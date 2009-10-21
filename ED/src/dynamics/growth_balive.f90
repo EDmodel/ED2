@@ -33,6 +33,7 @@ module growth_balive
       use ed_therm_lib    , only : calc_hcapveg           & ! function
                                  , update_veg_energy_cweh ! ! function
       use allometry       , only : area_indices           ! ! subroutine
+      use mortality       , only : mortality_rates        ! ! subroutine
       implicit none
       !----- Arguments. -----------------------------------------------------!
       type(edtype)     , target     :: cgrid
@@ -60,8 +61,6 @@ module growth_balive
       real                          :: old_hcapveg
       real                          :: nitrogen_uptake
       real                          :: N_uptake_pot
-      !----- External functions. --------------------------------------------!
-      real             , external   :: mortality_rates
 
 
       do ipy = 1,cgrid%npolygons
@@ -202,9 +201,10 @@ module growth_balive
                   !      Do mortality --- note that only frost mortality     !
                   ! changes daily.                                           !
                   !----------------------------------------------------------!
-                  dndt = - mortality_rates(cpatch,ipa,ico                    &
-                                          ,csite%avg_daily_temp(ipa))        &
-                       * cpatch%nplant(ico) * tfact
+                  call mortality_rates(cpatch,ipa,ico                        &
+                                      ,csite%avg_daily_temp(ipa))
+                  dndt = - sum(cpatch%mort_rate(:,ico)) * cpatch%nplant(ico) &
+                         * tfact
                   
                   !----- Update monthly mortality rate [plants/m2/month]. ---!
                   cpatch%monthly_dndt(ico) = cpatch%monthly_dndt(ico) + dndt

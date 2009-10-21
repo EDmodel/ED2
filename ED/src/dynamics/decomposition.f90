@@ -31,7 +31,7 @@ subroutine soil_respiration(csite,ipa)
           cpatch%hite(ico)) * cpatch%nplant(ico)
                         
      cpatch%root_respiration(ico) = r_resp
-     cpatch%mean_root_resp(ico) = cpatch%mean_root_resp(ico) + r_resp
+     cpatch%mean_root_resp(ico)  = cpatch%mean_root_resp(ico)  + r_resp
      cpatch%dmean_root_resp(ico) = cpatch%dmean_root_resp(ico) + r_resp
        
   enddo

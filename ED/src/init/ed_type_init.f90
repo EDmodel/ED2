@@ -16,16 +16,35 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
   
   cpatch%solvable(ico) = .false.
 
-  cpatch%mean_gpp(ico) = 0.0
-  cpatch%mean_leaf_resp(ico) = 0.0
-  cpatch%mean_root_resp(ico) = 0.0
+  cpatch%mean_gpp(ico)        = 0.0
+  cpatch%mean_leaf_resp(ico)  = 0.0
+  cpatch%mean_root_resp(ico)  = 0.0
   
   cpatch%dmean_leaf_resp(ico) = 0.0
   cpatch%dmean_root_resp(ico) = 0.0
-  cpatch%dmean_gpp(ico) = 0.0
-  cpatch%dmean_gpp_pot(ico) = 0.0
-  cpatch%dmean_gpp_max(ico) = 0.0
+  cpatch%dmean_gpp(ico)       = 0.0
+  cpatch%dmean_gpp_pot(ico)   = 0.0
+  cpatch%dmean_gpp_max(ico)   = 0.0
+
+  cpatch%mmean_gpp(ico)          = 0.0
+  cpatch%mmean_leaf_resp(ico)    = 0.0
+  cpatch%mmean_root_resp(ico)    = 0.0
+  cpatch%mmean_growth_resp(ico)  = 0.0
+  cpatch%mmean_storage_resp(ico) = 0.0
+  cpatch%mmean_vleaf_resp(ico)   = 0.0
   
+  cpatch%dmean_light_level(ico) = 0.0
+  cpatch%mmean_light_level(ico) = 0.0
+  
+  cpatch%dmean_fs_open(ico)     = 0.0
+  cpatch%dmean_fsw(ico)         = 0.0
+  cpatch%dmean_fsn(ico)         = 0.0
+  
+  cpatch%mmean_fs_open(ico)     = 0.0
+  cpatch%mmean_fsw(ico)         = 0.0
+  cpatch%mmean_fsn(ico)         = 0.0
+
+
   cpatch%gpp(ico) = 0.0
   cpatch%leaf_respiration(ico) = 0.0
   cpatch%root_respiration(ico) = 0.0
@@ -39,8 +58,16 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
   !----- This variable would never be assigned for low LAI cohorts 
   cpatch%fs_open(ico) = cpatch%fsw(ico)*cpatch%fsn(ico)
 
-  cpatch%monthly_dndt(ico) = 0.0
+  cpatch%monthly_dndt(ico)      = 0.0
+  cpatch%mort_rate(:,ico)       = 0.0
+  cpatch%mmean_mort_rate(:,ico) = 0.0
 
+  cpatch%dagb_dt(ico)          = 0.0
+  cpatch%dba_dt(ico)           = 0.0
+  cpatch%ddbh_dt(ico)          = 0.0
+
+
+  cpatch%light_level(ico)      = 0.0
   cpatch%par_v(ico)            = 0.0
   cpatch%par_v_beam(ico)       = 0.0
   cpatch%par_v_diffuse(ico)    = 0.0
@@ -173,7 +200,9 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
   csite%mean_qrunoff(ip1:ip2) = 0.0
   csite%mean_hflux(ip1:ip2) = 0.0
 
-
+  csite%dmean_rh(ip1:ip2) = 0.0
+  csite%mmean_rh(ip1:ip2) = 0.0
+  
   csite%dmean_A_decomp(ip1:ip2) = 0.0
   csite%dmean_Af_decomp(ip1:ip2) = 0.0
 
@@ -312,7 +341,6 @@ end subroutine init_ed_patch_vars
 
 !======================================================================
 
-
 subroutine init_ed_site_vars(cpoly, lat)
 
   use ed_state_vars,only:polygontype
@@ -333,7 +361,6 @@ subroutine init_ed_site_vars(cpoly, lat)
 !  cpoly%basal_area_recruit(1:n_pft, 1:n_dbh,:) = 0.0
 
   cpoly%agb(1:n_pft, 1:n_dbh,:) = 0.0
-  cpoly%agb_lu(1:n_dist_types,:) = 0.0
   cpoly%agb_growth(1:n_pft, 1:n_dbh,:) = 0.0
   cpoly%agb_mort(1:n_pft, 1:n_dbh,:) = 0.0
   cpoly%agb_cut(1:n_pft, 1:n_dbh,:) = 0.0

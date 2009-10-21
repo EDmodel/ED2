@@ -188,6 +188,7 @@ subroutine sfcrad_ed(cosz, cosaoi, csite, maxcohort, rshort)
    real                                   :: surface_absorbed_longwave_surf
    real                                   :: surface_absorbed_longwave_incid
    real                                   :: crown_area
+   real                                   :: remaining_rshort
    !----- Loop over the patches -----------------------------------------------------------!
 
    do ipa = 1,csite%npatches
@@ -222,6 +223,8 @@ subroutine sfcrad_ed(cosz, cosaoi, csite, maxcohort, rshort)
          cpatch%rlong_v_incid(ico)         = 0.0
          cpatch%rlong_v_surf(ico)          = 0.0
          cpatch%old_stoma_data(ico)%recalc = 1
+         
+         cpatch%light_level(ico)           = 0.0
 
          !------ Transfer information from linked lists to arrays. ------------------------!
          if (cpatch%solvable(ico)) then
@@ -424,6 +427,24 @@ subroutine sfcrad_ed(cosz, cosaoi, csite, maxcohort, rshort)
          csite%rlong_g_incid(ipa) = 0.0
       end if
       
+      !------------------------------------------------------------------------------------!
+      !    Find the light levels for all cohorts, provided it is daytime.  Otherwise, we   !
+      ! assign a negative light level, so we know this value is not to be considered in    !
+      ! the daily integration.                                                             !
+      !------------------------------------------------------------------------------------!
+      if (rshort > 0.5) then
+         remaining_rshort = 1.0
+         do ico = 1,cpatch%ncohorts
+            cpatch%light_level(ico) = remaining_rshort
+            remaining_rshort        = remaining_rshort                                     &
+                                    - 0.5 * ( cpatch%rshort_v_beam(ico)                    &
+                                            + cpatch%rshort_v_diffuse(ico))
+         end do
+      else
+         do ico = 1, cpatch%ncohorts
+            cpatch%light_level(ico) = -1.0
+         end do
+      end if
    end do
    return
 end subroutine sfcrad_ed

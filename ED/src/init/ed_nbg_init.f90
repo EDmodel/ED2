@@ -76,7 +76,7 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
                                  , patchtype          & ! structure
                                  , allocate_sitetype  & ! subroutine
                                  , allocate_patchtype ! ! subroutine
-   use ed_max_dims           , only : n_pft              ! ! intent(in)
+   use ed_max_dims        , only : n_pft              ! ! intent(in)
    use pft_coms           , only : q                  & ! intent(in)
                                  , qsw                & ! intent(in)
                                  , sla                & ! intent(in)
@@ -85,14 +85,15 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
                                  , include_these_pft  & ! intent(in)
                                  , include_pft_ag     & ! intent(in)
                                  , init_density       ! ! intent(in)
-   use consts_coms        , only : t3ple              ! ! intent(in)
+   use consts_coms        , only : t3ple              & ! intent(in)
+                                 , pio4               ! ! intent(in)
    use ed_therm_lib       , only : calc_hcapveg       ! ! function
    use allometry          , only : h2dbh              & ! function
                                  , dbh2bd             & ! function
                                  , dbh2bl             & ! function
                                  , ed_biomass         & ! function
                                  , area_indices       ! ! subroutine
-   use fuse_fiss_utils , only : sort_cohorts    ! ! subroutine
+   use fuse_fiss_utils    , only : sort_cohorts    ! ! subroutine
 
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
@@ -122,8 +123,7 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
 
       !----- Perform cohort allocation. ---------------------------------------------------!
       call allocate_patchtype(cpatch,mypfts)
-      !call allocate_patchtype(cpatch,0)
-      !cycle patchloop
+
       !------------------------------------------------------------------------------------!
       !    Here we loop over PFTs rather than assigning the cohorts, so we ensure to only  !
       ! include the PFTs that should be  included (i.e., patches that should not happen in !
@@ -175,7 +175,13 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
                           ,cpatch%pft(ico),cpatch%sla(ico),cpatch%lai(ico)                 &
                           ,cpatch%wpa(ico),cpatch%wai(ico))
 
-         
+         !----- Find the above-ground biomass and basal area. -----------------------------!
+         cpatch%agb(ico) = cpatch%nplant(ico) * 10.0                                       &
+                         * ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)                 &
+                                     ,cpatch%bleaf(ico),cpatch%pft(ico)                    &
+                                     ,cpatch%hite(ico),cpatch%bstorage(ico))
+         cpatch%basarea(ico) = cpatch%nplant(ico) * pio4 * cpatch%dbh(ico)*cpatch%dbh(ico)
+
          !----- Initialize other cohort-level variables. ----------------------------------!
          call init_ed_cohort_vars(cpatch,ico,lsl)
          
@@ -193,10 +199,7 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
                                               ,cpatch%phenology_status(ico))
  
          !----- Update total patch-level above-ground biomass -----------------------------!
-         csite%plant_ag_biomass(ipa) = csite%plant_ag_biomass(ipa) + cpatch%nplant(ico)    &
-                                     * ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)     &
-                                                 ,cpatch%bleaf(ico),cpatch%pft(ico)        &
-                                                 ,cpatch%hite(ico),cpatch%bstorage(ico))
+         csite%plant_ag_biomass(ipa) = csite%plant_ag_biomass(ipa) + 0.1 * cpatch%agb(ico)
       end do pftloop
       
       !------------------------------------------------------------------------------------!

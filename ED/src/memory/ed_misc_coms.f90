@@ -95,6 +95,10 @@ Module ed_misc_coms
   logical :: fast_diagnostics       !! If ifoutput,idoutput,and imoutput are zero, then
                                     !! there is no need to integrate fast flux diagnostics
 
+  logical :: fivedim_diags          !  If this is a SOI run, then the huge array with all
+                                    !     combinations will be allocated, otherwise some 2D
+                                    !     and a few 3D arrays will be allocated instead.
+
   ! Namelist option to attach metadata to HDF5 output files 0=no, 1=yes
 
   integer :: attach_metadata

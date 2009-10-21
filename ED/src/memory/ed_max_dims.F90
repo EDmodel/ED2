@@ -124,6 +124,12 @@ Module ed_max_dims
                                          ! 2 - secondary forest
                                          ! 3 - primary forest.
 
+  integer, parameter :: n_mort = 4 ! Number of mortality types:
+                                   ! 1. Ageing, PFT-dependent but otherwise constant;
+                                   ! 2. Negative carbon balance;
+                                   ! 3. Treefall mortality;
+                                   ! 4. Mortality due to cold weather.
+
   ! Maximum number of model variables
   integer, parameter :: maxvars = 250
 

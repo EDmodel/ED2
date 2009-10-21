@@ -2,13 +2,13 @@ module ed_state_vars
 
   use grid_coms, only: nzg,nzs,ngrids
   use c34constants, only : stoma_data,n_stoma_atts
-  use ed_max_dims, only: max_site,n_pft,n_dbh,n_age,n_dist_types             &
+  use ed_max_dims, only: max_site,n_pft,n_dbh,n_age,n_mort,n_dist_types      &
                        ,maxmach,maxgrds
   use disturb_coms, only : lutime,num_lu_trans,max_lu_years
   use met_driver_coms, only: met_driv_data,met_driv_state
   use fusion_fission_coms, only: ff_ndbh
   use phenology_coms, only: prescribed_phen
-  use ed_misc_coms, only: idoutput, imoutput
+  use ed_misc_coms, only: idoutput, imoutput, fivedim_diags
 
   implicit none
 !============================================================================!
@@ -80,6 +80,21 @@ module ed_state_vars
      ! Plant height (m)
      real ,pointer,dimension(:) :: hite
 
+     ! Above-ground biomass (tonC/ha)
+     real, pointer, dimension(:) :: agb
+
+     ! Basal area (cm2_plant/m2_gnd)
+     real, pointer, dimension(:) :: basarea
+     
+     ! Rate of change in agb (tonC/ha/month)
+     real, pointer, dimension(:) :: dagb_dt
+     
+     ! Rate of change in basal area (cm2_plant/m2_gnd/month)
+     real, pointer, dimension(:) :: dba_dt
+     
+     ! Rate of change in dbh (cm/month)
+     real, pointer, dimension(:) :: ddbh_dt
+
      ! Plant diameter at breast height (cm)
      real ,pointer,dimension(:) :: dbh
 
@@ -88,6 +103,7 @@ module ed_state_vars
 
      ! Biomass of leaves (kgC/plant)
      real ,pointer,dimension(:) :: bleaf
+     
 
      ! phenology_status codes:
      ! 0 - plant has the maximum LAI, given its size
@@ -175,11 +191,25 @@ module ed_state_vars
      ! Plant virtual leaf respiration (kgC/plant/day)
      real ,pointer,dimension(:) :: vleaf_respiration
 
+     ! Monthly mean of the plant productivity terms, all in umol/m2/s
+     real, pointer, dimension(:) :: mmean_gpp
+     real, pointer, dimension(:) :: mmean_leaf_resp
+     real, pointer, dimension(:) :: mmean_root_resp
+     real, pointer, dimension(:) :: mmean_growth_resp
+     real, pointer, dimension(:) :: mmean_storage_resp
+     real, pointer, dimension(:) :: mmean_vleaf_resp
+
      ! Weighting factor for open and closed stomata due to N limitation
      real ,pointer,dimension(:) :: fsn
 
-     ! Plant mortality rate [plants/m2/month]
+     ! Plant density tendency [plants/m2/month]
      real ,pointer,dimension(:) :: monthly_dndt
+
+     ! Mortality rate [yr-1]
+     real , pointer, dimension(:,:) :: mort_rate
+
+     ! Monthly mean Mortality rate [yr-1] (only frost mortality changes...)
+     real , pointer, dimension(:,:) :: mmean_mort_rate
 
      ! This is where you keep the derivatives of the 
      ! stomatal conductance residual and the old met conditions.
@@ -205,6 +235,11 @@ module ed_state_vars
      ! Flag specifying if this cohort is a new recruit with respect
      ! to the first census.
      integer ,pointer,dimension(:) :: new_recruit_flag
+
+     ! Light level received by this cohort, its diurnal and monthly means
+     real, pointer, dimension(:) :: light_level
+     real, pointer, dimension(:) :: dmean_light_level
+     real, pointer, dimension(:) :: mmean_light_level
 
      ! Photosynthetically active radiation (PAR) absorbed by the 
      ! cohort (units are Einsteins/m2/s)
@@ -262,6 +297,14 @@ module ed_state_vars
 
      ! Product of fsw and fsn
      real ,pointer,dimension(:) :: fs_open
+
+     ! Daily and monthly means of the weighting factors for open and closed stomata
+     real ,pointer,dimension(:) :: dmean_fs_open
+     real ,pointer,dimension(:) :: dmean_fsw
+     real ,pointer,dimension(:) :: dmean_fsn
+     real ,pointer,dimension(:) :: mmean_fs_open
+     real ,pointer,dimension(:) :: mmean_fsw
+     real ,pointer,dimension(:) :: mmean_fsn
 
      ! Net stomatal resistance [s/m]
      real ,pointer,dimension(:) :: stomatal_resistance
@@ -477,6 +520,10 @@ module ed_state_vars
 
      ! average of rh [umol/m2/s] over FRQSTATE
      real , pointer,dimension(:) :: mean_rh
+
+     ! average of rh [umol/m2/s] over a day and a month, respectively
+     real , pointer,dimension(:) :: dmean_rh
+     real , pointer,dimension(:) :: mmean_rh
 
      ! average of net ecosystem productivity (NEP) [umol/m2/s] over FRQSTATE
      real , pointer,dimension(:) :: mean_nep
@@ -786,7 +833,7 @@ module ed_state_vars
      real,pointer,dimension(:,:) :: runoff_A ! Runoff parameters, 1st dimension is 3.
      real,pointer,dimension(:)   :: runoff_rate
      real,pointer,dimension(:)   :: runoff
-     
+          
   end type sitetype
 !============================================================================!
 !============================================================================!
@@ -830,30 +877,12 @@ module ed_state_vars
                                                         ! calculated at read-in of data during 
                                                         ! landuse_init
 
-     real,   pointer,dimension(:,:) :: lai_age    ! Site level mean LAI, grouped by patch age
-                                                  ! class [m2/m2] (n_age,nsites)
-     real,   pointer,dimension(:,:) :: wpa_age    ! Woody Projected Area, grouped by cohort age
-                                                  ! class [m2/m2] (n_pft,nsites)
-     real,   pointer,dimension(:,:) :: wai_age    ! Woody area index, grouped by cohort age
-                                                  ! class [m2/m2] (n_pft,nsites)
-     real,   pointer,dimension(:,:) :: lai_dbh    ! Site level mean LAI, grouped by cohort DBH
-                                                  ! class [m2/m2] (n_dbh,nsites)
-     real,   pointer,dimension(:,:) :: wpa_dbh    ! Woody Projected Area, grouped by cohort DBH
-                                                  ! class [m2/m2] (n_pft,nsites)
-     real,   pointer,dimension(:,:) :: wai_dbh    ! Woody area index, grouped by cohort DBH
-                                                  ! class [m2/m2] (n_pft,nsites)
      real,   pointer,dimension(:,:) :: lai_pft    ! Site level mean LAI, grouped by cohort PFT
                                                   ! [m2/m2] (n_pft,nsites)
      real,   pointer,dimension(:,:) :: wpa_pft    ! Woody Projected Area, grouped by cohort PFT
                                                   ! [m2/m2] (n_pft,nsites)
      real,   pointer,dimension(:,:) :: wai_pft    ! Woody area index, grouped by cohort PFT
                                                   ! [m2/m2] (n_pft,nsites)
-     real,   pointer,dimension(:,:) :: lai_lu     ! Site level mean LAI, grouped by patch land use type
-                                                  ! [m2/m2] (n_dist_types,nsites)
-     real,   pointer,dimension(:,:) :: wpa_lu     ! Woody projected area, grouped by patch landuse type
-                                                  ! [m2/m2] (n_dist_types,nsites)
-     real,   pointer,dimension(:,:) :: wai_lu     ! Woody area index, grouped by patch landuse type
-                                                  ! [m2/m2] (n_dist_types,nsites)
 
      !-----------------------------------
      ! BASIC INFO
@@ -977,7 +1006,7 @@ module ed_state_vars
      real,pointer, dimension(:,:,:) :: basal_area !(n_pft,n_dbh,nsites)
      real,pointer, dimension(:,:,:) :: agb        !(n_pft,n_dbh,nsites)
      real,pointer, dimension(:,:,:) :: pldens     !(n_pft,n_dbh,nsites)
-     real,pointer, dimension(:,:)   :: agb_lu     !(n_dist_types,nsites)
+     real,pointer, dimension(:,:,:) :: bseeds     !(n_pft,n_dbh,nsites)
 
      real,pointer, dimension(:,:,:) :: basal_area_growth
      real,pointer, dimension(:,:,:) :: basal_area_mort
@@ -995,6 +1024,8 @@ module ed_state_vars
 
      real,pointer,dimension(:) :: albedt
      real,pointer,dimension(:) :: rlongup
+     !----- Length of day light, used to average light levels properly. -------------------!
+     real, pointer, dimension(:) :: daylight
 
      ! ------------------------------------------
      ! Fast time flux diagnostic variables == Polygon Level
@@ -1246,8 +1277,8 @@ module ed_state_vars
      ! Polygon above-ground biomass [kgC/m2]
      real,pointer,dimension(:,:,:) :: agb  !(n_pft,n_dbh,npolygons)
 
-     ! Polygon plant density [#/m2]
-     real,pointer,dimension(:,:,:) :: pldens  !(n_pft,n_dbh,npolygons)
+     real,pointer, dimension(:,:,:) :: pldens     !(n_pft,n_dbh,npolygons)
+     real,pointer, dimension(:,:,:) :: bseeds     !(n_pft,n_dbh,npolygons)
 
      ! ------------------------------------------
      ! Diagnostic variables
@@ -1388,12 +1419,9 @@ module ed_state_vars
      
      real, pointer, dimension(:,:) :: dmean_soil_temp      !(nzg,npolygons)
      real, pointer, dimension(:,:) :: dmean_soil_water     !(nzg,npolygons)
+     real, pointer, dimension(:)   :: dmean_fs_open
      real, pointer, dimension(:)   :: dmean_fsw
      real, pointer, dimension(:)   :: dmean_fsn
-     real, pointer, dimension(:,:) :: dmean_gpp_lu     !(n_dist_types,npolygons)
-     real, pointer, dimension(:,:) :: dmean_rh_lu      !(n_dist_types,npolygons)
-     real, pointer, dimension(:,:) :: dmean_nep_lu     !(n_dist_types,npolygons)
-     real, pointer, dimension(:,:) :: dmean_gpp_dbh    !(n_dbh       ,npolygons)
      
      real, pointer, dimension(:)   :: dmean_can_temp      ! (npolygons)
      real, pointer, dimension(:)   :: dmean_can_shv       ! (npolygons)
@@ -1423,18 +1451,24 @@ module ed_state_vars
      !   These are variables updated at a daily basis, so they are not   !
      ! averages but they are written at the daily analysis               !
      !-------------------------------------------------------------------!
-     real, pointer, dimension(:,:) :: lai_age    ! (n_age       , npolygons)
-     real, pointer, dimension(:,:) :: wpa_age    ! (n_age       , npolygons)
-     real, pointer, dimension(:,:) :: wai_age    ! (n_age       , npolygons)
-     real, pointer, dimension(:,:) :: lai_dbh    ! (n_dbh       , npolygons)
-     real, pointer, dimension(:,:) :: wpa_dbh    ! (n_dbh       , npolygons)
-     real, pointer, dimension(:,:) :: wai_dbh    ! (n_dbh       , npolygons)
      real, pointer, dimension(:,:) :: lai_pft    ! (n_pft       , npolygons)
      real, pointer, dimension(:,:) :: wpa_pft    ! (n_pft       , npolygons)
      real, pointer, dimension(:,:) :: wai_pft    ! (n_pft       , npolygons)
-     real, pointer, dimension(:,:) :: lai_lu     ! (n_dist_types, npolygons)
-     real, pointer, dimension(:,:) :: wpa_lu     ! (n_dist_types, npolygons)
-     real, pointer, dimension(:,:) :: wai_lu     ! (n_dist_types, npolygons)
+     real, pointer, dimension(:,:) :: dmean_gpp_dbh    !(n_dbh       ,npolygons)
+
+
+     !-------------------------------------------------------------------!
+     !   These are variables updated at a monthly basis, so they are not !
+     ! averages but they are written at the monthly analysis             !
+     !-------------------------------------------------------------------!
+     real, pointer, dimension(:,:) :: agb_pft    !(n_pft       ,npolygons)
+     real, pointer, dimension(:,:) :: ba_pft     !(n_pft       ,npolygons)
+     real, pointer, dimension(:,:) :: bseeds_pft !(n_pft      ,npolygons)
+
+     real, pointer, dimension(:,:) :: mmean_gpp_dbh  !(n_dbh       ,npolygons)
+     real, pointer, dimension(:,:) :: mmean_lai_pft  !(n_pft       ,npolygons)
+     real, pointer, dimension(:,:) :: mmean_wpa_pft  !(n_pft       ,npolygons)
+     real, pointer, dimension(:,:) :: mmean_wai_pft  !(n_pft       ,npolygons)
 
      !-------------------------------------------------------------------!
      ! These variables carry the montlhly mean, and are allocated only   !
@@ -1460,22 +1494,9 @@ module ed_state_vars
      real, pointer, dimension(:)   :: mmean_vleaf_resp
      real, pointer, dimension(:,:) :: mmean_soil_temp      !(nzg,npolygons)
      real, pointer, dimension(:,:) :: mmean_soil_water     !(nzg,npolygons)
-     real, pointer, dimension(:,:) :: mmean_gpp_lu   !(n_dist_types,npolygons)
-     real, pointer, dimension(:,:) :: mmean_rh_lu    !(n_dist_types,npolygons)
-     real, pointer, dimension(:,:) :: mmean_nep_lu   !(n_dist_types,npolygons)
-     real, pointer, dimension(:,:) :: mmean_gpp_dbh  !(n_dbh       ,npolygons)
-     real, pointer, dimension(:,:) :: mmean_lai_age  !(n_age       ,npolygons)
-     real, pointer, dimension(:,:) :: mmean_wpa_age  !(n_age       ,npolygons)
-     real, pointer, dimension(:,:) :: mmean_wai_age  !(n_age       ,npolygons)
-     real, pointer, dimension(:,:) :: mmean_lai_dbh  !(n_dbh       ,npolygons)
-     real, pointer, dimension(:,:) :: mmean_wpa_dbh  !(n_dbh       ,npolygons)
-     real, pointer, dimension(:,:) :: mmean_wai_dbh  !(n_dbh       ,npolygons)
-     real, pointer, dimension(:,:) :: mmean_lai_pft  !(n_pft       ,npolygons)
-     real, pointer, dimension(:,:) :: mmean_wpa_pft  !(n_pft       ,npolygons)
-     real, pointer, dimension(:,:) :: mmean_wai_pft  !(n_pft       ,npolygons)
-     real, pointer, dimension(:,:) :: mmean_lai_lu   !(n_dist_types,npolygons)
-     real, pointer, dimension(:,:) :: mmean_wpa_lu   !(n_dist_types,npolygons)
-     real, pointer, dimension(:,:) :: mmean_wai_lu   !(n_dist_types,npolygons)
+     real, pointer, dimension(:)   :: mmean_fs_open
+     real, pointer, dimension(:)   :: mmean_fsw
+     real, pointer, dimension(:)   :: mmean_fsn
 
      real, pointer, dimension(:)   :: mmean_can_temp      ! (npolygons)
      real, pointer, dimension(:)   :: mmean_can_shv       ! (npolygons)
@@ -1494,23 +1515,6 @@ module ed_state_vars
      real, pointer, dimension(:)   :: mmean_pcpg          ! (npolygons)
 
      !-------------------------------------------------------------------!
-     !   These are variables updated at a monthly basis, so they are not !
-     ! averages but they are written at the monthly analysis             !
-     !-------------------------------------------------------------------!
-     real, pointer, dimension(:,:) :: agb_pft    !(n_pft       ,npolygons)
-     real, pointer, dimension(:,:) :: ba_pft     !(n_pft       ,npolygons)
-     real, pointer, dimension(:,:) :: bseeds_pft ! (n_pft      ,npolygons)
-     real, pointer, dimension(:,:) :: area_pft   !(n_pft       ,npolygons)
-     real, pointer, dimension(:,:) :: agb_lu     !(n_dist_types,npolygons)
-     real, pointer, dimension(:,:) :: area_lu    !(n_dist_types,npolygons)
-     real, pointer, dimension(:,:) :: agb_age    !(n_age       ,npolygons)
-     real, pointer, dimension(:,:) :: ba_age     !(n_age       ,npolygons)
-     real, pointer, dimension(:,:) :: bseeds_age !(n_age       ,npolygons)
-     real, pointer, dimension(:,:) :: agb_dbh    !(n_dbh       ,npolygons)
-     real, pointer, dimension(:,:) :: ba_dbh     !(n_dbh       ,npolygons)
-     real, pointer, dimension(:,:) :: bseeds_dbh !(n_dbh       ,npolygons)
-
-     !-------------------------------------------------------------------!
      ! These variables serve two purposes. During the run they carry the !
      ! monthly square sum, and at the time of the monthly output, it     !
      ! is converted to standard deviation.                               !
@@ -1523,8 +1527,59 @@ module ed_state_vars
      real, pointer, dimension(:) :: stdev_sensible
      real, pointer, dimension(:) :: stdev_nep
      real, pointer, dimension(:) :: stdev_rh
+
+
+     !-----------------------------------------------------------------------!
+     !    Five dimension version of the above variables, plus some other     !
+     ! diagnostic variables.                                                 !
+     ! Dimensions: (n_pft,n_dist_types,n_dbh,n_age,npolygons)                !
+     !-----------------------------------------------------------------------!
+     !----- State variables, updated every day. -----------------------------!
+     real, pointer, dimension(:,:,:,:,:) :: lai_ar
+     real, pointer, dimension(:,:,:,:,:) :: wpa_ar
+     real, pointer, dimension(:,:,:,:,:) :: wai_ar
+     real, pointer, dimension(:,:,:,:,:) :: frostmort_ar
+     !----- Daily averages. -------------------------------------------------!
+     real, pointer, dimension(:,:,:,:,:) :: dmean_fs_open_ar
+     real, pointer, dimension(:,:,:,:,:) :: dmean_fsw_ar
+     real, pointer, dimension(:,:,:,:,:) :: dmean_fsn_ar
+     real, pointer, dimension(:,:,:,:,:) :: dmean_lightlev_ar
+     real, pointer, dimension(:,:,:,:,:) :: dmean_gpp_ar
+     real, pointer, dimension(:,:,:,:,:) :: dmean_plresp_ar
+     real, pointer, dimension(:,:,:,:,:) :: dmean_igpp_ar
+     real, pointer, dimension(:,:,:,:,:) :: dmean_iplresp_ar
+     !----- Variables that are updated once a month. ------------------------! 
+     real, pointer, dimension(:,:,:,:,:) :: bseeds_ar
+     real, pointer, dimension(:,:,:,:,:) :: agb_ar
+     real, pointer, dimension(:,:,:,:,:) :: ba_ar
+     real, pointer, dimension(:,:,:,:,:) :: pldens_ar
+     real, pointer, dimension(:,:,:,:,:) :: carbbal_ar
+     real, pointer, dimension(:,:,:,:,:) :: ncbmort_ar
+     !----- Monthly averages. -----------------------------------------------!
+     real, pointer, dimension(:,:,:,:,:) :: mmean_lai_ar
+     real, pointer, dimension(:,:,:,:,:) :: mmean_wpa_ar
+     real, pointer, dimension(:,:,:,:,:) :: mmean_wai_ar
+     real, pointer, dimension(:,:,:,:,:) :: mmean_fs_open_ar
+     real, pointer, dimension(:,:,:,:,:) :: mmean_fsw_ar
+     real, pointer, dimension(:,:,:,:,:) :: mmean_fsn_ar
+     real, pointer, dimension(:,:,:,:,:) :: mmean_lightlev_ar
+     real, pointer, dimension(:,:,:,:,:) :: mmean_frostmort_ar
+     real, pointer, dimension(:,:,:,:,:) :: mmean_gpp_ar
+     real, pointer, dimension(:,:,:,:,:) :: mmean_plresp_ar
+     real, pointer, dimension(:,:,:,:,:) :: mmean_igpp_ar
+     real, pointer, dimension(:,:,:,:,:) :: mmean_iplresp_ar
+     !-----------------------------------------------------------------------!
+     !    Heterotrophic respiration.  Since this is based on a patch-level   !
+     ! variable, we drop the PFT and DBH dimensions, so its dimensions are   !
+     ! (n_dist_types,n_age,npolygons).                                       !
+     !-----------------------------------------------------------------------!
+     real, pointer, dimension(:,:,:)     :: dmean_rh_ar
+     real, pointer, dimension(:,:,:)     :: mmean_rh_ar
+     !-----------------------------------------------------------------------!
+
+
      
-     !----- Disturbance rates. ------------------------------------------!
+     !----- Disturbance rates. ----------------------------------------------!
      real, pointer, dimension(:,:,:) :: disturbance_rates
   end type edtype
 !============================================================================!
@@ -1718,6 +1773,7 @@ contains
        allocate(cgrid%basal_area(n_pft,n_dbh,npolygons))
        allocate(cgrid%agb(n_pft,n_dbh,npolygons))
        allocate(cgrid%pldens(n_pft,n_dbh,npolygons))
+       allocate(cgrid%bseeds(n_pft,n_dbh,npolygons))
        
        allocate(cgrid%metinput(npolygons))
        allocate(cgrid%met(npolygons))
@@ -1814,18 +1870,9 @@ contains
        allocate(cgrid%avg_albedt       (npolygons))
        allocate(cgrid%avg_rlongup      (npolygons))
        
-       allocate(cgrid%lai_age            (n_age       ,npolygons))
-       allocate(cgrid%wpa_age            (n_age       ,npolygons))
-       allocate(cgrid%wai_age            (n_age       ,npolygons))
-       allocate(cgrid%lai_dbh            (n_dbh       ,npolygons))
-       allocate(cgrid%wpa_dbh            (n_dbh       ,npolygons))
-       allocate(cgrid%wai_dbh            (n_dbh       ,npolygons))
        allocate(cgrid%lai_pft            (n_pft       ,npolygons))
        allocate(cgrid%wpa_pft            (n_pft       ,npolygons))
        allocate(cgrid%wai_pft            (n_pft       ,npolygons))
-       allocate(cgrid%lai_lu             (n_dist_types,npolygons))
-       allocate(cgrid%wpa_lu             (n_dist_types,npolygons))
-       allocate(cgrid%wai_lu             (n_dist_types,npolygons))
 
        !-----------------------------------------------------------------!
        ! Allocating the daily means, only if daily or monthly means were !
@@ -1854,11 +1901,9 @@ contains
           allocate(cgrid%dmean_nep          (             npolygons))
           allocate(cgrid%dmean_soil_temp    (nzg,         npolygons))
           allocate(cgrid%dmean_soil_water   (nzg,         npolygons))
+          allocate(cgrid%dmean_fs_open      (             npolygons))
           allocate(cgrid%dmean_fsw          (             npolygons))
           allocate(cgrid%dmean_fsn          (             npolygons))
-          allocate(cgrid%dmean_gpp_lu       (n_dist_types,npolygons))
-          allocate(cgrid%dmean_rh_lu        (n_dist_types,npolygons))
-          allocate(cgrid%dmean_nep_lu       (n_dist_types,npolygons))
           allocate(cgrid%dmean_gpp_dbh      (n_dbh       ,npolygons))
           allocate(cgrid%dmean_can_temp     (             npolygons))
           allocate(cgrid%dmean_can_shv      (             npolygons))
@@ -1878,6 +1923,22 @@ contains
           allocate(cgrid%dmean_co2_residual   (             npolygons))
           allocate(cgrid%dmean_energy_residual(             npolygons))
           allocate(cgrid%dmean_water_residual (             npolygons))
+          
+          if (fivedim_diags) then
+             allocate(cgrid%lai_ar             (n_pft,n_dist_types,n_dbh,n_age,npolygons))
+             allocate(cgrid%wpa_ar             (n_pft,n_dist_types,n_dbh,n_age,npolygons))
+             allocate(cgrid%wai_ar             (n_pft,n_dist_types,n_dbh,n_age,npolygons))
+             allocate(cgrid%frostmort_ar       (n_pft,n_dist_types,n_dbh,n_age,npolygons))
+             allocate(cgrid%dmean_fs_open_ar   (n_pft,n_dist_types,n_dbh,n_age,npolygons))
+             allocate(cgrid%dmean_fsw_ar       (n_pft,n_dist_types,n_dbh,n_age,npolygons))
+             allocate(cgrid%dmean_fsn_ar       (n_pft,n_dist_types,n_dbh,n_age,npolygons))
+             allocate(cgrid%dmean_lightlev_ar  (n_pft,n_dist_types,n_dbh,n_age,npolygons))
+             allocate(cgrid%dmean_gpp_ar       (n_pft,n_dist_types,n_dbh,n_age,npolygons))
+             allocate(cgrid%dmean_plresp_ar    (n_pft,n_dist_types,n_dbh,n_age,npolygons))
+             allocate(cgrid%dmean_igpp_ar      (n_pft,n_dist_types,n_dbh,n_age,npolygons))
+             allocate(cgrid%dmean_iplresp_ar   (n_pft,n_dist_types,n_dbh,n_age,npolygons))
+             allocate(cgrid%dmean_rh_ar        (      n_dist_types,      n_age,npolygons))
+          end if
 
        end if
        !-------------------------------------------------------------------!
@@ -1901,22 +1962,13 @@ contains
           allocate(cgrid%mmean_vleaf_resp   (             npolygons))
           allocate(cgrid%mmean_soil_temp    (nzg,         npolygons))
           allocate(cgrid%mmean_soil_water   (nzg,         npolygons))
-          allocate(cgrid%mmean_gpp_lu       (n_dist_types,npolygons))
-          allocate(cgrid%mmean_rh_lu        (n_dist_types,npolygons))
-          allocate(cgrid%mmean_nep_lu       (n_dist_types,npolygons))
+          allocate(cgrid%mmean_fs_open      (             npolygons))
+          allocate(cgrid%mmean_fsw          (             npolygons))
+          allocate(cgrid%mmean_fsn          (             npolygons))
           allocate(cgrid%mmean_gpp_dbh      (n_dbh       ,npolygons))
-          allocate(cgrid%mmean_lai_age      (n_age       ,npolygons))
-          allocate(cgrid%mmean_wpa_age      (n_age       ,npolygons))
-          allocate(cgrid%mmean_wai_age      (n_age       ,npolygons))
-          allocate(cgrid%mmean_lai_dbh      (n_dbh       ,npolygons))
-          allocate(cgrid%mmean_wpa_dbh      (n_dbh       ,npolygons))
-          allocate(cgrid%mmean_wai_dbh      (n_dbh       ,npolygons))
           allocate(cgrid%mmean_lai_pft      (n_pft       ,npolygons))
           allocate(cgrid%mmean_wpa_pft      (n_pft       ,npolygons))
           allocate(cgrid%mmean_wai_pft      (n_pft       ,npolygons))
-          allocate(cgrid%mmean_lai_lu       (n_dist_types,npolygons))
-          allocate(cgrid%mmean_wpa_lu       (n_dist_types,npolygons))
-          allocate(cgrid%mmean_wai_lu       (n_dist_types,npolygons))
           allocate(cgrid%mmean_can_temp     (             npolygons))
           allocate(cgrid%mmean_can_shv      (             npolygons))
           allocate(cgrid%mmean_can_co2      (             npolygons))
@@ -1938,15 +1990,6 @@ contains
           allocate(cgrid%bseeds_pft         (n_pft       ,npolygons))
           allocate(cgrid%agb_pft            (n_pft       ,npolygons))
           allocate(cgrid%ba_pft             (n_pft       ,npolygons))
-          allocate(cgrid%area_pft           (n_pft       ,npolygons))
-          allocate(cgrid%agb_lu             (n_dist_types,npolygons))
-          allocate(cgrid%area_lu            (n_dist_types,npolygons))
-          allocate(cgrid%bseeds_age         (n_age       ,npolygons))
-          allocate(cgrid%agb_age            (n_age       ,npolygons))
-          allocate(cgrid%ba_age             (n_age       ,npolygons))
-          allocate(cgrid%bseeds_dbh         (n_dbh       ,npolygons))
-          allocate(cgrid%agb_dbh            (n_dbh       ,npolygons))
-          allocate(cgrid%ba_dbh             (n_dbh       ,npolygons))
           allocate(cgrid%stdev_gpp          (             npolygons))
           allocate(cgrid%stdev_evap         (             npolygons))
           allocate(cgrid%stdev_transp       (             npolygons))
@@ -1954,7 +1997,33 @@ contains
           allocate(cgrid%stdev_nep          (             npolygons))
           allocate(cgrid%stdev_rh           (             npolygons))
           allocate(cgrid%disturbance_rates  (n_dist_types,n_dist_types,npolygons))
+
+          
+          if (fivedim_diags) then
+             allocate(cgrid%bseeds_ar          (n_pft,n_dist_types,n_dbh,n_age,npolygons))
+             allocate(cgrid%agb_ar             (n_pft,n_dist_types,n_dbh,n_age,npolygons))
+             allocate(cgrid%ba_ar              (n_pft,n_dist_types,n_dbh,n_age,npolygons))
+             allocate(cgrid%pldens_ar          (n_pft,n_dist_types,n_dbh,n_age,npolygons))
+             allocate(cgrid%carbbal_ar         (n_pft,n_dist_types,n_dbh,n_age,npolygons))
+             allocate(cgrid%ncbmort_ar         (n_pft,n_dist_types,n_dbh,n_age,npolygons))
+             allocate(cgrid%mmean_lai_ar       (n_pft,n_dist_types,n_dbh,n_age,npolygons))
+             allocate(cgrid%mmean_wpa_ar       (n_pft,n_dist_types,n_dbh,n_age,npolygons))
+             allocate(cgrid%mmean_wai_ar       (n_pft,n_dist_types,n_dbh,n_age,npolygons))
+             allocate(cgrid%mmean_fs_open_ar   (n_pft,n_dist_types,n_dbh,n_age,npolygons))
+             allocate(cgrid%mmean_fsw_ar       (n_pft,n_dist_types,n_dbh,n_age,npolygons))
+             allocate(cgrid%mmean_fsn_ar       (n_pft,n_dist_types,n_dbh,n_age,npolygons))
+             allocate(cgrid%mmean_lightlev_ar  (n_pft,n_dist_types,n_dbh,n_age,npolygons))
+             allocate(cgrid%mmean_frostmort_ar (n_pft,n_dist_types,n_dbh,n_age,npolygons))
+             allocate(cgrid%mmean_gpp_ar       (n_pft,n_dist_types,n_dbh,n_age,npolygons))
+             allocate(cgrid%mmean_plresp_ar    (n_pft,n_dist_types,n_dbh,n_age,npolygons))
+             allocate(cgrid%mmean_igpp_ar      (n_pft,n_dist_types,n_dbh,n_age,npolygons))
+             allocate(cgrid%mmean_iplresp_ar   (n_pft,n_dist_types,n_dbh,n_age,npolygons))
+             allocate(cgrid%mmean_rh_ar        (      n_dist_types,      n_age,npolygons))
+          end if
+
+
        end if
+
 
 
        ! Initialize the variables with a non-sense number.
@@ -1999,21 +2068,9 @@ contains
     
     allocate(cpoly%num_landuse_years(nsites))
 
-    allocate(cpoly%lai_age(n_age,nsites))
-    allocate(cpoly%wpa_age(n_age,nsites))
-    allocate(cpoly%wai_age(n_age,nsites))
-
     allocate(cpoly%lai_pft(n_pft,nsites))
     allocate(cpoly%wpa_pft(n_pft,nsites))
     allocate(cpoly%wai_pft(n_pft,nsites))
-
-    allocate(cpoly%lai_dbh(n_dbh,nsites))
-    allocate(cpoly%wpa_dbh(n_dbh,nsites))
-    allocate(cpoly%wai_dbh(n_dbh,nsites))
-
-    allocate(cpoly%lai_lu(n_dist_types,nsites))
-    allocate(cpoly%wpa_lu(n_dist_types,nsites))
-    allocate(cpoly%wai_lu(n_dist_types,nsites))
 
     allocate(cpoly%TCI(nsites))      
     allocate(cpoly%hydro_next(nsites))
@@ -2051,7 +2108,7 @@ contains
     allocate(cpoly%basal_area  (n_pft,n_dbh,nsites))
     allocate(cpoly%agb         (n_pft,n_dbh,nsites))
     allocate(cpoly%pldens      (n_pft,n_dbh,nsites))
-    allocate(cpoly%agb_lu      (n_dist_types,nsites))
+    allocate(cpoly%bseeds      (n_pft,n_dbh,nsites))
 
     allocate(cpoly%basal_area_growth (n_pft,n_dbh,nsites))
     allocate(cpoly%agb_growth        (n_pft,n_dbh,nsites))
@@ -2067,6 +2124,7 @@ contains
     
     allocate(cpoly%albedt(nsites))
     allocate(cpoly%rlongup(nsites))
+    allocate(cpoly%daylight(nsites))
 
     allocate(cpoly%lai  (nsites))
     allocate(cpoly%wpa  (nsites))
@@ -2223,6 +2281,8 @@ contains
 
     allocate(csite%avg_daily_temp(npatches))  
     allocate(csite%mean_rh(npatches))
+    allocate(csite%dmean_rh(npatches))
+    allocate(csite%mmean_rh(npatches))
     allocate(csite%mean_nep(npatches))
     allocate(csite%wbudget_loss2atm(npatches))
     allocate(csite%wbudget_precipgain(npatches))
@@ -2380,6 +2440,11 @@ contains
     allocate(cpatch%pft(ncohorts))
     allocate(cpatch%nplant(ncohorts))
     allocate(cpatch%hite(ncohorts))
+    allocate(cpatch%agb(ncohorts))
+    allocate(cpatch%basarea(ncohorts))
+    allocate(cpatch%dagb_dt(ncohorts))
+    allocate(cpatch%dba_dt(ncohorts))
+    allocate(cpatch%ddbh_dt(ncohorts))
     allocate(cpatch%dbh(ncohorts))
     allocate(cpatch%bdead(ncohorts))
     allocate(cpatch%bleaf(ncohorts))
@@ -2405,11 +2470,13 @@ contains
     allocate(cpatch%dmean_gpp(ncohorts))
     allocate(cpatch%dmean_gpp_pot(ncohorts))
     allocate(cpatch%dmean_gpp_max(ncohorts))
+    allocate(cpatch%mmean_gpp(ncohorts))
     allocate(cpatch%growth_respiration(ncohorts))
     allocate(cpatch%storage_respiration(ncohorts))
     allocate(cpatch%vleaf_respiration(ncohorts))
     allocate(cpatch%fsn(ncohorts))
     allocate(cpatch%monthly_dndt(ncohorts))
+    allocate(cpatch%mort_rate(n_mort,ncohorts))
 
     ! Soon to be replaced
     allocate(cpatch%old_stoma_data(ncohorts))
@@ -2419,6 +2486,7 @@ contains
     allocate(cpatch%krdepth(ncohorts))
     allocate(cpatch%first_census(ncohorts))
     allocate(cpatch%new_recruit_flag(ncohorts))
+    allocate(cpatch%light_level(ncohorts))
     allocate(cpatch%par_v(ncohorts))
     allocate(cpatch%par_v_beam(ncohorts))
     allocate(cpatch%par_v_diffuse(ncohorts))
@@ -2448,6 +2516,27 @@ contains
     allocate(cpatch%llspan(ncohorts))
     allocate(cpatch%vm_bar(ncohorts))
     allocate(cpatch%sla(ncohorts))
+
+    if (idoutput > 0 .or. imoutput > 0) then
+       allocate(cpatch%dmean_light_level(ncohorts))
+       allocate(cpatch%dmean_fs_open(ncohorts))
+       allocate(cpatch%dmean_fsw(ncohorts))
+       allocate(cpatch%dmean_fsn(ncohorts))
+    end if
+    
+    if (imoutput > 0) then
+       allocate(cpatch%mmean_light_level(ncohorts))
+       allocate(cpatch%mmean_fs_open(ncohorts))
+       allocate(cpatch%mmean_fsw(ncohorts))
+       allocate(cpatch%mmean_fsn(ncohorts))
+       allocate(cpatch%mmean_leaf_resp(ncohorts))
+       allocate(cpatch%mmean_root_resp(ncohorts))
+       allocate(cpatch%mmean_growth_resp(ncohorts))
+       allocate(cpatch%mmean_storage_resp(ncohorts))
+       allocate(cpatch%mmean_vleaf_resp(ncohorts))
+       allocate(cpatch%mmean_mort_rate(n_mort,ncohorts))
+    end if
+
 
     ! Initialize the variables with a non-sense number.
     !call huge_patchtype(cpatch)
@@ -2516,6 +2605,7 @@ contains
        nullify(cgrid%basal_area              )
        nullify(cgrid%agb                     )
        nullify(cgrid%pldens                  )
+       nullify(cgrid%bseeds                  )
        
        nullify(cgrid%metinput                )
        nullify(cgrid%met                     )
@@ -2629,11 +2719,9 @@ contains
        nullify(cgrid%dmean_nep               )
        nullify(cgrid%dmean_soil_temp         )
        nullify(cgrid%dmean_soil_water        )
+       nullify(cgrid%dmean_fs_open           )
        nullify(cgrid%dmean_fsw               )
        nullify(cgrid%dmean_fsn               )
-       nullify(cgrid%dmean_gpp_lu            )
-       nullify(cgrid%dmean_rh_lu             )
-       nullify(cgrid%dmean_nep_lu            )
        nullify(cgrid%dmean_gpp_dbh           )
        nullify(cgrid%dmean_can_temp          )
        nullify(cgrid%dmean_can_shv           )
@@ -2652,18 +2740,9 @@ contains
        nullify(cgrid%dmean_co2_residual      )
        nullify(cgrid%dmean_energy_residual   )
        nullify(cgrid%dmean_water_residual    )
-       nullify(cgrid%lai_age                 )
-       nullify(cgrid%wpa_age                 )
-       nullify(cgrid%wai_age                 )
-       nullify(cgrid%lai_dbh                 )
-       nullify(cgrid%wpa_dbh                 )
-       nullify(cgrid%wai_dbh                 )
        nullify(cgrid%lai_pft                 )
        nullify(cgrid%wpa_pft                 )
        nullify(cgrid%wai_pft                 )
-       nullify(cgrid%lai_lu                  )
-       nullify(cgrid%wpa_lu                  )
-       nullify(cgrid%wai_lu                  )
        nullify(cgrid%mmean_gpp               )
        nullify(cgrid%mmean_evap              )
        nullify(cgrid%mmean_transp            )
@@ -2673,6 +2752,9 @@ contains
        nullify(cgrid%mmean_nep               )
        nullify(cgrid%mmean_soil_temp         )
        nullify(cgrid%mmean_soil_water        )
+       nullify(cgrid%mmean_fs_open           )
+       nullify(cgrid%mmean_fsw               )
+       nullify(cgrid%mmean_fsn               )
        nullify(cgrid%mmean_plresp            )
        nullify(cgrid%mmean_rh                )
        nullify(cgrid%mmean_leaf_resp         )
@@ -2680,22 +2762,10 @@ contains
        nullify(cgrid%mmean_growth_resp       )
        nullify(cgrid%mmean_storage_resp      )
        nullify(cgrid%mmean_vleaf_resp        )
-       nullify(cgrid%mmean_gpp_lu            )
-       nullify(cgrid%mmean_rh_lu             )
-       nullify(cgrid%mmean_nep_lu            )
        nullify(cgrid%mmean_gpp_dbh           )
-       nullify(cgrid%mmean_lai_age           )
-       nullify(cgrid%mmean_wpa_age           )
-       nullify(cgrid%mmean_wai_age           )
-       nullify(cgrid%mmean_lai_dbh           )
-       nullify(cgrid%mmean_wpa_dbh           )
-       nullify(cgrid%mmean_wai_dbh           )
        nullify(cgrid%mmean_lai_pft           )
        nullify(cgrid%mmean_wpa_pft           )
        nullify(cgrid%mmean_wai_pft           )
-       nullify(cgrid%mmean_lai_lu            )
-       nullify(cgrid%mmean_wpa_lu            )
-       nullify(cgrid%mmean_wai_lu            )
        nullify(cgrid%mmean_can_temp          )
        nullify(cgrid%mmean_can_shv           )
        nullify(cgrid%mmean_can_co2           )
@@ -2717,15 +2787,6 @@ contains
        nullify(cgrid%bseeds_pft              )
        nullify(cgrid%agb_pft                 )
        nullify(cgrid%ba_pft                  )
-       nullify(cgrid%area_pft                )
-       nullify(cgrid%bseeds_age              )
-       nullify(cgrid%agb_age                 )
-       nullify(cgrid%ba_age                  )
-       nullify(cgrid%bseeds_dbh              )
-       nullify(cgrid%agb_dbh                 )
-       nullify(cgrid%ba_dbh                  )
-       nullify(cgrid%agb_lu                  )
-       nullify(cgrid%area_lu                 )
        nullify(cgrid%stdev_gpp               )
        nullify(cgrid%stdev_evap              )
        nullify(cgrid%stdev_transp            )
@@ -2733,7 +2794,40 @@ contains
        nullify(cgrid%stdev_nep               )
        nullify(cgrid%stdev_rh                )
        nullify(cgrid%disturbance_rates       )
-      
+
+       nullify(cgrid%lai_ar                  )
+       nullify(cgrid%wpa_ar                  )
+       nullify(cgrid%wai_ar                  )
+       nullify(cgrid%frostmort_ar            )
+       nullify(cgrid%dmean_fs_open_ar        )
+       nullify(cgrid%dmean_fsw_ar            )
+       nullify(cgrid%dmean_fsn_ar            )
+       nullify(cgrid%dmean_lightlev_ar       )
+       nullify(cgrid%dmean_gpp_ar            )
+       nullify(cgrid%dmean_plresp_ar         )
+       nullify(cgrid%dmean_igpp_ar           )
+       nullify(cgrid%dmean_iplresp_ar        )
+       nullify(cgrid%dmean_rh_ar             )
+       nullify(cgrid%bseeds_ar               )
+       nullify(cgrid%agb_ar                  )
+       nullify(cgrid%ba_ar                   )
+       nullify(cgrid%pldens_ar               )
+       nullify(cgrid%carbbal_ar              )
+       nullify(cgrid%ncbmort_ar              )
+       nullify(cgrid%mmean_lai_ar            )
+       nullify(cgrid%mmean_wpa_ar            )
+       nullify(cgrid%mmean_wai_ar            )
+       nullify(cgrid%mmean_fs_open_ar        )
+       nullify(cgrid%mmean_fsw_ar            )
+       nullify(cgrid%mmean_fsn_ar            )
+       nullify(cgrid%mmean_lightlev_ar       )
+       nullify(cgrid%mmean_frostmort_ar      )
+       nullify(cgrid%mmean_gpp_ar            )
+       nullify(cgrid%mmean_plresp_ar         )
+       nullify(cgrid%mmean_igpp_ar           )
+       nullify(cgrid%mmean_iplresp_ar        )
+       nullify(cgrid%mmean_rh_ar             )
+
     return
   end subroutine nullify_edtype
 !============================================================================!
@@ -2764,18 +2858,9 @@ contains
     nullify(cpoly%aspect)
 
     nullify(cpoly%num_landuse_years)
-    nullify(cpoly%lai_age)
-    nullify(cpoly%wpa_age)
-    nullify(cpoly%wai_age)
-    nullify(cpoly%lai_dbh)
-    nullify(cpoly%wpa_dbh)
-    nullify(cpoly%wai_dbh)
     nullify(cpoly%lai_pft)
     nullify(cpoly%wpa_pft)
     nullify(cpoly%wai_pft)
-    nullify(cpoly%lai_lu)
-    nullify(cpoly%wpa_lu)
-    nullify(cpoly%wai_lu)
 
     nullify(cpoly%TCI)   
     nullify(cpoly%lsl)   
@@ -2811,7 +2896,7 @@ contains
     nullify(cpoly%basal_area)
     nullify(cpoly%agb)    
     nullify(cpoly%pldens)    
-    nullify(cpoly%agb_lu)    
+    nullify(cpoly%bseeds)    
     
     nullify(cpoly%basal_area_growth)
     nullify(cpoly%agb_growth       )
@@ -2827,6 +2912,7 @@ contains
     
     nullify(cpoly%albedt)
     nullify(cpoly%rlongup)
+    nullify(cpoly%daylight)
     nullify(cpoly%lai    )
     nullify(cpoly%wpa    )
     nullify(cpoly%wai    )
@@ -2966,6 +3052,8 @@ contains
     nullify(csite%old_stoma_vector_max)
     nullify(csite%avg_daily_temp)  
     nullify(csite%mean_rh)
+    nullify(csite%dmean_rh)
+    nullify(csite%mmean_rh)
     nullify(csite%mean_nep)
     nullify(csite%wbudget_loss2atm)
     nullify(csite%wbudget_precipgain)
@@ -3112,6 +3200,11 @@ contains
     nullify(cpatch%pft)
     nullify(cpatch%nplant)
     nullify(cpatch%hite)
+    nullify(cpatch%agb)
+    nullify(cpatch%basarea)
+    nullify(cpatch%dagb_dt)
+    nullify(cpatch%dba_dt)
+    nullify(cpatch%ddbh_dt)
     nullify(cpatch%dbh)
     nullify(cpatch%bdead)
     nullify(cpatch%bleaf)
@@ -3137,17 +3230,28 @@ contains
     nullify(cpatch%dmean_gpp)
     nullify(cpatch%dmean_gpp_pot)
     nullify(cpatch%dmean_gpp_max)
+    nullify(cpatch%mmean_gpp         )
+    nullify(cpatch%mmean_leaf_resp   )
+    nullify(cpatch%mmean_root_resp   )
+    nullify(cpatch%mmean_growth_resp )
+    nullify(cpatch%mmean_storage_resp)
+    nullify(cpatch%mmean_vleaf_resp  )
     nullify(cpatch%growth_respiration)
     nullify(cpatch%storage_respiration)
     nullify(cpatch%vleaf_respiration)
     nullify(cpatch%fsn)
     nullify(cpatch%monthly_dndt)
+    nullify(cpatch%mort_rate)
+    nullify(cpatch%mmean_mort_rate)
     nullify(cpatch%old_stoma_data)
     nullify(cpatch%old_stoma_vector)
     nullify(cpatch%Psi_open)
     nullify(cpatch%krdepth)
     nullify(cpatch%first_census)
     nullify(cpatch%new_recruit_flag)
+    nullify(cpatch%light_level)
+    nullify(cpatch%dmean_light_level)
+    nullify(cpatch%mmean_light_level)
     nullify(cpatch%par_v)
     nullify(cpatch%par_v_beam)
     nullify(cpatch%par_v_diffuse)
@@ -3165,6 +3269,12 @@ contains
     nullify(cpatch%rsw_closed)
     nullify(cpatch%fsw)
     nullify(cpatch%fs_open)
+    nullify(cpatch%dmean_fs_open)
+    nullify(cpatch%dmean_fsw)
+    nullify(cpatch%dmean_fsn)
+    nullify(cpatch%mmean_fs_open)
+    nullify(cpatch%mmean_fsw)
+    nullify(cpatch%mmean_fsn)
     nullify(cpatch%stomatal_resistance)
     nullify(cpatch%maintenance_costs)
     nullify(cpatch%bseeds)
@@ -3177,13 +3287,6 @@ contains
     nullify(cpatch%llspan)
     nullify(cpatch%vm_bar)
     nullify(cpatch%sla)
-
-! Depricated
-!    nullify(cpatch%co_srad_h)
-!    nullify(cpatch%co_lrad_h)
-!    nullify(cpatch%co_sens_h)
-!    nullify(cpatch%co_evap_h)
-!    nullify(cpatch%co_liqr_h)
 
     return
   end subroutine nullify_patchtype
@@ -3252,6 +3355,7 @@ contains
        if(associated(cgrid%basal_area              )) deallocate(cgrid%basal_area              )
        if(associated(cgrid%agb                     )) deallocate(cgrid%agb                     )
        if(associated(cgrid%pldens                  )) deallocate(cgrid%pldens                  )
+       if(associated(cgrid%bseeds                  )) deallocate(cgrid%bseeds                  )
        
        if(associated(cgrid%metinput                )) deallocate(cgrid%metinput                )
        if(associated(cgrid%met                     )) deallocate(cgrid%met                     )
@@ -3377,11 +3481,9 @@ contains
        if(associated(cgrid%dmean_nep               )) deallocate(cgrid%dmean_nep               )
        if(associated(cgrid%dmean_soil_temp         )) deallocate(cgrid%dmean_soil_temp         )
        if(associated(cgrid%dmean_soil_water        )) deallocate(cgrid%dmean_soil_water        )
+       if(associated(cgrid%dmean_fs_open           )) deallocate(cgrid%dmean_fs_open           )
        if(associated(cgrid%dmean_fsw               )) deallocate(cgrid%dmean_fsw               )
        if(associated(cgrid%dmean_fsn               )) deallocate(cgrid%dmean_fsn               )
-       if(associated(cgrid%dmean_gpp_lu            )) deallocate(cgrid%dmean_gpp_lu            )
-       if(associated(cgrid%dmean_rh_lu             )) deallocate(cgrid%dmean_rh_lu             )
-       if(associated(cgrid%dmean_nep_lu            )) deallocate(cgrid%dmean_nep_lu            )
        if(associated(cgrid%dmean_gpp_dbh           )) deallocate(cgrid%dmean_gpp_dbh           )
        if(associated(cgrid%dmean_can_temp          )) deallocate(cgrid%dmean_can_temp          )
        if(associated(cgrid%dmean_can_shv           )) deallocate(cgrid%dmean_can_shv           )
@@ -3401,18 +3503,9 @@ contains
        if(associated(cgrid%dmean_energy_residual   )) deallocate(cgrid%dmean_energy_residual   )
        if(associated(cgrid%dmean_water_residual    )) deallocate(cgrid%dmean_water_residual    )
 
-       if(associated(cgrid%lai_age                 )) deallocate(cgrid%lai_age                 )
-       if(associated(cgrid%wpa_age                 )) deallocate(cgrid%wpa_age                 )
-       if(associated(cgrid%wai_age                 )) deallocate(cgrid%wai_age                 )
-       if(associated(cgrid%lai_dbh                 )) deallocate(cgrid%lai_dbh                 )
-       if(associated(cgrid%wpa_dbh                 )) deallocate(cgrid%wpa_dbh                 )
-       if(associated(cgrid%wai_dbh                 )) deallocate(cgrid%wai_dbh                 )
        if(associated(cgrid%lai_pft                 )) deallocate(cgrid%lai_pft                 )
        if(associated(cgrid%wpa_pft                 )) deallocate(cgrid%wpa_pft                 )
        if(associated(cgrid%wai_pft                 )) deallocate(cgrid%wai_pft                 )
-       if(associated(cgrid%lai_lu                  )) deallocate(cgrid%lai_lu                  )
-       if(associated(cgrid%wpa_lu                  )) deallocate(cgrid%wpa_lu                  )
-       if(associated(cgrid%wai_lu                  )) deallocate(cgrid%wai_lu                  )
        if(associated(cgrid%mmean_gpp               )) deallocate(cgrid%mmean_gpp               )
        if(associated(cgrid%mmean_evap              )) deallocate(cgrid%mmean_evap              )
        if(associated(cgrid%mmean_transp            )) deallocate(cgrid%mmean_transp            )
@@ -3422,6 +3515,9 @@ contains
        if(associated(cgrid%mmean_nep               )) deallocate(cgrid%mmean_nep               )
        if(associated(cgrid%mmean_soil_temp         )) deallocate(cgrid%mmean_soil_temp         )
        if(associated(cgrid%mmean_soil_water        )) deallocate(cgrid%mmean_soil_water        )
+       if(associated(cgrid%mmean_fs_open           )) deallocate(cgrid%mmean_fs_open           )
+       if(associated(cgrid%mmean_fsw               )) deallocate(cgrid%mmean_fsw               )
+       if(associated(cgrid%mmean_fsn               )) deallocate(cgrid%mmean_fsn               )
        if(associated(cgrid%mmean_plresp            )) deallocate(cgrid%mmean_plresp            )
        if(associated(cgrid%mmean_rh                )) deallocate(cgrid%mmean_rh                )
        if(associated(cgrid%mmean_leaf_resp         )) deallocate(cgrid%mmean_leaf_resp         )
@@ -3429,22 +3525,10 @@ contains
        if(associated(cgrid%mmean_growth_resp       )) deallocate(cgrid%mmean_growth_resp       )
        if(associated(cgrid%mmean_storage_resp      )) deallocate(cgrid%mmean_storage_resp      )
        if(associated(cgrid%mmean_vleaf_resp        )) deallocate(cgrid%mmean_vleaf_resp        )
-       if(associated(cgrid%mmean_gpp_lu            )) deallocate(cgrid%mmean_gpp_lu            )
-       if(associated(cgrid%mmean_rh_lu             )) deallocate(cgrid%mmean_rh_lu             )
-       if(associated(cgrid%mmean_nep_lu            )) deallocate(cgrid%mmean_nep_lu            )
        if(associated(cgrid%mmean_gpp_dbh           )) deallocate(cgrid%mmean_gpp_dbh           )
-       if(associated(cgrid%mmean_lai_age           )) deallocate(cgrid%mmean_lai_age           )
-       if(associated(cgrid%mmean_wpa_age           )) deallocate(cgrid%mmean_wpa_age           )
-       if(associated(cgrid%mmean_wai_age           )) deallocate(cgrid%mmean_wai_age           )
-       if(associated(cgrid%mmean_lai_dbh           )) deallocate(cgrid%mmean_lai_dbh           )
-       if(associated(cgrid%mmean_wpa_dbh           )) deallocate(cgrid%mmean_wpa_dbh           )
-       if(associated(cgrid%mmean_wai_dbh           )) deallocate(cgrid%mmean_wai_dbh           )
        if(associated(cgrid%mmean_lai_pft           )) deallocate(cgrid%mmean_lai_pft           )
        if(associated(cgrid%mmean_wpa_pft           )) deallocate(cgrid%mmean_wpa_pft           )
        if(associated(cgrid%mmean_wai_pft           )) deallocate(cgrid%mmean_wai_pft           )
-       if(associated(cgrid%mmean_lai_lu            )) deallocate(cgrid%mmean_lai_lu            )
-       if(associated(cgrid%mmean_wpa_lu            )) deallocate(cgrid%mmean_wpa_lu            )
-       if(associated(cgrid%mmean_wai_lu            )) deallocate(cgrid%mmean_wai_lu            )
        if(associated(cgrid%mmean_can_temp          )) deallocate(cgrid%mmean_can_temp          )
        if(associated(cgrid%mmean_can_shv           )) deallocate(cgrid%mmean_can_shv           )
        if(associated(cgrid%mmean_can_co2           )) deallocate(cgrid%mmean_can_co2           )
@@ -3466,15 +3550,6 @@ contains
        if(associated(cgrid%bseeds_pft              )) deallocate(cgrid%bseeds_pft              )
        if(associated(cgrid%agb_pft                 )) deallocate(cgrid%agb_pft                 )
        if(associated(cgrid%ba_pft                  )) deallocate(cgrid%ba_pft                  )
-       if(associated(cgrid%area_pft                )) deallocate(cgrid%area_pft                )
-       if(associated(cgrid%agb_lu                  )) deallocate(cgrid%agb_lu                  )
-       if(associated(cgrid%area_lu                 )) deallocate(cgrid%area_lu                 )
-       if(associated(cgrid%bseeds_age              )) deallocate(cgrid%bseeds_age              )
-       if(associated(cgrid%agb_age                 )) deallocate(cgrid%agb_age                 )
-       if(associated(cgrid%ba_age                  )) deallocate(cgrid%ba_age                  )
-       if(associated(cgrid%bseeds_dbh              )) deallocate(cgrid%bseeds_dbh              )
-       if(associated(cgrid%agb_dbh                 )) deallocate(cgrid%agb_dbh                 )
-       if(associated(cgrid%ba_dbh                  )) deallocate(cgrid%ba_dbh                  )
        if(associated(cgrid%stdev_gpp               )) deallocate(cgrid%stdev_gpp               )
        if(associated(cgrid%stdev_evap              )) deallocate(cgrid%stdev_evap              )
        if(associated(cgrid%stdev_transp            )) deallocate(cgrid%stdev_transp            )
@@ -3482,6 +3557,40 @@ contains
        if(associated(cgrid%stdev_nep               )) deallocate(cgrid%stdev_nep               )
        if(associated(cgrid%stdev_rh                )) deallocate(cgrid%stdev_rh                )
        if(associated(cgrid%disturbance_rates       )) deallocate(cgrid%disturbance_rates       )
+
+       if(associated(cgrid%lai_ar                  )) deallocate(cgrid%lai_ar                  )
+       if(associated(cgrid%wpa_ar                  )) deallocate(cgrid%wpa_ar                  )
+       if(associated(cgrid%wai_ar                  )) deallocate(cgrid%wai_ar                  )
+       if(associated(cgrid%frostmort_ar            )) deallocate(cgrid%frostmort_ar            )
+       if(associated(cgrid%dmean_fs_open_ar        )) deallocate(cgrid%dmean_fs_open_ar        )
+       if(associated(cgrid%dmean_fsw_ar            )) deallocate(cgrid%dmean_fsw_ar            )
+       if(associated(cgrid%dmean_fsn_ar            )) deallocate(cgrid%dmean_fsn_ar            )
+       if(associated(cgrid%dmean_lightlev_ar       )) deallocate(cgrid%dmean_lightlev_ar       )
+       if(associated(cgrid%dmean_gpp_ar            )) deallocate(cgrid%dmean_gpp_ar            )
+       if(associated(cgrid%dmean_plresp_ar         )) deallocate(cgrid%dmean_plresp_ar         )
+       if(associated(cgrid%dmean_igpp_ar           )) deallocate(cgrid%dmean_igpp_ar           )
+       if(associated(cgrid%dmean_iplresp_ar        )) deallocate(cgrid%dmean_iplresp_ar        )
+       if(associated(cgrid%dmean_rh_ar             )) deallocate(cgrid%dmean_rh_ar             )
+       if(associated(cgrid%bseeds_ar               )) deallocate(cgrid%bseeds_ar               )
+       if(associated(cgrid%agb_ar                  )) deallocate(cgrid%agb_ar                  )
+       if(associated(cgrid%ba_ar                   )) deallocate(cgrid%ba_ar                   )
+       if(associated(cgrid%pldens_ar               )) deallocate(cgrid%pldens_ar               )
+       if(associated(cgrid%carbbal_ar              )) deallocate(cgrid%carbbal_ar              )
+       if(associated(cgrid%ncbmort_ar              )) deallocate(cgrid%ncbmort_ar              )
+       if(associated(cgrid%mmean_lai_ar            )) deallocate(cgrid%mmean_lai_ar            )
+       if(associated(cgrid%mmean_wpa_ar            )) deallocate(cgrid%mmean_wpa_ar            )
+       if(associated(cgrid%mmean_wai_ar            )) deallocate(cgrid%mmean_wai_ar            )
+       if(associated(cgrid%mmean_fs_open_ar        )) deallocate(cgrid%mmean_fs_open_ar        )
+       if(associated(cgrid%mmean_fsw_ar            )) deallocate(cgrid%mmean_fsw_ar            )
+       if(associated(cgrid%mmean_fsn_ar            )) deallocate(cgrid%mmean_fsn_ar            )
+       if(associated(cgrid%mmean_lightlev_ar       )) deallocate(cgrid%mmean_lightlev_ar       )
+       if(associated(cgrid%mmean_frostmort_ar      )) deallocate(cgrid%mmean_frostmort_ar      )
+       if(associated(cgrid%mmean_gpp_ar            )) deallocate(cgrid%mmean_gpp_ar            )
+       if(associated(cgrid%mmean_plresp_ar         )) deallocate(cgrid%mmean_plresp_ar         )
+       if(associated(cgrid%mmean_igpp_ar           )) deallocate(cgrid%mmean_igpp_ar           )
+       if(associated(cgrid%mmean_iplresp_ar        )) deallocate(cgrid%mmean_iplresp_ar        )
+       if(associated(cgrid%mmean_rh_ar             )) deallocate(cgrid%mmean_rh_ar             )
+
     return
   end subroutine deallocate_edtype
 !============================================================================!
@@ -3514,18 +3623,9 @@ contains
     if(associated(cpoly%aspect                      )) deallocate(cpoly%aspect                      )
 
     if(associated(cpoly%num_landuse_years           )) deallocate(cpoly%num_landuse_years           )
-    if(associated(cpoly%lai_age                     )) deallocate(cpoly%lai_age                     )
-    if(associated(cpoly%wpa_age                     )) deallocate(cpoly%wpa_age                     )
-    if(associated(cpoly%wai_age                     )) deallocate(cpoly%wai_age                     )
-    if(associated(cpoly%lai_dbh                     )) deallocate(cpoly%lai_dbh                     )
-    if(associated(cpoly%wpa_dbh                     )) deallocate(cpoly%wpa_dbh                     )
-    if(associated(cpoly%wai_dbh                     )) deallocate(cpoly%wai_dbh                     )
     if(associated(cpoly%lai_pft                     )) deallocate(cpoly%lai_pft                     )
     if(associated(cpoly%wpa_pft                     )) deallocate(cpoly%wpa_pft                     )
     if(associated(cpoly%wai_pft                     )) deallocate(cpoly%wai_pft                     )
-    if(associated(cpoly%lai_lu                      )) deallocate(cpoly%lai_lu                      )
-    if(associated(cpoly%wpa_lu                      )) deallocate(cpoly%wpa_lu                      )
-    if(associated(cpoly%wai_lu                      )) deallocate(cpoly%wai_lu                      )
 
     if(associated(cpoly%TCI                         )) deallocate(cpoly%TCI                         )
     if(associated(cpoly%lsl                         )) deallocate(cpoly%lsl                         )
@@ -3561,7 +3661,7 @@ contains
     if(associated(cpoly%basal_area                  )) deallocate(cpoly%basal_area                  )
     if(associated(cpoly%agb                         )) deallocate(cpoly%agb                         )
     if(associated(cpoly%pldens                      )) deallocate(cpoly%pldens                      )
-    if(associated(cpoly%agb_lu                      )) deallocate(cpoly%agb_lu                      )
+    if(associated(cpoly%bseeds                      )) deallocate(cpoly%bseeds                      )
     
     if(associated(cpoly%basal_area_growth           )) deallocate(cpoly%basal_area_growth           )
     if(associated(cpoly%agb_growth                  )) deallocate(cpoly%agb_growth                  )
@@ -3577,6 +3677,7 @@ contains
     
     if(associated(cpoly%albedt                      )) deallocate(cpoly%albedt                      )
     if(associated(cpoly%rlongup                     )) deallocate(cpoly%rlongup                     )
+    if(associated(cpoly%daylight                    )) deallocate(cpoly%daylight                    )
     
     if(associated(cpoly%lai                         )) deallocate(cpoly%lai                         )
     if(associated(cpoly%wpa                         )) deallocate(cpoly%wpa                         )
@@ -3717,6 +3818,8 @@ contains
 
     if(associated(csite%avg_daily_temp               )) deallocate(csite%avg_daily_temp               )
     if(associated(csite%mean_rh                      )) deallocate(csite%mean_rh                      )
+    if(associated(csite%dmean_rh                     )) deallocate(csite%dmean_rh                     )
+    if(associated(csite%mmean_rh                     )) deallocate(csite%mmean_rh                     )
     if(associated(csite%mean_nep                     )) deallocate(csite%mean_nep                     )
     if(associated(csite%wbudget_loss2atm             )) deallocate(csite%wbudget_loss2atm             )
     if(associated(csite%wbudget_precipgain           )) deallocate(csite%wbudget_precipgain           )
@@ -3861,76 +3964,97 @@ contains
     
     if (cpatch%ncohorts == 0) return
     
-    if(associated(cpatch%pft))    deallocate(cpatch%pft)
-    if(associated(cpatch%nplant))    deallocate(cpatch%nplant)
-    if(associated(cpatch%hite))      deallocate(cpatch%hite)
-    if(associated(cpatch%dbh))        deallocate(cpatch%dbh)
-    if(associated(cpatch%bdead))     deallocate(cpatch%bdead)
-    if(associated(cpatch%bleaf))     deallocate(cpatch%bleaf)
-    if(associated(cpatch%phenology_status)) deallocate(cpatch%phenology_status)
-    if(associated(cpatch%balive))    deallocate(cpatch%balive)
-    if(associated(cpatch%lai))       deallocate(cpatch%lai)
-    if(associated(cpatch%wpa))       deallocate(cpatch%wpa)
-    if(associated(cpatch%wai))       deallocate(cpatch%wai)
-    if(associated(cpatch%solvable))  deallocate(cpatch%solvable)
-    if(associated(cpatch%bstorage))  deallocate(cpatch%bstorage)
-    if(associated(cpatch%cb))        deallocate(cpatch%cb)
-    if(associated(cpatch%cb_max))    deallocate(cpatch%cb_max)
-    if(associated(cpatch%cbr_bar))   deallocate(cpatch%cbr_bar)
-    if(associated(cpatch%veg_energy))  deallocate(cpatch%veg_energy)
-    if(associated(cpatch%veg_temp))  deallocate(cpatch%veg_temp)
-    if(associated(cpatch%veg_fliq))  deallocate(cpatch%veg_fliq)
-    if(associated(cpatch%veg_water)) deallocate(cpatch%veg_water)
-    if(associated(cpatch%mean_gpp))  deallocate(cpatch%mean_gpp)
-    if(associated(cpatch%mean_leaf_resp))   deallocate(cpatch%mean_leaf_resp)
-    if(associated(cpatch%mean_root_resp))   deallocate(cpatch%mean_root_resp)
-    if(associated(cpatch%dmean_leaf_resp))  deallocate(cpatch%dmean_leaf_resp)
-    if(associated(cpatch%dmean_root_resp))  deallocate(cpatch%dmean_root_resp)
-    if(associated(cpatch%dmean_gpp))        deallocate(cpatch%dmean_gpp)
-    if(associated(cpatch%dmean_gpp_pot))    deallocate(cpatch%dmean_gpp_pot)
-    if(associated(cpatch%dmean_gpp_max)) deallocate(cpatch%dmean_gpp_max)
+    if(associated(cpatch%pft))                 deallocate(cpatch%pft)
+    if(associated(cpatch%nplant))              deallocate(cpatch%nplant)
+    if(associated(cpatch%hite))                deallocate(cpatch%hite)
+    if(associated(cpatch%agb))                 deallocate(cpatch%agb)
+    if(associated(cpatch%basarea))             deallocate(cpatch%basarea)
+    if(associated(cpatch%dagb_dt))             deallocate(cpatch%dagb_dt)
+    if(associated(cpatch%dba_dt))              deallocate(cpatch%dba_dt)
+    if(associated(cpatch%ddbh_dt))             deallocate(cpatch%ddbh_dt)
+    if(associated(cpatch%dbh))                 deallocate(cpatch%dbh)
+    if(associated(cpatch%bdead))               deallocate(cpatch%bdead)
+    if(associated(cpatch%bleaf))               deallocate(cpatch%bleaf)
+    if(associated(cpatch%phenology_status))    deallocate(cpatch%phenology_status)
+    if(associated(cpatch%balive))              deallocate(cpatch%balive)
+    if(associated(cpatch%lai))                 deallocate(cpatch%lai)
+    if(associated(cpatch%wpa))                 deallocate(cpatch%wpa)
+    if(associated(cpatch%wai))                 deallocate(cpatch%wai)
+    if(associated(cpatch%solvable))            deallocate(cpatch%solvable)
+    if(associated(cpatch%bstorage))            deallocate(cpatch%bstorage)
+    if(associated(cpatch%cb))                  deallocate(cpatch%cb)
+    if(associated(cpatch%cb_max))              deallocate(cpatch%cb_max)
+    if(associated(cpatch%cbr_bar))             deallocate(cpatch%cbr_bar)
+    if(associated(cpatch%veg_energy))          deallocate(cpatch%veg_energy)
+    if(associated(cpatch%veg_temp))            deallocate(cpatch%veg_temp)
+    if(associated(cpatch%veg_fliq))            deallocate(cpatch%veg_fliq)
+    if(associated(cpatch%veg_water))           deallocate(cpatch%veg_water)
+    if(associated(cpatch%mean_gpp))            deallocate(cpatch%mean_gpp)
+    if(associated(cpatch%mean_leaf_resp))      deallocate(cpatch%mean_leaf_resp)
+    if(associated(cpatch%mean_root_resp))      deallocate(cpatch%mean_root_resp)
+    if(associated(cpatch%dmean_leaf_resp))     deallocate(cpatch%dmean_leaf_resp)
+    if(associated(cpatch%dmean_root_resp))     deallocate(cpatch%dmean_root_resp)
+    if(associated(cpatch%dmean_gpp))           deallocate(cpatch%dmean_gpp)
+    if(associated(cpatch%dmean_gpp_pot))       deallocate(cpatch%dmean_gpp_pot)
+    if(associated(cpatch%dmean_gpp_max))       deallocate(cpatch%dmean_gpp_max)
     if(associated(cpatch%growth_respiration))  deallocate(cpatch%growth_respiration)
     if(associated(cpatch%storage_respiration)) deallocate(cpatch%storage_respiration)
     if(associated(cpatch%vleaf_respiration))   deallocate(cpatch%vleaf_respiration)
-    if(associated(cpatch%fsn))            deallocate(cpatch%fsn)
-    if(associated(cpatch%monthly_dndt))   deallocate(cpatch%monthly_dndt)
+    if(associated(cpatch%mmean_gpp         ))  deallocate(cpatch%mmean_gpp         )
+    if(associated(cpatch%mmean_leaf_resp   ))  deallocate(cpatch%mmean_leaf_resp   )
+    if(associated(cpatch%mmean_root_resp   ))  deallocate(cpatch%mmean_root_resp   )
+    if(associated(cpatch%mmean_growth_resp ))  deallocate(cpatch%mmean_growth_resp )
+    if(associated(cpatch%mmean_storage_resp))  deallocate(cpatch%mmean_storage_resp)
+    if(associated(cpatch%mmean_vleaf_resp  ))  deallocate(cpatch%mmean_vleaf_resp  )
+    if(associated(cpatch%fsn))                 deallocate(cpatch%fsn)
+    if(associated(cpatch%monthly_dndt))        deallocate(cpatch%monthly_dndt)
+    if(associated(cpatch%mort_rate))           deallocate(cpatch%mort_rate)
+    if(associated(cpatch%mmean_mort_rate))     deallocate(cpatch%mmean_mort_rate)
 
-    if(associated(cpatch%old_stoma_data))   deallocate(cpatch%old_stoma_data)
-    if(associated(cpatch%old_stoma_vector)) deallocate(cpatch%old_stoma_vector)
-
-    if(associated(cpatch%Psi_open))       deallocate(cpatch%Psi_open)
-    if(associated(cpatch%krdepth))        deallocate(cpatch%krdepth)
-    if(associated(cpatch%first_census))   deallocate(cpatch%first_census)
-    if(associated(cpatch%new_recruit_flag)) deallocate(cpatch%new_recruit_flag)
-    if(associated(cpatch%par_v))          deallocate(cpatch%par_v)
-    if(associated(cpatch%par_v_beam))     deallocate(cpatch%par_v_beam)
-    if(associated(cpatch%par_v_diffuse))  deallocate(cpatch%par_v_diffuse)
-    if(associated(cpatch%rshort_v))       deallocate(cpatch%rshort_v)
-    if(associated(cpatch%rshort_v_beam))  deallocate(cpatch%rshort_v_beam)
-    if(associated(cpatch%rshort_v_diffuse)) deallocate(cpatch%rshort_v_diffuse)
-    if(associated(cpatch%rlong_v))        deallocate(cpatch%rlong_v)
-    if(associated(cpatch%rlong_v_surf))   deallocate(cpatch%rlong_v_surf)
-    if(associated(cpatch%rlong_v_incid))  deallocate(cpatch%rlong_v_incid)
-    if(associated(cpatch%rb))             deallocate(cpatch%rb)
-    if(associated(cpatch%A_open))         deallocate(cpatch%A_open)    
-    if(associated(cpatch%A_closed))       deallocate(cpatch%A_closed)
-    if(associated(cpatch%Psi_closed))     deallocate(cpatch%Psi_closed)
-    if(associated(cpatch%rsw_open))       deallocate(cpatch%rsw_open)
-    if(associated(cpatch%rsw_closed))     deallocate(cpatch%rsw_closed)
-    if(associated(cpatch%fsw))            deallocate(cpatch%fsw)
-    if(associated(cpatch%fs_open))        deallocate(cpatch%fs_open)
+    if(associated(cpatch%old_stoma_data))      deallocate(cpatch%old_stoma_data)
+    if(associated(cpatch%old_stoma_vector))    deallocate(cpatch%old_stoma_vector)
+    if(associated(cpatch%Psi_open))             deallocate(cpatch%Psi_open)
+    if(associated(cpatch%krdepth))              deallocate(cpatch%krdepth)
+    if(associated(cpatch%first_census))         deallocate(cpatch%first_census)
+    if(associated(cpatch%new_recruit_flag))     deallocate(cpatch%new_recruit_flag)
+    if(associated(cpatch%light_level))          deallocate(cpatch%light_level)
+    if(associated(cpatch%dmean_light_level))    deallocate(cpatch%dmean_light_level)
+    if(associated(cpatch%mmean_light_level))    deallocate(cpatch%mmean_light_level)
+    if(associated(cpatch%par_v))                deallocate(cpatch%par_v)
+    if(associated(cpatch%par_v_beam))           deallocate(cpatch%par_v_beam)
+    if(associated(cpatch%par_v_diffuse))        deallocate(cpatch%par_v_diffuse)
+    if(associated(cpatch%rshort_v))             deallocate(cpatch%rshort_v)
+    if(associated(cpatch%rshort_v_beam))        deallocate(cpatch%rshort_v_beam)
+    if(associated(cpatch%rshort_v_diffuse))     deallocate(cpatch%rshort_v_diffuse)
+    if(associated(cpatch%rlong_v))              deallocate(cpatch%rlong_v)
+    if(associated(cpatch%rlong_v_surf))         deallocate(cpatch%rlong_v_surf)
+    if(associated(cpatch%rlong_v_incid))        deallocate(cpatch%rlong_v_incid)
+    if(associated(cpatch%rb))                   deallocate(cpatch%rb)
+    if(associated(cpatch%A_open))               deallocate(cpatch%A_open)    
+    if(associated(cpatch%A_closed))             deallocate(cpatch%A_closed)
+    if(associated(cpatch%Psi_closed))           deallocate(cpatch%Psi_closed)
+    if(associated(cpatch%rsw_open))             deallocate(cpatch%rsw_open)
+    if(associated(cpatch%rsw_closed))           deallocate(cpatch%rsw_closed)
+    if(associated(cpatch%fsw))                  deallocate(cpatch%fsw)
+    if(associated(cpatch%fs_open))              deallocate(cpatch%fs_open)
+    if(associated(cpatch%dmean_fs_open))        deallocate(cpatch%dmean_fs_open)
+    if(associated(cpatch%dmean_fsw))            deallocate(cpatch%dmean_fsw)
+    if(associated(cpatch%dmean_fsn))            deallocate(cpatch%dmean_fsn)
+    if(associated(cpatch%mmean_fs_open))        deallocate(cpatch%mmean_fs_open)
+    if(associated(cpatch%mmean_fsw))            deallocate(cpatch%mmean_fsw)
+    if(associated(cpatch%mmean_fsn))            deallocate(cpatch%mmean_fsn)
     if(associated(cpatch%stomatal_resistance))  deallocate(cpatch%stomatal_resistance)
     if(associated(cpatch%maintenance_costs))    deallocate(cpatch%maintenance_costs)
-    if(associated(cpatch%bseeds))           deallocate(cpatch%bseeds)
-    if(associated(cpatch%leaf_respiration)) deallocate(cpatch%leaf_respiration)
-    if(associated(cpatch%root_respiration)) deallocate(cpatch%root_respiration)
-    if(associated(cpatch%hcapveg))          deallocate(cpatch%hcapveg)
-    if(associated(cpatch%gpp))              deallocate(cpatch%gpp)
-    if(associated(cpatch%paw_avg))          deallocate(cpatch%paw_avg)
-    if(associated(cpatch%turnover_amp))     deallocate(cpatch%turnover_amp)
-    if(associated(cpatch%llspan))           deallocate(cpatch%llspan)
-    if(associated(cpatch%vm_bar))           deallocate(cpatch%vm_bar)
-    if(associated(cpatch%sla))           deallocate(cpatch%sla)
+    if(associated(cpatch%bseeds))               deallocate(cpatch%bseeds)
+    if(associated(cpatch%leaf_respiration))     deallocate(cpatch%leaf_respiration)
+    if(associated(cpatch%root_respiration))     deallocate(cpatch%root_respiration)
+    if(associated(cpatch%hcapveg))              deallocate(cpatch%hcapveg)
+    if(associated(cpatch%gpp))                  deallocate(cpatch%gpp)
+    if(associated(cpatch%paw_avg))              deallocate(cpatch%paw_avg)
+    if(associated(cpatch%turnover_amp))         deallocate(cpatch%turnover_amp)
+    if(associated(cpatch%llspan))               deallocate(cpatch%llspan)
+    if(associated(cpatch%vm_bar))               deallocate(cpatch%vm_bar)
+    if(associated(cpatch%sla))                  deallocate(cpatch%sla)
 
 
     return
@@ -4000,6 +4124,7 @@ contains
     if(associated(cgrid%basal_area              )) cgrid%basal_area               = large_real
     if(associated(cgrid%agb                     )) cgrid%agb                      = large_real
     if(associated(cgrid%pldens                  )) cgrid%pldens                   = large_real
+    if(associated(cgrid%bseeds                  )) cgrid%bseeds                   = large_real
     
 !   metinput has itself many pointers, so nothing is really allocated 
 !    if(associated(cgrid%metinput                )) cgrid%metinput                 = large_real
@@ -4162,11 +4287,9 @@ contains
     if(associated(cgrid%dmean_nep               )) cgrid%dmean_nep                = large_real
     if(associated(cgrid%dmean_soil_temp         )) cgrid%dmean_soil_temp          = large_real
     if(associated(cgrid%dmean_soil_water        )) cgrid%dmean_soil_water         = large_real
+    if(associated(cgrid%dmean_fs_open           )) cgrid%dmean_fs_open            = large_real
     if(associated(cgrid%dmean_fsw               )) cgrid%dmean_fsw                = large_real
     if(associated(cgrid%dmean_fsn               )) cgrid%dmean_fsn                = large_real
-    if(associated(cgrid%dmean_gpp_lu            )) cgrid%dmean_gpp_lu             = large_real
-    if(associated(cgrid%dmean_rh_lu             )) cgrid%dmean_rh_lu              = large_real
-    if(associated(cgrid%dmean_nep_lu            )) cgrid%dmean_nep_lu             = large_real
     if(associated(cgrid%dmean_gpp_dbh           )) cgrid%dmean_gpp_dbh            = large_real
     if(associated(cgrid%dmean_can_temp          )) cgrid%dmean_can_temp           = large_real
     if(associated(cgrid%dmean_can_shv           )) cgrid%dmean_can_shv            = large_real
@@ -4185,18 +4308,9 @@ contains
     if(associated(cgrid%dmean_co2_residual      )) cgrid%dmean_co2_residual       = large_real
     if(associated(cgrid%dmean_energy_residual   )) cgrid%dmean_energy_residual    = large_real
     if(associated(cgrid%dmean_water_residual    )) cgrid%dmean_water_residual     = large_real
-    if(associated(cgrid%lai_age                 )) cgrid%lai_age                  = large_real
-    if(associated(cgrid%wpa_age                 )) cgrid%wpa_age                  = large_real
-    if(associated(cgrid%wai_age                 )) cgrid%wai_age                  = large_real
-    if(associated(cgrid%lai_dbh                 )) cgrid%lai_dbh                  = large_real
-    if(associated(cgrid%wpa_dbh                 )) cgrid%wpa_dbh                  = large_real
-    if(associated(cgrid%wai_dbh                 )) cgrid%wai_dbh                  = large_real
     if(associated(cgrid%lai_pft                 )) cgrid%lai_pft                  = large_real
     if(associated(cgrid%wpa_pft                 )) cgrid%wpa_pft                  = large_real
     if(associated(cgrid%wai_pft                 )) cgrid%wai_pft                  = large_real
-    if(associated(cgrid%lai_lu                  )) cgrid%lai_lu                   = large_real
-    if(associated(cgrid%wpa_lu                  )) cgrid%wpa_lu                   = large_real
-    if(associated(cgrid%wai_lu                  )) cgrid%wai_lu                   = large_real
     if(associated(cgrid%mmean_gpp               )) cgrid%mmean_gpp                = large_real
     if(associated(cgrid%mmean_evap              )) cgrid%mmean_evap               = large_real
     if(associated(cgrid%mmean_transp            )) cgrid%mmean_transp             = large_real
@@ -4206,6 +4320,9 @@ contains
     if(associated(cgrid%mmean_nep               )) cgrid%mmean_nep                = large_real
     if(associated(cgrid%mmean_soil_temp         )) cgrid%mmean_soil_temp          = large_real
     if(associated(cgrid%mmean_soil_water        )) cgrid%mmean_soil_water         = large_real
+    if(associated(cgrid%mmean_fs_open           )) cgrid%mmean_fs_open            = large_real
+    if(associated(cgrid%mmean_fsw               )) cgrid%mmean_fsw                = large_real
+    if(associated(cgrid%mmean_fsn               )) cgrid%mmean_fsn                = large_real
     if(associated(cgrid%mmean_plresp            )) cgrid%mmean_plresp             = large_real
     if(associated(cgrid%mmean_rh                )) cgrid%mmean_rh                 = large_real
     if(associated(cgrid%mmean_leaf_resp         )) cgrid%mmean_leaf_resp          = large_real
@@ -4213,22 +4330,10 @@ contains
     if(associated(cgrid%mmean_growth_resp       )) cgrid%mmean_growth_resp        = large_real
     if(associated(cgrid%mmean_storage_resp      )) cgrid%mmean_storage_resp       = large_real
     if(associated(cgrid%mmean_vleaf_resp        )) cgrid%mmean_vleaf_resp         = large_real
-    if(associated(cgrid%mmean_gpp_lu            )) cgrid%mmean_gpp_lu             = large_real
-    if(associated(cgrid%mmean_rh_lu             )) cgrid%mmean_rh_lu              = large_real
-    if(associated(cgrid%mmean_nep_lu            )) cgrid%mmean_nep_lu             = large_real
     if(associated(cgrid%mmean_gpp_dbh           )) cgrid%mmean_gpp_dbh            = large_real
-    if(associated(cgrid%mmean_lai_age           )) cgrid%mmean_lai_age            = large_real
-    if(associated(cgrid%mmean_wpa_age           )) cgrid%mmean_wpa_age            = large_real
-    if(associated(cgrid%mmean_wai_age           )) cgrid%mmean_wai_age            = large_real
-    if(associated(cgrid%mmean_lai_dbh           )) cgrid%mmean_lai_dbh            = large_real
-    if(associated(cgrid%mmean_wpa_dbh           )) cgrid%mmean_wpa_dbh            = large_real
-    if(associated(cgrid%mmean_wai_dbh           )) cgrid%mmean_wai_dbh            = large_real
     if(associated(cgrid%mmean_lai_pft           )) cgrid%mmean_lai_pft            = large_real
     if(associated(cgrid%mmean_wpa_pft           )) cgrid%mmean_wpa_pft            = large_real
     if(associated(cgrid%mmean_wai_pft           )) cgrid%mmean_wai_pft            = large_real
-    if(associated(cgrid%mmean_lai_lu            )) cgrid%mmean_lai_lu             = large_real
-    if(associated(cgrid%mmean_wpa_lu            )) cgrid%mmean_wpa_lu             = large_real
-    if(associated(cgrid%mmean_wai_lu            )) cgrid%mmean_wai_lu             = large_real
     if(associated(cgrid%dmean_can_temp          )) cgrid%dmean_can_temp           = large_real
     if(associated(cgrid%dmean_can_shv           )) cgrid%dmean_can_shv            = large_real
     if(associated(cgrid%dmean_can_co2           )) cgrid%dmean_can_co2            = large_real
@@ -4249,15 +4354,6 @@ contains
     if(associated(cgrid%bseeds_pft              )) cgrid%bseeds_pft               = large_real
     if(associated(cgrid%agb_pft                 )) cgrid%agb_pft                  = large_real
     if(associated(cgrid%ba_pft                  )) cgrid%ba_pft                   = large_real
-    if(associated(cgrid%area_pft                )) cgrid%area_pft                 = large_real
-    if(associated(cgrid%agb_lu                  )) cgrid%agb_lu                   = large_real
-    if(associated(cgrid%area_lu                 )) cgrid%area_lu                  = large_real
-    if(associated(cgrid%bseeds_age              )) cgrid%bseeds_age               = large_real
-    if(associated(cgrid%agb_age                 )) cgrid%agb_age                  = large_real
-    if(associated(cgrid%ba_age                  )) cgrid%ba_age                   = large_real
-    if(associated(cgrid%bseeds_dbh              )) cgrid%bseeds_dbh               = large_real
-    if(associated(cgrid%agb_dbh                 )) cgrid%agb_dbh                  = large_real
-    if(associated(cgrid%ba_dbh                  )) cgrid%ba_dbh                   = large_real
     if(associated(cgrid%stdev_gpp               )) cgrid%stdev_gpp                = large_real
     if(associated(cgrid%stdev_evap              )) cgrid%stdev_evap               = large_real
     if(associated(cgrid%stdev_transp            )) cgrid%stdev_transp             = large_real
@@ -4265,6 +4361,39 @@ contains
     if(associated(cgrid%stdev_nep               )) cgrid%stdev_nep                = large_real
     if(associated(cgrid%stdev_rh                )) cgrid%stdev_rh                 = large_real
     if(associated(cgrid%disturbance_rates       )) cgrid%disturbance_rates        = large_real
+
+    if(associated(cgrid%lai_ar                  )) cgrid%lai_ar                   = large_real
+    if(associated(cgrid%wpa_ar                  )) cgrid%wpa_ar                   = large_real
+    if(associated(cgrid%wai_ar                  )) cgrid%wai_ar                   = large_real
+    if(associated(cgrid%frostmort_ar            )) cgrid%frostmort_ar             = large_real
+    if(associated(cgrid%dmean_fs_open_ar        )) cgrid%dmean_fs_open_ar         = large_real
+    if(associated(cgrid%dmean_fsw_ar            )) cgrid%dmean_fsw_ar             = large_real
+    if(associated(cgrid%dmean_fsn_ar            )) cgrid%dmean_fsn_ar             = large_real
+    if(associated(cgrid%dmean_lightlev_ar       )) cgrid%dmean_lightlev_ar        = large_real
+    if(associated(cgrid%dmean_gpp_ar            )) cgrid%dmean_gpp_ar             = large_real
+    if(associated(cgrid%dmean_plresp_ar         )) cgrid%dmean_plresp_ar          = large_real
+    if(associated(cgrid%dmean_igpp_ar           )) cgrid%dmean_igpp_ar            = large_real
+    if(associated(cgrid%dmean_iplresp_ar        )) cgrid%dmean_iplresp_ar         = large_real
+    if(associated(cgrid%dmean_rh_ar             )) cgrid%dmean_rh_ar              = large_real
+    if(associated(cgrid%bseeds_ar               )) cgrid%bseeds_ar                = large_real
+    if(associated(cgrid%agb_ar                  )) cgrid%agb_ar                   = large_real
+    if(associated(cgrid%ba_ar                   )) cgrid%ba_ar                    = large_real
+    if(associated(cgrid%pldens_ar               )) cgrid%pldens_ar                = large_real
+    if(associated(cgrid%carbbal_ar              )) cgrid%carbbal_ar               = large_real
+    if(associated(cgrid%ncbmort_ar              )) cgrid%ncbmort_ar               = large_real
+    if(associated(cgrid%mmean_lai_ar            )) cgrid%mmean_lai_ar             = large_real
+    if(associated(cgrid%mmean_wpa_ar            )) cgrid%mmean_wpa_ar             = large_real
+    if(associated(cgrid%mmean_wai_ar            )) cgrid%mmean_wai_ar             = large_real
+    if(associated(cgrid%mmean_fs_open_ar        )) cgrid%mmean_fs_open_ar         = large_real
+    if(associated(cgrid%mmean_fsw_ar            )) cgrid%mmean_fsw_ar             = large_real
+    if(associated(cgrid%mmean_fsn_ar            )) cgrid%mmean_fsn_ar             = large_real
+    if(associated(cgrid%mmean_lightlev_ar       )) cgrid%mmean_lightlev_ar        = large_real
+    if(associated(cgrid%mmean_frostmort_ar      )) cgrid%mmean_frostmort_ar       = large_real
+    if(associated(cgrid%mmean_gpp_ar            )) cgrid%mmean_gpp_ar             = large_real
+    if(associated(cgrid%mmean_plresp_ar         )) cgrid%mmean_plresp_ar          = large_real
+    if(associated(cgrid%mmean_igpp_ar           )) cgrid%mmean_igpp_ar            = large_real
+    if(associated(cgrid%mmean_iplresp_ar        )) cgrid%mmean_iplresp_ar         = large_real
+    if(associated(cgrid%mmean_rh_ar             )) cgrid%mmean_rh_ar              = large_real
 
     return
   end subroutine huge_edtype
@@ -4294,18 +4423,9 @@ contains
     if(associated(cpoly%aspect                      )) cpoly%aspect                      = large_real
 
     if(associated(cpoly%num_landuse_years           )) cpoly%num_landuse_years           = large_integer  ! Integer
-    if(associated(cpoly%lai_age                     )) cpoly%lai_age                     = large_real
-    if(associated(cpoly%wpa_age                     )) cpoly%wpa_age                     = large_real
-    if(associated(cpoly%wai_age                     )) cpoly%wai_age                     = large_real
-    if(associated(cpoly%lai_dbh                     )) cpoly%lai_dbh                     = large_real
-    if(associated(cpoly%wpa_dbh                     )) cpoly%wpa_dbh                     = large_real
-    if(associated(cpoly%wai_dbh                     )) cpoly%wai_dbh                     = large_real
     if(associated(cpoly%lai_pft                     )) cpoly%lai_pft                     = large_real
     if(associated(cpoly%wpa_pft                     )) cpoly%wpa_pft                     = large_real
     if(associated(cpoly%wai_pft                     )) cpoly%wai_pft                     = large_real
-    if(associated(cpoly%lai_lu                      )) cpoly%lai_lu                      = large_real
-    if(associated(cpoly%wpa_lu                      )) cpoly%wpa_lu                      = large_real
-    if(associated(cpoly%wai_lu                      )) cpoly%wai_lu                      = large_real
 
     if(associated(cpoly%TCI                         )) cpoly%TCI                         = large_real
     if(associated(cpoly%lsl                         )) cpoly%lsl                         = large_integer  ! Integer
@@ -4369,7 +4489,7 @@ contains
     if(associated(cpoly%basal_area                  )) cpoly%basal_area                  = large_real
     if(associated(cpoly%agb                         )) cpoly%agb                         = large_real
     if(associated(cpoly%pldens                      )) cpoly%pldens                      = large_real
-    if(associated(cpoly%agb_lu                      )) cpoly%agb_lu                      = large_real
+    if(associated(cpoly%bseeds                      )) cpoly%bseeds                      = large_real
     
     if(associated(cpoly%basal_area_growth           )) cpoly%basal_area_growth           = large_real
     if(associated(cpoly%agb_growth                  )) cpoly%agb_growth                  = large_real
@@ -4385,6 +4505,7 @@ contains
     
     if(associated(cpoly%albedt                      )) cpoly%albedt                      = large_real
     if(associated(cpoly%rlongup                     )) cpoly%rlongup                     = large_real
+    if(associated(cpoly%daylight                    )) cpoly%daylight                    = large_real
     
     if(associated(cpoly%lai                         )) cpoly%lai                         = large_real
     if(associated(cpoly%wpa                         )) cpoly%wpa                         = large_real
@@ -4539,6 +4660,8 @@ contains
 
     if(associated(csite%avg_daily_temp               )) csite%avg_daily_temp               = large_real
     if(associated(csite%mean_rh                      )) csite%mean_rh                      = large_real
+    if(associated(csite%dmean_rh                     )) csite%dmean_rh                     = large_real
+    if(associated(csite%mmean_rh                     )) csite%mmean_rh                     = large_real
     if(associated(csite%mean_nep                     )) csite%mean_nep                     = large_real
     if(associated(csite%wbudget_loss2atm             )) csite%wbudget_loss2atm             = large_real
     if(associated(csite%wbudget_precipgain           )) csite%wbudget_precipgain           = large_real
@@ -4677,6 +4800,11 @@ contains
     if(associated(cpatch%pft))                  cpatch%pft                 = large_integer    !Integer
     if(associated(cpatch%nplant))               cpatch%nplant              = large_real
     if(associated(cpatch%hite))                 cpatch%hite                = large_real
+    if(associated(cpatch%agb))                  cpatch%agb                 = large_real
+    if(associated(cpatch%basarea))              cpatch%basarea             = large_real
+    if(associated(cpatch%dagb_dt))              cpatch%dagb_dt             = large_real
+    if(associated(cpatch%dba_dt))               cpatch%dba_dt              = large_real
+    if(associated(cpatch%ddbh_dt))              cpatch%ddbh_dt             = large_real
     if(associated(cpatch%dbh))                  cpatch%dbh                 = large_real
     if(associated(cpatch%bdead))                cpatch%bdead               = large_real
     if(associated(cpatch%bleaf))                cpatch%bleaf               = large_real
@@ -4705,8 +4833,17 @@ contains
     if(associated(cpatch%growth_respiration))   cpatch%growth_respiration  = large_real
     if(associated(cpatch%storage_respiration))  cpatch%storage_respiration = large_real
     if(associated(cpatch%vleaf_respiration))    cpatch%vleaf_respiration   = large_real
+    if(associated(cpatch%mmean_gpp         ))   cpatch%mmean_gpp           = large_real
+    if(associated(cpatch%mmean_leaf_resp   ))   cpatch%mmean_leaf_resp     = large_real
+    if(associated(cpatch%mmean_root_resp   ))   cpatch%mmean_root_resp     = large_real
+    if(associated(cpatch%mmean_growth_resp ))   cpatch%mmean_growth_resp   = large_real
+    if(associated(cpatch%mmean_storage_resp))   cpatch%mmean_storage_resp  = large_real
+    if(associated(cpatch%mmean_vleaf_resp  ))   cpatch%mmean_vleaf_resp    = large_real
     if(associated(cpatch%fsn))                  cpatch%fsn                 = large_real
     if(associated(cpatch%monthly_dndt))         cpatch%monthly_dndt        = large_real
+    if(associated(cpatch%mort_rate))            cpatch%mort_rate           = large_real
+    if(associated(cpatch%mmean_mort_rate))      cpatch%mmean_mort_rate     = large_real
+
     if(associated(cpatch%old_stoma_data)) then
        cpatch%old_stoma_data(:)%recalc             = 1
        cpatch%old_stoma_data(:)%T_L                = large_real
@@ -4732,6 +4869,9 @@ contains
     if(associated(cpatch%krdepth))              cpatch%krdepth             = large_integer  !Integer
     if(associated(cpatch%first_census))         cpatch%first_census        = large_integer  !Integer
     if(associated(cpatch%new_recruit_flag))     cpatch%new_recruit_flag    = large_integer  !Integer
+    if(associated(cpatch%light_level))          cpatch%light_level         = large_real
+    if(associated(cpatch%dmean_light_level))    cpatch%dmean_light_level   = large_real
+    if(associated(cpatch%mmean_light_level))    cpatch%mmean_light_level   = large_real
     if(associated(cpatch%par_v))                cpatch%par_v               = large_real
     if(associated(cpatch%par_v_beam))           cpatch%par_v_beam          = large_real
     if(associated(cpatch%par_v_diffuse))        cpatch%par_v_diffuse       = large_real
@@ -4749,6 +4889,12 @@ contains
     if(associated(cpatch%rsw_closed))           cpatch%rsw_closed          = large_real
     if(associated(cpatch%fsw))                  cpatch%fsw                 = large_real
     if(associated(cpatch%fs_open))              cpatch%fs_open             = large_real
+    if(associated(cpatch%dmean_fs_open))        cpatch%dmean_fs_open       = large_real
+    if(associated(cpatch%dmean_fsw))            cpatch%dmean_fsw           = large_real
+    if(associated(cpatch%dmean_fsn))            cpatch%dmean_fsn           = large_real
+    if(associated(cpatch%mmean_fs_open))        cpatch%mmean_fs_open       = large_real
+    if(associated(cpatch%mmean_fsw))            cpatch%mmean_fsw           = large_real
+    if(associated(cpatch%mmean_fsn))            cpatch%mmean_fsn           = large_real
     if(associated(cpatch%stomatal_resistance))  cpatch%stomatal_resistance = large_real
     if(associated(cpatch%maintenance_costs))    cpatch%maintenance_costs   = large_real
     if(associated(cpatch%bseeds))               cpatch%bseeds              = large_real
@@ -5008,6 +5154,8 @@ contains
     siteout%wai(1:inc)                  = pack(sitein%wai,logmask)
     siteout%avg_daily_temp(1:inc)       = pack(sitein%avg_daily_temp,logmask)
     siteout%mean_rh(1:inc)              = pack(sitein%mean_rh,logmask)
+    siteout%dmean_rh(1:inc)             = pack(sitein%dmean_rh,logmask)
+    siteout%mmean_rh(1:inc)             = pack(sitein%mmean_rh,logmask)
     siteout%mean_nep(1:inc)             = pack(sitein%mean_nep,logmask)
     siteout%wbudget_loss2atm(1:inc)     = pack(sitein%wbudget_loss2atm,logmask)
     siteout%wbudget_precipgain(1:inc)        = pack(sitein%wbudget_precipgain,logmask)
@@ -5244,6 +5392,11 @@ contains
     patchout%pft(1:inc)              = pack(patchin%pft,mask)
     patchout%nplant(1:inc)           = pack(patchin%nplant,mask)
     patchout%hite(1:inc)             = pack(patchin%hite,mask)
+    patchout%agb(1:inc)              = pack(patchin%agb,mask)
+    patchout%basarea(1:inc)          = pack(patchin%basarea,mask)
+    patchout%dagb_dt(1:inc)          = pack(patchin%dagb_dt,mask)
+    patchout%dba_dt(1:inc)           = pack(patchin%dba_dt,mask)
+    patchout%ddbh_dt(1:inc)          = pack(patchin%ddbh_dt,mask)
     patchout%dbh(1:inc)              = pack(patchin%dbh,mask)
     patchout%bdead(1:inc)            = pack(patchin%bdead,mask)
     patchout%bleaf(1:inc)            = pack(patchin%bleaf,mask)
@@ -5267,6 +5420,12 @@ contains
     patchout%dmean_gpp(1:inc)        = pack(patchin%dmean_gpp,mask)
     patchout%dmean_gpp_pot(1:inc)    = pack(patchin%dmean_gpp_pot,mask)
     patchout%dmean_gpp_max(1:inc)    = pack(patchin%dmean_gpp_max,mask)
+    patchout%mmean_leaf_resp(1:inc)  = pack(patchin%mmean_leaf_resp,mask)
+    patchout%mmean_root_resp(1:inc)  = pack(patchin%mmean_root_resp,mask)
+    patchout%mmean_growth_resp(1:inc)  = pack(patchin%mmean_growth_resp,mask)
+    patchout%mmean_storage_resp(1:inc) = pack(patchin%mmean_storage_resp,mask)
+    patchout%mmean_vleaf_resp(1:inc)  = pack(patchin%mmean_vleaf_resp,mask)
+    patchout%mmean_gpp(1:inc)        = pack(patchin%mmean_gpp,mask)
     patchout%growth_respiration(1:inc) = pack(patchin%growth_respiration,mask)
     patchout%storage_respiration(1:inc) = pack(patchin%storage_respiration,mask)
     patchout%vleaf_respiration(1:inc) = pack(patchin%vleaf_respiration,mask)
@@ -5277,6 +5436,9 @@ contains
     patchout%krdepth(1:inc)          = pack(patchin%krdepth,mask)
     patchout%first_census(1:inc)     = pack(patchin%first_census,mask)
     patchout%new_recruit_flag(1:inc) = pack(patchin%new_recruit_flag,mask)
+    patchout%light_level(1:inc)      = pack(patchin%light_level,mask)
+    patchout%dmean_light_level(1:inc)= pack(patchin%dmean_light_level,mask)
+    patchout%mmean_light_level(1:inc)= pack(patchin%mmean_light_level,mask)
     patchout%par_v(1:inc)            = pack(patchin%par_v,mask)
     patchout%par_v_beam(1:inc)       = pack(patchin%par_v_beam,mask)
     patchout%par_v_diffuse(1:inc)    = pack(patchin%par_v_diffuse,mask)
@@ -5294,6 +5456,12 @@ contains
     patchout%rsw_closed(1:inc)       = pack(patchin%rsw_closed,mask)
     patchout%fsw(1:inc)              = pack(patchin%fsw,mask)
     patchout%fs_open(1:inc)          = pack(patchin%fs_open,mask)
+    patchout%dmean_fs_open(1:inc)    = pack(patchin%dmean_fs_open,mask)
+    patchout%dmean_fsw(1:inc)        = pack(patchin%dmean_fsw,mask)
+    patchout%dmean_fsn(1:inc)        = pack(patchin%dmean_fsn,mask)
+    patchout%mmean_fs_open(1:inc)    = pack(patchin%mmean_fs_open,mask)
+    patchout%mmean_fsw(1:inc)        = pack(patchin%mmean_fsw,mask)
+    patchout%mmean_fsn(1:inc)        = pack(patchin%mmean_fsn,mask)
     patchout%stomatal_resistance(1:inc) = pack(patchin%stomatal_resistance,mask)
     patchout%maintenance_costs(1:inc) = pack(patchin%maintenance_costs,mask)
     patchout%bseeds(1:inc)           = pack(patchin%bseeds,mask)
@@ -5316,7 +5484,10 @@ contains
        do i = 1,n_stoma_atts
           patchout%old_stoma_vector(i,m) = patchin%old_stoma_vector(i,k)
        enddo
-
+       do i = 1,n_mort
+          patchout%mort_rate(i,m)       = patchin%mort_rate(i,k)
+          patchout%mmean_mort_rate(i,m) = patchin%mmean_mort_rate(i,k)
+       end do
     end do
 
     
@@ -5382,6 +5553,11 @@ contains
        patchout%pft(iout)              = patchin%pft(iin)
        patchout%nplant(iout)           = patchin%nplant(iin)
        patchout%hite(iout)             = patchin%hite(iin)
+       patchout%agb(iout)              = patchin%agb(iin)
+       patchout%basarea(iout)          = patchin%basarea(iin)
+       patchout%dagb_dt(iout)          = patchin%dagb_dt(iin)
+       patchout%dba_dt(iout)           = patchin%dba_dt(iin)
+       patchout%ddbh_dt(iout)          = patchin%ddbh_dt(iin)
        patchout%dbh(iout)              = patchin%dbh(iin)
        patchout%bdead(iout)            = patchin%bdead(iin)
        patchout%bleaf(iout)            = patchin%bleaf(iin)
@@ -5407,16 +5583,27 @@ contains
        patchout%dmean_gpp(iout)        = patchin%dmean_gpp(iin)
        patchout%dmean_gpp_pot(iout)    = patchin%dmean_gpp_pot(iin)
        patchout%dmean_gpp_max(iout)    = patchin%dmean_gpp_max(iin)
+       patchout%mmean_gpp(iout)        = patchin%mmean_gpp(iin)
+       patchout%mmean_leaf_resp(iout)  = patchin%mmean_leaf_resp(iin)
+       patchout%mmean_root_resp(iout)  = patchin%mmean_root_resp(iin)
+       patchout%mmean_growth_resp(iout)  = patchin%mmean_growth_resp(iin)
+       patchout%mmean_storage_resp(iout)  = patchin%mmean_storage_resp(iin)
+       patchout%mmean_vleaf_resp(iout)  = patchin%mmean_vleaf_resp(iin)
        patchout%growth_respiration(iout) = patchin%growth_respiration(iin)
        patchout%storage_respiration(iout) = patchin%storage_respiration(iin)
        patchout%vleaf_respiration(iout) = patchin%vleaf_respiration(iin)
-       patchout%fsn(iout)              = patchin%fsn(iin)
-       patchout%monthly_dndt(iout)     = patchin%monthly_dndt(iin)
+       patchout%fsn(iout)               = patchin%fsn(iin)
+       patchout%monthly_dndt(iout)      = patchin%monthly_dndt(iin)
+       patchout%mort_rate(:,iout)       = patchin%mort_rate(:,iin)
+       patchout%mmean_mort_rate(:,iout) = patchin%mmean_mort_rate(:,iin)
     
        patchout%Psi_open(iout)         = patchin%Psi_open(iin)
        patchout%krdepth(iout)          = patchin%krdepth(iin)
        patchout%first_census(iout)     = patchin%first_census(iin)
        patchout%new_recruit_flag(iout) = patchin%new_recruit_flag(iin)
+       patchout%light_level(iout)      = patchin%light_level(iin)
+       patchout%dmean_light_level(iout)= patchin%dmean_light_level(iin)
+       patchout%mmean_light_level(iout)= patchin%mmean_light_level(iin)
        patchout%par_v(iout)            = patchin%par_v(iin)
        patchout%par_v_beam(iout)       = patchin%par_v_beam(iin)
        patchout%par_v_diffuse(iout)    = patchin%par_v_diffuse(iin)
@@ -5434,6 +5621,12 @@ contains
        patchout%rsw_closed(iout)       = patchin%rsw_closed(iin)
        patchout%fsw(iout)              = patchin%fsw(iin)
        patchout%fs_open(iout)          = patchin%fs_open(iin)
+       patchout%dmean_fs_open(iout)    = patchin%dmean_fs_open(iin)
+       patchout%dmean_fsw(iout)        = patchin%dmean_fsw(iin)
+       patchout%dmean_fsn(iout)        = patchin%dmean_fsn(iin)
+       patchout%mmean_fs_open(iout)    = patchin%mmean_fs_open(iin)
+       patchout%mmean_fsw(iout)        = patchin%mmean_fsw(iin)
+       patchout%mmean_fsn(iout)        = patchin%mmean_fsn(iin)
        patchout%stomatal_resistance(iout) = patchin%stomatal_resistance(iin)
        patchout%maintenance_costs(iout) = patchin%maintenance_costs(iin)
        patchout%bseeds(iout)           = patchin%bseeds(iin)
@@ -5522,46 +5715,52 @@ contains
   ! will not be used simultaneously.  The highest ranks in use are 3.
   ! Each unique combination will have a call number associated with it.
   !
-  ! 10  : rank 1 : polygon, integer
-  ! 11  : rank 1 : polygon
-  ! 12  : rank 2 : polygon, s-layer
-  ! 13  : rank 2 : polygon, w-layer
-  ! 14  : rank 2 : polygon, pft
-  ! 146 : rank 3 : polygon, pft, dbh
-  ! 15  : rank 2 : polygon, disturbance
-  ! 155 : rank 3 : polygon, disturbance, disturbance
-  ! 16  : rank 2 : polygon, dbh
-  ! 17  : rank 2 : polygon, age
+  ! 10    : rank 1 : polygon, integer
+  ! 11    : rank 1 : polygon
+  ! 12    : rank 2 : polygon, s-layer
+  ! 13    : rank 2 : polygon, w-layer
+  ! 14    : rank 2 : polygon, pft
+  ! 14567 : rank 5 : polygon, pft, disturbance, dbh, age
+  ! 146   : rank 3 : polygon, pft, dbh
+  ! 15    : rank 2 : polygon, disturbance
+  ! 155   : rank 3 : polygon, disturbance, disturbance
+  ! 157   : rank 3 : polygon, disturbance, age
+  ! 16    : rank 2 : polygon, dbh
+  ! 17    : rank 2 : polygon, age
+  ! 18    : rank 2 : polygon, mort
   !
-  ! 20  : rank 1 : site, integer
-  ! 21  : rank 1 : site
-  ! 22  : rank 2 : site, s-layer
-  ! 23  : rank 2 : site, w-layer
-  ! 24  : rank 2 : site, pft
-  ! 246 : rank 3 : site, pft, dbh
-  ! 25  : rank 2 : site, disturbance
-  ! 255 : rank 3 : site, disturbance, disturbance
-  ! 26  : rank 2 : site, dbh
-  ! 27  : rank 2 : site, age
-  ! 28  : rank 2 : site, month
+  ! 20    : rank 1 : site, integer
+  ! 21    : rank 1 : site
+  ! 22    : rank 2 : site, s-layer
+  ! 23    : rank 2 : site, w-layer
+  ! 24    : rank 2 : site, pft
+  ! 246   : rank 3 : site, pft, dbh
+  ! 25    : rank 2 : site, disturbance
+  ! 255   : rank 3 : site, disturbance, disturbance
+  ! 26    : rank 2 : site, dbh
+  ! 27    : rank 2 : site, age
+  ! 28    : rank 2 : site, mort
+  ! 29    : rank 2 : site, month
   !
-  ! 30  : rank 1 : patch, integer
-  ! 31  : rank 1 : patch
-  ! 32  : rank 2 : patch, s-layer
-  ! 33  : rank 2 : patch, w-layer
-  ! 34  : rank 2 : patch, pft
-  ! 346 : rank 3 : patch, pft, ff_dbh
-  ! 35  : rank 2 : patch, disturbance
-  ! 36  : rank 2 : patch, dbh
-  ! 37  : rank 2 : patch, age
+  ! 30    : rank 1 : patch, integer
+  ! 31    : rank 1 : patch
+  ! 32    : rank 2 : patch, s-layer
+  ! 33    : rank 2 : patch, w-layer
+  ! 34    : rank 2 : patch, pft
+  ! 346   : rank 3 : patch, pft, ff_dbh
+  ! 35    : rank 2 : patch, disturbance
+  ! 36    : rank 2 : patch, dbh
+  ! 37    : rank 2 : patch, age
+  ! 38    : rank 2 : patch, mort
   !
-  ! 41 : rank 1 : cohort
-  ! 44 : rank 2 : cohort, pft
-  ! 46 : rank 2 : cohort, dbh
-  ! 47 : rank 2 : cohort, age
-  ! 49 : rank 2 : cohort, month+1
+  ! 41    : rank 1 : cohort
+  ! 44    : rank 2 : cohort, pft
+  ! 46    : rank 2 : cohort, dbh
+  ! 47    : rank 2 : cohort, age
+  ! 48    : rank 2 : cohort, mort
+  ! 49    : rank 2 : cohort, month+1
   !
-  ! 90 : rank 0 : integer scalar 
+  ! 90    : rank 0 : integer scalar 
   !===================================================================
   
   subroutine filltab_alltypes
@@ -6219,7 +6418,7 @@ contains
        nvar=nvar+1
        call vtable_edio_r(cgrid%agb(1,1,1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'AGB :146:hist:anal:dail:mont:year') 
-       call metadata_edio(nvar,igr,'Polygon above ground biomass profile','[kgC/m2]','ipoly - n_dbh - n_pft')
+       call metadata_edio(nvar,igr,'Polygon above ground biomass profile','[tonC/ha]','ipoly - n_dbh - n_pft')
     endif
     
     if (associated(cgrid%pldens)) then
@@ -6227,6 +6426,13 @@ contains
        call vtable_edio_r(cgrid%pldens(1,1,1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'PLDENS :146:hist:anal:dail:mont:year') 
        call metadata_edio(nvar,igr,'Polygon plant density profile','[#/m2]','ipoly - n_dbh - n_pft')
+    endif
+    
+    if (associated(cgrid%bseeds)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%bseeds(1,1,1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'BSEEDS :146:hist:anal:dail:mont:year') 
+       call metadata_edio(nvar,igr,'Polygon seed biomass','[tonC/ha]','ipoly - n_dbh - n_pft')
     endif
     
     
@@ -6924,6 +7130,13 @@ contains
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
     
+    if(associated(cgrid%dmean_fs_open)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%dmean_fs_open(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'DMEAN_FS_OPEN :11:hist:dail') 
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
+    
     if(associated(cgrid%dmean_fsw)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%dmean_fsw(1),nvar,igr,init,cgrid%pyglob_id, &
@@ -6936,32 +7149,6 @@ contains
        call vtable_edio_r(cgrid%dmean_fsn(1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'DMEAN_FSN :11:hist:dail') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-    endif
-    
-    if(associated(cgrid%dmean_gpp_lu)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%dmean_gpp_lu(1,1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'DMEAN_GPP_LU :15:hist:dail') 
-       call metadata_edio(nvar,igr,'Polygon Averaged by Landuse, Daily Integrated Gross Primary Productivity' &
-            ,'[tC/ha/d]','ipoly - lu') 
-    endif
-    
-    if(associated(cgrid%dmean_rh_lu)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%dmean_rh_lu(1,1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'DMEAN_RH_LU :15:hist:dail') 
-       call metadata_edio(nvar,igr,'Polygon Averaged by Landuse, Daily Integrated Respiration','[tC/ha/d]' &
-            ,'ipoly - lu') 
-    endif
-    
-    if(associated(cgrid%dmean_nep_lu)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%dmean_nep_lu(1,1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'DMEAN_NEP_LU :15:hist:dail') 
-
-       call metadata_edio(nvar,igr,'Polygon Averaged by Landuse, Daily Integrated Net Ecosystem Production' &
-            ,'[tC/ha/d]','ipoly - lu') 
-
     endif
     
     if(associated(cgrid%dmean_gpp_dbh)) then
@@ -7091,48 +7278,6 @@ contains
        call metadata_edio(nvar,igr,'Daily mean of residual water ','[J/m2/s]','ipoly') 
     end if
 
-    if(associated(cgrid%lai_age)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%lai_age(1,1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'LAI_AGE :17:hist:anal:dail') 
-       call metadata_edio(nvar,igr,'Leaf Area Index','[m2/m2]','NA') 
-    endif
-    
-    if(associated(cgrid%wpa_age)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%wpa_age(1,1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'WPA_AGE :17:hist:anal:dail') 
-       call metadata_edio(nvar,igr,'Wood Projected Area','[m2/m2]','NA') 
-    endif
-    
-    if(associated(cgrid%wai_age)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%wai_age(1,1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'WAI_AGE :17:hist:anal:dail') 
-       call metadata_edio(nvar,igr,'Wood Area Index','[m2/m2]','NA') 
-    endif
-
-    if(associated(cgrid%lai_dbh)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%lai_dbh(1,1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'LAI_DBH :16:hist:anal:dail') 
-       call metadata_edio(nvar,igr,'Leaf Area Index','[m2/m2]','NA') 
-    endif
-    
-    if(associated(cgrid%wpa_dbh)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%wpa_dbh(1,1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'WPA_DBH :16:hist:anal:dail') 
-       call metadata_edio(nvar,igr,'Wood Projected Area','[m2/m2]','NA') 
-    endif
-    
-    if(associated(cgrid%wai_dbh)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%wai_dbh(1,1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'WAI_DBH :16:hist:anal:dail') 
-       call metadata_edio(nvar,igr,'Wood Area Index','[m2/m2]','NA') 
-    endif
-
     if(associated(cgrid%lai_pft)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%lai_pft(1,1),nvar,igr,init,cgrid%pyglob_id, &
@@ -7151,27 +7296,6 @@ contains
        nvar=nvar+1
        call vtable_edio_r(cgrid%wai_pft(1,1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'WAI_PFT :14:hist:anal:dail') 
-       call metadata_edio(nvar,igr,'Wood Area Index','[m2/m2]','NA') 
-    endif
-    
-    if(associated(cgrid%wpa_lu)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%wpa_lu(1,1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'WPA_LU :15:hist:anal:dail') 
-       call metadata_edio(nvar,igr,'Wood Projected Area ','[m2/m2]','NA') 
-    endif
-    
-    if(associated(cgrid%lai_lu)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%lai_lu(1,1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'LAI_LU :15:hist:anal:dail') 
-       call metadata_edio(nvar,igr,'Leaf Area Index','[m2/m2]','NA') 
-    endif
-    
-    if(associated(cgrid%wai_lu)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%wai_lu(1,1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'WAI_LU :15:hist:anal:dail') 
        call metadata_edio(nvar,igr,'Wood Area Index','[m2/m2]','NA') 
     endif
     
@@ -7237,7 +7361,28 @@ contains
             var_len,var_len_global,max_ptrs,'MMEAN_SOIL_WATER :12:hist:mont')
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA')
     endif
- 
+    
+    if(associated(cgrid%mmean_fs_open)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%mmean_fs_open(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'MMEAN_FS_OPEN :11:hist:mont') 
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
+    
+    if(associated(cgrid%mmean_fsw)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%mmean_fsw(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'MMEAN_FSW :11:hist:mont') 
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
+    
+    if(associated(cgrid%mmean_fsn)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%mmean_fsn(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'MMEAN_FSN :11:hist:mont') 
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
+
     if(associated(cgrid%mmean_plresp)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%mmean_plresp(1),nvar,igr,init,cgrid%pyglob_id, &
@@ -7287,73 +7432,10 @@ contains
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
     
-    if(associated(cgrid%mmean_gpp_lu)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%mmean_gpp_lu(1,1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'MMEAN_GPP_LU :15:hist:mont') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-    endif
-    
-    if(associated(cgrid%mmean_rh_lu)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%mmean_rh_lu(1,1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'MMEAN_RH_LU :15:hist:mont') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-    endif
-    
-    if(associated(cgrid%mmean_nep_lu)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%mmean_nep_lu(1,1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'MMEAN_NEP_LU :15:hist:mont') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-    endif
-    
     if(associated(cgrid%mmean_gpp_dbh)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%mmean_gpp_dbh(1,1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'MMEAN_GPP_DBH :16:hist:mont') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-    endif
-    
-    if(associated(cgrid%mmean_lai_age)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%mmean_lai_age(1,1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'MMEAN_LAI_AGE :17:hist:mont') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-    endif
-    
-    if(associated(cgrid%mmean_wpa_age)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%mmean_wpa_age(1,1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'MMEAN_WPA_AGE :17:hist:mont') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-    endif
-    
-    if(associated(cgrid%mmean_wai_age)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%mmean_wai_age(1,1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'MMEAN_WAI_AGE :17:hist:mont') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-    endif
-    
-    if(associated(cgrid%mmean_lai_dbh)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%mmean_lai_dbh(1,1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'MMEAN_LAI_DBH :16:hist:mont') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-    endif
-    
-    if(associated(cgrid%mmean_wpa_dbh)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%mmean_wpa_dbh(1,1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'MMEAN_WPA_DBH :16:hist:mont') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-    endif
-    
-    if(associated(cgrid%mmean_wai_dbh)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%mmean_wai_dbh(1,1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'MMEAN_WAI_DBH :16:hist:mont') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
     
@@ -7375,27 +7457,6 @@ contains
        nvar=nvar+1
        call vtable_edio_r(cgrid%mmean_wai_pft(1,1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'MMEAN_WAI_PFT :14:hist:mont') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-    endif
-    
-    if(associated(cgrid%mmean_lai_lu)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%mmean_lai_lu(1,1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'MMEAN_LAI_LU :15:hist:mont') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-    endif
-    
-    if(associated(cgrid%mmean_wpa_lu)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%mmean_wpa_lu(1,1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'MMEAN_WPA_LU :15:hist:mont') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-    endif
-    
-    if(associated(cgrid%mmean_wai_lu)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%mmean_wai_lu(1,1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'MMEAN_WAI_LU :15:hist:mont') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
     
@@ -7528,14 +7589,14 @@ contains
     if(associated(cgrid%bseeds_pft)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%bseeds_pft(1,1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'BSEEDS_PFT :14:hist:dail:mont') 
+            var_len,var_len_global,max_ptrs,'BSEEDS_PFT :14:hist:mont') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
     
     if(associated(cgrid%agb_pft)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%agb_pft(1,1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AGB_PFT :14:hist:dail:mont') 
+            var_len,var_len_global,max_ptrs,'AGB_PFT :14:hist:mont') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
     
@@ -7543,69 +7604,6 @@ contains
        nvar=nvar+1
        call vtable_edio_r(cgrid%ba_pft(1,1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'BA_PFT :14:hist:mont') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-    endif
-    
-    if(associated(cgrid%area_pft)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%area_pft(1,1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AREA_PFT :14:hist:mont') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-    endif
-    
-    if(associated(cgrid%agb_lu)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%agb_lu(1,1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AGB_LU :15:hist:mont') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-    endif
-    
-    if(associated(cgrid%area_lu)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%area_lu(1,1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AREA_LU :15:hist:mont') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-    endif
-    
-    if(associated(cgrid%bseeds_dbh)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%bseeds_dbh(1,1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'BSEEDS_DBH :16:hist:dail:mont') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-    endif
-    
-    if(associated(cgrid%agb_dbh)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%agb_dbh(1,1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AGB_DBH :16:hist:dail:mont') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-    endif
-    
-    if(associated(cgrid%ba_dbh)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%ba_dbh(1,1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'BA_DBH :16:hist:mont') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-    endif
-    
-    if(associated(cgrid%bseeds_age)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%bseeds_age(1,1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'BSEEDS_AGE :17:hist:dail:mont') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-    endif
-    
-    if(associated(cgrid%agb_age)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%agb_age(1,1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AGB_AGE :17:hist:dail:mont') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-    endif
-    
-    if(associated(cgrid%ba_age)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%ba_age(1,1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'BA_AGE :17:hist:mont') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
@@ -7658,16 +7656,303 @@ contains
        call metadata_edio(nvar,igr,'Disturbance Rates','[NA]','NA') 
     end if
 
+    !--------------------------------------------------------------------------------------!
+    !    The new 5-D/3-D arrays.                                                           !
+    !--------------------------------------------------------------------------------------!
+    if(associated(cgrid%lai_ar)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%lai_ar(1,1,1,1,1),nvar,igr,init,cgrid%pyglob_id            &
+                         ,var_len,var_len_global,max_ptrs                                  &
+                         ,'LAI_AR :14567:hist:dail')
+       call metadata_edio(nvar,igr,'Leaf Area Index','[m2/m2]'                             &
+                         ,'ipft;ilu;idbh;iage;ipoly') 
+    end if
 
+    if(associated(cgrid%wpa_ar)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%wpa_ar(1,1,1,1,1),nvar,igr,init,cgrid%pyglob_id            &
+                         ,var_len,var_len_global,max_ptrs                                  &
+                         ,'WPA_AR :14567:hist:dail')
+       call metadata_edio(nvar,igr,'Wood projected area','[m2/m2]'                         &
+                         ,'ipft;ilu;idbh;iage;ipoly') 
+    end if
 
+    if(associated(cgrid%wai_ar)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%wai_ar(1,1,1,1,1),nvar,igr,init,cgrid%pyglob_id            &
+                         ,var_len,var_len_global,max_ptrs                                  &
+                         ,'WAI_AR :14567:hist:dail')
+       call metadata_edio(nvar,igr,'Wood Area Index','[m2/m2]'                             &
+                         ,'ipft;ilu;idbh;iage;ipoly') 
+    end if
 
+    if(associated(cgrid%frostmort_ar)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%frostmort_ar(1,1,1,1,1),nvar,igr,init,cgrid%pyglob_id      &
+                         ,var_len,var_len_global,max_ptrs                                  &
+                         ,'FROSTMORT_AR :14567:hist:dail')
+       call metadata_edio(nvar,igr,'Mortality rate due to frost','[1/yr]'                  &
+                         ,'ipft;ilu;idbh;iage;ipoly') 
+    end if
+
+    if(associated(cgrid%dmean_fs_open_ar)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%dmean_fs_open_ar(1,1,1,1,1),nvar,igr,init,cgrid%pyglob_id  &
+                         ,var_len,var_len_global,max_ptrs                                  &
+                         ,'DMEAN_FS_OPEN_AR :14567:hist:dail')
+       call metadata_edio(nvar,igr,'No metadata available','[ -]'                          &
+                         ,'ipft;ilu;idbh;iage;ipoly') 
+    end if
+
+    if(associated(cgrid%dmean_fsw_ar)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%dmean_fsw_ar(1,1,1,1,1),nvar,igr,init,cgrid%pyglob_id      &
+                         ,var_len,var_len_global,max_ptrs                                  &
+                         ,'DMEAN_FSW_AR :14567:hist:dail')
+       call metadata_edio(nvar,igr,'No metadata available','[ -]'                          &
+                         ,'ipft;ilu;idbh;iage;ipoly') 
+    end if
+
+    if(associated(cgrid%dmean_fsn_ar)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%dmean_fsn_ar(1,1,1,1,1),nvar,igr,init,cgrid%pyglob_id  &
+                         ,var_len,var_len_global,max_ptrs                                  &
+                         ,'DMEAN_FSN_AR :14567:hist:dail')
+       call metadata_edio(nvar,igr,'No metadata available','[ -]'                          &
+                         ,'ipft;ilu;idbh;iage;ipoly') 
+    end if
+
+    if(associated(cgrid%dmean_lightlev_ar)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%dmean_lightlev_ar(1,1,1,1,1),nvar,igr,init,cgrid%pyglob_id &
+                         ,var_len,var_len_global,max_ptrs                                  &
+                         ,'DMEAN_LIGHTLEV_AR :14567:hist:dail')
+       call metadata_edio(nvar,igr,'Light level','[ -]'                                    &
+                         ,'ipft;ilu;idbh;iage;ipoly') 
+    end if
+
+    if(associated(cgrid%dmean_gpp_ar)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%dmean_gpp_ar(1,1,1,1,1),nvar,igr,init,cgrid%pyglob_id      &
+                         ,var_len,var_len_global,max_ptrs                                  &
+                         ,'DMEAN_GPP_AR :14567:hist:dail')
+       call metadata_edio(nvar,igr,'Daily mean gross primary production','[kgC/m2/s]'      &
+                         ,'ipft;ilu;idbh;iage;ipoly') 
+    end if
+
+    if(associated(cgrid%dmean_plresp_ar)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%dmean_plresp_ar(1,1,1,1,1),nvar,igr,init,cgrid%pyglob_id   &
+                         ,var_len,var_len_global,max_ptrs                                  &
+                         ,'DMEAN_PLRESP_AR :14567:hist:dail')
+       call metadata_edio(nvar,igr,'Daily mean plant respiration','[kgC/m2/s]'             &
+                         ,'ipft;ilu;idbh;iage;ipoly') 
+    end if
+
+    if(associated(cgrid%dmean_igpp_ar)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%dmean_igpp_ar(1,1,1,1,1),nvar,igr,init,cgrid%pyglob_id     &
+                         ,var_len,var_len_global,max_ptrs                                  &
+                         ,'DMEAN_IGPP_AR :14567:hist:dail')
+       call metadata_edio(nvar,igr,'Daily mean gross primary production','[kgC/plant/s]'   &
+                         ,'ipft;ilu;idbh;iage;ipoly') 
+    end if
+
+    if(associated(cgrid%dmean_iplresp_ar)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%dmean_iplresp_ar(1,1,1,1,1),nvar,igr,init,cgrid%pyglob_id  &
+                         ,var_len,var_len_global,max_ptrs                                  &
+                         ,'DMEAN_IPLRESP_AR :14567:hist:dail')
+       call metadata_edio(nvar,igr,'Daily mean plant respiration','[kgC/plant/s]'          &
+                         ,'ipft;ilu;idbh;iage;ipoly') 
+    end if
+
+    if(associated(cgrid%dmean_rh_ar)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%dmean_rh_ar(1,1,1),nvar,igr,init,cgrid%pyglob_id           &
+                         ,var_len,var_len_global,max_ptrs                                  &
+                         ,'DMEAN_RH_AR :157:hist:dail')
+       call metadata_edio(nvar,igr,'Daily mean heterotrophic respiration','[kgC/m2/s]'     &
+                         ,'ipft;ilu;idbh;iage;ipoly') 
+    end if
+
+    if(associated(cgrid%bseeds_ar)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%bseeds_ar(1,1,1,1,1),nvar,igr,init,cgrid%pyglob_id         &
+                         ,var_len,var_len_global,max_ptrs                                  &
+                         ,'BSEEDS_AR :14567:hist:mont')
+       call metadata_edio(nvar,igr,'Seed biomass','[tonC/ha]'                              &
+                         ,'ipft;ilu;idbh;iage;ipoly') 
+    end if
+
+    if(associated(cgrid%agb_ar)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%agb_ar(1,1,1,1,1),nvar,igr,init,cgrid%pyglob_id            &
+                         ,var_len,var_len_global,max_ptrs                                  &
+                         ,'AGB_AR :14567:hist:mont')
+       call metadata_edio(nvar,igr,'Above-ground biomass','[tonC/ha]'                      &
+                         ,'ipft;ilu;idbh;iage;ipoly') 
+    end if
+
+    if(associated(cgrid%ba_ar)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%ba_ar(1,1,1,1,1),nvar,igr,init,cgrid%pyglob_id             &
+                         ,var_len,var_len_global,max_ptrs                                  &
+                         ,'BA_AR :14567:hist:mont')
+       call metadata_edio(nvar,igr,'Basal area','[m2]'                                     &
+                         ,'ipft;ilu;idbh;iage;ipoly') 
+    end if
+
+    if(associated(cgrid%pldens_ar)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%pldens_ar(1,1,1,1,1),nvar,igr,init,cgrid%pyglob_id         &
+                         ,var_len,var_len_global,max_ptrs                                  &
+                         ,'PLDENS_AR :14567:hist:mont')
+       call metadata_edio(nvar,igr,'Plant density','[plant/m2]'                            &
+                         ,'ipft;ilu;idbh;iage;ipoly') 
+    end if
+
+    if(associated(cgrid%carbbal_ar)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%carbbal_ar(1,1,1,1,1),nvar,igr,init,cgrid%pyglob_id        &
+                         ,var_len,var_len_global,max_ptrs                                  &
+                         ,'CARBBAL_AR :14567:hist:mont')
+       call metadata_edio(nvar,igr,'Carbon balance','[tonC/ha]'                            &
+                         ,'ipft;ilu;idbh;iage;ipoly') 
+    end if
+
+    if(associated(cgrid%ncbmort_ar)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%ncbmort_ar(1,1,1,1,1),nvar,igr,init,cgrid%pyglob_id        &
+                         ,var_len,var_len_global,max_ptrs                                  &
+                         ,'NCBMORT_AR :14567:hist:mont')
+       call metadata_edio(nvar,igr,'Mortality rate due to neg. carbon ','[1/yr]'           &
+                         ,'ipft;ilu;idbh;iage;ipoly') 
+    end if
+
+    if(associated(cgrid%mmean_lai_ar)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%mmean_lai_ar(1,1,1,1,1),nvar,igr,init,cgrid%pyglob_id      &
+                         ,var_len,var_len_global,max_ptrs                                  &
+                         ,'MMEAN_LAI_AR :14567:hist:mont')
+       call metadata_edio(nvar,igr,'Monthly mean Leaf Area Index ','[m2/m2]'               &
+                         ,'ipft;ilu;idbh;iage;ipoly') 
+    end if
+
+    if(associated(cgrid%mmean_wpa_ar)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%mmean_wpa_ar(1,1,1,1,1),nvar,igr,init,cgrid%pyglob_id      &
+                         ,var_len,var_len_global,max_ptrs                                  &
+                         ,'MMEAN_WPA_AR :14567:hist:mont')
+       call metadata_edio(nvar,igr,'Monthly mean Wood Projected Area ','[m2/m2]'           &
+                         ,'ipft;ilu;idbh;iage;ipoly') 
+    end if
+
+    if(associated(cgrid%mmean_wai_ar)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%mmean_wai_ar(1,1,1,1,1),nvar,igr,init,cgrid%pyglob_id      &
+                         ,var_len,var_len_global,max_ptrs                                  &
+                         ,'MMEAN_WAI_AR :14567:hist:mont')
+       call metadata_edio(nvar,igr,'Monthly mean Wood Area Index','[m2/m2]'                &
+                         ,'ipft;ilu;idbh;iage;ipoly') 
+    end if
+
+    if(associated(cgrid%mmean_fs_open_ar)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%mmean_fs_open_ar(1,1,1,1,1),nvar,igr,init,cgrid%pyglob_id  &
+                         ,var_len,var_len_global,max_ptrs                                  &
+                         ,'MMEAN_FS_OPEN_AR :14567:hist:mont')
+       call metadata_edio(nvar,igr,'No metadata available','[ --]'                         &
+                         ,'ipft;ilu;idbh;iage;ipoly') 
+    end if
+
+    if(associated(cgrid%mmean_fsw_ar)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%mmean_fsw_ar(1,1,1,1,1),nvar,igr,init,cgrid%pyglob_id      &
+                         ,var_len,var_len_global,max_ptrs                                  &
+                         ,'MMEAN_FSW_AR :14567:hist:mont')
+       call metadata_edio(nvar,igr,'No metadata available','[ --]'                         &
+                         ,'ipft;ilu;idbh;iage;ipoly') 
+    end if
+
+    if(associated(cgrid%mmean_fs_open_ar)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%mmean_fsn_ar(1,1,1,1,1),nvar,igr,init,cgrid%pyglob_id      &
+                         ,var_len,var_len_global,max_ptrs                                  &
+                         ,'MMEAN_FSN_AR :14567:hist:mont')
+       call metadata_edio(nvar,igr,'No metadata available','[ --]'                         &
+                         ,'ipft;ilu;idbh;iage;ipoly') 
+    end if
+
+    if(associated(cgrid%mmean_lightlev_ar)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%mmean_lightlev_ar(1,1,1,1,1),nvar,igr,init                 &
+                         ,cgrid%pyglob_id,var_len,var_len_global,max_ptrs                  &
+                         ,'MMEAN_LIGHTLEV_AR :14567:hist:mont')
+       call metadata_edio(nvar,igr,'monthly mean light level','[1/yr]'     &
+                         ,'ipft;ilu;idbh;iage;ipoly') 
+    end if
+
+    if(associated(cgrid%mmean_frostmort_ar)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%mmean_frostmort_ar(1,1,1,1,1),nvar,igr,init                &
+                         ,cgrid%pyglob_id,var_len,var_len_global,max_ptrs                  &
+                         ,'MMEAN_FROSTMORT_AR :14567:hist:mont')
+       call metadata_edio(nvar,igr,'monthly mean mortality rate due to frost','[1/yr]'     &
+                         ,'ipft;ilu;idbh;iage;ipoly') 
+    end if
+
+    if(associated(cgrid%mmean_gpp_ar)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%mmean_gpp_ar(1,1,1,1,1),nvar,igr,init,cgrid%pyglob_id      &
+                         ,var_len,var_len_global,max_ptrs                                  &
+                         ,'MMEAN_GPP_AR :14567:hist:mont')
+       call metadata_edio(nvar,igr,'Monthly mean gross primary production','[kgC/m2/s]'    &
+                         ,'ipft;ilu;idbh;iage;ipoly') 
+    end if
+
+    if(associated(cgrid%mmean_plresp_ar)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%mmean_plresp_ar(1,1,1,1,1),nvar,igr,init,cgrid%pyglob_id   &
+                         ,var_len,var_len_global,max_ptrs                                  &
+                         ,'MMEAN_PLRESP_AR :14567:hist:mont')
+       call metadata_edio(nvar,igr,'Monthly mean plant respiration','[kgC/m2/s]'           &
+                         ,'ipft;ilu;idbh;iage;ipoly') 
+    end if
+
+    if(associated(cgrid%mmean_igpp_ar)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%mmean_igpp_ar(1,1,1,1,1),nvar,igr,init,cgrid%pyglob_id     &
+                         ,var_len,var_len_global,max_ptrs                                  &
+                         ,'MMEAN_IGPP_AR :14567:hist:mont')
+       call metadata_edio(nvar,igr,'Monthly mean gross primary production','[kgC/plant/s]' &
+                         ,'ipft;ilu;idbh;iage;ipoly') 
+    end if
+
+    if(associated(cgrid%mmean_iplresp_ar)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%mmean_iplresp_ar(1,1,1,1,1),nvar,igr,init,cgrid%pyglob_id  &
+                         ,var_len,var_len_global,max_ptrs                                  &
+                         ,'MMEAN_IPLRESP_AR :14567:hist:mont')
+       call metadata_edio(nvar,igr,'Monthly mean plant respiration','[kgC/plant/s]'        &
+                         ,'ipft;ilu;idbh;iage;ipoly') 
+    end if
+
+    if(associated(cgrid%mmean_rh_ar)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%mmean_rh_ar(1,1,1),nvar,igr,init,cgrid%pyglob_id           &
+                         ,var_len,var_len_global,max_ptrs                                  &
+                         ,'MMEAN_RH_AR :157:hist:mont')
+       call metadata_edio(nvar,igr,'Monthly mean heterotrophic respiration','[kgC/m2/s]'   &
+                         ,'ipft;ilu;idbh;iage;ipoly') 
+    end if
     
     if (init == 0) niogrid=nvar-nioglobal
     
     return
     
   end subroutine filltab_edtype
-  !==========================================================================================!
+!==========================================================================================!
 !==========================================================================================!
 
 
@@ -7970,48 +8255,6 @@ contains
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
-    if (associated(cpoly%lai_age)) then
-       nvar=nvar+1
-         call vtable_edio_r(cpoly%lai_age(1,1),nvar,igr,init,cpoly%siglob_id, &
-         var_len,var_len_global,max_ptrs,'LAI_AGE_SI :27:hist:dail') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-    endif
-    
-    if (associated(cpoly%wpa_age)) then
-       nvar=nvar+1
-         call vtable_edio_r(cpoly%wpa_age(1,1),nvar,igr,init,cpoly%siglob_id, &
-         var_len,var_len_global,max_ptrs,'WPA_AGE_SI :27:hist:dail') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-    endif
-    
-    if (associated(cpoly%wai_age)) then
-       nvar=nvar+1
-         call vtable_edio_r(cpoly%wai_age(1,1),nvar,igr,init,cpoly%siglob_id, &
-         var_len,var_len_global,max_ptrs,'WAI_AGE_SI :27:hist:dail') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-    endif
-
-    if (associated(cpoly%lai_dbh)) then
-       nvar=nvar+1
-         call vtable_edio_r(cpoly%lai_dbh(1,1),nvar,igr,init,cpoly%siglob_id, &
-         var_len,var_len_global,max_ptrs,'LAI_DBH_SI :26:hist:dail') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-    endif
-    
-    if (associated(cpoly%wpa_dbh)) then
-       nvar=nvar+1
-         call vtable_edio_r(cpoly%wpa_dbh(1,1),nvar,igr,init,cpoly%siglob_id, &
-         var_len,var_len_global,max_ptrs,'WPA_DBH_SI :26:hist:dail') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-    endif
-    
-    if (associated(cpoly%wai_dbh)) then
-       nvar=nvar+1
-         call vtable_edio_r(cpoly%wai_dbh(1,1),nvar,igr,init,cpoly%siglob_id, &
-         var_len,var_len_global,max_ptrs,'WAI_DBH_SI :26:hist:dail') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-    endif
-
     if (associated(cpoly%lai_pft)) then
        nvar=nvar+1
          call vtable_edio_r(cpoly%lai_pft(1,1),nvar,igr,init,cpoly%siglob_id, &
@@ -8032,27 +8275,6 @@ contains
          var_len,var_len_global,max_ptrs,'WAI_PFT_SI :24:hist:dail') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
-    
-    if (associated(cpoly%lai_lu)) then
-       nvar=nvar+1
-         call vtable_edio_r(cpoly%lai_lu(1,1),nvar,igr,init,cpoly%siglob_id, &
-         var_len,var_len_global,max_ptrs,'LAI_LU_SI :25:hist:dail') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-    endif
-    
-    if (associated(cpoly%wpa_lu)) then
-       nvar=nvar+1
-         call vtable_edio_r(cpoly%wpa_lu(1,1),nvar,igr,init,cpoly%siglob_id, &
-         var_len,var_len_global,max_ptrs,'WPA_LU_SI :25:hist:dail') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-    endif
-    
-    if (associated(cpoly%wai_lu)) then
-       nvar=nvar+1
-         call vtable_edio_r(cpoly%wai_lu(1,1),nvar,igr,init,cpoly%siglob_id, &
-         var_len,var_len_global,max_ptrs,'WAI_LU_SI :25:hist:dail') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-    endif
  
     if (associated(cpoly%ntext_soil)) then
        nvar=nvar+1
@@ -8064,7 +8286,7 @@ contains
     if (associated(cpoly%lambda_fire)) then
        nvar=nvar+1
          call vtable_edio_r(cpoly%lambda_fire(1,1),nvar,igr,init,cpoly%siglob_id, &
-         var_len,var_len_global,max_ptrs,'LAMBDA_FIRE :28:hist') 
+         var_len,var_len_global,max_ptrs,'LAMBDA_FIRE :29:hist') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
     
@@ -8124,10 +8346,10 @@ contains
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
-    if (associated(cpoly%agb_lu)) then
+    if (associated(cpoly%bseeds)) then
        nvar=nvar+1
-         call vtable_edio_r(cpoly%agb_lu(1,1),nvar,igr,init,cpoly%siglob_id, &
-         var_len,var_len_global,max_ptrs,'AGB_LU_SI :25:hist') 
+         call vtable_edio_r(cpoly%bseeds(1,1,1),nvar,igr,init,cpoly%siglob_id, &
+         var_len,var_len_global,max_ptrs,'BSEEDS_SI :246:hist') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
@@ -8172,7 +8394,6 @@ contains
          var_len,var_len_global,max_ptrs,'AGB_CUT :246:hist') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
- 
  
     if(associated(cpoly%dmean_co2_residual)) then
        nvar=nvar+1
@@ -8579,7 +8800,21 @@ contains
        nvar=nvar+1
          call vtable_edio_r(csite%mean_rh(1),nvar,igr,init,csite%paglob_id, &
          var_len,var_len_global,max_ptrs,'MEAN_RH :31:hist') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+       call metadata_edio(nvar,igr,'Heterotrophic respiration','[umol/m2/s]','ipatch') 
+    endif
+
+    if (associated(csite%dmean_rh)) then
+       nvar=nvar+1
+         call vtable_edio_r(csite%dmean_rh(1),nvar,igr,init,csite%paglob_id, &
+         var_len,var_len_global,max_ptrs,'DMEAN_RH_PA :31:hist:dail') 
+       call metadata_edio(nvar,igr,'Daily mean of heterotrophic respiration','[umol/m2/s]','ipatch') 
+    endif
+
+    if (associated(csite%mmean_rh)) then
+       nvar=nvar+1
+         call vtable_edio_r(csite%mmean_rh(1),nvar,igr,init,csite%paglob_id, &
+         var_len,var_len_global,max_ptrs,'MMEAN_RH_PA :31:hist:mont') 
+       call metadata_edio(nvar,igr,'Monthly mean of heterotrophic respiration','[umol/m2/s]','ipatch') 
     endif
 
     if (associated(csite%mean_nep)) then
@@ -9204,29 +9439,64 @@ contains
     if (associated(cpatch%pft)) then
        nvar=nvar+1
          call vtable_edio_i(cpatch%pft(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'PFT :41:hist:mont:year') 
+         var_len,var_len_global,max_ptrs,'PFT :41:hist:anal:mont:year') 
        call metadata_edio(nvar,igr,'Plant Functional Type','[-]','NA') 
     endif
 
     if (associated(cpatch%nplant)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%nplant(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'NPLANT :41:hist:year') 
-       call metadata_edio(nvar,igr,'Plant density','[NA]','NA') 
+         var_len,var_len_global,max_ptrs,'NPLANT :41:hist:anal:mont:year') 
+       call metadata_edio(nvar,igr,'Plant density','[plant/m2]','NA') 
     endif
 
     if (associated(cpatch%hite)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%hite(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'HITE :41:hist:year') 
+         var_len,var_len_global,max_ptrs,'HITE :41:hist:anal:mont:year') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
+
+    if (associated(cpatch%agb)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%agb(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'AGB_CO :41:hist:anal:mont:year') 
+       call metadata_edio(nvar,igr,'Above-ground biomass','[tonC/ha]','icohort') 
+    endif
+
+    if (associated(cpatch%basarea)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%basarea(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'BA_CO :41:hist:anal:mont:year') 
+       call metadata_edio(nvar,igr,'Basal-area','[cm2_plant/m2_gnd]','icohort') 
+    endif
+
+    if (associated(cpatch%dagb_dt)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%dagb_dt(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'DAGB_DT :41:hist:anal:mont:year') 
+       call metadata_edio(nvar,igr,'Above-ground biomass growth','[tonC/ha/month]','icohort') 
+    endif
+
+    if (associated(cpatch%dba_dt)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%dba_dt(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'DBA_DT :41:hist:anal:mont:year') 
+       call metadata_edio(nvar,igr,'Basal-area growth','[cm2/m2/month]','icohort') 
+    endif
+
+    if (associated(cpatch%ddbh_dt)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%ddbh_dt(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'DDBH_DT :41:hist:anal:mont:year') 
+       call metadata_edio(nvar,igr,'DBH growth','[cm/month]','icohort') 
     endif
 
     if (associated(cpatch%dbh)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%dbh(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'DBH :41:hist:year:mont') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+         var_len,var_len_global,max_ptrs,'DBH :41:hist:anal:year:mont') 
+       call metadata_edio(nvar,igr,'Diameter at breast height','[cm]','icohort') 
     endif
 
     if (associated(cpatch%bdead)) then
@@ -9288,7 +9558,7 @@ contains
     if (associated(cpatch%cb)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%cb(1,1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'CB :49:hist:year') 
+         var_len,var_len_global,max_ptrs,'CB :49:hist:mont:year') 
        call metadata_edio(nvar,igr,'carbon balance previous 12 months+current','[kgC/plant]','13 - icohort') 
     endif
 
@@ -9337,21 +9607,21 @@ contains
     if (associated(cpatch%mean_gpp)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%mean_gpp(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'MEAN_GPP :41:hist') 
+         var_len,var_len_global,max_ptrs,'MEAN_GPP :41:hist:anal') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%mean_leaf_resp)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%mean_leaf_resp(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'MEAN_LEAF_RESP :41:hist') 
+         var_len,var_len_global,max_ptrs,'MEAN_LEAF_RESP :41:hist:anal') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%mean_root_resp)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%mean_root_resp(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'MEAN_ROOT_RESP :41:hist') 
+         var_len,var_len_global,max_ptrs,'MEAN_ROOT_RESP :41:hist:anal') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
@@ -9365,7 +9635,7 @@ contains
     if (associated(cpatch%dmean_root_resp)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%dmean_root_resp(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'DMEAN_ROOT_RESP_CO :41:hist') 
+         var_len,var_len_global,max_ptrs,'DMEAN_ROOT_RESP_CO :41') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
@@ -9409,7 +9679,49 @@ contains
          call vtable_edio_r(cpatch%vleaf_respiration(1),nvar,igr,init,cpatch%coglob_id, &
          var_len,var_len_global,max_ptrs,'VLEAF_RESPIRATION :41:hist') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif  
+
+    if (associated(cpatch%mmean_gpp)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%mmean_gpp(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'MMEAN_GPP_CO :41:hist:mont') 
+       call metadata_edio(nvar,igr,'Monthly mean Gross Primary Productivity','[umol/m2/s]','icohort') 
     endif
+
+    if (associated(cpatch%mmean_leaf_resp)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%mmean_leaf_resp(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'MMEAN_LEAF_RESP_CO :41:hist:mont') 
+       call metadata_edio(nvar,igr,'Monthly mstructural_growthean leaf respiration','[umol/m2/s]','icohort') 
+    end if
+
+    if (associated(cpatch%mmean_root_resp)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%mmean_root_resp(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'MMEAN_ROOT_RESP_CO :41:hist:mont') 
+       call metadata_edio(nvar,igr,'Monthly mean root respiration','[umol/m2/s]','icohort') 
+    end if
+
+    if (associated(cpatch%mmean_growth_resp)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%mmean_growth_resp(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'MMEAN_GROWTH_RESP_CO :41:hist:mont') 
+       call metadata_edio(nvar,igr,'Monthly mean growth respiration','[umol/m2/s]','icohort') 
+    end if
+
+    if (associated(cpatch%mmean_storage_resp)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%mmean_storage_resp(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'MMEAN_STORAGE_RESP_CO :41:hist:mont') 
+       call metadata_edio(nvar,igr,'Monthly mean storage respiration','[umol/m2/s]','icohort') 
+    end if
+
+    if (associated(cpatch%mmean_vleaf_resp)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%mmean_vleaf_resp(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'MMEAN_VLEAF_RESP_CO :41:hist:mont') 
+       call metadata_edio(nvar,igr,'Monthly mean virtual leaf respiration','[umol/m2/s]','icohort') 
+    end if
 
     if (associated(cpatch%fsn)) then
        nvar=nvar+1
@@ -9430,6 +9742,20 @@ contains
          call vtable_edio_r(cpatch%monthly_dndt(1),nvar,igr,init,cpatch%coglob_id, &
          var_len,var_len_global,max_ptrs,'MONTHLY_DNDT :41:hist') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
+
+    if (associated(cpatch%mort_rate)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%mort_rate(1,1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'MORT_RATE_CO :48:hist:anal:dail') 
+       call metadata_edio(nvar,igr,'Mortality rates','[1/yr]','icohort') 
+    endif
+
+    if (associated(cpatch%mmean_mort_rate)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%mmean_mort_rate(1,1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'MMEAN_MORT_RATE_CO :48:hist:mont') 
+       call metadata_edio(nvar,igr,'Monthly mean mortality rate','[1/yr]','icohort') 
     endif
 
     if (associated(cpatch%Psi_open)) then
@@ -9458,6 +9784,27 @@ contains
          call vtable_edio_i(cpatch%new_recruit_flag(1),nvar,igr,init,cpatch%coglob_id, &
          var_len,var_len_global,max_ptrs,'NEW_RECRUIT_FLAG :41:hist') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
+
+    if (associated(cpatch%light_level)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%light_level(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'LIGHT_LEVEL :41:hist') 
+       call metadata_edio(nvar,igr,'Relative light level','[NA]','icohort') 
+    endif
+
+    if (associated(cpatch%dmean_light_level)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%dmean_light_level(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'DMEAN_LIGHT_LEVEL :41:hist:dail') 
+       call metadata_edio(nvar,igr,'Diurnal mean of Relative light level ','[NA]','icohort') 
+    endif
+
+    if (associated(cpatch%mmean_light_level)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%mmean_light_level(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'MMEAN_LIGHT_LEVEL :41:hist:mont') 
+       call metadata_edio(nvar,igr,'Monthly mean of Relative light level ','[NA]','icohort') 
     endif
 
     if (associated(cpatch%par_v)) then
@@ -9579,6 +9926,48 @@ contains
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
+    if (associated(cpatch%dmean_fs_open)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%dmean_fs_open(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'DMEAN_FS_OPEN_CO :41:dail:hist') 
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
+
+    if (associated(cpatch%dmean_fsw)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%dmean_fsw(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'DMEAN_FSW_CO :41:dail:hist') 
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
+
+    if (associated(cpatch%dmean_fsn)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%dmean_fsn(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'DMEAN_FSN_CO :41:dail:hist') 
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
+
+    if (associated(cpatch%mmean_fs_open)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%mmean_fs_open(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'MMEAN_FS_OPEN_CO :41:mont:hist') 
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
+
+    if (associated(cpatch%mmean_fsw)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%mmean_fsw(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'MMEAN_FSW_CO :41:dail:hist') 
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
+
+    if (associated(cpatch%mmean_fsn)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%mmean_fsn(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'MMEAN_FSN_CO :41:dail:hist') 
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
+
     if (associated(cpatch%stomatal_resistance)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%stomatal_resistance(1),nvar,igr,init,cpatch%coglob_id, &
@@ -9596,7 +9985,7 @@ contains
     if (associated(cpatch%bseeds)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%bseeds(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'BSEEDS :41:hist') 
+         var_len,var_len_global,max_ptrs,'BSEEDS_CO :41:hist') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
@@ -9625,7 +10014,7 @@ contains
        nvar=nvar+1
          call vtable_edio_r(cpatch%gpp(1),nvar,igr,init,cpatch%coglob_id, &
          var_len,var_len_global,max_ptrs,'GPP :41:hist') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+       call metadata_edio(nvar,igr,'Gross Primary Production','[umol/m2/s]','icohort') 
     endif
 
     if (associated(cpatch%paw_avg)) then

@@ -73,14 +73,15 @@ subroutine ed_masterput_nl(par_run)
 ! patches for the SOI runs).                                                               !
 !------------------------------------------------------------------------------------------!
    use ed_para_coms,    only: mainnum
-   use ed_max_dims,        only: str_len,max_soi,max_ed_regions,nzgmax,n_pft,maxgrds,maxpvars
-   use ed_misc_coms,       only: expnme, runtype,itimea,iyeara,imontha,idatea ,itimez,iyearz  &
-                             ,imonthz,idatez,dtlsm,radfrq,ifoutput,idoutput,imoutput,iyoutput &
-                             ,iclobber,frqfast,sfilin,ffilout,ied_init_mode,ed_inputs_dir   &
-                             ,integration_scheme,end_time,current_time,sfilout,frqstate     &
-                             ,isoutput,iprintpolys,printvars,pfmtstr,ipmin,ipmax,iedcnfgf   &
-                             ,outfast,outstate,out_time_fast,out_time_state,nrec_fast       &
-                             ,nrec_state,irec_fast,irec_state,unitfast,unitstate,event_file
+   use ed_max_dims,     only: str_len,max_soi,max_ed_regions,nzgmax,n_pft,maxgrds,maxpvars
+   use ed_misc_coms,    only: expnme, runtype,itimea,iyeara,imontha,idatea ,itimez,iyearz  &
+                             ,imonthz,idatez,dtlsm,radfrq,ifoutput,idoutput,imoutput       &
+                             ,iyoutput,iclobber,frqfast,sfilin,ffilout,ied_init_mode       &
+                             ,ed_inputs_dir,integration_scheme,end_time,current_time       &
+                             ,sfilout,frqstate,isoutput,iprintpolys,printvars,pfmtstr      &
+                             ,ipmin,ipmax,iedcnfgf,outfast,outstate,out_time_fast          &
+                             ,out_time_state,nrec_fast,nrec_state,irec_fast,irec_state     &
+                             ,unitfast,unitstate,event_file,fivedim_diags
 
    use ed_misc_coms,only: attach_metadata
    use canopy_air_coms, only: icanturb, isfclyrm
@@ -261,6 +262,8 @@ subroutine ed_masterput_nl(par_run)
    call MPI_Bcast(edres,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(attach_metadata,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+
+   call MPI_Bcast(fivedim_diags,1,MPI_LOGICAL,mainnum,MPI_COMM_WORLD,ierr)
 !------------------------------------------------------------------------------------------!
 !   One last thing to send is the layer index based on the soil_depth. It is not really a  !
 ! namelist thing, but it is still a setup variable.                                        !
@@ -639,14 +642,15 @@ subroutine ed_nodeget_nl
 !   This subroutine is responsible for getting all the namelist-related information in     !
 ! every node.                                                                              !
 !------------------------------------------------------------------------------------------!
-   use ed_max_dims,        only: str_len,max_soi,max_ed_regions,nzgmax,n_pft,maxgrds,maxpvars
-   use ed_misc_coms,       only: expnme, runtype,itimea,iyeara,imontha,idatea ,itimez,iyearz  &
-                             ,imonthz,idatez,dtlsm,radfrq,ifoutput,idoutput,imoutput, iyoutput &
-                             ,iclobber,frqfast,sfilin,ffilout,ied_init_mode,ed_inputs_dir   &
-                             ,integration_scheme,end_time,current_time,isoutput,sfilout    &
-                             ,frqstate,iprintpolys,printvars,pfmtstr,ipmin,ipmax,iedcnfgf  &
-                             ,outfast,outstate,out_time_fast,out_time_state,nrec_fast      &
-                             ,nrec_state,irec_fast,irec_state,unitfast,unitstate,event_file
+   use ed_max_dims,     only: str_len,max_soi,max_ed_regions,nzgmax,n_pft,maxgrds,maxpvars
+   use ed_misc_coms,    only: expnme, runtype,itimea,iyeara,imontha,idatea ,itimez,iyearz  &
+                             ,imonthz,idatez,dtlsm,radfrq,ifoutput,idoutput,imoutput       &
+                             ,iyoutput,iclobber,frqfast,sfilin,ffilout,ied_init_mode       &
+                             ,ed_inputs_dir,integration_scheme,end_time,current_time       &
+                             ,isoutput,sfilout,frqstate,iprintpolys,printvars,pfmtstr      &
+                             ,ipmin,ipmax,iedcnfgf,outfast,outstate,out_time_fast          &
+                             ,out_time_state,nrec_fast,nrec_state,irec_fast,irec_state     &
+                             ,unitfast,unitstate,event_file,fivedim_diags
 
    use grid_coms,       only: nzg,nzs,ngrids,nnxp,nnyp,deltax,deltay,polelat,polelon       &
                              ,centlat,centlon,time,timmax,nstratx,nstraty
@@ -825,6 +829,8 @@ subroutine ed_nodeget_nl
    call MPI_Bcast(edres,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    
    call MPI_Bcast(attach_metadata,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   
+   call MPI_Bcast(fivedim_diags,1,MPI_LOGICAL,master_num,MPI_COMM_WORLD,ierr)
 
 !------------------------------------------------------------------------------------------!
 !     Receiving the layer index based on soil_depth. This is allocatable, so I first       !

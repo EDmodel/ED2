@@ -8,7 +8,7 @@ subroutine masterput_ednl(mainnum)
                            ,integration_scheme,end_time,current_time,sfilout,frqstate      &
                            ,isoutput,iprintpolys,printvars,npvars,pfmtstr,ipmin,ipmax      &
                            ,iedcnfgf,event_file,iyoutput,outfast,outstate,unitfast         &
-                           ,unitstate,attach_metadata
+                           ,unitstate,attach_metadata,fivedim_diags
   use grid_coms,       only: nzg,nzs,ngrids,nnxp,nnyp,time,timmax
   use soil_coms,       only: isoilflg,nslcon,slz,slmstr,stgoff,veg_database,soil_database  &
                             ,soilstate_db,soildepth_db,isoilstateinit,isoildepthflg        &
@@ -55,6 +55,7 @@ subroutine masterput_ednl(mainnum)
   call MPI_Bcast(iyoutput,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(isoutput,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(attach_metadata,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+  call MPI_Bcast(fivedim_diags,1,MPI_LOGICAL,mainnum,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(outfast,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(outstate,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(unitfast,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
@@ -162,7 +163,7 @@ subroutine nodeget_ednl(master_num)
                            ,integration_scheme,end_time,current_time,sfilout,frqstate     &
                            ,isoutput,iprintpolys,printvars,npvars,pfmtstr,ipmin,ipmax     &
                            ,iedcnfgf,event_file,iyoutput,outfast,outstate,unitfast        &
-                           ,unitstate,attach_metadata
+                           ,unitstate,attach_metadata,fivedim_diags
   use grid_coms,       only: nzg,nzs,ngrids,nnxp,nnyp,time,timmax
   use soil_coms,       only: isoilflg,nslcon,slz,slmstr,stgoff,veg_database,soil_database &
                              ,soilstate_db,soildepth_db,isoilstateinit,isoildepthflg       &
@@ -208,6 +209,7 @@ subroutine nodeget_ednl(master_num)
   call MPI_Bcast(iyoutput,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(isoutput,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(attach_metadata,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+  call MPI_Bcast(fivedim_diags,1,MPI_LOGICAL,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(outfast,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(outstate,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
   call MPI_Bcast(unitfast,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)

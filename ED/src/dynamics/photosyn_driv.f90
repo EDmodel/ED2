@@ -264,11 +264,11 @@ subroutine canopy_photosynthesis(csite,ipa,vels,atm_tmp,prss,ed_ktrans,ntext_soi
                                                 / cpatch%rsw_closed(ico) )
 
             !----- GPP, averaged over frqstate. -------------------------------------------!
-            cpatch%gpp(ico) = cpatch%lai(ico)                                              &
-                            * ( cpatch%fs_open(ico) * cpatch%A_open(ico)                   &
-                              + (1.0 - cpatch%fs_open(ico)) * cpatch%A_closed(ico) )       &
-                            + cpatch%leaf_respiration(ico)
-            cpatch%mean_gpp(ico) = cpatch%mean_gpp(ico) + cpatch%gpp(ico)
+            cpatch%gpp(ico)       = cpatch%lai(ico)                                        &
+                                  * ( cpatch%fs_open(ico) * cpatch%A_open(ico)             &
+                                    + (1.0 - cpatch%fs_open(ico)) * cpatch%A_closed(ico) ) &
+                                  + cpatch%leaf_respiration(ico)
+            cpatch%mean_gpp(ico)  = cpatch%mean_gpp(ico) + cpatch%gpp(ico)
 
             !----- GPP, summed over 1 day. [µmol/m²ground] --------------------------------!
             cpatch%dmean_gpp(ico) = cpatch%dmean_gpp(ico) + cpatch%gpp(ico)

@@ -742,6 +742,10 @@ module disturbance_utils
           tpatch%leaf_respiration(nco)    = tpatch%leaf_respiration(nco)     * cohort_area_fac
           tpatch%root_respiration(nco)    = tpatch%root_respiration(nco)     * cohort_area_fac
           tpatch%monthly_dndt(nco)        = tpatch%monthly_dndt(nco)         * cohort_area_fac
+          tpatch%agb(nco)                 = tpatch%agb(nco)                  * cohort_area_fac
+          tpatch%basarea(nco)             = tpatch%basarea(nco)              * cohort_area_fac
+          tpatch%dagb_dt(nco)             = tpatch%dagb_dt(nco)              * cohort_area_fac
+          tpatch%dba_dt(nco)              = tpatch%dba_dt(nco)               * cohort_area_fac
           tpatch%veg_water(nco)           = tpatch%veg_water(nco)            * cohort_area_fac
           tpatch%hcapveg(nco)             = tpatch%hcapveg(nco)              * cohort_area_fac
           tpatch%veg_energy(nco)          = tpatch%veg_energy(nco)           * cohort_area_fac

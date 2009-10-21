@@ -258,7 +258,6 @@ subroutine update_site_derived_props(cpoly,census_flag,isi)
    !----- Initialise the variables before looping. ----------------------------------------!
    cpoly%basal_area(:,:,isi) = 0.0
    cpoly%agb(:,:,isi)        = 0.0
-   cpoly%agb_lu(:,isi)       = 0.0
    
    csite => cpoly%site(isi)
 
@@ -283,12 +282,6 @@ subroutine update_site_derived_props(cpoly,census_flag,isi)
                                                  ,cpatch%bleaf(ico),cpatch%pft(ico)        &
                                                  ,cpatch%hite(ico),cpatch%bstorage(ico))   &
                                      * cpatch%nplant(ico) * 10.0 * csite%area(ipa)
-
-            cpoly%agb_lu(ilu,isi) = cpoly%agb_lu(ilu,isi)                                  &
-                                  + ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)        &
-                                              ,cpatch%bleaf(ico),cpatch%pft(ico)           &
-                                              ,cpatch%hite(ico),cpatch%bstorage(ico))      &
-                                  * cpatch%nplant(ico) * 10.0 * csite%area(ipa)
          end if
       end do
    end do

@@ -30,7 +30,8 @@ subroutine read_ednl(iunit)
        ied_init_mode, current_time,ed_inputs_dir,                     &
        end_time, integration_scheme, ffilout,  dtlsm,                 &
        iprintpolys,printvars,npvars,pfmtstr,ipmax,ipmin,              &
-       iedcnfgf,ffilout,sfilout,sfilin,event_file, attach_metadata
+       iedcnfgf,ffilout,sfilout,sfilin,event_file, attach_metadata,   &
+       fivedim_diags
   use canopy_air_coms, only:  icanturb
 
   use grid_coms, only: timmax,time
@@ -167,6 +168,9 @@ subroutine read_ednl(iunit)
   unitstate = 0           ! reason to ask the user for units for outfast and outstate, the
                           ! special flags cover all possibilities.
 
+  fivedim_diags = .false. ! These 5-D arrays are cool, but they can make the output 
+                          !    files huge.  For the time being, they are only computed
+                          !    and allocated for SOI runs.
   
   ! Force LEAF3's number of patches to be 2. This is necessary for
   ! filling the lower boundary condition arrays correctly
