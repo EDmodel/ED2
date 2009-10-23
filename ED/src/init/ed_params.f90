@@ -1151,9 +1151,9 @@ subroutine init_pft_derived_params()
    ! parameters actually depend on which PFT we are solving, since grasses always have     !
    ! significantly less biomass.                                                           !
    !---------------------------------------------------------------------------------------!
-   !write (unit=61,fmt='(8(a,1x))') '  PFT','     HGT_MIN','         DBH','       BLEAF'    &
-   !                                       ,'       BDEAD','      BALIVE','   INIT_DENS'    &
-   !                                       ,'MIN_REC_SIZE'
+   write (unit=61,fmt='(8(a,1x))') '  PFT','     HGT_MIN','         DBH','       BLEAF'    &
+                                          ,'       BDEAD','      BALIVE','   INIT_DENS'    &
+                                          ,'MIN_REC_SIZE'
    min_plant_dens = onesixth * minval(init_density)
    do ipft = 1,n_pft
       !----- Finding the DBH and carbon pools associated with a newly formed recruit. -----!
@@ -1174,8 +1174,8 @@ subroutine init_pft_derived_params()
                              / (balive * ( f_labile(ipft) / c2n_leaf(ipft)                 &
                                          + (1.0 - f_labile(ipft)) / c2n_stem)              &
                                + bdead/c2n_stem)
-      !write (unit=61,fmt='(i5,1x,7(es12.5,1x))') ipft,hgt_min(ipft),dbh,bleaf,bdead,balive &
-      !                                          ,init_density(ipft),min_recruit_size(ipft)
+      write (unit=61,fmt='(i5,1x,7(es12.5,1x))') ipft,hgt_min(ipft),dbh,bleaf,bdead,balive &
+                                                ,init_density(ipft),min_recruit_size(ipft)
    end do
 
 end subroutine init_pft_derived_params

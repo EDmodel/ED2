@@ -501,12 +501,18 @@ subroutine integrate_ed_daily_output_state(cgrid)
 
                   !----- Integrate light level only if it is day time. --------------------!
                   if (cpoly%met(isi)%rshort > 0.5) then
-                     cpatch%dmean_light_level(ico) = cpatch%dmean_light_level(ico)         &
-                                                   + cpatch%light_level(ico)
+                     cpatch%dmean_light_level(ico)  = cpatch%dmean_light_level(ico)        &
+                                                    + cpatch%light_level(ico)
+                     cpatch%dmean_lambda_light(ico) = cpatch%dmean_lambda_light(ico)       &
+                                                    + cpatch%lambda_light(ico)
                   end if
 
                end if
             end do
+            if (cpoly%met(isi)%rshort > 0.5) then
+               csite%dmean_lambda_light(ipa) = csite%dmean_lambda_light(ipa)               &
+                                             + csite%lambda_light(ipa)
+            end if
 
             
          end do patchloop
@@ -1287,10 +1293,13 @@ subroutine normalize_ed_daily_output_vars(cgrid)
                ! problems with polar nights).                                              !
                !---------------------------------------------------------------------------!
                if (cpoly%daylight(isi) >= dtlsm) then
-                  cpatch%dmean_light_level(ico) = cpatch%dmean_light_level(ico)            &
-                                                * dtlsm / cpoly%daylight(isi)
+                  cpatch%dmean_light_level(ico)  = cpatch%dmean_light_level(ico)           &
+                                                 * dtlsm / cpoly%daylight(isi)
+                  cpatch%dmean_lambda_light(ico) = cpatch%dmean_lambda_light(ico)          &
+                                                 * dtlsm / cpoly%daylight(isi)
                else
-                  cpatch%dmean_light_level(ico) = 0.
+                  cpatch%dmean_light_level(ico)  = 0.
+                  cpatch%dmean_lambda_light(ico) = 0.
                end if
                
                !---------------------------------------------------------------------------!
@@ -1379,6 +1388,17 @@ subroutine normalize_ed_daily_output_vars(cgrid)
                                              * frqsum_o_daysec
             csite%dmean_water_residual(ipa)  = csite%dmean_water_residual(ipa)             &
                                              * frqsum_o_daysec
+            !------------------------------------------------------------------------------!
+            !     The light level is averaged over the length of day light only.  We find  !
+            ! this variable only if there is any day light (this is to avoid problems with !
+            ! polar nights).                                                               !
+            !------------------------------------------------------------------------------!
+            if (cpoly%daylight(isi) >= dtlsm) then
+               csite%dmean_lambda_light(ipa)    = csite%dmean_lambda_light(ipa)            &
+                                                * dtlsm / cpoly%daylight(isi)
+            else
+               csite%dmean_lambda_light(ipa)    = 0.0
+            end if
             !------------------------------------------------------------------------------!
             !     Heterotrophic respiration is currently the integral over a day, so we    !
             ! multiply by the number of days in a year and convert to kgC, so the final    !
@@ -1794,10 +1814,11 @@ subroutine zero_ed_daily_output_vars(cgrid)
             
             cpatch => csite%patch(ipa)
             do ico=1, cpatch%ncohorts
-               cpatch%dmean_fs_open(ico)     = 0.
-               cpatch%dmean_fsw(ico)         = 0.
-               cpatch%dmean_fsn(ico)         = 0.
-               cpatch%dmean_light_level(ico) = 0.
+               cpatch%dmean_fs_open(ico)      = 0.
+               cpatch%dmean_fsw(ico)          = 0.
+               cpatch%dmean_fsn(ico)          = 0.
+               cpatch%dmean_light_level(ico)  = 0.
+               cpatch%dmean_lambda_light(ico) = 0.
             end do
          end do
       end do
@@ -1965,6 +1986,8 @@ subroutine integrate_ed_monthly_output_vars(cgrid)
                                              + csite%dmean_water_residual(ipa)
 
             csite%mmean_rh(ipa)              = csite%mmean_rh(ipa) + csite%dmean_rh(ipa)
+            csite%mmean_lambda_light(ipa)    = csite%mmean_lambda_light(ipa)               &
+                                             + csite%dmean_lambda_light(ipa)
 
             cpatch => csite%patch(ipa)
             cohort_loop: do ico=1,cpatch%ncohorts
@@ -1989,6 +2012,8 @@ subroutine integrate_ed_monthly_output_vars(cgrid)
                !---------------------------------------------------------------------------!
                cpatch%mmean_light_level(ico)   = cpatch%mmean_light_level(ico)             &
                                                + cpatch%dmean_light_level(ico)
+               cpatch%mmean_lambda_light(ico)  = cpatch%mmean_lambda_light(ico)            &
+                                               + cpatch%dmean_lambda_light(ico)
 
                !----- Mortality rates. ----------------------------------------------------!
                do imt=1,n_mort
@@ -1997,8 +2022,6 @@ subroutine integrate_ed_monthly_output_vars(cgrid)
                end do
 
             end do cohort_loop
-
-            csite%mmean_rh(ipa) = csite%dmean_rh(ipa)
 
          end do patch_loop
       end do site_loop
@@ -2293,7 +2316,7 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
             csite%mmean_energy_residual(ipa) = csite%mmean_energy_residual(ipa) * ndaysi
             csite%mmean_water_residual(ipa)  = csite%mmean_water_residual(ipa)  * ndaysi
             csite%mmean_rh(ipa)              = csite%mmean_rh(ipa)              * ndaysi
-
+            csite%mmean_lambda_light(ipa)    = csite%mmean_lambda_light(ipa)    * ndaysi
             !----- Setting up some variables that are needed for 5-D arrays. --------------!
             if (fivedim_diags) then
                !---- Finding the age and land use class to which this patch belongs. ------!
@@ -2318,12 +2341,9 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
             cpatch => csite%patch(ipa)
             cohortloop: do ico = 1, cpatch%ncohorts
                !----- Finding the carbon fluxes. ------------------------------------------!
-               cpatch%mmean_gpp      (ico)    = cpatch%mmean_gpp(ico)                      &
-                                              * umol_2_kgC * day_sec * ndaysi
-               cpatch%mmean_leaf_resp(ico)    = cpatch%mmean_leaf_resp(ico)                &
-                                              * umol_2_kgC * day_sec * ndaysi
-               cpatch%mmean_root_resp(ico)    = cpatch%mmean_root_resp(ico)                &
-                                              * umol_2_kgC * day_sec * ndaysi
+               cpatch%mmean_gpp      (ico)    = cpatch%mmean_gpp(ico)          * ndaysi
+               cpatch%mmean_leaf_resp(ico)    = cpatch%mmean_leaf_resp(ico)    * ndaysi
+               cpatch%mmean_root_resp(ico)    = cpatch%mmean_root_resp(ico)    * ndaysi
                cpatch%mmean_growth_resp(ico)  = cpatch%mmean_growth_resp(ico)  * ndaysi
                cpatch%mmean_storage_resp(ico) = cpatch%mmean_storage_resp(ico) * ndaysi
                cpatch%mmean_vleaf_resp(ico)   = cpatch%mmean_vleaf_resp(ico)   * ndaysi
@@ -2334,7 +2354,8 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
                end do
 
                !----- Finding the light level, ignoring changes in day time length... -----!
-               cpatch%mmean_light_level(ico) = cpatch%mmean_light_level(ico) * ndaysi
+               cpatch%mmean_light_level (ico) = cpatch%mmean_light_level(ico)  * ndaysi
+               cpatch%mmean_lambda_light(ico) = cpatch%mmean_lambda_light(ico) * ndaysi
 
                !----- Defining to which PFT this cohort belongs. --------------------------!
                ipft = cpatch%pft(ico)
@@ -2685,6 +2706,7 @@ subroutine zero_ed_monthly_output_vars(cgrid)
             csite%mmean_energy_residual(ipa) = 0.
             csite%mmean_water_residual (ipa) = 0.
             csite%mmean_rh             (ipa) = 0.
+            csite%mmean_lambda_light   (ipa) = 0.
             cpatch=> csite%patch(ipa)
             do ico=1,cpatch%ncohorts
                cpatch%mmean_fs_open       (ico) = 0.
@@ -2697,6 +2719,7 @@ subroutine zero_ed_monthly_output_vars(cgrid)
                cpatch%mmean_storage_resp  (ico) = 0.
                cpatch%mmean_vleaf_resp    (ico) = 0.
                cpatch%mmean_light_level   (ico) = 0.
+               cpatch%mmean_lambda_light  (ico) = 0.
                cpatch%mmean_mort_rate   (:,ico) = 0.
             end do
          end do

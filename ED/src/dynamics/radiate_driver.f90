@@ -4,7 +4,7 @@
 ! step, but not every sub-step.                                                            !
 !------------------------------------------------------------------------------------------!
 subroutine radiate_driver(cgrid)
-   use ed_misc_coms             , only : current_time          & ! intent(in)
+   use ed_misc_coms          , only : current_time          & ! intent(in)
                                     , radfrq                & ! intent(in)
                                     , dtlsm                 ! ! intent(in)
    use ed_state_vars         , only : edtype                & ! structure
@@ -165,6 +165,7 @@ subroutine sfcrad_ed(cosz, cosaoi, csite, maxcohort, rshort)
    real(kind=8)    , dimension(maxcohort) :: veg_temp_array
    real(kind=8)    , dimension(maxcohort) :: tai_array
    real(kind=8)    , dimension(maxcohort) :: CA_array
+   real(kind=8)    , dimension(maxcohort) :: lambda_array
    real            , dimension(maxcohort) :: par_v_beam_array
    real            , dimension(maxcohort) :: rshort_v_beam_array
    real            , dimension(maxcohort) :: par_v_diffuse_array
@@ -175,6 +176,7 @@ subroutine sfcrad_ed(cosz, cosaoi, csite, maxcohort, rshort)
    real                                   :: upward_par_above_diffuse
    real                                   :: downward_nir_below_diffuse
    real                                   :: upward_nir_above_diffuse 
+   real(kind=8)                           :: lambda_tot
    real                                   :: T_surface
    real                                   :: emissivity
    real                                   :: downward_lw_below_surf
@@ -189,8 +191,14 @@ subroutine sfcrad_ed(cosz, cosaoi, csite, maxcohort, rshort)
    real                                   :: surface_absorbed_longwave_incid
    real                                   :: crown_area
    real                                   :: remaining_rshort
-   !----- Loop over the patches -----------------------------------------------------------!
+   !----- External function. --------------------------------------------------------------!
+   real            , external             :: sngloff
+   !----- Local constants. ----------------------------------------------------------------!
+   real(kind=8)    , parameter            :: tiny_offset = 1.d-20
+   !---------------------------------------------------------------------------------------!
 
+
+   !----- Loop over the patches -----------------------------------------------------------!
    do ipa = 1,csite%npatches
       cpatch => csite%patch(ipa)
       
@@ -203,6 +211,10 @@ subroutine sfcrad_ed(cosz, cosaoi, csite, maxcohort, rshort)
 
       !----- Recalc the maximum photosynthetic rates next time around. --------------------!
       csite%old_stoma_data_max(1:n_pft,ipa)%recalc = 1
+      
+      !----- Set the light extinction to zero, just in case it is night time... -----------!
+      csite%lambda_light(ipa) = 0.0 
+      lambda_tot              = 0.d0
 
       !------------------------------------------------------------------------------------!
       !     Loop over cohorts.  Unusually, we here start at the shortest. Required by      !
@@ -225,6 +237,7 @@ subroutine sfcrad_ed(cosz, cosaoi, csite, maxcohort, rshort)
          cpatch%old_stoma_data(ico)%recalc = 1
          
          cpatch%light_level(ico)           = 0.0
+         cpatch%lambda_light(ico)          = 0.0
 
          !------ Transfer information from linked lists to arrays. ------------------------!
          if (cpatch%solvable(ico)) then
@@ -237,6 +250,7 @@ subroutine sfcrad_ed(cosz, cosaoi, csite, maxcohort, rshort)
             par_v_beam_array(cohort_count)       = 0.0
             rshort_v_diffuse_array(cohort_count) = 0.0
             par_v_diffuse_array(cohort_count)    = 0.0
+            lambda_array(cohort_count)           = 0.d0
             select case (crown_mod)
             case (0)
                CA_array(cohort_count) = 1.
@@ -354,7 +368,8 @@ subroutine sfcrad_ed(cosz, cosaoi, csite, maxcohort, rshort)
                                    ,downward_par_below_beam,downward_par_below_diffuse     &
                                    ,upward_par_above_beam,upward_par_above_diffuse         &
                                    ,downward_nir_below_beam,downward_nir_below_diffuse     &
-                                   ,upward_nir_above_beam,upward_nir_above_diffuse)        
+                                   ,upward_nir_above_beam,upward_nir_above_diffuse         &
+                                   ,lambda_array,lambda_tot)        
 
             !----- Below-canopy downwelling radiation. ------------------------------------!
             downward_rshort_below_beam    = downward_par_below_beam                        &
@@ -365,6 +380,7 @@ subroutine sfcrad_ed(cosz, cosaoi, csite, maxcohort, rshort)
             !----- Soil+sfcwater+veg albedo (different for diffuse and beam radiation). ---!
             csite%albedo_beam(ipa)    = upward_par_above_beam    + upward_nir_above_beam
             csite%albedo_diffuse(ipa) = upward_par_above_diffuse + upward_nir_above_diffuse
+            csite%lambda_light(ipa)   = sngloff(lambda_tot,tiny_offset)
          else
 
             !----- The code expects values for these, even when it is not daytime. --------!
@@ -372,7 +388,7 @@ subroutine sfcrad_ed(cosz, cosaoi, csite, maxcohort, rshort)
             downward_rshort_below_diffuse = 1.0
             csite%albedo_beam(ipa)        = algs
             csite%albedo_diffuse(ipa)     = algs
-
+            csite%lambda_light(ipa)       = 0.0
          end if
 
          !----- Absorption rates of PAR, rshort, and rlong of the vegetation. -------------!
@@ -387,6 +403,7 @@ subroutine sfcrad_ed(cosz, cosaoi, csite, maxcohort, rshort)
                cpatch%par_v_diffuse(ico)    = par_v_diffuse_array(il) * Watts2Ein
                cpatch%rlong_v_surf(ico)     = lw_v_surf_array(il)
                cpatch%rlong_v_incid(ico)    = lw_v_incid_array(il)
+               cpatch%lambda_light(ico)     = sngloff(lambda_array(il),tiny_offset)
             end if
          end do
 

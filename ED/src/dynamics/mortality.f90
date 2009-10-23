@@ -67,7 +67,7 @@ module mortality
 
 
       !------------------------------------------------------------------------------------!
-      !     Mortality due to cold.                                                         !
+      ! 4.   Mortality due to cold.                                                         !
       !------------------------------------------------------------------------------------!
       threshtemp = 5.0 + plant_min_temp(ipft)
       if(avg_daily_temp < threshtemp)then

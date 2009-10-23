@@ -191,7 +191,7 @@ module ed_state_vars
      ! Plant virtual leaf respiration (kgC/plant/day)
      real ,pointer,dimension(:) :: vleaf_respiration
 
-     ! Monthly mean of the plant productivity terms, all in umol/m2/s
+     ! Monthly mean of the plant productivity terms, all in kgC/m2/yr
      real, pointer, dimension(:) :: mmean_gpp
      real, pointer, dimension(:) :: mmean_leaf_resp
      real, pointer, dimension(:) :: mmean_root_resp
@@ -240,6 +240,11 @@ module ed_state_vars
      real, pointer, dimension(:) :: light_level
      real, pointer, dimension(:) :: dmean_light_level
      real, pointer, dimension(:) :: mmean_light_level
+
+     ! Light extinction of this cohort, its diurnal and monthly means
+     real, pointer, dimension(:) :: lambda_light
+     real, pointer, dimension(:) :: dmean_lambda_light
+     real, pointer, dimension(:) :: mmean_lambda_light
 
      ! Photosynthetically active radiation (PAR) absorbed by the 
      ! cohort (units are Einsteins/m2/s)
@@ -445,6 +450,12 @@ module ed_state_vars
 
      ! Canopy depth (m)
      real , pointer,dimension(:) :: can_depth
+
+     ! Mean light extinction coefficient, its diurnal and monthly cycle.
+     real , pointer, dimension(:) :: lambda_light
+     real , pointer, dimension(:) :: dmean_lambda_light
+     real , pointer, dimension(:) :: mmean_lambda_light
+
 
      ! Number of cohorts in the patch
      integer , pointer,dimension(:) :: cohort_count
@@ -2253,6 +2264,7 @@ contains
     allocate(csite%can_prss(npatches))
     allocate(csite%can_theta(npatches))
     allocate(csite%can_depth(npatches))
+    allocate(csite%lambda_light(npatches))
     allocate(csite%cohort_count(npatches))
     allocate(csite%pname(npatches))
     
@@ -2281,8 +2293,6 @@ contains
 
     allocate(csite%avg_daily_temp(npatches))  
     allocate(csite%mean_rh(npatches))
-    allocate(csite%dmean_rh(npatches))
-    allocate(csite%mmean_rh(npatches))
     allocate(csite%mean_nep(npatches))
     allocate(csite%wbudget_loss2atm(npatches))
     allocate(csite%wbudget_precipgain(npatches))
@@ -2402,13 +2412,20 @@ contains
     allocate(csite%runoff_rate     (npatches))
     allocate(csite%runoff          (npatches))
 
-
-    allocate(csite%dmean_co2_residual      (npatches))
-    allocate(csite%dmean_energy_residual   (npatches))
-    allocate(csite%dmean_water_residual    (npatches))
-    allocate(csite%mmean_co2_residual      (npatches))
-    allocate(csite%mmean_energy_residual   (npatches))
-    allocate(csite%mmean_water_residual    (npatches))
+    if (imoutput > 0 .or. idoutput > 0) then
+       allocate(csite%dmean_lambda_light(npatches))
+       allocate(csite%dmean_co2_residual      (npatches))
+       allocate(csite%dmean_energy_residual   (npatches))
+       allocate(csite%dmean_water_residual    (npatches))
+       allocate(csite%dmean_rh                (npatches))
+    end if
+    if (imoutput > 0 ) then
+       allocate(csite%mmean_lambda_light      (npatches))
+       allocate(csite%mmean_co2_residual      (npatches))
+       allocate(csite%mmean_energy_residual   (npatches))
+       allocate(csite%mmean_water_residual    (npatches))
+       allocate(csite%mmean_rh                (npatches))
+    end if
 
     ! Initialize the variables with a non-sense number.
     !call huge_sitetype(csite)
@@ -2487,6 +2504,7 @@ contains
     allocate(cpatch%first_census(ncohorts))
     allocate(cpatch%new_recruit_flag(ncohorts))
     allocate(cpatch%light_level(ncohorts))
+    allocate(cpatch%lambda_light(ncohorts))
     allocate(cpatch%par_v(ncohorts))
     allocate(cpatch%par_v_beam(ncohorts))
     allocate(cpatch%par_v_diffuse(ncohorts))
@@ -2519,6 +2537,7 @@ contains
 
     if (idoutput > 0 .or. imoutput > 0) then
        allocate(cpatch%dmean_light_level(ncohorts))
+       allocate(cpatch%dmean_lambda_light(ncohorts))
        allocate(cpatch%dmean_fs_open(ncohorts))
        allocate(cpatch%dmean_fsw(ncohorts))
        allocate(cpatch%dmean_fsn(ncohorts))
@@ -2526,6 +2545,7 @@ contains
     
     if (imoutput > 0) then
        allocate(cpatch%mmean_light_level(ncohorts))
+       allocate(cpatch%mmean_lambda_light(ncohorts))
        allocate(cpatch%mmean_fs_open(ncohorts))
        allocate(cpatch%mmean_fsw(ncohorts))
        allocate(cpatch%mmean_fsn(ncohorts))
@@ -3025,6 +3045,9 @@ contains
     nullify(csite%can_prss)
     nullify(csite%can_theta)
     nullify(csite%can_depth)
+    nullify(csite%lambda_light)
+    nullify(csite%dmean_lambda_light)
+    nullify(csite%mmean_lambda_light)
     nullify(csite%lai)
     nullify(csite%wpa)
     nullify(csite%wai)
@@ -3252,6 +3275,9 @@ contains
     nullify(cpatch%light_level)
     nullify(cpatch%dmean_light_level)
     nullify(cpatch%mmean_light_level)
+    nullify(cpatch%lambda_light)
+    nullify(cpatch%dmean_lambda_light)
+    nullify(cpatch%mmean_lambda_light)
     nullify(cpatch%par_v)
     nullify(cpatch%par_v_beam)
     nullify(cpatch%par_v_diffuse)
@@ -3789,6 +3815,9 @@ contains
     if(associated(csite%can_prss                     )) deallocate(csite%can_prss                     )
     if(associated(csite%can_theta                    )) deallocate(csite%can_theta                    )
     if(associated(csite%can_depth                    )) deallocate(csite%can_depth                    )
+    if(associated(csite%lambda_light                 )) deallocate(csite%lambda_light                 )
+    if(associated(csite%dmean_lambda_light           )) deallocate(csite%dmean_lambda_light           )
+    if(associated(csite%mmean_lambda_light           )) deallocate(csite%mmean_lambda_light           )
     if(associated(csite%lai                          )) deallocate(csite%lai                          )
     if(associated(csite%wpa                          )) deallocate(csite%wpa                          )
     if(associated(csite%wai                          )) deallocate(csite%wai                          )
@@ -4020,6 +4049,9 @@ contains
     if(associated(cpatch%light_level))          deallocate(cpatch%light_level)
     if(associated(cpatch%dmean_light_level))    deallocate(cpatch%dmean_light_level)
     if(associated(cpatch%mmean_light_level))    deallocate(cpatch%mmean_light_level)
+    if(associated(cpatch%lambda_light))         deallocate(cpatch%lambda_light)
+    if(associated(cpatch%dmean_lambda_light))   deallocate(cpatch%dmean_lambda_light)
+    if(associated(cpatch%mmean_lambda_light))   deallocate(cpatch%mmean_lambda_light)
     if(associated(cpatch%par_v))                deallocate(cpatch%par_v)
     if(associated(cpatch%par_v_beam))           deallocate(cpatch%par_v_beam)
     if(associated(cpatch%par_v_diffuse))        deallocate(cpatch%par_v_diffuse)
@@ -4614,6 +4646,9 @@ contains
     if(associated(csite%can_prss                     )) csite%can_prss                     = large_real
     if(associated(csite%can_theta                    )) csite%can_theta                    = large_real
     if(associated(csite%can_depth                    )) csite%can_depth                    = large_real
+    if(associated(csite%lambda_light                 )) csite%lambda_light                 = large_real
+    if(associated(csite%dmean_lambda_light           )) csite%dmean_lambda_light           = large_real
+    if(associated(csite%mmean_lambda_light           )) csite%mmean_lambda_light           = large_real
     if(associated(csite%lai                          )) csite%lai                          = large_real
     if(associated(csite%wpa                          )) csite%wpa                          = large_real
     if(associated(csite%wai                          )) csite%wai                          = large_real
@@ -4872,6 +4907,9 @@ contains
     if(associated(cpatch%light_level))          cpatch%light_level         = large_real
     if(associated(cpatch%dmean_light_level))    cpatch%dmean_light_level   = large_real
     if(associated(cpatch%mmean_light_level))    cpatch%mmean_light_level   = large_real
+    if(associated(cpatch%lambda_light))          cpatch%lambda_light         = large_real
+    if(associated(cpatch%dmean_lambda_light))    cpatch%dmean_lambda_light   = large_real
+    if(associated(cpatch%mmean_lambda_light))    cpatch%mmean_lambda_light   = large_real
     if(associated(cpatch%par_v))                cpatch%par_v               = large_real
     if(associated(cpatch%par_v_beam))           cpatch%par_v_beam          = large_real
     if(associated(cpatch%par_v_diffuse))        cpatch%par_v_diffuse       = large_real
@@ -5078,6 +5116,23 @@ contains
     siteout%can_prss(ipout)           = sitein%can_prss(ipin)
     siteout%can_theta(ipout)          = sitein%can_theta(ipin)
     siteout%can_depth(ipout)          = sitein%can_depth(ipin)
+    siteout%lambda_light(ipout)        = sitein%lambda_light(ipin)
+       
+    if (idoutput > 0) then
+       siteout%dmean_rh             (ipout) = sitein%dmean_rh             (ipin)
+       siteout%dmean_co2_residual   (ipout) = sitein%dmean_co2_residual   (ipin)
+       siteout%dmean_energy_residual(ipout) = sitein%dmean_energy_residual(ipin)
+       siteout%dmean_water_residual (ipout) = sitein%dmean_water_residual (ipin)
+       siteout%dmean_lambda_light   (ipout) = sitein%dmean_lambda_light   (ipin)
+    end if
+    
+    if (idoutput > 0 .or. imoutput > 0) then
+       siteout%mmean_rh             (ipout) = sitein%mmean_rh             (ipin)
+       siteout%mmean_co2_residual   (ipout) = sitein%mmean_co2_residual   (ipin)
+       siteout%mmean_energy_residual(ipout) = sitein%mmean_energy_residual(ipin)
+       siteout%mmean_water_residual (ipout) = sitein%mmean_water_residual (ipin)
+       siteout%mmean_lambda_light   (ipout) = sitein%mmean_lambda_light   (ipin)
+    end if
   
     return
   end subroutine copy_sitetype
@@ -5149,13 +5204,12 @@ contains
     siteout%can_prss(1:inc)             = pack(sitein%can_prss,logmask)
     siteout%can_theta(1:inc)            = pack(sitein%can_theta,logmask)
     siteout%can_depth(1:inc)            = pack(sitein%can_depth,logmask)
+    siteout%lambda_light(1:inc)          = pack(sitein%lambda_light,logmask)
     siteout%lai(1:inc)                  = pack(sitein%lai,logmask)
     siteout%wpa(1:inc)                  = pack(sitein%wpa,logmask)
     siteout%wai(1:inc)                  = pack(sitein%wai,logmask)
     siteout%avg_daily_temp(1:inc)       = pack(sitein%avg_daily_temp,logmask)
     siteout%mean_rh(1:inc)              = pack(sitein%mean_rh,logmask)
-    siteout%dmean_rh(1:inc)             = pack(sitein%dmean_rh,logmask)
-    siteout%mmean_rh(1:inc)             = pack(sitein%mmean_rh,logmask)
     siteout%mean_nep(1:inc)             = pack(sitein%mean_nep,logmask)
     siteout%wbudget_loss2atm(1:inc)     = pack(sitein%wbudget_loss2atm,logmask)
     siteout%wbudget_precipgain(1:inc)        = pack(sitein%wbudget_precipgain,logmask)
@@ -5343,7 +5397,22 @@ contains
        
     enddo
        
+    if (idoutput > 0) then
+       siteout%dmean_rh             (1:inc) = pack(sitein%dmean_rh             ,logmask)
+       siteout%dmean_co2_residual   (1:inc) = pack(sitein%dmean_co2_residual   ,logmask)
+       siteout%dmean_energy_residual(1:inc) = pack(sitein%dmean_energy_residual,logmask)
+       siteout%dmean_water_residual (1:inc) = pack(sitein%dmean_water_residual ,logmask)
+       siteout%dmean_lambda_light   (1:inc) = pack(sitein%dmean_lambda_light   ,logmask)
+    end if
     
+    if (idoutput > 0 .or. imoutput > 0) then
+       siteout%mmean_rh             (1:inc) = pack(sitein%mmean_rh             ,logmask)
+       siteout%mmean_co2_residual   (1:inc) = pack(sitein%mmean_co2_residual   ,logmask)
+       siteout%mmean_energy_residual(1:inc) = pack(sitein%mmean_energy_residual,logmask)
+       siteout%mmean_water_residual (1:inc) = pack(sitein%mmean_water_residual ,logmask)
+       siteout%mmean_lambda_light   (1:inc) = pack(sitein%mmean_lambda_light   ,logmask)
+    end if
+
     return
   end subroutine copy_sitetype_mask
 !============================================================================!
@@ -5439,6 +5508,9 @@ contains
     patchout%light_level(1:inc)      = pack(patchin%light_level,mask)
     patchout%dmean_light_level(1:inc)= pack(patchin%dmean_light_level,mask)
     patchout%mmean_light_level(1:inc)= pack(patchin%mmean_light_level,mask)
+    patchout%lambda_light(1:inc)      = pack(patchin%lambda_light,mask)
+    patchout%dmean_lambda_light(1:inc)= pack(patchin%dmean_lambda_light,mask)
+    patchout%mmean_lambda_light(1:inc)= pack(patchin%mmean_lambda_light,mask)
     patchout%par_v(1:inc)            = pack(patchin%par_v,mask)
     patchout%par_v_beam(1:inc)       = pack(patchin%par_v_beam,mask)
     patchout%par_v_diffuse(1:inc)    = pack(patchin%par_v_diffuse,mask)
@@ -5604,6 +5676,9 @@ contains
        patchout%light_level(iout)      = patchin%light_level(iin)
        patchout%dmean_light_level(iout)= patchin%dmean_light_level(iin)
        patchout%mmean_light_level(iout)= patchin%mmean_light_level(iin)
+       patchout%lambda_light(iout)      = patchin%lambda_light(iin)
+       patchout%dmean_lambda_light(iout)= patchin%dmean_lambda_light(iin)
+       patchout%mmean_lambda_light(iout)= patchin%mmean_lambda_light(iin)
        patchout%par_v(iout)            = patchin%par_v(iin)
        patchout%par_v_beam(iout)       = patchin%par_v_beam(iin)
        patchout%par_v_diffuse(iout)    = patchin%par_v_diffuse(iin)
@@ -8634,6 +8709,27 @@ contains
          var_len,var_len_global,max_ptrs,'CAN_DEPTH :31:hist') 
        call metadata_edio(nvar,igr,'Canopy depth','[m]','NA') 
     endif
+   
+    if (associated(csite%lambda_light)) then
+       nvar=nvar+1
+         call vtable_edio_r(csite%lambda_light(1),nvar,igr,init,csite%paglob_id, &
+         var_len,var_len_global,max_ptrs,'LAMBDA_LIGHT :31:hist') 
+       call metadata_edio(nvar,igr,'Light extinction','[m2/,2]','NA') 
+    endif
+   
+    if (associated(csite%dmean_lambda_light)) then
+       nvar=nvar+1
+         call vtable_edio_r(csite%dmean_lambda_light(1),nvar,igr,init,csite%paglob_id, &
+         var_len,var_len_global,max_ptrs,'DMEAN_LAMBDA_LIGHT :31:hist:dail') 
+       call metadata_edio(nvar,igr,'Light extinction','[m2/,2]','NA') 
+    endif
+   
+    if (associated(csite%mmean_lambda_light)) then
+       nvar=nvar+1
+         call vtable_edio_r(csite%mmean_lambda_light(1),nvar,igr,init,csite%paglob_id, &
+         var_len,var_len_global,max_ptrs,'MMEAN_LAMBDA_LIGHT :31:hist:mont') 
+       call metadata_edio(nvar,igr,'Light extinction','[m2/,2]','NA') 
+    endif
 
     if (associated(csite%lai)) then
        nvar=nvar+1
@@ -8988,7 +9084,7 @@ contains
     if (associated(csite%repro)) then
        nvar=nvar+1
          call vtable_edio_r(csite%repro(1,1),nvar,igr,init,csite%paglob_id, &
-         var_len,var_len_global,max_ptrs,'REPRO_PA :34:hist') 
+         var_len,var_len_global,max_ptrs,'REPRO_PA :34:hist:mont') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
@@ -9565,14 +9661,14 @@ contains
     if (associated(cpatch%cb_max)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%cb_max(1,1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'CB_MAX :49:hist:year') 
+         var_len,var_len_global,max_ptrs,'CB_MAX :49:hist:mont:year') 
        call metadata_edio(nvar,igr,'TOC carbon balance previous 12 months+current','[kgC/plant]','13 - icohort') 
     endif
 
     if (associated(cpatch%cbr_bar)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%cbr_bar(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'CBR_BAR :41:hist:year') 
+         var_len,var_len_global,max_ptrs,'CBR_BAR :41:hist:mont:year') 
        call metadata_edio(nvar,igr,'Annual average ratio of cb/cb_max','[NA]','NA') 
     endif
 
@@ -9805,6 +9901,27 @@ contains
          call vtable_edio_r(cpatch%mmean_light_level(1),nvar,igr,init,cpatch%coglob_id, &
          var_len,var_len_global,max_ptrs,'MMEAN_LIGHT_LEVEL :41:hist:mont') 
        call metadata_edio(nvar,igr,'Monthly mean of Relative light level ','[NA]','icohort') 
+    endif
+
+    if (associated(cpatch%lambda_light)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%lambda_light(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'LAMBDA_LIGHT_CO :41:hist') 
+       call metadata_edio(nvar,igr,'Light extinction','[m2/m2]','icohort') 
+    endif
+
+    if (associated(cpatch%dmean_lambda_light)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%dmean_lambda_light(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'DMEAN_LAMBDA_LIGHT_CO :41:hist:dail') 
+       call metadata_edio(nvar,igr,'Diurnal mean of light extinction ','[m2/m2]','icohort') 
+    endif
+
+    if (associated(cpatch%mmean_lambda_light)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%mmean_lambda_light(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'MMEAN_LAMBDA_LIGHT_CO :41:hist:mont') 
+       call metadata_edio(nvar,igr,'Monthly mean of light extinction ','[m2/m2]','icohort') 
     endif
 
     if (associated(cpatch%par_v)) then

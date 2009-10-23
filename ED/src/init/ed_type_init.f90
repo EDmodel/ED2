@@ -3,9 +3,10 @@
 
 subroutine init_ed_cohort_vars(cpatch,ico, lsl)
   
-  use ed_state_vars,only : patchtype
-  use allometry, only: calc_root_depth, assign_root_depth
-  use pft_coms, only : leaf_turnover_rate, Vm0, sla
+  use ed_state_vars, only : patchtype
+  use allometry    , only : calc_root_depth, assign_root_depth
+  use pft_coms     , only : leaf_turnover_rate, Vm0, sla
+  use ed_misc_coms , only : imoutput, idoutput
 
   implicit none
 
@@ -26,25 +27,10 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
   cpatch%dmean_gpp_pot(ico)   = 0.0
   cpatch%dmean_gpp_max(ico)   = 0.0
 
-  cpatch%mmean_gpp(ico)          = 0.0
-  cpatch%mmean_leaf_resp(ico)    = 0.0
-  cpatch%mmean_root_resp(ico)    = 0.0
-  cpatch%mmean_growth_resp(ico)  = 0.0
-  cpatch%mmean_storage_resp(ico) = 0.0
-  cpatch%mmean_vleaf_resp(ico)   = 0.0
   
-  cpatch%dmean_light_level(ico) = 0.0
-  cpatch%mmean_light_level(ico) = 0.0
   
-  cpatch%dmean_fs_open(ico)     = 0.0
-  cpatch%dmean_fsw(ico)         = 0.0
-  cpatch%dmean_fsn(ico)         = 0.0
-  
-  cpatch%mmean_fs_open(ico)     = 0.0
-  cpatch%mmean_fsw(ico)         = 0.0
-  cpatch%mmean_fsn(ico)         = 0.0
-
-
+  cpatch%light_level(ico)       = 0.0
+  cpatch%lambda_light(ico)      = 0.0
   cpatch%gpp(ico) = 0.0
   cpatch%leaf_respiration(ico) = 0.0
   cpatch%root_respiration(ico) = 0.0
@@ -132,6 +118,28 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
   cpatch%veg_fliq(ico)   = 0.
 
   cpatch%turnover_amp(ico) = 1.0
+
+  if (imoutput > 0) then
+     cpatch%mmean_gpp(ico)          = 0.0
+     cpatch%mmean_leaf_resp(ico)    = 0.0
+     cpatch%mmean_root_resp(ico)    = 0.0
+     cpatch%mmean_growth_resp(ico)  = 0.0
+     cpatch%mmean_storage_resp(ico) = 0.0
+     cpatch%mmean_vleaf_resp(ico)   = 0.0
+     cpatch%mmean_light_level(ico)  = 0.0
+     cpatch%mmean_fs_open(ico)      = 0.0
+     cpatch%mmean_fsw(ico)          = 0.0
+     cpatch%mmean_fsn(ico)          = 0.0
+     cpatch%mmean_lambda_light(ico) = 0.0
+  end if
+  if (idoutput > 0 .or. imoutput > 0) then
+     cpatch%dmean_light_level(ico)  = 0.0
+     cpatch%dmean_fsw(ico)          = 0.0
+     cpatch%dmean_fsn(ico)          = 0.0
+     cpatch%dmean_lambda_light(ico) = 0.0
+     cpatch%dmean_fs_open(ico)      = 0.0
+  end if
+
   
   if (leaf_turnover_rate(cpatch%pft(ico)) > 0.0) then
      cpatch%llspan(ico) = 12.0/leaf_turnover_rate(cpatch%pft(ico)) !in month
@@ -154,6 +162,7 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
   use grid_coms,     only: nzs, nzg
   use soil_coms, only: slz
   use canopy_air_coms, only : veg_height_min, minimum_canopy_depth
+  use ed_misc_coms, only : imoutput, idoutput
 
   implicit none
 
@@ -199,9 +208,6 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
   csite%mean_latflux(ip1:ip2) = 0.0
   csite%mean_qrunoff(ip1:ip2) = 0.0
   csite%mean_hflux(ip1:ip2) = 0.0
-
-  csite%dmean_rh(ip1:ip2) = 0.0
-  csite%mmean_rh(ip1:ip2) = 0.0
   
   csite%dmean_A_decomp(ip1:ip2) = 0.0
   csite%dmean_Af_decomp(ip1:ip2) = 0.0
@@ -233,12 +239,24 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
   csite%ebudget_latent(ip1:ip2)           = 0.0
   csite%ebudget_initialstorage(ip1:ip2)   = 0.0
   csite%ebudget_residual(ip1:ip2)         = 0.0
-  csite%dmean_co2_residual(ip1:ip2)       = 0.0
-  csite%dmean_energy_residual(ip1:ip2)    = 0.0
-  csite%dmean_water_residual(ip1:ip2)     = 0.0
-  csite%mmean_co2_residual   (ip1:ip2)     = 0.0
-  csite%mmean_energy_residual(ip1:ip2)     = 0.0
-  csite%mmean_water_residual (ip1:ip2)     = 0.0
+
+
+
+  if (idoutput > 0 .or. imoutput > 0) then
+     csite%dmean_rh(ip1:ip2) = 0.0
+     csite%dmean_co2_residual(ip1:ip2)       = 0.0
+     csite%dmean_energy_residual(ip1:ip2)    = 0.0
+     csite%dmean_water_residual(ip1:ip2)     = 0.0
+     csite%dmean_lambda_light(ip1:ip2)       = 0.0
+  end if
+
+  if (imoutput > 0) then
+     csite%mmean_rh(ip1:ip2) = 0.0
+     csite%mmean_co2_residual   (ip1:ip2)     = 0.0
+     csite%mmean_energy_residual(ip1:ip2)     = 0.0
+     csite%mmean_water_residual (ip1:ip2)     = 0.0
+     csite%mmean_lambda_light   (ip1:ip2)     = 0.0
+  end if
 
   !----------------------------------------------------------------------------------------!
   !    These variables need to be initialized here otherwise it will fail when new patches !
@@ -285,6 +303,7 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
   csite%albedo_diffuse(ip1:ip2) = 0.0
   csite%rlongup(ip1:ip2) = 0.0
   csite%rlong_albedo(ip1:ip2) = 0.0
+  csite%lambda_light(ip1:ip2) = 0.0
 
   csite%fsc_in(ip1:ip2)                      = 0.0
   csite%ssc_in(ip1:ip2)                      = 0.0
@@ -328,6 +347,7 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
   
   csite%old_stoma_vector_max(:,:,ip1:ip2) = 0.
   csite%old_stoma_vector_max(1,:,ip1:ip2) = real(csite%old_stoma_data_max(:,ip1:ip2)%recalc)
+
 
   ncohorts = 0
   do ipa=1,csite%npatches

@@ -812,6 +812,7 @@ module fuse_fiss_utils
       cpatch%rlong_v(idt)             = cpatch%rlong_v(isc)
       cpatch%rlong_v_surf(idt)        = cpatch%rlong_v_surf(isc)
       cpatch%rlong_v_incid(idt)       = cpatch%rlong_v_incid(isc)
+      cpatch%light_level(idt)         = cpatch%light_level(isc)
       cpatch%rb(idt)                  = cpatch%rb(isc)
       cpatch%A_open(idt)              = cpatch%A_open(isc)
       cpatch%A_closed(idt)            = cpatch%A_closed(isc)
