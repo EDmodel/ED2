@@ -6569,7 +6569,7 @@ contains
     if (associated(cgrid%avg_snowdepth)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_snowdepth(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_SNOWDEPTH :11:hist:anal') 
+            var_len,var_len_global,max_ptrs,'AVG_SNOWDEPTH :11:hist:anal:opti') 
        call metadata_edio(nvar,igr,'Poly Avg. Snow Depth ','[m]','ipoly') 
     endif
     if (associated(cgrid%avg_snowenergy)) then
@@ -6587,7 +6587,7 @@ contains
     if (associated(cgrid%avg_snowtempk)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_snowtempk(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_SNOWTEMP :11:hist:anal') 
+            var_len,var_len_global,max_ptrs,'AVG_SNOWTEMP :11:hist:anal:opti') 
        call metadata_edio(nvar,igr,'Poly Avg. Snow Temperature','[K]','ipoly') 
     endif
     if (associated(cgrid%avg_snowfracliq)) then
@@ -8587,8 +8587,8 @@ contains
     if (associated(csite%sfcwater_depth)) then
        nvar=nvar+1
          call vtable_edio_r(csite%sfcwater_depth(1,1),nvar,igr,init,csite%paglob_id, &
-         var_len,var_len_global,max_ptrs,'SFCWATER_DEPTH :33:hist') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+         var_len,var_len_global,max_ptrs,'SFCWATER_DEPTH :33:hist:opti') 
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','m') 
     endif
 
     if (associated(csite%rshort_s)) then

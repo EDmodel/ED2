@@ -534,16 +534,17 @@ subroutine spatial_averages
 
                !---------------------------------------------------------------------------!
                !    Updating some other flux variables that need to be scaled by frqsum.   !
+               !    THESE ARE ALREADY SCALED BY frqsum in normalize_averaged_vars  [[MCD]] !
                !---------------------------------------------------------------------------!
                cgrid%avg_plant_resp(ipy)  = cgrid%avg_plant_resp(ipy)                      &
                                           + csite%co2budget_plresp(ipa)                    &
                                           * csite%area(ipa)*cpoly%area(isi)                &
-                                          * site_area_i * poly_area_i * frqsumi
+                                          * site_area_i * poly_area_i! * frqsumi
 
                cgrid%avg_htroph_resp(ipy) = cgrid%avg_htroph_resp(ipy)                     &
                                           + csite%co2budget_rh(ipa)                        &
                                           * csite%area(ipa)*cpoly%area(isi)                &
-                                          * site_area_i * poly_area_i * frqsumi
+                                          * site_area_i * poly_area_i! * frqsumi
 
                !----- Not sure what these variables do. -----------------------------------!
                lai_index = min(3,max(1, floor(csite%lai(ipa)/2.0) + 1)  )
