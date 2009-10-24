@@ -19,6 +19,9 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
   cpatch%mean_gpp(ico) = 0.0
   cpatch%mean_leaf_resp(ico) = 0.0
   cpatch%mean_root_resp(ico) = 0.0
+  cpatch%mean_growth_resp(ico) = 0.0
+  cpatch%mean_storage_resp(ico) = 0.0
+  cpatch%mean_vleaf_resp(ico) = 0.0
   
   cpatch%dmean_leaf_resp(ico) = 0.0
   cpatch%dmean_root_resp(ico) = 0.0
@@ -60,9 +63,9 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
       
       
   cpatch%stomatal_resistance(ico) = 0.0
-  cpatch%maintenance_costs(ico)   = 0.0
+  cpatch%leaf_maintenance_costs(ico)   = 0.0
+  cpatch%root_maintenance_costs(ico)   = 0.0
   cpatch%paw_avg(ico)             = 0.5 !0.0 - [KIM] starting from the mid point.  if starting from the driest point, plants'll drop leaves initially due to the water stress
-
 
   cpatch%Psi_open(ico) = 0.0
 

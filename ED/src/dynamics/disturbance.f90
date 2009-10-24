@@ -738,11 +738,13 @@ end subroutine apply_disturbances
     real, intent(in) :: area_fac
     integer,intent(in) :: nat_dist_type
     real :: fast_litter
-    real :: struct_litter
+    real :: struct_litter, struct_lignin
     real :: fast_litter_n
+    real :: struct_cohort
 
     fast_litter = 0.0
     struct_litter = 0.0
+    struct_lignin = 0.0
     fast_litter_n = 0.0
 
     cpatch => csite%patch(cp)
@@ -761,10 +763,13 @@ end subroutine apply_disturbances
             / c2n_leaf(cpatch%pft(ico)) + cpatch%bstorage(ico) /  &
             c2n_storage ) * cpatch%nplant(ico)
 
-       struct_litter = struct_litter + cpatch%nplant(ico) *   &
+       struct_cohort = cpatch%nplant(ico) *   &
             (1.0 - survivorship(q,nat_dist_type, csite, cp, ico)) * ( (1.0 -   &
             loss_fraction ) * cpatch%bdead(ico) +   & ! DOUBLE CHECK THIS, IS THIS RIGHT??
             (1.0 - f_labile(cpatch%pft(ico))) * cpatch%balive(ico))
+
+       struct_litter = struct_litter + struct_cohort
+       struct_lignin = struct_lignin + struct_cohort * l2n_stem / c2n_stem(cpatch%pft(ico))
        
     enddo
 
@@ -773,8 +778,8 @@ end subroutine apply_disturbances
 
     csite%structural_soil_C(np) = csite%structural_soil_C(np) + struct_litter * area_fac
 
-    csite%structural_soil_L(np) = csite%structural_soil_L(np) + l2n_stem / c2n_stem *   &
-         struct_litter * area_fac
+    csite%structural_soil_L(np) = csite%structural_soil_L(np) +  &
+         struct_lignin * area_fac
 
     csite%fast_soil_N(np) = csite%fast_soil_N(np) + fast_litter_n * area_fac
 

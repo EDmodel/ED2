@@ -970,6 +970,7 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxg
             !    Probably evapotranspiration, as long as the canopy air is not saturated.  !
             ! In the future, a fog model may be included and this could be relaxed.        !
             !------------------------------------------------------------------------------!
+
             if (initp%can_shv < can_ssh) then
                !---------------------------------------------------------------------------!
                !     Evaporation, energy is scaled by liquid/ice partition (no phase       !
@@ -998,6 +999,7 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxg
               cpatch%Psi_open(ico)   = 0.0
               cpatch%Psi_closed(ico) = 0.0
            end if
+
          else
             !------------------------------------------------------------------------------!
             !     Dew/frost formation. The deposition will conserve the liquid/ice         !
@@ -1033,6 +1035,8 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxg
          ! leaf water may evaporate in every condition.                                    !
          !---------------------------------------------------------------------------------!
          if (initp%veg_water(ico) >= max_leaf_water) then
+!!         if (cpatch%veg_water(ico) >= max_leaf_water) then
+
             !------------------------------------------------------------------------------!
             ! Case 1: Leaf has no space for rain. All rain/snow falls with the same        !
             !         density it fell. Dew and frost and old precipitation that were       !

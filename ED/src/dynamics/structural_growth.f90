@@ -123,7 +123,7 @@ subroutine structural_growth(cgrid, month)
                ! necessarily equal c2n_storage.                                            !
                !---------------------------------------------------------------------------!
                net_stem_N_uptake = (cpatch%bdead(ico) - bdead_in) * cpatch%nplant(ico)     &
-                                 * ( 1.0 / c2n_stem - 1.0 / c2n_storage)
+                                 * ( 1.0 / c2n_stem(cpatch%pft(ico)) - 1.0 / c2n_storage)
                
                !---------------------------------------------------------------------------!
                !      Calculate total seed production and seed litter.  The seed pool gets !
@@ -155,7 +155,7 @@ subroutine structural_growth(cgrid, month)
                                  + (1.0 - f_labile(ipft)) * balive_mort_litter
                csite%ssl_in(ipa) = csite%ssl_in(ipa)                                       &
                                  + ( (1.0 - f_labile(ipft)) * balive_mort_litter           &
-                                    + struct_litter ) * l2n_stem / c2n_stem
+                                    + struct_litter ) * l2n_stem / c2n_stem(cpatch%pft(ico))
                csite%total_plant_nitrogen_uptake(ipa) =                                    &
                       csite%total_plant_nitrogen_uptake(ipa) + net_seed_N_uptake           &
                     + net_stem_N_uptake
@@ -604,7 +604,7 @@ subroutine compute_C_and_N_storage(cgrid,ipy, soil_C, soil_N, veg_C, veg_N)
             
             veg_N8 = veg_N8 + area_factor                                                  &
                             * ( dble(cpatch%balive(ico)) / dble(c2n_leaf(cpatch%pft(ico))) &
-                              + dble(cpatch%bdead(ico)) / dble(c2n_stem)                   &
+                              + dble(cpatch%bdead(ico)) / dble(c2n_stem(cpatch%pft(ico)))                   &
                               + dble(cpatch%bstorage(ico)) / dble(c2n_storage))            &
                             * dble(cpatch%nplant(ico))
          end do cohortloop

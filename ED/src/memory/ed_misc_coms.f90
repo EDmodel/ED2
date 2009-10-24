@@ -35,6 +35,7 @@ Module ed_misc_coms
   integer :: idoutput
   integer :: imoutput
   integer :: iyoutput
+  integer :: itoutput
   integer :: isoutput
   integer :: iclobber
 
@@ -89,6 +90,11 @@ Module ed_misc_coms
 
   integer :: use_target_year        !! flag specifying whether to search for a target year in pss/css
 
+  ! flags to turn on/off intersite variability in edaphic variables
+  ! easier than redefining site files
+  integer :: vary_elev 
+  integer :: vary_rad
+  integer :: vary_hyd  
 
   ! Logical Switches for various memory structures
 

@@ -98,7 +98,7 @@ landuse_init.o: ed_misc_coms.mod ed_state_vars.mod grid_coms.mod
 phenology_init.o: ed_max_dims.mod ed_misc_coms.mod ed_state_vars.mod
 phenology_init.o: grid_coms.mod phenology_coms.mod
 average_utils.o: allometry.mod consts_coms.mod ed_max_dims.mod ed_misc_coms.mod
-average_utils.o: ed_state_vars.mod grid_coms.mod therm_lib.mod
+average_utils.o: ed_state_vars.mod grid_coms.mod pft_coms.mod therm_lib.mod
 ed_history_io.o: allometry.mod c34constants.mod consts_coms.mod ed_max_dims.mod
 ed_history_io.o: ed_misc_coms.mod ed_node_coms.mod ed_state_vars.mod
 ed_history_io.o: ed_therm_lib.mod fuse_fiss_utils.mod fusion_fission_coms.mod
@@ -121,7 +121,7 @@ ed_xml_config.o: hydrology_coms.mod met_driver_coms.mod pft_coms.mod
 ed_xml_config.o: phenology_coms.mod physiology_coms.mod soil_coms.mod
 edio.o: c34constants.mod consts_coms.mod ed_max_dims.mod ed_misc_coms.mod
 edio.o: ed_node_coms.mod ed_state_vars.mod ed_var_tables.mod grid_coms.mod
-edio.o: soil_coms.mod therm_lib.mod
+edio.o: pft_coms.mod soil_coms.mod therm_lib.mod
 h5_output.o: an_header.mod c34constants.mod ed_max_dims.mod ed_misc_coms.mod
 h5_output.o: ed_node_coms.mod ed_state_vars.mod ed_var_tables.mod
 h5_output.o: fusion_fission_coms.mod grid_coms.mod  hdf5_coms.mod
@@ -144,6 +144,7 @@ grid_coms.o: ed_max_dims.mod
 hdf5_coms.o: 
 mem_sites.o: ed_max_dims.mod
 met_driver_coms.o: ed_max_dims.mod
+misc_coms.o: max_dims.mod
 optimiz_coms.o: ed_max_dims.mod
 pft_coms.o: ed_max_dims.mod
 physiology_coms.o: ed_max_dims.mod
@@ -188,7 +189,7 @@ update_derived_props.o: allometry.mod canopy_air_coms.mod consts_coms.mod
 update_derived_props.o: ed_misc_coms.mod ed_state_vars.mod ed_therm_lib.mod
 update_derived_props.o: fuse_fiss_utils.mod fusion_fission_coms.mod
 update_derived_props.o: grid_coms.mod soil_coms.mod therm_lib.mod
-utils_c.o: /n/Moorcroft_Lab/Users/mlongo/EDBRAMS/ED/src/include/utils_sub_names.h
+utils_c.o: /home/mdietze/r31/EDBRAMS/ED/src/include/utils_sub_names.h
 utils_c.o:
 allometry.mod: allometry.o
 an_header.mod: an_header.o
@@ -224,6 +225,7 @@ libxml2f90_strings_module.mod: libxml2f90.f90_pp.o
 ll_module.mod: libxml2f90.f90_pp.o
 mem_sites.mod: mem_sites.o
 met_driver_coms.mod: met_driver_coms.o
+misc_coms.mod: misc_coms.o
 optimiz_coms.mod: optimiz_coms.o
 pft_coms.mod: pft_coms.o
 phenology_coms.mod: phenology_coms.o

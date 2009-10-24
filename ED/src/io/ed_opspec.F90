@@ -341,7 +341,7 @@ subroutine ed_opspec_times
 !------------------------------------------------------------------------------------------!
    use ed_misc_coms , only : frqfast,frqstate,imontha,idatea,iyeara,itimea  &
                          ,imonthz,idatez,iyearz,itimez,dtlsm,radfrq      &
-                         ,ifoutput,isoutput,idoutput,imoutput,iyoutput,  &
+                         ,ifoutput,isoutput,idoutput,imoutput,iyoutput,itoutput,  &
                          nrec_fast,nrec_state,outfast,outstate,unitfast,unitstate
    use consts_coms, only : day_sec,hr_sec
    use grid_coms , only : timmax
@@ -950,6 +950,7 @@ subroutine ed_opspec_misc
                                     , idoutput                     & ! intent(in)
                                     , imoutput                     & ! intent(in)
                                     , iyoutput                     & ! intent(in)
+                                    , itoutput                     & ! intent(in)
                                     , isoutput                     & ! intent(in)
                                     , iclobber                     & ! intent(in)
                                     , runtype                      & ! intent(in)
@@ -1021,7 +1022,13 @@ subroutine ed_opspec_misc
    if (iyoutput /= 0 .and. iyoutput /= 3) then
       write (reason,fmt='(a,1x,i4,a)') &
         'Invalid IYOUTPUT, it must be 0 (none) or 3 (HDF5). Yours is set to',iyoutput,'...'
-      call opspec_fatal(reason,'opspec_misc')
+      call opspec_fatal(reason,'opspec_misc')  
+      ifaterr = ifaterr +1
+   end if
+   if (itoutput /= 0 .and. itoutput /= 3) then
+      write (reason,fmt='(a,1x,i4,a)') &
+        'Invalid ITOUTPUT, it must be 0 (none) or 3 (HDF5). Yours is set to',itoutput,'...'
+      call opspec_fatal(reason,'opspec_misc')  
       ifaterr = ifaterr +1
    end if
    if (isoutput /= 0 .and. isoutput /= 3) then

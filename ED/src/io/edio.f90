@@ -15,6 +15,7 @@ subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,annua
        iyoutput,    &
        isoutput,    &
        ifoutput,    &
+       itoutput,    &
        iprintpolys, &
        frqsum
 
@@ -67,6 +68,10 @@ subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,annua
      if (ifoutput.eq.3) then
         call h5_output('INST')
      endif
+     if (itoutput.eq.3) then
+        call h5_output('OPTI')
+     endif
+
      
      ! If printpolys is on then print this info to
      ! the screen
@@ -81,6 +86,8 @@ subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,annua
 
   ! Daily analysis output and monthly integration
   if (new_day .and. (writing_dail .or. writing_mont)) then
+
+     call avg_ed_daily_output_pool
 
      do ifm=1,ngrids
         call normalize_ed_daily_output_vars(edgrid_g(ifm))
@@ -137,8 +144,75 @@ end subroutine ed_output
 
 
 
+subroutine avg_ed_daily_output_pool
+!--------------------------------------------------------------------------
+! This subroutine calculates the polygon average of the carbon and nitrogen
+! POOLS for outputting at a DAILY timestep
+!--------------------------------------------------------------------------
+  use ed_state_vars,only:edtype,polygontype,sitetype,patchtype,edgrid_g
+  use grid_coms, only : ngrids,nzg,nzs
+  use pft_coms, only: q,qsw,c2n_leaf,c2n_stem,c2n_storage
 
+  implicit none
+  
+  type(edtype),pointer :: cgrid
+  type(polygontype),pointer :: cpoly
+  type(sitetype),pointer :: csite
+  type(patchtype),pointer :: cpatch
+  integer :: igr,ipy,isi,ipa
+  real :: area_si,area_pa
 
+  do igr=1,ngrids
+     cgrid => edgrid_g(igr)
+     
+     do ipy=1,cgrid%npolygons
+        cpoly => cgrid%polygon(ipy)
+        
+        !! Zero variables        
+        cgrid%Cleaf (ipy)  = 0.0
+        cgrid%Croot (ipy)  = 0.0
+        cgrid%Cstore(ipy)  = 0.0
+        cgrid%Ccwd  (ipy)  = -9999.  !! haven't figured out simple way to get this yet
+        cgrid%Nleaf (ipy)  = 0.0
+        cgrid%Ndead (ipy)  = 0.0
+        cgrid%Nroot (ipy)  = 0.0
+        cgrid%Nstore(ipy)  = 0.0
+        cgrid%Ncwd  (ipy)  = -9999.  !! haven't figured out simple way to get this yet
+                                     !! b.c. CWD is an implict part of stsc
+     
+        
+        do isi=1,cpoly%nsites
+           csite => cpoly%site(isi)
+           area_si = cpoly%area(isi)
+           if (csite%npatches>0) then
+              do ipa=1,csite%npatches
+                 cpatch => csite%patch(ipa)
+                 area_pa = area_si * csite%area(ipa)
+
+                 cgrid%Cleaf(ipa)       = cgrid%Cleaf(ipy)       + &
+                      area_pa*sum(cpatch%bleaf*cpatch%nplant)
+                 cgrid%Cstore(ipa)      = cgrid%Cstore(ipy)      + &
+                      area_pa*sum(cpatch%bstorage*cpatch%nplant)
+                 cgrid%Croot(ipa)       = cgrid%Croot(ipy)       + &
+                      area_pa*sum(cpatch%balive*cpatch%nplant*q(cpatch%pft) / &
+                      (1.0 + q(cpatch%pft) + qsw(cpatch%pft) *cpatch%hite))
+                 
+                 cgrid%Nleaf(ipa)       = cgrid%Nleaf(ipy)       + &
+                      area_pa*sum(cpatch%bleaf*cpatch%nplant/c2n_leaf(cpatch%pft))
+                 cgrid%Nstore(ipa)      = cgrid%Nstore(ipy)      + &
+                      area_pa*sum(cpatch%bstorage*cpatch%nplant/c2n_storage) !! C:N not pft specific
+                 cgrid%Nroot(ipa)       = cgrid%Nroot(ipy)       + &
+                      area_pa*sum(cpatch%balive*cpatch%nplant*q(cpatch%pft) / &
+                      (1.0 + q(cpatch%pft) + qsw(cpatch%pft) *cpatch%hite) /&
+                      c2n_leaf(cpatch%pft))  !! it appears we assume leaf and root have same C:N
+                 cgrid%Ndead(ipa)       = cgrid%Ndead(ipy)       + &
+                      area_pa*sum(cpatch%bdead*cpatch%nplant/c2n_stem(cpatch%pft))
+              end do
+           end if
+        end do
+     end do
+  end do
+end subroutine avg_ed_daily_output_pool
 
 !==========================================================================================!
 !==========================================================================================!
@@ -147,6 +221,7 @@ end subroutine ed_output
 ! site level quantities to the polygon.                                                    !
 !------------------------------------------------------------------------------------------!
 subroutine spatial_averages
+
    use ed_state_vars         , only : edtype            & ! structure
                                     , polygontype       & ! structure
                                     , sitetype          & ! structure
@@ -220,6 +295,9 @@ subroutine spatial_averages
          cgrid%avg_leaf_resp(ipy)   = 0.0
          cgrid%avg_root_resp(ipy)   = 0.0
          cgrid%avg_plant_resp(ipy)  = 0.0
+         cgrid%avg_growth_resp(ipy) = 0.0
+         cgrid%avg_storage_resp(ipy)= 0.0
+         cgrid%avg_vleaf_resp(ipy)  = 0.0
          cgrid%avg_htroph_resp(ipy) = 0.0
          cgrid%max_veg_temp(ipy)    = -huge(1.)
          cgrid%min_veg_temp(ipy)    =  huge(1.)
@@ -228,7 +306,6 @@ subroutine spatial_averages
 
          !----- Inverse of this polygon area (it should be always 1.) ---------------------!
          poly_area_i = 1./sum(cpoly%area)
-
          siteloop: do isi=1,cpoly%nsites
             csite => cpoly%site(isi)
             
@@ -272,6 +349,14 @@ subroutine spatial_averages
             cpoly%avg_fsc(isi)    = sum(csite%fast_soil_C       * csite%area ) * site_area_i
             cpoly%avg_ssc(isi)    = sum(csite%slow_soil_C       * csite%area ) * site_area_i
             cpoly%avg_stsc(isi)   = sum(csite%structural_soil_C * csite%area ) * site_area_i
+            !cpoly%avg_co2can(isi)         = sum(csite%can_co2            * csite%area ) * site_area_i           
+            cpoly%avg_fsn(isi)         = sum(csite%fast_soil_N        * csite%area ) * site_area_i
+            cpoly%avg_msn(isi)         = sum(csite%mineralized_soil_N        * csite%area ) * site_area_i
+            cpoly%avg_snowdepth(isi)   = 0.0
+            cpoly%avg_snowenergy(isi)  = 0.0
+            cpoly%avg_snowmass(isi)    = 0.0
+            cpoly%avg_snowtempk(isi)   = 0.0
+            cpoly%avg_snowfracliq(isi) = 0.0
 
 
             !------------------------------------------------------------------------------!
@@ -405,6 +490,17 @@ subroutine spatial_averages
                                             * csite%area(ipa)*cpoly%area(isi)              &
                                             * site_area_i * poly_area_i
 
+                  cgrid%avg_growth_resp(ipy) = cgrid%avg_growth_resp(ipy) + &
+                       csite%area(ipa)*cpoly%area(isi)*sum(cpatch%mean_growth_resp) &
+                       *site_area_i * poly_area_i
+                 cgrid%avg_storage_resp(ipy) = cgrid%avg_storage_resp(ipy) + &
+                      csite%area(ipa)*cpoly%area(isi)*sum(cpatch%mean_storage_resp) &
+                      *site_area_i * poly_area_i
+                 cgrid%avg_vleaf_resp(ipy) = cgrid%avg_vleaf_resp(ipy) + &
+                      csite%area(ipa)*cpoly%area(isi)*sum(cpatch%mean_vleaf_resp) &
+                      *site_area_i * poly_area_i
+
+
                   cgrid%avg_balive(ipy)     = cgrid%avg_balive(ipy)                        &
                                             + sum(cpatch%balive*cpatch%nplant)             &
                                             * csite%area(ipa)*cpoly%area(isi)              &
@@ -438,16 +534,17 @@ subroutine spatial_averages
 
                !---------------------------------------------------------------------------!
                !    Updating some other flux variables that need to be scaled by frqsum.   !
+               !    THESE ARE ALREADY SCALED BY frqsum in normalize_averaged_vars  [[MCD]] !
                !---------------------------------------------------------------------------!
                cgrid%avg_plant_resp(ipy)  = cgrid%avg_plant_resp(ipy)                      &
                                           + csite%co2budget_plresp(ipa)                    &
                                           * csite%area(ipa)*cpoly%area(isi)                &
-                                          * site_area_i * poly_area_i * frqsumi
+                                          * site_area_i * poly_area_i! * frqsumi
 
                cgrid%avg_htroph_resp(ipy) = cgrid%avg_htroph_resp(ipy)                     &
                                           + csite%co2budget_rh(ipa)                        &
                                           * csite%area(ipa)*cpoly%area(isi)                &
-                                          * site_area_i * poly_area_i * frqsumi
+                                          * site_area_i * poly_area_i! * frqsumi
 
                !----- Not sure what these variables do. -----------------------------------!
                lai_index = min(3,max(1, floor(csite%lai(ipa)/2.0) + 1)  )
@@ -583,9 +680,7 @@ subroutine spatial_averages
                cpoly%avg_veg_fliq(isi) = 0.
             end if
 
-         end do siteloop
-     
-
+         end do siteloop     
          !----- Normalize the lai specific quantities -------------------------------------!
          if (area_sum(1)>0.) then
             cgrid%avg_lai_ebalvars(1,1,ipy) = cgrid%avg_lai_ebalvars(1,1,ipy)/area_sum(1)
@@ -612,12 +707,10 @@ subroutine spatial_averages
             cgrid%avg_lai_ebalvars(3,:,ipy) = -9999.0
          end if
 
-
          !----- Finding the polygon mean LAI ----------------------------------------------!
          cgrid%lai(ipy)  = sum(cpoly%lai  * cpoly%area ) * poly_area_i
          cgrid%wpa(ipy)  = sum(cpoly%wpa  * cpoly%area ) * poly_area_i
          cgrid%wai(ipy)  = sum(cpoly%wai  * cpoly%area ) * poly_area_i
-        
          !----- Average fast time flux dynamics over polygons. ----------------------------!
          cgrid%avg_vapor_vc(ipy)     = sum(cpoly%avg_vapor_vc    * cpoly%area)*poly_area_i
          cgrid%avg_dew_cg(ipy)       = sum(cpoly%avg_dew_cg      * cpoly%area)*poly_area_i
@@ -626,6 +719,8 @@ subroutine spatial_averages
          cgrid%avg_fsc(ipy)          = sum(cpoly%avg_fsc         * cpoly%area)*poly_area_i
          cgrid%avg_stsc(ipy)         = sum(cpoly%avg_stsc        * cpoly%area)*poly_area_i
          cgrid%avg_ssc(ipy)          = sum(cpoly%avg_ssc         * cpoly%area)*poly_area_i
+         cgrid%avg_fsn(ipy)            = sum(cpoly%avg_fsn            * cpoly%area ) * poly_area_i
+         cgrid%avg_msn(ipy)            = sum(cpoly%avg_msn            * cpoly%area ) * poly_area_i
          cgrid%avg_runoff_heat(ipy)  = sum(cpoly%avg_runoff_heat * cpoly%area)*poly_area_i
          cgrid%avg_runoff(ipy)       = sum(cpoly%avg_runoff      * cpoly%area)*poly_area_i
          cgrid%avg_drainage(ipy)     = sum(cpoly%avg_drainage    * cpoly%area)*poly_area_i
@@ -681,7 +776,6 @@ subroutine spatial_averages
                      ,cgrid%avg_soil_fracliq(k,ipy))
          end do
 
-
          !---------------------------------------------------------------------------------!
          !    Also using the same idea as the site-level: average energy, mass, and depth, !
          ! but find temperature and liquid fraction with the averaged values. Again, use   !
@@ -704,7 +798,6 @@ subroutine spatial_averages
             cgrid%avg_snowtempk(ipy)   = cgrid%avg_soil_temp(nzg,ipy)
             cgrid%avg_snowfracliq(ipy) = cgrid%avg_soil_fracliq(nzg,ipy)
          end if
-
          !---------------------------------------------------------------------------------!
          !    Similar to site level, compute mean leaf internal energy and water mass.     !
          ! Also find the mean heat capacity.  If there is enough LAI, then find the mean   !
@@ -722,7 +815,6 @@ subroutine spatial_averages
             cgrid%avg_veg_temp(ipy) = cgrid%avg_can_temp(ipy)
             cgrid%avg_veg_fliq(ipy) = 0.
          end if
-
       end do polyloop
    end do gridloop
 

@@ -222,6 +222,7 @@ subroutine find_frqsum()
         unitstate,       &
         isoutput,        &
         ifoutput,        &
+        itoutput,        &
         imoutput,        &
         idoutput,        &
         frqstate,        &
@@ -235,7 +236,7 @@ subroutine find_frqsum()
    ! Determining which frequency I should use to normalize variables. FRQSUM should never  !
    ! exceed 1 day.                                                                         !
    !---------------------------------------------------------------------------------------!
-   if (ifoutput == 0 .and. isoutput == 0 .and. idoutput == 0 .and. imoutput == 0) then
+   if (ifoutput == 0 .and. isoutput == 0 .and. idoutput == 0 .and. imoutput == 0 .and. itoutput==0) then
       write(unit=*,fmt='(a)') '---------------------------------------------------------'
       write(unit=*,fmt='(a)') '  WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! '
       write(unit=*,fmt='(a)') '  WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! '
@@ -251,21 +252,21 @@ subroutine find_frqsum()
    !     Either no instantaneous output was requested, or the user is outputting it at     !
    ! monthly or yearly scale, force it to be one day.                                      !
    !---------------------------------------------------------------------------------------!
-   elseif ((isoutput == 0 .and. ifoutput == 0) .or.                                        &
-           (ifoutput == 0 .and. isoutput  > 0 .and. unitstate > 1) .or.                    &
-           (isoutput == 0 .and. ifoutput  > 0 .and. unitfast  > 1) .or.                    &
-           (ifoutput  > 0 .and. isoutput  > 0 .and. unitstate > 1 .and. unitfast > 1)      &
+   elseif ((isoutput == 0 .and. (ifoutput == 0 .and. itoutput == 0)) .or.                                        &
+           ((ifoutput == 0.and. itoutput == 0) .and. isoutput  > 0 .and. unitstate > 1) .or.                    &
+           (isoutput == 0 .and. (ifoutput > 0 .or. itoutput > 0) .and. unitfast  > 1) .or.                    &
+           ((ifoutput  > 0 .or. itoutput > 0) .and. isoutput  > 0 .and. unitstate > 1 .and. unitfast > 1)      &
           ) then
       frqsum=day_sec
    !---------------------------------------------------------------------------------------!
    !    Only restarts, and the unit is in seconds, test which frqsum to use.               !
    !---------------------------------------------------------------------------------------!
-   elseif (ifoutput == 0 .and. isoutput > 0) then
+   elseif (ifoutput == 0 .and. itoutput == 0 .and. isoutput > 0) then
       frqsum=min(frqstate,day_sec)
    !---------------------------------------------------------------------------------------!
    !    Only fast analysis, and the unit is in seconds, test which frqsum to use.          !
    !---------------------------------------------------------------------------------------!
-   elseif (isoutput == 0 .and. ifoutput > 0) then
+   elseif (isoutput == 0 .and. (ifoutput > 0 .or. itoutput > 0)) then
       frqsum=min(frqfast,day_sec)
    !---------------------------------------------------------------------------------------!
    !    Both are on and both outputs are in seconds or day scales. Choose the minimum      !

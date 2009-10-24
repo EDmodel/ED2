@@ -22,7 +22,7 @@ subroutine radiate_driver(cgrid)
    type(polygontype), pointer :: cpoly
    type(sitetype)   , pointer :: csite
    type(patchtype)  , pointer :: cpatch
-   real                       :: total_beam_radiation
+   real                       :: total_beam_radiation,rshort,isbeam
    integer                    :: maxcohort
    integer                    :: ipy,isi,ipa
    real                       :: hrangl
@@ -45,11 +45,33 @@ subroutine radiate_driver(cgrid)
 
             csite => cpoly%site(isi)
 
+           if(cpoly%met(isi)%rlong < rlong_min ) then
+              print*,"STRANGE DATA",cpoly%met(isi)%rlong,ipy,isi,int(real(isi)/4.0),rlong_min
+              print*,cpoly%met(isi)
+              call fatal_error('Rlong is too low!','radiate_driver_ar'&
+                              &,'radiate_driver.f90')
+           endif
+
+
+           ! Update angle of incidence
+           hrangl = 15.0 * (mod(current_time%time + cgrid%lon(ipy) / 15.0 +   &
+                24.0, 24.0) - 12.0) * pio180
+           
+           call angle_of_incid(cpoly%cosaoi(isi), cgrid%cosz(ipy), hrangl,   &
+                cpoly%slope(isi) * pio180, cpoly%aspect(isi) * pio180)
+
+           rshort = cpoly%met(isi)%rshort
+           isbeam = 1.0
+           if(cpoly%cosaoi(isi) <= 0.0) then
+              rshort = cpoly%met(isi)%rshort_diffuse
+              isbeam = 0.0
+           end if
+
             !------------------------------------------------------------------------------!
             !     Compute the visible fraction of diffuse and beam radiation needed by the !
             ! radiative transfer routine.                                                  !
             !------------------------------------------------------------------------------!
-            total_beam_radiation = cpoly%met(isi)%nir_beam + cpoly%met(isi)%par_beam
+            total_beam_radiation = (cpoly%met(isi)%nir_beam + cpoly%met(isi)%par_beam)*isbeam
 
             if (total_beam_radiation > 0.0) then
                visible_fraction_dir = cpoly%met(isi)%par_beam / total_beam_radiation
@@ -64,13 +86,6 @@ subroutine radiate_driver(cgrid)
                visible_fraction_dif = 0.5
             end if
 
-            !----- Update angle of incidence ----------------------------------------------!
-            hrangl = 15.0 * pio180                                                         &
-                   * (mod(current_time%time + cgrid%lon(ipy) / 15.0 + 24.0, 24.0) - 12.0)
-            
-            call angle_of_incid(cpoly%cosaoi(isi), cgrid%cosz(ipy), hrangl                 &
-                               ,cpoly%slope(isi) * pio180, cpoly%aspect(isi) * pio180)
-
 
             !------------------------------------------------------------------------------!
             !    Loop over subgrid-scale patches.  These routines can be done as arrays.   !
@@ -84,10 +99,10 @@ subroutine radiate_driver(cgrid)
 
             !----- Get unnormalized radiative transfer information. -----------------------!
             call sfcrad_ed(cgrid%cosz(ipy),cpoly%cosaoi(isi),csite,maxcohort            &
-                             ,cpoly%met(isi)%rshort)
+                             ,rshort)
 
             !----- Normalize the absorbed radiations. -------------------------------------!
-            call scale_ed_radiation(cpoly%met(isi)%rshort,cpoly%met(isi)%rshort_diffuse &
+            call scale_ed_radiation(rshort,cpoly%met(isi)%rshort_diffuse &
                                       ,cpoly%met(isi)%rlong,csite)
 
             !----- Update all albedos and rlongup. ----------------------------------------!

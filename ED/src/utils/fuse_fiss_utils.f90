@@ -136,7 +136,7 @@ module fuse_fiss_utils
             csite%ssl_in(ipa) = csite%ssl_in(ipa) + cpatch%nplant(ico)                     &
                               * ((1.0 - f_labile(cpatch%pft(ico)))                         &
                                  *cpatch%balive(ico) + cpatch%bdead(ico))                  &
-                              * l2n_stem/c2n_stem
+                              * l2n_stem/c2n_stem(cpatch%pft(ico))
 
          end if
       end do
@@ -285,13 +285,16 @@ module fuse_fiss_utils
    ! to live with that and accept life is not always fair with those with limited          !
    ! computational resources.                                                              !
    !---------------------------------------------------------------------------------------!
+
    subroutine fuse_cohorts(csite,ipa, green_leaf_factor, lsl)
 
       use ed_state_vars       , only : sitetype            & ! Structure
                                      , patchtype           ! ! Structure
       use pft_coms            , only : rho                 & ! intent(in)
                                      , b1Ht                & ! intent(in)
-                                     , max_dbh               ! intent(in)
+                                     , max_dbh             & ! intent(in)
+                                     , sla                 & ! intent(in)
+                                     , hgt_ref
       use fusion_fission_coms , only : fusetol_h           & ! intent(in)
                                      , fusetol             & ! intent(in)
                                      , lai_fuse_tol        & ! intent(in)
@@ -301,7 +304,6 @@ module fuse_fiss_utils
       use mem_sites           , only : maxcohort           ! ! intent(in)
       use allometry           , only : dbh2h               & ! function
                                      , dbh2bl              ! ! function
-
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype)         , target      :: csite             ! Current site
@@ -353,7 +355,7 @@ module fuse_fiss_utils
       do ico3 = 1,cpatch%ncohorts
          !----- Get fusion height threshold -----------------------------------------------!
          if (rho(cpatch%pft(ico3)) == 0.0)then
-            hite_threshold = b1Ht(cpatch%pft(ico3))
+            hite_threshold = b1Ht(cpatch%pft(ico3)) !+hgt_ref(cpatch%(ico3))
          else
             hite_threshold = dbh2h(cpatch%pft(ico3),max_dbh(cpatch%pft(ico3)))
          end if
@@ -676,6 +678,13 @@ module fuse_fiss_utils
                cpatch%veg_water(ico)           = cpatch%veg_water(ico)            * 0.5
                cpatch%hcapveg(ico)             = cpatch%hcapveg(ico)              * 0.5
                cpatch%veg_energy(ico)          = cpatch%veg_energy(ico)           * 0.5
+
+               cpatch%mean_growth_resp(ico) = cpatch%mean_growth_resp(ico)       * 0.5
+               cpatch%mean_storage_resp(ico)= cpatch%mean_storage_resp(ico)      * 0.5
+               cpatch%mean_vleaf_resp(ico)  = cpatch%mean_vleaf_resp(ico)        * 0.5               
+               cpatch%growth_respiration(ico)  = cpatch%growth_respiration(ico)  * 0.5
+               cpatch%storage_respiration(ico) = cpatch%storage_respiration(ico) * 0.5
+               cpatch%vleaf_respiration(ico)   = cpatch%vleaf_respiration(ico)   * 0.5
                !---------------------------------------------------------------------------!
 
 
@@ -776,6 +785,9 @@ module fuse_fiss_utils
       cpatch%mean_gpp(idt)            = cpatch%mean_gpp(isc)
       cpatch%mean_leaf_resp(idt)      = cpatch%mean_leaf_resp(isc)
       cpatch%mean_root_resp(idt)      = cpatch%mean_root_resp(isc)
+     cpatch%mean_storage_resp(idt) = cpatch%mean_storage_resp(isc)
+     cpatch%mean_growth_resp(idt)= cpatch%mean_growth_resp(isc)
+     cpatch%mean_vleaf_resp(idt) = cpatch%mean_vleaf_resp(isc)
       cpatch%dmean_leaf_resp(idt)     = cpatch%dmean_leaf_resp(isc)
       cpatch%dmean_root_resp(idt)     = cpatch%dmean_root_resp(isc)
       cpatch%dmean_gpp(idt)           = cpatch%dmean_gpp(isc)
@@ -808,7 +820,8 @@ module fuse_fiss_utils
       cpatch%fsw(idt)                 = cpatch%fsw(isc)
       cpatch%fs_open(idt)             = cpatch%fs_open(isc)
       cpatch%stomatal_resistance(idt) = cpatch%stomatal_resistance(isc)
-      cpatch%maintenance_costs(idt)   = cpatch%maintenance_costs(isc)
+      cpatch%leaf_maintenance_costs(idt)   = cpatch%leaf_maintenance_costs(isc)
+      cpatch%root_maintenance_costs(idt)   = cpatch%root_maintenance_costs(isc)
       cpatch%bseeds(idt)              = cpatch%bseeds(isc)
       cpatch%leaf_respiration(idt)    = cpatch%leaf_respiration(isc)
       cpatch%root_respiration(idt)    = cpatch%root_respiration(isc)
@@ -844,7 +857,7 @@ module fuse_fiss_utils
       osdt%gsw_residual     = ossc%gsw_residual
      
       return
-   end subroutine clone_cohort
+    end subroutine clone_cohort
    !=======================================================================================!
    !=======================================================================================!
 
@@ -906,9 +919,12 @@ module fuse_fiss_utils
                               + cpatch%nplant(donc) * cpatch%bstorage(donc) ) * newni
       cpatch%bseeds(recc)   = ( cpatch%nplant(recc) * cpatch%bseeds(recc)                  &
                               + cpatch%nplant(donc) * cpatch%bseeds(donc) ) * newni
-      cpatch%maintenance_costs(recc) = newni                                               &
-                            * ( cpatch%nplant(recc) * cpatch%maintenance_costs(recc)       &
-                              + cpatch%nplant(donc) * cpatch%maintenance_costs(donc) )
+      cpatch%leaf_maintenance_costs(recc) = newni                                               &
+                            * ( cpatch%nplant(recc) * cpatch%leaf_maintenance_costs(recc)       &
+                              + cpatch%nplant(donc) * cpatch%leaf_maintenance_costs(donc) )
+      cpatch%root_maintenance_costs(recc) = newni                                               &
+                            * ( cpatch%nplant(recc) * cpatch%root_maintenance_costs(recc)       &
+                              + cpatch%nplant(donc) * cpatch%root_maintenance_costs(donc) )
       !------------------------------------------------------------------------------------!
 
 
@@ -981,6 +997,13 @@ module fuse_fiss_utils
 
       cpatch%mean_root_resp(recc) = cpatch%mean_root_resp(recc)                            &
                                   + cpatch%mean_root_resp(donc)
+
+      cpatch%mean_storage_resp(recc) = cpatch%mean_storage_resp(recc) +   &
+           cpatch%mean_storage_resp(donc)
+      cpatch%mean_growth_resp(recc) = cpatch%mean_growth_resp(recc) +   &
+           cpatch%mean_growth_resp(donc)
+      cpatch%mean_vleaf_resp(recc) = cpatch%mean_vleaf_resp(recc) +   &
+           cpatch%mean_vleaf_resp(donc)
 
       cpatch%dmean_gpp(recc)     = cpatch%dmean_gpp(recc)                                  &
                                  + cpatch%dmean_gpp(donc)
@@ -1089,7 +1112,6 @@ module fuse_fiss_utils
    ! limited computational resources.                                                      !
    !---------------------------------------------------------------------------------------!
    subroutine fuse_patches(cgrid,ifm)
-     
       use ed_state_vars       , only :  edtype            & ! structure
                                       , polygontype       & ! structure
                                       , sitetype          & ! structure
@@ -1791,6 +1813,12 @@ module fuse_fiss_utils
          cpatch%mean_gpp(ico)            = cpatch%mean_gpp(ico)             * area_scale
          cpatch%mean_leaf_resp(ico)      = cpatch%mean_leaf_resp(ico)       * area_scale
          cpatch%mean_root_resp(ico)      = cpatch%mean_root_resp(ico)       * area_scale
+         cpatch%mean_growth_resp(ico)    = cpatch%mean_growth_resp(ico)     * area_scale
+         cpatch%mean_storage_resp(ico)   = cpatch%mean_storage_resp(ico)    * area_scale
+         cpatch%mean_vleaf_resp(ico)     = cpatch%mean_vleaf_resp(ico)      * area_scale
+         cpatch%growth_respiration(ico)  = cpatch%growth_respiration(ico)   * area_scale
+         cpatch%storage_respiration(ico) = cpatch%storage_respiration(ico)  * area_scale
+         cpatch%vleaf_respiration(ico)   = cpatch%vleaf_respiration(ico)    * area_scale
          cpatch%dmean_gpp(ico)           = cpatch%dmean_gpp(ico)            * area_scale
          cpatch%dmean_gpp_pot(ico)       = cpatch%dmean_gpp_pot(ico)        * area_scale
          cpatch%dmean_gpp_max(ico)       = cpatch%dmean_gpp_max(ico)        * area_scale
@@ -1817,6 +1845,12 @@ module fuse_fiss_utils
          cpatch%mean_gpp(ico)            = cpatch%mean_gpp(ico)             * area_scale
          cpatch%mean_leaf_resp(ico)      = cpatch%mean_leaf_resp(ico)       * area_scale
          cpatch%mean_root_resp(ico)      = cpatch%mean_root_resp(ico)       * area_scale
+         cpatch%mean_growth_resp(ico)    = cpatch%mean_growth_resp(ico)     * area_scale
+         cpatch%mean_storage_resp(ico)   = cpatch%mean_storage_resp(ico)    * area_scale
+         cpatch%mean_vleaf_resp(ico)     = cpatch%mean_vleaf_resp(ico)      * area_scale
+         cpatch%growth_respiration(ico)  = cpatch%growth_respiration(ico)   * area_scale
+         cpatch%storage_respiration(ico) = cpatch%storage_respiration(ico)  * area_scale
+         cpatch%vleaf_respiration(ico)   = cpatch%vleaf_respiration(ico)    * area_scale
          cpatch%dmean_gpp(ico)           = cpatch%dmean_gpp(ico)            * area_scale
          cpatch%dmean_gpp_pot(ico)       = cpatch%dmean_gpp_pot(ico)        * area_scale
          cpatch%dmean_gpp_max(ico)       = cpatch%dmean_gpp_max(ico)        * area_scale

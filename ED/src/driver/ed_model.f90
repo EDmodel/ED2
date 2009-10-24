@@ -15,6 +15,7 @@ subroutine ed_model()
                             , idoutput            & ! intent(in)
                             , imoutput            & ! intent(in)
                             , iyoutput            & ! intent(in)
+                            , itoutput            & ! intent(in)
                             , frqsum              & ! intent(in)
                             , unitfast            & ! intent(in)
                             , unitstate           & ! intent(in)
@@ -108,7 +109,7 @@ subroutine ed_model()
    ! variables, these are used in conditions of ifoutput,idoutput and imoutput conditions.
    ! If they are not >0, then set the logical, fast_diagnostics to false.
    !---------------------------------------------------------------------------------------!
-   fast_diagnostics = checkbudget .or. ifoutput /= 0 .or. idoutput /= 0 .or. imoutput /= 0
+   fast_diagnostics = checkbudget .or. ifoutput /= 0 .or. idoutput /= 0 .or. imoutput /= 0 .or. itoutput /= 0
 
    !------------------------------------------------------------------------!
    ! If this is not a history restart - then zero out the
@@ -220,12 +221,12 @@ subroutine ed_model()
       !----- Checking whether this is time to write fast analysis output or not. -----------!
       select case (unitfast)
       case (0,1) !----- Now both are in seconds --------------------------------------------!
-         analysis_time   = mod(current_time%time, frqfast) < dtlsm .and. ifoutput /= 0
+         analysis_time   = mod(current_time%time, frqfast) < dtlsm .and. (ifoutput /= 0 .or. itoutput /=0)
       case (2)   !----- Months, analysis time is at the new month --------------------------!
-         analysis_time   = new_month .and. ifoutput /= 0 .and.                              &
+         analysis_time   = new_month .and. (ifoutput /= 0 .or. itoutput /=0) .and.&
                            mod(real(12+current_time%month-imontha),frqfast) == 0.
       case (3) !----- Year, analysis time is at the same month as initial time -------------!
-         analysis_time   = new_month .and. ifoutput /= 0 .and.                              &
+         analysis_time   = new_month .and. (ifoutput /= 0 .or. itoutput /= 0) .and.         &
                            current_time%month == imontha .and.                              &
                            mod(real(current_time%year-iyeara),frqfast) == 0.
       end select

@@ -11,6 +11,15 @@ Module met_driver_coms
 
   integer            :: lapse_scheme  ! which variant of lapse rate correction to use
 
+  !! values for simple climate change scenarios
+  !! X_future = intercept + slope * X_current
+  real               :: atm_tmp_intercept
+  real               :: atm_tmp_slope
+  real               :: prec_intercept
+  real               :: prec_slope
+  integer            :: humid_scenario ! 0 = constant sh
+                                       ! 1 = constant RH
+  
   integer :: nformats
   character(len=metname_len), allocatable, dimension(:) :: met_names
   integer, allocatable, dimension(:) :: met_nlon
@@ -78,6 +87,7 @@ Module met_driver_coms
      real :: exner
      real :: geoht
      real :: atm_co2
+     real :: pptnorm
 
   end Type met_driv_state
 

@@ -728,8 +728,8 @@ subroutine event_till(rval8)
                       (1.0-f_labile(pft))*cpatch%balive(ico) + &
                       cpatch%bdead(ico) 
                  csite%structural_soil_L(ipa) = csite%structural_soil_L(ipa) + &
-                      (1.0-f_labile(pft))*cpatch%balive(ico)* l2n_stem / c2n_stem + &
-                      cpatch%bdead(ico)* l2n_stem / c2n_stem
+                      (1.0-f_labile(pft))*cpatch%balive(ico)* l2n_stem / c2n_stem(pft) + &
+                      cpatch%bdead(ico)* l2n_stem / c2n_stem(pft)
                  csite%fast_soil_N(ipa) = csite%fast_soil_N(ipa) &
                       + f_labile(pft)*cpatch%balive(ico)/c2n_leaf(pft) &
                       + cpatch%bstorage(ico)/c2n_storage

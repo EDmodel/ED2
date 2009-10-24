@@ -217,7 +217,7 @@ subroutine update_phenology(doy, cpoly, isi, lat)
                   csite%ssc_in(ipa) = csite%ssc_in(ipa) + leaf_litter                      &
                                     * (1.0 - f_labile(ipft))
                   csite%ssl_in(ipa) = csite%ssl_in(ipa) + leaf_litter                      &
-                                    * (1.0 - f_labile(ipft)) * l2n_stem / c2n_stem
+                                    * (1.0 - f_labile(ipft)) * l2n_stem / c2n_stem(cpatch%pft(ico))
                   
                   !----- Update plant carbon pools. ---------------------------------------!
                   cpatch%balive(ico)   = cpatch%balive(ico) - cpatch%bleaf(ico)
@@ -275,7 +275,7 @@ subroutine update_phenology(doy, cpoly, isi, lat)
                   csite%ssc_in(ipa) = csite%ssc_in(ipa)                                    &
                                     + leaf_litter * (1.0 - f_labile(ipft))
                   csite%ssl_in(ipa) = csite%ssl_in(ipa) + leaf_litter                      &
-                                    * (1.0 - f_labile(ipft)) * l2n_stem / c2n_stem
+                                    * (1.0 - f_labile(ipft)) * l2n_stem / c2n_stem(cpatch%pft(ico))
                   
                   !----- Adjust plant carbon pools. ---------------------------------------!
                   cpatch%balive(ico)   = cpatch%balive(ico) - delta_bleaf
@@ -337,7 +337,7 @@ subroutine update_phenology(doy, cpoly, isi, lat)
                                  / c2n_leaf(ipft)
                csite%ssc_in(ipa) = csite%ssc_in(ipa) + leaf_litter * (1.0-f_labile(ipft))
                csite%ssl_in(ipa) = csite%ssl_in(ipa) + leaf_litter                         &
-                                 * (1.0 - f_labile(ipft)) * l2n_stem / c2n_stem
+                                 * (1.0 - f_labile(ipft)) * l2n_stem / c2n_stem(cpatch%pft(ico))
 
                !----- Adjust plant carbon pools. ------------------------------------------!
                cpatch%balive(ico)   = cpatch%balive(ico) - delta_bleaf

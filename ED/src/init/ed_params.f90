@@ -85,7 +85,8 @@ subroutine load_ed_ecosystem_params()
       p = p+1
    end do
    if (sum(include_pft_ag) == 0 .and. ianth_disturb == 1) then
-      call fatal_error ('No grass included in include_these_pft,'//&
+!!      call fatal_error ('No grass included in include_these_pft,'//&
+      call warning ('No grass included in include_these_pft,'//&
                        &' you should have at least one kind of grass...'                   &
                        ,'load_ecosystem_params','ed_params.f90')
    end if
@@ -115,7 +116,11 @@ end subroutine load_ed_ecosystem_params
 subroutine init_ed_misc_coms
 
   use ed_misc_coms,only:burnin,outputMonth, &
-       restart_target_year,use_target_year
+       restart_target_year,use_target_year,vary_elev,vary_hyd,vary_rad
+
+  vary_elev = 1
+  vary_rad = 1
+  vary_hyd = 1
 
   burnin = 0 !! number of years to ignore demography when starting a run
 
@@ -136,7 +141,7 @@ end subroutine init_ed_misc_coms
 subroutine init_lapse_params()
 !! define defaults for lapse rates
 
-  use met_driver_coms, only: lapse
+  use met_driver_coms!!, only: lapse
 
   lapse%geoht        = 0.0
   lapse%vels         = 0.0
@@ -153,6 +158,12 @@ subroutine init_lapse_params()
   lapse%par_beam     = 0.0
   lapse%par_diffuse  = 0.0
 
+  atm_tmp_intercept = 0.0
+  atm_tmp_slope     = 1.0
+  prec_intercept    = 0.0
+  prec_slope        = 1.0
+  humid_scenario    = 0
+  
 end subroutine init_lapse_params
 !==========================================================================================!
 !==========================================================================================!
@@ -605,6 +616,7 @@ subroutine init_pft_alloc_params()
                           , b2Bl                  & ! intent(out)
                           , C2B                   & ! intent(out)
                           , hgt_ref               & ! intent(out)
+                          , sapwood_ratio         & ! intent(out)
                           , rbranch               & ! intent(out)
                           , rdiamet               & ! intent(out)
                           , rlength               & ! intent(out)
@@ -697,6 +709,7 @@ subroutine init_pft_alloc_params()
    q(9:11)  = 1.1274
    q(12:15) = 1.0
 
+   sapwood_ratio(1:15) = 3900.0
 
    !---------------------------------------------------------------------------------------!
    !    Finding the ratio between sapwood and leaves [kg_sapwood/kg_leaves]                !
@@ -705,9 +718,9 @@ subroutine init_pft_alloc_params()
    ! latitude parameters have been optimized using the wrong SLA, we keep the bug until    !
    ! it is updated...                                                                      !
    !---------------------------------------------------------------------------------------!
-   qsw(1:4)    = SLA(1:4)   / (3900.0*2.0/1000.0)
-   qsw(5:13)   = SLA(5:13)  / 3900.0
-   qsw(14:15)  = SLA(14:15) / (3900.0*2.0/1000.0)
+   qsw(1:4)    = SLA(1:4)   / (sapwood_ratio(1:4)*2.0/1000.0)
+   qsw(5:13)   = SLA(5:13)  / sapwood_ratio(5:13)
+   qsw(14:15)  = SLA(14:15) / (sapwood_ratio(14:15)*2.0/1000.0)
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
@@ -1132,8 +1145,8 @@ subroutine init_pft_derived_params()
       !----- Finding the recruit carbon to nitrogen ratio. --------------------------------!
       c2n_recruit(ipft)      = (balive + bdead)                                            &
                              / (balive * ( f_labile(ipft) / c2n_leaf(ipft)                 &
-                                         + (1.0 - f_labile(ipft)) / c2n_stem)              &
-                               + bdead/c2n_stem)
+                                         + (1.0 - f_labile(ipft)) / c2n_stem(ipft))              &
+                               + bdead/c2n_stem(ipft))
       !write (unit=61,fmt='(i5,1x,7(es12.5,1x))') ipft,hgt_min(ipft),dbh,bleaf,bdead,balive &
       !                                          ,init_density(ipft),min_recruit_size(ipft)
    end do
@@ -1593,7 +1606,7 @@ subroutine overwrite_with_xml_config(thisnode)
          !! SECOND, update parameter defaults from XML
          call read_ed_xml_config(trim(iedcnfgf))
 
-         !! THIRD, reset any values based on xml
+         !! THIRD, recalculate any derived values based on xml
 
          !! FINALLY, write out copy of settings
          call write_ed_xml_config()
