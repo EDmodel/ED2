@@ -745,8 +745,10 @@ module fuse_fiss_utils
    !---------------------------------------------------------------------------------------!
    subroutine clone_cohort(cpatch,isc,idt)
    
-      use ed_state_vars, only : patchtype  & ! Strucuture
+      use ed_state_vars, only : patchtype  & ! Structure
                               , stoma_data ! ! Structure
+      use ed_misc_coms , only : idoutput   & ! structure
+                              , imoutput   ! ! structure
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(patchtype) , target     :: cpatch ! Current patch
@@ -813,6 +815,8 @@ module fuse_fiss_utils
       cpatch%rlong_v_surf(idt)        = cpatch%rlong_v_surf(isc)
       cpatch%rlong_v_incid(idt)       = cpatch%rlong_v_incid(isc)
       cpatch%light_level(idt)         = cpatch%light_level(isc)
+      cpatch%light_level_beam(idt)    = cpatch%light_level_beam(isc)
+      cpatch%light_level_diff(idt)    = cpatch%light_level_diff(isc)
       cpatch%rb(idt)                  = cpatch%rb(isc)
       cpatch%A_open(idt)              = cpatch%A_open(isc)
       cpatch%A_closed(idt)            = cpatch%A_closed(isc)
@@ -857,6 +861,33 @@ module fuse_fiss_utils
       osdt%leaf_residual    = ossc%leaf_residual
       osdt%gsw_residual     = ossc%gsw_residual
      
+     
+      if (idoutput > 0 .or. imoutput > 0) then
+         cpatch%dmean_fs_open         (idt) = cpatch%dmean_fs_open         (isc)
+         cpatch%dmean_fsw             (idt) = cpatch%dmean_fsw             (isc)
+         cpatch%dmean_fsn             (idt) = cpatch%dmean_fsn             (isc)
+         cpatch%dmean_lambda_light    (idt) = cpatch%dmean_lambda_light    (isc)
+         cpatch%dmean_light_level     (idt) = cpatch%dmean_light_level     (isc)
+         cpatch%dmean_light_level_beam(idt) = cpatch%dmean_light_level_beam(isc)
+         cpatch%dmean_light_level_diff(idt) = cpatch%dmean_light_level_diff(isc)
+      end if
+
+      if (imoutput > 0) then
+         cpatch%mmean_fs_open         (idt) = cpatch%mmean_fs_open         (isc)
+         cpatch%mmean_fsw             (idt) = cpatch%mmean_fsw             (isc)
+         cpatch%mmean_fsn             (idt) = cpatch%mmean_fsn             (isc)
+         cpatch%mmean_lambda_light    (idt) = cpatch%mmean_lambda_light    (isc)
+         cpatch%mmean_light_level     (idt) = cpatch%mmean_light_level     (isc)
+         cpatch%mmean_light_level_beam(idt) = cpatch%mmean_light_level_beam(isc)
+         cpatch%mmean_light_level_diff(idt) = cpatch%mmean_light_level_diff(isc)
+         cpatch%mmean_leaf_resp       (idt) = cpatch%mmean_leaf_resp       (isc)
+         cpatch%mmean_root_resp       (idt) = cpatch%mmean_root_resp       (isc)
+         cpatch%mmean_growth_resp     (idt) = cpatch%mmean_growth_resp     (isc)
+         cpatch%mmean_storage_resp    (idt) = cpatch%mmean_storage_resp    (isc)
+         cpatch%mmean_vleaf_resp      (idt) = cpatch%mmean_vleaf_resp      (isc)
+         cpatch%mmean_gpp             (idt) = cpatch%mmean_gpp             (isc)
+      end if
+
       return
    end subroutine clone_cohort
    !=======================================================================================!
@@ -1033,9 +1064,15 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------!
       !    Light level.  Using the intensive way of fusing.                                !
       !------------------------------------------------------------------------------------!
-      cpatch%light_level(recc) = ( cpatch%light_level(recc) * cpatch%nplant(recc)          &
-                                 + cpatch%light_level(donc) * cpatch%nplant(donc) )        &
-                               * newni
+      cpatch%light_level(recc)      = ( cpatch%light_level(recc) *cpatch%nplant(recc)      &
+                                      + cpatch%light_level(donc) *cpatch%nplant(donc) )    &
+                                    * newni
+      cpatch%light_level_beam(recc) = ( cpatch%light_level_beam(recc) *cpatch%nplant(recc) &
+                                      + cpatch%light_level_beam(donc) *cpatch%nplant(donc) )        &
+                                    * newni
+      cpatch%light_level_diff(recc) = ( cpatch%light_level_diff(recc) *cpatch%nplant(recc) &
+                                      + cpatch%light_level_diff(donc) *cpatch%nplant(donc) )        &
+                                    * newni
 
       !------------------------------------------------------------------------------------!
       !    Not sure about the following variables.  From ed_state_vars, I would say that   !

@@ -83,8 +83,8 @@ subroutine radiate_driver(cgrid)
 
 
             !----- Get unnormalized radiative transfer information. -----------------------!
-            call sfcrad_ed(cgrid%cosz(ipy),cpoly%cosaoi(isi),csite,maxcohort            &
-                             ,cpoly%met(isi)%rshort)
+            call sfcrad_ed(cgrid%cosz(ipy),cpoly%cosaoi(isi),csite,maxcohort               &
+                          ,cpoly%met(isi)%rshort,cpoly%met(isi)%rshort_diffuse)
 
             !----- Normalize the absorbed radiations. -------------------------------------!
             call scale_ed_radiation(cpoly%met(isi)%rshort,cpoly%met(isi)%rshort_diffuse &
@@ -122,7 +122,7 @@ end subroutine radiate_driver
 !     This subroutine will drive the distribution of radiation among crowns, snow layers,  !
 ! and soil.                                                                                !
 !------------------------------------------------------------------------------------------!
-subroutine sfcrad_ed(cosz, cosaoi, csite, maxcohort, rshort)
+subroutine sfcrad_ed(cosz, cosaoi, csite, maxcohort, rshort,rshort_diffuse)
 
    use ed_state_vars        , only : sitetype        & ! structure  
                                    , patchtype       ! ! structure  
@@ -140,6 +140,7 @@ subroutine sfcrad_ed(cosz, cosaoi, csite, maxcohort, rshort)
    !----- Arguments. ----------------------------------------------------------------------!
    type(sitetype)  , target     :: csite
    real            , intent(in) :: rshort
+   real            , intent(in) :: rshort_diffuse
    real            , intent(in) :: cosaoi
    real            , intent(in) :: cosz
    integer         , intent(in) :: maxcohort
@@ -191,6 +192,9 @@ subroutine sfcrad_ed(cosz, cosaoi, csite, maxcohort, rshort)
    real                                   :: surface_absorbed_longwave_incid
    real                                   :: crown_area
    real                                   :: remaining_rshort
+   real                                   :: remaining_rshort_beam
+   real                                   :: remaining_rshort_diff
+   real                                   :: difffac
    !----- External function. --------------------------------------------------------------!
    real            , external             :: sngloff
    !----- Local constants. ----------------------------------------------------------------!
@@ -236,7 +240,9 @@ subroutine sfcrad_ed(cosz, cosaoi, csite, maxcohort, rshort)
          cpatch%rlong_v_surf(ico)          = 0.0
          cpatch%old_stoma_data(ico)%recalc = 1
          
-         cpatch%light_level(ico)           = 0.0
+         cpatch%light_level     (ico)      = 0.0
+         cpatch%light_level_beam(ico)      = 0.0
+         cpatch%light_level_diff(ico)      = 0.0
          cpatch%lambda_light(ico)          = 0.0
 
          !------ Transfer information from linked lists to arrays. ------------------------!
@@ -450,16 +456,29 @@ subroutine sfcrad_ed(cosz, cosaoi, csite, maxcohort, rshort)
       ! the daily integration.                                                             !
       !------------------------------------------------------------------------------------!
       if (rshort > 0.5) then
-         remaining_rshort = 1.0
+         !----- Find the relative contribution of diffuse radiation to the SW total. ------!
+         difffac               = rshort_diffuse/rshort
+         !----- At the top of the canopy, we start with maximum rshort. -------------------!
+         remaining_rshort      = 1.0
+         remaining_rshort_beam = 1.0-difffac
+         remaining_rshort_diff = difffac
          do ico = 1,cpatch%ncohorts
-            cpatch%light_level(ico) = remaining_rshort
-            remaining_rshort        = remaining_rshort                                     &
-                                    - 0.5 * ( cpatch%rshort_v_beam(ico)                    &
-                                            + cpatch%rshort_v_diffuse(ico))
+         
+            cpatch%light_level     (ico) = remaining_rshort
+            cpatch%light_level_diff(ico) = remaining_rshort_diff
+            cpatch%light_level_beam(ico) = remaining_rshort_beam
+            !----- Remove the radiation of this cohort from the total. --------------------!
+            remaining_rshort_beam        = remaining_rshort_beam                           &
+                                         - (1.0-difffac) * cpatch%rshort_v_beam(ico)
+            remaining_rshort_diff        = remaining_rshort_diff                           &
+                                         - difffac       * cpatch%rshort_v_diffuse(ico)
+            remaining_rshort             = remaining_rshort_beam + remaining_rshort_diff
          end do
       else
          do ico = 1, cpatch%ncohorts
-            cpatch%light_level(ico) = -1.0
+            cpatch%light_level     (ico) = -1.0
+            cpatch%light_level_diff(ico) = -1.0
+            cpatch%light_level_beam(ico) = -1.0
          end do
       end if
    end do

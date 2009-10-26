@@ -240,6 +240,12 @@ module ed_state_vars
      real, pointer, dimension(:) :: light_level
      real, pointer, dimension(:) :: dmean_light_level
      real, pointer, dimension(:) :: mmean_light_level
+     real, pointer, dimension(:) :: light_level_beam
+     real, pointer, dimension(:) :: dmean_light_level_beam
+     real, pointer, dimension(:) :: mmean_light_level_beam
+     real, pointer, dimension(:) :: light_level_diff
+     real, pointer, dimension(:) :: dmean_light_level_diff
+     real, pointer, dimension(:) :: mmean_light_level_diff
 
      ! Light extinction of this cohort, its diurnal and monthly means
      real, pointer, dimension(:) :: lambda_light
@@ -2504,6 +2510,8 @@ contains
     allocate(cpatch%first_census(ncohorts))
     allocate(cpatch%new_recruit_flag(ncohorts))
     allocate(cpatch%light_level(ncohorts))
+    allocate(cpatch%light_level_beam(ncohorts))
+    allocate(cpatch%light_level_diff(ncohorts))
     allocate(cpatch%lambda_light(ncohorts))
     allocate(cpatch%par_v(ncohorts))
     allocate(cpatch%par_v_beam(ncohorts))
@@ -2537,6 +2545,8 @@ contains
 
     if (idoutput > 0 .or. imoutput > 0) then
        allocate(cpatch%dmean_light_level(ncohorts))
+       allocate(cpatch%dmean_light_level_beam(ncohorts))
+       allocate(cpatch%dmean_light_level_diff(ncohorts))
        allocate(cpatch%dmean_lambda_light(ncohorts))
        allocate(cpatch%dmean_fs_open(ncohorts))
        allocate(cpatch%dmean_fsw(ncohorts))
@@ -2545,6 +2555,8 @@ contains
     
     if (imoutput > 0) then
        allocate(cpatch%mmean_light_level(ncohorts))
+       allocate(cpatch%mmean_light_level_beam(ncohorts))
+       allocate(cpatch%mmean_light_level_diff(ncohorts))
        allocate(cpatch%mmean_lambda_light(ncohorts))
        allocate(cpatch%mmean_fs_open(ncohorts))
        allocate(cpatch%mmean_fsw(ncohorts))
@@ -3275,6 +3287,12 @@ contains
     nullify(cpatch%light_level)
     nullify(cpatch%dmean_light_level)
     nullify(cpatch%mmean_light_level)
+    nullify(cpatch%light_level_beam)
+    nullify(cpatch%dmean_light_level_beam)
+    nullify(cpatch%mmean_light_level_beam)
+    nullify(cpatch%light_level_diff)
+    nullify(cpatch%dmean_light_level_diff)
+    nullify(cpatch%mmean_light_level_diff)
     nullify(cpatch%lambda_light)
     nullify(cpatch%dmean_lambda_light)
     nullify(cpatch%mmean_lambda_light)
@@ -4040,53 +4058,59 @@ contains
     if(associated(cpatch%mort_rate))           deallocate(cpatch%mort_rate)
     if(associated(cpatch%mmean_mort_rate))     deallocate(cpatch%mmean_mort_rate)
 
-    if(associated(cpatch%old_stoma_data))      deallocate(cpatch%old_stoma_data)
-    if(associated(cpatch%old_stoma_vector))    deallocate(cpatch%old_stoma_vector)
-    if(associated(cpatch%Psi_open))             deallocate(cpatch%Psi_open)
-    if(associated(cpatch%krdepth))              deallocate(cpatch%krdepth)
-    if(associated(cpatch%first_census))         deallocate(cpatch%first_census)
-    if(associated(cpatch%new_recruit_flag))     deallocate(cpatch%new_recruit_flag)
-    if(associated(cpatch%light_level))          deallocate(cpatch%light_level)
-    if(associated(cpatch%dmean_light_level))    deallocate(cpatch%dmean_light_level)
-    if(associated(cpatch%mmean_light_level))    deallocate(cpatch%mmean_light_level)
-    if(associated(cpatch%lambda_light))         deallocate(cpatch%lambda_light)
-    if(associated(cpatch%dmean_lambda_light))   deallocate(cpatch%dmean_lambda_light)
-    if(associated(cpatch%mmean_lambda_light))   deallocate(cpatch%mmean_lambda_light)
-    if(associated(cpatch%par_v))                deallocate(cpatch%par_v)
-    if(associated(cpatch%par_v_beam))           deallocate(cpatch%par_v_beam)
-    if(associated(cpatch%par_v_diffuse))        deallocate(cpatch%par_v_diffuse)
-    if(associated(cpatch%rshort_v))             deallocate(cpatch%rshort_v)
-    if(associated(cpatch%rshort_v_beam))        deallocate(cpatch%rshort_v_beam)
-    if(associated(cpatch%rshort_v_diffuse))     deallocate(cpatch%rshort_v_diffuse)
-    if(associated(cpatch%rlong_v))              deallocate(cpatch%rlong_v)
-    if(associated(cpatch%rlong_v_surf))         deallocate(cpatch%rlong_v_surf)
-    if(associated(cpatch%rlong_v_incid))        deallocate(cpatch%rlong_v_incid)
-    if(associated(cpatch%rb))                   deallocate(cpatch%rb)
-    if(associated(cpatch%A_open))               deallocate(cpatch%A_open)    
-    if(associated(cpatch%A_closed))             deallocate(cpatch%A_closed)
-    if(associated(cpatch%Psi_closed))           deallocate(cpatch%Psi_closed)
-    if(associated(cpatch%rsw_open))             deallocate(cpatch%rsw_open)
-    if(associated(cpatch%rsw_closed))           deallocate(cpatch%rsw_closed)
-    if(associated(cpatch%fsw))                  deallocate(cpatch%fsw)
-    if(associated(cpatch%fs_open))              deallocate(cpatch%fs_open)
-    if(associated(cpatch%dmean_fs_open))        deallocate(cpatch%dmean_fs_open)
-    if(associated(cpatch%dmean_fsw))            deallocate(cpatch%dmean_fsw)
-    if(associated(cpatch%dmean_fsn))            deallocate(cpatch%dmean_fsn)
-    if(associated(cpatch%mmean_fs_open))        deallocate(cpatch%mmean_fs_open)
-    if(associated(cpatch%mmean_fsw))            deallocate(cpatch%mmean_fsw)
-    if(associated(cpatch%mmean_fsn))            deallocate(cpatch%mmean_fsn)
-    if(associated(cpatch%stomatal_resistance))  deallocate(cpatch%stomatal_resistance)
-    if(associated(cpatch%maintenance_costs))    deallocate(cpatch%maintenance_costs)
-    if(associated(cpatch%bseeds))               deallocate(cpatch%bseeds)
-    if(associated(cpatch%leaf_respiration))     deallocate(cpatch%leaf_respiration)
-    if(associated(cpatch%root_respiration))     deallocate(cpatch%root_respiration)
-    if(associated(cpatch%hcapveg))              deallocate(cpatch%hcapveg)
-    if(associated(cpatch%gpp))                  deallocate(cpatch%gpp)
-    if(associated(cpatch%paw_avg))              deallocate(cpatch%paw_avg)
-    if(associated(cpatch%turnover_amp))         deallocate(cpatch%turnover_amp)
-    if(associated(cpatch%llspan))               deallocate(cpatch%llspan)
-    if(associated(cpatch%vm_bar))               deallocate(cpatch%vm_bar)
-    if(associated(cpatch%sla))                  deallocate(cpatch%sla)
+    if(associated(cpatch%old_stoma_data))         deallocate(cpatch%old_stoma_data)
+    if(associated(cpatch%old_stoma_vector))       deallocate(cpatch%old_stoma_vector)
+    if(associated(cpatch%Psi_open))               deallocate(cpatch%Psi_open)
+    if(associated(cpatch%krdepth))                deallocate(cpatch%krdepth)
+    if(associated(cpatch%first_census))           deallocate(cpatch%first_census)
+    if(associated(cpatch%new_recruit_flag))       deallocate(cpatch%new_recruit_flag)
+    if(associated(cpatch%light_level))            deallocate(cpatch%light_level)
+    if(associated(cpatch%dmean_light_level))      deallocate(cpatch%dmean_light_level)
+    if(associated(cpatch%mmean_light_level))      deallocate(cpatch%mmean_light_level)
+    if(associated(cpatch%light_level_beam))       deallocate(cpatch%light_level_beam)
+    if(associated(cpatch%dmean_light_level_beam)) deallocate(cpatch%dmean_light_level_beam)
+    if(associated(cpatch%mmean_light_level_beam)) deallocate(cpatch%mmean_light_level_beam)
+    if(associated(cpatch%light_level_diff))       deallocate(cpatch%light_level_diff)
+    if(associated(cpatch%dmean_light_level_diff)) deallocate(cpatch%dmean_light_level_diff)
+    if(associated(cpatch%mmean_light_level_diff)) deallocate(cpatch%mmean_light_level_diff)
+    if(associated(cpatch%lambda_light))           deallocate(cpatch%lambda_light)
+    if(associated(cpatch%dmean_lambda_light))     deallocate(cpatch%dmean_lambda_light)
+    if(associated(cpatch%mmean_lambda_light))     deallocate(cpatch%mmean_lambda_light)
+    if(associated(cpatch%par_v))                  deallocate(cpatch%par_v)
+    if(associated(cpatch%par_v_beam))             deallocate(cpatch%par_v_beam)
+    if(associated(cpatch%par_v_diffuse))          deallocate(cpatch%par_v_diffuse)
+    if(associated(cpatch%rshort_v))               deallocate(cpatch%rshort_v)
+    if(associated(cpatch%rshort_v_beam))          deallocate(cpatch%rshort_v_beam)
+    if(associated(cpatch%rshort_v_diffuse))       deallocate(cpatch%rshort_v_diffuse)
+    if(associated(cpatch%rlong_v))                deallocate(cpatch%rlong_v)
+    if(associated(cpatch%rlong_v_surf))           deallocate(cpatch%rlong_v_surf)
+    if(associated(cpatch%rlong_v_incid))          deallocate(cpatch%rlong_v_incid)
+    if(associated(cpatch%rb))                     deallocate(cpatch%rb)
+    if(associated(cpatch%A_open))                 deallocate(cpatch%A_open)    
+    if(associated(cpatch%A_closed))               deallocate(cpatch%A_closed)
+    if(associated(cpatch%Psi_closed))             deallocate(cpatch%Psi_closed)
+    if(associated(cpatch%rsw_open))               deallocate(cpatch%rsw_open)
+    if(associated(cpatch%rsw_closed))             deallocate(cpatch%rsw_closed)
+    if(associated(cpatch%fsw))                    deallocate(cpatch%fsw)
+    if(associated(cpatch%fs_open))                deallocate(cpatch%fs_open)
+    if(associated(cpatch%dmean_fs_open))          deallocate(cpatch%dmean_fs_open)
+    if(associated(cpatch%dmean_fsw))              deallocate(cpatch%dmean_fsw)
+    if(associated(cpatch%dmean_fsn))              deallocate(cpatch%dmean_fsn)
+    if(associated(cpatch%mmean_fs_open))          deallocate(cpatch%mmean_fs_open)
+    if(associated(cpatch%mmean_fsw))              deallocate(cpatch%mmean_fsw)
+    if(associated(cpatch%mmean_fsn))              deallocate(cpatch%mmean_fsn)
+    if(associated(cpatch%stomatal_resistance))    deallocate(cpatch%stomatal_resistance)
+    if(associated(cpatch%maintenance_costs))      deallocate(cpatch%maintenance_costs)
+    if(associated(cpatch%bseeds))                 deallocate(cpatch%bseeds)
+    if(associated(cpatch%leaf_respiration))       deallocate(cpatch%leaf_respiration)
+    if(associated(cpatch%root_respiration))       deallocate(cpatch%root_respiration)
+    if(associated(cpatch%hcapveg))                deallocate(cpatch%hcapveg)
+    if(associated(cpatch%gpp))                    deallocate(cpatch%gpp)
+    if(associated(cpatch%paw_avg))                deallocate(cpatch%paw_avg)
+    if(associated(cpatch%turnover_amp))           deallocate(cpatch%turnover_amp)
+    if(associated(cpatch%llspan))                 deallocate(cpatch%llspan)
+    if(associated(cpatch%vm_bar))                 deallocate(cpatch%vm_bar)
+    if(associated(cpatch%sla))                    deallocate(cpatch%sla)
 
 
     return
@@ -4907,6 +4931,12 @@ contains
     if(associated(cpatch%light_level))          cpatch%light_level         = large_real
     if(associated(cpatch%dmean_light_level))    cpatch%dmean_light_level   = large_real
     if(associated(cpatch%mmean_light_level))    cpatch%mmean_light_level   = large_real
+    if(associated(cpatch%light_level_beam))       cpatch%light_level_beam       = large_real
+    if(associated(cpatch%dmean_light_level_beam)) cpatch%dmean_light_level_beam = large_real
+    if(associated(cpatch%mmean_light_level_beam)) cpatch%mmean_light_level_beam = large_real
+    if(associated(cpatch%light_level_diff))       cpatch%light_level_diff       = large_real
+    if(associated(cpatch%dmean_light_level_diff)) cpatch%dmean_light_level_diff = large_real
+    if(associated(cpatch%mmean_light_level_diff)) cpatch%mmean_light_level_diff = large_real
     if(associated(cpatch%lambda_light))          cpatch%lambda_light         = large_real
     if(associated(cpatch%dmean_lambda_light))    cpatch%dmean_lambda_light   = large_real
     if(associated(cpatch%mmean_lambda_light))    cpatch%mmean_lambda_light   = large_real
@@ -5118,7 +5148,7 @@ contains
     siteout%can_depth(ipout)          = sitein%can_depth(ipin)
     siteout%lambda_light(ipout)        = sitein%lambda_light(ipin)
        
-    if (idoutput > 0) then
+    if (idoutput > 0 .or. imoutput > 0) then
        siteout%dmean_rh             (ipout) = sitein%dmean_rh             (ipin)
        siteout%dmean_co2_residual   (ipout) = sitein%dmean_co2_residual   (ipin)
        siteout%dmean_energy_residual(ipout) = sitein%dmean_energy_residual(ipin)
@@ -5126,7 +5156,7 @@ contains
        siteout%dmean_lambda_light   (ipout) = sitein%dmean_lambda_light   (ipin)
     end if
     
-    if (idoutput > 0 .or. imoutput > 0) then
+    if (imoutput > 0) then
        siteout%mmean_rh             (ipout) = sitein%mmean_rh             (ipin)
        siteout%mmean_co2_residual   (ipout) = sitein%mmean_co2_residual   (ipin)
        siteout%mmean_energy_residual(ipout) = sitein%mmean_energy_residual(ipin)
@@ -5397,7 +5427,7 @@ contains
        
     enddo
        
-    if (idoutput > 0) then
+    if (idoutput > 0 .or. imoutput > 0) then
        siteout%dmean_rh             (1:inc) = pack(sitein%dmean_rh             ,logmask)
        siteout%dmean_co2_residual   (1:inc) = pack(sitein%dmean_co2_residual   ,logmask)
        siteout%dmean_energy_residual(1:inc) = pack(sitein%dmean_energy_residual,logmask)
@@ -5405,7 +5435,7 @@ contains
        siteout%dmean_lambda_light   (1:inc) = pack(sitein%dmean_lambda_light   ,logmask)
     end if
     
-    if (idoutput > 0 .or. imoutput > 0) then
+    if (imoutput > 0) then
        siteout%mmean_rh             (1:inc) = pack(sitein%mmean_rh             ,logmask)
        siteout%mmean_co2_residual   (1:inc) = pack(sitein%mmean_co2_residual   ,logmask)
        siteout%mmean_energy_residual(1:inc) = pack(sitein%mmean_energy_residual,logmask)
@@ -5489,12 +5519,6 @@ contains
     patchout%dmean_gpp(1:inc)        = pack(patchin%dmean_gpp,mask)
     patchout%dmean_gpp_pot(1:inc)    = pack(patchin%dmean_gpp_pot,mask)
     patchout%dmean_gpp_max(1:inc)    = pack(patchin%dmean_gpp_max,mask)
-    patchout%mmean_leaf_resp(1:inc)  = pack(patchin%mmean_leaf_resp,mask)
-    patchout%mmean_root_resp(1:inc)  = pack(patchin%mmean_root_resp,mask)
-    patchout%mmean_growth_resp(1:inc)  = pack(patchin%mmean_growth_resp,mask)
-    patchout%mmean_storage_resp(1:inc) = pack(patchin%mmean_storage_resp,mask)
-    patchout%mmean_vleaf_resp(1:inc)  = pack(patchin%mmean_vleaf_resp,mask)
-    patchout%mmean_gpp(1:inc)        = pack(patchin%mmean_gpp,mask)
     patchout%growth_respiration(1:inc) = pack(patchin%growth_respiration,mask)
     patchout%storage_respiration(1:inc) = pack(patchin%storage_respiration,mask)
     patchout%vleaf_respiration(1:inc) = pack(patchin%vleaf_respiration,mask)
@@ -5506,11 +5530,9 @@ contains
     patchout%first_census(1:inc)     = pack(patchin%first_census,mask)
     patchout%new_recruit_flag(1:inc) = pack(patchin%new_recruit_flag,mask)
     patchout%light_level(1:inc)      = pack(patchin%light_level,mask)
-    patchout%dmean_light_level(1:inc)= pack(patchin%dmean_light_level,mask)
-    patchout%mmean_light_level(1:inc)= pack(patchin%mmean_light_level,mask)
+    patchout%light_level_beam(1:inc) = pack(patchin%light_level_beam,mask)
+    patchout%light_level_diff(1:inc) = pack(patchin%light_level_diff,mask)
     patchout%lambda_light(1:inc)      = pack(patchin%lambda_light,mask)
-    patchout%dmean_lambda_light(1:inc)= pack(patchin%dmean_lambda_light,mask)
-    patchout%mmean_lambda_light(1:inc)= pack(patchin%mmean_lambda_light,mask)
     patchout%par_v(1:inc)            = pack(patchin%par_v,mask)
     patchout%par_v_beam(1:inc)       = pack(patchin%par_v_beam,mask)
     patchout%par_v_diffuse(1:inc)    = pack(patchin%par_v_diffuse,mask)
@@ -5528,12 +5550,6 @@ contains
     patchout%rsw_closed(1:inc)       = pack(patchin%rsw_closed,mask)
     patchout%fsw(1:inc)              = pack(patchin%fsw,mask)
     patchout%fs_open(1:inc)          = pack(patchin%fs_open,mask)
-    patchout%dmean_fs_open(1:inc)    = pack(patchin%dmean_fs_open,mask)
-    patchout%dmean_fsw(1:inc)        = pack(patchin%dmean_fsw,mask)
-    patchout%dmean_fsn(1:inc)        = pack(patchin%dmean_fsn,mask)
-    patchout%mmean_fs_open(1:inc)    = pack(patchin%mmean_fs_open,mask)
-    patchout%mmean_fsw(1:inc)        = pack(patchin%mmean_fsw,mask)
-    patchout%mmean_fsn(1:inc)        = pack(patchin%mmean_fsn,mask)
     patchout%stomatal_resistance(1:inc) = pack(patchin%stomatal_resistance,mask)
     patchout%maintenance_costs(1:inc) = pack(patchin%maintenance_costs,mask)
     patchout%bseeds(1:inc)           = pack(patchin%bseeds,mask)
@@ -5588,6 +5604,31 @@ contains
        osdo%gsw_residual     = osdi%gsw_residual
        
     enddo
+    
+    if (idoutput > 0 .or. imoutput > 0) then
+       patchout%dmean_fs_open     (1:inc)    = pack(patchin%dmean_fs_open         ,mask)
+       patchout%dmean_fsw         (1:inc)    = pack(patchin%dmean_fsw             ,mask)
+       patchout%dmean_fsn         (1:inc)    = pack(patchin%dmean_fsn             ,mask)
+       patchout%dmean_lambda_light(1:inc)    = pack(patchin%dmean_lambda_light    ,mask)
+       patchout%dmean_light_level (1:inc)    = pack(patchin%dmean_light_level     ,mask)
+       patchout%dmean_light_level_beam(1:inc)= pack(patchin%dmean_light_level_beam,mask)
+       patchout%dmean_light_level_diff(1:inc)= pack(patchin%dmean_light_level_diff,mask)
+    end if
+    if (imoutput > 0) then
+       patchout%mmean_fs_open         (1:inc) = pack(patchin%mmean_fs_open         ,mask)
+       patchout%mmean_fsw             (1:inc) = pack(patchin%mmean_fsw             ,mask)
+       patchout%mmean_fsn             (1:inc) = pack(patchin%mmean_fsn             ,mask)
+       patchout%mmean_lambda_light    (1:inc) = pack(patchin%mmean_lambda_light    ,mask)
+       patchout%mmean_light_level     (1:inc) = pack(patchin%mmean_light_level     ,mask)
+       patchout%mmean_light_level_beam(1:inc) = pack(patchin%mmean_light_level_beam,mask)
+       patchout%mmean_light_level_diff(1:inc) = pack(patchin%mmean_light_level_diff,mask)
+       patchout%mmean_leaf_resp       (1:inc) = pack(patchin%mmean_leaf_resp       ,mask)
+       patchout%mmean_root_resp       (1:inc) = pack(patchin%mmean_root_resp       ,mask)
+       patchout%mmean_growth_resp     (1:inc) = pack(patchin%mmean_growth_resp     ,mask)
+       patchout%mmean_storage_resp    (1:inc) = pack(patchin%mmean_storage_resp    ,mask)
+       patchout%mmean_vleaf_resp      (1:inc) = pack(patchin%mmean_vleaf_resp      ,mask)
+       patchout%mmean_gpp             (1:inc) = pack(patchin%mmean_gpp             ,mask)
+    end if
     
     return
   end subroutine copy_patchtype_mask
@@ -5655,30 +5696,21 @@ contains
        patchout%dmean_gpp(iout)        = patchin%dmean_gpp(iin)
        patchout%dmean_gpp_pot(iout)    = patchin%dmean_gpp_pot(iin)
        patchout%dmean_gpp_max(iout)    = patchin%dmean_gpp_max(iin)
-       patchout%mmean_gpp(iout)        = patchin%mmean_gpp(iin)
-       patchout%mmean_leaf_resp(iout)  = patchin%mmean_leaf_resp(iin)
-       patchout%mmean_root_resp(iout)  = patchin%mmean_root_resp(iin)
-       patchout%mmean_growth_resp(iout)  = patchin%mmean_growth_resp(iin)
-       patchout%mmean_storage_resp(iout)  = patchin%mmean_storage_resp(iin)
-       patchout%mmean_vleaf_resp(iout)  = patchin%mmean_vleaf_resp(iin)
        patchout%growth_respiration(iout) = patchin%growth_respiration(iin)
        patchout%storage_respiration(iout) = patchin%storage_respiration(iin)
        patchout%vleaf_respiration(iout) = patchin%vleaf_respiration(iin)
        patchout%fsn(iout)               = patchin%fsn(iin)
        patchout%monthly_dndt(iout)      = patchin%monthly_dndt(iin)
        patchout%mort_rate(:,iout)       = patchin%mort_rate(:,iin)
-       patchout%mmean_mort_rate(:,iout) = patchin%mmean_mort_rate(:,iin)
     
        patchout%Psi_open(iout)         = patchin%Psi_open(iin)
        patchout%krdepth(iout)          = patchin%krdepth(iin)
        patchout%first_census(iout)     = patchin%first_census(iin)
        patchout%new_recruit_flag(iout) = patchin%new_recruit_flag(iin)
        patchout%light_level(iout)      = patchin%light_level(iin)
-       patchout%dmean_light_level(iout)= patchin%dmean_light_level(iin)
-       patchout%mmean_light_level(iout)= patchin%mmean_light_level(iin)
-       patchout%lambda_light(iout)      = patchin%lambda_light(iin)
-       patchout%dmean_lambda_light(iout)= patchin%dmean_lambda_light(iin)
-       patchout%mmean_lambda_light(iout)= patchin%mmean_lambda_light(iin)
+       patchout%light_level_beam(iout) = patchin%light_level_beam(iin)
+       patchout%light_level_diff(iout) = patchin%light_level_diff(iin)
+       patchout%lambda_light(iout)     = patchin%lambda_light(iin)
        patchout%par_v(iout)            = patchin%par_v(iin)
        patchout%par_v_beam(iout)       = patchin%par_v_beam(iin)
        patchout%par_v_diffuse(iout)    = patchin%par_v_diffuse(iin)
@@ -5696,12 +5728,6 @@ contains
        patchout%rsw_closed(iout)       = patchin%rsw_closed(iin)
        patchout%fsw(iout)              = patchin%fsw(iin)
        patchout%fs_open(iout)          = patchin%fs_open(iin)
-       patchout%dmean_fs_open(iout)    = patchin%dmean_fs_open(iin)
-       patchout%dmean_fsw(iout)        = patchin%dmean_fsw(iin)
-       patchout%dmean_fsn(iout)        = patchin%dmean_fsn(iin)
-       patchout%mmean_fs_open(iout)    = patchin%mmean_fs_open(iin)
-       patchout%mmean_fsw(iout)        = patchin%mmean_fsw(iin)
-       patchout%mmean_fsn(iout)        = patchin%mmean_fsn(iin)
        patchout%stomatal_resistance(iout) = patchin%stomatal_resistance(iin)
        patchout%maintenance_costs(iout) = patchin%maintenance_costs(iin)
        patchout%bseeds(iout)           = patchin%bseeds(iin)
@@ -5735,6 +5761,32 @@ contains
        osdo%rb_residual      = osdi%rb_residual
        osdo%leaf_residual    = osdi%leaf_residual
        osdo%gsw_residual     = osdi%gsw_residual
+
+       if (imoutput > 0 .or. idoutput > 0 ) then
+          patchout%dmean_fs_open         (iout) = patchin%dmean_fs_open         (iin)
+          patchout%dmean_fsw             (iout) = patchin%dmean_fsw             (iin)
+          patchout%dmean_fsn             (iout) = patchin%dmean_fsn             (iin)
+          patchout%dmean_light_level     (iout) = patchin%dmean_light_level     (iin)
+          patchout%dmean_light_level_beam(iout) = patchin%dmean_light_level_beam(iin)
+          patchout%dmean_light_level_diff(iout) = patchin%dmean_light_level_diff(iin)
+          patchout%dmean_lambda_light    (iout) = patchin%dmean_lambda_light    (iin)
+       end if
+       if (imoutput > 0) then
+          patchout%mmean_fs_open           (iout) = patchin%mmean_fs_open           (iin)
+          patchout%mmean_fsw               (iout) = patchin%mmean_fsw               (iin)
+          patchout%mmean_fsn               (iout) = patchin%mmean_fsn               (iin)
+          patchout%mmean_light_level       (iout) = patchin%mmean_light_level       (iin)
+          patchout%mmean_light_level_beam  (iout) = patchin%mmean_light_level_beam  (iin)
+          patchout%mmean_light_level_diff  (iout) = patchin%mmean_light_level_diff  (iin)
+          patchout%mmean_gpp               (iout) = patchin%mmean_gpp               (iin)
+          patchout%mmean_leaf_resp         (iout) = patchin%mmean_leaf_resp         (iin)
+          patchout%mmean_root_resp         (iout) = patchin%mmean_root_resp         (iin)
+          patchout%mmean_growth_resp       (iout) = patchin%mmean_growth_resp       (iin)
+          patchout%mmean_storage_resp      (iout) = patchin%mmean_storage_resp      (iin)
+          patchout%mmean_vleaf_resp        (iout) = patchin%mmean_vleaf_resp        (iin)
+          patchout%mmean_mort_rate       (:,iout) = patchin%mmean_mort_rate       (:,iin)
+          patchout%mmean_lambda_light      (iout) = patchin%mmean_lambda_light      (iin)
+       end if
 
        iin = iin + 1
 
@@ -9889,6 +9941,20 @@ contains
        call metadata_edio(nvar,igr,'Relative light level','[NA]','icohort') 
     endif
 
+    if (associated(cpatch%light_level_beam)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%light_level_beam(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'LIGHT_LEVEL_BEAM :41:hist') 
+       call metadata_edio(nvar,igr,'Relative light level, beam fraction','[NA]','icohort') 
+    endif
+
+    if (associated(cpatch%light_level_diff)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%light_level_diff(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'LIGHT_LEVEL_DIFF :41:hist') 
+       call metadata_edio(nvar,igr,'Relative light level, diffuse fraction','[NA]','icohort') 
+    endif
+
     if (associated(cpatch%dmean_light_level)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%dmean_light_level(1),nvar,igr,init,cpatch%coglob_id, &
@@ -9896,11 +9962,39 @@ contains
        call metadata_edio(nvar,igr,'Diurnal mean of Relative light level ','[NA]','icohort') 
     endif
 
+    if (associated(cpatch%dmean_light_level_beam)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%dmean_light_level_beam(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'DMEAN_LIGHT_LEVEL_BEAM :41:hist:dail') 
+       call metadata_edio(nvar,igr,'Diurnal mean of Relative light level (beam)','[NA]','icohort') 
+    endif
+
+    if (associated(cpatch%dmean_light_level_diff)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%dmean_light_level_diff(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'DMEAN_LIGHT_LEVEL_DIFF :41:hist:dail') 
+       call metadata_edio(nvar,igr,'Diurnal mean of Relative light level (diffuse)','[NA]','icohort') 
+    endif
+
     if (associated(cpatch%mmean_light_level)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%mmean_light_level(1),nvar,igr,init,cpatch%coglob_id, &
          var_len,var_len_global,max_ptrs,'MMEAN_LIGHT_LEVEL :41:hist:mont') 
        call metadata_edio(nvar,igr,'Monthly mean of Relative light level ','[NA]','icohort') 
+    endif
+
+    if (associated(cpatch%mmean_light_level_beam)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%mmean_light_level_beam(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'MMEAN_LIGHT_LEVEL_BEAM :41:hist:mont') 
+       call metadata_edio(nvar,igr,'Monthly mean of Relative light level (beam)','[NA]','icohort') 
+    endif
+
+    if (associated(cpatch%mmean_light_level_diff)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%mmean_light_level_diff(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'MMEAN_LIGHT_LEVEL_DIFF :41:hist:mont') 
+       call metadata_edio(nvar,igr,'Monthly mean of Relative light level (diff)','[NA]','icohort') 
     endif
 
     if (associated(cpatch%lambda_light)) then

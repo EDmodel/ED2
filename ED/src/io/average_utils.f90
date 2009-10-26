@@ -503,6 +503,12 @@ subroutine integrate_ed_daily_output_state(cgrid)
                   if (cpoly%met(isi)%rshort > 0.5) then
                      cpatch%dmean_light_level(ico)  = cpatch%dmean_light_level(ico)        &
                                                     + cpatch%light_level(ico)
+                     cpatch%dmean_light_level_beam(ico) =                                  &
+                                               cpatch%dmean_light_level_beam(ico)          &
+                                             + cpatch%light_level_beam(ico)
+                     cpatch%dmean_light_level_diff(ico) =                                  &
+                                               cpatch%dmean_light_level_diff(ico)          &
+                                             + cpatch%light_level_diff(ico)
                      cpatch%dmean_lambda_light(ico) = cpatch%dmean_lambda_light(ico)       &
                                                     + cpatch%lambda_light(ico)
                   end if
@@ -1293,13 +1299,19 @@ subroutine normalize_ed_daily_output_vars(cgrid)
                ! problems with polar nights).                                              !
                !---------------------------------------------------------------------------!
                if (cpoly%daylight(isi) >= dtlsm) then
-                  cpatch%dmean_light_level(ico)  = cpatch%dmean_light_level(ico)           &
-                                                 * dtlsm / cpoly%daylight(isi)
-                  cpatch%dmean_lambda_light(ico) = cpatch%dmean_lambda_light(ico)          &
-                                                 * dtlsm / cpoly%daylight(isi)
+                  cpatch%dmean_light_level(ico)       = cpatch%dmean_light_level(ico)      &
+                                                      * dtlsm / cpoly%daylight(isi)
+                  cpatch%dmean_light_level_beam(ico)  = cpatch%dmean_light_level_beam(ico) &
+                                                      * dtlsm / cpoly%daylight(isi)
+                  cpatch%dmean_light_level_diff(ico)  = cpatch%dmean_light_level_diff(ico) &
+                                                      * dtlsm / cpoly%daylight(isi)
+                  cpatch%dmean_lambda_light(ico)      = cpatch%dmean_lambda_light(ico)     &
+                                                      * dtlsm / cpoly%daylight(isi)
                else
-                  cpatch%dmean_light_level(ico)  = 0.
-                  cpatch%dmean_lambda_light(ico) = 0.
+                  cpatch%dmean_light_level     (ico) = 0.
+                  cpatch%dmean_light_level_beam(ico) = 0.
+                  cpatch%dmean_light_level_diff(ico) = 0.
+                  cpatch%dmean_lambda_light    (ico) = 0.
                end if
                
                !---------------------------------------------------------------------------!
@@ -1612,7 +1624,7 @@ subroutine normalize_ed_daily_output_vars(cgrid)
       if (fivedim_diags) then
          cgrid%dmean_rh_ar       (  :  ,:,ipy) = cgrid%dmean_rh_ar       (  :  ,:,ipy)     &
                                                + sss_rh_ar      (  :,  :) * poly_area_i
-         cgrid%frostmort_ar(:,:,:,:,ipy)       = cgrid%frostmort_ar(:,:,:,:,ipy)           &
+         cgrid%frostmort_ar      (:,:,:,:,ipy) = cgrid%frostmort_ar(:,:,:,:,ipy)           &
                                                + sss_frostmort  (:,:,:,:) * poly_area_i
          cgrid%dmean_fs_open_ar  (:,:,:,:,ipy) = cgrid%dmean_fs_open_ar  (:,:,:,:,ipy)     &
                                                + sss_fs_open_ar (:,:,:,:) * poly_area_i
@@ -1811,14 +1823,17 @@ subroutine zero_ed_daily_output_vars(cgrid)
             csite%dmean_energy_residual(ipa) = 0.
             csite%dmean_water_residual (ipa) = 0.
             csite%dmean_rh             (ipa) = 0.
+            csite%dmean_lambda_light   (ipa) = 0.
             
             cpatch => csite%patch(ipa)
             do ico=1, cpatch%ncohorts
-               cpatch%dmean_fs_open(ico)      = 0.
-               cpatch%dmean_fsw(ico)          = 0.
-               cpatch%dmean_fsn(ico)          = 0.
-               cpatch%dmean_light_level(ico)  = 0.
-               cpatch%dmean_lambda_light(ico) = 0.
+               cpatch%dmean_fs_open(ico)          = 0.
+               cpatch%dmean_fsw(ico)              = 0.
+               cpatch%dmean_fsn(ico)              = 0.
+               cpatch%dmean_light_level(ico)      = 0.
+               cpatch%dmean_light_level_beam(ico) = 0.
+               cpatch%dmean_light_level_diff(ico) = 0.
+               cpatch%dmean_lambda_light(ico)     = 0.
             end do
          end do
       end do
@@ -2010,10 +2025,14 @@ subroutine integrate_ed_monthly_output_vars(cgrid)
                !    Light level, a simple average now.  We currently ignore that different !
                ! days have different day light lenghts.                                    !
                !---------------------------------------------------------------------------!
-               cpatch%mmean_light_level(ico)   = cpatch%mmean_light_level(ico)             &
-                                               + cpatch%dmean_light_level(ico)
-               cpatch%mmean_lambda_light(ico)  = cpatch%mmean_lambda_light(ico)            &
-                                               + cpatch%dmean_lambda_light(ico)
+               cpatch%mmean_light_level(ico)      = cpatch%mmean_light_level(ico)          &
+                                                  + cpatch%dmean_light_level(ico)
+               cpatch%mmean_light_level_beam(ico) = cpatch%mmean_light_level_beam(ico)     &
+                                                  + cpatch%dmean_light_level_beam(ico)
+               cpatch%mmean_light_level_diff(ico) = cpatch%mmean_light_level_diff(ico)     &
+                                                  + cpatch%dmean_light_level_diff(ico)
+               cpatch%mmean_lambda_light(ico)     = cpatch%mmean_lambda_light(ico)         &
+                                                  + cpatch%dmean_lambda_light(ico)
 
                !----- Mortality rates. ----------------------------------------------------!
                do imt=1,n_mort
@@ -2354,8 +2373,14 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
                end do
 
                !----- Finding the light level, ignoring changes in day time length... -----!
-               cpatch%mmean_light_level (ico) = cpatch%mmean_light_level(ico)  * ndaysi
-               cpatch%mmean_lambda_light(ico) = cpatch%mmean_lambda_light(ico) * ndaysi
+               cpatch%mmean_light_level (ico)      = cpatch%mmean_light_level(ico)         &
+                                                   * ndaysi
+               cpatch%mmean_light_level_beam (ico) = cpatch%mmean_light_level_beam(ico)    &
+                                                   * ndaysi
+               cpatch%mmean_light_level_diff (ico) = cpatch%mmean_light_level_diff(ico)    &
+                                                   * ndaysi
+               cpatch%mmean_lambda_light(ico)      = cpatch%mmean_lambda_light(ico)        &
+                                                   * ndaysi
 
                !----- Defining to which PFT this cohort belongs. --------------------------!
                ipft = cpatch%pft(ico)
@@ -2702,25 +2727,27 @@ subroutine zero_ed_monthly_output_vars(cgrid)
 
          csite => cpoly%site(isi)
          do ipa=1,csite%npatches
-            csite%mmean_co2_residual   (ipa) = 0.
-            csite%mmean_energy_residual(ipa) = 0.
-            csite%mmean_water_residual (ipa) = 0.
-            csite%mmean_rh             (ipa) = 0.
-            csite%mmean_lambda_light   (ipa) = 0.
+            csite%mmean_co2_residual      (ipa) = 0.
+            csite%mmean_energy_residual   (ipa) = 0.
+            csite%mmean_water_residual    (ipa) = 0.
+            csite%mmean_rh                (ipa) = 0.
+            csite%mmean_lambda_light      (ipa) = 0.
             cpatch=> csite%patch(ipa)
             do ico=1,cpatch%ncohorts
-               cpatch%mmean_fs_open       (ico) = 0.
-               cpatch%mmean_fsw           (ico) = 0.
-               cpatch%mmean_fsn           (ico) = 0.
-               cpatch%mmean_gpp           (ico) = 0.
-               cpatch%mmean_leaf_resp     (ico) = 0.
-               cpatch%mmean_root_resp     (ico) = 0.
-               cpatch%mmean_growth_resp   (ico) = 0.
-               cpatch%mmean_storage_resp  (ico) = 0.
-               cpatch%mmean_vleaf_resp    (ico) = 0.
-               cpatch%mmean_light_level   (ico) = 0.
-               cpatch%mmean_lambda_light  (ico) = 0.
-               cpatch%mmean_mort_rate   (:,ico) = 0.
+               cpatch%mmean_fs_open           (ico) = 0.
+               cpatch%mmean_fsw               (ico) = 0.
+               cpatch%mmean_fsn               (ico) = 0.
+               cpatch%mmean_gpp               (ico) = 0.
+               cpatch%mmean_leaf_resp         (ico) = 0.
+               cpatch%mmean_root_resp         (ico) = 0.
+               cpatch%mmean_growth_resp       (ico) = 0.
+               cpatch%mmean_storage_resp      (ico) = 0.
+               cpatch%mmean_vleaf_resp        (ico) = 0.
+               cpatch%mmean_light_level       (ico) = 0.
+               cpatch%mmean_light_level_beam  (ico) = 0.
+               cpatch%mmean_light_level_diff  (ico) = 0.
+               cpatch%mmean_lambda_light      (ico) = 0.
+               cpatch%mmean_mort_rate       (:,ico) = 0.
             end do
          end do
       end do

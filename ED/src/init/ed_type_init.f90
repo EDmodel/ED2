@@ -29,7 +29,9 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
 
   
   
-  cpatch%light_level(ico)       = 0.0
+  cpatch%light_level     (ico)  = 0.0
+  cpatch%light_level_beam(ico)  = 0.0
+  cpatch%light_level_diff(ico)  = 0.0
   cpatch%lambda_light(ico)      = 0.0
   cpatch%gpp(ico) = 0.0
   cpatch%leaf_respiration(ico) = 0.0
@@ -53,7 +55,6 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
   cpatch%ddbh_dt(ico)          = 0.0
 
 
-  cpatch%light_level(ico)      = 0.0
   cpatch%par_v(ico)            = 0.0
   cpatch%par_v_beam(ico)       = 0.0
   cpatch%par_v_diffuse(ico)    = 0.0
@@ -120,24 +121,28 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
   cpatch%turnover_amp(ico) = 1.0
 
   if (imoutput > 0) then
-     cpatch%mmean_gpp(ico)          = 0.0
-     cpatch%mmean_leaf_resp(ico)    = 0.0
-     cpatch%mmean_root_resp(ico)    = 0.0
-     cpatch%mmean_growth_resp(ico)  = 0.0
-     cpatch%mmean_storage_resp(ico) = 0.0
-     cpatch%mmean_vleaf_resp(ico)   = 0.0
-     cpatch%mmean_light_level(ico)  = 0.0
-     cpatch%mmean_fs_open(ico)      = 0.0
-     cpatch%mmean_fsw(ico)          = 0.0
-     cpatch%mmean_fsn(ico)          = 0.0
-     cpatch%mmean_lambda_light(ico) = 0.0
+     cpatch%mmean_gpp              (ico) = 0.0
+     cpatch%mmean_leaf_resp        (ico) = 0.0
+     cpatch%mmean_root_resp        (ico) = 0.0
+     cpatch%mmean_growth_resp      (ico) = 0.0
+     cpatch%mmean_storage_resp     (ico) = 0.0
+     cpatch%mmean_vleaf_resp       (ico) = 0.0
+     cpatch%mmean_light_level      (ico) = 0.0
+     cpatch%mmean_light_level_beam (ico) = 0.0
+     cpatch%mmean_light_level_diff (ico) = 0.0
+     cpatch%mmean_fs_open          (ico) = 0.0
+     cpatch%mmean_fsw              (ico) = 0.0
+     cpatch%mmean_fsn              (ico) = 0.0
+     cpatch%mmean_lambda_light     (ico) = 0.0
   end if
   if (idoutput > 0 .or. imoutput > 0) then
-     cpatch%dmean_light_level(ico)  = 0.0
-     cpatch%dmean_fsw(ico)          = 0.0
-     cpatch%dmean_fsn(ico)          = 0.0
-     cpatch%dmean_lambda_light(ico) = 0.0
-     cpatch%dmean_fs_open(ico)      = 0.0
+     cpatch%dmean_light_level      (ico) = 0.0
+     cpatch%dmean_light_level_beam (ico) = 0.0
+     cpatch%dmean_light_level_diff (ico) = 0.0
+     cpatch%dmean_fsw              (ico) = 0.0
+     cpatch%dmean_fsn              (ico) = 0.0
+     cpatch%dmean_lambda_light     (ico) = 0.0
+     cpatch%dmean_fs_open          (ico) = 0.0
   end if
 
   
