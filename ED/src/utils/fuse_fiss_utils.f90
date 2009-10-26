@@ -179,10 +179,11 @@ module fuse_fiss_utils
    !---------------------------------------------------------------------------------------!
    subroutine terminate_patches(csite)
 
-      use ed_state_vars, only :  polygontype       & ! Structure
-                               , sitetype          & ! Structure
-                               , patchtype         ! ! Structure
-      use disturb_coms,  only : min_new_patch_area ! ! intent(in)
+      use ed_state_vars, only : polygontype        & ! Structure
+                              , sitetype           & ! Structure
+                              , patchtype          ! ! Structure
+      use disturb_coms , only : min_new_patch_area ! ! intent(in)
+      use ed_misc_coms , only : imoutput           ! ! intent(in)
 
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -260,6 +261,15 @@ module fuse_fiss_utils
             cpatch%basarea(ico)             = cpatch%basarea(ico)             * area_scale
             cpatch%dagb_dt(ico)             = cpatch%dagb_dt(ico)             * area_scale
             cpatch%dba_dt(ico)              = cpatch%dba_dt(ico)              * area_scale
+            !----- Carbon flux monthly means are extensive, we must convert them. ---------!
+            if (imoutput > 0) then
+               cpatch%mmean_leaf_resp   (ico) = cpatch%mmean_leaf_resp   (ico) * area_scale
+               cpatch%mmean_root_resp   (ico) = cpatch%mmean_root_resp   (ico) * area_scale
+               cpatch%mmean_growth_resp (ico) = cpatch%mmean_growth_resp (ico) * area_scale
+               cpatch%mmean_storage_resp(ico) = cpatch%mmean_storage_resp(ico) * area_scale
+               cpatch%mmean_vleaf_resp  (ico) = cpatch%mmean_vleaf_resp  (ico) * area_scale
+               cpatch%mmean_gpp         (ico) = cpatch%mmean_gpp         (ico) * area_scale
+            end if
          end do
       end do
 
@@ -572,14 +582,15 @@ module fuse_fiss_utils
    !---------------------------------------------------------------------------------------!
    subroutine split_cohorts(cpatch, green_leaf_factor, lsl)
 
-      use ed_state_vars        , only :  patchtype              ! ! structure
-      use pft_coms             , only :  q                      & ! intent(in), lookup table
-                                       , qsw                      ! intent(in), lookup table
-      use fusion_fission_coms  , only :  lai_tol                ! ! intent(in)
-      use ed_max_dims             , only :  n_pft                  ! ! intent(in)
-      use allometry            , only :  dbh2h                  & ! function
-                                       , bd2dbh                 & ! function
-                                       , dbh2bd                 ! ! function
+      use ed_state_vars        , only : patchtype              ! ! structure
+      use pft_coms             , only : q                      & ! intent(in), lookup table
+                                      , qsw                      ! intent(in), lookup table
+      use fusion_fission_coms  , only : lai_tol                ! ! intent(in)
+      use ed_max_dims          , only : n_pft                  ! ! intent(in)
+      use allometry            , only : dbh2h                  & ! function
+                                      , bd2dbh                 & ! function
+                                      , dbh2bd                 ! ! function
+      use ed_misc_coms         , only : imoutput               ! ! intent(in)
       implicit none
       !----- Constants --------------------------------------------------------------------!
       real                   , parameter   :: epsilon=0.0001    ! Tweak factor...
@@ -685,6 +696,16 @@ module fuse_fiss_utils
                cpatch%hcapveg(ico)             = cpatch%hcapveg(ico)              * 0.5
                cpatch%veg_energy(ico)          = cpatch%veg_energy(ico)           * 0.5
                !---------------------------------------------------------------------------!
+
+               !----- Carbon flux monthly means are extensive, we must convert them. ------!
+               if (imoutput > 0) then
+                  cpatch%mmean_leaf_resp   (ico) = cpatch%mmean_leaf_resp   (ico) * 0.5
+                  cpatch%mmean_root_resp   (ico) = cpatch%mmean_root_resp   (ico) * 0.5
+                  cpatch%mmean_growth_resp (ico) = cpatch%mmean_growth_resp (ico) * 0.5
+                  cpatch%mmean_storage_resp(ico) = cpatch%mmean_storage_resp(ico) * 0.5
+                  cpatch%mmean_vleaf_resp  (ico) = cpatch%mmean_vleaf_resp  (ico) * 0.5
+                  cpatch%mmean_gpp         (ico) = cpatch%mmean_gpp         (ico) * 0.5
+               end if
 
 
                !----- Apply these values to the new cohort. -------------------------------!
@@ -817,6 +838,8 @@ module fuse_fiss_utils
       cpatch%light_level(idt)         = cpatch%light_level(isc)
       cpatch%light_level_beam(idt)    = cpatch%light_level_beam(isc)
       cpatch%light_level_diff(idt)    = cpatch%light_level_diff(isc)
+      cpatch%norm_par_beam(idt)       = cpatch%norm_par_beam(isc)
+      cpatch%norm_par_diff(idt)       = cpatch%norm_par_diff(isc)
       cpatch%rb(idt)                  = cpatch%rb(isc)
       cpatch%A_open(idt)              = cpatch%A_open(isc)
       cpatch%A_closed(idt)            = cpatch%A_closed(isc)
@@ -869,6 +892,8 @@ module fuse_fiss_utils
          cpatch%dmean_lambda_light    (idt) = cpatch%dmean_lambda_light    (isc)
          cpatch%dmean_light_level     (idt) = cpatch%dmean_light_level     (isc)
          cpatch%dmean_light_level_beam(idt) = cpatch%dmean_light_level_beam(isc)
+         cpatch%dmean_norm_par_beam   (idt) = cpatch%dmean_norm_par_beam   (isc)
+         cpatch%dmean_norm_par_diff   (idt) = cpatch%dmean_norm_par_diff   (isc)
          cpatch%dmean_light_level_diff(idt) = cpatch%dmean_light_level_diff(isc)
       end if
 
@@ -885,6 +910,8 @@ module fuse_fiss_utils
          cpatch%mmean_growth_resp     (idt) = cpatch%mmean_growth_resp     (isc)
          cpatch%mmean_storage_resp    (idt) = cpatch%mmean_storage_resp    (isc)
          cpatch%mmean_vleaf_resp      (idt) = cpatch%mmean_vleaf_resp      (isc)
+         cpatch%mmean_norm_par_beam   (idt) = cpatch%mmean_norm_par_beam   (isc)
+         cpatch%mmean_norm_par_diff   (idt) = cpatch%mmean_norm_par_diff   (isc)
          cpatch%mmean_gpp             (idt) = cpatch%mmean_gpp             (isc)
       end if
 
@@ -915,6 +942,8 @@ module fuse_fiss_utils
                                , bd2dbh                 & ! function
                                , dbh2h                  ! ! function
       use ed_max_dims   , only : n_mort                 ! ! intent(in)
+      use ed_misc_coms  , only : imoutput               & ! intent(in)
+                               , idoutput               ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(patchtype) , target     :: cpatch            ! Current patch
@@ -1073,6 +1102,12 @@ module fuse_fiss_utils
       cpatch%light_level_diff(recc) = ( cpatch%light_level_diff(recc) *cpatch%nplant(recc) &
                                       + cpatch%light_level_diff(donc) *cpatch%nplant(donc) )        &
                                     * newni
+      cpatch%norm_par_beam(recc)    = ( cpatch%norm_par_beam(recc) *cpatch%nplant(recc)    &
+                                      + cpatch%norm_par_beam(donc) *cpatch%nplant(donc)    )        &
+                                    * newni
+      cpatch%norm_par_diff(recc)    = ( cpatch%norm_par_diff(recc) *cpatch%nplant(recc)    &
+                                      + cpatch%norm_par_diff(donc) *cpatch%nplant(donc)    )        &
+                                    * newni
 
       !------------------------------------------------------------------------------------!
       !    Not sure about the following variables.  From ed_state_vars, I would say that   !
@@ -1109,7 +1144,7 @@ module fuse_fiss_utils
       cpatch%basarea(recc)      = cpatch%basarea(recc)      + cpatch%basarea(donc)
       cpatch%dagb_dt(recc)      = cpatch%dagb_dt(recc)      + cpatch%dagb_dt(donc)
       cpatch%dba_dt(recc)       = cpatch%dba_dt(recc)       + cpatch%dba_dt(donc)
-      !----- DBH growth is not area-dependent, so we use a weighted average
+      !----- DBH growth is not area-dependent, so we use a weighted average. --------------!
       cpatch%ddbh_dt(recc)      = ( cpatch%ddbh_dt(recc)    * cpatch%nplant(recc)          &
                                   + cpatch%ddbh_dt(donc)    * cpatch%nplant(donc) )        &
                                 * newni
@@ -1148,6 +1183,116 @@ module fuse_fiss_utils
     
       root_depth = calc_root_depth(cpatch%hite(recc), cpatch%dbh(recc), cpatch%pft(recc))
       cpatch%krdepth(recc) = assign_root_depth(root_depth, lsl)
+
+      !------------------------------------------------------------------------------------!
+      !    Now that we have daily and monthly means going to the cohort level, we must     !
+      ! fuse them too.                                                                     !
+      !------------------------------------------------------------------------------------!
+      if (idoutput > 0 .or. imoutput > 0) then
+         cpatch%dmean_light_level     (recc) = ( cpatch%dmean_light_level(recc)            &
+                                               * cpatch%nplant(recc)                       &
+                                               + cpatch%dmean_light_level(donc)            &
+                                               * cpatch%nplant(donc) ) * newni
+         cpatch%dmean_light_level_beam(recc) = ( cpatch%dmean_light_level_beam(recc)       &
+                                               * cpatch%nplant(recc)                       &
+                                               + cpatch%dmean_light_level_beam(donc)       &
+                                               * cpatch%nplant(donc) ) * newni
+         cpatch%dmean_light_level_diff(recc) = ( cpatch%dmean_light_level_diff(recc)       &
+                                               * cpatch%nplant(recc)                       &
+                                               + cpatch%dmean_light_level_diff(donc)       &
+                                               * cpatch%nplant(donc) ) * newni
+         cpatch%dmean_norm_par_beam(recc)    = ( cpatch%dmean_norm_par_beam(recc)          &
+                                               * cpatch%nplant(recc)                       &
+                                               + cpatch%dmean_norm_par_beam(donc)          &
+                                               * cpatch%nplant(donc) ) * newni
+         cpatch%dmean_norm_par_diff(recc)    = ( cpatch%dmean_norm_par_diff(recc)          &
+                                               * cpatch%nplant(recc)                       &
+                                               + cpatch%dmean_norm_par_diff(donc)          &
+                                               * cpatch%nplant(donc) ) * newni
+         cpatch%dmean_lambda_light    (recc) = ( cpatch%dmean_lambda_light(recc)           &
+                                               * cpatch%nplant(recc)                       &
+                                               + cpatch%dmean_lambda_light(donc)           &
+                                               * cpatch%nplant(donc) ) * newni
+         cpatch%dmean_fs_open         (recc) = ( cpatch%dmean_fs_open(recc)                &
+                                               * cpatch%nplant(recc)                       &
+                                               + cpatch%dmean_fs_open(donc)                &
+                                               * cpatch%nplant(donc) ) * newni
+         cpatch%dmean_fsw             (recc) = ( cpatch%dmean_fsw(recc)                    &
+                                               * cpatch%nplant(recc)                       &
+                                               + cpatch%dmean_fsw(donc)                    &
+                                               * cpatch%nplant(donc) ) * newni
+         cpatch%dmean_fsn             (recc) = ( cpatch%dmean_fsn(recc)                    &
+                                               * cpatch%nplant(recc)                       &
+                                               + cpatch%dmean_fsn(donc)                    &
+                                               * cpatch%nplant(donc) ) * newni
+      end if
+      if (imoutput > 0) then
+         cpatch%mmean_light_level     (recc) = ( cpatch%mmean_light_level(recc)            &
+                                               * cpatch%nplant(recc)                       &
+                                               + cpatch%mmean_light_level(donc)            &
+                                               * cpatch%nplant(donc) ) * newni
+         cpatch%mmean_light_level_beam(recc) = ( cpatch%mmean_light_level_beam(recc)       &
+                                               * cpatch%nplant(recc)                       &
+                                               + cpatch%mmean_light_level_beam(donc)       &
+                                               * cpatch%nplant(donc) ) * newni
+         cpatch%mmean_light_level_diff(recc) = ( cpatch%mmean_light_level_diff(recc)       &
+                                               * cpatch%nplant(recc)                       &
+                                               + cpatch%mmean_light_level_diff(donc)       &
+                                               * cpatch%nplant(donc) ) * newni
+         cpatch%mmean_norm_par_beam(recc)    = ( cpatch%mmean_norm_par_beam(recc)          &
+                                               * cpatch%nplant(recc)                       &
+                                               + cpatch%mmean_norm_par_beam(donc)          &
+                                               * cpatch%nplant(donc) ) * newni
+         cpatch%mmean_norm_par_diff(recc)    = ( cpatch%mmean_norm_par_diff(recc)          &
+                                               * cpatch%nplant(recc)                       &
+                                               + cpatch%mmean_norm_par_diff(donc)          &
+                                               * cpatch%nplant(donc) ) * newni
+         cpatch%mmean_lambda_light    (recc) = ( cpatch%mmean_lambda_light(recc)           &
+                                               * cpatch%nplant(recc)                       &
+                                               + cpatch%mmean_lambda_light(donc)           &
+                                               * cpatch%nplant(donc) ) * newni
+         cpatch%mmean_fs_open         (recc) = ( cpatch%mmean_fs_open(recc)                &
+                                               * cpatch%nplant(recc)                       &
+                                               + cpatch%mmean_fs_open(donc)                &
+                                               * cpatch%nplant(donc) ) * newni
+         cpatch%mmean_fsw             (recc) = ( cpatch%mmean_fsw(recc)                    &
+                                               * cpatch%nplant(recc)                       &
+                                               + cpatch%mmean_fsw(donc)                    &
+                                               * cpatch%nplant(donc) ) * newni
+         cpatch%mmean_fsn             (recc) = ( cpatch%mmean_fsn(recc)                    &
+                                               * cpatch%nplant(recc)                       &
+                                               + cpatch%mmean_fsn(donc)                    &
+                                               * cpatch%nplant(donc) ) * newni
+
+         !---------------------------------------------------------------------------------!
+         !    Fusing the mortality rates.  The terms that are PFT-dependent but density-   !
+         ! independent should be the same, so it doesn't matter which average we use.  The !
+         ! density-dependent should be averaged using nplant as the relative weight.       !
+         !---------------------------------------------------------------------------------!
+         do imty=1,n_mort
+            cpatch%mmean_mort_rate(imty,recc) = ( cpatch%mmean_mort_rate(imty,recc)        &
+                                                * cpatch%nplant(recc)                      &
+                                                + cpatch%mort_rate(imty,donc)              &
+                                                * cpatch%nplant(donc))                     &
+                                              * newni
+         end do
+         
+         !----- These variables are "extensive", so we just add them. ---------------------!
+         cpatch%mmean_gpp      (recc)    = cpatch%mmean_gpp(recc)                          &
+                                         + cpatch%mmean_gpp(donc)
+         cpatch%mmean_leaf_resp(recc)    = cpatch%mmean_leaf_resp(recc)                    &
+                                         + cpatch%mmean_leaf_resp(donc)
+         cpatch%mmean_root_resp(recc)    = cpatch%mmean_root_resp(recc)                    &
+                                         + cpatch%mmean_root_resp(donc)
+         cpatch%mmean_growth_resp(recc)  = cpatch%mmean_growth_resp(recc)                  &
+                                         + cpatch%mmean_growth_resp(donc)
+         cpatch%mmean_storage_resp(recc) = cpatch%mmean_storage_resp(recc)                 &
+                                         + cpatch%mmean_storage_resp(donc)
+         cpatch%mmean_vleaf_resp(recc)   = cpatch%mmean_vleaf_resp(recc)                   &
+                                         + cpatch%mmean_vleaf_resp(donc)
+      end if
+
+
 
       !----- Last, but not the least, we update nplant ------------------------------------!
       cpatch%nplant(recc) = newn
@@ -1512,20 +1657,22 @@ module fuse_fiss_utils
    !---------------------------------------------------------------------------------------!
    subroutine fuse_2_patches(csite,donp,recp,prss,lsl,green_leaf_factor                 &
                                ,elim_nplant,elim_lai)
-      use ed_state_vars      , only :  sitetype              & ! Structure 
-                                     , patchtype             ! ! Structure
-      use soil_coms          , only :  soil                  & ! intent(in), lookup table
-                                     , min_sfcwater_mass     ! ! intent(in)
-      use grid_coms          , only :  nzg                   & ! intent(in)
-                                     , nzs                   ! ! intent(in)
-      use fusion_fission_coms, only :  ff_ndbh               ! ! intent(in)
-      use ed_max_dims        , only :  n_pft                 & ! intent(in)
-                                     , n_dbh                 ! ! intent(in)
-      use mem_sites          , only :  maxcohort             ! ! intent(in)
-      use consts_coms        , only :  cpi                   & ! intent(in)
-                                     , cpor                  & ! intent(in)
-                                     , p00                   ! ! intent(in)
-      use therm_lib          , only :  qwtk
+      use ed_state_vars      , only : sitetype              & ! Structure 
+                                    , patchtype             ! ! Structure
+      use soil_coms          , only : soil                  & ! intent(in), lookup table
+                                    , min_sfcwater_mass     ! ! intent(in)
+      use grid_coms          , only : nzg                   & ! intent(in)
+                                    , nzs                   ! ! intent(in)
+      use fusion_fission_coms, only : ff_ndbh               ! ! intent(in)
+      use ed_max_dims        , only : n_pft                 & ! intent(in)
+                                    , n_dbh                 ! ! intent(in)
+      use mem_sites          , only : maxcohort             ! ! intent(in)
+      use consts_coms        , only : cpi                   & ! intent(in)
+                                    , cpor                  & ! intent(in)
+                                    , p00                   ! ! intent(in)
+      use therm_lib          , only : qwtk                  ! ! function
+      use ed_misc_coms       , only : idoutput              & ! intent(in)
+                                    , imoutput              ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype)         , target      :: csite             ! Current site
@@ -1845,6 +1992,61 @@ module fuse_fiss_utils
       end do
       !------------------------------------------------------------------------------------!
 
+      !------------------------------------------------------------------------------------! 
+      !    We must also check whether daily/monthly output variables exist.  If they do,   !
+      ! then we must fuse them too.                                                        !
+      !------------------------------------------------------------------------------------! 
+      if (idoutput > 0 .or. imoutput > 0) then
+         csite%dmean_rh(recp)           = newareai                                         &
+                                        * ( csite%dmean_rh(donp) * csite%area(donp)        &
+                                          + csite%dmean_rh(recp) * csite%area(recp) )
+         csite%dmean_co2_residual(recp) = newareai                                         &
+                                        * ( csite%dmean_co2_residual(donp)                 &
+                                          * csite%area(donp)                               &
+                                          + csite%dmean_co2_residual(recp)                 &
+                                          * csite%area(recp) )
+         csite%dmean_energy_residual(recp) = newareai                                      &
+                                           * ( csite%dmean_energy_residual(donp)           &
+                                             * csite%area(donp)                            &
+                                             + csite%dmean_energy_residual(recp)           &
+                                             * csite%area(recp) )
+         csite%dmean_water_residual(recp)  = newareai                                      &
+                                           * ( csite%dmean_water_residual(donp)            &
+                                             * csite%area(donp)                            &
+                                             + csite%dmean_water_residual(recp)            &
+                                             * csite%area(recp) )
+         csite%dmean_lambda_light(recp)    = newareai                                      &
+                                           * ( csite%dmean_lambda_light(donp)              &
+                                             * csite%area(donp)                            &
+                                             + csite%dmean_lambda_light(recp)              &
+                                             * csite%area(recp) )
+      end if
+      if (imoutput > 0) then
+         csite%mmean_rh(recp)           = newareai                                         &
+                                        * ( csite%mmean_rh(donp) * csite%area(donp)        &
+                                          + csite%mmean_rh(recp) * csite%area(recp) )
+         csite%mmean_co2_residual(recp) = newareai                                         &
+                                        * ( csite%mmean_co2_residual(donp)                 &
+                                          * csite%area(donp)                               &
+                                          + csite%mmean_co2_residual(recp)                 &
+                                          * csite%area(recp) )
+         csite%mmean_energy_residual(recp) = newareai                                      &
+                                           * ( csite%mmean_energy_residual(donp)           &
+                                             * csite%area(donp)                            &
+                                             + csite%mmean_energy_residual(recp)           &
+                                             * csite%area(recp) )
+         csite%mmean_water_residual(recp)  = newareai                                      &
+                                           * ( csite%mmean_water_residual(donp)            &
+                                             * csite%area(donp)                            &
+                                             + csite%mmean_water_residual(recp)            &
+                                             * csite%area(recp) )
+         csite%mmean_lambda_light(recp)    = newareai                                      &
+                                           * ( csite%mmean_lambda_light(donp)              &
+                                             * csite%area(donp)                            &
+                                             + csite%mmean_lambda_light(recp)              &
+                                             * csite%area(recp) )
+      end if
+
       !------------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
       call qwtk(csite%avg_veg_energy(recp),csite%avg_veg_water(recp),csite%hcapveg(recp)   &
@@ -1891,6 +2093,15 @@ module fuse_fiss_utils
          cpatch%veg_water(ico)           = cpatch%veg_water(ico)            * area_scale
          cpatch%hcapveg(ico)             = cpatch%hcapveg(ico)              * area_scale
          cpatch%veg_energy(ico)          = cpatch%veg_energy(ico)           * area_scale
+         !----- Carbon flux monthly means are extensive, we must convert them. ------------!
+         if (imoutput > 0) then
+            cpatch%mmean_leaf_resp   (ico) = cpatch%mmean_leaf_resp   (ico) * area_scale
+            cpatch%mmean_root_resp   (ico) = cpatch%mmean_root_resp   (ico) * area_scale
+            cpatch%mmean_growth_resp (ico) = cpatch%mmean_growth_resp (ico) * area_scale
+            cpatch%mmean_storage_resp(ico) = cpatch%mmean_storage_resp(ico) * area_scale
+            cpatch%mmean_vleaf_resp  (ico) = cpatch%mmean_vleaf_resp  (ico) * area_scale
+            cpatch%mmean_gpp         (ico) = cpatch%mmean_gpp         (ico) * area_scale
+         end if
       end do
       !----- 2. Adjust densities of cohorts in donor patch --------------------------------!
       cpatch => csite%patch(donp)
@@ -1921,6 +2132,15 @@ module fuse_fiss_utils
          cpatch%veg_water(ico)           = cpatch%veg_water(ico)            * area_scale
          cpatch%hcapveg(ico)             = cpatch%hcapveg(ico)              * area_scale
          cpatch%veg_energy(ico)          = cpatch%veg_energy(ico)           * area_scale
+         !----- Carbon flux monthly means are extensive, we must convert them. ------------!
+         if (imoutput > 0) then
+            cpatch%mmean_leaf_resp   (ico) = cpatch%mmean_leaf_resp   (ico) * area_scale
+            cpatch%mmean_root_resp   (ico) = cpatch%mmean_root_resp   (ico) * area_scale
+            cpatch%mmean_growth_resp (ico) = cpatch%mmean_growth_resp (ico) * area_scale
+            cpatch%mmean_storage_resp(ico) = cpatch%mmean_storage_resp(ico) * area_scale
+            cpatch%mmean_vleaf_resp  (ico) = cpatch%mmean_vleaf_resp  (ico) * area_scale
+            cpatch%mmean_gpp         (ico) = cpatch%mmean_gpp         (ico) * area_scale
+         end if
       end do
       !------------------------------------------------------------------------------------!
 

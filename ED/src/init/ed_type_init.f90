@@ -32,6 +32,8 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
   cpatch%light_level     (ico)  = 0.0
   cpatch%light_level_beam(ico)  = 0.0
   cpatch%light_level_diff(ico)  = 0.0
+  cpatch%norm_par_beam   (ico)  = 0.0
+  cpatch%norm_par_diff   (ico)  = 0.0
   cpatch%lambda_light(ico)      = 0.0
   cpatch%gpp(ico) = 0.0
   cpatch%leaf_respiration(ico) = 0.0
@@ -130,6 +132,8 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
      cpatch%mmean_light_level      (ico) = 0.0
      cpatch%mmean_light_level_beam (ico) = 0.0
      cpatch%mmean_light_level_diff (ico) = 0.0
+     cpatch%mmean_norm_par_beam    (ico) = 0.0
+     cpatch%mmean_norm_par_diff    (ico) = 0.0
      cpatch%mmean_fs_open          (ico) = 0.0
      cpatch%mmean_fsw              (ico) = 0.0
      cpatch%mmean_fsn              (ico) = 0.0
@@ -139,6 +143,8 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
      cpatch%dmean_light_level      (ico) = 0.0
      cpatch%dmean_light_level_beam (ico) = 0.0
      cpatch%dmean_light_level_diff (ico) = 0.0
+     cpatch%dmean_norm_par_beam    (ico) = 0.0
+     cpatch%dmean_norm_par_diff    (ico) = 0.0
      cpatch%dmean_fsw              (ico) = 0.0
      cpatch%dmean_fsn              (ico) = 0.0
      cpatch%dmean_lambda_light     (ico) = 0.0

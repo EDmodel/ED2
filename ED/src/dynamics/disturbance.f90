@@ -658,6 +658,7 @@ module disturbance_utils
   subroutine insert_survivors(csite, np, cp, q, area_fac,nat_dist_type)
 
     use ed_state_vars, only: sitetype,patchtype
+    use ed_misc_coms , only: imoutput
     
     implicit none
     type(sitetype),target    :: csite
@@ -749,6 +750,15 @@ module disturbance_utils
           tpatch%veg_water(nco)           = tpatch%veg_water(nco)            * cohort_area_fac
           tpatch%hcapveg(nco)             = tpatch%hcapveg(nco)              * cohort_area_fac
           tpatch%veg_energy(nco)          = tpatch%veg_energy(nco)           * cohort_area_fac
+          !----- Carbon flux monthly means are extensive, we must convert them. ------------!
+          if (imoutput > 0) then
+             tpatch%mmean_leaf_resp   (nco) = tpatch%mmean_leaf_resp   (nco) * cohort_area_fac
+             tpatch%mmean_root_resp   (nco) = tpatch%mmean_root_resp   (nco) * cohort_area_fac
+             tpatch%mmean_growth_resp (nco) = tpatch%mmean_growth_resp (nco) * cohort_area_fac
+             tpatch%mmean_storage_resp(nco) = tpatch%mmean_storage_resp(nco) * cohort_area_fac
+             tpatch%mmean_vleaf_resp  (nco) = tpatch%mmean_vleaf_resp  (nco) * cohort_area_fac
+             tpatch%mmean_gpp         (nco) = tpatch%mmean_gpp         (nco) * cohort_area_fac
+          end if
        end if
           
     enddo  ! end loop over cohorts

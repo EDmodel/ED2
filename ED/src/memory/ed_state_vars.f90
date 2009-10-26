@@ -246,6 +246,12 @@ module ed_state_vars
      real, pointer, dimension(:) :: light_level_diff
      real, pointer, dimension(:) :: dmean_light_level_diff
      real, pointer, dimension(:) :: mmean_light_level_diff
+     real, pointer, dimension(:) :: norm_par_beam
+     real, pointer, dimension(:) :: dmean_norm_par_beam
+     real, pointer, dimension(:) :: mmean_norm_par_beam
+     real, pointer, dimension(:) :: norm_par_diff
+     real, pointer, dimension(:) :: dmean_norm_par_diff
+     real, pointer, dimension(:) :: mmean_norm_par_diff
 
      ! Light extinction of this cohort, its diurnal and monthly means
      real, pointer, dimension(:) :: lambda_light
@@ -2493,7 +2499,6 @@ contains
     allocate(cpatch%dmean_gpp(ncohorts))
     allocate(cpatch%dmean_gpp_pot(ncohorts))
     allocate(cpatch%dmean_gpp_max(ncohorts))
-    allocate(cpatch%mmean_gpp(ncohorts))
     allocate(cpatch%growth_respiration(ncohorts))
     allocate(cpatch%storage_respiration(ncohorts))
     allocate(cpatch%vleaf_respiration(ncohorts))
@@ -2512,6 +2517,8 @@ contains
     allocate(cpatch%light_level(ncohorts))
     allocate(cpatch%light_level_beam(ncohorts))
     allocate(cpatch%light_level_diff(ncohorts))
+    allocate(cpatch%norm_par_beam(ncohorts))
+    allocate(cpatch%norm_par_diff(ncohorts))
     allocate(cpatch%lambda_light(ncohorts))
     allocate(cpatch%par_v(ncohorts))
     allocate(cpatch%par_v_beam(ncohorts))
@@ -2547,6 +2554,8 @@ contains
        allocate(cpatch%dmean_light_level(ncohorts))
        allocate(cpatch%dmean_light_level_beam(ncohorts))
        allocate(cpatch%dmean_light_level_diff(ncohorts))
+       allocate(cpatch%dmean_norm_par_beam(ncohorts))
+       allocate(cpatch%dmean_norm_par_diff(ncohorts))
        allocate(cpatch%dmean_lambda_light(ncohorts))
        allocate(cpatch%dmean_fs_open(ncohorts))
        allocate(cpatch%dmean_fsw(ncohorts))
@@ -2557,10 +2566,13 @@ contains
        allocate(cpatch%mmean_light_level(ncohorts))
        allocate(cpatch%mmean_light_level_beam(ncohorts))
        allocate(cpatch%mmean_light_level_diff(ncohorts))
+       allocate(cpatch%mmean_norm_par_beam(ncohorts))
+       allocate(cpatch%mmean_norm_par_diff(ncohorts))
        allocate(cpatch%mmean_lambda_light(ncohorts))
        allocate(cpatch%mmean_fs_open(ncohorts))
        allocate(cpatch%mmean_fsw(ncohorts))
        allocate(cpatch%mmean_fsn(ncohorts))
+       allocate(cpatch%mmean_gpp(ncohorts))
        allocate(cpatch%mmean_leaf_resp(ncohorts))
        allocate(cpatch%mmean_root_resp(ncohorts))
        allocate(cpatch%mmean_growth_resp(ncohorts))
@@ -3296,6 +3308,12 @@ contains
     nullify(cpatch%lambda_light)
     nullify(cpatch%dmean_lambda_light)
     nullify(cpatch%mmean_lambda_light)
+    nullify(cpatch%norm_par_beam)
+    nullify(cpatch%dmean_norm_par_beam)
+    nullify(cpatch%mmean_norm_par_beam)
+    nullify(cpatch%norm_par_diff)
+    nullify(cpatch%dmean_norm_par_diff)
+    nullify(cpatch%mmean_norm_par_diff)
     nullify(cpatch%par_v)
     nullify(cpatch%par_v_beam)
     nullify(cpatch%par_v_diffuse)
@@ -4076,6 +4094,12 @@ contains
     if(associated(cpatch%lambda_light))           deallocate(cpatch%lambda_light)
     if(associated(cpatch%dmean_lambda_light))     deallocate(cpatch%dmean_lambda_light)
     if(associated(cpatch%mmean_lambda_light))     deallocate(cpatch%mmean_lambda_light)
+    if(associated(cpatch%norm_par_beam))          deallocate(cpatch%norm_par_beam)
+    if(associated(cpatch%dmean_norm_par_beam))    deallocate(cpatch%dmean_norm_par_beam)
+    if(associated(cpatch%mmean_norm_par_beam))    deallocate(cpatch%mmean_norm_par_beam)
+    if(associated(cpatch%norm_par_diff))          deallocate(cpatch%norm_par_diff)
+    if(associated(cpatch%dmean_norm_par_diff))    deallocate(cpatch%dmean_norm_par_diff)
+    if(associated(cpatch%mmean_norm_par_diff))    deallocate(cpatch%mmean_norm_par_diff)
     if(associated(cpatch%par_v))                  deallocate(cpatch%par_v)
     if(associated(cpatch%par_v_beam))             deallocate(cpatch%par_v_beam)
     if(associated(cpatch%par_v_diffuse))          deallocate(cpatch%par_v_diffuse)
@@ -4937,6 +4961,12 @@ contains
     if(associated(cpatch%light_level_diff))       cpatch%light_level_diff       = large_real
     if(associated(cpatch%dmean_light_level_diff)) cpatch%dmean_light_level_diff = large_real
     if(associated(cpatch%mmean_light_level_diff)) cpatch%mmean_light_level_diff = large_real
+    if(associated(cpatch%norm_par_beam))          cpatch%norm_par_beam       = large_real
+    if(associated(cpatch%dmean_norm_par_beam))    cpatch%dmean_norm_par_beam = large_real
+    if(associated(cpatch%mmean_norm_par_beam))    cpatch%mmean_norm_par_beam = large_real
+    if(associated(cpatch%norm_par_diff))          cpatch%norm_par_diff       = large_real
+    if(associated(cpatch%dmean_norm_par_diff))    cpatch%dmean_norm_par_diff = large_real
+    if(associated(cpatch%mmean_norm_par_diff))    cpatch%mmean_norm_par_diff = large_real
     if(associated(cpatch%lambda_light))          cpatch%lambda_light         = large_real
     if(associated(cpatch%dmean_lambda_light))    cpatch%dmean_lambda_light   = large_real
     if(associated(cpatch%mmean_lambda_light))    cpatch%mmean_lambda_light   = large_real
@@ -5532,7 +5562,9 @@ contains
     patchout%light_level(1:inc)      = pack(patchin%light_level,mask)
     patchout%light_level_beam(1:inc) = pack(patchin%light_level_beam,mask)
     patchout%light_level_diff(1:inc) = pack(patchin%light_level_diff,mask)
-    patchout%lambda_light(1:inc)      = pack(patchin%lambda_light,mask)
+    patchout%norm_par_beam(1:inc)    = pack(patchin%norm_par_beam,mask)
+    patchout%norm_par_diff(1:inc)    = pack(patchin%norm_par_diff,mask)
+    patchout%lambda_light(1:inc)     = pack(patchin%lambda_light,mask)
     patchout%par_v(1:inc)            = pack(patchin%par_v,mask)
     patchout%par_v_beam(1:inc)       = pack(patchin%par_v_beam,mask)
     patchout%par_v_diffuse(1:inc)    = pack(patchin%par_v_diffuse,mask)
@@ -5606,13 +5638,15 @@ contains
     enddo
     
     if (idoutput > 0 .or. imoutput > 0) then
-       patchout%dmean_fs_open     (1:inc)    = pack(patchin%dmean_fs_open         ,mask)
-       patchout%dmean_fsw         (1:inc)    = pack(patchin%dmean_fsw             ,mask)
-       patchout%dmean_fsn         (1:inc)    = pack(patchin%dmean_fsn             ,mask)
-       patchout%dmean_lambda_light(1:inc)    = pack(patchin%dmean_lambda_light    ,mask)
-       patchout%dmean_light_level (1:inc)    = pack(patchin%dmean_light_level     ,mask)
-       patchout%dmean_light_level_beam(1:inc)= pack(patchin%dmean_light_level_beam,mask)
-       patchout%dmean_light_level_diff(1:inc)= pack(patchin%dmean_light_level_diff,mask)
+       patchout%dmean_fs_open         (1:inc) = pack(patchin%dmean_fs_open         ,mask)
+       patchout%dmean_fsw             (1:inc) = pack(patchin%dmean_fsw             ,mask)
+       patchout%dmean_fsn             (1:inc) = pack(patchin%dmean_fsn             ,mask)
+       patchout%dmean_lambda_light    (1:inc) = pack(patchin%dmean_lambda_light    ,mask)
+       patchout%dmean_light_level     (1:inc) = pack(patchin%dmean_light_level     ,mask)
+       patchout%dmean_light_level_beam(1:inc) = pack(patchin%dmean_light_level_beam,mask)
+       patchout%dmean_light_level_diff(1:inc) = pack(patchin%dmean_light_level_diff,mask)
+       patchout%dmean_norm_par_beam   (1:inc) = pack(patchin%dmean_norm_par_beam   ,mask)
+       patchout%dmean_norm_par_diff   (1:inc) = pack(patchin%dmean_norm_par_diff   ,mask)
     end if
     if (imoutput > 0) then
        patchout%mmean_fs_open         (1:inc) = pack(patchin%mmean_fs_open         ,mask)
@@ -5622,6 +5656,8 @@ contains
        patchout%mmean_light_level     (1:inc) = pack(patchin%mmean_light_level     ,mask)
        patchout%mmean_light_level_beam(1:inc) = pack(patchin%mmean_light_level_beam,mask)
        patchout%mmean_light_level_diff(1:inc) = pack(patchin%mmean_light_level_diff,mask)
+       patchout%mmean_norm_par_beam   (1:inc) = pack(patchin%mmean_norm_par_beam   ,mask)
+       patchout%mmean_norm_par_diff   (1:inc) = pack(patchin%mmean_norm_par_diff   ,mask)
        patchout%mmean_leaf_resp       (1:inc) = pack(patchin%mmean_leaf_resp       ,mask)
        patchout%mmean_root_resp       (1:inc) = pack(patchin%mmean_root_resp       ,mask)
        patchout%mmean_growth_resp     (1:inc) = pack(patchin%mmean_growth_resp     ,mask)
@@ -5710,6 +5746,8 @@ contains
        patchout%light_level(iout)      = patchin%light_level(iin)
        patchout%light_level_beam(iout) = patchin%light_level_beam(iin)
        patchout%light_level_diff(iout) = patchin%light_level_diff(iin)
+       patchout%norm_par_beam(iout)    = patchin%norm_par_beam(iin)
+       patchout%norm_par_diff(iout)    = patchin%norm_par_diff(iin)
        patchout%lambda_light(iout)     = patchin%lambda_light(iin)
        patchout%par_v(iout)            = patchin%par_v(iin)
        patchout%par_v_beam(iout)       = patchin%par_v_beam(iin)
@@ -5769,6 +5807,8 @@ contains
           patchout%dmean_light_level     (iout) = patchin%dmean_light_level     (iin)
           patchout%dmean_light_level_beam(iout) = patchin%dmean_light_level_beam(iin)
           patchout%dmean_light_level_diff(iout) = patchin%dmean_light_level_diff(iin)
+          patchout%dmean_norm_par_beam   (iout) = patchin%dmean_norm_par_beam   (iin)
+          patchout%dmean_norm_par_diff   (iout) = patchin%dmean_norm_par_diff   (iin)
           patchout%dmean_lambda_light    (iout) = patchin%dmean_lambda_light    (iin)
        end if
        if (imoutput > 0) then
@@ -5778,6 +5818,8 @@ contains
           patchout%mmean_light_level       (iout) = patchin%mmean_light_level       (iin)
           patchout%mmean_light_level_beam  (iout) = patchin%mmean_light_level_beam  (iin)
           patchout%mmean_light_level_diff  (iout) = patchin%mmean_light_level_diff  (iin)
+          patchout%mmean_norm_par_beam     (iout) = patchin%mmean_norm_par_beam     (iin)
+          patchout%mmean_norm_par_diff     (iout) = patchin%mmean_norm_par_diff     (iin)
           patchout%mmean_gpp               (iout) = patchin%mmean_gpp               (iin)
           patchout%mmean_leaf_resp         (iout) = patchin%mmean_leaf_resp         (iin)
           patchout%mmean_root_resp         (iout) = patchin%mmean_root_resp         (iin)
@@ -9955,6 +9997,20 @@ contains
        call metadata_edio(nvar,igr,'Relative light level, diffuse fraction','[NA]','icohort') 
     endif
 
+    if (associated(cpatch%norm_par_beam)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%norm_par_beam(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'NORM_PAR_BEAM :41:hist') 
+       call metadata_edio(nvar,igr,'Relative light level, beam fraction','[NA]','icohort') 
+    endif
+
+    if (associated(cpatch%norm_par_diff)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%norm_par_diff(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'NORM_PAR_DIFF :41:hist') 
+       call metadata_edio(nvar,igr,'Relative light level, diffuse fraction','[NA]','icohort') 
+    endif
+
     if (associated(cpatch%dmean_light_level)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%dmean_light_level(1),nvar,igr,init,cpatch%coglob_id, &
@@ -9976,6 +10032,20 @@ contains
        call metadata_edio(nvar,igr,'Diurnal mean of Relative light level (diffuse)','[NA]','icohort') 
     endif
 
+    if (associated(cpatch%dmean_norm_par_beam)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%dmean_norm_par_beam(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'DMEAN_NORM_PAR_BEAM :41:hist:dail') 
+       call metadata_edio(nvar,igr,'Diurnal mean of Relative light level (beam)','[NA]','icohort') 
+    endif
+
+    if (associated(cpatch%dmean_norm_par_diff)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%dmean_norm_par_diff(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'DMEAN_NORM_PAR_DIFF :41:hist:dail') 
+       call metadata_edio(nvar,igr,'Diurnal mean of Relative light level (diffuse)','[NA]','icohort') 
+    endif
+
     if (associated(cpatch%mmean_light_level)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%mmean_light_level(1),nvar,igr,init,cpatch%coglob_id, &
@@ -9994,6 +10064,20 @@ contains
        nvar=nvar+1
          call vtable_edio_r(cpatch%mmean_light_level_diff(1),nvar,igr,init,cpatch%coglob_id, &
          var_len,var_len_global,max_ptrs,'MMEAN_LIGHT_LEVEL_DIFF :41:hist:mont') 
+       call metadata_edio(nvar,igr,'Monthly mean of Relative light level (diff)','[NA]','icohort') 
+    endif
+
+    if (associated(cpatch%mmean_norm_par_beam)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%mmean_norm_par_beam(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'MMEAN_NORM_PAR_BEAM :41:hist:mont') 
+       call metadata_edio(nvar,igr,'Monthly mean of Relative light level (beam)','[NA]','icohort') 
+    endif
+
+    if (associated(cpatch%mmean_norm_par_diff)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%mmean_norm_par_diff(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'MMEAN_NORM_PAR_DIFF :41:hist:mont') 
        call metadata_edio(nvar,igr,'Monthly mean of Relative light level (diff)','[NA]','icohort') 
     endif
 

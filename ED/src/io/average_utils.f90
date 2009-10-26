@@ -509,8 +509,12 @@ subroutine integrate_ed_daily_output_state(cgrid)
                      cpatch%dmean_light_level_diff(ico) =                                  &
                                                cpatch%dmean_light_level_diff(ico)          &
                                              + cpatch%light_level_diff(ico)
-                     cpatch%dmean_lambda_light(ico) = cpatch%dmean_lambda_light(ico)       &
-                                                    + cpatch%lambda_light(ico)
+                     cpatch%dmean_norm_par_beam(ico)    = cpatch%dmean_norm_par_beam(ico)  &
+                                                        + cpatch%norm_par_beam(ico)
+                     cpatch%dmean_norm_par_diff(ico)    = cpatch%dmean_norm_par_diff(ico)  &
+                                                        + cpatch%norm_par_diff(ico)
+                     cpatch%dmean_lambda_light(ico)     = cpatch%dmean_lambda_light(ico)   &
+                                                        + cpatch%lambda_light(ico)
                   end if
 
                end if
@@ -1305,12 +1309,18 @@ subroutine normalize_ed_daily_output_vars(cgrid)
                                                       * dtlsm / cpoly%daylight(isi)
                   cpatch%dmean_light_level_diff(ico)  = cpatch%dmean_light_level_diff(ico) &
                                                       * dtlsm / cpoly%daylight(isi)
+                  cpatch%dmean_norm_par_beam(ico)     = cpatch%dmean_norm_par_beam(ico)    &
+                                                      * dtlsm / cpoly%daylight(isi)
+                  cpatch%dmean_norm_par_diff(ico)     = cpatch%dmean_norm_par_diff(ico)    &
+                                                      * dtlsm / cpoly%daylight(isi)
                   cpatch%dmean_lambda_light(ico)      = cpatch%dmean_lambda_light(ico)     &
                                                       * dtlsm / cpoly%daylight(isi)
                else
                   cpatch%dmean_light_level     (ico) = 0.
                   cpatch%dmean_light_level_beam(ico) = 0.
                   cpatch%dmean_light_level_diff(ico) = 0.
+                  cpatch%dmean_norm_par_beam   (ico) = 0.
+                  cpatch%dmean_norm_par_diff   (ico) = 0.
                   cpatch%dmean_lambda_light    (ico) = 0.
                end if
                
@@ -1833,6 +1843,8 @@ subroutine zero_ed_daily_output_vars(cgrid)
                cpatch%dmean_light_level(ico)      = 0.
                cpatch%dmean_light_level_beam(ico) = 0.
                cpatch%dmean_light_level_diff(ico) = 0.
+               cpatch%dmean_norm_par_beam   (ico) = 0.
+               cpatch%dmean_norm_par_diff   (ico) = 0.
                cpatch%dmean_lambda_light(ico)     = 0.
             end do
          end do
@@ -2031,6 +2043,10 @@ subroutine integrate_ed_monthly_output_vars(cgrid)
                                                   + cpatch%dmean_light_level_beam(ico)
                cpatch%mmean_light_level_diff(ico) = cpatch%mmean_light_level_diff(ico)     &
                                                   + cpatch%dmean_light_level_diff(ico)
+               cpatch%mmean_norm_par_beam   (ico) = cpatch%mmean_norm_par_beam(ico)        &
+                                                  + cpatch%dmean_norm_par_beam(ico)
+               cpatch%mmean_norm_par_diff   (ico) = cpatch%mmean_norm_par_diff(ico)        &
+                                                  + cpatch%dmean_norm_par_diff(ico)
                cpatch%mmean_lambda_light(ico)     = cpatch%mmean_lambda_light(ico)         &
                                                   + cpatch%dmean_lambda_light(ico)
 
@@ -2378,6 +2394,10 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
                cpatch%mmean_light_level_beam (ico) = cpatch%mmean_light_level_beam(ico)    &
                                                    * ndaysi
                cpatch%mmean_light_level_diff (ico) = cpatch%mmean_light_level_diff(ico)    &
+                                                   * ndaysi
+               cpatch%mmean_norm_par_beam(ico)     = cpatch%mmean_norm_par_beam(ico)       &
+                                                   * ndaysi
+               cpatch%mmean_norm_par_diff(ico)     = cpatch%mmean_norm_par_diff(ico)       &
                                                    * ndaysi
                cpatch%mmean_lambda_light(ico)      = cpatch%mmean_lambda_light(ico)        &
                                                    * ndaysi
@@ -2746,6 +2766,8 @@ subroutine zero_ed_monthly_output_vars(cgrid)
                cpatch%mmean_light_level       (ico) = 0.
                cpatch%mmean_light_level_beam  (ico) = 0.
                cpatch%mmean_light_level_diff  (ico) = 0.
+               cpatch%mmean_norm_par_beam     (ico) = 0.
+               cpatch%mmean_norm_par_diff     (ico) = 0.
                cpatch%mmean_lambda_light      (ico) = 0.
                cpatch%mmean_mort_rate       (:,ico) = 0.
             end do
