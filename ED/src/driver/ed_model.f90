@@ -499,15 +499,15 @@ subroutine vegetation_dynamics(new_month,new_year)
      call normalize_ed_daily_vars(cgrid, tfact1)
      
 !     write (unit=*,fmt='(a)') '~~~ Phenology_driver...'
-     call phenology_driver(cgrid,doy,current_time%month, tfact1)
+     !call phenology_driver(cgrid,doy,current_time%month, tfact1)
      
 !     write (unit=*,fmt='(a)') '~~~ Dbalive_dt...'
-     call dbalive_dt(cgrid,tfact2)
+     !call dbalive_dt(cgrid,tfact2)
      
      if(new_month)then
 
 !        write (unit=*,fmt='(a)') '^^^ Structural_growth...'
-        call structural_growth(cgrid, current_time%month)
+        !call structural_growth(cgrid, current_time%month)
 
 
 !        write (unit=*,fmt='(a)') '^^^ Reproduction...'

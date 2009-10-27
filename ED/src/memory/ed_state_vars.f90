@@ -9692,14 +9692,14 @@ contains
     if (associated(cpatch%bdead)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%bdead(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'BDEAD :41:hist:year') 
+         var_len,var_len_global,max_ptrs,'BDEAD :41:hist:mont:year') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%bleaf)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%bleaf(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'BLEAF :41:hist:year') 
+         var_len,var_len_global,max_ptrs,'BLEAF :41:hist:mont:year') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
@@ -9713,7 +9713,7 @@ contains
     if (associated(cpatch%balive)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%balive(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'BALIVE :41:hist:year') 
+         var_len,var_len_global,max_ptrs,'BALIVE :41:hist:year:mont') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
@@ -9741,7 +9741,7 @@ contains
     if (associated(cpatch%bstorage)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%bstorage(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'BSTORAGE :41:hist:year') 
+         var_len,var_len_global,max_ptrs,'BSTORAGE :41:hist:year:mont') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
@@ -10252,14 +10252,14 @@ contains
     if (associated(cpatch%mmean_fsw)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%mmean_fsw(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'MMEAN_FSW_CO :41:dail:hist') 
+         var_len,var_len_global,max_ptrs,'MMEAN_FSW_CO :41:mont:hist') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%mmean_fsn)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%mmean_fsn(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'MMEAN_FSN_CO :41:dail:hist') 
+         var_len,var_len_global,max_ptrs,'MMEAN_FSN_CO :41:mont:hist') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
@@ -10273,14 +10273,14 @@ contains
     if (associated(cpatch%maintenance_costs)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%maintenance_costs(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'MAINTENANCE_COSTS :41:hist') 
+         var_len,var_len_global,max_ptrs,'MAINTENANCE_COSTS :41:hist:mont') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%bseeds)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%bseeds(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'BSEEDS_CO :41:hist') 
+         var_len,var_len_global,max_ptrs,'BSEEDS_CO :41:hist:mont') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 

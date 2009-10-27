@@ -2376,12 +2376,15 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
             cpatch => csite%patch(ipa)
             cohortloop: do ico = 1, cpatch%ncohorts
                !----- Finding the carbon fluxes. ------------------------------------------!
-               cpatch%mmean_gpp      (ico)    = cpatch%mmean_gpp(ico)          * ndaysi
-               cpatch%mmean_leaf_resp(ico)    = cpatch%mmean_leaf_resp(ico)    * ndaysi
-               cpatch%mmean_root_resp(ico)    = cpatch%mmean_root_resp(ico)    * ndaysi
-               cpatch%mmean_growth_resp(ico)  = cpatch%mmean_growth_resp(ico)  * ndaysi
+               cpatch%mmean_gpp         (ico) = cpatch%mmean_gpp         (ico) * ndaysi
+               cpatch%mmean_leaf_resp   (ico) = cpatch%mmean_leaf_resp   (ico) * ndaysi
+               cpatch%mmean_root_resp   (ico) = cpatch%mmean_root_resp   (ico) * ndaysi
+               cpatch%mmean_growth_resp (ico) = cpatch%mmean_growth_resp (ico) * ndaysi
                cpatch%mmean_storage_resp(ico) = cpatch%mmean_storage_resp(ico) * ndaysi
-               cpatch%mmean_vleaf_resp(ico)   = cpatch%mmean_vleaf_resp(ico)   * ndaysi
+               cpatch%mmean_vleaf_resp  (ico) = cpatch%mmean_vleaf_resp  (ico) * ndaysi
+               cpatch%mmean_fsw         (ico) = cpatch%mmean_fsw         (ico) * ndaysi
+               cpatch%mmean_fsn         (ico) = cpatch%mmean_fsn         (ico) * ndaysi
+               cpatch%mmean_fs_open     (ico) = cpatch%mmean_fs_open     (ico) * ndaysi
 
                !----- Finding the mortality rates. ----------------------------------------!
                do imt=1,n_mort

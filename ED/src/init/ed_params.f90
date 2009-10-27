@@ -552,15 +552,16 @@ end subroutine init_pft_resp_params
 !------------------------------------------------------------------------------------------!
 subroutine init_pft_mort_params()
 
-   use pft_coms   , only : mort1                & ! intent(out)
-                         , mort2                & ! intent(out)
-                         , mort3                & ! intent(out)
-                         , seedling_mortality   & ! intent(out)
-                         , treefall_s_gtht      & ! intent(out)
-                         , treefall_s_ltht      & ! intent(out)
-                         , plant_min_temp       & ! intent(out)
-                         , frost_mort           ! ! intent(out)
-   use consts_coms, only : t00                  ! ! intent(in)
+   use pft_coms    , only : mort1                & ! intent(out)
+                          , mort2                & ! intent(out)
+                          , mort3                & ! intent(out)
+                          , seedling_mortality   & ! intent(out)
+                          , treefall_s_gtht      & ! intent(out)
+                          , treefall_s_ltht      & ! intent(out)
+                          , plant_min_temp       & ! intent(out)
+                          , frost_mort           ! ! intent(out)
+   use disturb_coms, only :
+   use consts_coms , only : t00                  ! ! intent(in)
 
    implicit none
 
@@ -593,6 +594,11 @@ subroutine init_pft_mort_params()
    mort3(11) = 0.00428
    mort3(12:13) = 0.066
    mort3(14:15) = 0.037
+   
+   if (treefall_disturbance_rate < 0.) then
+      mort3(:) = mort3(:) - treefall_disturbance_rate
+      treefall_disturbance_rate = 0.
+   end if
 
    seedling_mortality = 0.95
 
