@@ -3,7 +3,7 @@
 # RAMS root directory.
 
 #
-ED_ROOT=/n/Moorcroft_Lab/Users/mlongo/EDBRAMS/ED
+ED_ROOT=/n/nobackup2/moorcroft/nlevine/EDBRAMS_tmp/ED
 
 # MCD: ED_ROOT=/n/Moorcroft_Lab/Users/mcd/EDBRAMS/ED
 # KIM: ED_ROOT=/n/Moorcroft_Lab/Users/kim/ed-code/EDBRAMS/ED

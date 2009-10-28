@@ -901,6 +901,7 @@ module fuse_fiss_utils
          cpatch%mmean_fs_open         (idt) = cpatch%mmean_fs_open         (isc)
          cpatch%mmean_fsw             (idt) = cpatch%mmean_fsw             (isc)
          cpatch%mmean_fsn             (idt) = cpatch%mmean_fsn             (isc)
+         cpatch%mmean_mnt_cost        (idt) = cpatch%mmean_mnt_cost        (isc)
          cpatch%mmean_lambda_light    (idt) = cpatch%mmean_lambda_light    (isc)
          cpatch%mmean_light_level     (idt) = cpatch%mmean_light_level     (isc)
          cpatch%mmean_light_level_beam(idt) = cpatch%mmean_light_level_beam(isc)
@@ -1262,6 +1263,10 @@ module fuse_fiss_utils
          cpatch%mmean_fsn             (recc) = ( cpatch%mmean_fsn(recc)                    &
                                                * cpatch%nplant(recc)                       &
                                                + cpatch%mmean_fsn(donc)                    &
+                                               * cpatch%nplant(donc) ) * newni
+         cpatch%mmean_mnt_cost        (recc) = ( cpatch%mmean_mnt_cost(recc)                    &
+                                               * cpatch%nplant(recc)                       &
+                                               + cpatch%mmean_mnt_cost(donc)                    &
                                                * cpatch%nplant(donc) ) * newni
 
          !---------------------------------------------------------------------------------!

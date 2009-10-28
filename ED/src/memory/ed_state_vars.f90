@@ -329,6 +329,8 @@ module ed_state_vars
      ! Plant maintenance costs due to turnover of leaves and fine 
      ! roots [kgC/plant/day]
      real ,pointer,dimension(:) :: maintenance_costs
+     real ,pointer,dimension(:) :: mmean_mnt_cost
+
 
      ! Amount of seeds produced for dispersal [kgC/plant]
      real ,pointer,dimension(:) :: bseeds
@@ -2572,6 +2574,7 @@ contains
        allocate(cpatch%mmean_fs_open(ncohorts))
        allocate(cpatch%mmean_fsw(ncohorts))
        allocate(cpatch%mmean_fsn(ncohorts))
+       allocate(cpatch%mmean_mnt_cost(ncohorts))
        allocate(cpatch%mmean_gpp(ncohorts))
        allocate(cpatch%mmean_leaf_resp(ncohorts))
        allocate(cpatch%mmean_root_resp(ncohorts))
@@ -3339,6 +3342,7 @@ contains
     nullify(cpatch%mmean_fsn)
     nullify(cpatch%stomatal_resistance)
     nullify(cpatch%maintenance_costs)
+    nullify(cpatch%mmean_mnt_cost)
     nullify(cpatch%bseeds)
     nullify(cpatch%leaf_respiration)
     nullify(cpatch%root_respiration)
@@ -4125,6 +4129,7 @@ contains
     if(associated(cpatch%mmean_fsn))              deallocate(cpatch%mmean_fsn)
     if(associated(cpatch%stomatal_resistance))    deallocate(cpatch%stomatal_resistance)
     if(associated(cpatch%maintenance_costs))      deallocate(cpatch%maintenance_costs)
+    if(associated(cpatch%mmean_mnt_cost))         deallocate(cpatch%mmean_mnt_cost)
     if(associated(cpatch%bseeds))                 deallocate(cpatch%bseeds)
     if(associated(cpatch%leaf_respiration))       deallocate(cpatch%leaf_respiration)
     if(associated(cpatch%root_respiration))       deallocate(cpatch%root_respiration)
@@ -4995,6 +5000,7 @@ contains
     if(associated(cpatch%mmean_fsn))            cpatch%mmean_fsn           = large_real
     if(associated(cpatch%stomatal_resistance))  cpatch%stomatal_resistance = large_real
     if(associated(cpatch%maintenance_costs))    cpatch%maintenance_costs   = large_real
+    if(associated(cpatch%mmean_mnt_cost))       cpatch%mmean_mnt_cost      = large_real
     if(associated(cpatch%bseeds))               cpatch%bseeds              = large_real
     if(associated(cpatch%leaf_respiration))     cpatch%leaf_respiration    = large_real
     if(associated(cpatch%root_respiration))     cpatch%root_respiration    = large_real
@@ -5652,6 +5658,7 @@ contains
        patchout%mmean_fs_open         (1:inc) = pack(patchin%mmean_fs_open         ,mask)
        patchout%mmean_fsw             (1:inc) = pack(patchin%mmean_fsw             ,mask)
        patchout%mmean_fsn             (1:inc) = pack(patchin%mmean_fsn             ,mask)
+       patchout%mmean_mnt_cost        (1:inc) = pack(patchin%mmean_mnt_cost        ,mask)
        patchout%mmean_lambda_light    (1:inc) = pack(patchin%mmean_lambda_light    ,mask)
        patchout%mmean_light_level     (1:inc) = pack(patchin%mmean_light_level     ,mask)
        patchout%mmean_light_level_beam(1:inc) = pack(patchin%mmean_light_level_beam,mask)
@@ -5815,6 +5822,7 @@ contains
           patchout%mmean_fs_open           (iout) = patchin%mmean_fs_open           (iin)
           patchout%mmean_fsw               (iout) = patchin%mmean_fsw               (iin)
           patchout%mmean_fsn               (iout) = patchin%mmean_fsn               (iin)
+          patchout%mmean_mnt_cost          (iout) = patchin%mmean_mnt_cost          (iin)
           patchout%mmean_light_level       (iout) = patchin%mmean_light_level       (iin)
           patchout%mmean_light_level_beam  (iout) = patchin%mmean_light_level_beam  (iin)
           patchout%mmean_light_level_diff  (iout) = patchin%mmean_light_level_diff  (iin)
@@ -9692,14 +9700,14 @@ contains
     if (associated(cpatch%bdead)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%bdead(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'BDEAD :41:hist:year') 
+         var_len,var_len_global,max_ptrs,'BDEAD :41:hist:year:mont') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%bleaf)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%bleaf(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'BLEAF :41:hist:year') 
+         var_len,var_len_global,max_ptrs,'BLEAF :41:hist:year:mont') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
@@ -9713,7 +9721,7 @@ contains
     if (associated(cpatch%balive)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%balive(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'BALIVE :41:hist:year') 
+         var_len,var_len_global,max_ptrs,'BALIVE :41:hist:year:mont') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
@@ -9741,7 +9749,7 @@ contains
     if (associated(cpatch%bstorage)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%bstorage(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'BSTORAGE :41:hist:year') 
+         var_len,var_len_global,max_ptrs,'BSTORAGE :41:hist:year:mont') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
@@ -10252,14 +10260,14 @@ contains
     if (associated(cpatch%mmean_fsw)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%mmean_fsw(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'MMEAN_FSW_CO :41:dail:hist') 
+         var_len,var_len_global,max_ptrs,'MMEAN_FSW_CO :41:mont:hist') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%mmean_fsn)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%mmean_fsn(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'MMEAN_FSN_CO :41:dail:hist') 
+         var_len,var_len_global,max_ptrs,'MMEAN_FSN_CO :41:mont:hist') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
@@ -10273,14 +10281,21 @@ contains
     if (associated(cpatch%maintenance_costs)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%maintenance_costs(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'MAINTENANCE_COSTS :41:hist') 
+         var_len,var_len_global,max_ptrs,'MAINTENANCE_COSTS :41:hist:dail') 
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
+
+    if (associated(cpatch%mmean_mnt_cost)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%mmean_mnt_cost(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'MMEAN_MNT_COST :41:hist:mont') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%bseeds)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%bseeds(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'BSEEDS_CO :41:hist') 
+         var_len,var_len_global,max_ptrs,'BSEEDS_CO :41:hist:mont') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
