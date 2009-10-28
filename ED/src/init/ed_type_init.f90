@@ -138,6 +138,7 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
      cpatch%mmean_fsw              (ico) = 0.0
      cpatch%mmean_fsn              (ico) = 0.0
      cpatch%mmean_lambda_light     (ico) = 0.0
+     cpatch%mmean_mnt_cost	   (ico) = 0.0
   end if
   if (idoutput > 0 .or. imoutput > 0) then
      cpatch%dmean_light_level      (ico) = 0.0

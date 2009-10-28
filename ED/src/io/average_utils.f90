@@ -1881,6 +1881,7 @@ subroutine integrate_ed_monthly_output_vars(cgrid)
                            , n_dist_types  & ! intent(in)
                            , n_mort        ! ! intent(in)
    use ed_misc_coms , only : fivedim_diags ! ! intent(in)
+   use consts_coms ,  only : yr_day
    implicit none
    !----- Argument. -----------------------------------------------------------------------!
    type(edtype)      , target  :: cgrid
@@ -2018,21 +2019,27 @@ subroutine integrate_ed_monthly_output_vars(cgrid)
 
             cpatch => csite%patch(ipa)
             cohort_loop: do ico=1,cpatch%ncohorts
-               cpatch%mmean_fs_open(ico) = cpatch%mmean_fs_open(ico)                       &
-                                         + cpatch%dmean_fs_open(ico)
-               cpatch%mmean_fsw(ico)     = cpatch%mmean_fsw(ico) + cpatch%dmean_fsw(ico)
-               cpatch%mmean_fsn(ico)     = cpatch%mmean_fsn(ico) + cpatch%dmean_fsn(ico)
+               cpatch%mmean_fs_open  (ico)     = cpatch%mmean_fs_open(ico)                 &
+                                               + cpatch%dmean_fs_open(ico)
+               cpatch%mmean_fsw      (ico)     = cpatch%mmean_fsw(ico)                     &
+                                               + cpatch%dmean_fsw(ico)
+               cpatch%mmean_fsn      (ico)     = cpatch%mmean_fsn(ico)                     &
+                                               + cpatch%dmean_fsn(ico)
+               !----- Monthly mean of Maintenance costs is expressed in kgC/plant/yr. -----!
+               cpatch%mmean_mnt_cost (ico)     = cpatch%mmean_mnt_cost(ico)                &
+                                               + cpatch%maintenance_costs(ico)             &
+                                               * yr_day
 
                !----- The following variables will become per area instead of per plant. --!
                cpatch%mmean_growth_resp(ico)   = cpatch%mmean_growth_resp(ico)             &
                                                + cpatch%growth_respiration(ico)            &
-                                               * cpatch%nplant(ico)
+                                               * cpatch%nplant(ico)*yr_day
                cpatch%mmean_storage_resp(ico)  = cpatch%mmean_storage_resp(ico)            &
                                                + cpatch%storage_respiration(ico)           &
-                                               * cpatch%nplant(ico)
+                                               * cpatch%nplant(ico)*yr_day
                cpatch%mmean_vleaf_resp(ico)    = cpatch%mmean_vleaf_resp(ico)              &
                                                + cpatch%vleaf_respiration(ico)             &
-                                               * cpatch%nplant(ico)
+                                               * cpatch%nplant(ico)*yr_day
                !---------------------------------------------------------------------------!
                !    Light level, a simple average now.  We currently ignore that different !
                ! days have different day light lenghts.                                    !
@@ -2385,6 +2392,7 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
                cpatch%mmean_fsw         (ico) = cpatch%mmean_fsw         (ico) * ndaysi
                cpatch%mmean_fsn         (ico) = cpatch%mmean_fsn         (ico) * ndaysi
                cpatch%mmean_fs_open     (ico) = cpatch%mmean_fs_open     (ico) * ndaysi
+               cpatch%mmean_mnt_cost    (ico) = cpatch%mmean_mnt_cost    (ico) * ndaysi
 
                !----- Finding the mortality rates. ----------------------------------------!
                do imt=1,n_mort
@@ -2760,6 +2768,7 @@ subroutine zero_ed_monthly_output_vars(cgrid)
                cpatch%mmean_fs_open           (ico) = 0.
                cpatch%mmean_fsw               (ico) = 0.
                cpatch%mmean_fsn               (ico) = 0.
+               cpatch%mmean_mnt_cost          (ico) = 0.
                cpatch%mmean_gpp               (ico) = 0.
                cpatch%mmean_leaf_resp         (ico) = 0.
                cpatch%mmean_root_resp         (ico) = 0.

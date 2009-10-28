@@ -1315,13 +1315,13 @@ subroutine ed_opspec_misc
       ifaterr = ifaterr +1
    end if
     
-   if (treefall_disturbance_rate < 0.0) then
-      write (reason,fmt='(a,1x,es14.7,a)')                                                 &
-             'Invalid TREEFALL_DISTURBANCE_RATE, it can''t be negative.  Yours is set to'  &
-             ,treefall_disturbance_rate,'...'
-      call opspec_fatal(reason,'opspec_misc')
-      ifaterr = ifaterr +1
-   end if
+   !if (treefall_disturbance_rate < 0.0) then
+   !   write (reason,fmt='(a,1x,es14.7,a)')                                                 &
+   !          'Invalid TREEFALL_DISTURBANCE_RATE, it can''t be negative.  Yours is set to'  &
+   !          ,treefall_disturbance_rate,'...'
+   !   call opspec_fatal(reason,'opspec_misc')
+   !   ifaterr = ifaterr +1
+   !end if
     
    if (runoff_time < 0.0) then
       write (reason,fmt='(a,1x,es14.7,a)')                                                 &

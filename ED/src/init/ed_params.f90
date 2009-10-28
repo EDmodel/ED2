@@ -552,16 +552,16 @@ end subroutine init_pft_resp_params
 !------------------------------------------------------------------------------------------!
 subroutine init_pft_mort_params()
 
-   use pft_coms    , only : mort1                & ! intent(out)
-                          , mort2                & ! intent(out)
-                          , mort3                & ! intent(out)
-                          , seedling_mortality   & ! intent(out)
-                          , treefall_s_gtht      & ! intent(out)
-                          , treefall_s_ltht      & ! intent(out)
-                          , plant_min_temp       & ! intent(out)
-                          , frost_mort           ! ! intent(out)
-   use disturb_coms, only :
-   use consts_coms , only : t00                  ! ! intent(in)
+   use pft_coms    , only : mort1                      & ! intent(out)
+                          , mort2                      & ! intent(out)
+                          , mort3                      & ! intent(out)
+                          , seedling_mortality         & ! intent(out)
+                          , treefall_s_gtht            & ! intent(out)
+                          , treefall_s_ltht            & ! intent(out)
+                          , plant_min_temp             & ! intent(out)
+                          , frost_mort                 ! ! intent(out)
+   use consts_coms , only : t00                        ! ! intent(in)
+   use disturb_coms, only : treefall_disturbance_rate  ! ! intent(inout)
 
    implicit none
 
@@ -599,7 +599,7 @@ subroutine init_pft_mort_params()
       mort3(:) = mort3(:) - treefall_disturbance_rate
       treefall_disturbance_rate = 0.
    end if
-
+   
    seedling_mortality = 0.95
 
    treefall_s_gtht = 0.0
@@ -751,7 +751,7 @@ subroutine init_pft_alloc_params()
    ! latitude parameters have been optimized using the wrong SLA, we keep the bug until    !
    ! it is updated...                                                                      !
    !---------------------------------------------------------------------------------------!
-   qsw(1:4)    = SLA(1:4)   / (3900.0*2.0/1000.0)
+   qsw(1:4)    = SLA(1:4)   / 3900.0  !new is SLA(1:4)/3900.0*2.0/1000.0
    qsw(5:13)   = SLA(5:13)  / 3900.0
    qsw(14:15)  = SLA(14:15) / (3900.0*2.0/1000.0)
    !---------------------------------------------------------------------------------------!
