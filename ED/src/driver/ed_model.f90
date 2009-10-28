@@ -459,7 +459,7 @@ subroutine vegetation_dynamics(new_month,new_year)
 
   use ed_node_coms,only:mynum,nnodetot
   use grid_coms, only: ngrids
-  use ed_misc_coms, only: current_time, dtlsm,frqsum
+  use ed_misc_coms, only: current_time, dtlsm,frqsum,ied_init_mode
   use disturb_coms, only: include_fire
   use disturbance_utils, only: apply_disturbances, site_disturbance_rates
   use fuse_fiss_utils, only : fuse_patches
@@ -499,15 +499,15 @@ subroutine vegetation_dynamics(new_month,new_year)
      call normalize_ed_daily_vars(cgrid, tfact1)
      
 !     write (unit=*,fmt='(a)') '~~~ Phenology_driver...'
-     !call phenology_driver(cgrid,doy,current_time%month, tfact1)
+     if (ied_init_mode /= 8) call phenology_driver(cgrid,doy,current_time%month, tfact1)
      
 !     write (unit=*,fmt='(a)') '~~~ Dbalive_dt...'
-     !call dbalive_dt(cgrid,tfact2)
+     if (ied_init_mode /= 8) call dbalive_dt(cgrid,tfact2)
      
      if(new_month)then
 
 !        write (unit=*,fmt='(a)') '^^^ Structural_growth...'
-        !call structural_growth(cgrid, current_time%month)
+        if (ied_init_mode /= 8) call structural_growth(cgrid, current_time%month)
 
 
 !        write (unit=*,fmt='(a)') '^^^ Reproduction...'

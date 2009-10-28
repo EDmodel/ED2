@@ -658,7 +658,7 @@ module disturbance_utils
   subroutine insert_survivors(csite, np, cp, q, area_fac,nat_dist_type)
 
     use ed_state_vars, only: sitetype,patchtype
-    use ed_misc_coms , only: imoutput
+    use ed_misc_coms , only: idoutput,imoutput
     
     implicit none
     type(sitetype),target    :: csite
@@ -733,11 +733,11 @@ module disturbance_utils
           tpatch%mean_gpp(nco)            = tpatch%mean_gpp(nco)             * cohort_area_fac
           tpatch%mean_leaf_resp(nco)      = tpatch%mean_leaf_resp(nco)       * cohort_area_fac
           tpatch%mean_root_resp(nco)      = tpatch%mean_root_resp(nco)       * cohort_area_fac
-          tpatch%dmean_gpp(nco)           = tpatch%dmean_gpp(nco)            * cohort_area_fac
-          tpatch%dmean_gpp_pot(nco)       = tpatch%dmean_gpp_pot(nco)        * cohort_area_fac
-          tpatch%dmean_gpp_max(nco)       = tpatch%dmean_gpp_max(nco)        * cohort_area_fac
-          tpatch%dmean_leaf_resp(nco)     = tpatch%dmean_leaf_resp(nco)      * cohort_area_fac
-          tpatch%dmean_root_resp(nco)     = tpatch%dmean_root_resp(nco)      * cohort_area_fac
+          tpatch%today_gpp(nco)           = tpatch%today_gpp(nco)            * cohort_area_fac
+          tpatch%today_gpp_pot(nco)       = tpatch%today_gpp_pot(nco)        * cohort_area_fac
+          tpatch%today_gpp_max(nco)       = tpatch%today_gpp_max(nco)        * cohort_area_fac
+          tpatch%today_leaf_resp(nco)     = tpatch%today_leaf_resp(nco)      * cohort_area_fac
+          tpatch%today_root_resp(nco)     = tpatch%today_root_resp(nco)      * cohort_area_fac
           tpatch%Psi_open(nco)            = tpatch%Psi_open(nco)             * cohort_area_fac
           tpatch%gpp(nco)                 = tpatch%gpp(nco)                  * cohort_area_fac
           tpatch%leaf_respiration(nco)    = tpatch%leaf_respiration(nco)     * cohort_area_fac
@@ -751,13 +751,15 @@ module disturbance_utils
           tpatch%hcapveg(nco)             = tpatch%hcapveg(nco)              * cohort_area_fac
           tpatch%veg_energy(nco)          = tpatch%veg_energy(nco)           * cohort_area_fac
           !----- Carbon flux monthly means are extensive, we must convert them. ------------!
+          if (idoutput > 0 .or. imoutput > 0) then
+             tpatch%dmean_par_v     (ico) = tpatch%dmean_par_v     (ico)     * cohort_area_fac
+             tpatch%dmean_par_v_beam(ico) = tpatch%dmean_par_v_beam(ico)     * cohort_area_fac
+             tpatch%dmean_par_v_diff(ico) = tpatch%dmean_par_v_diff(ico)     * cohort_area_fac
+          end if
           if (imoutput > 0) then
-             tpatch%mmean_leaf_resp   (nco) = tpatch%mmean_leaf_resp   (nco) * cohort_area_fac
-             tpatch%mmean_root_resp   (nco) = tpatch%mmean_root_resp   (nco) * cohort_area_fac
-             tpatch%mmean_growth_resp (nco) = tpatch%mmean_growth_resp (nco) * cohort_area_fac
-             tpatch%mmean_storage_resp(nco) = tpatch%mmean_storage_resp(nco) * cohort_area_fac
-             tpatch%mmean_vleaf_resp  (nco) = tpatch%mmean_vleaf_resp  (nco) * cohort_area_fac
-             tpatch%mmean_gpp         (nco) = tpatch%mmean_gpp         (nco) * cohort_area_fac
+             tpatch%mmean_par_v     (ico) = tpatch%mmean_par_v     (ico)     * cohort_area_fac
+             tpatch%mmean_par_v_beam(ico) = tpatch%mmean_par_v_beam(ico)     * cohort_area_fac
+             tpatch%mmean_par_v_diff(ico) = tpatch%mmean_par_v_diff(ico)     * cohort_area_fac
           end if
        end if
           

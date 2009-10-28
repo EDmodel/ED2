@@ -153,7 +153,7 @@ subroutine load_ecosystem_state()
   
 
    select case (ied_init_mode)
-   case(0)
+   case(0,8)
       !----- Initialize everything with near-bare ground ----------------------------------!
       if (mynum /= 1) write(unit=*,fmt='(a)') ' + Doing near bare ground initialization...'
       do igr=1,ngrids

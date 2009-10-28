@@ -21,17 +21,18 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
   cpatch%mean_leaf_resp(ico)  = 0.0
   cpatch%mean_root_resp(ico)  = 0.0
   
-  cpatch%dmean_leaf_resp(ico) = 0.0
-  cpatch%dmean_root_resp(ico) = 0.0
-  cpatch%dmean_gpp(ico)       = 0.0
-  cpatch%dmean_gpp_pot(ico)   = 0.0
-  cpatch%dmean_gpp_max(ico)   = 0.0
+  cpatch%today_leaf_resp(ico) = 0.0
+  cpatch%today_root_resp(ico) = 0.0
+  cpatch%today_gpp(ico)       = 0.0
+  cpatch%today_gpp_pot(ico)   = 0.0
+  cpatch%today_gpp_max(ico)   = 0.0
 
   
   
   cpatch%light_level     (ico)  = 0.0
   cpatch%light_level_beam(ico)  = 0.0
   cpatch%light_level_diff(ico)  = 0.0
+  cpatch%beamext_level   (ico)  = 0.0
   cpatch%norm_par_beam   (ico)  = 0.0
   cpatch%norm_par_diff   (ico)  = 0.0
   cpatch%lambda_light(ico)      = 0.0
@@ -123,6 +124,9 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
   cpatch%turnover_amp(ico) = 1.0
 
   if (imoutput > 0) then
+     cpatch%mmean_par_v            (ico) = 0.0
+     cpatch%mmean_par_v_beam       (ico) = 0.0
+     cpatch%mmean_par_v_diff       (ico) = 0.0
      cpatch%mmean_gpp              (ico) = 0.0
      cpatch%mmean_leaf_resp        (ico) = 0.0
      cpatch%mmean_root_resp        (ico) = 0.0
@@ -132,6 +136,7 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
      cpatch%mmean_light_level      (ico) = 0.0
      cpatch%mmean_light_level_beam (ico) = 0.0
      cpatch%mmean_light_level_diff (ico) = 0.0
+     cpatch%mmean_beamext_level    (ico) = 0.0
      cpatch%mmean_norm_par_beam    (ico) = 0.0
      cpatch%mmean_norm_par_diff    (ico) = 0.0
      cpatch%mmean_fs_open          (ico) = 0.0
@@ -141,9 +146,16 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
      cpatch%mmean_mnt_cost	   (ico) = 0.0
   end if
   if (idoutput > 0 .or. imoutput > 0) then
+     cpatch%dmean_par_v            (ico) = 0.0
+     cpatch%dmean_par_v_beam       (ico) = 0.0
+     cpatch%dmean_par_v_diff       (ico) = 0.0
+     cpatch%dmean_gpp              (ico) = 0.0
+     cpatch%dmean_leaf_resp        (ico) = 0.0
+     cpatch%dmean_root_resp        (ico) = 0.0
      cpatch%dmean_light_level      (ico) = 0.0
      cpatch%dmean_light_level_beam (ico) = 0.0
      cpatch%dmean_light_level_diff (ico) = 0.0
+     cpatch%dmean_beamext_level    (ico) = 0.0
      cpatch%dmean_norm_par_beam    (ico) = 0.0
      cpatch%dmean_norm_par_diff    (ico) = 0.0
      cpatch%dmean_fsw              (ico) = 0.0

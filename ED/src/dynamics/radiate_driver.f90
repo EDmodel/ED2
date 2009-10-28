@@ -170,6 +170,7 @@ subroutine sfcrad_ed(cosz, cosaoi, csite, maxcohort, rshort,rshort_diffuse)
    real(kind=8)    , dimension(maxcohort) :: tai_array
    real(kind=8)    , dimension(maxcohort) :: CA_array
    real(kind=8)    , dimension(maxcohort) :: lambda_array
+   real(kind=8)    , dimension(maxcohort) :: beam_level_array
    real            , dimension(maxcohort) :: par_v_beam_array
    real            , dimension(maxcohort) :: rshort_v_beam_array
    real            , dimension(maxcohort) :: par_v_diffuse_array
@@ -248,7 +249,8 @@ subroutine sfcrad_ed(cosz, cosaoi, csite, maxcohort, rshort,rshort_diffuse)
          cpatch%light_level_diff(ico)      = 0.0
          cpatch%norm_par_beam   (ico)      = 0.0
          cpatch%norm_par_diff   (ico)      = 0.0
-         cpatch%lambda_light(ico)          = 0.0
+         cpatch%lambda_light    (ico)      = 0.0
+         cpatch%beamext_level   (ico)      = 0.0
 
          !------ Transfer information from linked lists to arrays. ------------------------!
          if (cpatch%solvable(ico)) then
@@ -262,6 +264,7 @@ subroutine sfcrad_ed(cosz, cosaoi, csite, maxcohort, rshort,rshort_diffuse)
             rshort_v_diffuse_array(cohort_count) = 0.0
             par_v_diffuse_array(cohort_count)    = 0.0
             lambda_array(cohort_count)           = 0.d0
+            beam_level_array(cohort_count)       = 0.d0
             select case (crown_mod)
             case (0)
                CA_array(cohort_count) = 1.
@@ -380,7 +383,7 @@ subroutine sfcrad_ed(cosz, cosaoi, csite, maxcohort, rshort,rshort_diffuse)
                                    ,upward_par_above_beam,upward_par_above_diffuse         &
                                    ,downward_nir_below_beam,downward_nir_below_diffuse     &
                                    ,upward_nir_above_beam,upward_nir_above_diffuse         &
-                                   ,lambda_array,lambda_tot)        
+                                   ,beam_level_array,lambda_array,lambda_tot)        
 
             !----- Below-canopy downwelling radiation. ------------------------------------!
             downward_rshort_below_beam    = downward_par_below_beam                        &
@@ -415,6 +418,7 @@ subroutine sfcrad_ed(cosz, cosaoi, csite, maxcohort, rshort,rshort_diffuse)
                cpatch%rlong_v_surf(ico)     = lw_v_surf_array(il)
                cpatch%rlong_v_incid(ico)    = lw_v_incid_array(il)
                cpatch%lambda_light(ico)     = sngloff(lambda_array(il),tiny_offset)
+               cpatch%beamext_level(ico)    = sngloff(beam_level_array(il),tiny_offset)
             end if
          end do
 

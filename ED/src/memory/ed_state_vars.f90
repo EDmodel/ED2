@@ -166,21 +166,21 @@ module ed_state_vars
      real ,pointer,dimension(:) :: mean_root_resp
 
      ! Mean leaf respiration rate (umol/m2 ground/s), averaged over 1 day
-     real ,pointer,dimension(:) :: dmean_leaf_resp
+     real ,pointer,dimension(:) :: today_leaf_resp
 
      ! Mean root respiration rate (umol/m2 ground/s), averaged over 1 day
-     real ,pointer,dimension(:) :: dmean_root_resp
+     real ,pointer,dimension(:) :: today_root_resp
 
      ! Gross primary productivity (GPP) [umol/m2 ground/s], averaged over 1 day
-     real ,pointer,dimension(:) :: dmean_gpp
+     real ,pointer,dimension(:) :: today_gpp
 
      ! Potential GPP in the absence of N limitation [umol/m2 ground/s],
      ! averaged over 1 day
-     real ,pointer,dimension(:) :: dmean_gpp_pot
+     real ,pointer,dimension(:) :: today_gpp_pot
 
      ! Maximum GPP if cohort were at the top of the canopy 
      ! [umol/m2 ground/s], averaged over 1 day
-     real ,pointer,dimension(:) :: dmean_gpp_max
+     real ,pointer,dimension(:) :: today_gpp_max
 
      ! Plant growth respiration (kgC/plant/day)
      real ,pointer,dimension(:) :: growth_respiration
@@ -191,7 +191,10 @@ module ed_state_vars
      ! Plant virtual leaf respiration (kgC/plant/day)
      real ,pointer,dimension(:) :: vleaf_respiration
 
-     ! Monthly mean of the plant productivity terms, all in kgC/m2/yr
+     ! Daily and monthly means of the plant productivity terms, all in kgC/m2/yr
+     real, pointer, dimension(:) :: dmean_gpp
+     real, pointer, dimension(:) :: dmean_leaf_resp
+     real, pointer, dimension(:) :: dmean_root_resp
      real, pointer, dimension(:) :: mmean_gpp
      real, pointer, dimension(:) :: mmean_leaf_resp
      real, pointer, dimension(:) :: mmean_root_resp
@@ -246,6 +249,9 @@ module ed_state_vars
      real, pointer, dimension(:) :: light_level_diff
      real, pointer, dimension(:) :: dmean_light_level_diff
      real, pointer, dimension(:) :: mmean_light_level_diff
+     real, pointer, dimension(:) :: beamext_level
+     real, pointer, dimension(:) :: dmean_beamext_level
+     real, pointer, dimension(:) :: mmean_beamext_level
      real, pointer, dimension(:) :: norm_par_beam
      real, pointer, dimension(:) :: dmean_norm_par_beam
      real, pointer, dimension(:) :: mmean_norm_par_beam
@@ -261,14 +267,20 @@ module ed_state_vars
      ! Photosynthetically active radiation (PAR) absorbed by the 
      ! cohort (units are Einsteins/m2/s)
      real ,pointer,dimension(:) :: par_v
+     real ,pointer,dimension(:) :: dmean_par_v
+     real ,pointer,dimension(:) :: mmean_par_v
 
      ! Photosynthetically active radiation (PAR) absorbed by the 
      ! cohort (units are Einsteins/m2/s), beam component
      real ,pointer,dimension(:) :: par_v_beam
+     real ,pointer,dimension(:) :: dmean_par_v_beam
+     real ,pointer,dimension(:) :: mmean_par_v_beam
 
      ! Photosynthetically active radiation (PAR) absorbed by the 
      ! cohort (units are Einsteins/m2/s), diffuse component
      real ,pointer,dimension(:) :: par_v_diffuse
+     real ,pointer,dimension(:) :: dmean_par_v_diff
+     real ,pointer,dimension(:) :: mmean_par_v_diff
 
      ! Total short wave radiation absorbed by the cohort, W/m2
      real ,pointer,dimension(:) :: rshort_v
@@ -1503,20 +1515,20 @@ module ed_state_vars
      ! not a requirement at all, if you feel like looking at daily means !
      ! of site/patch/cohort level variables, feel free to include them.  !
      !-------------------------------------------------------------------!
-     real, pointer, dimension(:)   :: mmean_gpp
+     real, pointer, dimension(:)   :: mmean_gpp            ! [kgC/m2/yr]
      real, pointer, dimension(:)   :: mmean_evap
      real, pointer, dimension(:)   :: mmean_transp
      real, pointer, dimension(:)   :: mmean_sensible_vc    ! [      W/m2]
      real, pointer, dimension(:)   :: mmean_sensible_gc    ! [      W/m2]
      real, pointer, dimension(:)   :: mmean_sensible_ac    ! [      W/m2]
-     real, pointer, dimension(:)   :: mmean_nep
-     real, pointer, dimension(:)   :: mmean_plresp
-     real, pointer, dimension(:)   :: mmean_rh
-     real, pointer, dimension(:)   :: mmean_leaf_resp
-     real, pointer, dimension(:)   :: mmean_root_resp
-     real, pointer, dimension(:)   :: mmean_growth_resp
-     real, pointer, dimension(:)   :: mmean_storage_resp
-     real, pointer, dimension(:)   :: mmean_vleaf_resp
+     real, pointer, dimension(:)   :: mmean_nep            ! [ kgC/m2/yr]
+     real, pointer, dimension(:)   :: mmean_plresp         ! [ kgC/m2/yr]
+     real, pointer, dimension(:)   :: mmean_rh             ! [ kgC/m2/yr]
+     real, pointer, dimension(:)   :: mmean_leaf_resp      ! [ kgC/m2/yr]
+     real, pointer, dimension(:)   :: mmean_root_resp      ! [ kgC/m2/yr]
+     real, pointer, dimension(:)   :: mmean_growth_resp    ! [ kgC/m2/yr]
+     real, pointer, dimension(:)   :: mmean_storage_resp   ! [ kgC/m2/yr]
+     real, pointer, dimension(:)   :: mmean_vleaf_resp     ! [ kgC/m2/yr]
      real, pointer, dimension(:,:) :: mmean_soil_temp      !(nzg,npolygons)
      real, pointer, dimension(:,:) :: mmean_soil_water     !(nzg,npolygons)
      real, pointer, dimension(:)   :: mmean_fs_open
@@ -2496,11 +2508,11 @@ contains
     allocate(cpatch%mean_gpp(ncohorts))
     allocate(cpatch%mean_leaf_resp(ncohorts))
     allocate(cpatch%mean_root_resp(ncohorts))
-    allocate(cpatch%dmean_leaf_resp(ncohorts))
-    allocate(cpatch%dmean_root_resp(ncohorts))
-    allocate(cpatch%dmean_gpp(ncohorts))
-    allocate(cpatch%dmean_gpp_pot(ncohorts))
-    allocate(cpatch%dmean_gpp_max(ncohorts))
+    allocate(cpatch%today_leaf_resp(ncohorts))
+    allocate(cpatch%today_root_resp(ncohorts))
+    allocate(cpatch%today_gpp(ncohorts))
+    allocate(cpatch%today_gpp_pot(ncohorts))
+    allocate(cpatch%today_gpp_max(ncohorts))
     allocate(cpatch%growth_respiration(ncohorts))
     allocate(cpatch%storage_respiration(ncohorts))
     allocate(cpatch%vleaf_respiration(ncohorts))
@@ -2519,6 +2531,7 @@ contains
     allocate(cpatch%light_level(ncohorts))
     allocate(cpatch%light_level_beam(ncohorts))
     allocate(cpatch%light_level_diff(ncohorts))
+    allocate(cpatch%beamext_level(ncohorts))
     allocate(cpatch%norm_par_beam(ncohorts))
     allocate(cpatch%norm_par_diff(ncohorts))
     allocate(cpatch%lambda_light(ncohorts))
@@ -2553,21 +2566,32 @@ contains
     allocate(cpatch%sla(ncohorts))
 
     if (idoutput > 0 .or. imoutput > 0) then
+       allocate(cpatch%dmean_par_v(ncohorts))
+       allocate(cpatch%dmean_par_v_beam(ncohorts))
+       allocate(cpatch%dmean_par_v_diff(ncohorts))
        allocate(cpatch%dmean_light_level(ncohorts))
        allocate(cpatch%dmean_light_level_beam(ncohorts))
        allocate(cpatch%dmean_light_level_diff(ncohorts))
+       allocate(cpatch%dmean_beamext_level(ncohorts))
        allocate(cpatch%dmean_norm_par_beam(ncohorts))
        allocate(cpatch%dmean_norm_par_diff(ncohorts))
        allocate(cpatch%dmean_lambda_light(ncohorts))
        allocate(cpatch%dmean_fs_open(ncohorts))
        allocate(cpatch%dmean_fsw(ncohorts))
        allocate(cpatch%dmean_fsn(ncohorts))
+       allocate(cpatch%dmean_gpp(ncohorts))
+       allocate(cpatch%dmean_leaf_resp(ncohorts))
+       allocate(cpatch%dmean_root_resp(ncohorts))
     end if
     
     if (imoutput > 0) then
+       allocate(cpatch%mmean_par_v(ncohorts))
+       allocate(cpatch%mmean_par_v_beam(ncohorts))
+       allocate(cpatch%mmean_par_v_diff(ncohorts))
        allocate(cpatch%mmean_light_level(ncohorts))
        allocate(cpatch%mmean_light_level_beam(ncohorts))
        allocate(cpatch%mmean_light_level_diff(ncohorts))
+       allocate(cpatch%mmean_beamext_level(ncohorts))
        allocate(cpatch%mmean_norm_par_beam(ncohorts))
        allocate(cpatch%mmean_norm_par_diff(ncohorts))
        allocate(cpatch%mmean_lambda_light(ncohorts))
@@ -3275,11 +3299,14 @@ contains
     nullify(cpatch%mean_gpp)
     nullify(cpatch%mean_leaf_resp)
     nullify(cpatch%mean_root_resp)
-    nullify(cpatch%dmean_leaf_resp)
-    nullify(cpatch%dmean_root_resp)
-    nullify(cpatch%dmean_gpp)
-    nullify(cpatch%dmean_gpp_pot)
-    nullify(cpatch%dmean_gpp_max)
+    nullify(cpatch%today_leaf_resp)
+    nullify(cpatch%today_root_resp)
+    nullify(cpatch%today_gpp)
+    nullify(cpatch%today_gpp_pot)
+    nullify(cpatch%today_gpp_max)
+    nullify(cpatch%dmean_gpp         )
+    nullify(cpatch%dmean_leaf_resp   )
+    nullify(cpatch%dmean_root_resp   )
     nullify(cpatch%mmean_gpp         )
     nullify(cpatch%mmean_leaf_resp   )
     nullify(cpatch%mmean_root_resp   )
@@ -3308,6 +3335,9 @@ contains
     nullify(cpatch%light_level_diff)
     nullify(cpatch%dmean_light_level_diff)
     nullify(cpatch%mmean_light_level_diff)
+    nullify(cpatch%beamext_level)
+    nullify(cpatch%dmean_beamext_level)
+    nullify(cpatch%mmean_beamext_level)
     nullify(cpatch%lambda_light)
     nullify(cpatch%dmean_lambda_light)
     nullify(cpatch%mmean_lambda_light)
@@ -3317,6 +3347,12 @@ contains
     nullify(cpatch%norm_par_diff)
     nullify(cpatch%dmean_norm_par_diff)
     nullify(cpatch%mmean_norm_par_diff)
+    nullify(cpatch%dmean_par_v)
+    nullify(cpatch%dmean_par_v_beam)
+    nullify(cpatch%dmean_par_v_diff)
+    nullify(cpatch%mmean_par_v)
+    nullify(cpatch%mmean_par_v_beam)
+    nullify(cpatch%mmean_par_v_diff)
     nullify(cpatch%par_v)
     nullify(cpatch%par_v_beam)
     nullify(cpatch%par_v_diffuse)
@@ -4061,14 +4097,17 @@ contains
     if(associated(cpatch%mean_gpp))            deallocate(cpatch%mean_gpp)
     if(associated(cpatch%mean_leaf_resp))      deallocate(cpatch%mean_leaf_resp)
     if(associated(cpatch%mean_root_resp))      deallocate(cpatch%mean_root_resp)
-    if(associated(cpatch%dmean_leaf_resp))     deallocate(cpatch%dmean_leaf_resp)
-    if(associated(cpatch%dmean_root_resp))     deallocate(cpatch%dmean_root_resp)
-    if(associated(cpatch%dmean_gpp))           deallocate(cpatch%dmean_gpp)
-    if(associated(cpatch%dmean_gpp_pot))       deallocate(cpatch%dmean_gpp_pot)
-    if(associated(cpatch%dmean_gpp_max))       deallocate(cpatch%dmean_gpp_max)
+    if(associated(cpatch%today_leaf_resp))     deallocate(cpatch%today_leaf_resp)
+    if(associated(cpatch%today_root_resp))     deallocate(cpatch%today_root_resp)
+    if(associated(cpatch%today_gpp))           deallocate(cpatch%today_gpp)
+    if(associated(cpatch%today_gpp_pot))       deallocate(cpatch%today_gpp_pot)
+    if(associated(cpatch%today_gpp_max))       deallocate(cpatch%today_gpp_max)
     if(associated(cpatch%growth_respiration))  deallocate(cpatch%growth_respiration)
     if(associated(cpatch%storage_respiration)) deallocate(cpatch%storage_respiration)
     if(associated(cpatch%vleaf_respiration))   deallocate(cpatch%vleaf_respiration)
+    if(associated(cpatch%dmean_gpp         ))  deallocate(cpatch%dmean_gpp         )
+    if(associated(cpatch%dmean_leaf_resp   ))  deallocate(cpatch%dmean_leaf_resp   )
+    if(associated(cpatch%dmean_root_resp   ))  deallocate(cpatch%dmean_root_resp   )
     if(associated(cpatch%mmean_gpp         ))  deallocate(cpatch%mmean_gpp         )
     if(associated(cpatch%mmean_leaf_resp   ))  deallocate(cpatch%mmean_leaf_resp   )
     if(associated(cpatch%mmean_root_resp   ))  deallocate(cpatch%mmean_root_resp   )
@@ -4095,6 +4134,9 @@ contains
     if(associated(cpatch%light_level_diff))       deallocate(cpatch%light_level_diff)
     if(associated(cpatch%dmean_light_level_diff)) deallocate(cpatch%dmean_light_level_diff)
     if(associated(cpatch%mmean_light_level_diff)) deallocate(cpatch%mmean_light_level_diff)
+    if(associated(cpatch%beamext_level))          deallocate(cpatch%beamext_level)
+    if(associated(cpatch%dmean_beamext_level))    deallocate(cpatch%dmean_beamext_level)
+    if(associated(cpatch%mmean_beamext_level))    deallocate(cpatch%mmean_beamext_level)
     if(associated(cpatch%lambda_light))           deallocate(cpatch%lambda_light)
     if(associated(cpatch%dmean_lambda_light))     deallocate(cpatch%dmean_lambda_light)
     if(associated(cpatch%mmean_lambda_light))     deallocate(cpatch%mmean_lambda_light)
@@ -4107,6 +4149,12 @@ contains
     if(associated(cpatch%par_v))                  deallocate(cpatch%par_v)
     if(associated(cpatch%par_v_beam))             deallocate(cpatch%par_v_beam)
     if(associated(cpatch%par_v_diffuse))          deallocate(cpatch%par_v_diffuse)
+    if(associated(cpatch%dmean_par_v))            deallocate(cpatch%dmean_par_v)
+    if(associated(cpatch%dmean_par_v_beam))       deallocate(cpatch%dmean_par_v_beam)
+    if(associated(cpatch%dmean_par_v_diff))       deallocate(cpatch%dmean_par_v_diff)
+    if(associated(cpatch%mmean_par_v))            deallocate(cpatch%mmean_par_v)
+    if(associated(cpatch%mmean_par_v_beam))       deallocate(cpatch%mmean_par_v_beam)
+    if(associated(cpatch%mmean_par_v_diff))       deallocate(cpatch%mmean_par_v_diff)
     if(associated(cpatch%rshort_v))               deallocate(cpatch%rshort_v)
     if(associated(cpatch%rshort_v_beam))          deallocate(cpatch%rshort_v_beam)
     if(associated(cpatch%rshort_v_diffuse))       deallocate(cpatch%rshort_v_diffuse)
@@ -4913,14 +4961,17 @@ contains
     if(associated(cpatch%mean_gpp))             cpatch%mean_gpp            = large_real
     if(associated(cpatch%mean_leaf_resp))       cpatch%mean_leaf_resp      = large_real
     if(associated(cpatch%mean_root_resp))       cpatch%mean_root_resp      = large_real
-    if(associated(cpatch%dmean_leaf_resp))      cpatch%dmean_leaf_resp     = large_real
-    if(associated(cpatch%dmean_root_resp))      cpatch%dmean_root_resp     = large_real
-    if(associated(cpatch%dmean_gpp))            cpatch%dmean_gpp           = large_real
-    if(associated(cpatch%dmean_gpp_pot))        cpatch%dmean_gpp_pot       = large_real
-    if(associated(cpatch%dmean_gpp_max))        cpatch%dmean_gpp_max       = large_real
+    if(associated(cpatch%today_leaf_resp))      cpatch%today_leaf_resp     = large_real
+    if(associated(cpatch%today_root_resp))      cpatch%today_root_resp     = large_real
+    if(associated(cpatch%today_gpp))            cpatch%today_gpp           = large_real
+    if(associated(cpatch%today_gpp_pot))        cpatch%today_gpp_pot       = large_real
+    if(associated(cpatch%today_gpp_max))        cpatch%today_gpp_max       = large_real
     if(associated(cpatch%growth_respiration))   cpatch%growth_respiration  = large_real
     if(associated(cpatch%storage_respiration))  cpatch%storage_respiration = large_real
     if(associated(cpatch%vleaf_respiration))    cpatch%vleaf_respiration   = large_real
+    if(associated(cpatch%dmean_gpp         ))   cpatch%dmean_gpp           = large_real
+    if(associated(cpatch%dmean_leaf_resp   ))   cpatch%dmean_leaf_resp     = large_real
+    if(associated(cpatch%dmean_root_resp   ))   cpatch%dmean_root_resp     = large_real
     if(associated(cpatch%mmean_gpp         ))   cpatch%mmean_gpp           = large_real
     if(associated(cpatch%mmean_leaf_resp   ))   cpatch%mmean_leaf_resp     = large_real
     if(associated(cpatch%mmean_root_resp   ))   cpatch%mmean_root_resp     = large_real
@@ -4966,6 +5017,9 @@ contains
     if(associated(cpatch%light_level_diff))       cpatch%light_level_diff       = large_real
     if(associated(cpatch%dmean_light_level_diff)) cpatch%dmean_light_level_diff = large_real
     if(associated(cpatch%mmean_light_level_diff)) cpatch%mmean_light_level_diff = large_real
+    if(associated(cpatch%beamext_level))          cpatch%beamext_level         = large_real
+    if(associated(cpatch%dmean_beamext_level))    cpatch%dmean_beamext_level   = large_real
+    if(associated(cpatch%mmean_beamext_level))    cpatch%mmean_beamext_level   = large_real
     if(associated(cpatch%norm_par_beam))          cpatch%norm_par_beam       = large_real
     if(associated(cpatch%dmean_norm_par_beam))    cpatch%dmean_norm_par_beam = large_real
     if(associated(cpatch%mmean_norm_par_beam))    cpatch%mmean_norm_par_beam = large_real
@@ -4978,6 +5032,12 @@ contains
     if(associated(cpatch%par_v))                cpatch%par_v               = large_real
     if(associated(cpatch%par_v_beam))           cpatch%par_v_beam          = large_real
     if(associated(cpatch%par_v_diffuse))        cpatch%par_v_diffuse       = large_real
+    if(associated(cpatch%dmean_par_v))          cpatch%dmean_par_v               = large_real
+    if(associated(cpatch%dmean_par_v_beam))     cpatch%dmean_par_v_beam          = large_real
+    if(associated(cpatch%dmean_par_v_diff))     cpatch%dmean_par_v_diff      = large_real
+    if(associated(cpatch%mmean_par_v))          cpatch%mmean_par_v               = large_real
+    if(associated(cpatch%mmean_par_v_beam))     cpatch%mmean_par_v_beam          = large_real
+    if(associated(cpatch%mmean_par_v_diff))     cpatch%mmean_par_v_diff      = large_real
     if(associated(cpatch%rshort_v))             cpatch%rshort_v            = large_real
     if(associated(cpatch%rshort_v_beam))        cpatch%rshort_v_beam       = large_real
     if(associated(cpatch%rshort_v_diffuse))     cpatch%rshort_v_diffuse    = large_real
@@ -5550,11 +5610,11 @@ contains
     patchout%mean_gpp(1:inc)         = pack(patchin%mean_gpp,mask)
     patchout%mean_leaf_resp(1:inc)   = pack(patchin%mean_leaf_resp,mask)
     patchout%mean_root_resp(1:inc)   = pack(patchin%mean_root_resp,mask)
-    patchout%dmean_leaf_resp(1:inc)  = pack(patchin%dmean_leaf_resp,mask)
-    patchout%dmean_root_resp(1:inc)  = pack(patchin%dmean_root_resp,mask)
-    patchout%dmean_gpp(1:inc)        = pack(patchin%dmean_gpp,mask)
-    patchout%dmean_gpp_pot(1:inc)    = pack(patchin%dmean_gpp_pot,mask)
-    patchout%dmean_gpp_max(1:inc)    = pack(patchin%dmean_gpp_max,mask)
+    patchout%today_leaf_resp(1:inc)  = pack(patchin%today_leaf_resp,mask)
+    patchout%today_root_resp(1:inc)  = pack(patchin%today_root_resp,mask)
+    patchout%today_gpp(1:inc)        = pack(patchin%today_gpp,mask)
+    patchout%today_gpp_pot(1:inc)    = pack(patchin%today_gpp_pot,mask)
+    patchout%today_gpp_max(1:inc)    = pack(patchin%today_gpp_max,mask)
     patchout%growth_respiration(1:inc) = pack(patchin%growth_respiration,mask)
     patchout%storage_respiration(1:inc) = pack(patchin%storage_respiration,mask)
     patchout%vleaf_respiration(1:inc) = pack(patchin%vleaf_respiration,mask)
@@ -5568,6 +5628,7 @@ contains
     patchout%light_level(1:inc)      = pack(patchin%light_level,mask)
     patchout%light_level_beam(1:inc) = pack(patchin%light_level_beam,mask)
     patchout%light_level_diff(1:inc) = pack(patchin%light_level_diff,mask)
+    patchout%beamext_level(1:inc)      = pack(patchin%beamext_level,mask)
     patchout%norm_par_beam(1:inc)    = pack(patchin%norm_par_beam,mask)
     patchout%norm_par_diff(1:inc)    = pack(patchin%norm_par_diff,mask)
     patchout%lambda_light(1:inc)     = pack(patchin%lambda_light,mask)
@@ -5651,8 +5712,15 @@ contains
        patchout%dmean_light_level     (1:inc) = pack(patchin%dmean_light_level     ,mask)
        patchout%dmean_light_level_beam(1:inc) = pack(patchin%dmean_light_level_beam,mask)
        patchout%dmean_light_level_diff(1:inc) = pack(patchin%dmean_light_level_diff,mask)
+       patchout%dmean_beamext_level   (1:inc) = pack(patchin%dmean_beamext_level   ,mask)
        patchout%dmean_norm_par_beam   (1:inc) = pack(patchin%dmean_norm_par_beam   ,mask)
        patchout%dmean_norm_par_diff   (1:inc) = pack(patchin%dmean_norm_par_diff   ,mask)
+       patchout%dmean_gpp             (1:inc) = pack(patchin%dmean_gpp             ,mask)
+       patchout%dmean_leaf_resp       (1:inc) = pack(patchin%dmean_leaf_resp       ,mask)
+       patchout%dmean_root_resp       (1:inc) = pack(patchin%dmean_root_resp       ,mask)
+       patchout%dmean_par_v           (1:inc) = pack(patchin%dmean_par_v           ,mask)
+       patchout%dmean_par_v_beam      (1:inc) = pack(patchin%dmean_par_v_beam      ,mask)
+       patchout%dmean_par_v_diff      (1:inc) = pack(patchin%dmean_par_v_diff      ,mask)
     end if
     if (imoutput > 0) then
        patchout%mmean_fs_open         (1:inc) = pack(patchin%mmean_fs_open         ,mask)
@@ -5663,14 +5731,18 @@ contains
        patchout%mmean_light_level     (1:inc) = pack(patchin%mmean_light_level     ,mask)
        patchout%mmean_light_level_beam(1:inc) = pack(patchin%mmean_light_level_beam,mask)
        patchout%mmean_light_level_diff(1:inc) = pack(patchin%mmean_light_level_diff,mask)
+       patchout%mmean_beamext_level   (1:inc) = pack(patchin%mmean_beamext_level   ,mask)
        patchout%mmean_norm_par_beam   (1:inc) = pack(patchin%mmean_norm_par_beam   ,mask)
        patchout%mmean_norm_par_diff   (1:inc) = pack(patchin%mmean_norm_par_diff   ,mask)
+       patchout%mmean_gpp             (1:inc) = pack(patchin%mmean_gpp             ,mask)
        patchout%mmean_leaf_resp       (1:inc) = pack(patchin%mmean_leaf_resp       ,mask)
        patchout%mmean_root_resp       (1:inc) = pack(patchin%mmean_root_resp       ,mask)
        patchout%mmean_growth_resp     (1:inc) = pack(patchin%mmean_growth_resp     ,mask)
        patchout%mmean_storage_resp    (1:inc) = pack(patchin%mmean_storage_resp    ,mask)
        patchout%mmean_vleaf_resp      (1:inc) = pack(patchin%mmean_vleaf_resp      ,mask)
-       patchout%mmean_gpp             (1:inc) = pack(patchin%mmean_gpp             ,mask)
+       patchout%mmean_par_v           (1:inc) = pack(patchin%mmean_par_v           ,mask)
+       patchout%mmean_par_v_beam      (1:inc) = pack(patchin%mmean_par_v_beam      ,mask)
+       patchout%mmean_par_v_diff      (1:inc) = pack(patchin%mmean_par_v_diff      ,mask)
     end if
     
     return
@@ -5734,11 +5806,11 @@ contains
        patchout%mean_gpp(iout)         = patchin%mean_gpp(iin)
        patchout%mean_leaf_resp(iout)   = patchin%mean_leaf_resp(iin)
        patchout%mean_root_resp(iout)   = patchin%mean_root_resp(iin)
-       patchout%dmean_leaf_resp(iout)  = patchin%dmean_leaf_resp(iin)
-       patchout%dmean_root_resp(iout)  = patchin%dmean_root_resp(iin)
-       patchout%dmean_gpp(iout)        = patchin%dmean_gpp(iin)
-       patchout%dmean_gpp_pot(iout)    = patchin%dmean_gpp_pot(iin)
-       patchout%dmean_gpp_max(iout)    = patchin%dmean_gpp_max(iin)
+       patchout%today_leaf_resp(iout)  = patchin%today_leaf_resp(iin)
+       patchout%today_root_resp(iout)  = patchin%today_root_resp(iin)
+       patchout%today_gpp(iout)        = patchin%today_gpp(iin)
+       patchout%today_gpp_pot(iout)    = patchin%today_gpp_pot(iin)
+       patchout%today_gpp_max(iout)    = patchin%today_gpp_max(iin)
        patchout%growth_respiration(iout) = patchin%growth_respiration(iin)
        patchout%storage_respiration(iout) = patchin%storage_respiration(iin)
        patchout%vleaf_respiration(iout) = patchin%vleaf_respiration(iin)
@@ -5753,6 +5825,7 @@ contains
        patchout%light_level(iout)      = patchin%light_level(iin)
        patchout%light_level_beam(iout) = patchin%light_level_beam(iin)
        patchout%light_level_diff(iout) = patchin%light_level_diff(iin)
+       patchout%beamext_level(iout)    = patchin%beamext_level(iin)
        patchout%norm_par_beam(iout)    = patchin%norm_par_beam(iin)
        patchout%norm_par_diff(iout)    = patchin%norm_par_diff(iin)
        patchout%lambda_light(iout)     = patchin%lambda_light(iin)
@@ -5808,15 +5881,22 @@ contains
        osdo%gsw_residual     = osdi%gsw_residual
 
        if (imoutput > 0 .or. idoutput > 0 ) then
-          patchout%dmean_fs_open         (iout) = patchin%dmean_fs_open         (iin)
-          patchout%dmean_fsw             (iout) = patchin%dmean_fsw             (iin)
-          patchout%dmean_fsn             (iout) = patchin%dmean_fsn             (iin)
-          patchout%dmean_light_level     (iout) = patchin%dmean_light_level     (iin)
-          patchout%dmean_light_level_beam(iout) = patchin%dmean_light_level_beam(iin)
-          patchout%dmean_light_level_diff(iout) = patchin%dmean_light_level_diff(iin)
-          patchout%dmean_norm_par_beam   (iout) = patchin%dmean_norm_par_beam   (iin)
-          patchout%dmean_norm_par_diff   (iout) = patchin%dmean_norm_par_diff   (iin)
-          patchout%dmean_lambda_light    (iout) = patchin%dmean_lambda_light    (iin)
+          patchout%dmean_fs_open           (iout) = patchin%dmean_fs_open           (iin)
+          patchout%dmean_fsw               (iout) = patchin%dmean_fsw               (iin)
+          patchout%dmean_fsn               (iout) = patchin%dmean_fsn               (iin)
+          patchout%dmean_light_level       (iout) = patchin%dmean_light_level       (iin)
+          patchout%dmean_light_level_beam  (iout) = patchin%dmean_light_level_beam  (iin)
+          patchout%dmean_light_level_diff  (iout) = patchin%dmean_light_level_diff  (iin)
+          patchout%dmean_beamext_level     (iout) = patchin%dmean_beamext_level     (iin)
+          patchout%dmean_norm_par_beam     (iout) = patchin%dmean_norm_par_beam     (iin)
+          patchout%dmean_norm_par_diff     (iout) = patchin%dmean_norm_par_diff     (iin)
+          patchout%dmean_lambda_light      (iout) = patchin%dmean_lambda_light      (iin)
+          patchout%dmean_gpp               (iout) = patchin%dmean_gpp               (iin)
+          patchout%dmean_leaf_resp         (iout) = patchin%dmean_leaf_resp         (iin)
+          patchout%dmean_root_resp         (iout) = patchin%dmean_root_resp         (iin)
+          patchout%dmean_par_v             (iout) = patchin%dmean_par_v             (iin)
+          patchout%dmean_par_v_beam        (iout) = patchin%dmean_par_v_beam        (iin)
+          patchout%dmean_par_v_diff        (iout) = patchin%dmean_par_v_diff        (iin)
        end if
        if (imoutput > 0) then
           patchout%mmean_fs_open           (iout) = patchin%mmean_fs_open           (iin)
@@ -5826,6 +5906,7 @@ contains
           patchout%mmean_light_level       (iout) = patchin%mmean_light_level       (iin)
           patchout%mmean_light_level_beam  (iout) = patchin%mmean_light_level_beam  (iin)
           patchout%mmean_light_level_diff  (iout) = patchin%mmean_light_level_diff  (iin)
+          patchout%mmean_beamext_level     (iout) = patchin%mmean_beamext_level     (iin)
           patchout%mmean_norm_par_beam     (iout) = patchin%mmean_norm_par_beam     (iin)
           patchout%mmean_norm_par_diff     (iout) = patchin%mmean_norm_par_diff     (iin)
           patchout%mmean_gpp               (iout) = patchin%mmean_gpp               (iin)
@@ -5836,6 +5917,9 @@ contains
           patchout%mmean_vleaf_resp        (iout) = patchin%mmean_vleaf_resp        (iin)
           patchout%mmean_mort_rate       (:,iout) = patchin%mmean_mort_rate       (:,iin)
           patchout%mmean_lambda_light      (iout) = patchin%mmean_lambda_light      (iin)
+          patchout%mmean_par_v             (iout) = patchin%mmean_par_v             (iin)
+          patchout%mmean_par_v_beam        (iout) = patchin%mmean_par_v_beam        (iin)
+          patchout%mmean_par_v_diff        (iout) = patchin%mmean_par_v_diff        (iin)
        end if
 
        iin = iin + 1
@@ -9823,38 +9907,38 @@ contains
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
-    if (associated(cpatch%dmean_leaf_resp)) then
+    if (associated(cpatch%today_leaf_resp)) then
        nvar=nvar+1
-         call vtable_edio_r(cpatch%dmean_leaf_resp(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'DMEAN_LEAF_RESP_CO :41:hist') 
+         call vtable_edio_r(cpatch%today_leaf_resp(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'TODAY_LEAF_RESP :41:hist') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
-    if (associated(cpatch%dmean_root_resp)) then
+    if (associated(cpatch%today_root_resp)) then
        nvar=nvar+1
-         call vtable_edio_r(cpatch%dmean_root_resp(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'DMEAN_ROOT_RESP_CO :41') 
+         call vtable_edio_r(cpatch%today_root_resp(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'TODAY_ROOT_RESP_CO :41') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
-    if (associated(cpatch%dmean_gpp)) then
+    if (associated(cpatch%today_gpp)) then
        nvar=nvar+1
-         call vtable_edio_r(cpatch%dmean_gpp(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'DMEAN_GPP_CO :41:hist') 
+         call vtable_edio_r(cpatch%today_gpp(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'TODAY_GPP :41:hist') 
        call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC-WILL ZERO PRIOR TO DAILY WRITE OUT','[umol/m2/s]','icohort') 
     endif
 
-    if (associated(cpatch%dmean_gpp_pot)) then
+    if (associated(cpatch%today_gpp_pot)) then
        nvar=nvar+1
-         call vtable_edio_r(cpatch%dmean_gpp_pot(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'DMEAN_GPP_POT :41:hist') 
+         call vtable_edio_r(cpatch%today_gpp_pot(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'TODAY_GPP_POT :41:hist') 
        call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC-WILL ZERO PRIOR TO DAILY WRITE OUT','[NA]','NA') 
     endif
 
-    if (associated(cpatch%dmean_gpp_max)) then
+    if (associated(cpatch%today_gpp_max)) then
        nvar=nvar+1
-         call vtable_edio_r(cpatch%dmean_gpp_max(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'DMEAN_GPP_MAX :41:hist') 
+         call vtable_edio_r(cpatch%today_gpp_max(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'TODAY_GPP_MAX :41:hist') 
        call metadata_edio(nvar,igr,'NOT A DIANOSTIC-WILL ZERO PRIOR TO DAILY WRITE OUT','[NA]','NA') 
     endif
 
@@ -9879,46 +9963,67 @@ contains
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif  
 
+    if (associated(cpatch%dmean_gpp)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%dmean_gpp(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'DMEAN_GPP_CO :41:hist:dail') 
+       call metadata_edio(nvar,igr,'Daily mean Gross Primary Productivity','[kgC/plant/yr]','icohort') 
+    endif
+
+    if (associated(cpatch%dmean_leaf_resp)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%dmean_leaf_resp(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'DMEAN_LEAF_RESP_CO :41:hist:dail') 
+       call metadata_edio(nvar,igr,'Daily mean leaf respiration','[kgC/plant/yr]','icohort') 
+    end if
+
+    if (associated(cpatch%dmean_root_resp)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%dmean_root_resp(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'DMEAN_ROOT_RESP_CO :41:hist:dail') 
+       call metadata_edio(nvar,igr,'Daily mean root respiration','[kgC/plant/yr]','icohort') 
+    end if
+
     if (associated(cpatch%mmean_gpp)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%mmean_gpp(1),nvar,igr,init,cpatch%coglob_id, &
          var_len,var_len_global,max_ptrs,'MMEAN_GPP_CO :41:hist:mont') 
-       call metadata_edio(nvar,igr,'Monthly mean Gross Primary Productivity','[umol/m2/s]','icohort') 
+       call metadata_edio(nvar,igr,'Monthly mean Gross Primary Productivity','[kgC/plant/yr]','icohort') 
     endif
 
     if (associated(cpatch%mmean_leaf_resp)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%mmean_leaf_resp(1),nvar,igr,init,cpatch%coglob_id, &
          var_len,var_len_global,max_ptrs,'MMEAN_LEAF_RESP_CO :41:hist:mont') 
-       call metadata_edio(nvar,igr,'Monthly mstructural_growthean leaf respiration','[umol/m2/s]','icohort') 
+       call metadata_edio(nvar,igr,'Monthly mstructural_growthean leaf respiration','[kgC/plant/yr]','icohort') 
     end if
 
     if (associated(cpatch%mmean_root_resp)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%mmean_root_resp(1),nvar,igr,init,cpatch%coglob_id, &
          var_len,var_len_global,max_ptrs,'MMEAN_ROOT_RESP_CO :41:hist:mont') 
-       call metadata_edio(nvar,igr,'Monthly mean root respiration','[umol/m2/s]','icohort') 
+       call metadata_edio(nvar,igr,'Monthly mean root respiration','[kgC/plant/yr]','icohort') 
     end if
 
     if (associated(cpatch%mmean_growth_resp)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%mmean_growth_resp(1),nvar,igr,init,cpatch%coglob_id, &
          var_len,var_len_global,max_ptrs,'MMEAN_GROWTH_RESP_CO :41:hist:mont') 
-       call metadata_edio(nvar,igr,'Monthly mean growth respiration','[umol/m2/s]','icohort') 
+       call metadata_edio(nvar,igr,'Monthly mean growth respiration','[kgC/plant/yr]','icohort') 
     end if
 
     if (associated(cpatch%mmean_storage_resp)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%mmean_storage_resp(1),nvar,igr,init,cpatch%coglob_id, &
          var_len,var_len_global,max_ptrs,'MMEAN_STORAGE_RESP_CO :41:hist:mont') 
-       call metadata_edio(nvar,igr,'Monthly mean storage respiration','[umol/m2/s]','icohort') 
+       call metadata_edio(nvar,igr,'Monthly mean storage respiration','[kgC/plant/yr]','icohort') 
     end if
 
     if (associated(cpatch%mmean_vleaf_resp)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%mmean_vleaf_resp(1),nvar,igr,init,cpatch%coglob_id, &
          var_len,var_len_global,max_ptrs,'MMEAN_VLEAF_RESP_CO :41:hist:mont') 
-       call metadata_edio(nvar,igr,'Monthly mean virtual leaf respiration','[umol/m2/s]','icohort') 
+       call metadata_edio(nvar,igr,'Monthly mean virtual leaf respiration','[kgC/plant/yr]','icohort') 
     end if
 
     if (associated(cpatch%fsn)) then
@@ -10005,6 +10110,13 @@ contains
        call metadata_edio(nvar,igr,'Relative light level, diffuse fraction','[NA]','icohort') 
     endif
 
+    if (associated(cpatch%beamext_level)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%light_level(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'BEAMEXT_LEVEL :41:hist') 
+       call metadata_edio(nvar,igr,'Beam extinction level','[NA]','icohort') 
+    endif
+
     if (associated(cpatch%norm_par_beam)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%norm_par_beam(1),nvar,igr,init,cpatch%coglob_id, &
@@ -10040,6 +10152,13 @@ contains
        call metadata_edio(nvar,igr,'Diurnal mean of Relative light level (diffuse)','[NA]','icohort') 
     endif
 
+    if (associated(cpatch%dmean_beamext_level)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%dmean_beamext_level(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'DMEAN_BEAMEXT_LEVEL :41:hist:dail') 
+       call metadata_edio(nvar,igr,'Diurnal mean of beam extinction level ','[NA]','icohort') 
+    endif
+
     if (associated(cpatch%dmean_norm_par_beam)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%dmean_norm_par_beam(1),nvar,igr,init,cpatch%coglob_id, &
@@ -10073,6 +10192,13 @@ contains
          call vtable_edio_r(cpatch%mmean_light_level_diff(1),nvar,igr,init,cpatch%coglob_id, &
          var_len,var_len_global,max_ptrs,'MMEAN_LIGHT_LEVEL_DIFF :41:hist:mont') 
        call metadata_edio(nvar,igr,'Monthly mean of Relative light level (diff)','[NA]','icohort') 
+    endif
+
+    if (associated(cpatch%mmean_beamext_level)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%mmean_beamext_level(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'MMEAN_BEAMEXT_LEVEL :41:hist:mont') 
+       call metadata_edio(nvar,igr,'Diurnal mean of beam extinction level ','[NA]','icohort') 
     endif
 
     if (associated(cpatch%mmean_norm_par_beam)) then
@@ -10128,6 +10254,48 @@ contains
        nvar=nvar+1
          call vtable_edio_r(cpatch%par_v_diffuse(1),nvar,igr,init,cpatch%coglob_id, &
          var_len,var_len_global,max_ptrs,'PAR_V_DIFFUSE :41:hist') 
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
+
+    if (associated(cpatch%dmean_par_v)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%dmean_par_v(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'DMEAN_PAR_V :41:hist:dail') 
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
+
+    if (associated(cpatch%dmean_par_v_beam)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%dmean_par_v_beam(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'DMEAN_PAR_V_BEAM :41:hist:dail') 
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
+
+    if (associated(cpatch%dmean_par_v_diff)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%dmean_par_v_diff(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'DMEAN_PAR_V_DIFF :41:hist:dail') 
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
+
+    if (associated(cpatch%mmean_par_v)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%mmean_par_v(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'MMEAN_PAR_V :41:hist:mont') 
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
+
+    if (associated(cpatch%mmean_par_v_beam)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%mmean_par_v_beam(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'MMEAN_PAR_V_BEAM :41:hist:mont') 
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
+
+    if (associated(cpatch%mmean_par_v_diff)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%mmean_par_v_diff(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'MMEAN_PAR_V_DIFF :41:hist:mont') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 

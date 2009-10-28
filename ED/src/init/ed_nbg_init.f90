@@ -3,11 +3,12 @@
 !      This subroutine initializes a near-bare ground polygon.                             !
 !------------------------------------------------------------------------------------------!
 subroutine near_bare_ground_init(cgrid)
-   use ed_state_vars , only: edtype           & ! structure
-                           , polygontype      & ! structure
-                           , sitetype         & ! structure
-                           ,allocate_sitetype ! ! subroutine
-
+   use ed_state_vars , only : edtype           & ! structure
+                            , polygontype      & ! structure
+                            , sitetype         & ! structure
+                            ,allocate_sitetype ! ! subroutine
+   use ed_misc_coms  , only : ied_init_mode    ! ! intent(in)
+   
    implicit none
 
    !----- Arguments. ----------------------------------------------------------------------!
@@ -43,8 +44,12 @@ subroutine near_bare_ground_init(cgrid)
          csite%plant_ag_biomass   (1) = 0.
 
          !----- We now populate the cohorts with near bare ground condition. --------------!
-         !call init_nbg_cohorts(csite,cpoly%lsl(isi),1,csite%npatches)
-         call init_cohorts_by_layers(csite,cpoly%lsl(isi),1,csite%npatches)
+         select case (ied_init_mode)
+         case (0)
+            call init_nbg_cohorts(csite,cpoly%lsl(isi),1,csite%npatches)
+         case (8)
+            call init_cohorts_by_layers(csite,cpoly%lsl(isi),1,csite%npatches)
+         end select
 
          !----- Initialise the patches now that cohorts are there. ------------------------!
          call init_ed_patch_vars(csite,1,csite%npatches,cpoly%lsl(isi))

@@ -379,9 +379,9 @@ module growth_balive
       !----- Compute daily C uptake [kgC/plant/day]. ------------------------!
       if(cpatch%nplant(ico) > tiny(1.0)) then
          daily_C_gain = umol_2_kgC * day_sec                                 &
-                      * ( cpatch%dmean_gpp(ico)                              &
-                        - cpatch%dmean_leaf_resp(ico)                        &
-                        - cpatch%dmean_root_resp(ico))                       &
+                      * ( cpatch%today_gpp(ico)                              &
+                        - cpatch%today_leaf_resp(ico)                        &
+                        - cpatch%today_root_resp(ico))                       &
                       / cpatch%nplant(ico)
       else
          daily_C_gain = 0.0
@@ -443,9 +443,9 @@ module growth_balive
          ! function).  [kgC/plant/day].                                      !
          !-------------------------------------------------------------------!
          daily_C_gain_pot       = umol_2_kgC * day_sec                       &
-                                * ( cpatch%dmean_gpp_pot(ico)                &
-                                  - cpatch%dmean_leaf_resp(ico)              &
-                                  - cpatch%dmean_root_resp(ico))             &
+                                * ( cpatch%today_gpp_pot(ico)                &
+                                  - cpatch%today_leaf_resp(ico)              &
+                                  - cpatch%today_root_resp(ico))             &
                                 / cpatch%nplant(ico)
          growth_respiration_pot = max(0.0, daily_C_gain_pot                  &
                                          * growth_resp_factor(ipft) )
@@ -454,9 +454,9 @@ module growth_balive
 
          !----- Calculate maximum carbon balance (used for mortality). ------!
          daily_C_gain_max       = umol_2_kgC * day_sec                       &
-                                * ( cpatch%dmean_gpp_max(ico)                &
-                                  - cpatch%dmean_leaf_resp(ico)              &
-                                  - cpatch%dmean_root_resp(ico) )            &
+                                * ( cpatch%today_gpp_max(ico)                &
+                                  - cpatch%today_leaf_resp(ico)              &
+                                  - cpatch%today_root_resp(ico) )            &
                                 / cpatch%nplant(ico)
          growth_respiration_max = max(0.0, daily_C_gain_max                  &
                                          * growth_resp_factor(ipft))
@@ -479,8 +479,8 @@ module growth_balive
             write (unit=30+ipft,fmt='(a10,14(1x,a12))')                      &
                 '      TIME','       PATCH','      COHORT','      NPLANT'    &
                             ,'    CB_TODAY',' GROWTH_RESP','  VLEAF_RESP'    &
-                            ,'   DMEAN_GPP','DMEAN_GPPMAX','  DMEAN_LEAF'    &
-                            ,'  DMEAN_ROOT',' CBMAX_TODAY','          CB'    &
+                            ,'   TODAY_GPP','TODAY_GPPMAX','  TODAY_LEAF'    &
+                            ,'  TODAY_ROOT',' CBMAX_TODAY','          CB'    &
                             ,'       CBMAX',' MAINTENANCE'
          end if
 
@@ -488,8 +488,8 @@ module growth_balive
               current_time%month,'/',current_time%date,'/',current_time%year &
              ,ipa,ico,cpatch%nplant(ico),carbon_balance                      &
              ,cpatch%growth_respiration(ico),cpatch%vleaf_respiration(ico)   &
-             ,cpatch%dmean_gpp(ico),cpatch%dmean_gpp_max(ico)                &
-             ,cpatch%dmean_leaf_resp(ico),cpatch%dmean_root_resp(ico)        &
+             ,cpatch%today_gpp(ico),cpatch%today_gpp_max(ico)                &
+             ,cpatch%today_leaf_resp(ico),cpatch%today_root_resp(ico)        &
              ,carbon_balance_max,cpatch%cb(13,ico),cpatch%cb_max(13,ico)     &
              ,cpatch%maintenance_costs(ico)
       end if

@@ -10,7 +10,7 @@ subroutine sw_twostream_clump(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area       
                              ,SW_abs_diffuse_flip,DW_vislo_beam,DW_vislo_diffuse           &
                              ,UW_vishi_beam,UW_vishi_diffuse,DW_nirlo_beam                 &
                              ,DW_nirlo_diffuse,UW_nirhi_beam,UW_nirhi_diffuse              &
-                             ,lambda_coh,lambda_tot)
+                             ,beam_level,lambda_coh,lambda_tot)
 
    use ed_max_dims             , only : n_pft                   ! ! intent(in) 
    use pft_coms             , only : clumping_factor         & ! intent(in) 
@@ -42,6 +42,7 @@ subroutine sw_twostream_clump(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area       
    real                         , intent(out)   :: DW_vislo_diffuse
    real                         , intent(out)   :: DW_nirlo_beam
    real                         , intent(out)   :: DW_nirlo_diffuse
+   real(kind=8), dimension(ncoh), intent(inout) :: beam_level
    real(kind=8), dimension(ncoh), intent(inout) :: lambda_coh
    real(kind=8)                 , intent(inout) :: lambda_tot
    !----- Local variables -----------------------------------------------------------------!
@@ -115,12 +116,17 @@ subroutine sw_twostream_clump(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area       
       !------------------------------------------------------------------------------------!
       !----- Start with the tallest cohort, moving downwards. -----------------------------!
       beam_bot_crown(ncoh) = exp(-lambda*eff_tai(ncoh)/canopy_area(ncoh))
+      beam_level(ncoh)     = exp(-5.d-1*lambda*eff_tai(ncoh)/canopy_area(ncoh))
       beam_bot(ncoh)       = (1.d0-canopy_area(ncoh))                                      &
                            + canopy_area(ncoh)*beam_bot_crown(ncoh)
       do il=ncoh-1,1,-1
          beam_bot_crown(il) = beam_bot(il+1) * exp(-lambda*eff_tai(il)/canopy_area(il))
          beam_bot(il)       = beam_bot(il+1)*(1.d0-canopy_area(il))                        & 
                             + canopy_area(il)*beam_bot_crown(il)
+         beam_level(il)     = beam_level(il+1)                                             &
+                            * exp(-5.d-1*lambda*eff_tai(il)/canopy_area(il))               &
+                            * canopy_area(il)                                              &
+                            + (1.d0-canopy_area(il)) * beam_level(il+1)
       end do
 
       

@@ -198,8 +198,7 @@ subroutine canopy_photosynthesis(csite,ipa,vels,atm_tmp,prss,ed_ktrans,ntext_soi
             ! of leaf.                                                                     !
             !------------------------------------------------------------------------------!
             mixrat     = csite%can_shv(ipa) / (1. - csite%can_shv(ipa))
-            parv_o_lai = cpatch%par_v(ico)                                                 &
-                       / (cpatch%lai(ico) + cpatch%wai(ico))
+            parv_o_lai = cpatch%par_v(ico) / cpatch%lai(ico) 
 
             !----- Calling the photosynthesis for maximum photosynthetic rates. -----------!
             call lphysiol_full(            & !
@@ -228,7 +227,7 @@ subroutine canopy_photosynthesis(csite,ipa,vels,atm_tmp,prss,ed_ktrans,ntext_soi
             cpatch%leaf_respiration(ico) = leaf_resp * cpatch%lai(ico)
             cpatch%mean_leaf_resp(ico)   = cpatch%mean_leaf_resp(ico)                      &
                                          + cpatch%leaf_respiration(ico)
-            cpatch%dmean_leaf_resp(ico)  = cpatch%dmean_leaf_resp(ico)                     &
+            cpatch%today_leaf_resp(ico)  = cpatch%today_leaf_resp(ico)                     &
                                          + cpatch%leaf_respiration(ico)
 
             !----- Demand for water [kg/m2/s].  Psi_open is from last time step. ----------!
@@ -271,17 +270,17 @@ subroutine canopy_photosynthesis(csite,ipa,vels,atm_tmp,prss,ed_ktrans,ntext_soi
             cpatch%mean_gpp(ico)  = cpatch%mean_gpp(ico) + cpatch%gpp(ico)
 
             !----- GPP, summed over 1 day. [µmol/m²ground] --------------------------------!
-            cpatch%dmean_gpp(ico) = cpatch%dmean_gpp(ico) + cpatch%gpp(ico)
+            cpatch%today_gpp(ico) = cpatch%today_gpp(ico) + cpatch%gpp(ico)
 
             !----- Potential GPP if no N limitation. [µmol/m²ground] ----------------------!
-            cpatch%dmean_gpp_pot(ico) = cpatch%dmean_gpp_pot(ico)                          &
+            cpatch%today_gpp_pot(ico) = cpatch%today_gpp_pot(ico)                          &
                                       + cpatch%lai(ico)                                    &
                                       * ( cpatch%fsw(ico) * cpatch%A_open(ico)             &
                                         + (1.0 - cpatch%fsw(ico)) * cpatch%A_closed(ico))  &
                                       + cpatch%leaf_respiration(ico)
 
             !----- Maximum GPP if at the top of the canopy [µmol/m²ground] ----------------!
-            cpatch%dmean_gpp_max(ico) = cpatch%dmean_gpp_max(ico)                          &
+            cpatch%today_gpp_max(ico) = cpatch%today_gpp_max(ico)                          &
                                       + cpatch%lai(ico)                                    &
                                       * ( cpatch%fs_open(ico) * csite%A_o_max(ipft,ipa)    &
                                         + (1.0 - cpatch%fs_open(ico))                      &
