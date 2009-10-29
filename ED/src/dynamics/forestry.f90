@@ -279,10 +279,7 @@ subroutine inventory_mat_forests(cpoly,isi,area_mature_primary,agb_mature_primar
       csite%plant_ag_biomass(ipa) = 0.0
       do ico=1,cpatch%ncohorts
          csite%plant_ag_biomass(ipa) = csite%plant_ag_biomass(ipa)                         &
-                                     + ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)     &
-                                                 ,cpatch%bleaf(ico),cpatch%pft(ico)        &
-                                                 ,cpatch%hite(ico),cpatch%bstorage(ico))   &
-                                     * cpatch%nplant(ico)
+                                     + cpatch%agb(ico) * cpatch%nplant(ico)
       end do
 
       if (csite%plant_ag_biomass(ipa) < 0.01) cycle

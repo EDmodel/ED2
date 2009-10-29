@@ -184,11 +184,10 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
                           ,cpatch%wpa(ico),cpatch%wai(ico))
 
          !----- Find the above-ground biomass and basal area. -----------------------------!
-         cpatch%agb(ico) = cpatch%nplant(ico) * kgom2_2_tonoha                             &
-                         * ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)                 &
+         cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)                 &
                                      ,cpatch%bleaf(ico),cpatch%pft(ico)                    &
                                      ,cpatch%hite(ico),cpatch%bstorage(ico))
-         cpatch%basarea(ico) = cpatch%nplant(ico) * pio4 * cpatch%dbh(ico)*cpatch%dbh(ico)
+         cpatch%basarea(ico) = pio4 * cpatch%dbh(ico)*cpatch%dbh(ico)
 
          !----- Initialize other cohort-level variables. ----------------------------------!
          call init_ed_cohort_vars(cpatch,ico,lsl)
@@ -208,7 +207,7 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
  
          !----- Update total patch-level above-ground biomass -----------------------------!
          csite%plant_ag_biomass(ipa) = csite%plant_ag_biomass(ipa)                         &
-                                     + tonoha_2_kgom2 * cpatch%agb(ico)
+                                     + cpatch%nplant(ico) * cpatch%agb(ico)
       end do pftloop
       
       !------------------------------------------------------------------------------------!
@@ -326,11 +325,10 @@ subroutine init_cohorts_by_layers(csite,lsl,ipa_a,ipa_z)
                           ,cpatch%wpa(ico),cpatch%wai(ico))
 
          !----- Find the above-ground biomass and basal area. -----------------------------!
-         cpatch%agb(ico) = cpatch%nplant(ico) * kgom2_2_tonoha                             &
-                         * ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)                 &
+         cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)                 &
                                      ,cpatch%bleaf(ico),cpatch%pft(ico)                    &
                                      ,cpatch%hite(ico),cpatch%bstorage(ico))
-         cpatch%basarea(ico) = cpatch%nplant(ico) * pio4 * cpatch%dbh(ico)*cpatch%dbh(ico)
+         cpatch%basarea(ico) = cpatch%dbh(ico)*cpatch%dbh(ico)
 
          !----- Initialize other cohort-level variables. ----------------------------------!
          call init_ed_cohort_vars(cpatch,ico,lsl)
@@ -350,7 +348,7 @@ subroutine init_cohorts_by_layers(csite,lsl,ipa_a,ipa_z)
  
          !----- Update total patch-level above-ground biomass -----------------------------!
          csite%plant_ag_biomass(ipa) = csite%plant_ag_biomass(ipa)                         &
-                                     + tonoha_2_kgom2 * cpatch%agb(ico)
+                                     + cpatch%nplant(ico) * cpatch%agb(ico)
       end do layerloop
       
       !------------------------------------------------------------------------------------!

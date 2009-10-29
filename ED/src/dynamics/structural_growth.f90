@@ -189,8 +189,8 @@ subroutine structural_growth(cgrid, month)
                !----- Update annual average carbon balances for mortality. ----------------!
                update_month = month - 1
                if(update_month == 0) update_month = 12
-               cpatch%cb(update_month,ico)     = cpatch%cb(13,ico)
-               cpatch%cb_max(update_month,ico) = cpatch%cb_max(13,ico)
+               cpatch%cb(update_month,ico)     = cpatch%cb(13,ico)     * 12.0
+               cpatch%cb_max(update_month,ico) = cpatch%cb_max(13,ico) * 12.0
                cpatch%cb(13,ico)               = 0.0
                cpatch%cb_max(13,ico)           = 0.0
                cb_act = 0.0
@@ -410,18 +410,27 @@ subroutine update_vital_rates(cpatch,ico,ilu,dbh_in,bdead_in,balive_in,hite_in,b
    idbh = max(1,min(n_dbh,ceiling(dbh_in*ddbhi)))
 
    !----- Finding the new basal area and above-ground biomass. ----------------------------!
-   cpatch%basarea(ico)    = cpatch%nplant(ico) * pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)
-   cpatch%agb(ico)        = cpatch%nplant(ico) * 10.0                                      &
-                          * ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)                &
+   cpatch%basarea(ico)    = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)
+   cpatch%agb(ico)        = ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)                &
                                       ,cpatch%bleaf(ico),cpatch%pft(ico)                   &
                                       ,cpatch%hite(ico) ,cpatch%bstorage(ico) ) 
-   cpatch%dagb_dt(ico)    = cpatch%agb(ico)     - agb_in
-   cpatch%dba_dt(ico)     = cpatch%basarea(ico) - ba_in
-   cpatch%ddbh_dt(ico)    = cpatch%dbh(ico)     - dbh_in
 
-   !----- Update the current basal area and above-ground biomass. -------------------------!
-   basal_area(ipft, idbh) = basal_area(ipft, idbh) + area * cpatch%basarea(ico)
-   agb(ipft, idbh)        = agb(ipft, idbh)        + area * cpatch%agb(ico)
+   !---------------------------------------------------------------------------------------!
+   !     Changing the agb growth to kgC/plant/year, basal area to cm2/plant/year, and DBH  !
+   ! growth to cm/year.                                                                    !
+   !---------------------------------------------------------------------------------------!
+   cpatch%dagb_dt(ico)    = (cpatch%agb(ico)     - agb_in ) * 12.0
+   cpatch%dba_dt(ico)     = (cpatch%basarea(ico) - ba_in  ) * 12.0
+   cpatch%ddbh_dt(ico)    = (cpatch%dbh(ico)     - dbh_in ) * 12.0
+
+   !---------------------------------------------------------------------------------------!
+   !     These are polygon-level variable, so they are done in kgC/m2.  Update the current !
+   ! basal area and above-ground biomass.                                                  !
+   !---------------------------------------------------------------------------------------!
+   basal_area(ipft, idbh) = basal_area(ipft, idbh)                                         &
+                          + area * cpatch%nplant(ico) * cpatch%basarea(ico)
+   agb(ipft, idbh)        = agb(ipft, idbh)                                                &
+                          + area * cpatch%nplant(ico) * cpatch%agb(ico)
 
    !---------------------------------------------------------------------------------------!
    !    The growth and mortality census are applied only on those cohorts present on the   !
@@ -429,24 +438,26 @@ subroutine update_vital_rates(cpatch,ico,ilu,dbh_in,bdead_in,balive_in,hite_in,b
    !---------------------------------------------------------------------------------------!
    if (cpatch%first_census(ico) /= 1) return
 
-   !----- Computed for plants alive both at past census and current census. ---------------!
+   !---------------------------------------------------------------------------------------!
+   !   Computed for plants alive both at past census and current census.  These will be    !
+   ! given in cm2/m2/yr and kgC/m2/yr, respectively.                                       !
+   !---------------------------------------------------------------------------------------!
    basal_area_growth(ipft,idbh) = basal_area_growth(ipft,idbh)                             &
                                 + area * cpatch%nplant(ico) * pio4                         &
-                                * (cpatch%dbh(ico) * cpatch%dbh(ico) - dbh_in * dbh_in)
+                                * (cpatch%dbh(ico) * cpatch%dbh(ico) - dbh_in * dbh_in)    &
+                                * 12.0
    agb_growth(ipft,idbh)        = agb_growth(ipft,idbh)                                    &
-                                + area * cpatch%nplant(ico) * 10.0                         &
-                                * ( ed_biomass(cpatch%bdead(ico), cpatch%balive(ico)       &
-                                              ,cpatch%bleaf(ico), cpatch%pft(ico)          &
-                                              ,cpatch%hite(ico) , cpatch%bstorage(ico))    &
-                                  - ed_biomass(bdead_in,balive_in,cpatch%bleaf(ico)        &
-                                              ,cpatch%pft(ico),hite_in,bstorage_in))
+                                + area * cpatch%nplant(ico)                                &
+                                * (cpatch%agb(ico) - agb_in)                               &
+                                * 12.0 
 
-   !----- Computed for plants alive at past census but dead at current census. ------------!
+   !---------------------------------------------------------------------------------------!
+   !    Computed for plants alive at past census but dead at current census.  These        !
+   ! variables are also given in cm2/m2/yr and kgC/m2/yr, respectively.                    !
+   !---------------------------------------------------------------------------------------!
    basal_area_mort(ipft,idbh) = basal_area_mort(ipft,idbh)                                 &
-                              + area * (nplant_in - cpatch%nplant(ico)) * pio4             &
-                              * dbh_in * dbh_in
-         
-   agb_mort(ipft,idbh)        = agb_mort(ipft,idbh) + area * mort_litter * 10.0
+                              + area * (nplant_in - cpatch%nplant(ico)) * ba_in * 12.0
+   agb_mort(ipft,idbh)        = agb_mort(ipft,idbh) + area * mort_litter * 12.0
 
    return
 end subroutine update_vital_rates

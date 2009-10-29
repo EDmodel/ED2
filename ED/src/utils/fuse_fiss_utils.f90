@@ -257,10 +257,6 @@ module fuse_fiss_utils
             cpatch%hcapveg(ico)             = cpatch%hcapveg(ico)             * area_scale
             cpatch%veg_energy(ico)          = cpatch%veg_energy(ico)          * area_scale
             cpatch%monthly_dndt(ico)        = cpatch%monthly_dndt(ico)        * area_scale
-            cpatch%agb(ico)                 = cpatch%agb(ico)                 * area_scale
-            cpatch%basarea(ico)             = cpatch%basarea(ico)             * area_scale
-            cpatch%dagb_dt(ico)             = cpatch%dagb_dt(ico)             * area_scale
-            cpatch%dba_dt(ico)              = cpatch%dba_dt(ico)              * area_scale
             if (idoutput > 0 .or. imoutput > 0 ) then                                       
                cpatch%dmean_par_v     (ico) = cpatch%dmean_par_v     (ico)    * area_scale 
                cpatch%dmean_par_v_beam(ico) = cpatch%dmean_par_v_beam(ico)    * area_scale 
@@ -690,10 +686,6 @@ module fuse_fiss_utils
                cpatch%leaf_respiration(ico)    = cpatch%leaf_respiration(ico)     * 0.5
                cpatch%root_respiration(ico)    = cpatch%root_respiration(ico)     * 0.5
                cpatch%monthly_dndt(ico)        = cpatch%monthly_dndt(ico)         * 0.5
-               cpatch%agb(ico)                 = cpatch%agb(ico)                  * 0.5
-               cpatch%basarea(ico)             = cpatch%basarea(ico)              * 0.5
-               cpatch%dagb_dt(ico)             = cpatch%dagb_dt(ico)              * 0.5
-               cpatch%dba_dt(ico)              = cpatch%dba_dt(ico)               * 0.5
                cpatch%veg_water(ico)           = cpatch%veg_water(ico)            * 0.5
                cpatch%hcapveg(ico)             = cpatch%hcapveg(ico)              * 0.5
                cpatch%veg_energy(ico)          = cpatch%veg_energy(ico)           * 0.5
@@ -768,10 +760,11 @@ module fuse_fiss_utils
    !---------------------------------------------------------------------------------------!
    subroutine clone_cohort(cpatch,isc,idt)
    
+      use ed_max_dims  , only : n_mort     ! ! intent(in)
       use ed_state_vars, only : patchtype  & ! Structure
                               , stoma_data ! ! Structure
-      use ed_misc_coms , only : idoutput   & ! structure
-                              , imoutput   ! ! structure
+      use ed_misc_coms , only : idoutput   & ! intent(in)
+                              , imoutput   ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(patchtype) , target     :: cpatch ! Current patch
@@ -857,6 +850,7 @@ module fuse_fiss_utils
       cpatch%leaf_respiration(idt)    = cpatch%leaf_respiration(isc)
       cpatch%root_respiration(idt)    = cpatch%root_respiration(isc)
       cpatch%hcapveg(idt)             = cpatch%hcapveg(isc)
+      cpatch%mort_rate(:,idt)         = cpatch%mort_rate(:,isc)
 
       cpatch%gpp(idt)                 = cpatch%gpp(isc)
       cpatch%paw_avg(idt)          = cpatch%paw_avg(isc)
@@ -908,26 +902,27 @@ module fuse_fiss_utils
       end if
 
       if (imoutput > 0) then
-         cpatch%mmean_par_v           (idt) = cpatch%mmean_par_v           (isc) 
-         cpatch%mmean_par_v_beam      (idt) = cpatch%mmean_par_v_beam      (isc) 
-         cpatch%mmean_par_v_diff      (idt) = cpatch%mmean_par_v_diff      (isc) 
-         cpatch%mmean_fs_open         (idt) = cpatch%mmean_fs_open         (isc)
-         cpatch%mmean_fsw             (idt) = cpatch%mmean_fsw             (isc)
-         cpatch%mmean_fsn             (idt) = cpatch%mmean_fsn             (isc)
-         cpatch%mmean_mnt_cost        (idt) = cpatch%mmean_mnt_cost        (isc)
-         cpatch%mmean_lambda_light    (idt) = cpatch%mmean_lambda_light    (isc)
-         cpatch%mmean_light_level     (idt) = cpatch%mmean_light_level     (isc)
-         cpatch%mmean_light_level_beam(idt) = cpatch%mmean_light_level_beam(isc)
-         cpatch%mmean_light_level_diff(idt) = cpatch%mmean_light_level_diff(isc)
-         cpatch%mmean_beamext_level   (idt) = cpatch%mmean_beamext_level   (isc)
-         cpatch%mmean_gpp             (idt) = cpatch%mmean_gpp             (isc)
-         cpatch%mmean_leaf_resp       (idt) = cpatch%mmean_leaf_resp       (isc)
-         cpatch%mmean_root_resp       (idt) = cpatch%mmean_root_resp       (isc)
-         cpatch%mmean_growth_resp     (idt) = cpatch%mmean_growth_resp     (isc)
-         cpatch%mmean_storage_resp    (idt) = cpatch%mmean_storage_resp    (isc)
-         cpatch%mmean_vleaf_resp      (idt) = cpatch%mmean_vleaf_resp      (isc)
-         cpatch%mmean_norm_par_beam   (idt) = cpatch%mmean_norm_par_beam   (isc)
-         cpatch%mmean_norm_par_diff   (idt) = cpatch%mmean_norm_par_diff   (isc)
+         cpatch%mmean_par_v             (idt) = cpatch%mmean_par_v             (isc) 
+         cpatch%mmean_par_v_beam        (idt) = cpatch%mmean_par_v_beam        (isc) 
+         cpatch%mmean_par_v_diff        (idt) = cpatch%mmean_par_v_diff        (isc) 
+         cpatch%mmean_fs_open           (idt) = cpatch%mmean_fs_open           (isc)
+         cpatch%mmean_fsw               (idt) = cpatch%mmean_fsw               (isc)
+         cpatch%mmean_fsn               (idt) = cpatch%mmean_fsn               (isc)
+         cpatch%mmean_mnt_cost          (idt) = cpatch%mmean_mnt_cost          (isc)
+         cpatch%mmean_lambda_light      (idt) = cpatch%mmean_lambda_light      (isc)
+         cpatch%mmean_light_level       (idt) = cpatch%mmean_light_level       (isc)
+         cpatch%mmean_light_level_beam  (idt) = cpatch%mmean_light_level_beam  (isc)
+         cpatch%mmean_light_level_diff  (idt) = cpatch%mmean_light_level_diff  (isc)
+         cpatch%mmean_beamext_level     (idt) = cpatch%mmean_beamext_level     (isc)
+         cpatch%mmean_gpp               (idt) = cpatch%mmean_gpp               (isc)
+         cpatch%mmean_leaf_resp         (idt) = cpatch%mmean_leaf_resp         (isc)
+         cpatch%mmean_root_resp         (idt) = cpatch%mmean_root_resp         (isc)
+         cpatch%mmean_growth_resp       (idt) = cpatch%mmean_growth_resp       (isc)
+         cpatch%mmean_storage_resp      (idt) = cpatch%mmean_storage_resp      (isc)
+         cpatch%mmean_vleaf_resp        (idt) = cpatch%mmean_vleaf_resp        (isc)
+         cpatch%mmean_norm_par_beam     (idt) = cpatch%mmean_norm_par_beam     (isc)
+         cpatch%mmean_norm_par_diff     (idt) = cpatch%mmean_norm_par_diff     (isc)
+         cpatch%mmean_mort_rate       (:,idt) = cpatch%mmean_mort_rate       (:,isc)
       end if
 
       return
@@ -1151,22 +1146,33 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------!
 
 
+      !------------------------------------------------------------------------------------!
+      !    Merging biomass and basal area.  Contrary to the patch/site/polygon levels,     !
+      ! these variables are "intensive" (or per plant) at the cohort level, so we must     !
+      ! average them.                                                                      !
+      !------------------------------------------------------------------------------------!
+      cpatch%agb(recc)          = ( cpatch%agb(recc)         * cpatch%nplant(recc)         &
+                                  + cpatch%agb(donc)         * cpatch%nplant(donc) )       &
+                                * newni
+      cpatch%basarea(recc)      = ( cpatch%basarea(recc)     * cpatch%nplant(recc)         &
+                                  + cpatch%basarea(donc)     * cpatch%nplant(donc) )       &
+                                * newni
+      cpatch%dagb_dt(recc)      = ( cpatch%dagb_dt(recc)     * cpatch%nplant(recc)         &
+                                  + cpatch%dagb_dt(donc)     * cpatch%nplant(donc) )       &
+                                * newni
+      cpatch%dba_dt(recc)       = ( cpatch%dba_dt(recc)      * cpatch%nplant(recc)         &
+                                  + cpatch%dba_dt(donc)      * cpatch%nplant(donc) )       &
+                                * newni
+      cpatch%ddbh_dt(recc)      = ( cpatch%ddbh_dt(recc)     * cpatch%nplant(recc)         &
+                                  + cpatch%ddbh_dt(donc)     * cpatch%nplant(donc) )       &
+                                * newni
+      !------------------------------------------------------------------------------------!
 
       !------------------------------------------------------------------------------------!
-      !     Updating the above-ground biomass, basal area, and rate of change of these     !
-      ! variables plus the tendency of plant density.  All variables are per unit of area, !
+      !     Updating the tendency of plant density.  All variables are per unit of area,   !
       ! so they should be added, not scaled.                                               !
       !------------------------------------------------------------------------------------!
       cpatch%monthly_dndt(recc) = cpatch%monthly_dndt(recc) + cpatch%monthly_dndt(donc)
-      cpatch%agb(recc)          = cpatch%agb(recc)          + cpatch%agb(donc)
-      cpatch%basarea(recc)      = cpatch%basarea(recc)      + cpatch%basarea(donc)
-      cpatch%dagb_dt(recc)      = cpatch%dagb_dt(recc)      + cpatch%dagb_dt(donc)
-      cpatch%dba_dt(recc)       = cpatch%dba_dt(recc)       + cpatch%dba_dt(donc)
-      !----- DBH growth is not area-dependent, so we use a weighted average. --------------!
-      cpatch%ddbh_dt(recc)      = ( cpatch%ddbh_dt(recc)    * cpatch%nplant(recc)          &
-                                  + cpatch%ddbh_dt(donc)    * cpatch%nplant(donc) )        &
-                                * newni
-      !------------------------------------------------------------------------------------!
           
       cpatch%fsw(recc) = ( cpatch%fsw(recc) * cpatch%nplant(recc)                          &
                          + cpatch%fsw(donc) * cpatch%nplant(donc) ) * newni
@@ -2155,10 +2161,6 @@ module fuse_fiss_utils
          cpatch%leaf_respiration(ico)    = cpatch%leaf_respiration(ico)     * area_scale
          cpatch%root_respiration(ico)    = cpatch%root_respiration(ico)     * area_scale
          cpatch%monthly_dndt(ico)        = cpatch%monthly_dndt(ico)         * area_scale
-         cpatch%agb(ico)                 = cpatch%agb(ico)                  * area_scale
-         cpatch%basarea(ico)             = cpatch%basarea(ico)              * area_scale
-         cpatch%dagb_dt(ico)             = cpatch%dagb_dt(ico)              * area_scale
-         cpatch%dba_dt(ico)              = cpatch%dba_dt(ico)               * area_scale
          cpatch%veg_water(ico)           = cpatch%veg_water(ico)            * area_scale
          cpatch%hcapveg(ico)             = cpatch%hcapveg(ico)              * area_scale
          cpatch%veg_energy(ico)          = cpatch%veg_energy(ico)           * area_scale
@@ -2195,10 +2197,6 @@ module fuse_fiss_utils
          cpatch%leaf_respiration(ico)    = cpatch%leaf_respiration(ico)     * area_scale
          cpatch%root_respiration(ico)    = cpatch%root_respiration(ico)     * area_scale
          cpatch%monthly_dndt(ico)        = cpatch%monthly_dndt(ico)         * area_scale
-         cpatch%agb(ico)                 = cpatch%agb(ico)                  * area_scale
-         cpatch%basarea(ico)             = cpatch%basarea(ico)              * area_scale
-         cpatch%dagb_dt(ico)             = cpatch%dagb_dt(ico)              * area_scale
-         cpatch%dba_dt(ico)              = cpatch%dba_dt(ico)               * area_scale
          cpatch%veg_water(ico)           = cpatch%veg_water(ico)            * area_scale
          cpatch%hcapveg(ico)             = cpatch%hcapveg(ico)              * area_scale
          cpatch%veg_energy(ico)          = cpatch%veg_energy(ico)           * area_scale

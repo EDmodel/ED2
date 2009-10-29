@@ -2468,7 +2468,7 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
                ipft = cpatch%pft(ico)
 
                !----- Computing the total seed mass of this cohort. -----------------------!
-               cohort_seeds   = cpatch%nplant(ico) * 10.0 * cpatch%bseeds(ico)
+               cohort_seeds   = cpatch%nplant(ico) * cpatch%bseeds(ico)
                
                pss_bseeds_pft(ipft) = pss_bseeds_pft(ipft)                                 &
                                          + cohort_seeds * csite%area(ipa)
@@ -2515,9 +2515,11 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
                   pss_bseeds_ar (ipft,ilu,idbh,iage) = pss_bseeds_ar (ipft,ilu,idbh,iage)  &
                                                      + cohort_seeds        *csite%area(ipa)
                   pss_agb_ar    (ipft,ilu,idbh,iage) = pss_agb_ar    (ipft,ilu,idbh,iage)  &
-                                                     + cpatch%agb(ico)     *csite%area(ipa)
+                                                     + cpatch%nplant(ico)                  &
+                                                     * cpatch%agb(ico) * csite%area(ipa)
                   pss_ba_ar     (ipft,ilu,idbh,iage) = pss_ba_ar     (ipft,ilu,idbh,iage)  &
-                                                     + cpatch%basarea(ico) *csite%area(ipa)
+                                                     + cpatch%nplant(ico)                  &
+                                                     * cpatch%basarea(ico)* csite%area(ipa)
                   pss_pldens_ar (ipft,ilu,idbh,iage) = pss_pldens_ar (ipft,ilu,idbh,iage)  &
                                                      + cpatch%nplant(ico)  *csite%area(ipa)
                   pss_carbbal_ar(ipft,ilu,idbh,iage) = pss_carbbal_ar(ipft,ilu,idbh,iage)  &
@@ -2924,14 +2926,12 @@ subroutine update_ed_yearly_vars(cgrid)
 
                if(cpatch%new_recruit_flag(ico) == 1)then
                   cgrid%total_agb_recruit(ipy) = cgrid%total_agb_recruit(ipy) +   &
-                       ed_biomass(cpatch%bdead(ico), cpatch%balive(ico),   &
-                       cpatch%bleaf(ico), cpatch%pft(ico), cpatch%hite(ico),   &
-                       cpatch%bstorage(ico)) * csite%area(ipa) * &
-                       cpoly%area(isi) * 10.0 * cpatch%nplant(ico)
+                       cpatch%agb(ico) * cpatch%nplant(ico) * csite%area(ipa) * &
+                       cpoly%area(isi)
                   cgrid%total_basal_area_recruit(ipy) =   &
                        cgrid%total_basal_area_recruit(ipy) +   &
-                       pi1 * 0.25 * cpatch%dbh(ico)**2 * &
-                       cpatch%nplant(ico) * csite%area(ipa) * cpoly%area(isi)
+                       cpatch%basarea(ico) * cpatch%nplant(ico) *&
+                       csite%area(ipa) * cpoly%area(isi)
                   cpatch%new_recruit_flag(ico) = 0
                endif
                cpatch%first_census(ico) = 1

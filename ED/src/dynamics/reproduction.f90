@@ -287,12 +287,10 @@ subroutine reproduction(cgrid, month)
                   !    Computing initial AGB and Basal Area. Their derivatives will be     !
                   ! zero.                                                                  !
                   !------------------------------------------------------------------------!
-                  cpatch%agb(ico)     = cpatch%nplant(ico) * 10.0                          &
-                                      * ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)    &
+                  cpatch%agb(ico)     = ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)    &
                                                   ,cpatch%bleaf(ico),cpatch%pft(ico)       &
                                                   ,cpatch%hite(ico),cpatch%bstorage(ico))
-                  cpatch%basarea(ico) = cpatch%nplant(ico) * pio4                          &
-                                      * cpatch%dbh(ico)  * cpatch%dbh(ico)
+                  cpatch%basarea(ico) = pio4 * cpatch%dbh(ico)  * cpatch%dbh(ico)
                   cpatch%dagb_dt(ico) = 0.0
                   cpatch%dba_dt(ico)  = 0.0
                   cpatch%ddbh_dt(ico) = 0.0

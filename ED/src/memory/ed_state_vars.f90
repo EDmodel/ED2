@@ -80,19 +80,19 @@ module ed_state_vars
      ! Plant height (m)
      real ,pointer,dimension(:) :: hite
 
-     ! Above-ground biomass (tonC/ha)
+     ! Above-ground biomass (kgC/plant)
      real, pointer, dimension(:) :: agb
 
-     ! Basal area (cm2_plant/m2_gnd)
+     ! Basal area (cm2)
      real, pointer, dimension(:) :: basarea
      
-     ! Rate of change in agb (tonC/ha/month)
+     ! Rate of change in agb (kgC/plant/yr)
      real, pointer, dimension(:) :: dagb_dt
      
-     ! Rate of change in basal area (cm2_plant/m2_gnd/month)
+     ! Rate of change in basal area (cm2/yr)
      real, pointer, dimension(:) :: dba_dt
      
-     ! Rate of change in dbh (cm/month)
+     ! Rate of change in dbh (cm/yr)
      real, pointer, dimension(:) :: ddbh_dt
 
      ! Plant diameter at breast height (cm)
@@ -130,11 +130,12 @@ module ed_state_vars
      real ,pointer,dimension(:) :: bstorage
      
      ! Monthly carbon balance for past 12 months and the current month
-     ! (kgC/plant)
+     ! (kgC/plant/yr) - 13th column will have the partial month integration
      real, pointer,dimension(:,:) :: cb       !(13,ncohorts)
      
      ! Maximum monthly carbon balance for past 12 months and the current 
-     ! month  if cohort were at the top of the canopy (kgC/plant)
+     ! month  if cohort were at the top of the canopy (kgC/plant/yr)
+     ! 13th column will have the partial month integration.
      real, pointer,dimension(:,:) :: cb_max  !(13,ncohorts)
      
      ! Annual average ratio of cb/cb_max
@@ -1040,18 +1041,18 @@ module ed_state_vars
 
      type(met_driv_state),pointer,dimension(:) :: met
 
-     real,pointer, dimension(:,:,:) :: basal_area !(n_pft,n_dbh,nsites)
-     real,pointer, dimension(:,:,:) :: agb        !(n_pft,n_dbh,nsites)
-     real,pointer, dimension(:,:,:) :: pldens     !(n_pft,n_dbh,nsites)
-     real,pointer, dimension(:,:,:) :: bseeds     !(n_pft,n_dbh,nsites)
+     real,pointer, dimension(:,:,:) :: basal_area !(n_pft,n_dbh,nsites), cm2/m2
+     real,pointer, dimension(:,:,:) :: agb        !(n_pft,n_dbh,nsites), kgC/m2
+     real,pointer, dimension(:,:,:) :: pldens     !(n_pft,n_dbh,nsites)  plant/m2
+     real,pointer, dimension(:,:,:) :: bseeds     !(n_pft,n_dbh,nsites)  kgC/m2
 
-     real,pointer, dimension(:,:,:) :: basal_area_growth
-     real,pointer, dimension(:,:,:) :: basal_area_mort
-     real,pointer, dimension(:,:,:) :: basal_area_cut
+     real,pointer, dimension(:,:,:) :: basal_area_growth ! cm2/m2/yr
+     real,pointer, dimension(:,:,:) :: basal_area_mort   ! c2/m2/yr
+     real,pointer, dimension(:,:,:) :: basal_area_cut    ! c2/m2/yr
 
-     real,pointer, dimension(:,:,:) :: agb_growth
-     real,pointer, dimension(:,:,:) :: agb_mort
-     real,pointer, dimension(:,:,:) :: agb_cut
+     real,pointer, dimension(:,:,:) :: agb_growth        ! kgC/m2/yr
+     real,pointer, dimension(:,:,:) :: agb_mort          ! kgC/m2/yr
+     real,pointer, dimension(:,:,:) :: agb_cut           ! kgC/m2/yr
 
 
      real,pointer,dimension(:) :: cosaoi
@@ -1247,32 +1248,32 @@ module ed_state_vars
      integer,pointer,dimension(:) :: ilon   ! index for matching met. data
      integer,pointer,dimension(:) :: ilat   ! index for matching met. data
 
-     ! Polygon AGB (tC/ha)
+     ! Polygon AGB (kgC/m2)
      real,pointer,dimension(:) :: total_agb
 
-     ! Polygon basal area (m2/ha)
+     ! Polygon basal area (cm2/m2)
      real,pointer,dimension(:) :: total_basal_area
 
-     ! AGB accruing due to growth (tC/ha/yr)
+     ! AGB accruing due to growth (kgC/m2/yr)
      real,pointer,dimension(:) :: total_agb_growth
 
-     ! AGB lost due to mortality (tC/ha/yr)
+     ! AGB lost due to mortality (kgC/m2/yr)
      real,pointer,dimension(:) :: total_agb_mort
 
-     ! AGB used to generate recruits (tC/ha/yr)
+     ! AGB used to generate recruits (kgC/m2/yr)
      real,pointer,dimension(:) :: total_agb_recruit
 
 
 
-     ! CHANGED THE FOLLOWING UNIT DESCRIPTORS: FROM (tC/ha/yr) to (m2/ha/yr) RGK 6-13-08
+     ! CHANGED THE FOLLOWING UNIT DESCRIPTORS: FROM (cm2/m2/yr) RGK 6-13-08
      !------------
-     ! BASAL_AREA accruing due to growth (m2/ha/yr)
+     ! BASAL_AREA accruing due to growth (cm2/m2/yr)
      real,pointer,dimension(:) :: total_basal_area_growth
 
-     ! BASAL_AREA lost due to mortality (m2/ha/yr)
+     ! BASAL_AREA lost due to mortality (cm2/m2/yr)
      real,pointer,dimension(:) :: total_basal_area_mort
 
-     ! BASAL_AREA used to generate recruits (m2/ha/yr)
+     ! BASAL_AREA used to generate recruits (cm2/m2/yr)
      real,pointer,dimension(:) :: total_basal_area_recruit
      !------------
 
@@ -1308,13 +1309,15 @@ module ed_state_vars
      ! budget-averaging time [kgN/m2]
      real,pointer,dimension(:) :: nbudget_initialstorage
 
-     ! Polygon basal area profile [m2/ha]
+     ! Polygon basal area profile [cm2/m2]
      real,pointer,dimension(:,:,:) :: basal_area !(n_pft,n_dbh,npolygons)
 
      ! Polygon above-ground biomass [kgC/m2]
      real,pointer,dimension(:,:,:) :: agb  !(n_pft,n_dbh,npolygons)
-
+     ! Polygon plant density [plant/m2]
      real,pointer, dimension(:,:,:) :: pldens     !(n_pft,n_dbh,npolygons)
+
+     ! Seed biomass [kgC/m2]
      real,pointer, dimension(:,:,:) :: bseeds     !(n_pft,n_dbh,npolygons)
 
      ! ------------------------------------------
@@ -1498,9 +1501,9 @@ module ed_state_vars
      !   These are variables updated at a monthly basis, so they are not !
      ! averages but they are written at the monthly analysis             !
      !-------------------------------------------------------------------!
-     real, pointer, dimension(:,:) :: agb_pft    !(n_pft       ,npolygons)
-     real, pointer, dimension(:,:) :: ba_pft     !(n_pft       ,npolygons)
-     real, pointer, dimension(:,:) :: bseeds_pft !(n_pft      ,npolygons)
+     real, pointer, dimension(:,:) :: agb_pft    !(n_pft       ,npolygons), kgC/m2
+     real, pointer, dimension(:,:) :: ba_pft     !(n_pft       ,npolygons), cm2/m2
+     real, pointer, dimension(:,:) :: bseeds_pft !(n_pft      ,npolygons), kgC/m2
 
      real, pointer, dimension(:,:) :: mmean_gpp_dbh  !(n_dbh       ,npolygons)
      real, pointer, dimension(:,:) :: mmean_lai_pft  !(n_pft       ,npolygons)
@@ -1586,12 +1589,12 @@ module ed_state_vars
      real, pointer, dimension(:,:,:,:,:) :: dmean_igpp_ar
      real, pointer, dimension(:,:,:,:,:) :: dmean_iplresp_ar
      !----- Variables that are updated once a month. ------------------------! 
-     real, pointer, dimension(:,:,:,:,:) :: bseeds_ar
-     real, pointer, dimension(:,:,:,:,:) :: agb_ar
-     real, pointer, dimension(:,:,:,:,:) :: ba_ar
-     real, pointer, dimension(:,:,:,:,:) :: pldens_ar
-     real, pointer, dimension(:,:,:,:,:) :: carbbal_ar
-     real, pointer, dimension(:,:,:,:,:) :: ncbmort_ar
+     real, pointer, dimension(:,:,:,:,:) :: bseeds_ar        !kgC/m2
+     real, pointer, dimension(:,:,:,:,:) :: agb_ar           !kgC/m2
+     real, pointer, dimension(:,:,:,:,:) :: ba_ar            !cm2/m2
+     real, pointer, dimension(:,:,:,:,:) :: pldens_ar        !#/m2
+     real, pointer, dimension(:,:,:,:,:) :: carbbal_ar       !kgC/m2/month
+     real, pointer, dimension(:,:,:,:,:) :: ncbmort_ar       !1/yr
      !----- Monthly averages. -----------------------------------------------!
      real, pointer, dimension(:,:,:,:,:) :: mmean_lai_ar
      real, pointer, dimension(:,:,:,:,:) :: mmean_wpa_ar
@@ -5673,7 +5676,6 @@ contains
        enddo
        do i = 1,n_mort
           patchout%mort_rate(i,m)       = patchin%mort_rate(i,k)
-          patchout%mmean_mort_rate(i,m) = patchin%mmean_mort_rate(i,k)
        end do
     end do
 
@@ -5743,6 +5745,13 @@ contains
        patchout%mmean_par_v           (1:inc) = pack(patchin%mmean_par_v           ,mask)
        patchout%mmean_par_v_beam      (1:inc) = pack(patchin%mmean_par_v_beam      ,mask)
        patchout%mmean_par_v_diff      (1:inc) = pack(patchin%mmean_par_v_diff      ,mask)
+
+       do m=1,inc
+         k=incmask(m)
+         do i = 1,n_mort
+             patchout%mmean_mort_rate(i,m) = patchin%mmean_mort_rate(i,k)
+          end do
+       end do
     end if
     
     return
@@ -6580,14 +6589,14 @@ contains
        nvar=nvar+1
        call vtable_edio_r(cgrid%total_agb(1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'TOTAL_AGB :11:hist:anal:year') 
-       call metadata_edio(nvar,igr,'Polygon Total Above Ground Biomass','[tC/ha]','ipoly')
+       call metadata_edio(nvar,igr,'Polygon Total Above Ground Biomass','[kgC/m2]','ipoly')
     endif
     
     if (associated(cgrid%total_basal_area)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%total_basal_area(1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'TOTAL_BASAL_AREA :11:hist:anal:year') 
-       call metadata_edio(nvar,igr,'Polygon Total Basal Area','[m2/ha]','ipoly')
+       call metadata_edio(nvar,igr,'Polygon Total Basal Area','[cm2/m2]','ipoly')
        
     endif
 
@@ -6595,42 +6604,42 @@ contains
        nvar=nvar+1
        call vtable_edio_r(cgrid%total_agb_growth(1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'TOTAL_AGB_GROWTH:11:hist:anal') 
-        call metadata_edio(nvar,igr,'Polygon AGB gain through growth','[tc/ha/yr]','ipoly')
+        call metadata_edio(nvar,igr,'Polygon AGB gain through growth','[kgC/m2/yr]','ipoly')
     endif
     
     if (associated(cgrid%total_agb_mort)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%total_agb_mort(1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'TOTAL_AGB_MORT :11:hist:anal') 
-       call metadata_edio(nvar,igr,'Polygon AGB lost due to mortality','[tc/ha/yr]','ipoly')
+       call metadata_edio(nvar,igr,'Polygon AGB lost due to mortality','[kgC/m2/yr]','ipoly')
     endif
     
     if (associated(cgrid%total_agb_recruit)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%total_agb_recruit(1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'TOTAL_AGB_RECRUIT :11:hist:anal') 
-       call metadata_edio(nvar,igr,'Polygon AGB used to generate recruits','[tc/ha/yr]','ipoly')
+       call metadata_edio(nvar,igr,'Polygon AGB used to generate recruits','[kgC/m2/yr]','ipoly')
     endif
     
     if (associated(cgrid%total_basal_area_growth)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%total_basal_area_growth(1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'TOTAL_BASAL_AREA_GROWTH :11:hist:anal') 
-       call metadata_edio(nvar,igr,'Polygon basal area gained through growth ','[m2/ha/yr]','ipoly')
+       call metadata_edio(nvar,igr,'Polygon basal area gained through growth ','[kgC/m2/yr]','ipoly')
     endif
     
     if (associated(cgrid%total_basal_area_mort)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%total_basal_area_mort(1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'TOTAL_BASAL_AREA_MORT :11:hist:anal') 
-       call metadata_edio(nvar,igr,'Polygon basal area lost through growth ','[m2/ha/yr]','ipoly')
+       call metadata_edio(nvar,igr,'Polygon basal area lost through growth ','[cm2/m2/yr]','ipoly')
     endif
     
     if (associated(cgrid%total_basal_area_recruit)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%total_basal_area_recruit(1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'TOTAL_BASAL_AREA_RECRUIT :11:hist:anal') 
-       call metadata_edio(nvar,igr,'Polygon basal area gained by recruits','[m2/ha/yr]','ipoly')
+       call metadata_edio(nvar,igr,'Polygon basal area gained by recruits','[cm2/m2/yr]','ipoly')
     endif
     
     if (associated(cgrid%load_adjacency)) then
@@ -6672,14 +6681,14 @@ contains
        nvar=nvar+1
        call vtable_edio_r(cgrid%basal_area(1,1,1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'BASAL_AREA :146:hist:anal:dail:mont:year') 
-       call metadata_edio(nvar,igr,'Polygon basal area profile','[m2/ha]','ipoly - n_dbh - n_pft')
+       call metadata_edio(nvar,igr,'Polygon basal area profile','[cm2/m2]','ipoly - n_dbh - n_pft')
     endif
     
     if (associated(cgrid%agb)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%agb(1,1,1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'AGB :146:hist:anal:dail:mont:year') 
-       call metadata_edio(nvar,igr,'Polygon above ground biomass profile','[tonC/ha]','ipoly - n_dbh - n_pft')
+       call metadata_edio(nvar,igr,'Polygon above ground biomass profile','[kgC/m2]','ipoly - n_dbh - n_pft')
     endif
     
     if (associated(cgrid%pldens)) then
@@ -6693,7 +6702,7 @@ contains
        nvar=nvar+1
        call vtable_edio_r(cgrid%bseeds(1,1,1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'BSEEDS :146:hist:anal:dail:mont:year') 
-       call metadata_edio(nvar,igr,'Polygon seed biomass','[tonC/ha]','ipoly - n_dbh - n_pft')
+       call metadata_edio(nvar,igr,'Polygon seed biomass','[kgC/m2]','ipoly - n_dbh - n_pft')
     endif
     
     
@@ -7238,7 +7247,7 @@ contains
        nvar=nvar+1
        call vtable_edio_r(cgrid%dmean_gpp(1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'DMEAN_GPP :11:hist:dail') 
-       call metadata_edio(nvar,igr,'Polygon Average Daily Integrated Gross Primary Productivity','[tC/ha/d]','ipoly') 
+       call metadata_edio(nvar,igr,'Polygon Average Daily Integrated Gross Primary Productivity','[kgC/m2/yr]','ipoly') 
     endif
     
     
@@ -7417,7 +7426,7 @@ contains
        call vtable_edio_r(cgrid%dmean_gpp_dbh(1,1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'DMEAN_GPP_DBH :16:hist:dail') 
        call metadata_edio(nvar,igr,'Polygon Averaged by DBH, Daily Integrated Gross Primary Production' &
-            ,'[tC/ha/d]','ipoly - ndbh') 
+            ,'[kgC/m2/yr]','ipoly - ndbh') 
     endif
     
     if(associated(cgrid%dmean_can_temp)) then
@@ -7858,14 +7867,14 @@ contains
        nvar=nvar+1
        call vtable_edio_r(cgrid%agb_pft(1,1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'AGB_PFT :14:hist:mont') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+       call metadata_edio(nvar,igr,'Above-ground biomass by PFT','[kgC/m2]','NA') 
     endif
     
     if(associated(cgrid%ba_pft)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%ba_pft(1,1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'BA_PFT :14:hist:mont') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+       call metadata_edio(nvar,igr,'Basal area by PFT','[cm2/m2]','NA') 
     endif
 
     if(associated(cgrid%stdev_gpp)) then
@@ -8042,7 +8051,7 @@ contains
        call vtable_edio_r(cgrid%bseeds_ar(1,1,1,1,1),nvar,igr,init,cgrid%pyglob_id         &
                          ,var_len,var_len_global,max_ptrs                                  &
                          ,'BSEEDS_AR :14567:hist:mont')
-       call metadata_edio(nvar,igr,'Seed biomass','[tonC/ha]'                              &
+       call metadata_edio(nvar,igr,'Seed biomass','[kgC/m2]'                               &
                          ,'ipft;ilu;idbh;iage;ipoly') 
     end if
 
@@ -8051,7 +8060,7 @@ contains
        call vtable_edio_r(cgrid%agb_ar(1,1,1,1,1),nvar,igr,init,cgrid%pyglob_id            &
                          ,var_len,var_len_global,max_ptrs                                  &
                          ,'AGB_AR :14567:hist:mont')
-       call metadata_edio(nvar,igr,'Above-ground biomass','[tonC/ha]'                      &
+       call metadata_edio(nvar,igr,'Above-ground biomass','[kgC/m2]'                       &
                          ,'ipft;ilu;idbh;iage;ipoly') 
     end if
 
@@ -8060,7 +8069,7 @@ contains
        call vtable_edio_r(cgrid%ba_ar(1,1,1,1,1),nvar,igr,init,cgrid%pyglob_id             &
                          ,var_len,var_len_global,max_ptrs                                  &
                          ,'BA_AR :14567:hist:mont')
-       call metadata_edio(nvar,igr,'Basal area','[m2]'                                     &
+       call metadata_edio(nvar,igr,'Basal area','[cm2/m2]'                                 &
                          ,'ipft;ilu;idbh;iage;ipoly') 
     end if
 
@@ -8078,7 +8087,7 @@ contains
        call vtable_edio_r(cgrid%carbbal_ar(1,1,1,1,1),nvar,igr,init,cgrid%pyglob_id        &
                          ,var_len,var_len_global,max_ptrs                                  &
                          ,'CARBBAL_AR :14567:hist:mont')
-       call metadata_edio(nvar,igr,'Carbon balance','[tonC/ha]'                            &
+       call metadata_edio(nvar,igr,'Carbon balance','[kgC/m2/yr]'                          &
                          ,'ipft;ilu;idbh;iage;ipoly') 
     end if
 
@@ -9743,35 +9752,35 @@ contains
        nvar=nvar+1
          call vtable_edio_r(cpatch%agb(1),nvar,igr,init,cpatch%coglob_id, &
          var_len,var_len_global,max_ptrs,'AGB_CO :41:hist:anal:mont:year') 
-       call metadata_edio(nvar,igr,'Above-ground biomass','[tonC/ha]','icohort') 
+       call metadata_edio(nvar,igr,'Above-ground biomass','[kgC/plant]','icohort') 
     endif
 
     if (associated(cpatch%basarea)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%basarea(1),nvar,igr,init,cpatch%coglob_id, &
          var_len,var_len_global,max_ptrs,'BA_CO :41:hist:anal:mont:year') 
-       call metadata_edio(nvar,igr,'Basal-area','[cm2_plant/m2_gnd]','icohort') 
+       call metadata_edio(nvar,igr,'Basal-area','[cm2]','icohort') 
     endif
 
     if (associated(cpatch%dagb_dt)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%dagb_dt(1),nvar,igr,init,cpatch%coglob_id, &
          var_len,var_len_global,max_ptrs,'DAGB_DT :41:hist:anal:mont:year') 
-       call metadata_edio(nvar,igr,'Above-ground biomass growth','[tonC/ha/month]','icohort') 
+       call metadata_edio(nvar,igr,'Above-ground biomass growth','[kgC/plant/yr]','icohort') 
     endif
 
     if (associated(cpatch%dba_dt)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%dba_dt(1),nvar,igr,init,cpatch%coglob_id, &
          var_len,var_len_global,max_ptrs,'DBA_DT :41:hist:anal:mont:year') 
-       call metadata_edio(nvar,igr,'Basal-area growth','[cm2/m2/month]','icohort') 
+       call metadata_edio(nvar,igr,'Basal-area growth','[cm2/plant/yr]','icohort') 
     endif
 
     if (associated(cpatch%ddbh_dt)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%ddbh_dt(1),nvar,igr,init,cpatch%coglob_id, &
          var_len,var_len_global,max_ptrs,'DDBH_DT :41:hist:anal:mont:year') 
-       call metadata_edio(nvar,igr,'DBH growth','[cm/month]','icohort') 
+       call metadata_edio(nvar,igr,'DBH growth','[cm/plant/yr]','icohort') 
     endif
 
     if (associated(cpatch%dbh)) then

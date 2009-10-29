@@ -743,23 +743,19 @@ module disturbance_utils
           tpatch%leaf_respiration(nco)    = tpatch%leaf_respiration(nco)     * cohort_area_fac
           tpatch%root_respiration(nco)    = tpatch%root_respiration(nco)     * cohort_area_fac
           tpatch%monthly_dndt(nco)        = tpatch%monthly_dndt(nco)         * cohort_area_fac
-          tpatch%agb(nco)                 = tpatch%agb(nco)                  * cohort_area_fac
-          tpatch%basarea(nco)             = tpatch%basarea(nco)              * cohort_area_fac
-          tpatch%dagb_dt(nco)             = tpatch%dagb_dt(nco)              * cohort_area_fac
-          tpatch%dba_dt(nco)              = tpatch%dba_dt(nco)               * cohort_area_fac
           tpatch%veg_water(nco)           = tpatch%veg_water(nco)            * cohort_area_fac
           tpatch%hcapveg(nco)             = tpatch%hcapveg(nco)              * cohort_area_fac
           tpatch%veg_energy(nco)          = tpatch%veg_energy(nco)           * cohort_area_fac
           !----- Carbon flux monthly means are extensive, we must convert them. ------------!
           if (idoutput > 0 .or. imoutput > 0) then
-             tpatch%dmean_par_v     (ico) = tpatch%dmean_par_v     (ico)     * cohort_area_fac
-             tpatch%dmean_par_v_beam(ico) = tpatch%dmean_par_v_beam(ico)     * cohort_area_fac
-             tpatch%dmean_par_v_diff(ico) = tpatch%dmean_par_v_diff(ico)     * cohort_area_fac
+             tpatch%dmean_par_v     (nco) = tpatch%dmean_par_v     (nco)     * cohort_area_fac
+             tpatch%dmean_par_v_beam(nco) = tpatch%dmean_par_v_beam(nco)     * cohort_area_fac
+             tpatch%dmean_par_v_diff(nco) = tpatch%dmean_par_v_diff(nco)     * cohort_area_fac
           end if
           if (imoutput > 0) then
-             tpatch%mmean_par_v     (ico) = tpatch%mmean_par_v     (ico)     * cohort_area_fac
-             tpatch%mmean_par_v_beam(ico) = tpatch%mmean_par_v_beam(ico)     * cohort_area_fac
-             tpatch%mmean_par_v_diff(ico) = tpatch%mmean_par_v_diff(ico)     * cohort_area_fac
+             tpatch%mmean_par_v     (nco) = tpatch%mmean_par_v     (nco)     * cohort_area_fac
+             tpatch%mmean_par_v_beam(nco) = tpatch%mmean_par_v_beam(nco)     * cohort_area_fac
+             tpatch%mmean_par_v_diff(nco) = tpatch%mmean_par_v_diff(nco)     * cohort_area_fac
           end if
        end if
           
