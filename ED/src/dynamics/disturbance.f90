@@ -889,8 +889,8 @@ module disturbance_utils
     use ed_misc_coms, only: dtlsm
     use fuse_fiss_utils, only : sort_cohorts
     use ed_therm_lib,only : calc_hcapveg
-    use consts_coms, only: t3ple
-    use allometry, only : h2dbh, dbh2bd, dbh2bl, dbh2h, area_indices
+    use consts_coms, only: t3ple, pio4
+    use allometry, only : h2dbh, dbh2bd, dbh2bl, dbh2h, area_indices, ed_biomass
     use ed_max_dims, only : n_pft
 
     implicit none
@@ -961,6 +961,11 @@ module disturbance_utils
 
     cpatch%bstorage(nc) = 1.0*(cpatch%balive(nc)) !! changed by MCD, was 0.0
 
+
+    !----- Finding the new basal area and above-ground biomass. ---------------------------!
+    cpatch%basarea(nc) = pio4 * cpatch%dbh(nc) * cpatch%dbh(nc)                
+    cpatch%agb(nc)     = ed_biomass(cpatch%bdead(nc),cpatch%balive(nc),cpatch%bleaf(nc)    &
+                                   ,cpatch%pft(nc),cpatch%hite(nc) ,cpatch%bstorage(nc))     
 
 
     call init_ed_cohort_vars(cpatch, nc, lsl)

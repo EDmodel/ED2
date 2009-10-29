@@ -32,7 +32,8 @@ module growth_balive
       use grid_coms       , only : nzg                    ! ! intent(in)
       use ed_therm_lib    , only : calc_hcapveg           & ! function
                                  , update_veg_energy_cweh ! ! function
-      use allometry       , only : area_indices           ! ! subroutine
+      use allometry       , only : area_indices           & ! subroutine
+                                 , ed_biomass             ! ! function
       use mortality       , only : mortality_rates        ! ! subroutine
       implicit none
       !----- Arguments. -----------------------------------------------------!
@@ -217,6 +218,14 @@ module growth_balive
                                    , cpatch%pft(ico)   , cpatch%sla(ico)     &
                                    , cpatch%lai(ico)   , cpatch%wpa(ico)     &
                                    , cpatch%wai(ico)   )
+
+                  !----- Update above-ground biomass. -----------------------!
+                  cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico)             &
+                                              ,cpatch%balive(ico)            &
+                                              ,cpatch%bleaf(ico)             &
+                                              ,cpatch%pft(ico)               &
+                                              ,cpatch%hite(ico)              &
+                                              ,cpatch%bstorage(ico))     
 
                   !----------------------------------------------------------!
                   !     It is likely that biomass has changed, therefore,    !

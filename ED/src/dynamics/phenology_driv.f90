@@ -98,9 +98,10 @@ subroutine update_phenology(doy, cpoly, isi, lat)
                              , alli                     ! ! intent(in)
    use ed_therm_lib   , only : calc_hcapveg             & ! function
                              , update_veg_energy_cweh   ! ! subroutine
-   use ed_max_dims       , only : n_pft                    ! ! intent(in)
-   use ed_misc_coms      , only : current_time             ! ! intent(in)
+   use ed_max_dims    , only : n_pft                    ! ! intent(in)
+   use ed_misc_coms   , only : current_time             ! ! intent(in)
    use allometry      , only : area_indices             & ! subroutine
+                             , ed_biomass               & ! function
                              , dbh2bl                   ! ! function
 
    implicit none
@@ -376,6 +377,11 @@ subroutine update_phenology(doy, cpoly, isi, lat)
                           ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)            &
                           ,cpatch%pft(ico),cpatch%sla(ico), cpatch%lai(ico)                &
                           ,cpatch%wpa(ico),cpatch%wai(ico))
+
+         !----- Update above-ground biomass. ----------------------------------------------!
+         cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)                 &
+                                     ,cpatch%bleaf(ico),cpatch%pft(ico)                    &
+                                     ,cpatch%hite(ico) ,cpatch%bstorage(ico) ) 
 
          !---------------------------------------------------------------------------------!
          !    The leaf biomass of the cohort has changed, update the vegetation energy -   !

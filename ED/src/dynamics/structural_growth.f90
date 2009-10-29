@@ -301,7 +301,9 @@ subroutine update_derived_cohort_props(cpatch,ico,green_leaf_factor,lsl)
                             , dbh2bl              & ! function
                             , assign_root_depth   & ! function
                             , calc_root_depth     & ! function
+                            , ed_biomass          & ! function
                             , area_indices        ! ! subroutine
+   use consts_coms   , only : pio4                ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(patchtype), target     :: cpatch
@@ -340,6 +342,11 @@ subroutine update_derived_cohort_props(cpatch,ico,green_leaf_factor,lsl)
                  ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico),cpatch%pft(ico)     &
                  ,cpatch%sla(ico),cpatch%lai(ico),cpatch%wpa(ico),cpatch%wai(ico))
    end if
+
+   !----- Finding the new basal area and above-ground biomass. ----------------------------!
+   cpatch%basarea(ico) = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)                
+   cpatch%agb(ico)     = ed_biomass(cpatch%bdead(ico),cpatch%balive(ico),cpatch%bleaf(ico) &
+                                   ,cpatch%pft(ico),cpatch%hite(ico) ,cpatch%bstorage(ico))     
 
    !----- Update rooting depth ------------------------------------------------------------!
    rootdepth = calc_root_depth(cpatch%hite(ico), cpatch%dbh(ico), cpatch%pft(ico))

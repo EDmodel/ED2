@@ -25,9 +25,9 @@ euler_driver.o: canopy_air_coms.mod canopy_struct_dynamics.mod consts_coms.mod
 euler_driver.o: ed_max_dims.mod ed_misc_coms.mod ed_state_vars.mod
 euler_driver.o: ed_therm_lib.mod grid_coms.mod met_driver_coms.mod soil_coms.mod
 euler_driver.o: therm_lib.mod
-events.o: allometry.mod decomp_coms.mod disturbance_utils.mod ed_misc_coms.mod
-events.o: ed_state_vars.mod ed_therm_lib.mod fuse_fiss_utils.mod grid_coms.mod
-events.o: pft_coms.mod therm_lib.mod
+events.o: allometry.mod consts_coms.mod decomp_coms.mod disturbance_utils.mod
+events.o: ed_misc_coms.mod ed_state_vars.mod ed_therm_lib.mod
+events.o: fuse_fiss_utils.mod grid_coms.mod pft_coms.mod therm_lib.mod
 farq_leuning.o: c34constants.mod consts_coms.mod pft_coms.mod phenology_coms.mod
 farq_leuning.o: physiology_coms.mod therm_lib.mod
 fire.o: allometry.mod consts_coms.mod disturb_coms.mod ed_state_vars.mod
