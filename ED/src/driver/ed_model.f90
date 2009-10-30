@@ -464,7 +464,7 @@ subroutine vegetation_dynamics(new_month,new_year)
   use disturbance_utils, only: apply_disturbances, site_disturbance_rates
   use fuse_fiss_utils, only : fuse_patches
   use ed_state_vars,only : edgrid_g,edtype
-  use growth_balive,only : dbalive_dt
+  use growth_balive,only : dbalive_dt, dbalive_dt_eq_0
   use consts_coms, only : day_sec,yr_day
   use mem_sites, only: maxpatch
 
@@ -499,15 +499,27 @@ subroutine vegetation_dynamics(new_month,new_year)
      call normalize_ed_daily_vars(cgrid, tfact1)
      
 !     write (unit=*,fmt='(a)') '~~~ Phenology_driver...'
-     if (ied_init_mode /= 8) call phenology_driver(cgrid,doy,current_time%month, tfact1)
+     if (ied_init_mode == -8) then
+        call phenology_driver_eq_0(cgrid,doy,current_time%month, tfact1)
+     else
+        call phenology_driver(cgrid,doy,current_time%month, tfact1)
+     end if
      
 !     write (unit=*,fmt='(a)') '~~~ Dbalive_dt...'
-     if (ied_init_mode /= 8) call dbalive_dt(cgrid,tfact2)
-     
+     if (ied_init_mode == -8) then
+        call dbalive_dt_eq_0(cgrid,tfact2)
+     else
+        call dbalive_dt(cgrid,tfact2)
+     end if
+
      if(new_month)then
 
 !        write (unit=*,fmt='(a)') '^^^ Structural_growth...'
-        if (ied_init_mode /= 8) call structural_growth(cgrid, current_time%month)
+        if (ied_init_mode == -8) then
+           call structural_growth_eq_0(cgrid, current_time%month)
+        else
+           call structural_growth(cgrid, current_time%month)
+        end if
 
 
 !        write (unit=*,fmt='(a)') '^^^ Reproduction...'

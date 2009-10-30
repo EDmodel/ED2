@@ -206,11 +206,11 @@ module growth_balive
                                       ,csite%avg_daily_temp(ipa))
                   dndt = - sum(cpatch%mort_rate(:,ico)) * cpatch%nplant(ico) &
                          * tfact
-                  
+
                   !----- Update monthly mortality rate [plants/m2/month]. ---!
                   cpatch%monthly_dndt(ico) = cpatch%monthly_dndt(ico) + dndt
 
-     
+
                   !----- Updating LAI, WPA, and WAI. ------------------------!
                   call area_indices( cpatch%nplant(ico), cpatch%bleaf(ico)   &
                                    , cpatch%bdead(ico) , cpatch%balive(ico)  &
@@ -262,6 +262,178 @@ module growth_balive
 
       return
    end subroutine dbalive_dt
+   !=========================================================================!
+   !=========================================================================!
+
+
+
+
+
+
+   !=========================================================================!
+   !=========================================================================!
+   !     This subroutine will compute the respiration terms other than leaf  !
+   ! respiration, plus the carbon balance and maintenance costs but without  !
+   ! updating the pools.                                                     !
+   !-------------------------------------------------------------------------!
+   subroutine dbalive_dt_eq_0(cgrid, tfact)
+      use ed_state_vars   , only : edtype                 & ! structure
+                                 , polygontype            & ! structure
+                                 , sitetype               & ! structure
+                                 , patchtype              ! ! structure
+      use pft_coms        , only : q                      & ! intent(in)
+                                 , qsw                    & ! intent(in)
+                                 , plant_N_supply_scale   & ! intent(in)
+                                 , c2n_storage            & ! intent(in)
+                                 , growth_resp_factor     & ! intent(in)
+                                 , storage_turnover_rate  ! ! intent(in)
+      use physiology_coms , only : N_plant_lim            ! ! intent(in)
+      use grid_coms       , only : nzg                    ! ! intent(in)
+      use ed_therm_lib    , only : calc_hcapveg           & ! function
+                                 , update_veg_energy_cweh ! ! function
+      use allometry       , only : area_indices           & ! subroutine
+                                 , ed_biomass             ! ! function
+      use mortality       , only : mortality_rates        ! ! subroutine
+      implicit none
+      !----- Arguments. -----------------------------------------------------!
+      type(edtype)     , target     :: cgrid
+      real             , intent(in) :: tfact
+      !----- Local variables. -----------------------------------------------!
+      type(polygontype), pointer    :: cpoly
+      type(sitetype)   , pointer    :: csite
+      type(patchtype)  , pointer    :: cpatch
+      integer                       :: ipy
+      integer                       :: isi
+      integer                       :: ipa
+      integer                       :: ico
+      integer                       :: ipft
+      real                          :: salloc
+      real                          :: salloci
+      real                          :: bl
+      real                          :: br
+      real                          :: daily_C_gain
+      real                          :: carbon_balance
+      real                          :: carbon_balance_pot
+      real                          :: carbon_balance_max
+      real                          :: balive_in
+      real                          :: nitrogen_supply
+      real                          :: dndt
+      real                          :: old_hcapveg
+      real                          :: nitrogen_uptake
+      real                          :: N_uptake_pot
+
+
+      do ipy = 1,cgrid%npolygons
+         cpoly => cgrid%polygon(ipy)
+
+         do isi = 1,cpoly%nsites
+            csite => cpoly%site(isi)
+
+            do ipa = 1,csite%npatches
+               cpatch => csite%patch(ipa)
+
+               !----- Reset averaged variables. -----------------------------!
+               csite%total_plant_nitrogen_uptake(ipa) = 0.0
+
+               !----- Loop over cohorts. ------------------------------------!
+               do ico = 1,cpatch%ncohorts
+
+                  !----- Alias for current PFT. -----------------------------!
+                  ipft = cpatch%pft(ico)
+
+                  !----- Initialize cohort nitrogen uptake. -----------------!
+                  nitrogen_uptake = 0.0
+                  N_uptake_pot    = 0.0
+                  
+                  ! Set allocation factors
+                  salloc  = 1.0 + qsw(ipft) * cpatch%hite(ico) + q(ipft)
+                  salloci = 1.0 / salloc
+                  
+                  !----- Leaf and root biomass. -----------------------------!
+                  bl = cpatch%bleaf(ico)
+                  br = q(ipft) * cpatch%balive(ico) * salloci 
+
+                  !----------------------------------------------------------!
+                  !     Compute maintenance costs.                           !
+                  !----------------------------------------------------------!
+                  call plant_maintenance(cpatch,ico,br,bl,tfact,daily_C_gain &
+                                        ,csite%avg_daily_temp(ipa))
+
+                  !----- Subtract maintenance costs from balive. ------------!
+                  cpatch%cb(13,ico)     = cpatch%cb(13,ico)                  &
+                                        - cpatch%maintenance_costs(ico)
+                  cpatch%cb_max(13,ico) = cpatch%cb_max(13,ico)              &
+                                        - cpatch%maintenance_costs(ico)
+
+                  !----------------------------------------------------------!
+                  !      Calculate actual, potential and maximum carbon      !
+                  ! balances.                                                !
+                  !----------------------------------------------------------!
+                  call plant_carbon_balances(cpatch,ipa,ico,daily_C_gain     &
+                                            ,carbon_balance                  &
+                                            ,carbon_balance_pot              &
+                                            ,carbon_balance_max)
+
+                  !----------------------------------------------------------!
+                  !      Compute respiration rates for coming day            !
+                  ! [kgC/plant/day].                                         !
+                  !----------------------------------------------------------!
+                  cpatch%growth_respiration(ico) =                           &
+                          max(0.0, daily_C_gain * growth_resp_factor(ipft))
+                  cpatch%storage_respiration(ico) =                          &
+                          cpatch%bstorage(ico) * storage_turnover_rate(ipft) &
+                        * tfact
+                  cpatch%vleaf_respiration(ico) =                            &
+                          (1.0 - cpoly%green_leaf_factor(ipft,isi))          &
+                        / (1.0 + q(ipft) + qsw(ipft) * cpatch%hite(ico))     &
+                        * cpatch%balive(ico) * storage_turnover_rate(ipft)   &
+                        * tfact
+
+                  !----------------------------------------------------------!
+                  !     Do a shadow calculation to see what would have       !
+                  ! happened if stomata were open.  This is used to          !
+                  ! calculate potential nitrogen uptake, N_uptake_pot.       !
+                  !----------------------------------------------------------!
+
+                  if (N_plant_lim == 1) then
+                     call potential_N_uptake(cpatch,ico,salloc,salloci       &
+                                  ,balive_in,carbon_balance_pot,N_uptake_pot &
+                                  ,cpoly%green_leaf_factor(ipft,isi))
+                  end if
+
+                  !----------------------------------------------------------!
+                  !  Increment the [kgN/m2] taken up during previous day.    !
+                  !----------------------------------------------------------!
+                  csite%total_plant_nitrogen_uptake(ipa) =                   &
+                         csite%total_plant_nitrogen_uptake(ipa)              &
+                       + nitrogen_uptake * cpatch%nplant(ico)
+
+                  !----- Calculate plant N limitation factor. ---------------!
+                  if (n_plant_lim == 0 .or. N_uptake_pot <= 0.0) then
+                     cpatch%fsn(ico) = 1.0
+                  else
+                     nitrogen_supply = plant_N_supply_scale * br             &
+                                     * csite%mineralized_soil_N(ipa)
+                     cpatch%fsn(ico) = nitrogen_supply                       &
+                                     / (nitrogen_supply + N_uptake_pot)
+                  end if
+                  
+                  !----------------------------------------------------------!
+                  !      Do mortality --- note that only frost mortality     !
+                  ! changes daily.                                           !
+                  !----------------------------------------------------------!
+                  call mortality_rates(cpatch,ipa,ico                        &
+                                      ,csite%avg_daily_temp(ipa))
+               end do
+
+               !----- It's a new day, reset average daily temperature. ------!
+               csite%avg_daily_temp(ipa) = 0.0 
+            end do
+         end do
+      end do
+
+      return
+   end subroutine dbalive_dt_eq_0
    !=========================================================================!
    !=========================================================================!
 

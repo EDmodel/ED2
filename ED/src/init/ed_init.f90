@@ -95,7 +95,7 @@ end subroutine soil_depth_fill
 !------------------------------------------------------------------------------------------!
 subroutine load_ecosystem_state()
    use phenology_coms    , only : iphen_scheme    ! ! intent(in)
-   use ed_misc_coms         , only : ied_init_mode   ! ! intent(in)
+   use ed_misc_coms      , only : ied_init_mode   ! ! intent(in)
    use phenology_startup , only : phenology_init  ! ! intent(in)
    use ed_node_coms      , only : mynum           & ! intent(in)
                                 , nmachs          & ! intent(in)
@@ -153,7 +153,7 @@ subroutine load_ecosystem_state()
   
 
    select case (ied_init_mode)
-   case(0,8)
+   case(-8,0)
       !----- Initialize everything with near-bare ground ----------------------------------!
       if (mynum /= 1) write(unit=*,fmt='(a)') ' + Doing near bare ground initialization...'
       do igr=1,ngrids

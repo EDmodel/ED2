@@ -130,8 +130,7 @@ subroutine canopy_photosynthesis(csite,ipa,vels,atm_tmp,prss,ed_ktrans,ntext_soi
             ! of leaf.                                                                     !
             !------------------------------------------------------------------------------!
             mixrat     = csite%can_shv(ipa) / (1. - csite%can_shv(ipa))
-            parv_o_lai = cpatch%par_v(tuco)                                                &
-                       / (cpatch%lai(tuco) + cpatch%wai(tuco))
+            parv_o_lai = cpatch%par_v(tuco) / cpatch%lai(tuco)
 
             !----- Calling the photosynthesis for maximum photosynthetic rates. -----------!
             call lphysiol_full(            & !

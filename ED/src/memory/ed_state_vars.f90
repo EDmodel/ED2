@@ -134,12 +134,16 @@ module ed_state_vars
      real, pointer,dimension(:,:) :: cb       !(13,ncohorts)
      
      ! Maximum monthly carbon balance for past 12 months and the current 
-     ! month  if cohort were at the top of the canopy (kgC/plant/yr)
+     ! month  if cohort were at the top of the canopy (kgC/plant, over one month)
      ! 13th column will have the partial month integration.
      real, pointer,dimension(:,:) :: cb_max  !(13,ncohorts)
      
      ! Annual average ratio of cb/cb_max
      real ,pointer,dimension(:) :: cbr_bar
+     
+     ! Monthly mean of cb. The only difference from cb is the way it is scaled, so
+     ! all months have the same "weight"
+     real, pointer, dimension(:) :: mmean_cb
 
      ! Vegetation internal energy (J/m2 ground)
      real ,pointer,dimension(:) :: veg_energy
@@ -253,6 +257,9 @@ module ed_state_vars
      real, pointer, dimension(:) :: beamext_level
      real, pointer, dimension(:) :: dmean_beamext_level
      real, pointer, dimension(:) :: mmean_beamext_level
+     real, pointer, dimension(:) :: diffext_level
+     real, pointer, dimension(:) :: dmean_diffext_level
+     real, pointer, dimension(:) :: mmean_diffext_level
      real, pointer, dimension(:) :: norm_par_beam
      real, pointer, dimension(:) :: dmean_norm_par_beam
      real, pointer, dimension(:) :: mmean_norm_par_beam
@@ -340,10 +347,15 @@ module ed_state_vars
      real ,pointer,dimension(:) :: stomatal_resistance
 
      ! Plant maintenance costs due to turnover of leaves and fine 
-     ! roots [kgC/plant/day]
+     ! roots [kgC/plant]
      real ,pointer,dimension(:) :: maintenance_costs
+     ! Monthly mean, in kgC/plant/year
      real ,pointer,dimension(:) :: mmean_mnt_cost
-
+     
+     ! Leaf loss to litter layer due to phenology [kgC/plant]
+     real , pointer, dimension(:) :: leaf_litter
+     ! Monthly mean, in kgC/plant/year
+     real , pointer, dimension(:) :: mmean_leaf_litter
 
      ! Amount of seeds produced for dispersal [kgC/plant]
      real ,pointer,dimension(:) :: bseeds
@@ -2535,6 +2547,7 @@ contains
     allocate(cpatch%light_level_beam(ncohorts))
     allocate(cpatch%light_level_diff(ncohorts))
     allocate(cpatch%beamext_level(ncohorts))
+    allocate(cpatch%diffext_level(ncohorts))
     allocate(cpatch%norm_par_beam(ncohorts))
     allocate(cpatch%norm_par_diff(ncohorts))
     allocate(cpatch%lambda_light(ncohorts))
@@ -2557,6 +2570,7 @@ contains
     allocate(cpatch%fs_open(ncohorts))
     allocate(cpatch%stomatal_resistance(ncohorts))
     allocate(cpatch%maintenance_costs(ncohorts))
+    allocate(cpatch%leaf_litter(ncohorts))
     allocate(cpatch%bseeds(ncohorts))
     allocate(cpatch%leaf_respiration(ncohorts))
     allocate(cpatch%root_respiration(ncohorts))
@@ -2576,6 +2590,7 @@ contains
        allocate(cpatch%dmean_light_level_beam(ncohorts))
        allocate(cpatch%dmean_light_level_diff(ncohorts))
        allocate(cpatch%dmean_beamext_level(ncohorts))
+       allocate(cpatch%dmean_diffext_level(ncohorts))
        allocate(cpatch%dmean_norm_par_beam(ncohorts))
        allocate(cpatch%dmean_norm_par_diff(ncohorts))
        allocate(cpatch%dmean_lambda_light(ncohorts))
@@ -2595,6 +2610,7 @@ contains
        allocate(cpatch%mmean_light_level_beam(ncohorts))
        allocate(cpatch%mmean_light_level_diff(ncohorts))
        allocate(cpatch%mmean_beamext_level(ncohorts))
+       allocate(cpatch%mmean_diffext_level(ncohorts))
        allocate(cpatch%mmean_norm_par_beam(ncohorts))
        allocate(cpatch%mmean_norm_par_diff(ncohorts))
        allocate(cpatch%mmean_lambda_light(ncohorts))
@@ -2602,6 +2618,8 @@ contains
        allocate(cpatch%mmean_fsw(ncohorts))
        allocate(cpatch%mmean_fsn(ncohorts))
        allocate(cpatch%mmean_mnt_cost(ncohorts))
+       allocate(cpatch%mmean_leaf_litter(ncohorts))
+       allocate(cpatch%mmean_cb(ncohorts))
        allocate(cpatch%mmean_gpp(ncohorts))
        allocate(cpatch%mmean_leaf_resp(ncohorts))
        allocate(cpatch%mmean_root_resp(ncohorts))
@@ -3295,6 +3313,7 @@ contains
     nullify(cpatch%cb)
     nullify(cpatch%cb_max)
     nullify(cpatch%cbr_bar)
+    nullify(cpatch%mmean_cb)
     nullify(cpatch%veg_energy)
     nullify(cpatch%veg_temp)
     nullify(cpatch%veg_fliq)
@@ -3341,6 +3360,9 @@ contains
     nullify(cpatch%beamext_level)
     nullify(cpatch%dmean_beamext_level)
     nullify(cpatch%mmean_beamext_level)
+    nullify(cpatch%diffext_level)
+    nullify(cpatch%dmean_diffext_level)
+    nullify(cpatch%mmean_diffext_level)
     nullify(cpatch%lambda_light)
     nullify(cpatch%dmean_lambda_light)
     nullify(cpatch%mmean_lambda_light)
@@ -3382,6 +3404,8 @@ contains
     nullify(cpatch%stomatal_resistance)
     nullify(cpatch%maintenance_costs)
     nullify(cpatch%mmean_mnt_cost)
+    nullify(cpatch%leaf_litter)
+    nullify(cpatch%mmean_leaf_litter)
     nullify(cpatch%bseeds)
     nullify(cpatch%leaf_respiration)
     nullify(cpatch%root_respiration)
@@ -4093,6 +4117,7 @@ contains
     if(associated(cpatch%cb))                  deallocate(cpatch%cb)
     if(associated(cpatch%cb_max))              deallocate(cpatch%cb_max)
     if(associated(cpatch%cbr_bar))             deallocate(cpatch%cbr_bar)
+    if(associated(cpatch%mmean_cb))            deallocate(cpatch%mmean_cb)
     if(associated(cpatch%veg_energy))          deallocate(cpatch%veg_energy)
     if(associated(cpatch%veg_temp))            deallocate(cpatch%veg_temp)
     if(associated(cpatch%veg_fliq))            deallocate(cpatch%veg_fliq)
@@ -4140,6 +4165,9 @@ contains
     if(associated(cpatch%beamext_level))          deallocate(cpatch%beamext_level)
     if(associated(cpatch%dmean_beamext_level))    deallocate(cpatch%dmean_beamext_level)
     if(associated(cpatch%mmean_beamext_level))    deallocate(cpatch%mmean_beamext_level)
+    if(associated(cpatch%diffext_level))          deallocate(cpatch%diffext_level)
+    if(associated(cpatch%dmean_diffext_level))    deallocate(cpatch%dmean_diffext_level)
+    if(associated(cpatch%mmean_diffext_level))    deallocate(cpatch%mmean_diffext_level)
     if(associated(cpatch%lambda_light))           deallocate(cpatch%lambda_light)
     if(associated(cpatch%dmean_lambda_light))     deallocate(cpatch%dmean_lambda_light)
     if(associated(cpatch%mmean_lambda_light))     deallocate(cpatch%mmean_lambda_light)
@@ -4181,6 +4209,8 @@ contains
     if(associated(cpatch%stomatal_resistance))    deallocate(cpatch%stomatal_resistance)
     if(associated(cpatch%maintenance_costs))      deallocate(cpatch%maintenance_costs)
     if(associated(cpatch%mmean_mnt_cost))         deallocate(cpatch%mmean_mnt_cost)
+    if(associated(cpatch%leaf_litter))            deallocate(cpatch%leaf_litter)
+    if(associated(cpatch%mmean_leaf_litter))      deallocate(cpatch%mmean_leaf_litter)
     if(associated(cpatch%bseeds))                 deallocate(cpatch%bseeds)
     if(associated(cpatch%leaf_respiration))       deallocate(cpatch%leaf_respiration)
     if(associated(cpatch%root_respiration))       deallocate(cpatch%root_respiration)
@@ -4957,6 +4987,7 @@ contains
     if(associated(cpatch%cb))                   cpatch%cb                  = large_real
     if(associated(cpatch%cb_max))               cpatch%cb_max              = large_real
     if(associated(cpatch%cbr_bar))              cpatch%cbr_bar             = large_real
+    if(associated(cpatch%mmean_cb))             cpatch%mmean_cb            = large_real
     if(associated(cpatch%veg_energy))           cpatch%veg_energy          = large_real
     if(associated(cpatch%veg_temp))             cpatch%veg_temp            = large_real
     if(associated(cpatch%veg_fliq))             cpatch%veg_fliq            = large_real
@@ -5023,6 +5054,9 @@ contains
     if(associated(cpatch%beamext_level))          cpatch%beamext_level         = large_real
     if(associated(cpatch%dmean_beamext_level))    cpatch%dmean_beamext_level   = large_real
     if(associated(cpatch%mmean_beamext_level))    cpatch%mmean_beamext_level   = large_real
+    if(associated(cpatch%diffext_level))          cpatch%diffext_level         = large_real
+    if(associated(cpatch%dmean_diffext_level))    cpatch%dmean_diffext_level   = large_real
+    if(associated(cpatch%mmean_diffext_level))    cpatch%mmean_diffext_level   = large_real
     if(associated(cpatch%norm_par_beam))          cpatch%norm_par_beam       = large_real
     if(associated(cpatch%dmean_norm_par_beam))    cpatch%dmean_norm_par_beam = large_real
     if(associated(cpatch%mmean_norm_par_beam))    cpatch%mmean_norm_par_beam = large_real
@@ -5064,6 +5098,8 @@ contains
     if(associated(cpatch%stomatal_resistance))  cpatch%stomatal_resistance = large_real
     if(associated(cpatch%maintenance_costs))    cpatch%maintenance_costs   = large_real
     if(associated(cpatch%mmean_mnt_cost))       cpatch%mmean_mnt_cost      = large_real
+    if(associated(cpatch%leaf_litter))          cpatch%leaf_litter         = large_real
+    if(associated(cpatch%mmean_leaf_litter))    cpatch%mmean_leaf_litter   = large_real
     if(associated(cpatch%bseeds))               cpatch%bseeds              = large_real
     if(associated(cpatch%leaf_respiration))     cpatch%leaf_respiration    = large_real
     if(associated(cpatch%root_respiration))     cpatch%root_respiration    = large_real
@@ -5632,6 +5668,7 @@ contains
     patchout%light_level_beam(1:inc) = pack(patchin%light_level_beam,mask)
     patchout%light_level_diff(1:inc) = pack(patchin%light_level_diff,mask)
     patchout%beamext_level(1:inc)      = pack(patchin%beamext_level,mask)
+    patchout%diffext_level(1:inc)      = pack(patchin%diffext_level,mask)
     patchout%norm_par_beam(1:inc)    = pack(patchin%norm_par_beam,mask)
     patchout%norm_par_diff(1:inc)    = pack(patchin%norm_par_diff,mask)
     patchout%lambda_light(1:inc)     = pack(patchin%lambda_light,mask)
@@ -5654,6 +5691,7 @@ contains
     patchout%fs_open(1:inc)          = pack(patchin%fs_open,mask)
     patchout%stomatal_resistance(1:inc) = pack(patchin%stomatal_resistance,mask)
     patchout%maintenance_costs(1:inc) = pack(patchin%maintenance_costs,mask)
+    patchout%leaf_litter(1:inc)      = pack(patchin%leaf_litter,mask)
     patchout%bseeds(1:inc)           = pack(patchin%bseeds,mask)
     patchout%leaf_respiration(1:inc) = pack(patchin%leaf_respiration,mask)
     patchout%root_respiration(1:inc) = pack(patchin%root_respiration,mask)
@@ -5715,6 +5753,7 @@ contains
        patchout%dmean_light_level_beam(1:inc) = pack(patchin%dmean_light_level_beam,mask)
        patchout%dmean_light_level_diff(1:inc) = pack(patchin%dmean_light_level_diff,mask)
        patchout%dmean_beamext_level   (1:inc) = pack(patchin%dmean_beamext_level   ,mask)
+       patchout%dmean_diffext_level   (1:inc) = pack(patchin%dmean_diffext_level   ,mask)
        patchout%dmean_norm_par_beam   (1:inc) = pack(patchin%dmean_norm_par_beam   ,mask)
        patchout%dmean_norm_par_diff   (1:inc) = pack(patchin%dmean_norm_par_diff   ,mask)
        patchout%dmean_gpp             (1:inc) = pack(patchin%dmean_gpp             ,mask)
@@ -5729,11 +5768,14 @@ contains
        patchout%mmean_fsw             (1:inc) = pack(patchin%mmean_fsw             ,mask)
        patchout%mmean_fsn             (1:inc) = pack(patchin%mmean_fsn             ,mask)
        patchout%mmean_mnt_cost        (1:inc) = pack(patchin%mmean_mnt_cost        ,mask)
+       patchout%mmean_leaf_litter     (1:inc) = pack(patchin%mmean_leaf_litter     ,mask)
+       patchout%mmean_cb              (1:inc) = pack(patchin%mmean_cb              ,mask)
        patchout%mmean_lambda_light    (1:inc) = pack(patchin%mmean_lambda_light    ,mask)
        patchout%mmean_light_level     (1:inc) = pack(patchin%mmean_light_level     ,mask)
        patchout%mmean_light_level_beam(1:inc) = pack(patchin%mmean_light_level_beam,mask)
        patchout%mmean_light_level_diff(1:inc) = pack(patchin%mmean_light_level_diff,mask)
        patchout%mmean_beamext_level   (1:inc) = pack(patchin%mmean_beamext_level   ,mask)
+       patchout%mmean_diffext_level   (1:inc) = pack(patchin%mmean_diffext_level   ,mask)
        patchout%mmean_norm_par_beam   (1:inc) = pack(patchin%mmean_norm_par_beam   ,mask)
        patchout%mmean_norm_par_diff   (1:inc) = pack(patchin%mmean_norm_par_diff   ,mask)
        patchout%mmean_gpp             (1:inc) = pack(patchin%mmean_gpp             ,mask)
@@ -5835,6 +5877,7 @@ contains
        patchout%light_level_beam(iout) = patchin%light_level_beam(iin)
        patchout%light_level_diff(iout) = patchin%light_level_diff(iin)
        patchout%beamext_level(iout)    = patchin%beamext_level(iin)
+       patchout%diffext_level(iout)    = patchin%diffext_level(iin)
        patchout%norm_par_beam(iout)    = patchin%norm_par_beam(iin)
        patchout%norm_par_diff(iout)    = patchin%norm_par_diff(iin)
        patchout%lambda_light(iout)     = patchin%lambda_light(iin)
@@ -5857,6 +5900,7 @@ contains
        patchout%fs_open(iout)          = patchin%fs_open(iin)
        patchout%stomatal_resistance(iout) = patchin%stomatal_resistance(iin)
        patchout%maintenance_costs(iout) = patchin%maintenance_costs(iin)
+       patchout%leaf_litter(iout)      = patchin%leaf_litter(iin)
        patchout%bseeds(iout)           = patchin%bseeds(iin)
        patchout%leaf_respiration(iout) = patchin%leaf_respiration(iin)
        patchout%root_respiration(iout) = patchin%root_respiration(iin)
@@ -5897,6 +5941,7 @@ contains
           patchout%dmean_light_level_beam  (iout) = patchin%dmean_light_level_beam  (iin)
           patchout%dmean_light_level_diff  (iout) = patchin%dmean_light_level_diff  (iin)
           patchout%dmean_beamext_level     (iout) = patchin%dmean_beamext_level     (iin)
+          patchout%dmean_diffext_level     (iout) = patchin%dmean_diffext_level     (iin)
           patchout%dmean_norm_par_beam     (iout) = patchin%dmean_norm_par_beam     (iin)
           patchout%dmean_norm_par_diff     (iout) = patchin%dmean_norm_par_diff     (iin)
           patchout%dmean_lambda_light      (iout) = patchin%dmean_lambda_light      (iin)
@@ -5912,10 +5957,13 @@ contains
           patchout%mmean_fsw               (iout) = patchin%mmean_fsw               (iin)
           patchout%mmean_fsn               (iout) = patchin%mmean_fsn               (iin)
           patchout%mmean_mnt_cost          (iout) = patchin%mmean_mnt_cost          (iin)
+          patchout%mmean_leaf_litter       (iout) = patchin%mmean_leaf_litter       (iin)
+          patchout%mmean_cb                (iout) = patchin%mmean_cb                (iin)
           patchout%mmean_light_level       (iout) = patchin%mmean_light_level       (iin)
           patchout%mmean_light_level_beam  (iout) = patchin%mmean_light_level_beam  (iin)
           patchout%mmean_light_level_diff  (iout) = patchin%mmean_light_level_diff  (iin)
           patchout%mmean_beamext_level     (iout) = patchin%mmean_beamext_level     (iin)
+          patchout%mmean_diffext_level     (iout) = patchin%mmean_diffext_level     (iin)
           patchout%mmean_norm_par_beam     (iout) = patchin%mmean_norm_par_beam     (iin)
           patchout%mmean_norm_par_diff     (iout) = patchin%mmean_norm_par_diff     (iin)
           patchout%mmean_gpp               (iout) = patchin%mmean_gpp               (iin)
@@ -9867,6 +9915,13 @@ contains
        call metadata_edio(nvar,igr,'Annual average ratio of cb/cb_max','[NA]','NA') 
     endif
 
+    if (associated(cpatch%mmean_cb)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%mmean_cb(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'MMEAN_CB :41:hist:mont:year') 
+       call metadata_edio(nvar,igr,'Monthly mean of carbon balance','[kgC/plant/yr]','NA') 
+    endif
+
     if (associated(cpatch%veg_energy)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%veg_energy(1),nvar,igr,init,cpatch%coglob_id, &
@@ -10126,6 +10181,13 @@ contains
        call metadata_edio(nvar,igr,'Beam extinction level','[NA]','icohort') 
     endif
 
+    if (associated(cpatch%diffext_level)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%light_level(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'DIFFEXT_LEVEL :41:hist') 
+       call metadata_edio(nvar,igr,'diff extinction level','[NA]','icohort') 
+    endif
+
     if (associated(cpatch%norm_par_beam)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%norm_par_beam(1),nvar,igr,init,cpatch%coglob_id, &
@@ -10168,6 +10230,13 @@ contains
        call metadata_edio(nvar,igr,'Diurnal mean of beam extinction level ','[NA]','icohort') 
     endif
 
+    if (associated(cpatch%dmean_diffext_level)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%dmean_diffext_level(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'DMEAN_DIFFEXT_LEVEL :41:hist:dail') 
+       call metadata_edio(nvar,igr,'Diurnal mean of diff extinction level ','[NA]','icohort') 
+    endif
+
     if (associated(cpatch%dmean_norm_par_beam)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%dmean_norm_par_beam(1),nvar,igr,init,cpatch%coglob_id, &
@@ -10208,6 +10277,13 @@ contains
          call vtable_edio_r(cpatch%mmean_beamext_level(1),nvar,igr,init,cpatch%coglob_id, &
          var_len,var_len_global,max_ptrs,'MMEAN_BEAMEXT_LEVEL :41:hist:mont') 
        call metadata_edio(nvar,igr,'Diurnal mean of beam extinction level ','[NA]','icohort') 
+    endif
+
+    if (associated(cpatch%mmean_diffext_level)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%mmean_diffext_level(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'MMEAN_DIFFEXT_LEVEL :41:hist:mont') 
+       call metadata_edio(nvar,igr,'Diurnal mean of diff extinction level ','[NA]','icohort') 
     endif
 
     if (associated(cpatch%mmean_norm_par_beam)) then
@@ -10466,6 +10542,20 @@ contains
        nvar=nvar+1
          call vtable_edio_r(cpatch%mmean_mnt_cost(1),nvar,igr,init,cpatch%coglob_id, &
          var_len,var_len_global,max_ptrs,'MMEAN_MNT_COST :41:hist:mont') 
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
+
+    if (associated(cpatch%leaf_litter)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%leaf_litter(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'LEAF_LITTER :41:hist:dail') 
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
+
+    if (associated(cpatch%mmean_leaf_litter)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%mmean_leaf_litter(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'MMEAN_LEAF_LITTER :41:hist:mont') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 

@@ -834,6 +834,7 @@ module fuse_fiss_utils
       cpatch%light_level_beam(idt)    = cpatch%light_level_beam(isc)
       cpatch%light_level_diff(idt)    = cpatch%light_level_diff(isc)
       cpatch%beamext_level(idt)       = cpatch%beamext_level(isc)
+      cpatch%diffext_level(idt)       = cpatch%diffext_level(isc)
       cpatch%norm_par_beam(idt)       = cpatch%norm_par_beam(isc)
       cpatch%norm_par_diff(idt)       = cpatch%norm_par_diff(isc)
       cpatch%rb(idt)                  = cpatch%rb(isc)
@@ -846,6 +847,7 @@ module fuse_fiss_utils
       cpatch%fs_open(idt)             = cpatch%fs_open(isc)
       cpatch%stomatal_resistance(idt) = cpatch%stomatal_resistance(isc)
       cpatch%maintenance_costs(idt)   = cpatch%maintenance_costs(isc)
+      cpatch%leaf_litter(idt)         = cpatch%leaf_litter(isc)
       cpatch%bseeds(idt)              = cpatch%bseeds(isc)
       cpatch%leaf_respiration(idt)    = cpatch%leaf_respiration(isc)
       cpatch%root_respiration(idt)    = cpatch%root_respiration(isc)
@@ -897,6 +899,7 @@ module fuse_fiss_utils
          cpatch%dmean_light_level_beam(idt) = cpatch%dmean_light_level_beam(isc)
          cpatch%dmean_light_level_diff(idt) = cpatch%dmean_light_level_diff(isc)
          cpatch%dmean_beamext_level   (idt) = cpatch%dmean_beamext_level   (isc)
+         cpatch%dmean_diffext_level   (idt) = cpatch%dmean_diffext_level   (isc)
          cpatch%dmean_norm_par_beam   (idt) = cpatch%dmean_norm_par_beam   (isc)
          cpatch%dmean_norm_par_diff   (idt) = cpatch%dmean_norm_par_diff   (isc)
       end if
@@ -909,11 +912,14 @@ module fuse_fiss_utils
          cpatch%mmean_fsw               (idt) = cpatch%mmean_fsw               (isc)
          cpatch%mmean_fsn               (idt) = cpatch%mmean_fsn               (isc)
          cpatch%mmean_mnt_cost          (idt) = cpatch%mmean_mnt_cost          (isc)
+         cpatch%mmean_leaf_litter       (idt) = cpatch%mmean_leaf_litter       (isc)
+         cpatch%mmean_cb                (idt) = cpatch%mmean_cb                (isc)
          cpatch%mmean_lambda_light      (idt) = cpatch%mmean_lambda_light      (isc)
          cpatch%mmean_light_level       (idt) = cpatch%mmean_light_level       (isc)
          cpatch%mmean_light_level_beam  (idt) = cpatch%mmean_light_level_beam  (isc)
          cpatch%mmean_light_level_diff  (idt) = cpatch%mmean_light_level_diff  (isc)
          cpatch%mmean_beamext_level     (idt) = cpatch%mmean_beamext_level     (isc)
+         cpatch%mmean_diffext_level     (idt) = cpatch%mmean_diffext_level     (isc)
          cpatch%mmean_gpp               (idt) = cpatch%mmean_gpp               (isc)
          cpatch%mmean_leaf_resp         (idt) = cpatch%mmean_leaf_resp         (isc)
          cpatch%mmean_root_resp         (idt) = cpatch%mmean_root_resp         (isc)
@@ -995,6 +1001,9 @@ module fuse_fiss_utils
       cpatch%maintenance_costs(recc) = newni                                               &
                             * ( cpatch%nplant(recc) * cpatch%maintenance_costs(recc)       &
                               + cpatch%nplant(donc) * cpatch%maintenance_costs(donc) )
+      cpatch%leaf_litter(recc) = newni                                                     &
+                               * ( cpatch%nplant(recc) * cpatch%leaf_litter(recc)          &
+                                 + cpatch%nplant(donc) * cpatch%leaf_litter(donc) )
       !------------------------------------------------------------------------------------!
 
 
@@ -1115,6 +1124,9 @@ module fuse_fiss_utils
       cpatch%beamext_level(recc)    = ( cpatch%beamext_level(recc) *cpatch%nplant(recc)    &
                                       + cpatch%beamext_level(donc) *cpatch%nplant(donc) )  &
                                     * newni
+      cpatch%diffext_level(recc)    = ( cpatch%diffext_level(recc) *cpatch%nplant(recc)    &
+                                      + cpatch%diffext_level(donc) *cpatch%nplant(donc) )  &
+                                    * newni
       cpatch%norm_par_beam(recc)    = ( cpatch%norm_par_beam(recc) *cpatch%nplant(recc)    &
                                       + cpatch%norm_par_beam(donc) *cpatch%nplant(donc))   &
                                     * newni
@@ -1213,66 +1225,70 @@ module fuse_fiss_utils
       ! fuse them too.                                                                     !
       !------------------------------------------------------------------------------------!
       if (idoutput > 0 .or. imoutput > 0) then
-         cpatch%dmean_light_level     (recc) = ( cpatch%dmean_light_level(recc)            &
-                                               * cpatch%nplant(recc)                       &
-                                               + cpatch%dmean_light_level(donc)            &
-                                               * cpatch%nplant(donc) ) * newni
-         cpatch%dmean_light_level_beam(recc) = ( cpatch%dmean_light_level_beam(recc)       &
-                                               * cpatch%nplant(recc)                       &
-                                               + cpatch%dmean_light_level_beam(donc)       &
-                                               * cpatch%nplant(donc) ) * newni
-         cpatch%dmean_light_level_diff(recc) = ( cpatch%dmean_light_level_diff(recc)       &
-                                               * cpatch%nplant(recc)                       &
-                                               + cpatch%dmean_light_level_diff(donc)       &
-                                               * cpatch%nplant(donc) ) * newni
+         cpatch%dmean_light_level       (recc) = ( cpatch%dmean_light_level(recc)          &
+                                                 * cpatch%nplant(recc)                     &
+                                                 + cpatch%dmean_light_level(donc)          &
+                                                 * cpatch%nplant(donc) ) * newni
+         cpatch%dmean_light_level_beam  (recc) = ( cpatch%dmean_light_level_beam(recc)     &
+                                                 * cpatch%nplant(recc)                     &
+                                                 + cpatch%dmean_light_level_beam(donc)     &
+                                                 * cpatch%nplant(donc) ) * newni
+         cpatch%dmean_light_level_diff  (recc) = ( cpatch%dmean_light_level_diff(recc)     &
+                                                 * cpatch%nplant(recc)                     &
+                                                 + cpatch%dmean_light_level_diff(donc)     &
+                                                 * cpatch%nplant(donc) ) * newni
          cpatch%dmean_beamext_level     (recc) = ( cpatch%dmean_beamext_level(recc)        &
-                                               * cpatch%nplant(recc)                       &
-                                               + cpatch%dmean_beamext_level(donc)          &
-                                               * cpatch%nplant(donc) ) * newni
-         cpatch%dmean_norm_par_beam(recc)    = ( cpatch%dmean_norm_par_beam(recc)          &
-                                               * cpatch%nplant(recc)                       &
-                                               + cpatch%dmean_norm_par_beam(donc)          &
-                                               * cpatch%nplant(donc) ) * newni
-         cpatch%dmean_norm_par_diff(recc)    = ( cpatch%dmean_norm_par_diff(recc)          &
-                                               * cpatch%nplant(recc)                       &
-                                               + cpatch%dmean_norm_par_diff(donc)          &
-                                               * cpatch%nplant(donc) ) * newni
-         cpatch%dmean_lambda_light    (recc) = ( cpatch%dmean_lambda_light(recc)           &
-                                               * cpatch%nplant(recc)                       &
-                                               + cpatch%dmean_lambda_light(donc)           &
-                                               * cpatch%nplant(donc) ) * newni
-         cpatch%dmean_fs_open         (recc) = ( cpatch%dmean_fs_open(recc)                &
-                                               * cpatch%nplant(recc)                       &
-                                               + cpatch%dmean_fs_open(donc)                &
-                                               * cpatch%nplant(donc) ) * newni
-         cpatch%dmean_fsw             (recc) = ( cpatch%dmean_fsw(recc)                    &
-                                               * cpatch%nplant(recc)                       &
-                                               + cpatch%dmean_fsw(donc)                    &
-                                               * cpatch%nplant(donc) ) * newni
-         cpatch%dmean_fsn             (recc) = ( cpatch%dmean_fsn(recc)                    &
-                                               * cpatch%nplant(recc)                       &
-                                               + cpatch%dmean_fsn(donc)                    &
-                                               * cpatch%nplant(donc) ) * newni
-         cpatch%dmean_gpp             (recc) = ( cpatch%dmean_gpp(recc)                    &
-                                               * cpatch%nplant(recc)                       &
-                                               + cpatch%dmean_gpp(donc)                    &
-                                               * cpatch%nplant(donc) ) * newni
-         cpatch%dmean_leaf_resp       (recc) = ( cpatch%dmean_leaf_resp(recc)              &
-                                               * cpatch%nplant(recc)                       &
-                                               + cpatch%dmean_leaf_resp(donc)              &
-                                               * cpatch%nplant(donc) ) * newni
-         cpatch%dmean_root_resp       (recc) = ( cpatch%dmean_root_resp(recc)              &
-                                               * cpatch%nplant(recc)                       &
-                                               + cpatch%dmean_root_resp(donc)              &
-                                               * cpatch%nplant(donc) ) * newni
+                                                 * cpatch%nplant(recc)                     &
+                                                 + cpatch%dmean_beamext_level(donc)        &
+                                                 * cpatch%nplant(donc) ) * newni
+         cpatch%dmean_diffext_level     (recc) = ( cpatch%dmean_diffext_level(recc)        &
+                                                 * cpatch%nplant(recc)                     &
+                                                 + cpatch%dmean_diffext_level(donc)        &
+                                                 * cpatch%nplant(donc) ) * newni
+         cpatch%dmean_norm_par_beam     (recc) = ( cpatch%dmean_norm_par_beam(recc)        &
+                                                 * cpatch%nplant(recc)                     &
+                                                 + cpatch%dmean_norm_par_beam(donc)        &
+                                                 * cpatch%nplant(donc) ) * newni
+         cpatch%dmean_norm_par_diff     (recc) = ( cpatch%dmean_norm_par_diff(recc)        &
+                                                 * cpatch%nplant(recc)                     &
+                                                 + cpatch%dmean_norm_par_diff(donc)        &
+                                                 * cpatch%nplant(donc) ) * newni
+         cpatch%dmean_lambda_light      (recc) = ( cpatch%dmean_lambda_light(recc)         &
+                                                 * cpatch%nplant(recc)                     &
+                                                 + cpatch%dmean_lambda_light(donc)         &
+                                                 * cpatch%nplant(donc) ) * newni
+         cpatch%dmean_fs_open           (recc) = ( cpatch%dmean_fs_open(recc)              &
+                                                 * cpatch%nplant(recc)                     &
+                                                 + cpatch%dmean_fs_open(donc)              &
+                                                 * cpatch%nplant(donc) ) * newni
+         cpatch%dmean_fsw               (recc) = ( cpatch%dmean_fsw(recc)                  &
+                                                 * cpatch%nplant(recc)                     &
+                                                 + cpatch%dmean_fsw(donc)                  &
+                                                 * cpatch%nplant(donc) ) * newni
+         cpatch%dmean_fsn               (recc) = ( cpatch%dmean_fsn(recc)                  &
+                                                 * cpatch%nplant(recc)                     &
+                                                 + cpatch%dmean_fsn(donc)                  &
+                                                 * cpatch%nplant(donc) ) * newni
+         cpatch%dmean_gpp               (recc) = ( cpatch%dmean_gpp(recc)                  &
+                                                 * cpatch%nplant(recc)                     &
+                                                 + cpatch%dmean_gpp(donc)                  &
+                                                 * cpatch%nplant(donc) ) * newni
+         cpatch%dmean_leaf_resp         (recc) = ( cpatch%dmean_leaf_resp(recc)            &
+                                                 * cpatch%nplant(recc)                     &
+                                                 + cpatch%dmean_leaf_resp(donc)            &
+                                                 * cpatch%nplant(donc) ) * newni
+         cpatch%dmean_root_resp         (recc) = ( cpatch%dmean_root_resp(recc)            &
+                                                 * cpatch%nplant(recc)                     &
+                                                 + cpatch%dmean_root_resp(donc)            &
+                                                 * cpatch%nplant(donc) ) * newni
 
          !----- The following variables are "extensive", add them. ------------------------!
-         cpatch%dmean_par_v           (recc) = cpatch%dmean_par_v (recc)                   &
-                                             + cpatch%dmean_par_v (donc)
-         cpatch%dmean_par_v_beam      (recc) = cpatch%dmean_par_v_beam (recc)              &
-                                             + cpatch%dmean_par_v_beam (donc)
-         cpatch%dmean_par_v_diff      (recc) = cpatch%dmean_par_v_diff (recc)              &
-                                             + cpatch%dmean_par_v_diff (donc)
+         cpatch%dmean_par_v             (recc) = cpatch%dmean_par_v (recc)                 &
+                                               + cpatch%dmean_par_v (donc)
+         cpatch%dmean_par_v_beam        (recc) = cpatch%dmean_par_v_beam (recc)            &
+                                               + cpatch%dmean_par_v_beam (donc)
+         cpatch%dmean_par_v_diff        (recc) = cpatch%dmean_par_v_diff (recc)            &
+                                               + cpatch%dmean_par_v_diff (donc)
       end if
       if (imoutput > 0) then
          cpatch%mmean_light_level     (recc) = ( cpatch%mmean_light_level(recc)            &
@@ -1290,6 +1306,10 @@ module fuse_fiss_utils
          cpatch%mmean_beamext_level   (recc) = ( cpatch%mmean_beamext_level(recc)          &
                                                * cpatch%nplant(recc)                       &
                                                + cpatch%mmean_beamext_level(donc)          &
+                                               * cpatch%nplant(donc) ) * newni
+         cpatch%mmean_diffext_level   (recc) = ( cpatch%mmean_diffext_level(recc)          &
+                                               * cpatch%nplant(recc)                       &
+                                               + cpatch%mmean_diffext_level(donc)          &
                                                * cpatch%nplant(donc) ) * newni
          cpatch%mmean_norm_par_beam(recc)    = ( cpatch%mmean_norm_par_beam(recc)          &
                                                * cpatch%nplant(recc)                       &
@@ -1318,6 +1338,14 @@ module fuse_fiss_utils
          cpatch%mmean_mnt_cost        (recc) = ( cpatch%mmean_mnt_cost(recc)               &
                                                * cpatch%nplant(recc)                       &
                                                + cpatch%mmean_mnt_cost(donc)               &
+                                               * cpatch%nplant(donc) ) * newni
+         cpatch%mmean_leaf_litter     (recc) = ( cpatch%mmean_leaf_litter(recc)            &
+                                               * cpatch%nplant(recc)                       &
+                                               + cpatch%mmean_leaf_litter(donc)            &
+                                               * cpatch%nplant(donc) ) * newni
+         cpatch%mmean_cb              (recc) = ( cpatch%mmean_cb(recc)                     &
+                                               * cpatch%nplant(recc)                       &
+                                               + cpatch%mmean_cb(donc)                     &
                                                * cpatch%nplant(donc) ) * newni
          cpatch%mmean_gpp             (recc) = ( cpatch%mmean_gpp(recc)                    &
                                                * cpatch%nplant(recc)                       &

@@ -33,6 +33,7 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
   cpatch%light_level_beam(ico)  = 0.0
   cpatch%light_level_diff(ico)  = 0.0
   cpatch%beamext_level   (ico)  = 0.0
+  cpatch%diffext_level   (ico)  = 0.0
   cpatch%norm_par_beam   (ico)  = 0.0
   cpatch%norm_par_diff   (ico)  = 0.0
   cpatch%lambda_light(ico)      = 0.0
@@ -78,6 +79,7 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
       
   cpatch%stomatal_resistance(ico) = 0.0
   cpatch%maintenance_costs(ico)   = 0.0
+  cpatch%leaf_litter      (ico)   = 0.0
   cpatch%paw_avg(ico)             = 0.5 !0.0 - [KIM] starting from the mid point.  if starting from the driest point, plants'll drop leaves initially due to the water stress
 
 
@@ -137,13 +139,16 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
      cpatch%mmean_light_level_beam (ico) = 0.0
      cpatch%mmean_light_level_diff (ico) = 0.0
      cpatch%mmean_beamext_level    (ico) = 0.0
+     cpatch%mmean_diffext_level    (ico) = 0.0
      cpatch%mmean_norm_par_beam    (ico) = 0.0
      cpatch%mmean_norm_par_diff    (ico) = 0.0
      cpatch%mmean_fs_open          (ico) = 0.0
      cpatch%mmean_fsw              (ico) = 0.0
      cpatch%mmean_fsn              (ico) = 0.0
      cpatch%mmean_lambda_light     (ico) = 0.0
-     cpatch%mmean_mnt_cost	   (ico) = 0.0
+     cpatch%mmean_mnt_cost         (ico) = 0.0
+     cpatch%mmean_leaf_litter      (ico) = 0.0
+     cpatch%mmean_cb               (ico) = 0.0
   end if
   if (idoutput > 0 .or. imoutput > 0) then
      cpatch%dmean_par_v            (ico) = 0.0
@@ -156,6 +161,7 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
      cpatch%dmean_light_level_beam (ico) = 0.0
      cpatch%dmean_light_level_diff (ico) = 0.0
      cpatch%dmean_beamext_level    (ico) = 0.0
+     cpatch%dmean_diffext_level    (ico) = 0.0
      cpatch%dmean_norm_par_beam    (ico) = 0.0
      cpatch%dmean_norm_par_diff    (ico) = 0.0
      cpatch%dmean_fsw              (ico) = 0.0

@@ -518,6 +518,8 @@ subroutine integrate_ed_daily_output_state(cgrid)
                                              + cpatch%light_level_diff(ico)
                      cpatch%dmean_beamext_level(ico)    = cpatch%dmean_beamext_level(ico)  &
                                                         + cpatch%beamext_level(ico)
+                     cpatch%dmean_diffext_level(ico)    = cpatch%dmean_diffext_level(ico)  &
+                                                        + cpatch%diffext_level(ico)
                      cpatch%dmean_norm_par_beam(ico)    = cpatch%dmean_norm_par_beam(ico)  &
                                                         + cpatch%norm_par_beam(ico)
                      cpatch%dmean_norm_par_diff(ico)    = cpatch%dmean_norm_par_diff(ico)  &
@@ -712,7 +714,10 @@ subroutine integrate_ed_daily_output_flux(cgrid)
                                              + csite%co2budget_rh(ipa)
          end do patchloop
          
-         ! Variables already average at the sitetype level, just add them to polygontype level
+         !---------------------------------------------------------------------------------!
+         !      Variables already averaged at the sitetype level, add them to polygontype  !
+         ! level.                                                                          !
+         !---------------------------------------------------------------------------------!
          sitesum_leaf_resp    = sitesum_leaf_resp                                          &
                               + (patchsum_leaf_resp * site_area_i) * cpoly%area(isi)
          sitesum_root_resp    = sitesum_root_resp                                          &
@@ -760,15 +765,8 @@ subroutine integrate_ed_daily_output_flux(cgrid)
 
       end do siteloop
       
-      cgrid%dmean_leaf_resp(ipy) = cgrid%dmean_leaf_resp(ipy)                              &
-                                 + sitesum_leaf_resp * poly_area_i
-      cgrid%dmean_root_resp(ipy) = cgrid%dmean_root_resp(ipy)                              &
-                                 + sitesum_root_resp * poly_area_i
-      
       cgrid%dmean_rh(ipy)     = cgrid%dmean_rh(ipy)                                        &
                               + sitesum_rh * poly_area_i
-      cgrid%dmean_gpp(ipy)    = cgrid%dmean_gpp(ipy)                                       &
-                              + sitesum_gpp * poly_area_i
       cgrid%dmean_plresp(ipy) = cgrid%dmean_plresp(ipy)                                    &
                               + sitesum_plresp * poly_area_i
       cgrid%dmean_nep(ipy)    = cgrid%dmean_nep(ipy)                                       &
@@ -859,10 +857,16 @@ subroutine normalize_ed_daily_vars(cgrid,timefac1)
    integer                                                    :: ilu
    integer                                                    :: idbh
    integer                                                    :: iage
-   real, dimension(n_pft,n_dist_types,n_dbh,n_age)            :: pss_gpp
-   real, dimension(n_pft,n_dist_types,n_dbh,n_age)            :: pss_lero_resp
-   real, dimension(n_pft,n_dist_types,n_dbh,n_age)            :: sss_gpp
-   real, dimension(n_pft,n_dist_types,n_dbh,n_age)            :: sss_lero_resp
+   real                                                       :: pss_gpp
+   real                                                       :: pss_leaf_resp
+   real                                                       :: pss_root_resp
+   real                                                       :: sss_gpp
+   real                                                       :: sss_leaf_resp
+   real                                                       :: sss_root_resp
+   real, dimension(n_pft,n_dist_types,n_dbh,n_age)            :: pss_gpp_4d
+   real, dimension(n_pft,n_dist_types,n_dbh,n_age)            :: pss_lero_resp_4d
+   real, dimension(n_pft,n_dist_types,n_dbh,n_age)            :: sss_gpp_4d
+   real, dimension(n_pft,n_dist_types,n_dbh,n_age)            :: sss_lero_resp_4d
    real, dimension(n_dist_types,n_age)                        :: luage_area_i
    real                                                       :: poly_area_i
    real                                                       :: site_area_i
@@ -882,8 +886,11 @@ subroutine normalize_ed_daily_vars(cgrid,timefac1)
       !----- This part is done only if arrays are sought. ---------------------------------!
       if (fivedim_diags) then
          poly_area_i             = 1./sum(cpoly%area)
-         sss_gpp       (:,:,:,:) = 0.
-         sss_lero_resp (:,:,:,:) = 0.
+         sss_gpp                    = 0.
+         sss_leaf_resp              = 0.
+         sss_root_resp              = 0.
+         sss_gpp_4d       (:,:,:,:) = 0.
+         sss_lero_resp_4d (:,:,:,:) = 0.
       end if
       
       siteloop: do isi=1,cpoly%nsites
@@ -892,12 +899,17 @@ subroutine normalize_ed_daily_vars(cgrid,timefac1)
          csite%dmean_A_decomp  = csite%dmean_A_decomp  * timefac1
          csite%dmean_Af_decomp = csite%dmean_Af_decomp * timefac1
 
+         site_area_i               = 1./ sum(csite%area)
+         if (save_daily) then
+            pss_gpp                   = 0.
+            pss_leaf_resp             = 0.
+            pss_root_resp             = 0.
+         end if
          !----- This part is done only if arrays are sought. ------------------------------!
          if (fivedim_diags) then
-            luage_area_i     (:,:) = 0.
-            site_area_i            = 1./ sum(csite%area)
-            pss_gpp      (:,:,:,:) = 0.
-            pss_lero_resp(:,:,:,:) = 0.
+            luage_area_i        (:,:) = 0.
+            pss_gpp_4d      (:,:,:,:) = 0.
+            pss_lero_resp_4d(:,:,:,:) = 0.
          end if
          
          patchloop: do ipa=1,csite%npatches
@@ -930,6 +942,18 @@ subroutine normalize_ed_daily_vars(cgrid,timefac1)
                                               * umols_2_kgCyr / cpatch%nplant(ico)
                   cpatch%dmean_root_resp(ico) = cpatch%today_root_resp(ico)                &
                                               * umols_2_kgCyr / cpatch%nplant(ico)
+                  pss_gpp                     = pss_gpp                                    &
+                                              + cpatch%today_gpp(ico)                      &
+                                              * csite%area(ipa)                            &
+                                              * umols_2_kgCyr
+                  pss_leaf_resp               = pss_leaf_resp                              &
+                                              + cpatch%today_leaf_resp(ico)                &
+                                              * csite%area(ipa)                            &
+                                              * umols_2_kgCyr
+                  pss_root_resp               = pss_root_resp                              &
+                                              + cpatch%today_root_resp(ico)                &
+                                              * csite%area(ipa)                            &
+                                              * umols_2_kgCyr
                end if
 
                !---------------------------------------------------------------------------!
@@ -945,16 +969,17 @@ subroutine normalize_ed_daily_vars(cgrid,timefac1)
                   cpatch%mmean_root_resp(ico)     = cpatch%mmean_root_resp(ico)            &
                                                   + cpatch%dmean_root_resp(ico)
                end if
-               
+
                if (fivedim_diags) then
                   ipft = cpatch%pft(ico)
                   idbh = max(1,min(n_dbh,ceiling(cpatch%dbh(ico)*ddbhi)))
                   
-                  pss_gpp(ipft,ilu,idbh,iage)       = pss_gpp(ipft,ilu,idbh,iage)          &
-                                                    + cpatch%today_gpp(ico)                &
-                                                    * csite%area(ipa)                      &
-                                                    * umols_2_kgCyr
-                  pss_lero_resp(ipft,ilu,idbh,iage) = pss_lero_resp(ipft,ilu,idbh,iage)    &
+                  pss_gpp_4d(ipft,ilu,idbh,iage) = pss_gpp_4d(ipft,ilu,idbh,iage)          &
+                                                 + cpatch%today_gpp(ico)                   &
+                                                 * csite%area(ipa)                         &
+                                                 * umols_2_kgCyr
+                  pss_lero_resp_4d(ipft,ilu,idbh,iage) =                                   &
+                                                      pss_lero_resp_4d(ipft,ilu,idbh,iage) &
                                                     + ( cpatch%today_leaf_resp(ico)        &
                                                       + cpatch%today_root_resp(ico))       &
                                                     * csite%area(ipa)                      &
@@ -962,6 +987,11 @@ subroutine normalize_ed_daily_vars(cgrid,timefac1)
                end if
             end do cohortloop
          end do patchloop
+         if (save_daily) then
+            sss_gpp       = sss_gpp       + pss_gpp       * site_area_i * cpoly%area(isi)
+            sss_leaf_resp = sss_leaf_resp + pss_leaf_resp * site_area_i * cpoly%area(isi)
+            sss_root_resp = sss_root_resp + pss_root_resp * site_area_i * cpoly%area(isi)
+         end if
          
 
          !---------------------------------------------------------------------------------!
@@ -986,16 +1016,16 @@ subroutine normalize_ed_daily_vars(cgrid,timefac1)
                do idbh=1,n_dbh
                   do ilu=1,n_dist_types
                      do ipft=1,n_pft
-                        sss_gpp      (ipft,ilu,idbh,iage) =                                &
-                                                         sss_gpp      (ipft,ilu,idbh,iage) &
-                                                       + pss_gpp      (ipft,ilu,idbh,iage) &
+                        sss_gpp_4d   (ipft,ilu,idbh,iage) =                                &
+                                                         sss_gpp_4d   (ipft,ilu,idbh,iage) &
+                                                       + pss_gpp_4d   (ipft,ilu,idbh,iage) &
                                                        * luage_area_i(ilu,iage)            &
                                                        * cpoly%area(isi)
-                        sss_lero_resp(ipft,ilu,idbh,iage) =                                &
-                                                         sss_lero_resp(ipft,ilu,idbh,iage) &
-                                                       + pss_lero_resp(ipft,ilu,idbh,iage) &
-                                                       * luage_area_i(ilu,iage)            &
-                                                       * cpoly%area(isi)
+                        sss_lero_resp_4d(ipft,ilu,idbh,iage) =                             &
+                                                      sss_lero_resp_4d(ipft,ilu,idbh,iage) &
+                                                    + pss_lero_resp_4d(ipft,ilu,idbh,iage) &
+                                                    * luage_area_i(ilu,iage)               &
+                                                    * cpoly%area(isi)
                      end do
                   end do
                end do
@@ -1004,15 +1034,29 @@ subroutine normalize_ed_daily_vars(cgrid,timefac1)
       end do siteloop
       if (fivedim_diags) then
          cgrid%dmean_gpp_ar(:,:,:,:,ipy) = cgrid%dmean_gpp_ar(:,:,:,:,ipy)                 &
-                                         + sss_gpp(:,:,:,:) * poly_area_i
+                                         + sss_gpp_4d(:,:,:,:) * poly_area_i
          !---------------------------------------------------------------------------------!
          !    This is not the actual plant respiration, there are terms (growth, storage,  !
          ! and vleaf) that are missing here.  They will be included in                     !
          ! normalize_ed_daily_output_vars                                                  !
          !---------------------------------------------------------------------------------!
          cgrid%dmean_plresp_ar(:,:,:,:,ipy) = cgrid%dmean_plresp_ar(:,:,:,:,ipy)           &
-                                            + sss_lero_resp(:,:,:,:) * poly_area_i
-      end if 
+                                            + sss_lero_resp_4d(:,:,:,:) * poly_area_i
+      end if
+      if (save_daily) then
+         cgrid%dmean_gpp(ipy)       = sss_gpp       * poly_area_i
+         cgrid%dmean_leaf_resp(ipy) = sss_leaf_resp * poly_area_i
+         cgrid%dmean_root_resp(ipy) = sss_root_resp * poly_area_i
+      end if
+      
+      if (save_monthly) then
+         cgrid%mmean_gpp(ipy)       = cgrid%mmean_gpp(ipy)                                 &
+                                    + cgrid%dmean_gpp(ipy)
+         cgrid%mmean_leaf_resp(ipy) = cgrid%mmean_leaf_resp(ipy)                           &
+                                    + cgrid%dmean_leaf_resp(ipy)
+         cgrid%mmean_root_resp(ipy) = cgrid%mmean_root_resp(ipy)                           &
+                                    + cgrid%dmean_root_resp(ipy)
+      end if
    end do polyloop
    
    return
@@ -1043,7 +1087,6 @@ subroutine normalize_ed_daily_output_vars(cgrid)
    use consts_coms          , only : cpi           & ! intent(in)
                                    , alvl          & ! intent(in)
                                    , day_sec       & ! intent(in)
-                                   , umol_2_kgC    & ! intent(in)
                                    , umols_2_kgCyr & ! intent(in)
                                    , yr_day        & ! intent(in)
                                    , p00i          & ! intent(in)
@@ -1201,13 +1244,12 @@ subroutine normalize_ed_daily_output_vars(cgrid)
 
       !------------------------------------------------------------------------------------!
       !      Carbon flux variables should be total flux integrated over the day at this    !
-      ! point.  We just multiply by one year in days and convert to kgC, so the units will !
-      ! be kgC/m2/yr.                                                                      !
+      ! point in umol/m2/s.  We just multiply by one year in seconds and convert to kgC,   !
+      ! so the units will be kgC/m2/yr.                                                    !
       !------------------------------------------------------------------------------------!
-      cgrid%dmean_gpp        (ipy)  = cgrid%dmean_gpp       (ipy) * umol_2_kgC * yr_day
-      cgrid%dmean_plresp     (ipy)  = cgrid%dmean_plresp    (ipy) * umol_2_kgC * yr_day
-      cgrid%dmean_nep        (ipy)  = cgrid%dmean_nep       (ipy) * umol_2_kgC * yr_day
-      cgrid%dmean_gpp_dbh  (:,ipy)  = cgrid%dmean_gpp_dbh (:,ipy) * umol_2_kgC * yr_day
+      cgrid%dmean_plresp     (ipy)  = cgrid%dmean_plresp    (ipy) * umols_2_kgCyr
+      cgrid%dmean_nep        (ipy)  = cgrid%dmean_nep       (ipy) * umols_2_kgCyr
+      cgrid%dmean_gpp_dbh  (:,ipy)  = cgrid%dmean_gpp_dbh (:,ipy) * umols_2_kgCyr
 
       cgrid%dmean_co2_residual   (ipy) = cgrid%dmean_co2_residual   (ipy) * frqsum_o_daysec
       cgrid%dmean_energy_residual(ipy) = cgrid%dmean_energy_residual(ipy) * frqsum_o_daysec
@@ -1336,6 +1378,8 @@ subroutine normalize_ed_daily_output_vars(cgrid)
                                                       * dtlsm / cpoly%daylight(isi)
                   cpatch%dmean_beamext_level(ico)     = cpatch%dmean_beamext_level(ico)    &
                                                       * dtlsm / cpoly%daylight(isi)
+                  cpatch%dmean_diffext_level(ico)     = cpatch%dmean_diffext_level(ico)    &
+                                                      * dtlsm / cpoly%daylight(isi)
                   cpatch%dmean_norm_par_beam(ico)     = cpatch%dmean_norm_par_beam(ico)    &
                                                       * dtlsm / cpoly%daylight(isi)
                   cpatch%dmean_norm_par_diff(ico)     = cpatch%dmean_norm_par_diff(ico)    &
@@ -1347,6 +1391,7 @@ subroutine normalize_ed_daily_output_vars(cgrid)
                   cpatch%dmean_light_level_beam(ico) = 0.
                   cpatch%dmean_light_level_diff(ico) = 0.
                   cpatch%dmean_beamext_level   (ico) = 0.
+                  cpatch%dmean_diffext_level   (ico) = 0.
                   cpatch%dmean_norm_par_beam   (ico) = 0.
                   cpatch%dmean_norm_par_diff   (ico) = 0.
                   cpatch%dmean_lambda_light    (ico) = 0.
@@ -1451,11 +1496,11 @@ subroutine normalize_ed_daily_output_vars(cgrid)
                csite%dmean_lambda_light(ipa)    = 0.0
             end if
             !------------------------------------------------------------------------------!
-            !     Heterotrophic respiration is currently the integral over a day, so we    !
-            ! multiply by the number of days in a year and convert to kgC, so the final    !
-            ! units will be kgC/m2/yr.                                                     !
+            !     Heterotrophic respiration is currently the integral over a day, given    !
+            ! in µmol(CO2)/m²/s, so we multiply by the number of seconds in a year and     !
+            ! convert to kgC, so the final units will be kgC/m2/yr.                        !
             !------------------------------------------------------------------------------!
-            csite%dmean_rh(ipa)              = csite%dmean_rh(ipa) * umol_2_kgC * yr_day
+            csite%dmean_rh(ipa)              = csite%dmean_rh(ipa) * umols_2_kgCyr
 
             if (cpatch%ncohorts > 0) then
                pss_growth_resp  = pss_growth_resp + csite%area(ipa)                        &
@@ -1879,6 +1924,7 @@ subroutine zero_ed_daily_output_vars(cgrid)
                cpatch%dmean_light_level_beam(ico) = 0.
                cpatch%dmean_light_level_diff(ico) = 0.
                cpatch%dmean_beamext_level(ico)    = 0.
+               cpatch%dmean_diffext_level(ico)    = 0.
                cpatch%dmean_norm_par_beam   (ico) = 0.
                cpatch%dmean_norm_par_diff   (ico) = 0.
                cpatch%dmean_lambda_light(ico)     = 0.
@@ -1939,7 +1985,6 @@ subroutine integrate_ed_monthly_output_vars(cgrid)
       cgrid%mmean_fs_open (ipy) = cgrid%mmean_fs_open (ipy) + cgrid%dmean_fs_open (ipy)
       cgrid%mmean_fsw     (ipy) = cgrid%mmean_fsw     (ipy) + cgrid%dmean_fsw     (ipy)
       cgrid%mmean_fsn     (ipy) = cgrid%mmean_fsn     (ipy) + cgrid%dmean_fsn     (ipy)
-      cgrid%mmean_gpp     (ipy) = cgrid%mmean_gpp     (ipy) + cgrid%dmean_gpp     (ipy)
       cgrid%mmean_evap    (ipy) = cgrid%mmean_evap    (ipy) + cgrid%dmean_evap    (ipy)
       cgrid%mmean_transp  (ipy) = cgrid%mmean_transp  (ipy) + cgrid%dmean_transp  (ipy)
 
@@ -1955,10 +2000,6 @@ subroutine integrate_ed_monthly_output_vars(cgrid)
                                       + cgrid%dmean_plresp        (ipy)
       cgrid%mmean_rh            (ipy) = cgrid%mmean_rh            (ipy)                    &
                                       + cgrid%dmean_rh            (ipy)
-      cgrid%mmean_leaf_resp     (ipy) = cgrid%mmean_leaf_resp     (ipy)                    &
-                                      + cgrid%dmean_leaf_resp     (ipy)
-      cgrid%mmean_root_resp     (ipy) = cgrid%mmean_root_resp     (ipy)                    &
-                                      + cgrid%dmean_root_resp     (ipy)
       cgrid%mmean_growth_resp   (ipy) = cgrid%mmean_growth_resp   (ipy)                    &
                                       + cgrid%dmean_growth_resp   (ipy)
       cgrid%mmean_storage_resp  (ipy) = cgrid%mmean_storage_resp  (ipy)                    &
@@ -2073,6 +2114,9 @@ subroutine integrate_ed_monthly_output_vars(cgrid)
                cpatch%mmean_mnt_cost (ico)     = cpatch%mmean_mnt_cost(ico)                &
                                                + cpatch%maintenance_costs(ico)             &
                                                * yr_day
+               cpatch%mmean_leaf_litter (ico)  = cpatch%leaf_litter(ico)                   &
+                                               + cpatch%leaf_litter(ico)                   &
+                                               * yr_day
                cpatch%mmean_growth_resp(ico)   = cpatch%mmean_growth_resp(ico)             &
                                                + cpatch%growth_respiration(ico)            &
                                                * yr_day
@@ -2094,6 +2138,8 @@ subroutine integrate_ed_monthly_output_vars(cgrid)
                                                   + cpatch%dmean_light_level_diff(ico)
                cpatch%mmean_beamext_level(ico)    = cpatch%mmean_beamext_level(ico)        &
                                                   + cpatch%dmean_beamext_level(ico)
+               cpatch%mmean_diffext_level(ico)    = cpatch%mmean_diffext_level(ico)        &
+                                                  + cpatch%dmean_diffext_level(ico)
                cpatch%mmean_norm_par_beam   (ico) = cpatch%mmean_norm_par_beam(ico)        &
                                                   + cpatch%dmean_norm_par_beam(ico)
                cpatch%mmean_norm_par_diff   (ico) = cpatch%mmean_norm_par_diff(ico)        &
@@ -2176,7 +2222,8 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
                                    , rocp          & ! intent(in)
                                    , pio4          & ! intent(in)
                                    , umol_2_kgC    & ! intent(in)
-                                   , day_sec       ! ! intent(in)
+                                   , day_sec       & ! intent(in)
+                                   , yr_day        ! ! intent(in)
    use pft_coms             , only : init_density  ! ! intent(in)
    use canopy_radiation_coms, only : lai_min       & ! intent(in)
                                    , tai_min       ! ! intent(in)
@@ -2442,6 +2489,9 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
                cpatch%mmean_par_v_beam  (ico) = cpatch%mmean_par_v_beam  (ico) * ndaysi
                cpatch%mmean_par_v_diff  (ico) = cpatch%mmean_par_v_diff  (ico) * ndaysi
                cpatch%mmean_mnt_cost    (ico) = cpatch%mmean_mnt_cost    (ico) * ndaysi
+               cpatch%mmean_leaf_litter (ico) = cpatch%mmean_leaf_litter (ico) * ndaysi
+               !----- Mean carbon balance is re-scaled so it will be in kgC/plant/yr
+               cpatch%mmean_cb          (ico) = cpatch%cb(lmon,ico) * ndaysi * yr_day
 
                !----- Finding the mortality rates. ----------------------------------------!
                do imt=1,n_mort
@@ -2456,6 +2506,8 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
                cpatch%mmean_light_level_diff (ico) = cpatch%mmean_light_level_diff(ico)    &
                                                    * ndaysi
                cpatch%mmean_beamext_level (ico)    = cpatch%mmean_beamext_level(ico)       &
+                                                   * ndaysi
+               cpatch%mmean_diffext_level (ico)    = cpatch%mmean_diffext_level(ico)       &
                                                    * ndaysi
                cpatch%mmean_norm_par_beam(ico)     = cpatch%mmean_norm_par_beam(ico)       &
                                                    * ndaysi
@@ -2523,7 +2575,7 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
                   pss_pldens_ar (ipft,ilu,idbh,iage) = pss_pldens_ar (ipft,ilu,idbh,iage)  &
                                                      + cpatch%nplant(ico)  *csite%area(ipa)
                   pss_carbbal_ar(ipft,ilu,idbh,iage) = pss_carbbal_ar(ipft,ilu,idbh,iage)  &
-                                                     + cpatch%cb(lmon,ico)                 &
+                                                     + cpatch%mmean_cb(ico)                &
                                                      * cpatch%nplant(ico) * csite%area(ipa)
                end if
                !---------------------------------------------------------------------------!
@@ -2835,6 +2887,7 @@ subroutine zero_ed_monthly_output_vars(cgrid)
                cpatch%mmean_light_level_beam  (ico) = 0.
                cpatch%mmean_light_level_diff  (ico) = 0.
                cpatch%mmean_beamext_level     (ico) = 0.
+               cpatch%mmean_diffext_level     (ico) = 0.
                cpatch%mmean_norm_par_beam     (ico) = 0.
                cpatch%mmean_norm_par_diff     (ico) = 0.
                cpatch%mmean_lambda_light      (ico) = 0.

@@ -10,9 +10,9 @@ subroutine sw_twostream_clump(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area       
                              ,SW_abs_diffuse_flip,DW_vislo_beam,DW_vislo_diffuse           &
                              ,UW_vishi_beam,UW_vishi_diffuse,DW_nirlo_beam                 &
                              ,DW_nirlo_diffuse,UW_nirhi_beam,UW_nirhi_diffuse              &
-                             ,beam_level,lambda_coh,lambda_tot)
+                             ,beam_level,diff_level,lambda_coh,lambda_tot)
 
-   use ed_max_dims             , only : n_pft                   ! ! intent(in) 
+   use ed_max_dims          , only : n_pft                   ! ! intent(in) 
    use pft_coms             , only : clumping_factor         & ! intent(in) 
                                    , phenology               ! ! intent(in) 
    use canopy_radiation_coms, only : diffuse_backscatter_nir & ! intent(in)
@@ -43,6 +43,7 @@ subroutine sw_twostream_clump(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area       
    real                         , intent(out)   :: DW_nirlo_beam
    real                         , intent(out)   :: DW_nirlo_diffuse
    real(kind=8), dimension(ncoh), intent(inout) :: beam_level
+   real(kind=8), dimension(ncoh), intent(inout) :: diff_level
    real(kind=8), dimension(ncoh), intent(inout) :: lambda_coh
    real(kind=8)                 , intent(inout) :: lambda_tot
    !----- Local variables -----------------------------------------------------------------!
@@ -338,6 +339,7 @@ subroutine sw_twostream_clump(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area       
    end do bandloop
    
    do il=1,ncoh
+      diff_level(il)          = downward_vis_diffuse(il+1)
       PAR_beam_flip(il)       = visible_fraction_dir                                       &
                               * sngl( downward_vis_beam(il+1)-downward_vis_beam(il)        &
                                     + upward_vis_beam(il)-upward_vis_beam(il+1))

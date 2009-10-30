@@ -45,10 +45,10 @@ subroutine near_bare_ground_init(cgrid)
 
          !----- We now populate the cohorts with near bare ground condition. --------------!
          select case (ied_init_mode)
+         case (-8)
+            call init_cohorts_by_layers(csite,cpoly%lsl(isi),1,csite%npatches)
          case (0)
             call init_nbg_cohorts(csite,cpoly%lsl(isi),1,csite%npatches)
-         case (8)
-            call init_cohorts_by_layers(csite,cpoly%lsl(isi),1,csite%npatches)
          end select
 
          !----- Initialise the patches now that cohorts are there. ------------------------!
