@@ -81,7 +81,7 @@ subroutine ed_masterput_nl(par_run)
                              ,sfilout,frqstate,isoutput,iprintpolys,printvars,pfmtstr      &
                              ,ipmin,ipmax,iedcnfgf,outfast,outstate,out_time_fast          &
                              ,out_time_state,nrec_fast,nrec_state,irec_fast,irec_state     &
-                             ,unitfast,unitstate,event_file,fivedim_diags
+                             ,unitfast,unitstate,event_file
 
    use ed_misc_coms,only: attach_metadata
    use canopy_air_coms, only: icanturb, isfclyrm
@@ -263,7 +263,6 @@ subroutine ed_masterput_nl(par_run)
 
    call MPI_Bcast(attach_metadata,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
 
-   call MPI_Bcast(fivedim_diags,1,MPI_LOGICAL,mainnum,MPI_COMM_WORLD,ierr)
 !------------------------------------------------------------------------------------------!
 !   One last thing to send is the layer index based on the soil_depth. It is not really a  !
 ! namelist thing, but it is still a setup variable.                                        !
@@ -650,7 +649,7 @@ subroutine ed_nodeget_nl
                              ,isoutput,sfilout,frqstate,iprintpolys,printvars,pfmtstr      &
                              ,ipmin,ipmax,iedcnfgf,outfast,outstate,out_time_fast          &
                              ,out_time_state,nrec_fast,nrec_state,irec_fast,irec_state     &
-                             ,unitfast,unitstate,event_file,fivedim_diags
+                             ,unitfast,unitstate,event_file
 
    use grid_coms,       only: nzg,nzs,ngrids,nnxp,nnyp,deltax,deltay,polelat,polelon       &
                              ,centlat,centlon,time,timmax,nstratx,nstraty
@@ -830,8 +829,6 @@ subroutine ed_nodeget_nl
    
    call MPI_Bcast(attach_metadata,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    
-   call MPI_Bcast(fivedim_diags,1,MPI_LOGICAL,master_num,MPI_COMM_WORLD,ierr)
-
 !------------------------------------------------------------------------------------------!
 !     Receiving the layer index based on soil_depth. This is allocatable, so I first       !
 ! allocate, then let the master know that it is safe to send to me and I reveive the data. !

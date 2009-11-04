@@ -8,7 +8,7 @@ module ed_state_vars
   use met_driver_coms, only: met_driv_data,met_driv_state
   use fusion_fission_coms, only: ff_ndbh
   use phenology_coms, only: prescribed_phen
-  use ed_misc_coms, only: idoutput, imoutput, fivedim_diags
+  use ed_misc_coms, only: idoutput, imoutput
 
   implicit none
 !============================================================================!
@@ -590,6 +590,10 @@ module ed_state_vars
      ! (kg_H2O/m2/s)
      real , pointer,dimension(:) :: wbudget_loss2atm
 
+     ! Contribution of density change on change in the final storage
+     ! (kg_H2O/m2/s)
+     real , pointer,dimension(:) :: wbudget_denseffect
+
      ! Precipitation [kg_H2O/m2/s]
      real , pointer,dimension(:) :: wbudget_precipgain
 
@@ -609,6 +613,10 @@ module ed_state_vars
      ! Mean sensible heat transfer from the canopy air to the atmosphere
      ! (J/m2/s)
      real , pointer,dimension(:) :: ebudget_loss2atm
+
+     ! Mean change in storage due to change in density
+     ! (J/m2/s)
+     real , pointer,dimension(:) :: ebudget_denseffect
 
      ! Energy associated with runoff (J/m2/s)
      real , pointer,dimension(:) :: ebudget_loss2runoff
@@ -641,6 +649,9 @@ module ed_state_vars
 
      ! Flux of CO2 from the canopy air to the atmosphere [umol_CO2/m2/s]
      real , pointer,dimension(:) :: co2budget_loss2atm
+
+     ! Change in CO2 total storage due to change in density [umol_CO2/m2/s]
+     real , pointer,dimension(:) :: co2budget_denseffect
 
      ! Average GPP [umol_CO2/m2/s]
      real , pointer,dimension(:) :: co2budget_gpp
@@ -1579,60 +1590,11 @@ module ed_state_vars
      real, pointer, dimension(:) :: stdev_sensible
      real, pointer, dimension(:) :: stdev_nep
      real, pointer, dimension(:) :: stdev_rh
-
-
-     !-----------------------------------------------------------------------!
-     !    Five dimension version of the above variables, plus some other     !
-     ! diagnostic variables.                                                 !
-     ! Dimensions: (n_pft,n_dist_types,n_dbh,n_age,npolygons)                !
-     !-----------------------------------------------------------------------!
-     !----- State variables, updated every day. -----------------------------!
-     real, pointer, dimension(:,:,:,:,:) :: lai_ar
-     real, pointer, dimension(:,:,:,:,:) :: wpa_ar
-     real, pointer, dimension(:,:,:,:,:) :: wai_ar
-     real, pointer, dimension(:,:,:,:,:) :: frostmort_ar
-     !----- Daily averages. -------------------------------------------------!
-     real, pointer, dimension(:,:,:,:,:) :: dmean_fs_open_ar
-     real, pointer, dimension(:,:,:,:,:) :: dmean_fsw_ar
-     real, pointer, dimension(:,:,:,:,:) :: dmean_fsn_ar
-     real, pointer, dimension(:,:,:,:,:) :: dmean_lightlev_ar
-     real, pointer, dimension(:,:,:,:,:) :: dmean_gpp_ar
-     real, pointer, dimension(:,:,:,:,:) :: dmean_plresp_ar
-     real, pointer, dimension(:,:,:,:,:) :: dmean_igpp_ar
-     real, pointer, dimension(:,:,:,:,:) :: dmean_iplresp_ar
-     !----- Variables that are updated once a month. ------------------------! 
-     real, pointer, dimension(:,:,:,:,:) :: bseeds_ar        !kgC/m2
-     real, pointer, dimension(:,:,:,:,:) :: agb_ar           !kgC/m2
-     real, pointer, dimension(:,:,:,:,:) :: ba_ar            !cm2/m2
-     real, pointer, dimension(:,:,:,:,:) :: pldens_ar        !#/m2
-     real, pointer, dimension(:,:,:,:,:) :: carbbal_ar       !kgC/m2/month
-     real, pointer, dimension(:,:,:,:,:) :: ncbmort_ar       !1/yr
-     !----- Monthly averages. -----------------------------------------------!
-     real, pointer, dimension(:,:,:,:,:) :: mmean_lai_ar
-     real, pointer, dimension(:,:,:,:,:) :: mmean_wpa_ar
-     real, pointer, dimension(:,:,:,:,:) :: mmean_wai_ar
-     real, pointer, dimension(:,:,:,:,:) :: mmean_fs_open_ar
-     real, pointer, dimension(:,:,:,:,:) :: mmean_fsw_ar
-     real, pointer, dimension(:,:,:,:,:) :: mmean_fsn_ar
-     real, pointer, dimension(:,:,:,:,:) :: mmean_lightlev_ar
-     real, pointer, dimension(:,:,:,:,:) :: mmean_frostmort_ar
-     real, pointer, dimension(:,:,:,:,:) :: mmean_gpp_ar
-     real, pointer, dimension(:,:,:,:,:) :: mmean_plresp_ar
-     real, pointer, dimension(:,:,:,:,:) :: mmean_igpp_ar
-     real, pointer, dimension(:,:,:,:,:) :: mmean_iplresp_ar
-     !-----------------------------------------------------------------------!
-     !    Heterotrophic respiration.  Since this is based on a patch-level   !
-     ! variable, we drop the PFT and DBH dimensions, so its dimensions are   !
-     ! (n_dist_types,n_age,npolygons).                                       !
-     !-----------------------------------------------------------------------!
-     real, pointer, dimension(:,:,:)     :: dmean_rh_ar
-     real, pointer, dimension(:,:,:)     :: mmean_rh_ar
-     !-----------------------------------------------------------------------!
-
-
      
      !----- Disturbance rates. ----------------------------------------------!
      real, pointer, dimension(:,:,:) :: disturbance_rates
+
+
   end type edtype
 !============================================================================!
 !============================================================================!
@@ -1975,22 +1937,6 @@ contains
           allocate(cgrid%dmean_co2_residual   (             npolygons))
           allocate(cgrid%dmean_energy_residual(             npolygons))
           allocate(cgrid%dmean_water_residual (             npolygons))
-          
-          if (fivedim_diags) then
-             allocate(cgrid%lai_ar             (n_pft,n_dist_types,n_dbh,n_age,npolygons))
-             allocate(cgrid%wpa_ar             (n_pft,n_dist_types,n_dbh,n_age,npolygons))
-             allocate(cgrid%wai_ar             (n_pft,n_dist_types,n_dbh,n_age,npolygons))
-             allocate(cgrid%frostmort_ar       (n_pft,n_dist_types,n_dbh,n_age,npolygons))
-             allocate(cgrid%dmean_fs_open_ar   (n_pft,n_dist_types,n_dbh,n_age,npolygons))
-             allocate(cgrid%dmean_fsw_ar       (n_pft,n_dist_types,n_dbh,n_age,npolygons))
-             allocate(cgrid%dmean_fsn_ar       (n_pft,n_dist_types,n_dbh,n_age,npolygons))
-             allocate(cgrid%dmean_lightlev_ar  (n_pft,n_dist_types,n_dbh,n_age,npolygons))
-             allocate(cgrid%dmean_gpp_ar       (n_pft,n_dist_types,n_dbh,n_age,npolygons))
-             allocate(cgrid%dmean_plresp_ar    (n_pft,n_dist_types,n_dbh,n_age,npolygons))
-             allocate(cgrid%dmean_igpp_ar      (n_pft,n_dist_types,n_dbh,n_age,npolygons))
-             allocate(cgrid%dmean_iplresp_ar   (n_pft,n_dist_types,n_dbh,n_age,npolygons))
-             allocate(cgrid%dmean_rh_ar        (      n_dist_types,      n_age,npolygons))
-          end if
 
        end if
        !-------------------------------------------------------------------!
@@ -2049,30 +1995,6 @@ contains
           allocate(cgrid%stdev_nep          (             npolygons))
           allocate(cgrid%stdev_rh           (             npolygons))
           allocate(cgrid%disturbance_rates  (n_dist_types,n_dist_types,npolygons))
-
-          
-          if (fivedim_diags) then
-             allocate(cgrid%bseeds_ar          (n_pft,n_dist_types,n_dbh,n_age,npolygons))
-             allocate(cgrid%agb_ar             (n_pft,n_dist_types,n_dbh,n_age,npolygons))
-             allocate(cgrid%ba_ar              (n_pft,n_dist_types,n_dbh,n_age,npolygons))
-             allocate(cgrid%pldens_ar          (n_pft,n_dist_types,n_dbh,n_age,npolygons))
-             allocate(cgrid%carbbal_ar         (n_pft,n_dist_types,n_dbh,n_age,npolygons))
-             allocate(cgrid%ncbmort_ar         (n_pft,n_dist_types,n_dbh,n_age,npolygons))
-             allocate(cgrid%mmean_lai_ar       (n_pft,n_dist_types,n_dbh,n_age,npolygons))
-             allocate(cgrid%mmean_wpa_ar       (n_pft,n_dist_types,n_dbh,n_age,npolygons))
-             allocate(cgrid%mmean_wai_ar       (n_pft,n_dist_types,n_dbh,n_age,npolygons))
-             allocate(cgrid%mmean_fs_open_ar   (n_pft,n_dist_types,n_dbh,n_age,npolygons))
-             allocate(cgrid%mmean_fsw_ar       (n_pft,n_dist_types,n_dbh,n_age,npolygons))
-             allocate(cgrid%mmean_fsn_ar       (n_pft,n_dist_types,n_dbh,n_age,npolygons))
-             allocate(cgrid%mmean_lightlev_ar  (n_pft,n_dist_types,n_dbh,n_age,npolygons))
-             allocate(cgrid%mmean_frostmort_ar (n_pft,n_dist_types,n_dbh,n_age,npolygons))
-             allocate(cgrid%mmean_gpp_ar       (n_pft,n_dist_types,n_dbh,n_age,npolygons))
-             allocate(cgrid%mmean_plresp_ar    (n_pft,n_dist_types,n_dbh,n_age,npolygons))
-             allocate(cgrid%mmean_igpp_ar      (n_pft,n_dist_types,n_dbh,n_age,npolygons))
-             allocate(cgrid%mmean_iplresp_ar   (n_pft,n_dist_types,n_dbh,n_age,npolygons))
-             allocate(cgrid%mmean_rh_ar        (      n_dist_types,      n_age,npolygons))
-          end if
-
 
        end if
 
@@ -2336,6 +2258,7 @@ contains
     allocate(csite%mean_rh(npatches))
     allocate(csite%mean_nep(npatches))
     allocate(csite%wbudget_loss2atm(npatches))
+    allocate(csite%wbudget_denseffect(npatches))
     allocate(csite%wbudget_precipgain(npatches))
     allocate(csite%wbudget_loss2runoff(npatches))
     allocate(csite%wbudget_loss2drainage(npatches))
@@ -2343,6 +2266,7 @@ contains
     allocate(csite%wbudget_residual(npatches))
     allocate(csite%ebudget_latent(npatches))
     allocate(csite%ebudget_loss2atm(npatches))
+    allocate(csite%ebudget_denseffect(npatches))
     allocate(csite%ebudget_loss2runoff(npatches))
     allocate(csite%ebudget_loss2drainage(npatches))
     allocate(csite%ebudget_netrad(npatches))
@@ -2352,6 +2276,7 @@ contains
     allocate(csite%co2budget_initialstorage(npatches))
     allocate(csite%co2budget_residual(npatches))
     allocate(csite%co2budget_loss2atm(npatches))
+    allocate(csite%co2budget_denseffect(npatches))
     allocate(csite%co2budget_gpp(npatches))
     allocate(csite%co2budget_gpp_dbh(n_dbh,npatches))
     allocate(csite%co2budget_plresp(npatches))
@@ -2887,39 +2812,6 @@ contains
        nullify(cgrid%stdev_rh                )
        nullify(cgrid%disturbance_rates       )
 
-       nullify(cgrid%lai_ar                  )
-       nullify(cgrid%wpa_ar                  )
-       nullify(cgrid%wai_ar                  )
-       nullify(cgrid%frostmort_ar            )
-       nullify(cgrid%dmean_fs_open_ar        )
-       nullify(cgrid%dmean_fsw_ar            )
-       nullify(cgrid%dmean_fsn_ar            )
-       nullify(cgrid%dmean_lightlev_ar       )
-       nullify(cgrid%dmean_gpp_ar            )
-       nullify(cgrid%dmean_plresp_ar         )
-       nullify(cgrid%dmean_igpp_ar           )
-       nullify(cgrid%dmean_iplresp_ar        )
-       nullify(cgrid%dmean_rh_ar             )
-       nullify(cgrid%bseeds_ar               )
-       nullify(cgrid%agb_ar                  )
-       nullify(cgrid%ba_ar                   )
-       nullify(cgrid%pldens_ar               )
-       nullify(cgrid%carbbal_ar              )
-       nullify(cgrid%ncbmort_ar              )
-       nullify(cgrid%mmean_lai_ar            )
-       nullify(cgrid%mmean_wpa_ar            )
-       nullify(cgrid%mmean_wai_ar            )
-       nullify(cgrid%mmean_fs_open_ar        )
-       nullify(cgrid%mmean_fsw_ar            )
-       nullify(cgrid%mmean_fsn_ar            )
-       nullify(cgrid%mmean_lightlev_ar       )
-       nullify(cgrid%mmean_frostmort_ar      )
-       nullify(cgrid%mmean_gpp_ar            )
-       nullify(cgrid%mmean_plresp_ar         )
-       nullify(cgrid%mmean_igpp_ar           )
-       nullify(cgrid%mmean_iplresp_ar        )
-       nullify(cgrid%mmean_rh_ar             )
-
     return
   end subroutine nullify_edtype
 !============================================================================!
@@ -3151,6 +3043,7 @@ contains
     nullify(csite%mmean_rh)
     nullify(csite%mean_nep)
     nullify(csite%wbudget_loss2atm)
+    nullify(csite%wbudget_denseffect)
     nullify(csite%wbudget_precipgain)
     nullify(csite%wbudget_loss2runoff)
     nullify(csite%wbudget_loss2drainage)
@@ -3158,6 +3051,7 @@ contains
     nullify(csite%wbudget_residual)
     nullify(csite%ebudget_latent)
     nullify(csite%ebudget_loss2atm)
+    nullify(csite%ebudget_denseffect)
     nullify(csite%ebudget_loss2runoff)
     nullify(csite%ebudget_loss2drainage)
     nullify(csite%ebudget_netrad)
@@ -3167,6 +3061,7 @@ contains
     nullify(csite%co2budget_initialstorage)
     nullify(csite%co2budget_residual)
     nullify(csite%co2budget_loss2atm)
+    nullify(csite%co2budget_denseffect)
     nullify(csite%co2budget_gpp)
     nullify(csite%co2budget_gpp_dbh)
     nullify(csite%co2budget_plresp)
@@ -3687,39 +3582,6 @@ contains
        if(associated(cgrid%stdev_rh                )) deallocate(cgrid%stdev_rh                )
        if(associated(cgrid%disturbance_rates       )) deallocate(cgrid%disturbance_rates       )
 
-       if(associated(cgrid%lai_ar                  )) deallocate(cgrid%lai_ar                  )
-       if(associated(cgrid%wpa_ar                  )) deallocate(cgrid%wpa_ar                  )
-       if(associated(cgrid%wai_ar                  )) deallocate(cgrid%wai_ar                  )
-       if(associated(cgrid%frostmort_ar            )) deallocate(cgrid%frostmort_ar            )
-       if(associated(cgrid%dmean_fs_open_ar        )) deallocate(cgrid%dmean_fs_open_ar        )
-       if(associated(cgrid%dmean_fsw_ar            )) deallocate(cgrid%dmean_fsw_ar            )
-       if(associated(cgrid%dmean_fsn_ar            )) deallocate(cgrid%dmean_fsn_ar            )
-       if(associated(cgrid%dmean_lightlev_ar       )) deallocate(cgrid%dmean_lightlev_ar       )
-       if(associated(cgrid%dmean_gpp_ar            )) deallocate(cgrid%dmean_gpp_ar            )
-       if(associated(cgrid%dmean_plresp_ar         )) deallocate(cgrid%dmean_plresp_ar         )
-       if(associated(cgrid%dmean_igpp_ar           )) deallocate(cgrid%dmean_igpp_ar           )
-       if(associated(cgrid%dmean_iplresp_ar        )) deallocate(cgrid%dmean_iplresp_ar        )
-       if(associated(cgrid%dmean_rh_ar             )) deallocate(cgrid%dmean_rh_ar             )
-       if(associated(cgrid%bseeds_ar               )) deallocate(cgrid%bseeds_ar               )
-       if(associated(cgrid%agb_ar                  )) deallocate(cgrid%agb_ar                  )
-       if(associated(cgrid%ba_ar                   )) deallocate(cgrid%ba_ar                   )
-       if(associated(cgrid%pldens_ar               )) deallocate(cgrid%pldens_ar               )
-       if(associated(cgrid%carbbal_ar              )) deallocate(cgrid%carbbal_ar              )
-       if(associated(cgrid%ncbmort_ar              )) deallocate(cgrid%ncbmort_ar              )
-       if(associated(cgrid%mmean_lai_ar            )) deallocate(cgrid%mmean_lai_ar            )
-       if(associated(cgrid%mmean_wpa_ar            )) deallocate(cgrid%mmean_wpa_ar            )
-       if(associated(cgrid%mmean_wai_ar            )) deallocate(cgrid%mmean_wai_ar            )
-       if(associated(cgrid%mmean_fs_open_ar        )) deallocate(cgrid%mmean_fs_open_ar        )
-       if(associated(cgrid%mmean_fsw_ar            )) deallocate(cgrid%mmean_fsw_ar            )
-       if(associated(cgrid%mmean_fsn_ar            )) deallocate(cgrid%mmean_fsn_ar            )
-       if(associated(cgrid%mmean_lightlev_ar       )) deallocate(cgrid%mmean_lightlev_ar       )
-       if(associated(cgrid%mmean_frostmort_ar      )) deallocate(cgrid%mmean_frostmort_ar      )
-       if(associated(cgrid%mmean_gpp_ar            )) deallocate(cgrid%mmean_gpp_ar            )
-       if(associated(cgrid%mmean_plresp_ar         )) deallocate(cgrid%mmean_plresp_ar         )
-       if(associated(cgrid%mmean_igpp_ar           )) deallocate(cgrid%mmean_igpp_ar           )
-       if(associated(cgrid%mmean_iplresp_ar        )) deallocate(cgrid%mmean_iplresp_ar        )
-       if(associated(cgrid%mmean_rh_ar             )) deallocate(cgrid%mmean_rh_ar             )
-
     return
   end subroutine deallocate_edtype
 !============================================================================!
@@ -3954,6 +3816,7 @@ contains
     if(associated(csite%mmean_rh                     )) deallocate(csite%mmean_rh                     )
     if(associated(csite%mean_nep                     )) deallocate(csite%mean_nep                     )
     if(associated(csite%wbudget_loss2atm             )) deallocate(csite%wbudget_loss2atm             )
+    if(associated(csite%wbudget_denseffect           )) deallocate(csite%wbudget_denseffect           )
     if(associated(csite%wbudget_precipgain           )) deallocate(csite%wbudget_precipgain           )
     if(associated(csite%wbudget_loss2runoff          )) deallocate(csite%wbudget_loss2runoff          )
     if(associated(csite%wbudget_loss2drainage        )) deallocate(csite%wbudget_loss2drainage        )
@@ -3961,6 +3824,7 @@ contains
     if(associated(csite%wbudget_residual             )) deallocate(csite%wbudget_residual             )
     if(associated(csite%ebudget_latent               )) deallocate(csite%ebudget_latent               )
     if(associated(csite%ebudget_loss2atm             )) deallocate(csite%ebudget_loss2atm             )
+    if(associated(csite%ebudget_denseffect           )) deallocate(csite%ebudget_denseffect           )
     if(associated(csite%ebudget_loss2runoff          )) deallocate(csite%ebudget_loss2runoff          )
     if(associated(csite%ebudget_loss2drainage        )) deallocate(csite%ebudget_loss2drainage        )
     if(associated(csite%ebudget_netrad               )) deallocate(csite%ebudget_netrad               )
@@ -3970,6 +3834,7 @@ contains
     if(associated(csite%co2budget_initialstorage     )) deallocate(csite%co2budget_initialstorage     )
     if(associated(csite%co2budget_residual           )) deallocate(csite%co2budget_residual           )
     if(associated(csite%co2budget_loss2atm           )) deallocate(csite%co2budget_loss2atm           )
+    if(associated(csite%co2budget_denseffect         )) deallocate(csite%co2budget_denseffect         )
     if(associated(csite%co2budget_gpp                )) deallocate(csite%co2budget_gpp                )
     if(associated(csite%co2budget_gpp_dbh            )) deallocate(csite%co2budget_gpp_dbh            )
     if(associated(csite%co2budget_plresp             )) deallocate(csite%co2budget_plresp             )
@@ -4528,38 +4393,6 @@ contains
     if(associated(cgrid%stdev_rh                )) cgrid%stdev_rh                 = large_real
     if(associated(cgrid%disturbance_rates       )) cgrid%disturbance_rates        = large_real
 
-    if(associated(cgrid%lai_ar                  )) cgrid%lai_ar                   = large_real
-    if(associated(cgrid%wpa_ar                  )) cgrid%wpa_ar                   = large_real
-    if(associated(cgrid%wai_ar                  )) cgrid%wai_ar                   = large_real
-    if(associated(cgrid%frostmort_ar            )) cgrid%frostmort_ar             = large_real
-    if(associated(cgrid%dmean_fs_open_ar        )) cgrid%dmean_fs_open_ar         = large_real
-    if(associated(cgrid%dmean_fsw_ar            )) cgrid%dmean_fsw_ar             = large_real
-    if(associated(cgrid%dmean_fsn_ar            )) cgrid%dmean_fsn_ar             = large_real
-    if(associated(cgrid%dmean_lightlev_ar       )) cgrid%dmean_lightlev_ar        = large_real
-    if(associated(cgrid%dmean_gpp_ar            )) cgrid%dmean_gpp_ar             = large_real
-    if(associated(cgrid%dmean_plresp_ar         )) cgrid%dmean_plresp_ar          = large_real
-    if(associated(cgrid%dmean_igpp_ar           )) cgrid%dmean_igpp_ar            = large_real
-    if(associated(cgrid%dmean_iplresp_ar        )) cgrid%dmean_iplresp_ar         = large_real
-    if(associated(cgrid%dmean_rh_ar             )) cgrid%dmean_rh_ar              = large_real
-    if(associated(cgrid%bseeds_ar               )) cgrid%bseeds_ar                = large_real
-    if(associated(cgrid%agb_ar                  )) cgrid%agb_ar                   = large_real
-    if(associated(cgrid%ba_ar                   )) cgrid%ba_ar                    = large_real
-    if(associated(cgrid%pldens_ar               )) cgrid%pldens_ar                = large_real
-    if(associated(cgrid%carbbal_ar              )) cgrid%carbbal_ar               = large_real
-    if(associated(cgrid%ncbmort_ar              )) cgrid%ncbmort_ar               = large_real
-    if(associated(cgrid%mmean_lai_ar            )) cgrid%mmean_lai_ar             = large_real
-    if(associated(cgrid%mmean_wpa_ar            )) cgrid%mmean_wpa_ar             = large_real
-    if(associated(cgrid%mmean_wai_ar            )) cgrid%mmean_wai_ar             = large_real
-    if(associated(cgrid%mmean_fs_open_ar        )) cgrid%mmean_fs_open_ar         = large_real
-    if(associated(cgrid%mmean_fsw_ar            )) cgrid%mmean_fsw_ar             = large_real
-    if(associated(cgrid%mmean_fsn_ar            )) cgrid%mmean_fsn_ar             = large_real
-    if(associated(cgrid%mmean_lightlev_ar       )) cgrid%mmean_lightlev_ar        = large_real
-    if(associated(cgrid%mmean_frostmort_ar      )) cgrid%mmean_frostmort_ar       = large_real
-    if(associated(cgrid%mmean_gpp_ar            )) cgrid%mmean_gpp_ar             = large_real
-    if(associated(cgrid%mmean_plresp_ar         )) cgrid%mmean_plresp_ar          = large_real
-    if(associated(cgrid%mmean_igpp_ar           )) cgrid%mmean_igpp_ar            = large_real
-    if(associated(cgrid%mmean_iplresp_ar        )) cgrid%mmean_iplresp_ar         = large_real
-    if(associated(cgrid%mmean_rh_ar             )) cgrid%mmean_rh_ar              = large_real
 
     return
   end subroutine huge_edtype
@@ -4833,6 +4666,7 @@ contains
     if(associated(csite%mmean_rh                     )) csite%mmean_rh                     = large_real
     if(associated(csite%mean_nep                     )) csite%mean_nep                     = large_real
     if(associated(csite%wbudget_loss2atm             )) csite%wbudget_loss2atm             = large_real
+    if(associated(csite%wbudget_denseffect           )) csite%wbudget_denseffect           = large_real
     if(associated(csite%wbudget_precipgain           )) csite%wbudget_precipgain           = large_real
     if(associated(csite%wbudget_loss2runoff          )) csite%wbudget_loss2runoff          = large_real
     if(associated(csite%wbudget_loss2drainage        )) csite%wbudget_loss2drainage        = large_real
@@ -4840,6 +4674,7 @@ contains
     if(associated(csite%wbudget_residual             )) csite%wbudget_residual             = large_real
     if(associated(csite%ebudget_latent               )) csite%ebudget_latent               = large_real
     if(associated(csite%ebudget_loss2atm             )) csite%ebudget_loss2atm             = large_real
+    if(associated(csite%ebudget_denseffect           )) csite%ebudget_denseffect           = large_real
     if(associated(csite%ebudget_loss2runoff          )) csite%ebudget_loss2runoff          = large_real
     if(associated(csite%ebudget_loss2drainage        )) csite%ebudget_loss2drainage        = large_real
     if(associated(csite%ebudget_netrad               )) csite%ebudget_netrad               = large_real
@@ -4849,6 +4684,7 @@ contains
     if(associated(csite%co2budget_initialstorage     )) csite%co2budget_initialstorage     = large_real
     if(associated(csite%co2budget_residual           )) csite%co2budget_residual           = large_real
     if(associated(csite%co2budget_loss2atm           )) csite%co2budget_loss2atm           = large_real
+    if(associated(csite%co2budget_denseffect         )) csite%co2budget_denseffect         = large_real
     if(associated(csite%co2budget_gpp                )) csite%co2budget_gpp                = large_real
     if(associated(csite%co2budget_gpp_dbh            )) csite%co2budget_gpp_dbh            = large_real
     if(associated(csite%co2budget_plresp             )) csite%co2budget_plresp             = large_real
@@ -5343,7 +5179,6 @@ contains
     end do
 
     ! First do all of the true vectors
-
     siteout%paco_id(1:inc)              = pack(sitein%paco_id,logmask)
     siteout%paco_n(1:inc)               = pack(sitein%paco_n,logmask)
     siteout%dist_type(1:inc)            = pack(sitein%dist_type,logmask)
@@ -5359,7 +5194,6 @@ contains
     siteout%sum_dgd(1:inc)              = pack(sitein%sum_dgd,logmask)
     siteout%sum_chd(1:inc)              = pack(sitein%sum_chd,logmask)
     siteout%plantation(1:inc)           = pack(sitein%plantation,logmask)
-    !siteout%pname                = pack(sitein%pname 
     siteout%cohort_count(1:inc)         = pack(sitein%cohort_count,logmask)
     siteout%can_enthalpy(1:inc)         = pack(sitein%can_enthalpy,logmask)
     siteout%can_temp(1:inc)             = pack(sitein%can_temp,logmask)
@@ -5377,22 +5211,25 @@ contains
     siteout%mean_rh(1:inc)              = pack(sitein%mean_rh,logmask)
     siteout%mean_nep(1:inc)             = pack(sitein%mean_nep,logmask)
     siteout%wbudget_loss2atm(1:inc)     = pack(sitein%wbudget_loss2atm,logmask)
+    siteout%wbudget_denseffect(1:inc)        = pack(sitein%wbudget_denseffect,logmask)
     siteout%wbudget_precipgain(1:inc)        = pack(sitein%wbudget_precipgain,logmask)
     siteout%wbudget_loss2runoff(1:inc)       = pack(sitein%wbudget_loss2runoff,logmask)
     siteout%wbudget_loss2drainage(1:inc)     = pack(sitein%wbudget_loss2drainage,logmask)
     siteout%wbudget_initialstorage(1:inc)    = pack(sitein%wbudget_initialstorage,logmask)
-    siteout%wbudget_residual(1:inc)     = pack(sitein%wbudget_residual,logmask)
-    siteout%ebudget_latent(1:inc)       = pack(sitein%ebudget_latent,logmask)
-    siteout%ebudget_loss2atm(1:inc)     = pack(sitein%ebudget_loss2atm,logmask)
-    siteout%ebudget_loss2runoff(1:inc)    = pack(sitein%ebudget_loss2runoff,logmask)
-    siteout%ebudget_loss2drainage(1:inc)    = pack(sitein%ebudget_loss2drainage,logmask)
-    siteout%ebudget_netrad(1:inc)       = pack(sitein%ebudget_netrad,logmask)
-    siteout%ebudget_precipgain(1:inc)   = pack(sitein%ebudget_precipgain,logmask)
+    siteout%wbudget_residual(1:inc)          = pack(sitein%wbudget_residual,logmask)
+    siteout%ebudget_latent(1:inc)            = pack(sitein%ebudget_latent,logmask)
+    siteout%ebudget_loss2atm(1:inc)          = pack(sitein%ebudget_loss2atm,logmask)
+    siteout%ebudget_loss2atm(1:inc)          = pack(sitein%ebudget_loss2atm,logmask)
+    siteout%ebudget_loss2runoff(1:inc)       = pack(sitein%ebudget_loss2runoff,logmask)
+    siteout%ebudget_loss2drainage(1:inc)     = pack(sitein%ebudget_loss2drainage,logmask)
+    siteout%ebudget_netrad(1:inc)            = pack(sitein%ebudget_netrad,logmask)
+    siteout%ebudget_precipgain(1:inc)        = pack(sitein%ebudget_precipgain,logmask)
     siteout%ebudget_initialstorage(1:inc)    = pack(sitein%ebudget_initialstorage,logmask)
-    siteout%ebudget_residual(1:inc)    = pack(sitein%ebudget_residual,logmask)
-    siteout%co2budget_initialstorage(1:inc)    = pack(sitein%co2budget_initialstorage,logmask)
+    siteout%ebudget_residual(1:inc)          = pack(sitein%ebudget_residual,logmask)
+    siteout%co2budget_initialstorage(1:inc)  = pack(sitein%co2budget_initialstorage,logmask)
     siteout%co2budget_residual(1:inc)   = pack(sitein%co2budget_residual,logmask)
     siteout%co2budget_loss2atm(1:inc)   = pack(sitein%co2budget_loss2atm,logmask)
+    siteout%co2budget_denseffect(1:inc) = pack(sitein%co2budget_denseffect,logmask)
     siteout%co2budget_gpp(1:inc)        = pack(sitein%co2budget_gpp,logmask)
     siteout%co2budget_plresp(1:inc)     = pack(sitein%co2budget_plresp,logmask)
     siteout%co2budget_rh(1:inc)         = pack(sitein%co2budget_rh,logmask)
@@ -7973,297 +7810,6 @@ contains
             var_len,var_len_global,max_ptrs,'DISTURBANCE_RATES :155:hist:mont:mpti:mpt3') 
        call metadata_edio(nvar,igr,'Disturbance Rates','[NA]','NA') 
     end if
-
-    !--------------------------------------------------------------------------------------!
-    !    The new 5-D/3-D arrays.                                                           !
-    !--------------------------------------------------------------------------------------!
-    if(associated(cgrid%lai_ar)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%lai_ar(1,1,1,1,1),nvar,igr,init,cgrid%pyglob_id            &
-                         ,var_len,var_len_global,max_ptrs                                  &
-                         ,'LAI_AR :14567:hist:dail')
-       call metadata_edio(nvar,igr,'Leaf Area Index','[m2/m2]'                             &
-                         ,'ipft;ilu;idbh;iage;ipoly') 
-    end if
-
-    if(associated(cgrid%wpa_ar)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%wpa_ar(1,1,1,1,1),nvar,igr,init,cgrid%pyglob_id            &
-                         ,var_len,var_len_global,max_ptrs                                  &
-                         ,'WPA_AR :14567:hist:dail')
-       call metadata_edio(nvar,igr,'Wood projected area','[m2/m2]'                         &
-                         ,'ipft;ilu;idbh;iage;ipoly') 
-    end if
-
-    if(associated(cgrid%wai_ar)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%wai_ar(1,1,1,1,1),nvar,igr,init,cgrid%pyglob_id            &
-                         ,var_len,var_len_global,max_ptrs                                  &
-                         ,'WAI_AR :14567:hist:dail')
-       call metadata_edio(nvar,igr,'Wood Area Index','[m2/m2]'                             &
-                         ,'ipft;ilu;idbh;iage;ipoly') 
-    end if
-
-    if(associated(cgrid%frostmort_ar)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%frostmort_ar(1,1,1,1,1),nvar,igr,init,cgrid%pyglob_id      &
-                         ,var_len,var_len_global,max_ptrs                                  &
-                         ,'FROSTMORT_AR :14567:hist:dail')
-       call metadata_edio(nvar,igr,'Mortality rate due to frost','[1/yr]'                  &
-                         ,'ipft;ilu;idbh;iage;ipoly') 
-    end if
-
-    if(associated(cgrid%dmean_fs_open_ar)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%dmean_fs_open_ar(1,1,1,1,1),nvar,igr,init,cgrid%pyglob_id  &
-                         ,var_len,var_len_global,max_ptrs                                  &
-                         ,'DMEAN_FS_OPEN_AR :14567:hist:dail')
-       call metadata_edio(nvar,igr,'No metadata available','[ -]'                          &
-                         ,'ipft;ilu;idbh;iage;ipoly') 
-    end if
-
-    if(associated(cgrid%dmean_fsw_ar)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%dmean_fsw_ar(1,1,1,1,1),nvar,igr,init,cgrid%pyglob_id      &
-                         ,var_len,var_len_global,max_ptrs                                  &
-                         ,'DMEAN_FSW_AR :14567:hist:dail')
-       call metadata_edio(nvar,igr,'No metadata available','[ -]'                          &
-                         ,'ipft;ilu;idbh;iage;ipoly') 
-    end if
-
-    if(associated(cgrid%dmean_fsn_ar)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%dmean_fsn_ar(1,1,1,1,1),nvar,igr,init,cgrid%pyglob_id  &
-                         ,var_len,var_len_global,max_ptrs                                  &
-                         ,'DMEAN_FSN_AR :14567:hist:dail')
-       call metadata_edio(nvar,igr,'No metadata available','[ -]'                          &
-                         ,'ipft;ilu;idbh;iage;ipoly') 
-    end if
-
-    if(associated(cgrid%dmean_lightlev_ar)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%dmean_lightlev_ar(1,1,1,1,1),nvar,igr,init,cgrid%pyglob_id &
-                         ,var_len,var_len_global,max_ptrs                                  &
-                         ,'DMEAN_LIGHTLEV_AR :14567:hist:dail')
-       call metadata_edio(nvar,igr,'Light level','[ -]'                                    &
-                         ,'ipft;ilu;idbh;iage;ipoly') 
-    end if
-
-    if(associated(cgrid%dmean_gpp_ar)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%dmean_gpp_ar(1,1,1,1,1),nvar,igr,init,cgrid%pyglob_id      &
-                         ,var_len,var_len_global,max_ptrs                                  &
-                         ,'DMEAN_GPP_AR :14567:hist:dail')
-       call metadata_edio(nvar,igr,'Daily mean gross primary production','[kgC/m2/s]'      &
-                         ,'ipft;ilu;idbh;iage;ipoly') 
-    end if
-
-    if(associated(cgrid%dmean_plresp_ar)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%dmean_plresp_ar(1,1,1,1,1),nvar,igr,init,cgrid%pyglob_id   &
-                         ,var_len,var_len_global,max_ptrs                                  &
-                         ,'DMEAN_PLRESP_AR :14567:hist:dail')
-       call metadata_edio(nvar,igr,'Daily mean plant respiration','[kgC/m2/s]'             &
-                         ,'ipft;ilu;idbh;iage;ipoly') 
-    end if
-
-    if(associated(cgrid%dmean_igpp_ar)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%dmean_igpp_ar(1,1,1,1,1),nvar,igr,init,cgrid%pyglob_id     &
-                         ,var_len,var_len_global,max_ptrs                                  &
-                         ,'DMEAN_IGPP_AR :14567:hist:dail')
-       call metadata_edio(nvar,igr,'Daily mean gross primary production','[kgC/plant/s]'   &
-                         ,'ipft;ilu;idbh;iage;ipoly') 
-    end if
-
-    if(associated(cgrid%dmean_iplresp_ar)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%dmean_iplresp_ar(1,1,1,1,1),nvar,igr,init,cgrid%pyglob_id  &
-                         ,var_len,var_len_global,max_ptrs                                  &
-                         ,'DMEAN_IPLRESP_AR :14567:hist:dail')
-       call metadata_edio(nvar,igr,'Daily mean plant respiration','[kgC/plant/s]'          &
-                         ,'ipft;ilu;idbh;iage;ipoly') 
-    end if
-
-    if(associated(cgrid%dmean_rh_ar)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%dmean_rh_ar(1,1,1),nvar,igr,init,cgrid%pyglob_id           &
-                         ,var_len,var_len_global,max_ptrs                                  &
-                         ,'DMEAN_RH_AR :157:hist:dail')
-       call metadata_edio(nvar,igr,'Daily mean heterotrophic respiration','[kgC/m2/s]'     &
-                         ,'ipft;ilu;idbh;iage;ipoly') 
-    end if
-
-    if(associated(cgrid%bseeds_ar)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%bseeds_ar(1,1,1,1,1),nvar,igr,init,cgrid%pyglob_id         &
-                         ,var_len,var_len_global,max_ptrs                                  &
-                         ,'BSEEDS_AR :14567:hist:mont')
-       call metadata_edio(nvar,igr,'Seed biomass','[kgC/m2]'                               &
-                         ,'ipft;ilu;idbh;iage;ipoly') 
-    end if
-
-    if(associated(cgrid%agb_ar)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%agb_ar(1,1,1,1,1),nvar,igr,init,cgrid%pyglob_id            &
-                         ,var_len,var_len_global,max_ptrs                                  &
-                         ,'AGB_AR :14567:hist:mont')
-       call metadata_edio(nvar,igr,'Above-ground biomass','[kgC/m2]'                       &
-                         ,'ipft;ilu;idbh;iage;ipoly') 
-    end if
-
-    if(associated(cgrid%ba_ar)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%ba_ar(1,1,1,1,1),nvar,igr,init,cgrid%pyglob_id             &
-                         ,var_len,var_len_global,max_ptrs                                  &
-                         ,'BA_AR :14567:hist:mont')
-       call metadata_edio(nvar,igr,'Basal area','[cm2/m2]'                                 &
-                         ,'ipft;ilu;idbh;iage;ipoly') 
-    end if
-
-    if(associated(cgrid%pldens_ar)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%pldens_ar(1,1,1,1,1),nvar,igr,init,cgrid%pyglob_id         &
-                         ,var_len,var_len_global,max_ptrs                                  &
-                         ,'PLDENS_AR :14567:hist:mont')
-       call metadata_edio(nvar,igr,'Plant density','[plant/m2]'                            &
-                         ,'ipft;ilu;idbh;iage;ipoly') 
-    end if
-
-    if(associated(cgrid%carbbal_ar)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%carbbal_ar(1,1,1,1,1),nvar,igr,init,cgrid%pyglob_id        &
-                         ,var_len,var_len_global,max_ptrs                                  &
-                         ,'CARBBAL_AR :14567:hist:mont')
-       call metadata_edio(nvar,igr,'Carbon balance','[kgC/m2/yr]'                          &
-                         ,'ipft;ilu;idbh;iage;ipoly') 
-    end if
-
-    if(associated(cgrid%ncbmort_ar)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%ncbmort_ar(1,1,1,1,1),nvar,igr,init,cgrid%pyglob_id        &
-                         ,var_len,var_len_global,max_ptrs                                  &
-                         ,'NCBMORT_AR :14567:hist:mont')
-       call metadata_edio(nvar,igr,'Mortality rate due to neg. carbon ','[1/yr]'           &
-                         ,'ipft;ilu;idbh;iage;ipoly') 
-    end if
-
-    if(associated(cgrid%mmean_lai_ar)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%mmean_lai_ar(1,1,1,1,1),nvar,igr,init,cgrid%pyglob_id      &
-                         ,var_len,var_len_global,max_ptrs                                  &
-                         ,'MMEAN_LAI_AR :14567:hist:mont')
-       call metadata_edio(nvar,igr,'Monthly mean Leaf Area Index ','[m2/m2]'               &
-                         ,'ipft;ilu;idbh;iage;ipoly') 
-    end if
-
-    if(associated(cgrid%mmean_wpa_ar)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%mmean_wpa_ar(1,1,1,1,1),nvar,igr,init,cgrid%pyglob_id      &
-                         ,var_len,var_len_global,max_ptrs                                  &
-                         ,'MMEAN_WPA_AR :14567:hist:mont')
-       call metadata_edio(nvar,igr,'Monthly mean Wood Projected Area ','[m2/m2]'           &
-                         ,'ipft;ilu;idbh;iage;ipoly') 
-    end if
-
-    if(associated(cgrid%mmean_wai_ar)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%mmean_wai_ar(1,1,1,1,1),nvar,igr,init,cgrid%pyglob_id      &
-                         ,var_len,var_len_global,max_ptrs                                  &
-                         ,'MMEAN_WAI_AR :14567:hist:mont')
-       call metadata_edio(nvar,igr,'Monthly mean Wood Area Index','[m2/m2]'                &
-                         ,'ipft;ilu;idbh;iage;ipoly') 
-    end if
-
-    if(associated(cgrid%mmean_fs_open_ar)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%mmean_fs_open_ar(1,1,1,1,1),nvar,igr,init,cgrid%pyglob_id  &
-                         ,var_len,var_len_global,max_ptrs                                  &
-                         ,'MMEAN_FS_OPEN_AR :14567:hist:mont')
-       call metadata_edio(nvar,igr,'No metadata available','[ --]'                         &
-                         ,'ipft;ilu;idbh;iage;ipoly') 
-    end if
-
-    if(associated(cgrid%mmean_fsw_ar)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%mmean_fsw_ar(1,1,1,1,1),nvar,igr,init,cgrid%pyglob_id      &
-                         ,var_len,var_len_global,max_ptrs                                  &
-                         ,'MMEAN_FSW_AR :14567:hist:mont')
-       call metadata_edio(nvar,igr,'No metadata available','[ --]'                         &
-                         ,'ipft;ilu;idbh;iage;ipoly') 
-    end if
-
-    if(associated(cgrid%mmean_fs_open_ar)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%mmean_fsn_ar(1,1,1,1,1),nvar,igr,init,cgrid%pyglob_id      &
-                         ,var_len,var_len_global,max_ptrs                                  &
-                         ,'MMEAN_FSN_AR :14567:hist:mont')
-       call metadata_edio(nvar,igr,'No metadata available','[ --]'                         &
-                         ,'ipft;ilu;idbh;iage;ipoly') 
-    end if
-
-    if(associated(cgrid%mmean_lightlev_ar)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%mmean_lightlev_ar(1,1,1,1,1),nvar,igr,init                 &
-                         ,cgrid%pyglob_id,var_len,var_len_global,max_ptrs                  &
-                         ,'MMEAN_LIGHTLEV_AR :14567:hist:mont')
-       call metadata_edio(nvar,igr,'monthly mean light level','[1/yr]'     &
-                         ,'ipft;ilu;idbh;iage;ipoly') 
-    end if
-
-    if(associated(cgrid%mmean_frostmort_ar)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%mmean_frostmort_ar(1,1,1,1,1),nvar,igr,init                &
-                         ,cgrid%pyglob_id,var_len,var_len_global,max_ptrs                  &
-                         ,'MMEAN_FROSTMORT_AR :14567:hist:mont')
-       call metadata_edio(nvar,igr,'monthly mean mortality rate due to frost','[1/yr]'     &
-                         ,'ipft;ilu;idbh;iage;ipoly') 
-    end if
-
-    if(associated(cgrid%mmean_gpp_ar)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%mmean_gpp_ar(1,1,1,1,1),nvar,igr,init,cgrid%pyglob_id      &
-                         ,var_len,var_len_global,max_ptrs                                  &
-                         ,'MMEAN_GPP_AR :14567:hist:mont')
-       call metadata_edio(nvar,igr,'Monthly mean gross primary production','[kgC/m2/s]'    &
-                         ,'ipft;ilu;idbh;iage;ipoly') 
-    end if
-
-    if(associated(cgrid%mmean_plresp_ar)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%mmean_plresp_ar(1,1,1,1,1),nvar,igr,init,cgrid%pyglob_id   &
-                         ,var_len,var_len_global,max_ptrs                                  &
-                         ,'MMEAN_PLRESP_AR :14567:hist:mont')
-       call metadata_edio(nvar,igr,'Monthly mean plant respiration','[kgC/m2/s]'           &
-                         ,'ipft;ilu;idbh;iage;ipoly') 
-    end if
-
-    if(associated(cgrid%mmean_igpp_ar)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%mmean_igpp_ar(1,1,1,1,1),nvar,igr,init,cgrid%pyglob_id     &
-                         ,var_len,var_len_global,max_ptrs                                  &
-                         ,'MMEAN_IGPP_AR :14567:hist:mont')
-       call metadata_edio(nvar,igr,'Monthly mean gross primary production','[kgC/plant/s]' &
-                         ,'ipft;ilu;idbh;iage;ipoly') 
-    end if
-
-    if(associated(cgrid%mmean_iplresp_ar)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%mmean_iplresp_ar(1,1,1,1,1),nvar,igr,init,cgrid%pyglob_id  &
-                         ,var_len,var_len_global,max_ptrs                                  &
-                         ,'MMEAN_IPLRESP_AR :14567:hist:mont')
-       call metadata_edio(nvar,igr,'Monthly mean plant respiration','[kgC/plant/s]'        &
-                         ,'ipft;ilu;idbh;iage;ipoly') 
-    end if
-
-    if(associated(cgrid%mmean_rh_ar)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%mmean_rh_ar(1,1,1),nvar,igr,init,cgrid%pyglob_id           &
-                         ,var_len,var_len_global,max_ptrs                                  &
-                         ,'MMEAN_RH_AR :157:hist:mont')
-       call metadata_edio(nvar,igr,'Monthly mean heterotrophic respiration','[kgC/m2/s]'   &
-                         ,'ipft;ilu;idbh;iage;ipoly') 
-    end if
     
     if (init == 0) niogrid=nvar-nioglobal
     
@@ -9170,6 +8716,13 @@ contains
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
+    if (associated(csite%wbudget_denseffect)) then
+       nvar=nvar+1
+         call vtable_edio_r(csite%wbudget_denseffect(1),nvar,igr,init,csite%paglob_id, &
+         var_len,var_len_global,max_ptrs,'WBUDGET_DENSEFFECT :31:hist') 
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
+
     if (associated(csite%wbudget_precipgain)) then
        nvar=nvar+1
          call vtable_edio_r(csite%wbudget_precipgain(1),nvar,igr,init,csite%paglob_id, &
@@ -9216,6 +8769,13 @@ contains
        nvar=nvar+1
          call vtable_edio_r(csite%ebudget_loss2atm(1),nvar,igr,init,csite%paglob_id, &
          var_len,var_len_global,max_ptrs,'EBUDGET_LOSS2ATM :31:hist') 
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
+
+    if (associated(csite%ebudget_denseffect)) then
+       nvar=nvar+1
+         call vtable_edio_r(csite%ebudget_denseffect(1),nvar,igr,init,csite%paglob_id, &
+         var_len,var_len_global,max_ptrs,'EBUDGET_DENSEFFECT :31:hist') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
@@ -9279,6 +8839,13 @@ contains
        nvar=nvar+1
          call vtable_edio_r(csite%co2budget_loss2atm(1),nvar,igr,init,csite%paglob_id, &
          var_len,var_len_global,max_ptrs,'CO2BUDGET_LOSS2ATM :31:hist') 
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
+
+    if (associated(csite%co2budget_denseffect)) then
+       nvar=nvar+1
+         call vtable_edio_r(csite%co2budget_denseffect(1),nvar,igr,init,csite%paglob_id, &
+         var_len,var_len_global,max_ptrs,'CO2BUDGET_DENSEFFECT :31:hist') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
@@ -9981,7 +9548,7 @@ contains
     if (associated(cpatch%today_root_resp)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%today_root_resp(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'TODAY_ROOT_RESP_CO :41') 
+         var_len,var_len_global,max_ptrs,'TODAY_ROOT_RESP :41') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 

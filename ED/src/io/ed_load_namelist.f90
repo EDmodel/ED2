@@ -47,7 +47,7 @@ subroutine copy_nl(copy_type)
        sfilin, ied_init_mode, current_time, ed_inputs_dir,   &
        end_time, radfrq, integration_scheme, ffilout, idoutput,imoutput,iyoutput, dtlsm, &
        frqstate,sfilout,isoutput,iprintpolys,printvars,npvars,pfmtstr,ipmax,ipmin, &
-       iedcnfgf, outfast, outstate,unitfast,unitstate,event_file,fivedim_diags
+       iedcnfgf, outfast, outstate,unitfast,unitstate,event_file
 
   use grid_coms, only: time,centlon,centlat,deltax,deltay,nnxp,nnyp,nstratx, &
                        nstraty,polelat,polelon,ngrids,timmax,time,nzg, nzs
@@ -221,9 +221,6 @@ subroutine copy_nl(copy_type)
      end_time%date = idatez
      end_time%time = real(int(real(itimez) * 0.01)) * 3600.0   &
           + (real(itimez) * 0.01 - real(int(real(itimez)*0.01)))*100.0*60.0
-          
-     ! Decide whether to allocate the five dimension arrays or not.
-     fivedim_diags = n_ed_region == 0 .and. (idoutput > 0 .or. imoutput > 0)
 
   elseif (copy_type == 'NOT_HISTORY') then
         

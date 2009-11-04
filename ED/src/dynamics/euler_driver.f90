@@ -33,9 +33,6 @@ subroutine euler_timestep(cgrid)
    integer                              :: ipa
    integer                              :: ico
    integer, dimension(nzg)              :: ed_ktrans
-   real   , dimension(n_dbh)            :: gpp_dbh
-   real                                 :: gpp
-   real                                 :: plant_respiration
    real                                 :: thetaatm
    real                                 :: thetacan
    real                                 :: rasveg
@@ -91,9 +88,6 @@ subroutine euler_timestep(cgrid)
             ! probably done at the Euler solver, otherwise it will be always a simple      !
             ! explicit method.                                                             !
             !------------------------------------------------------------------------------!
-            !----- Compute the carbon flux components. ------------------------------------!
-            call sum_plant_cfluxes(csite,ipa,gpp,gpp_dbh,plant_respiration)
-
             !----- Finding the atmosphere -> canopy flux. ---------------------------------!
             cflxac = csite%can_rhos(ipa) * csite%ustar(ipa) * csite%cstar(ipa) * mmdryi
 

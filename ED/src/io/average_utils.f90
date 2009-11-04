@@ -226,9 +226,11 @@ subroutine normalize_averaged_vars(cgrid,frqsum,dtlsm)
             csite%co2budget_plresp(ipa)      = csite%co2budget_plresp(ipa)      * frqsumi
             csite%co2budget_rh(ipa)          = csite%co2budget_rh(ipa)          * frqsumi
             csite%co2budget_loss2atm(ipa)    = csite%co2budget_loss2atm(ipa)    * frqsumi
+            csite%co2budget_denseffect(ipa)  = csite%co2budget_denseffect(ipa)  * frqsumi
             csite%co2budget_residual(ipa)    = csite%co2budget_residual(ipa)    * frqsumi
             csite%ebudget_precipgain(ipa)    = csite%ebudget_precipgain(ipa)    * frqsumi
             csite%ebudget_netrad(ipa)        = csite%ebudget_netrad(ipa)        * frqsumi
+            csite%ebudget_denseffect(ipa)    = csite%ebudget_denseffect(ipa)    * frqsumi
             csite%ebudget_latent(ipa)        = csite%ebudget_latent(ipa)        * frqsumi
             csite%ebudget_loss2atm(ipa)      = csite%ebudget_loss2atm(ipa)      * frqsumi
             csite%ebudget_loss2drainage(ipa) = csite%ebudget_loss2drainage(ipa) * frqsumi
@@ -238,6 +240,7 @@ subroutine normalize_averaged_vars(cgrid,frqsum,dtlsm)
             csite%wbudget_loss2atm(ipa)      = csite%wbudget_loss2atm(ipa)      * frqsumi
             csite%wbudget_loss2drainage(ipa) = csite%wbudget_loss2drainage(ipa) * frqsumi
             csite%wbudget_loss2runoff(ipa)   = csite%wbudget_loss2runoff(ipa)   * frqsumi
+            csite%wbudget_denseffect(ipa)    = csite%wbudget_denseffect(ipa)    * frqsumi
             csite%wbudget_residual(ipa)      = csite%wbudget_residual(ipa)      * frqsumi
          end do
       end do
@@ -327,6 +330,7 @@ subroutine reset_averaged_vars(cgrid)
             csite%co2budget_plresp(ipa)         = 0.0
             csite%co2budget_residual(ipa)       = 0.0
             csite%co2budget_loss2atm(ipa)       = 0.0
+            csite%co2budget_denseffect(ipa)     = 0.0
 
             !----------------------------------------------------------------!
             ! Zeroing water budget variables.                                !
@@ -335,6 +339,7 @@ subroutine reset_averaged_vars(cgrid)
             csite%wbudget_loss2atm(ipa)         = 0.0
             csite%wbudget_loss2runoff(ipa)      = 0.0
             csite%wbudget_loss2drainage(ipa)    = 0.0
+            csite%wbudget_denseffect(ipa)       = 0.0
             csite%wbudget_residual(ipa)         = 0.0
 
 
@@ -347,6 +352,7 @@ subroutine reset_averaged_vars(cgrid)
             csite%ebudget_loss2atm(ipa)         = 0.0
             csite%ebudget_loss2runoff(ipa)      = 0.0
             csite%ebudget_loss2drainage(ipa)    = 0.0
+            csite%ebudget_denseffect(ipa)       = 0.0
             csite%ebudget_residual(ipa)         = 0.0
             !----------------------------------------------------------------!
 
@@ -837,7 +843,6 @@ subroutine normalize_ed_daily_vars(cgrid,timefac1)
                             , n_dbh         ! ! intent(in)
    use ed_misc_coms  , only : imoutput      & ! intent(in)
                             , idoutput      & ! intent(in)
-                            , fivedim_diags & ! intent(in)
                             , ddbhi         & ! intent(in)
                             , dagei         ! ! intent(in)
    use consts_coms   , only : umols_2_kgCyr ! ! intent(in)
@@ -863,11 +868,6 @@ subroutine normalize_ed_daily_vars(cgrid,timefac1)
    real                                                       :: sss_gpp
    real                                                       :: sss_leaf_resp
    real                                                       :: sss_root_resp
-   real, dimension(n_pft,n_dist_types,n_dbh,n_age)            :: pss_gpp_4d
-   real, dimension(n_pft,n_dist_types,n_dbh,n_age)            :: pss_lero_resp_4d
-   real, dimension(n_pft,n_dist_types,n_dbh,n_age)            :: sss_gpp_4d
-   real, dimension(n_pft,n_dist_types,n_dbh,n_age)            :: sss_lero_resp_4d
-   real, dimension(n_dist_types,n_age)                        :: luage_area_i
    real                                                       :: poly_area_i
    real                                                       :: site_area_i
    !----- Locally saved variables. --------------------------------------------------------!
@@ -884,13 +884,11 @@ subroutine normalize_ed_daily_vars(cgrid,timefac1)
    polyloop: do ipy=1,cgrid%npolygons
       cpoly => cgrid%polygon(ipy)
       !----- This part is done only if arrays are sought. ---------------------------------!
-      if (fivedim_diags) then
+      if (save_daily) then
          poly_area_i             = 1./sum(cpoly%area)
          sss_gpp                    = 0.
          sss_leaf_resp              = 0.
          sss_root_resp              = 0.
-         sss_gpp_4d       (:,:,:,:) = 0.
-         sss_lero_resp_4d (:,:,:,:) = 0.
       end if
       
       siteloop: do isi=1,cpoly%nsites
@@ -899,29 +897,15 @@ subroutine normalize_ed_daily_vars(cgrid,timefac1)
          csite%dmean_A_decomp  = csite%dmean_A_decomp  * timefac1
          csite%dmean_Af_decomp = csite%dmean_Af_decomp * timefac1
 
-         site_area_i               = 1./ sum(csite%area)
          if (save_daily) then
+            site_area_i               = 1./ sum(csite%area)
             pss_gpp                   = 0.
             pss_leaf_resp             = 0.
             pss_root_resp             = 0.
          end if
-         !----- This part is done only if arrays are sought. ------------------------------!
-         if (fivedim_diags) then
-            luage_area_i        (:,:) = 0.
-            pss_gpp_4d      (:,:,:,:) = 0.
-            pss_lero_resp_4d(:,:,:,:) = 0.
-         end if
          
          patchloop: do ipa=1,csite%npatches
             cpatch => csite%patch(ipa)
-            
-            !----- Finding the land use and age class to which this patch belongs. --------!
-            if (fivedim_diags) then
-               iage = max(1,min(n_age,ceiling(csite%age(ipa)*dagei)))
-               ilu  = csite%dist_type(ipa)
-               !----- Incrementing the total area of this class. --------------------------!
-               luage_area_i(ilu,iage) = luage_area_i(ilu,iage) + csite%area(ipa) 
-            end if
             
             !----- Included a loop so it won't crash with empty cohorts... ----------------!
             cohortloop: do ico=1,cpatch%ncohorts
@@ -969,22 +953,6 @@ subroutine normalize_ed_daily_vars(cgrid,timefac1)
                   cpatch%mmean_root_resp(ico)     = cpatch%mmean_root_resp(ico)            &
                                                   + cpatch%dmean_root_resp(ico)
                end if
-
-               if (fivedim_diags) then
-                  ipft = cpatch%pft(ico)
-                  idbh = max(1,min(n_dbh,ceiling(cpatch%dbh(ico)*ddbhi)))
-                  
-                  pss_gpp_4d(ipft,ilu,idbh,iage) = pss_gpp_4d(ipft,ilu,idbh,iage)          &
-                                                 + cpatch%today_gpp(ico)                   &
-                                                 * csite%area(ipa)                         &
-                                                 * umols_2_kgCyr
-                  pss_lero_resp_4d(ipft,ilu,idbh,iage) =                                   &
-                                                      pss_lero_resp_4d(ipft,ilu,idbh,iage) &
-                                                    + ( cpatch%today_leaf_resp(ico)        &
-                                                      + cpatch%today_root_resp(ico))       &
-                                                    * csite%area(ipa)                      &
-                                                    * umols_2_kgCyr
-               end if
             end do cohortloop
          end do patchloop
          if (save_daily) then
@@ -993,56 +961,8 @@ subroutine normalize_ed_daily_vars(cgrid,timefac1)
             sss_root_resp = sss_root_resp + pss_root_resp * site_area_i * cpoly%area(isi)
          end if
          
-
-         !---------------------------------------------------------------------------------!
-         !    Here we add the contribution of this site to the site sum of the 5-D vari-   !
-         ! ables.  The extensive variables are simply averaged amongst all patches, but    !
-         ! intensive variables are averaged only amongst the patches with the same land    !
-         ! use and age class.                                                              !
-         !---------------------------------------------------------------------------------!
-         !----- Computing the site sum. ---------------------------------------------------!
-         if (fivedim_diags) then
-            where (luage_area_i > 1.e-6)
-               luage_area_i = 1./luage_area_i
-            elsewhere
-               luage_area_i = 0.
-            end where
-            
-            !------------------------------------------------------------------------------!
-            !    The patch averaged variables must be averaged only over the patches       !
-            ! belonging to the patches in the same land use and age bins.                  !
-            !------------------------------------------------------------------------------!
-            do iage=1,n_age
-               do idbh=1,n_dbh
-                  do ilu=1,n_dist_types
-                     do ipft=1,n_pft
-                        sss_gpp_4d   (ipft,ilu,idbh,iage) =                                &
-                                                         sss_gpp_4d   (ipft,ilu,idbh,iage) &
-                                                       + pss_gpp_4d   (ipft,ilu,idbh,iage) &
-                                                       * luage_area_i(ilu,iage)            &
-                                                       * cpoly%area(isi)
-                        sss_lero_resp_4d(ipft,ilu,idbh,iage) =                             &
-                                                      sss_lero_resp_4d(ipft,ilu,idbh,iage) &
-                                                    + pss_lero_resp_4d(ipft,ilu,idbh,iage) &
-                                                    * luage_area_i(ilu,iage)               &
-                                                    * cpoly%area(isi)
-                     end do
-                  end do
-               end do
-            end do
-         end if
       end do siteloop
-      if (fivedim_diags) then
-         cgrid%dmean_gpp_ar(:,:,:,:,ipy) = cgrid%dmean_gpp_ar(:,:,:,:,ipy)                 &
-                                         + sss_gpp_4d(:,:,:,:) * poly_area_i
-         !---------------------------------------------------------------------------------!
-         !    This is not the actual plant respiration, there are terms (growth, storage,  !
-         ! and vleaf) that are missing here.  They will be included in                     !
-         ! normalize_ed_daily_output_vars                                                  !
-         !---------------------------------------------------------------------------------!
-         cgrid%dmean_plresp_ar(:,:,:,:,ipy) = cgrid%dmean_plresp_ar(:,:,:,:,ipy)           &
-                                            + sss_lero_resp_4d(:,:,:,:) * poly_area_i
-      end if
+
       if (save_daily) then
          cgrid%dmean_gpp(ipy)       = sss_gpp       * poly_area_i
          cgrid%dmean_leaf_resp(ipy) = sss_leaf_resp * poly_area_i
@@ -1094,8 +1014,7 @@ subroutine normalize_ed_daily_output_vars(cgrid)
    use ed_misc_coms         , only : dtlsm         & ! intent(in)
                                    , frqsum        & ! intent(in)
                                    , ddbhi         & ! intent(in)
-                                   , dagei         & ! intent(in)
-                                   , fivedim_diags ! ! intent(in)
+                                   , dagei         ! ! intent(in)
    use pft_coms             , only : init_density  ! ! intent(in)
    use canopy_radiation_coms, only : lai_min       & ! intent(in)
                                    , tai_min       ! ! intent(in)
@@ -1119,25 +1038,6 @@ subroutine normalize_ed_daily_output_vars(cgrid)
    integer                                         :: k
    logical                                         :: forest
    logical                                         :: any_solvable
-   real, dimension(n_dist_types,n_age)             :: pss_rh_ar      , sss_rh_ar
-   real, dimension(n_pft,n_dist_types,n_dbh,n_age) :: pss_lai        , sss_lai
-   real, dimension(n_pft,n_dist_types,n_dbh,n_age) :: pss_wpa        , sss_wpa
-   real, dimension(n_pft,n_dist_types,n_dbh,n_age) :: pss_wai        , sss_wai
-   real, dimension(n_pft,n_dist_types,n_dbh,n_age) :: pss_frostmort  , sss_frostmort
-   real, dimension(n_pft,n_dist_types,n_dbh,n_age) :: pss_fs_open_ar , sss_fs_open_ar
-   real, dimension(n_pft,n_dist_types,n_dbh,n_age) :: pss_fsw_ar     , sss_fsw_ar
-   real, dimension(n_pft,n_dist_types,n_dbh,n_age) :: pss_fsn_ar     , sss_fsn_ar
-   real, dimension(n_pft,n_dist_types,n_dbh,n_age) :: pss_light_level, sss_light_level
-   real, dimension(n_pft,n_dist_types,n_dbh,n_age) :: pss_gsv_resp   , sss_gsv_resp
-   real, dimension(n_pft,n_dbh)                    :: css_frostmort
-   real, dimension(n_pft,n_dbh)                    :: css_fs_open_ar
-   real, dimension(n_pft,n_dbh)                    :: css_fsw_ar
-   real, dimension(n_pft,n_dbh)                    :: css_fsn_ar
-   real, dimension(n_pft,n_dbh)                    :: css_light_level
-   real, dimension(n_pft,n_dbh)                    :: patch_lai_i
-   real, dimension(n_pft,n_dbh)                    :: patch_tai_i
-   real, dimension(n_pft,n_dbh)                    :: patch_nplant_i
-   real, dimension(n_dist_types,n_age)             :: luage_area_i
    real                                            :: poly_area_i
    real                                            :: site_area_i
    real                                            :: forest_area_i
@@ -1264,18 +1164,6 @@ subroutine normalize_ed_daily_output_vars(cgrid)
       sss_fsn          = 0.
       sss_fsw          = 0.
       sss_fs_open      = 0.
-      if (fivedim_diags) then
-         sss_lai         (:,:,:,:) = 0.
-         sss_wpa         (:,:,:,:) = 0.
-         sss_wai         (:,:,:,:) = 0.
-         sss_frostmort   (:,:,:,:) = 0.
-         sss_fs_open_ar  (:,:,:,:) = 0.
-         sss_fsw_ar      (:,:,:,:) = 0.
-         sss_fsn_ar      (:,:,:,:) = 0.
-         sss_light_level (:,:,:,:) = 0.
-         sss_gsv_resp    (:,:,:,:) = 0.
-         sss_rh_ar           (:,:) = 0.
-      end if
 
       siteloop: do isi=1,cpoly%nsites
          csite => cpoly%site(isi)
@@ -1308,43 +1196,10 @@ subroutine normalize_ed_daily_output_vars(cgrid)
          pss_growth_resp  = 0.
          pss_storage_resp = 0.
          pss_vleaf_resp   = 0.
-         if (fivedim_diags) then
-            luage_area_i        (:,:) = 0.
-            pss_lai         (:,:,:,:) = 0.
-            pss_wpa         (:,:,:,:) = 0.
-            pss_wai         (:,:,:,:) = 0.
-            pss_frostmort   (:,:,:,:) = 0.
-            pss_fs_open_ar  (:,:,:,:) = 0.
-            pss_fsw_ar      (:,:,:,:) = 0.
-            pss_fsn_ar      (:,:,:,:) = 0.
-            pss_light_level (:,:,:,:) = 0.
-            pss_gsv_resp    (:,:,:,:) = 0.
-            pss_rh_ar           (:,:) = 0.
-         end if
 
          patchloop: do ipa=1,csite%npatches
             cpatch => csite%patch(ipa)
             
-            !----- Setting up some variables that are needed for 5-D arrays. --------------!
-            if (fivedim_diags) then
-               !---- Finding the age and land use class to which this patch belongs. ------!
-               iage = max(1,min(n_age,ceiling(csite%age(ipa)*dagei)))
-               ilu  = csite%dist_type(ipa)
-
-               !----- Incrementing the total area of this class. --------------------------!
-               luage_area_i(ilu,iage) = luage_area_i(ilu,iage) + csite%area(ipa) 
-               
-               
-               !----- These will be used to average intensive patch variables. ------------!
-               patch_lai_i         (:,:) = 0.
-               patch_tai_i         (:,:) = 0.
-               patch_nplant_i      (:,:) = 0.
-               css_frostmort       (:,:) = 0.
-               css_fs_open_ar      (:,:) = 0.
-               css_fsw_ar          (:,:) = 0.
-               css_fsn_ar          (:,:) = 0.
-               css_light_level     (:,:) = 0.
-            end if
             
             any_solvable = .false.
             if (cpatch%ncohorts > 0) then
@@ -1395,62 +1250,6 @@ subroutine normalize_ed_daily_output_vars(cgrid)
                   cpatch%dmean_norm_par_beam   (ico) = 0.
                   cpatch%dmean_norm_par_diff   (ico) = 0.
                   cpatch%dmean_lambda_light    (ico) = 0.
-               end if
-
-               
-               !---------------------------------------------------------------------------!
-               !    The array integration is done only if the arrays are sought...         !
-               !---------------------------------------------------------------------------!
-               if (fivedim_diags) then
-                  !----- Finding the size and PFT classes to which this cohort belongs. ---!
-                  ipft = cpatch%pft(ico)
-                  idbh = max(1,min(n_dbh,ceiling(cpatch%dbh(ico)*ddbhi)))
-                  
-                  !------------------------------------------------------------------------! 
-                  !    Adding the total patch LAI, TAI, and nplants of this class. The     !
-                  ! inverse will be found later.                                           !
-                  !------------------------------------------------------------------------!
-                  patch_lai_i(ipft,idbh)    = patch_lai_i(ipft,idbh)                       &
-                                            + cpatch%lai(ico)
-                  patch_tai_i(ipft,idbh)    = patch_tai_i(ipft,idbh)                       &
-                                            + cpatch%lai(ico) + cpatch%wai(ico)  
-                  patch_nplant_i(ipft,idbh) = patch_nplant_i(ipft,idbh)                    &
-                                            + cpatch%nplant(ico)
-                  !------------------------------------------------------------------------!
-                  !     The following variables are intensive, so they are averaged at the !
-                  ! patch level.  Each one has a different story, so the weights are       !
-                  ! chosen based on the most appropriate variable.                         !
-                  !------------------------------------------------------------------------!
-                  css_frostmort(ipft,idbh)   = css_frostmort(ipft,idbh)                    &
-                                             + cpatch%mort_rate(4,ico) * cpatch%nplant(ico)
-                  css_fs_open_ar(ipft,idbh)  = css_fs_open_ar(ipft,idbh)                   &
-                                             + cpatch%dmean_fs_open(ico) * cpatch%lai(ico)
-                  css_fsw_ar(ipft,idbh)      = css_fsw_ar(ipft,idbh)                       &
-                                             + cpatch%dmean_fsw(ico) * cpatch%lai(ico)
-                  css_fsn_ar(ipft,idbh)      = css_fsn_ar(ipft,idbh)                       &
-                                             + cpatch%dmean_fsn(ico) * cpatch%lai(ico)
-                  css_light_level(ipft,idbh) = css_light_level(ipft,idbh)                  &
-                                             + cpatch%dmean_light_level(ico)               &
-                                             * (cpatch%lai(ico)+cpatch%wai(ico))
-
-                  !------------------------------------------------------------------------!
-                  !     The following variables are "extensive", so we simply add them.    !
-                  ! Notice that we are converting the structural respiration terms to      !
-                  ! become extensive.                                                      !
-                  !------------------------------------------------------------------------!
-                  pss_lai     (ipft,ilu,idbh,iage) = pss_lai     (ipft,ilu,idbh,iage)      &
-                                                   + cpatch%lai(ico) * csite%area(ipa)
-                  pss_wpa     (ipft,ilu,idbh,iage) = pss_wpa     (ipft,ilu,idbh,iage)      &
-                                                   + cpatch%wpa(ico) * csite%area(ipa)
-                  pss_wai     (ipft,ilu,idbh,iage) = pss_wai     (ipft,ilu,idbh,iage)      &
-                                                   + cpatch%wai(ico) * csite%area(ipa)
-                  pss_gsv_resp(ipft,ilu,idbh,iage) = pss_gsv_resp(ipft,ilu,idbh,iage)      &
-                                                   + ( cpatch%growth_respiration(ico)      &
-                                                     + cpatch%storage_respiration(ico)     &
-                                                     + cpatch%vleaf_respiration(ico)  )    &
-                                                   * cpatch%nplant(ico) * csite%area(ipa)  &
-                                                   * yr_day
-
                end if
             end do cohortloop
 
@@ -1525,64 +1324,11 @@ subroutine normalize_ed_daily_output_vars(cgrid)
                end do
 
             end if
-            !------------------------------------------------------------------------------!
-            !    We will now add the contribution of the mean patch-level value of some    !
-            ! intensive cohort-level variables.                                            !
-            !------------------------------------------------------------------------------!
-            if (fivedim_diags) then
-               !----- We now normalise the weights for those bins that have something... --!
-               where (patch_lai_i > 0.1*lai_min)
-                  patch_lai_i = 1./patch_lai_i
-               elsewhere
-                  patch_lai_i = 0.
-               end where
-               where (patch_tai_i > 0.1*tai_min)
-                  patch_tai_i = 1./patch_tai_i
-               elsewhere
-                  patch_tai_i = 0.
-               end where
-               where (patch_nplant_i > 0.01*minval(init_density))
-                  patch_nplant_i = 1./patch_nplant_i
-               elsewhere
-                  patch_nplant_i = 0.
-               end where
-               !---------------------------------------------------------------------------!
-               !     Here we find the patch-level average of those intensive variables and !
-               ! add them to the patch sum variables.                                      !
-               !---------------------------------------------------------------------------!
-               do idbh=1,n_dbh
-                  do ipft=1,n_pft
-                     pss_frostmort(ipft,ilu,idbh,iage)       =                             &
-                         pss_frostmort(ipft,ilu,idbh,iage)   + css_frostmort(ipft,idbh)    &
-                                                             * patch_nplant_i(ipft,idbh)   &
-                                                             * csite%area(ipa)
-                     pss_fs_open_ar(ipft,ilu,idbh,iage)      =                             &
-                         pss_fs_open_ar(ipft,ilu,idbh,iage)  + css_fs_open_ar(ipft,idbh)   &
-                                                             * patch_lai_i(ipft,idbh)      &
-                                                             * csite%area(ipa)
-                     pss_fsw_ar(ipft,ilu,idbh,iage)          =                             &
-                         pss_fsw_ar(ipft,ilu,idbh,iage)      + css_fsw_ar(ipft,idbh)       &
-                                                             * patch_lai_i(ipft,idbh)      &
-                                                             * csite%area(ipa)
-                     pss_fsn_ar(ipft,ilu,idbh,iage)          =                             &
-                         pss_fsn_ar(ipft,ilu,idbh,iage)      + css_fsn_ar(ipft,idbh)       &
-                                                             * patch_lai_i(ipft,idbh)      &
-                                                             * csite%area(ipa)
-                     pss_light_level(ipft,ilu,idbh,iage)     =                             &
-                         pss_light_level(ipft,ilu,idbh,iage) + css_light_level(ipft,idbh)  &
-                                                             * patch_tai_i(ipft,idbh)      &
-                                                             * csite%area(ipa)
-                  end do
-               end do
-               !---------------------------------------------------------------------------!
-               !     Heterotrophic respiration is a patch-level variable, so it doesn't    !
-               ! have pft or dbh information.                                              !
-               !---------------------------------------------------------------------------!
-               pss_rh_ar(ilu,iage) = pss_rh_ar(ilu,iage)                                   &
-                                   + csite%dmean_rh(ipa) * csite%area(ipa)
-            end if
 
          end do patchloop
+
+         !----- Adding this patch to the site sum. ----------------------------------------!
+
          sss_fsn          = sss_fsn          + (pss_fsn          * site_area_i)            &
                                              * cpoly%area(isi)
          sss_fsw          = sss_fsw          + (pss_fsw          * site_area_i)            &
@@ -1597,85 +1343,6 @@ subroutine normalize_ed_daily_output_vars(cgrid)
                                              * cpoly%area(isi)
          sss_rh           = sss_rh  + (sum(csite%dmean_rh * csite%area) * site_area_i)     &
                                     * cpoly%area(isi)
-
-         !---------------------------------------------------------------------------------!
-         !    Here we add the contribution of this site to the site sum of the 5-D vari-   !
-         ! ables.  The extensive variables are simply averaged amongst all patches, but    !
-         ! intensive variables are averaged only amongst the patches with the same land    !
-         ! use and age class.                                                              !
-         !---------------------------------------------------------------------------------!
-         if (fivedim_diags) then
-            where (luage_area_i > 1.e-6)
-               luage_area_i = 1./luage_area_i
-            elsewhere
-               luage_area_i = 0.
-            end where
-            
-            !------------------------------------------------------------------------------!
-            !    The intensive variables are again averaged over the patches, but only     !
-            ! those that have something.  The average is weighted by areas belonging to    !
-            ! the same land use and age class.                                             !
-            !------------------------------------------------------------------------------!
-            do iage=1,n_age
-               do idbh=1,n_dbh
-                  do ilu=1,n_dist_types
-                     do ipft=1,n_pft
-                        sss_frostmort  (ipft,ilu,idbh,iage) =                              &
-                                                       sss_frostmort  (ipft,ilu,idbh,iage) &
-                                                     + pss_frostmort  (ipft,ilu,idbh,iage) &
-                                                     * luage_area_i(ilu,iage)              &
-                                                     * cpoly%area(isi)
-                        sss_fs_open_ar (ipft,ilu,idbh,iage) =                              &
-                                                       sss_fs_open_ar (ipft,ilu,idbh,iage) &
-                                                     + pss_fs_open_ar (ipft,ilu,idbh,iage) &
-                                                     * luage_area_i(ilu,iage)              &
-                                                     * cpoly%area(isi)
-                        sss_fsw_ar     (ipft,ilu,idbh,iage) =                              &
-                                                       sss_fsw_ar     (ipft,ilu,idbh,iage) &
-                                                     + pss_fsw_ar     (ipft,ilu,idbh,iage) &
-                                                     * luage_area_i(ilu,iage)              &
-                                                     * cpoly%area(isi)
-                        sss_fsn_ar     (ipft,ilu,idbh,iage) =                              &
-                                                       sss_fsn_ar     (ipft,ilu,idbh,iage) &
-                                                     + pss_fsn_ar     (ipft,ilu,idbh,iage) &
-                                                     * luage_area_i(ilu,iage)              &
-                                                     * cpoly%area(isi)
-                        sss_light_level(ipft,ilu,idbh,iage) =                              &
-                                                       sss_light_level(ipft,ilu,idbh,iage) &
-                                                     + pss_light_level(ipft,ilu,idbh,iage) &
-                                                     * luage_area_i(ilu,iage)              &
-                                                     * cpoly%area(isi)
-                        sss_lai        (ipft,ilu,idbh,iage) =                              &
-                                                       sss_lai        (ipft,ilu,idbh,iage) &
-                                                     + pss_lai        (ipft,ilu,idbh,iage) &
-                                                     * luage_area_i(ilu,iage)              &
-                                                     * cpoly%area(isi)
-                        sss_wpa        (ipft,ilu,idbh,iage) =                              &
-                                                       sss_wpa        (ipft,ilu,idbh,iage) &
-                                                     + pss_wpa        (ipft,ilu,idbh,iage) &
-                                                     * luage_area_i(ilu,iage)              &
-                                                     * cpoly%area(isi)
-                        sss_wai        (ipft,ilu,idbh,iage) =                              &
-                                                       sss_wai        (ipft,ilu,idbh,iage) &
-                                                     + pss_wai        (ipft,ilu,idbh,iage) &
-                                                     * luage_area_i(ilu,iage)              &
-                                                     * cpoly%area(isi)
-                        sss_gsv_resp   (ipft,ilu,idbh,iage) =                              &
-                                                       sss_gsv_resp   (ipft,ilu,idbh,iage) &
-                                                     + pss_gsv_resp   (ipft,ilu,idbh,iage) &
-                                                     * luage_area_i(ilu,iage)              &
-                                                     * cpoly%area(isi)
-                     end do
-                  end do
-               end do
-            end do 
-            !------------------------------------------------------------------------------!
-            !     Heterotrophic respiration doesn't have PFT nor size classes.             !
-            !------------------------------------------------------------------------------!
-            sss_rh_ar(:,:) = sss_rh_ar(:,:) + pss_rh_ar(:,:)                               &
-                                            * luage_area_i(:,:) * cpoly%area(isi)
-         end if
-
       end do siteloop
       
       !------------------------------------------------------------------------------------!
@@ -1704,32 +1371,6 @@ subroutine normalize_ed_daily_output_vars(cgrid)
       cgrid%dmean_vleaf_resp(ipy)   = cgrid%dmean_vleaf_resp(ipy)                          &
                                     + sss_vleaf_resp   * poly_area_i
 
-      !----- We now update the daily means of the 5-D arrays (plus het. respiration). -----!
-      if (fivedim_diags) then
-         cgrid%dmean_rh_ar       (  :  ,:,ipy) = cgrid%dmean_rh_ar       (  :  ,:,ipy)     &
-                                               + sss_rh_ar      (  :,  :) * poly_area_i
-         cgrid%frostmort_ar      (:,:,:,:,ipy) = cgrid%frostmort_ar(:,:,:,:,ipy)           &
-                                               + sss_frostmort  (:,:,:,:) * poly_area_i
-         cgrid%dmean_fs_open_ar  (:,:,:,:,ipy) = cgrid%dmean_fs_open_ar  (:,:,:,:,ipy)     &
-                                               + sss_fs_open_ar (:,:,:,:) * poly_area_i
-         cgrid%dmean_fsw_ar      (:,:,:,:,ipy) = cgrid%dmean_fsw_ar      (:,:,:,:,ipy)     &
-                                               + sss_fsw_ar     (:,:,:,:) * poly_area_i
-         cgrid%dmean_fsn_ar      (:,:,:,:,ipy) = cgrid%dmean_fsn_ar      (:,:,:,:,ipy)     &
-                                               + sss_fsn_ar     (:,:,:,:) * poly_area_i
-         cgrid%dmean_lightlev_ar (:,:,:,:,ipy) = cgrid%dmean_lightlev_ar (:,:,:,:,ipy)     &
-                                               + sss_light_level(:,:,:,:) * poly_area_i
-         cgrid%lai_ar            (:,:,:,:,ipy) = cgrid%lai_ar            (:,:,:,:,ipy)     &
-                                               + sss_lai        (:,:,:,:) * poly_area_i
-         cgrid%wpa_ar            (:,:,:,:,ipy) = cgrid%wpa_ar            (:,:,:,:,ipy)     &
-                                               + sss_wpa        (:,:,:,:) * poly_area_i
-         cgrid%wai_ar            (:,:,:,:,ipy) = cgrid%wai_ar            (:,:,:,:,ipy)     &
-                                               + sss_wai        (:,:,:,:) * poly_area_i
-         !---------------------------------------------------------------------------------!
-         !    Plant respiration already has the contribution of leaf and root respiration. !
-         !---------------------------------------------------------------------------------!
-         cgrid%dmean_plresp_ar   (:,:,:,:,ipy) = cgrid%dmean_plresp_ar   (:,:,:,:,ipy)     &
-                                               + sss_gsv_resp   (:,:,:,:) * poly_area_i
-      end if
    end do polyloop
 
    return
@@ -1806,7 +1447,6 @@ subroutine zero_ed_daily_output_vars(cgrid)
                            , polygontype   & ! structure
                            , sitetype      & ! structure
                            , patchtype     ! ! structure
-   use ed_misc_coms , only : fivedim_diags ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    type(edtype)     , target  :: cgrid
@@ -1872,23 +1512,6 @@ subroutine zero_ed_daily_output_vars(cgrid)
       cgrid%dmean_co2_residual   (ipy) = 0.
       cgrid%dmean_energy_residual(ipy) = 0.
       cgrid%dmean_water_residual (ipy) = 0.
-      
-      !----- Reset the 5-D arrays if they are to be filled. -------------------------------!
-      if (fivedim_diags) then
-         cgrid%lai_ar           (:,:,:,:,ipy) = 0.
-         cgrid%wpa_ar           (:,:,:,:,ipy) = 0.
-         cgrid%wai_ar           (:,:,:,:,ipy) = 0.
-         cgrid%frostmort_ar     (:,:,:,:,ipy) = 0.
-         cgrid%dmean_fs_open_ar (:,:,:,:,ipy) = 0.
-         cgrid%dmean_fsw_ar     (:,:,:,:,ipy) = 0.
-         cgrid%dmean_fsn_ar     (:,:,:,:,ipy) = 0.
-         cgrid%dmean_lightlev_ar(:,:,:,:,ipy) = 0.
-         cgrid%dmean_gpp_ar     (:,:,:,:,ipy) = 0.
-         cgrid%dmean_plresp_ar  (:,:,:,:,ipy) = 0.
-         cgrid%dmean_igpp_ar    (:,:,:,:,ipy) = 0.
-         cgrid%dmean_iplresp_ar (:,:,:,:,ipy) = 0.
-         cgrid%dmean_rh_ar      (  :,  :,ipy) = 0.
-      end if
 
       !----- Reset variables stored in polygontype. ---------------------------------------!
       do isi=1,cpoly%nsites
@@ -1962,7 +1585,6 @@ subroutine integrate_ed_monthly_output_vars(cgrid)
                            , n_pft         & ! intent(in) 
                            , n_dist_types  & ! intent(in)
                            , n_mort        ! ! intent(in)
-   use ed_misc_coms , only : fivedim_diags ! ! intent(in)
    use consts_coms ,  only : yr_day
    implicit none
    !----- Argument. -----------------------------------------------------------------------!
@@ -2157,35 +1779,6 @@ subroutine integrate_ed_monthly_output_vars(cgrid)
 
          end do patch_loop
       end do site_loop
-
-      !------------------------------------------------------------------------------------!
-      !    Integrating the 5-D arrays that can be written based on the daily mean.   This  !
-      ! simplifies the task...                                                             !
-      !------------------------------------------------------------------------------------!
-      if (fivedim_diags) then
-         cgrid%mmean_rh_ar       (  :  ,:,ipy) = cgrid%mmean_rh_ar       (  :  ,:,ipy)     &
-                                               + cgrid%dmean_rh_ar       (  :  ,:,ipy)
-         cgrid%mmean_frostmort_ar(:,:,:,:,ipy) = cgrid%mmean_frostmort_ar(:,:,:,:,ipy)     &
-                                               + cgrid%frostmort_ar      (:,:,:,:,ipy)
-         cgrid%mmean_fs_open_ar  (:,:,:,:,ipy) = cgrid%mmean_fs_open_ar  (:,:,:,:,ipy)     &
-                                               + cgrid%dmean_fs_open_ar  (:,:,:,:,ipy)
-         cgrid%mmean_fsw_ar      (:,:,:,:,ipy) = cgrid%mmean_fsw_ar      (:,:,:,:,ipy)     &
-                                               + cgrid%dmean_fsw_ar      (:,:,:,:,ipy)
-         cgrid%mmean_fsn_ar      (:,:,:,:,ipy) = cgrid%mmean_fsn_ar      (:,:,:,:,ipy)     &
-                                               + cgrid%dmean_fsn_ar      (:,:,:,:,ipy)
-         cgrid%mmean_lightlev_ar (:,:,:,:,ipy) = cgrid%mmean_lightlev_ar (:,:,:,:,ipy)     &
-                                               + cgrid%dmean_lightlev_ar (:,:,:,:,ipy)
-         cgrid%mmean_lai_ar      (:,:,:,:,ipy) = cgrid%mmean_lai_ar      (:,:,:,:,ipy)     &
-                                               + cgrid%lai_ar            (:,:,:,:,ipy)
-         cgrid%mmean_wpa_ar      (:,:,:,:,ipy) = cgrid%mmean_wpa_ar      (:,:,:,:,ipy)     &
-                                               + cgrid%wpa_ar            (:,:,:,:,ipy)
-         cgrid%mmean_wai_ar      (:,:,:,:,ipy) = cgrid%mmean_wai_ar      (:,:,:,:,ipy)     &
-                                               + cgrid%wai_ar            (:,:,:,:,ipy)
-         cgrid%mmean_gpp_ar      (:,:,:,:,ipy) = cgrid%mmean_gpp_ar      (:,:,:,:,ipy)     &
-                                               + cgrid%dmean_gpp_ar      (:,:,:,:,ipy)
-         cgrid%mmean_plresp_ar   (:,:,:,:,ipy) = cgrid%mmean_plresp_ar   (:,:,:,:,ipy)     &
-                                               + cgrid%dmean_plresp_ar   (:,:,:,:,ipy)
-      end if
    end do poly_loop
 
    return
@@ -2211,8 +1804,7 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
    use ed_misc_coms         , only : current_time  & ! intent(in)
                                    , simtime       & ! intent(in)
                                    , ddbhi         & ! intent(in)
-                                   , dagei         & ! intent(in)
-                                   , fivedim_diags ! ! intent(in)
+                                   , dagei         ! ! intent(in)
    use ed_max_dims          , only : n_pft         & ! intent(in)
                                    , n_dbh         & ! intent(in)
                                    , n_age         & ! intent(in)
@@ -2245,15 +1837,6 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
    real                                            :: site_area_i
    real, dimension(n_pft)                          :: pss_bseeds_pft, sss_bseeds_pft
    real, dimension(n_pft,n_dbh)                    :: pss_bseeds    , pss_pldens
-   real, dimension(n_pft,n_dist_types,n_dbh,n_age) :: pss_bseeds_ar , sss_bseeds_ar
-   real, dimension(n_pft,n_dist_types,n_dbh,n_age) :: pss_agb_ar    , sss_agb_ar
-   real, dimension(n_pft,n_dist_types,n_dbh,n_age) :: pss_ba_ar     , sss_ba_ar
-   real, dimension(n_pft,n_dist_types,n_dbh,n_age) :: pss_pldens_ar , sss_pldens_ar
-   real, dimension(n_pft,n_dist_types,n_dbh,n_age) :: pss_carbbal_ar, sss_carbbal_ar
-   real, dimension(n_pft,n_dist_types,n_dbh,n_age) :: pss_ncbmort_ar, sss_ncbmort_ar
-   real, dimension(n_pft,n_dbh)                    :: css_ncbmort_ar
-   real, dimension(n_pft,n_dbh)                    :: patch_nplant_i
-   real, dimension(n_dist_types,n_age)             :: luage_area_i
    integer                                         :: lmon
    integer                                         :: ipy
    integer                                         :: isi
@@ -2392,14 +1975,6 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
       cgrid%bseeds     (:,:,ipy) = 0.
       cgrid%pldens     (:,:,ipy) = 0.
       sss_bseeds_pft         (:) = 0.
-      if (fivedim_diags) then
-         sss_bseeds_ar  (:,:,:,:) = 0.
-         sss_agb_ar     (:,:,:,:) = 0.
-         sss_ba_ar      (:,:,:,:) = 0.
-         sss_pldens_ar  (:,:,:,:) = 0.
-         sss_carbbal_ar (:,:,:,:) = 0.
-         sss_ncbmort_ar (:,:,:,:) = 0.
-      end if
 
       !----- Looping over all sites. ------------------------------------------------------!
       siteloop: do isi = 1, cpoly%nsites
@@ -2432,15 +2007,6 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
          pss_bseeds_pft       (:) = 0.
          pss_bseeds         (:,:) = 0.
          pss_pldens         (:,:) = 0.
-         if (fivedim_diags) then
-            luage_area_i       (:,:) = 0.
-            pss_bseeds_ar  (:,:,:,:) = 0.
-            pss_agb_ar     (:,:,:,:) = 0.
-            pss_ba_ar      (:,:,:,:) = 0.
-            pss_pldens_ar  (:,:,:,:) = 0.
-            pss_carbbal_ar (:,:,:,:) = 0.
-            pss_ncbmort_ar (:,:,:,:) = 0.
-         end if
 
          patchloop: do ipa=1,csite%npatches
 
@@ -2452,20 +2018,6 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
             csite%mmean_water_residual(ipa)  = csite%mmean_water_residual(ipa)  * ndaysi
             csite%mmean_rh(ipa)              = csite%mmean_rh(ipa)              * ndaysi
             csite%mmean_lambda_light(ipa)    = csite%mmean_lambda_light(ipa)    * ndaysi
-            !----- Setting up some variables that are needed for 5-D arrays. --------------!
-            if (fivedim_diags) then
-               !---- Finding the age and land use class to which this patch belongs. ------!
-               iage = max(1,min(n_age,ceiling(csite%age(ipa)*dagei)))
-               ilu  = csite%dist_type(ipa)
-
-               !----- Incrementing the total area of this class. --------------------------!
-               luage_area_i(ilu,iage) = luage_area_i(ilu,iage) + csite%area(ipa) 
-               
-               
-               !----- These will be used to average intensive patch variables. ------------!
-               patch_nplant_i      (:,:) = 0.
-               css_ncbmort_ar      (:,:) = 0.
-            end if
 
             !------------------------------------------------------------------------------!
             !     Determining whether this is an agricultural patch or not.  Age and size  !
@@ -2536,76 +2088,7 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
                                              + cohort_seeds * csite%area(ipa)
                end if
 
-
-               !---------------------------------------------------------------------------!
-               !    The array integration is done only if the arrays are sought...         !
-               !---------------------------------------------------------------------------!
-               if (fivedim_diags) then
-                  !----- Finding the size and PFT classes to which this cohort belongs. ---!
-                  ipft = cpatch%pft(ico)
-                  idbh = max(1,min(n_dbh,ceiling(cpatch%dbh(ico)*ddbhi)))
-
-                  !------------------------------------------------------------------------! 
-                  !    Adding the total patch nplants of this class. The inverse will be   !
-                  ! found later.                                                           !
-                  !------------------------------------------------------------------------!
-                  patch_nplant_i(ipft,idbh) = patch_nplant_i(ipft,idbh)                    &
-                                            + cpatch%nplant(ico)
-                  !------------------------------------------------------------------------!
-                  !     The following variables are intensive, so they are averaged at the !
-                  ! patch level.  Each one has a different story, so the weights are       !
-                  ! chosen based on the most appropriate variable.                         !
-                  !------------------------------------------------------------------------!
-                  css_ncbmort_ar(ipft,idbh) = css_ncbmort_ar(ipft,idbh)                    &
-                                            + cpatch%mort_rate(2,ico) * cpatch%nplant(ico)
-
-                  !------------------------------------------------------------------------!
-                  !     The following variables are "extensive", so we simply add them.    !
-                  ! Notice that we are converting the carbon balance and seed biomass to   !
-                  ! become extensive.                                                      !
-                  !------------------------------------------------------------------------!
-                  pss_bseeds_ar (ipft,ilu,idbh,iage) = pss_bseeds_ar (ipft,ilu,idbh,iage)  &
-                                                     + cohort_seeds        *csite%area(ipa)
-                  pss_agb_ar    (ipft,ilu,idbh,iage) = pss_agb_ar    (ipft,ilu,idbh,iage)  &
-                                                     + cpatch%nplant(ico)                  &
-                                                     * cpatch%agb(ico) * csite%area(ipa)
-                  pss_ba_ar     (ipft,ilu,idbh,iage) = pss_ba_ar     (ipft,ilu,idbh,iage)  &
-                                                     + cpatch%nplant(ico)                  &
-                                                     * cpatch%basarea(ico)* csite%area(ipa)
-                  pss_pldens_ar (ipft,ilu,idbh,iage) = pss_pldens_ar (ipft,ilu,idbh,iage)  &
-                                                     + cpatch%nplant(ico)  *csite%area(ipa)
-                  pss_carbbal_ar(ipft,ilu,idbh,iage) = pss_carbbal_ar(ipft,ilu,idbh,iage)  &
-                                                     + cpatch%mmean_cb(ico)                &
-                                                     * cpatch%nplant(ico) * csite%area(ipa)
-               end if
-               !---------------------------------------------------------------------------!
-
             end do cohortloop
-
-            !------------------------------------------------------------------------------!
-            !    We will now add the contribution of the mean patch-level value of some    !
-            ! intensive cohort-level variables.                                            !
-            !------------------------------------------------------------------------------!
-            if (fivedim_diags) then
-               !----- We now normalise the weights for those bins that have something... --!
-               where (patch_nplant_i > 0.01*minval(init_density))
-                  patch_nplant_i = 1./patch_nplant_i
-               elsewhere
-                  patch_nplant_i = 0.
-               end where
-               !---------------------------------------------------------------------------!
-               !     Here we find the patch-level average of those intensive variables and !
-               ! add them to the patch sum variables.                                      !
-               !---------------------------------------------------------------------------!
-               do idbh=1,n_dbh
-                  do ipft=1,n_pft
-                     pss_ncbmort_ar(ipft,ilu,idbh,iage) =                                  &
-                         pss_ncbmort_ar(ipft,ilu,idbh,iage) + css_ncbmort_ar(ipft,idbh)    &
-                                                            * patch_nplant_i(ipft,idbh)    &
-                                                            * csite%area(ipa)
-                  end do
-               end do
-            end if
          end do patchloop
          !---------------------------------------------------------------------------------!
          !     We now increment the site-level variables.                                  !
@@ -2625,65 +2108,6 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
                                            + pss_bseeds(ipft,idbh) * forest_area_i
             end do
          end do
-         !---------------------------------------------------------------------------------!
-
-
-         !---------------------------------------------------------------------------------!
-         !    Here we add the contribution of this site to the site sum of the 5-D vari-   !
-         ! ables.  The extensive variables are simply averaged amongst all patches, but    !
-         ! intensive variables are averaged only amongst the patches with the same land    !
-         ! use and age class.                                                              !
-         !---------------------------------------------------------------------------------!
-         if (fivedim_diags) then
-            where (luage_area_i > 1.e-6)
-               luage_area_i = 1./luage_area_i
-            elsewhere
-               luage_area_i = 0.
-            end where
-            !------------------------------------------------------------------------------!
-            !    The intensive variables are again averaged over the patches, but only     !
-            ! those that have something.  The average is weighted by areas belonging to    !
-            ! the same land use and age class.                                             !
-            !------------------------------------------------------------------------------!
-            do iage=1,n_age
-               do idbh=1,n_dbh
-                  do ilu=1,n_dist_types
-                     do ipft=1,n_pft
-                        sss_ncbmort_ar(ipft,ilu,idbh,iage) =                               &
-                                                       sss_ncbmort_ar (ipft,ilu,idbh,iage) &
-                                                     + pss_ncbmort_ar (ipft,ilu,idbh,iage) &
-                                                     * luage_area_i(ilu,iage)              &
-                                                     * cpoly%area(isi)
-                        sss_bseeds_ar (ipft,ilu,idbh,iage) =                               &
-                                                       sss_bseeds_ar  (ipft,ilu,idbh,iage) &
-                                                     + pss_bseeds_ar  (ipft,ilu,idbh,iage) &
-                                                     * luage_area_i(ilu,iage)              &
-                                                     * cpoly%area(isi)
-                        sss_agb_ar    (ipft,ilu,idbh,iage) =                               &
-                                                       sss_agb_ar     (ipft,ilu,idbh,iage) &
-                                                     + pss_agb_ar     (ipft,ilu,idbh,iage) &
-                                                     * luage_area_i(ilu,iage)              &
-                                                     * cpoly%area(isi)
-                        sss_ba_ar     (ipft,ilu,idbh,iage) =                               &
-                                                       sss_ba_ar      (ipft,ilu,idbh,iage) &
-                                                     + pss_ba_ar      (ipft,ilu,idbh,iage) &
-                                                     * luage_area_i(ilu,iage)              &
-                                                     * cpoly%area(isi)
-                        sss_pldens_ar (ipft,ilu,idbh,iage) =                               &
-                                                       sss_pldens_ar  (ipft,ilu,idbh,iage) &
-                                                     + pss_pldens_ar  (ipft,ilu,idbh,iage) &
-                                                     * luage_area_i(ilu,iage)              &
-                                                     * cpoly%area(isi)
-                        sss_carbbal_ar(ipft,ilu,idbh,iage) =                               &
-                                                       sss_carbbal_ar (ipft,ilu,idbh,iage) &
-                                                     + pss_carbbal_ar (ipft,ilu,idbh,iage) &
-                                                     * luage_area_i(ilu,iage)              &
-                                                     * cpoly%area(isi)
-                     end do
-                  end do
-               end do
-            end do
-         end if
          !---------------------------------------------------------------------------------!
       end do siteloop
 
@@ -2708,46 +2132,6 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
             end do
          end do
       end do
-
-      !------------------------------------------------------------------------------------!
-      !    Finishing the monthly mean variables, or those updated every month only.        !
-      !------------------------------------------------------------------------------------!
-      if (fivedim_diags) then
-         !----- Scaling those that were integrated every day. -----------------------------!
-         cgrid%mmean_rh_ar       (  :  ,:,ipy) = cgrid%mmean_rh_ar       (  :  ,:,ipy)     &
-                                               * ndaysi
-         cgrid%mmean_frostmort_ar(:,:,:,:,ipy) = cgrid%mmean_frostmort_ar(:,:,:,:,ipy)     &
-                                               * ndaysi
-         cgrid%mmean_fs_open_ar  (:,:,:,:,ipy) = cgrid%mmean_fs_open_ar  (:,:,:,:,ipy)     &
-                                               * ndaysi
-         cgrid%mmean_fsw_ar      (:,:,:,:,ipy) = cgrid%mmean_fsw_ar      (:,:,:,:,ipy)     &
-                                               * ndaysi
-         cgrid%mmean_fsn_ar      (:,:,:,:,ipy) = cgrid%mmean_fsn_ar      (:,:,:,:,ipy)     &
-                                               * ndaysi
-         cgrid%mmean_lightlev_ar (:,:,:,:,ipy) = cgrid%mmean_lightlev_ar (:,:,:,:,ipy)     &
-                                               * ndaysi
-         cgrid%mmean_lai_ar      (:,:,:,:,ipy) = cgrid%mmean_lai_ar      (:,:,:,:,ipy)     &
-                                               * ndaysi
-         cgrid%mmean_wpa_ar      (:,:,:,:,ipy) = cgrid%mmean_wpa_ar      (:,:,:,:,ipy)     &
-                                               * ndaysi
-         cgrid%mmean_wai_ar      (:,:,:,:,ipy) = cgrid%mmean_wai_ar      (:,:,:,:,ipy)     &
-                                               * ndaysi
-         cgrid%mmean_gpp_ar      (:,:,:,:,ipy) = cgrid%mmean_gpp_ar      (:,:,:,:,ipy)     &
-                                               * ndaysi
-         cgrid%mmean_plresp_ar   (:,:,:,:,ipy) = cgrid%mmean_plresp_ar   (:,:,:,:,ipy)     &
-                                               * ndaysi
-         !----- Now we integrate the polygon-level for those that came from other levels. -!
-         cgrid%bseeds_ar  (:,:,:,:,ipy) = cgrid%bseeds_ar  (:,:,:,:,ipy)                   &
-                                        +   sss_bseeds_ar  (:,:,:,:) * poly_area_i
-         cgrid%agb_ar     (:,:,:,:,ipy) = cgrid%agb_ar     (:,:,:,:,ipy)                   &
-                                        +   sss_agb_ar     (:,:,:,:) * poly_area_i 
-         cgrid%ba_ar      (:,:,:,:,ipy) = cgrid%ba_ar      (:,:,:,:,ipy)                   &
-                                        +   sss_ba_ar      (:,:,:,:) * poly_area_i 
-         cgrid%pldens_ar  (:,:,:,:,ipy) = cgrid%pldens_ar  (:,:,:,:,ipy)                   &
-                                        +   sss_pldens_ar  (:,:,:,:) * poly_area_i 
-         cgrid%carbbal_ar (:,:,:,:,ipy) = cgrid%carbbal_ar (:,:,:,:,ipy)                   &
-                                        +   sss_carbbal_ar (:,:,:,:) * poly_area_i 
-      end if
    end do polyloop
 
    return
@@ -2767,7 +2151,6 @@ subroutine zero_ed_monthly_output_vars(cgrid)
                             , polygontype   & ! structure
                             , sitetype      & ! structure
                             , patchtype     ! ! structure
-   use ed_misc_coms  , only : fivedim_diags ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    type(edtype)     , target  :: cgrid
@@ -2831,28 +2214,6 @@ subroutine zero_ed_monthly_output_vars(cgrid)
       cgrid%mmean_co2_residual       (ipy) = 0.
       cgrid%mmean_energy_residual    (ipy) = 0.
       cgrid%mmean_water_residual     (ipy) = 0.
-      
-      if (fivedim_diags) then
-         cgrid%mmean_lai_ar        (:,:,:,:,ipy) = 0.
-         cgrid%mmean_wpa_ar        (:,:,:,:,ipy) = 0.
-         cgrid%mmean_wai_ar        (:,:,:,:,ipy) = 0.
-         cgrid%mmean_frostmort_ar  (:,:,:,:,ipy) = 0.
-         cgrid%mmean_fs_open_ar    (:,:,:,:,ipy) = 0.
-         cgrid%mmean_fsw_ar        (:,:,:,:,ipy) = 0.
-         cgrid%mmean_fsn_ar        (:,:,:,:,ipy) = 0.
-         cgrid%mmean_lightlev_ar   (:,:,:,:,ipy) = 0.
-         cgrid%mmean_gpp_ar        (:,:,:,:,ipy) = 0.
-         cgrid%mmean_plresp_ar     (:,:,:,:,ipy) = 0.
-         cgrid%mmean_igpp_ar       (:,:,:,:,ipy) = 0.
-         cgrid%mmean_iplresp_ar    (:,:,:,:,ipy) = 0.
-         cgrid%bseeds_ar           (:,:,:,:,ipy) = 0.
-         cgrid%agb_ar              (:,:,:,:,ipy) = 0.
-         cgrid%ba_ar               (:,:,:,:,ipy) = 0.
-         cgrid%pldens_ar           (:,:,:,:,ipy) = 0.
-         cgrid%carbbal_ar          (:,:,:,:,ipy) = 0.
-         cgrid%ncbmort_ar          (:,:,:,:,ipy) = 0.
-         cgrid%mmean_rh_ar         (  :,  :,ipy) = 0.
-      end if
 
       cpoly => cgrid%polygon(ipy)
       do isi = 1, cpoly%nsites

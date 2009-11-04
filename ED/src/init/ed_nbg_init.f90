@@ -271,9 +271,10 @@ subroutine init_cohorts_by_layers(csite,lsl,ipa_a,ipa_z)
    integer                            :: ipft    ! PFT counter
    real                               :: height  ! Cohort initial height
    !----- Local constants. ----------------------------------------------------------------!
-   integer               , parameter  :: nlayers = 8  ! # of cohort layers to be included.
-   real                  , parameter  :: dheight = 1. ! height interval.
-   real                  , parameter  :: lai0    = 1. ! Initial LAI for each layer.
+   integer               , parameter  :: nlayers = 8   ! # of cohort layers to be included.
+   real                  , parameter  :: dheight = 1.5 ! height interval.
+   real                  , parameter  :: lai0    = 1.  ! Initial LAI for each layer.
+   real                  , parameter  :: h0      = 1.5 ! Height of the lowest cohort.
    !---------------------------------------------------------------------------------------!
 
    !----- Patch loop. ---------------------------------------------------------------------!
@@ -294,7 +295,7 @@ subroutine init_cohorts_by_layers(csite,lsl,ipa_a,ipa_z)
       !------------------------------------------------------------------------------------!
       !    Here we loop over layers and assign the new cohort.                             !
       !------------------------------------------------------------------------------------!
-      height = 0.
+      height = h0 - dheight
       layerloop: do ico = 1,nlayers
          height = height + dheight
 

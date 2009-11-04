@@ -49,9 +49,10 @@ subroutine leaf_derivs(initp,dinitp,csite,ipa,isi,ipy)
    !---------------------------------------------------------------------------------------!
 
    !----- Ensure that enthalpy and water storage derivatives are both zero. ---------------!
-   dinitp%ebudget_storage = 0.d0
-   dinitp%wbudget_storage = 0.d0
-   dinitp%ebudget_latent  = 0.d0
+   dinitp%ebudget_storage   = 0.d0
+   dinitp%wbudget_storage   = 0.d0
+   dinitp%co2budget_storage = 0.d0
+   dinitp%ebudget_latent    = 0.d0
 
    !----- Compute canopy turbulence properties. -------------------------------------------!
    call canopy_turbulence8(csite,initp,isi,ipa,.false.)
@@ -876,26 +877,23 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxg
    ! canopy air space, integrate cohort energy, calculate precipitation throughfall and    !
    ! sum fluxes to the patch level. Initialize variables used to store sums over cohorts.  !
    !---------------------------------------------------------------------------------------!
-   hflxvc_tot   = 0.d0               
-   wflxvc_tot   = 0.d0               
-   qwflxvc_tot  = 0.d0               
-   cflxvc_tot   = csite%cwd_rh(ipa) 
-   transp_tot   = 0.d0               
-   qtransp_tot  = 0.d0               
-   cflxgc      = csite%rh(ipa) - csite%cwd_rh(ipa)
+   hflxvc_tot   = 0.d0
+   wflxvc_tot   = 0.d0
+   qwflxvc_tot  = 0.d0
+   cflxvc_tot   = initp%cwd_rh
+   transp_tot   = 0.d0
+   qtransp_tot  = 0.d0
+   cflxgc       = initp%rh - initp%cwd_rh
   
    cohortloop: do ico = 1,cpatch%ncohorts
       
-      cflxgc = cflxgc + cpatch%root_respiration(ico)
+      cflxgc = cflxgc + initp%root_resp(ico)
       
       !------------------------------------------------------------------------------------!
-      !    Calculate 'decay' term of storage (same for all) need to convert units from     !
-      ! kgC/plant/day to umolC/m2/s.                                                       !
+      !    Calculate 'decay' term of storage.                                              !
       !------------------------------------------------------------------------------------!
-      storage_decay = ( dble(cpatch%growth_respiration(ico))                               &
-                      + dble(cpatch%storage_respiration(ico))                              &
-                      + dble(cpatch%vleaf_respiration(ico)))                               &
-                    * dble(cpatch%nplant(ico)) / (day_sec8 * umol_2_kgC8)
+      storage_decay = initp%growth_resp(ico) + initp%storage_resp(ico)                     &
+                    + initp%vleaf_resp(ico)
       cflxvc_tot    = cflxvc_tot + storage_decay
       
       
@@ -916,7 +914,7 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxg
 
 
          !------  Calculate leaf-level CO2 flux -------------------------------------------!
-         leaf_flux = dble(cpatch%gpp(ico)) - dble(cpatch%leaf_respiration(ico))
+         leaf_flux = initp%gpp(ico) - initp%leaf_resp(ico)
 
          !------ Update CO2 flux from vegetation to canopy air space. ---------------------!
          cflxvc_tot = cflxvc_tot - leaf_flux
@@ -1149,8 +1147,9 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxg
       dinitp%co2budget_loss2atm = - cflxac
       dinitp%ebudget_loss2atm   = - eflxac
       dinitp%wbudget_loss2atm   = - wflxac
-      dinitp%ebudget_storage = dinitp%ebudget_storage + eflxac + dinitp%avg_netrad
-      dinitp%wbudget_storage = dinitp%wbudget_storage + wflxac
+      dinitp%co2budget_storage  = dinitp%co2budget_storage + cflxgc + cflxvc_tot + cflxac
+      dinitp%ebudget_storage    = dinitp%ebudget_storage   + eflxac + dinitp%avg_netrad
+      dinitp%wbudget_storage    = dinitp%wbudget_storage   + wflxac
    end if
   
    !---------------------------------------------------------------------------------------!
