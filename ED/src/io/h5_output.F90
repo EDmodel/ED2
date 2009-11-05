@@ -659,6 +659,29 @@ subroutine h5_output(vtype)
      case ('YEAR')
         subaname='  Annual average analysis HDF write   '
      case ('HIST')
+
+        ! -------------------------------------------------------------------
+        ! The following is helpfull to those running very massive simulations
+        ! File write times may be significantly long in these cases, and with 
+        ! automation of simulation queuing, the last thing you want to it try
+        ! restarting partially written files.  The generation of the CPM file
+        ! ensures that its sibling H5 file was completely written.
+        ! For simplicity, this will remain commented out by default.
+        ! REMEMBER, THE BARRIER WILL SCREW UP COUPLED RUNS
+        ! -------------------------------------------------------------------
+
+        !  if (nnodetot /= 1  ) then
+        !   call MPI_Barrier(MPI_COMM_WORLD,ierr)
+        !   if (mynum .eq. 1) then
+        !  ! Write a dummy file that signals we are done
+        !    call makefnam(anamel,sfilout,time,iyeara,imontha,idatea,  &
+        !      itimea*100,vnam,cgrid,'cmp')
+        !    open(unit=79,file=trim(anamel),form="formatted",status="new")
+        !    write(unit=79,fmt='(a)') "history write completed"
+        !    close(unit=79)
+        !   endif
+        !  endif
+
         subaname='  History HDF write   '
      case default
         subaname='  Analysis HDF write         '
