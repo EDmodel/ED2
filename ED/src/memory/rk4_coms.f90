@@ -81,17 +81,27 @@ module rk4_coms
       real(kind=8)                        :: rasveg
       real(kind=8)                        :: root_res_fac
       
+      !----- Heterotrophic respiration.[µmol/m²/s] ----------------------------------------!
+      real(kind=8)                        :: cwd_rh
+      real(kind=8)                        :: rh
+      
       !----- Leaf (cohort-level) variables. -----------------------------------------------!
-      real(kind=8), pointer, dimension(:) :: veg_energy ! Internal energy         [   J/m²]
-      real(kind=8), pointer, dimension(:) :: veg_water  ! Surface water mass      [  kg/m²]
-      real(kind=8), pointer, dimension(:) :: veg_temp   ! Temperature             [      K]
-      real(kind=8), pointer, dimension(:) :: veg_fliq   ! Liquid fraction         [    ---]
-      real(kind=8), pointer, dimension(:) :: hcapveg    ! Heat capacity           [ J/m²/K]
-      real(kind=8), pointer, dimension(:) :: lai        ! Leaf area index         [  m²/m²]
-      real(kind=8), pointer, dimension(:) :: wpa        ! Wood projected area     [  m²/m²]
-      real(kind=8), pointer, dimension(:) :: tai        ! Tree area index         [  m²/m²]
-      real(kind=8), pointer, dimension(:) :: rb         ! Aerodynamic resistance  [    s/m]
-      logical     , pointer, dimension(:) :: solvable   ! Can I solve this cohort [    T|F]
+      real(kind=8), pointer, dimension(:) :: veg_energy   ! Internal energy     [     J/m²]
+      real(kind=8), pointer, dimension(:) :: veg_water    ! Surface water mass  [    kg/m²]
+      real(kind=8), pointer, dimension(:) :: veg_temp     ! Temperature         [        K]
+      real(kind=8), pointer, dimension(:) :: veg_fliq     ! Liquid fraction     [      ---]
+      real(kind=8), pointer, dimension(:) :: hcapveg      ! Heat capacity       [   J/m²/K]
+      real(kind=8), pointer, dimension(:) :: lai          ! Leaf area index     [    m²/m²]
+      real(kind=8), pointer, dimension(:) :: wpa          ! Wood projected area [    m²/m²]
+      real(kind=8), pointer, dimension(:) :: tai          ! Tree area index     [    m²/m²]
+      real(kind=8), pointer, dimension(:) :: rb           ! Aerodynamic resist. [      s/m]
+      logical     , pointer, dimension(:) :: solvable     ! solve this cohort   [      T|F]
+      real(kind=8), pointer, dimension(:) :: gpp          ! Gross primary prod. [µmol/m²/s]
+      real(kind=8), pointer, dimension(:) :: leaf_resp    ! Leaf respiration    [µmol/m²/s]
+      real(kind=8), pointer, dimension(:) :: root_resp    ! Root respiration    [µmol/m²/s]
+      real(kind=8), pointer, dimension(:) :: growth_resp  ! Growth respiration  [µmol/m²/s]
+      real(kind=8), pointer, dimension(:) :: storage_resp ! Storage respiration [µmol/m²/s]
+      real(kind=8), pointer, dimension(:) :: vleaf_resp   ! Virtual leaf resp.  [µmol/m²/s]
       !------------------------------------------------------------------------------------!
 
       !------------------------------------------------------------------------------------!
@@ -122,6 +132,7 @@ module rk4_coms
       real(kind=8),pointer,dimension(:) :: avg_sensible_gg ! Soil heat flux between layers
       real(kind=8)                      :: avg_drainage    ! Drainage at the bottom.
       !----- Full budget variables --------------------------------------------------------!
+      real(kind=8) :: co2budget_storage
       real(kind=8) :: co2budget_loss2atm
       real(kind=8) :: ebudget_storage
       real(kind=8) :: ebudget_loss2atm
@@ -525,6 +536,7 @@ module rk4_coms
       type(rk4patchtype) :: y
       !------------------------------------------------------------------------------------!
 
+      y%co2budget_storage              = 0.d0
       y%co2budget_loss2atm             = 0.d0
       y%ebudget_storage                = 0.d0
       y%ebudget_loss2atm               = 0.d0
@@ -560,6 +572,13 @@ module rk4_coms
       y%tstar                          = 0.d0
       y%qstar                          = 0.d0
       y%estar                          = 0.d0
+
+      y%rasveg                         = 0.d0
+      y%root_res_fac                   = 0.d0
+      y%cwd_rh                         = 0.d0
+      y%rh                             = 0.d0
+
+
       y%virtual_flag                   = 0
       y%avg_carbon_ac                  = 0.d0
      
@@ -676,16 +695,22 @@ module rk4_coms
       
       call nullify_rk4_cohort(y)
 
-      allocate(y%veg_energy(maxcohort))
-      allocate(y%veg_water(maxcohort))
-      allocate(y%veg_temp(maxcohort))
-      allocate(y%veg_fliq(maxcohort))
-      allocate(y%hcapveg(maxcohort))
-      allocate(y%lai(maxcohort))
-      allocate(y%wpa(maxcohort))
-      allocate(y%tai(maxcohort))
-      allocate(y%rb(maxcohort))
-      allocate(y%solvable(maxcohort))
+      allocate(y%veg_energy   (maxcohort))
+      allocate(y%veg_water    (maxcohort))
+      allocate(y%veg_temp     (maxcohort))
+      allocate(y%veg_fliq     (maxcohort))
+      allocate(y%hcapveg      (maxcohort))
+      allocate(y%lai          (maxcohort))
+      allocate(y%wpa          (maxcohort))
+      allocate(y%tai          (maxcohort))
+      allocate(y%rb           (maxcohort))
+      allocate(y%solvable     (maxcohort))
+      allocate(y%gpp          (maxcohort))
+      allocate(y%leaf_resp    (maxcohort))
+      allocate(y%root_resp    (maxcohort))
+      allocate(y%growth_resp  (maxcohort))
+      allocate(y%storage_resp (maxcohort))
+      allocate(y%vleaf_resp   (maxcohort))
 
       call zero_rk4_cohort(y)
 
@@ -709,16 +734,22 @@ module rk4_coms
       type(rk4patchtype) :: y
       !------------------------------------------------------------------------------------!
           
-      nullify(y%veg_energy)
-      nullify(y%veg_water)
-      nullify(y%veg_temp)
-      nullify(y%veg_fliq)
-      nullify(y%hcapveg)
-      nullify(y%lai)
-      nullify(y%wpa)
-      nullify(y%tai)
-      nullify(y%rb)
-      nullify(y%solvable)
+      nullify(y%veg_energy   )
+      nullify(y%veg_water    )
+      nullify(y%veg_temp     )
+      nullify(y%veg_fliq     )
+      nullify(y%hcapveg      )
+      nullify(y%lai          )
+      nullify(y%wpa          )
+      nullify(y%tai          )
+      nullify(y%rb           )
+      nullify(y%solvable     )
+      nullify(y%gpp          )
+      nullify(y%leaf_resp    )
+      nullify(y%root_resp    )
+      nullify(y%growth_resp  )
+      nullify(y%storage_resp )
+      nullify(y%vleaf_resp   )
 
       return
    end subroutine nullify_rk4_cohort
@@ -750,6 +781,12 @@ module rk4_coms
       if(associated(y%tai           ))  y%tai           = 0.d0
       if(associated(y%rb            ))  y%rb            = 0.d0
       if(associated(y%solvable      ))  y%solvable      = .false.
+      if(associated(y%gpp           ))  y%gpp           = 0.d0
+      if(associated(y%leaf_resp     ))  y%leaf_resp     = 0.d0
+      if(associated(y%root_resp     ))  y%root_resp     = 0.d0
+      if(associated(y%growth_resp   ))  y%growth_resp   = 0.d0
+      if(associated(y%storage_resp  ))  y%storage_resp  = 0.d0
+      if(associated(y%vleaf_resp    ))  y%vleaf_resp    = 0.d0
 
       return
    end subroutine zero_rk4_cohort
@@ -771,16 +808,22 @@ module rk4_coms
       type(rk4patchtype) :: y
       !------------------------------------------------------------------------------------!
 
-      if(associated(y%veg_energy    ))  deallocate(y%veg_energy)
-      if(associated(y%veg_water     ))  deallocate(y%veg_water )
-      if(associated(y%veg_temp      ))  deallocate(y%veg_temp  )
-      if(associated(y%veg_fliq      ))  deallocate(y%veg_fliq  )
-      if(associated(y%hcapveg       ))  deallocate(y%hcapveg   )
-      if(associated(y%lai           ))  deallocate(y%lai       )
-      if(associated(y%wpa           ))  deallocate(y%wpa       )
-      if(associated(y%tai           ))  deallocate(y%tai       )
-      if(associated(y%rb            ))  deallocate(y%rb        )
-      if(associated(y%solvable      ))  deallocate(y%solvable  )
+      if(associated(y%veg_energy    ))  deallocate(y%veg_energy  )
+      if(associated(y%veg_water     ))  deallocate(y%veg_water   )
+      if(associated(y%veg_temp      ))  deallocate(y%veg_temp    )
+      if(associated(y%veg_fliq      ))  deallocate(y%veg_fliq    )
+      if(associated(y%hcapveg       ))  deallocate(y%hcapveg     )
+      if(associated(y%lai           ))  deallocate(y%lai         )
+      if(associated(y%wpa           ))  deallocate(y%wpa         )
+      if(associated(y%tai           ))  deallocate(y%tai         )
+      if(associated(y%rb            ))  deallocate(y%rb          )
+      if(associated(y%solvable      ))  deallocate(y%solvable    )
+      if(associated(y%gpp           ))  deallocate(y%gpp         )
+      if(associated(y%leaf_resp     ))  deallocate(y%leaf_resp   )
+      if(associated(y%root_resp     ))  deallocate(y%root_resp   )
+      if(associated(y%growth_resp   ))  deallocate(y%growth_resp )
+      if(associated(y%storage_resp  ))  deallocate(y%storage_resp)
+      if(associated(y%vleaf_resp    ))  deallocate(y%vleaf_resp  )
 
       return
    end subroutine deallocate_rk4_coh

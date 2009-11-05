@@ -258,7 +258,6 @@ subroutine update_site_derived_props(cpoly,census_flag,isi)
    !----- Initialise the variables before looping. ----------------------------------------!
    cpoly%basal_area(:,:,isi) = 0.0
    cpoly%agb(:,:,isi)        = 0.0
-   cpoly%agb_lu(:,isi)       = 0.0
    
    csite => cpoly%site(isi)
 
@@ -274,21 +273,13 @@ subroutine update_site_derived_props(cpoly,census_flag,isi)
          !----- Update basal area and above-ground biomass. -------------------------------!
          if(census_flag == 0 .or. cpatch%first_census(ico) == 1)then
             bdbh = max(0,min( int(cpatch%dbh(ico) * 0.1), 10)) + 1
-            ba   = cpatch%nplant(ico) * cpatch%dbh(ico) * cpatch%dbh(ico)
 
             cpoly%basal_area(ipft,bdbh,isi) = cpoly%basal_area(ipft, bdbh,isi)             &
-                                            + csite%area(ipa) * ba * pio4
-            cpoly%agb(ipft,bdbh,isi) = cpoly%agb(ipft, bdbh,isi)                           &
-                                     + ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)     &
-                                                 ,cpatch%bleaf(ico),cpatch%pft(ico)        &
-                                                 ,cpatch%hite(ico),cpatch%bstorage(ico))   &
-                                     * cpatch%nplant(ico) * 10.0 * csite%area(ipa)
-
-            cpoly%agb_lu(ilu,isi) = cpoly%agb_lu(ilu,isi)                                  &
-                                  + ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)        &
-                                              ,cpatch%bleaf(ico),cpatch%pft(ico)           &
-                                              ,cpatch%hite(ico),cpatch%bstorage(ico))      &
-                                  * cpatch%nplant(ico) * 10.0 * csite%area(ipa)
+                                            + cpatch%basarea(ico) * cpatch%nplant(ico)     &
+                                            * csite%area(ipa)   
+            cpoly%agb(ipft,bdbh,isi)        = cpoly%agb(ipft, bdbh,isi)                    &
+                                            + cpatch%agb(ico)     * cpatch%nplant(ico)     &
+                                            * csite%area(ipa)
          end if
       end do
    end do

@@ -166,8 +166,6 @@ subroutine read_ednl(iunit)
   unitfast  = 0           ! Since BRAMS uses frqanl and frqhist in seconds, there is no
   unitstate = 0           ! reason to ask the user for units for outfast and outstate, the
                           ! special flags cover all possibilities.
-
-  
   ! Force LEAF3's number of patches to be 2. This is necessary for
   ! filling the lower boundary condition arrays correctly
   ! --------------------------------------------------------------------

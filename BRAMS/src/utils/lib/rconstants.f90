@@ -83,11 +83,12 @@ Module rconstants
    !---------------------------------------------------------------------------------------!
    ! Time conversion units                                                                 !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: yr_day  = 365.2425 ! # of days in a year                  [   day/yr]
-   real, parameter :: day_sec = 86400.   ! # of seconds in a day                [    s/day]
-   real, parameter :: day_hr  = 24.      ! # of hours in a day                  [   hr/day]
-   real, parameter :: hr_sec  = 3600.    ! # of seconds in an hour              [     s/hr]
-   real, parameter :: min_sec = 60.      ! # of seconds in a minute             [    s/min]
+   real, parameter :: yr_day  = 365.2425         ! # of days in a year          [   day/yr]
+   real, parameter :: day_sec = 86400.           ! # of seconds in a day        [    s/day]
+   real, parameter :: day_hr  = 24.              ! # of hours in a day          [   hr/day]
+   real, parameter :: hr_sec  = 3600.            ! # of seconds in an hour      [     s/hr]
+   real, parameter :: min_sec = 60.              ! # of seconds in a minute     [    s/min]
+   real, parameter :: yr_sec  = yr_day * day_sec ! # of seconds in a year       [     s/yr]
    !---------------------------------------------------------------------------------------!
 
 

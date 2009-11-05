@@ -1344,11 +1344,6 @@ decomp_coms.o : $(ED_MEMORY)/decomp_coms.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
-decomposition.o : $(ED_DYNAMICS)/decomposition.f90
-	cp -f $< $(<F:.f90=.f90)
-	$(F90_COMMAND) $(<F:.f90=.f90)
-	rm -f $(<F:.f90=.f90)
-
 disturb_coms.o : $(ED_MEMORY)/disturb_coms.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
@@ -1678,6 +1673,11 @@ soil_coms.o : $(ED_MEMORY)/soil_coms.F90
 	cp -f $< $(<F:.F90=.F90)
 	$(FPP_COMMAND) $(<F:.F90=.F90)
 	rm -f $(<F:.F90=.F90)
+
+soil_respiration.o : $(ED_DYNAMICS)/soil_respiration.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
 
 stable_cohorts.o : $(ED_UTILS)/stable_cohorts.f90
 	cp -f $< $(<F:.f90=.f90)

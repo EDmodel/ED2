@@ -326,7 +326,8 @@ subroutine inc_rk4_patch(rkp, inc, fac, cpatch)
 
    if(checkbudget) then
 
-      rkp%co2budget_loss2atm    = rkp%co2budget_loss2atm    + fac * inc%co2budget_loss2atm
+     rkp%co2budget_storage     = rkp%co2budget_storage     + fac * inc%co2budget_storage
+     rkp%co2budget_loss2atm    = rkp%co2budget_loss2atm    + fac * inc%co2budget_loss2atm
 
       rkp%wbudget_storage       = rkp%wbudget_storage       + fac * inc%wbudget_storage
       rkp%wbudget_loss2atm      = rkp%wbudget_loss2atm      + fac * inc%wbudget_loss2atm
@@ -578,6 +579,14 @@ subroutine get_yscal(y, dy, htry, yscal, cpatch)
                                 + abs(dy%ebudget_storage*htry)
       end if
 
+      if (abs(y%co2budget_storage)  < tiny_offset .and.                      &
+          abs(dy%co2budget_storage) < tiny_offset) then
+         yscal%co2budget_storage = huge_offset
+      else 
+         yscal%co2budget_storage = abs(y%co2budget_storage)                  &
+                                + abs(dy%co2budget_storage*htry)
+      end if
+
       if (abs(y%wbudget_storage)  < tiny_offset .and.                        &
           abs(dy%wbudget_storage) < tiny_offset) then
          yscal%wbudget_storage      = huge_offset
@@ -608,6 +617,7 @@ subroutine get_yscal(y, dy, htry, yscal, cpatch)
       end if
 
    else 
+      yscal%co2budget_storage       = huge_offset
       yscal%co2budget_loss2atm      = huge_offset
       yscal%ebudget_loss2atm        = huge_offset
       yscal%wbudget_loss2atm        = huge_offset
@@ -741,6 +751,8 @@ subroutine get_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
    ! it is computed after a step was accepted.                               !
    !-------------------------------------------------------------------------!
    if (checkbudget) then
+      err    = abs(yerr%co2budget_storage/yscal%co2budget_storage)
+      errmax = max(errmax,err)
       err    = abs(yerr%co2budget_loss2atm/yscal%co2budget_loss2atm)
       errmax = max(errmax,err)
       err    = abs(yerr%ebudget_loss2atm/yscal%ebudget_loss2atm)
@@ -830,42 +842,52 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
    targetp%virtual_flag  = sourcep%virtual_flag
    targetp%rasveg        = sourcep%rasveg
 
+   targetp%cwd_rh        = sourcep%cwd_rh
+   targetp%rh            = sourcep%rh
+
    do k=rk4met%lsl,nzg
       
-      targetp%soil_water(k)             = sourcep%soil_water(k)
-      targetp%soil_energy(k)            = sourcep%soil_energy(k)
-      targetp%soil_tempk(k)             = sourcep%soil_tempk(k)
-      targetp%soil_fracliq(k)           = sourcep%soil_fracliq(k)
+      targetp%soil_water            (k) = sourcep%soil_water            (k)
+      targetp%soil_energy           (k) = sourcep%soil_energy           (k)
+      targetp%soil_tempk            (k) = sourcep%soil_tempk            (k)
+      targetp%soil_fracliq          (k) = sourcep%soil_fracliq          (k)
       targetp%available_liquid_water(k) = sourcep%available_liquid_water(k)
-      targetp%extracted_water(k)        = sourcep%extracted_water(k)
-      targetp%psiplusz(k)               = sourcep%psiplusz(k)
-      targetp%soilair99(k)              = sourcep%soilair99(k)
-      targetp%soilair01(k)              = sourcep%soilair01(k)
-      targetp%soil_liq(k)               = sourcep%soil_liq(k)
+      targetp%extracted_water       (k) = sourcep%extracted_water       (k)
+      targetp%psiplusz              (k) = sourcep%psiplusz              (k)
+      targetp%soilair99             (k) = sourcep%soilair99             (k)
+      targetp%soilair01             (k) = sourcep%soilair01             (k)
+      targetp%soil_liq              (k) = sourcep%soil_liq              (k)
    end do
 
    do k=1,nzs
-      targetp%sfcwater_mass(k)    = sourcep%sfcwater_mass(k)   
-      targetp%sfcwater_energy(k)  = sourcep%sfcwater_energy(k) 
-      targetp%sfcwater_depth(k)   = sourcep%sfcwater_depth(k)  
-      targetp%sfcwater_tempk(k)   = sourcep%sfcwater_tempk(k)  
+      targetp%sfcwater_mass   (k) = sourcep%sfcwater_mass   (k)
+      targetp%sfcwater_energy (k) = sourcep%sfcwater_energy (k)
+      targetp%sfcwater_depth  (k) = sourcep%sfcwater_depth  (k)
+      targetp%sfcwater_tempk  (k) = sourcep%sfcwater_tempk  (k)
       targetp%sfcwater_fracliq(k) = sourcep%sfcwater_fracliq(k)
    end do
 
    do k=1,cpatch%ncohorts
-      targetp%veg_water(k)   = sourcep%veg_water(k)
-      targetp%veg_energy(k)  = sourcep%veg_energy(k)
-      targetp%veg_temp(k)    = sourcep%veg_temp(k)
-      targetp%veg_fliq(k)    = sourcep%veg_fliq(k)
-      targetp%hcapveg(k)     = sourcep%hcapveg(k)
-      targetp%lai(k)         = sourcep%lai(k)
-      targetp%wpa(k)         = sourcep%wpa(k)
-      targetp%tai(k)         = sourcep%tai(k)
-      targetp%solvable(k)    = sourcep%solvable(k)
-      targetp%rb(k)          = sourcep%rb(k)
+      targetp%veg_water   (k) = sourcep%veg_water   (k)
+      targetp%veg_energy  (k) = sourcep%veg_energy  (k)
+      targetp%veg_temp    (k) = sourcep%veg_temp    (k)
+      targetp%veg_fliq    (k) = sourcep%veg_fliq    (k)
+      targetp%hcapveg     (k) = sourcep%hcapveg     (k)
+      targetp%lai         (k) = sourcep%lai         (k)
+      targetp%wpa         (k) = sourcep%wpa         (k)
+      targetp%tai         (k) = sourcep%tai         (k)
+      targetp%solvable    (k) = sourcep%solvable    (k)
+      targetp%rb          (k) = sourcep%rb          (k)
+      targetp%gpp         (k) = sourcep%gpp         (k)
+      targetp%leaf_resp   (k) = sourcep%leaf_resp   (k)
+      targetp%root_resp   (k) = sourcep%root_resp   (k)
+      targetp%growth_resp (k) = sourcep%growth_resp (k)
+      targetp%storage_resp(k) = sourcep%storage_resp(k)
+      targetp%vleaf_resp  (k) = sourcep%vleaf_resp  (k)
    end do
 
    if (checkbudget) then
+      targetp%co2budget_storage      = sourcep%co2budget_storage
       targetp%co2budget_loss2atm     = sourcep%co2budget_loss2atm
       targetp%ebudget_loss2atm       = sourcep%ebudget_loss2atm
       targetp%ebudget_loss2drainage  = sourcep%ebudget_loss2drainage

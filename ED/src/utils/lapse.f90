@@ -250,3 +250,43 @@ subroutine calc_met_lapse(cgrid,ipy)
 end subroutine calc_met_lapse
 !==========================================================================================!
 !==========================================================================================!
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+subroutine setLapseParms(cgrid)
+  
+   use ed_state_vars,only:edtype
+   use met_driver_coms, only: lapse
+
+   implicit none
+
+   integer :: ipy
+   type(edtype), target :: cgrid
+
+   !! right now, simply transfer lapse rates from ed_data
+   !! in future, could set parms based on spatial maps of parms
+  
+   do ipy = 1,cgrid%npolygons
+      
+      cgrid%lapse(ipy)%geoht   = lapse%geoht
+      cgrid%lapse(ipy)%vels    = lapse%vels
+      cgrid%lapse(ipy)%atm_tmp = lapse%atm_tmp
+      cgrid%lapse(ipy)%atm_shv = lapse%atm_shv
+      cgrid%lapse(ipy)%prss    = lapse%prss
+      cgrid%lapse(ipy)%pcpg    = lapse%pcpg
+      cgrid%lapse(ipy)%atm_co2 = lapse%atm_co2
+      cgrid%lapse(ipy)%rlong   = lapse%rlong
+      cgrid%lapse(ipy)%nir_beam    = lapse%nir_beam
+      cgrid%lapse(ipy)%nir_diffuse = lapse%nir_diffuse
+      cgrid%lapse(ipy)%par_beam    = lapse%par_beam
+      cgrid%lapse(ipy)%par_diffuse = lapse%par_diffuse
+   enddo
+
+   return
+end subroutine setLapseParms
+!==========================================================================================!
+!==========================================================================================!

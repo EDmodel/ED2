@@ -552,15 +552,16 @@ end subroutine init_pft_resp_params
 !------------------------------------------------------------------------------------------!
 subroutine init_pft_mort_params()
 
-   use pft_coms   , only : mort1                & ! intent(out)
-                         , mort2                & ! intent(out)
-                         , mort3                & ! intent(out)
-                         , seedling_mortality   & ! intent(out)
-                         , treefall_s_gtht      & ! intent(out)
-                         , treefall_s_ltht      & ! intent(out)
-                         , plant_min_temp       & ! intent(out)
-                         , frost_mort           ! ! intent(out)
-   use consts_coms, only : t00                  ! ! intent(in)
+   use pft_coms    , only : mort1                      & ! intent(out)
+                          , mort2                      & ! intent(out)
+                          , mort3                      & ! intent(out)
+                          , seedling_mortality         & ! intent(out)
+                          , treefall_s_gtht            & ! intent(out)
+                          , treefall_s_ltht            & ! intent(out)
+                          , plant_min_temp             & ! intent(out)
+                          , frost_mort                 ! ! intent(out)
+   use consts_coms , only : t00                        ! ! intent(in)
+   use disturb_coms, only : treefall_disturbance_rate  ! ! intent(inout)
 
    implicit none
 
@@ -593,7 +594,12 @@ subroutine init_pft_mort_params()
    mort3(11) = 0.00428
    mort3(12:13) = 0.066
    mort3(14:15) = 0.037
-
+   
+   if (treefall_disturbance_rate < 0.) then
+      mort3(:) = mort3(:) - treefall_disturbance_rate
+      treefall_disturbance_rate = 0.
+   end if
+   
    seedling_mortality = 0.95
 
    treefall_s_gtht = 0.0
@@ -745,9 +751,9 @@ subroutine init_pft_alloc_params()
    ! latitude parameters have been optimized using the wrong SLA, we keep the bug until    !
    ! it is updated...                                                                      !
    !---------------------------------------------------------------------------------------!
-   qsw(1:4)    = SLA(1:4)   / (3900.0*2.0/1000.0)
+   qsw(1:4)    = SLA(1:4)   / 3900.0  !new is SLA(1:4)/(3900.0*2.0/1000.0)
    qsw(5:13)   = SLA(5:13)  / 3900.0
-   qsw(14:15)  = SLA(14:15) / (3900.0*2.0/1000.0)
+   qsw(14:15)  = SLA(14:15) / 3900.0  !new is SLA(14:15)(3900.0*2.0/1000.0)
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
@@ -764,8 +770,8 @@ subroutine init_pft_alloc_params()
    !---------------------------------------------------------------------------------------!
    !    Minimum height of an individual.                                                   !
    !---------------------------------------------------------------------------------------!
-   hgt_min(1)     = 1.50  ! Used to be 1.5
-   hgt_min(2:4)   = 1.50  ! Used to be 1.5
+   hgt_min(1)     = 0.50  ! Used to be 1.5
+   hgt_min(2:4)   = 0.50  ! Used to be 1.5
    hgt_min(5)     = 0.15
    hgt_min(6:7)   = 1.82  ! Used to be 1.5
    hgt_min(8)     = 1.80
@@ -1151,9 +1157,9 @@ subroutine init_pft_derived_params()
    ! parameters actually depend on which PFT we are solving, since grasses always have     !
    ! significantly less biomass.                                                           !
    !---------------------------------------------------------------------------------------!
-   !write (unit=61,fmt='(8(a,1x))') '  PFT','     HGT_MIN','         DBH','       BLEAF'    &
-   !                                       ,'       BDEAD','      BALIVE','   INIT_DENS'    &
-   !                                       ,'MIN_REC_SIZE'
+   write (unit=61,fmt='(8(a,1x))') '  PFT','     HGT_MIN','         DBH','       BLEAF'    &
+                                          ,'       BDEAD','      BALIVE','   INIT_DENS'    &
+                                          ,'MIN_REC_SIZE'
    min_plant_dens = onesixth * minval(init_density)
    do ipft = 1,n_pft
       !----- Finding the DBH and carbon pools associated with a newly formed recruit. -----!
@@ -1174,8 +1180,8 @@ subroutine init_pft_derived_params()
                              / (balive * ( f_labile(ipft) / c2n_leaf(ipft)                 &
                                          + (1.0 - f_labile(ipft)) / c2n_stem)              &
                                + bdead/c2n_stem)
-      !write (unit=61,fmt='(i5,1x,7(es12.5,1x))') ipft,hgt_min(ipft),dbh,bleaf,bdead,balive &
-      !                                          ,init_density(ipft),min_recruit_size(ipft)
+      write (unit=61,fmt='(i5,1x,7(es12.5,1x))') ipft,hgt_min(ipft),dbh,bleaf,bdead,balive &
+                                                ,init_density(ipft),min_recruit_size(ipft)
    end do
 
 end subroutine init_pft_derived_params
@@ -1592,7 +1598,7 @@ subroutine init_rk4_params()
    ! again.  The air can still become super-saturated because mixing with the free atmo-   !
    ! sphere will not stop.                                                                 !
    !---------------------------------------------------------------------------------------!
-   supersat_ok = .false.
+   supersat_ok = .true.
 
 
    return

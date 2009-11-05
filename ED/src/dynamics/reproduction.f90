@@ -38,10 +38,12 @@ subroutine reproduction(cgrid, month)
                                  , split_cohorts         ! ! subroutine
    use phenology_coms     , only : repro_scheme          ! ! intent(in)
    use mem_sites          , only : maxcohort             ! ! intent(in)
+   use consts_coms        , only : pio4                  ! ! intent(in)
    use ed_therm_lib       , only : calc_hcapveg          ! ! function
    use allometry          , only : dbh2bd                & ! function
                                  , dbh2bl                & ! function
                                  , h2dbh                 & ! function
+                                 , ed_biomass            & ! function
                                  , area_indices          ! ! subroutine
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
@@ -280,6 +282,18 @@ subroutine reproduction(cgrid, month)
                   cpatch%solvable(ico) = .true.
                   !----- Assigning SLA as the default value. ------------------------------!
                   cpatch%sla(ico) = sla(cpatch%pft(ico))
+                  
+                  !------------------------------------------------------------------------!
+                  !    Computing initial AGB and Basal Area. Their derivatives will be     !
+                  ! zero.                                                                  !
+                  !------------------------------------------------------------------------!
+                  cpatch%agb(ico)     = ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)    &
+                                                  ,cpatch%bleaf(ico),cpatch%pft(ico)       &
+                                                  ,cpatch%hite(ico),cpatch%bstorage(ico))
+                  cpatch%basarea(ico) = pio4 * cpatch%dbh(ico)  * cpatch%dbh(ico)
+                  cpatch%dagb_dt(ico) = 0.0
+                  cpatch%dba_dt(ico)  = 0.0
+                  cpatch%ddbh_dt(ico) = 0.0
                   !------------------------------------------------------------------------!
                   !     Setting new_recruit_flag to 1 indicates that this cohort is        !
                   ! included when we tally agb_recruit, basal_area_recruit.                !

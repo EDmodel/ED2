@@ -9,9 +9,10 @@ subroutine sw_twostream_clump(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area       
                              ,PAR_beam_flip,PAR_diffuse_flip,SW_abs_beam_flip              &
                              ,SW_abs_diffuse_flip,DW_vislo_beam,DW_vislo_diffuse           &
                              ,UW_vishi_beam,UW_vishi_diffuse,DW_nirlo_beam                 &
-                             ,DW_nirlo_diffuse,UW_nirhi_beam,UW_nirhi_diffuse)
+                             ,DW_nirlo_diffuse,UW_nirhi_beam,UW_nirhi_diffuse              &
+                             ,beam_level,diff_level,lambda_coh,lambda_tot)
 
-   use ed_max_dims             , only : n_pft                   ! ! intent(in) 
+   use ed_max_dims          , only : n_pft                   ! ! intent(in) 
    use pft_coms             , only : clumping_factor         & ! intent(in) 
                                    , phenology               ! ! intent(in) 
    use canopy_radiation_coms, only : diffuse_backscatter_nir & ! intent(in)
@@ -41,6 +42,10 @@ subroutine sw_twostream_clump(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area       
    real                         , intent(out)   :: DW_vislo_diffuse
    real                         , intent(out)   :: DW_nirlo_beam
    real                         , intent(out)   :: DW_nirlo_diffuse
+   real(kind=8), dimension(ncoh), intent(inout) :: beam_level
+   real(kind=8), dimension(ncoh), intent(inout) :: diff_level
+   real(kind=8), dimension(ncoh), intent(inout) :: lambda_coh
+   real(kind=8)                 , intent(inout) :: lambda_tot
    !----- Local variables -----------------------------------------------------------------!
    integer     , dimension(2*ncoh)        :: indx
    integer                                :: il,ipft,ncoh2,iband,i,j,ind
@@ -59,7 +64,7 @@ subroutine sw_twostream_clump(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area       
    real(kind=8), dimension(2*ncoh,2)      :: matal
    real(kind=8), dimension(2*ncoh,5)      :: mastermat
    real(kind=8), dimension(2*ncoh,2*ncoh) :: masmatcp  
-   real(kind=8)                           :: alb,cosz,cosaoi,lambda,lambda_tot
+   real(kind=8)                           :: alb,cosz,cosaoi,lambda
    real(kind=8)                           :: beam_backscatter,eta,zeta
    real(kind=8)                           :: exk,exki,zetai
    real(kind=8)                           :: d,rhoo,sigma,source_bot,source_top
@@ -77,14 +82,14 @@ subroutine sw_twostream_clump(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area       
    lambda     = 5.d-1/cosaoi
    lambda_tot = 0.0d0
    do il=1,ncoh
-      ipft          = pft(il)
-      lambda_tot    = lambda_tot + clumping_factor(ipft)
-      eff_tai(il) = clumping_factor(ipft)*TAI(il)
+      ipft           = pft(il)
+      lambda_tot     = lambda_tot + clumping_factor(ipft)
+      lambda_coh(il) = lambda * clumping_factor(ipft) / canopy_area(il)
+      eff_tai(il)    = clumping_factor(ipft)*TAI(il)
    end do
    lambda_tot = lambda_tot * lambda / dble(ncoh)
-
    beam_backscatter = (5.d-1 + cosz) * (1.0d0 - cosz*log(1.0d0+1.0d0/cosz))
- 
+  
    !----- Loop over bands (currently Visible and near infrared). --------------------------!
    bandloop: do iband = 1,2
       select case(iband)
@@ -112,12 +117,17 @@ subroutine sw_twostream_clump(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area       
       !------------------------------------------------------------------------------------!
       !----- Start with the tallest cohort, moving downwards. -----------------------------!
       beam_bot_crown(ncoh) = exp(-lambda*eff_tai(ncoh)/canopy_area(ncoh))
+      beam_level(ncoh)     = exp(-5.d-1*lambda*eff_tai(ncoh)/canopy_area(ncoh))
       beam_bot(ncoh)       = (1.d0-canopy_area(ncoh))                                      &
                            + canopy_area(ncoh)*beam_bot_crown(ncoh)
       do il=ncoh-1,1,-1
          beam_bot_crown(il) = beam_bot(il+1) * exp(-lambda*eff_tai(il)/canopy_area(il))
          beam_bot(il)       = beam_bot(il+1)*(1.d0-canopy_area(il))                        & 
                             + canopy_area(il)*beam_bot_crown(il)
+         beam_level(il)     = beam_level(il+1)                                             &
+                            * exp(-5.d-1*lambda*eff_tai(il)/canopy_area(il))               &
+                            * canopy_area(il)                                              &
+                            + (1.d0-canopy_area(il)) * beam_level(il+1)
       end do
 
       
@@ -329,6 +339,7 @@ subroutine sw_twostream_clump(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area       
    end do bandloop
    
    do il=1,ncoh
+      diff_level(il)          = downward_vis_diffuse(il+1)
       PAR_beam_flip(il)       = visible_fraction_dir                                       &
                               * sngl( downward_vis_beam(il+1)-downward_vis_beam(il)        &
                                     + upward_vis_beam(il)-upward_vis_beam(il+1))

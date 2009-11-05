@@ -274,7 +274,6 @@ OBJ_MODEL =                         \
 	canopy_update_euler.o       \
 	consts_coms.o               \
 	decomp_coms.o               \
-	decomposition.o             \
 	disturb_coms.o              \
 	disturbance.o               \
 	ed_filelist.o               \
@@ -340,6 +339,7 @@ OBJ_MODEL =                         \
 	rk4_misc.o                  \
 	rk4_stepper.o               \
 	soil_coms.o                 \
+	soil_respiration.o          \
 	stable_cohorts.o            \
 	structural_growth.o         \
 	twostream_rad.o             \

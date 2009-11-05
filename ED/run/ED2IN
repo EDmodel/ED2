@@ -344,10 +344,17 @@
                         ! This option is ignored in near bare ground runs.
 
 !----- Patch and cohort dimension settings ------------------------------------------------!
-   NL%MAXPATCH  =  80 ! If number of patches in a given site exceeds 
-                      ! NL%MAXPATCH, force patch fusion.
-   NL%MAXCOHORT =  80 ! If number of cohorts in a given patch exceeds
-                      ! NL%MAXCOHORT, force cohort fusion.
+   NL%MAXPATCH  =  80 ! If number of patches in a given site exceeds NL%MAXPATCH, 
+                      !    force patch fusion.  If NL%MAXPATCH is 0, then
+                      !    fusion will never happen.  If MAXPATCH is negative, then the 
+                      !    absolute value is used only during the initialization, and  
+                      !    fusion will never happen again. 
+   NL%MAXCOHORT =  80 ! If number of cohorts in a given patch exceeds NL%MAXCOHORT, 
+                      !    force cohort fusion.  If NL%MAXCOHORT is 0, then
+                      !    fusion will never happen.  If MAXCOHORT is negative, then the 
+                      !    absolute value is used only during the initialization, and  
+                      !    fusion will never happen again. 
+                      ! 
 !------------------------------------------------------------------------------------------!
                                          
                                          
@@ -358,7 +365,13 @@
 
    NL%ZROUGH = 0.1                       ! Constant roughness if for all domain
 
-   NL%TREEFALL_DISTURBANCE_RATE  = 0.014 ! Treefall disturbance rate, 1/years
+   NL%TREEFALL_DISTURBANCE_RATE  = 0.014 ! - Sign-dependent treefall disturbance rate:
+                                         ! > 0. usual disturbance rate, in 1/years;
+                                         ! = 0. No treefall disturbance;
+                                         ! < 0. Treefall will be added as a mortality
+                                         !      rate (it will kill plants, but it won't
+                                         !      create a new patch).
+                                         !  
 
    NL%RUNOFF_TIME    = 28800.0           ! the forest could get saturated and 
                                          ! develop a sfcwater pool of meters or 

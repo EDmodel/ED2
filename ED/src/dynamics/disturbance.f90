@@ -658,6 +658,7 @@ module disturbance_utils
   subroutine insert_survivors(csite, np, cp, q, area_fac,nat_dist_type)
 
     use ed_state_vars, only: sitetype,patchtype
+    use ed_misc_coms , only: idoutput,imoutput
     
     implicit none
     type(sitetype),target    :: csite
@@ -732,11 +733,11 @@ module disturbance_utils
           tpatch%mean_gpp(nco)            = tpatch%mean_gpp(nco)             * cohort_area_fac
           tpatch%mean_leaf_resp(nco)      = tpatch%mean_leaf_resp(nco)       * cohort_area_fac
           tpatch%mean_root_resp(nco)      = tpatch%mean_root_resp(nco)       * cohort_area_fac
-          tpatch%dmean_gpp(nco)           = tpatch%dmean_gpp(nco)            * cohort_area_fac
-          tpatch%dmean_gpp_pot(nco)       = tpatch%dmean_gpp_pot(nco)        * cohort_area_fac
-          tpatch%dmean_gpp_max(nco)       = tpatch%dmean_gpp_max(nco)        * cohort_area_fac
-          tpatch%dmean_leaf_resp(nco)     = tpatch%dmean_leaf_resp(nco)      * cohort_area_fac
-          tpatch%dmean_root_resp(nco)     = tpatch%dmean_root_resp(nco)      * cohort_area_fac
+          tpatch%today_gpp(nco)           = tpatch%today_gpp(nco)            * cohort_area_fac
+          tpatch%today_gpp_pot(nco)       = tpatch%today_gpp_pot(nco)        * cohort_area_fac
+          tpatch%today_gpp_max(nco)       = tpatch%today_gpp_max(nco)        * cohort_area_fac
+          tpatch%today_leaf_resp(nco)     = tpatch%today_leaf_resp(nco)      * cohort_area_fac
+          tpatch%today_root_resp(nco)     = tpatch%today_root_resp(nco)      * cohort_area_fac
           tpatch%Psi_open(nco)            = tpatch%Psi_open(nco)             * cohort_area_fac
           tpatch%gpp(nco)                 = tpatch%gpp(nco)                  * cohort_area_fac
           tpatch%leaf_respiration(nco)    = tpatch%leaf_respiration(nco)     * cohort_area_fac
@@ -745,6 +746,17 @@ module disturbance_utils
           tpatch%veg_water(nco)           = tpatch%veg_water(nco)            * cohort_area_fac
           tpatch%hcapveg(nco)             = tpatch%hcapveg(nco)              * cohort_area_fac
           tpatch%veg_energy(nco)          = tpatch%veg_energy(nco)           * cohort_area_fac
+          !----- Carbon flux monthly means are extensive, we must convert them. ------------!
+          if (idoutput > 0 .or. imoutput > 0) then
+             tpatch%dmean_par_v     (nco) = tpatch%dmean_par_v     (nco)     * cohort_area_fac
+             tpatch%dmean_par_v_beam(nco) = tpatch%dmean_par_v_beam(nco)     * cohort_area_fac
+             tpatch%dmean_par_v_diff(nco) = tpatch%dmean_par_v_diff(nco)     * cohort_area_fac
+          end if
+          if (imoutput > 0) then
+             tpatch%mmean_par_v     (nco) = tpatch%mmean_par_v     (nco)     * cohort_area_fac
+             tpatch%mmean_par_v_beam(nco) = tpatch%mmean_par_v_beam(nco)     * cohort_area_fac
+             tpatch%mmean_par_v_diff(nco) = tpatch%mmean_par_v_diff(nco)     * cohort_area_fac
+          end if
        end if
           
     enddo  ! end loop over cohorts
@@ -877,8 +889,8 @@ module disturbance_utils
     use ed_misc_coms, only: dtlsm
     use fuse_fiss_utils, only : sort_cohorts
     use ed_therm_lib,only : calc_hcapveg
-    use consts_coms, only: t3ple
-    use allometry, only : h2dbh, dbh2bd, dbh2bl, dbh2h, area_indices
+    use consts_coms, only: t3ple, pio4
+    use allometry, only : h2dbh, dbh2bd, dbh2bl, dbh2h, area_indices, ed_biomass
     use ed_max_dims, only : n_pft
 
     implicit none
@@ -949,6 +961,11 @@ module disturbance_utils
 
     cpatch%bstorage(nc) = 1.0*(cpatch%balive(nc)) !! changed by MCD, was 0.0
 
+
+    !----- Finding the new basal area and above-ground biomass. ---------------------------!
+    cpatch%basarea(nc) = pio4 * cpatch%dbh(nc) * cpatch%dbh(nc)                
+    cpatch%agb(nc)     = ed_biomass(cpatch%bdead(nc),cpatch%balive(nc),cpatch%bleaf(nc)    &
+                                   ,cpatch%pft(nc),cpatch%hite(nc) ,cpatch%bstorage(nc))     
 
 
     call init_ed_cohort_vars(cpatch, nc, lsl)

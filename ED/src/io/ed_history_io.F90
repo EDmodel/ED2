@@ -5,7 +5,7 @@ subroutine read_ed1_history_file
   use pft_coms, only: SLA, q, qsw, hgt_min, include_pft, include_pft_ag, phenology,pft_1st_check,include_these_pft
   use ed_misc_coms, only: sfilin, ied_init_mode
   use mem_sites, only: grid_res,edres
-  use consts_coms, only: pio180
+  use consts_coms, only: pio180,pio4
   use ed_misc_coms, only: use_target_year, restart_target_year
   use ed_state_vars,only:polygontype,sitetype,patchtype,edtype, &
        edgrid_g,allocate_sitetype,allocate_patchtype
@@ -569,16 +569,24 @@ subroutine read_ed1_history_file
                        cpatch%cb(13,ic2) = 0.0
                        cpatch%cb_max(13,ic2) = 0.0
                        
+                       cpatch%agb(ic2) = ed_biomass(cpatch%bdead(ic2),cpatch%balive(ic2)   &
+                                                   ,cpatch%bleaf(ic2),cpatch%pft(ic2)      &
+                                                   ,cpatch%hite(ic2),cpatch%bstorage(ic2)) &
+                                       * cpatch%nplant(ic2) * 10.
+                       cpatch%basarea(ic2)  = cpatch%nplant(ic2) * pio4                    &
+                                            * cpatch%dbh(ic2) * cpatch%dbh(ic2)
+                       cpatch%dagb_dt(ic2)  = 0.
+                       cpatch%dba_dt(ic2)   = 0.
+                       cpatch%ddbh_dt(ic2)  = 0.
+                       
                        ! Initialize other cohort variables. Some of them won't be updated
                        ! unless the lai goes above lai_min
                        cpatch%fsw(ic2)   = 1.0
                        cpatch%gpp(ic2)   = 0.0
                        cpatch%par_v(ic2) = 0.0
                        
-                       csite%plant_ag_biomass(ipa) = csite%plant_ag_biomass(ipa) +         &
-                           ed_biomass(cpatch%bdead(ic2),cpatch%balive(ic2)                 &
-                                     ,cpatch%bleaf(ic2),cpatch%pft(ic2),cpatch%hite(ic2)   &
-                                     ,cpatch%bstorage(ic2))* cpatch%nplant(ic2)
+                       csite%plant_ag_biomass(ipa) = csite%plant_ag_biomass(ipa)           &
+                                                   + cpatch%agb(ic2) * 0.1
                     endif
                  enddo
               else ! if (csite%cohort_count(ipa) == 0) then                  
@@ -1356,6 +1364,10 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
      call hdf_getslab_r(cgrid%dmean_vleaf_resp     (ipy:ipy) ,'DMEAN_VLEAF_RESP      '     &
                        ,dsetrank,iparallel,.false.)
 
+  if (associated(cgrid%dmean_fs_open        ))                                             &
+     call hdf_getslab_r(cgrid%dmean_fs_open        (ipy:ipy) ,'DMEAN_FS_OPEN         '     &
+                       ,dsetrank,iparallel,.false.)
+
   if (associated(cgrid%dmean_fsw            ))                                             &
      call hdf_getslab_r(cgrid%dmean_fsw            (ipy:ipy) ,'DMEAN_FSW             '     &
                        ,dsetrank,iparallel,.false.)
@@ -1560,7 +1572,19 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
   if (associated(cgrid%mmean_pcpg           ))                                             &
      call hdf_getslab_r(cgrid%mmean_pcpg           (ipy:ipy) ,'MMEAN_PCPG            '     &
                        ,dsetrank,iparallel,.false.)
- 
+
+  if (associated(cgrid%mmean_fs_open        ))                                             &
+     call hdf_getslab_r(cgrid%mmean_fs_open        (ipy:ipy) ,'MMEAN_FS_OPEN         '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%mmean_fsw            ))                                             &
+     call hdf_getslab_r(cgrid%mmean_fsw            (ipy:ipy) ,'MMEAN_FSW             '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%mmean_fsn            ))                                             &
+     call hdf_getslab_r(cgrid%mmean_fsn            (ipy:ipy) ,'MMEAN_FSN             '     &
+                       ,dsetrank,iparallel,.false.)
+
   if (associated(cgrid%stdev_gpp            ))                                             &
      call hdf_getslab_r(cgrid%stdev_gpp            (ipy:ipy) ,'STDEV_GPP             '     &
                        ,dsetrank,iparallel,.false.)
@@ -1601,7 +1625,7 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    memsize(2)   = 1_8
    memoffs(2)   = 0_8
 
-   call hdf_getslab_i(cgrid%ntext_soil(:,ipy)       ,'NTEXT_SOIL '       ,&
+   call hdf_getslab_i(cgrid%ntext_soil(:,ipy)          ,'NTEXT_SOIL '       ,&
         dsetrank,iparallel,.false.)
    if(associated(cgrid%dmean_soil_temp)) &
       call hdf_getslab_r(cgrid%dmean_soil_temp(:,ipy)  ,'DMEAN_SOIL_TEMP '  ,&
@@ -1652,41 +1676,6 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    if(associated(cgrid%ba_pft)) call hdf_getslab_r(cgrid%ba_pft(:,ipy) ,'BA_PFT '        ,   &
         dsetrank,iparallel,.true.)
 
-   ! Variables with 2 dimensions (n_pft,npolygons)
-   dsetrank    = 2
-   globdims(1) = int(n_dist_types,8)
-   chnkdims(1) = int(n_dist_types,8)
-   memdims(1)  = int(n_dist_types,8)
-   memsize(1)  = int(n_dist_types,8)
-   chnkoffs(1) = 0_8
-   memoffs(1)  = 0_8
-
-   globdims(2)  = int(cgrid%npolygons_global,8)
-   chnkdims(2)  = 1_8
-   chnkoffs(2)  = int(py_index - 1,8)
-   memdims(2)   = 1_8
-   memsize(2)   = 1_8
-   memoffs(2)   = 0_8
-
-   if(associated(cgrid%dmean_gpp_lu))  call hdf_getslab_r(cgrid%dmean_gpp_lu(:,ipy) , &
-        'DMEAN_GPP_LU ' ,dsetrank,iparallel,.false.)
-   if(associated(cgrid%dmean_rh_lu ))  call hdf_getslab_r(cgrid%dmean_rh_lu(:,ipy)  , &
-        'DMEAN_RH_LU '  ,dsetrank,iparallel,.false.)
-   if(associated(cgrid%dmean_nep_lu))  call hdf_getslab_r(cgrid%dmean_nep_lu(:,ipy) , &
-        'DMEAN_NEP_LU ' ,dsetrank,iparallel,.false.)
-   if(associated(cgrid%mmean_lai_lu))  call hdf_getslab_r(cgrid%mmean_lai_lu(:,ipy) , &
-        'MMEAN_LAI_LU ' ,dsetrank,iparallel,.false.)
-   if(associated(cgrid%mmean_wpa_lu))  call hdf_getslab_r(cgrid%mmean_wpa_lu(:,ipy) , &
-        'MMEAN_WPA_LU ' ,dsetrank,iparallel,.false.)
-   if(associated(cgrid%mmean_wai_lu))  call hdf_getslab_r(cgrid%mmean_wai_lu(:,ipy) , &
-        'MMEAN_WAI_LU ' ,dsetrank,iparallel,.false.)
-   if(associated(cgrid%mmean_gpp_lu))  call hdf_getslab_r(cgrid%mmean_gpp_lu(:,ipy) , &
-        'MMEAN_GPP_LU ' ,dsetrank,iparallel,.false.)
-   if(associated(cgrid%mmean_rh_lu ))  call hdf_getslab_r(cgrid%mmean_rh_lu(:,ipy)  , &
-        'MMEAN_RH_LU '  ,dsetrank,iparallel,.false.)
-   if(associated(cgrid%mmean_nep_lu))  call hdf_getslab_r(cgrid%mmean_nep_lu(:,ipy) , &
-        'MMEAN_NEP_LU ' ,dsetrank,iparallel,.false.)
-
 
    ! Variables with 2 dimensions (n_dbh,npolygons)
    dsetrank    = 2
@@ -1704,78 +1693,11 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    memsize(2)   = 1_8
    memoffs(2)   = 0_8
 
-
-   if(associated(cgrid%bseeds_dbh)) call hdf_getslab_r(cgrid%bseeds_dbh(:,ipy),  &
-        'BSEEDS_DBH ' ,dsetrank,iparallel,.false.)
-   if(associated(cgrid%agb_dbh)) call hdf_getslab_r(cgrid%agb_dbh(:,ipy) ,         &
-        'AGB_DBH '       ,dsetrank,iparallel,.true.)
-   if(associated(cgrid%ba_dbh)) call hdf_getslab_r(cgrid%ba_dbh(:,ipy) ,           &
-        'BA_DBH '        ,dsetrank,iparallel,.true.)
-
-   if(associated(cgrid%lai_dbh)) call hdf_getslab_r(cgrid%lai_dbh(:,ipy),  &
-        'LAI_DBH ' ,dsetrank,iparallel,.false.)
-
-   if(associated(cgrid%wpa_dbh)) call hdf_getslab_r(cgrid%wpa_dbh(:,ipy),  &
-        'WPA_DBH ' ,dsetrank,iparallel,.false.)
-
-   if(associated(cgrid%wai_dbh)) call hdf_getslab_r(cgrid%wai_dbh(:,ipy),  &
-        'WAI_DBH ' ,dsetrank,iparallel,.false.)
-
-   if(associated(cgrid%mmean_lai_dbh)) call hdf_getslab_r(cgrid%mmean_lai_dbh(:,ipy),  &
-        'MMEAN_LAI_DBH ' ,dsetrank,iparallel,.false.)
-
-   if(associated(cgrid%mmean_wpa_dbh)) call hdf_getslab_r(cgrid%mmean_wpa_dbh(:,ipy),  &
-        'MMEAN_WPA_DBH ' ,dsetrank,iparallel,.false.)
-
-   if(associated(cgrid%mmean_wai_dbh)) call hdf_getslab_r(cgrid%mmean_wai_dbh(:,ipy),  &
-        'MMEAN_WAI_DBH ' ,dsetrank,iparallel,.false.)
-
    if(associated(cgrid%dmean_gpp_dbh)) call hdf_getslab_r(cgrid%dmean_gpp_dbh(:,ipy) , &
         'DMEAN_GPP_DBH ' ,dsetrank,iparallel,.false.)
    if(associated(cgrid%mmean_gpp_dbh)) call hdf_getslab_r(cgrid%mmean_gpp_dbh(:,ipy) , &
         'MMEAN_GPP_DBH ' ,dsetrank,iparallel,.false.)
 
-
-   ! Variables with 2 dimensions (n_age,npolygons)
-   dsetrank    = 2
-   globdims(1) = int(n_age,8)
-   chnkdims(1) = int(n_age,8)
-   memdims(1)  = int(n_age,8)
-   memsize(1)  = int(n_age,8)
-   chnkoffs(1) = 0_8
-   memoffs(1)  = 0_8
-
-   globdims(2)  = int(cgrid%npolygons_global,8)
-   chnkdims(2)  = 1_8
-   chnkoffs(2)  = int(py_index - 1,8)
-   memdims(2)   = 1_8
-   memsize(2)   = 1_8
-   memoffs(2)   = 0_8
-
-   if(associated(cgrid%bseeds_age)) call hdf_getslab_r(cgrid%bseeds_age(:,ipy),  &
-        'BSEEDS_AGE ' ,dsetrank,iparallel,.false.)
-   if(associated(cgrid%agb_age)) call hdf_getslab_r(cgrid%agb_age(:,ipy) ,         &
-        'AGB_AGE '       ,dsetrank,iparallel,.true.)
-   if(associated(cgrid%ba_age)) call hdf_getslab_r(cgrid%ba_age(:,ipy) ,           &
-        'BA_AGE '        ,dsetrank,iparallel,.true.)
-
-   if(associated(cgrid%lai_age)) call hdf_getslab_r(cgrid%lai_age(:,ipy),  &
-        'LAI_AGE ' ,dsetrank,iparallel,.false.)
-
-   if(associated(cgrid%wpa_age)) call hdf_getslab_r(cgrid%wpa_age(:,ipy),  &
-        'WPA_AGE ' ,dsetrank,iparallel,.false.)
-
-   if(associated(cgrid%wai_age)) call hdf_getslab_r(cgrid%wai_age(:,ipy),  &
-        'WAI_AGE ' ,dsetrank,iparallel,.false.)
-
-   if(associated(cgrid%mmean_lai_age)) call hdf_getslab_r(cgrid%mmean_lai_age(:,ipy),  &
-        'MMEAN_LAI_AGE ' ,dsetrank,iparallel,.false.)
-
-   if(associated(cgrid%mmean_wpa_age)) call hdf_getslab_r(cgrid%mmean_wpa_age(:,ipy),  &
-        'MMEAN_WPA_AGE ' ,dsetrank,iparallel,.false.)
-
-   if(associated(cgrid%mmean_wai_age)) call hdf_getslab_r(cgrid%mmean_wai_age(:,ipy),  &
-        'MMEAN_WAI_AGE ' ,dsetrank,iparallel,.false.)
 
    ! Variables with three dimensions(n_dist_types,n_dist_types,npolygons)
    dsetrank    = 3
@@ -2167,12 +2089,19 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    call hdf_getslab_r(csite%rough,'ROUGH ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%avg_daily_temp,'AVG_DAILY_TEMP ',dsetrank,iparallel,.true.)  
    call hdf_getslab_r(csite%mean_rh,'MEAN_RH ',dsetrank,iparallel,.true.)
+   call hdf_getslab_r(csite%dmean_rh,'DMEAN_RH_PA ',dsetrank,iparallel,.false.)
+   call hdf_getslab_r(csite%mmean_rh,'MMEAN_RH_PA ',dsetrank,iparallel,.false.)
+   call hdf_getslab_r(csite%lambda_light,'LAMBDA_LIGHT ',dsetrank,iparallel,.true.)
+   call hdf_getslab_r(csite%dmean_lambda_light,'DMEAN_LAMBDA_LIGHT ',dsetrank,iparallel,.false.)
+   call hdf_getslab_r(csite%mmean_lambda_light,'MMEAN_LAMBDA_LIGHT ',dsetrank,iparallel,.false.)
    call hdf_getslab_r(csite%mean_nep,'MEAN_NEP ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%wbudget_loss2atm,'WBUDGET_LOSS2ATM ',dsetrank,iparallel,.true.)
+   call hdf_getslab_r(csite%wbudget_denseffect,'WBUDGET_DENSEFFECT ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%wbudget_precipgain,'WBUDGET_PRECIPGAIN ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%wbudget_loss2runoff,'WBUDGET_LOSS2RUNOFF ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%wbudget_initialstorage,'WBUDGET_INITIALSTORAGE ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%ebudget_loss2atm,'EBUDGET_LOSS2ATM ',dsetrank,iparallel,.true.)
+   call hdf_getslab_r(csite%ebudget_denseffect,'EBUDGET_DENSEFFECT ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%ebudget_loss2runoff,'EBUDGET_LOSS2RUNOFF ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%ebudget_netrad,'EBUDGET_NETRAD ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%ebudget_latent,'EBUDGET_LATENT ',dsetrank,iparallel,.true.)
@@ -2180,6 +2109,7 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    call hdf_getslab_r(csite%ebudget_initialstorage,'EBUDGET_INITIALSTORAGE ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%co2budget_initialstorage,'CO2BUDGET_INITIALSTORAGE ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%co2budget_loss2atm,'CO2BUDGET_LOSS2ATM ',dsetrank,iparallel,.true.)
+   call hdf_getslab_r(csite%co2budget_denseffect,'CO2BUDGET_DENSEFFECT ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%co2budget_gpp,'CO2BUDGET_GPP ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%co2budget_plresp,'CO2BUDGET_PLRESP ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%co2budget_rh,'CO2BUDGET_RH ',dsetrank,iparallel,.true.)
@@ -2430,7 +2360,7 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
        memdims,memoffs,memsize
   use consts_coms, only: cliq,cice,t3ple,tsupercool
   use c34constants,only: n_stoma_atts
-  use ed_max_dims,only: n_pft
+  use ed_max_dims,only: n_pft, n_mort
   use ed_therm_lib, only : calc_hcapveg
   use allometry, only : area_indices
   use therm_lib, only : qwtk
@@ -2498,6 +2428,12 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
      call hdf_getslab_r(cpatch%nplant,'NPLANT ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%hite,'HITE ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%dbh,'DBH ',dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%agb,'AGB_CO ',dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%basarea,'BA_CO',dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%dagb_dt,'DAGB_DT ',dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%dba_dt,'DBA_DT',dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%ddbh_dt,'DDBH_DT',dsetrank,iparallel,.true.)
+
      call hdf_getslab_r(cpatch%bdead,'BDEAD ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%bleaf,'BLEAF ',dsetrank,iparallel,.true.)
      call hdf_getslab_i(cpatch%phenology_status,'PHENOLOGY_STATUS ',dsetrank,iparallel,.true.)
@@ -2525,22 +2461,69 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
      call hdf_getslab_r(cpatch%mean_gpp,'MEAN_GPP ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%mean_leaf_resp,'MEAN_LEAF_RESP ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%mean_root_resp,'MEAN_ROOT_RESP ',dsetrank,iparallel,.true.)
-     call hdf_getslab_r(cpatch%dmean_leaf_resp,'DMEAN_LEAF_RESP_CO ',dsetrank,iparallel,.true.)
-     call hdf_getslab_r(cpatch%dmean_root_resp,'DMEAN_ROOT_RESP_CO ',dsetrank,iparallel,.true.)
-     call hdf_getslab_r(cpatch%dmean_gpp,'DMEAN_GPP_CO ',dsetrank,iparallel,.true.)
-     call hdf_getslab_r(cpatch%dmean_gpp_pot,'DMEAN_GPP_POT ',dsetrank,iparallel,.true.)
-     call hdf_getslab_r(cpatch%dmean_gpp_max,'DMEAN_GPP_MAX ',dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%today_leaf_resp,'TODAY_LEAF_RESP ',dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%today_root_resp,'TODAY_ROOT_RESP ',dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%today_gpp,'TODAY_GPP ',dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%today_gpp_pot,'TODAY_GPP_POT ',dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%today_gpp_max,'TODAY_GPP_MAX ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%growth_respiration,'GROWTH_RESPIRATION ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%storage_respiration,'STORAGE_RESPIRATION ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%vleaf_respiration,'VLEAF_RESPIRATION ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%fsn,'FSN ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%monthly_dndt,'MONTHLY_DNDT ',dsetrank,iparallel,.true.)
-     
-     
+     call hdf_getslab_r(cpatch%mmean_gpp,'MMEAN_GPP_CO ',dsetrank,iparallel,.false.)
+     call hdf_getslab_r(cpatch%mmean_leaf_resp,'MMEAN_LEAF_RESP_CO ',dsetrank,iparallel,.false.)
+     call hdf_getslab_r(cpatch%mmean_root_resp,'MMEAN_ROOT_RESP_CO ',dsetrank,iparallel,.false.)
+     call hdf_getslab_r(cpatch%mmean_growth_resp,'MMEAN_GROWTH_RESP_CO ',dsetrank,iparallel,.false.)
+     call hdf_getslab_r(cpatch%mmean_storage_resp,'MMEAN_STORAGE_RESP_CO ',dsetrank,iparallel,.false.)
+     call hdf_getslab_r(cpatch%mmean_vleaf_resp,'MMEAN_VLEAF_RESP_CO ',dsetrank,iparallel,.false.)
+     call hdf_getslab_r(cpatch%dmean_leaf_resp,'DMEAN_LEAF_RESP_CO ',dsetrank,iparallel,.false.)
+     call hdf_getslab_r(cpatch%dmean_root_resp,'DMEAN_ROOT_RESP_CO ',dsetrank,iparallel,.false.)
+     call hdf_getslab_r(cpatch%dmean_gpp,'DMEAN_GPP_CO ',dsetrank,iparallel,.false.)
+     call hdf_getslab_r(cpatch%dmean_fs_open,'DMEAN_FS_OPEN ',dsetrank,iparallel,.false.)
+     call hdf_getslab_r(cpatch%mmean_fs_open,'MMEAN_FS_OPEN ',dsetrank,iparallel,.false.) 
+     call hdf_getslab_r(cpatch%dmean_fsw,'DMEAN_FSW ',dsetrank,iparallel,.false.)
+     call hdf_getslab_r(cpatch%mmean_fsw,'MMEAN_FSW ',dsetrank,iparallel,.false.) 
+     call hdf_getslab_r(cpatch%dmean_fsn,'DMEAN_FSN ',dsetrank,iparallel,.false.)
+     call hdf_getslab_r(cpatch%mmean_fsn,'MMEAN_FSN ',dsetrank,iparallel,.false.) 
+     call hdf_getslab_r(cpatch%mmean_mnt_cost,'MMEAN_MNT_COST ',dsetrank,iparallel,.false.)   
+     call hdf_getslab_r(cpatch%mmean_leaf_litter,'MMEAN_LEAF_LITTER ',dsetrank,iparallel,.false.)   
+     call hdf_getslab_r(cpatch%mmean_cb,'MMEAN_CB ',dsetrank,iparallel,.false.)   
+     call hdf_getslab_r(cpatch%dmean_light_level,'DMEAN_LIGHT_LEVEL ',dsetrank,iparallel,.false.)
+     call hdf_getslab_r(cpatch%mmean_light_level,'MMEAN_LIGHT_LEVEL ',dsetrank,iparallel,.false.)
+     call hdf_getslab_r(cpatch%dmean_light_level_beam,'DMEAN_LIGHT_LEVEL_BEAM ',dsetrank,iparallel,.false.)
+     call hdf_getslab_r(cpatch%mmean_light_level_beam,'MMEAN_LIGHT_LEVEL_BEAM ',dsetrank,iparallel,.false.)
+     call hdf_getslab_r(cpatch%dmean_light_level_diff,'DMEAN_LIGHT_LEVEL_DIFF ',dsetrank,iparallel,.false.)
+     call hdf_getslab_r(cpatch%mmean_light_level_diff,'MMEAN_LIGHT_LEVEL_DIFF ',dsetrank,iparallel,.false.)
+     call hdf_getslab_r(cpatch%dmean_par_v,'DMEAN_PAR_V ',dsetrank,iparallel,.false.)
+     call hdf_getslab_r(cpatch%dmean_par_v_beam,'DMEAN_PAR_V_BEAM ',dsetrank,iparallel,.false.)
+     call hdf_getslab_r(cpatch%dmean_par_v_diff,'DMEAN_PAR_V_DIFF ',dsetrank,iparallel,.false.)
+     call hdf_getslab_r(cpatch%mmean_par_v,'MMEAN_PAR_V ',dsetrank,iparallel,.false.)
+     call hdf_getslab_r(cpatch%mmean_par_v_beam,'MMEAN_PAR_V_BEAM ',dsetrank,iparallel,.false.)
+     call hdf_getslab_r(cpatch%mmean_par_v_diff,'MMEAN_PAR_V_DIFF ',dsetrank,iparallel,.false.)
+     call hdf_getslab_r(cpatch%dmean_beamext_level,'DMEAN_BEAMEXT_LEVEL ',dsetrank,iparallel,.false.)
+     call hdf_getslab_r(cpatch%mmean_beamext_level,'MMEAN_BEAMEXT_LEVEL ',dsetrank,iparallel,.false.)
+     call hdf_getslab_r(cpatch%dmean_diffext_level,'DMEAN_DIFFEXT_LEVEL ',dsetrank,iparallel,.false.)
+     call hdf_getslab_r(cpatch%mmean_diffext_level,'MMEAN_DIFFEXT_LEVEL ',dsetrank,iparallel,.false.)
+     call hdf_getslab_r(cpatch%dmean_norm_par_beam,'DMEAN_NORM_PAR_BEAM ',dsetrank,iparallel,.false.)
+     call hdf_getslab_r(cpatch%mmean_norm_par_beam,'MMEAN_NORM_PAR_BEAM ',dsetrank,iparallel,.false.)
+     call hdf_getslab_r(cpatch%dmean_norm_par_diff,'DMEAN_NORM_PAR_DIFF ',dsetrank,iparallel,.false.)
+     call hdf_getslab_r(cpatch%mmean_norm_par_diff,'MMEAN_NORM_PAR_DIFF ',dsetrank,iparallel,.false.)
+     call hdf_getslab_r(cpatch%dmean_lambda_light,'DMEAN_LAMBDA_LIGHT_CO ',dsetrank,iparallel,.false.)
+     call hdf_getslab_r(cpatch%mmean_lambda_light,'MMEAN_LAMBDA_LIGHT_CO ',dsetrank,iparallel,.false.)
+
      call hdf_getslab_r(cpatch%Psi_open,'PSI_OPEN ',dsetrank,iparallel,.true.)
      call hdf_getslab_i(cpatch%krdepth,'KRDEPTH ',dsetrank,iparallel,.true.)
      call hdf_getslab_i(cpatch%first_census,'FIRST_CENSUS ',dsetrank,iparallel,.true.)
      call hdf_getslab_i(cpatch%new_recruit_flag,'NEW_RECRUIT_FLAG ',dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%light_level,'LIGHT_LEVEL ',dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%light_level_beam,'LIGHT_LEVEL_BEAM ',dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%light_level_diff,'LIGHT_LEVEL_DIFF ',dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%beamext_level,'BEAMEXT_LEVEL ',dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%diffext_level,'DIFFEXT_LEVEL ',dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%norm_par_beam,'NORM_PAR_BEAM ',dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%norm_par_diff,'NORM_PAR_DIFF ',dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%lambda_light,'LAMBDA_LIGHT_CO ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%par_v,'PAR_V ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%par_v_beam,'PAR_V_BEAM ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%par_v_diffuse,'PAR_V_DIFFUSE ',dsetrank,iparallel,.true.)
@@ -2560,12 +2543,14 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
      call hdf_getslab_r(cpatch%fs_open,'FS_OPEN ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%stomatal_resistance,'STOMATAL_RESISTANCE ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%maintenance_costs,'MAINTENANCE_COSTS ',dsetrank,iparallel,.true.)
-     call hdf_getslab_r(cpatch%bseeds,'BSEEDS ',dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%leaf_litter,'LEAF_LITTER ',dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%bseeds,'BSEEDS_CO ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%leaf_respiration,'LEAF_RESPIRATION ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%root_respiration,'ROOT_RESPIRATION ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%gpp,'GPP ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%paw_avg,'PAW_AVG ',dsetrank,iparallel,.true.)
      
+     !----- 13-month dimension (12 previous months + current month). ----------------------!
      dsetrank    = 2
      globdims(1) = 13_8
      chnkdims(1) = 13_8
@@ -2584,7 +2569,27 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
      
      call hdf_getslab_r(cpatch%cb,'CB ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%cb_max,'CB_MAX ',dsetrank,iparallel,.true.)
-  
+
+     !----- 2-D, dimensioned by the number of mortality rates. ----------------------------!
+     dsetrank    = 2
+     globdims(1) = int(n_mort,8)
+     chnkdims(1) = int(n_mort,8)
+     chnkoffs(1) = 0_8
+     memdims(1)  = int(n_mort,8)
+     memsize(1)  = int(n_mort,8)
+     memoffs(2)  = 0_8
+     
+     globdims(2) = int(ncohorts_global,8)
+     chnkdims(2) = int(cpatch%ncohorts,8)
+     chnkoffs(2) = int(paco_index - 1,8)
+     
+     memdims(2)  = int(cpatch%ncohorts,8)
+     memsize(2)  = int(cpatch%ncohorts,8)
+     memoffs(2)  = 0_8
+
+     call hdf_getslab_r(cpatch%mort_rate,'MORT_RATE_CO ',dsetrank,iparallel,.true.)
+
+
      dsetrank    = 2
      globdims(1) = int(n_stoma_atts,8)
      chnkdims(1) = int(n_stoma_atts,8)

@@ -270,7 +270,6 @@ rm -fv canopy_struct_dynamics.o   canopy_struct_dynamics.mod
 rm -fv canopy_update_euler.o      canopy_update_euler.mod
 rm -fv consts_coms.o              consts_coms.mod
 rm -fv decomp_coms.o              decomp_coms.mod
-rm -fv decomposition.o            decomposition.mod
 rm -fv disturb_coms.o             disturb_coms.mod
 rm -fv disturbance.o              disturbance.mod
 rm -fv ed_bare_restart.o          ed_bare_restart.mod
@@ -335,6 +334,7 @@ rm -fv rk4_integ_utils.o          rk4_integ_utils.mod
 rm -fv rk4_odeint.o               rk4_odeint.mod
 rm -fv rk4_stepper.o              rk4_stepper.mod
 rm -fv soil_coms.o                soil_coms.mod
+rm -fv soil_respiration.o         soil_respiration.mod
 rm -fv structural_growth.o        structural_growth.mod
 rm -fv twostream_rad.o            twostream_rad.mod
 rm -fv update_derived_props.o     update_derived_props.mod

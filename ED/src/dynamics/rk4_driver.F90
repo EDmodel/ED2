@@ -48,6 +48,10 @@ module rk4_driver
       real                                    :: wcurr_loss2runoff
       real                                    :: ecurr_loss2runoff
       real                                    :: ecurr_latent
+      real                                    :: old_can_enthalpy
+      real                                    :: old_can_shv
+      real                                    :: old_can_co2
+      real                                    :: old_can_rhos
       !----- Variables declared differently depending on the user's compilation options. --!
 #if USE_MPIWTIME
       real(kind=8)                            :: time_py_start
@@ -128,6 +132,12 @@ module rk4_driver
                call zero_rk4_cohort(integration_buff%ak6)
                call zero_rk4_cohort(integration_buff%ak7)
 
+               !----- Save the previous thermodynamic state. ------------------------------!
+               old_can_enthalpy = csite%can_enthalpy(ipa)
+               old_can_shv      = csite%can_shv(ipa)
+               old_can_co2      = csite%can_co2(ipa)
+               old_can_rhos     = csite%can_rhos(ipa)
+
                !----- Get velocity for aerodynamic resistance. ----------------------------!
                if (csite%can_theta(ipa) < cpoly%met(isi)%atm_theta) then
                   cpoly%met(isi)%vels = cpoly%met(isi)%vels_stab
@@ -147,13 +157,13 @@ module rk4_driver
                                      ,cpoly%met(isi)%geoht,cpoly%lsl(isi)                  &
                                      ,cgrid%lon(ipy),cgrid%lat(ipy))
 
+               !----- Compute current storage terms. --------------------------------------!
+               call update_budget(csite,cpoly%lsl(isi),ipa,ipa)
 
                !---------------------------------------------------------------------------!
                !     Set up the integration patch.                                         !
                !---------------------------------------------------------------------------!
                call copy_patch_init(csite,ipa,integration_buff%initp)
-
-
 
                !---------------------------------------------------------------------------!
                !     Calculate the canopy geometry, and the scalar transport coefficients. !
@@ -173,6 +183,11 @@ module rk4_driver
                call soil_respiration(csite,ipa)
 
                !---------------------------------------------------------------------------!
+               !     Set up the integration patch.                                         !
+               !---------------------------------------------------------------------------!
+               call copy_patch_init_carbon(csite,ipa,integration_buff%initp)
+
+               !---------------------------------------------------------------------------!
                !    This is the driver for the integration process...                      !
                !---------------------------------------------------------------------------!
                call integrate_patch(csite,integration_buff%initp,ipa,isi,ipy,ifm           &
@@ -187,16 +202,15 @@ module rk4_driver
                   cpoly%min_monthly_temp(isi) = cpoly%site(isi)%can_temp(ipa)
                end if
                
-               !-------------------------------------------------------------!
-               !     Compute the residuals.                                  !
-               !-------------------------------------------------------------!
-               call compute_budget(csite,cpoly%lsl(isi)                      &
-                                  ,cpoly%met(isi)%pcpg,cpoly%met(isi)%qpcpg  &
-                                  ,ipa,wcurr_loss2atm,ecurr_loss2atm         &
-                                  ,co2curr_loss2atm,wcurr_loss2drainage      &
-                                  ,ecurr_loss2drainage,wcurr_loss2runoff     &
-                                  ,ecurr_loss2runoff,ecurr_latent            &
-                                  ,cpoly%area(isi),cgrid%cbudget_nep(ipy))
+               !---------------------------------------------------------------------------!
+               !     Compute the residuals.                                                !
+               !---------------------------------------------------------------------------!
+               call compute_budget(csite,cpoly%lsl(isi),cpoly%met(isi)%pcpg                &
+                                  ,cpoly%met(isi)%qpcpg,ipa,wcurr_loss2atm,ecurr_loss2atm  &
+                                  ,co2curr_loss2atm,wcurr_loss2drainage                    &
+                                  ,ecurr_loss2drainage,wcurr_loss2runoff,ecurr_loss2runoff &
+                                  ,ecurr_latent,cpoly%area(isi),cgrid%cbudget_nep(ipy)     &
+                                  ,old_can_enthalpy,old_can_shv,old_can_co2,old_can_rhos)
                
 
             end do patchloop
