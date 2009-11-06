@@ -1459,18 +1459,18 @@ module ed_state_vars
      ! of site/patch/cohort level variables, feel free to include them.  !
      !-------------------------------------------------------------------!
 
-     real, pointer, dimension(:)   :: dmean_pcpg           ! [ kg/m²/day]
-     real, pointer, dimension(:)   :: dmean_runoff         ! [ kg/m²/day]
-     real, pointer, dimension(:)   :: dmean_drainage       ! [ kg/m²/day]
-     real, pointer, dimension(:)   :: dmean_gpp            ! [kgC/m²/day]
-     real, pointer, dimension(:)   :: dmean_evap           ! [      W/m2]
-     real, pointer, dimension(:)   :: dmean_transp         ! [      W/m2]
+     real, pointer, dimension(:)   :: dmean_pcpg           ! [   kg/m²/s]
+     real, pointer, dimension(:)   :: dmean_runoff         ! [   kg/m²/s]
+     real, pointer, dimension(:)   :: dmean_drainage       ! [   kg/m²/s]
+     real, pointer, dimension(:)   :: dmean_evap           ! [   kg/m²/s]
+     real, pointer, dimension(:)   :: dmean_transp         ! [   kg/m²/s]
+     real, pointer, dimension(:)   :: dmean_vapor_vc       ! [   kg/m²/s]
+     real, pointer, dimension(:)   :: dmean_vapor_gc       ! [   kg/m²/s]
+     real, pointer, dimension(:)   :: dmean_vapor_ac       ! [   kg/m²/s]
      real, pointer, dimension(:)   :: dmean_sensible_vc    ! [      W/m2]
      real, pointer, dimension(:)   :: dmean_sensible_gc    ! [      W/m2]
      real, pointer, dimension(:)   :: dmean_sensible_ac    ! [      W/m2]
-     real, pointer, dimension(:)   :: dmean_vapor_vc       ! [      W/m2]
-     real, pointer, dimension(:)   :: dmean_vapor_gc       ! [      W/m2]
-     real, pointer, dimension(:)   :: dmean_vapor_ac       ! [      W/m2]
+     real, pointer, dimension(:)   :: dmean_gpp            ! [ kgC/m²/yr]
      real, pointer, dimension(:)   :: dmean_nep            ! [ kgC/m²/yr]
      real, pointer, dimension(:)   :: dmean_plresp         ! [ kgC/m²/yr]
      real, pointer, dimension(:)   :: dmean_rh             ! [ kgC/m²/yr]
@@ -1541,12 +1541,18 @@ module ed_state_vars
      ! not a requirement at all, if you feel like looking at daily means !
      ! of site/patch/cohort level variables, feel free to include them.  !
      !-------------------------------------------------------------------!
-     real, pointer, dimension(:)   :: mmean_gpp            ! [kgC/m2/yr]
-     real, pointer, dimension(:)   :: mmean_evap
-     real, pointer, dimension(:)   :: mmean_transp
+     real, pointer, dimension(:)   :: mmean_pcpg           ! [   kg/m²/s]
+     real, pointer, dimension(:)   :: mmean_runoff         ! [   kg/m²/s]
+     real, pointer, dimension(:)   :: mmean_drainage       ! [   kg/m²/s]
+     real, pointer, dimension(:)   :: mmean_evap           ! [   kg/m2/s]
+     real, pointer, dimension(:)   :: mmean_transp         ! [   kg/m2/s]
+     real, pointer, dimension(:)   :: mmean_vapor_vc       ! [   kg/m²/s]
+     real, pointer, dimension(:)   :: mmean_vapor_gc       ! [   kg/m²/s]
+     real, pointer, dimension(:)   :: mmean_vapor_ac       ! [   kg/m2/s]
      real, pointer, dimension(:)   :: mmean_sensible_vc    ! [      W/m2]
      real, pointer, dimension(:)   :: mmean_sensible_gc    ! [      W/m2]
      real, pointer, dimension(:)   :: mmean_sensible_ac    ! [      W/m2]
+     real, pointer, dimension(:)   :: mmean_gpp            ! [ kgC/m2/yr]
      real, pointer, dimension(:)   :: mmean_nep            ! [ kgC/m2/yr]
      real, pointer, dimension(:)   :: mmean_plresp         ! [ kgC/m2/yr]
      real, pointer, dimension(:)   :: mmean_rh             ! [ kgC/m2/yr]
@@ -1575,7 +1581,6 @@ module ed_state_vars
      real, pointer, dimension(:)   :: mmean_atm_shv       ! (npolygons)
      real, pointer, dimension(:)   :: mmean_atm_prss      ! (npolygons)
      real, pointer, dimension(:)   :: mmean_atm_vels      ! (npolygons)
-     real, pointer, dimension(:)   :: mmean_pcpg          ! (npolygons)
 
      !-------------------------------------------------------------------!
      ! These variables serve two purposes. During the run they carry the !
@@ -1893,46 +1898,46 @@ contains
        ! requested by the user.                                          !
        !-----------------------------------------------------------------!
        if (idoutput > 0 .or. imoutput > 0) then
-          allocate(cgrid%dmean_pcpg         (             npolygons))
-          allocate(cgrid%dmean_runoff       (             npolygons))
-          allocate(cgrid%dmean_drainage     (             npolygons))
-          allocate(cgrid%dmean_vapor_ac     (             npolygons))
-          allocate(cgrid%dmean_vapor_gc     (             npolygons))
-          allocate(cgrid%dmean_vapor_vc     (             npolygons))
-          allocate(cgrid%dmean_gpp          (             npolygons))
-          allocate(cgrid%dmean_evap         (             npolygons))
-          allocate(cgrid%dmean_transp       (             npolygons))
-          allocate(cgrid%dmean_sensible_ac  (             npolygons))
-          allocate(cgrid%dmean_sensible_gc  (             npolygons))
-          allocate(cgrid%dmean_sensible_vc  (             npolygons))
-          allocate(cgrid%dmean_plresp       (             npolygons))
-          allocate(cgrid%dmean_rh           (             npolygons))
-          allocate(cgrid%dmean_leaf_resp    (             npolygons))
-          allocate(cgrid%dmean_root_resp    (             npolygons))
-          allocate(cgrid%dmean_growth_resp  (             npolygons))
-          allocate(cgrid%dmean_storage_resp (             npolygons))
-          allocate(cgrid%dmean_vleaf_resp   (             npolygons))
-          allocate(cgrid%dmean_nep          (             npolygons))
-          allocate(cgrid%dmean_soil_temp    (nzg,         npolygons))
-          allocate(cgrid%dmean_soil_water   (nzg,         npolygons))
-          allocate(cgrid%dmean_fs_open      (             npolygons))
-          allocate(cgrid%dmean_fsw          (             npolygons))
-          allocate(cgrid%dmean_fsn          (             npolygons))
-          allocate(cgrid%dmean_gpp_dbh      (n_dbh       ,npolygons))
-          allocate(cgrid%dmean_can_temp     (             npolygons))
-          allocate(cgrid%dmean_can_shv      (             npolygons))
-          allocate(cgrid%dmean_can_co2      (             npolygons))
-          allocate(cgrid%dmean_can_rhos     (             npolygons))
-          allocate(cgrid%dmean_can_prss     (             npolygons))
-          allocate(cgrid%dmean_can_theta    (             npolygons))
-          allocate(cgrid%dmean_veg_energy   (             npolygons))
-          allocate(cgrid%dmean_veg_water    (             npolygons))
-          allocate(cgrid%dmean_veg_hcap     (             npolygons))
-          allocate(cgrid%dmean_veg_temp     (             npolygons))
-          allocate(cgrid%dmean_atm_temp     (             npolygons))
-          allocate(cgrid%dmean_atm_shv      (             npolygons))
-          allocate(cgrid%dmean_atm_prss     (             npolygons))
-          allocate(cgrid%dmean_atm_vels     (             npolygons))
+          allocate(cgrid%dmean_pcpg           (             npolygons))
+          allocate(cgrid%dmean_runoff         (             npolygons))
+          allocate(cgrid%dmean_drainage       (             npolygons))
+          allocate(cgrid%dmean_vapor_ac       (             npolygons))
+          allocate(cgrid%dmean_vapor_gc       (             npolygons))
+          allocate(cgrid%dmean_vapor_vc       (             npolygons))
+          allocate(cgrid%dmean_gpp            (             npolygons))
+          allocate(cgrid%dmean_evap           (             npolygons))
+          allocate(cgrid%dmean_transp         (             npolygons))
+          allocate(cgrid%dmean_sensible_ac    (             npolygons))
+          allocate(cgrid%dmean_sensible_gc    (             npolygons))
+          allocate(cgrid%dmean_sensible_vc    (             npolygons))
+          allocate(cgrid%dmean_plresp         (             npolygons))
+          allocate(cgrid%dmean_rh             (             npolygons))
+          allocate(cgrid%dmean_leaf_resp      (             npolygons))
+          allocate(cgrid%dmean_root_resp      (             npolygons))
+          allocate(cgrid%dmean_growth_resp    (             npolygons))
+          allocate(cgrid%dmean_storage_resp   (             npolygons))
+          allocate(cgrid%dmean_vleaf_resp     (             npolygons))
+          allocate(cgrid%dmean_nep            (             npolygons))
+          allocate(cgrid%dmean_soil_temp      (nzg,         npolygons))
+          allocate(cgrid%dmean_soil_water     (nzg,         npolygons))
+          allocate(cgrid%dmean_fs_open        (             npolygons))
+          allocate(cgrid%dmean_fsw            (             npolygons))
+          allocate(cgrid%dmean_fsn            (             npolygons))
+          allocate(cgrid%dmean_gpp_dbh        (n_dbh       ,npolygons))
+          allocate(cgrid%dmean_can_temp       (             npolygons))
+          allocate(cgrid%dmean_can_shv        (             npolygons))
+          allocate(cgrid%dmean_can_co2        (             npolygons))
+          allocate(cgrid%dmean_can_rhos       (             npolygons))
+          allocate(cgrid%dmean_can_prss       (             npolygons))
+          allocate(cgrid%dmean_can_theta      (             npolygons))
+          allocate(cgrid%dmean_veg_energy     (             npolygons))
+          allocate(cgrid%dmean_veg_water      (             npolygons))
+          allocate(cgrid%dmean_veg_hcap       (             npolygons))
+          allocate(cgrid%dmean_veg_temp       (             npolygons))
+          allocate(cgrid%dmean_atm_temp       (             npolygons))
+          allocate(cgrid%dmean_atm_shv        (             npolygons))
+          allocate(cgrid%dmean_atm_prss       (             npolygons))
+          allocate(cgrid%dmean_atm_vels       (             npolygons))
 
           allocate(cgrid%dmean_co2_residual   (             npolygons))
           allocate(cgrid%dmean_energy_residual(             npolygons))
@@ -1944,56 +1949,61 @@ contains
        ! requested by the user.                                            !
        !-------------------------------------------------------------------!
        if (imoutput > 0) then
-          allocate(cgrid%mmean_gpp          (             npolygons))
-          allocate(cgrid%mmean_evap         (             npolygons))
-          allocate(cgrid%mmean_transp       (             npolygons))
-          allocate(cgrid%mmean_sensible_ac  (             npolygons))
-          allocate(cgrid%mmean_sensible_gc  (             npolygons))
-          allocate(cgrid%mmean_sensible_vc  (             npolygons))
-          allocate(cgrid%mmean_nep          (             npolygons))
-          allocate(cgrid%mmean_plresp       (             npolygons))
-          allocate(cgrid%mmean_rh           (             npolygons))
-          allocate(cgrid%mmean_leaf_resp    (             npolygons))
-          allocate(cgrid%mmean_root_resp    (             npolygons))
-          allocate(cgrid%mmean_growth_resp  (             npolygons))
-          allocate(cgrid%mmean_storage_resp (             npolygons))
-          allocate(cgrid%mmean_vleaf_resp   (             npolygons))
-          allocate(cgrid%mmean_soil_temp    (nzg,         npolygons))
-          allocate(cgrid%mmean_soil_water   (nzg,         npolygons))
-          allocate(cgrid%mmean_fs_open      (             npolygons))
-          allocate(cgrid%mmean_fsw          (             npolygons))
-          allocate(cgrid%mmean_fsn          (             npolygons))
-          allocate(cgrid%mmean_gpp_dbh      (n_dbh       ,npolygons))
-          allocate(cgrid%mmean_lai_pft      (n_pft       ,npolygons))
-          allocate(cgrid%mmean_wpa_pft      (n_pft       ,npolygons))
-          allocate(cgrid%mmean_wai_pft      (n_pft       ,npolygons))
-          allocate(cgrid%mmean_can_temp     (             npolygons))
-          allocate(cgrid%mmean_can_shv      (             npolygons))
-          allocate(cgrid%mmean_can_co2      (             npolygons))
-          allocate(cgrid%mmean_can_rhos     (             npolygons))
-          allocate(cgrid%mmean_can_prss     (             npolygons))
-          allocate(cgrid%mmean_can_theta    (             npolygons))
-          allocate(cgrid%mmean_veg_energy   (             npolygons))
-          allocate(cgrid%mmean_veg_water    (             npolygons))
-          allocate(cgrid%mmean_veg_temp     (             npolygons))
-          allocate(cgrid%mmean_veg_hcap     (             npolygons))
-          allocate(cgrid%mmean_atm_temp     (             npolygons))
-          allocate(cgrid%mmean_atm_shv      (             npolygons))
-          allocate(cgrid%mmean_atm_prss     (             npolygons))
-          allocate(cgrid%mmean_atm_vels     (             npolygons))
-          allocate(cgrid%mmean_pcpg         (             npolygons))
-          allocate(cgrid%mmean_co2_residual   (           npolygons))
-          allocate(cgrid%mmean_energy_residual(           npolygons))
-          allocate(cgrid%mmean_water_residual (           npolygons))
-          allocate(cgrid%bseeds_pft         (n_pft       ,npolygons))
-          allocate(cgrid%agb_pft            (n_pft       ,npolygons))
-          allocate(cgrid%ba_pft             (n_pft       ,npolygons))
-          allocate(cgrid%stdev_gpp          (             npolygons))
-          allocate(cgrid%stdev_evap         (             npolygons))
-          allocate(cgrid%stdev_transp       (             npolygons))
-          allocate(cgrid%stdev_sensible     (             npolygons))
-          allocate(cgrid%stdev_nep          (             npolygons))
-          allocate(cgrid%stdev_rh           (             npolygons))
+          allocate(cgrid%mmean_pcpg           (             npolygons))
+          allocate(cgrid%mmean_runoff         (             npolygons))
+          allocate(cgrid%mmean_drainage       (             npolygons))
+          allocate(cgrid%mmean_evap           (             npolygons))
+          allocate(cgrid%mmean_transp         (             npolygons))
+          allocate(cgrid%mmean_vapor_ac       (             npolygons))
+          allocate(cgrid%mmean_vapor_gc       (             npolygons))
+          allocate(cgrid%mmean_vapor_vc       (             npolygons))
+          allocate(cgrid%mmean_sensible_ac    (             npolygons))
+          allocate(cgrid%mmean_sensible_gc    (             npolygons))
+          allocate(cgrid%mmean_sensible_vc    (             npolygons))
+          allocate(cgrid%mmean_gpp            (             npolygons))
+          allocate(cgrid%mmean_nep            (             npolygons))
+          allocate(cgrid%mmean_plresp         (             npolygons))
+          allocate(cgrid%mmean_rh             (             npolygons))
+          allocate(cgrid%mmean_leaf_resp      (             npolygons))
+          allocate(cgrid%mmean_root_resp      (             npolygons))
+          allocate(cgrid%mmean_growth_resp    (             npolygons))
+          allocate(cgrid%mmean_storage_resp   (             npolygons))
+          allocate(cgrid%mmean_vleaf_resp     (             npolygons))
+          allocate(cgrid%mmean_soil_temp      (nzg,         npolygons))
+          allocate(cgrid%mmean_soil_water     (nzg,         npolygons))
+          allocate(cgrid%mmean_fs_open        (             npolygons))
+          allocate(cgrid%mmean_fsw            (             npolygons))
+          allocate(cgrid%mmean_fsn            (             npolygons))
+          allocate(cgrid%mmean_gpp_dbh        (n_dbh       ,npolygons))
+          allocate(cgrid%mmean_lai_pft        (n_pft       ,npolygons))
+          allocate(cgrid%mmean_wpa_pft        (n_pft       ,npolygons))
+          allocate(cgrid%mmean_wai_pft        (n_pft       ,npolygons))
+          allocate(cgrid%mmean_can_temp       (             npolygons))
+          allocate(cgrid%mmean_can_shv        (             npolygons))
+          allocate(cgrid%mmean_can_co2        (             npolygons))
+          allocate(cgrid%mmean_can_rhos       (             npolygons))
+          allocate(cgrid%mmean_can_prss       (             npolygons))
+          allocate(cgrid%mmean_can_theta      (             npolygons))
+          allocate(cgrid%mmean_veg_energy     (             npolygons))
+          allocate(cgrid%mmean_veg_water      (             npolygons))
+          allocate(cgrid%mmean_veg_temp       (             npolygons))
+          allocate(cgrid%mmean_veg_hcap       (             npolygons))
+          allocate(cgrid%mmean_atm_temp       (             npolygons))
+          allocate(cgrid%mmean_atm_shv        (             npolygons))
+          allocate(cgrid%mmean_atm_prss       (             npolygons))
+          allocate(cgrid%mmean_atm_vels       (             npolygons))
+          allocate(cgrid%mmean_co2_residual   (             npolygons))
+          allocate(cgrid%mmean_energy_residual(             npolygons))
+          allocate(cgrid%mmean_water_residual (             npolygons))
+          allocate(cgrid%bseeds_pft           (n_pft       ,npolygons))
+          allocate(cgrid%agb_pft              (n_pft       ,npolygons))
+          allocate(cgrid%ba_pft               (n_pft       ,npolygons))
+          allocate(cgrid%stdev_gpp            (             npolygons))
+          allocate(cgrid%stdev_evap           (             npolygons))
+          allocate(cgrid%stdev_transp         (             npolygons))
+          allocate(cgrid%stdev_sensible       (             npolygons))
+          allocate(cgrid%stdev_nep            (             npolygons))
+          allocate(cgrid%stdev_rh             (             npolygons))
           allocate(cgrid%disturbance_rates  (n_dist_types,n_dist_types,npolygons))
 
        end if
@@ -2766,6 +2776,9 @@ contains
        nullify(cgrid%mmean_sensible_vc       )
        nullify(cgrid%mmean_sensible_gc       )
        nullify(cgrid%mmean_sensible_ac       )
+       nullify(cgrid%mmean_vapor_vc          )
+       nullify(cgrid%mmean_vapor_gc          )
+       nullify(cgrid%mmean_vapor_ac          )
        nullify(cgrid%mmean_nep               )
        nullify(cgrid%mmean_soil_temp         )
        nullify(cgrid%mmean_soil_water        )
@@ -2798,6 +2811,8 @@ contains
        nullify(cgrid%mmean_atm_prss          )
        nullify(cgrid%mmean_atm_vels          )
        nullify(cgrid%mmean_pcpg              )
+       nullify(cgrid%mmean_runoff            )
+       nullify(cgrid%mmean_drainage          )
        nullify(cgrid%mmean_co2_residual      )
        nullify(cgrid%mmean_energy_residual   )
        nullify(cgrid%mmean_water_residual    )
@@ -3533,6 +3548,9 @@ contains
        if(associated(cgrid%mmean_gpp               )) deallocate(cgrid%mmean_gpp               )
        if(associated(cgrid%mmean_evap              )) deallocate(cgrid%mmean_evap              )
        if(associated(cgrid%mmean_transp            )) deallocate(cgrid%mmean_transp            )
+       if(associated(cgrid%mmean_vapor_vc          )) deallocate(cgrid%mmean_vapor_vc          )
+       if(associated(cgrid%mmean_vapor_gc          )) deallocate(cgrid%mmean_vapor_gc          )
+       if(associated(cgrid%mmean_vapor_ac          )) deallocate(cgrid%mmean_vapor_ac          )
        if(associated(cgrid%mmean_sensible_vc       )) deallocate(cgrid%mmean_sensible_vc       )
        if(associated(cgrid%mmean_sensible_gc       )) deallocate(cgrid%mmean_sensible_gc       )
        if(associated(cgrid%mmean_sensible_ac       )) deallocate(cgrid%mmean_sensible_ac       )
@@ -3568,6 +3586,8 @@ contains
        if(associated(cgrid%mmean_atm_prss          )) deallocate(cgrid%mmean_atm_prss          )
        if(associated(cgrid%mmean_atm_vels          )) deallocate(cgrid%mmean_atm_vels          )
        if(associated(cgrid%mmean_pcpg              )) deallocate(cgrid%mmean_pcpg              )
+       if(associated(cgrid%mmean_runoff            )) deallocate(cgrid%mmean_runoff            )
+       if(associated(cgrid%mmean_drainage          )) deallocate(cgrid%mmean_drainage          )
        if(associated(cgrid%mmean_co2_residual      )) deallocate(cgrid%mmean_co2_residual      )
        if(associated(cgrid%mmean_energy_residual   )) deallocate(cgrid%mmean_energy_residual   )
        if(associated(cgrid%mmean_water_residual    )) deallocate(cgrid%mmean_water_residual    )
@@ -5219,7 +5239,7 @@ contains
     siteout%wbudget_residual(1:inc)          = pack(sitein%wbudget_residual,logmask)
     siteout%ebudget_latent(1:inc)            = pack(sitein%ebudget_latent,logmask)
     siteout%ebudget_loss2atm(1:inc)          = pack(sitein%ebudget_loss2atm,logmask)
-    siteout%ebudget_loss2atm(1:inc)          = pack(sitein%ebudget_loss2atm,logmask)
+    siteout%ebudget_denseffect(1:inc)        = pack(sitein%ebudget_denseffect,logmask)
     siteout%ebudget_loss2runoff(1:inc)       = pack(sitein%ebudget_loss2runoff,logmask)
     siteout%ebudget_loss2drainage(1:inc)     = pack(sitein%ebudget_loss2drainage,logmask)
     siteout%ebudget_netrad(1:inc)            = pack(sitein%ebudget_netrad,logmask)
@@ -7495,6 +7515,27 @@ contains
             var_len,var_len_global,max_ptrs,'MMEAN_SENSIBLE_VC :11:hist:mont')
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA')
     endif
+
+    if(associated(cgrid%mmean_vapor_ac)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%mmean_vapor_ac(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'MMEAN_VAPOR_AC :11:hist:mont')
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA')
+    endif
+
+    if(associated(cgrid%mmean_vapor_gc)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%mmean_vapor_gc(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'MMEAN_VAPOR_GC :11:hist:mont')
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA')
+    endif
+
+    if(associated(cgrid%mmean_vapor_vc)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%mmean_vapor_vc(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'MMEAN_VAPOR_VC :11:hist:mont')
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA')
+    endif
     
     if(associated(cgrid%mmean_nep)) then
        nvar=nvar+1
@@ -7718,6 +7759,20 @@ contains
        call vtable_edio_r(cgrid%mmean_pcpg(1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'MMEAN_PCPG :11:hist:mont') 
        call metadata_edio(nvar,igr,'Monthly mean precipitation rate','[kg/m2/s]','ipoly') 
+    end if
+    
+    if(associated(cgrid%mmean_runoff)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%mmean_runoff(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'MMEAN_RUNOFF :11:hist:mont') 
+       call metadata_edio(nvar,igr,'Monthly mean runoff','[kg/m2/s]','ipoly') 
+    end if
+    
+    if(associated(cgrid%mmean_drainage)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%mmean_drainage(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'MMEAN_DRAINAGE :11:hist:mont') 
+       call metadata_edio(nvar,igr,'Monthly mean drainage','[kg/m2/day]','ipoly') 
     end if
 
     if(associated(cgrid%mmean_co2_residual)) then

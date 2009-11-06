@@ -12,6 +12,7 @@ subroutine read_ed1_history_file
   use grid_coms,only:ngrids
   use allometry, only: dbh2h,h2dbh,dbh2bd,dbh2bl, ed_biomass,area_indices
   use fuse_fiss_utils, only: sort_cohorts
+  use disturb_coms , only : min_new_patch_area ! ! intent(in)
   implicit none
 
   integer :: year
@@ -56,10 +57,10 @@ subroutine read_ed1_history_file
   real(kind=8), dimension(max_water) :: dwater
   
   ! This is the smallest representable number in single precision
-  real(kind=8), parameter :: snglmin=dble(tiny(1.))
-  real, parameter :: min_area=epsilon(1.) ! Doesn't need to be the machine epsilon, chose just a small number.
-  real(kind=8), parameter :: min_ok=dble(tiny(1.)/epsilon(1.)) ! Chose a number small enough, but with some
-                                                               ! room for multiplying by a small area.
+  real(kind=8), parameter :: min_area = 1.d-7     ! Doesn't need to be the machine epsilon,
+                                                  !     just chose a small number.
+  real(kind=8), parameter :: min_ok   = 1.d-20    ! Chose a number small enough, but with some
+                                                  !     room for multiplying by a small area.
   ! Cohort variables from the restart
 
   integer :: ierr
@@ -98,6 +99,8 @@ subroutine read_ed1_history_file
   real                  , dimension(maxfiles)           :: plon_list,plat_list
   real                  , dimension(maxfiles)           :: clon_list,clat_list
   real                  , dimension(maxfiles)           :: file_pdist,file_cdist
+  !----- External function. ---------------------------------------------------------------!
+  real                  , external                      :: sngloff
   !----------------------------------------------------------------------------------------!
   
   
@@ -215,17 +218,17 @@ subroutine read_ed1_history_file
                       dstsl,dssc,dpsc,dmsn,dfsn,dwater(1:nwater)
                  if(ierr /= 0)exit count_patches
              
-                 area(ip)   = sngl(max(snglmin,darea  ))
-                 age(ip)    = sngl(max(min_ok ,dage   ))
-                 fsc(ip)    = sngl(max(min_ok ,dfsc   ))
-                 stsc(ip)   = sngl(max(min_ok ,dstsc  ))
-                 stsl(ip)   = sngl(max(min_ok ,dstsl  ))
-                 ssc(ip)    = sngl(max(min_ok ,dssc   ))
-                 psc(ip)    = sngl(max(min_ok ,dpsc   ))
-                 msn(ip)    = sngl(max(min_ok ,dmsn   ))
-                 fsn(ip)    = sngl(max(min_ok ,dfsn   ))
+                 area(ip)   = sngloff(darea      ,min_area)
+                 age(ip)    = sngloff(dage       ,min_ok  )
+                 fsc(ip)    = sngloff(dfsc       ,min_ok  )
+                 stsc(ip)   = sngloff(dstsc      ,min_ok  )
+                 stsl(ip)   = sngloff(dstsl      ,min_ok  )
+                 ssc(ip)    = sngloff(dssc       ,min_ok  )
+                 psc(ip)    = sngloff(dpsc       ,min_ok  )
+                 msn(ip)    = sngloff(dmsn       ,min_ok  )
+                 fsn(ip)    = sngloff(dfsn       ,min_ok  )
                  do nw=1,nwater
-                    water(nw,ip)  = sngl(max(min_ok ,dwater(nw) ))
+                    water(nw,ip) = sngloff(dwater(nw) ,min_ok  )
                  end do
                  
               case(2)  !! read ED2 format files
@@ -233,15 +236,15 @@ subroutine read_ed1_history_file
                       ,dstsl,dssc,dummy,dmsn,dfsn
                  if(ierr /= 0)exit count_patches
               
-                 area(ip)   = sngl(max(snglmin,darea  ))
-                 age(ip)    = sngl(max(min_ok ,dage   ))
-                 fsc(ip)    = sngl(max(min_ok ,dfsc   ))
-                 stsc(ip)   = sngl(max(min_ok ,dstsc  ))
-                 stsl(ip)   = sngl(max(min_ok ,dstsl  ))
-                 ssc(ip)    = sngl(max(min_ok ,dssc   ))
-                 msn(ip)    = sngl(max(min_ok ,dmsn   ))
-                 fsn(ip)    = sngl(max(min_ok ,dfsn   ))
-                 water(1,ip)  = sngl(max(min_ok ,dwater(1) ))
+                 area(ip)    = sngloff(darea    ,min_area)
+                 age(ip)     = sngloff(dage     ,min_ok  )
+                 fsc(ip)     = sngloff(dfsc     ,min_ok  )
+                 stsc(ip)    = sngloff(dstsc    ,min_ok  )
+                 stsl(ip)    = sngloff(dstsl    ,min_ok  )
+                 ssc(ip)     = sngloff(dssc     ,min_ok  )
+                 msn(ip)     = sngloff(dmsn     ,min_ok  )
+                 fsn(ip)     = sngloff(dfsn     ,min_ok  )
+                 water(1,ip) = sngloff(dwater(1),min_ok  )
                  
               case(3)
                  
@@ -249,7 +252,7 @@ subroutine read_ed1_history_file
                       darea,water(1,ip),fsc(ip),stsc(ip),stsl(ip),ssc(ip),psc(ip),msn(ip),fsn(ip)
                  if(ierr /= 0)exit count_patches
               
-                 area(ip)=sngl(max(snglmin,darea))
+                 area(ip)=sngloff(darea, min_area)
                  
                  if(sitenum(ip)<= 0) continue !! check for valid site number
                  
@@ -561,8 +564,8 @@ subroutine read_ed1_history_file
                        call area_indices(cpatch%nplant(ic2),cpatch%bleaf(ic2)              &
                                         ,cpatch%bdead(ic2),cpatch%balive(ic2)              &
                                         ,cpatch%dbh(ic2), cpatch%hite(ic2)                 &
-                                        ,cpatch%pft(ic2), SLA(cpatch%pft(ic2)), cpatch%lai(ic2) &
-                                        ,cpatch%wpa(ic2), cpatch%wai(ic2))
+                                        ,cpatch%pft(ic2), SLA(cpatch%pft(ic2))             &
+                                        ,cpatch%lai(ic2),cpatch%wpa(ic2), cpatch%wai(ic2))
                        
                        cpatch%cb(1:12,ic2) = cb(1:12,ic)
                        cpatch%cb_max(1:12,ic2) = cb_max(1:12,ic)
@@ -571,8 +574,7 @@ subroutine read_ed1_history_file
                        
                        cpatch%agb(ic2) = ed_biomass(cpatch%bdead(ic2),cpatch%balive(ic2)   &
                                                    ,cpatch%bleaf(ic2),cpatch%pft(ic2)      &
-                                                   ,cpatch%hite(ic2),cpatch%bstorage(ic2)) &
-                                       * cpatch%nplant(ic2) * 10.
+                                                   ,cpatch%hite(ic2),cpatch%bstorage(ic2)) 
                        cpatch%basarea(ic2)  = cpatch%nplant(ic2) * pio4                    &
                                             * cpatch%dbh(ic2) * cpatch%dbh(ic2)
                        cpatch%dagb_dt(ic2)  = 0.
@@ -586,60 +588,9 @@ subroutine read_ed1_history_file
                        cpatch%par_v(ic2) = 0.0
                        
                        csite%plant_ag_biomass(ipa) = csite%plant_ag_biomass(ipa)           &
-                                                   + cpatch%agb(ic2) * 0.1
+                                                   + cpatch%agb(ic2) * cpatch%nplant(ic2)
                     endif
                  enddo
-              else ! if (csite%cohort_count(ipa) == 0) then                  
-                !write (unit=*,fmt='(2(a,1x,i5,1x))') &
-                !   "WARNING: found patch with no cohorts: poly",ip,"patch",ipa
-                !      stop
-                ! MLO - 1-8-09. Now I think empty patches should exist, and the right way to
-                !               deal with them is to leave them empty... I am commenting
-                !               this for the time being, hopefully the code will survive...
-                
-                ! ! MLO 5-27-08. Force the patch to have one cohort of each pft that should be included
-                ! !              Considers whether this is agricultural or forest.
-              
-                ! if (csite%dist_type(ipa) == 1) then
-                !    include_pft_ep = include_pft_ag
-                ! else 
-                !    include_pft_ep = include_pft
-                ! end if
-                ! ic = sum(include_pft_ep)
-                ! ! MLO - 5-27-08. "Phylosophical" question. If the patch has no cohort, shouldn't we 
-                ! !                reset its age to zero? It will behave as a near-bare ground patch...
-                ! !                I just set it up to zero here, if this is wrong please remove it...
-                ! csite%age(ipa) = 0.
-                ! ! MLO - 5-27-08. Another "phylosophical" question. If the patch has no cohort and 
-                ! !                it is not water, should it even exist?
-                ! ! Initialize aboveground biomass for this site.
-                ! csite%plant_ag_biomass(ipa) = 0.
-                ! call allocate_patchtype(cpatch,ic)
-                ! csite%cohort_count(ipa) = ic
-                ! ic = 0
-                ! do pft = 1,n_pft
-                !    if(include_pft_ep(pft) == 1)then
-                !       
-                !       ic = ic + 1
-                !       
-                !       ! Define the near-bare ground
-                !       cpatch%pft(ic)     = pft
-                !       cpatch%hite(ic)    = hgt_min(pft)
-                !       cpatch%dbh(ic)     = h2dbh(cpatch%hite(ic),pft)
-                !       cpatch%bdead(ic)   = dbh2bd(cpatch%dbh(ic),cpatch%hite(ic),pft)
-                !       cpatch%bleaf(ic)   = dbh2bl(cpatch%dbh(ic),pft)
-                !       cpatch%nplant(ic)  = 0.1
-                !       cpatch%phenology_status(ic) = 0
-                !       cpatch%balive(ic)  = cpatch%bleaf(ic) * (1.0 + q(pft) +  &
-                !            qsw(pft) * cpatch%hite(ic))
-                !       cpatch%lai(ic)      = cpatch%bleaf(ic) * cpatch%nplant(ic) * SLA(pft)
-                !       cpatch%bstorage(ic) = 0.0
-                !       csite%plant_ag_biomass(ipa) = csite%plant_ag_biomass(ipa) +         &
-                !           ed_biomass(cpatch%bdead(ic),cpatch%balive(ic), cpatch%bleaf(ic) &
-                !                     ,cpatch%pft(ic), cpatch%hite(ic),cpatch%bstorage(ic)) &
-                !          * cpatch%nplant(ic)
-                !    endif
-                ! enddo
               end if
            enddo loop_patches
         enddo loop_sites
@@ -727,6 +678,7 @@ subroutine read_ed1_history_file
            enddo
            cpoly%patch_count(isi) = nsitepat
         enddo
+        
         
      end do polyloop
 
@@ -1481,6 +1433,18 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
      call hdf_getslab_r(cgrid%mmean_sensible_ac    (ipy:ipy) ,'MMEAN_SENSIBLE_AC     '     &
                        ,dsetrank,iparallel,.false.)
  
+  if (associated(cgrid%mmean_vapor_vc       ))                                             &
+     call hdf_getslab_r(cgrid%mmean_vapor_vc       (ipy:ipy) ,'MMEAN_VAPOR_VC        '     &
+                       ,dsetrank,iparallel,.false.)
+ 
+  if (associated(cgrid%mmean_vapor_gc       ))                                             &
+     call hdf_getslab_r(cgrid%mmean_vapor_gc       (ipy:ipy) ,'MMEAN_VAPOR_GC        '     &
+                       ,dsetrank,iparallel,.false.)
+ 
+  if (associated(cgrid%mmean_vapor_ac       ))                                             &
+     call hdf_getslab_r(cgrid%mmean_vapor_ac       (ipy:ipy) ,'MMEAN_VAPOR_AC     '     &
+                       ,dsetrank,iparallel,.false.)
+ 
   if (associated(cgrid%mmean_nep            ))                                             &
      call hdf_getslab_r(cgrid%mmean_nep            (ipy:ipy) ,'MMEAN_NEP             '     &
                        ,dsetrank,iparallel,.false.)
@@ -1571,6 +1535,14 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
  
   if (associated(cgrid%mmean_pcpg           ))                                             &
      call hdf_getslab_r(cgrid%mmean_pcpg           (ipy:ipy) ,'MMEAN_PCPG            '     &
+                       ,dsetrank,iparallel,.false.)
+ 
+  if (associated(cgrid%mmean_runoff         ))                                             &
+     call hdf_getslab_r(cgrid%mmean_runoff         (ipy:ipy) ,'MMEAN_RUNOFF          '     &
+                       ,dsetrank,iparallel,.false.)
+ 
+  if (associated(cgrid%mmean_drainage       ))                                             &
+     call hdf_getslab_r(cgrid%mmean_drainage       (ipy:ipy) ,'MMEAN_DRAINAGE        '     &
                        ,dsetrank,iparallel,.false.)
 
   if (associated(cgrid%mmean_fs_open        ))                                             &

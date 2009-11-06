@@ -52,7 +52,6 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
 
   cpatch%monthly_dndt(ico)      = 0.0
   cpatch%mort_rate(:,ico)       = 0.0
-  cpatch%mmean_mort_rate(:,ico) = 0.0
 
   cpatch%dagb_dt(ico)          = 0.0
   cpatch%dba_dt(ico)           = 0.0
@@ -149,6 +148,7 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
      cpatch%mmean_mnt_cost         (ico) = 0.0
      cpatch%mmean_leaf_litter      (ico) = 0.0
      cpatch%mmean_cb               (ico) = 0.0
+     cpatch%mmean_mort_rate      (:,ico) = 0.0
   end if
   if (idoutput > 0 .or. imoutput > 0) then
      cpatch%dmean_par_v            (ico) = 0.0
