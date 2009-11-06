@@ -141,7 +141,7 @@ end subroutine int_met_avg
 subroutine normalize_averaged_vars(cgrid,frqsum,dtlsm)
 
    use grid_coms, only: nzg
-   use ed_misc_coms, only: radfrq
+   use ed_misc_coms, only: radfrq, current_time
    use ed_state_vars,only:edtype,polygontype,sitetype,patchtype
 
    
@@ -797,8 +797,6 @@ subroutine integrate_ed_daily_output_flux(cgrid)
          cgrid%dmean_soil_water(k,ipy)  = cgrid%dmean_soil_water(k,ipy)                    &
                                         + cgrid%avg_soil_water(k,ipy)
       end do
-      cgrid%dmean_evap(ipy)        = cgrid%dmean_evap(ipy)   + cgrid%avg_evap(ipy)
-      cgrid%dmean_transp(ipy)      = cgrid%dmean_transp(ipy) + cgrid%avg_transp(ipy)
       cgrid%dmean_sensible_vc(ipy) = cgrid%dmean_sensible_vc(ipy)                          &
                                    + cgrid%avg_sensible_vc(ipy) 
       cgrid%dmean_sensible_gc(ipy) = cgrid%dmean_sensible_gc(ipy)                          &
@@ -806,12 +804,14 @@ subroutine integrate_ed_daily_output_flux(cgrid)
       cgrid%dmean_sensible_ac(ipy) = cgrid%dmean_sensible_ac(ipy)                          &
                                    + cgrid%avg_sensible_ac(ipy)
 
-      cgrid%dmean_pcpg(ipy)     = cgrid%dmean_pcpg(ipy)     + cgrid%avg_pcpg(ipy)     
-      cgrid%dmean_runoff(ipy)   = cgrid%dmean_runoff(ipy)   + cgrid%avg_runoff(ipy)
+      cgrid%dmean_pcpg    (ipy) = cgrid%dmean_pcpg    (ipy) + cgrid%avg_pcpg    (ipy)
+      cgrid%dmean_evap    (ipy) = cgrid%dmean_evap    (ipy) + cgrid%avg_evap    (ipy)
+      cgrid%dmean_transp  (ipy) = cgrid%dmean_transp  (ipy) + cgrid%avg_transp  (ipy)
+      cgrid%dmean_runoff  (ipy) = cgrid%dmean_runoff  (ipy) + cgrid%avg_runoff  (ipy)
       cgrid%dmean_drainage(ipy) = cgrid%dmean_drainage(ipy) + cgrid%avg_drainage(ipy)
-      cgrid%dmean_vapor_vc(ipy) = cgrid%dmean_vapor_vc(ipy) + cgrid%avg_vapor_vc(ipy) 
-      cgrid%dmean_vapor_gc(ipy) = cgrid%dmean_vapor_gc(ipy) + cgrid%avg_vapor_gc(ipy) 
-      cgrid%dmean_vapor_ac(ipy) = cgrid%dmean_vapor_ac(ipy) + cgrid%avg_vapor_ac(ipy) 
+      cgrid%dmean_vapor_vc(ipy) = cgrid%dmean_vapor_vc(ipy) + cgrid%avg_vapor_vc(ipy)
+      cgrid%dmean_vapor_gc(ipy) = cgrid%dmean_vapor_gc(ipy) + cgrid%avg_vapor_gc(ipy)
+      cgrid%dmean_vapor_ac(ipy) = cgrid%dmean_vapor_ac(ipy) + cgrid%avg_vapor_ac(ipy)
    end do polyloop
 
    return
@@ -1122,14 +1122,14 @@ subroutine normalize_ed_daily_output_vars(cgrid)
          cgrid%dmean_soil_water(k,ipy) = cgrid%dmean_soil_water(k,ipy) * frqsum_o_daysec
       end do
       !----- Precipitation and runoff. ----------------------------------------------------!
-      cgrid%dmean_pcpg     (ipy)  = cgrid%dmean_pcpg     (ipy) * frqsum_o_daysec ! kg/m2/sec
-      cgrid%dmean_runoff   (ipy)  = cgrid%dmean_runoff   (ipy) * frqsum_o_daysec ! kg/m2/sec
-      cgrid%dmean_drainage (ipy)  = cgrid%dmean_drainage (ipy) * frqsum_o_daysec ! kg/m2/sec
+      cgrid%dmean_pcpg     (ipy)  = cgrid%dmean_pcpg     (ipy) * frqsum_o_daysec ! kg/m2/s
+      cgrid%dmean_runoff   (ipy)  = cgrid%dmean_runoff   (ipy) * frqsum_o_daysec ! kg/m2/s
+      cgrid%dmean_drainage (ipy)  = cgrid%dmean_drainage (ipy) * frqsum_o_daysec ! kg/m2/s
 
       !----- Vapor flux. ------------------------------------------------------------------!
-      cgrid%dmean_vapor_vc(ipy)  = cgrid%dmean_vapor_vc(ipy)  * frqsum_o_daysec
-      cgrid%dmean_vapor_gc(ipy)  = cgrid%dmean_vapor_gc(ipy)  * frqsum_o_daysec
-      cgrid%dmean_vapor_ac(ipy)  = cgrid%dmean_vapor_ac(ipy)  * frqsum_o_daysec
+      cgrid%dmean_vapor_vc(ipy)   = cgrid%dmean_vapor_vc(ipy)  * frqsum_o_daysec ! kg/m2/s
+      cgrid%dmean_vapor_gc(ipy)   = cgrid%dmean_vapor_gc(ipy)  * frqsum_o_daysec ! kg/m2/s
+      cgrid%dmean_vapor_ac(ipy)   = cgrid%dmean_vapor_ac(ipy)  * frqsum_o_daysec ! kg/m2/s
 
 
       !------------------------------------------------------------------------------------!
@@ -1610,6 +1610,12 @@ subroutine integrate_ed_monthly_output_vars(cgrid)
       cgrid%mmean_evap    (ipy) = cgrid%mmean_evap    (ipy) + cgrid%dmean_evap    (ipy)
       cgrid%mmean_transp  (ipy) = cgrid%mmean_transp  (ipy) + cgrid%dmean_transp  (ipy)
 
+      cgrid%mmean_vapor_ac      (ipy) = cgrid%mmean_vapor_ac      (ipy)                    &
+                                      + cgrid%dmean_vapor_ac      (ipy)
+      cgrid%mmean_vapor_gc      (ipy) = cgrid%mmean_vapor_gc      (ipy)                    &
+                                      + cgrid%dmean_vapor_gc      (ipy)
+      cgrid%mmean_vapor_vc      (ipy) = cgrid%mmean_vapor_vc      (ipy)                    &
+                                      + cgrid%dmean_vapor_vc      (ipy)
       cgrid%mmean_sensible_ac   (ipy) = cgrid%mmean_sensible_ac   (ipy)                    &
                                       + cgrid%dmean_sensible_ac   (ipy)
       cgrid%mmean_sensible_gc   (ipy) = cgrid%mmean_sensible_gc   (ipy)                    &
@@ -1668,13 +1674,17 @@ subroutine integrate_ed_monthly_output_vars(cgrid)
                                       + cgrid%dmean_atm_vels      (ipy)
       cgrid%mmean_pcpg          (ipy) = cgrid%mmean_pcpg          (ipy)                    &
                                       + cgrid%dmean_pcpg          (ipy)
+      cgrid%mmean_runoff        (ipy) = cgrid%mmean_runoff        (ipy)                    &
+                                      + cgrid%dmean_runoff        (ipy)
+      cgrid%mmean_drainage      (ipy) = cgrid%mmean_drainage      (ipy)                    &
+                                      + cgrid%dmean_drainage      (ipy)
 
-      cgrid%mmean_co2_residual(ipy)    = cgrid%mmean_co2_residual(ipy)                     &
-                                       + cgrid%dmean_co2_residual(ipy)
+      cgrid%mmean_co2_residual   (ipy) = cgrid%mmean_co2_residual   (ipy)                  &
+                                       + cgrid%dmean_co2_residual   (ipy)
       cgrid%mmean_energy_residual(ipy) = cgrid%mmean_energy_residual(ipy)                  &
                                        + cgrid%dmean_energy_residual(ipy)
-      cgrid%mmean_water_residual(ipy)  = cgrid%mmean_water_residual(ipy)                   &
-                                       + cgrid%dmean_water_residual(ipy)
+      cgrid%mmean_water_residual (ipy) = cgrid%mmean_water_residual (ipy)                  &
+                                       + cgrid%dmean_water_residual (ipy)
 
       !------------------------------------------------------------------------------------!
       !    During the integration stage we keep the sum of squares, it will be converted   !
@@ -1871,6 +1881,9 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
       cgrid%mmean_gpp            (ipy) = cgrid%mmean_gpp            (ipy) * ndaysi
       cgrid%mmean_evap           (ipy) = cgrid%mmean_evap           (ipy) * ndaysi
       cgrid%mmean_transp         (ipy) = cgrid%mmean_transp         (ipy) * ndaysi
+      cgrid%mmean_vapor_ac       (ipy) = cgrid%mmean_vapor_ac       (ipy) * ndaysi
+      cgrid%mmean_vapor_gc       (ipy) = cgrid%mmean_vapor_gc       (ipy) * ndaysi
+      cgrid%mmean_vapor_vc       (ipy) = cgrid%mmean_vapor_vc       (ipy) * ndaysi
       cgrid%mmean_sensible_ac    (ipy) = cgrid%mmean_sensible_ac    (ipy) * ndaysi
       cgrid%mmean_sensible_gc    (ipy) = cgrid%mmean_sensible_gc    (ipy) * ndaysi
       cgrid%mmean_sensible_vc    (ipy) = cgrid%mmean_sensible_vc    (ipy) * ndaysi
@@ -1897,6 +1910,8 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
       cgrid%mmean_atm_prss       (ipy) = cgrid%mmean_atm_prss       (ipy) * ndaysi
       cgrid%mmean_atm_vels       (ipy) = cgrid%mmean_atm_vels       (ipy) * ndaysi
       cgrid%mmean_pcpg           (ipy) = cgrid%mmean_pcpg           (ipy) * ndaysi
+      cgrid%mmean_runoff         (ipy) = cgrid%mmean_runoff         (ipy) * ndaysi
+      cgrid%mmean_drainage       (ipy) = cgrid%mmean_drainage       (ipy) * ndaysi
       cgrid%mmean_lai_pft      (:,ipy) = cgrid%mmean_lai_pft      (:,ipy) * ndaysi
       cgrid%mmean_wpa_pft      (:,ipy) = cgrid%mmean_wpa_pft      (:,ipy) * ndaysi
       cgrid%mmean_wai_pft      (:,ipy) = cgrid%mmean_wai_pft      (:,ipy) * ndaysi
@@ -2169,6 +2184,9 @@ subroutine zero_ed_monthly_output_vars(cgrid)
       cgrid%mmean_gpp                (ipy) = 0.
       cgrid%mmean_evap               (ipy) = 0.
       cgrid%mmean_transp             (ipy) = 0.
+      cgrid%mmean_vapor_ac           (ipy) = 0.
+      cgrid%mmean_vapor_gc           (ipy) = 0.
+      cgrid%mmean_vapor_vc           (ipy) = 0.
       cgrid%mmean_sensible_ac        (ipy) = 0.
       cgrid%mmean_sensible_gc        (ipy) = 0.
       cgrid%mmean_sensible_vc        (ipy) = 0.
@@ -2198,6 +2216,8 @@ subroutine zero_ed_monthly_output_vars(cgrid)
       cgrid%mmean_atm_prss           (ipy) = 0.
       cgrid%mmean_atm_vels           (ipy) = 0.
       cgrid%mmean_pcpg               (ipy) = 0.
+      cgrid%mmean_runoff             (ipy) = 0.
+      cgrid%mmean_drainage           (ipy) = 0.
       cgrid%mmean_lai_pft          (:,ipy) = 0.
       cgrid%mmean_wpa_pft          (:,ipy) = 0.
       cgrid%mmean_wai_pft          (:,ipy) = 0.

@@ -2058,6 +2058,18 @@ module fuse_fiss_utils
                                       ( csite%avg_veg_water(donp)     * csite%area(donp)   &
                                       + csite%avg_veg_water(recp)     * csite%area(recp) )  
 
+      csite%co2budget_residual(recp)  = newareai *                                         &
+                                      ( csite%co2budget_residual(donp)* csite%area(donp)   &
+                                      + csite%co2budget_residual(recp)* csite%area(recp) )  
+
+      csite%co2budget_loss2atm(recp)  = newareai *                                         &
+                                      ( csite%co2budget_loss2atm(donp)* csite%area(donp)   &
+                                      + csite%co2budget_loss2atm(recp)* csite%area(recp) )  
+
+      csite%co2budget_denseffect(recp)= newareai *                                         &
+                      ( csite%co2budget_denseffect(donp) * csite%area(donp)                &
+                      + csite%co2budget_denseffect(recp) * csite%area(recp) )
+
       csite%co2budget_gpp(recp)       = newareai *                                         &
                                       ( csite%co2budget_gpp(donp)     * csite%area(donp)   &
                                       + csite%co2budget_gpp(recp)     * csite%area(recp) )  
@@ -2069,6 +2081,63 @@ module fuse_fiss_utils
       csite%co2budget_rh(recp)        = newareai *                                         &
                                       ( csite%co2budget_rh(donp)      * csite%area(donp)   &
                                       + csite%co2budget_rh(recp)      * csite%area(recp) )  
+
+      csite%ebudget_residual(recp)    = newareai *                                         &
+                                      ( csite%ebudget_residual(donp)  * csite%area(donp)   &
+                                      + csite%ebudget_residual(recp)  * csite%area(recp) )
+
+      csite%ebudget_loss2atm(recp)    = newareai *                                         &
+                                      ( csite%ebudget_loss2atm(donp)  * csite%area(donp)   &
+                                      + csite%ebudget_loss2atm(recp)  * csite%area(recp) )
+
+      csite%ebudget_denseffect(recp)  = newareai *                                         &
+                                      ( csite%ebudget_denseffect(donp) * csite%area(donp)  &
+                                      + csite%ebudget_denseffect(recp) * csite%area(recp) )
+
+      csite%ebudget_loss2runoff(recp) = newareai *                                         &
+                                     ( csite%ebudget_loss2runoff(donp) * csite%area(donp)  &
+                                     + csite%ebudget_loss2runoff(recp) * csite%area(recp) )
+
+      csite%ebudget_loss2drainage(recp) = newareai *                                       &
+                                   ( csite%ebudget_loss2drainage(donp) * csite%area(donp)  &
+                                   + csite%ebudget_loss2drainage(recp) * csite%area(recp) )
+
+      csite%ebudget_netrad(recp)      = newareai *                                         &
+                                      ( csite%ebudget_netrad(donp) * csite%area(donp)      &
+                                      + csite%ebudget_netrad(recp) * csite%area(recp) )
+
+      csite%ebudget_latent(recp)      = newareai *                                         &
+                                      ( csite%ebudget_latent(donp) * csite%area(donp)      &
+                                      + csite%ebudget_latent(recp) * csite%area(recp) )
+
+      csite%ebudget_precipgain(recp)  = newareai *                                         &
+                                  ( csite%ebudget_precipgain(donp) * csite%area(donp)      &
+                                  + csite%ebudget_precipgain(recp) * csite%area(recp) )
+
+      csite%wbudget_residual(recp)    = newareai *                                         &
+                                      ( csite%wbudget_residual(donp)  * csite%area(donp)   &
+                                      + csite%wbudget_residual(recp)  * csite%area(recp) )
+
+      csite%wbudget_loss2atm(recp)    = newareai *                                         &
+                                      ( csite%wbudget_loss2atm(donp)  * csite%area(donp)   &
+                                      + csite%wbudget_loss2atm(recp)  * csite%area(recp) )
+
+      csite%wbudget_denseffect(recp)  = newareai *                                         &
+                                      ( csite%wbudget_denseffect(donp) * csite%area(donp)  &
+                                      + csite%wbudget_denseffect(recp) * csite%area(recp) )
+
+      csite%wbudget_loss2runoff(recp) = newareai *                                         &
+                                     ( csite%wbudget_loss2runoff(donp) * csite%area(donp)  &
+                                     + csite%wbudget_loss2runoff(recp) * csite%area(recp) )
+
+      csite%wbudget_loss2drainage(recp) = newareai *                                       &
+                                   ( csite%wbudget_loss2drainage(donp) * csite%area(donp)  &
+                                   + csite%wbudget_loss2drainage(recp) * csite%area(recp) )
+
+      csite%wbudget_precipgain(recp)  = newareai *                                         &
+                                  ( csite%wbudget_precipgain(donp) * csite%area(donp)      &
+                                  + csite%wbudget_precipgain(recp) * csite%area(recp) )
+
 
       do iii=1,nzg
          csite%avg_smoist_gg(iii,recp)   = newareai *                                      &
