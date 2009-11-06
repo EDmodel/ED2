@@ -833,6 +833,7 @@ module fuse_fiss_utils
       cpatch%light_level(idt)         = cpatch%light_level(isc)
       cpatch%light_level_beam(idt)    = cpatch%light_level_beam(isc)
       cpatch%light_level_diff(idt)    = cpatch%light_level_diff(isc)
+      cpatch%lambda_light(idt)        = cpatch%lambda_light(isc)
       cpatch%beamext_level(idt)       = cpatch%beamext_level(isc)
       cpatch%diffext_level(idt)       = cpatch%diffext_level(isc)
       cpatch%norm_par_beam(idt)       = cpatch%norm_par_beam(isc)
