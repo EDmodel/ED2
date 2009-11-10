@@ -633,9 +633,9 @@ module disturbance_utils
 
     csite%mean_rh(np) = csite%mean_rh(np) + csite%mean_rh(cp) * area_fac
 
-    csite%dmean_A_decomp(np) = csite%dmean_A_decomp(np) + csite%dmean_A_decomp(cp) * area_fac
+    csite%today_A_decomp(np) = csite%today_A_decomp(np) + csite%today_A_decomp(cp) * area_fac
 
-    csite%dmean_Af_decomp(np) = csite%dmean_Af_decomp(np) + csite%dmean_Af_decomp(cp) * area_fac
+    csite%today_Af_decomp(np) = csite%today_Af_decomp(np) + csite%today_Af_decomp(cp) * area_fac
 
     csite%repro(1:n_pft,np) = csite%repro(1:n_pft,np) + csite%repro(1:n_pft,cp) * area_fac
 

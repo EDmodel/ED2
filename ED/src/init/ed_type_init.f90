@@ -239,8 +239,8 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
   csite%mean_qrunoff(ip1:ip2) = 0.0
   csite%mean_hflux(ip1:ip2) = 0.0
   
-  csite%dmean_A_decomp(ip1:ip2) = 0.0
-  csite%dmean_Af_decomp(ip1:ip2) = 0.0
+  csite%today_A_decomp(ip1:ip2) = 0.0
+  csite%today_Af_decomp(ip1:ip2) = 0.0
 
   csite%repro(1:n_pft,ip1:ip2) = 0.0
   csite%A_o_max(1:n_pft,ip1:ip2) = 0.0
@@ -276,19 +276,23 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
 
 
   if (idoutput > 0 .or. imoutput > 0) then
-     csite%dmean_rh(ip1:ip2) = 0.0
-     csite%dmean_co2_residual(ip1:ip2)       = 0.0
-     csite%dmean_energy_residual(ip1:ip2)    = 0.0
-     csite%dmean_water_residual(ip1:ip2)     = 0.0
-     csite%dmean_lambda_light(ip1:ip2)       = 0.0
+     csite%dmean_A_decomp        (ip1:ip2) = 0.0
+     csite%dmean_Af_decomp       (ip1:ip2) = 0.0
+     csite%dmean_rh              (ip1:ip2) = 0.0
+     csite%dmean_co2_residual    (ip1:ip2) = 0.0
+     csite%dmean_energy_residual (ip1:ip2) = 0.0
+     csite%dmean_water_residual  (ip1:ip2) = 0.0
+     csite%dmean_lambda_light    (ip1:ip2) = 0.0
   end if
 
   if (imoutput > 0) then
-     csite%mmean_rh(ip1:ip2) = 0.0
-     csite%mmean_co2_residual   (ip1:ip2)     = 0.0
-     csite%mmean_energy_residual(ip1:ip2)     = 0.0
-     csite%mmean_water_residual (ip1:ip2)     = 0.0
-     csite%mmean_lambda_light   (ip1:ip2)     = 0.0
+     csite%mmean_A_decomp        (ip1:ip2) = 0.0
+     csite%mmean_Af_decomp       (ip1:ip2) = 0.0
+     csite%mmean_rh              (ip1:ip2) = 0.0
+     csite%mmean_co2_residual    (ip1:ip2) = 0.0
+     csite%mmean_energy_residual (ip1:ip2) = 0.0
+     csite%mmean_water_residual  (ip1:ip2) = 0.0
+     csite%mmean_lambda_light    (ip1:ip2) = 0.0
   end if
 
   !----------------------------------------------------------------------------------------!

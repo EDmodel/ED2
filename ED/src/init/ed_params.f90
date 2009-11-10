@@ -418,52 +418,64 @@ end subroutine init_can_air_params
 !==========================================================================================!
 subroutine init_pft_photo_params()
 
-use ed_max_dims,only : n_pft
-use pft_coms, only: D0, Vm_low_temp, Vm0, stomatal_slope, cuticular_cond, &
-     quantum_efficiency, photosyn_pathway
+   use ed_max_dims, only : n_pft                ! ! intent(in)
+   use pft_coms   , only : D0                   & ! intent(out)
+                         , Vm_low_temp          & ! intent(out)
+                         , Vm_high_temp         & ! intent(out)
+                         , Vm0                  & ! intent(out)
+                         , stomatal_slope       & ! intent(out)
+                         , cuticular_cond       & ! intent(out)
+                         , quantum_efficiency   & ! intent(out)
+                         , photosyn_pathway     ! ! intent(out)
 
-implicit none
+   implicit none
 
 
-D0 = 0.01 ! same for all PFTs
+   D0(1:15)                  = 0.01 ! same for all PFTs
 
-Vm_low_temp(1:4) = 5.0     ! tropical PFTs
-Vm_low_temp(5:13) = 4.7137 ! temperate PFTs
-Vm_low_temp(14:15) = 5.0 
+   Vm_low_temp(1:4)          = 5.0     ! tropical PFTs
+   Vm_low_temp(5:13)         = 4.7137  ! temperate PFTs
+   Vm_low_temp(14:15)        = 5.0     ! tropical PFTs
 
-Vm0(1) = 12.5
-Vm0(2) = 18.8
-Vm0(3) = 12.5
-Vm0(4) = 6.25
-Vm0(5) = 18.3
-Vm0(6) = 15.625 * 0.7264
-Vm0(7) = 15.625 * 0.7264
-Vm0(8) = 6.25 * 0.7264
-Vm0(9) = 18.25 * 1.1171
-Vm0(10) = 15.625 * 1.1171
-Vm0(11) = 6.25 * 1.1171
-Vm0(12:13) = 18.3
-Vm0(14:15) = 12.5
+   Vm_high_temp(1)           = 100.0    ! C4
+   Vm_high_temp(2:12)        =  45.0    ! C3
+   Vm_high_temp(14:15)       = 100.0    ! C4
 
-stomatal_slope(1) = 10.0
-stomatal_slope(2:4) = 8.0
-stomatal_slope(5:13) = 6.3949
-stomatal_slope(14:15) = 10.0 
+   Vm0(1)                    = 12.5
+   Vm0(2)                    = 18.8
+   Vm0(3)                    = 12.5
+   Vm0(4)                    = 6.25
+   Vm0(5)                    = 18.3
+   Vm0(6)                    = 15.625 * 0.7264
+   Vm0(7)                    = 15.625 * 0.7264
+   Vm0(8)                    = 6.25   * 0.7264
+   Vm0(9)                    = 18.25  * 1.1171
+   Vm0(10)                   = 15.625 * 1.1171
+   Vm0(11)                   = 6.25   * 1.1171
+   Vm0(12:13)                = 18.3
+   Vm0(14:15)                = 12.5
 
-cuticular_cond(1:5) = 10000.0
-cuticular_cond(6:8) = 1000.0
-cuticular_cond(9:11) = 20000.0
-cuticular_cond(12:15) = 10000.0
+   stomatal_slope(1)         = 10.0
+   stomatal_slope(2:4)       = 8.0
+   stomatal_slope(5:13)      = 6.3949
+   stomatal_slope(14:15)     = 10.0 
 
-quantum_efficiency(1) = 0.06
-quantum_efficiency(2:13) = 0.08
-quantum_efficiency(14:15) = 0.06
+   cuticular_cond(1:5)       = 10000.0
+   cuticular_cond(6:8)       = 1000.0
+   cuticular_cond(9:11)      = 20000.0
+   cuticular_cond(12:15)     = 10000.0
 
-photosyn_pathway(1) = 4
-photosyn_pathway(2:13) = 3
-photosyn_pathway(14:15) = 4
+   quantum_efficiency(1)     = 0.06
+   quantum_efficiency(2:13)  = 0.08
+   quantum_efficiency(14:15) = 0.06
 
-return
+   photosyn_pathway(1)       = 4
+   photosyn_pathway(2:4)     = 3
+   photosyn_pathway(5)       = 3
+   photosyn_pathway(6:13)    = 3
+   photosyn_pathway(14:15)   = 4
+
+   return
 end subroutine init_pft_photo_params
 !==========================================================================================!
 !==========================================================================================!
@@ -738,7 +750,9 @@ subroutine init_pft_alloc_params()
 
 
    !----- Ratio between fine roots and leaves [kg_fine_roots/kg_leaves] -------------------!
-   q(1:5)    = 1.0
+   q(1)     = 1.0
+   q(2:4)   = 1.0
+   q(5)     = 1.0
    q(6:8)   = 0.3463
    q(9:11)  = 1.1274
    q(12:15) = 1.0

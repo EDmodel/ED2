@@ -675,12 +675,18 @@ module ed_state_vars
      real, pointer, dimension(:) :: mmean_water_residual  ! [kg_H20/m2]
 
      ! Daily average of A_decomp, the temperature and moisture dependence
-     ! of heterotrophic respiration.
+     ! of heterotrophic respiration.  The "today" variable is used in the
+     ! model, whereas dmean and mmean are for output only.
+     real , pointer,dimension(:) :: today_A_decomp
      real , pointer,dimension(:) :: dmean_A_decomp
+     real , pointer,dimension(:) :: mmean_A_decomp
 
      ! Daily average of the product A_decomp * f_decomp, which incorporates
-     ! temperature, moisture, and N dependence of decomposition.
+     ! temperature, moisture, and N dependence of decomposition.  The "today" 
+     ! variable is used in the model, whereas dmean and mmean are for output only.
+     real , pointer,dimension(:) :: today_Af_decomp
      real , pointer,dimension(:) :: dmean_Af_decomp
+     real , pointer,dimension(:) :: mmean_Af_decomp
 
      ! Carbon available to establish recruits [kgC/m2]
      real, pointer,dimension(:,:) :: repro    !(n_pft,npatches)  
@@ -2291,8 +2297,8 @@ contains
     allocate(csite%co2budget_gpp_dbh(n_dbh,npatches))
     allocate(csite%co2budget_plresp(npatches))
     allocate(csite%co2budget_rh(npatches))
-    allocate(csite%dmean_A_decomp(npatches))
-    allocate(csite%dmean_Af_decomp(npatches))
+    allocate(csite%today_A_decomp(npatches))
+    allocate(csite%today_Af_decomp(npatches))
     allocate(csite%repro(n_pft,npatches))
     allocate(csite%veg_rough(npatches))
     allocate(csite%veg_height (npatches))
@@ -2394,6 +2400,8 @@ contains
        allocate(csite%dmean_energy_residual   (npatches))
        allocate(csite%dmean_water_residual    (npatches))
        allocate(csite%dmean_rh                (npatches))
+       allocate(csite%dmean_A_decomp          (npatches))
+       allocate(csite%dmean_Af_decomp         (npatches))
     end if
     if (imoutput > 0 ) then
        allocate(csite%mmean_lambda_light      (npatches))
@@ -2401,6 +2409,8 @@ contains
        allocate(csite%mmean_energy_residual   (npatches))
        allocate(csite%mmean_water_residual    (npatches))
        allocate(csite%mmean_rh                (npatches))
+       allocate(csite%mmean_A_decomp          (npatches))
+       allocate(csite%mmean_Af_decomp         (npatches))
     end if
 
     ! Initialize the variables with a non-sense number.
@@ -3081,8 +3091,12 @@ contains
     nullify(csite%co2budget_gpp_dbh)
     nullify(csite%co2budget_plresp)
     nullify(csite%co2budget_rh)
+    nullify(csite%today_A_decomp)
+    nullify(csite%today_Af_decomp)
     nullify(csite%dmean_A_decomp)
     nullify(csite%dmean_Af_decomp)
+    nullify(csite%mmean_A_decomp)
+    nullify(csite%mmean_Af_decomp)
     nullify(csite%repro)
     nullify(csite%veg_rough)
     nullify(csite%veg_height)
@@ -3859,8 +3873,12 @@ contains
     if(associated(csite%co2budget_gpp_dbh            )) deallocate(csite%co2budget_gpp_dbh            )
     if(associated(csite%co2budget_plresp             )) deallocate(csite%co2budget_plresp             )
     if(associated(csite%co2budget_rh                 )) deallocate(csite%co2budget_rh                 )
+    if(associated(csite%today_A_decomp               )) deallocate(csite%today_A_decomp               )
+    if(associated(csite%today_Af_decomp              )) deallocate(csite%today_Af_decomp              )
     if(associated(csite%dmean_A_decomp               )) deallocate(csite%dmean_A_decomp               )
     if(associated(csite%dmean_Af_decomp              )) deallocate(csite%dmean_Af_decomp              )
+    if(associated(csite%mmean_A_decomp               )) deallocate(csite%mmean_A_decomp               )
+    if(associated(csite%mmean_Af_decomp              )) deallocate(csite%mmean_Af_decomp              )
     if(associated(csite%repro                        )) deallocate(csite%repro                        )
     if(associated(csite%veg_rough                    )) deallocate(csite%veg_rough                    )
     if(associated(csite%veg_height                   )) deallocate(csite%veg_height                   )
@@ -4709,8 +4727,12 @@ contains
     if(associated(csite%co2budget_gpp_dbh            )) csite%co2budget_gpp_dbh            = large_real
     if(associated(csite%co2budget_plresp             )) csite%co2budget_plresp             = large_real
     if(associated(csite%co2budget_rh                 )) csite%co2budget_rh                 = large_real
+    if(associated(csite%today_A_decomp               )) csite%today_A_decomp               = large_real
+    if(associated(csite%today_Af_decomp              )) csite%today_Af_decomp              = large_real
     if(associated(csite%dmean_A_decomp               )) csite%dmean_A_decomp               = large_real
     if(associated(csite%dmean_Af_decomp              )) csite%dmean_Af_decomp              = large_real
+    if(associated(csite%mmean_A_decomp               )) csite%mmean_A_decomp               = large_real
+    if(associated(csite%mmean_Af_decomp              )) csite%mmean_Af_decomp              = large_real
     if(associated(csite%repro                        )) csite%repro                        = large_real
     if(associated(csite%veg_rough                    )) csite%veg_rough                    = large_real
     if(associated(csite%veg_height                   )) csite%veg_height                   = large_real
@@ -5253,8 +5275,8 @@ contains
     siteout%co2budget_gpp(1:inc)        = pack(sitein%co2budget_gpp,logmask)
     siteout%co2budget_plresp(1:inc)     = pack(sitein%co2budget_plresp,logmask)
     siteout%co2budget_rh(1:inc)         = pack(sitein%co2budget_rh,logmask)
-    siteout%dmean_A_decomp(1:inc)       = pack(sitein%dmean_A_decomp,logmask)
-    siteout%dmean_Af_decomp(1:inc)      = pack(sitein%dmean_Af_decomp,logmask)
+    siteout%today_A_decomp(1:inc)       = pack(sitein%today_A_decomp,logmask)
+    siteout%today_Af_decomp(1:inc)      = pack(sitein%today_Af_decomp,logmask)
     siteout%veg_rough(1:inc)            = pack(sitein%veg_rough,logmask)
     siteout%veg_height(1:inc)           = pack(sitein%veg_height,logmask)
     siteout%fsc_in(1:inc)               = pack(sitein%fsc_in,logmask)
@@ -5425,6 +5447,8 @@ contains
        siteout%dmean_energy_residual(1:inc) = pack(sitein%dmean_energy_residual,logmask)
        siteout%dmean_water_residual (1:inc) = pack(sitein%dmean_water_residual ,logmask)
        siteout%dmean_lambda_light   (1:inc) = pack(sitein%dmean_lambda_light   ,logmask)
+       siteout%dmean_A_decomp       (1:inc) = pack(sitein%dmean_A_decomp       ,logmask)
+       siteout%dmean_Af_decomp      (1:inc) = pack(sitein%dmean_Af_decomp      ,logmask)
     end if
     
     if (imoutput > 0) then
@@ -5433,6 +5457,8 @@ contains
        siteout%mmean_energy_residual(1:inc) = pack(sitein%mmean_energy_residual,logmask)
        siteout%mmean_water_residual (1:inc) = pack(sitein%mmean_water_residual ,logmask)
        siteout%mmean_lambda_light   (1:inc) = pack(sitein%mmean_lambda_light   ,logmask)
+       siteout%mmean_A_decomp       (1:inc) = pack(sitein%mmean_A_decomp       ,logmask)
+       siteout%mmean_Af_decomp      (1:inc) = pack(sitein%mmean_Af_decomp      ,logmask)
     end if
 
     return
@@ -8932,18 +8958,46 @@ contains
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
+    if (associated(csite%today_A_decomp)) then
+       nvar=nvar+1
+         call vtable_edio_r(csite%today_A_decomp(1),nvar,igr,init,csite%paglob_id, &
+         var_len,var_len_global,max_ptrs,'TODAY_A_DECOMP :31:hist') 
+       call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC-WILL ZERO AT END OF DAY','[NA]','NA') 
+    endif
+
+    if (associated(csite%today_Af_decomp)) then
+       nvar=nvar+1
+         call vtable_edio_r(csite%today_Af_decomp(1),nvar,igr,init,csite%paglob_id, &
+         var_len,var_len_global,max_ptrs,'TODAY_AF_DECOMP :31:hist') 
+       call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC-WILL ZERO AT END OF DAY','[NA]','NA') 
+    endif
+
     if (associated(csite%dmean_A_decomp)) then
        nvar=nvar+1
          call vtable_edio_r(csite%dmean_A_decomp(1),nvar,igr,init,csite%paglob_id, &
-         var_len,var_len_global,max_ptrs,'DMEAN_A_DECOMP :31:hist') 
-       call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC-WILL ZERO AT END OF DAY','[NA]','NA') 
+         var_len,var_len_global,max_ptrs,'DMEAN_A_DECOMP :31:hist:dail') 
+       call metadata_edio(nvar,igr,'A factor for decomposition','[--]','ipatch') 
     endif
 
     if (associated(csite%dmean_Af_decomp)) then
        nvar=nvar+1
          call vtable_edio_r(csite%dmean_Af_decomp(1),nvar,igr,init,csite%paglob_id, &
-         var_len,var_len_global,max_ptrs,'DMEAN_AF_DECOMP :31:hist') 
-       call metadata_edio(nvar,igr,'NOT A DIAGNOSTIC-WILL ZERO AT END OF DAY','[NA]','NA') 
+         var_len,var_len_global,max_ptrs,'DMEAN_AF_DECOMP :31:hist:dail') 
+       call metadata_edio(nvar,igr,'A factor for decomposition, including N','[--]','ipatch') 
+    endif
+
+    if (associated(csite%mmean_A_decomp)) then
+       nvar=nvar+1
+         call vtable_edio_r(csite%mmean_A_decomp(1),nvar,igr,init,csite%paglob_id, &
+         var_len,var_len_global,max_ptrs,'MMEAN_A_DECOMP :31:hist:mont') 
+       call metadata_edio(nvar,igr,'Monthly mean of A factor for decomposition','[--]','ipatch') 
+    endif
+
+    if (associated(csite%mmean_Af_decomp)) then
+       nvar=nvar+1
+         call vtable_edio_r(csite%mmean_Af_decomp(1),nvar,igr,init,csite%paglob_id, &
+         var_len,var_len_global,max_ptrs,'MMEAN_AF_DECOMP :31:hist:mont') 
+       call metadata_edio(nvar,igr,'Monthly mean A factor for decomposition, including N','[--]','ipatch') 
     endif
 
     if (associated(csite%repro)) then
