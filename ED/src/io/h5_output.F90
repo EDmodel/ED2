@@ -667,7 +667,7 @@ subroutine h5_output(vtype)
         ! restarting partially written files.  The generation of the CPM file
         ! ensures that its sibling H5 file was completely written.
         ! For simplicity, this will remain commented out by default.
-        ! REMEMBER, THE BARRIER WILL SCREW UP COUPLED RUNS
+        ! REMEMBER, THE BARRIER WILL SCREW UP COUPLED RUNS.
         ! -------------------------------------------------------------------
 
         !  if (nnodetot /= 1  ) then

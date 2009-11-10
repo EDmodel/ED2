@@ -285,6 +285,7 @@ subroutine sfcrad_ed(cosz, cosaoi, csite, maxcohort, rshort,rshort_diffuse)
       csite%rshort_s_beam(:,ipa)    = 0.0
 
       !----- Soil water fraction. ---------------------------------------------------------!
+     
       fcpct = csite%soil_water(nzg,ipa) / soil(csite%ntext_soil(nzg,ipa))%slmsts 
 
       !----- Finding the ground albedo as a function of soil water relative moisture. -----!
