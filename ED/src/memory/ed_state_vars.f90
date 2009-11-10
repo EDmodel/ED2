@@ -5308,12 +5308,7 @@ contains
     siteout%avg_veg_temp(1:inc)         = pack(sitein%avg_veg_temp,logmask)
     siteout%avg_veg_fliq(1:inc)         = pack(sitein%avg_veg_fliq,logmask)
     siteout%avg_veg_water(1:inc)        = pack(sitein%avg_veg_water,logmask)
-    siteout%dmean_co2_residual   (1:inc)= pack(sitein%dmean_co2_residual      ,logmask)
-    siteout%dmean_energy_residual(1:inc)= pack(sitein%dmean_energy_residual   ,logmask)
-    siteout%dmean_water_residual (1:inc)= pack(sitein%dmean_water_residual    ,logmask)
-    siteout%mmean_co2_residual   (1:inc)= pack(sitein%mmean_co2_residual      ,logmask)
-    siteout%mmean_energy_residual(1:inc)= pack(sitein%mmean_energy_residual   ,logmask)
-    siteout%mmean_water_residual (1:inc)= pack(sitein%mmean_water_residual    ,logmask)
+  
 
 
     ! Water layers 1:nzs
@@ -5404,7 +5399,11 @@ contains
        siteout%dmean_co2_residual   (1:inc) = pack(sitein%dmean_co2_residual   ,logmask)
        siteout%dmean_energy_residual(1:inc) = pack(sitein%dmean_energy_residual,logmask)
        siteout%dmean_water_residual (1:inc) = pack(sitein%dmean_water_residual ,logmask)
-       siteout%dmean_lambda_light   (1:inc) = pack(sitein%dmean_lambda_light   ,logmask)
+       siteout%dmean_lambda_light   (1:inc) = pack(sitein%dmean_lambda_light   ,logmask) 
+       siteout%dmean_co2_residual   (1:inc)= pack(sitein%dmean_co2_residual      ,logmask)
+       siteout%dmean_energy_residual(1:inc)= pack(sitein%dmean_energy_residual   ,logmask)
+       siteout%dmean_water_residual (1:inc)= pack(sitein%dmean_water_residual    ,logmask)
+       
     end if
     
     if (imoutput > 0) then
@@ -5413,6 +5412,9 @@ contains
        siteout%mmean_energy_residual(1:inc) = pack(sitein%mmean_energy_residual,logmask)
        siteout%mmean_water_residual (1:inc) = pack(sitein%mmean_water_residual ,logmask)
        siteout%mmean_lambda_light   (1:inc) = pack(sitein%mmean_lambda_light   ,logmask)
+       siteout%mmean_co2_residual   (1:inc)= pack(sitein%mmean_co2_residual      ,logmask)
+       siteout%mmean_energy_residual(1:inc)= pack(sitein%mmean_energy_residual   ,logmask)
+       siteout%mmean_water_residual (1:inc)= pack(sitein%mmean_water_residual    ,logmask)
     end if
 
     return
