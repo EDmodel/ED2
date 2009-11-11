@@ -81,7 +81,7 @@ subroutine ed_masterput_nl(par_run)
                              ,sfilout,frqstate,isoutput,iprintpolys,printvars,pfmtstr      &
                              ,ipmin,ipmax,iedcnfgf,outfast,outstate,out_time_fast          &
                              ,out_time_state,nrec_fast,nrec_state,irec_fast,irec_state     &
-                             ,unitfast,unitstate,event_file
+                             ,unitfast,unitstate,event_file,itimeh,iyearh,imonthh,idateh
 
    use ed_misc_coms,only: attach_metadata
    use canopy_air_coms, only: icanturb, isfclyrm
@@ -136,6 +136,11 @@ subroutine ed_masterput_nl(par_run)
    call MPI_Bcast(idatea,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(iyeara,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(itimea,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+
+   call MPI_Bcast(imonthh,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(idateh,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(iyearh,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(itimeh,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(imonthz,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(idatez,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
@@ -649,7 +654,7 @@ subroutine ed_nodeget_nl
                              ,isoutput,sfilout,frqstate,iprintpolys,printvars,pfmtstr      &
                              ,ipmin,ipmax,iedcnfgf,outfast,outstate,out_time_fast          &
                              ,out_time_state,nrec_fast,nrec_state,irec_fast,irec_state     &
-                             ,unitfast,unitstate,event_file
+                             ,unitfast,unitstate,event_file,itimeh,iyearh,imonthh,idateh
 
    use grid_coms,       only: nzg,nzs,ngrids,nnxp,nnyp,deltax,deltay,polelat,polelon       &
                              ,centlat,centlon,time,timmax,nstratx,nstraty
@@ -702,6 +707,11 @@ subroutine ed_nodeget_nl
    call MPI_Bcast(idatea,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(iyeara,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(itimea,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+
+   call MPI_Bcast(imonthh,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(idateh,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(iyearh,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(itimeh,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(imonthz,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(idatez,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
