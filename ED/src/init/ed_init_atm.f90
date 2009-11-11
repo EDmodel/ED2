@@ -48,7 +48,7 @@ subroutine ed_init_atm
      ! If this is a standard ED2 restart, we will read these fields in from 
      ! a history file and therefore not worry about setting them here.
 
-     if(ied_init_mode == 4 .or. trim(runtype) == 'HISTORY' )return
+     if(trim(runtype) == 'HISTORY' )return
 
      print*,"=========================================="
      print*,"ENTERING A NON HISTORY PORTION OF THE CODE"

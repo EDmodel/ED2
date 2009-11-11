@@ -1972,13 +1972,13 @@ module fuse_fiss_utils
                                          ( csite%mean_rh(donp)        * csite%area(donp)   &
                                          + csite%mean_rh(recp)        * csite%area(recp) )
 
-      csite%dmean_A_decomp(recp)         = newareai *                                      &
-                                         ( csite%dmean_A_decomp(donp) * csite%area(donp)   &
-                                         + csite%dmean_A_decomp(recp) * csite%area(recp) )
+      csite%today_A_decomp(recp)         = newareai *                                      &
+                                         ( csite%today_A_decomp(donp) * csite%area(donp)   &
+                                         + csite%today_A_decomp(recp) * csite%area(recp) )
 
-      csite%dmean_Af_decomp(recp)        = newareai *                                      &
-                                         ( csite%dmean_Af_decomp(donp)* csite%area(donp)   &
-                                         + csite%dmean_Af_decomp(recp)* csite%area(recp) )
+      csite%today_Af_decomp(recp)        = newareai *                                      &
+                                         ( csite%today_Af_decomp(donp)* csite%area(donp)   &
+                                         + csite%today_Af_decomp(recp)* csite%area(recp) )
 
       do iii = 1,n_pft
          csite%repro(iii,recp)           = newareai *                                      &
@@ -2193,6 +2193,17 @@ module fuse_fiss_utils
                                              * csite%area(donp)                            &
                                              + csite%dmean_lambda_light(recp)              &
                                              * csite%area(recp) )
+         csite%dmean_A_decomp(recp)        = newareai                                      &
+                                           * ( csite%dmean_A_decomp(donp)                  &
+                                             * csite%area(donp)                            &
+                                             + csite%dmean_A_decomp(recp)                  &
+                                             * csite%area(recp) )
+
+         csite%dmean_Af_decomp(recp)       = newareai                                      &
+                                           * ( csite%dmean_Af_decomp(donp)                 &
+                                             * csite%area(donp)                            &
+                                             + csite%dmean_Af_decomp(recp)                 &
+                                             * csite%area(recp) )
       end if
       if (imoutput > 0) then
          csite%mmean_rh(recp)           = newareai                                         &
@@ -2217,6 +2228,17 @@ module fuse_fiss_utils
                                            * ( csite%mmean_lambda_light(donp)              &
                                              * csite%area(donp)                            &
                                              + csite%mmean_lambda_light(recp)              &
+                                             * csite%area(recp) )
+         csite%mmean_A_decomp(recp)        = newareai                                      &
+                                           * ( csite%mmean_A_decomp(donp)                  &
+                                             * csite%area(donp)                            &
+                                             + csite%mmean_A_decomp(recp)                  &
+                                             * csite%area(recp) )
+
+         csite%mmean_Af_decomp(recp)       = newareai                                      &
+                                           * ( csite%mmean_Af_decomp(donp)                 &
+                                             * csite%area(donp)                            &
+                                             + csite%mmean_Af_decomp(recp)                 &
                                              * csite%area(recp) )
       end if
 

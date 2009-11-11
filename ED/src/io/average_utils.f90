@@ -894,8 +894,6 @@ subroutine normalize_ed_daily_vars(cgrid,timefac1)
       siteloop: do isi=1,cpoly%nsites
          csite => cpoly%site(isi)
          
-         csite%dmean_A_decomp  = csite%dmean_A_decomp  * timefac1
-         csite%dmean_Af_decomp = csite%dmean_Af_decomp * timefac1
 
          if (save_daily) then
             site_area_i               = 1./ sum(csite%area)
@@ -905,6 +903,23 @@ subroutine normalize_ed_daily_vars(cgrid,timefac1)
          end if
          
          patchloop: do ipa=1,csite%npatches
+
+            csite%today_A_decomp (ipa) = csite%today_A_decomp(ipa)  * timefac1
+            csite%today_Af_decomp(ipa) = csite%today_Af_decomp(ipa) * timefac1
+
+            !----- Copy the decomposition terms to the daily mean if they are sought. -----!
+            if (save_daily) then
+               csite%dmean_A_decomp(ipa)  = csite%today_A_decomp(ipa)
+               csite%dmean_Af_decomp(ipa) = csite%today_Af_decomp(ipa)
+               !----- Integrate the monthly mean. -----------------------------------------!
+               if (save_monthly) then
+                  csite%mmean_A_decomp(ipa)  = csite%mmean_A_decomp(ipa)                   &
+                                             + csite%dmean_A_decomp(ipa)
+                  csite%mmean_Af_decomp(ipa) = csite%mmean_Af_decomp(ipa)                  &
+                                             + csite%dmean_Af_decomp(ipa)
+               end if
+            end if
+
             cpatch => csite%patch(ipa)
             
             !----- Included a loop so it won't crash with empty cohorts... ----------------!
@@ -1413,8 +1428,8 @@ subroutine zero_ed_daily_vars(cgrid)
             cpatch => csite%patch(ipa)
             
             !----- Reset variables stored in sitetype. ------------------------------------!
-            csite%dmean_A_decomp(ipa)  = 0.0
-            csite%dmean_Af_decomp(ipa) = 0.0
+            csite%today_A_decomp(ipa)  = 0.0
+            csite%today_Af_decomp(ipa) = 0.0
 
             !----- Reset variables stored in patchtype. -----------------------------------!
             do ico = 1, cpatch%ncohorts
@@ -1531,7 +1546,9 @@ subroutine zero_ed_daily_output_vars(cgrid)
             csite%dmean_water_residual (ipa) = 0.
             csite%dmean_rh             (ipa) = 0.
             csite%dmean_lambda_light   (ipa) = 0.
-            
+            csite%dmean_A_decomp       (ipa) = 0.
+            csite%dmean_Af_decomp      (ipa) = 0.
+
             cpatch => csite%patch(ipa)
             do ico=1, cpatch%ncohorts
                cpatch%dmean_gpp(ico)              = 0.
@@ -2033,6 +2050,8 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
             csite%mmean_water_residual(ipa)  = csite%mmean_water_residual(ipa)  * ndaysi
             csite%mmean_rh(ipa)              = csite%mmean_rh(ipa)              * ndaysi
             csite%mmean_lambda_light(ipa)    = csite%mmean_lambda_light(ipa)    * ndaysi
+            csite%mmean_A_decomp(ipa)        = csite%mmean_A_decomp(ipa)        * ndaysi
+            csite%mmean_Af_decomp(ipa)       = csite%mmean_Af_decomp(ipa)       * ndaysi
 
             !------------------------------------------------------------------------------!
             !     Determining whether this is an agricultural patch or not.  Age and size  !
@@ -2249,6 +2268,9 @@ subroutine zero_ed_monthly_output_vars(cgrid)
             csite%mmean_water_residual    (ipa) = 0.
             csite%mmean_rh                (ipa) = 0.
             csite%mmean_lambda_light      (ipa) = 0.
+            csite%mmean_A_decomp          (ipa) = 0.
+            csite%mmean_Af_decomp         (ipa) = 0.
+
             cpatch=> csite%patch(ipa)
             do ico=1,cpatch%ncohorts
                cpatch%mmean_par_v             (ico) = 0.

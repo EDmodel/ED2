@@ -781,6 +781,23 @@
                                     !  2 - Allows you to do a standard history restart from
                                     !      ED2-type restart files.
                                     !  3 - initialize via ed-2 and site file restarts
+                                    ! 4 - initialize from ED2.1 H5 history/state files.
+                                    !     input files take the form:
+                                    !               'dir/prefix-S-YYYY-MM-DD-HHMMSS-'
+                                    !     the first grid will use suffix g01.h5 and so on
+                                    !     will use site level soils information from the
+                                    !     top soil layer only.  Will distribute this type
+                                    !     all other layers, and patch layers.
+                                    !     No thermodynamic information is assumed from the
+                                    !     file.  Only information regarding site level soils
+                                    !     patch descriptors such as age, area, type and
+                                    !     biophysical states such as balive, bdead, bstorage
+                                    !     the soil profile, and initialization of temperatures
+                                    !     is the same as in type 0-3, where is is based
+                                    !     off of user discretion and the lower atmosphere.
+                                    !     The YYYY, MM, DD, HHMMSS information is built
+                                    !     using IYEARH, IMONTHH, IDATEH, and ITIMEH,
+                                    !     respectively.
                                     !
                                     ! -1 - use a mix of ED-1 and ED-2 files. This should
                                     !      be avoided by all means, unless:

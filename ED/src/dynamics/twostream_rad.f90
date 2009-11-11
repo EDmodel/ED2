@@ -648,6 +648,7 @@ subroutine lw_twostream(ncoh,semgs,sT_grnd, pft,TAI,canopy_area,T_veg,lw_v_surf,
       explai(il)  = exp( exk *TAI(il))
       exmlai(il)  = exp(-exk *TAI(il))
 
+
       !------------------------------------------------------------------------------------!
       !     Coefficient of lambda1 (and minus the coefficient of lambda2) for the bottom   !
       ! of a layer, downwelling radiation.                                                 !

@@ -28,6 +28,11 @@ Module ed_misc_coms
   integer :: imonthz
   integer :: idatez
 
+  integer :: itimeh
+  integer :: iyearh
+  integer :: imonthh
+  integer :: idateh
+
   real :: dtlsm
   real :: radfrq
 

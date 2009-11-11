@@ -92,7 +92,7 @@ subroutine ed_driver
   call sfcdata_ed()
   
   
-  if (trim(runtype) == 'HISTORY') then
+  if (trim(runtype) == 'HISTORY' ) then
        
  
      !-----------------------------------------------------------------------!
