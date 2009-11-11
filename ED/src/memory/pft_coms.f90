@@ -123,6 +123,9 @@ module pft_coms
    !----- Temperature [°C] below which leaf metabolic activity begins to rapidly decline. -!
    real, dimension(n_pft) :: Vm_low_temp 
 
+   !----- Temperature [°C] above which leaf metabolic activity begins to rapidly decline. -!
+   real, dimension(n_pft) :: Vm_high_temp 
+
    !----- Maximum photosynthetic capacity at a reference temperature [µmol/m2/s]. ---------!
    real, dimension(n_pft) :: Vm0 
 

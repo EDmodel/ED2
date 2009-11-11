@@ -141,7 +141,7 @@ end subroutine int_met_avg
 subroutine normalize_averaged_vars(cgrid,frqsum,dtlsm)
 
    use grid_coms, only: nzg
-   use ed_misc_coms, only: radfrq
+   use ed_misc_coms, only: radfrq, current_time
    use ed_state_vars,only:edtype,polygontype,sitetype,patchtype
 
    
@@ -797,8 +797,6 @@ subroutine integrate_ed_daily_output_flux(cgrid)
          cgrid%dmean_soil_water(k,ipy)  = cgrid%dmean_soil_water(k,ipy)                    &
                                         + cgrid%avg_soil_water(k,ipy)
       end do
-      cgrid%dmean_evap(ipy)        = cgrid%dmean_evap(ipy)   + cgrid%avg_evap(ipy)
-      cgrid%dmean_transp(ipy)      = cgrid%dmean_transp(ipy) + cgrid%avg_transp(ipy)
       cgrid%dmean_sensible_vc(ipy) = cgrid%dmean_sensible_vc(ipy)                          &
                                    + cgrid%avg_sensible_vc(ipy) 
       cgrid%dmean_sensible_gc(ipy) = cgrid%dmean_sensible_gc(ipy)                          &
@@ -806,12 +804,14 @@ subroutine integrate_ed_daily_output_flux(cgrid)
       cgrid%dmean_sensible_ac(ipy) = cgrid%dmean_sensible_ac(ipy)                          &
                                    + cgrid%avg_sensible_ac(ipy)
 
-      cgrid%dmean_pcpg(ipy)     = cgrid%dmean_pcpg(ipy)     + cgrid%avg_pcpg(ipy)     
-      cgrid%dmean_runoff(ipy)   = cgrid%dmean_runoff(ipy)   + cgrid%avg_runoff(ipy)
+      cgrid%dmean_pcpg    (ipy) = cgrid%dmean_pcpg    (ipy) + cgrid%avg_pcpg    (ipy)
+      cgrid%dmean_evap    (ipy) = cgrid%dmean_evap    (ipy) + cgrid%avg_evap    (ipy)
+      cgrid%dmean_transp  (ipy) = cgrid%dmean_transp  (ipy) + cgrid%avg_transp  (ipy)
+      cgrid%dmean_runoff  (ipy) = cgrid%dmean_runoff  (ipy) + cgrid%avg_runoff  (ipy)
       cgrid%dmean_drainage(ipy) = cgrid%dmean_drainage(ipy) + cgrid%avg_drainage(ipy)
-      cgrid%dmean_vapor_vc(ipy) = cgrid%dmean_vapor_vc(ipy) + cgrid%avg_vapor_vc(ipy) 
-      cgrid%dmean_vapor_gc(ipy) = cgrid%dmean_vapor_gc(ipy) + cgrid%avg_vapor_gc(ipy) 
-      cgrid%dmean_vapor_ac(ipy) = cgrid%dmean_vapor_ac(ipy) + cgrid%avg_vapor_ac(ipy) 
+      cgrid%dmean_vapor_vc(ipy) = cgrid%dmean_vapor_vc(ipy) + cgrid%avg_vapor_vc(ipy)
+      cgrid%dmean_vapor_gc(ipy) = cgrid%dmean_vapor_gc(ipy) + cgrid%avg_vapor_gc(ipy)
+      cgrid%dmean_vapor_ac(ipy) = cgrid%dmean_vapor_ac(ipy) + cgrid%avg_vapor_ac(ipy)
    end do polyloop
 
    return
@@ -894,8 +894,6 @@ subroutine normalize_ed_daily_vars(cgrid,timefac1)
       siteloop: do isi=1,cpoly%nsites
          csite => cpoly%site(isi)
          
-         csite%dmean_A_decomp  = csite%dmean_A_decomp  * timefac1
-         csite%dmean_Af_decomp = csite%dmean_Af_decomp * timefac1
 
          if (save_daily) then
             site_area_i               = 1./ sum(csite%area)
@@ -905,6 +903,23 @@ subroutine normalize_ed_daily_vars(cgrid,timefac1)
          end if
          
          patchloop: do ipa=1,csite%npatches
+
+            csite%today_A_decomp (ipa) = csite%today_A_decomp(ipa)  * timefac1
+            csite%today_Af_decomp(ipa) = csite%today_Af_decomp(ipa) * timefac1
+
+            !----- Copy the decomposition terms to the daily mean if they are sought. -----!
+            if (save_daily) then
+               csite%dmean_A_decomp(ipa)  = csite%today_A_decomp(ipa)
+               csite%dmean_Af_decomp(ipa) = csite%today_Af_decomp(ipa)
+               !----- Integrate the monthly mean. -----------------------------------------!
+               if (save_monthly) then
+                  csite%mmean_A_decomp(ipa)  = csite%mmean_A_decomp(ipa)                   &
+                                             + csite%dmean_A_decomp(ipa)
+                  csite%mmean_Af_decomp(ipa) = csite%mmean_Af_decomp(ipa)                  &
+                                             + csite%dmean_Af_decomp(ipa)
+               end if
+            end if
+
             cpatch => csite%patch(ipa)
             
             !----- Included a loop so it won't crash with empty cohorts... ----------------!
@@ -1122,14 +1137,14 @@ subroutine normalize_ed_daily_output_vars(cgrid)
          cgrid%dmean_soil_water(k,ipy) = cgrid%dmean_soil_water(k,ipy) * frqsum_o_daysec
       end do
       !----- Precipitation and runoff. ----------------------------------------------------!
-      cgrid%dmean_pcpg     (ipy)  = cgrid%dmean_pcpg     (ipy) * frqsum_o_daysec ! kg/m2/sec
-      cgrid%dmean_runoff   (ipy)  = cgrid%dmean_runoff   (ipy) * frqsum_o_daysec ! kg/m2/sec
-      cgrid%dmean_drainage (ipy)  = cgrid%dmean_drainage (ipy) * frqsum_o_daysec ! kg/m2/sec
+      cgrid%dmean_pcpg     (ipy)  = cgrid%dmean_pcpg     (ipy) * frqsum_o_daysec ! kg/m2/s
+      cgrid%dmean_runoff   (ipy)  = cgrid%dmean_runoff   (ipy) * frqsum_o_daysec ! kg/m2/s
+      cgrid%dmean_drainage (ipy)  = cgrid%dmean_drainage (ipy) * frqsum_o_daysec ! kg/m2/s
 
       !----- Vapor flux. ------------------------------------------------------------------!
-      cgrid%dmean_vapor_vc(ipy)  = cgrid%dmean_vapor_vc(ipy)  * frqsum_o_daysec
-      cgrid%dmean_vapor_gc(ipy)  = cgrid%dmean_vapor_gc(ipy)  * frqsum_o_daysec
-      cgrid%dmean_vapor_ac(ipy)  = cgrid%dmean_vapor_ac(ipy)  * frqsum_o_daysec
+      cgrid%dmean_vapor_vc(ipy)   = cgrid%dmean_vapor_vc(ipy)  * frqsum_o_daysec ! kg/m2/s
+      cgrid%dmean_vapor_gc(ipy)   = cgrid%dmean_vapor_gc(ipy)  * frqsum_o_daysec ! kg/m2/s
+      cgrid%dmean_vapor_ac(ipy)   = cgrid%dmean_vapor_ac(ipy)  * frqsum_o_daysec ! kg/m2/s
 
 
       !------------------------------------------------------------------------------------!
@@ -1413,8 +1428,8 @@ subroutine zero_ed_daily_vars(cgrid)
             cpatch => csite%patch(ipa)
             
             !----- Reset variables stored in sitetype. ------------------------------------!
-            csite%dmean_A_decomp(ipa)  = 0.0
-            csite%dmean_Af_decomp(ipa) = 0.0
+            csite%today_A_decomp(ipa)  = 0.0
+            csite%today_Af_decomp(ipa) = 0.0
 
             !----- Reset variables stored in patchtype. -----------------------------------!
             do ico = 1, cpatch%ncohorts
@@ -1531,7 +1546,9 @@ subroutine zero_ed_daily_output_vars(cgrid)
             csite%dmean_water_residual (ipa) = 0.
             csite%dmean_rh             (ipa) = 0.
             csite%dmean_lambda_light   (ipa) = 0.
-            
+            csite%dmean_A_decomp       (ipa) = 0.
+            csite%dmean_Af_decomp      (ipa) = 0.
+
             cpatch => csite%patch(ipa)
             do ico=1, cpatch%ncohorts
                cpatch%dmean_gpp(ico)              = 0.
@@ -1610,6 +1627,12 @@ subroutine integrate_ed_monthly_output_vars(cgrid)
       cgrid%mmean_evap    (ipy) = cgrid%mmean_evap    (ipy) + cgrid%dmean_evap    (ipy)
       cgrid%mmean_transp  (ipy) = cgrid%mmean_transp  (ipy) + cgrid%dmean_transp  (ipy)
 
+      cgrid%mmean_vapor_ac      (ipy) = cgrid%mmean_vapor_ac      (ipy)                    &
+                                      + cgrid%dmean_vapor_ac      (ipy)
+      cgrid%mmean_vapor_gc      (ipy) = cgrid%mmean_vapor_gc      (ipy)                    &
+                                      + cgrid%dmean_vapor_gc      (ipy)
+      cgrid%mmean_vapor_vc      (ipy) = cgrid%mmean_vapor_vc      (ipy)                    &
+                                      + cgrid%dmean_vapor_vc      (ipy)
       cgrid%mmean_sensible_ac   (ipy) = cgrid%mmean_sensible_ac   (ipy)                    &
                                       + cgrid%dmean_sensible_ac   (ipy)
       cgrid%mmean_sensible_gc   (ipy) = cgrid%mmean_sensible_gc   (ipy)                    &
@@ -1668,13 +1691,17 @@ subroutine integrate_ed_monthly_output_vars(cgrid)
                                       + cgrid%dmean_atm_vels      (ipy)
       cgrid%mmean_pcpg          (ipy) = cgrid%mmean_pcpg          (ipy)                    &
                                       + cgrid%dmean_pcpg          (ipy)
+      cgrid%mmean_runoff        (ipy) = cgrid%mmean_runoff        (ipy)                    &
+                                      + cgrid%dmean_runoff        (ipy)
+      cgrid%mmean_drainage      (ipy) = cgrid%mmean_drainage      (ipy)                    &
+                                      + cgrid%dmean_drainage      (ipy)
 
-      cgrid%mmean_co2_residual(ipy)    = cgrid%mmean_co2_residual(ipy)                     &
-                                       + cgrid%dmean_co2_residual(ipy)
+      cgrid%mmean_co2_residual   (ipy) = cgrid%mmean_co2_residual   (ipy)                  &
+                                       + cgrid%dmean_co2_residual   (ipy)
       cgrid%mmean_energy_residual(ipy) = cgrid%mmean_energy_residual(ipy)                  &
                                        + cgrid%dmean_energy_residual(ipy)
-      cgrid%mmean_water_residual(ipy)  = cgrid%mmean_water_residual(ipy)                   &
-                                       + cgrid%dmean_water_residual(ipy)
+      cgrid%mmean_water_residual (ipy) = cgrid%mmean_water_residual (ipy)                  &
+                                       + cgrid%dmean_water_residual (ipy)
 
       !------------------------------------------------------------------------------------!
       !    During the integration stage we keep the sum of squares, it will be converted   !
@@ -1871,6 +1898,9 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
       cgrid%mmean_gpp            (ipy) = cgrid%mmean_gpp            (ipy) * ndaysi
       cgrid%mmean_evap           (ipy) = cgrid%mmean_evap           (ipy) * ndaysi
       cgrid%mmean_transp         (ipy) = cgrid%mmean_transp         (ipy) * ndaysi
+      cgrid%mmean_vapor_ac       (ipy) = cgrid%mmean_vapor_ac       (ipy) * ndaysi
+      cgrid%mmean_vapor_gc       (ipy) = cgrid%mmean_vapor_gc       (ipy) * ndaysi
+      cgrid%mmean_vapor_vc       (ipy) = cgrid%mmean_vapor_vc       (ipy) * ndaysi
       cgrid%mmean_sensible_ac    (ipy) = cgrid%mmean_sensible_ac    (ipy) * ndaysi
       cgrid%mmean_sensible_gc    (ipy) = cgrid%mmean_sensible_gc    (ipy) * ndaysi
       cgrid%mmean_sensible_vc    (ipy) = cgrid%mmean_sensible_vc    (ipy) * ndaysi
@@ -1897,6 +1927,8 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
       cgrid%mmean_atm_prss       (ipy) = cgrid%mmean_atm_prss       (ipy) * ndaysi
       cgrid%mmean_atm_vels       (ipy) = cgrid%mmean_atm_vels       (ipy) * ndaysi
       cgrid%mmean_pcpg           (ipy) = cgrid%mmean_pcpg           (ipy) * ndaysi
+      cgrid%mmean_runoff         (ipy) = cgrid%mmean_runoff         (ipy) * ndaysi
+      cgrid%mmean_drainage       (ipy) = cgrid%mmean_drainage       (ipy) * ndaysi
       cgrid%mmean_lai_pft      (:,ipy) = cgrid%mmean_lai_pft      (:,ipy) * ndaysi
       cgrid%mmean_wpa_pft      (:,ipy) = cgrid%mmean_wpa_pft      (:,ipy) * ndaysi
       cgrid%mmean_wai_pft      (:,ipy) = cgrid%mmean_wai_pft      (:,ipy) * ndaysi
@@ -2018,6 +2050,8 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
             csite%mmean_water_residual(ipa)  = csite%mmean_water_residual(ipa)  * ndaysi
             csite%mmean_rh(ipa)              = csite%mmean_rh(ipa)              * ndaysi
             csite%mmean_lambda_light(ipa)    = csite%mmean_lambda_light(ipa)    * ndaysi
+            csite%mmean_A_decomp(ipa)        = csite%mmean_A_decomp(ipa)        * ndaysi
+            csite%mmean_Af_decomp(ipa)       = csite%mmean_Af_decomp(ipa)       * ndaysi
 
             !------------------------------------------------------------------------------!
             !     Determining whether this is an agricultural patch or not.  Age and size  !
@@ -2169,6 +2203,9 @@ subroutine zero_ed_monthly_output_vars(cgrid)
       cgrid%mmean_gpp                (ipy) = 0.
       cgrid%mmean_evap               (ipy) = 0.
       cgrid%mmean_transp             (ipy) = 0.
+      cgrid%mmean_vapor_ac           (ipy) = 0.
+      cgrid%mmean_vapor_gc           (ipy) = 0.
+      cgrid%mmean_vapor_vc           (ipy) = 0.
       cgrid%mmean_sensible_ac        (ipy) = 0.
       cgrid%mmean_sensible_gc        (ipy) = 0.
       cgrid%mmean_sensible_vc        (ipy) = 0.
@@ -2198,6 +2235,8 @@ subroutine zero_ed_monthly_output_vars(cgrid)
       cgrid%mmean_atm_prss           (ipy) = 0.
       cgrid%mmean_atm_vels           (ipy) = 0.
       cgrid%mmean_pcpg               (ipy) = 0.
+      cgrid%mmean_runoff             (ipy) = 0.
+      cgrid%mmean_drainage           (ipy) = 0.
       cgrid%mmean_lai_pft          (:,ipy) = 0.
       cgrid%mmean_wpa_pft          (:,ipy) = 0.
       cgrid%mmean_wai_pft          (:,ipy) = 0.
@@ -2229,6 +2268,9 @@ subroutine zero_ed_monthly_output_vars(cgrid)
             csite%mmean_water_residual    (ipa) = 0.
             csite%mmean_rh                (ipa) = 0.
             csite%mmean_lambda_light      (ipa) = 0.
+            csite%mmean_A_decomp          (ipa) = 0.
+            csite%mmean_Af_decomp         (ipa) = 0.
+
             cpatch=> csite%patch(ipa)
             do ico=1,cpatch%ncohorts
                cpatch%mmean_par_v             (ico) = 0.

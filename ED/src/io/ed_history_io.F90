@@ -13,6 +13,7 @@ subroutine read_ed1_history_file
   use grid_coms,only:ngrids
   use allometry, only: dbh2h,h2dbh,dbh2bd,dbh2bl, ed_biomass,area_indices
   use fuse_fiss_utils, only: sort_cohorts
+  use disturb_coms , only : min_new_patch_area ! ! intent(in)
   implicit none
 
   integer :: year
@@ -57,10 +58,10 @@ subroutine read_ed1_history_file
   real(kind=8), dimension(max_water) :: dwater
   
   ! This is the smallest representable number in single precision
-  real(kind=8), parameter :: snglmin=dble(tiny(1.))
-  real, parameter :: min_area=epsilon(1.) ! Doesn't need to be the machine epsilon, chose just a small number.
-  real(kind=8), parameter :: min_ok=dble(tiny(1.)/epsilon(1.)) ! Chose a number small enough, but with some
-                                                               ! room for multiplying by a small area.
+  real(kind=8), parameter :: min_area = 1.d-7     ! Doesn't need to be the machine epsilon,
+                                                  !     just chose a small number.
+  real(kind=8), parameter :: min_ok   = 1.d-20    ! Chose a number small enough, but with some
+                                                  !     room for multiplying by a small area.
   ! Cohort variables from the restart
 
   integer :: ierr
@@ -86,7 +87,7 @@ subroutine read_ed1_history_file
   integer :: npatches,nsitepat,npatch2
   integer, parameter :: harvard_override = 0
   logical :: site_match
-  real :: dist_gc
+  real   , external  :: dist_gc
   integer :: nw
   integer :: ied_init_mode_local
 
@@ -99,6 +100,8 @@ subroutine read_ed1_history_file
   real                  , dimension(maxfiles)           :: plon_list,plat_list
   real                  , dimension(maxfiles)           :: clon_list,clat_list
   real                  , dimension(maxfiles)           :: file_pdist,file_cdist
+  !----- External function. ---------------------------------------------------------------!
+  real                  , external                      :: sngloff
   !----------------------------------------------------------------------------------------!
   
   
@@ -216,17 +219,17 @@ subroutine read_ed1_history_file
                       dstsl,dssc,dpsc,dmsn,dfsn,dwater(1:nwater)
                  if(ierr /= 0)exit count_patches
              
-                 area(ip)   = sngl(max(snglmin,darea  ))
-                 age(ip)    = sngl(max(min_ok ,dage   ))
-                 fsc(ip)    = sngl(max(min_ok ,dfsc   ))
-                 stsc(ip)   = sngl(max(min_ok ,dstsc  ))
-                 stsl(ip)   = sngl(max(min_ok ,dstsl  ))
-                 ssc(ip)    = sngl(max(min_ok ,dssc   ))
-                 psc(ip)    = sngl(max(min_ok ,dpsc   ))
-                 msn(ip)    = sngl(max(min_ok ,dmsn   ))
-                 fsn(ip)    = sngl(max(min_ok ,dfsn   ))
+                 area(ip)   = sngloff(darea      ,min_area)
+                 age(ip)    = sngloff(dage       ,min_ok  )
+                 fsc(ip)    = sngloff(dfsc       ,min_ok  )
+                 stsc(ip)   = sngloff(dstsc      ,min_ok  )
+                 stsl(ip)   = sngloff(dstsl      ,min_ok  )
+                 ssc(ip)    = sngloff(dssc       ,min_ok  )
+                 psc(ip)    = sngloff(dpsc       ,min_ok  )
+                 msn(ip)    = sngloff(dmsn       ,min_ok  )
+                 fsn(ip)    = sngloff(dfsn       ,min_ok  )
                  do nw=1,nwater
-                    water(nw,ip)  = sngl(max(min_ok ,dwater(nw) ))
+                    water(nw,ip) = sngloff(dwater(nw) ,min_ok  )
                  end do
                  
               case(2)  !! read ED2 format files
@@ -234,15 +237,15 @@ subroutine read_ed1_history_file
                       ,dstsl,dssc,dummy,dmsn,dfsn
                  if(ierr /= 0)exit count_patches
               
-                 area(ip)   = sngl(max(snglmin,darea  ))
-                 age(ip)    = sngl(max(min_ok ,dage   ))
-                 fsc(ip)    = sngl(max(min_ok ,dfsc   ))
-                 stsc(ip)   = sngl(max(min_ok ,dstsc  ))
-                 stsl(ip)   = sngl(max(min_ok ,dstsl  ))
-                 ssc(ip)    = sngl(max(min_ok ,dssc   ))
-                 msn(ip)    = sngl(max(min_ok ,dmsn   ))
-                 fsn(ip)    = sngl(max(min_ok ,dfsn   ))
-                 water(1,ip)  = sngl(max(min_ok ,dwater(1) ))
+                 area(ip)    = sngloff(darea    ,min_area)
+                 age(ip)     = sngloff(dage     ,min_ok  )
+                 fsc(ip)     = sngloff(dfsc     ,min_ok  )
+                 stsc(ip)    = sngloff(dstsc    ,min_ok  )
+                 stsl(ip)    = sngloff(dstsl    ,min_ok  )
+                 ssc(ip)     = sngloff(dssc     ,min_ok  )
+                 msn(ip)     = sngloff(dmsn     ,min_ok  )
+                 fsn(ip)     = sngloff(dfsn     ,min_ok  )
+                 water(1,ip) = sngloff(dwater(1),min_ok  )
                  
               case(3)
                  
@@ -250,7 +253,7 @@ subroutine read_ed1_history_file
                       darea,water(1,ip),fsc(ip),stsc(ip),stsl(ip),ssc(ip),psc(ip),msn(ip),fsn(ip)
                  if(ierr /= 0)exit count_patches
               
-                 area(ip)=sngl(max(snglmin,darea))
+                 area(ip)=sngloff(darea, min_area)
                  
                  if(sitenum(ip)<= 0) continue !! check for valid site number
                  
@@ -562,8 +565,8 @@ subroutine read_ed1_history_file
                        call area_indices(cpatch%nplant(ic2),cpatch%bleaf(ic2)              &
                                         ,cpatch%bdead(ic2),cpatch%balive(ic2)              &
                                         ,cpatch%dbh(ic2), cpatch%hite(ic2)                 &
-                                        ,cpatch%pft(ic2), SLA(cpatch%pft(ic2)), cpatch%lai(ic2) &
-                                        ,cpatch%wpa(ic2), cpatch%wai(ic2))
+                                        ,cpatch%pft(ic2), SLA(cpatch%pft(ic2))             &
+                                        ,cpatch%lai(ic2),cpatch%wpa(ic2), cpatch%wai(ic2))
                        
                        cpatch%cb(1:12,ic2) = cb(1:12,ic)
                        cpatch%cb_max(1:12,ic2) = cb_max(1:12,ic)
@@ -572,8 +575,7 @@ subroutine read_ed1_history_file
                        
                        cpatch%agb(ic2) = ed_biomass(cpatch%bdead(ic2),cpatch%balive(ic2)   &
                                                    ,cpatch%bleaf(ic2),cpatch%pft(ic2)      &
-                                                   ,cpatch%hite(ic2),cpatch%bstorage(ic2)) &
-                                       * cpatch%nplant(ic2) * 10.
+                                                   ,cpatch%hite(ic2),cpatch%bstorage(ic2)) 
                        cpatch%basarea(ic2)  = cpatch%nplant(ic2) * pio4                    &
                                             * cpatch%dbh(ic2) * cpatch%dbh(ic2)
                        cpatch%dagb_dt(ic2)  = 0.
@@ -587,60 +589,9 @@ subroutine read_ed1_history_file
                        cpatch%par_v(ic2) = 0.0
                        
                        csite%plant_ag_biomass(ipa) = csite%plant_ag_biomass(ipa)           &
-                                                   + cpatch%agb(ic2) * 0.1
+                                                   + cpatch%agb(ic2) * cpatch%nplant(ic2)
                     endif
                  enddo
-              else ! if (csite%cohort_count(ipa) == 0) then                  
-                !write (unit=*,fmt='(2(a,1x,i5,1x))') &
-                !   "WARNING: found patch with no cohorts: poly",ip,"patch",ipa
-                !      stop
-                ! MLO - 1-8-09. Now I think empty patches should exist, and the right way to
-                !               deal with them is to leave them empty... I am commenting
-                !               this for the time being, hopefully the code will survive...
-                
-                ! ! MLO 5-27-08. Force the patch to have one cohort of each pft that should be included
-                ! !              Considers whether this is agricultural or forest.
-              
-                ! if (csite%dist_type(ipa) == 1) then
-                !    include_pft_ep = include_pft_ag
-                ! else 
-                !    include_pft_ep = include_pft
-                ! end if
-                ! ic = sum(include_pft_ep)
-                ! ! MLO - 5-27-08. "Phylosophical" question. If the patch has no cohort, shouldn't we 
-                ! !                reset its age to zero? It will behave as a near-bare ground patch...
-                ! !                I just set it up to zero here, if this is wrong please remove it...
-                ! csite%age(ipa) = 0.
-                ! ! MLO - 5-27-08. Another "phylosophical" question. If the patch has no cohort and 
-                ! !                it is not water, should it even exist?
-                ! ! Initialize aboveground biomass for this site.
-                ! csite%plant_ag_biomass(ipa) = 0.
-                ! call allocate_patchtype(cpatch,ic)
-                ! csite%cohort_count(ipa) = ic
-                ! ic = 0
-                ! do pft = 1,n_pft
-                !    if(include_pft_ep(pft) == 1)then
-                !       
-                !       ic = ic + 1
-                !       
-                !       ! Define the near-bare ground
-                !       cpatch%pft(ic)     = pft
-                !       cpatch%hite(ic)    = hgt_min(pft)
-                !       cpatch%dbh(ic)     = h2dbh(cpatch%hite(ic),pft)
-                !       cpatch%bdead(ic)   = dbh2bd(cpatch%dbh(ic),cpatch%hite(ic),pft)
-                !       cpatch%bleaf(ic)   = dbh2bl(cpatch%dbh(ic),pft)
-                !       cpatch%nplant(ic)  = 0.1
-                !       cpatch%phenology_status(ic) = 0
-                !       cpatch%balive(ic)  = cpatch%bleaf(ic) * (1.0 + q(pft) +  &
-                !            qsw(pft) * cpatch%hite(ic))
-                !       cpatch%lai(ic)      = cpatch%bleaf(ic) * cpatch%nplant(ic) * SLA(pft)
-                !       cpatch%bstorage(ic) = 0.0
-                !       csite%plant_ag_biomass(ipa) = csite%plant_ag_biomass(ipa) +         &
-                !           ed_biomass(cpatch%bdead(ic),cpatch%balive(ic), cpatch%bleaf(ic) &
-                !                     ,cpatch%pft(ic), cpatch%hite(ic),cpatch%bstorage(ic)) &
-                !          * cpatch%nplant(ic)
-                !    endif
-                ! enddo
               end if
            enddo loop_patches
         enddo loop_sites
@@ -729,6 +680,7 @@ subroutine read_ed1_history_file
            cpoly%patch_count(isi) = nsitepat
         enddo
         
+        
      end do polyloop
 
      !! need to check what's going on in here
@@ -747,7 +699,7 @@ subroutine read_ed21_history_file
 
   use pft_coms, only: SLA, q, qsw, hgt_min, include_pft, include_pft_ag,&
        phenology,pft_1st_check,include_these_pft
-  use ed_misc_coms, only: sfilin,current_time
+  use ed_misc_coms, only: sfilin,current_time, imonthh,iyearh,idateh,itimeh
   use ed_state_vars,only:polygontype,sitetype,patchtype,edtype, &
        edgrid_g,allocate_polygontype,allocate_sitetype,allocate_patchtype
   use grid_coms,only:ngrids,nzg
@@ -796,8 +748,8 @@ subroutine read_ed21_history_file
   include 'mpif.h'
   real(kind=8) :: dbletime
 
-
-
+  ! Function that computes the distance between two points.
+  real, external :: dist_gc
 
   ! Open the HDF environment
 
@@ -828,10 +780,9 @@ subroutine read_ed21_history_file
 
      write(cgr,'(a1,i2.2)') 'g',igr
 
-     dbletime=dble(current_time%time)
+     dbletime=0.d0
      
-     call makefnam(hnamel,sfilin,dbletime,current_time%year, &
-          current_time%month,current_time%date,0,vnam,cgr,'h5 ')
+     !!call makefnam(hnamel,sfilin,dbletime,iyearh,imonthh,idateh,itimeh*100,vnam,cgr,'h5 ')
 
      hnamel = trim(sfilin)//trim(cgr)//".h5"
 
@@ -839,6 +790,11 @@ subroutine read_ed21_history_file
      inquire(file=trim(hnamel),exist=exists)
 
      if (.not.exists) then
+        write (unit=*,fmt='(a,1x,a)')    'SFILIN  = ',trim(sfilin)
+        write (unit=*,fmt='(a,1x,i4.4)') 'IYEARH  = ',iyearh
+        write (unit=*,fmt='(a,1x,i2.2)') 'IMONTHH = ',imonthh
+        write (unit=*,fmt='(a,1x,i2.2)') 'IDATEH  = ',idateh
+        write (unit=*,fmt='(a,1x,i4.4)') 'ITIMEH  = ',itimeh
         call fatal_error ('File '//trim(hnamel)//' not found.'         &
                          ,'read_ed21_history_fill','ed_history_io.f90')
      else
@@ -966,12 +922,11 @@ subroutine read_ed21_history_file
         
         py_index = 0
         cpoly => cgrid%polygon(ipy)
-        minrad = sqrt(2*(90.0**2))
+        minrad = 1.e20
         
         do ifpy = 1,dset_npolygons_global
            
-           currad = sqrt( (file_lats(ifpy)-cgrid%lat(ipy))**2 + &
-                (file_lons(ifpy)-cgrid%lon(ipy))**2 )
+           currad = dist_gc(file_lons(ifpy),cgrid%lon(ipy),file_lats(ifpy),cgrid%lat(ipy))
            
            if ( abs(file_lats(ifpy)-cgrid%lat(ipy)) < ll_tolerance .and. &
                 abs(file_lons(ifpy)-cgrid%lon(ipy)) < ll_tolerance .and. &
@@ -980,17 +935,16 @@ subroutine read_ed21_history_file
               minrad   = currad
            end if
            
-        enddo
-!!        GRID LATS:    13.06241    
-!!        GRID LONS:   -87.56100   
+        end do
+        
+
         if ( py_index.eq.0 .or. pysi_n(py_index)<1) then
            print*,"COULD NOT MATCH A POLYGON WITH THE DATASET"
            print*,"STOPPING"
            print*,"THIS IS THE ",ipy,"th POLYGON"
            print*,"GRID LATS: ",cgrid%lat(ipy)
            print*,"GRID LONS: ",cgrid%lon(ipy)
-           !           print*,"FILE LATS: ",file_lats
-           !           print*,"FILE LONS: ",file_lons
+
            call fatal_error('Mismatch between polygon and dataset'         &
                    ,'read_ed21_history_file','ed_history_io.f90')
         else
@@ -999,8 +953,6 @@ subroutine read_ed21_history_file
            ! Use these values, and its children values in sites, patchs and cohorts
            ! =======================================================================
            iparallel = 0
-           
-           
            
            ! Load 1D dataset
            dsetrank = 1
@@ -1143,11 +1095,16 @@ subroutine read_ed21_history_file
                  patchloop: do ipa = 1,csite%npatches
                     cpatch => csite%patch(ipa)
                     
+                    csite%lai(ipa)  = 0.0
+                    csite%wpa(ipa)  = 0.0
+                    csite%wai(ipa)  = 0.0
+                    csite%plant_ag_biomass(ipa)  = 0.0
+
                     pa_index = sipa_id(si_index) + ipa - 1
                     
-                    if (paco_n(pa_index) > 0) then
-                       
-                       call allocate_patchtype(cpatch,paco_n(pa_index))
+                    call allocate_patchtype(cpatch,paco_n(pa_index))
+
+                    if (cpatch%ncohorts > 0) then
                        
                        dsetrank = 1
                        globdims(1) = int(dset_ncohorts_global,8)
@@ -1166,10 +1123,7 @@ subroutine read_ed21_history_file
                        call hdf_getslab_i(cpatch%phenology_status,'PHENOLOGY_STATUS ',dsetrank,iparallel,.true.)
                        call hdf_getslab_r(cpatch%bleaf,'BLEAF ',dsetrank,iparallel,.true.)
                        call hdf_getslab_r(cpatch%bstorage,'BSTORAGE ',dsetrank,iparallel,.true.)
-                     
-!!                       call hdf_getslab_r(cpatch%agb,'AGB_CO ',dsetrank,iparallel,.true.)
-!!                       call hdf_getslab_r(cpatch%basarea,'BA_CO',dsetrank,iparallel,.true.)
-                       
+                                            
                        dsetrank    = 2
                        globdims(1) = 13_8
                        chnkdims(1) = 13_8
@@ -1188,23 +1142,18 @@ subroutine read_ed21_history_file
                        call hdf_getslab_r(cpatch%cb_max,'CB_MAX ',dsetrank,iparallel,.true.)
                        
                        
-                       csite%plant_ag_biomass(ipa) = sum(cpatch%agb)*0.1
                        cpatch%dagb_dt              = 0.
                        cpatch%dba_dt               = 0.
                        cpatch%ddbh_dt              = 0.
                        cpatch%fsw                  = 1.0
                        cpatch%gpp                  = 0.0
                        cpatch%par_v                = 0.0
-                       csite%lai(ipa)  = 0.0
-                       csite%wpa(ipa)  = 0.0
-                       csite%wai(ipa)  = 0.0
                        
                        cohortloop: do ico=1,cpatch%ncohorts
 
                           cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)   &
                                ,cpatch%bleaf(ico),cpatch%pft(ico)      &
-                               ,cpatch%hite(ico),cpatch%bstorage(ico)) &
-                               * cpatch%nplant(ico) * 10.
+                               ,cpatch%hite(ico),cpatch%bstorage(ico))
 
                           cpatch%basarea(ico)  = cpatch%nplant(ico) * pio4                    &
                                * cpatch%dbh(ico) * cpatch%dbh(ico)
@@ -1219,13 +1168,16 @@ subroutine read_ed21_history_file
                           csite%lai(ipa)  = csite%lai(ipa) + cpatch%lai(ico)
                           csite%wpa(ipa)  = csite%wpa(ipa) + cpatch%wpa(ico)
                           csite%wai(ipa)  = csite%wai(ipa) + cpatch%wai(ico)
+                          csite%plant_ag_biomass(ipa) = csite%plant_ag_biomass(ipa)        &
+                                                      + cpatch%agb(ico)*cpatch%nplant(ico)
 
                           call init_ed_cohort_vars(cpatch,ico,cpoly%lsl(isi))
                           
                        end do cohortloop
-                    else
 
-                       !call fatal_error('No cohorts?','read_ed21_history_file','ed_history_io.f90')
+                       ! Notice that if there are no cohorts, that is just fine
+                       ! This is entirely possible
+
                     end if
                     
                  enddo patchloop
@@ -2036,6 +1988,18 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
      call hdf_getslab_r(cgrid%mmean_sensible_ac    (ipy:ipy) ,'MMEAN_SENSIBLE_AC     '     &
                        ,dsetrank,iparallel,.false.)
  
+  if (associated(cgrid%mmean_vapor_vc       ))                                             &
+     call hdf_getslab_r(cgrid%mmean_vapor_vc       (ipy:ipy) ,'MMEAN_VAPOR_VC        '     &
+                       ,dsetrank,iparallel,.false.)
+ 
+  if (associated(cgrid%mmean_vapor_gc       ))                                             &
+     call hdf_getslab_r(cgrid%mmean_vapor_gc       (ipy:ipy) ,'MMEAN_VAPOR_GC        '     &
+                       ,dsetrank,iparallel,.false.)
+ 
+  if (associated(cgrid%mmean_vapor_ac       ))                                             &
+     call hdf_getslab_r(cgrid%mmean_vapor_ac       (ipy:ipy) ,'MMEAN_VAPOR_AC     '     &
+                       ,dsetrank,iparallel,.false.)
+ 
   if (associated(cgrid%mmean_nep            ))                                             &
      call hdf_getslab_r(cgrid%mmean_nep            (ipy:ipy) ,'MMEAN_NEP             '     &
                        ,dsetrank,iparallel,.false.)
@@ -2126,6 +2090,14 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
  
   if (associated(cgrid%mmean_pcpg           ))                                             &
      call hdf_getslab_r(cgrid%mmean_pcpg           (ipy:ipy) ,'MMEAN_PCPG            '     &
+                       ,dsetrank,iparallel,.false.)
+ 
+  if (associated(cgrid%mmean_runoff         ))                                             &
+     call hdf_getslab_r(cgrid%mmean_runoff         (ipy:ipy) ,'MMEAN_RUNOFF          '     &
+                       ,dsetrank,iparallel,.false.)
+ 
+  if (associated(cgrid%mmean_drainage       ))                                             &
+     call hdf_getslab_r(cgrid%mmean_drainage       (ipy:ipy) ,'MMEAN_DRAINAGE        '     &
                        ,dsetrank,iparallel,.false.)
 
   if (associated(cgrid%mmean_fs_open        ))                                             &
@@ -2678,8 +2650,12 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    call hdf_getslab_r(csite%co2budget_gpp,'CO2BUDGET_GPP ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%co2budget_plresp,'CO2BUDGET_PLRESP ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%co2budget_rh,'CO2BUDGET_RH ',dsetrank,iparallel,.true.)
-   call hdf_getslab_r(csite%dmean_A_decomp,'DMEAN_A_DECOMP ',dsetrank,iparallel,.true.)
-   call hdf_getslab_r(csite%dmean_Af_decomp,'DMEAN_AF_DECOMP ',dsetrank,iparallel,.true.)
+   call hdf_getslab_r(csite%today_A_decomp,'TODAY_A_DECOMP ',dsetrank,iparallel,.true.)
+   call hdf_getslab_r(csite%today_Af_decomp,'TODAY_AF_DECOMP ',dsetrank,iparallel,.true.)
+   call hdf_getslab_r(csite%dmean_A_decomp,'DMEAN_A_DECOMP ',dsetrank,iparallel,.false.)
+   call hdf_getslab_r(csite%dmean_Af_decomp,'DMEAN_AF_DECOMP ',dsetrank,iparallel,.false.)
+   call hdf_getslab_r(csite%mmean_A_decomp,'MMEAN_A_DECOMP ',dsetrank,iparallel,.false.)
+   call hdf_getslab_r(csite%mmean_Af_decomp,'MMEAN_AF_DECOMP ',dsetrank,iparallel,.false.)
    call hdf_getslab_r(csite%veg_rough,'VEG_ROUGH ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%veg_height ,'VEG_HEIGHT ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%fsc_in,'FSC_IN ',dsetrank,iparallel,.true.)

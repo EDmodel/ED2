@@ -139,7 +139,8 @@ subroutine read_ednl(iunit)
   end if
 
   call copy_in_bramsnl(expnme, runtype, itimez, idatez, imonthz, iyearz, &
-       itimea, idatea, imontha, iyeara, radfrq, nnxp,nnyp,deltax,        &
+       itimea, idatea, imontha, iyeara, itimeh, idateh, imonthh, iyearh, &
+       radfrq, nnxp,nnyp,deltax,        &
        deltay,polelat,polelon,centlat,centlon,nstratx,nstraty,           &
        iclobber,nzg,nzs,isoilflg,nslcon,slz,slmstr,stgoff,leaf_zrough,istar,ngrids)
   
@@ -242,12 +243,13 @@ subroutine read_ednl(iunit)
   
 subroutine copy_in_bramsnl(expnme_b, runtype_b, itimez_b, idatez_b, &
      imonthz_b, iyearz_b, itimea_b, idatea_b, imontha_b, iyeara_b,  &
+     itimeh_b, idateh_b, imonthh_b, iyearh_b,                       &
      radfrq_b,nnxp_b,nnyp_b,deltax_b,deltay_b,polelat_b,polelon_b,  &
      centlat_b,centlon_b,nstratx_b,nstraty_b,iclobber_b,nzg_b,nzs_b,&
      isoilflg_b,nslcon_b,slz_b,slmstr_b,stgoff_b,zrough_b,isfclyrm_b,ngrids_b)
   
   use ed_misc_coms, only: expnme, runtype, itimez, idatez, imonthz, iyearz, &
-       itimea, idatea, imontha, iyeara, iclobber,radfrq
+       itimea, idatea, imontha, iyeara, itimeh, idateh, imonthh, iyearh, iclobber,radfrq
   
   use grid_coms, only: centlon,centlat,deltax,deltay,nnxp,nnyp,nstratx, &
        nstraty,polelat,polelon,ngrids,timmax,time,nzg, nzs
@@ -271,6 +273,10 @@ subroutine copy_in_bramsnl(expnme_b, runtype_b, itimez_b, idatez_b, &
   integer                   , intent(in) :: imonthz_b
   integer                   , intent(in) :: idatez_b
   integer                   , intent(in) :: itimez_b
+  integer                   , intent(in) :: iyearh_b
+  integer                   , intent(in) :: imonthh_b
+  integer                   , intent(in) :: idateh_b
+  integer                   , intent(in) :: itimeh_b
   real                      , intent(in) :: radfrq_b
   integer                   , intent(in) :: iclobber_b
   integer,dimension(maxgrds), intent(in) :: nnxp_b
@@ -300,6 +306,10 @@ subroutine copy_in_bramsnl(expnme_b, runtype_b, itimez_b, idatez_b, &
   idatez   = idatez_b
   imonthz  = imonthz_b
   iyearz   = iyearz_b
+  itimeh   = itimeh_b
+  idateh   = idateh_b
+  imonthh  = imonthh_b
+  iyearh   = iyearh_b
   itimea   = itimea_b
   idatea   = idatea_b
   imontha  = imontha_b

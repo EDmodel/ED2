@@ -161,6 +161,13 @@
 				       !     the soil profile, and initialization of temperatures
                                        !     is the same as in type 0-3, where is is based
                                        !     off of user discretion and the lower atmosphere.
+                                       !     The YYYY, MM, DD, HHMMSS information is built
+                                       !     using IYEARH, IMONTHH, IDATEH, and ITIMEH,
+                                       !     respectively.
+                                       !
+                                       ! -1 - use a mix of ED-1 and ED-2 files. This should
+                                       !      be avoided by all means, unless you are 
+                                       !      absolute sure of what you're doing;
                          
    NL%EDRES  = 1.0                     ! ED2/ED1 restart grid resolution
 
