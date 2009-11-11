@@ -1,4 +1,4 @@
-!------------------------------------------------------------------------!
+ !------------------------------------------------------------------------!
 !                                                                        !
 ! Main subroutine for driving the initialization process for             !
 ! the Ecosystem Demography Model 2.  All compute nodes, including        !

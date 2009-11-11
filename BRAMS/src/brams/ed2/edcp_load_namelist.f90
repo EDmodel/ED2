@@ -31,7 +31,7 @@ subroutine read_ednl(iunit)
        end_time, integration_scheme, ffilout,  dtlsm,                 &
        iprintpolys,printvars,npvars,pfmtstr,ipmax,ipmin,              &
        iedcnfgf,ffilout,sfilout,sfilin,event_file, attach_metadata
-  use canopy_air_coms, only:  icanturb
+  use canopy_air_coms, only:  icanturb, isfclyrm
 
   use grid_coms, only: timmax,time
   
@@ -67,7 +67,8 @@ subroutine read_ednl(iunit)
        soildepth_db,isoilstateinit,isoildepthflg,isoilbc,integration_scheme, &
        ibranch_thermo,istoma_scheme,iphen_scheme,repro_scheme,lapse_scheme,  &
        crown_mod,n_plant_lim,n_decomp_lim,include_fire,ianth_disturb,        &
-       icanturb,include_these_pft,agri_stock,plantation_stock,pft_1st_check, &
+       icanturb,isfclyrm,include_these_pft,agri_stock,plantation_stock,      &
+       pft_1st_check, &
        maxpatch,maxcohort,treefall_disturbance_rate,runoff_time,iprintpolys, &
        npvars,printvars,pfmtstr,ipmin,ipmax,iphenys1,iphenysf,               &
        iphenyf1,iphenyff,iedcnfgf,event_file,phenpath
@@ -111,6 +112,7 @@ subroutine read_ednl(iunit)
      write(*,*) "include_fire=",include_fire
      write(*,*) "ianth_disturb=",ianth_disturb
      write(*,*) "icanturb=",icanturb
+     write(*,*) "isfclyrm=",isfclyrm
      write(*,*) "include_these_pft=",include_these_pft
      write(*,*) "agri_stock=",agri_stock
      write(*,*) "plantation_stock=",plantation_stock

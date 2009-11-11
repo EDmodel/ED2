@@ -406,6 +406,22 @@ subroutine harr_lwrad(nz,mynum)
    real   , dimension(mb)    :: wlenlo,wlenhi
    !---------------------------------------------------------------------------------------!
 
+   interface
+      subroutine flxlw(nz,nzmax,tg,tp,tcr,omgp,src,t,r,tc,sigu,sigd,re,vd,td,vu,fu, &
+           fd,chck,xgry,asym,mynum)
+        
+        !----- Arguments -----------------------------------------------------------------------!
+        integer, intent(in)                       :: nz,nzmax,mynum
+        real   , intent(in)    , dimension   (nz) :: tg,tcr,src
+        real   , intent(in)    , dimension(nzmax) :: tp,omgp,asym
+        real   , intent(in)                       :: chck,xgry
+        real   , intent(inout) , dimension(nzmax) :: fu,fd
+        real   , intent(inout) , dimension   (nz) :: t,r,tc,sigu,sigd
+        real   , intent(inout) , dimension   (nz) :: re,vd,td,vu
+        !---------------------------------------------------------------------------------------!
+      end subroutine flxlw
+   end interface
+
 
    !---------------------------------------------------------------------------------------!
    !     Remember, for this code it is assumed that u, the gaseous absorber amounts, are   !
@@ -494,8 +510,10 @@ subroutine harr_lwrad(nz,mynum)
             end do
 
             !----- Now do rest of stuff in the flux subroutine ----------------------------!
-            call flxlw(nz,nzmax,tg,tp(:,ib),tcr,omgp(:,ib),src,t,r,tc,sigu,sigd,re,vd,td   &
-                      ,vu,fu(:,6),fd(:,6),1.,1.,asym(:,ib),mynum)
+            call flxlw(nz,nzmax,tg(1:nz),tp(1:nzmax,ib),tcr(1:nz),omgp(1:nzmax,ib), &
+                 src(1:nz),t(1:nz),r(1:nz),tc(1:nz),sigu(1:nz),sigd(1:nz),re(1:nz), &
+                 vd(1:nz),td(1:nz),vu(1:nz),fu(1:nzmax,6),fd(1:nzmax,6),1.,1.,      &
+                 asym(1:nzmax,ib),mynum)
 
             !----- Add pseudo-band fluxes to the total flux -------------------------------!
             do iz=1,nz
@@ -733,7 +751,8 @@ subroutine flxsw(nz,nzmax,tg,tp,tcr,omgp,alb,slr,amu0,t,r,tc,sigu,sigd,re,vd  &
    real        , dimension(nzmax), intent(inout) :: fu,fd
    !----- Local variables -----------------------------------------------------------------!
    integer                                       :: iz
-   real(kind=8), dimension(nz)                   :: tg8,tp8,tcr8,omgp8,asym8
+   real(kind=8), dimension(nz)                   :: tg8,tcr8
+   real(kind=8), dimension(nzmax)                :: tp8,omgp8,asym8
    real(kind=8)                                  :: alb8,slr8,amu08
    real(kind=8), dimension(nz)                   :: t8,r8,tc8,sigu8,sigd8,re8,vd8,td8,vu8
    real(kind=8), dimension(nz)                   :: fu8,fd8
@@ -863,7 +882,8 @@ subroutine flxsw(nz,nzmax,tg,tp,tcr,omgp,alb,slr,amu0,t,r,tc,sigu,sigd,re,vd  &
       fd8(iz-1) = re8(iz-1) * fu8(iz-1) + vd8(iz-1) + fd8(iz-1)
       fu8(iz)   = t8(iz) * fu8(iz-1) / td8(iz) + vu8(iz-1)
    end do
-   
+
+   !----- Local variables -----------------------------------------------------------------!
    !----- Transfer values back to single precision. ---------------------------------------!
    do iz=2,nz
       fd(iz)   = dble2sngl(tinyreal,fd8(iz)  )
@@ -887,11 +907,6 @@ end subroutine flxsw
 !==========================================================================================!
 !==========================================================================================!
 
-
-
-
-
-
 !==========================================================================================!
 !==========================================================================================!
 subroutine flxlw(nz,nzmax,tg,tp,tcr,omgp,src,t,r,tc,sigu,sigd,re,vd,td,vu,fu,fd,chck,xgry  &
@@ -907,9 +922,13 @@ subroutine flxlw(nz,nzmax,tg,tp,tcr,omgp,src,t,r,tc,sigu,sigd,re,vd,td,vu,fu,fd,
    real   , intent(inout) , dimension(nzmax) :: fu,fd
    real   , intent(inout) , dimension   (nz) :: t,r,tc,sigu,sigd
    real   , intent(inout) , dimension   (nz) :: re,vd,td,vu
+
    !----- Local variables -----------------------------------------------------------------!
    integer                                   :: iz
-   real(kind=8)           , dimension(nz)    :: tg8,tp8,tcr8,omgp8,src8,asym8,fu8,fd8
+   real(kind=8)           , dimension(nz)    :: tg8,tcr8,src8,fu8,fd8
+
+   real(kind=8)           , dimension(nzmax) :: tp8,omgp8,asym8
+
    real(kind=8)           , dimension(nz)    :: t8,r8,tc8,sigu8,sigd8
    real(kind=8)           , dimension(nz)    :: re8,vd8,td8,vu8
    real(kind=8)                              :: chck8,xgry8
@@ -923,6 +942,8 @@ subroutine flxlw(nz,nzmax,tg,tp,tcr,omgp,src,t,r,tc,sigu,sigd,re,vd,td,vu,fu,fd,
    !----- Functions -----------------------------------------------------------------------!
    real                          , external  :: dble2sngl
    !---------------------------------------------------------------------------------------!
+
+   
 
    !----- Initializing double precision version of output variables. ----------------------!
    t8    = dble(0.)
@@ -948,6 +969,7 @@ subroutine flxlw(nz,nzmax,tg,tp,tcr,omgp,src,t,r,tc,sigu,sigd,re,vd,td,vu,fu,fd,
    !     Get total optical depth, single scattering albedo and assymetry parameter.        !
    !---------------------------------------------------------------------------------------!
    do iz=nz,2,-1
+
       tau = tg8(iz) * xgry8 + tp8(iz) + tcr8(iz) * chck8
 
       if ( tau == 0.d0 ) then
@@ -957,6 +979,7 @@ subroutine flxlw(nz,nzmax,tg,tp,tcr,omgp,src,t,r,tc,sigu,sigd,re,vd,td,vu,fu,fd,
          omg0 = min(9.99999d-1, omgp8(iz) * tp8(iz) / max(tinyreal, tau))
          af = asym8(iz)
       end if
+
       !----- Do delta-m scaling (wiscombe). -----------------------------------------------!
       fact = af * af
       tau = (1.d0 - omg0 * fact) * tau
@@ -979,6 +1002,7 @@ subroutine flxlw(nz,nzmax,tg,tp,tcr,omgp,src,t,r,tc,sigu,sigd,re,vd,td,vu,fu,fd,
       t8(iz) = (1.d0-rinf*rinf)*expp1 / (1.d0-rinf*rinf*expp2)
       r8(iz) = rinf*(1.d0-expp2) / (1.d0-rinf*rinf*expp2)
      
+
       !----- Get the source functions, go from top down to accomodate solar terms. --------!
       if (tau < 4.d-2) then      !changed June 12 after Jerry's recom.
          sigu8(iz) = halfpi8 * (src8(iz) + src8(iz-1)) * tau * diffac
@@ -990,6 +1014,7 @@ subroutine flxlw(nz,nzmax,tg,tp,tcr,omgp,src,t,r,tc,sigu,sigd,re,vd,td,vu,fu,fd,
          sigu8(iz) = cc*(aa*src8(iz)+bb*src8(iz-1))
          sigd8(iz) = cc*(bb*src8(iz)+aa*src8(iz-1))
       end if
+
    end do
 
    !----- Do adding, going from top down calculate fluxes going up through the layers. ----!
@@ -1022,6 +1047,7 @@ subroutine flxlw(nz,nzmax,tg,tp,tcr,omgp,src,t,r,tc,sigu,sigd,re,vd,td,vu,fu,fd,
       td(iz)   = dble2sngl(tinyreal,td8(iz)  )
       vu(iz)   = dble2sngl(tinyreal,vu8(iz)  )
    end do
+
    fd(1)   = dble2sngl(tinyreal,fd8(1)  )
    fu(1)   = dble2sngl(tinyreal,fu8(1)  )
 
