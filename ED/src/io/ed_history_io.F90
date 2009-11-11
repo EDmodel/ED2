@@ -784,7 +784,7 @@ subroutine read_ed21_history_file
      
      !!call makefnam(hnamel,sfilin,dbletime,iyearh,imonthh,idateh,itimeh*100,vnam,cgr,'h5 ')
 
-     hnamel = trim(sfilin)//trim(cgr)//".h5"
+     hnamel = trim(sfilin)//"-"//trim(cgr)//".h5"
 
 
      inquire(file=trim(hnamel),exist=exists)
