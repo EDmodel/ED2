@@ -9717,7 +9717,7 @@ contains
     if (associated(cpatch%today_root_resp)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%today_root_resp(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'TODAY_ROOT_RESP :41') 
+         var_len,var_len_global,max_ptrs,'TODAY_ROOT_RESP :41:hist') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 

@@ -782,9 +782,9 @@ subroutine read_ed21_history_file
 
      dbletime=0.d0
      
-     call makefnam(hnamel,sfilin,dbletime,iyearh,imonthh,idateh,itimeh*100,vnam,cgr,'h5 ')
+     !!call makefnam(hnamel,sfilin,dbletime,iyearh,imonthh,idateh,itimeh*100,vnam,cgr,'h5 ')
 
-     !hnamel = trim(sfilin)//trim(cgr)//".h5"
+     hnamel = trim(sfilin)//"-"//trim(cgr)//".h5"
 
 
      inquire(file=trim(hnamel),exist=exists)
@@ -937,24 +937,22 @@ subroutine read_ed21_history_file
            
         end do
         
+
         if ( py_index.eq.0 .or. pysi_n(py_index)<1) then
            print*,"COULD NOT MATCH A POLYGON WITH THE DATASET"
            print*,"STOPPING"
            print*,"THIS IS THE ",ipy,"th POLYGON"
            print*,"GRID LATS: ",cgrid%lat(ipy)
            print*,"GRID LONS: ",cgrid%lon(ipy)
-           !           print*,"FILE LATS: ",file_lats
-           !           print*,"FILE LONS: ",file_lons
+
            call fatal_error('Mismatch between polygon and dataset'         &
-                   ,'init_full_history_restart','ed_history_io.f90')
+                   ,'read_ed21_history_file','ed_history_io.f90')
         else
            
            ! A suitably close polygon has been located in the datasets
            ! Use these values, and its children values in sites, patchs and cohorts
            ! =======================================================================
            iparallel = 0
-           
-           
            
            ! Load 1D dataset
            dsetrank = 1
@@ -1195,14 +1193,10 @@ subroutine read_ed21_history_file
                           call init_ed_cohort_vars(cpatch,ico,cpoly%lsl(isi))
                           
                        end do cohortloop
-                    else
-                       ! Empty patches should be fine, in this case we must make the
-                       ! patch level properties that are derived from the cohort level
-                       ! to be zero...
 
-                       !print*,"SIPA_N",paco_n(pa_index),paco_id(pa_index),pa_index
+                       ! Notice that if there are no cohorts, that is just fine
+                       ! This is entirely possible
 
-                       !call fatal_error('No cohorts?','read_ed21_history_file','ed_history_io.f90')
                     end if
                     
                  enddo patchloop
@@ -2660,12 +2654,22 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    call hdf_getslab_r(csite%rough,'ROUGH ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%avg_daily_temp,'AVG_DAILY_TEMP ',dsetrank,iparallel,.true.)  
    call hdf_getslab_r(csite%mean_rh,'MEAN_RH ',dsetrank,iparallel,.true.)
-   call hdf_getslab_r(csite%dmean_rh,'DMEAN_RH_PA ',dsetrank,iparallel,.false.)
-   call hdf_getslab_r(csite%mmean_rh,'MMEAN_RH_PA ',dsetrank,iparallel,.false.)
+
+   if (associated(csite%dmean_rh       )) &
+        call hdf_getslab_r(csite%dmean_rh,'DMEAN_RH_PA ',dsetrank,iparallel,.false.)
+   if (associated(csite%mmean_rh       )) &
+        call hdf_getslab_r(csite%mmean_rh,'MMEAN_RH_PA ',dsetrank,iparallel,.false.)
+
    call hdf_getslab_r(csite%lambda_light,'LAMBDA_LIGHT ',dsetrank,iparallel,.true.)
-   call hdf_getslab_r(csite%dmean_lambda_light,'DMEAN_LAMBDA_LIGHT ',dsetrank,iparallel,.false.)
-   call hdf_getslab_r(csite%mmean_lambda_light,'MMEAN_LAMBDA_LIGHT ',dsetrank,iparallel,.false.)
+
+   if (associated(csite%dmean_lambda_light       )) &
+        call hdf_getslab_r(csite%dmean_lambda_light,'DMEAN_LAMBDA_LIGHT ',dsetrank,iparallel,.false.)
+
+   if (associated(csite%mmean_lambda_light       )) &
+        call hdf_getslab_r(csite%mmean_lambda_light,'MMEAN_LAMBDA_LIGHT ',dsetrank,iparallel,.false.)
+   
    call hdf_getslab_r(csite%mean_nep,'MEAN_NEP ',dsetrank,iparallel,.true.)
+
    call hdf_getslab_r(csite%wbudget_loss2atm,'WBUDGET_LOSS2ATM ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%wbudget_denseffect,'WBUDGET_DENSEFFECT ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%wbudget_precipgain,'WBUDGET_PRECIPGAIN ',dsetrank,iparallel,.true.)
@@ -3048,45 +3052,87 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
      call hdf_getslab_r(cpatch%vleaf_respiration,'VLEAF_RESPIRATION ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%fsn,'FSN ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%monthly_dndt,'MONTHLY_DNDT ',dsetrank,iparallel,.true.)
-     call hdf_getslab_r(cpatch%mmean_gpp,'MMEAN_GPP_CO ',dsetrank,iparallel,.false.)
-     call hdf_getslab_r(cpatch%mmean_leaf_resp,'MMEAN_LEAF_RESP_CO ',dsetrank,iparallel,.false.)
-     call hdf_getslab_r(cpatch%mmean_root_resp,'MMEAN_ROOT_RESP_CO ',dsetrank,iparallel,.false.)
-     call hdf_getslab_r(cpatch%mmean_growth_resp,'MMEAN_GROWTH_RESP_CO ',dsetrank,iparallel,.false.)
-     call hdf_getslab_r(cpatch%mmean_storage_resp,'MMEAN_STORAGE_RESP_CO ',dsetrank,iparallel,.false.)
-     call hdf_getslab_r(cpatch%mmean_vleaf_resp,'MMEAN_VLEAF_RESP_CO ',dsetrank,iparallel,.false.)
-     call hdf_getslab_r(cpatch%dmean_leaf_resp,'DMEAN_LEAF_RESP_CO ',dsetrank,iparallel,.false.)
-     call hdf_getslab_r(cpatch%dmean_root_resp,'DMEAN_ROOT_RESP_CO ',dsetrank,iparallel,.false.)
-     call hdf_getslab_r(cpatch%dmean_gpp,'DMEAN_GPP_CO ',dsetrank,iparallel,.false.)
+
+     if (associated(cpatch%mmean_gpp       )) &
+          call hdf_getslab_r(cpatch%mmean_gpp,'MMEAN_GPP_CO ',dsetrank,iparallel,.false.)
+     if (associated(cpatch%mmean_leaf_resp       )) &
+          call hdf_getslab_r(cpatch%mmean_leaf_resp,'MMEAN_LEAF_RESP_CO ',dsetrank,iparallel,.false.)
+     if (associated(cpatch%mmean_root_resp       )) &
+          call hdf_getslab_r(cpatch%mmean_root_resp,'MMEAN_ROOT_RESP_CO ',dsetrank,iparallel,.false.)
+     if (associated(cpatch%mmean_growth_resp       )) &
+          call hdf_getslab_r(cpatch%mmean_growth_resp,'MMEAN_GROWTH_RESP_CO ',dsetrank,iparallel,.false.)
+     if (associated(cpatch%mmean_storage_resp       )) &
+          call hdf_getslab_r(cpatch%mmean_storage_resp,'MMEAN_STORAGE_RESP_CO ',dsetrank,iparallel,.false.)
+     if (associated(cpatch%mmean_vleaf_resp       )) &
+          call hdf_getslab_r(cpatch%mmean_vleaf_resp,'MMEAN_VLEAF_RESP_CO ',dsetrank,iparallel,.false.)
+     if (associated(cpatch%dmean_leaf_resp       )) &
+          call hdf_getslab_r(cpatch%dmean_leaf_resp,'DMEAN_LEAF_RESP_CO ',dsetrank,iparallel,.false.)
+     if (associated(cpatch%dmean_root_resp       )) &
+          call hdf_getslab_r(cpatch%dmean_root_resp,'DMEAN_ROOT_RESP_CO ',dsetrank,iparallel,.false.)
+     if (associated(cpatch%dmean_gpp       )) &
+          call hdf_getslab_r(cpatch%dmean_gpp,'DMEAN_GPP_CO ',dsetrank,iparallel,.false.)
+     if (associated(cpatch%dmean_fs_open       )) &
      call hdf_getslab_r(cpatch%dmean_fs_open,'DMEAN_FS_OPEN ',dsetrank,iparallel,.false.)
+     if (associated(cpatch%mmean_fs_open       )) &
      call hdf_getslab_r(cpatch%mmean_fs_open,'MMEAN_FS_OPEN ',dsetrank,iparallel,.false.) 
+     if (associated(cpatch%dmean_fsw       )) &
      call hdf_getslab_r(cpatch%dmean_fsw,'DMEAN_FSW ',dsetrank,iparallel,.false.)
+     if (associated(cpatch%mmean_fsw       )) &
      call hdf_getslab_r(cpatch%mmean_fsw,'MMEAN_FSW ',dsetrank,iparallel,.false.) 
+     if (associated(cpatch%dmean_fsn       )) &
      call hdf_getslab_r(cpatch%dmean_fsn,'DMEAN_FSN ',dsetrank,iparallel,.false.)
+     if (associated(cpatch%mmean_fsn       )) &
      call hdf_getslab_r(cpatch%mmean_fsn,'MMEAN_FSN ',dsetrank,iparallel,.false.) 
+     if (associated(cpatch%mmean_mnt_cost       )) &
      call hdf_getslab_r(cpatch%mmean_mnt_cost,'MMEAN_MNT_COST ',dsetrank,iparallel,.false.)   
+     if (associated(cpatch%mmean_leaf_litter       )) &
      call hdf_getslab_r(cpatch%mmean_leaf_litter,'MMEAN_LEAF_LITTER ',dsetrank,iparallel,.false.)   
+     if (associated(cpatch%mmean_cb       )) &
      call hdf_getslab_r(cpatch%mmean_cb,'MMEAN_CB ',dsetrank,iparallel,.false.)   
+     if (associated(cpatch%dmean_light_level       )) &
      call hdf_getslab_r(cpatch%dmean_light_level,'DMEAN_LIGHT_LEVEL ',dsetrank,iparallel,.false.)
+     if (associated(cpatch%mmean_light_level       )) &
      call hdf_getslab_r(cpatch%mmean_light_level,'MMEAN_LIGHT_LEVEL ',dsetrank,iparallel,.false.)
+     if (associated(cpatch%mmean_light_level       )) &
      call hdf_getslab_r(cpatch%dmean_light_level_beam,'DMEAN_LIGHT_LEVEL_BEAM ',dsetrank,iparallel,.false.)
+     if (associated(cpatch%mmean_light_level_beam       )) &
      call hdf_getslab_r(cpatch%mmean_light_level_beam,'MMEAN_LIGHT_LEVEL_BEAM ',dsetrank,iparallel,.false.)
+     if (associated(cpatch%dmean_light_level_diff       )) &
      call hdf_getslab_r(cpatch%dmean_light_level_diff,'DMEAN_LIGHT_LEVEL_DIFF ',dsetrank,iparallel,.false.)
+     if (associated(cpatch%mmean_light_level_diff       )) &
      call hdf_getslab_r(cpatch%mmean_light_level_diff,'MMEAN_LIGHT_LEVEL_DIFF ',dsetrank,iparallel,.false.)
+     if (associated(cpatch%dmean_par_v       )) &
      call hdf_getslab_r(cpatch%dmean_par_v,'DMEAN_PAR_V ',dsetrank,iparallel,.false.)
+
+     if (associated(cpatch%dmean_par_v_beam       )) &
      call hdf_getslab_r(cpatch%dmean_par_v_beam,'DMEAN_PAR_V_BEAM ',dsetrank,iparallel,.false.)
+     if (associated(cpatch%dmean_par_v_diff       )) &
      call hdf_getslab_r(cpatch%dmean_par_v_diff,'DMEAN_PAR_V_DIFF ',dsetrank,iparallel,.false.)
+     if (associated(cpatch%mmean_par_v       )) &
      call hdf_getslab_r(cpatch%mmean_par_v,'MMEAN_PAR_V ',dsetrank,iparallel,.false.)
+     if (associated(cpatch%mmean_par_v_beam       )) &
      call hdf_getslab_r(cpatch%mmean_par_v_beam,'MMEAN_PAR_V_BEAM ',dsetrank,iparallel,.false.)
+     if (associated(cpatch%mmean_par_v_diff       )) &
      call hdf_getslab_r(cpatch%mmean_par_v_diff,'MMEAN_PAR_V_DIFF ',dsetrank,iparallel,.false.)
+     if (associated(cpatch%dmean_beamext_level       )) &
      call hdf_getslab_r(cpatch%dmean_beamext_level,'DMEAN_BEAMEXT_LEVEL ',dsetrank,iparallel,.false.)
+     if (associated(cpatch%mmean_beamext_level      )) &
      call hdf_getslab_r(cpatch%mmean_beamext_level,'MMEAN_BEAMEXT_LEVEL ',dsetrank,iparallel,.false.)
+     if (associated(cpatch%dmean_diffext_level       )) &
      call hdf_getslab_r(cpatch%dmean_diffext_level,'DMEAN_DIFFEXT_LEVEL ',dsetrank,iparallel,.false.)
+     if (associated(cpatch%dmean_diffext_level       )) &
      call hdf_getslab_r(cpatch%mmean_diffext_level,'MMEAN_DIFFEXT_LEVEL ',dsetrank,iparallel,.false.)
+     if (associated(cpatch%mmean_diffext_level       )) &
      call hdf_getslab_r(cpatch%dmean_norm_par_beam,'DMEAN_NORM_PAR_BEAM ',dsetrank,iparallel,.false.)
+     if (associated(cpatch%dmean_norm_par_beam       )) &
      call hdf_getslab_r(cpatch%mmean_norm_par_beam,'MMEAN_NORM_PAR_BEAM ',dsetrank,iparallel,.false.)
+     if (associated(cpatch%dmean_norm_par_diff       )) &
      call hdf_getslab_r(cpatch%dmean_norm_par_diff,'DMEAN_NORM_PAR_DIFF ',dsetrank,iparallel,.false.)
+     if (associated(cpatch%mmean_norm_par_diff       )) &
      call hdf_getslab_r(cpatch%mmean_norm_par_diff,'MMEAN_NORM_PAR_DIFF ',dsetrank,iparallel,.false.)
-     call hdf_getslab_r(cpatch%dmean_lambda_light,'DMEAN_LAMBDA_LIGHT_CO ',dsetrank,iparallel,.false.)
+     if (associated(cpatch%dmean_lambda_light       )) &
+          call hdf_getslab_r(cpatch%dmean_lambda_light,'DMEAN_LAMBDA_LIGHT_CO ',dsetrank,iparallel,.false.)
+     if (associated(cpatch%mmean_lambda_light       )) &
      call hdf_getslab_r(cpatch%mmean_lambda_light,'MMEAN_LAMBDA_LIGHT_CO ',dsetrank,iparallel,.false.)
 
      call hdf_getslab_r(cpatch%Psi_open,'PSI_OPEN ',dsetrank,iparallel,.true.)

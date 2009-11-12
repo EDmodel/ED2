@@ -117,10 +117,8 @@ subroutine ed_coup_driver()
   if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Sfcdata_ED...'
   call sfcdata_ed()
   
-  
   if (trim(runtype) == 'HISTORY') then
        
- 
      !-----------------------------------------------------------------------!
      ! STEP 7A: Initialize the model state as a replicate image of a previous
      !          state.

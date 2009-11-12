@@ -274,10 +274,10 @@ harr_coms.o : $(RADIATE)/harr_coms.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90) 
 
-harr_rad.o : $(RADIATE)/harr_rad.f90
-	cp -f $< $(<F:.f90=.f90)
-	$(F90_COMMAND) $(<F:.f90=.f90)
-	rm -f $(<F:.f90=.f90) 
+harr_rad.o : $(RADIATE)/harr_rad.F90
+	cp -f $< $(<F:.f90=.F90)
+	$(FPP_COMMAND) $(<F:.f90=.F90)
+	rm -f $(<F:.f90=.F90)
 
 harr_raddriv.o : $(RADIATE)/harr_raddriv.f90
 	cp -f $< $(<F:.f90=.f90)

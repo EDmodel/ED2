@@ -815,6 +815,7 @@ subroutine harr_radinit1(ng,nb,ns,npsb,nuum,prf,alpha,trf,beta,xp,  &
 !     .2817000E+03,   .2558000E+03,   .0000000E+00,  &
 !     .2817000E+03,   .2558000E+03,   .2040000E+03,  &
 !     .2817000E+03,   .2558000E+03,   .0000000E+00/
+
   data ((npsb1(ig,ib),ig=1,3),ib=1,8)/  &
       5,    3,    0,  &
       5,    1,    0,  &
