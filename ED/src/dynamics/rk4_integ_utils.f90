@@ -5,7 +5,7 @@
 !     This subroutine will drive the integration of several ODEs that drive the fast-scale !
 ! state variables.                                                                         !
 !------------------------------------------------------------------------------------------!
-subroutine odeint(h1,csite,ipa,isi,ipy,ifm)
+subroutine odeint(h1,csite,ipa,isi,ipy,ifm,nsteps)
 
    use ed_state_vars  , only : sitetype               & ! structure
                              , patchtype              ! ! structure
@@ -38,6 +38,7 @@ subroutine odeint(h1,csite,ipa,isi,ipy,ifm)
    integer                   , intent(in)  :: ipy              ! Current polygon ID
    integer                   , intent(in)  :: ifm              ! Current grid ID
    real(kind=8)              , intent(in)  :: h1               ! First guess of delta-t
+   integer                   , intent(out) :: nsteps           ! Number of steps taken.
    !----- Local variables -----------------------------------------------------------------!
    type(patchtype)           , pointer     :: cpatch           ! Current patch
    integer                                 :: i                ! Step counter
@@ -180,11 +181,18 @@ subroutine odeint(h1,csite,ipa,isi,ipy,ifm)
             integration_buff%initp%ebudget_loss2runoff = 0.d0
          end if
 
-         !------ Copying the temporary patch to the next intermediate step ----------------!
+         !------ Copy the temporary patch to the next intermediate step -------------------!
          call copy_rk4_patch(integration_buff%y,integration_buff%initp, cpatch)
-         !------ Updating the substep for next time and leave -----------------------------!
+         !------ Update the substep for next time and leave -------------------------------!
          csite%htry(ipa) = sngl(hnext)
 
+         !---------------------------------------------------------------------------------!
+         !     Update the average time step.  The square of DTLSM (tend-tbeg) is needed    !
+         ! because we will divide this by the time between t0 and t0+frqsum.               !
+         !---------------------------------------------------------------------------------!
+         csite%avg_rk4step(ipa) = csite%avg_rk4step(ipa)                                   &
+                                + sngl((tend-tbeg)*(tend-tbeg))/real(i)
+         nsteps = i
          return
       end if
       

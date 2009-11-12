@@ -969,6 +969,25 @@ subroutine read_ed21_history_file
                 dsetrank,iparallel,.true.)
            call hdf_getslab_r(cgrid%wbar(ipy),'WBAR ',dsetrank,iparallel,.true.)
            
+           ! Load the workload (2D)
+           dsetrank    = 2
+           globdims(1) = int(13,8)
+           chnkdims(1) = int(13,8)
+           memdims(1)  = int(13,8)
+           memsize(1)  = int(13,8)
+           chnkoffs(1) = 0_8
+           memoffs(1)  = 0_8
+           globdims(2) = int(pysi_n(py_index),8)
+           chnkdims(2) = int(pysi_n(py_index),8)
+           memdims(2)  = int(pysi_n(py_index),8)
+           memsize(2)  = int(pysi_n(py_index),8)
+           chnkoffs(2) = 0_8
+           memoffs(2)  = 0_8
+           
+           call hdf_getslab_i(cgrid%workload(ipy),'WORKLOAD ',dsetrank,iparallel,.true.)
+
+
+
            ! Load the site adjacency dataset (3D)
            dsetrank    = 3
            globdims(1) = int(pysi_n(py_index),8)
@@ -2231,6 +2250,25 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    if(associated(cgrid%mmean_gpp_dbh)) call hdf_getslab_r(cgrid%mmean_gpp_dbh(:,ipy) , &
         'MMEAN_GPP_DBH ' ,dsetrank,iparallel,.false.)
 
+   ! Variables with 2 dimensions (13,npolygons)
+   dsetrank    = 2
+   globdims(1) = int(13,8)
+   chnkdims(1) = int(13,8)
+   memdims(1)  = int(13,8)
+   memsize(1)  = int(13,8)
+   chnkoffs(1) = 0_8
+   memoffs(1)  = 0_8
+
+   globdims(2)  = int(cgrid%npolygons_global,8)
+   chnkdims(2)  = 1_8
+   chnkoffs(2)  = int(py_index - 1,8)
+   memdims(2)   = 1_8
+   memsize(2)   = 1_8
+   memoffs(2)   = 0_8
+
+   if(associated(cgrid%workload)) call hdf_getslab_r(cgrid%workload(:,ipy) , &
+        'WORKLOAD ' ,dsetrank,iparallel,.true.)
+
 
    ! Variables with three dimensions(n_dist_types,n_dist_types,npolygons)
    dsetrank    = 3
@@ -2689,6 +2727,8 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    call hdf_getslab_r(csite%mean_runoff,'MEAN_RUNOFF ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%mean_qrunoff,'MEAN_QRUNOFF ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%htry,'HTRY ',dsetrank,iparallel,.true.)
+   call hdf_getslab_r(csite%dmean_rk4step,'DMEAN_RK4STEP ',dsetrank,iparallel,.false.)
+   call hdf_getslab_r(csite%mmean_rk4step,'MMEAN_RK4STEP ',dsetrank,iparallel,.false.)
    
    dsetrank    = 2
    globdims(1) = int(nzs,8)

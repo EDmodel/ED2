@@ -2204,6 +2204,11 @@ module fuse_fiss_utils
                                              * csite%area(donp)                            &
                                              + csite%dmean_Af_decomp(recp)                 &
                                              * csite%area(recp) )
+         csite%dmean_rk4step(recp)         = newareai                                      &
+                                           * ( csite%dmean_rk4step(donp)                   &
+                                             * csite%area(donp)                            &
+                                             + csite%dmean_rk4step(recp)                   &
+                                             * csite%area(recp) )
       end if
       if (imoutput > 0) then
          csite%mmean_rh(recp)           = newareai                                         &
@@ -2234,11 +2239,15 @@ module fuse_fiss_utils
                                              * csite%area(donp)                            &
                                              + csite%mmean_A_decomp(recp)                  &
                                              * csite%area(recp) )
-
          csite%mmean_Af_decomp(recp)       = newareai                                      &
                                            * ( csite%mmean_Af_decomp(donp)                 &
                                              * csite%area(donp)                            &
                                              + csite%mmean_Af_decomp(recp)                 &
+                                             * csite%area(recp) )
+         csite%mmean_rk4step(recp)         = newareai                                      &
+                                           * ( csite%mmean_rk4step(donp)                   &
+                                             * csite%area(donp)                            &
+                                             + csite%mmean_rk4step(recp)                   &
                                              * csite%area(recp) )
       end if
 

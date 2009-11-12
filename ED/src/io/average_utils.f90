@@ -190,6 +190,7 @@ subroutine normalize_averaged_vars(cgrid,frqsum,dtlsm)
             csite%avg_sensible_ac(ipa)  = csite%avg_sensible_ac(ipa)   * frqsumi
             csite%avg_carbon_ac(ipa)    = csite%avg_carbon_ac(ipa)     * frqsumi
             csite%avg_runoff_heat(ipa)  = csite%avg_runoff_heat(ipa)   * frqsumi
+            csite%avg_rk4step(ipa)      = csite%avg_rk4step(ipa)       * frqsumi
          
             do k=cpoly%lsl(isi),nzg
                csite%avg_sensible_gg(k,ipa) = csite%avg_sensible_gg(k,ipa) * frqsumi
@@ -376,6 +377,7 @@ subroutine reset_averaged_vars(cgrid)
             csite%avg_sensible_ac(ipa)      = 0.0
             csite%avg_sensible_gg(:,ipa)    = 0.0
             csite%avg_runoff_heat(ipa)      = 0.0
+            csite%avg_rk4step(ipa)          = 0.0
             csite%aux(ipa)                  = 0.0
             csite%aux_s(:,ipa)              = 0.0
          
@@ -718,6 +720,8 @@ subroutine integrate_ed_daily_output_flux(cgrid)
                                              + csite%wbudget_residual(ipa)
             csite%dmean_rh(ipa)              = csite%dmean_rh(ipa)                         &
                                              + csite%co2budget_rh(ipa)
+            csite%dmean_rk4step(ipa)         = csite%dmean_rk4step(ipa)                    &
+                                             + csite%avg_rk4step(ipa)
          end do patchloop
          
          !---------------------------------------------------------------------------------!
@@ -1298,6 +1302,8 @@ subroutine normalize_ed_daily_output_vars(cgrid)
                                              * frqsum_o_daysec
             csite%dmean_water_residual(ipa)  = csite%dmean_water_residual(ipa)             &
                                              * frqsum_o_daysec
+            csite%dmean_rk4step(ipa)         = csite%dmean_rk4step(ipa)                    &
+                                             * frqsum_o_daysec
             !------------------------------------------------------------------------------!
             !     The light level is averaged over the length of day light only.  We find  !
             ! this variable only if there is any day light (this is to avoid problems with !
@@ -1545,6 +1551,7 @@ subroutine zero_ed_daily_output_vars(cgrid)
             csite%dmean_energy_residual(ipa) = 0.
             csite%dmean_water_residual (ipa) = 0.
             csite%dmean_rh             (ipa) = 0.
+            csite%dmean_rk4step        (ipa) = 0.
             csite%dmean_lambda_light   (ipa) = 0.
             csite%dmean_A_decomp       (ipa) = 0.
             csite%dmean_Af_decomp      (ipa) = 0.
@@ -1740,6 +1747,10 @@ subroutine integrate_ed_monthly_output_vars(cgrid)
                                              + csite%dmean_water_residual(ipa)
 
             csite%mmean_rh(ipa)              = csite%mmean_rh(ipa) + csite%dmean_rh(ipa)
+
+            csite%mmean_rk4step(ipa)         = csite%mmean_rk4step(ipa)                    &
+                                             + csite%dmean_rk4step(ipa)
+
             csite%mmean_lambda_light(ipa)    = csite%mmean_lambda_light(ipa)               &
                                              + csite%dmean_lambda_light(ipa)
 
@@ -2049,6 +2060,7 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
             csite%mmean_energy_residual(ipa) = csite%mmean_energy_residual(ipa) * ndaysi
             csite%mmean_water_residual(ipa)  = csite%mmean_water_residual(ipa)  * ndaysi
             csite%mmean_rh(ipa)              = csite%mmean_rh(ipa)              * ndaysi
+            csite%mmean_rk4step(ipa)         = csite%mmean_rk4step(ipa)         * ndaysi
             csite%mmean_lambda_light(ipa)    = csite%mmean_lambda_light(ipa)    * ndaysi
             csite%mmean_A_decomp(ipa)        = csite%mmean_A_decomp(ipa)        * ndaysi
             csite%mmean_Af_decomp(ipa)       = csite%mmean_Af_decomp(ipa)       * ndaysi
@@ -2267,6 +2279,7 @@ subroutine zero_ed_monthly_output_vars(cgrid)
             csite%mmean_energy_residual   (ipa) = 0.
             csite%mmean_water_residual    (ipa) = 0.
             csite%mmean_rh                (ipa) = 0.
+            csite%mmean_rk4step           (ipa) = 0.
             csite%mmean_lambda_light      (ipa) = 0.
             csite%mmean_A_decomp          (ipa) = 0.
             csite%mmean_Af_decomp         (ipa) = 0.

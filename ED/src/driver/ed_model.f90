@@ -512,7 +512,10 @@ subroutine vegetation_dynamics(new_month,new_year)
         call dbalive_dt(cgrid,tfact2)
      end if
 
-     if(new_month)then
+     if (new_month) then
+
+!        write (unit=*,fmt='(a)') '^^^ Update_workload...'
+        call update_workload(cgrid)
 
 !        write (unit=*,fmt='(a)') '^^^ Structural_growth...'
         if (ied_init_mode == -8) then

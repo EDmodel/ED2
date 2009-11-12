@@ -807,6 +807,12 @@ module ed_state_vars
      ! Last time step successfully completed by integrator.
      real, pointer,dimension(:)  :: htry
 
+     ! Average time step used by the integrator, its daily and monthly mean
+     real, pointer, dimension(:) :: avg_rk4step
+     real, pointer, dimension(:) :: dmean_rk4step
+     real, pointer, dimension(:) :: mmean_rk4step
+
+
      real, pointer,dimension(:)  :: ustar ! Friction velocity [m/s]
 
      real, pointer,dimension(:)  :: tstar ! Characteristic temperature fluctuation scale [K]
@@ -1601,10 +1607,21 @@ module ed_state_vars
      real, pointer, dimension(:) :: stdev_sensible
      real, pointer, dimension(:) :: stdev_nep
      real, pointer, dimension(:) :: stdev_rh
+
      
      !----- Disturbance rates. ----------------------------------------------!
      real, pointer, dimension(:,:,:) :: disturbance_rates
 
+     !-----------------------------------------------------------------------!
+     !     This variable storages the workload of this polygon, and this is  !
+     ! "measured" by the total number of Runge-Kutta time steps this polygon !
+     ! takes on average every day.  This is not averaged by patch, instead   ! 
+     ! this is added (because having two patches is computationally more     !
+     ! expensive than having one).  Since the number of patches changes by   !
+     ! season, and this may be dramatically different, we store the previous !
+     ! 12 months.                                                            !
+     !-----------------------------------------------------------------------!
+     real, pointer, dimension(:,:) :: workload
 
   end type edtype
 !============================================================================!
@@ -2010,7 +2027,8 @@ contains
           allocate(cgrid%stdev_sensible       (             npolygons))
           allocate(cgrid%stdev_nep            (             npolygons))
           allocate(cgrid%stdev_rh             (             npolygons))
-          allocate(cgrid%disturbance_rates  (n_dist_types,n_dist_types,npolygons))
+          allocate(cgrid%disturbance_rates    (n_dist_types,n_dist_types,npolygons))
+          allocate(cgrid%workload             (13          ,npolygons))
 
        end if
 
@@ -2337,7 +2355,8 @@ contains
     allocate(csite%mean_runoff(npatches))
     allocate(csite%mean_qrunoff(npatches))
 
-    allocate(csite%htry(npatches))
+    allocate(csite%htry       (npatches))
+    allocate(csite%avg_rk4step(npatches))
 
     allocate(csite%ustar(npatches))
     allocate(csite%tstar(npatches))
@@ -2395,7 +2414,8 @@ contains
     allocate(csite%runoff          (npatches))
 
     if (imoutput > 0 .or. idoutput > 0) then
-       allocate(csite%dmean_lambda_light(npatches))
+       allocate(csite%dmean_rk4step           (npatches))
+       allocate(csite%dmean_lambda_light      (npatches))
        allocate(csite%dmean_co2_residual      (npatches))
        allocate(csite%dmean_energy_residual   (npatches))
        allocate(csite%dmean_water_residual    (npatches))
@@ -2404,6 +2424,7 @@ contains
        allocate(csite%dmean_Af_decomp         (npatches))
     end if
     if (imoutput > 0 ) then
+       allocate(csite%mmean_rk4step           (npatches))
        allocate(csite%mmean_lambda_light      (npatches))
        allocate(csite%mmean_co2_residual      (npatches))
        allocate(csite%mmean_energy_residual   (npatches))
@@ -2836,6 +2857,7 @@ contains
        nullify(cgrid%stdev_nep               )
        nullify(cgrid%stdev_rh                )
        nullify(cgrid%disturbance_rates       )
+       nullify(cgrid%workload                )
 
     return
   end subroutine nullify_edtype
@@ -3136,6 +3158,9 @@ contains
     nullify(csite%mean_qrunoff)
 
     nullify(csite%htry)
+    nullify(csite%avg_rk4step)
+    nullify(csite%dmean_rk4step)
+    nullify(csite%mmean_rk4step)
 
     nullify(csite%ustar)
     nullify(csite%tstar)
@@ -3615,6 +3640,7 @@ contains
        if(associated(cgrid%stdev_nep               )) deallocate(cgrid%stdev_nep               )
        if(associated(cgrid%stdev_rh                )) deallocate(cgrid%stdev_rh                )
        if(associated(cgrid%disturbance_rates       )) deallocate(cgrid%disturbance_rates       )
+       if(associated(cgrid%workload                )) deallocate(cgrid%workload                )
 
     return
   end subroutine deallocate_edtype
@@ -3918,6 +3944,9 @@ contains
     if(associated(csite%mean_qrunoff                 )) deallocate(csite%mean_qrunoff                 )
 
     if(associated(csite%htry                         )) deallocate(csite%htry                         )
+    if(associated(csite%avg_rk4step                  )) deallocate(csite%avg_rk4step                  )
+    if(associated(csite%dmean_rk4step                )) deallocate(csite%dmean_rk4step                )
+    if(associated(csite%mmean_rk4step                )) deallocate(csite%mmean_rk4step                )
 
     if(associated(csite%ustar                        )) deallocate(csite%ustar                        )
     if(associated(csite%tstar                        )) deallocate(csite%tstar                        )
@@ -4430,6 +4459,7 @@ contains
     if(associated(cgrid%stdev_nep               )) cgrid%stdev_nep                = large_real
     if(associated(cgrid%stdev_rh                )) cgrid%stdev_rh                 = large_real
     if(associated(cgrid%disturbance_rates       )) cgrid%disturbance_rates        = large_real
+    if(associated(cgrid%workload                )) cgrid%workload                 = large_real
 
 
     return
@@ -4772,6 +4802,9 @@ contains
     if(associated(csite%mean_qrunoff                 )) csite%mean_qrunoff                 = large_real
 
     if(associated(csite%htry                         )) csite%htry                         = large_real
+    if(associated(csite%avg_rk4step                  )) csite%avg_rk4step                  = large_real
+    if(associated(csite%dmean_rk4step                )) csite%dmean_rk4step                = large_real
+    if(associated(csite%mmean_rk4step                )) csite%mmean_rk4step                = large_real
 
     if(associated(csite%ustar                        )) csite%ustar                        = large_real
     if(associated(csite%tstar                        )) csite%tstar                        = large_real
@@ -5312,6 +5345,7 @@ contains
     siteout%mean_runoff(1:inc)          = pack(sitein%mean_runoff,logmask)
     siteout%mean_qrunoff(1:inc)         = pack(sitein%mean_qrunoff,logmask)
     siteout%htry(1:inc)                 = pack(sitein%htry,logmask)
+    siteout%avg_rk4step(1:inc)          = pack(sitein%avg_rk4step,logmask)
     siteout%ustar(1:inc)                = pack(sitein%ustar,logmask)
     siteout%tstar(1:inc)                = pack(sitein%tstar,logmask)
     siteout%qstar(1:inc)                = pack(sitein%qstar,logmask)
@@ -5444,6 +5478,7 @@ contains
        siteout%dmean_lambda_light   (1:inc) = pack(sitein%dmean_lambda_light   ,logmask)
        siteout%dmean_A_decomp       (1:inc) = pack(sitein%dmean_A_decomp       ,logmask)
        siteout%dmean_Af_decomp      (1:inc) = pack(sitein%dmean_Af_decomp      ,logmask)
+       siteout%dmean_rk4step        (1:inc) = pack(sitein%dmean_rk4step        ,logmask)
     end if
     
     if (imoutput > 0) then
@@ -5454,6 +5489,7 @@ contains
        siteout%mmean_lambda_light   (1:inc) = pack(sitein%mmean_lambda_light   ,logmask)
        siteout%mmean_A_decomp       (1:inc) = pack(sitein%mmean_A_decomp       ,logmask)
        siteout%mmean_Af_decomp      (1:inc) = pack(sitein%mmean_Af_decomp      ,logmask)
+       siteout%mmean_rk4step        (1:inc) = pack(sitein%mmean_rk4step        ,logmask)
     end if
 
     return
@@ -5924,6 +5960,7 @@ contains
   ! 16    : rank 2 : polygon, dbh
   ! 17    : rank 2 : polygon, age
   ! 18    : rank 2 : polygon, mort
+  ! 19    : rank 2 : polygon, month+1
   !
   ! 20    : rank 1 : site, integer
   ! 21    : rank 1 : site
@@ -7883,7 +7920,14 @@ contains
     if(associated(cgrid%disturbance_rates)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%disturbance_rates(1,1,1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'DISTURBANCE_RATES :155:hist:mont:mpti:mpt3') 
+            var_len,var_len_global,max_ptrs,'DISTURBANCE_RATES :155:hist:mont') 
+       call metadata_edio(nvar,igr,'Disturbance Rates','[NA]','NA') 
+    end if
+
+    if(associated(cgrid%workload)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%workload(1,1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'WORKLOAD :19:hist:mont') 
        call metadata_edio(nvar,igr,'Disturbance Rates','[NA]','NA') 
     end if
     
@@ -9252,6 +9296,27 @@ contains
          call vtable_edio_r(csite%htry(1),nvar,igr,init,csite%paglob_id, &
          var_len,var_len_global,max_ptrs,'HTRY :31:hist') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
+    
+    if (associated(csite%avg_rk4step)) then
+       nvar=nvar+1
+         call vtable_edio_r(csite%avg_rk4step(1),nvar,igr,init,csite%paglob_id, &
+         var_len,var_len_global,max_ptrs,'AVG_RK4STEP :31:hist:anal') 
+       call metadata_edio(nvar,igr,'Average time step used by Runge-Kutta','[s]','ipatch') 
+    endif
+    
+    if (associated(csite%dmean_rk4step)) then
+       nvar=nvar+1
+         call vtable_edio_r(csite%dmean_rk4step(1),nvar,igr,init,csite%paglob_id, &
+         var_len,var_len_global,max_ptrs,'DMEAN_RK4STEP :31:hist:dail') 
+       call metadata_edio(nvar,igr,'Daily mean time step used by Runge-Kutta','[s]','ipatch') 
+    endif
+    
+    if (associated(csite%mmean_rk4step)) then
+       nvar=nvar+1
+         call vtable_edio_r(csite%mmean_rk4step(1),nvar,igr,init,csite%paglob_id, &
+         var_len,var_len_global,max_ptrs,'MMEAN_RK4STEP :31:hist:mont') 
+       call metadata_edio(nvar,igr,'Monthly mean time step used by Runge-Kutta','[s]','ipatch') 
     endif
     
     if (associated(csite%ustar)) then

@@ -493,6 +493,9 @@ subroutine vegetation_dynamics(new_month,new_year)
       call dbalive_dt(cgrid,tfact2)
 
       if(new_month)then
+
+         call update_workload(cgrid)
+
          call structural_growth(cgrid, current_time%month)
          call reproduction(cgrid,current_time%month)
 
