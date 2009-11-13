@@ -364,6 +364,8 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                  !! [[this needs to be more sophisticated]] 
                  
                  cpatch%balive(ico)   = max(0.0,bleaf_new + bfr_new + bsw_new)
+                 cpatch%broot(ico)    = max(0.0,bfr_new)
+                 cpatch%bsapwood(ico) = max(0.0,bsw_new)
                  cpatch%bdead(ico)    = max(0.0,bdead_new)
                  cpatch%bstorage(ico) = max(0.0,bstore_new)
                  if(bleaf_new .le. tiny(1.0)) then
@@ -746,6 +748,8 @@ subroutine event_till(rval8)
 
                  !! update biomass pools
                  cpatch%balive(ico)     = 0.0
+                 cpatch%broot(ico)      = 0.0
+                 cpatch%bsapwood(ico)   = 0.0
                  cpatch%bdead(ico)      = 0.0
                  cpatch%bstorage(ico)   = 0.0
                  cpatch%nplant(ico)     = 0.0

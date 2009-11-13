@@ -96,7 +96,8 @@ subroutine leaftw_derivs(initp,dinitp,csite,ipa,isi,ipy)
                                    , ss                   & ! intent(in)
                                    , isoilbc              ! ! intent(in)
    use ed_misc_coms         , only : dtlsm                & ! intent(in)
-                                   , current_time         ! ! intent(in)
+                                   , current_time         & ! intent(in)
+                                   , fast_diagnostics     ! ! intent(in)
    use rk4_coms             , only : rk4eps               & ! intent(in)
                                    , rk4min_sfcwater_mass & ! intent(in)
                                    , checkbudget          & ! intent(in)
@@ -362,11 +363,19 @@ subroutine leaftw_derivs(initp,dinitp,csite,ipa,isi,ipy)
    qw_flux(nzg+ksn+1) = - qdewgnd - qwshed
    d_flux(ksn+1)      =   ddewgnd + dwshed
 
-   dinitp%avg_vapor_gc  = wflxgc   ! Diagnostic
-   dinitp%avg_dew_cg    = dewgnd   ! Diagnostic
-   dinitp%avg_qwshed_vg = qwshed   ! Diagnostic
-   dinitp%avg_wshed_vg  = wshed    ! Diagnostic
-
+   if (fast_diagnostics) then
+      dinitp%avg_vapor_gc  = wflxgc   ! Diagnostic  
+      dinitp%avg_dew_cg    = dewgnd   ! Diagnostic  
+      dinitp%avg_qwshed_vg = qwshed   ! Diagnostic  
+      dinitp%avg_wshed_vg  = wshed    ! Diagnostic  
+      !------------------------------------------------------------------------------------!
+      !     Since intercepted_tot may not reflect the total amount that was actually       !
+      ! intercepted, we compute the intercepted as the difference between precipitation    !
+      ! and what has reached the ground.                                                   !
+      !------------------------------------------------------------------------------------!
+      dinitp%avg_qintercepted = qwshed
+      dinitp%avg_intercepted  = wshed
+   end if
 
    !---------------------------------------------------------------------------------------!
    !     Transfer water downward through snow layers by percolation. Here we define:       !
@@ -488,8 +497,8 @@ subroutine leaftw_derivs(initp,dinitp,csite,ipa,isi,ipy)
                          * freezeCor
 
       !-----  Make it kg/s instead of m3. -------------------------------------------------!
-      dinitp%avg_drainage = w_flux(rk4met%lsl) * wdns8
-      
+      dinitp%avg_drainage      = w_flux(rk4met%lsl) * wdns8
+      dinitp%avg_drainage_heat = qw_flux(rk4met%lsl)  
       !------------------------------------------------------------------------------------!
       !      Limit water transfers to prevent over-saturation and over-depletion.          !
       !------------------------------------------------------------------------------------!
@@ -503,18 +512,19 @@ subroutine leaftw_derivs(initp,dinitp,csite,ipa,isi,ipy)
                           * cliqvlme8 * (initp%soil_tempk(rk4met%lsl) - tsupercool8)
    else
       !----- Bedrock, no flux accross it. -------------------------------------------------!
-      w_flux(rk4met%lsl)  = 0.d0
-      qw_flux(rk4met%lsl) = 0.d0
-      dinitp%avg_drainage = 0.d0
+      w_flux(rk4met%lsl)       = 0.d0
+      qw_flux(rk4met%lsl)      = 0.d0
+      dinitp%avg_drainage      = 0.d0
+      dinitp%avg_drainage_heat = 0.d0
    end if
 
    !----- Copying the variables to the budget arrays. -------------------------------------!
    if (checkbudget) then
       dinitp%wbudget_loss2drainage = -dinitp%avg_drainage
-      dinitp%ebudget_loss2drainage = -qw_flux(rk4met%lsl)
+      dinitp%ebudget_loss2drainage = -dinitp%avg_drainage_heat
 
       dinitp%wbudget_storage = dinitp%wbudget_storage + dinitp%avg_drainage
-      dinitp%ebudget_storage = dinitp%ebudget_storage + qw_flux(rk4met%lsl)
+      dinitp%ebudget_storage = dinitp%ebudget_storage + dinitp%avg_drainage_heat
    end if
 
    !----- Finally, update soil moisture (impose minimum value of soilcp) and soil energy. -!

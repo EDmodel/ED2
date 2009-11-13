@@ -77,8 +77,9 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
       
       
   cpatch%stomatal_resistance(ico) = 0.0
-  cpatch%maintenance_costs(ico)   = 0.0
-  cpatch%leaf_litter      (ico)   = 0.0
+  cpatch%leaf_maintenance   (ico) = 0.0
+  cpatch%root_maintenance   (ico) = 0.0
+  cpatch%leaf_drop          (ico) = 0.0
   cpatch%paw_avg(ico)             = 0.5 !0.0 - [KIM] starting from the mid point.  if starting from the driest point, plants'll drop leaves initially due to the water stress
 
 
@@ -145,8 +146,9 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
      cpatch%mmean_fsw              (ico) = 0.0
      cpatch%mmean_fsn              (ico) = 0.0
      cpatch%mmean_lambda_light     (ico) = 0.0
-     cpatch%mmean_mnt_cost         (ico) = 0.0
-     cpatch%mmean_leaf_litter      (ico) = 0.0
+     cpatch%mmean_leaf_maintenance (ico) = 0.0
+     cpatch%mmean_root_maintenance (ico) = 0.0
+     cpatch%mmean_leaf_drop        (ico) = 0.0
      cpatch%mmean_cb               (ico) = 0.0
      cpatch%mmean_mort_rate      (:,ico) = 0.0
   end if
@@ -308,15 +310,18 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
   csite%avg_dew_cg       (ip1:ip2)  = 0.0
   csite%avg_vapor_gc     (ip1:ip2)  = 0.0
   csite%avg_wshed_vg     (ip1:ip2)  = 0.0
+  csite%avg_intercepted  (ip1:ip2)  = 0.0
   csite%avg_vapor_ac     (ip1:ip2)  = 0.0
   csite%avg_transp       (ip1:ip2)  = 0.0
   csite%avg_evap         (ip1:ip2)  = 0.0
   csite%avg_netrad       (ip1:ip2)  = 0.0
   csite%avg_runoff       (ip1:ip2)  = 0.0
   csite%avg_drainage     (ip1:ip2)  = 0.0
+  csite%avg_drainage_heat(ip1:ip2)  = 0.0
   csite%aux              (ip1:ip2)  = 0.0
   csite%avg_sensible_vc  (ip1:ip2)  = 0.0
   csite%avg_qwshed_vg    (ip1:ip2)  = 0.0
+  csite%avg_qintercepted (ip1:ip2)  = 0.0
   csite%avg_sensible_gc  (ip1:ip2)  = 0.0
   csite%avg_sensible_ac  (ip1:ip2)  = 0.0
   csite%avg_runoff_heat  (ip1:ip2)  = 0.0

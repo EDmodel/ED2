@@ -179,6 +179,7 @@ subroutine normalize_averaged_vars(cgrid,frqsum,dtlsm)
             csite%avg_dew_cg(ipa)       = csite%avg_dew_cg(ipa)        * frqsumi
             csite%avg_vapor_gc(ipa)     = csite%avg_vapor_gc(ipa)      * frqsumi
             csite%avg_wshed_vg(ipa)     = csite%avg_wshed_vg(ipa)      * frqsumi
+            csite%avg_intercepted(ipa)  = csite%avg_intercepted(ipa)   * frqsumi
             csite%avg_vapor_ac(ipa)     = csite%avg_vapor_ac(ipa)      * frqsumi
             csite%avg_transp(ipa)       = csite%avg_transp(ipa)        * frqsumi
             csite%avg_evap(ipa)         = csite%avg_evap(ipa)          * frqsumi
@@ -186,11 +187,14 @@ subroutine normalize_averaged_vars(cgrid,frqsum,dtlsm)
             csite%avg_drainage(ipa)     = csite%avg_drainage(ipa)      * frqsumi
             csite%avg_sensible_vc(ipa)  = csite%avg_sensible_vc(ipa)   * frqsumi
             csite%avg_qwshed_vg(ipa)    = csite%avg_qwshed_vg(ipa)     * frqsumi
+            csite%avg_qintercepted(ipa) = csite%avg_qintercepted(ipa)  * frqsumi
             csite%avg_sensible_gc(ipa)  = csite%avg_sensible_gc(ipa)   * frqsumi
             csite%avg_sensible_ac(ipa)  = csite%avg_sensible_ac(ipa)   * frqsumi
             csite%avg_carbon_ac(ipa)    = csite%avg_carbon_ac(ipa)     * frqsumi
             csite%avg_runoff_heat(ipa)  = csite%avg_runoff_heat(ipa)   * frqsumi
+            csite%avg_drainage_heat(ipa)= csite%avg_drainage_heat(ipa) * frqsumi
             csite%avg_rk4step(ipa)      = csite%avg_rk4step(ipa)       * frqsumi
+
          
             do k=cpoly%lsl(isi),nzg
                csite%avg_sensible_gg(k,ipa) = csite%avg_sensible_gg(k,ipa) * frqsumi
@@ -198,6 +202,9 @@ subroutine normalize_averaged_vars(cgrid,frqsum,dtlsm)
                csite%avg_smoist_gc(k,ipa)   = csite%avg_smoist_gc(k,ipa)   * frqsumi
                csite%aux_s(k,ipa)           = csite%aux_s(k,ipa)           * frqsumi
             end do
+            
+            !     Available water is added every dtlsm, so we normalise using tfact...
+            csite%avg_available_water(ipa) = csite%avg_available_water(ipa)       * tfact
             
             do ico=1,cpatch%ncohorts
                !-- Normalization of cohort level state variables
@@ -362,6 +369,7 @@ subroutine reset_averaged_vars(cgrid)
             csite%avg_dew_cg(ipa)           = 0.0
             csite%avg_vapor_gc(ipa)         = 0.0
             csite%avg_wshed_vg(ipa)         = 0.0
+            csite%avg_intercepted(ipa)      = 0.0
             csite%avg_vapor_ac(ipa)         = 0.0
             csite%avg_transp(ipa)           = 0.0
             csite%avg_evap(ipa)             = 0.0
@@ -371,13 +379,16 @@ subroutine reset_averaged_vars(cgrid)
             csite%avg_runoff(ipa)           = 0.0
             csite%avg_runoff_heat(ipa)      = 0.0
             csite%avg_drainage(ipa)         = 0.0
+            csite%avg_drainage_heat(ipa)    = 0.0
             csite%avg_sensible_vc(ipa)      = 0.0
             csite%avg_qwshed_vg(ipa)        = 0.0
+            csite%avg_qintercepted(ipa)     = 0.0
             csite%avg_sensible_gc(ipa)      = 0.0
             csite%avg_sensible_ac(ipa)      = 0.0
             csite%avg_sensible_gg(:,ipa)    = 0.0
             csite%avg_runoff_heat(ipa)      = 0.0
             csite%avg_rk4step(ipa)          = 0.0
+            csite%avg_available_water(ipa)  = 0.0
             csite%aux(ipa)                  = 0.0
             csite%aux_s(:,ipa)              = 0.0
          
@@ -1769,23 +1780,27 @@ subroutine integrate_ed_monthly_output_vars(cgrid)
                cpatch%mmean_par_v_diff(ico)    = cpatch%mmean_par_v_diff(ico)              &
                                                + cpatch%dmean_par_v_diff(ico)
 
-               !----- 
-               !     The following variables are all converted to kgC/plant/yr. -----------!
-               cpatch%mmean_mnt_cost (ico)     = cpatch%mmean_mnt_cost(ico)                &
-                                               + cpatch%maintenance_costs(ico)             &
-                                               * yr_day
-               cpatch%mmean_leaf_litter (ico)  = cpatch%leaf_litter(ico)                   &
-                                               + cpatch%leaf_litter(ico)                   &
-                                               * yr_day
-               cpatch%mmean_growth_resp(ico)   = cpatch%mmean_growth_resp(ico)             &
-                                               + cpatch%growth_respiration(ico)            &
-                                               * yr_day
-               cpatch%mmean_storage_resp(ico)  = cpatch%mmean_storage_resp(ico)            &
-                                               + cpatch%storage_respiration(ico)           &
-                                               * yr_day
-               cpatch%mmean_vleaf_resp(ico)    = cpatch%mmean_vleaf_resp(ico)              &
-                                               + cpatch%vleaf_respiration(ico)             &
-                                               * yr_day
+               !---------------------------------------------------------------------------!
+               !     The following variables are all converted to kgC/plant/yr.            !
+               !---------------------------------------------------------------------------!
+               cpatch%mmean_leaf_maintenance(ico) = cpatch%mmean_leaf_maintenance(ico)     &
+                                                  + cpatch%leaf_maintenance(ico)           &
+                                                  * yr_day
+               cpatch%mmean_root_maintenance(ico) = cpatch%mmean_root_maintenance(ico)     &
+                                                  + cpatch%root_maintenance(ico)           &
+                                                  * yr_day
+               cpatch%mmean_leaf_drop (ico)       = cpatch%leaf_drop(ico)                  &
+                                                  + cpatch%leaf_drop(ico)                  &
+                                                  * yr_day
+               cpatch%mmean_growth_resp(ico)      = cpatch%mmean_growth_resp(ico)          &
+                                                  + cpatch%growth_respiration(ico)         &
+                                                  * yr_day
+               cpatch%mmean_storage_resp(ico)     = cpatch%mmean_storage_resp(ico)         &
+                                                  + cpatch%storage_respiration(ico)        &
+                                                  * yr_day
+               cpatch%mmean_vleaf_resp(ico)       = cpatch%mmean_vleaf_resp(ico)           &
+                                                  + cpatch%vleaf_respiration(ico)          &
+                                                  * yr_day
                !---------------------------------------------------------------------------!
                !    Light level, a simple average now.  We currently ignore that different !
                ! days have different day light lenghts.                                    !
@@ -2086,8 +2101,11 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
                cpatch%mmean_par_v       (ico) = cpatch%mmean_par_v       (ico) * ndaysi
                cpatch%mmean_par_v_beam  (ico) = cpatch%mmean_par_v_beam  (ico) * ndaysi
                cpatch%mmean_par_v_diff  (ico) = cpatch%mmean_par_v_diff  (ico) * ndaysi
-               cpatch%mmean_mnt_cost    (ico) = cpatch%mmean_mnt_cost    (ico) * ndaysi
-               cpatch%mmean_leaf_litter (ico) = cpatch%mmean_leaf_litter (ico) * ndaysi
+               cpatch%mmean_leaf_maintenance (ico) = cpatch%mmean_leaf_maintenance(ico)    &
+                                                   * ndaysi
+               cpatch%mmean_root_maintenance (ico) = cpatch%mmean_root_maintenance(ico)    &
+                                                   * ndaysi
+               cpatch%mmean_leaf_drop   (ico) = cpatch%mmean_leaf_drop   (ico) * ndaysi
                !----- Mean carbon balance is re-scaled so it will be in kgC/plant/yr
                cpatch%mmean_cb          (ico) = cpatch%cb(lmon,ico) * ndaysi * yr_day
 
@@ -2292,7 +2310,9 @@ subroutine zero_ed_monthly_output_vars(cgrid)
                cpatch%mmean_fs_open           (ico) = 0.
                cpatch%mmean_fsw               (ico) = 0.
                cpatch%mmean_fsn               (ico) = 0.
-               cpatch%mmean_mnt_cost          (ico) = 0.
+               cpatch%mmean_leaf_maintenance  (ico) = 0.
+               cpatch%mmean_root_maintenance  (ico) = 0.
+               cpatch%mmean_leaf_drop         (ico) = 0.
                cpatch%mmean_gpp               (ico) = 0.
                cpatch%mmean_leaf_resp         (ico) = 0.
                cpatch%mmean_root_resp         (ico) = 0.

@@ -353,13 +353,16 @@ subroutine inc_rk4_patch(rkp, inc, fac, cpatch)
       rkp%avg_dew_cg         = rkp%avg_dew_cg         + fac * inc%avg_dew_cg
       rkp%avg_vapor_gc       = rkp%avg_vapor_gc       + fac * inc%avg_vapor_gc
       rkp%avg_wshed_vg       = rkp%avg_wshed_vg       + fac * inc%avg_wshed_vg
+      rkp%avg_intercepted    = rkp%avg_intercepted    + fac * inc%avg_intercepted
       rkp%avg_vapor_ac       = rkp%avg_vapor_ac       + fac * inc%avg_vapor_ac
       rkp%avg_transp         = rkp%avg_transp         + fac * inc%avg_transp
       rkp%avg_evap           = rkp%avg_evap           + fac * inc%avg_evap
       rkp%avg_drainage       = rkp%avg_drainage       + fac * inc%avg_drainage
+      rkp%avg_drainage_heat  = rkp%avg_drainage_heat  + fac * inc%avg_drainage_heat
       rkp%avg_netrad         = rkp%avg_netrad         + fac * inc%avg_netrad
       rkp%avg_sensible_vc    = rkp%avg_sensible_vc    + fac * inc%avg_sensible_vc
       rkp%avg_qwshed_vg      = rkp%avg_qwshed_vg      + fac * inc%avg_qwshed_vg
+      rkp%avg_qintercepted   = rkp%avg_qintercepted   + fac * inc%avg_qintercepted
       rkp%avg_sensible_gc    = rkp%avg_sensible_gc    + fac * inc%avg_sensible_gc
       rkp%avg_sensible_ac    = rkp%avg_sensible_ac    + fac * inc%avg_sensible_ac
 
@@ -913,14 +916,18 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
       targetp%avg_dew_cg             = sourcep%avg_dew_cg  
       targetp%avg_vapor_gc           = sourcep%avg_vapor_gc
       targetp%avg_wshed_vg           = sourcep%avg_wshed_vg
+      targetp%avg_intercepted        = sourcep%avg_intercepted
       targetp%avg_vapor_ac           = sourcep%avg_vapor_ac
       targetp%avg_transp             = sourcep%avg_transp  
       targetp%avg_evap               = sourcep%avg_evap   
       targetp%avg_netrad             = sourcep%avg_netrad   
       targetp%avg_sensible_vc        = sourcep%avg_sensible_vc  
       targetp%avg_qwshed_vg          = sourcep%avg_qwshed_vg    
+      targetp%avg_qintercepted       = sourcep%avg_qintercepted
       targetp%avg_sensible_gc        = sourcep%avg_sensible_gc  
-      targetp%avg_sensible_ac        = sourcep%avg_sensible_ac  
+      targetp%avg_sensible_ac        = sourcep%avg_sensible_ac
+      targetp%avg_drainage           = sourcep%avg_drainage
+      targetp%avg_drainage_heat      = sourcep%avg_drainage_heat
 
       do k=rk4met%lsl,nzg
          targetp%avg_sensible_gg(k) = sourcep%avg_sensible_gg(k)

@@ -905,6 +905,7 @@ module disturbance_utils
     real, intent(in) :: density
     real, intent(in) :: height_factor
     real, dimension(n_pft), intent(in) :: green_leaf_factor
+    real :: salloc, salloci
     cpatch => csite%patch(np)
 
     ! Reallocate the current cohort with an extra space for the
@@ -951,8 +952,12 @@ module disturbance_utils
     end if
 
     cpatch%phenology_status(nc) = 0
-    cpatch%balive(nc) = cpatch%bleaf(nc) * &
-         (1.0 + q(cpatch%pft(nc)) + qsw(cpatch%pft(nc)) * cpatch%hite(nc))
+    salloc = 1.0 + q(cpatch%pft(nc)) + qsw(cpatch%pft(nc)) * cpatch%hite(nc)
+    salloci = 1.0 / salloc
+    cpatch%balive(nc)   = cpatch%bleaf(nc) * salloc
+    cpatch%broot(nc)    = cpatch%balive(nc) * q(cpatch%pft(nc)) * salloci
+    cpatch%bsapwood(nc) = cpatch%balive(nc) * qsw(cpatch%pft(nc))                &
+                        * cpatch%hite(nc) * salloci
     cpatch%sla(nc)=sla(cpatch%pft(nc))
     call area_indices(cpatch%nplant(nc),cpatch%bleaf(nc),cpatch%bdead(nc)        &
                      ,cpatch%balive(nc),cpatch%dbh(nc), cpatch%hite(nc)          &

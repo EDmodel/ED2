@@ -115,6 +115,8 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
    integer                            :: ico     ! Cohort counter
    integer                            :: mypfts  ! Number of PFTs to be included.
    integer                            :: ipft    ! PFT counter
+   real                               :: salloc  ! Factor to find balive, broot, bsapwood
+   real                               :: salloci ! 1./salloc
    !---------------------------------------------------------------------------------------!
 
    !----- Patch loop. ---------------------------------------------------------------------!
@@ -159,7 +161,6 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
 
          !----- The PFT is the plant functional type. -------------------------------------!
          cpatch%pft(ico)              = ipft
-   
          !---------------------------------------------------------------------------------!
          !     Define the near-bare ground state using the standard minimum height and     !
          ! minimum plant density.  We assume all NBG PFTs to have leaves fully flushed,    !
@@ -174,8 +175,15 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
          cpatch%bdead(ico)            = dbh2bd(cpatch%dbh(ico),cpatch%hite(ico),ipft)
          cpatch%bleaf(ico)            = dbh2bl(cpatch%dbh(ico),ipft)
          cpatch%sla(ico)              = sla(ipft)
-         cpatch%balive(ico)           = cpatch%bleaf(ico)                                  &
-                                      * ( 1.0 + q(ipft) + qsw(ipft) * cpatch%hite(ico) )
+
+
+         salloc                       = 1.0 + q(ipft) + qsw(ipft) * cpatch%hite(ico)
+         salloci                      = 1. / salloc
+
+         cpatch%balive(ico)           = cpatch%bleaf(ico) * salloc
+         cpatch%broot(ico)            = q(ipft) * cpatch%balive(ico) * salloci
+         cpatch%bsapwood(ico)         = qsw(ipft) * cpatch%hite(ico) * cpatch%balive(ico)  &
+                                      * salloci
 
          !----- Find the initial area indices (LAI, WPA, WAI). ----------------------------!
          call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)          &
@@ -270,6 +278,8 @@ subroutine init_cohorts_by_layers(csite,lsl,ipa_a,ipa_z)
    integer                            :: ico     ! Cohort counter
    integer                            :: ipft    ! PFT counter
    real                               :: height  ! Cohort initial height
+   real                               :: salloc  ! Factor to find balive, broot, bsapwood
+   real                               :: salloci ! 1./salloc
    !----- Local constants. ----------------------------------------------------------------!
    integer               , parameter  :: nlayers = 8   ! # of cohort layers to be included.
    real                  , parameter  :: dheight = 1.5 ! height interval.
@@ -314,8 +324,16 @@ subroutine init_cohorts_by_layers(csite,lsl,ipa_a,ipa_z)
          cpatch%bdead(ico)            = dbh2bd(cpatch%dbh(ico),cpatch%hite(ico),ipft)
          cpatch%bleaf(ico)            = dbh2bl(cpatch%dbh(ico),ipft)
          cpatch%sla(ico)              = sla(ipft)
-         cpatch%balive(ico)           = cpatch%bleaf(ico)                                  &
-                                      * ( 1.0 + q(ipft) + qsw(ipft) * cpatch%hite(ico) )
+
+
+         salloc                       = 1.0 + q(ipft) + qsw(ipft) * cpatch%hite(ico)
+         salloci                      = 1. / salloc
+
+         cpatch%balive(ico)           = cpatch%bleaf(ico) * salloc
+         cpatch%broot(ico)            = q(ipft) * cpatch%balive(ico) * salloci
+         cpatch%bsapwood(ico)         = qsw(ipft) * cpatch%hite(ico) * cpatch%balive(ico)  &
+                                      * salloci
+
          !----- NPlant is defined such that the cohort LAI is equal to LAI0
          cpatch%nplant(ico)           = lai0 / (cpatch%bleaf(ico) * cpatch%sla(ico))
 

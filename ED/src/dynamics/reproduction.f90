@@ -61,6 +61,7 @@ subroutine reproduction(cgrid, month)
    logical                             :: late_spring
    real                                :: elim_nplant
    real                                :: elim_lai
+   real                                :: salloci
    !----- Saved variables -----------------------------------------------------------------!
    logical          , save             :: first_time=.true.
    !---------------------------------------------------------------------------------------!
@@ -270,7 +271,15 @@ subroutine reproduction(cgrid, month)
                   !----- Carry out standard initialization. -------------------------------!
                   call init_ed_cohort_vars(cpatch,ico,cpoly%lsl(isi))
 
-                  !----- Assign temperature after init_ed_cohort_vars... ---------------!
+                  !----- Assign initial sapwood and root biomass. -------------------------!
+                  ipft    = cpatch%pft(ico)
+                  salloci = 1. / (1. + qsw(ipft) * cpatch%hite(ipft) + q(ipft))
+                  cpatch%broot(ico)    = q(ipft) * cpatch%balive(ico) * salloci
+                  cpatch%bsapwood(ico) = qsw(ipft) * cpatch%hite(ipft)                     &
+                                       * cpatch%balive(ico) * salloci
+
+
+                  !----- Assign temperature after init_ed_cohort_vars... ------------------!
                   cpatch%veg_temp(ico)  = recruit(inew)%veg_temp
 
                   !----- Initialise the next variables with zeroes... ---------------------!

@@ -546,6 +546,12 @@ subroutine read_ed1_history_file
                        
                        cpatch%balive(ic2) = cpatch%bleaf(ic2) * (1.0 + q(ipft(ic)) +  &
                             qsw(ipft(ic)) * cpatch%hite(ic2))
+                       
+                       cpatch%broot(ic2)  = cpatch%balive(ic2) * q(ipft(ic))               &
+                                          /(1.0 + q(ipft(ic)) + qsw(ipft(ic2)) * cpatch%hite(ic2))
+
+                       cpatch%bsapwood(ic2) = cpatch%balive(ic2) * qsw(ipft(ic)) * cpatch%hite(ic2) &
+                                            /(1.0 + q(ipft(ic)) + qsw(ipft(ic2)) * cpatch%hite(ic2))
 
                        !print*,cpatch%lai(ic2),cpatch%bleaf(ic2),cpatch%nplant(ic2),SLA(ipft(ic)),ipft(ic)
                        
@@ -697,6 +703,7 @@ end subroutine read_ed1_history_file
 
 subroutine read_ed21_history_file
 
+  use ed_max_dims, only: n_pft
   use pft_coms, only: SLA, q, qsw, hgt_min, include_pft, include_pft_ag,&
        phenology,pft_1st_check,include_these_pft
   use ed_misc_coms, only: sfilin,current_time, imonthh,iyearh,idateh,itimeh
@@ -708,6 +715,7 @@ subroutine read_ed21_history_file
   use hdf5_coms,only:file_id,dset_id,dspace_id,plist_id, &
        globdims,chnkdims,chnkoffs,memdims,memoffs,memsize
   use allometry, only : area_indices, ed_biomass
+  use fuse_fiss_utils, only : terminate_cohorts
 
   implicit none
 
@@ -736,8 +744,8 @@ subroutine read_ed21_history_file
   real,allocatable :: file_lats(:),file_lons(:)
 
   real,parameter :: ll_tolerance = 25.0
-  real :: minrad, currad
-
+  real    :: minrad, currad
+  real    :: elim_nplant, elim_lai
   integer :: ngr,ifpy,ipft
   integer :: py_index,si_index,pa_index
   integer :: dsetrank,iparallel
@@ -982,7 +990,7 @@ subroutine read_ed21_history_file
            chnkoffs(2) = 0_8
            memoffs(2)  = 0_8
            
-           call hdf_getslab_i(cgrid%workload(ipy),'WORKLOAD ',dsetrank,iparallel,.true.)
+           call hdf_getslab_r(cgrid%workload(:,ipy),'WORKLOAD ',dsetrank,iparallel,.false.)
 
 
 
@@ -1169,13 +1177,57 @@ subroutine read_ed21_history_file
                        cpatch%par_v                = 0.0
                        
                        cohortloop: do ico=1,cpatch%ncohorts
-
+                          !----------------------------------------------------------------!
+                          !    We will now check the PFT of each cohort, so we determine   !
+                          ! if this is a valid PFT.  If not, then we must decide what we   !
+                          ! should do...                                                   !
+                          !----------------------------------------------------------------!
+                          if (include_pft(cpatch%pft(ico)) == 0) then
+                             select case(pft_1st_check)
+                             case (0)
+                                write (unit=*,fmt='(a,1x,i5,1x,a)')                        &
+                                      'I found a cohort with PFT=',cpatch%pft(ico)         &
+                                     ,' and it is not in your include_these_pft...'
+                                call fatal_error('Invalid PFT in history file'             &
+                                                ,'read_ed21_history_file'                  &
+                                                ,'ed_history_io.f90')
+                             case (1)
+                                write (unit=*,fmt='(a,1x,i5,1x,a)')                        &
+                                     'I found a cohort with PFT=',cpatch%pft(ico)          &
+                                    ,'... Including this PFT in your include_these_pft...'
+                                include_pft(cpatch%pft(ico)) = 1
+                                include_these_pft(sum(include_pft)) = cpatch%pft(ico)
+                                call sort_up(include_these_pft,n_pft)
+                                if (cpatch%pft(ico) == 1 .or. cpatch%pft(ico) == 5) then
+                                   include_pft_ag(cpatch%pft(ico)) = 1
+                                end if
+                             case (2)
+                                write (unit=*,fmt='(a,1x,i5,1x,a)')                        &
+                                      'I found a cohort with PFT=',cpatch%pft(ico)         &
+                                     ,'... Ignoring it...'
+                                !----------------------------------------------------------!
+                                !    The way we will ignore this cohort is by setting its  !
+                                ! nplant to zero, and calling the "terminate_cohorts"      !
+                                ! subroutine right after this.                             !
+                                !----------------------------------------------------------!
+                                cpatch%nplant(ico) = 0.
+                             end select
+                          end if
                           cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)   &
                                ,cpatch%bleaf(ico),cpatch%pft(ico)      &
                                ,cpatch%hite(ico),cpatch%bstorage(ico))
 
                           cpatch%basarea(ico)  = cpatch%nplant(ico) * pio4                    &
                                * cpatch%dbh(ico) * cpatch%dbh(ico)
+                          
+                          cpatch%broot(ico) = q(cpatch%pft(ico)) * cpatch%balive(ico)         &
+                                            / ( 1.0 + q(cpatch%pft(ico))                      &
+                                              + qsw(cpatch%pft(ico)) * cpatch%hite(ico))
+                          
+                          cpatch%bsapwood(ico) = qsw(cpatch%pft(ico)) * cpatch%balive(ico)    &
+                                               * cpatch%hite(ico)                             &
+                                               / ( 1.0 + q(cpatch%pft(ico))                   &
+                                                 + qsw(cpatch%pft(ico)) * cpatch%hite(ico))
                           
                           !----- Assign LAI, WPA, and WAI ------------------------------------!
                           call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico)              &
@@ -1193,9 +1245,7 @@ subroutine read_ed21_history_file
                           call init_ed_cohort_vars(cpatch,ico,cpoly%lsl(isi))
                           
                        end do cohortloop
-
-                       ! Notice that if there are no cohorts, that is just fine
-                       ! This is entirely possible
+                       call terminate_cohorts(csite,ipa,elim_nplant,elim_lai)
 
                     end if
                     
@@ -1212,7 +1262,8 @@ subroutine read_ed21_history_file
         call init_ed_site_vars(cpoly,cgrid%lat(ipy))
         
      end do polyloop
-     
+
+
      !! need to check what's going on in here
      call init_ed_poly_vars(cgrid)
      
@@ -1220,8 +1271,9 @@ subroutine read_ed21_history_file
      if (hdferr.ne.0) then
         print*,"COULD NOT CLOSE THE HDF FILE"
         print*,hdferr
-        stop	
-     endif
+        call fatal_error('Could not close the HDF file','read_ed21_history_file'&
+                        ,'ed_history_io.F90')
+     end if
      
      deallocate(file_lats,file_lons)
      deallocate(paco_n,paco_id)
@@ -1233,6 +1285,11 @@ subroutine read_ed21_history_file
   ! Close the HDF environment
   
   call h5close_f(hdferr)
+
+  !----------------------------------------------------------------------------------------!
+  !    Because depending on the pft_1st_check the number of cohorts may have changed,      !
+  ! we call all init_vars subroutines in a second loop.                                    !
+  !----------------------------------------------------------------------------------------!
   
   return
 end subroutine read_ed21_history_file
@@ -3019,6 +3076,8 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
      call hdf_getslab_r(cpatch%bleaf,'BLEAF ',dsetrank,iparallel,.true.)
      call hdf_getslab_i(cpatch%phenology_status,'PHENOLOGY_STATUS ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%balive,'BALIVE ',dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%broot,'BROOT  ',dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%bsapwood,'BSAPWOOD ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%lai,'LAI_CO ',dsetrank,iparallel,.true.)
      
      call hdf_getslab_r(cpatch%llspan,'LLSPAN ',dsetrank,iparallel,.true.)
@@ -3083,10 +3142,12 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
      call hdf_getslab_r(cpatch%dmean_fsn,'DMEAN_FSN ',dsetrank,iparallel,.false.)
      if (associated(cpatch%mmean_fsn       )) &
      call hdf_getslab_r(cpatch%mmean_fsn,'MMEAN_FSN ',dsetrank,iparallel,.false.) 
-     if (associated(cpatch%mmean_mnt_cost       )) &
-     call hdf_getslab_r(cpatch%mmean_mnt_cost,'MMEAN_MNT_COST ',dsetrank,iparallel,.false.)   
-     if (associated(cpatch%mmean_leaf_litter       )) &
-     call hdf_getslab_r(cpatch%mmean_leaf_litter,'MMEAN_LEAF_LITTER ',dsetrank,iparallel,.false.)   
+     if (associated(cpatch%mmean_leaf_maintenance )) &
+     call hdf_getslab_r(cpatch%mmean_leaf_maintenance,'MMEAN_LEAF_MAINTENANCE ',dsetrank,iparallel,.false.)   
+     if (associated(cpatch%mmean_root_maintenance )) &
+     call hdf_getslab_r(cpatch%mmean_root_maintenance,'MMEAN_ROOT_MAINTENANCE ',dsetrank,iparallel,.false.)   
+     if (associated(cpatch%mmean_leaf_drop       )) &
+     call hdf_getslab_r(cpatch%mmean_leaf_drop,'MMEAN_LEAF_DROP ',dsetrank,iparallel,.false.)   
      if (associated(cpatch%mmean_cb       )) &
      call hdf_getslab_r(cpatch%mmean_cb,'MMEAN_CB ',dsetrank,iparallel,.false.)   
      if (associated(cpatch%dmean_light_level       )) &
@@ -3165,8 +3226,9 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
      call hdf_getslab_r(cpatch%fsw,'FSW ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%fs_open,'FS_OPEN ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%stomatal_resistance,'STOMATAL_RESISTANCE ',dsetrank,iparallel,.true.)
-     call hdf_getslab_r(cpatch%maintenance_costs,'MAINTENANCE_COSTS ',dsetrank,iparallel,.true.)
-     call hdf_getslab_r(cpatch%leaf_litter,'LEAF_LITTER ',dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%leaf_maintenance,'LEAF_MAINTENANCE ',dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%root_maintenance,'ROOT_MAINTENANCE ',dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%leaf_drop,'LEAF_DROP ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%bseeds,'BSEEDS_CO ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%leaf_respiration,'LEAF_RESPIRATION ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%root_respiration,'ROOT_RESPIRATION ',dsetrank,iparallel,.true.)
