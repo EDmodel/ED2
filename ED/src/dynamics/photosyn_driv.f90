@@ -57,6 +57,9 @@ subroutine canopy_photosynthesis(csite,ipa,vels,atm_tmp,prss,ed_ktrans,ntext_soi
    real                                    :: swp
    real                                    :: water_demand
    real                                    :: water_supply
+   real                                    :: broot_tot
+   real                                    :: broot_loc
+   real                                    :: pss_available_water
    !----- Local constants -----------------------------------------------------------------!
    real   , parameter                      :: vels_min    = 1.0
    logical, parameter                      :: print_debug = .false.
@@ -130,8 +133,7 @@ subroutine canopy_photosynthesis(csite,ipa,vels,atm_tmp,prss,ed_ktrans,ntext_soi
             ! of leaf.                                                                     !
             !------------------------------------------------------------------------------!
             mixrat     = csite%can_shv(ipa) / (1. - csite%can_shv(ipa))
-            parv_o_lai = cpatch%par_v(tuco)                                                &
-                       / (cpatch%lai(tuco) + cpatch%wai(tuco))
+            parv_o_lai = cpatch%par_v(tuco) / cpatch%lai(tuco)
 
             !----- Calling the photosynthesis for maximum photosynthetic rates. -----------!
             call lphysiol_full(            & !
@@ -171,8 +173,12 @@ subroutine canopy_photosynthesis(csite,ipa,vels,atm_tmp,prss,ed_ktrans,ntext_soi
    !---------------------------------------------------------------------------------------!
    !----- LAI/rb, summed over all cohorts.  Used in the Euler scheme. ---------------------!
    sum_lai_rbi = 0.0
+   !----- Total root biomass (in kgC/m2) and patch sum available water. -------------------!
+   pss_available_water = 0.0
+   broot_tot           = 0.0
    !----- Initialize variables for transpiration calculation. -----------------------------!
    root_depth_indices(:) = .false.
+   !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
    !    Loop over all cohorts, from tallest to shortest.                                   !
@@ -198,8 +204,7 @@ subroutine canopy_photosynthesis(csite,ipa,vels,atm_tmp,prss,ed_ktrans,ntext_soi
             ! of leaf.                                                                     !
             !------------------------------------------------------------------------------!
             mixrat     = csite%can_shv(ipa) / (1. - csite%can_shv(ipa))
-            parv_o_lai = cpatch%par_v(ico)                                                 &
-                       / (cpatch%lai(ico) + cpatch%wai(ico))
+            parv_o_lai = cpatch%par_v(ico) / cpatch%lai(ico) 
 
             !----- Calling the photosynthesis for maximum photosynthetic rates. -----------!
             call lphysiol_full(            & !
@@ -228,7 +233,7 @@ subroutine canopy_photosynthesis(csite,ipa,vels,atm_tmp,prss,ed_ktrans,ntext_soi
             cpatch%leaf_respiration(ico) = leaf_resp * cpatch%lai(ico)
             cpatch%mean_leaf_resp(ico)   = cpatch%mean_leaf_resp(ico)                      &
                                          + cpatch%leaf_respiration(ico)
-            cpatch%dmean_leaf_resp(ico)  = cpatch%dmean_leaf_resp(ico)                     &
+            cpatch%today_leaf_resp(ico)  = cpatch%today_leaf_resp(ico)                     &
                                          + cpatch%leaf_respiration(ico)
 
             !----- Demand for water [kg/m2/s].  Psi_open is from last time step. ----------!
@@ -242,6 +247,13 @@ subroutine canopy_photosynthesis(csite,ipa,vels,atm_tmp,prss,ed_ktrans,ntext_soi
                          * cpatch%nplant(ico)
 
             root_depth_indices(cpatch%krdepth(ico)) = .true.
+
+            broot_loc = q(ipft) * cpatch%balive(ico)                                       &
+                      / (1.0 + q(ipft) + cpatch%hite(ico) * qsw(ipft) )                    &
+                      * cpatch%nplant(ico)
+            broot_tot = broot_tot + broot_loc
+            pss_available_water = pss_available_water                                      &
+                                + available_liquid_water(cpatch%krdepth(ico)) * broot_loc
 
             !----- Weighting between open/closed stomata. ---------------------------------!
             cpatch%fsw(ico) = water_supply / max(1.0e-30,water_supply + water_demand)
@@ -264,24 +276,24 @@ subroutine canopy_photosynthesis(csite,ipa,vels,atm_tmp,prss,ed_ktrans,ntext_soi
                                                 / cpatch%rsw_closed(ico) )
 
             !----- GPP, averaged over frqstate. -------------------------------------------!
-            cpatch%gpp(ico) = cpatch%lai(ico)                                              &
-                            * ( cpatch%fs_open(ico) * cpatch%A_open(ico)                   &
-                              + (1.0 - cpatch%fs_open(ico)) * cpatch%A_closed(ico) )       &
-                            + cpatch%leaf_respiration(ico)
-            cpatch%mean_gpp(ico) = cpatch%mean_gpp(ico) + cpatch%gpp(ico)
+            cpatch%gpp(ico)       = cpatch%lai(ico)                                        &
+                                  * ( cpatch%fs_open(ico) * cpatch%A_open(ico)             &
+                                    + (1.0 - cpatch%fs_open(ico)) * cpatch%A_closed(ico) ) &
+                                  + cpatch%leaf_respiration(ico)
+            cpatch%mean_gpp(ico)  = cpatch%mean_gpp(ico) + cpatch%gpp(ico)
 
             !----- GPP, summed over 1 day. [µmol/m²ground] --------------------------------!
-            cpatch%dmean_gpp(ico) = cpatch%dmean_gpp(ico) + cpatch%gpp(ico)
+            cpatch%today_gpp(ico) = cpatch%today_gpp(ico) + cpatch%gpp(ico)
 
             !----- Potential GPP if no N limitation. [µmol/m²ground] ----------------------!
-            cpatch%dmean_gpp_pot(ico) = cpatch%dmean_gpp_pot(ico)                          &
+            cpatch%today_gpp_pot(ico) = cpatch%today_gpp_pot(ico)                          &
                                       + cpatch%lai(ico)                                    &
                                       * ( cpatch%fsw(ico) * cpatch%A_open(ico)             &
                                         + (1.0 - cpatch%fsw(ico)) * cpatch%A_closed(ico))  &
                                       + cpatch%leaf_respiration(ico)
 
             !----- Maximum GPP if at the top of the canopy [µmol/m²ground] ----------------!
-            cpatch%dmean_gpp_max(ico) = cpatch%dmean_gpp_max(ico)                          &
+            cpatch%today_gpp_max(ico) = cpatch%today_gpp_max(ico)                          &
                                       + cpatch%lai(ico)                                    &
                                       * ( cpatch%fs_open(ico) * csite%A_o_max(ipft,ipa)    &
                                         + (1.0 - cpatch%fs_open(ico))                      &
@@ -302,6 +314,16 @@ subroutine canopy_photosynthesis(csite,ipa,vels,atm_tmp,prss,ed_ktrans,ntext_soi
          cpatch%leaf_respiration(ico)    = 0.0
       end if
    end do cohortloop
+
+   !---------------------------------------------------------------------------------------!
+   !     Add the contribution of this time step to the average available water.            !
+   !---------------------------------------------------------------------------------------!
+   if (broot_tot > 1.e-20) then
+      csite%avg_available_water(ipa) = csite%avg_available_water(ipa)                      &
+                                     + pss_available_water / broot_tot
+   !else
+   !  Add nothing, the contribution of this time is zero since no cohort can transpire... 
+   end if
 
    !---------------------------------------------------------------------------------------!
    !     For plants of a given rooting depth, determine soil level from which transpired   !

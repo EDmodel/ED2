@@ -816,7 +816,7 @@ subroutine masterput_carma(master_num)
         pso2,pso3,psh2o,psco2,wave,solfx,xah2o, &
         xaco2,xao2,xao3,ta,tb,wa,wb,ga,gb,tia,tib, &
         wia,wib,gia,gib,alpha,gama,caseE,caseW,caseG, &
-        sq3,jdble,jn,tpi,cpcon,fdegday
+        jdble,jn,rad_data_not_read
    use rpara
 
    implicit none
@@ -875,11 +875,9 @@ subroutine masterput_carma(master_num)
    call MPI_Bcast(caseE,(9*nwave),MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(caseW,(9*nwave),MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(caseG,(9*nwave),MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(sq3,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(jdble,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(jn,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(cpcon,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(fdegday,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(jdble,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(jn,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(rad_data_not_read,1,MPI_LOGICAL,master_num,MPI_COMM_WORLD,ierr)
 
    return
 end subroutine masterput_carma
@@ -1687,7 +1685,7 @@ subroutine nodeget_carma()
         pso2,pso3,psh2o,psco2,wave,solfx,xah2o, &
         xaco2,xao2,xao3,ta,tb,wa,wb,ga,gb,tia,tib, &
         wia,wib,gia,gib,alpha,gama,caseE,caseW,caseG, &
-        sq3,jdble,jn,tpi,cpcon,fdegday
+        jdble,jn,rad_data_not_read
    use rpara
    use node_mod, only: master_num
    implicit none
@@ -1746,11 +1744,9 @@ subroutine nodeget_carma()
    call MPI_Bcast(caseE,(9*nwave),MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(caseW,(9*nwave),MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(caseG,(9*nwave),MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(sq3,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(jdble,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(jn,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(cpcon,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(fdegday,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(jdble,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(jn,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(rad_data_not_read,1,MPI_LOGICAL,master_num,MPI_COMM_WORLD,ierr)
 
    return
 end subroutine nodeget_carma

@@ -1,107 +1,115 @@
 !==========================================================================================!
 !==========================================================================================!
-subroutine leaf_database(ofn, nlandsea, iaction, lat, lon, idatp)
+subroutine leaf_database(ofn,nlandsea,iaction,lat,lon,idatp)
 
-  use hdf5_utils,  only: shdf5_open_f, shdf5_close_f, shdf5_irec_f
+   use hdf5_utils , only : shdf5_open_f  & ! subroutine
+                         , shdf5_close_f & ! subroutine
+                         , shdf5_irec_f  ! ! subroutine
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   character(len=*)                         , intent(in)  :: ofn
+   character(len=*)                         , intent(in)  :: iaction
+   integer                                  , intent(in)  :: nlandsea
+   real           , dimension(3,nlandsea)   , intent(in)  :: lat
+   real           , dimension(3,nlandsea)   , intent(in)  :: lon
+   integer        , dimension(nlandsea)     , intent(out) :: idatp
+   !----- Variables describing the files. -------------------------------------------------!
+   integer                                                :: nio
+   integer                                                :: njo
+   integer                                                :: nperdeg
+   integer                                                :: niosh
+   integer                                                :: njosh
+   integer                                                :: ifiles
+   integer                                                :: jfiles
+   real                                                   :: offpix
+   integer                                                :: west
+   integer                                                :: south
+   !----- Variables for file handling. ----------------------------------------------------!
+   integer                                                :: iwoc
+   integer                                                :: isoc
+   integer                                                :: isocpt
+   integer                                                :: isocpo
+   integer                                                :: iwocpt
+   integer                                                :: iwocpo
+   integer                                                :: iwocph
+   character(len=3)                                       :: title1
+   character(len=4)                                       :: title2
+   character(len=128)                                     :: title3
+   logical                                                :: l1
+   logical                                                :: l2
+   integer                                                :: ndims
+   integer        , dimension(2)                          :: idims
+   integer                                                :: ierr
+   !----- Variables for file indexing. ----------------------------------------------------!
+   integer        , dimension(:,:)          , allocatable :: nump
+   integer        , dimension(:,:,:)        , allocatable :: cnr_ind
+   integer(kind=4), dimension(:,:)          , allocatable :: idato
+   integer        , dimension(4*nlandsea)                 :: cnr_i1
+   integer        , dimension(4*nlandsea)                 :: cnr_i2
+   integer        , dimension(4*nlandsea)                 :: cnr_j1
+   integer        , dimension(4*nlandsea)                 :: cnr_j2
+   integer        , dimension(4*nlandsea)                 :: cnr_ipoly
+   integer        , dimension(0:20,nlandsea)              :: hgramtypes
+   integer                                                :: ifile,ifile2
+   integer                                                :: jfile,jfile2
+   integer                                                :: jo_full
+   integer                                                :: io_full
+   integer                                                :: ind
+   integer                                                :: io_loc,jo_loc
+   integer                                                :: max_per_file
+   integer                                                :: cid,i,j,i1,i2,j1,j2,ic,jc
+   integer                                                :: nt
+   integer                                                :: ilandsea
+   integer                                                :: dq
+   integer                                                :: stext,best 
+   real                                                   :: rio_full
+   real                                                   :: rjo_full
+   !---------------------------------------------------------------------------------------!
 
-  implicit none
 
-  character(len=*), intent(in) :: ofn
-  integer, intent(in) :: nlandsea
 
-  ! Variables describing the files
-  ! ------------------------------
-  integer :: nio
-  integer :: njo
-  integer :: nperdeg
-  real :: offpix
-  integer :: niosh
-  integer :: njosh
-  integer :: ifiles
-  integer :: jfiles
 
-  ! Variables for file handling
-  ! ---------------------------
-  integer :: iwoc
-  integer :: isoc
-  integer :: isocpt
-  integer :: isocpo
-  integer :: iwocpt
-  integer :: iwocpo
-  integer :: iwocph
-  character(len=3) :: title1
-  character(len=4) :: title2
-  character(len=128) :: title3
-  logical :: l1
-  logical :: l2
-  integer :: ndims
-  integer, dimension(2) :: idims
-  character(len=*), intent(in) :: iaction
+   !----- Initialize idatp. ---------------------------------------------------------------!
+   hgramtypes = 0
 
-  ! Variables for file indexing
-  ! ---------------------------
-  integer, allocatable, dimension(:,:) :: nump
-  integer, allocatable, dimension(:,:,:) :: cnr_ind
-  integer(kind=4), allocatable, dimension(:,:) :: idato
-  integer :: ifile,ifile2
-  integer :: jfile,jfile2
-  real :: rio_full
-  real :: rjo_full
-  integer :: jo_full
-  integer :: io_full
-  integer :: ind
-  integer :: io_loc,jo_loc
-  integer, dimension(4*nlandsea) :: cnr_i1
-  integer, dimension(4*nlandsea) :: cnr_i2
-  integer, dimension(4*nlandsea) :: cnr_j1
-  integer, dimension(4*nlandsea) :: cnr_j2
-  integer, dimension(4*nlandsea) :: cnr_ipoly
-  integer :: max_per_file
-  integer :: cid,i,j,i1,i2,j1,j2,ic,jc
-
-  integer :: nt
-  integer :: ilandsea
-  integer :: dq
-  integer :: stext,best
-
-  real, dimension(3,nlandsea), intent(in) :: lat
-  real, dimension(3,nlandsea), intent(in) :: lon
+   !---------------------------------------------------------------------------------------!
+   !     Read header file.                                                                 !
+   !---------------------------------------------------------------------------------------!
+   write(unit=*,fmt='(2a)') trim(ofn),'HEADER'
+   open (unit=29,file=trim(ofn)//'HEADER',form='formatted',status='old')
+   read (unit=29,fmt=*,iostat=ierr) nio, njo, nperdeg,west,south
+   !----- Check whether this was read sucessfully.  If not, rewind it and assume global. --!
+   if (ierr /= 0) then
+      rewind(unit=29)
+      read  (unit=29,fmt=*) nio, njo, nperdeg
+      west  = -180
+      south =  -90
+   end if
+   close(unit=29)
   
-  integer, dimension(0:20,nlandsea) :: hgramtypes
-  
-  integer, intent(out), dimension(nlandsea) :: idatp
+   !---------------------------------------------------------------------------------------!
+   !     Compute number of pixels in a shift to adjacent file (niosh and njosh).  Compute  !
+   ! number of files in database that span all latitudes and longitudes on Earth.  [This   !
+   ! algorithm will change when multiple resolutions of the SRTM data become available.]   !
+   !---------------------------------------------------------------------------------------!
+   if (mod(nio,nperdeg) == 2) then
+      offpix = .5
+      niosh = nio - 2
+      njosh = njo - 2
+   else
+      offpix = 0.
+      niosh = nio - 1
+      njosh = njo - 1
+   endif
 
-
-  ! Initialize idatp
-  hgramtypes = 0
-
-  ! Read header file
-
-  print*,trim(ofn)//'HEADER'
-  open(29,file=trim(ofn)//'HEADER',form='formatted',status='old')
-  read(29,*) nio, njo, nperdeg
-  close(29)
-  
-  ! Compute number of pixels in a shift to adjacent file (niosh and njosh).
-  ! Compute number of files in database that span all latitudes and
-  ! longitudes on earth. [This algorithm will change when multiple resolutions
-  ! of the SRTM data become available.]
-  
-  if (mod(nio,nperdeg) == 2) then
-     offpix = .5
-     niosh = nio - 2
-     njosh = njo - 2
-  else
-     offpix = 0.
-     niosh = nio - 1
-     njosh = njo - 1
-  endif
-
-  ! Compute number of files in input dataset that span all latitudes and
-  ! longitudes on earth.  
-  
-  ifiles = 360 * nperdeg / niosh
-  jfiles = 180 * nperdeg / njosh
+   !---------------------------------------------------------------------------------------!
+   !     Compute number of files in input dataset that span all latitudes and longitudes   !
+   ! on Earth.  This could be done more efficiently, but for the time being we will only   !
+   ! check the southernmost and westernmost points, and assume that the data set could go  !
+   ! to the North Pole and the International Date Line.                                    !
+   !---------------------------------------------------------------------------------------!
+   ifiles = (180 -  west) * nperdeg / niosh
+   jfiles = ( 90 - south) * nperdeg / njosh
   
   ! Allocate 5 arrays.
   
@@ -120,7 +128,7 @@ subroutine leaf_database(ofn, nlandsea, iaction, lat, lon, idatp)
   do ilandsea = 1, nlandsea
      do ic=2,3
         do jc=2,3
-           call get_file_indices(lat(jc,ilandsea),lon(ic,ilandsea), &
+           call get_file_indices(lat(jc,ilandsea),lon(ic,ilandsea),west,south, &
                 nperdeg,niosh,njosh, &
                 io_full,jo_full,     &
                 io_loc,jo_loc,       &
@@ -151,7 +159,7 @@ subroutine leaf_database(ofn, nlandsea, iaction, lat, lon, idatp)
            
            ! Get the file indices and the local indices within the file
            
-           call get_file_indices(lat(jc,ilandsea),lon(ic,ilandsea), &
+           call get_file_indices(lat(jc,ilandsea),lon(ic,ilandsea),west,south, &
                 nperdeg,niosh,njosh, &
                 io_full,jo_full,     &
                 io_loc,jo_loc,       &
@@ -170,7 +178,7 @@ subroutine leaf_database(ofn, nlandsea, iaction, lat, lon, idatp)
            
            ! Get the local indices of the other corner
 
-           call get_file_indices(lat(j2,ilandsea),lon(i2,ilandsea), &
+           call get_file_indices(lat(j2,ilandsea),lon(i2,ilandsea),west,south, &
                 nperdeg,niosh,njosh, &
                 io_full,jo_full,     &
                 io_loc,jo_loc,       &
@@ -213,9 +221,9 @@ subroutine leaf_database(ofn, nlandsea, iaction, lat, lon, idatp)
            
 
         ! SW longitude of current file
-        iwoc = (ifile - 1) * niosh/nperdeg - 180
+        iwoc = (ifile - 1) * niosh/nperdeg + west
         ! SW latitude of current file
-        isoc = (jfile - 1) * njosh/nperdeg -  90
+        isoc = (jfile - 1) * njosh/nperdeg + south
         
         ! Construct filename
         isocpt = abs(isoc) / 10
@@ -357,11 +365,13 @@ end subroutine leaf_database
 !==========================================================================================!
 !==========================================================================================!
 
-subroutine get_file_indices(lat,lon,nper,ni,nj,io_full,jo_full,io_loc,jo_loc,ifile,jfile)
+subroutine get_file_indices(lat,lon,west,south,nper,ni,nj,io_full,jo_full,io_loc,jo_loc    &
+                           ,ifile,jfile)
   
   implicit none
   
   real,intent(in)     :: lat,lon
+  integer,intent(in)  :: west,south
   integer,intent(in)  :: nper,ni,nj
   integer,intent(out) :: io_full,jo_full
   integer,intent(out) :: io_loc,jo_loc
@@ -377,8 +387,8 @@ subroutine get_file_indices(lat,lon,nper,ni,nj,io_full,jo_full,io_loc,jo_loc,ifi
   if(wlon < -180.) wlon = wlon + 360.
   wlon = max(-179.9999,min(179.9999,wlon))
   
-  rio_full = (wlon + 180.) * real(nper) ! must ignore pixel offset here
-  rjo_full = (wlat +  90.) * real(nper) ! must ignore pixel offset here
+  rio_full = (wlon -  west) * real(nper) ! must ignore pixel offset here
+  rjo_full = (wlat - south) * real(nper) ! must ignore pixel offset here
   
   io_full = int(rio_full)
   jo_full = int(rjo_full)

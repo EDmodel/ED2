@@ -55,7 +55,6 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
                                   , patchtype                  ! ! structure
    use canopy_air_coms     , only : icanturb                   ! ! intent(in)
    use allometry           , only : ed_biomass                 ! ! function
-   use fusion_fission_coms , only : ff_ndbh                    ! ! intent(in)
    use fuse_fiss_utils     , only : patch_pft_size_profile     ! ! subroutine
    use canopy_air_coms     , only : veg_height_min             & ! intent(in)
                                   , minimum_canopy_depth       & ! intent(in)
@@ -160,7 +159,7 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
    end select
 
    !----- Find the PFT-dependent size distribution of this patch. -------------------------!
-   call patch_pft_size_profile(csite,ipa,ff_ndbh)
+   call patch_pft_size_profile(csite,ipa)
 
    !----- Updating the cohort count (may be redundant as well...) -------------------------!
    csite%cohort_count(ipa) = cpatch%ncohorts
@@ -259,7 +258,6 @@ subroutine update_site_derived_props(cpoly,census_flag,isi)
    !----- Initialise the variables before looping. ----------------------------------------!
    cpoly%basal_area(:,:,isi) = 0.0
    cpoly%agb(:,:,isi)        = 0.0
-   cpoly%agb_lu(:,isi)       = 0.0
    
    csite => cpoly%site(isi)
 
@@ -275,21 +273,13 @@ subroutine update_site_derived_props(cpoly,census_flag,isi)
          !----- Update basal area and above-ground biomass. -------------------------------!
          if(census_flag == 0 .or. cpatch%first_census(ico) == 1)then
             bdbh = max(0,min( int(cpatch%dbh(ico) * 0.1), 10)) + 1
-            ba   = cpatch%nplant(ico) * cpatch%dbh(ico) * cpatch%dbh(ico)
 
             cpoly%basal_area(ipft,bdbh,isi) = cpoly%basal_area(ipft, bdbh,isi)             &
-                                            + csite%area(ipa) * ba * pio4
-            cpoly%agb(ipft,bdbh,isi) = cpoly%agb(ipft, bdbh,isi)                           &
-                                     + ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)     &
-                                                 ,cpatch%bleaf(ico),cpatch%pft(ico)        &
-                                                 ,cpatch%hite(ico),cpatch%bstorage(ico))   &
-                                     * cpatch%nplant(ico) * 10.0 * csite%area(ipa)
-
-            cpoly%agb_lu(ilu,isi) = cpoly%agb_lu(ilu,isi)                                  &
-                                  + ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)        &
-                                              ,cpatch%bleaf(ico),cpatch%pft(ico)           &
-                                              ,cpatch%hite(ico),cpatch%bstorage(ico))      &
-                                  * cpatch%nplant(ico) * 10.0 * csite%area(ipa)
+                                            + cpatch%basarea(ico) * cpatch%nplant(ico)     &
+                                            * csite%area(ipa)   
+            cpoly%agb(ipft,bdbh,isi)        = cpoly%agb(ipft, bdbh,isi)                    &
+                                            + cpatch%agb(ico)     * cpatch%nplant(ico)     &
+                                            * csite%area(ipa)
          end if
       end do
    end do
@@ -575,5 +565,47 @@ subroutine update_rad_avg(cgrid)
    
    return
 end subroutine update_rad_avg
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine will convert the integrated number of time steps in steps/day, then  !
+! it will update the monthly mean workload.                                                !
+!------------------------------------------------------------------------------------------!
+subroutine update_workload(cgrid)
+   use ed_state_vars, only : edtype        ! ! structure
+   use ed_misc_coms , only : current_time  & ! intent(in)
+                           , simtime       ! ! intent(in)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   type(edtype), target     :: cgrid
+   !----- Local variables. ----------------------------------------------------------------!
+   type(simtime)            :: lastmonth
+   integer                  :: lmon
+   integer                  :: ipy
+   real                     :: ndaysi
+   !---------------------------------------------------------------------------------------!
+
+   !----- Find last month information. ----------------------------------------------------!
+   call lastmonthdate(current_time,lastmonth,ndaysi)
+   lmon = lastmonth%month
+
+   !---------------------------------------------------------------------------------------!
+   !     Loop over all polygons, normalise the workload, then copy it to the corresponding !
+   ! month.  Then copy the scratch column (13) to the appropriate month, and reset it.     !
+   !---------------------------------------------------------------------------------------!
+   do ipy=1,cgrid%npolygons
+      cgrid%workload(lmon,ipy) = cgrid%workload(13,ipy) * ndaysi
+      cgrid%workload(13,ipy)   = 0.
+   end do
+
+   return
+end subroutine update_workload
 !==========================================================================================!
 !==========================================================================================!

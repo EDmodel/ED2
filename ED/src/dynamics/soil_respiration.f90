@@ -31,8 +31,8 @@ subroutine soil_respiration(csite,ipa)
           cpatch%hite(ico)) * cpatch%nplant(ico)
                         
      cpatch%root_respiration(ico) = r_resp
-     cpatch%mean_root_resp(ico) = cpatch%mean_root_resp(ico) + r_resp
-     cpatch%dmean_root_resp(ico) = cpatch%dmean_root_resp(ico) + r_resp
+     cpatch%mean_root_resp(ico)  = cpatch%mean_root_resp(ico)  + r_resp
+     cpatch%today_root_resp(ico) = cpatch%today_root_resp(ico) + r_resp
        
   enddo
 
@@ -48,8 +48,8 @@ subroutine soil_respiration(csite,ipa)
   call resp_rh(csite,ipa, Lc)
 
   ! Update averaged variables
-  csite%dmean_A_decomp(ipa) = csite%dmean_A_decomp(ipa) + csite%A_decomp(ipa)
-  csite%dmean_Af_decomp(ipa) = csite%dmean_Af_decomp(ipa) +   &
+  csite%today_A_decomp(ipa) = csite%today_A_decomp(ipa) + csite%A_decomp(ipa)
+  csite%today_Af_decomp(ipa) = csite%today_Af_decomp(ipa) +   &
        csite%A_decomp(ipa) * csite%f_decomp(ipa)
   csite%mean_rh(ipa) = csite%mean_rh(ipa) + csite%rh(ipa)
 
@@ -220,26 +220,27 @@ subroutine update_C_and_N_pools(cgrid)
            endif
      
            ! fast pools
-           fast_C_loss = csite%dmean_A_decomp(ipa) * K2 * csite%fast_soil_C(ipa)
-           fast_N_loss = csite%dmean_A_decomp(ipa) * K2 * csite%fast_soil_N(ipa)
+           fast_C_loss = csite%today_A_decomp(ipa) * K2 * csite%fast_soil_C(ipa)
+           fast_N_loss = csite%today_A_decomp(ipa) * K2 * csite%fast_soil_N(ipa)
 !fast_C_loss = 0.0
            
            ! structural pools
-           structural_C_loss = csite%dmean_Af_decomp(ipa) * Lc * K1 *   &
+           structural_C_loss = csite%today_Af_decomp(ipa) * Lc * K1 *   &
                 csite%structural_soil_C(ipa)
-           structural_L_loss = csite%dmean_Af_decomp(ipa) * Lc * K1 *   &
+           structural_L_loss = csite%today_Af_decomp(ipa) * Lc * K1 *   &
                 csite%structural_soil_L(ipa)
 !structural_C_loss = 0.0
            
            ! slow pools
            slow_C_input = (1.0 - r_stsc) * structural_C_loss
-           slow_C_loss = csite%dmean_A_decomp(ipa) * K3 * csite%slow_soil_C(ipa)
+           slow_C_loss = csite%today_A_decomp(ipa) * K3 * csite%slow_soil_C(ipa)
 !slow_C_loss = 0.0
            
            ! mineralized pool
-           csite%mineralized_N_input(ipa) = fast_N_loss + slow_C_loss / c2n_slow
-           csite%mineralized_N_loss(ipa) = csite%total_plant_nitrogen_uptake(ipa) +   &
-                structural_C_loss   &
+           csite%mineralized_N_input = fast_N_loss + slow_C_loss / c2n_slow
+           csite%mineralized_N_loss = csite%total_plant_nitrogen_uptake(ipa) +   &
+                csite%today_Af_decomp(ipa) * Lc * K1 *   &
+                csite%structural_soil_C(ipa)   &
                 * ( (1.0 - r_stsc) / c2n_slow - 1.0 / c2n_structural)
      
            ! all C fluxes have units kgC/m2/day, and we are updating on 

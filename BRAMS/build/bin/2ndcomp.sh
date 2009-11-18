@@ -99,7 +99,6 @@ rm -fv mem_mksfc.o                mem_mksfc.mod
 rm -fv mem_nestb.o                mem_nestb.mod
 rm -fv mem_oda.o                  mem_oda.mod
 rm -fv mem_opt_scratch.o          mem_opt_scratch.mod
-rm -fv mem_precision.o            mem_precision.mod
 rm -fv mem_radiate.o              mem_radiate.mod
 rm -fv mem_scalar.o               mem_scalar.mod
 rm -fv mem_scratch.o              mem_scratch.mod
@@ -271,7 +270,6 @@ rm -fv canopy_struct_dynamics.o   canopy_struct_dynamics.mod
 rm -fv canopy_update_euler.o      canopy_update_euler.mod
 rm -fv consts_coms.o              consts_coms.mod
 rm -fv decomp_coms.o              decomp_coms.mod
-rm -fv decomposition.o            decomposition.mod
 rm -fv disturb_coms.o             disturb_coms.mod
 rm -fv disturbance.o              disturbance.mod
 rm -fv ed_bare_restart.o          ed_bare_restart.mod
@@ -336,6 +334,7 @@ rm -fv rk4_integ_utils.o          rk4_integ_utils.mod
 rm -fv rk4_odeint.o               rk4_odeint.mod
 rm -fv rk4_stepper.o              rk4_stepper.mod
 rm -fv soil_coms.o                soil_coms.mod
+rm -fv soil_respiration.o         soil_respiration.mod
 rm -fv structural_growth.o        structural_growth.mod
 rm -fv twostream_rad.o            twostream_rad.mod
 rm -fv update_derived_props.o     update_derived_props.mod

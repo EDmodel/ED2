@@ -20,7 +20,6 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
                                    , rocp8                 ! ! intent(in)
    use rk4_coms             , only : rk4patchtype          & ! structure
                                    , rk4met                & ! structure
-                                   , const_depth           & ! intent(in)
                                    , hcapveg_ref           & ! intent(in)
                                    , rk4eps                & ! intent(in)
                                    , min_height            & ! intent(in)
@@ -195,6 +194,7 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
          targetp%veg_energy(ico) = targetp%hcapveg(ico) * targetp%veg_temp(ico)
       end if
    end do
+
    !----- Diagnostics variables -----------------------------------------------------------!
    if(fast_diagnostics) then
       !----------------------------------------------------------------------!
@@ -207,13 +207,16 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
       targetp%avg_dew_cg         = dble(sourcesite%avg_dew_cg(ipa)        )
       targetp%avg_vapor_gc       = dble(sourcesite%avg_vapor_gc(ipa)      )
       targetp%avg_wshed_vg       = dble(sourcesite%avg_wshed_vg(ipa)      )
+      targetp%avg_intercepted    = dble(sourcesite%avg_intercepted(ipa)   )
       targetp%avg_vapor_ac       = dble(sourcesite%avg_vapor_ac(ipa)      )
       targetp%avg_transp         = dble(sourcesite%avg_transp(ipa)        )
       targetp%avg_evap           = dble(sourcesite%avg_evap(ipa)          )
       targetp%avg_drainage       = dble(sourcesite%avg_drainage(ipa)      )
+      targetp%avg_drainage_heat  = dble(sourcesite%avg_drainage_heat(ipa) )
       targetp%avg_netrad         = dble(sourcesite%avg_netrad(ipa)        )
       targetp%avg_sensible_vc    = dble(sourcesite%avg_sensible_vc(ipa)   )
       targetp%avg_qwshed_vg      = dble(sourcesite%avg_qwshed_vg(ipa)     )
+      targetp%avg_qintercepted   = dble(sourcesite%avg_qintercepted(ipa)  )
       targetp%avg_sensible_gc    = dble(sourcesite%avg_sensible_gc(ipa)   )
       targetp%avg_sensible_ac    = dble(sourcesite%avg_sensible_ac(ipa)   )
 
@@ -224,6 +227,7 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
       end do
    end if
    if (checkbudget) then
+      targetp%co2budget_storage     = dble(sourcesite%co2budget_initialstorage(ipa))
       targetp%ebudget_storage       = dble(sourcesite%ebudget_initialstorage(ipa))
       targetp%wbudget_storage       = dble(sourcesite%wbudget_initialstorage(ipa))
       targetp%co2budget_loss2atm    = 0.d0
@@ -238,6 +242,63 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
 
    return
 end subroutine copy_patch_init
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!    This subroutine copies the carbon fluxes, which could not be copied by the time we    !
+! called copy_patch_init.                                                                  !
+!------------------------------------------------------------------------------------------!
+subroutine copy_patch_init_carbon(sourcesite,ipa,targetp)
+   use ed_state_vars        , only : sitetype              & ! structure
+                                   , patchtype             ! ! structure
+   use consts_coms          , only : day_sec8              & ! intent(in)
+                                   , umol_2_kgC8           ! ! intent(in)
+   use rk4_coms             , only : rk4patchtype          ! ! structure
+   implicit none
+
+   !----- Arguments -----------------------------------------------------------------------!
+   type(rk4patchtype)    , target     :: targetp
+   type(sitetype)        , target     :: sourcesite
+   integer               , intent(in) :: ipa
+   !----- Local variables -----------------------------------------------------------------!
+   type(patchtype)       , pointer    :: cpatch
+   integer                            :: ico
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Here we copy the cohort level variables that are part of the carbon budget.       !
+   !---------------------------------------------------------------------------------------!
+   cpatch => sourcesite%patch(ipa)
+   do ico = 1,cpatch%ncohorts
+      targetp%gpp         (ico) = dble(cpatch%gpp                (ico))
+      targetp%leaf_resp   (ico) = dble(cpatch%leaf_respiration   (ico))
+      targetp%root_resp   (ico) = dble(cpatch%root_respiration   (ico))
+
+      !------------------------------------------------------------------------------------!
+      !     The following variables are in kgC/plant/day, convert them to µmol/m²/s.       !
+      !------------------------------------------------------------------------------------!
+      targetp%growth_resp (ico) = dble(cpatch%growth_respiration (ico))                    &
+                                * dble(cpatch%nplant(ico)) / (day_sec8 * umol_2_kgC8)
+      targetp%storage_resp(ico) = dble(cpatch%storage_respiration(ico))                    &
+                                * dble(cpatch%nplant(ico)) / (day_sec8 * umol_2_kgC8)
+      targetp%vleaf_resp  (ico) = dble(cpatch%vleaf_respiration  (ico))                    &
+                                * dble(cpatch%nplant(ico)) / (day_sec8 * umol_2_kgC8)
+   end do
+
+   !----- Heterotrophic respiration terms. ------------------------------------------------!
+   targetp%cwd_rh = dble(sourcesite%cwd_rh(ipa))
+   targetp%rh     = dble(sourcesite%rh    (ipa))
+
+   return
+end subroutine copy_patch_init_carbon
 !==========================================================================================!
 !==========================================================================================!
 
@@ -279,8 +340,7 @@ end function large_error
 ! temporary snow/pond layers.                                                                      !
 !------------------------------------------------------------------------------------------!
 subroutine update_diagnostic_vars(initp, csite,ipa)
-   use rk4_coms              , only : const_depth          & ! intent(in)
-                                    , rk4met               & ! intent(in)
+   use rk4_coms              , only : rk4met               & ! intent(in)
                                     , rk4min_sfcwater_mass & ! intent(in)
                                     , rk4min_can_shv       & ! intent(in)
                                     , rk4min_can_temp      & ! intent(in)
@@ -1413,8 +1473,10 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
                initp%virtual_depth   = initp%virtual_depth + veg_dwshed
             end if
             !----- Updating output fluxes -------------------------------------------------!
-            initp%avg_wshed_vg  = initp%avg_wshed_vg  + veg_wshed  * hdidi
-            initp%avg_qwshed_vg = initp%avg_qwshed_vg + veg_qwshed * hdidi
+            initp%avg_wshed_vg     = initp%avg_wshed_vg     + veg_wshed  * hdidi
+            initp%avg_qwshed_vg    = initp%avg_qwshed_vg    + veg_qwshed * hdidi
+            initp%avg_intercepted  = initp%avg_intercepted  - veg_wshed  * hdidi
+            initp%avg_qintercepted = initp%avg_qintercepted - veg_qwshed * hdidi
 
          !---------------------------------------------------------------------------------!
          !    If veg_water is tiny, exchange moisture with the air.  If the tiny number is !
@@ -1626,6 +1688,13 @@ subroutine print_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
       write(unit=*,fmt=onefmt) 'H2ODRAINAGE:',errmax                         &
                               ,yerr%wbudget_loss2drainage                    &
                               ,yscal%wbudget_loss2drainage,troublemaker
+
+      errmax = max(errmax                                                    &
+                  ,abs(yerr%co2budget_storage/yscal%co2budget_storage))
+      troublemaker = large_error(yerr%co2budget_storage                      &
+                                ,yscal%co2budget_storage)
+      write(unit=*,fmt=onefmt) 'CO2STORAGE:',errmax,yerr%co2budget_storage   &
+                              ,yscal%co2budget_storage,troublemaker
 
       errmax = max(errmax                                                    &
                   ,abs(yerr%ebudget_storage/yscal%ebudget_storage))

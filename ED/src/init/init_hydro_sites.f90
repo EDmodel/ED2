@@ -166,7 +166,7 @@ subroutine read_site_file(cgrid)
                if(lcount <= nsites) then  !know we're in the site section
                   get_site_line=1
                   get_mat_line=0
-                  ! RGK
+
                elseif(found_mat_header.eq.1)then !know we're in the matrix section
                   if(mcount < nsites)then
                      get_site_line = 0
@@ -274,8 +274,8 @@ subroutine read_site_file(cgrid)
          cpoly%area(:) = real(dble(cpoly%area(:))/area_sum)
       end if
 
-      ! Mike, could you check this part out? 
-      if(cgrid%load_adjacency(ipy) /= 0) then  !RGK
+
+      if(cgrid%load_adjacency(ipy) /= 0) then  
          call calc_flow_routing(cgrid,ipy)
       endif
 
@@ -335,7 +335,7 @@ subroutine calc_flow_routing(cgrid,ipy)
    integer :: nsites
 
    !if we loaded an adjacency matrix from file, we don't need to calculate flow routing
-   if(cgrid%load_adjacency(ipy) == 1) return    !RGK
+   if(cgrid%load_adjacency(ipy) == 1) return   
 
    cpoly => cgrid%polygon(ipy)
    nsites=cpoly%nsites

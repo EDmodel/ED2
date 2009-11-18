@@ -113,25 +113,70 @@ end subroutine load_ed_ecosystem_params
 !==========================================================================================!
 !==========================================================================================!
 
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine assigns values for some variables that are in ed_misc_coms, which    !
+! wouldn't fit in any of the other categories.                                             !
+!------------------------------------------------------------------------------------------!
 subroutine init_ed_misc_coms
+   use ed_max_dims  , only : n_pft               & ! intent(in)
+                           , n_dbh               & ! intent(in)
+                           , n_age               ! ! intent(in)
+   use ed_misc_coms , only : burnin              & ! intent(out)
+                           , outputMonth         & ! intent(out)
+                           , restart_target_year & ! intent(out)
+                           , use_target_year     & ! intent(out)
+                           , maxage              & ! intent(out)
+                           , dagei               & ! intent(out)
+                           , maxdbh              & ! intent(out)
+                           , ddbhi               ! ! intent(out)
+                           , vary_elev
+                           , vary_hyd
+                           , vary_rad
+   implicit none
 
-  use ed_misc_coms,only:burnin,outputMonth, &
-       restart_target_year,use_target_year,vary_elev,vary_hyd,vary_rad
 
-  vary_elev = 1
-  vary_rad = 1
-  vary_hyd = 1
+   !----- Flags that allow components of subgrid heterogeneity to be turned on/off --------!
+   vary_elev = 1
+   vary_rad = 1
+   vary_hyd = 1
 
-  burnin = 0 !! number of years to ignore demography when starting a run
+   !----- Number of years to ignore demography when starting a run. -----------------------!
+   burnin = 0
 
-  outputMonth = 6 !! month to output annual files
+   !----- Month to output the yearly files. -----------------------------------------------!
+   outputMonth = 6
 
-  restart_target_year = 2000 !! year to read when parsing pss/css with multiple years
+   !----- Year to read when parsing pss/css with multiple years. --------------------------!
+   restart_target_year = 2000
 
-  use_target_year = 0    !! flag specifying whether to search for a target year in pss/css
-  
-  return
+   !----- Flag specifying whether to search for a target year in pss/css. -----------------!
+   use_target_year = 0    
+
+   !----- Maximum age [yr] to split into classes. -----------------------------------------!
+   maxage = 200.
+
+   !----- Maximum DBH [cm] to be split into classes. --------------------------------------!
+   maxdbh = 100.
+
+   !---------------------------------------------------------------------------------------!
+   !     The inverse of bin classes will depend on max??? and n_???, leaving one class for !
+   ! when the number exceeds the maximum.                                                  !
+   !---------------------------------------------------------------------------------------!
+   dagei = real(n_age-1) / maxage
+   ddbhi = real(n_dbh-1) / maxdbh
+
+   return
 end subroutine init_ed_misc_coms
+!==========================================================================================!
+!==========================================================================================!
+
+
 
 
 
@@ -389,52 +434,64 @@ end subroutine init_can_air_params
 !==========================================================================================!
 subroutine init_pft_photo_params()
 
-use ed_max_dims,only : n_pft
-use pft_coms, only: D0, Vm_low_temp, Vm0, stomatal_slope, cuticular_cond, &
-     quantum_efficiency, photosyn_pathway
+   use ed_max_dims, only : n_pft                ! ! intent(in)
+   use pft_coms   , only : D0                   & ! intent(out)
+                         , Vm_low_temp          & ! intent(out)
+                         , Vm_high_temp         & ! intent(out)
+                         , Vm0                  & ! intent(out)
+                         , stomatal_slope       & ! intent(out)
+                         , cuticular_cond       & ! intent(out)
+                         , quantum_efficiency   & ! intent(out)
+                         , photosyn_pathway     ! ! intent(out)
 
-implicit none
+   implicit none
 
 
-D0 = 0.01 ! same for all PFTs
+   D0(1:15)                  = 0.01 ! same for all PFTs
 
-Vm_low_temp(1:4) = 5.0     ! tropical PFTs
-Vm_low_temp(5:13) = 4.7137 ! temperate PFTs
-Vm_low_temp(14:15) = 5.0 
+   Vm_low_temp(1:4)          = 5.0     ! tropical PFTs
+   Vm_low_temp(5:13)         = 4.7137  ! temperate PFTs
+   Vm_low_temp(14:15)        = 5.0     ! tropical PFTs
 
-Vm0(1) = 12.5
-Vm0(2) = 18.8
-Vm0(3) = 12.5
-Vm0(4) = 6.25
-Vm0(5) = 18.3
-Vm0(6) = 15.625 * 0.7264
-Vm0(7) = 15.625 * 0.7264
-Vm0(8) = 6.25 * 0.7264
-Vm0(9) = 18.25 * 1.1171
-Vm0(10) = 15.625 * 1.1171
-Vm0(11) = 6.25 * 1.1171
-Vm0(12:13) = 18.3
-Vm0(14:15) = 12.5
+   Vm_high_temp(1)           = 100.0    ! C4
+   Vm_high_temp(2:12)        =  45.0    ! C3
+   Vm_high_temp(14:15)       = 100.0    ! C4
 
-stomatal_slope(1) = 10.0
-stomatal_slope(2:4) = 8.0
-stomatal_slope(5:13) = 6.3949
-stomatal_slope(14:15) = 10.0 
+   Vm0(1)                    = 12.5
+   Vm0(2)                    = 18.8
+   Vm0(3)                    = 12.5
+   Vm0(4)                    = 6.25
+   Vm0(5)                    = 18.3
+   Vm0(6)                    = 15.625 * 0.7264
+   Vm0(7)                    = 15.625 * 0.7264
+   Vm0(8)                    = 6.25   * 0.7264
+   Vm0(9)                    = 18.25  * 1.1171
+   Vm0(10)                   = 15.625 * 1.1171
+   Vm0(11)                   = 6.25   * 1.1171
+   Vm0(12:13)                = 18.3
+   Vm0(14:15)                = 12.5
 
-cuticular_cond(1:5) = 10000.0
-cuticular_cond(6:8) = 1000.0
-cuticular_cond(9:11) = 20000.0
-cuticular_cond(12:15) = 10000.0
+   stomatal_slope(1)         = 10.0
+   stomatal_slope(2:4)       = 8.0
+   stomatal_slope(5:13)      = 6.3949
+   stomatal_slope(14:15)     = 10.0 
 
-quantum_efficiency(1) = 0.06
-quantum_efficiency(2:13) = 0.08
-quantum_efficiency(14:15) = 0.06
+   cuticular_cond(1:5)       = 10000.0
+   cuticular_cond(6:8)       = 1000.0
+   cuticular_cond(9:11)      = 20000.0
+   cuticular_cond(12:15)     = 10000.0
 
-photosyn_pathway(1) = 4
-photosyn_pathway(2:13) = 3
-photosyn_pathway(14:15) = 4
+   quantum_efficiency(1)     = 0.06
+   quantum_efficiency(2:13)  = 0.08
+   quantum_efficiency(14:15) = 0.06
 
-return
+   photosyn_pathway(1)       = 4
+   photosyn_pathway(2:4)     = 3
+   photosyn_pathway(5)       = 3
+   photosyn_pathway(6:13)    = 3
+   photosyn_pathway(14:15)   = 4
+
+   return
 end subroutine init_pft_photo_params
 !==========================================================================================!
 !==========================================================================================!
@@ -523,15 +580,16 @@ end subroutine init_pft_resp_params
 !------------------------------------------------------------------------------------------!
 subroutine init_pft_mort_params()
 
-   use pft_coms   , only : mort1                & ! intent(out)
-                         , mort2                & ! intent(out)
-                         , mort3                & ! intent(out)
-                         , seedling_mortality   & ! intent(out)
-                         , treefall_s_gtht      & ! intent(out)
-                         , treefall_s_ltht      & ! intent(out)
-                         , plant_min_temp       & ! intent(out)
-                         , frost_mort           ! ! intent(out)
-   use consts_coms, only : t00                  ! ! intent(in)
+   use pft_coms    , only : mort1                      & ! intent(out)
+                          , mort2                      & ! intent(out)
+                          , mort3                      & ! intent(out)
+                          , seedling_mortality         & ! intent(out)
+                          , treefall_s_gtht            & ! intent(out)
+                          , treefall_s_ltht            & ! intent(out)
+                          , plant_min_temp             & ! intent(out)
+                          , frost_mort                 ! ! intent(out)
+   use consts_coms , only : t00                        ! ! intent(in)
+   use disturb_coms, only : treefall_disturbance_rate  ! ! intent(inout)
 
    implicit none
 
@@ -564,7 +622,12 @@ subroutine init_pft_mort_params()
    mort3(11) = 0.00428
    mort3(12:13) = 0.066
    mort3(14:15) = 0.037
-
+   
+   if (treefall_disturbance_rate < 0.) then
+      mort3(:) = mort3(:) - treefall_disturbance_rate
+      treefall_disturbance_rate = 0.
+   end if
+   
    seedling_mortality = 0.95
 
    treefall_s_gtht = 0.0
@@ -704,7 +767,9 @@ subroutine init_pft_alloc_params()
 
 
    !----- Ratio between fine roots and leaves [kg_fine_roots/kg_leaves] -------------------!
-   q(1:5)    = 1.0
+   q(1)     = 1.0
+   q(2:4)   = 1.0
+   q(5)     = 1.0
    q(6:8)   = 0.3463
    q(9:11)  = 1.1274
    q(12:15) = 1.0
@@ -718,9 +783,10 @@ subroutine init_pft_alloc_params()
    ! latitude parameters have been optimized using the wrong SLA, we keep the bug until    !
    ! it is updated...                                                                      !
    !---------------------------------------------------------------------------------------!
-   qsw(1:4)    = SLA(1:4)   / (sapwood_ratio(1:4)*2.0/1000.0)
+   qsw(1:4)    = SLA(1:4)   / sapwood_ratio(1:4)    !new is SLA(1:4)/(3900.0*2.0/1000.0)
    qsw(5:13)   = SLA(5:13)  / sapwood_ratio(5:13)
-   qsw(14:15)  = SLA(14:15) / (sapwood_ratio(14:15)*2.0/1000.0)
+   qsw(14:15)  = SLA(14:15) / sapwood_ratio(14:15)  !new is SLA(14:15)(3900.0*2.0/1000.0)
+
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
@@ -737,8 +803,8 @@ subroutine init_pft_alloc_params()
    !---------------------------------------------------------------------------------------!
    !    Minimum height of an individual.                                                   !
    !---------------------------------------------------------------------------------------!
-   hgt_min(1)     = 1.50  ! Used to be 1.5
-   hgt_min(2:4)   = 1.50  ! Used to be 1.5
+   hgt_min(1)     = 0.50  ! Used to be 1.5
+   hgt_min(2:4)   = 0.50  ! Used to be 1.5
    hgt_min(5)     = 0.15
    hgt_min(6:7)   = 1.82  ! Used to be 1.5
    hgt_min(8)     = 1.80
@@ -1124,9 +1190,9 @@ subroutine init_pft_derived_params()
    ! parameters actually depend on which PFT we are solving, since grasses always have     !
    ! significantly less biomass.                                                           !
    !---------------------------------------------------------------------------------------!
-   !write (unit=61,fmt='(8(a,1x))') '  PFT','     HGT_MIN','         DBH','       BLEAF'    &
-   !                                       ,'       BDEAD','      BALIVE','   INIT_DENS'    &
-   !                                       ,'MIN_REC_SIZE'
+   write (unit=61,fmt='(8(a,1x))') '  PFT','     HGT_MIN','         DBH','       BLEAF'    &
+                                          ,'       BDEAD','      BALIVE','   INIT_DENS'    &
+                                          ,'MIN_REC_SIZE'
    min_plant_dens = onesixth * minval(init_density)
    do ipft = 1,n_pft
       !----- Finding the DBH and carbon pools associated with a newly formed recruit. -----!
@@ -1145,10 +1211,11 @@ subroutine init_pft_derived_params()
       !----- Finding the recruit carbon to nitrogen ratio. --------------------------------!
       c2n_recruit(ipft)      = (balive + bdead)                                            &
                              / (balive * ( f_labile(ipft) / c2n_leaf(ipft)                 &
-                                         + (1.0 - f_labile(ipft)) / c2n_stem(ipft))              &
-                               + bdead/c2n_stem(ipft))
-      !write (unit=61,fmt='(i5,1x,7(es12.5,1x))') ipft,hgt_min(ipft),dbh,bleaf,bdead,balive &
-      !                                          ,init_density(ipft),min_recruit_size(ipft)
+                             + (1.0 - f_labile(ipft)) / c2n_stem(ipft))                    &
+                             + bdead/c2n_stem(ipft))
+      write (unit=61,fmt='(i5,1x,7(es12.5,1x))') ipft,hgt_min(ipft),dbh,bleaf,bdead,balive &
+                                                ,init_density(ipft),min_recruit_size(ipft)
+
    end do
 
 end subroutine init_pft_derived_params
@@ -1379,7 +1446,7 @@ end subroutine init_phen_coms
 !==========================================================================================!
 subroutine init_ff_coms
 
-   use fusion_fission_coms , only :  min_dbh_class, maxdbh                                 &
+   use fusion_fission_coms , only :  min_dbh_class, maxffdbh, dffdbhi                      &
                                    , min_hgt_class, fusetol, fusetol_h, lai_fuse_tol       &
                                    , lai_tol, ntol, profile_tol,max_patch_age, ff_ndbh     &
                                    , coh_tolerance_max, pat_tolerance_max, fuse_relax
@@ -1387,7 +1454,7 @@ subroutine init_ff_coms
    implicit none
 
    min_dbh_class     = 0.0  
-   maxdbh            = 200.0 
+   maxffdbh          = 200.0 
    min_hgt_class     = 0.0
    fusetol           = 0.4
    fusetol_h         = 0.5
@@ -1400,6 +1467,7 @@ subroutine init_ff_coms
    coh_tolerance_max = 10.0 ! Original 2.0
    pat_tolerance_max = 100.0
    fuse_relax        = .false.
+   dffdbhi           = real(ff_ndbh)/maxffdbh
    return
 
 end subroutine init_ff_coms
@@ -1430,7 +1498,6 @@ subroutine init_rk4_params()
                                    , hmin                  & ! intent(out)
                                    , print_diags           & ! intent(out)
                                    , checkbudget           & ! intent(out)
-                                   , const_depth           & ! intent(out)
                                    , debug                 & ! intent(out)
                                    , toocold               & ! intent(out)
                                    , toohot                & ! intent(out)
@@ -1458,7 +1525,8 @@ subroutine init_rk4_params()
                                    , rk4min_sfcw_temp      & ! intent(out)
                                    , rk4max_sfcw_temp      & ! intent(out)
                                    , rk4min_sfcw_moist     & ! intent(out)
-                                   , rk4min_virt_moist     ! ! intent(out)
+                                   , rk4min_virt_moist     & ! intent(out)
+                                   , supersat_ok           ! ! intent(out)
    implicit none
 
    !---------------------------------------------------------------------------------------!
@@ -1485,13 +1553,6 @@ subroutine init_rk4_params()
                               !     step and stop the run in case any of these budgets 
                               !     doesn't close.
    !---------------------------------------------------------------------------------------!
-
-   !---------------------------------------------------------------------------------------!
-   !     This flag determines whether density or canopy air space density is assumed       !
-   ! constant during the RK4 integration.  The value assumed constant is updated only once !
-   ! right before the integration.                                                         !
-   !---------------------------------------------------------------------------------------!
-   const_depth = .false.
 
 
    !---------------------------------------------------------------------------------------!
@@ -1560,6 +1621,19 @@ subroutine init_rk4_params()
    rk4min_sfcw_moist = -5.0000d-4 ! Minimum water mass allowed.
    rk4min_virt_moist = -5.0000d-4 ! Minimum water allowed at virtual pool.
    !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !    This flag is used to control evaporation and transpiration when the air is         !
+   ! saturated or super-saturated.  If supersat_ok is TRUE, then evaporation and           !
+   ! transpiration will continue to happen even if the air is super-saturated at the       !
+   ! canopy air temperature (but not at the soil or vegetation temperature).  Otherwise,   !
+   ! evaporation and transpiration will be interrupted until the air becomes sub-saturated !
+   ! again.  The air can still become super-saturated because mixing with the free atmo-   !
+   ! sphere will not stop.                                                                 !
+   !---------------------------------------------------------------------------------------!
+   supersat_ok = .true.
+
 
    return
 end subroutine init_rk4_params

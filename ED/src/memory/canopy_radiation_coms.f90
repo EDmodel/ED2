@@ -13,6 +13,7 @@ module canopy_radiation_coms
 
    !----- Converts PAR radiation from  watts to Einsteins (units are Ein/watt of PAR). ----!
    real, parameter :: Watts2Ein = 4.6e-6
+   real, parameter :: Ein2Watts = 1./Watts2Ein
    !---------------------------------------------------------------------------------------!
 
 

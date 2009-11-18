@@ -1068,7 +1068,7 @@ subroutine ed_opspec_misc
       write (unit=*,fmt='(a)') ' run, and in case it crashes, it is going to be all your   '
       write (unit=*,fmt='(a)') ' fault and I will remind you that!!!                       '
       write (unit=*,fmt='(a)') '==========================================================='
-   elseif (ied_init_mode < 0 .or. ied_init_mode > 4) then
+   elseif ((ied_init_mode < 0 .and. ied_init_mode /= -8) .or. ied_init_mode > 4 ) then
       write (reason,fmt='(a,1x,i4,a)') &
         'Invalid IED_INIT_MODE, it must be between 0 and 4. Yours is set to',ied_init_mode,'...'
       call opspec_fatal(reason,'opspec_misc')
@@ -1322,13 +1322,13 @@ subroutine ed_opspec_misc
       ifaterr = ifaterr +1
    end if
     
-   if (treefall_disturbance_rate < 0.0) then
-      write (reason,fmt='(a,1x,es14.7,a)')                                                 &
-             'Invalid TREEFALL_DISTURBANCE_RATE, it can''t be negative.  Yours is set to'  &
-             ,treefall_disturbance_rate,'...'
-      call opspec_fatal(reason,'opspec_misc')
-      ifaterr = ifaterr +1
-   end if
+   !if (treefall_disturbance_rate < 0.0) then
+   !   write (reason,fmt='(a,1x,es14.7,a)')                                                 &
+   !          'Invalid TREEFALL_DISTURBANCE_RATE, it can''t be negative.  Yours is set to'  &
+   !          ,treefall_disturbance_rate,'...'
+   !   call opspec_fatal(reason,'opspec_misc')
+   !   ifaterr = ifaterr +1
+   !end if
     
    if (runoff_time < 0.0) then
       write (reason,fmt='(a,1x,es14.7,a)')                                                 &

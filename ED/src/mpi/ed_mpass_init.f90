@@ -1,59 +1,58 @@
 !==========================================================================================!
 !==========================================================================================!
-subroutine ed_masterput_processid(nproc,headnode_num,masterworks,par_run)
-!------------------------------------------------------------------------------------------!
 !    This routine gives basic processor ID info to the nodes.                              !
 !------------------------------------------------------------------------------------------!
+subroutine ed_masterput_processid(nproc,headnode_num,masterworks,par_run)
 
-  use ed_para_coms, only: mainnum,nmachs,machsize,machnum
-  use ed_node_coms, only: mynum,nnodetot,sendnum,recvnum,master_num,machs
+   use ed_para_coms, only: mainnum,nmachs,machsize,machnum
+   use ed_node_coms, only: mynum,nnodetot,sendnum,recvnum,master_num,machs
 
-  implicit none
-  integer :: headnode_num,nproc
-  include 'mpif.h'
-  integer :: nm
-  integer :: ierr
-  integer :: par_run
-  logical :: masterworks
+   implicit none
+   integer :: headnode_num,nproc
+   include 'mpif.h'
+   integer :: nm
+   integer :: ierr
+   integer :: par_run
+   logical :: masterworks
 
-  mainnum=headnode_num
-  master_num=headnode_num
-  nmachs=nproc
+   mainnum=headnode_num
+   master_num=headnode_num
+   nmachs=nproc
 
-  if (masterworks) then
-    mynum=nmachs+1
-    nnodetot=machsize
-    sendnum=1
-    recvnum=nmachs
-  else
-    mynum=-1
-    nnodetot=nmachs
-    sendnum=-1
-    recvnum=-1
-  end if
-
-
-  if (par_run == 0) return
-
-  do nm=1,nmachs
-     machnum(nm)=nm
-     machs(nm)=nm
-  enddo
-
-  machs(machsize)=0  !Thats me!!
-
-  do nm=1,nmachs
-    call MPI_Send(mainnum,1,MPI_INTEGER,machnum(nm),311,MPI_COMM_WORLD,ierr)
-    call MPI_Send(machnum(nm),1,MPI_INTEGER,machnum(nm),312,MPI_COMM_WORLD,ierr)
-    call MPI_Send(nm,1,MPI_INTEGER,machnum(nm),313,MPI_COMM_WORLD,ierr)
-    call MPI_Send(nmachs,1,MPI_INTEGER,machnum(nm),314,MPI_COMM_WORLD,ierr)
-    call MPI_Send(machnum,nmachs,MPI_INTEGER,machnum(nm),315,MPI_COMM_WORLD,ierr)
-    call MPI_Send(machsize,1,MPI_INTEGER,machnum(nm),316,MPI_COMM_WORLD,ierr)
-  enddo
+   if (masterworks) then
+     mynum=nmachs+1
+     nnodetot=machsize
+     sendnum=1
+     recvnum=nmachs
+   else
+     mynum=-1
+     nnodetot=nmachs
+     sendnum=-1
+     recvnum=-1
+   end if
 
 
+   if (par_run == 0) return
 
-  return
+   do nm=1,nmachs
+      machnum(nm)=nm
+      machs(nm)=nm
+   enddo
+
+   machs(machsize)=0  !Thats me!!
+
+   do nm=1,nmachs
+     call MPI_Send(mainnum,1,MPI_INTEGER,machnum(nm),311,MPI_COMM_WORLD,ierr)
+     call MPI_Send(machnum(nm),1,MPI_INTEGER,machnum(nm),312,MPI_COMM_WORLD,ierr)
+     call MPI_Send(nm,1,MPI_INTEGER,machnum(nm),313,MPI_COMM_WORLD,ierr)
+     call MPI_Send(nmachs,1,MPI_INTEGER,machnum(nm),314,MPI_COMM_WORLD,ierr)
+     call MPI_Send(machnum,nmachs,MPI_INTEGER,machnum(nm),315,MPI_COMM_WORLD,ierr)
+     call MPI_Send(machsize,1,MPI_INTEGER,machnum(nm),316,MPI_COMM_WORLD,ierr)
+   enddo
+
+
+
+   return
 end subroutine ed_masterput_processid
 !==========================================================================================!
 !==========================================================================================!
@@ -65,22 +64,22 @@ end subroutine ed_masterput_processid
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine ed_masterput_nl(par_run)
-!------------------------------------------------------------------------------------------!
 !   This subroutine is responsible for sending all the namelist-related information to all !
 ! the nodes. This is done by the head node, because the head node has read this            !
 ! information to define the polygon distribution in regional runs (and in the future, the  !
 ! patches for the SOI runs).                                                               !
 !------------------------------------------------------------------------------------------!
+subroutine ed_masterput_nl(par_run)
    use ed_para_coms,    only: mainnum
-   use ed_max_dims,        only: str_len,max_soi,max_ed_regions,nzgmax,n_pft,maxgrds,maxpvars
-   use ed_misc_coms,       only: expnme, runtype,itimea,iyeara,imontha,idatea ,itimez,iyearz  &
-                             ,imonthz,idatez,dtlsm,radfrq,ifoutput,idoutput,imoutput,iyoutput, itoutput&
-                             ,iclobber,frqfast,sfilin,ffilout,ied_init_mode,ed_inputs_dir   &
-                             ,integration_scheme,end_time,current_time,sfilout,frqstate     &
-                             ,isoutput,iprintpolys,printvars,pfmtstr,ipmin,ipmax,iedcnfgf   &
-                             ,outfast,outstate,out_time_fast,out_time_state,nrec_fast       &
-                             ,nrec_state,irec_fast,irec_state,unitfast,unitstate,event_file
+   use ed_max_dims,     only: str_len,max_soi,max_ed_regions,nzgmax,n_pft,maxgrds,maxpvars
+   use ed_misc_coms,    only: expnme, runtype,itimea,iyeara,imontha,idatea ,itimez,iyearz  &
+                             ,imonthz,idatez,dtlsm,radfrq,ifoutput,idoutput,imoutput, itoutput &
+                             ,iyoutput,iclobber,frqfast,sfilin,ffilout,ied_init_mode       &
+                             ,ed_inputs_dir,integration_scheme,end_time,current_time       &
+                             ,sfilout,frqstate,isoutput,iprintpolys,printvars,pfmtstr      &
+                             ,ipmin,ipmax,iedcnfgf,outfast,outstate,out_time_fast          &
+                             ,out_time_state,nrec_fast,nrec_state,irec_fast,irec_state     &
+                             ,unitfast,unitstate,event_file,itimeh,iyearh,imonthh,idateh
 
    use ed_misc_coms,only: attach_metadata
    use canopy_air_coms, only: icanturb, isfclyrm
@@ -135,6 +134,11 @@ subroutine ed_masterput_nl(par_run)
    call MPI_Bcast(idatea,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(iyeara,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(itimea,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+
+   call MPI_Bcast(imonthh,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(idateh,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(iyearh,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(itimeh,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(imonthz,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(idatez,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
@@ -262,6 +266,7 @@ subroutine ed_masterput_nl(par_run)
    call MPI_Bcast(edres,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(attach_metadata,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+
 !------------------------------------------------------------------------------------------!
 !   One last thing to send is the layer index based on the soil_depth. It is not really a  !
 ! namelist thing, but it is still a setup variable.                                        !
@@ -333,51 +338,73 @@ subroutine ed_masterput_met_header(par_run)
    call MPI_Bcast(met_frq,nsize,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(met_interp,nsize,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
 
-!! Just double checking:
-!   write(unit=60,fmt='(a,1x,i5)') 'nformats=',nformats
-!   write(unit=60,fmt='(a,1x,l1)') 'no_ll=',no_ll
-!   do f=1,nformats
-!     write (unit=60,fmt='(a,i5,a)')     ' + Format: ',f,':'
-!     write (unit=60,fmt='(2a)')         '   - Name    : ',trim(met_names(f))
-!     write (unit=60,fmt='(a,i5)')       '   - Nlon    : ',met_nlon(f) 
-!     write (unit=60,fmt='(a,i5)')       '   - Nlat    : ',met_nlat(f) 
-!     write (unit=60,fmt='(a,es12.5)')   '   - dx      : ',met_dx(f) 
-!     write (unit=60,fmt='(a,es12.5)')   '   - dy      : ',met_dy(f) 
-!     write (unit=60,fmt='(a,es12.5)')   '   - xmin    : ',met_xmin(f) 
-!     write (unit=60,fmt='(a,es12.5)')   '   - ymin    : ',met_ymin(f) 
-!     write (unit=60,fmt='(a,i5)')       '   - nv      : ',met_nv(f) 
-!     do v=1,met_nv(f)
-!        write (unit=60,fmt='(a,i5)')       '   - Variable: ',v
-!        write (unit=60,fmt='(2a)')         '     ~ vars    : ',trim(met_vars(f,v))
-!        write (unit=60,fmt='(a,es12.5)')   '     ~ frq     : ',met_frq(f,v)
-!        write (unit=60,fmt='(a,i5)')       '     ~ interp  : ',met_interp(f,v)
-!     end do
-!   end do
-!!
    return
 end subroutine ed_masterput_met_header
 !==========================================================================================!
 !==========================================================================================!
 
-subroutine ed_masterput_poly_dims(par_run)
-   use ed_state_vars , only : gdpy,py_off
-   use grid_coms     , only : nnxp,nnyp,ngrids
-   use ed_work_vars  , only : work_e
-   use ed_para_coms  , only : mainnum,nmachs
-   use mem_sites     , only : n_ed_region, n_soi
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+subroutine ed_masterput_poly_dims(par_run,masterworks)
+   use ed_state_vars , only : gdpy         & ! intent(in)
+                            , py_off       ! ! intent(in)
+   use grid_coms     , only : nnxp         & ! intent(in)
+                            , nnyp         & ! intent(in)
+                            , ngrids       ! ! intent(in)
+   use ed_work_vars  , only : work_v       & ! intent(in)
+                            , npolys_run   ! ! intent(in)
+   use ed_para_coms  , only : mainnum      & ! intent(in)
+                            , nmachs       ! ! intent(in)
+   use mem_sites     , only : n_ed_region  & ! intent(in)
+                            , n_soi        ! ! intent(in)
    implicit none
-
    include 'mpif.h'
-   integer             :: ierr
-   integer, intent(in) :: par_run
-   integer             :: ifm,nm,npolys,offset
-   integer             :: polys_per_node,extras,extra1
+   !----- Local constants. ----------------------------------------------------------------!
+   integer                     , parameter   :: nmethods = 3
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                     , intent(in)  :: par_run
+   logical                     , intent(in)  :: masterworks
+   !----- Local variables. ----------------------------------------------------------------!
+   integer, dimension(:,:)     , allocatable :: machind
+   integer, dimension(:)       , allocatable :: mpolys
+   integer, dimension(:)       , allocatable :: moffset
+   integer                                   :: ierr
+   integer                                   :: npolys
+   integer                                   :: ifm
+   integer                                   :: ipy
+   integer                                   :: imach
+   integer                                   :: imeth
+   integer                                   :: ibest
+   integer                                   :: maxnmachs
+   integer                                   :: ntotmachs
+   real   , dimension(:,:)     , allocatable :: machload
+   real   , dimension(:)       , allocatable :: thiswork
+   real   , dimension(:)       , allocatable :: cumwork
+   real   , dimension(nmethods)              :: maxload
+   real                                      :: totalwork
+   !---------------------------------------------------------------------------------------!
 
+
+   !---------------------------------------------------------------------------------------!
+   !    This is a logical flag to test wheter the master should also simulate polygons.    !
+   ! This is true for offline runs, but false for coupled runs.                            !
+   !---------------------------------------------------------------------------------------!
+   if (masterworks) then
+      ntotmachs=nmachs+1
+   else
+      ntotmachs=nmachs
+   end if
+
+
+   !---------------------------------------------------------------------------------------!
+   !     We currently don't allow SOI simulations to be run in parallel.                   !
+   !---------------------------------------------------------------------------------------!
    if (par_run == 1 .and. n_soi > 0 ) then
-      write (unit=*,fmt='(a)') '--------------------------------------------------------------------'
-      write (unit=*,fmt='(a)') '                             FATAL ERROR!                           ' 
-      write (unit=*,fmt='(a)') '--------------------------------------------------------------------'
-      write (unit=*,fmt='(a)')
       write (unit=*,fmt='(a)') '--------------------------------------------------------------------'
       write (unit=*,fmt='(a)') '                                                                    '
       write (unit=*,fmt='(a)') '  Dear ED user,                                                     '
@@ -397,64 +424,213 @@ subroutine ed_masterput_poly_dims(par_run)
       write (unit=*,fmt='(a)') 'SOI runs in serial mode instead.                                    '
       write (unit=*,fmt='(a)') '                                                                    '
       write (unit=*,fmt='(a)') '--------------------------------------------------------------------' 
-      stop '====> STOP! Create_polygon_map (ed_para_init.f90)'
+      call fatal_error('Parallel version of SOI runs not available.'                       &
+                      , 'ed_masterput_poly_dims','ed_mpass_init.f90')
    end if
   
-   ! Now I am just setting the number of polygons that each node will deal with. The polygon ID 
+
+   !---------------------------------------------------------------------------------------!
+   !     Now we decide how many polygons we send for each node.  If this is a serial       !
+   ! (single node) run, then all nodes go to the only node available.  Otherwise, we       !
+   ! try to split the nodes evenly.  This doesn't necessarily mean giving each node the    !
+   ! same number of polygons, because different environments may require very different    !
+   ! number of operations.  So if we have information on how the model has been behaving   !
+   ! (from a history start, for example), we use that information to split the work load   !
+   ! more evenly.  Otherwise, if this is a near bare ground or an ED-1/ED-2.0 restart run, !
+   ! we assume that all polygons are equally expensive.                                    !
+   !---------------------------------------------------------------------------------------!
    if (par_run == 0) then
      do ifm=1,n_ed_region
-        gdpy(1,ifm)=count(work_e(ifm)%land)
-        py_off(1,ifm)=0
+        gdpy(1,ifm)   = npolys_run(ifm)
+        py_off(1,ifm) = 0
      end do
      do ifm=n_ed_region+1,ngrids
-        gdpy(1,ifm)=1
-        py_off(1,ifm)=0
+        gdpy(1,ifm)   = 1
+        py_off(1,ifm) = 0
      end do
    else
-      do ifm=1,ngrids
+      !----- Parallel run, split the grids into the nodes. --------------------------------!
+      gridloop: do ifm=1,ngrids
+         npolys    = npolys_run(ifm)
 
-         ! Essentially, the domain decomposition is 
-         ! determined in the next sequence of lines
-         ! ----------------------------------------
+         !---------------------------------------------------------------------------------!
+         !     We will now try three different methods to put the nodes together.  The     !
+         ! final choice will be the one with the lowest maximum load, because this is the  !
+         ! one with the smallest load disparity.  But first we allocate some scratch       !
+         ! arrays.                                                                         !
+         !---------------------------------------------------------------------------------!
+         allocate(thiswork(npolys),cumwork(npolys),machind(npolys,3))
+         allocate(machload(ntotmachs,3),mpolys(ntotmachs),moffset(ntotmachs))
+         !----- Copy the workload and also find the cumulative sum of workload. -----------!
+         call atob(npolys,work_v(ifm)%work,thiswork)
+         call atob(npolys,work_v(ifm)%work,cumwork)
+         call cumsum(npolys,cumwork)
+         totalwork = cumwork(npolys)
 
-         polys_per_node = floor(real(count(work_e(ifm)%land))/real(nmachs+1))
-         extras = count(work_e(ifm)%land)-polys_per_node*real(nmachs+1)
-
-         if (extras>0) then
-            extra1=1
-         else
-            extra1=0
-         endif
-         ! ----------------------------------------
+         !---------------------------------------------------------------------------------!
+         !     Worksum is the sum of the relative workload. This will be always less than  !
+         ! or equal to the number of polygons.  In case we have no idea on how the         !
+         ! polygons behave (if they are slow or fast), then all polygons received workload !
+         ! 1., and the total workload will be the same as the number of polygons.  If we   !
+         ! do know the distribution from the history file, and the workload is very skew-  !
+         ! ed (some polygons are extremely slow compared to the others), worksum will be   !
+         ! significantly less than the number of polygons.                                 !
+         !---------------------------------------------------------------------------------!
+         maxnmachs = ceiling(totalwork)
          
-         npolys=0
-         offset=0
-         do nm=1,nmachs 
-            offset=offset+npolys
-            npolys = polys_per_node + extra1
+         !---------------------------------------------------------------------------------!
+         !     If nmachsmax is less than the number of machines, stop the run.  The MPI    !
+         ! process contains way too many nodes, and this would be a waste of resources.    !
+         ! At the run crash, give this information to the user...                          !
+         !---------------------------------------------------------------------------------!
+         if (maxnmachs < ntotmachs) then
+            write (unit=*,fmt='(a)') '----------------------------------------------------'
+            write (unit=*,fmt='(a)') '       The number of requested nodes exceeds the    '
+            write (unit=*,fmt='(a)') ' maximum number of nodes in which you would still   '
+            write (unit=*,fmt='(a)') ' take advantage of parallel processing.  This can   '
+            write (unit=*,fmt='(a)') ' be because you have requested a number of nodes    '
+            write (unit=*,fmt='(a)') ' that exceeds the number of polygons, or because    '
+            write (unit=*,fmt='(a)') ' in the past some of your polygons were so much     '
+            write (unit=*,fmt='(a)') ' slower than the others that having more nodes      '
+            write (unit=*,fmt='(a)') ' wouldn''t help.  Reduce the number of nodes and    '
+            write (unit=*,fmt='(a)') ' try again...                                       '
+            write (unit=*,fmt='(a)') '----------------------------------------------------'
+            write (unit=*,fmt='(a,1x,i6)') ' # of requested slave nodes :',ntotmachs
+            write (unit=*,fmt='(a,1x,i6)') ' # of polygons              :',npolys 
+            write (unit=*,fmt='(a,1x,i6)') ' Max. # of nodes needed     :',maxnmachs 
+            write (unit=*,fmt='(a)') '----------------------------------------------------'
+            call fatal_error('Requested number of nodes exceeds the maximum needed.'       &
+                            ,'ed_masterput_poly_dims','ed_mpass_init.f90')
+         end if
 
-            gdpy(nm,ifm)   = npolys
-            py_off(nm,ifm) = offset
-            call MPI_Bcast(npolys,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-            call MPI_Bcast(offset,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
 
-            extras = extras - 1
-            if (extras>0) then
-               extra1=1
-            else
-               extra1=0
-            endif
-            
-           
+         do ipy = 1, npolys
+            !------------------------------------------------------------------------------!
+            ! Method 1.  Load will be evenly distributed accross the nodes.  The node      !
+            !            index will be defined by the next integer of the relative         !
+            !            position of the cumulative sum split into ntotmachs categories.   !
+            !------------------------------------------------------------------------------!
+            machind(ipy,1) = ceiling(cumwork(ipy)*real(ntotmachs)/totalwork)
+
+            !------------------------------------------------------------------------------!
+            ! Method 2.  We simply split the polygons evenly, without bothering about the  !
+            !            workload.                                                         !
+            !------------------------------------------------------------------------------!
+            machind(ipy,2) = ceiling(real(ipy)*real(ntotmachs)/real(npolys))
+
+            !------------------------------------------------------------------------------!
+            ! Method 3.  Similar to 1, but here we round the index instead of finding the  !
+            !            next integer.  Because of that we use the number of machines      !
+            !            minus one.  This is theoretically less efficient, but sometimes   !
+            !            it can be less just because a large workload polygon is next to a !
+            !            small one such that it would cause an almost empty node next to   !
+            !            very busy one.                                                    !
+            !------------------------------------------------------------------------------!
+            machind(ipy,3) = 1 + nint(cumwork(ipy)*real(ntotmachs-1)/totalwork)
          end do
-         nm=nmachs+1
-         offset=offset+npolys
-         npolys = polys_per_node + extra1
 
-         gdpy(nm,ifm)   = npolys
-         py_off(nm,ifm) = offset
+         !---------------------------------------------------------------------------------!
+         !    We now play it safe and ensure all indices are within bounds.                !
+         !---------------------------------------------------------------------------------!
+         where (machind < 1)
+            machind = 1
+         end where
+         where (machind > ntotmachs)
+            machind = ntotmachs
+         end where
 
-      end do
+         !---------------------------------------------------------------------------------!
+         !     We now loop over the machine indices and find the workload that each        !
+         ! node will receive, as well as the maximum load that each method got.            !
+         !---------------------------------------------------------------------------------!
+         machload(:,:) = 0.0
+         do imeth = 1, nmethods
+            do imach = 1, ntotmachs
+               machload(imach,imeth) = sum(thiswork,machind(:,imeth) == imach)
+            end do
+            maxload(imeth) = maxval(machload(:,imeth))
+         end do
+
+         !---------------------------------------------------------------------------------!
+         !     The best method is the one that gives the lowest maximum load.  The average !
+         ! load is actually the same for all the three methods, so the only difference is  !
+         ! the range, that's why the smallest maximum is the preferred one.                !
+         !---------------------------------------------------------------------------------!
+         ibest = minloc(maxload,dim=1)
+         
+         !----- Count how many polygons go to each node. ----------------------------------!
+         do imach=1,ntotmachs
+            mpolys(imach) = count(machind(:,ibest) == imach)
+         end do
+
+         !----- Now find the offset. ------------------------------------------------------!
+         moffset(1) = 0
+         do imach = 2, ntotmachs
+            moffset(imach) = moffset(imach-1) + mpolys(imach-1)
+         end do
+
+         !---------------------------------------------------------------------------------!
+         !     We now print a banner so the user can have some idea of the workload        !
+         ! distribution.                                                                   !
+         !---------------------------------------------------------------------------------!
+         write(unit=*,fmt='(a)') '--------------------------------------------------------'
+         write(unit=*,fmt='(a)') '                WORKLOAD PER POLYGON'
+         write(unit=*,fmt='(a,1x,i6)')     ' - Maxnmachs   : ',maxnmachs
+         write(unit=*,fmt='(a,1x,i6)')     ' - NPolys      : ',npolys
+         write(unit=*,fmt='(a,1x,es13.6)') ' - Total Work  : ',totalwork
+         write(unit=*,fmt='(a)') '--------------------------------------------------------'
+         write(unit=*,fmt='(7(a,1x))') '   IPY','     WORKLOAD','       CUMSUM'            &
+                                             ,'METH1','METH2','METH3'
+         write(unit=*,fmt='(a)') '--------------------------------------------------------'
+         do ipy=1,npolys
+            write(unit=*,fmt='(i6,1x,2(es13.6,1x),3(i5,1x))')                              &
+                                              ipy,thiswork(ipy),cumwork(ipy)               &
+                                            , machind(ipy,1),machind(ipy,2),machind(ipy,3)
+         end do
+         write(unit=*,fmt='(a)') '--------------------------------------------------------'
+         !---------------------------------------------------------------------------------!
+
+         !---------------------------------------------------------------------------------!
+         !     We now print a banner so the user can have some idea of the workload        !
+         ! distribution.                                                                   !
+         !---------------------------------------------------------------------------------!
+         write(unit=*,fmt='(a)') '--------------------------------------------------------'
+         write(unit=*,fmt='(a)') '                Node distribution'
+         write(unit=*,fmt='(a,1x,i6)') ' - Best method :',ibest
+         write(unit=*,fmt='(a)') '--------------------------------------------------------'
+         write(unit=*,fmt='(6(a,1x))') ' IMACH','MPOLYS','OFFSET','    MACHLOAD1'          &
+                                      ,'    MACHLOAD2','    MACHLOAD3'
+         write(unit=*,fmt='(a)') '--------------------------------------------------------'
+         do imach=1,ntotmachs
+            write(unit=*,fmt='(3(i6,1x),3(es13.6,1x))') imach,mpolys(imach),moffset(imach) &
+                                                       ,machload(imach,1)                  &
+                                                       ,machload(imach,2)                  &
+                                                       ,machload(imach,3)
+         end do
+         write(unit=*,fmt='(a)') '--------------------------------------------------------'
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !     Send the number of polygons and offset to the other nodes.                  !
+         !---------------------------------------------------------------------------------!
+         do imach=1,nmachs
+            gdpy  (imach,ifm) = mpolys (imach)
+            py_off(imach,ifm) = moffset(imach)
+            call MPI_Bcast(mpolys (imach),1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+            call MPI_Bcast(moffset(imach),1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+         end do
+
+         !----- Getting the message about this node itself. -------------------------------!
+         gdpy  (ntotmachs,ifm) = mpolys(imach)
+         py_off(ntotmachs,ifm) = moffset(imach)
+
+         !---------------------------------------------------------------------------------!
+         !     Free memory for re-allocation in the next grid (or to quit the subroutine). !
+         !---------------------------------------------------------------------------------!
+         deallocate(thiswork,cumwork,machind)
+         deallocate(machload,mpolys,moffset)
+      end do gridloop
    end if
 
    return
@@ -462,6 +638,13 @@ end subroutine ed_masterput_poly_dims
 !==========================================================================================!
 !==========================================================================================!
 
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
 subroutine ed_masterput_worklist_info(par_run)
 
   use ed_max_dims, only: maxmach
@@ -640,14 +823,15 @@ subroutine ed_nodeget_nl
 !   This subroutine is responsible for getting all the namelist-related information in     !
 ! every node.                                                                              !
 !------------------------------------------------------------------------------------------!
-   use ed_max_dims,        only: str_len,max_soi,max_ed_regions,nzgmax,n_pft,maxgrds,maxpvars
-   use ed_misc_coms,       only: expnme, runtype,itimea,iyeara,imontha,idatea ,itimez,iyearz  &
-                             ,imonthz,idatez,dtlsm,radfrq,ifoutput,idoutput,imoutput, iyoutput,itoutput &
-                             ,iclobber,frqfast,sfilin,ffilout,ied_init_mode,ed_inputs_dir   &
-                             ,integration_scheme,end_time,current_time,isoutput,sfilout    &
-                             ,frqstate,iprintpolys,printvars,pfmtstr,ipmin,ipmax,iedcnfgf  &
-                             ,outfast,outstate,out_time_fast,out_time_state,nrec_fast      &
-                             ,nrec_state,irec_fast,irec_state,unitfast,unitstate,event_file
+   use ed_max_dims,     only: str_len,max_soi,max_ed_regions,nzgmax,n_pft,maxgrds,maxpvars
+   use ed_misc_coms,    only: expnme, runtype,itimea,iyeara,imontha,idatea ,itimez,iyearz  &
+                             ,imonthz,idatez,dtlsm,radfrq,ifoutput,idoutput,imoutput, itoutput       &
+                             ,iyoutput,iclobber,frqfast,sfilin,ffilout,ied_init_mode       &
+                             ,ed_inputs_dir,integration_scheme,end_time,current_time       &
+                             ,isoutput,sfilout,frqstate,iprintpolys,printvars,pfmtstr      &
+                             ,ipmin,ipmax,iedcnfgf,outfast,outstate,out_time_fast          &
+                             ,out_time_state,nrec_fast,nrec_state,irec_fast,irec_state     &
+                             ,unitfast,unitstate,event_file,itimeh,iyearh,imonthh,idateh
 
    use grid_coms,       only: nzg,nzs,ngrids,nnxp,nnyp,deltax,deltay,polelat,polelon       &
                              ,centlat,centlon,time,timmax,nstratx,nstraty
@@ -700,6 +884,11 @@ subroutine ed_nodeget_nl
    call MPI_Bcast(idatea,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(iyeara,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(itimea,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+
+   call MPI_Bcast(imonthh,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(idateh,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(iyearh,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(itimeh,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(imonthz,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(idatez,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
@@ -827,7 +1016,7 @@ subroutine ed_nodeget_nl
    call MPI_Bcast(edres,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    
    call MPI_Bcast(attach_metadata,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-
+   
 !------------------------------------------------------------------------------------------!
 !     Receiving the layer index based on soil_depth. This is allocatable, so I first       !
 ! allocate, then let the master know that it is safe to send to me and I reveive the data. !

@@ -75,6 +75,71 @@ end subroutine phenology_driver
 
 !==========================================================================================!
 !==========================================================================================!
+!    This subroutine will compute only the parts of the phenology that don t change the    !
+! ecosystem state.                                                                         !
+!------------------------------------------------------------------------------------------!
+subroutine phenology_driver_eq_0(cgrid, doy, month, tfact)
+   use ed_state_vars  , only : edtype        & ! structure
+                             , polygontype   & ! structure
+                             , sitetype      ! ! structure
+   use phenology_coms , only : iphen_scheme  ! ! intent(in)
+   use ed_misc_coms      , only : current_time  ! ! intent(in)
+   implicit none
+   !----- Arguments -----------------------------------------------------------------------!
+   type(edtype)      , target      :: cgrid
+   integer           , intent(in)  :: doy
+   integer           , intent(in)  :: month
+   real              , intent(in)  :: tfact
+   !----- Local variables -----------------------------------------------------------------!
+   type(polygontype) , pointer     :: cpoly
+   type(sitetype)    , pointer     :: csite
+   integer                         :: ipy
+   integer                         :: isi
+   integer                         :: ipa
+   !---------------------------------------------------------------------------------------!
+
+   do ipy = 1,cgrid%npolygons
+      cpoly => cgrid%polygon(ipy)
+
+      do isi = 1,cpoly%nsites
+         csite => cpoly%site(isi)
+
+         !---------------------------------------------------------------------------------!
+         !     Get the patch-level average daily temperature, which is needed for mortal-  !
+         ! ity, recruitment and some phenology schemes.                                    !
+         !---------------------------------------------------------------------------------!
+         do ipa = 1,csite%npatches
+            csite%avg_daily_temp(ipa) = csite%avg_daily_temp(ipa) * tfact
+         end do
+         
+         select case (iphen_scheme)
+         case (0,2)
+            !------------------------------------------------------------------------------!
+            !     Default predictive scheme (Botta et al.) or the modified drought         !
+            ! deciduous phenology for broadleaf PFTs.                                      !
+            !------------------------------------------------------------------------------!
+            call update_thermal_sums(month, cpoly, isi, cgrid%lat(ipy))
+
+         case (3)
+            !----- KIM light-controlled predictive phenology scheme. ----------------------!
+            call update_thermal_sums(month, cpoly, isi, cgrid%lat(ipy))
+            call update_turnover(cpoly,isi)
+         end select
+      end do
+   end do
+
+   return
+end subroutine phenology_driver_eq_0
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
 subroutine update_phenology(doy, cpoly, isi, lat)
 
    use ed_state_vars  , only : polygontype              & ! structure
@@ -98,9 +163,10 @@ subroutine update_phenology(doy, cpoly, isi, lat)
                              , alli                     ! ! intent(in)
    use ed_therm_lib   , only : calc_hcapveg             & ! function
                              , update_veg_energy_cweh   ! ! subroutine
-   use ed_max_dims       , only : n_pft                    ! ! intent(in)
-   use ed_misc_coms      , only : current_time             ! ! intent(in)
+   use ed_max_dims    , only : n_pft                    ! ! intent(in)
+   use ed_misc_coms   , only : current_time             ! ! intent(in)
    use allometry      , only : area_indices             & ! subroutine
+                             , ed_biomass               & ! function
                              , dbh2bl                   ! ! function
 
    implicit none
@@ -123,9 +189,9 @@ subroutine update_phenology(doy, cpoly, isi, lat)
    real                                  :: daylight
    real                                  :: delta_bleaf
    real                                  :: elongf
-   real                                  :: leaf_litter
    real                                  :: bl_max
    real                                  :: old_hcapveg
+   real                                  :: salloci
    !----- External functions. -------------------------------------------------------------!
    real                     , external   :: daylength
    !----- Variables used only for debugging purposes. -------------------------------------!
@@ -159,8 +225,12 @@ subroutine update_phenology(doy, cpoly, isi, lat)
                                ,leaf_out_cold,theta,cpoly%lsl(isi))
 
       cohortloop: do ico = 1,cpatch%ncohorts
-         ipft  = cpatch%pft(ico)
-         kroot = cpatch%krdepth(ico)
+         ipft    = cpatch%pft(ico)
+         kroot   = cpatch%krdepth(ico)
+         salloci = 1. / (1.0 + qsw(ipft) * cpatch%hite(ico) + q(ipft))
+         
+         !----- Initially, we assume all leaves stay. -------------------------------------!
+         cpatch%leaf_drop(ico) = 0.0
 
          !----- Find cohort-specific thresholds. ------------------------------------------!
          select case (iphen_scheme)
@@ -209,18 +279,26 @@ subroutine update_phenology(doy, cpoly, isi, lat)
                !----- It is time to drop leaves. ------------------------------------------!
                if (cpatch%phenology_status(ico) < 2) then
                   !----- Update litter pools. ---------------------------------------------!
-                  leaf_litter = (1.0 - retained_carbon_fraction) * cpatch%lai(ico)         &
-                              / cpatch%sla(ico)
-                  csite%fsc_in(ipa) = csite%fsc_in(ipa) + leaf_litter * f_labile(ipft)
-                  csite%fsn_in(ipa) = csite%fsn_in(ipa) + leaf_litter * f_labile(ipft)     &
-                                    / c2n_leaf(ipft)
-                  csite%ssc_in(ipa) = csite%ssc_in(ipa) + leaf_litter                      &
+                  cpatch%leaf_drop(ico) = (1.0 - retained_carbon_fraction)                 &
+                                        * cpatch%lai(ico) / cpatch%sla(ico)                &
+                                        / cpatch%nplant(ico)
+
+                  csite%fsc_in(ipa) = csite%fsc_in(ipa)                                    &
+                                    + cpatch%nplant(ico) * cpatch%leaf_drop(ico)           &
+                                    * f_labile(ipft)
+                  csite%fsn_in(ipa) = csite%fsn_in(ipa)                                    &
+                                    + cpatch%nplant(ico) * cpatch%leaf_drop(ico)           &
+                                    * f_labile(ipft) / c2n_leaf(ipft)
+                  csite%ssc_in(ipa) = csite%ssc_in(ipa) + cpatch%leaf_drop(ico)            &
                                     * (1.0 - f_labile(ipft))
-                  csite%ssl_in(ipa) = csite%ssl_in(ipa) + leaf_litter                      &
+                  csite%ssl_in(ipa) = csite%ssl_in(ipa)                                    &
+                                    + cpatch%nplant(ico) * cpatch%leaf_drop(ico)           &
                                     * (1.0 - f_labile(ipft)) * l2n_stem / c2n_stem(cpatch%pft(ico))
+
                   
                   !----- Update plant carbon pools. ---------------------------------------!
                   cpatch%balive(ico)   = cpatch%balive(ico) - cpatch%bleaf(ico)
+
                   cpatch%bstorage(ico) = cpatch%bstorage(ico) + cpatch%bleaf(ico)          &
                                        * retained_carbon_fraction
 
@@ -235,17 +313,16 @@ subroutine update_phenology(doy, cpoly, isi, lat)
                   cpatch%bleaf(ico)            = 0.0
                   cpatch%phenology_status(ico) = 2
                   cpatch%cb(13,ico)            = cpatch%cb(13,ico)                         &
-                                               - leaf_litter / cpatch%nplant(ico)
+                                               - cpatch%leaf_drop(ico)
                   cpatch%cb_max(13,ico)        = cpatch%cb_max(13,ico)                     &
-                                               - leaf_litter/cpatch%nplant(ico)
+                                               - cpatch%leaf_drop(ico)
                end if
                
             elseif(theta(kroot) > theta_crit .and. cpatch%phenology_status(ico) == 2) then
                
                !----- It is time to flush.  Update carbon pools ---------------------------!
                cpatch%phenology_status(ico) = 1
-               cpatch%bleaf(ico)            = cpatch%balive(ico)                           &
-                                            / (1.0 + qsw(ipft)*cpatch%hite(ico) + q(ipft))
+               cpatch%bleaf(ico)            = cpatch%balive(ico) * salloci
             end if  ! critical moisture
 
          case (2)
@@ -267,14 +344,18 @@ subroutine update_phenology(doy, cpoly, isi, lat)
                   ! not growing (not necessarily because the leaves are fully flushed).    !
                   !------------------------------------------------------------------------!
                   cpatch%phenology_status(ico) = 0
-                  leaf_litter       = (1.0 - retained_carbon_fraction) * delta_bleaf       &
-                                    * cpatch%nplant(ico)
-                  csite%fsc_in(ipa) = csite%fsc_in(ipa) + leaf_litter * f_labile(ipft)
-                  csite%fsn_in(ipa) = csite%fsn_in(ipa) + leaf_litter * f_labile(ipft)     &
-                                    / c2n_leaf(ipft)
+                  cpatch%leaf_drop(ico) = (1.0 - retained_carbon_fraction) * delta_bleaf
+                  csite%fsc_in(ipa) = csite%fsc_in(ipa)                                    &
+                                    + cpatch%nplant(ico) * cpatch%leaf_drop(ico)           &
+                                    * f_labile(ipft)
+                  csite%fsn_in(ipa) = csite%fsn_in(ipa)                                    &
+                                    + cpatch%nplant(ico) * cpatch%leaf_drop(ico)           &
+                                    * f_labile(ipft) / c2n_leaf(ipft)
                   csite%ssc_in(ipa) = csite%ssc_in(ipa)                                    &
-                                    + leaf_litter * (1.0 - f_labile(ipft))
-                  csite%ssl_in(ipa) = csite%ssl_in(ipa) + leaf_litter                      &
+                                    + cpatch%nplant(ico) * cpatch%leaf_drop(ico)           &
+                                    * (1.0 - f_labile(ipft))
+                  csite%ssl_in(ipa) = csite%ssl_in(ipa)                                    &
+                                    + cpatch%nplant(ico) * cpatch%leaf_drop(ico)           &
                                     * (1.0 - f_labile(ipft)) * l2n_stem / c2n_stem(cpatch%pft(ico))
                   
                   !----- Adjust plant carbon pools. ---------------------------------------!
@@ -291,10 +372,8 @@ subroutine update_phenology(doy, cpoly, isi, lat)
                                         * retained_carbon_fraction                         &
                                         * (1.0 / c2n_leaf(ipft) - 1.0/c2n_storage)
                   cpatch%bleaf(ico)     = bl_max
-                  cpatch%cb(13,ico)     = cpatch%cb(13,ico)                                &
-                                        - leaf_litter / cpatch%nplant(ico)
-                  cpatch%cb_max(13,ico) = cpatch%cb_max(13,ico)                            &
-                                        - leaf_litter / cpatch%nplant(ico)
+                  cpatch%cb(13,ico)     = cpatch%cb(13,ico) - cpatch%leaf_drop(ico)
+                  cpatch%cb_max(13,ico) = cpatch%cb_max(13,ico) - cpatch%leaf_drop(ico)
                end if
 
                !----- Set status flag. ----------------------------------------------------!
@@ -309,7 +388,7 @@ subroutine update_phenology(doy, cpoly, isi, lat)
                !---------------------------------------------------------------------------!
                cpatch%phenology_status(ico) = 1
                cpatch%bleaf(ico) = cpoly%green_leaf_factor(ipft,isi) * cpatch%balive(ico)  &
-                                 / (1.0 + qsw(ipft) * cpatch%hite(ico) + q(ipft))
+                                 * salloci
             end if
 
 
@@ -330,13 +409,18 @@ subroutine update_phenology(doy, cpoly, isi, lat)
 
             if (delta_bleaf > 0.0) then
                cpatch%phenology_status(ico) = 0 
-               leaf_litter                  = (1.0 - retained_carbon_fraction)             &
-                                            * delta_bleaf * cpatch%nplant(ico)
-               csite%fsc_in(ipa) = csite%fsc_in(ipa) + leaf_litter * f_labile(ipft)
-               csite%fsn_in(ipa) = csite%fsn_in(ipa) + leaf_litter * f_labile(ipft)        &
-                                 / c2n_leaf(ipft)
-               csite%ssc_in(ipa) = csite%ssc_in(ipa) + leaf_litter * (1.0-f_labile(ipft))
-               csite%ssl_in(ipa) = csite%ssl_in(ipa) + leaf_litter                         &
+               cpatch%leaf_drop(ico) = (1.0 - retained_carbon_fraction) * delta_bleaf
+               csite%fsc_in(ipa) = csite%fsc_in(ipa)                                       &
+                                 + cpatch%nplant(ico) * cpatch%leaf_drop(ico)              &
+                                 * f_labile(ipft)
+               csite%fsn_in(ipa) = csite%fsn_in(ipa)                                       &
+                                 + cpatch%nplant(ico) * cpatch%leaf_drop(ico)              &
+                                 * f_labile(ipft) / c2n_leaf(ipft)
+               csite%ssc_in(ipa) = csite%ssc_in(ipa)                                       &
+                                 + cpatch%nplant(ico) * cpatch%leaf_drop(ico)              &
+                                 * (1.0-f_labile(ipft))
+               csite%ssl_in(ipa) = csite%ssl_in(ipa)                                       &
+                                 + cpatch%nplant(ico) * cpatch%leaf_drop(ico)              &
                                  * (1.0 - f_labile(ipft)) * l2n_stem / c2n_stem(cpatch%pft(ico))
 
                !----- Adjust plant carbon pools. ------------------------------------------!
@@ -352,14 +436,12 @@ subroutine update_phenology(doy, cpoly, isi, lat)
                                      * (1.0 / c2n_leaf(ipft) - 1.0/c2n_storage)
                
                cpatch%bleaf(ico)     = bl_max
-               cpatch%cb(13,ico)     = cpatch%cb(13,ico) - leaf_litter/cpatch%nplant(ico)
-               cpatch%cb_max(13,ico) = cpatch%cb_max(13,ico)                               &
-                                     - leaf_litter / cpatch%nplant(ico)
+               cpatch%cb(13,ico)     = cpatch%cb(13,ico)     - cpatch%leaf_drop(ico)
+               cpatch%cb_max(13,ico) = cpatch%cb_max(13,ico) - cpatch%leaf_drop(ico)
             !------ Becoming slightly moister again, start flushing the leaves. -----------!
             elseif (elongf > 0.02) then
                cpatch%phenology_status(ico) = 1 
-               cpatch%bleaf(ico)            = elongf * cpatch%balive(ico)                  &
-                                            / (1.0 + qsw(ipft)*cpatch%hite(ico) + q(ipft))
+               cpatch%bleaf(ico)            = elongf * cpatch%balive(ico) * salloci
             end if
 
             !----- In case it is too dry, drop all the leaves... --------------------------!
@@ -377,16 +459,21 @@ subroutine update_phenology(doy, cpoly, isi, lat)
                           ,cpatch%pft(ico),cpatch%sla(ico), cpatch%lai(ico)                &
                           ,cpatch%wpa(ico),cpatch%wai(ico))
 
+         !----- Update above-ground biomass. ----------------------------------------------!
+         cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)                 &
+                                     ,cpatch%bleaf(ico),cpatch%pft(ico)                    &
+                                     ,cpatch%hite(ico) ,cpatch%bstorage(ico) ) 
+
          !---------------------------------------------------------------------------------!
          !    The leaf biomass of the cohort has changed, update the vegetation energy -   !
          ! using a constant temperature assumption.                                        !
          !---------------------------------------------------------------------------------!
          old_hcapveg         = cpatch%hcapveg(ico)
-         csite%hcapveg(ipa)  = csite%hcapveg(ipa) + cpatch%hcapveg(ico) - old_hcapveg
          cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico)            &
                                            ,cpatch%balive(ico),cpatch%nplant(ico)          &
                                            ,cpatch%hite(ico),cpatch%pft(ico)               &
                                            ,cpatch%phenology_status(ico))
+         csite%hcapveg(ipa)  = csite%hcapveg(ipa) + cpatch%hcapveg(ico) - old_hcapveg
          call update_veg_energy_cweh(csite,ipa,ico,old_hcapveg)
 
          !----- Printing some debugging stuff if the code is set for it. ------------------!
@@ -396,12 +483,12 @@ subroutine update_phenology(doy, cpoly, isi, lat)
                first_time(ipft) = .false.
                write (unit=40+ipft,fmt='(a10,6(1x,a12))')                                  &
                   &'      TIME','       PATCH','      COHORT','      NPLANT'               &
-                  &            ,' LEAF_LITTER','       THETA','  THETA_CRIT'
+                  &            ,'   LEAF_DROP','       THETA','  THETA_CRIT'
             end if
          
             write (unit=40+ipft,fmt='(2(i2.2,a1),i4.4,2(1x,i12),4(1x,es12.5))')            &
                  current_time%month,'/',current_time%date,'/',current_time%year,ipa,ico    &
-                ,cpatch%nplant(ico),leaf_litter,theta(kroot),theta_crit
+                ,cpatch%nplant(ico),cpatch%leaf_drop(ico),theta(kroot),theta_crit
          end if
       end do cohortloop
    end do patchloop

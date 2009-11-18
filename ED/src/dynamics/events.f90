@@ -292,7 +292,9 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
   use disturbance_utils,only: plant_patch
   use ed_therm_lib, only: calc_hcapveg,update_veg_energy_cweh
   use fuse_fiss_utils, only: terminate_cohorts
-  use allometry, only : bd2dbh, dbh2h, area_indices
+  use allometry, only : bd2dbh, dbh2h, area_indices, ed_biomass
+  use consts_coms, only : pio4
+  implicit none
   real(kind=8),intent(in) :: agb_frac8
   real(kind=8),intent(in) :: bgb_frac8
   real(kind=8),intent(in) :: fol_frac8
@@ -302,7 +304,7 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
   real :: old_hcapveg
   real :: elim_nplant
   real :: elim_lai
-  integer :: ifm,ipy,isi,ipa,pft
+  integer :: ifm,ipy,isi,ipa,ico,pft
   type(edtype), pointer :: cgrid
   type(polygontype), pointer :: cpoly
   type(sitetype),pointer :: csite
@@ -362,6 +364,8 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                  !! [[this needs to be more sophisticated]] 
                  
                  cpatch%balive(ico)   = max(0.0,bleaf_new + bfr_new + bsw_new)
+                 cpatch%broot(ico)    = max(0.0,bfr_new)
+                 cpatch%bsapwood(ico) = max(0.0,bsw_new)
                  cpatch%bdead(ico)    = max(0.0,bdead_new)
                  cpatch%bstorage(ico) = max(0.0,bstore_new)
                  if(bleaf_new .le. tiny(1.0)) then
@@ -384,8 +388,14 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                  !----- Update LAI, WPA, and WAI ------------------------------------------!
                  call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)  &
                                   ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)    &
-                                  ,cpatch%pft(nc),cpatch%sla(nc), cpatch%lai(nc)           &
-                                  ,cpatch%wpa(nc),cpatch%wai(nc))
+                                  ,cpatch%pft(ico),cpatch%sla(ico), cpatch%lai(ico)        &
+                                  ,cpatch%wpa(ico),cpatch%wai(ico))
+
+                 !----- Update basal area and above-ground biomass. -----------------------!
+                 cpatch%basarea(ico) = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)                
+                 cpatch%agb(ico)     = ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)     &
+                                                 ,cpatch%bleaf(ico),cpatch%pft(ico)        &
+                                                 ,cpatch%hite(ico) ,cpatch%bstorage(ico))     
 
                  !-------------------------------------------------------------------------!
                  !    Here we are leaving all water in the branches and twigs... Do not    !
@@ -738,6 +748,8 @@ subroutine event_till(rval8)
 
                  !! update biomass pools
                  cpatch%balive(ico)     = 0.0
+                 cpatch%broot(ico)      = 0.0
+                 cpatch%bsapwood(ico)   = 0.0
                  cpatch%bdead(ico)      = 0.0
                  cpatch%bstorage(ico)   = 0.0
                  cpatch%nplant(ico)     = 0.0

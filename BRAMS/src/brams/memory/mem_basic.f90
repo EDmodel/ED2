@@ -127,7 +127,7 @@ module mem_basic
       if (associated(basic%pc      ))  nullify (basic%pc      )
       if (associated(basic%thp     ))  nullify (basic%thp     )
       if (associated(basic%rtp     ))  nullify (basic%rtp     )
-      if (associated(basic%co2p    ))  nullify (basic%theta   )
+      if (associated(basic%co2p    ))  nullify (basic%co2p   )
       if (associated(basic%rv      ))  nullify (basic%rv      )
       if (associated(basic%theta   ))  nullify (basic%theta   )
       if (associated(basic%pi0     ))  nullify (basic%pi0     )

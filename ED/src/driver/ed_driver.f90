@@ -1,4 +1,4 @@
-!------------------------------------------------------------------------!
+ !------------------------------------------------------------------------!
 !                                                                        !
 ! Main subroutine for driving the initialization process for             !
 ! the Ecosystem Demography Model 2.  All compute nodes, including        !
@@ -92,7 +92,7 @@ subroutine ed_driver
   call sfcdata_ed()
   
   
-  if (trim(runtype) == 'HISTORY') then
+  if (trim(runtype) == 'HISTORY' ) then
        
  
      !-----------------------------------------------------------------------!
