@@ -6581,7 +6581,7 @@ contains
     if (associated(cgrid%avg_snowmass)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_snowmass(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_SNOWMASS :11:hist:anal') 
+            var_len,var_len_global,max_ptrs,'AVG_SNOWMASS :11:hist:anal:opti') 
        call metadata_edio(nvar,igr,'Poly Avg. Snow Mass (SWE) ','[kg/m2]','ipoly') 
     endif
     if (associated(cgrid%avg_snowtempk)) then
@@ -6593,7 +6593,7 @@ contains
     if (associated(cgrid%avg_snowfracliq)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_snowfracliq(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_SNOWFRACLIQ :11:hist:anal') 
+            var_len,var_len_global,max_ptrs,'AVG_SNOWFRACLIQ :11:hist:anal:opti') 
        call metadata_edio(nvar,igr,'Poly Avg. Snow liquid fraction','[proportion]','ipoly') 
     endif
     if (associated(cgrid%avg_bdead)) then

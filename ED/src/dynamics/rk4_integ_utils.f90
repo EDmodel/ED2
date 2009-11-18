@@ -5,10 +5,11 @@
 !     This subroutine will drive the integration of several ODEs that drive the fast-scale !
 ! state variables.                                                                         !
 !------------------------------------------------------------------------------------------!
-subroutine odeint(h1,csite,ipa,isi,ipy,ifm)
+subroutine odeint(h1,csite,ipa,isi,ipy,ifm,cpoly)
 
    use ed_state_vars  , only : sitetype               & ! structure
-                             , patchtype              ! ! structure
+                             , patchtype              & ! structure
+                             , polygontype
    use rk4_coms       , only : integration_vars       & ! structure
                              , integration_buff       & ! intent(inout)
                              , rk4met                 & ! intent(in)
@@ -33,6 +34,7 @@ subroutine odeint(h1,csite,ipa,isi,ipy,ifm)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(sitetype)            , target      :: csite            ! Current site
+   type(polygontype)         , target      :: cpoly            ! Current polygon
    integer                   , intent(in)  :: ipa              ! Current patch ID
    integer                   , intent(in)  :: isi              ! Current site ID
    integer                   , intent(in)  :: ipy              ! Current polygon ID
@@ -98,7 +100,7 @@ subroutine odeint(h1,csite,ipa,isi,ipy,ifm)
    timesteploop: do i=1,maxstp
 
       !----- Get initial derivatives ------------------------------------------------------!
-      call leaf_derivs(integration_buff%y,integration_buff%dydx,csite,ipa,isi,ipy)
+      call leaf_derivs(integration_buff%y,integration_buff%dydx,csite,ipa,isi,ipy,cpoly)
 
       !----- Get scalings used to determine stability -------------------------------------!
       call get_yscal(integration_buff%y, integration_buff%dydx,h,integration_buff%yscal    &
@@ -108,7 +110,7 @@ subroutine odeint(h1,csite,ipa,isi,ipy,ifm)
       if((x+h-tend)*(x+h-tbeg) > 0.d0) h=tend-x
 
       !----- Take the step ----------------------------------------------------------------!
-      call rkqs(x,h,hdid,hnext,csite,ipa,isi,ipy,ifm)
+      call rkqs(x,h,hdid,hnext,csite,ipa,isi,ipy,ifm,cpoly)
 
       !----- If the integration reached the next step, make some final adjustments --------!
       if((x-tend)*dtrk4 >= 0.d0)then
@@ -310,6 +312,10 @@ subroutine inc_rk4_patch(rkp, inc, fac, cpatch)
    rkp%virtual_heat  = rkp%virtual_heat  + fac * inc%virtual_heat
    rkp%virtual_water = rkp%virtual_water + fac * inc%virtual_water
    rkp%virtual_depth = rkp%virtual_depth + fac * inc%virtual_depth
+
+!print*,"depth",rkp%virtual_depth,rkp%sfcwater_depth(k)
+!print*,"mass ",rkp%virtual_water,rkp%sfcwater_mass
+!print*,"dens ",rkp%virtual_water/rkp%virtual_depth,rkp%sfcwater_mass/rkp%sfcwater_depth(k)
 
   
    rkp%upwp = rkp%upwp + fac * inc%upwp

@@ -465,6 +465,15 @@ subroutine redistribute_snow(initp,csite,ipa)
    integer                             :: nsoil
    !----- Constants -----------------------------------------------------------------------!
    logical                , parameter  :: debug = .false.
+   !----- New Snow  -----------------------------------------------------------------------!
+   logical                , parameter  :: newsnow = .true.
+   real(kind=8)                        :: Cr      !! snow waterholding capacity
+   real(kind=8)                        :: Crmin = 3.d-2
+   real(kind=8)                        :: Crmax = 1.d-1 
+   real(kind=8)                        :: gi      !! partial density of ice
+   real(kind=8)                        :: ge = 2.d2
+   real(kind=8)                        :: wf0
+   
    !---------------------------------------------------------------------------------------!
 
 
@@ -551,7 +560,7 @@ subroutine redistribute_snow(initp,csite,ipa)
    end if
    !---------------------------------------------------------------------------------------!
 
-
+!if(abs(depthgain) > tiny(1.0)) print*,"depthgain",depthgain,wfree,wfree/depthgain
 
    !---------------------------------------------------------------------------------------!
    ! 3. We now update the diagnostic variables, and ensure the layers are stable.  Loop    !
@@ -615,9 +624,30 @@ subroutine redistribute_snow(initp,csite,ipa)
       !------------------------------------------------------------------------------------!
       if (w > rk4min_sfcwater_mass) then
          wfreeb = max(0.d0, w * (initp%sfcwater_fracliq(k)-1.d-1)/9.d-1)
+
+         if(newsnow) then
+            wf0 = wfreeb
+
+            !!! Alternative "free" water calculation
+            !!! Anderson 1976 NOAA Tech Report NWS 19
+            gi = initp%sfcwater_mass(k)/initp%sfcwater_depth(k)*(1-initp%sfcwater_fracliq(k))
+            Cr = Crmin
+            if(gi < ge) then
+               Cr = Crmin + (Crmax-Crmin)*(ge-gi)/ge
+            endif
+            wfreeb = 0
+            if(initp%sfcwater_fracliq(k) > Cr/(1+Cr)) then
+               wfreeb = w*(initp%sfcwater_fracliq(k) - Cr/(1+Cr))
+            end if
+            !!if(wf0 .gt.0.0d0 .or. wfreeb .gt. 0.0d0)then
+            !!   print*,wf0,wfreeb,gi,Cr
+            !!endif
+         end if
+
       else
          wfreeb = 0.0
       end if
+
 
       if (k == 1)then
            !----- Do "greedy" infiltration. -----------------------------------------------!
@@ -638,7 +668,7 @@ subroutine redistribute_snow(initp,csite,ipa)
          qwfree = wfreeb * cliq8 * (initp%sfcwater_tempk(k)-tsupercool8)
       end if
       depthloss = wfreeb * wdnsi8
-      
+
       !----- Remove water and internal energy losses due to percolation -------------------!
       initp%sfcwater_mass(k)  = w - wfreeb
       initp%sfcwater_depth(k) = initp%sfcwater_depth(k) + depthgain - depthloss
@@ -668,6 +698,7 @@ subroutine redistribute_snow(initp,csite,ipa)
       sndenmin = max(3.d1, 2.d2 * (wfree + wfreeb)                                         &
                / max(rk4min_sfcwater_mass,initp%sfcwater_mass(k)))
       snden    = min(sndenmax, max(sndenmin,snden))
+      !!newsnow -- check snden
       initp%sfcwater_depth(k) = initp%sfcwater_mass(k) / snden
 
       !----- Set up input to next layer ---------------------------------------------------!
@@ -702,6 +733,7 @@ subroutine redistribute_snow(initp,csite,ipa)
          if (      initp%sfcwater_mass(k)   >  rk4min_sfcwater_mass                        &
              .and. rk4snowmin * thicknet(k) <= totsnow                                     &
              .and. initp%sfcwater_energy(k) <  initp%sfcwater_mass(k)*qliqt38 ) then
+            !!newsnow -- alt criteria for number of layers
 
             newlayers = newlayers + 1
          end if
@@ -711,6 +743,7 @@ subroutine redistribute_snow(initp,csite,ipa)
       kold  = 1
       wtnew = 1.d0
       wtold = 1.d0
+      !!newsnow -- check thickness criteria
       do k = 1,newlayers
          newsfcw_mass(k)   = totsnow * thick(k,newlayers)
          newsfcw_energy(k) = 0.d0

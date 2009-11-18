@@ -7,11 +7,11 @@
 ! whereas in LEAF-3 the actual step is done at once. This derivative will be used for the  !
 ! Runge-Kutta integration step.                                                            !
 !------------------------------------------------------------------------------------------!
-subroutine leaf_derivs(initp,dinitp,csite,ipa,isi,ipy)
+subroutine leaf_derivs(initp,dinitp,csite,ipa,isi,ipy,cpoly)
   
    use rk4_coms               , only : rk4met             & ! intent(in)
                                      , rk4patchtype       ! ! structure
-   use ed_state_vars          , only : sitetype           ! ! structure
+   use ed_state_vars          , only : sitetype,polygontype           ! ! structure
    use consts_coms            , only : cp8                & ! intent(in)
                                      , cpi8               ! ! intent(in)
    use grid_coms              , only : nzg                ! ! intent(in)
@@ -21,6 +21,7 @@ subroutine leaf_derivs(initp,dinitp,csite,ipa,isi,ipy)
    type(rk4patchtype) , target     :: initp     ! Structure with RK4 intermediate state
    type(rk4patchtype) , target     :: dinitp    ! Structure with RK4 derivatives
    type(sitetype)     , target     :: csite     ! This site (with previous values);
+   type(polygontype)  , target     :: cpoly     ! 
    integer            , intent(in) :: ipa       ! Patch ID
    integer            , intent(in) :: isi       ! Site ID
    integer            , intent(in) :: ipy       ! Polygon ID
@@ -34,13 +35,14 @@ subroutine leaf_derivs(initp,dinitp,csite,ipa,isi,ipy)
       !------------------------------------------------------------------------------------!
       !    Subroutine that computes the canopy and leaf fluxes.                            ! 
       !------------------------------------------------------------------------------------!
-      subroutine leaftw_derivs(initp,dinitp,csite,ipa,isi,ipy)
+      subroutine leaftw_derivs(initp,dinitp,csite,ipa,isi,ipy,cpoly)
          use rk4_coms      , only : rk4patchtype ! ! structure
-         use ed_state_vars , only : sitetype     ! ! structure
+         use ed_state_vars , only : sitetype,polygontype     ! ! structure
          implicit none
          type(rk4patchtype) , target     :: initp  
          type(rk4patchtype) , target     :: dinitp 
          type(sitetype)     , target     :: csite
+         type(polygontype)     , target     :: cpoly
          integer            , intent(in) :: ipa,isi,ipy
       end subroutine leaftw_derivs
       !------------------------------------------------------------------------------------!
@@ -57,7 +59,8 @@ subroutine leaf_derivs(initp,dinitp,csite,ipa,isi,ipy)
    call canopy_turbulence8(csite,initp,isi,ipa,.false.)
 
    !----- Finding the derivatives. --------------------------------------------------------!
-   call leaftw_derivs(initp,dinitp,csite,ipa,isi,ipy)
+   call leaftw_derivs(initp,dinitp,csite,ipa,isi,ipy,cpoly)
+
 
    !----- Nlev_sfcwater derivative... I doubt it's really used... -------------------------!
    dinitp%nlev_sfcwater = initp%nlev_sfcwater
@@ -74,7 +77,7 @@ end subroutine leaf_derivs
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine leaftw_derivs(initp,dinitp,csite,ipa,isi,ipy)
+subroutine leaftw_derivs(initp,dinitp,csite,ipa,isi,ipy,cpoly)
    use ed_max_dims             , only : nzgmax               & ! intent(in)
                                    , nzsmax               ! ! intent(in)
    use consts_coms          , only : alvl8                & ! intent(in)
@@ -103,7 +106,8 @@ subroutine leaftw_derivs(initp,dinitp,csite,ipa,isi,ipy)
                                    , rk4met               & ! intent(in)
                                    , rk4patchtype         ! ! structure
    use ed_state_vars        , only : sitetype             & ! structure
-                                   , patchtype            ! ! structure
+                                   , patchtype            & ! structure
+                                   , polygontype
    use ed_therm_lib         , only : ed_grndvap8          ! ! subroutine
    use therm_lib8           , only : qtk8                 ! ! subroutine
    implicit none
@@ -111,6 +115,7 @@ subroutine leaftw_derivs(initp,dinitp,csite,ipa,isi,ipy)
    type(rk4patchtype)  , target     :: initp         ! RK4 structure, intermediate step
    type(rk4patchtype)  , target     :: dinitp        ! RK4 structure, derivatives
    type(sitetype)      , target     :: csite         ! Current site (before integration)
+   type(polygontype)   , target     :: cpoly         ! Current polygon
    integer             , intent(in) :: ipa           ! Current patch ID
    integer             , intent(in) :: isi           ! Current site ID
    integer             , intent(in) :: ipy           ! Current polygon ID
@@ -166,13 +171,15 @@ subroutine leaftw_derivs(initp,dinitp,csite,ipa,isi,ipy)
    interface
       subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxgc &
                                      ,dewgndflx,qdewgndflx,ddewgndflx,wshed_tot,qwshed_tot &
-                                     ,dwshed_tot)
+                                     ,dwshed_tot,cpoly)
          use rk4_coms     , only: rk4patchtype  ! ! structure
          use ed_state_vars, only: sitetype      & ! structure
-                                , patchtype     ! ! structure
+                                , patchtype     & ! structure
+                                , polygontype
          implicit none
          type (rk4patchtype) , target      :: initp, dinitp
          type (sitetype)     , target      :: csite
+         type (polygontype)  , target      :: cpoly
          integer             , intent(in)  :: ipa, isi, ipy
          real(kind=8)        , intent(out) :: hflxgc, wflxgc, qwflxgc
          real(kind=8)        , intent(out) :: dewgndflx, qdewgndflx, ddewgndflx
@@ -259,7 +266,7 @@ subroutine leaftw_derivs(initp,dinitp,csite,ipa,isi,ipy)
  
    !----- Get derivatives of canopy variables. --------------------------------------------!
    call canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxgc,dewgnd   &
-                            ,qdewgnd,ddewgnd,wshed,qwshed,dwshed)
+                            ,qdewgnd,ddewgnd,wshed,qwshed,dwshed,cpoly)
 
    !---------------------------------------------------------------------------------------!
    !     Here we check whether it is bedrock or not. I think the reason for this check is  !
@@ -359,7 +366,11 @@ subroutine leaftw_derivs(initp,dinitp,csite,ipa,isi,ipy)
    !---------------------------------------------------------------------------------------!
    w_flux(nzg+ksn+1)  = -  dewgnd -  wshed
    qw_flux(nzg+ksn+1) = - qdewgnd - qwshed
-   d_flux(ksn+1)      =   ddewgnd + dwshed
+   d_flux(ksn+1)      = - ddewgnd - dwshed  !! this used to be +, seemed like a bug (MCD)
+
+!if(abs(w_flux(nzg+ksn+1)) .gt. tiny(1.0)) &
+!if(abs(ddewgnd) .gt. tiny(1.0)) &
+!     print*,"snden",w_flux(nzg+ksn+1)/d_flux(ksn+1),wshed,dewgnd,dwshed,ddewgnd
 
    dinitp%avg_vapor_gc  = wflxgc   ! Diagnostic
    dinitp%avg_dew_cg    = dewgnd   ! Diagnostic
@@ -561,7 +572,7 @@ end subroutine leaftw_derivs
 !==========================================================================================!
 subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxgc       &
                                ,dewgndflx,qdewgndflx,ddewgndflx,wshed_tot,qwshed_tot       &
-                               ,dwshed_tot)
+                               ,dwshed_tot,cpoly)
    use rk4_coms              , only : rk4patchtype         & ! Structure
                                     , rk4met               & ! intent(in)
                                     , debug                & ! intent(in)
@@ -583,7 +594,8 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxg
                                     , rk4fullveg_lwater    & ! intent(in)
                                     , checkbudget          ! ! intent(in)
    use ed_state_vars         , only : sitetype             & ! Structure
-                                    , patchtype            ! ! Structure
+                                    , patchtype            & ! Structure
+                                    , polygontype
    use consts_coms           , only : alvl8                & ! intent(in)
                                     , cp8                  & ! intent(in)
                                     , cpi8                 & ! intent(in)
@@ -631,6 +643,7 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxg
    real(kind=8)       , intent(out) :: dewgndflx      ! Dew/frost water flux
    real(kind=8)       , intent(out) :: qdewgndflx     ! Dew/frost heat flux
    real(kind=8)       , intent(out) :: ddewgndflx     ! Dew/frost density
+   type(polygontype)  , target       :: cpoly
    !----- Local variables -----------------------------------------------------------------!
    type(patchtype)    , pointer     :: cpatch           ! Current patch
    integer                          :: ico              ! Current cohort ID
@@ -719,11 +732,12 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxg
    do ico = 1,cpatch%ncohorts
       if(initp%solvable(ico)) then
          can_frac = can_frac                                                               &
-                  * (1.d0 - min(1.d0                                                       &
-                  ,dble(cpatch%nplant(ico))*dble(dbh2ca(cpatch%dbh(ico),cpatch%pft(ico)))))
+              * (1.d0 - min(1.d0                                                       &
+              ,dble(cpatch%nplant(ico))*dble(dbh2ca(cpatch%dbh(ico),cpatch%pft(ico))) &
+              *dble(cpoly%green_leaf_factor(cpatch%pft(ico),isi)))) !! scale by phenology
       end if
    end do
-   can_frac = 1.d0 - can_frac
+   can_frac = max(0.d0,min(1.d0 - can_frac,1.d0))
    !---------------------------------------------------------------------------------------!
 
 
@@ -830,7 +844,10 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,isi,ipy,hflxgc,wflxgc,qwflxg
    ! will leave this as the first attempt, so if you know a better way to do it, feel free !
    ! to add it here.                                                                       !
    !---------------------------------------------------------------------------------------!
-   ddewgndflx = dewgndflx / (initp%surface_fliq*wdns8 + (1.d0-initp%surface_fliq)*idns8)
+!!  ddewgndflx = dewgndflx / (initp%surface_fliq*wdns8 + (1.d0-initp%surface_fliq)*idns8)
+
+!! alternate version (mcd  11/17/09)
+   ddewgndflx = dewgndflx * (initp%surface_fliq/wdns8 + (1.d0-initp%surface_fliq)/200.0)
 
 
    !----- We now check whether the canopy air space can hold more water. ------------------!

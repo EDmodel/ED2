@@ -4,7 +4,7 @@ subroutine ed_init_atm
   
   use ed_misc_coms,     only: ied_init_mode,runtype
   use ed_state_vars, only: edtype,polygontype,sitetype,patchtype,edgrid_g
-  use soil_coms,     only: soil_rough, isoilstateinit, soil, slmstr
+  use soil_coms,     only: soil_rough, isoilstateinit, soil, slmstr, stgoff
   use consts_coms,    only: cliqvlme, cicevlme, t3ple, tsupercool, p00i, rocp,t00
   use grid_coms,      only: nzs, nzg, ngrids
   use fuse_fiss_utils, only: fuse_patches,fuse_cohorts
@@ -180,32 +180,28 @@ subroutine ed_init_atm
               cpatch => csite%patch(ipa)
               
               if(csite%soil_tempk(1,ipa) == -100.0 .or. isoilstateinit /= 1)then
-                 
-                 csite%soil_tempk(1:nzg,ipa) = csite%can_temp(ipa)
-                 
-                 if(csite%can_temp(ipa) > t3ple)then
-                    do k = 1, nzg
+                 csite%soil_tempk(1:nzg,ipa) = csite%can_temp(ipa) + stgoff(1:nzg)
+                 do k = 1, nzg                 
+                    if(csite%soil_tempk(k,ipa) > t3ple)then
                        nsoil=csite%ntext_soil(k,ipa)
                        csite%soil_fracliq(k,ipa) = 1.0
                        csite%soil_water(k,ipa)  = max(soil(nsoil)%soilcp                   &
-                                                     ,slmstr(k) * soil(nsoil)%slmsts)
+                            ,slmstr(k) * soil(nsoil)%slmsts)
                        csite%soil_energy(k,ipa) = soil(nsoil)%slcpd                        &
-                                                * csite%soil_tempk(k,ipa)                  &
-                                                + csite%soil_water(k,ipa)  * cliqvlme      &
-                                                * (csite%soil_tempk(k,ipa) - tsupercool)
-                    end do
-                 else
-                    do k = 1, nzg
+                            * csite%soil_tempk(k,ipa)                  &
+                            + csite%soil_water(k,ipa)  * cliqvlme      &
+                            * (csite%soil_tempk(k,ipa) - tsupercool)
+                    else
                        nsoil=csite%ntext_soil(k,ipa)
                        csite%soil_fracliq(k,ipa) = 0.0
                        csite%soil_water(k,ipa)   = max(soil(nsoil)%soilcp                  &
-                                                      ,slmstr(k) * soil(nsoil)%slmsts)
+                            ,slmstr(k) * soil(nsoil)%slmsts)
                        csite%soil_energy(k,ipa) = soil(nsoil)%slcpd                        &
-                                                * csite%soil_tempk(k,ipa)                  &
-                                                + csite%soil_water(k,ipa)                  &
-                                                * cicevlme * csite%soil_tempk(k,ipa)
-                    end do
-                 end if
+                            * csite%soil_tempk(k,ipa)                  &
+                            + csite%soil_water(k,ipa)                  &
+                            * cicevlme * csite%soil_tempk(k,ipa)
+                    end if
+                 end do
 
                  !----- Initial condition is with no snow/pond. ---------------------------!
                  csite%nlev_sfcwater(ipa) = 0

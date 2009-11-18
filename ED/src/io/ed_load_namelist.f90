@@ -28,7 +28,7 @@ subroutine copy_nl(copy_type)
 
   use ed_max_dims , only: n_pft, nzgmax
   use ename_coms, only: nl
-  use soil_coms, only: isoilflg, nslcon, slmstr, zrough, soil_database, &
+  use soil_coms, only: isoilflg, nslcon, slmstr, stgoff, zrough, soil_database, &
        isoilstateinit, isoildepthflg, isoilbc, soilstate_db, soildepth_db,   &
                        runoff_time, slz,veg_database
   use met_driver_coms, only: ed_met_driver_db, ishuffle, metcyc1, metcycf,imettype,initial_co2, lapse_scheme
@@ -108,6 +108,7 @@ subroutine copy_nl(copy_type)
      isoilflg      = nl%isoilflg
      nslcon        = nl%nslcon
      slmstr(1:nzgmax) = nl%slmstr(1:nzgmax)
+     stgoff(1:nzgmax) = nl%stgoff(1:nzgmax)
 
      soil_database = nl%soil_database
      veg_database = nl%veg_database
