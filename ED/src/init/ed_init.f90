@@ -95,7 +95,7 @@ end subroutine soil_depth_fill
 !------------------------------------------------------------------------------------------!
 subroutine load_ecosystem_state()
    use phenology_coms    , only : iphen_scheme    ! ! intent(in)
-   use ed_misc_coms         , only : ied_init_mode   ! ! intent(in)
+   use ed_misc_coms      , only : ied_init_mode   ! ! intent(in)
    use phenology_startup , only : phenology_init  ! ! intent(in)
    use ed_node_coms      , only : mynum           & ! intent(in)
                                 , nmachs          & ! intent(in)
@@ -117,8 +117,6 @@ subroutine load_ecosystem_state()
    !---------------------------------------------------------------------------------------!
 
    ping = 741776
-  
-
 
 
    if (mynum == 1) write(unit=*,fmt='(a)') ' + Doing sequential initialization over nodes.'
@@ -138,9 +136,11 @@ subroutine load_ecosystem_state()
    if (mynum /= 1) &
       call MPI_Recv(ping,1,MPI_INTEGER,recvnum,100,MPI_COMM_WORLD,MPI_STATUS_IGNORE,ierr)
   
-   do igr = 1,ngrids
-      call read_site_file(edgrid_g(igr))
-   end do
+   if (ied_init_mode < 4) then
+      do igr = 1,ngrids
+         call read_site_file(edgrid_g(igr))
+      end do
+   end if
   
    if (mynum < nnodetot) call MPI_Send(ping,1,MPI_INTEGER,sendnum,100,MPI_COMM_WORLD,ierr)
   
@@ -153,7 +153,7 @@ subroutine load_ecosystem_state()
   
 
    select case (ied_init_mode)
-   case(0)
+   case(-8,0)
       !----- Initialize everything with near-bare ground ----------------------------------!
       if (mynum /= 1) write(unit=*,fmt='(a)') ' + Doing near bare ground initialization...'
       do igr=1,ngrids
@@ -164,6 +164,12 @@ subroutine load_ecosystem_state()
       !----- Initialize with ED1-type restart information. --------------------------------!
       write(unit=*,fmt='(a,i3.3)') ' + Initializing from ED restart file. Node: ',mynum
       call read_ed1_history_file
+
+   case(4)   
+      write(unit=*,fmt='(a,i3.3)') ' + Initializing from ED2.1 state file. Node: ',mynum
+      call read_ed21_history_file
+      
+
    end select
 
    if (mynum < nnodetot) call MPI_Send(ping,1,MPI_INTEGER,sendnum,101,MPI_COMM_WORLD,ierr)

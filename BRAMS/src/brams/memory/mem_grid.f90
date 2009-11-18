@@ -623,7 +623,7 @@ contains
          'LPV :2:mpti')      
     if (associated(grid%flpw)) &
          call vtables2 (grid%flpw(1,1),gridm%flpw(1,1),ng,npts,imean,  &
-         'LPW :2:mpti')      
+         'LPW :2:mpti')
 
     if (associated(grid%fmynum)) &
          call vtables2 (grid%fmynum(1,1),gridm%fmynum(1,1),ng,npts,imean,  &

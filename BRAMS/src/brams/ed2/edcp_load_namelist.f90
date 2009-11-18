@@ -31,7 +31,7 @@ subroutine read_ednl(iunit)
        end_time, integration_scheme, ffilout,  dtlsm,                 &
        iprintpolys,printvars,npvars,pfmtstr,ipmax,ipmin,              &
        iedcnfgf,ffilout,sfilout,sfilin,event_file, attach_metadata
-  use canopy_air_coms, only:  icanturb
+  use canopy_air_coms, only:  icanturb, isfclyrm
 
   use grid_coms, only: timmax,time
   
@@ -67,7 +67,8 @@ subroutine read_ednl(iunit)
        soildepth_db,isoilstateinit,isoildepthflg,isoilbc,integration_scheme, &
        ibranch_thermo,istoma_scheme,iphen_scheme,repro_scheme,lapse_scheme,  &
        crown_mod,n_plant_lim,n_decomp_lim,include_fire,ianth_disturb,        &
-       icanturb,include_these_pft,agri_stock,plantation_stock,pft_1st_check, &
+       icanturb,isfclyrm,include_these_pft,agri_stock,plantation_stock,      &
+       pft_1st_check, &
        maxpatch,maxcohort,treefall_disturbance_rate,runoff_time,iprintpolys, &
        npvars,printvars,pfmtstr,ipmin,ipmax,iphenys1,iphenysf,               &
        iphenyf1,iphenyff,iedcnfgf,event_file,phenpath
@@ -111,6 +112,7 @@ subroutine read_ednl(iunit)
      write(*,*) "include_fire=",include_fire
      write(*,*) "ianth_disturb=",ianth_disturb
      write(*,*) "icanturb=",icanturb
+     write(*,*) "isfclyrm=",isfclyrm
      write(*,*) "include_these_pft=",include_these_pft
      write(*,*) "agri_stock=",agri_stock
      write(*,*) "plantation_stock=",plantation_stock
@@ -137,7 +139,8 @@ subroutine read_ednl(iunit)
   end if
 
   call copy_in_bramsnl(expnme, runtype, itimez, idatez, imonthz, iyearz, &
-       itimea, idatea, imontha, iyeara, radfrq, nnxp,nnyp,deltax,        &
+       itimea, idatea, imontha, iyeara, itimeh, idateh, imonthh, iyearh, &
+       radfrq, nnxp,nnyp,deltax,        &
        deltay,polelat,polelon,centlat,centlon,nstratx,nstraty,           &
        iclobber,nzg,nzs,isoilflg,nslcon,slz,slmstr,stgoff,leaf_zrough,istar,ngrids)
   
@@ -166,8 +169,6 @@ subroutine read_ednl(iunit)
   unitfast  = 0           ! Since BRAMS uses frqanl and frqhist in seconds, there is no
   unitstate = 0           ! reason to ask the user for units for outfast and outstate, the
                           ! special flags cover all possibilities.
-
-  
   ! Force LEAF3's number of patches to be 2. This is necessary for
   ! filling the lower boundary condition arrays correctly
   ! --------------------------------------------------------------------
@@ -242,12 +243,13 @@ subroutine read_ednl(iunit)
   
 subroutine copy_in_bramsnl(expnme_b, runtype_b, itimez_b, idatez_b, &
      imonthz_b, iyearz_b, itimea_b, idatea_b, imontha_b, iyeara_b,  &
+     itimeh_b, idateh_b, imonthh_b, iyearh_b,                       &
      radfrq_b,nnxp_b,nnyp_b,deltax_b,deltay_b,polelat_b,polelon_b,  &
      centlat_b,centlon_b,nstratx_b,nstraty_b,iclobber_b,nzg_b,nzs_b,&
      isoilflg_b,nslcon_b,slz_b,slmstr_b,stgoff_b,zrough_b,isfclyrm_b,ngrids_b)
   
   use ed_misc_coms, only: expnme, runtype, itimez, idatez, imonthz, iyearz, &
-       itimea, idatea, imontha, iyeara, iclobber,radfrq
+       itimea, idatea, imontha, iyeara, itimeh, idateh, imonthh, iyearh, iclobber,radfrq
   
   use grid_coms, only: centlon,centlat,deltax,deltay,nnxp,nnyp,nstratx, &
        nstraty,polelat,polelon,ngrids,timmax,time,nzg, nzs
@@ -271,6 +273,10 @@ subroutine copy_in_bramsnl(expnme_b, runtype_b, itimez_b, idatez_b, &
   integer                   , intent(in) :: imonthz_b
   integer                   , intent(in) :: idatez_b
   integer                   , intent(in) :: itimez_b
+  integer                   , intent(in) :: iyearh_b
+  integer                   , intent(in) :: imonthh_b
+  integer                   , intent(in) :: idateh_b
+  integer                   , intent(in) :: itimeh_b
   real                      , intent(in) :: radfrq_b
   integer                   , intent(in) :: iclobber_b
   integer,dimension(maxgrds), intent(in) :: nnxp_b
@@ -300,6 +306,10 @@ subroutine copy_in_bramsnl(expnme_b, runtype_b, itimez_b, idatez_b, &
   idatez   = idatez_b
   imonthz  = imonthz_b
   iyearz   = iyearz_b
+  itimeh   = itimeh_b
+  idateh   = idateh_b
+  imonthh  = imonthh_b
+  iyearh   = iyearh_b
   itimea   = itimea_b
   idatea   = idatea_b
   imontha  = imontha_b

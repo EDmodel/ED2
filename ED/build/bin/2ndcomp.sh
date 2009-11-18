@@ -12,7 +12,6 @@ rm -fv c34constants.o             c34constants.mod
 rm -fv charutils.o                charutils.mod 
 rm -fv consts_coms.o              consts_coms.mod 
 rm -fv dateutils.o                dateutils.mod 
-rm -fv decomposition.o            decomposition.mod 
 rm -fv decomp_coms.o              decomp_coms.mod 
 rm -fv disturbance.o              disturbance.mod 
 rm -fv disturb_coms.o             disturb_coms.mod 
@@ -90,6 +89,7 @@ rm -fv rk4_misc.o                 rk4_misc.mod
 rm -fv rk4_stepper.o              rk4_stepper.mod 
 rm -fv rsys.o                     rsys.mod 
 rm -fv soil_coms.o                soil_coms.mod 
+rm -fv soil_respiration.o         soil_respiration.mod 
 rm -fv structural_growth.o        structural_growth.mod 
 rm -fv therm_lib.o                therm_lib.mod 
 rm -fv therm_lib8.o               therm_lib8.mod 

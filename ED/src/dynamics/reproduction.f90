@@ -31,17 +31,19 @@ subroutine reproduction(cgrid, month)
                                  , hgt_min               & ! intent(in)
                                  , plant_min_temp        ! ! intent(in)
    use decomp_coms        , only : f_labile              ! ! intent(in)
-   use ed_max_dims           , only : n_pft                 ! ! intent(in)
-   use fuse_fiss_utils , only : sort_cohorts       & ! subroutine
-                                 , terminate_cohorts  & ! subroutine
-                                 , fuse_cohorts       & ! subroutine
-                                 , split_cohorts      ! ! subroutine
+   use ed_max_dims        , only : n_pft                 ! ! intent(in)
+   use fuse_fiss_utils    , only : sort_cohorts          & ! subroutine
+                                 , terminate_cohorts     & ! subroutine
+                                 , fuse_cohorts          & ! subroutine
+                                 , split_cohorts         ! ! subroutine
    use phenology_coms     , only : repro_scheme          ! ! intent(in)
    use mem_sites          , only : maxcohort             ! ! intent(in)
+   use consts_coms        , only : pio4                  ! ! intent(in)
    use ed_therm_lib       , only : calc_hcapveg          ! ! function
    use allometry          , only : dbh2bd                & ! function
                                  , dbh2bl                & ! function
                                  , h2dbh                 & ! function
+                                 , ed_biomass            & ! function
                                  , area_indices          ! ! subroutine
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
@@ -59,6 +61,7 @@ subroutine reproduction(cgrid, month)
    logical                             :: late_spring
    real                                :: elim_nplant
    real                                :: elim_lai
+   real                                :: salloci
    !----- Saved variables -----------------------------------------------------------------!
    logical          , save             :: first_time=.true.
    !---------------------------------------------------------------------------------------!
@@ -268,7 +271,15 @@ subroutine reproduction(cgrid, month)
                   !----- Carry out standard initialization. -------------------------------!
                   call init_ed_cohort_vars(cpatch,ico,cpoly%lsl(isi))
 
-                  !----- Assign temperature after init_ed_cohort_vars... ---------------!
+                  !----- Assign initial sapwood and root biomass. -------------------------!
+                  ipft    = cpatch%pft(ico)
+                  salloci = 1. / (1. + qsw(ipft) * cpatch%hite(ipft) + q(ipft))
+                  cpatch%broot(ico)    = q(ipft) * cpatch%balive(ico) * salloci
+                  cpatch%bsapwood(ico) = qsw(ipft) * cpatch%hite(ipft)                     &
+                                       * cpatch%balive(ico) * salloci
+
+
+                  !----- Assign temperature after init_ed_cohort_vars... ------------------!
                   cpatch%veg_temp(ico)  = recruit(inew)%veg_temp
 
                   !----- Initialise the next variables with zeroes... ---------------------!
@@ -280,6 +291,18 @@ subroutine reproduction(cgrid, month)
                   cpatch%solvable(ico) = .true.
                   !----- Assigning SLA as the default value. ------------------------------!
                   cpatch%sla(ico) = sla(cpatch%pft(ico))
+                  
+                  !------------------------------------------------------------------------!
+                  !    Computing initial AGB and Basal Area. Their derivatives will be     !
+                  ! zero.                                                                  !
+                  !------------------------------------------------------------------------!
+                  cpatch%agb(ico)     = ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)    &
+                                                  ,cpatch%bleaf(ico),cpatch%pft(ico)       &
+                                                  ,cpatch%hite(ico),cpatch%bstorage(ico))
+                  cpatch%basarea(ico) = pio4 * cpatch%dbh(ico)  * cpatch%dbh(ico)
+                  cpatch%dagb_dt(ico) = 0.0
+                  cpatch%dba_dt(ico)  = 0.0
+                  cpatch%ddbh_dt(ico) = 0.0
                   !------------------------------------------------------------------------!
                   !     Setting new_recruit_flag to 1 indicates that this cohort is        !
                   ! included when we tally agb_recruit, basal_area_recruit.                !

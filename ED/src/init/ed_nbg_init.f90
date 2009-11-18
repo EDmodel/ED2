@@ -3,11 +3,12 @@
 !      This subroutine initializes a near-bare ground polygon.                             !
 !------------------------------------------------------------------------------------------!
 subroutine near_bare_ground_init(cgrid)
-   use ed_state_vars , only: edtype           & ! structure
-                           , polygontype      & ! structure
-                           , sitetype         & ! structure
-                           ,allocate_sitetype ! ! subroutine
-
+   use ed_state_vars , only : edtype           & ! structure
+                            , polygontype      & ! structure
+                            , sitetype         & ! structure
+                            ,allocate_sitetype ! ! subroutine
+   use ed_misc_coms  , only : ied_init_mode    ! ! intent(in)
+   
    implicit none
 
    !----- Arguments. ----------------------------------------------------------------------!
@@ -43,7 +44,12 @@ subroutine near_bare_ground_init(cgrid)
          csite%plant_ag_biomass   (1) = 0.
 
          !----- We now populate the cohorts with near bare ground condition. --------------!
-         call init_nbg_cohorts(csite,cpoly%lsl(isi),1,csite%npatches)
+         select case (ied_init_mode)
+         case (-8)
+            call init_cohorts_by_layers(csite,cpoly%lsl(isi),1,csite%npatches)
+         case (0)
+            call init_nbg_cohorts(csite,cpoly%lsl(isi),1,csite%npatches)
+         end select
 
          !----- Initialise the patches now that cohorts are there. ------------------------!
          call init_ed_patch_vars(csite,1,csite%npatches,cpoly%lsl(isi))
@@ -76,7 +82,7 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
                                  , patchtype          & ! structure
                                  , allocate_sitetype  & ! subroutine
                                  , allocate_patchtype ! ! subroutine
-   use ed_max_dims           , only : n_pft              ! ! intent(in)
+   use ed_max_dims        , only : n_pft              ! ! intent(in)
    use pft_coms           , only : q                  & ! intent(in)
                                  , qsw                & ! intent(in)
                                  , sla                & ! intent(in)
@@ -85,14 +91,17 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
                                  , include_these_pft  & ! intent(in)
                                  , include_pft_ag     & ! intent(in)
                                  , init_density       ! ! intent(in)
-   use consts_coms        , only : t3ple              ! ! intent(in)
+   use consts_coms        , only : t3ple              & ! intent(in)
+                                 , pio4               & ! intent(in)
+                                 , kgom2_2_tonoha     & ! intent(in)
+                                 , tonoha_2_kgom2     ! ! intent(in)
    use ed_therm_lib       , only : calc_hcapveg       ! ! function
    use allometry          , only : h2dbh              & ! function
                                  , dbh2bd             & ! function
                                  , dbh2bl             & ! function
                                  , ed_biomass         & ! function
                                  , area_indices       ! ! subroutine
-   use fuse_fiss_utils , only : sort_cohorts    ! ! subroutine
+   use fuse_fiss_utils    , only : sort_cohorts    ! ! subroutine
 
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
@@ -106,6 +115,8 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
    integer                            :: ico     ! Cohort counter
    integer                            :: mypfts  ! Number of PFTs to be included.
    integer                            :: ipft    ! PFT counter
+   real                               :: salloc  ! Factor to find balive, broot, bsapwood
+   real                               :: salloci ! 1./salloc
    !---------------------------------------------------------------------------------------!
 
    !----- Patch loop. ---------------------------------------------------------------------!
@@ -122,8 +133,7 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
 
       !----- Perform cohort allocation. ---------------------------------------------------!
       call allocate_patchtype(cpatch,mypfts)
-      !call allocate_patchtype(cpatch,0)
-      !cycle patchloop
+
       !------------------------------------------------------------------------------------!
       !    Here we loop over PFTs rather than assigning the cohorts, so we ensure to only  !
       ! include the PFTs that should be  included (i.e., patches that should not happen in !
@@ -151,7 +161,6 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
 
          !----- The PFT is the plant functional type. -------------------------------------!
          cpatch%pft(ico)              = ipft
-   
          !---------------------------------------------------------------------------------!
          !     Define the near-bare ground state using the standard minimum height and     !
          ! minimum plant density.  We assume all NBG PFTs to have leaves fully flushed,    !
@@ -166,8 +175,15 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
          cpatch%bdead(ico)            = dbh2bd(cpatch%dbh(ico),cpatch%hite(ico),ipft)
          cpatch%bleaf(ico)            = dbh2bl(cpatch%dbh(ico),ipft)
          cpatch%sla(ico)              = sla(ipft)
-         cpatch%balive(ico)           = cpatch%bleaf(ico)                                  &
-                                      * ( 1.0 + q(ipft) + qsw(ipft) * cpatch%hite(ico) )
+
+
+         salloc                       = 1.0 + q(ipft) + qsw(ipft) * cpatch%hite(ico)
+         salloci                      = 1. / salloc
+
+         cpatch%balive(ico)           = cpatch%bleaf(ico) * salloc
+         cpatch%broot(ico)            = q(ipft) * cpatch%balive(ico) * salloci
+         cpatch%bsapwood(ico)         = qsw(ipft) * cpatch%hite(ico) * cpatch%balive(ico)  &
+                                      * salloci
 
          !----- Find the initial area indices (LAI, WPA, WAI). ----------------------------!
          call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)          &
@@ -175,7 +191,12 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
                           ,cpatch%pft(ico),cpatch%sla(ico),cpatch%lai(ico)                 &
                           ,cpatch%wpa(ico),cpatch%wai(ico))
 
-         
+         !----- Find the above-ground biomass and basal area. -----------------------------!
+         cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)                 &
+                                     ,cpatch%bleaf(ico),cpatch%pft(ico)                    &
+                                     ,cpatch%hite(ico),cpatch%bstorage(ico))
+         cpatch%basarea(ico) = pio4 * cpatch%dbh(ico)*cpatch%dbh(ico)
+
          !----- Initialize other cohort-level variables. ----------------------------------!
          call init_ed_cohort_vars(cpatch,ico,lsl)
          
@@ -193,10 +214,8 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
                                               ,cpatch%phenology_status(ico))
  
          !----- Update total patch-level above-ground biomass -----------------------------!
-         csite%plant_ag_biomass(ipa) = csite%plant_ag_biomass(ipa) + cpatch%nplant(ico)    &
-                                     * ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)     &
-                                                 ,cpatch%bleaf(ico),cpatch%pft(ico)        &
-                                                 ,cpatch%hite(ico),cpatch%bstorage(ico))
+         csite%plant_ag_biomass(ipa) = csite%plant_ag_biomass(ipa)                         &
+                                     + cpatch%nplant(ico) * cpatch%agb(ico)
       end do pftloop
       
       !------------------------------------------------------------------------------------!
@@ -207,5 +226,157 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
 
    return
 end subroutine init_nbg_cohorts
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!      This subroutine assigns a near-bare ground (NBG) state for some patches.            !
+!------------------------------------------------------------------------------------------!
+subroutine init_cohorts_by_layers(csite,lsl,ipa_a,ipa_z)
+   use ed_state_vars      , only : edtype             & ! structure
+                                 , polygontype        & ! structure
+                                 , sitetype           & ! structure
+                                 , patchtype          & ! structure
+                                 , allocate_sitetype  & ! subroutine
+                                 , allocate_patchtype ! ! subroutine
+   use ed_max_dims        , only : n_pft              ! ! intent(in)
+   use pft_coms           , only : q                  & ! intent(in)
+                                 , qsw                & ! intent(in)
+                                 , sla                & ! intent(in)
+                                 , hgt_min            & ! intent(in)
+                                 , include_pft        & ! intent(in)
+                                 , include_these_pft  & ! intent(in)
+                                 , include_pft_ag     & ! intent(in)
+                                 , init_density       ! ! intent(in)
+   use consts_coms        , only : t3ple              & ! intent(in)
+                                 , pio4               & ! intent(in)
+                                 , kgom2_2_tonoha     & ! intent(in)
+                                 , tonoha_2_kgom2     ! ! intent(in)
+   use ed_therm_lib       , only : calc_hcapveg       ! ! function
+   use allometry          , only : h2dbh              & ! function
+                                 , dbh2bd             & ! function
+                                 , dbh2bl             & ! function
+                                 , ed_biomass         & ! function
+                                 , area_indices       ! ! subroutine
+   use fuse_fiss_utils    , only : sort_cohorts    ! ! subroutine
+
+   implicit none
+   !----- Arguments -----------------------------------------------------------------------!
+   type(sitetype)        , target     :: csite   ! Current site
+   integer               , intent(in) :: lsl     ! Lowest soil level
+   integer               , intent(in) :: ipa_a   ! 1st patch to be assigned with NBG state
+   integer               , intent(in) :: ipa_z   ! Last patch to be assigned with NBG state
+   !----- Local variables -----------------------------------------------------------------!
+   type(patchtype)       , pointer    :: cpatch  ! Current patch
+   integer                            :: ipa     ! Patch number
+   integer                            :: ico     ! Cohort counter
+   integer                            :: ipft    ! PFT counter
+   real                               :: height  ! Cohort initial height
+   real                               :: salloc  ! Factor to find balive, broot, bsapwood
+   real                               :: salloci ! 1./salloc
+   !----- Local constants. ----------------------------------------------------------------!
+   integer               , parameter  :: nlayers = 8   ! # of cohort layers to be included.
+   real                  , parameter  :: dheight = 1.5 ! height interval.
+   real                  , parameter  :: lai0    = 1.  ! Initial LAI for each layer.
+   real                  , parameter  :: h0      = 1.5 ! Height of the lowest cohort.
+   !---------------------------------------------------------------------------------------!
+
+   !----- Patch loop. ---------------------------------------------------------------------!
+   patchloop: do ipa=ipa_a,ipa_z
+      cpatch => csite%patch(ipa)
+
+      if (sum(include_pft) /= 1) then
+         call fatal_error('Multi-layer run cannot be run with more than 1 PFT...'          &
+                         ,'init_cohorts_by_layers','ed_nbg_init.f90')
+      end if
+
+      !----- Assigning the PFT. -----------------------------------------------------------! 
+      ipft = include_these_pft(1)
+      
+      !----- Perform cohort allocation. ---------------------------------------------------!
+      call allocate_patchtype(cpatch,nlayers)
+
+      !------------------------------------------------------------------------------------!
+      !    Here we loop over layers and assign the new cohort.                             !
+      !------------------------------------------------------------------------------------!
+      height = h0 - dheight
+      layerloop: do ico = 1,nlayers
+         height = height + dheight
+
+         !----- The PFT is the plant functional type. -------------------------------------!
+         cpatch%pft(ico)              = ipft
+
+         !---------------------------------------------------------------------------------!
+         !     Define the initial state in such a way that the LAI is always the initial   !
+         ! LAI.  We then compute the other biomass quantities using the standard allometry !
+         ! for this PFT.                                                                   !
+         !---------------------------------------------------------------------------------!
+         cpatch%hite(ico)             = height
+         cpatch%phenology_status(ico) = 0
+         cpatch%bstorage(ico)         = 0.0
+         cpatch%dbh(ico)              = h2dbh(cpatch%hite(ico),ipft)
+         cpatch%bdead(ico)            = dbh2bd(cpatch%dbh(ico),cpatch%hite(ico),ipft)
+         cpatch%bleaf(ico)            = dbh2bl(cpatch%dbh(ico),ipft)
+         cpatch%sla(ico)              = sla(ipft)
+
+
+         salloc                       = 1.0 + q(ipft) + qsw(ipft) * cpatch%hite(ico)
+         salloci                      = 1. / salloc
+
+         cpatch%balive(ico)           = cpatch%bleaf(ico) * salloc
+         cpatch%broot(ico)            = q(ipft) * cpatch%balive(ico) * salloci
+         cpatch%bsapwood(ico)         = qsw(ipft) * cpatch%hite(ico) * cpatch%balive(ico)  &
+                                      * salloci
+
+         !----- NPlant is defined such that the cohort LAI is equal to LAI0
+         cpatch%nplant(ico)           = lai0 / (cpatch%bleaf(ico) * cpatch%sla(ico))
+
+         !----- Find the initial area indices (LAI, WPA, WAI). ----------------------------!
+         call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)          &
+                          ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)            &
+                          ,cpatch%pft(ico),cpatch%sla(ico),cpatch%lai(ico)                 &
+                          ,cpatch%wpa(ico),cpatch%wai(ico))
+
+         !----- Find the above-ground biomass and basal area. -----------------------------!
+         cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)                 &
+                                     ,cpatch%bleaf(ico),cpatch%pft(ico)                    &
+                                     ,cpatch%hite(ico),cpatch%bstorage(ico))
+         cpatch%basarea(ico) = cpatch%dbh(ico)*cpatch%dbh(ico)
+
+         !----- Initialize other cohort-level variables. ----------------------------------!
+         call init_ed_cohort_vars(cpatch,ico,lsl)
+         
+         !---------------------------------------------------------------------------------!
+         !     Set the initial vegetation thermodynamic properties.  We assume the veget-  !
+         ! ation to be with no condensed/frozen water in their surfaces, and the temper-   !
+         ! ature to be the same as the canopy air space.  Then we find the internal energy !
+         ! and heat capacity.                                                              !
+         !---------------------------------------------------------------------------------!
+         cpatch%veg_water(ico)  = 0.0
+         cpatch%veg_fliq(ico)   = 0.0
+         cpatch%hcapveg(ico)    = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico)         &
+                                              ,cpatch%balive(ico),cpatch%nplant(ico)       &
+                                              ,cpatch%hite(ico),cpatch%pft(ico)            &
+                                              ,cpatch%phenology_status(ico))
+ 
+         !----- Update total patch-level above-ground biomass -----------------------------!
+         csite%plant_ag_biomass(ipa) = csite%plant_ag_biomass(ipa)                         &
+                                     + cpatch%nplant(ico) * cpatch%agb(ico)
+      end do layerloop
+      
+      !------------------------------------------------------------------------------------!
+      !     Since initial heights may not be constant, we must sort the cohorts.           !
+      !------------------------------------------------------------------------------------!
+      call sort_cohorts(cpatch)
+   end do patchloop
+
+   return
+end subroutine init_cohorts_by_layers
 !==========================================================================================!
 !==========================================================================================!

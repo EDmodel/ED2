@@ -43,7 +43,8 @@ subroutine copy_nl(copy_type)
   use pft_coms, only: include_these_pft,agri_stock,plantation_stock,pft_1st_check
 
   use ed_misc_coms, only: expnme, runtype, itimez, idatez, imonthz, iyearz,  &
-       itimea, idatea, imontha, iyeara, ifoutput, iclobber, frqfast, &
+       itimea, idatea, imontha, iyeara, itimeh, idateh, imonthh, iyearh, &
+       ifoutput, iclobber, frqfast, &
        sfilin, ied_init_mode, current_time, ed_inputs_dir,   &
        end_time, radfrq, integration_scheme, ffilout, idoutput,imoutput,&
        iyoutput, itoutput, dtlsm, &
@@ -93,17 +94,23 @@ subroutine copy_nl(copy_type)
 
      attach_metadata = nl%attach_metadata
 
-     iclobber       = nl%iclobber
-     unitfast       = nl%unitfast
-     unitstate      = nl%unitstate
-     frqfast        = nl%frqfast
-     frqstate       = nl%frqstate
-     outfast        = nl%outfast
-     outstate       = nl%outstate
-     sfilin         = nl%sfilin
-     ffilout        = nl%ffilout
-     sfilout        = nl%sfilout
-     ied_init_mode  = nl%ied_init_mode
+     iclobber        = nl%iclobber
+     unitfast        = nl%unitfast
+     unitstate       = nl%unitstate
+     frqfast         = nl%frqfast
+     frqstate        = nl%frqstate
+     outfast         = nl%outfast
+     outstate        = nl%outstate
+     
+     sfilin          = nl%sfilin
+     itimeh          = nl%itimeh
+     idateh          = nl%idateh
+     imonthh         = nl%imonthh
+     iyearh          = nl%iyearh
+     
+     ffilout         = nl%ffilout
+     sfilout         = nl%sfilout
+     ied_init_mode   = nl%ied_init_mode
 
      isoilflg      = nl%isoilflg
      nslcon        = nl%nslcon

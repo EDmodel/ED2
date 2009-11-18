@@ -1,1066 +1,1064 @@
-MODULE rad_carma
+!==========================================================================================!
+!==========================================================================================!
+!     This module contains the subroutines that drive CARMA radiation.                     !
+!------------------------------------------------------------------------------------------!
+module rad_carma
   
-  USE mem_carma
-  
-  INTEGER,ALLOCATABLE :: indexi(:)
-  INTEGER,ALLOCATABLE :: indexj(:)  
-  
-  CONTAINS
+   use mem_carma
 
-!kmlnew
-  SUBROUTINE radcarma(m1,m2,m3,ia,iz,ja,jz,solfac  &
-     ,theta_,pi0_,pp_,rv_,RAIN_,LWL_,IWL_,dn0_,rtp_,fthrd_,rtgt_,f13t_,f23t_ &
-     ,glat_,glon_,rshort_,rlong_,albedt_,cosz_,rlongup_ &
-     ,mynum,fmapt_,pm_,aot_,xland_)
-!kmlnew
-    ! CATT
-    use catt_start, only: CATT ! INTENT(IN)
-
-    USE mem_grid,   ONLY:  centlon,	& !INTENT()
-  			   dzm, 	  & !INTENT()
-  			   dzt, 	  & !INTENT()
-  			   idatea,	  & !INTENT()
-  			   imontha,	  & !INTENT()
-  			   itimea,	  & !INTENT()
-  			   itopo,	  & !INTENT()
-  			   iyeara,	  & !INTENT()
-  			   ngrid,	  & !INTENT()
-  			   nzp, 	  & !INTENT()
-  			   plonn,	  & !INTENT()
-  			   time 	    !INTENT()
-  
-    USE grid_dims, ONLY: nzpmax	    !INTENT()
-    USE mem_radiate, ONLY: lonrad	    !INTENT()
-  
-    USE rconstants,  ONLY: cp,  	  & !INTENT()
-  			   cpor,	  & !INTENT()
-  			   p00, 	  & !INTENT()
-  			   pio180,	  & !INTENT()
-  			   stefan	    !INTENT()
-
-    USE mem_globrad, ONLY: rad_data_not_read,raddatfn !,read_rad_data ! not used
-
-    USE mem_aerad, ONLY: ngas,nwave,iprocopio
-!kmlnew 
-    USE mem_leaf          , only: leaf_g
-!kmlnew  
-   !LFR->para salvar o estado da memoria
-    !LFR  USE rams_rad_state, ONLY: WRITE_radiate_stat
-    !LFR->  
-  
-      IMPLICIT NONE
-  
-    INTEGER,INTENT(IN) :: m1,m2,m3,ia,iz,ja,jz,mynum
-    REAL,INTENT(IN)    :: solfac
-  	 
-    REAL,INTENT(IN) :: rtgt_(m2,m3)
-    REAL,INTENT(IN) :: f13t_(m2,m3)
-    REAL,INTENT(IN) :: f23t_(m2,m3)
-    REAL,INTENT(IN) :: glat_(m2,m3)
-    REAL,INTENT(IN) :: glon_(m2,m3)
-    REAL,INTENT(IN) :: cosz_(m2,m3)
-    REAL,INTENT(IN) :: albedt_(m2,m3)
-    REAL,INTENT(IN) :: fmapt_(m2,m3)
-  
-    REAL,INTENT(IN) :: pm_(m1,m2,m3)   ! particulate material (kg[pm]/kg[air])
-    REAL,INTENT(IN) :: theta_(m1,m2,m3)
-    REAL,INTENT(IN) :: pi0_(m1,m2,m3)
-    REAL,INTENT(IN) :: pp_(m1,m2,m3)
-    REAL,INTENT(IN) :: rv_(m1,m2,m3)
-!kmlnew
-    REAL,INTENT(IN) :: RAIN_(m2,m3)
-    REAL,INTENT(IN) :: LWL_(m1,m2,m3)
-    REAL,INTENT(IN) :: IWL_(m1,m2,m3)
-    REAL,INTENT(IN) :: xland_(m2,m3)
-!kmlnew    
-    REAL,INTENT(IN) :: dn0_(m1,m2,m3)
-    REAL,INTENT(IN) :: rtp_(m1,m2,m3)
-  
-    REAL,INTENT(INOUT) :: fthrd_(m1,m2,m3)  
-    REAL,INTENT(INOUT) :: rshort_(m2,m3)
-    REAL,INTENT(INOUT) :: rlong_(m2,m3)
-    REAL,INTENT(INOUT) :: rlongup_(m2,m3)
-    REAL,INTENT(INOUT) :: aot_(m2,m3,nwave)
-    
-    
-    REAL :: rtgt((iz-ia+1)*(jz-ja+1))
-    REAL :: f13t((iz-ia+1)*(jz-ja+1))
-    REAL :: f23t((iz-ia+1)*(jz-ja+1))
-    REAL :: glat((iz-ia+1)*(jz-ja+1))
-    REAL :: glon((iz-ia+1)*(jz-ja+1))
-    REAL :: cosz((iz-ia+1)*(jz-ja+1))
-    REAL :: albedt((iz-ia+1)*(jz-ja+1))
-    REAL :: fmapt((iz-ia+1)*(jz-ja+1))
-  
-    REAL :: pm((iz-ia+1)*(jz-ja+1),m1)! particulate material (kg[pm]/kg[air])
-    REAL :: theta((iz-ia+1)*(jz-ja+1),m1)
-    REAL :: pi0((iz-ia+1)*(jz-ja+1),m1)
-    REAL :: pp((iz-ia+1)*(jz-ja+1),m1)
-    REAL :: rv((iz-ia+1)*(jz-ja+1),m1)
-!kmlnew
-    REAL :: RAIN((iz-ia+1)*(jz-ja+1))
-    REAL :: LWL((iz-ia+1)*(jz-ja+1),m1)
-    REAL :: IWL((iz-ia+1)*(jz-ja+1),m1)
-    REAL :: xland((iz-ia+1)*(jz-ja+1))
-!kmlnew    
-    REAL :: dn0((iz-ia+1)*(jz-ja+1),m1)
-    REAL :: rtp((iz-ia+1)*(jz-ja+1),m1)
-  
-    REAL :: fthrd((iz-ia+1)*(jz-ja+1),m1)   
-    REAL :: rshort((iz-ia+1)*(jz-ja+1))     
-    REAL :: rlong((iz-ia+1)*(jz-ja+1))      
-    REAL :: rlongup((iz-ia+1)*(jz-ja+1))    
-    REAL :: aotl((iz-ia+1)*(jz-ja+1),nwave)
-      
-    REAL :: prd((iz-ia+1)*(jz-ja+1),nzpmax)
-    REAL :: temprd((iz-ia+1)*(jz-ja+1),nzpmax+1)
-    REAL :: dn0r((iz-ia+1)*(jz-ja+1),nzpmax)
-    REAL :: dztr((iz-ia+1)*(jz-ja+1),nzpmax)
-    REAL :: pmr((iz-ia+1)*(jz-ja+1),nzpmax)
-    REAL :: rvr((iz-ia+1)*(jz-ja+1),nzpmax)
-!kmlnew
-    REAL :: RAINr((iz-ia+1)*(jz-ja+1))
-    REAL :: LWLr((iz-ia+1)*(jz-ja+1),nzpmax)
-    REAL :: IWLr((iz-ia+1)*(jz-ja+1),nzpmax)
-    REAL :: xlandr((iz-ia+1)*(jz-ja+1))
-!kmlnew
-    REAL :: fthrl((iz-ia+1)*(jz-ja+1),nzpmax)
-    REAL :: fthrs((iz-ia+1)*(jz-ja+1),nzpmax)
-    
-    REAL,PARAMETER :: fcui=1.e-6     !de mg [gas/part] /kg [ar] para kg/kg
-    
-    
-    REAL :: pird,dzsdx,dzsdy,dlon,a1,a2,dayhr,gglon,dztri
-    REAL :: dayhrr,hrangl,sinz,sazmut,slazim,slangl,cosi
-    INTEGER :: igas,kk,ik,iend,ij,i,j,k,nzz
-
-    INTEGER :: ncall = 0 
-
-    ! DEBUG-ALF
-    real :: sum_test
-    !
+   !=======================================================================================!
+   !=======================================================================================!
 
 
-    iend=(iz-ia+1)*(jz-ja+1) !Size of vector
-    
-    CALL AllocIndex(ia,ja,iz,jz,1) !1 to alloc auxiliar
-    
-    CALL C_2d_1d(rtgt_(ia:iz,ja:jz),rtgt,ia,iz,ja,jz,iend)
-    CALL C_2d_1d(f13t_(ia:iz,ja:jz),f13t,ia,iz,ja,jz,iend)
-    CALL C_2d_1d(f23t_(ia:iz,ja:jz),f23t,ia,iz,ja,jz,iend)
-    CALL C_2d_1d(glat_(ia:iz,ja:jz),glat,ia,iz,ja,jz,iend)
-    CALL C_2d_1d(glon_(ia:iz,ja:jz),glon,ia,iz,ja,jz,iend)
-    CALL C_2d_1d(cosz_(ia:iz,ja:jz),cosz,ia,iz,ja,jz,iend)
-    CALL C_2d_1d(albedt_(ia:iz,ja:jz),albedt,ia,iz,ja,jz,iend)
-    CALL C_2d_1d(fmapt_(ia:iz,ja:jz),fmapt,ia,iz,ja,jz,iend)
+   contains
 
-    if (CATT==1) then
-       CALL C_3d_2d(pm_(:,ia:iz,ja:jz),pm,m1,ia,iz,ja,jz,iend)
-    endif
 
-    CALL C_3d_2d(theta_(:,ia:iz,ja:jz),theta,m1,ia,iz,ja,jz,iend)
-    CALL C_3d_2d(pi0_(:,ia:iz,ja:jz),pi0,m1,ia,iz,ja,jz,iend)
-    CALL C_3d_2d(pp_(:,ia:iz,ja:jz),pp,m1,ia,iz,ja,jz,iend)
-    CALL C_3d_2d(rv_(:,ia:iz,ja:jz),rv,m1,ia,iz,ja,jz,iend)
-!kmlnew
-    CALL C_3d_2d(LWL_(:,ia:iz,ja:jz),LWL,m1,ia,iz,ja,jz,iend)
-    CALL C_3d_2d(IWL_(:,ia:iz,ja:jz),IWL,m1,ia,iz,ja,jz,iend)
-    CALL C_2d_1d( RAIN_(ia:iz,ja:jz),RAIN ,ia,iz,ja,jz,iend)
-    CALL C_2d_1d(xland_(ia:iz,ja:jz),xland,ia,iz,ja,jz,iend)
-!kmlnew
 
-    CALL C_3d_2d(dn0_(:,ia:iz,ja:jz),dn0,m1,ia,iz,ja,jz,iend)
-    CALL C_3d_2d(rtp_(:,ia:iz,ja:jz),rtp,m1,ia,iz,ja,jz,iend)
-    
-    CALL C_2d_1d(rshort_(ia:iz,ja:jz),rshort,ia,iz,ja,jz,iend)       
-    CALL C_2d_1d(rlong_(ia:iz,ja:jz),rlong,ia,iz,ja,jz,iend)         
-    CALL C_2d_1d(rlongup_(ia:iz,ja:jz),rlongup,ia,iz,ja,jz,iend)     
-    CALL C_3d_2d(fthrd_(:,ia:iz,ja:jz),fthrd,m1,ia,iz,ja,jz,iend)    
-    CALL Ci_3d_2d(aot_(ia:iz,ja:jz,:),aotl,nwave,ia,iz,ja,jz,iend)
-  
-      
-    ! liga radiacao de onda longa
-    ir_aerad = 1
-    
-!srf ---- otimizacao (comentar o "call end_carma" abaixo)
-    !IF (nCALL == 0) THEN
-    !  nCALL = 1
-    !  CALL init_carma(ia,iz,ja,jz,m1,m2,m3)
-    !ENDIF
-!    CALL init_carma(ia,iz,ja,jz,m1,m2,m3)
-  
-    IF(rad_data_not_read) THEN
-       rad_data_not_read=.false.
-       CALL init_carma(ia,iz,ja,jz,m1,m2,m3)
-       CALL setupbins
-    END IF
-    
-    isl_aerad = 0
-    nzz = m1 - 1
-    DO k = 1,m1
-      DO ij=1,iend
-  	pird = (pp(ij,k) + pi0(ij,k)) / cp
-  	temprd(ij,k) = theta(ij,k) * pird ! air temperature (K)
-  	rvr(ij,k) = max(0.,rv(ij,k))
-        
-	LWL(ij,k) = max(0.,LWL(ij,k))
-	IWL(ij,k) = max(0.,IWL(ij,k))
-	
-  	! Convert the next 7 variables to cgs for now.
-  	prd(ij,k) = pird ** cpor * p00 * 10. ! pressure
-  	dn0r(ij,k) = dn0(ij,k) * 1.e-3        ! air density
-  	dztr(ij,k) = dzt(k) / rtgt(ij) * 1.e-2
+   !=======================================================================================!
+   !=======================================================================================!
+   !    This subroutine is an interface between BRAMS and the actual CARMA driver.         !
+   !---------------------------------------------------------------------------------------!
+   subroutine radcomp_carma(m1,m2,m3,ia,iz,ja,jz,solfac,theta,pi0,pp,rv,rain,lwl,iwl,dn0   &
+                           ,rtp,fthrd,rtgt,f13t,f23t,glat,glon,rshort,rlong,albedt,cosz    &
+                           ,rlongup,mynum,fmapt,pm,patch_area,npat)
+      use catt_start  , only : catt               ! ! intent(in)
+      use mem_grid    , only : ngrid              ! ! intent(in)
+      use grid_dims   , only : nzpmax             ! ! intent(in)
+      use mem_aerad   , only : nwave              ! ! intent(in)
+      use mem_globrad , only : rad_data_not_read  ! ! intent(inout)
+      use mem_radiate , only : ilwrtyp            & ! intent(in)
+                             , iswrtyp            ! ! intent(in)
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      integer                    , intent(in)    :: m1
+      integer                    , intent(in)    :: m2
+      integer                    , intent(in)    :: m3
+      integer                    , intent(in)    :: ia
+      integer                    , intent(in)    :: iz
+      integer                    , intent(in)    :: ja
+      integer                    , intent(in)    :: jz
+      integer                    , intent(in)    :: mynum
+      integer                    , intent(in)    :: npat
+      real                       , intent(in)    :: solfac
+      real, dimension(m1,m2,m3)  , intent(in)    :: theta
+      real, dimension(m1,m2,m3)  , intent(in)    :: pi0
+      real, dimension(m1,m2,m3)  , intent(in)    :: pp
+      real, dimension(m1,m2,m3)  , intent(in)    :: rv
+      real, dimension(m1,m2,m3)  , intent(inout) :: lwl
+      real, dimension(m1,m2,m3)  , intent(inout) :: iwl
+      real, dimension(m2,m3)     , intent(in)    :: rain
+      real, dimension(m2,m3,npat), intent(in)    :: patch_area
+      real, dimension(m1,m2,m3)  , intent(in)    :: dn0
+      real, dimension(m1,m2,m3)  , intent(in)    :: rtp
+      real, dimension(m2,m3)     , intent(in)    :: rtgt
+      real, dimension(m2,m3)     , intent(in)    :: f13t
+      real, dimension(m2,m3)     , intent(in)    :: f23t
+      real, dimension(m2,m3)     , intent(in)    :: glat
+      real, dimension(m2,m3)     , intent(in)    :: glon
+      real, dimension(m2,m3)     , intent(in)    :: cosz
+      real, dimension(m2,m3)     , intent(in)    :: albedt
+      real, dimension(m2,m3)     , intent(in)    :: fmapt
+      real, dimension(m1,m2,m3)  , intent(in)    :: pm
+      real, dimension(m2,m3)     , intent(inout) :: rshort
+      real, dimension(m2,m3)     , intent(inout) :: rlong
+      real, dimension(m1,m2,m3)  , intent(inout) :: fthrd
+      real, dimension(m2,m3)     , intent(inout) :: rlongup
+      integer                                    :: i
+      integer                                    :: j
+      integer                                    :: ipat
+      real                                       :: xland
+      real, dimension(nwave)                     :: aotl
+      !------------------------------------------------------------------------------------!
 
-        if (CATT==1) then
-           pmr(ij,k) = pm(ij,k)*fcui
-        else
-           pmr(ij,k) = 0.
-        endif
-	
-      END DO
-    END DO
-    
-    DO ij=1,iend
-      temprd(ij,1) = (rlongup(ij) / stefan) ** 0.25     
-      temprd(ij,nzp+1) = temprd(ij,nzp)
-      !  Initialize atmospheric structure. 
-      p_surf(ij) = 0.5*(prd(ij,1) + prd(ij,2))    
-      p_top(ij)  = prd(ij,m1)		  
-      t_surf(ij) = temprd(ij,1)   
-    END DO
-    DO k=1,m1-1
-      DO ij=1,iend
-  	! K level in CARMA grid corresponds to K+1 level in BRAMS grid
-  	! Transfer values from RAMS grid to CARMA grid
-  	p(ij,k)    =	prd(ij,k+1)
-  	t(ij,k)    = temprd(ij,k+1)
-  	rhoa(ij,k) =   dn0r(ij,k+1)
-!kmlnew
-	LWLr(ij,k) = LWL(ij,k+1)*dn0r(ij,k+1) * 1.e+3  ![kg/m3]
-	IWLr(ij,k) = IWL(ij,k+1)*dn0r(ij,k+1) * 1.e+3  ![kg/m3]
-!kmlnew	
-      END DO
-    END DO
-    
+      !------------------------------------------------------------------------------------!
+      !     Here we initialise some variables.                                             !
+      !------------------------------------------------------------------------------------!
+      call init_carma(m1)
+      call setupbins
+
+      do j=ja,jz
+         do i=ia,iz
+            !----- Resetting the scratch variables. ---------------------------------------!
+            call flush_carma()
+            
+            !----- Copying the aerosol optical transmission to a scratch array. -----------!
+            call ci_3d_1d(m2,m3,nwave,carma(ngrid)%aot,aotl,i,j)
+
+            !----- Finding the amount of land. --------------------------------------------!
+            xland = 1. - patch_area(i,j,1)
+
+            !----- Calling the main CARMA driver. -----------------------------------------!
+            call radcarma(nzpmax,m1,solfac,theta(1:m1,i,j),pi0(1:m1,i,j),pp(1:m1,i,j)      &
+                         ,rv(1:m1,i,j),rain(i,j),lwl(1:m1,i,j),iwl(1:m1,i,j),dn0(1:m1,i,j) &
+                         ,rtp(1:m1,i,j),fthrd(1:m1,i,j),rtgt(i,j),f13t(i,j),f23t(i,j)      &
+                         ,glat(i,j),glon(i,j),rshort(i,j),rlong(i,j),albedt(i,j),cosz(i,j) &
+                         ,rlongup(i,j),mynum,fmapt(i,j),pm(1:m1,i,j),aotl,xland)
+
+            !----- Copying the scratch array back to the CARMA structure. -----------------!
+            call ci_1d_3d(m2,m3,nwave,aotl,carma(ngrid)%aot,i,j)
+            
+            if (ilwrtyp == 4 .and. rlong(i,j) < 50.) then
+               write (unit=*,fmt='(a)')       '==========================================='
+               write (unit=*,fmt='(a,1x,i5)')     ' MYNUM   = ',mynum
+               write (unit=*,fmt='(a,1x,i5)')     ' IA      = ',ia
+               write (unit=*,fmt='(a,1x,i5)')     ' IZ      = ',iz
+               write (unit=*,fmt='(a,1x,i5)')     ' JA      = ',ja
+               write (unit=*,fmt='(a,1x,i5)')     ' JZ      = ',jz
+               write (unit=*,fmt='(a,1x,i5)')     ' I       = ',i
+               write (unit=*,fmt='(a,1x,i5)')     ' J       = ',j
+               write (unit=*,fmt='(a,1x,es12.5)') ' RSHORT  = ',rshort(i,j)
+               write (unit=*,fmt='(a,1x,es12.5)') ' RLONG   = ',rlong(i,j)
+               write (unit=*,fmt='(a,1x,es12.5)') ' RLONGUP = ',rlongup(i,j)
+               write (unit=*,fmt='(a)')       '==========================================='
+               call abort_run('Weird RLONG on CARMA...','radcomp_carma','rad_carma.f90')
+            end if
+         end do
+      end do
+
+      return
+   end subroutine radcomp_carma
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   subroutine radcarma(nzpmax,m1,solfac,theta,pi0,pp,rv,rain,lwl,iwl,dn0,rtp,fthrd         &
+                      ,rtgt,f13t,f23t,glat,glon,rshort,rlong,albedt,cosz,rlongup,mynum     &
+                      ,fmapt,pm,aotl,xland)
+      use catt_start  , only : catt       ! ! intent(in)
+      use mem_grid    , only : centlon    & ! intent(in)
+                             , dzm        & ! intent(in)
+                             , dzt        & ! intent(in)
+                             , idatea     & ! intent(in)
+                             , imontha    & ! intent(in)
+                             , itimea     & ! intent(in)
+                             , itopo      & ! intent(in)
+                             , iyeara     & ! intent(in)
+                             , ngrid      & ! intent(in)
+                             , nzp        & ! intent(in)
+                             , plonn      & ! intent(in)
+                             , time       ! ! intent(in)
+      use mem_radiate , only : lonrad     & ! intent(in)
+                             , iswrtyp    & ! intent(in)
+                             , ilwrtyp    ! ! intent(in)
+      use rconstants  , only : cp         & ! intent(in)
+                             , cpor       & ! intent(in)
+                             , p00        & ! intent(in)
+                             , pio180     & ! intent(in)
+                             , stefan     & ! intent(in)
+                             , toodry     ! ! intent(in)
+      use mem_aerad   , only : ngas       & ! intent(in)
+                             , nwave      & ! intent(in)
+                             , lprocopio  ! ! intent(in)
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      integer                  , intent(in)    :: nzpmax
+      integer                  , intent(in)    :: m1
+      integer                  , intent(in)    :: mynum
+      real                     , intent(in)    :: solfac
+      real                     , intent(in)    :: rtgt
+      real                     , intent(in)    :: f13t
+      real                     , intent(in)    :: f23t
+      real                     , intent(in)    :: glat
+      real                     , intent(in)    :: glon
+      real                     , intent(in)    :: cosz
+      real                     , intent(in)    :: albedt
+      real                     , intent(in)    :: fmapt
+      real                     , intent(in)    :: rain
+      real                     , intent(in)    :: xland
+      real, dimension(m1)      , intent(in)    :: pm     ! part. mat. (kg[pm]/kg[air])
+      real, dimension(m1)      , intent(in)    :: theta
+      real, dimension(m1)      , intent(in)    :: pi0
+      real, dimension(m1)      , intent(in)    :: pp
+      real, dimension(m1)      , intent(in)    :: rv
+      real, dimension(m1)      , intent(in)    :: dn0
+      real, dimension(m1)      , intent(in)    :: rtp
+      real, dimension(m1)      , intent(inout) :: lwl
+      real, dimension(m1)      , intent(inout) :: iwl
+      real, dimension(m1)      , intent(inout) :: fthrd
+      real                     , intent(out)   :: rshort
+      real                     , intent(out)   :: rlong
+      real                     , intent(inout) :: rlongup
+      real, dimension(nwave)   , intent(out)   :: aotl
+      !----- Local variables. -------------------------------------------------------------!
+      real, dimension(nzpmax)                  :: prd
+      real, dimension(nzpmax+1)                :: temprd
+      real, dimension(nzpmax)                  :: dn0r
+      real, dimension(nzpmax)                  :: dztr
+      real, dimension(nzpmax)                  :: pmr
+      real, dimension(nzpmax)                  :: rvr
+      real                                     :: rainr
+      real, dimension(nzpmax)                  :: lwlr
+      real, dimension(nzpmax)                  :: iwlr
+      real                                     :: xlandr
+      real, dimension(nzpmax)                  :: fthrl
+      real, dimension(nzpmax)                  :: fthrs
+      real                                     :: pird
+      real                                     :: dzsdx
+      real                                     :: dzsdy
+      real                                     :: dlon
+      real                                     :: a1
+      real                                     :: a2
+      real                                     :: dayhr
+      real                                     :: gglon
+      real                                     :: dztri
+      real                                     :: dayhrr
+      real                                     :: hrangl
+      real                                     :: sinz
+      real                                     :: sazmut
+      real                                     :: slazim
+      real                                     :: slangl
+      real                                     :: cosi
+      integer                                  :: igas
+      integer                                  :: kk
+      integer                                  :: ik
+      integer                                  :: i
+      integer                                  :: j
+      integer                                  :: k
+      integer                                  :: nzz
+      !----- Local constants. -------------------------------------------------------------!
+      real                     , parameter     :: fcui = 1.e-6 ! mg/kg => kg/kg
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !      These variables turn the LW and SW radiation on or off.  The default is to    !
+      ! call longwave if ILWRTYP is 4, and shortwave is turned off unless ISWRTYP is 4 and !
+      ! the sun is sufficiently above the horizon (no twilight).                           !
+      !------------------------------------------------------------------------------------!
+      ir_aerad  = ilwrtyp == 4
+      isl_aerad = iswrtyp == 4 .and. cosz > .03
+
+      !----- Copying environment variables to some scratch arrays. ------------------------!
+      nzz = m1 - 1
+      do k = 1,m1
+         pird      = (pp(k) + pi0(k)) / cp
+         temprd(k) = theta(k) * pird ! air temperature (k)
+         rvr(k)    = max(toodry,rv(k))
+
+         lwl(k)    = max(0.,lwl(k))
+         iwl(k)    = max(0.,iwl(k))
+
+         !----- Convert the next 7 variables to cgs for the time being. ----------------!
+         prd(k)  = pird ** cpor * p00 * 10.  ! pressure
+         dn0r(k) = dn0(k) * 1.e-3         ! air density
+         dztr(k) = dzt(k) / rtgt * 1.e-2
+
+         if (catt == 1) then
+            pmr(k) = pm(k) * fcui
+         else
+            pmr(k) = 0.
+         end if
+      end do
+
+      !----- Finding the lower boundary condition. ----------------------------------------!
+      temprd(1) = (rlongup / stefan) ** 0.25
+      temprd(nzp+1) = temprd(nzp)
+      !----- Initialise the surface atmospheric state. ---------------------------------!
+      p_surf = 0.5*(prd(1) + prd(2))
+      p_top  = prd(m1)
+      t_surf = temprd(1)
+
+      !------------------------------------------------------------------------------------!
+      !      K level on CARMA grid corresponds to k+1 level on BRAMS grid.  Here we        !
+      ! transfer values from BRAMS grid to CARMA grid
+      !------------------------------------------------------------------------------------!
+      do k=1,m1-1
+         p(k)    =    prd(k+1)
+         t(k)    = temprd(k+1)
+         rhoa(k) =   dn0r(k+1)
+         lwlr(k) = lwl(k+1)*dn0r(k+1) * 1.e+3  ![kg/m3]
+         iwlr(k) = iwl(k+1)*dn0r(k+1) * 1.e+3  ![kg/m3]
+      end do
+
+
+      !----- Revert the vertical index when cartesian coordinates are used. ---------------!
+      do ik = 1,nzz
+         kk = nzz + 1 - ik
+         t_aerad(kk)   = t(ik)
+         p_aerad(kk)   = p(ik)
+         lwl_aerad(kk) = lwlr(ik)
+         iwl_aerad(kk) = iwlr(ik)
+      end do
+      do ik = 1,nzz
+         dztri=1./(dztr(ik) * 1.e+2)
+         lwp_aerad(ik) = lwl_aerad(ik) * dztri   ![kg/m2]
+         iwp_aerad(ik) = iwl_aerad(ik) * dztri   ![kg/m2]
+      end do
+
+      xland_aerad=xland
+      rain_aerad=rain
+      tabove_aerad  = t(nzz)
+
+      !----- Initialise gas concentrations. -----------------------------------------------!
+      do igas = 1,ngas
+         do k = 1,m1-1
+            !----- K level on CARMA grid corresponds to k+1 level on BRAMS grid. ----------!
+            if (igas == 1) gc(k,igas) = rvr(k+1) * dn0r(k+1)
+         end do
+      end do
+
  
-    DO ik = 1,NZZ
-      !  Reverse the vertical index when in cartesian coordinates
-       kk = NZZ + 1 - ik
-      DO ij=1,iend
-  	 t_aerad(ij,kk) = t(ij,ik)
-  	 p_aerad(ij,kk) = p(ij,ik)
-!kmlnew
-	LWL_aerad(ij,kk) = LWLr(ij,ik)
-	IWL_aerad(ij,kk) = IWLr(ij,ik)
-	
-!        if(LWL_aerad(ij,ik).ne.0.) print*,'LWL [g/cm3]=', LWL_aerad(ij,ik), ik
-!	if(IWL_aerad(ij,ik).ne.0.) print*,'IWL [g/cm3]=', IWL_aerad(ij,ik), ik
-!kmlnew	
-	 
-      END DO
-    END DO
+      call initaer(m1,pmr,dn0r,nzpmax)
 
-!kmlnew 
+      !----- Initialise radiation arrays. -------------------------------------------------!
+      call initrad(imontha,idatea,iyeara,itimea,time,m1)
 
-    DO ik = 1,NZZ
-      DO ij=1,iend
-        dztri=1./(dztr(ij,ik) * 1.e+2)
-	LWP_aerad(ij,ik) = LWL_aerad(ij,ik) * dztri   ![kg/m2]
-	IWP_aerad(ij,ik) = IWL_aerad(ij,ik) * dztri   ![kg/m2]
-!	if(IWL_aerad(ij,ik).gt.0.) print*,'ik,IWL=',ik,IWL_aerad(ij,ik),IWP_aerad(ij,ik)
-      END DO
-    END DO
-!kmlnew 
-      DO ij=1,iend
-       xland_aerad(ij)=xland(ij)
-       RAIN_aerad(ij)=RAIN(ij)
-      END DO
-   
-    
-    DO ij=1,iend
-      tabove_aerad(ij)  = t(ij,nzz)
-    END DO
-    
-    !  Initialize gas concentrations.
-    DO igas = 1,ngas
-       DO k = 1,m1-1
-  	  ! K level in CARMA grid corresponds to K+1 level in BRAMS grid
-  	  DO ij=1,iend
-  	    ! water vapor concentration
-  	    IF( igas .eq. 1 ) gc(ij,k,igas) = rvr(ij,k+1) * dn0r(ij,k+1) 
-  	  END DO
-       END DO
-    END DO
-  
-    DO ij=1,iend
-      ! The shortwave parameterizations are only valid if the cosine
-      !    of the zenith angle is greater than .03 .
-      IF (cosz(ij) .gt. .03) isl_aerad(ij) = 1
-    END DO
-      
-    CALL initaer(m1,pmr,dn0r,ia,iz,ja,jz,nzpmax)
-    
-    !  Initialize radiation
-![ED2
-    CALL initrad(imontha,idatea,iyeara,itimea,time,m1,ia,ja,iz,jz)
-!ED2]
-    CALL prerad(m1,dztr,fmapt,ia,iz,ja,jz,nzpmax,m2,m3)
-    
-    CALL radtran(albedt,cosz,m1,m2,m3,ia,iz,ja,jz,aotl(:,11))  !kml2
-  
-    CALL radtran_to_rams(nzp,m2,m3,fthrl,rlong,fthrs,rshort,aotl,ia,iz,ja,jz,mynum)   
-  
-    ! 
-    ! Modify the DOwnward surface shortwave flux by considering
-    !	 the slope of the topography.
-  
-    DO ij=1,iend
-      IF (itopo .eq. 1) THEN
-  	dzsdx = f13t(ij) * rtgt(ij)
-  	dzsdy = f23t(ij) * rtgt(ij)
-  
-  	! The y- and x-directions must be true north and east for
-  	! this correction. the following rotates the model y/x
-  	! to the true north/east.   
-  
-  	! The following rotation seems to be incorrect,so CALL this instead:
-  	! SUBROUTINE uvtoueve(u,v,ue,ve,qlat,qlon,platn(ngrid),plonn(ngrid))
-  
-  	dlon = (plonn(ngrid) - glon(ij)) * pio180
-  	a1 = dzsdx*cos(dlon) + dzsdy * sin(dlon)
-  	a2 = -dzsdx*sin(dlon) + dzsdy * cos(dlon)
-  	dzsdx = a1
-  	dzsdy = a2
-  
-  	dayhr = real(time / 3600.) + float(itimea/100)  &
-  	    + float(mod(itimea,100)) / 60.
-  	gglon = glon(ij)
-  	IF (lonrad .eq. 0) gglon = centlon(1)
-  	dayhrr = mod(dayhr+gglon/15.+24.,24.)
-  	hrangl = 15. * (dayhrr - 12.) * pio180
-        !srf - evitando SQRT (<0)
-        !sinz = sqrt(1. - cosz(ij) ** 2)
-  	sinz = sqrt(max(0., (1. - cosz(ij) ** 2)))
-  
-  	! ALF - Evitando divisao por zero
-  	sinz = max(0.000001, sinz)
-  	! ALF
-  
-  	sazmut = asin(max(-1.,min(1.,cdec*sin(hrangl)/sinz)))
-  	IF (abs(dzsdx) .lt. 1e-20) dzsdx = 1.e-20
-  	IF (abs(dzsdy) .lt. 1e-20) dzsdy = 1.e-20
-  	slazim = 1.571 - atan2(dzsdy,dzsdx)
-  	slangl = atan(sqrt(dzsdx*dzsdx+dzsdy*dzsdy))
-  	cosi = cos(slangl) * cosz(ij) + sin(slangl) * sinz  &
-  	     * cos(sazmut-slazim)
-  	rshort(ij) = rshort(ij) * cosi / cosz(ij)        
-     END IF
-    END DO
-    
-    !print*,'------ radiative heating rates ---- ---'
-    DO k = 2,m1-1
-      DO ij=1,iend
-  	 fthrd(ij,k) = fthrl(ij,k) + fthrs(ij,k)        
-!	 if(fthrd(ij,k)*86400. < -10.) &
-!	 print*,'IJ K',ij,k,fthrl(ij,k)*86400. , fthrs(ij,k)*86400.
-      END DO
-    END DO
-  
-    ! Convert the downward flux at the ground to SI.
-  
-    !	     rshort(i,j) = rshort(i,j) * 1.e-3 / (1. - albedt(i,j))
-    !	     rlong(i,j) = rlong(i,j) * 1.e-3
-    DO ij=1,iend
-      rshort(ij) = rshort(ij) / (1. - albedt(ij)) 
-      rlong(ij) = rlong(ij)                       
-      fthrd(ij,1) = fthrd(ij,2)                  
-      !print*,'IJ SW LW=',ij,rshort(ij),rlong(ij)
-      !call flush(6)
-      !if (rlong(ij).lt.10.) print*,'Antes da conversao!!!',ij,rlong(ij)
 
-    END DO
-  
-    
-!srf ---- comentar a linha abaixo    
-    !!! CALL end_carma()
-  
-    CALL C_1d_2d(rshort,rshort_(ia:iz,ja:jz),ia,iz,ja,jz,iend)    
-    CALL C_1d_2d(rlong,rlong_(ia:iz,ja:jz),ia,iz,ja,jz,iend)      
-    CALL C_1d_2d(rlongup,rlongup_(ia:iz,ja:jz),ia,iz,ja,jz,iend)  
-    CALL C_2d_3d(fthrd,fthrd_(:,ia:iz,ja:jz),m1,ia,iz,ja,jz,iend) 
-    CALL Ci_2d_3d(aotl,aot_(ia:iz,ja:jz,:),nwave,ia,iz,ja,jz,iend)
-  
-    CALL AllocIndex(ia,ja,iz,jz,0) !0 to dealloc auxiliar
-    
-   
-  
-  END SUBROUTINE radcarma
-  
-  SUBROUTINE setupbins
-    !  This routine evaluates the derived mapping arrays and sets up
-    !  the particle size bins.
-  
-    USE mem_aerad, ONLY: lunoprt, nbin
-    USE mem_globaer, ONLY: ngroup,nelem,itype,i_involatile, &
-  			   i_volatile,ienconc,igelem,ncore, &
-  			   nelemg,i_coremass,i_volcore, &
-  			   i_core2mom,ixyz,nxyz,rhop3,rhoelem,rhopcore3, &
-  			   rhocore,pi,rmassmin,rmin,rmrat,one,rmass, &
-  			   rmasscore,pcore,rmassup,rmasscoreup,dm,vol, &
-  			   r,rcore,rup,rcoreup,dr,rlow,diffmass
-    
-    IMPLICIT NONE
-    
-    !Local
-  
-    INTEGER :: igrp
-    INTEGER :: ielem
-    INTEGER :: j
-    INTEGER :: ie
-    INTEGER :: ig
-    INTEGER :: ibin
-    REAL    :: cpi
-    REAL    :: vrfact
-  
-    !  Determine which elements are particle number concentrations
-    !  <ienconc(igroup)> is the element corresponding to particle number 
-    !  concentration in group <igroup>
-    !
-    igrp = 0
-    DO ielem = 1, NELEM
-       IF( itype(ielem) .eq. I_INVOLATILE .or. &
-  	    itype(ielem) .eq. I_VOLATILE )THEN
-  
-  	  igrp = igrp + 1
-  	  ienconc(igrp) = ielem
-       END IF
-    END DO
-    !
-    !  Determine which group each element belongs to
-    !  i.e., <igelem(ielem)> is the group to which element <ielem> belongs
-    !
-    igrp = 0
-    DO ielem = 1, NELEM
-       IF( itype(ielem) .eq. I_INVOLATILE .or.       &
-  	    itype(ielem) .eq. I_VOLATILE )THEN
-  	  igrp = igrp + 1
-       END IF
-       igelem(ielem) = igrp
-    END DO
-    !
-    !  Particle mass densities (NXYZ*NBIN for each group) -- the user might want
-    !  to modIFy this (this code segment DOes not appear in setupaer SUBROUTINE
-    !  because <igelem> is not defined until this SUBROUTINE).
-    !
-    DO ie = 1,NELEM
-       ig = igelem(ie)
-       DO ibin = 1,NBIN
-  	  DO ixyz = 1,NXYZ
-  	     rhop3(ixyz,ibin,ig) = rhoelem(ie)
-  	     rhopcore3(ixyz,ibin,ig) = rhocore(ie)
-  	  END DO
-       END DO
-    END DO
-    !
-    !
-    !  Set up the particle bins.
-    !  For each particle group, the mass of a particle in
-    !  bin j is <rmrat> times that in bin j-1
-    !
-    !	 rmass(NBIN,NGROUP)	=  bin center mass [g]
-    !	 r(NBIN,NGROUP) 	=  bin mean (volume-weighted) radius [cm]
-    !	 vol(NBIN,NGROUP)	=  bin center volume [cm^3]
-    !	 dr(NBIN,NGROUP)	=  bin width in radius space [cm]
-    !	 dv(NBIN,NGROUP)	=  bin width in volume space [cm^3]
-    !	 dm(NBIN,NGROUP)	=  bin width in mass space [g]
-    !
-    cpi = 4./3.*PI
-  
-    DO igrp = 1, NGROUP
-  
-       rmassmin(igrp) = cpi*rhop3(1,1,igrp)*rmin(igrp)**3
-  
-       vrfact = ( (3./2./PI/(rmrat(igrp)+1.))**(ONE/3.) )*    &
-  	    ( rmrat(igrp)**(ONE/3.) - 1. )
-  
-       DO j = 1, NBIN
-  	  !PRINT *,'LFRDBG->igrp,j,rmassmin(igrp),rmrat(igrp):', &
-  	  !	    igrp,j,rmassmin(igrp),rmrat(igrp)
-  	  !CALL FLUSH(6)
-  	  rmass(j,igrp)   = rmassmin(igrp) * rmrat(igrp)**(j-1)
-  	  rmasscore(j,igrp) = pcore/100. * rmass(j,igrp)
-  
-  	  rmassup(j,igrp) = 2.*rmrat(igrp)/(rmrat(igrp)+1.)*rmass(j,igrp)
-  	  rmasscoreup(j,igrp) = pcore/100. * rmassup(j,igrp)
-  
-  	  dm(j,igrp)	  = 2.*(rmrat(igrp)-1.)/(rmrat(igrp)+1.)*rmass(j,igrp)
-  	  vol(j,igrp) = rmass(j,igrp) / rhop3(1,1,igrp)
-  
-  	  r(j,igrp)	  = ( rmass(j,igrp)/rhop3(1,1,igrp)/cpi )**(ONE/3.)
-  	  !PRINT *,'LFRDBG->cpi,ONE,rmasscore(j,igrp),rhopcore3(1,1,igrp):', &
-  	  !	    cpi,one,rmasscore(j,igrp),rhopcore3(1,1,igrp)
-  	  !CALL FLUSH(6)
-  	  rcore(j,igrp)   = ( rmasscore(j,igrp)/rhopcore3(1,1,igrp)/cpi )**(ONE/3.)
-  
-  	  rup(j,igrp)	  = ( rmassup(j,igrp)/rhop3(1,1,igrp)/cpi )**(ONE/3.)
-  	  rcoreup(j,igrp) = ( rmasscoreup(j,igrp)/rhopcore3(1,1,igrp)/cpi )**(ONE/3.)
-  	  !PRINT *,'LFRDBG->vrfact,rmass(j,igrp),rhop3(1,1,igrp):', &
-  	  !		    vrfact,rmass(j,igrp),rhop3(1,1,igrp)
-  
-  	  dr(j,igrp)  = vrfact*(rmass(j,igrp)/rhop3(1,1,igrp))**(ONE/3.)
-  	  rlow(j,igrp) = rup(j,igrp) - dr(j,igrp)
-       END DO
-    END DO
-    !PRINT *,'LFRDBG->End of setupbins';CALL FLUSH(6)
-  
-  END SUBROUTINE setupbins
-  
-  SUBROUTINE initaer(m1,pmr,dn0r,ia,iz,ja,jz,nzpmax)
+      call prerad(m1,nzpmax,dztr,fmapt)
+      call radtran(albedt,cosz,m1,aotl(11))
+      call radtran_to_rams(m1,fthrl,rlong,fthrs,rshort,aotl,mynum)
 
-    use mem_aerad, only: &
-         nbin
+      !------------------------------------------------------------------------------------!
+      !    Modify the downward surface shortwave flux by considering the slope of the      !
+      ! topography.                                                                        !
+      !------------------------------------------------------------------------------------!
+      if (itopo == 1) then
+         dzsdx = f13t * rtgt
+         dzsdy = f23t * rtgt
+  
+         !---------------------------------------------------------------------------------!
+         !     The y- and x-directions must be true north and east for this correction.    !
+         ! The following lines will rotate the model y/x to the true north/east.           !
+         !---------------------------------------------------------------------------------!
+         dlon =   (plonn(ngrid) - glon) * pio180
+         a1   =   dzsdx * cos(dlon) + dzsdy * sin(dlon)
+         a2   = - dzsdx * sin(dlon) + dzsdy * cos(dlon)
+         dzsdx = a1
+         dzsdy = a2
+  
+         dayhr = real(time / 3600.) + real(itimea/100)  + real(mod(itimea,100)) / 60.
+         gglon = glon
+         if (lonrad == 0) gglon = centlon(1)
+         dayhrr = mod(dayhr+gglon/15.+24.,24.)
+         hrangl = 15. * (dayhrr - 12.) * pio180
+         sinz   = max(0.000001,sqrt(max(0., (1. - cosz * cosz ) ) ))
+  
+         sazmut = asin(max(-1.,min(1.,cdec*sin(hrangl)/sinz)))
+         if (abs(dzsdx) < 1e-20) dzsdx = 1.e-20
+         if (abs(dzsdy) < 1e-20) dzsdy = 1.e-20
+         slazim     = 1.571 - atan2(dzsdy,dzsdx)
+         slangl     = atan(sqrt(dzsdx*dzsdx+dzsdy*dzsdy))
+         cosi       = cos(slangl) * cosz + sin(slangl) * sinz * cos(sazmut-slazim)
+         rshort = rshort * cosi / cosz        
+      end if
+    
+      do k = 2,m1-1
+         fthrd(k) = fthrl(k) + fthrs(k)        
+      end do
+  
+      rshort  = rshort / (1. - albedt) 
+      fthrd(1) = fthrd(2)                  
 
-    USE mem_globaer, ONLY: nelem      , &
-  			   igelem     , &
-  			   ienconc    , &
-  			   small_pc   , &
-  			   itype      , &
-  			   i_coremass , &
-  			   rmass      , &
-  			   fix_coref  , &
-  			   i_core2mom , &
-  			   rhop3      , &
-  			   pi	      , &
-  			   dr	      , &
-  			   r
-    
-    IMPLICIT NONE
-  
-    INTEGER,INTENT(IN)  	      :: m1,ia,iz,ja,jz,nzpmax
-    REAL   ,INTENT(IN), DIMENSION((iz-ia+1)*(jz-ja+1),nzpmax) :: pmr
-    REAL   ,INTENT(IN), DIMENSION((iz-ia+1)*(jz-ja+1),nzpmax) :: dn0r
-  
-    !Local
-    REAL,DIMENSION((iz-ia+1)*(jz-ja+1),m1) :: totm
-    REAL,DIMENSION((iz-ia+1)*(jz-ja+1),m1) :: r0
-    REAL,DIMENSION((iz-ia+1)*(jz-ja+1),m1) :: rsig
-    INTEGER :: ie,ix,iy
-    INTEGER :: ielem
-    INTEGER :: ig
-    INTEGER :: ip,iend,ij
-    INTEGER :: j
-    INTEGER :: k
-    INTEGER :: kr
-    INTEGER :: nzz
-    REAL    :: arg1
-    REAL    :: arg2
-    REAL    :: sum((iz-ia+1)*(jz-ja+1))
-    REAL    :: totn((iz-ia+1)*(jz-ja+1))
-  
-    iend=(iz-ia+1)*(jz-ja+1)
-      
-    nzz = m1 - 1
-    !
-    !transfere valores da grade do rams para carma
-    DO k = 1,nzz
-      kr = K + 1     ! nivel K da grade do carma orresponde ao nivel K + 1 DO RAMS
-      DO ij=1,iend
-  	!    totm = total mass particle concentration (g/cm3) 
-  	totm(ij,k)  = pmr(ij,kr) *  dn0r(ij,kr) 
-      END DO
-    END DO
-    !  Initialize particle number densities 
-    !  Core mass is assumed to be 100% of particle mass
-    DO ielem = 1,nelem
-       ig = igelem(ielem)
-       ip = ienconc(ig)
-       DO j = 1,nbin
-  	  DO k = 1,nzz
-  	     DO ij = 1,iend
-  	       IF( ielem .eq. ip )THEN
-  		  !  Particle number concentration [#/cm^3]
-  		  pc(ij,k,j,ielem) = SMALL_PC
-  	       ELSE IF( itype(ielem) .eq. I_COREMASS )THEN
-  		  !  Core mass concentration [g/cm^3]
-  		  pc(ij,k,j,ielem) = pc(ij,k,j,ip)*rmass(j,ig) * &
-  					FIX_COREF
-  	       ELSE IF( itype(ielem) .eq. I_CORE2MOM )THEN
-  		  !  Second moment of core mass distribution [ (g/cm^3)^2 ]
-  		  pc(ij,k,j,ielem) = pc(ij,k,j,ip) *	      &
-  		       (rmass(j,ig)*FIX_COREF)**2
-  	       END IF
-  	    END DO
-  	  END DO
-       END DO
-    END DO
-    !
-    !  Initial particle distribution: log-normal size distribution 
-    !  for first particle group (which has only one particle element)
-    !  in a single column
-    ig = 1
-    ie = ienconc(ig)
-  
-    DO k = 1,nzz
-       !
-       !  Log-normal parameters:
-       !  
-       !    r0   = number mode radius
-       !    rsig = geometric standard deviation
-       !    totm = total mass particle concentration (g/cm3) (proveniente DO rams) 
-       !
-       DO ij=1,iend
-  	 r0(ij,k)  = 1.95e-5
-  	 rsig(ij,k) = 1.62
-  	 totn(ij) = (6. * totm(ij,k)/(rhop3(1,1,1)*PI*r0(ij,k)**3))* &
-  	    exp((-9./2)*log(rsig(ij,k))**2)
-       END DO
-       !  Adjust prefactor to yield particle number concentration <ntot>
-       !
-     sum = 0.
-     DO j = 1,nbin
-        DO ij=1,iend
-  	  arg1 = dr(j,ig) / ( sqrt(2.*PI) * r(j,ig) * log(rsig(ij,k)) ) 
-  	  arg2 = -log( r(j,ig) / r0(ij,k) )**2 / &
-    		       ( 2.*log(rsig(ij,k))**2 )
+      return
+   end subroutine radcarma
+   !=======================================================================================!
+   !=======================================================================================!
 
-  	  sum(ij)  = sum(ij) + arg1 * exp( arg2 )
-        END DO
-     END DO
-     DO ij=1,iend
-       totn(ij) = totn(ij) / sum(ij)
-     END DO
-     DO j = 1,nbin
-        DO ij=1,iend
-  	  arg1 = totn(ij) * dr(j,ig) / ( sqrt(2.*PI) * r(j,ig) * &
-  		       log(rsig(ij,k)) ) 
 
-  	  arg2 = -log( r(j,ig) / r0(ij,k) )**2 / &
-  		       ( 2.*log(rsig(ij,k))**2 )
-  	  pc(ij,k,j,ie) = max( arg1 * exp( arg2 ), REAL(SMALL_PC) )
-        END DO
-     END DO
-    END DO
-    
-  END SUBROUTINE initaer
-  
-  SUBROUTINE initrad(imonth1,idate1,iyear1,itime1,time_rams,m1,ia,ja,iz,jz)
-  
-    USE mem_aerad, ONLY: is_grp_ice_aerad,r_aerad, &
-  			 rup_aerad,rcore_aerad,rcoreup_aerad, &
-  			 ptop_aerad,pbot_aerad,u0_aerad, &
-  			 sfc_alb_aerad,emisir_aerad,tsfc_aerad, &
-  			 tabove_aerad,wave_aerad,iprocopio&
-                         ,nx,ny,nbin,nwave,nsol
-  
-    USE mem_globaer, ONLY: time,do_solar,do_ir,isolar_zen,i_diurnal, &
-  			   rad_start,scday,pi,ix,iy,rlat,u0,ngroup, &
-  			   is_grp_ice,ienconc,r,rup,rcore,rcoreup, &
-  			   t_surf,wave,z_sin, &
-  			   z_cos
-    USE mem_globrad, ONLY: imie
-    
-    USE mem_carma, ONLY: declin
-    
-    IMPLICIT NONE
-    
-    INTEGER,INTENT(IN) :: m1,ia,ja,iz,jz
-    INTEGER,INTENT(IN) :: imonth1
-    INTEGER,INTENT(IN) :: idate1
-    INTEGER,INTENT(IN) :: iyear1
-    INTEGER,INTENT(IN) :: itime1
-    REAL(kind=8)   ,INTENT(IN) :: time_rams
-  
-    !Local  
-    INTEGER :: iday
-    INTEGER :: iwave
-    INTEGER :: julday
-    REAL    :: saz
-    REAL    :: wavetemp
-   
-    !
-    !  Define flag to control the calculation of the solar zenith angle:
-    !	 <isolar_zen> = I_FIXED: USE fixed value <u0fixed>
-    !		      = I_DIURNAL: calculation based on time, day, lat, and lon
-    !
-    isolar_zen = I_DIURNAL
-  
-    IF( isolar_zen .eq. I_DIURNAL )THEN
-       !
-       !
-       !  Define values needed for calculation of solar zenith angle:
-       !    <iday> is day of year
-       !    <rad_start> is solar time corresponding to <time> = 0, in seconds
-       !     = 0 means <time> = 0 corresponds to midnight,
-       !     = 6 * 3600 means <time> = 0 corresponds to 6 AM
-       !    Note: all times are local standard time.
-       !
-  
-       iday =  julday(imonth1,idate1,iyear1)
-       iday =  iday + nint(time_rams/86400.)
-       rad_start = (float(itime1/100) + float(mod(itime1,100)) / 60.)*scday
-       !
-       !
-       !  Precalculate terms in solar zenith angle computation:
-       !    (adapted from original Toon model)
-       !    <saz> is solar azimuth angle [rad]
-       !    <declin> is solar declination [rad]
-       !    <z_sin> is sin term in precalculation
-       !    <z_cos> is cos term in precalculation
-       !
-  
-       saz = 2. * PI / 365. * iday 
-  
-       declin = 0.006918 - 0.399912*cos(saz)	+0.070257*sin(saz)    &
-  	    - 0.006758*cos(2.*saz) +0.000907*sin(2.*saz) &
-  	    - 0.002697*cos(3.*saz) +0.001480*sin(3.*saz)
-  
-       !DO ix = 1,NX
-       !   DO iy = 1,NY
-       !      rlat(ix,iy) = glat
-       !      z_sin(ix,iy) = sin(declin) * sin( rlat(ix,iy) * PI/180. )
-       !      z_cos(ix,iy) = cos(declin) * cos( rlat(ix,iy) * PI/180. )
-       !   END DO
-       !END DO
-  
-    END IF
-    !
-  
-    !
-    !  Initialize the radiative transfer model
-    CALL setuprad(m1,ia,ja,iz,jz)
-    
-     IF(imie == 0) THEN
-      CALL calcproperties
-     END IF
 
-    !  Get radiative wavelengths
-    !
-    DO iwave = 1,NWAVE
-       !
-       !
-       !  Solar wavelengths in radiative transfer model are bin centers,
-       !  infrared are bin edges
-       !
-       IF( iwave .le. NSOL )THEN
-  	  wave(iwave) = wave_aerad(iwave)
-       ELSE
-  	  wave(iwave) = 0.5*( wave_aerad(iwave) + wave_aerad(iwave+1) )
-       END IF
-  
-    END DO
-    !
-    !  Switch bins 11 and 12
-    !KLF Corrigidos os comp. de onda (11 e 12) para (17 e 18)!!!
-    !	   wavetemp = wave(11)
-    !	   wave(11) = wave(12)
-    !	   wave(12) = wavetemp
-  
-    wavetemp = wave(17)
-    wave(17) = wave(18)
-    wave(18) = wavetemp
-    !
-    !  Return to CALLer with radiation model initialized
-    !
-  END SUBROUTINE initrad
-  
-  SUBROUTINE setuprad(m1,ia,ja,iz,jz)
-    !	  *********************************************************
-    !	  *  Purpose		:  Defines all constants, and	  *
-    !	  *			   calculates pressure averaged   *
-    !	  *			   absorption coefficients.	  *
-    !	  * *******************************************************
-    !
-  
-  
-    USE mem_aerad, ONLY: wave_aerad,u0_aerad, &
-  			 sfc_alb_aerad,emisir_aerad,ptop_aerad, &
-  			 pbot_aerad,tsfc_aerad
-  
-    USE mem_globrad, ONLY: nlayer,g, &
-  			   ntotal,nprob, &
-  			   wave, &
-  			   nvert,p,t,o2mol,am, &
-  			   co2mol,o3c,o3mol,avg,wol,gol, &
-  			   tauray,nsolp,ltemp,nsol,alos,aco2,xaco2, &
-  			   ao2,xao2,ao3,xao3,xah2o,psh2o, &
-  			   psco2,pso2,pso3,pj,o3mixp, &
-  			   akh2o,ako3,akco2,nirp,imie, &
-  			   corereal,coreimag
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This routine evaluates the derived mapping arrays and sets up the particle size   !
+   ! bins.                                                                                 !
+   !---------------------------------------------------------------------------------------!
+   subroutine setupbins
+      use rconstants , only : pi4o3         & ! intent(in)
+                            , pi1           & ! intent(in)
+                            , onethird      ! ! intent(in)
+      use mem_aerad  , only : lunoprt       & ! intent(something)
+                            , nbin          ! ! intent(something)
+      use mem_globaer, only : ngroup        & ! intent(something)
+                            , nelem         & ! intent(something)
+                            , itype         & ! intent(something)
+                            , i_involatile  & ! intent(something)
+                            , i_volatile    & ! intent(something)
+                            , ienconc       & ! intent(something)
+                            , igelem        & ! intent(something)
+                            , ncore         & ! intent(something)
+                            , nelemg        & ! intent(something)
+                            ,i_coremass     & ! intent(something)
+                            ,i_volcore      & ! intent(something)
+                            ,i_core2mom     & ! intent(something)
+                            ,ixyz           & ! intent(something)
+                            ,nxyz           & ! intent(something)
+                            ,rhop3          & ! intent(something)
+                            ,rhoelem        & ! intent(something)
+                            ,rhopcore3      & ! intent(something)
+                            ,rhocore        & ! intent(something)
+                            ,rmassmin       & ! intent(something)
+                            ,rmin           & ! intent(something)
+                            ,rmrat          & ! intent(something)
+                            ,rmass          & ! intent(something)
+                            ,rmasscore      & ! intent(something)
+                            ,pcore          & ! intent(something)
+                            ,rmassup        & ! intent(something)
+                            ,rmasscoreup    & ! intent(something)
+                            ,dm             & ! intent(something)
+                            ,vol            & ! intent(something)
+                            ,r              & ! intent(something)
+                            ,rcore          & ! intent(something)
+                            ,rup            & ! intent(something)
+                            ,rcoreup        & ! intent(something)
+                            ,dr             & ! intent(something)
+                            ,rlow           & ! intent(something)
+                            ,diffmass       ! ! intent(something)
+      implicit none
      
-    IMPLICIT NONE
-   
-    INTEGER,INTENT(IN) :: m1,ia,ja,iz,jz
-    
-    REAL,DIMENSION((iz-ia+1)*(jz-ja+1),m1) :: pbar
-    REAL,DIMENSION((iz-ia+1)*(jz-ja+1),m1) :: o3mix
-    INTEGER :: i,i1,j1
-    INTEGER :: ii((iz-ia+1)*(jz-ja+1),nlayer)
-    INTEGER :: ik((iz-ia+1)*(jz-ja+1),nlayer)
-    INTEGER :: ij
-    INTEGER :: j
-    INTEGER :: k
-    INTEGER :: l
-    REAL    :: co2mix
-    REAL    :: dp((iz-ia+1)*(jz-ja+1),nlayer)
-    REAL    :: o2mix
-    REAL,DIMENSION((iz-ia+1)*(jz-ja+1))  :: o3mix2
-    REAL    :: pm
-    REAL    :: ps((iz-ia+1)*(jz-ja+1),nlayer)
-    REAL    :: wvo
-    REAL    :: x
-    INTEGER :: iend
-    
-    iend=(iz-ia+1)*(jz-ja+1)
-  
-    !pbar  - layer average pressure (bars)
-    !(note - the top layer is from ptop to 0, so average = ptop/2)
-    !press - pressure at edge of layer (dyne/cm^2)
-    !dpg   - mass of layer (g / cm**2)
-    DO ij=1,iend
-      pbar(ij,1)  = p_top(ij)/2.0E6
-      press(ij,1) = p_top(ij)
-    END DO
-    DO  k  = 2,nvert
-      DO ij=1,iend 
-  	pbar(ij,k)  = p_aerad(ij,k-1)/1.0E6
-  	press(ij,k) = (p_aerad(ij,k-1) + p_aerad(ij,k)) * 0.5
-  	dpg(ij,k-1) = (press(ij,k)-press(ij,k-1)) / g
-      END DO
-    END DO
-    DO ij=1,iend
-      pbar(ij,nlayer)  = p_aerad(ij,nvert)/1.0E6
-      press(ij,nlayer) = p_surf(ij)
-      dpg(ij,nvert)  = (press(ij,nlayer)-press(ij,nvert)) / g
-      !skin temperature
-      tt(ij,nlayer) = t_surf(ij)
-      !amount of water vapor above model domain (gm / cm**2)
-      !From 1976 U.S. Standard Atmosphere, mid-latitude sounding:
-      !
-      !For z_top = 5 km
-      !RDH2O(1) = .13
-      !
-      !For z_top = 2.6 km
-      !RDH2O(1) = .64
-      rdh2o(ij,1)   = h2ocol_aerad
-      !interpolate temperature from layer center (t) to layer edge (tt)
-      tt(ij,1) = t_aerad(ij,1)
-    END DO
-    DO  k = 2, nvert
-      DO ij=1,iend 
-  	tt(ij,k) = t_aerad(ij,k-1) * (press(ij,k)/p_aerad(ij,k-1)) ** &
-  		    (LOG(t_aerad(ij,k)/t_aerad(ij,k-1))/&
-  		     LOG(p_aerad(ij,k)/p_aerad(ij,k-1)))
+      !----- Local variables. -------------------------------------------------------------!
+      integer :: igrp
+      integer :: ielem
+      integer :: j
+      integer :: ie
+      integer :: ig
+      integer :: ibin
+      real    :: vrfact
+      !------------------------------------------------------------------------------------!
 
-      END DO
-    END DO
-    !
-    !
-    !	  DEFINE MASS MIXING RATIOS. O3MIX TAKEN FROM U.S. STANDARD ATMOS-
-    !	  PHERE, MID-LATITUDE SOUNDING
-    !
-    o2mix	   =   0.22*o2mol/am
-    co2mix	   =   3.5E-4*co2mol/am
-    !
-    !	  OZONE COLUMN ABUNDANCE O3C (#/CM**2) ABOVE PTOP WAS CALCULATED
-    !	  FROM THE U.S. STANDARD ATMOSPHERE MID-LATITUDE PROFILE.
-    !
-    !	  This is for z_top = 5 km
-    o3c 	   =   9.02E18
-    !
-    !	  This is for z_top = 3 km
-    !	  O3C		 =   9.2E18
-    !
-    !	  This is for z_top = 1 km
-    !	   O3C  	  =   9.3E18
-    !
-    !	  CONVERT O3C TO MASS MIXING RATIO O3MIX2.
-    !
-    DO ij=1,iend
-       o3mix2(ij) = o3c*o3mol*g/(p_top(ij)*avg)
-    END DO
-    !  !
-    DO  l	    =	nsolp+1,ntotal
-      ltemp(l-nsolp)  =   nprob(l) - nsol
-    END DO
-    !
-    x		       =   alos/avg
-    !
-    !	  CONVERT SOLAR ABSORPTION COEFFICIENTS TO CM**2/GM.
-    !
-    DO  l	    =	1,nsolp
-      !srf	   ACO2(L)	   =   ACO2(L)/(X*CO2MOL)
-      !srf	   AO2(L)	 =   AO2(L)/(X*O2MOL)
-      !srf	   AO3(L)	 =   AO3(L)/(X*O3MOL)
-      aco2(l)	      =   xaco2(l)/(x*co2mol)
-      ao2(l)	      =   xao2(l)/(x*o2mol)
-      !  if(l.eq.14) print*,'XAO2=',Xao2(l),X,O2MOL
-      ao3(l)	      =   xao3(l)/(x*o3mol)
-    END DO
-    !
-    !	  CALCULATE ABSORPTION COEFFICIENTS
-    !
-    pah2o=0.0
-    paco2=0.0
-    pao2=0.0
-    pao3=0.0
+
+
+      !------------------------------------------------------------------------------------!
+      !      Determine which elements are particle number concentrations.                  !
+      ! <ienconc(igroup)> is the element corresponding to particle number concentration in !
+      ! group <igroup>.                                                                    !
+      !------------------------------------------------------------------------------------!
+      igrp = 0
+      do ielem = 1, nelem
+         if (itype(ielem) == i_involatile .or. itype(ielem) .eq. i_volatile) then
+            igrp = igrp + 1
+            ienconc(igrp) = ielem
+         end if
+      end do
+
+      !------------------------------------------------------------------------------------!
+      !      Determine which group each element belongs to, i.e., <igelem(ielem)> is the   !
+      ! group to which element <ielem> belongs.                                            !
+      !------------------------------------------------------------------------------------!
+      igrp = 0
+      do ielem = 1, nelem
+         if (itype(ielem) == i_involatile .or. itype(ielem) .eq. i_volatile) then
+            igrp = igrp + 1
+         end if
+         igelem(ielem) = igrp
+      end do
+
+      !------------------------------------------------------------------------------------!
+      !       Particle mass densities (nxyz*nbin for each group) -- the user might want    !
+      !  to modify this (this code segment does not appear in setupaer subroutine          !
+      !  because <igelem> is not defined until this subroutine).                           !
+      !------------------------------------------------------------------------------------!
+
+      do ie = 1,nelem
+         ig = igelem(ie)
+         do ibin = 1,nbin
+            do ixyz = 1,nxyz
+               rhop3(ixyz,ibin,ig)     = rhoelem(ie)
+               rhopcore3(ixyz,ibin,ig) = rhocore(ie)
+            end do
+         end do
+      end do
+
+
+      !------------------------------------------------------------------------------------!
+      !      Set up the particle bins.  For each particle group, the mass of a particle in !
+      !  bin j is <rmrat> times that in bin j-1.                                           !
+      !                                                                                    !
+      !    rmass(nbin,ngroup)     =  bin center mass [g]                                   !
+      !    r(nbin,ngroup)         =  bin mean (volume-weighted) radius [cm]                !
+      !    vol(nbin,ngroup)       =  bin center volume [cm^3]                              !
+      !    dr(nbin,ngroup)        =  bin width in radius space [cm]                        !
+      !    dv(nbin,ngroup)        =  bin width in volume space [cm^3]                      !
+      !    dm(nbin,ngroup)        =  bin width in mass space [g]                           !
+      !------------------------------------------------------------------------------------!
+      do igrp = 1, ngroup
+
+         rmassmin(igrp) = pi4o3 * rhop3(1,1,igrp) * rmin(igrp)**3
+         vrfact = ( (3./2./pi1/(rmrat(igrp)+1.))**onethird )* (rmrat(igrp)**onethird - 1.)
+
+         do j = 1, nbin
+            rmass(j,igrp)     = rmassmin(igrp) * rmrat(igrp)**(j-1)
+            rmasscore(j,igrp) = pcore/100.     * rmass(j,igrp)
    
-    DO  j =   1,nlayer
-      DO  l=  1,nsolp
-  	DO ij=1,iend
-  	  pah2o(ij,l,j)   =  xah2o(l)*pbar(ij,j)**psh2o(l)
-  	  paco2(ij,l,j)   =   aco2(l)*pbar(ij,j)**psco2(l)
-  	  pao2(ij,l,j)    =   ao2(l)*pbar(ij,j)**pso2(l)
-  	  pao3(ij,l,j)    =   ao3(l)*pbar(ij,j)**pso3(l)
-  	END DO
-      END DO
-    END DO
-    !
-    
-    DO ij=1,iend
-      DO  j	    =	1,nlayer
-  	DO  i	  =   1,6
-  	  ii(ij,j)	     =   i
-  	  IF(pbar(ij,j) > pj(i)) EXIT
-  	END DO
-      END DO
-    END DO
-    
-    ps = 0.0
-    DO  j	    =	1,nlayer
-      DO ij=1,iend
-  	IF( ii(ij,j) == 1 ) ii(ij,j) = 2
-  	dp(ij,j)	   =   LOG(pj(ii(ij,j)-1)/pj(ii(ij,j)))
-  	IF( pbar(ij,j) > pj(6) )THEN
-  	  ik(ij,j) = ii(ij,j) - 1
-  	ELSE
-  	  ik(ij,j) = ii(ij,j)
-  	END IF
-  	ps(ij,j) = pbar(ij,j)/pj(ik(ij,j))
-  	IF (j /= 1) o3mix(ij,j) =o3mixp(ik(ij,j))*ps(ij,j)**(LOG(o3mixp(ii(ij,j)-1)/o3mixp(ii(ij,j)))/dp(ij,j))
-      END DO
-    END DO
-    
-    DO  j	=   1,nlayer
-      DO  l	  =   1,31
-  	DO ij=1,iend
-  	  pah2o(ij,nsolp+l,j) = akh2o(l,ik(ij,j))*ps(ij,j)**(LOG (akh2o(l,ii(ij,j)-1)/akh2o(l,ii(ij,j)))/dp(ij,j))
-  	END DO
-      END DO
-      DO  l	  =   32,35
-  	DO ij=1,iend
-  	  pah2o(ij,nsolp+l,j) = akh2o(32,ik(ij,j))*ps(ij,j)**(LOG (akh2o(32,ii(ij,j)-1)/akh2o(32,ii(ij,j)))/dp(ij,j))
-  	  pao3(ij,nsolp+l,j)  = ako3(l-31,ik(ij,j))*ps(ij,j)**(LOG  &
-  			     (ako3(l-31,ii(ij,j)-1)/ako3(l-31,ii(ij,j)))/dp(ij,j))
-  	END DO
-      END DO
-      DO ij=1,iend
-  	pah2o(ij,nsolp+36,j)  = akh2o(33,ik(ij,j))*ps(ij,j)**(LOG (akh2o(33,ii(ij,j)-1)/akh2o(33,ii(ij,j)))/dp(ij,j))
-      END DO
-      DO  l	  =   37,40
-  	DO ij=1,iend
-  	  paco2(ij,nsolp+l,j) = akco2(1,ik(ij,j))*ps(ij,j)**(LOG (akco2(1,ii(ij,j)-1)/akco2(1,ii(ij,j)))/dp(ij,j))
-  	  pah2o(ij,nsolp+l,j) = akh2o(l-3,ik(ij,j))*ps(ij,j)**(LOG  &
-  		(akh2o(l-3,ii(ij,j)-1)/akh2o(l-3,ii(ij,j)))/dp(ij,j))
-  	END DO
-      END DO
-      DO  l	  =   41,44
-  	DO ij=1,iend
-  	  paco2(ij,nsolp+l,j)  =  akco2(2,ik(ij,j))*ps(ij,j)**(LOG (akco2(2,ii(ij,j)-1)/akco2(2,ii(ij,j)))/dp(ij,j))
-  	  pah2o(ij,nsolp+l,j)  =  akh2o(l-7,ik(ij,j))*ps(ij,j)**(LOG  &
-  		(akh2o(l-7,ii(ij,j)-1)/akh2o(l-7,ii(ij,j)))/dp(ij,j))
-  	END DO
-      END DO
-      DO  l	  =   45,48
-  	DO ij=1,iend
-  	  paco2(ij,nsolp+l,j) = akco2(3,ik(ij,j))*ps(ij,j)**(LOG (akco2(3,ii(ij,j)-1)/akco2(3,ii(ij,j)))/dp(ij,j))
-  	  pah2o(ij,nsolp+l,j) = akh2o(l-11,ik(ij,j))*ps(ij,j)**(LOG  &
-  	      (akh2o(l-11,ii(ij,j)-1)/akh2o(l-11,ii(ij,j)))/dp(ij,j))
-      END DO
-    END DO
-    DO  l	=   49,51
-      DO ij=1,iend
-        paco2(ij,nsolp+l,j) = akco2(4,ik(ij,j))*ps(ij,j)**(LOG (akco2(4,ii(ij,j)-1)/akco2(4,ii(ij,j)))/dp(ij,j))
-        pah2o(ij,nsolp+l,j) = akh2o(l-11,ik(ij,j))*ps(ij,j)**(LOG  &
-  	      (akh2o(l-11,ii(ij,j)-1)/akh2o(l-11,ii(ij,j)))/dp(ij,j))
-      END DO
-    END DO
-    DO  l	=   52,54
-      DO ij=1,iend
-        paco2(ij,nsolp+l,j) = akco2(5,ik(ij,j))*ps(ij,j)**(LOG (akco2(5,ii(ij,j)-1)/akco2(5,ii(ij,j)))/dp(ij,j))
-        pah2o(ij,nsolp+l,j) = akh2o(l-14,ik(ij,j))*ps(ij,j)**(LOG  &
-  	      (akh2o(l-14,ii(ij,j)-1)/akh2o(l-14,ii(ij,j)))/dp(ij,j))
-      END DO
-    END DO
-    DO  l	=   55,57
-      DO ij=1,iend
-        paco2(ij,nsolp+l,j) = akco2(6,ik(ij,j))*ps(ij,j)**(LOG (akco2(6,ii(ij,j)-1)/akco2(6,ii(ij,j)))/dp(ij,j))
-        pah2o(ij,nsolp+l,j) = akh2o(l-17,ik(ij,j))*ps(ij,j)**(LOG  &
-  	      (akh2o(l-17,ii(ij,j)-1)/akh2o(l-17,ii(ij,j)))/dp(ij,j))
-      END DO
-    END DO
-    DO  l	=   58,nirp
-      DO ij=1,iend
-  	pah2o(ij,nsolp+l,j) = akh2o(l-17,ik(ij,j))*ps(ij,j)**(LOG  &
-  		(akh2o(l-17,ii(ij,j)-1)/akh2o(l-17,ii(ij,j)))/dp(ij,j))
-  	END DO
-      END DO
-    END DO
-  
-    DO ij=1,iend
-      ! store o3mix2 in o3mix(1)
-      o3mix(ij,1) = o3mix2(ij)
-    END DO
-    
-    !	  here we find taugas. it is tauco2+tauo2+tauo3.
-    DO  l=1,ntotal
-      DO ij=1,iend
-  	pm=p_top(ij)/g
-  	taugas(ij,l,1) = pm*(o2mix*pao2(ij,l,1)+co2mix* &
-  			     paco2(ij,l,1)+o3mix(ij,1)*pao3(ij,l,1)) 
-      END DO
-    END DO
-    DO    j =	2,nlayer
-      DO  l    =   1,ntotal
-  	 DO ij=1,iend
-  	   pm=dpg(ij,j-1)
-  	   taugas(ij,l,j) = pm*(o2mix*pao2(ij,l,j)+co2mix* &
-  			      paco2(ij,l,j)+o3mix(ij,j)*pao3(ij,l,j)) 
-  	 END DO
-      END DO
-    END DO
-  
-    !
-    !	  wave must be in microns
-    !	  calculate rayleigh optical depth parameters.
-    !
-    DO  l      =   1,ntotal
-      wvo	=    wave(nprob(l))
-      tauray(l) =   (8.46E-9/wvo**4) * ( 1.+0.0113/wvo**2+0.00013/wvo**4 )
-    END DO
-  
-    !	  we do not include rayleigh scattering in infrared
-    DO  j = 1,nvert
-      DO  l= 1,ntotal
-  	DO ij=1,iend
-  	  IF( l <= nsolp ) THEN
-  	    paray(ij,l,j+1) = tauray(l)*dpg(ij,j)*g
-  	  ELSE
-  	    paray(ij,l,j+1) = 0.
-  	  END IF
-  	END DO
-      END DO
-      DO  l   =   1,ntotal
-  	DO ij=1,iend
-  	  IF( l <= nsolp ) THEN
-  	    paray(ij,l,1) = tauray(l)*p_top(ij)
-  	  ELSE
-  	    paray(ij,l,1) = 0.
-  	  END IF
-  	END DO
-      END DO
-    END DO
+            rmassup(j,igrp)     = 2. * rmrat(igrp) / (rmrat(igrp)+1.)*rmass(j,igrp)
+            rmasscoreup(j,igrp) = pcore/100. * rmassup(j,igrp)
    
-  END SUBROUTINE setuprad
+            dm(j,igrp)          = 2.*(rmrat(igrp)-1.)/(rmrat(igrp)+1.)*rmass(j,igrp)
+            vol(j,igrp)         = rmass(j,igrp) / rhop3(1,1,igrp)
+   
+            r(j,igrp)           = (rmass(j,igrp)/rhop3(1,1,igrp)/pi4o3)**onethird
+            rcore(j,igrp)       = (rmasscore(j,igrp)/rhopcore3(1,1,igrp)/pi4o3 )**onethird
+   
+            rup(j,igrp)         = (rmassup(j,igrp)/rhop3(1,1,igrp)/pi4o3)**onethird
+            rcoreup(j,igrp)     =  (rmasscoreup(j,igrp)/rhopcore3(1,1,igrp)/pi4o3 )        &
+                                ** onethird
+
+            dr(j,igrp)          = vrfact*(rmass(j,igrp)/rhop3(1,1,igrp))**onethird
+            rlow(j,igrp)        = rup(j,igrp) - dr(j,igrp)
+         end do
+      end do
+
+      return
+   end subroutine setupbins
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   subroutine initaer(m1,pmr,dn0r,nzpmax)
+      use mem_aerad   , only : nbin        ! !
+      use mem_globaer , only : nelem       & !
+                             , igelem      & !
+                             , ienconc     & !
+                             , small_pc    & !
+                             , itype       & !
+                             , i_coremass  & !
+                             , rmass       & !
+                             , fix_coref   & !
+                             , i_core2mom  & !
+                             , rhop3       & !
+                             , dr          & !
+                             , r           ! !
+      use rconstants  , only : pi1         & ! intent(in)
+                             , twopi       ! ! intent(in)
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      integer                   , intent(in) :: m1,nzpmax
+      real   , dimension(nzpmax), intent(in) :: pmr
+      real   , dimension(nzpmax), intent(in) :: dn0r
+      !----- Local variables. -------------------------------------------------------------!
+      real   , dimension(m1)                 :: totm
+      real   , dimension(m1)                 :: r0
+      real   , dimension(m1)                 :: rsig
+      real                                   :: sum
+      real                                   :: totn
+      integer                                :: ie,ix,iy
+      integer                                :: ielem
+      integer                                :: ig
+      integer                                :: ip
+      integer                                :: j
+      integer                                :: k
+      integer                                :: kr
+      integer                                :: nzz
+      real                                   :: arg1
+      real                                   :: arg2
+      !------------------------------------------------------------------------------------!
+
+      nzz = m1 - 1
+
+      !----- Transfer variables from BRAMS grid to CARMA. ---------------------------------!
+      do k = 1,nzz
+         !---------------------------------------------------------------------------------!
+         !     k level in CARMA corresponds to the k+1 level in BRAMS.  This is true for   !
+         ! terrain-following coordinate, not for the adaptive one...                       !
+         !---------------------------------------------------------------------------------!
+         kr = k + 1
+         !---- totm  is the total mass particle concentration (g/cm3). --------------------!
+         totm(k)  = pmr(kr) *  dn0r(kr) 
+      end do
+
+      !------------------------------------------------------------------------------------!
+      !      Initialize particle number densities.  Core mass is assumed to be 100% of     !
+      ! particle mass.                                                                     !
+      !------------------------------------------------------------------------------------!
+      do ielem = 1,nelem
+         ig = igelem(ielem)
+         ip = ienconc(ig)
+         do j = 1,nbin
+            do k = 1,nzz
+               if (ielem == ip) then
+                  !----- Particle number concentration [#/cm3]. ---------------------------!
+                  pc(k,j,ielem) = small_pc
+               elseif (itype(ielem) == i_coremass) then
+                  !----- Core mass concentration [g/cm3]. ---------------------------------!
+                  pc(k,j,ielem) = pc(k,j,ip) * rmass(j,ig) * fix_coref
+               else if( itype(ielem) .eq. i_core2mom )then
+                  !----- Second moment of core mass distribution [g2/cm6]. ----------------!
+                  pc(k,j,ielem) = pc(k,j,ip) * (rmass(j,ig)*fix_coref)**2
+               end if
+            end do
+         end do
+      end do
+
+      !------------------------------------------------------------------------------------!
+      !      Initial particle distribution: log-normal size distribution for first         !
+      ! particle group (which has only one particle element) in a single column.           !
+      !------------------------------------------------------------------------------------!
+      ig = 1
+      ie = ienconc(ig)
+  
+      do k = 1,nzz
+         !---------------------------------------------------------------------------------!
+         !    Log-normal parameters:                                                       !
+         !                                                                                 !
+         !    r0   = number mode radius.                                                   !
+         !    rsig = geometric standard deviation.                                         !
+         !    totm = total mass particle concentration (g/cm3).                            !
+         !---------------------------------------------------------------------------------!
+         r0(k)   = 1.95e-5
+         rsig(k) = 1.62
+         totn    = (6. * totm(k) / (rhop3(1,1,1)*pi1*r0(k)**3) )                           &
+                 * exp((-9./2)*log(rsig(k))**2)
+         !----- Adjust prefactor to yield particle number concentration <ntot>. -----------!
+         sum = 0.
+         do j = 1,nbin
+            arg1 = dr(j,ig) / ( sqrt(twopi) * r(j,ig) * log(rsig(k)) ) 
+            arg2 = - log( r(j,ig) / r0(k) )**2 / ( 2.*log(rsig(k))**2 )
+            sum  = sum + arg1 * exp( arg2 )
+         end do
+
+         totn = totn / sum
+
+         do j = 1,nbin
+            arg1       = totn * dr(j,ig) / ( sqrt(twopi) * r(j,ig) * log(rsig(k)) ) 
+            arg2       = -log( r(j,ig) / r0(k) )**2 / ( 2.*log(rsig(k))**2 )
+            pc(k,j,ie) = max( arg1 * exp( arg2 ), small_pc )
+         end do
+      end do
+
+      return
+   end subroutine initaer
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   subroutine initrad(imonth1,idate1,iyear1,itime1,time_rams,m1)
+      use mem_aerad   , only : is_grp_ice_aerad  & ! intent(something)
+                             , r_aerad           & ! intent(something)
+                             , rup_aerad         & ! intent(something)
+                             , rcore_aerad       & ! intent(something)
+                             , rcoreup_aerad     & ! intent(something)
+                             , ptop_aerad        & ! intent(something)
+                             , pbot_aerad        & ! intent(something)
+                             , u0_aerad          & ! intent(something)
+                             , sfc_alb_aerad     & ! intent(something)
+                             , emisir_aerad      & ! intent(something)
+                             , tsfc_aerad        & ! intent(something)
+                             , tabove_aerad      & ! intent(something)
+                             , wave_aerad        & ! intent(something)
+                             , lprocopio         & ! intent(something)
+                             , nx                & ! intent(something)
+                             , ny                & ! intent(something)
+                             , nbin              & ! intent(something)
+                             , nwave             & ! intent(something)
+                             , nsol              ! ! intent(something)
+      use mem_globaer , only : time              & ! intent(something)
+                             , do_solar          & ! intent(something)
+                             , do_ir             & ! intent(something)
+                             , rad_start         & ! intent(something)
+                             , ix                & ! intent(something)
+                             , iy                & ! intent(something)
+                             , rlat              & ! intent(something)
+                             , u0                & ! intent(something)
+                             , ngroup            & ! intent(something)
+                             , is_grp_ice        & ! intent(something)
+                             , ienconc           & ! intent(something)
+                             , r                 & ! intent(something)
+                             , rup               & ! intent(something)
+                             , rcore             & ! intent(something)
+                             , rcoreup           & ! intent(something)
+                             , t_surf            & ! intent(something)
+                             , wave              & ! intent(something)
+                             , z_sin             & ! intent(something)
+                             , z_cos             ! ! intent(something)
+      use mem_globrad , only : lmie              ! ! intent(something)
+      use mem_carma   , only : declin            ! ! intent(something)
+      use rconstants  , only : day_sec           & ! intent(in)
+                             , pi1               ! ! intent(in)
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      integer     , intent(in) :: m1
+      integer     , intent(in) :: imonth1
+      integer     , intent(in) :: idate1
+      integer     , intent(in) :: iyear1
+      integer     , intent(in) :: itime1
+      real(kind=8), intent(in) :: time_rams
+      !----- Local variables. -------------------------------------------------------------!
+      integer                  :: iday
+      integer                  :: iwave
+      integer                  :: julday
+      real                     :: saz
+      real                     :: wavetemp
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !    Define values needed for calculation of solar zenith angle:                     !
+      !    - iday      : is day of year                                                    !
+      !    - rad_start : is solar time corresponding to <time> = 0, in seconds             !
+      !                = 0 means <time> = 0 corresponds to midnight,                       !
+      !                = 6 * 3600 means <time> = 0 corresponds to 6 am                     !
+      !    Note: all times are local standard time.                                        !
+      !------------------------------------------------------------------------------------!
+      iday      = julday(imonth1,idate1,iyear1)
+      iday      = iday + nint(time_rams/day_sec)
+      rad_start = (float(itime1/100) + float(mod(itime1,100)) / 60.)*day_sec
+
+
+      !------------------------------------------------------------------------------------!
+      !    Calculate terms in solar zenith angle computation (adapted from original Toon's !
+      ! model).                                                                            !
+      !  - saz: is solar azimuth angle [rad]                                               !
+      !  - declin: is solar declination [rad]                                              !
+      !  - z_sin: is sin term in precalculation                                            !
+      !  - z_cos: is cos term in precalculation                                            !
+      !------------------------------------------------------------------------------------!
+  
+      saz = 2. * pi1 / 365. * iday 
+  
+      declin = 0.006918 - 0.399912 * cos(     saz) + 0.070257 * sin(     saz)              &
+                        - 0.006758 * cos(2. * saz) + 0.000907 * sin(2. * saz)              &
+                        - 0.002697 * cos(3. * saz) + 0.001480 * sin(3. * saz)
+
+      !------------------------------------------------------------------------------------!
+      !    Initialize the radiative transfer model.                                        !
+      !------------------------------------------------------------------------------------!
+      call setuprad(m1)
+     
+       if (.not. lmie) call calcproperties
+
+      !---- Get radiative wavelengths. ----------------------------------------------------!
+      do iwave = 1,nwave
+         !---------------------------------------------------------------------------------!
+         !      Solar wavelengths in radiative transfer model are bin centers, infrared    !
+         ! are bin edges.                                                                  !
+         !---------------------------------------------------------------------------------!
+         if (iwave <= nsol) then
+            wave(iwave) = wave_aerad(iwave)
+         else
+            wave(iwave) = 0.5*( wave_aerad(iwave) + wave_aerad(iwave+1) )
+         end if
+      end do
+
+      !---- Switch bins 11 and 12 (stored at 17 and 18???). -------------------------------!
+      wavetemp = wave(17)
+      wave(17) = wave(18)
+      wave(18) = wavetemp
+
+      return
+   end subroutine initrad
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This subroutine defines various constants, and calculates the pressure-averaged   !
+   ! absorption coefficients.                                                              !
+   !---------------------------------------------------------------------------------------!
+   subroutine setuprad(m1)
+      use rconstants , only : gcgs            & ! intent(in)
+                            , mmo2cgs         & ! intent(in)
+                            , mmo2cgs         & ! intent(in)
+                            , mmo3cgs         & ! intent(in)
+                            , mmco2cgs        & ! intent(in)
+                            , mmdrycgs        & ! intent(in)
+                            , avogrado        & ! intent(in)
+                            , loschcgs        ! ! intent(in)
+      use mem_aerad  , only : wave_aerad      & ! intent(something)
+                            , u0_aerad        & ! intent(something)
+                            , sfc_alb_aerad   & ! intent(something)
+                            , emisir_aerad    & ! intent(something)
+                            , ptop_aerad      & ! intent(something)
+                            , pbot_aerad      & ! intent(something)
+                            , tsfc_aerad      ! ! intent(something)
+      use mem_globrad, only : nlayer          & ! intent(something)
+                            , ntotal          & ! intent(something)
+                            , nprob           & ! intent(something)
+                            , wave            & ! intent(something)
+                            , nvert           & ! intent(something)
+                            , p               & ! intent(something)
+                            , t               & ! intent(something)
+                            , o3c             & ! intent(something)
+                            , wol             & ! intent(something)
+                            , gol             & ! intent(something)
+                            , tauray          & ! intent(something)
+                            , nsolp           & ! intent(something)
+                            , ltemp           & ! intent(something)
+                            , nsol            & ! intent(something)
+                            , aco2            & ! intent(something)
+                            , xaco2           & ! intent(something)
+                            , ao2             & ! intent(something)
+                            , xao2            & ! intent(something)
+                            , ao3             & ! intent(something)
+                            , xao3            & ! intent(something)
+                            , xah2o           & ! intent(something)
+                            , psh2o           & ! intent(something)
+                            , psco2           & ! intent(something)
+                            , pso2            & ! intent(something)
+                            , pso3            & ! intent(something)
+                            , pj              & ! intent(something)
+                            , o3mixp          & ! intent(something)
+                            , akh2o           & ! intent(something)
+                            , ako3            & ! intent(something)
+                            , akco2           & ! intent(something)
+                            , nirp            & ! intent(something)
+                            , lmie            & ! intent(something)
+                            , corereal        & ! intent(something)
+                            , coreimag        ! ! intent(something)
+       
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      integer               ,intent(in) :: m1
+      !----- Local variables. -------------------------------------------------------------!
+      integer, dimension(nlayer)        :: ii
+      integer, dimension(nlayer)        :: ik
+      real   , dimension(m1)            :: pbar
+      real   , dimension(m1)            :: o3mix
+      real   , dimension(nlayer)        :: dp
+      real   , dimension(nlayer)        :: ps
+      integer                           :: i
+      integer                           :: i1
+      integer                           :: j1
+      integer                           :: j
+      integer                           :: k
+      integer                           :: l
+      real                              :: co2mix
+      real                              :: o2mix
+      real                              :: o3mix2
+      real                              :: pm
+      real                              :: wvo
+      real                              :: x
+      !------------------------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
+      !    Compute the layer average pressure (pbar), pressure at the edge of the layer    !
+      ! (press), and the layer total mass (dpg). Units are bars, dyne/cm2, and g/cm2,      !
+      ! respectively.                                                                      !
+      !------------------------------------------------------------------------------------!
+      pbar (1) = p_top * 5.0e-7
+      press(1) = p_top
+      do k  = 2,nvert
+         pbar(k)  = p_aerad(k-1) * 1.0e-6
+         press(k) = (p_aerad(k-1) + p_aerad(k)) * 0.5
+         dpg(k-1) = (press(k)-press(k-1)) / gcgs
+      end do
+      pbar(nlayer)  = p_aerad(nvert) * 1.0e-6
+      press(nlayer) = p_surf
+      dpg(nvert)    = (press(nlayer)-press(nvert)) / gcgs
+      !----- Skin temperature. ------------------------------------------------------------!
+
+      tt(nlayer) = t_surf
+
+      !------------------------------------------------------------------------------------!
+      !    This is the amount of water vapor above model domain (gm/cm2), based on the     !
+      ! 1976 US standard atmosphere, mid-latitude sounding.                                !
+      !------------------------------------------------------------------------------------!
+      rdh2o(1)   = h2ocol_aerad
+      !----- Interpolate temperature from layer centre (t) to layer edge (tt). ------------!
+      tt(1) = t_aerad(1)
+      do k = 2, nvert
+         tt(k) =  t_aerad(k-1) * (press(k)/p_aerad(k-1))                                   &
+               ** (log(t_aerad(k)/t_aerad(k-1))/log(p_aerad(k)/p_aerad(k-1)))
+      end do
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Define mass mixing ratios.  O3mix taken from US standard atmosphere,           !
+      ! mid-latitude sounding.  Likewise, ozone column abundance o3c (#/cm2) above ptop    !
+      ! was calculated from this same profile.                                             !
+      !------------------------------------------------------------------------------------!
+      o2mix          = 0.22   * mmo2cgs  / mmdrycgs
+      co2mix         = 3.5e-4 * mmco2cgs / mmdrycgs
+      o3c            = 9.02e18
+      o3mix2         = o3c * mmo3cgs * gcgs / (p_top * avogrado)
+
+      do l = nsolp+1,ntotal
+         ltemp(l-nsolp) = nprob(l) - nsol
+      end do
+
+      x =   loschcgs / avogrado
+
+      !----- Convert solar absorption coefficients to cm**2/gm. ---------------------------!
+      do l = 1,nsolp
+        aco2(l) = xaco2(l) / (x * mmco2cgs)
+        ao2(l)  = xao2(l)  / (x * mmo2cgs )
+        ao3(l)  = xao3(l)  / (x * mmo3cgs )
+      end do
+
+      !----- Calculate absorption coefficients. -------------------------------------------!
+      pah2o = 0.0
+      paco2 = 0.0
+      pao2  = 0.0
+      pao3  = 0.0
+
+      do j = 1,nlayer
+         do l = 1,nsolp
+            pah2o(l,j) = xah2o(l) * pbar(j) ** psh2o(l)
+            paco2(l,j) =  aco2(l) * pbar(j) ** psco2(l)
+            pao2(l,j)  =  ao2(l)  * pbar(j) ** pso2(l)
+            pao3(l,j)  =  ao3(l)  * pbar(j) ** pso3(l)
+         end do
+      end do
+
+      do j = 1,nlayer
+         iloop: do i = 1,6
+            ii(j) = i
+            if(pbar(j) > pj(i)) exit iloop
+         end do iloop
+      end do
+     
+      ps = 0.0
+      do j = 1,nlayer
+         if (ii(j) == 1) ii(j) = 2
+         dp(j) = log(pj(ii(j)-1)/pj(ii(j)))
+
+         if (pbar(j) > pj(6)) then
+            ik(j) = ii(j) - 1
+         else
+            ik(j) = ii(j)
+         end if
+
+         ps(j) = pbar(j)/pj(ik(j))
+         if (j /= 1) then
+            o3mix(j) =o3mixp(ik(j)) * ps(j)**(log(o3mixp(ii(j)-1) / o3mixp(ii(j))) / dp(j))
+         end if
+      end do
+     
+      do j = 1,nlayer
+
+         do l = 1,31
+            pah2o(nsolp+l,j) = akh2o(l,ik(j))                                              &
+                             * ps(j)**(log(akh2o(l,ii(j)-1) / akh2o(l,ii(j))) / dp(j))
+         end do
+
+         do l = 32,35
+            pah2o(nsolp+l,j) = akh2o(32,ik(j))                                             &
+                             * ps(j)**(log(akh2o(32,ii(j)-1) / akh2o(32,ii(j))) / dp(j))
+            pao3(nsolp+l,j)  = ako3(l-31,ik(j))                                            &
+                             * ps(j)**(log(ako3(l-31,ii(j)-1) / ako3(l-31,ii(j))) / dp(j))
+         end do
+
+         pah2o(nsolp+36,j)  = akh2o(33,ik(j))                                              &
+                            * ps(j)**(log(akh2o(33,ii(j)-1) / akh2o(33,ii(j))) / dp(j))
+
+         do l = 37,40
+            paco2(nsolp+l,j) = akco2(1,ik(j))                                              &
+                             * ps(j)**(log(akco2(1,ii(j)-1) / akco2(1,ii(j))) / dp(j))
+            pah2o(nsolp+l,j) = akh2o(l-3,ik(j))                                            &
+                             * ps(j)**(log(akh2o(l-3,ii(j)-1) / akh2o(l-3,ii(j))) / dp(j))
+         end do
+
+         do l = 41,44
+            paco2(nsolp+l,j) = akco2(2,ik(j))                                              &
+                             * ps(j)**(log(akco2(2,ii(j)-1) / akco2(2,ii(j))) / dp(j))
+            pah2o(nsolp+l,j) = akh2o(l-7,ik(j))                                            &
+                             * ps(j)**(log(akh2o(l-7,ii(j)-1) / akh2o(l-7,ii(j))) / dp(j))
+         end do
+
+         do l = 45,48
+            paco2(nsolp+l,j) = akco2(3,ik(j))                                              &
+                             * ps(j)**(log(akco2(3,ii(j)-1) / akco2(3,ii(j))) / dp(j))
+            pah2o(nsolp+l,j) = akh2o(l-11,ik(j))                                           &
+                             * ps(j)**(log(akh2o(l-11,ii(j)-1)/akh2o(l-11,ii(j))) / dp(j))
+         end do
+
+         do l = 49,51
+            paco2(nsolp+l,j) = akco2(4,ik(j))                                              &
+                             * ps(j)**(log(akco2(4,ii(j)-1) / akco2(4,ii(j))) / dp(j))
+            pah2o(nsolp+l,j) = akh2o(l-11,ik(j))                                           &
+                             * ps(j)**(log(akh2o(l-11,ii(j)-1)/akh2o(l-11,ii(j))) / dp(j))
+         end do
+
+         do l = 52,54
+            paco2(nsolp+l,j) = akco2(5,ik(j))                                              &
+                             * ps(j)**(log (akco2(5,ii(j)-1) / akco2(5,ii(j))) / dp(j))
+            pah2o(nsolp+l,j) = akh2o(l-14,ik(j))                                           &
+                             * ps(j)**(log(akh2o(l-14,ii(j)-1)/akh2o(l-14,ii(j))) / dp(j))
+         end do
+
+         do l = 55,57
+            paco2(nsolp+l,j) = akco2(6,ik(j))                                              &
+                             * ps(j)**(log (akco2(6,ii(j)-1) / akco2(6,ii(j))) / dp(j))
+            pah2o(nsolp+l,j) = akh2o(l-17,ik(j))                                           &
+                             * ps(j)**(log(akh2o(l-17,ii(j)-1)/akh2o(l-17,ii(j))) / dp(j))
+         end do
+
+         do l = 58,nirp
+            pah2o(nsolp+l,j) = akh2o(l-17,ik(j))                                           &
+                             * ps(j)**(log(akh2o(l-17,ii(j)-1)/akh2o(l-17,ii(j))) / dp(j))
+         end do
+      end do
+
+      !----- Store o3mix2 in o3mix(1). ----------------------------------------------------!
+      o3mix(1) = o3mix2
+     
+      !----- Here we find taugas, which is the sum of tauco2, tauo2, and tauo3. -----------!
+      do l=1,ntotal
+         pm = p_top/gcgs
+         taugas(l,1) = pm * (o2mix*pao2(l,1) + co2mix*paco2(l,1) + o3mix(1)*pao3(l,1)) 
+      end do
+      do j = 2, nlayer
+         do l = 1,ntotal
+            pm = dpg(j-1)
+            taugas(l,j) = pm * (o2mix*pao2(l,j) + co2mix*paco2(l,j) + o3mix(j)*pao3(l,j)) 
+         end do
+      end do
+   
+      !------------------------------------------------------------------------------------!
+      !     Wave length must be in microns.  Here we compute the Rayleigh optical depth    !
+      ! parameters.                                                                        !
+      !------------------------------------------------------------------------------------!
+      do l = 1,ntotal
+        wvo       = wave(nprob(l))
+        tauray(l) = (8.46e-9/wvo**4) * ( 1.+0.0113/wvo**2+0.00013/wvo**4 )
+      end do
+   
+      !------------------------------------------------------------------------------------!
+      !     We don't include Rayleigh scattering in infrared.                              !
+      !------------------------------------------------------------------------------------!
+      do j = 1,nvert
+         do l= 1,ntotal
+            if (l <= nsolp) then
+               paray(l,j+1) = tauray(l) * dpg(j) * gcgs
+            else
+               paray(l,j+1) = 0.
+            end if
+         end do
+         do l   =   1,ntotal
+            if (l <= nsolp) then
+               paray(l,1) = tauray(l) * p_top
+            else
+               paray(l,1) = 0.
+            end if
+         end do
+      end do
+
+      return
+   end subroutine setuprad
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
   
   SUBROUTINE calcproperties
     ! **********************************************************************
@@ -1071,15 +1069,15 @@ MODULE rad_carma
     !
     !	  Get <is_grp_ice> and radius grid from interface common block
     !	  and calculate cross-sectional area for each bin.
-    !
+    use rconstants, only : pii, pi1, twopi, stefan
     USE mem_aerad, ONLY: is_grp_ice_aerad,r_aerad,rcore_aerad,rup_aerad, &
          rcoreup_aerad,lunmie,lunoprt,ir_above_aerad, tabove_aerad
   
-    USE mem_globrad, ONLY: ngroup,nrad,core_rad,xsecta,pi, &
-         coreup_rad,i_write,i_read,nwave,rmin,rdqext, &
+    USE mem_globrad, ONLY: ngroup,nrad,core_rad,xsecta, &
+         coreup_rad,l_write,l_read,nwave,rmin,rdqext, &
          qscat,qbrqs,nsol,wave,corereal,coreimag,nsolp, &
          weight,ntotal,sol,solfx,nprob,iblackbody_above, &
-         t_above,ncount,nlow,plank,sbk
+         t_above,ncount,nlow,planck
   
     USE mem_globaer, ONLY: r,rcore,rup,rcoreup,is_grp_ice
   
@@ -1088,7 +1086,6 @@ MODULE rad_carma
     INTEGER :: i
     INTEGER :: ibeyond_spectrum
     INTEGER :: ig
-    INTEGER :: i_mie
     INTEGER :: irefr
     INTEGER :: j
     INTEGER :: jj
@@ -1125,17 +1122,13 @@ MODULE rad_carma
     
     DO ig = 1, ngroup
        DO I = 1, nrad
-          xsecta(i,ig) = pi * r(i,ig)**2.
+          xsecta(i,ig) = pi1 * r(i,ig)**2.
        END DO
     END DO
     !
-    !	  Set <i_mie> = I_READ to WRITE the mie coefficients to a data file,
-    !		      = I_WRITE to READ them
+    !	  Set <i_mie> = L_READ to WRITE the mie coefficients to a data file,
+    !		      = L_WRITE to READ them
     !
-    i_mie = I_READ
-    !i_mie = i_WRITE
-    !srf - nao precisa escrever o arquivo mie.data
-    !	   i_mie = 555
     
     ! ------------------------------------------------------------------
     ! "mie.data" Parameters definitions
@@ -2353,7 +2346,7 @@ MODULE rad_carma
     ! ------------------------------------------------------------------
 
    
-    IF ( i_mie .eq. i_READ ) THEN
+    IF (l_read ) THEN
        all_ok = (mwave==nwave) .and. (mrad==nrad) .and. (mgroup==ngroup)
        DO ig = 1, ngroup
           !...dbg:
@@ -2365,7 +2358,7 @@ MODULE rad_carma
           WRITE(lunoprt,*) ' in mie.data, mwave, mrad, mgroup = ', &
                mwave, mrad, mgroup
           WRITE(lunoprt,*) ' and rmin = ', rmin
-          stop 1
+          call abort_run ('Bad set up data...','calcproperties','rad_carma.f90')
        END IF
     ELSE
        ! calculate extinction and scattering coefficients
@@ -2402,7 +2395,7 @@ MODULE rad_carma
              ELSE
                 awave = 0.5*(wave(l)+wave(l+1))
              END IF
-             wvno     =	2.*pi/(awave*1.0e-4)
+             wvno     =	twopi/(awave*1.0e-4)
              !
              DO i=1,nrad
                 IF(i .eq. 1) THEN
@@ -2424,7 +2417,7 @@ MODULE rad_carma
                 DO j=1,6
                    !
                    !
-                   ! limit x=2*pi/wave to no larger 1000 to avoid anguish in the mie code.
+                   ! limit x=twopi/wave to no larger 1000 to avoid anguish in the mie code.
                    !
                    IF( wvno*rr .gt. 1000. ) rr = 1000./wvno
                    !  print*,'-------------------------------------------------'
@@ -2454,65 +2447,6 @@ MODULE rad_carma
        END DO	  ! ig=1,ngroup
        !
     END IF
-  
-    !
-    !srf - nao precisa escrever o arquivo mie.data
-    !	 i_mie=555
-    
-    !	   DO ig = 1,ngroup
-    !	    DO i = 1,nrad
-    !	     DO l = 1,nwave
-    !	       print*, 'rdqext(i,ig,l), qscat(i,ig,l), qbrqs(i,ig,l)'
-    !	       print*, rdqext(i,ig,l), qscat(i,ig,l), qbrqs(i,ig,l)
-    !	     END DO
-    !	    END DO
-    !	   END DO
-  
-    !IF ( i_mie .eq. i_WRITE ) THEN
-    !  PRINT *,'LFR->006.1.4: Writing mie';CALL flush(6)
-    !
-    !   ! WRITE extinction and scattering coefficients to data file
-    !   !
-    !   OPEN(lunmie,file='./mie.data',form='formatted')
-    !   !
-    !   PRINT *,'LFR->006.1.4.1: Writing nwave,nrad,ngroup',nwave,nrad,ngroup;CALL flush(6)
-    !   WRITE(lunmie,*) nwave,nrad,ngroup
-    !   PRINT *,'LFR->006.1.4.1: Writing r';CALL flush(6)
-    !   DO ig = 1,ngroup
-    !	 DO i = 1,nrad
-    !	  WRITE(lunmie,*) r(i,ig)
-    !	 END DO
-    !    END DO
-    !
-    !    PRINT *,'LFR->006.1.4.2: Writing rdqext,qscat,qbrqs';CALL flush(6)
-    !    DO ig = 1,ngroup
-    !	 DO i = 1,nrad
-    !	  DO l = 1,nwave
-    !	    WRITE(lunmie,*) rdqext(i,ig,l), qscat(i,ig,l), qbrqs(i,ig,l)
-    !	  END DO
-    !	 END DO
-    !    END DO
-    !
-    !    CLOSE(lunmie)
-    !    PRINT *,'LFR->006.1.4.3: Mie close';CALL flush(6)
-    !
-    !  END IF
-    !	 stop
-    !
-    !	WRITE some values to print file
-    !
-    !	 DO ig = 1, ngroup
-    !	   WRITE (lunoprt,500) ig
-    !	   DO i = 1, nrad
-    !	     sizparm6 = 2.*pi*r(i,ig)/(wave(6)*1.e-4)
-    !	     sizparm24 = 2.*pi*r(i,ig)/(wave(24)*1.e-4)
-    !	     WRITE(lunoprt,505) i,r(i,ig),rdqext(i,ig,6),sizparm6,
-    !	1	rdqext(i,ig,24),sizparm24
-    !	   END DO
-    !	 END DO
-    !
-    !500  FORMAT(/," setuprad: igroup = ",i4,//,"   i	 r(cm)   rdqext(6)	x6","	rdqext(24)	x24",/)
-    !505  FORMAT(i4,5(1pe11.2))
     !
     ! *********************************************************************
     !
@@ -2537,12 +2471,6 @@ MODULE rad_carma
     DO l = 1,nsolp
        sol(l) = solfx(nprob(l)) * weight(l)
     END DO
-    !	 print*, 'wave(l),nprob(l),weight(l),solfx(nprob(l)),sol(l)'
-    !	 DO 361 l   =	1,ntotal
-    !
-    !	   print*,wave(nprob(l)),nprob(l),weight(nprob(l)),solfx(nprob(l)),sol(l)
-    !
-    ! 361  continue
   
     !
     ! *********************************************************************
@@ -2558,20 +2486,20 @@ MODULE rad_carma
     t_above = tabove_aerad
     !
     !	set <ibeyond_spectrum> = 1 to include blackbody radiation at
-    !	wavelengths longer than wave(nwave+1) in plank(nwave+1-nsol) and
-    !	at wavelengths shorter than wave(nsol+1) in plank(1)
+    !	wavelengths longer than wave(nwave+1) in planck(nwave+1-nsol) and
+    !	at wavelengths shorter than wave(nsol+1) in planck(1)
     !
     ibeyond_spectrum = 1
     !
     IF( ibeyond_spectrum .eq. 1 )THEN 
        DO j = 1,ncount
-          plank(nwave+1-nsol,j) = (0.01*float(nlow+j))**4
+          planck(nwave+1-nsol,j) = (0.01*float(nlow+j))**4
        END DO
        DO i = nsol+2,nwave
           DO j = 1,ncount
              k = i-nsol
              v = 1.438e4 / wave(i)
-             CALL plnk(v,(0.01*float(nlow+j)),plank(k,j))
+             CALL plnk(v,(0.01*float(nlow+j)),planck(k,j))
           END DO
        END DO
     ELSE 
@@ -2579,7 +2507,7 @@ MODULE rad_carma
           DO j = 1,ncount
              k = i-nsol
              v = 1.438e4 / wave(i)
-             CALL plnk(v,(0.01*float(nlow+j)),plank(k,j))
+             CALL plnk(v,(0.01*float(nlow+j)),planck(k,j))
           END DO
        END DO
     END IF
@@ -2588,17 +2516,17 @@ MODULE rad_carma
   
        IF( ibeyond_spectrum .eq. 1 )THEN
   
-          plank(1,j) = plank(2,j)*sbk/pi
+          planck(1,j) = planck(2,j) * stefan * pii
           DO l = nsol+2,nwave
              k = l-nsol
-             plank(k,j) = (plank(k+1,j)-plank(k,j))*sbk/pi
+             planck(k,j) = (planck(k+1,j)-planck(k,j)) * stefan * pii
           END DO
   
        ELSE
   
           DO l = nsol+1,nwave
              k = l-nsol
-             plank(k,j) = (plank(k+1,j)-plank(k,j))*sbk/pi
+             planck(k,j) = (planck(k+1,j)-planck(k,j))*stefan * pii
           END DO
         
        END IF
@@ -2607,1028 +2535,624 @@ MODULE rad_carma
     !
   
   END SUBROUTINE calcproperties
-  
-!KML2!!!!!!!!1
-  SUBROUTINE nocalcproperties
-    ! **********************************************************************
-    !
-    !		 CALCULATE THE AEROSOL EXTINCTION CROSS SECTIONS
-    !
-    ! **********************************************************************
-    !
-    !	  Get <is_grp_ice> and radius grid from interface common block
-    !	  and calculate cross-sectional area for each bin.
-    !
-    USE mem_aerad, ONLY: ir_above_aerad,tabove_aerad,lunoprt
+   !=======================================================================================!
+   !=======================================================================================!
 
 
-  
-    USE mem_globrad, ONLY: ngroup,nrad,xsecta,pi, &
-  			   i_write,i_read,nwave,rmin, &
-  			   nsol,wave,nsolp, &
-  			   weight,ntotal,sol,solfx,nprob,iblackbody_above, &
-  			   t_above,ncount,nlow,plank,sbk
-  
-    USE mem_globaer, ONLY: r
-  
-    IMPLICIT NONE
-    
-    INTEGER :: i
-    INTEGER :: ibeyond_spectrum
-    INTEGER :: ig
-    INTEGER :: j
-    INTEGER :: jj
-    INTEGER :: k
-    INTEGER :: l
-    REAL    :: sum
-    REAL    :: sum1
-    REAL    :: sum2
-    REAL    :: v
-  
-    CHARACTER(LEN=*),PARAMETER :: &
-    lab355='(//,"setuprad: error in weights ",/," ' &
-  	   //'sum of weights for solar =",1pe15.5,/,"' &
-  	   //' sum of weights for ir = ",1pe15.5,/," ' &
-  	   //'total sum =  ",1pe15.5)'
-    
-    DO ig = 1, ngroup
-      DO I = 1, nrad
-  	xsecta(i,ig) = pi * r(i,ig)**2.
-      END DO
-    END DO
-   
-
-    !
-    ! *********************************************************************
-    !
-    !				 check sum of weights
-    !
-    ! **********************************************************************
-    !
-    sum 	=   0.0
-    sum1	=   0.0
-    sum2	=   0.0
-    DO l	=   1,nsolp
-      sum	     =   sum+weight(l)
-    END DO
-    DO l	=   nsolp+1,ntotal
-      sum1	 =   sum1+weight(l)
-    END DO
-    sum2	=   sum+sum1
-  
-    !
-    IF ( abs(nwave-sum2) .gt. 1.e-3 ) WRITE(lunoprt,FMT=lab355) sum,sum1,sum2
-    !
-    DO  l   =	1,nsolp
-      sol(l)  =   solfx(nprob(l)) * weight(l)
-    END DO
 
 
-    ! *********************************************************************
-    !
-    !	compute planck function table. wave is in units of microns.
-    !
-    ! **********************************************************************
-    !
-    !	set <iblackbody_above> = 1 to include a source of radiation
-    !	at the top of the radiative transfer model DOmain
-    
-    iblackbody_above = ir_above_aerad
-    t_above = tabove_aerad
-    !
-    !	set <ibeyond_spectrum> = 1 to include blackbody radiation at
-    !	wavelengths longer than wave(nwave+1) in plank(nwave+1-nsol) and
-    !	at wavelengths shorter than wave(nsol+1) in plank(1)
-    !
-    ibeyond_spectrum = 1
-    !
-    IF( ibeyond_spectrum .eq. 1 )THEN 
-      DO j  =	1,ncount
-  	plank(nwave+1-nsol,j) = (0.01*float(nlow+j))**4
-      END DO
-      DO i =   nsol+2,nwave
-        DO j  =	1,ncount
-  	  k =	i-nsol
-  	  v =	1.438e4  /  wave(i)
-  	  CALL plnk(v,(0.01*float(nlow+j)),plank(k,j))
-  	END DO
-      END DO
-    ELSE 
-      DO i =   nsol+1,nwave+1
-        DO j  =	1,ncount
-  	  k =	i-nsol
-  	  v =	1.438e4  /  wave(i)
-  	  CALL plnk(v,(0.01*float(nlow+j)),plank(k,j))
-  	END DO
-      END DO
-    END IF
-    !
-    DO j   =   1,ncount
-  
-      IF( ibeyond_spectrum .eq. 1 )THEN
-  
-  	plank(1,j) = plank(2,j)*sbk/pi
-  	DO l  =   nsol+2,nwave
-  	  k  =   l-nsol
-  	  plank(k,j) = (plank(k+1,j)-plank(k,j))*sbk/pi
-  	END DO
-  
-      ELSE
-  
-  	DO l  =   nsol+1,nwave
-  	  k  =   l-nsol
-  	  plank(k,j) = (plank(k+1,j)-plank(k,j))*sbk/pi
-  	END DO
-  
-      END IF
-  
-    END DO
-    !
-  
-  END SUBROUTINE nocalcproperties
 
 
-!KML2!!!!!!!!
 
-  SUBROUTINE prerad(m1,dztr,fmapt,ia,iz,ja,jz,nzpmax,m2,m3)
-    !
-    !  Note that vertical index in radiative transfer model DOmain is reversed
-    !  for cartesian coordinates.
-    !
-    !  Indices <ix> and <iy> are passed through global COMMON block.
-    !
-    !  INCLUDE global constants and variables
-    !
-    
-    !USE mem_aerad, ONLY: qv_aerad,pc_aerad
-    USE mem_aerad, ONLY: nbin
-    USE mem_globaer,ONLY: ngroup,ienconc,nelem
-    
-    IMPLICIT NONE
+   !=======================================================================================!
+   !=======================================================================================!
+   !    This subroutines loads profiles of temperature [k], water vapour [g/g], and        !
+   ! aerosol particle concentrations [#/cm^2].                                             !
+   !---------------------------------------------------------------------------------------!
+   subroutine prerad(m1,nzpmax,dztr,fmapt)
+      use mem_aerad  , only : nbin    ! !
+      use mem_globaer, only : ngroup  & !
+                            , ienconc & !
+                            , nelem   ! ! 
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      integer                   , intent(in) :: m1
+      integer                   , intent(in) :: nzpmax
+      real   , dimension(nzpmax), intent(in) :: dztr
+      real                      , intent(in) :: fmapt
+      !----- Local variables. -------------------------------------------------------------!
+      integer                                :: ibin
+      integer                                :: iep
+      integer                                :: igas
+      integer                                :: igroup
+      integer                                :: k,kk
+      integer                                :: nzz
+      real                                   :: xymet
+      !------------------------------------------------------------------------------------!
+      !
+      igas = 1
+      nzz = m1 - 1
   
-    INTEGER,INTENT(IN)  	      :: m1,m2,m3,ia,iz,ja,jz,nzpmax
-    REAL   ,INTENT(IN), DIMENSION((iz-ia+1)*(jz-ja+1),nzpmax) :: dztr
-    REAL   ,INTENT(IN), DIMENSION((iz-ia+1)*(jz-ja+1)) :: fmapt
-  
-    INTEGER :: ibin
-    INTEGER :: i,j,ij,iend
-    INTEGER :: iep
-    INTEGER :: igas
-    INTEGER :: igroup
-    INTEGER :: k,kk
-    INTEGER :: nzz
-    REAL    :: xymet
-  
-    iend=(iz-ia+1)*(jz-ja+1)
-  	   
-    !  Load profiles of temperature [K], water vapor [g/g], and
-    !  aerosol particle concentrations [#/cm^2]
-    !
-    igas = 1
-    !srf
-    nzz = m1 - 1
-  
-    DO k = 1,NZZ
-       !  Reverse the vertical index when in cartesian coordinates
-       kk = nzz + 1 - k
-       ! For radiation code: qv-aerad have g[H20]/g[ar] unit
-       DO ij=1,iend
-  	 qv_aerad(ij,kk) = gc(ij,k,igas) / rhoa(ij,k)
-       END DO
-       DO igroup = 1,ngroup
-  	  iep = ienconc(igroup)
-  	  DO ibin = 1,nbin
-  	    DO ij=1,iend 
-  	      xymet = fmapt(ij)*fmapt(ij)
-  	      pc_aerad(ij,kk,ibin,igroup) = pc(ij,k,ibin,iep) *  &
-  		  (1./dztr(ij,k)) / xymet
-  	    END DO
-  	  END DO
-  	END DO
-    END DO
-    !
-  
-  END SUBROUTINE prerad
-!kmlnew  
-  SUBROUTINE radtran(albedt,cosz,m1,m2,m3,ia,iz,ja,jz,aot11)
-!kmlnew     
-    USE mem_aerad, ONLY: u0_aerad,qrad_aerad, &
-  			 alb_toai_aerad,alb_tomi_aerad,alb_toa_aerad, &
-  			 fsl_up_aerad,fsl_dn_aerad,fir_up_aerad,fir_dn_aerad, &
-                         nir
+      do k = 1,nzz
+         !----- Reverse the vertical index when in cartesian coordinates. -----------------!
+         kk = nzz + 1 - k
+         !----- qv-aerad has g[h20]/g[ar] units in the radiation code... ------------------!
+         qv_aerad(kk) = gc(k,igas) / rhoa(k)
+         do igroup = 1,ngroup
+            iep = ienconc(igroup)
+            do ibin = 1,nbin
+               xymet = fmapt*fmapt
+               pc_aerad(kk,ibin,igroup) = pc(k,ibin,iep) * (1./dztr(k)) / xymet
+            end do
+         end do
+      end do
       
-    USE mem_globrad, ONLY: isl,nvert,nlayer, &
-  			   ngroup,nrad,u0,nsolp,albedo_sfc, &
-  			   emis,ntotal,emisir,ir,irs, &
-  			   fdegday,g,scday,qrad,pi,epsilon,xsecta,rdqext, &
-  			   nprob,qscat,nwave,tslu,tsld,fupbs,fdownbs, &
-  			   fnetbs,nsol,fslu,fsld,alb_toa,alb_tomi,alb_toai, &
-  			   solfx, &
-  			   tiru,fupbi,fdownbi,fnetbi,firu,xirup
+      return
+   end subroutine prerad
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   subroutine radtran(albedt,cosz,m1,aot11)
+      use rconstants  , only : pi1             & ! intent(in)
+                             , gcgs            & ! intent(in)
+                             , day_sec         ! ! intent(in)
+      use mem_aerad   , only : u0_aerad        & ! intent()
+                             , qrad_aerad      & ! intent()
+                             , alb_toai_aerad  & ! intent()
+                             , alb_tomi_aerad  & ! intent()
+                             , alb_toa_aerad   & ! intent()
+                             , fsl_up_aerad    & ! intent()
+                             , fsl_dn_aerad    & ! intent()
+                             , fir_up_aerad    & ! intent()
+                             , fir_dn_aerad    & ! intent()
+                             , nir             ! ! intent()
+      use mem_globrad , only : isl             & ! intent()
+                             , nvert           & ! intent()
+                             , nlayer          & ! intent()
+                             , ngroup          & ! intent()
+                             , nrad            & ! intent()
+                             , u0              & ! intent()
+                             , nsolp           & ! intent()
+                             , albedo_sfc      & ! intent()
+                             , emis            & ! intent()
+                             , ntotal          & ! intent()
+                             , emisir          & ! intent()
+                             , ir              & ! intent()
+                             , irs             & ! intent()
+                             , fdegday         & ! intent()
+                             , qrad            & ! intent()
+                             , roundoff        & ! intent()
+                             , xsecta          & ! intent()
+                             , rdqext          & ! intent()
+                             , nprob           & ! intent()
+                             , qscat           & ! intent()
+                             , nwave           & ! intent()
+                             , tslu            & ! intent()
+                             , tsld            & ! intent()
+                             , fupbs           & ! intent()
+                             , fdownbs         & ! intent()
+                             , fnetbs          & ! intent()
+                             , nsol            & ! intent()
+                             , fslu            & ! intent()
+                             , fsld            & ! intent()
+                             , alb_toa         & ! intent()
+                             , alb_tomi        & ! intent()
+                             , alb_toai        & ! intent()
+                             , solfx           & ! intent()
+                             , tiru            & ! intent()
+                             , fupbi           & ! intent()
+                             , fdownbi         & ! intent()
+                             , fnetbi          & ! intent()
+                             , firu            & ! intent()
+                             , xirup           ! ! intent()
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      integer                    , intent(in) :: m1
+      real                       , intent(in) :: albedt
+      real                       , intent(in) :: cosz
+      real                       , intent(in) :: aot11
+      !----- Local variables. -------------------------------------------------------------!
+      real    , dimension(nlayer)             :: heati
+      real    , dimension(nlayer)             :: heats
+      real    , dimension(nlayer)             :: heat 
+      integer                                 :: i,i1,j1
+      integer                                 :: ig
+      integer                                 :: j
+      integer                                 :: l,k
+      real                                    :: term1
+      integer                                 :: count=0
+      !------------------------------------------------------------------------------------!
   
-    IMPLICIT NONE
-  
-    INTEGER,INTENT(IN) :: m1,m2,m3,ia,iz,ja,jz
-    REAL,INTENT(IN),DIMENSION((iz-ia+1)*(jz-ja+1)) :: albedt,cosz
-    REAL  :: aot11((iz-ia+1)*(jz-ja+1))
-    INTEGER :: i,i1,j1
-    INTEGER :: ig
-    INTEGER :: j
-    INTEGER :: l,k
-    REAL    :: term1((iz-ia+1)*(jz-ja+1))
-    INTEGER :: count=0
-    INTEGER :: ij,iend
-    REAL :: heati((iz-ia+1)*(jz-ja+1),nlayer)
-    REAL :: heats((iz-ia+1)*(jz-ja+1),nlayer)
-    REAL :: heat((iz-ia+1)*(jz-ja+1),nlayer)
-    
-    iend=(iz-ia+1)*(jz-ja+1)
-  
-    heats   =  0.0
-    heati   =  0.0
-    
-    !
-    !	  interpolate temperature from layer center (t) to layer edge (tt)
-    DO ij=1,iend
-      tt(ij,1) = t_aerad(ij,1)
-    END DO
-    DO  j = 2, nvert
-      DO ij=1,iend
-  	  tt(ij,j) = t_aerad(ij,j-1) * (press(ij,j)/p_aerad(ij,j-1)) ** &
-  			(LOG(t_aerad(ij,j)/t_aerad(ij,j-1))/ &
-  		    LOG(p_aerad(ij,j)/p_aerad(ij,j-1)))
-      END DO
-    END DO
-  
-    !	  water vapor (g / cm**2)
-      DO  j = 2, nlayer
-      DO ij=1,iend
-  	  rdh2o(ij,j)	= qv_aerad(ij,j-1) * dpg(ij,j-1)
-      END DO
-    END DO
-  
-    !	  aerosol concentrations (# / cm**2)
-    DO ig = 1, ngroup
-      DO  j = 2, nvert
-  	DO  i = 1, nrad
-  	  DO ij=1,iend
-  	    caer(ij,j,i,ig)  = pc_aerad(ij,j-1,i,ig)  !!!!!!
-  	  END DO
-  	END DO
-      END DO
-    END DO  
-  
-    !surface reflectivity and emissivity
-    DO  l =  1,nsolp
-      DO ij=1,iend
-  	rsfx(ij,l) =  albedt(ij)
-  	emis(l) =  0.0
-      END DO
-    END DO
-    DO  l =  nsolp+1,ntotal
-      DO ij=1,iend
-  	emis(l) =  emisir_aerad
-  	rsfx(ij,l) = 1.0 - emis(l)
-      END DO
-    END DO
-    
-    !set wavelength limits lla and lls based on values of isl and ir
-    lla=  ntotal
-    lls=  1
-  
-    DO ij=1,iend
-      IF(isl_aerad(ij)  == 0) THEN
-  	lls(ij)   =  nsolp+1
-      END IF
-    END DO
-    !
-    IF(ir_aerad   == 0) THEN
-      DO ij=1,iend
-  	lla(ij)  =  nsolp
-      END DO
-    END IF
+      heats   =  0.0
+      heati   =  0.0
      
-      !DO ij=1,iend
-      !     print*,'AOT11 na radtran=',ij,aot11
-      !END DO
-	   
-    !calculate the optical properties
-    CALL oppr(ia,iz,ja,jz,m1,aot11)
-    !
-    !	  if infrared calculations are required then calculate
-    !	  the plank function
-    !
-    IF(ir_aerad /= 0) THEN
-      CALL oppr1(ia,iz,ja,jz,m1)
-    END IF
-    !
-    !	  if no infrared scattering then set index to number of
-    !	  solar intervals
-    !
-    IF(irs == 0) THEN
-      lla  =  nsolp
-    END IF
-    !
-    !	  if either solar or infrared scattering calculations are required
-    !	  call the two stream code and find the solution
-    !
-    
+      !----- Interpolate temperature from layer centre (t) to layer edge (tt). ------------!
+      tt(1) = t_aerad(1)
+      do j = 2, nvert
+         tt(j) =  t_aerad(j-1) * (press(j)/p_aerad(j-1))                                   &
+               ** (log(t_aerad(j)/t_aerad(j-1)) / log(p_aerad(j)/p_aerad(j-1)))
+      end do
   
-    CALL twostr(m1,ia,iz,ja,jz)
-    
-    !DO i1=ia,iz
-    !  DO j1=ja,jz
-    !	 IF(isl_aerad(i1,j1) /= 0 .OR. irs .NE. 0 ) THEN
-    !	   CALL add(i1,j1,ia,iz,ja,jz,cosz,m2,m3)
-    !	 END IF
-    !  END DO
-    !END DO
-    CALL add(m1,ia,iz,ja,jz,cosz,m2,m3)
+      !----- Water vapour (g/cm2). --------------------------------------------------------!
+      do j = 2, nlayer
+         rdh2o(j)   = qv_aerad(j-1) * dpg(j-1)
+      end do
   
-    !
-    !	  if infrared calculations are required then call newflux1 for
-    !	  a more accurate solution
-    !
-    IF(ir_aerad /= 0) THEN
-      CALL newflux1(m1,ia,iz,ja,jz)
-    END IF
-    
-    !	  calculate infrafred and solar heating rates (deg/day),
-    DO  j      =  1,nvert
-      DO ij=1,iend
-  	IF(isl_aerad(ij) /= 0) THEN
-  	  term1(ij)	 =  fdegday/(dpg(ij,j)*g)
-  	END IF
-      END DO
-      DO  l =  1,nsolp
-  	DO ij=1,iend
-  	  IF(isl_aerad(ij) /= 0) THEN
-  	      heats(ij,j)   =  heats(ij,j)+(fnet(ij,l,j+1)-fnet(ij,l,j))*term1(ij)
-  	  END IF
-  	END DO
-      END DO
-    END DO
-    !  
-    DO  j      =  1,nvert
-      DO ij=1,iend
-  	IF(ir_aerad /= 0) THEN
-  	  term1(ij)	 =  fdegday/(dpg(ij,j)*g)
-  	END IF
-      END DO
-      DO  l =  nsolp+1,ntotal
-  	DO ij=1,iend
-  	  IF(ir_aerad /= 0) THEN
-  	    heati(ij,j)  =  heati(ij,j)+(directu(ij,l,j+1)-direc(ij,l,j+1)  &
-  		       -(directu(ij,l,j)-direc(ij,l,j)) )*term1(ij)
-	  
-!srf
-!            if(heati(ij,j) < -10) then
-!	      print*,ij,j,heati(ij,j)
-!        if((ii == 41 .and. jj==36) .or.(ii == 42 .and. jj==36) ) then
-!	      if(l==nsolp+1)print*,'radtran ii jj l j',ii,jj,l,j
-!	      print*,j,directu(ij,l,j+1),direc(ij,l,j+1)  &
- ! 		       ,directu(ij,l,j),direc(ij,l,j),term1(ij)
-!	     endif
-!srf		       
+      !----- Aerosol concentrations (#/cm2). ----------------------------------------------!
+      do ig = 1, ngroup
+         do j = 2, nvert
+            do i = 1, nrad
+               caer(j,i,ig) = pc_aerad(j-1,i,ig)
+            end do
+         end do
+      end do  
   
-	  
-	  
-  	  END IF
-  	END DO
-      END DO
-    END DO
-    !
-    DO j      =  1,nvert
-      DO ij=1,iend
-  	!     Load heating rates [deg_K/s] into interface common block
-  	heat(ij,j)	   =  heats(ij,j)+heati(ij,j)
-  	heats_aerad(ij,j) =  heats(ij,j)/scday
-  	heati_aerad(ij,j) =  heati(ij,j)/scday
-      END DO
-    END DO
-    
-    !DO  j	=  1,nvert
-    ! heats(j)   =  0.0
-    !  term1	  =  fdegday/(dpg(j)*g)
-    !
-    !  IF(isl /= 0) THEN
-    !	 DO  l    =  1,nsolp
-    !	  heats(j)   =  heats(j)+(fnet(l,j+1)-fnet(l,j))*term1
-    !		    print*,l,heats(j)
-    !	 END DO
-    !  END IF
-    !
-    !  IF(ir /= 0) THEN
-    !	 DO  l    =  nsolp+1,ntotal
-    !	  heati(j)  =  heati(j)+( directu(l,j+1)-direc(l,j+1)  &
-    !	      -(directu(l,j)-direc(l,j)) )*term1
-    !	 END DO
-    !  END IF
-    !  heat(j)       =  heats(j)+heati(j)
-    !
-    !	  Load heating rates [deg_K/s] into interface common block
-    !
-    !  heats_aerad(j) =  heats(j)/scday
-    !  heati_aerad(j) =  heati(j)/scday
-    !
-    !END DO
-    !
-    !	  Here we Calculate (4 * pi * mean_intensity) for the IR.
-    !
-    !DO j = 1, nvert
-    !  DO l = nsolp+1, ntotal
-  !	DO ij=1,iend
-  !	  IF (ir_aerad /= 0) THEN
-  !	    tmi(ij,l,j) = tmiu(ij,l,j)+tmid(ij,l,j)
-  !	  END IF
-  !	END DO
-  !    END DO
-  !  END DO
-    !
-    !	  Here we compute the heating rates for droplets
-    !	  (C11 converts W/m^2 to erg/cm^2)
-    !
-    !qrad = 0.
-    !c11 = 1000.
-    !IF (ir /= 0) THEN
-    !  DO ig = 1, ngroup
-    !	 DO i = 1, nrad
-    !	   DO j = 1, nvert
-    !	    DO l = nsolp+1, ntotal
-    !	      x = tmi(l,j)-4.0*pi*ptemp(l,j)
-    !	      IF( ABS(x/tmi(l,j)) < epsilon ) x = 0.
-    !	      qrad(i,j,ig) = qrad(i,j,ig) + x*c11*xsecta(i,ig) *  &
-    !		  (rdqext(i,ig,nprob(l))-qscat(i,ig,nprob(l)))
-    !	    END DO
-    !	   END DO  ! j=1,nvert
-    !	 END DO   ! i=1,nrad
-    !  END DO	    ! ig=1,ngroup
-    !END IF
-    !
-    !IF (isl /= 0) THEN
-    !  DO ig = 1, ngroup
-    !	 DO i = 1, nrad
-    !	   DO j = 1, nvert
-    !	    DO l = 1, nsolp
-    !	      qrad(i,j,ig) = qrad(i,j,ig) + tmi(l,j)*c11*xsecta(i,ig) *  &
-    !		  (rdqext(i,ig,nprob(l))-qscat(i,ig,nprob(l)))
-    !	    END DO
-    !	   END DO  ! j=1,nvert
-    !	 END DO   ! i=1,nrad
-    !  END DO	    ! ig=1,ngroup
-    !END IF
-    !
-    !	  Load layer averages of droplet heating rates into interface common block
-    !
-    !DO ig = 1, ngroup
-    !  DO i = 1, nrad
-    !	 DO j = 1, nvert
-    !	   IF (j == nvert) THEN
-    !	    qrad_aerad(i,j,ig) = qrad(i,j,ig)
-    !	  ELSE IF (j > 1) THEN
-    !	    qrad_aerad(i,j-1,ig) = 0.5 * ( qrad(i,j,ig) + qrad(i,j-1,ig) )
-    !	  END IF
-    !	 END DO    ! j=1,nvert
-    !  END DO	  ! i=1,nrad
-    !END DO	  ! ig=1,ngroup
-    !
-    !
-    !	Calculate some diagnostic quantities (formerly done in radout.f) and
-    !	load them into the interface common block.  None of these presently
-    !	influence any microphysical processes -- hence, the following code only
-    !	needs to be executed before the aerosol model writes its output.
-    !	Not all of the calculated quantities are presently being
-    !	loaded into the interface common block.
-    !
-    !	Load optical depths into interface common block
-    !
-    !DO i = 1, nwave
-    !  opdaerad(i) = uopd(i,nlayer)
-    !	print*,'AOT',uopd(i,nlayer),opd(i,nlayer)
-    !END DO
-   
-    !
-    !	  <tsLu> and <tsLd> are total upwelling and downwelling solar
-    !	  fluxes at top-of-atmosphere
-    !
-    !tslu = 0.
-    !tsld = 0.
-    !
-    !	  <fupbs>, <fdownbs>, and <fnetbs> are total upwelling, downwelling, and net
-    !	  solar fluxes at grid boundaries
-    !
-    !DO  j = 1, nlayer
-    !  fupbs(j) = 0.
-    !  fdownbs(j) = 0.
-    !  fnetbs(j) = 0.
-    !END DO
-    !
-    !	  <fsLu> and <fsLd> are upwelling, downwelling, and net
-    !	  solar fluxes at top-of-atmosphere (spectrally-resolved)
-    !
-    !	  <alb_toa> is albedo at top-of-atmosphere (spectrally-resolved)
-    !
-    !DO  i = 1, nsol
-    !  fslu(i) = 0.
-    !  fsld(i) = 0.
-    !  alb_toa(i) = 0.
-    !END DO
-    !
-    !	   <alb_tomi> and <alb_toai> are total solar albedos at top-of-model
-    !	   and top-of-atmosphere
-    !
-    !alb_tomi = 0.
-    !alb_toai = 0.
-    !
-    !	  CALCULATE SOLAR ABSORBED BY GROUND, SOLNET, AND UPWARD AND DOWNWARD
-    !	  LONGWAVE FLUXES AT SURFACE, XIRUP AND XIRDOWN (WATTS/M**2)
-    !
-    solnet  = 0.0
-   
-    DO  l   =  1,nsolp
-      DO ij=1,iend
-  	IF (isl_aerad(ij) /= 0) THEN
-  	  solnet(ij) = solnet(ij) - fnet(ij,l,nlayer)
-    !fp = ck1(l,1)*el2(l,1) - ck2(l,1)*em2(l,1) + cp(l,1)
-    !fslu( nprob(l) ) = fslu( nprob(l) ) + fp
-    !DO  j = 1, nlayer
-    !	  fp = ck1(l,j)*el1(l,j) + ck2(l,j)*em1(l,j) + cpb(l,j)
-    !	  fupbs(j) = fupbs(j) + fp
-    !	  fnetbs(j) = fnetbs(j) + fnet(l,j)
-    !	  IF (l == nsolp) fdownbs(j) = fupbs(j) - fnetbs(j)
-    !	 END DO
-  	END IF
-      END DO
-    END DO
-      !DO  i = 1, nsol
-  	!fsld(i) = u0*solfx(i)
-  	!alb_toa(i) = fslu(i)/fsld(i)
-  	!tslu = tslu + fslu(i)
-  	!tsld = tsld + fsld(i)
-      !END DO
-    !
-      !alb_tomi = fupbs(1)/fdownbs(1)
-      !alb_toai = tslu/tsld
-    !
-    !	   Load albedos into interface common block
-    !
-      !alb_toai_aerad = alb_toai
-      !alb_tomi_aerad = alb_tomi
-      !DO i = 1, nsol
-      !  alb_toa_aerad(i) = alb_toa(i)
-      !END DO
-    !
-    !	   Load fluxes into interface common block
-    !
-      !DO j = 1, nlayer
-      !  fsl_up_aerad(j) = fupbs(j)
-      !  fsl_dn_aerad(j) = fdownbs(j)
-      !END DO
-   
-   ! END DO
-    !
-    !	  <tiru> is total upwelling infrared flux at top-of-atmosphere;
-    !	  <fupbi>, <fdownbi>, and <fnetbi> are total upwelling, downwelling, and net
-    !	  infrared fluxes at grid boundaries
-    !
-    !tiru = 0.
-    !DO  j = 1, nlayer
-    !  fupbi(j)   =  0.0
-    !  fdownbi(j)   =  0.0
-    !  fnetbi(j)  =  0.0
-    !END DO
-    !
-    !	  <firu> is upwelling infrared flux at top-of-atmosphere (spectrally-resolved)
-    !
-    !DO  i = 1, nir
-    !  firu(i) = 0.
-    !END DO
-   
-    xirdown = 0.0
-    !xirup   = 0.0
-   
-    DO  l  =  nsolp+1,ntotal
-      DO ij=1,iend
-  	IF (ir_aerad /= 0) THEN
-  	    xirdown(ij) = xirdown(ij) + direc(ij,l,nlayer)
-
-    !	 xirup   = xirup  + directu(l,nlayer)
-    !	 firu( nprob(l)-nsol ) = firu( nprob(l)-nsol ) + directu(l,1)
-    !	 DO  j = 1, nlayer
-    !	  fupbi(j) = fupbi(j) + directu(l,j)
-    !	  fdownbi(j) = fdownbi(j) + direc  (l,j)
-    !	  fnetbi(j) = fnetbi(j) + directu(l,j) - direc(l,j)
-    !	 END DO
-  	END IF
-      END DO
-    END DO
- 
-   
-    !  DO  i = 1, nir
-    !	 tiru = tiru + firu(i)
-    !  END DO
-    !
-    !	   Load fluxes into interface common block
-    !
-    !  DO j = 1, nlayer
-    !	 fir_up_aerad(j) = fupbi(j)
-    !	 fir_dn_aerad(j) = fdownbi(j)
-    !  END DO
-  
-  END SUBROUTINE radtran
-  
-  SUBROUTINE oppr(ia,iz,ja,jz,m1,aot11)
-    !
-    !	  **************************************************************
-    !	  *  Purpose		 :  CaLculates optical properties      *
-    !	  *			    such as single scattering albedo,  *
-    !	  *			    asymmetry parameter, etc.	       *
-    !	  *			    This routine is case dependent and *
-    !	  *			    wiLL have to be repLaced by the    *
-    !	  *			    user.			       *
-    !	  *  Subroutines Called  :  None			       *
-    !	  *  Input		 :  PAH2O, RDH2O, CO2, O3, ETC         *
-    !	  *  Output		 :  TAUL, W0, G0, OPD,         *
-    !	  * ************************************************************
-    !
-    !INCLUDE 'globrad.h'
-    !
-    !	  W0(NWAVE,NLAYER) : SINGLE SCATTERING ALBEDO *** delta scaled ***
-    !	  G0(NWAVE,NLAYER) : ASYMMETRY PARAMETER *** delta scaled ***
-    !	  OPD(NWAVE,NLAYER): cumulative OPTICAL DEPTH *** delta scaled ***
-    !	  SFL(NWAVE)	   : SOLAR FLUX
-    !	 uW0(NWAVE,NLAYER)  : unscaled SINGLE SCATTERING ALBEDO
-    !	 uG0(NWAVE,NLAYER)  : unscaled ASYMMETRY PARAMETER
-    !	 uTAUL(NWAVE,NLAYER): unscaled OPTICAL DEPTH of layer
-    !
-    !	  ASSUME THAT P IS SAME ON ALL SIGMA LEVELS. IF PSURFACE
-    !	  VARIES A LOT, THEN WE MAY NEED TO CALCULATE TAUO3,
-    !	  TAUCO2, TAUO2 FOR EACH POINT.
-    !
-    !	  NOTE : THE TOP LAYER IS A DUMMY. IT CONTAINS A DEFINED GAS
-    !		 AMOUNT. DIFFERENT MODELS WILL REQUIRE DIFFERENT
-    !		 TREATMENT OF THIS.
-    !	  CALCULATE TOTAL OPTICAL DEPTH INCLUDING GASES. THEN
-    !	  GIVEN THE AEROSOL OPTICAL DEPTHS AND CLOUD OPTICAL DEPTHS,
-    !	  CALCULATE FINAL OPTICAL PROPERTIES. WE USE A DELTA
-    !	  TWO STREAM APPROACH TO FIND W0, SINGLE SCATTERING ALBEDO,
-    !	  G0, ASYMMMETRY PARAMETER, TAUL, LAYER OPTICAL DEPTH,
-    !	  OPD, CUMULATIVE OPTICAL DEPTH TO BASE OF LAYER.
-    !
-    USE mem_globrad, ONLY: nlayer,nwave,ngroup,nrad,xsecta, &
-  			   rdqext,qscat,qbrqs,ntotal,nprob, &
-  			   epsilon,g,ptop,p,q,nsolp,contnm, &
-  			   uw0,ug0,ir,ngauss,gangle,ta,tb,  &
-			   wa,wb,ga,gb,tia,tib,wia,wib,gia, &
-			   gib,alpha,gama,caseE,caseW,  &          !kml2
-          		   caseG,wave,imie               !kml2
-    
-    USE mem_aerad, ONLY: iprocopio
-    use rconstants, only: t00
-    IMPLICIT NONE
-    
-    INTEGER,INTENT(IN) :: ia,iz,ja,jz,m1
-    REAL,DIMENSION((iz-ia+1)*(jz-ja+1),ntotal,nlayer) :: taua,taus,g01,wol
-    REAL,DIMENSION((iz-ia+1)*(jz-ja+1),ntotal,nlayer) :: gol
-    INTEGER :: i,i1,j1,kk
-    INTEGER :: ig
-    INTEGER :: iradgas
-    INTEGER :: j
-    INTEGER :: l
-    REAL    :: cco((iz-ia+1)*(jz-ja+1))
-    REAL    :: den 
-    REAL    :: denom
-    REAL    :: fo
-    REAL    :: pcorr
-    REAL    :: qcorr
-    REAL    :: ttas
-    REAL    :: tauh2o((iz-ia+1)*(jz-ja+1),ntotal,nlayer)
-    REAL    :: utaul((iz-ia+1)*(jz-ja+1),ntotal,nlayer)
-  !  REAL    :: uw0((iz-ia+1)*(jz-ja+1),ntotal,nlayer)
-    REAL    :: wot((iz-ia+1)*(jz-ja+1),ntotal)
-    REAL    :: got((iz-ia+1)*(jz-ja+1),ntotal)
-    INTEGER,DIMENSION((iz-ia+1)*(jz-ja+1)):: idaot
-    REAL :: aot11((iz-ia+1)*(jz-ja+1))         !kml2
-    INTEGER :: ij,iend,jjj,in
-    
-!kmlnew
-    REAL,DIMENSION((iz-ia+1)*(jz-ja+1),ntotal,nlayer) :: taucld,wcld,gcld 
-    REAL,DIMENSION((iz-ia+1)*(jz-ja+1),ntotal,nlayer) :: wolc,woice,worain,gl,gice,grain
-    REAL,DIMENSION((iz-ia+1)*(jz-ja+1),ntotal,nlayer) :: DENC
-    REAL,DIMENSION((iz-ia+1)*(jz-ja+1),ntotal,nlayer) :: taucldlw,taucldice,taurain
-    REAL,DIMENSION((iz-ia+1)*(jz-ja+1),nlayer) :: CORR,REFFI
-    
-    REAL,DIMENSION((iz-ia+1)*(jz-ja+1),nwave) :: rdqextnew,wonew,gonew
-    real X_teste
-  
+      !----- Surface reflectivity and emissivity. -----------------------------------------!
+      do l = 1,nsolp
+         rsfx(l) = albedt
+         emis(l) = 0.0
+      end do
+      do l = nsolp+1,ntotal
+         emis(l) = emisir_aerad
+         rsfx(l) = 1.0 - emis(l)
+      end do
      
-    CORR=0.0
-    DENC=0.0
-    REFFI=0.0
-    taucldlw=0.0
-    taucldice=0.0
-    taurain=0.0
-    wolc=0.0
-    woice=0.0
-    worain=0.0
-    gl=0.0
-    gice=0.0
-    grain=0.0
-    taucld=0.0
-    wcld=0.0
-    gcld=0.0
-    rdqextnew=0.0
-    wonew=0.0
-    gonew=0.0
-
-!kmlnew    
+      !----- Set wavelength limits lla and lls based on values of isl and ir. -------------!
+      lla = ntotal
+      lls = 1
+      if (.not. isl_aerad) lls  =  nsolp+1
+      if (.not. ir_aerad)  lla  =  nsolp
        
-    iend=(iz-ia+1)*(jz-ja+1)
+             
+      !----- Compute some optical properties. ---------------------------------------------!
+      call oppr(m1,aot11)
+
+      !------------------------------------------------------------------------------------!
+      !     In case infrared calculations are required, then we also compute the Planck's  !
+      ! function.                                                                          !
+      !------------------------------------------------------------------------------------!
+      if (ir_aerad) call oppr1(m1)
+
+      !------------------------------------------------------------------------------------!
+      !     If no infrared scattering exists, then we set the index to the number of       !
+      ! solar intervals.                                                                   !
+      !------------------------------------------------------------------------------------!
+      if(irs == 0) lla = nsolp
+
+      !------------------------------------------------------------------------------------!
+      !     If either solar or infrared scattering calculations are required, we call the  ! 
+      ! two stream code and find the solution.                                             !
+      !------------------------------------------------------------------------------------!
+      call twostr(m1)
+      call add(m1,cosz)
+
+      !------------------------------------------------------------------------------------!
+      !     If infrared calculations are required then call newflux1 for a more accurate   !
+      ! solution.                                                                          !
+      !------------------------------------------------------------------------------------!
+      if (ir_aerad) call newflux1(m1)
+
+      !----- Calculate infrafred and solar heating rates (deg/day). -----------------------!
+      do j = 1,nvert
+         if (isl_aerad) term1 = fdegday/(dpg(j) * gcgs)
+         do l =  1,nsolp
+            if (isl_aerad) heats(j) = heats(j) + (fnet(l,j+1) - fnet(l,j)) * term1
+         end do
+      end do
+
+      do j = 1,nvert
+         if (ir_aerad) term1 = fdegday / (dpg(j) * gcgs)
+         do l = nsolp+1,ntotal
+            if (ir_aerad) then
+               heati(j)  = heati(j)                                                        &
+                         + (directu(l,j+1) - direc(l,j+1) - (directu(l,j) - direc(l,j)))   &
+                         * term1
+            end if
+         end do
+      end do
+
+      do j = 1,nvert
+         !----- Load heating rates [deg_k/s] into interface common block. -----------------!
+         heat(j)        =  heats(j) + heati(j)
+         heats_aerad(j) =  heats(j) / day_sec
+         heati_aerad(j) =  heati(j) / day_sec
+      end do
+
+      solnet  = 0.0
+      if (isl_aerad) then
+         do l = 1,nsolp
+            solnet = solnet - fnet(l,nlayer)
+         end do
+      end if
+    
+      xirdown = 0.0
+      if (ir_aerad) then
+         do l = nsolp+1,ntotal
+            xirdown = xirdown + direc(l,nlayer)
+         end do
+      end if
+
+      return
+   end subroutine radtran
+   !=======================================================================================!
+   !=======================================================================================!
 
 
 
-      IF (iprocopio == 1 .and. imie == 1) THEN
-!            aot11=0.1          !TMP KML2
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !      This subroutine calculates optical properties such as single scattering albedo,  !
+   ! asymmetry parameter, etc.                                                             !
+   !                                                                                       !
+   !                                                                                       !
+   !    w0(nwave,nlayer)   : single scattering albedo *** delta scaled ***                 !
+   !    g0(nwave,nlayer)   : asymmetry parameter *** delta scaled ***                      !
+   !    opd(nwave,nlayer)  : cumulative optical depth *** delta scaled ***                 !
+   !    sfl(nwave)         : solar flux                                                    !
+   !    uw0(nwave,nlayer)  : unscaled single scattering albedo                             !
+   !    ug0(nwave,nlayer)  : unscaled asymmetry parameter                                  !
+   !    utaul(nwave,nlayer): unscaled optical depth of layer                               !
+   !                                                                                       !
+   !     Assume that p is same on all sigma levels. if psurface varies a lot, then we may  !
+   ! need to calculate tauo3, tauco2, tauo2 for each point.                                !
+   !                                                                                       !
+   !     NOTE : The top layer is a dummy.  It contains a defined gas amount.  Different    !
+   ! models will require different treatment of this.                                      !
+   !                                                                                       !
+   !     Calculate total optical depth including gases.  Then given the aerosol optical    !
+   ! depths and cloud optical depths, calculate final optical properties. we use a delta   !
+   ! two stream approach to find w0, single scattering albedo, g0, asymmmetry parameter,   !
+   ! taul, layer optical depth, opd, cumulative optical depth to base of layer.            !
+   !---------------------------------------------------------------------------------------!
+   subroutine oppr(m1,aot11)
+      use rconstants , only : gcgs          ! ! intent(in)
+      use mem_globrad, only : nlayer        & ! intent(something)
+                            , nwave         & ! intent(something)
+                            , ngroup        & ! intent(something)
+                            , nrad          & ! intent(something)
+                            , xsecta        & ! intent(something)
+                            , rdqext        & ! intent(something)
+                            , qscat         & ! intent(something)
+                            , qbrqs         & ! intent(something)
+                            , ntotal        & ! intent(something)
+                            , nprob         & ! intent(something)
+                            , roundoff      & ! intent(something)
+                            , ptop          & ! intent(something)
+                            , p             & ! intent(something)
+                            , q             & ! intent(something)
+                            , nsolp         & ! intent(something)
+                            , contnm        & ! intent(something)
+                            , uw0           & ! intent(something)
+                            , ug0           & ! intent(something)
+                            , ir            & ! intent(something)
+                            , ngauss        & ! intent(something)
+                            , gangle        & ! intent(something)
+                            , ta            & ! intent(something)
+                            , tb            & ! intent(something)
+                            , wa            & ! intent(something)
+                            , wb            & ! intent(something)
+                            , ga            & ! intent(something)
+                            , gb            & ! intent(something)
+                            , tia           & ! intent(something)
+                            , tib           & ! intent(something)
+                            , wia           & ! intent(something)
+                            , wib           & ! intent(something)
+                            , gia           & ! intent(something)
+                            , gib           & ! intent(something)
+                            , alpha         & ! intent(something)
+                            , gama          & ! intent(something)
+                            , caseE         & ! intent(something)
+                            , caseW         & ! intent(something)
+                            , caseG         & ! intent(something)
+                            , wave          & ! intent(something)
+                            , lmie          ! ! intent(something)
+      use mem_aerad  , only : lprocopio     ! ! intent(in)
+      use rconstants , only : t00           ! ! intent(in)
+
+      implicit none
+
+      !----- Arguments. -------------------------------------------------------------------!
+      integer                          , intent(in) :: m1
+      real                             , intent(in) :: aot11
+      !----- Local variables. -------------------------------------------------------------!
+      real   , dimension(ntotal,nlayer)             :: taua
+      real   , dimension(ntotal,nlayer)             :: taus
+      real   , dimension(ntotal,nlayer)             :: g01
+      real   , dimension(ntotal,nlayer)             :: wol
+      real   , dimension(ntotal,nlayer)             :: gol
+      real   , dimension(ntotal,nlayer)             :: tauh2o
+      real   , dimension(ntotal,nlayer)             :: utaul
+      real   , dimension(ntotal,nlayer)             :: taucld
+      real   , dimension(ntotal,nlayer)             :: wcld
+      real   , dimension(ntotal,nlayer)             :: gcld 
+      real   , dimension(ntotal,nlayer)             :: wolc
+      real   , dimension(ntotal,nlayer)             :: woice
+      real   , dimension(ntotal,nlayer)             :: worain
+      real   , dimension(ntotal,nlayer)             :: gl
+      real   , dimension(ntotal,nlayer)             :: gice
+      real   , dimension(ntotal,nlayer)             :: grain
+      real   , dimension(ntotal,nlayer)             :: denc
+      real   , dimension(ntotal,nlayer)             :: taucldlw
+      real   , dimension(ntotal,nlayer)             :: taucldice
+      real   , dimension(ntotal,nlayer)             :: taurain
+      real   , dimension(ntotal)                    :: wot
+      real   , dimension(ntotal)                    :: got
+      real   , dimension(nlayer)                    :: corr
+      real   , dimension(nlayer)                    :: reffi
+      real   , dimension(nwave)                     :: rdqextnew
+      real   , dimension(nwave)                     :: wonew
+      real   , dimension(nwave)                     :: gonew
+      integer                                       :: i,i1,j1,kk
+      integer                                       :: ig
+      integer                                       :: iradgas
+      integer                                       :: j
+      integer                                       :: l
+      real                                          :: cco
+      real                                          :: den 
+      real                                          :: denom
+      real                                          :: fo
+      real                                          :: pcorr
+      real                                          :: qcorr
+      real                                          :: ttas
+      real                                          :: x_teste
+      integer                                       :: idaot
+      integer                                       :: jjj
+      !------------------------------------------------------------------------------------!
+  
+      !----- Initialise a bunch of variables. ---------------------------------------------!
+      corr      = 0.0
+      denc      = 0.0
+      reffi     = 0.0
+      taucldlw  = 0.0
+      taucldice = 0.0
+      taurain   = 0.0
+      wolc      = 0.0
+      woice     = 0.0
+      worain    = 0.0
+      gl        = 0.0
+      gice      = 0.0
+      grain     = 0.0
+      taucld    = 0.0
+      wcld      = 0.0
+      gcld      = 0.0
+      rdqextnew = 0.0
+      wonew     = 0.0
+      gonew     = 0.0
+
+      if (lprocopio .and. lmie) then
  
-   	    DO ij=1,iend
-		idaot(ij) = MAX(MIN(INT(10*((ANINT(10.*aot11(ij))/10.)+0.1)/2.),9),1)
+         idaot = max(min(int(10*((anint(10.*aot11)/10.)+0.1)/2.),9),1)
 
-  	        DO  l = 1,nwave
-	         rdqextnew(ij,l) = caseE(idaot(ij),l) 
-		 wonew(ij,l)	 = caseW(idaot(ij),l) 
-                 gonew(ij,l)	 = caseG(idaot(ij),l)
-                 !if(l.eq.11) print*,'ext,wo,go=',rdqextnew(ij,l),wonew(ij,l),gonew(ij,l),ij
-                END DO
-            END DO
+         do l = 1,nwave
+            rdqextnew(l) = casee(idaot,l) 
+            wonew(l)     = casew(idaot,l) 
+            gonew(l)     = caseg(idaot,l)
+         end do
 
-!TMP       
-           taua=0.0
-           DO j=1,nlayer
-             DO ig = 1,ngroup
-         	DO  i = 1,nrad
-         	  DO  l = 1,ntotal
-         	    DO ij=1,iend
-
-         		taua(ij,l,j)=taua(ij,l,j)+rdqextnew(ij,nprob(l))*xsecta(i,ig)* &
-         				   caer(ij,j,i,ig)
-			tauaer(ij,l,j) = MAX(taua(ij,nprob(l),j),REAL(epsilon))		   
-         		wol(ij,l,j)    = wonew(ij,nprob(l))
-         		gol(ij,l,j)    = gonew(ij,nprob(l))
-!               		if(tauaer(ij,l,j).gt.REAL(epsilon)) then
-!			  print*,'ij,j,nprob=',ij,l,nprob(l)
-!			  print*,'wo,go,ext,taua=',wol(ij,l,j),gol(ij,l,j),rdqextnew(ij,nprob(l))
-!			  print*,'caer, taua=',taua(ij,l,j),caer(ij,j,i,ig)
-!			endif
-         	    END DO
-         	  END DO
-         	END DO
-             END DO
-
-           END DO
-      ELSE
-
-     	  taua=0.0
-     	  taus=0.0
-     	  g01=0.0
-     	  DO j=1,nlayer
-     	    DO ig = 1,ngroup
-     	       DO  i = 1,nrad
-     		 DO  l = 1,nwave
-     		   DO ij=1,iend
-     		     taua(ij,l,j)=taua(ij,l,j)+rdqext(i,ig,l)*xsecta(i,ig)* &
-     				  caer(ij,j,i,ig)
-     		     taus(ij,l,j)=taus(ij,l,j)+qscat(i,ig,l)*xsecta(i,ig)* &
-     				  caer(ij,j,i,ig)
-     		     g01(ij,l,j) =g01(ij,l,j) +qbrqs(i,ig,l)*xsecta(i,ig)* &
-     				  caer(ij,j,i,ig)
-     		   END DO
-     		 END DO
-     	       END DO
-     	    END DO
+         taua=0.0
+         do j=1,nlayer
+            do ig = 1,ngroup
+               do i = 1,nrad
+                 do l = 1,ntotal
+                    taua(l,j)   = taua(l,j)                                                &
+                                + rdqextnew(nprob(l)) * xsecta(i,ig) * caer(j,i,ig)
+                    tauaer(l,j) = max(taua(nprob(l),j),roundoff)                 
+                    wol(l,j)    = wonew(nprob(l))
+                    gol(l,j)    = gonew(nprob(l))
+                 end do
+               end do
+            end do
+         end do
+      else
+         taua = 0.0
+         taus = 0.0
+         g01  = 0.0
+         do j=1,nlayer
+            do ig = 1,ngroup
+               do  i = 1,nrad
+                  do  l = 1,nwave
+                      taua(l,j) = taua(l,j)                                                &
+                                + rdqext(i,ig,l) * xsecta(i,ig) * caer(j,i,ig)
+                      taus(l,j) = taus(l,j)                                                &
+                                + qscat(i,ig,l)  * xsecta(i,ig) * caer(j,i,ig)
+                      g01(l,j)  = g01(l,j)                                                 &
+                                + qbrqs(i,ig,l)  * xsecta(i,ig) * caer(j,i,ig)
+                  end do
+               end do
+            end do
 
 
-     	    DO l= 1,ntotal
-     	       DO ij=1,iend
-     		 tauaer(ij,l,j) = MAX(taua(ij,nprob(l),j),REAL(epsilon))
-!     		 tauaer(ij,l,j) =     taua(ij,nprob(l),j)
-    		 wol(ij,l,j)	 = taus(ij,nprob(l),j)/tauaer(ij,l,j)
-     		 ttas=1.0
-     		 IF( wol(ij,l,j) /= 0. ) ttas = taus(ij,nprob(l),j)
-     		 gol(ij,l,j)	= g01(ij,nprob(l),j)/ttas
-     	       END DO
-     	    END DO
-     	  END DO
-	  imie = 1
-      END IF
+            do l= 1,ntotal
+               tauaer(l,j) = max(taua(nprob(l),j),roundoff)
+               wol(l,j)    = taus(nprob(l),j)/tauaer(l,j)
+               ttas        = 1.0
+               if(wol(l,j) /= 0.) ttas = taus(nprob(l),j)
+               gol(l,j)    = g01(nprob(l),j)/ttas
+            end do
+         end do
+         lmie = .true.
+      end if
 
-!kmlnew 
+      do j=1,nlayer
+         if (xland_aerad >= .009) then
+           reffi(j) =  7.0 * 1.e+3 * lwl_aerad(j) + 5.5 
+         else 
+           reffi(j) =  9.5 * 1.e+3 * lwl_aerad(j) + 4.0 
+         end if
+         
+         corr(j) = 1.047 - 0.913e-4 * (tt(j)-t00) + 0.203e-3 * (tt(j)-t00) **2             &
+                         - 0.106e-4 * (tt(j)-t00) **3
+         corr(j) = max(corr(j),roundoff)  
+      end do
 
-!     imie = 1 
+      do j=1,nlayer
+         do l= 1,ntotal        
+            if (j == 1) taurain(l,j) = 0.00018 * rain_aerad * 2000.0
+            
+            taucldlw  (l,j) = 1.e+3 * lwp_aerad(j) *(ta(l)/reffi(j)+tb(l)/reffi(j)**2)
+            worain    (l,j) = 1. - 0.45
+            wolc      (l,j) = (1. - wa(l)) + wb(l) * reffi(j)
+            gl        (l,j) = ga(l) + gb(l) * reffi(j)
+            grain     (l,j) = 0.95
+            denc      (l,j) = 1. / (tia(l) + tib(l) * 1.0e+3 * iwl_aerad(j))
+            taucldice (l,j) = corr(j) * 1.0e+3 * iwp_aerad(j) * denc(l,j)
+            
+            if (wib(l) < 1.e-5) then
+               x_teste = 0.
+            else
+               x_teste = (1.0e+3 * iwl_aerad(j))**wib(l)
+            end if
 
-    DO j=1,nlayer
-       DO ij=1,iend
-       
-       IF (xland_aerad(ij).ge..009) THEN
-         REFFI(ij,j) =  7.0 * 1.e+3 * LWL_aerad(ij,j) + 5.5 
-       ELSE 
-         REFFI(ij,j) =  9.5 * 1.e+3 * LWL_aerad(ij,j) + 4.0 
-       END IF
-       
-       CORR(ij,j) = 1.047 - 0.913e-4 * (tt(ij,j)-t00) + 0.203e-3 * &
-                   (tt(ij,j)-t00) **2 - 0.106e-4 * (tt(ij,j)-t00) **3
-      
-       CORR(ij,j) = MAX(CORR(ij,j),REAL((epsilon)))
-              
-	 
-       END DO  
-    END DO
+            woice(l,j) = ( 1.0 -  wia(l) * x_teste)                                        &
+                       * ( 1.0 - gama(l) * (corr(j) - 1)/ corr(j) )
+            
+            if(gib(l) < 1.e-5) then
+               x_teste = 1.
+            else
+               x_teste = (1.0e+3 * iwl_aerad(j))**gib(l)
+            end if
+            gice(l,j)  = (gia(l) * x_teste)                                                &
+                       * ( 1.0 + alpha(l) * (corr(j) - 1)/ corr(j) )
+                           
+            
+            select case (l)
+            case (91:113)
+               taucldlw(l,j)= 1.0e+3 * lwp_aerad(j) * ta(l) * exp(tb(l)* reffi(j))
 
-   DO j=1,nlayer
-      DO l= 1,ntotal
-       DO ij=1,iend
+            case (114:154)
+               taucldlw(l,j)=  1.0e+3 * lwp_aerad(j) * ( ta(l) + tb(l)* reffi(j))
+               gl(l,j) = 1. - ga(l) * exp( gb(l) * reffi(j))
+
+            end select
+            
+            taucld(l,j) = taucldlw(l,j) + taucldice(l,j) + taurain(l,j)
+
+            if ( taucld(l,j) > roundoff) then
+               wcld(l,j) = ( wolc(l,j) * taucldlw(l,j)  + woice(l,j) * taucldice(l,j)      &
+                           + worain(l,j) * taurain(l,j)) / taucld(l,j)
+               gcld(l,j) = ( wolc(l,j) *  taucldlw(l,j) * gl(l,j)                          &
+                           + woice(l,j) * taucldice(l,j)* gice(l,j)                        &
+                           + worain(l,j) * taurain(l,j) * grain(l,j))                      &
+                           / (wcld(l,j) * taucld(l,j))            
+            else 
+              wcld(l,j)  = 1.0
+              gcld(l,j)  = 0.0
+            end if
+         end do
+      end do
         
-	IF( j .eq. 1) taurain(ij,l,j) = 0.00018 * RAIN_aerad(ij) * 2000.0
-	
-	taucldlw(ij,l,j)= 1.e+3 * LWP_aerad(ij,j) *(ta(l)/REFFI(ij,j)+tb(l)/REFFI(ij,j)**2)
-
-	worain(ij,l,j) = 1. - 0.45
-	wolc(ij,l,j) = (1. - wa(l)) + wb(l) * REFFI(ij,j)
-	gl(ij,l,j)   = ga(l) + gb(l) * REFFI(ij,j)
-	grain(ij,l,j) = 0.95
-
-	DENC(ij,l,j)      = 1. / (tia(l) + tib(l) * 1.0e+3 * IWL_aerad(ij,j))
-	taucldice(ij,l,j) = CORR(ij,j) * 1.0e+3 * IWP_aerad(ij,j) * DENC(ij,l,j)
-	
-!srf-evitando bug - 0**0	
-        if(wib(l) < 1.e-5) then
-	   X_teste = 0.
-	else
-	   X_teste = (1.0e+3 * IWL_aerad(ij,j))**wib(l)
-	endif
-
-!	woice(ij,l,j) =( 1.0 -  wia(l) * (1.0e+3 * IWL_aerad(ij,j))**wib(l)) * & 
-	woice(ij,l,j) =( 1.0 -  wia(l) *  X_teste                          ) * & 
-	               ( 1.0 - gama(l) * (CORR(ij,j) - 1)/ CORR(ij,j) )
-	
-!srf-evitando bug - 0**0	
-        if(gib(l) < 1.e-5) then
-!	   X_teste = 0.
-	   X_teste = 1.
-	   
-	else
-	   X_teste = (1.0e+3 * IWL_aerad(ij,j))**gib(l)
-	endif
-!	gice(ij,l,j) = ( gia(l) * (1.0e+3 * IWL_aerad(ij,j))**gib(l) ) * &
-	gice(ij,l,j) = ( gia(l) * X_teste                            ) * &
-	               ( 1.0 + alpha(l) * (CORR(ij,j) - 1)/ CORR(ij,j) )
-		       
-	
-	IF (l>=91 .AND. l<=113) THEN
-	
-	taucldlw(ij,l,j)= 1.0e+3 * LWP_aerad(ij,j) * ta(l) * exp(tb(l)* REFFI(ij,j))
-	
-	END IF
-	
-	IF (l>=114 .AND. l<=154) THEN
-	
-	taucldlw(ij,l,j)=  1.0e+3 * LWP_aerad(ij,j) * ( ta(l) + tb(l)* REFFI(ij,j))
-	
-	gl(ij,l,j) = 1. - ga(l) * exp( gb(l) * REFFI(ij,j))
-	
-	END IF
-	
-	taucld(ij,l,j)= taucldlw(ij,l,j) + taucldice(ij,l,j) + taurain(ij,l,j)
-
-!        if(LWL_aerad(ij,j).gt.0.) print*, 'Liquid', 1.0e+3 * LWL_aerad(ij,j),taucldlw(ij,l,j)
-!	if(IWL_aerad(ij,j).gt.0.) print*, 'Ice', 1.0e+3 * IWL_aerad(ij,j),taucldice(ij,l,j)
-
-        IF ( taucld(ij,l,j).gt.epsilon) THEN
-	
-	  wcld(ij,l,j) =  (wolc(ij,l,j) *  taucldlw(ij,l,j)  + &
-	                  woice(ij,l,j) * taucldice(ij,l,j) + &
-			  worain(ij,l,j) * taurain(ij,l,j)) &
-	              / taucld(ij,l,j)
-	  gcld(ij,l,j) = ( wolc(ij,l,j) *  taucldlw(ij,l,j)*   gl(ij,l,j) + &
-	                woice(ij,l,j) * taucldice(ij,l,j)* gice(ij,l,j) + &
-			worain(ij,l,j) * taurain(ij,l,j) * grain(ij,l,j)) &
-		      / (wcld(ij,l,j) * taucld(ij,l,j))	     
-        ELSE 
-	  wcld(ij,l,j) = 1.0
-	  gcld(ij,l,j) = 0.0
-        ENDIF
-       END DO                           
-      END DO
-    END DO
-!kmlnew 
-    
-    iradgas = 1 !iradgas = 0: no gas in radiative xfer
-    DO  j = 1,nlayer
-      kk = MAX( 1, j-1 )
-      !
-      !   Bergstrom water vapor continuum fix:
-      !
-      !    <qcorr> is layer average water vapor mixing ratio
-      !    <pcorr> is layer average pressure
-      !
-      !   For layer 0, calculate mixing ratio [g/g] from vapor column [g/cm^2]
-      !   and average pressure [dyne/cm^2]
-      !
-      IF( j == 1 )THEN
-        DO ij=1,iend
-  	  qcorr = rdh2o(ij,1) * g / p_top(ij)
-  	  pcorr = p_aerad(ij,1) / 2.
-  	  cco(ij) = EXP(1800./t_aerad(ij,kk))*(qcorr*pcorr/2.87 + pcorr/4610.)
-        END DO
-      ELSE
-        DO ij=1,iend
-  	  qcorr = qv_aerad(ij,kk)
-  	  pcorr = p_aerad(ij,kk)
-  	  cco(ij) = EXP(1800./t_aerad(ij,kk))*(qcorr*pcorr/2.87 + pcorr/4610.)
-        END DO
-      END IF
+      iradgas = 1
+      do  j = 1,nlayer
+         kk = max( 1, j-1 )
+         !---------------------------------------------------------------------------------!
+         !   Bergstrom water vapor continuum fix:                                          !
+         !                                                                                 !
+         !    <qcorr> is layer average water vapor mixing ratio                            !
+         !    <pcorr> is layer average pressure                                            !
+         !                                                                                 !
+         !   For layer 0, calculate mixing ratio [g/g] from vapor column [g/cm^2]          !
+         !   and average pressure [dyne/cm^2].                                             !
+         !---------------------------------------------------------------------------------!
+         if (j == 1)then
+            qcorr = rdh2o(1) * gcgs / p_top
+            pcorr = p_aerad(1) / 2.
+            cco   = exp(1800./t_aerad(kk))*(qcorr*pcorr/2.87 + pcorr/4610.)
+         else
+            qcorr = qv_aerad(kk)
+            pcorr = p_aerad(kk)
+            cco = exp(1800./t_aerad(kk))*(qcorr*pcorr/2.87 + pcorr/4610.)
+         end if
   
-      DO  l   = 1,ntotal
-  	DO ij=1,iend
-  	  IF (l>=lls(ij) .AND. l<=lla(ij)) THEN
-  	    tauh2o(ij,l,j) = rdh2o(ij,j)*pah2o(ij,l,j)
-  	    !	  Bergstrom water vapor continuum fix (next two statements)
-  	    IF( l > nsolp+30 .AND. l <= nsolp+36 ) THEN
-  	      !kml	   if( L .GT. NSOLP+36 .AND. L .LE. NSOLP+42 ) then
-  		  tauh2o(ij,l,j) = rdh2o(ij,j)*pah2o(ij,l,j)*cco(ij)
-  	    ELSE
-  		  tauh2o(ij,l,j) = tauh2o(ij,l,j)
-  	    END IF
-  	    IF (l > nsolp+36) tauh2o(ij,l,j) = tauh2o(ij,l,j) + &
-  			    cco(ij)*rdh2o(ij,j)*contnm(l-nsolp)
-     
-  	    taul(ij,l,j)   = tauh2o(ij,l,j)+taugas(ij,l,j)+ &
-  			      paray(ij,l,j)+tauaer(ij,l,j)+taucld(ij,l,j)
-  
-  	    IF (iradgas == 0) taul(ij,l,j) = tauaer(ij,l,j)
-  	    IF( taul(ij,l,j) < epsilon ) taul(ij,l,j) = epsilon
-  	  END IF
-  	END DO
-      END DO
-  
-      DO  l   = 1,ntotal
-  	DO ij=1,iend
+         do l = 1,ntotal
+            if (l >= lls .and. l <= lla) then
+               !---- Bergstrom water vapor continuum. -------------------------------------!
+               select case (l-nsolp)
+               case (:30)
+                  tauh2o(l,j) = rdh2o(j) * pah2o(l,j)
+               case (31:36)
+                  tauh2o(l,j) = rdh2o(j) * pah2o(l,j) * cco
+               case (37:)
+                  tauh2o(l,j) = rdh2o(j) * pah2o(l,j)                                      &
+                              + cco * rdh2o(j) * contnm(l-nsolp)
+               end select
+               taul(l,j) = tauh2o(l,j) + taugas(l,j) + paray(l,j)                          &
+                         + tauaer(l,j) + taucld(l,j)
+               if (iradgas == 0)        taul(l,j) = tauaer(l,j)
+               if (taul(l,j) < roundoff) taul(l,j) = roundoff
+            end if
+         end do
 
-  	  IF (l>=lls(ij) .AND. l<=lla(ij)) THEN
-  	    utaul(ij,l,j)  = taul(ij,l,j)
-  	    wot(ij,l)	   = (paray(ij,l,j)+tauaer(ij,l,j)*wol(ij,l,j)+  &
-  			 taucld(ij,l,j)*wcld(ij,l,j))/taul(ij,l,j)
-  	    IF (iradgas == 0) wot(ij,l) = wol(ij,l,j)
-  	    wot(ij,l)	      = MIN(1.-REAL(epsilon),wot(ij,l))
-  !	    uw0(ij,l,j)    = wot(ij)
-  	    denom     = (paray(ij,l,j)+taucld(ij,l,j)*wcld(ij,l,j)+ &
-  			 tauaer(ij,l,j)*wol(ij,l,j))
-  	    !IF( denom <= epsilon ) denom = epsilon
-  	    IF( denom > epsilon ) THEN
-  	      got(ij,l) = ( wcld(ij,l,j)*gcld(ij,l,j)*taucld(ij,l,j) + &
-  		      gol(ij,l,j)* wol(ij,l,j)*tauaer(ij,l,j) ) / denom
-	      got(ij,l)=max(REAL(epsilon), got(ij,l))
-  	    ELSE
-  	      got(ij,l) = 0.
-  	    END IF
-  	    IF (iradgas == 0) got(ij,l) = gol(ij,l,j)
-  	  END IF
-  	END DO
-      END DO
+         do l = 1,ntotal
+            if (l>=lls .and. l<=lla) then
+              utaul(l,j)  = taul(l,j)
+              wot(l)      = ( paray(l,j) + tauaer(l,j) * wol(l,j)                          &
+                            + taucld(l,j) * wcld(l,j) ) / taul(l,j)
+              if (iradgas == 0) wot(l) = wol(l,j)
+              wot(l)      = min(1. - roundoff,wot(l))
+              denom       = paray(l,j) + taucld(l,j)*wcld(l,j) + tauaer(l,j)*wol(l,j)
 
-      DO  l   = 1,ntotal
-  	DO ij=1,iend
-  	  IF (l>=lls(ij) .AND. l<=lla(ij)) THEN
-  	    !ug0(l,j)	 = got(ij)
-  	    fo        = got(ij,l)**2
-  	    den       = 1.-wot(ij,l)*fo
-  	    taul(ij,l,j)   = taul(ij,l,j) * den
-  	    w0(ij,l,j)      = (1.-fo)*wot(ij,l)/den
-  	    g0(ij,l,j)      = got(ij,l)/(1.+got(ij,l))
-  	    opd(ij,l,j)    = 0.0
-  	    opd(ij,l,j)    = opd(ij,l,kk)+taul(ij,l,j)
-  	    uopd(ij,l,j)   = 0.0
-  	    uopd(ij,l,j)   = uopd(ij,l,kk)+utaul(ij,l,j)
-  	  END IF
-  	END DO
-      END DO
-    END DO
+              if (denom > roundoff ) then
+                 got(l) = ( wcld(l,j) * gcld(l,j) * taucld(l,j)                            &
+                          + gol(l,j)  * wol(l,j)  * tauaer(l,j) ) / denom
+                 got(l)=max(roundoff, got(l))
+              else
+                 got(l) = 0.
+              end if
+              if (iradgas == 0) got(l) = gol(l,j)
+            end if
+         end do
+
+         do l   = 1,ntotal
+            if (l>=lls .and. l<=lla) then
+               fo        = got(l)**2
+               den       = 1.-wot(l)*fo
+               taul(l,j) = taul(l,j) * den
+               w0(l,j)   = (1.-fo)*wot(l)/den
+               g0(l,j)   = got(l)/(1.+got(l))
+               opd(l,j)  = 0.0
+               opd(l,j)  = opd(l,kk)+taul(l,j)
+               uopd(l,j) = 0.0
+               uopd(l,j) = uopd(l,kk)+utaul(l,j)
+            end if
+         end do
+      end do
   
-    IF(ir_aerad == 1) THEN
-      DO   j =   1,nlayer
-  	DO  i =   1,ngauss
-  	  DO  l =   1,ntotal
-  	    DO ij=1,iend
-  	      IF(l>=lls(ij) .AND. l<=lla(ij)) &
-  		   y3(ij,l,i,j) = EXP(-taul(ij,l,j)/gangle(i))
-  	    END DO
-  	  END DO
-  	END DO
-      END DO
-    END IF
-  
-  END SUBROUTINE oppr 
-  
-  SUBROUTINE oppr1(ia,iz,ja,jz,m1)
+      if (ir_aerad) then
+         do j = 1,nlayer
+            do i = 1,ngauss
+               do l = 1,ntotal
+                  if (l>=lls .and. l<=lla) then
+                     y3(l,i,j) = exp(-taul(l,j)/gangle(i))
+                  end if
+               end do
+            end do
+         end do
+      end if
+
+      return
+   end subroutine oppr 
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+  SUBROUTINE oppr1(m1)
     !
     !	  **********************************************************
     !	  *  Purpose		 :  Calculate Planck Function and  *
@@ -3639,108 +3163,88 @@ MODULE rad_carma
     !	  *  Output		 :  PTEMP, PTEMPG, SLOPE	   *
     !	  * ********************************************************
     !
-    USE mem_globrad, ONLY: ntotal,tgrnd,nlow,nirp,plank,ltemp,nsolp, &
+    USE mem_globrad, ONLY: ntotal,tgrnd,nlow,nirp,planck,ltemp,nsolp, &
   			   weight,iblackbody_above,t_above, &
   			   nlayer,ncount
     
     IMPLICIT NONE
     
-    INTEGER,INTENT(IN) :: ia,iz,ja,jz,m1
-    INTEGER :: it1((iz-ia+1)*(jz-ja+1),nlayer)
-    INTEGER :: itg((iz-ia+1)*(jz-ja+1))
-    INTEGER :: itp((iz-ia+1)*(jz-ja+1))
+    INTEGER,INTENT(IN) :: m1
+    INTEGER :: it1(nlayer)
+    INTEGER :: itg
+    INTEGER :: itp
     INTEGER :: j
     INTEGER :: kindex
     INTEGER :: l,i1,j1
-    REAL :: pltemp1((iz-ia+1)*(jz-ja+1),ntotal)
-    REAL :: ptemp2((iz-ia+1)*(jz-ja+1),ntotal,nlayer)
-    INTEGER :: ij,iend,i
-    
-    iend=(iz-ia+1)*(jz-ja+1)
+    REAL :: pltemp1(ntotal)
+    REAL :: ptemp2(ntotal,nlayer)
+    INTEGER :: i
       !
     !	  **************************************
     !	  * CALCULATE PTEMP AND SLOPE	       *
     !	  **************************************
     !
-    !	  CALCULATE THE WAVELENGTH DEPENDENT PLANK FUNCTION AT THE GROUND.
+    !	  CALCULATE THE WAVELENGTH DEPENDENT PLANCK FUNCTION AT THE GROUND.
   
-    DO ij=1,iend
-      itg(ij)= ANINT(100.*t_surf(ij)) - nlow
+    itg= ANINT(100.*t_surf) - nlow
 !srf
-!      if( itg(ij) < 0. .OR. itg(ij) > ncount) print*,'1-ITG=',itg(ij)
+!      if( itg < 0. .OR. itg > ncount) print*,'1-ITG=',itg
 !srf      
-    END DO
     DO i=1,nirp
-      DO ij=1,iend
-        pltemp1(ij,i)=plank(ltemp(i),itg(ij))
-      END DO
+        pltemp1(i)=planck(ltemp(i),itg)
     END DO
     DO  l =   nsolp+1,ntotal
-      DO ij=1,iend
-  	 ptempg(ij,l)=   pltemp1(ij,l-nsolp)*weight(l)
-      END DO
+  	 ptempg(l)=   pltemp1(l-nsolp)*weight(l)
     END DO
     !
     IF( iblackbody_above /= 0 )THEN
-    !	    CALCULATE THE WAVELENGTH DEPENDENT PLANK FUNCTION AT THE TOP
+    !	    CALCULATE THE WAVELENGTH DEPENDENT PLANCK FUNCTION AT THE TOP
     !	    OF THE MODEL.
-      DO ij=1,iend
-  	  itp(ij) = ANINT(100.*tabove_aerad(ij)) - nlow
+  	  itp = ANINT(100.*tabove_aerad) - nlow
 !srf
-!      if( itp(ij) < 0. .OR. itp(ij) > ncount) print*,'2-ITP=',itp(ij)
+!      if( itp < 0. .OR. itp > ncount) print*,'2-ITP=',itp
 !srf      
-      END DO
       DO i=1,nirp
-        DO ij=1,iend  	 
-	   pltemp1(ij,i)=plank(ltemp(i),itp(ij))
-	   !CALL gather(nirp,pltemp1(ij,:),plank(1,itp(ij)),ltemp)
-        END DO
+	   pltemp1(i)=planck(ltemp(i),itp)
+	   !CALL gather(nirp,pltemp1(:),planck(1,itp),ltemp)
       END DO
       DO  l =	nsolp+1,ntotal
-  	DO ij=1,iend
-  	    ptempt(ij,l)	=   pltemp1(ij,l-nsolp)*weight(l)
-  	END DO
+  	    ptempt(l)	=   pltemp1(l-nsolp)*weight(l)
       END DO
   
     END IF
     !
     DO  j	     =   1,nlayer
-      DO ij=1,iend
-  	it1(ij,j) = ANINT(100.*tt(ij,j)) - nlow
+  	it1(j) = ANINT(100.*tt(j)) - nlow
 !srf
-!      if( it1(ij,j) < 0. .OR. it1(ij,j) > ncount) print*,'3-IT1=',it1(ij,j)
+!      if( it1(j) < 0. .OR. it1(j) > ncount) print*,'3-IT1=',it1(j)
 !srf      
-      END DO
     END DO
     DO  j	     =   1,nlayer
       DO i=1,nirp
-        DO ij=1,iend
-           ptemp2(ij,i,j)=plank(ltemp(i),it1(ij,j))
-        END DO
+           ptemp2(i,j)=planck(ltemp(i),it1(j))
       END DO
     END DO
     
    ! kindex makes the top layer isothermal. using kindex, find
-   ! plank function at bottom of each layer.
+   ! planck function at bottom of each layer.
    ! note: if you force slope=0, then you have isothermal
    ! layers with tt(j) corresponding to average temperature
    ! of layer and tt(nlayer) should be set to tgrnd.
     DO  j	     =   1,nlayer
       kindex	      = MAX( 1, j-1 )
       DO  l	   = nsolp+1,ntotal
-  	DO ij=1,iend
-  	  ptemp(ij,l,j)   = ptemp2(ij,l-nsolp,j)*weight(l)
-  	  slope(ij,l,j)   = (ptemp(ij,l,j)-ptemp(ij,l,kindex))/ &
-  				 taul(ij,l,j)
-  	  IF( taul(ij,l,j) <= 1.0E-6 ) slope(ij,l,j) = 0.
-  	END DO
+  	  ptemp(l,j)   = ptemp2(l-nsolp,j)*weight(l)
+  	  slope(l,j)   = (ptemp(l,j)-ptemp(l,kindex))/ &
+  				 taul(l,j)
+  	  IF( taul(l,j) <= 1.0E-6 ) slope(l,j) = 0.
       END DO
     END DO
   
     !
   END SUBROUTINE oppr1
   
-  SUBROUTINE twostr(m1,ia,iz,ja,jz)
+  SUBROUTINE twostr(m1)
     !
     !	 ******************************************************************
     !	 *  Purpose		:  Defines matrix properties and sets up  *
@@ -3751,33 +3255,29 @@ MODULE rad_carma
     !	 *  Output		:  B1, B2, GAMI, ACON, EL1, AF, ETC	  *
     !	 * ****************************************************************
     !
-  
-    USE mem_globrad, ONLY: nsolp,sq3,tpi,nlayer,jn,jdble,irs,ntotal
+    use rconstants , only: srthree, twopi
+    USE mem_globrad, ONLY: nsolp,nlayer,jn,jdble,irs,ntotal
   
     IMPLICIT NONE
   
-    INTEGER,INTENT(IN) :: m1,ia,iz,ja,jz
+    INTEGER,INTENT(IN) :: m1
     INTEGER	   :: j
     INTEGER	   :: jd
     INTEGER	   :: l
     REAL,PARAMETER :: two = 2.d0
-    INTEGER :: ij,iend
     
-    iend=(iz-ia+1)*(jz-ja+1)
       
     DO  l    =  1,ntotal !lls(i1,j1),lla(i1,j1)
-      DO ij=1,iend  
-  	IF(isl_aerad(ij) /= 0 .OR. irs .NE. 0 ) THEN
-  	  IF( l>=lls(ij) .AND. l<=lla(ij)) THEN
+  	IF(isl_aerad .OR. irs .NE. 0 ) THEN
+  	  IF( l>=lls .AND. l<=lla) THEN
   	    IF(l <= nsolp ) THEN
-  	      u1i(ij,l) = sq3
+  	      u1i(l) = srthree
   	    ELSE
-  	      u1i(ij,l) = two
+  	      u1i(l) = two
   	    END IF
-  	    !u1s(l)  =  tpi/u1i(l)
+  	    !u1s(l)  =  twopi/u1i(l)
   	  END IF
   	END IF
-      END DO
     END DO
     !
     !	   here we define layer properties following general scheme
@@ -3786,22 +3286,20 @@ MODULE rad_carma
     !
     DO  j =  1,nlayer
       DO  l=  1,ntotal
-  	DO  ij=  1,iend
-  	  IF(isl_aerad(ij) /= 0 .OR. irs .NE. 0 ) THEN
-  	    IF( l>=lls(ij) .AND. l<=lla(ij)) THEN
+  	  IF(isl_aerad  .OR. irs .NE. 0 ) THEN
+  	    IF( l>=lls .AND. l<=lla) THEN
   	      !these are for two stream and hemispheric means
-  	      b1(ij,l,j)   =  0.5*u1i(ij,l)*(2.-w0(ij,l,j)*(1. + g0(ij,l,j)))
-  	      b2(ij,l,j)   =  0.5*u1i(ij,l)*w0(ij,l,j)*(1. - g0(ij,l,j))
-  	      ak(ij,l,j)   =  SQRT(ABS(b1(ij,l,j)**2 - b2(ij,l,j)**2))
-  	      gami(ij,l,j)  =  b2(ij,l,j)/(b1(ij,l,j) + ak(ij,l,j))
-  	      ee1(ij,l,j)   =  EXP(-ak(ij,l,j)*taul(ij,l,j))
-  	      el1(ij,l,j)   =  1.0 + gami(ij,l,j) *ee1(ij,l,j)
-  	      em1(ij,l,j)   =  1.0 - gami(ij,l,j) * ee1(ij,l,j)
-  	      el2(ij,l,j)   =  gami(ij,l,j) + ee1(ij,l,j)
-  	      em2(ij,l,j)   =  gami(ij,l,j) - ee1(ij,l,j)
+  	      b1(l,j)   =  0.5*u1i(l)*(2.-w0(l,j)*(1. + g0(l,j)))
+  	      b2(l,j)   =  0.5*u1i(l)*w0(l,j)*(1. - g0(l,j))
+  	      ak(l,j)   =  SQRT(ABS(b1(l,j)**2 - b2(l,j)**2))
+  	      gami(l,j)  =  b2(l,j)/(b1(l,j) + ak(l,j))
+  	      ee1(l,j)   =  EXP(-ak(l,j)*taul(l,j))
+  	      el1(l,j)   =  1.0 + gami(l,j) *ee1(l,j)
+  	      em1(l,j)   =  1.0 - gami(l,j) * ee1(l,j)
+  	      el2(l,j)   =  gami(l,j) + ee1(l,j)
+  	      em2(l,j)   =  gami(l,j) - ee1(l,j)
   	    END IF
   	  END IF
-  	END DO
       END DO
     END DO
     !
@@ -3815,26 +3313,24 @@ MODULE rad_carma
     DO  jd=  2,jn,2
       j=  j + 1
       DO  l=  1,ntotal
-  	DO  ij=  1,iend
-  	  IF(isl_aerad(ij) /= 0 .OR. irs .NE. 0 ) THEN
-  	    IF( l>=lls(ij) .AND. l<=lla(ij)) THEN
+  	  IF(isl_aerad .OR. irs .NE. 0 ) THEN
+  	    IF( l>=lls .AND. l<=lla) THEN
   	      !here are the even matrix elements
-  	      af(ij,l,jd)   =  em1(ij,l,j+1)*el1(ij,l,j)- &
-  				  em2(ij,l,j+1)*el2(ij,l,j)
-  	      bf(ij,l,jd)   =  em1(ij,l,j+1)* em1(ij,l,j)- &
-  				  em2(ij,l,j+1)*em2(ij,l,j)
-  	      ef(ij,l,jd)   =  el1(ij,l,j+1)*em2(ij,l,j+1) - &
-  				  el2(ij,l,j+1)*em1(ij,l,j+1)
+  	      af(l,jd)   =  em1(l,j+1)*el1(l,j)- &
+  				  em2(l,j+1)*el2(l,j)
+  	      bf(l,jd)   =  em1(l,j+1)* em1(l,j)- &
+  				  em2(l,j+1)*em2(l,j)
+  	      ef(l,jd)   =  el1(l,j+1)*em2(l,j+1) - &
+  				  el2(l,j+1)*em1(l,j+1)
   	      !here are the odd matrix elements except for the top.
-  	      af(ij,l,jd+1) =  em1(ij,l,j)*el2(ij,l,j)- &
-  				  el1(ij,l,j)*em2(ij,l,j)
-  	      bf(ij,l,jd+1) =  el1(ij,l,j+1)*el1(ij,l,j) - &
-  				  el2(ij,l,j+1)*el2(ij,l,j)
-  	      ef(ij,l,jd+1) =  el2(ij,l,j)*em2(ij,l,j+1)- &
-  				el1(ij,l,j)*em1(ij,l,j+1)
+  	      af(l,jd+1) =  em1(l,j)*el2(l,j)- &
+  				  el1(l,j)*em2(l,j)
+  	      bf(l,jd+1) =  el1(l,j+1)*el1(l,j) - &
+  				  el2(l,j+1)*el2(l,j)
+  	      ef(l,jd+1) =  el2(l,j)*em2(l,j+1)- &
+  				el1(l,j)*em1(l,j+1)
   	    END IF
   	  END IF
-  	END DO
       END DO
     END DO
     !
@@ -3843,26 +3339,24 @@ MODULE rad_carma
     !	  NO DIFFUSE RADIATION IS INCIDENT AT UPPER BOUNDARY.
     !
     DO  l=  1,ntotal
-      DO  ij=  1,iend
-  	IF(isl_aerad(ij) /= 0 .OR. irs .NE. 0 ) THEN
-  	  IF( l>=lls(ij) .AND. l<=lla(ij)) THEN
-  	    af(ij,l,1)    = 0.0
-  	    bf(ij,l,1)    = el1(ij,l,1)
-  	    ef(ij,l,1)    = -em1(ij,l,1)
-  	    af(ij,l,jdble) = el1(ij,l,nlayer)-rsfx(ij,l)*el2(ij,l,nlayer)
-  	    bf(ij,l,jdble) = em1(ij,l,nlayer)-rsfx(ij,l)*em2(ij,l,nlayer)
-  	    ef(ij,l,jdble) = 0.0
+  	IF(isl_aerad .OR. irs .NE. 0 ) THEN
+  	  IF( l>=lls .AND. l<=lla) THEN
+  	    af(l,1)    = 0.0
+  	    bf(l,1)    = el1(l,1)
+  	    ef(l,1)    = -em1(l,1)
+  	    af(l,jdble) = el1(l,nlayer)-rsfx(l)*el2(l,nlayer)
+  	    bf(l,jdble) = em1(l,nlayer)-rsfx(l)*em2(l,nlayer)
+  	    ef(l,jdble) = 0.0
   	  END IF
   	END IF
-      END DO
     END DO
   
   END SUBROUTINE twostr
   
-  SUBROUTINE add(m1,ia,iz,ja,jz,cosz,m2,m3)
-  
-    USE mem_globrad, ONLY: isl,u0,nlayer,nsolp,sq3,sol,epsilon, &
-  			   irs,ntotal,u1s,emis,pi,jn,tpi, &
+  SUBROUTINE add(m1,cosz)
+    use rconstants , only: srthree, twopi, pi1
+    USE mem_globrad, ONLY: isl,u0,nlayer,nsolp,sol,roundoff, &
+  			   irs,ntotal,u1s,emis,jn, &
   			   jdble,ndbl
     
     IMPLICIT NONE 
@@ -3874,8 +3368,8 @@ MODULE rad_carma
     !	  ******************************
     !	  *   CALCULATIONS FOR SOLAR   *
     !	  ******************************
-    INTEGER,INTENT(IN) :: ia,iz,ja,jz,m1,m2,m3
-    REAL,INTENT(IN),DIMENSION((iz-ia+1)*(jz-ja+1)) :: cosz  
+    INTEGER,INTENT(IN) :: m1
+    REAL,INTENT(IN) :: cosz  
     INTEGER :: j,kk
     INTEGER :: jd
     INTEGER :: kindex
@@ -3890,103 +3384,91 @@ MODULE rad_carma
     REAL    :: x2
     REAL    :: x3
     REAL    :: x4
-    REAL,DIMENSION((iz-ia+1)*(jz-ja+1),nsolp,nlayer) :: direct,el3,ee3,cm
-    REAL,DIMENSION((iz-ia+1)*(jz-ja+1),nsolp) :: sfcs
-    REAL,DIMENSION((iz-ia+1)*(jz-ja+1),ntotal,ndbl) :: df,as,ds,xk
-    INTEGER :: ij,iend,i1,j1
-    
-    iend=(iz-ia+1)*(jz-ja+1)
+    REAL,DIMENSION(nsolp,nlayer) :: direct,el3,ee3,cm
+    REAL,DIMENSION(nsolp) :: sfcs
+    REAL,DIMENSION(ntotal,ndbl) :: df,as,ds,xk
+    INTEGER :: i1,j1
   
     DO  j	 =  1,nlayer
       kk = MAX( 1, j-1 )
       DO  l    =  1,nsolp
-  	DO ij=1,iend
-  	  du0=1./cosz(ij)
-  	  IF(isl_aerad(ij) /= 0)  THEN
-  	    b3(ij,l,j)     =  0.5*(1.-sq3*g0(ij,l,j)*cosz(ij))
-  	    b4         =  1. - b3(ij,l,j)
-  	    x2         =  taul(ij,l,j)*du0
-  	    ee3(ij,l,j)   =  EXP(-x2)
-  	    x3         =  opd(ij,l,j)*du0
-  	    el3(ij,l,j)   =  EXP(-x3)*sol(l)
-  	    direct(ij,l,j) =  cosz(ij)*el3(ij,l,j)
-  	    c1         =  b1(ij,l,j) - du0
-  	    IF( ABS(c1) < epsilon ) c1 = SIGN(REAL(epsilon),c1)
-  	    c2         =  ak(ij,l,j)*ak(ij,l,j) - du0*du0
-  	    IF( ABS(c2) <= epsilon ) c2 = epsilon
-  	    cp1        =  w0(ij,l,j)*(b3(ij,l,j)*c1+b4*b2(ij,l,j))/c2
-  	    cpb(ij,l,j)    =  cp1 * el3(ij,l,j)
+  	  du0=1./cosz
+  	  IF(isl_aerad)  THEN
+  	    b3(l,j)     =  0.5*(1.-srthree*g0(l,j)*cosz)
+  	    b4         =  1. - b3(l,j)
+  	    x2         =  taul(l,j)*du0
+  	    ee3(l,j)   =  EXP(-x2)
+  	    x3         =  opd(l,j)*du0
+  	    el3(l,j)   =  EXP(-x3)*sol(l)
+  	    direct(l,j) =  cosz*el3(l,j)
+  	    c1         =  b1(l,j) - du0
+  	    IF( ABS(c1) < roundoff ) c1 = sign(roundoff,c1)
+  	    c2         =  ak(l,j)*ak(l,j) - du0*du0
+  	    IF( ABS(c2) <= roundoff ) c2 = roundoff
+  	    cp1        =  w0(l,j)*(b3(l,j)*c1+b4*b2(l,j))/c2
+  	    cpb(l,j)    =  cp1 * el3(l,j)
   	    IF( j /= 1 ) THEN
-  	      x4 = el3(ij,l,kk)
+  	      x4 = el3(l,kk)
   	    ELSE
   	      x4 = sol(l)
   	    END IF
-  	    cp(ij,l,j)     =  cp1 * x4
-  	    cm1        =  ( cp1*b2(ij,l,j) + w0(ij,l,j)*b4 )/c1
-  	    cmb(ij,l,j)    =  cm1 * el3(ij,l,j)
-  	    cm(ij,l,j)    =  cm1 * x4
+  	    cp(l,j)     =  cp1 * x4
+  	    cm1        =  ( cp1*b2(l,j) + w0(l,j)*b4 )/c1
+  	    cmb(l,j)    =  cm1 * el3(l,j)
+  	    cm(l,j)    =  cm1 * x4
   	  END IF
-  	END DO
       END DO
     END DO
     !	     CALCULATE SFCS, THE SOURCE AT THE BOTTOM.
-    DO  l=  1,nsolp
-      DO ij=1,iend
-  	IF(isl_aerad(ij) /= 0)  THEN
-  	  sfcs(ij,l)=  direct(ij,l,nlayer) * rsfx(ij,l)
-  	END IF
-      END DO
-    END DO
+    IF(isl_aerad)  THEN
+       DO l=  1,nsolp
+  	  sfcs(l)=  direct(l,nlayer) * rsfx(l)
+       END DO
+    END IF
    
     !	  ******************************
     !	  * CALCULATIONS FOR INFRARED. *
     !	  ******************************
     DO  j= 1,nlayer
       DO  l = nsolp+1,ntotal
-  	DO ij=1,iend
   	  IF(irs /= 0)  THEN
   	      kindex = MAX(1,j-1)
-  	      b3(ij,l,j)     = 1.0/(b1(ij,l,j)+b2(ij,l,j))
-  	      cp(ij,l,j)     = (ptemp(ij,l,kindex)+slope(ij,l,j)* &
-  				   b3(ij,l,j))*(tpi/u1i(ij,l))
-  	      cpb(ij,l,j)    = cp(ij,l,j) + slope(ij,l,j)* &
-  				  taul(ij,l,j)*(tpi/u1i(ij,l))
-  	      cm(ij,l,j)     = (ptemp(ij,l,kindex)-slope(ij,l,j)* &
-  				   b3(ij,l,j))*(tpi/u1i(ij,l))
-  	      cmb(ij,l,j)    = cm(ij,l,j) + slope(ij,l,j)* &
-  				  taul(ij,l,j)*(tpi/u1i(ij,l))
-  	      el3(ij,l,j)    = 0.0
-  	      direct(ij,l,j) = 0.0
-  	      ee3(ij,l,j)    = 0.0
+  	      b3(l,j)     = 1.0/(b1(l,j)+b2(l,j))
+  	      cp(l,j)     = (ptemp(l,kindex)+slope(l,j)* &
+  				   b3(l,j))*(twopi/u1i(l))
+  	      cpb(l,j)    = cp(l,j) + slope(l,j)* &
+  				  taul(l,j)*(twopi/u1i(l))
+  	      cm(l,j)     = (ptemp(l,kindex)-slope(l,j)* &
+  				   b3(l,j))*(twopi/u1i(l))
+  	      cmb(l,j)    = cm(l,j) + slope(l,j)* &
+  				  taul(l,j)*(twopi/u1i(l))
+  	      el3(l,j)    = 0.0
+  	      direct(l,j) = 0.0
+  	      ee3(l,j)    = 0.0
   	  END IF
-  	END DO
       END DO
     END DO
     
-    DO  l= nsolp+1,ntotal
-      DO ij=1,iend
-  	IF(irs /= 0)  THEN
-  	  sfcs(ij,l)= emis(l)*ptempg(ij,l)*pi
-  	END IF
-      END DO
-    END DO
+    IF (irs /= 0)  THEN
+       DO  l= nsolp+1,ntotal
+          sfcs(l)= emis(l)*ptempg(l)*pi1
+       END DO
+    END IF
    
     j=  0
     DO  jd=  2,jn,2
      j=  j + 1
      DO  l=1,ntotal
-       DO ij=1,iend
-  	 IF(isl_aerad(ij) /= 0 .OR. irs .NE. 0 ) THEN
-  	   IF(l>=lls(ij) .AND. l<=lla(ij)) THEN
+  	 IF(isl_aerad .OR. irs .NE. 0 ) THEN
+  	   IF(l>=lls .AND. l<=lla) THEN
   	 !	    HERE ARE THE EVEN MATRIX ELEMENTS
-  	   df(ij,l,jd) = (cp(ij,l,j+1) - cpb(ij,l,j))*em1(ij,l,j+1) -  &
-  		(cm(ij,l,j+1) - cmb(ij,l,j))*em2(ij,l,j+1)
+  	   df(l,jd) = (cp(l,j+1) - cpb(l,j))*em1(l,j+1) -  &
+  		(cm(l,j+1) - cmb(l,j))*em2(l,j+1)
   	 !	    HERE ARE THE ODD MATRIX ELEMENTS EXCEPT FOR THE TOP.
-  	   df(ij,l,jd+1) =  el2(ij,l,j) * (cp(ij,l,j+1)-cpb(ij,l,j)) +  &
-  		el1(ij,l,j) * (cmb(ij,l,j) - cm(ij,l,j+1))
+  	   df(l,jd+1) =  el2(l,j) * (cp(l,j+1)-cpb(l,j)) +  &
+  		el1(l,j) * (cmb(l,j) - cm(l,j+1))
   	    END IF
   	  END IF
-  	END DO
       END DO
     END DO
    
@@ -3994,17 +3476,15 @@ MODULE rad_carma
     !	  BEGINNING OF THE TRIDIAGONAL SOLUTION DEFINITIONS. I ASSUME NO
     !	  DIFFUSE RADIATION IS INCIDENT AT THE TOP.
     DO  l=1,ntotal
-      DO ij=1,iend
-  	IF(isl_aerad(ij) /= 0 .OR. irs .NE. 0 ) THEN
-  	  IF(l>=lls(ij).AND. l<=lla(ij)) THEN
-  	    df(ij,l,1)   = -cm(ij,l,1)
-  	    df(ij,l,jdble) = sfcs(ij,l)+rsfx(ij,l)*cmb(ij,l,nlayer)- &
-  			  cpb(ij,l,nlayer)
-  	    ds(ij,l,jdble) = df(ij,l,jdble)/bf(ij,l,jdble)
-  	    as(ij,l,jdble) = af(ij,l,jdble)/bf(ij,l,jdble)
+  	IF(isl_aerad .OR. irs .NE. 0 ) THEN
+  	  IF(l>=lls.AND. l<=lla) THEN
+  	    df(l,1)   = -cm(l,1)
+  	    df(l,jdble) = sfcs(l)+rsfx(l)*cmb(l,nlayer)- &
+  			  cpb(l,nlayer)
+  	    ds(l,jdble) = df(l,jdble)/bf(l,jdble)
+  	    as(l,jdble) = af(l,jdble)/bf(l,jdble)
   	  END IF
   	END IF
-      END DO
     END DO
    
     !	  ********************************************
@@ -4013,39 +3493,33 @@ MODULE rad_carma
    
     DO  j = 2, jdble
       DO  l=1,ntotal
-  	DO ij=1,iend
-  	  IF(isl_aerad(ij) /= 0 .OR. irs .NE. 0 ) THEN
-  	    IF(l>=lls(ij) .AND. l<=lla(ij)) THEN
-  	      x  = 1./(bf(ij,l,jdble+1-j) - ef(ij,l,jdble+1-j)* &
-  			  as(ij,l,jdble+2-j))
-  	      as(ij,l,jdble+1-j) = af(ij,l,jdble+1-j)*x
-  	      ds(ij,l,jdble+1-j) = (df(ij,l,jdble+1-j) - &
-  			  ef(ij,l,jdble+1-j) *ds(ij,l,jdble+2-j))*x
+  	  IF(isl_aerad .OR. irs .NE. 0 ) THEN
+  	    IF(l>=lls .AND. l<=lla) THEN
+  	      x  = 1./(bf(l,jdble+1-j) - ef(l,jdble+1-j)* &
+  			  as(l,jdble+2-j))
+  	      as(l,jdble+1-j) = af(l,jdble+1-j)*x
+  	      ds(l,jdble+1-j) = (df(l,jdble+1-j) - &
+  			  ef(l,jdble+1-j) *ds(l,jdble+2-j))*x
   	    END IF
   	  END IF
-  	END DO
       END DO
     END DO
    
     DO  l=1,ntotal
-      DO ij=1,iend
-  	IF(isl_aerad(ij) /= 0 .OR. irs .NE. 0 ) THEN
-  	  IF(l>=lls(ij) .AND. l<=lla(ij)) THEN
-  	    xk(ij,l,1)    = ds(ij,l,1)
+  	IF(isl_aerad .OR. irs .NE. 0 ) THEN
+  	  IF(l>=lls .AND. l<=lla) THEN
+  	    xk(l,1)    = ds(l,1)
   	  END IF 
   	END IF
-      END DO
     END DO
   
     DO  j	= 2, jdble
       DO  l=1,ntotal
-  	DO ij=1,iend
-  	  IF(isl_aerad(ij) /= 0 .OR. irs .NE. 0 ) THEN
-  	    IF(l>=lls(ij) .AND. l<=lla(ij)) THEN
-  	      xk(ij,l,j) = ds(ij,l,j) - as(ij,l,j)*xk(ij,l,j-1)
+  	  IF(isl_aerad .OR. irs .NE. 0 ) THEN
+  	    IF(l>=lls .AND. l<=lla) THEN
+  	      xk(l,j) = ds(l,j) - as(l,j)*xk(l,j-1)
   	    END IF 
   	  END IF
-  	END DO
       END DO
     END DO
    
@@ -4055,212 +3529,222 @@ MODULE rad_carma
       
      DO j = 1,nlayer
        DO  l=1,ntotal
-  	 DO ij=1,iend
-  	   IF(isl_aerad(ij) /= 0 .OR. irs .NE. 0 ) THEN
-  	     IF(l>=lls(ij) .AND. l<=lla(ij)) THEN
-  	       ck1(ij,l,j)   = xk(ij,l,2*j-1)
-  	       ck2(ij,l,j)   = xk(ij,l,2*j)
+  	   IF(isl_aerad .OR. irs .NE. 0 ) THEN
+  	     IF(l>=lls .AND. l<=lla) THEN
+  	       ck1(l,j)   = xk(l,2*j-1)
+  	       ck2(l,j)   = xk(l,2*j)
 	       
-  	       fnet(ij,l,j)  = ck1(ij,l,j)  *( el1(ij,l,j) &
-  				 -el2(ij,l,j)) + ck2(ij,l,j) * &
-  				    ( em1(ij,l,j)-em2(ij,l,j) ) + &
-  				    cpb(ij,l,j) - cmb(ij,l,j) - direct(ij,l,j)
- 	       tmi(ij,l,j)   =  el3(ij,l,j) + u1i(ij,l) *(ck1(ij,l,j)  *  &
-  			  ( el1(ij,l,j) + el2(ij,l,j))   + ck2(ij,l,j) * &
-  			  ( em1(ij,l,j)+em2(ij,l,j) ) +  cpb(ij,l,j) + &
-  			  cmb(ij,l,j) )
+  	       fnet(l,j)  = ck1(l,j)  *( el1(l,j) &
+  				 -el2(l,j)) + ck2(l,j) * &
+  				    ( em1(l,j)-em2(l,j) ) + &
+  				    cpb(l,j) - cmb(l,j) - direct(l,j)
+ 	       tmi(l,j)   =  el3(l,j) + u1i(l) *(ck1(l,j)  *  &
+  			  ( el1(l,j) + el2(l,j))   + ck2(l,j) * &
+  			  ( em1(l,j)+em2(l,j) ) +  cpb(l,j) + &
+  			  cmb(l,j) )
   	     END IF 
   	   END IF
-  	 END DO
        END DO
      END DO
    
     END SUBROUTINE add
-    
-    SUBROUTINE newflux1(m1,ia,iz,ja,jz)
-      !
-      !     **************************************************************
-      !     *  Purpose  	   :  Calculate upward and downward	 *
-      !     *			      intensities and fluxes using Gauss *
-      !     *			      Quadrature angles and weights.	 *
-      !     *  Subroutines Called  :  None				 *
-      !     *  Input		   :  PTEMP, SLOPE, Y3, B3, EE1, EE2	 *
-      !     *  Output		   :  DINTENT, UINTENT, DIREC, DIRECTU   *
-      !     * ************************************************************
-      !
-      !INCLUDE 'globrad.h'
-      USE mem_globrad, ONLY: ntotal,ngauss,nlayer,nsolp,tpi, &
-  			     irs,gangle, &
-  			     iblackbody_above, &
-  			     gratio,gweight,emis
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This subroutine calculates upward and downward intensities and fluxes using Gauss !
+   ! quadrature angles and weights.                                                        !
+   !---------------------------------------------------------------------------------------!
+   subroutine newflux1(m1)
+      use rconstants  , only : twopi             ! ! intent(in)
+      use mem_globrad , only : ntotal            & ! intent(in)
+                             , ngauss            & ! intent(in)
+                             , nlayer            & ! intent(in)
+                             , nsolp             & ! intent(in)
+                             , irs               & ! intent(in)
+                             , gangle            & ! intent(in)
+                             , iblackbody_above  & ! intent(in)
+                             , gratio            & ! intent(in)
+                             , gweight           & ! intent(in)
+                             , emis              ! ! intent(in)
+      use node_mod    , only : mynum             ! ! intent(in)
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      integer                                  , intent(in) :: m1
+      real    , dimension(ntotal,ngauss,nlayer)             :: y1
+      real    , dimension(ntotal,ngauss,nlayer)             :: y2
+      real    , dimension(ntotal,ngauss,nlayer)             :: y4
+      real    , dimension(ntotal,ngauss,nlayer)             :: y8
+      real    , dimension(ntotal,ngauss,nlayer)             :: dintent
+      real    , dimension(ntotal,ngauss,nlayer)             :: uintent
+      real    , dimension(ntotal,nlayer)                    :: a1
+      real    , dimension(ntotal,nlayer)                    :: a2
+      real    , dimension(ntotal,nlayer)                    :: a3
+      real    , dimension(ntotal,nlayer)                    :: a4
+      real    , dimension(ntotal,nlayer)                    :: a7
+      real    , dimension(ntotal,nlayer)                    :: y5
+      integer                                               :: i
+      integer                                               :: j
+      integer                                               :: kindex
+      integer                                               :: l
+      integer                                               :: m
+      real                                                  :: ckm
+      real                                                  :: ckp
+      real                                                  :: x4
+      real                                                  :: ya
+      real                                                  :: yb
+      integer                                               :: i1
+      integer                                               :: j1
+      !----- Local constants. -------------------------------------------------------------!
+      logical                                  , parameter  :: print_debug=.false.
+      !------------------------------------------------------------------------------------!
+
+      do j =  1,nlayer
+         kindex = max(1, j-1)
+         !----- First the non-scattering coefficients. ------------------------------------!
+         do l = nsolp+1,ntotal
+            a3(l,j) = ptemp(l,kindex) * twopi
+            a4(l,j) = twopi * slope(l,j)
+            a7(l,j) = a3(l,j)
+            y5(l,j) = a4(l,j) * taul(l,j)
+         end do
+         !----- Then the scattering coefficients. -----------------------------------------!
+         do l = nsolp+1,ntotal
+            if (irs /= 0) then
+               x4      = slope(l,j) * (twopi*b3(l,j)-(twopi/u1i(l)))
+               a1(l,j) = u1i(l) - ak(l,j)
+               a2(l,j) = gami(l,j) * (ak(l,j)+u1i(l))
+               a3(l,j) = a3(l,j) + x4
+               a7(l,j) = a7(l,j) - x4
+            end if
+         end do
+      end do
+
+      !----- Calculations for all Gaussian points. ----------------------------------------!
+      do j=  1,nlayer
+         do i=  1,ngauss
+            !----- No scattering. ---------------------------------------------------------!
+            do l =  nsolp+1,ntotal
+               y1(l,i,j)  =  0.0
+               y2(l,i,j)  =  0.0
+               y4(l,i,j)  =  a7(l,j) - a4(l,j) * gangle(i)
+               y8(l,i,j)  =  a3(l,j) + a4(l,j) * gangle(i)
+            end do
+            !----- Scattering. ------------------------------------------------------------!
+            do l = nsolp+1, ntotal
+               if (irs /= 0) then
+                  ya  = a1(l,j) * (y3(l,i,j)-ee1(l,j)) / (ak(l,j)*gangle(i)-1.)
+                  yb  = a2(l,j) * (1.- ee1(l,j)*y3(l,i,j)) / (ak(l,j)*gangle(i)+1.)
+                  ckp = ck1(l,j) + ck2(l,j)
+                  ckm = ck1(l,j) - ck2(l,j)
+                  y1(l,i,j) = ckp * yb + ckm * ya
+                  y2(l,i,j) = ckp * ya + ckm * yb
+               end if
+            end do
+         end do
+      end do
+
+      do j = 1,nlayer
+         do l = nsolp+1,ntotal
+            direc(l,j)   = 0.0
+            directu(l,j) = 0.0
+         end do
+      end do
+
+      !------------------------------------------------------------------------------------!
+      !     Direc is downward flux, and directu is upward flux.  Here we calculate dintent !
+      ! the downward intensity, and direc the downward flux.                               !
+      !------------------------------------------------------------------------------------!
+      do i = 1,ngauss
+         do l = nsolp+1,ntotal
+            if (iblackbody_above == 1) then
+               dintent(l,i,1) = ptempt(l) * y3(l,i,1) * twopi                              &
+                              + y1(l,i,1) + (1.-y3(l,i,1)) * y4(l,i,1)
+            else
+               dintent(l,i,1) = (1. - y3(l,i,1)) * y4(l,i,1) + y1(l,i,1)
+            end if
+            direc(l,1) = direc(l,1) + dintent(l,i,1) * gweight(i)
+         end do
+      end do
+
+      !------------------------------------------------------------------------------------!
+      !    Dintent is downward intensity * twopi.  Direc is the downward flux.             !
+      !------------------------------------------------------------------------------------!
+      do j= 2,nlayer
+         do i = 1,ngauss
+            do l = nsolp+1,ntotal
+               dintent(l,i,j) = dintent(l,i,j-1) * y3(l,i,j) + y1(l,i,j) + y5(l,j)         &
+                              + (1.-y3(l,i,j)) * y4(l,i,j)
+               direc(l,j)     = direc(l,j) + dintent(l,i,j) * gweight(i)
+            end do
+         end do
+      end do
+
+      !------------------------------------------------------------------------------------!
+      !    Uintent is the upward intensity * twopi.  Directu is the upward flux.           !
+      !    Assume that the reflectivity is Lambert.                                        !
+      !------------------------------------------------------------------------------------!
+      do i = 1,ngauss
+         do l = nsolp+1,ntotal
+            uintent(l,i,nlayer) = ptempg(l) * emis(l) * twopi                              &
+                                + 2. * rsfx(l) * direc(l,nlayer)
+            directu(l,nlayer)   = directu(l,nlayer) + uintent(l,i,nlayer)*gweight(i)
+         end do
+      end do
+
+      do m= 2,nlayer
+         j = nlayer-m+1
+         do i = 1,ngauss
+            do l = nsolp+1,ntotal
+               uintent(l,i,j) = (uintent(l,i,j+1)-y5(l,j+1)) * y3(l,i,j+1) + y2(l,i,j+1)   &
+                              + (1.-y3(l,i,j+1))*y8(l,i,j+1)
+               directu(l,j)   = directu(l,j) + gweight(i) * uintent(l,i,j)
+            end do
+         end do
+      end do
       
-      IMPLICIT NONE
-      
-      INTEGER,INTENT(IN) :: m1,ia,iz,ja,jz
-      INTEGER :: i
-      INTEGER :: j
-      INTEGER :: kindex
-      INTEGER :: l
-      INTEGER :: m
-      REAL    :: ckm
-      REAL    :: ckp
-      REAL    :: x4
-      REAL    :: ya
-      REAL    :: yb
-  	
-      !
-      REAL,DIMENSION((iz-ia+1)*(jz-ja+1),ntotal,ngauss,nlayer) :: y1,y2,y4,y8
-      REAL,DIMENSION((iz-ia+1)*(jz-ja+1),ntotal,ngauss,nlayer) :: dintent,uintent
-      REAL,DIMENSION((iz-ia+1)*(jz-ja+1),ntotal,nlayer) :: a1,a2,a3,a4,a7
-      REAL,DIMENSION((iz-ia+1)*(jz-ja+1),ntotal,nlayer) :: y5
-      INTEGER :: ij,iend,i1,j1
-      
-      iend=(iz-ia+1)*(jz-ja+1)
-      !
-    
-      DO  j	  =  1,nlayer
-  	kindex     = MAX( 1, j-1 )
-  	DO   l  =  nsolp+1,ntotal
-  	  DO ij=1,iend
-  	    !HERE WE DO NO SCATTERING COEFFICIENTS
-  	    a3(ij,l,j) =  ptemp(ij,l,kindex)*tpi
-  	    a4(ij,l,j) =  tpi*slope(ij,l,j)
-  	    a7(ij,l,j) =  a3(ij,l,j)
-  	    y5(ij,l,j) =  a4(ij,l,j)*taul(ij,l,j)
-  	  END DO
-      END DO
-      !HERE WE DO SCATTERING
-      DO  l    =  nsolp+1,ntotal
-  	DO ij=1,iend
-  	  IF(irs /= 0) THEN
-  	    x4         =  slope(ij,l,j)*(tpi*b3(ij,l,j)-(tpi/u1i(ij,l)))
-  	    a1(ij,l,j) = u1i(ij,l) - ak(ij,l,j)
-  	    a2(ij,l,j) = gami(ij,l,j)*(ak(ij,l,j)+u1i(ij,l))
-  	    a3(ij,l,j) = a3(ij,l,j)+x4
-  	    a7(ij,l,j) = a7(ij,l,j)-x4
-  	  END IF
-  	END DO
-      END DO
-    END DO
-    !
-    !	  CALCULATIONS FOR ALL GAUSS POINTS. HERE WE DO NO SCATTERING COEFFI
-    !
-    DO j=  1,nlayer
-      DO i=  1,ngauss
-  	DO  l =  nsolp+1,ntotal
-  	  DO ij=1,iend
-  	    y1(ij,l,i,j)  =  0.0
-  	    y2(ij,l,i,j)  =  0.0
-  	    y4(ij,l,i,j)  =  a7(ij,l,j) - a4(ij,l,j)*gangle(i)
-  	    y8(ij,l,i,j)  =  a3(ij,l,j) + a4(ij,l,j)*gangle(i)
-  	  END DO
-  	END DO
-  	!HERE WE DO SCATTERING
-  	DO  l =  nsolp+1,ntotal
-  	  DO ij=1,iend
-  	    IF(irs /= 0) THEN
-  	      ya=  a1(ij,l,j)*(y3(ij,l,i,j)-ee1(ij,l,j))/ &
-  		      (ak(ij,l,j)*gangle(i)-1.)
-  	      yb=  a2(ij,l,j)*(1.- ee1(ij,l,j)*y3(ij,l,i,j))/ &
-  			(ak(ij,l,j)*gangle(i)+1.)
-  	      ckp= ck1(ij,l,j)+ck2(ij,l,j)
-  	      ckm= ck1(ij,l,j) -ck2(ij,l,j)
-  	      y1(ij,l,i,j) =  ckp*yb+ckm*ya
-  	      y2(ij,l,i,j) =  ckp*ya+ ckm*yb
-  	    END IF
-  	  END DO
-  	END DO
-      END DO
-    END DO
-    !
-    DO  j	  =  1,nlayer
-      DO   l	 =  nsolp+1,ntotal
-  	DO ij=1,iend
-  	  !tmid(ij,l,j) = 0.0
-  	  !tmiu(ij,l,j) = 0.0
-  	  direc(ij,l,j)     =  0.0
-  	  directu(ij,l,j)   =  0.0
-  	END DO
-      END DO
-    END DO
-    !
-    !	  DIREC IS DOWNWARD FLUX. DIRECTU IS UPWARD FLUX.
-    !	  CALCULATE DINTENT THE DOWNWARD INTENSITY AND DIREC THE DOWNWARD FL
-    !
-    DO  i = 1,ngauss
-      DO  l = nsolp+1,ntotal
-  	DO ij=1,iend
-  	  IF( iblackbody_above == 1 )THEN
-  	    dintent(ij,l,i,1) = ptempt(ij,l)*y3(ij,l,i,1)*tpi + &
-  		      y1(ij,l,i,1)+ (1.-y3(ij,l,i,1))*y4(ij,l,i,1)
-  	  ELSE
-  	    dintent(ij,l,i,1) = (1.-y3(ij,l,i,1))*y4(ij,l,i,1) + &
-  		       y1(ij,l,i,1)
-  	  END IF
-  	  !tmid(ij,l,1) = tmid(ij,l,1)+dintent(ij,l,i,1)*gratio(i)
-  	  direc(ij,l,1)= direc(ij,l,1)+dintent(ij,l,i,1)* gweight(i)
-  	END DO
-      END DO
-    END DO
-    !
-    !	   DINTENT IS DOWNWARD INTENSITY * TPI. DIREC IS THE DOWNWARD FLUX.
-    !
-    DO j= 2,nlayer
-      DO i = 1,ngauss
-  	DO l = nsolp+1,ntotal
-  	  DO ij=1,iend
-  	    dintent(ij,l,i,j)  = dintent(ij,l,i,j-1)*y3(ij,l,i,j) + &
-  			   y1(ij,l,i,j)+y5(ij,l,j)+  &
-  			     (1.-y3(ij,l,i,j))*y4(ij,l,i,j)
-  	    !tmid(ij,l,j)= tmid(ij,l,j)  +dintent(ij,l,i,j)*gratio(i)
-  	    direc(ij,l,j)= direc(ij,l,j)+dintent(ij,l,i,j)*gweight(i)
-  	  END DO
-  	END DO
-      END DO
-    END DO
-    !
-    !	  UINTENT IS THE UPWARD INTENSITY * TPI. DIRECTU IS THE UPWARD FLUX.
-    !	  ASSUME THAT THE REFLECTIVITY IS LAMBERT.
-    !
-    DO i =  1,ngauss
-      DO l =  nsolp+1,ntotal
-  	DO ij=1,iend
-  	  uintent(ij,l,i,nlayer)  =  ptempg(ij,l)*emis(l) *tpi+2.* &
-  			      rsfx(ij,l)*direc(ij,l,nlayer)
-  	  !tmiu(ij,l,nlayer)=  tmiu(ij,l,nlayer)+ &
-  	!		     uintent(ij,l,i,nlayer)*gratio(i)
-  	  directu(ij,l,nlayer)    =  directu(ij,l,nlayer)+ &
-  			      uintent(ij,l,i,nlayer)*gweight(i)
-  	END DO
-      END DO
-    END DO
-    !
-    DO m= 2,nlayer
-      j = nlayer-m+1
-      DO i = 1,ngauss
-  	DO l = nsolp+1,ntotal
-  	  DO ij=1,iend
-  	    uintent(ij,l,i,j)= (uintent(ij,l,i,j+1)-y5(ij,l,j+1)) * &
-  			  y3(ij,l,i,j+1)+y2(ij,l,i,j+1)+ &
-  			(1.-y3(ij,l,i,j+1))*y8(ij,l,i,j+1)
-  	    !tmiu(ij,l,j) = tmiu(ij,l,j)+uintent(ij,l,i,j)*gratio(i)
-  	    directu(ij,l,j) = directu(ij,l,j) + gweight(i)* &
-  			       uintent(ij,l,i,j)
-  	  END DO
-  	END DO
-      END DO
-    END DO
-    
-  END SUBROUTINE newflux1
-  
-  
+      if (print_debug) then
+         write (unit=20+mynum,fmt='(8(a,1x))') '   ib','   ig'                             &
+                                       ,'      ptempt','          y1','          y3'       &
+                                       ,'          y4','          y5','     dintent'
+         write (unit=20+mynum,fmt='(78a)') ('-',i=1,78)
+         do i=1,ngauss
+            do l=nsolp+1,ntotal
+               write (unit=20+mynum,fmt='(2(i5,1x),6(es12.5,1x))')                         &
+                  l,i,ptempt(l),y1(l,i,nlayer),y3(l,i,nlayer)                              &
+                       ,y4(l,i,nlayer),y5(l,nlayer),dintent(l,i,nlayer)
+            end do
+         end do
+         write (unit=20+mynum,fmt='(78a)') ('-',i=1,78)
+      end if
+
+      return
+   end subroutine newflux1
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+
+
   SUBROUTINE plnk(e,t1,d)
     
     !	  ******************************************************
     !	  *  Purpose		 :  Calculate Planck Function  *
     !	  *  Subroutines Called  :  None		       *
     !	  *  Input		 :  WAVE, NCOUNT	       *
-    !	  *  Output		 :  PLANK		       *
+    !	  *  Output		 :  PLANCK		       *
     !	  * ****************************************************
    
     !  THIS SUBROUTINE COMPUTES THE INTEGRAL OF THE PLANCK FUNCTION BETWEEN
@@ -4393,7 +3877,7 @@ MODULE rad_carma
     REAL, INTENT(IN)			     :: rfr
     REAL, INTENT(IN)			     :: rfi
     INTEGER, INTENT(IN) 		     :: jx
-    REAL, INTENT(IN OUT)		     :: thetd(jx)
+    REAL, INTENT(INOUT)	                     :: thetd(jx)
     REAL, INTENT(OUT)			     :: qext
     REAL, INTENT(OUT)			     :: qscat
     REAL, INTENT(OUT)			     :: ctbrqs
@@ -4816,326 +4300,156 @@ MODULE rad_carma
     8  FORMAT( // 10X, 'THE UPPER LIMIT FOR ACAP IS NOT ENOUGH. SUGGEST GET DETAILED OUTPUT AND MODIFY SUBROUTINE' // )
     !
   END SUBROUTINE miess
-  
-  
-  SUBROUTINE  radtran_to_rams(m1,m2,m3,fthrl,rlong,fthrs,rshort,aotr,ia,iz,ja,jz,mynum)
-  
-    USE mem_grid   , ONLY: nzpmax	  !INTENT(IN)
-    USE mem_globrad, ONLY: nwave,ntotal,nprob
-    
-    IMPLICIT NONE
-  
-    INTEGER,INTENT(IN)  	       :: m1,m2,m3,ia,iz,ja,jz,mynum
-    REAL,INTENT(OUT)  ,DIMENSION((iz-ia+1)*(jz-ja+1))           :: rshort
-    REAL,INTENT(OUT)  ,DIMENSION((iz-ia+1)*(jz-ja+1))           :: rlong
-    REAL,INTENT(OUT)  ,DIMENSION((iz-ia+1)*(jz-ja+1),nwave)     :: aotr
-    REAL,INTENT(INOUT),DIMENSION((iz-ia+1)*(jz-ja+1),nzpmax)	:: fthrl
-    REAL,INTENT(INOUT),DIMENSION((iz-ia+1)*(jz-ja+1),nzpmax)	:: fthrs
-    INTEGER :: ij,iend
-  
-    !Local
-  
-    REAL, DIMENSION((iz-ia+1)*(jz-ja+1),nzpmax)         :: duml
-    REAL, DIMENSION((iz-ia+1)*(jz-ja+1),nzpmax)         :: dums
-    REAL, DIMENSION((iz-ia+1)*(jz-ja+1),nwave)          :: dumaot
-    REAL, DIMENSION((iz-ia+1)*(jz-ja+1),ntotal,nzpmax)  :: dum2aot
-    
-  
-    INTEGER :: k,j1,i1
-    INTEGER :: k1
-    INTEGER :: kr
-    INTEGER :: l
-    INTEGER :: nzz
-  
-    iend=(iz-ia+1)*(jz-ja+1)
-    !nzz = Vertical level number
-    nzz = m1 - 1
-    aotr=0.0
-       
-!srf- otimizado
-!    DO k = 1,nzz
-!       !  Reverse the vertical index when in cartesian coordinates
-!      !
-!       k1  = nzz + 1 - k
-!       DO ij=1,iend
-!	duml(ij,k1) = heati_aerad(ij,k)
-!	dums(ij,k1) = heats_aerad(ij,k)
-!       END DO
-!     END DO
-!  
-!    ! Transfer values from CARMA grid to BRAMS grid
-!     DO k=1,m1-1
-!       kr = k + 1     ! K level in CARMA grid corresponds to K+1 level in BRAMS grid
-!       DO ij=1,iend
-!	 fthrl(ij,kr) = duml(ij,k)
-!	 fthrs(ij,kr) = dums(ij,k)
-!       END DO
-!     END DO
-   
-    ! reverse the vertical and transfer values from CARMA grid to BRAMS grid
-    DO k=2,m1
-       kr = nzz+2- k 
-       DO ij=1,iend
-  	 fthrl(ij,k) = heati_aerad(ij,kr)
-  	 fthrs(ij,k) = heats_aerad(ij,kr)
-!	print*,k,fthrl(ij,k),fthrs(ij,k)
-       END DO
-    END DO
-!srf
+   !=======================================================================================!
+   !=======================================================================================!
 
 
-     DO ij=1,iend
-  	rshort(ij) = solnet(ij)  ! total absorvido pela superficie
-        rlong(ij)  = xirdown(ij) ! downward longwave  na superficie
-        !if (rlong(ij).lt.10.) print*,'RADTRAN_TO_RAMS!!!',ij,rlong(ij)
-    END DO
-    
-    dumaot=0.0
-    !  DATA WAVE / 0.256, 0.280, 0.296, 0.319, 0.335, 0.365, 0.420,
-    ! 2   0.690, 0.762, 0.719, 0.813, 0.862, 0.926, 1.005, 1.111,
-    ! 3   1.333, 1.562, 1.770, 2.051, 2.210, 2.584, 3.284, 3.809,
-    ! 4   4.292, 4.546, 4.878, 5.128, 5.405, 5.714, 6.061, 6.452,
-    ! 5   6.897, 7.407, 8.333, 9.009, 10.309, 12.500, 13.889,	 
-    ! 6   16.667,20.000, 26.316, 35.714, 62.50  		/
 
-    DO l=1,ntotal
-       DO k=1,m1				  
-  	 DO ij=1,iend
-           dum2aot(ij,nprob(l),k)=tauaer(ij,nprob(l),k)
-  	 END DO 				  
-       END DO					  
-    END DO
 
-    DO l=1,nwave
-       DO k=1,m1				  
-  	 DO ij=1,iend
-  	   dumaot(ij,l) = dumaot(ij,l) + dum2aot(ij,l,k)   
-!  	   dumaot(ij,l) = dumaot(ij,l) + tauaer(ij,l,k)   
-  	 END DO 				  
-       END DO					  
-    END DO
-    
-    DO l=1,nwave
-      DO ij=1,iend
-  	aotr(ij,l)= dumaot(ij,l)
-      END DO
-    END DO
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   subroutine radtran_to_rams(m1,fthrl,rlong,fthrs,rshort,aotr,mynum)
   
-  END SUBROUTINE radtran_to_rams
-
-!kmlnew  
-  SUBROUTINE radcomp_carma(m1,m2,m3,ia,iz,ja,jz,solfac  &
-       ,theta,pi0,pp,rv,RAIN,LWL,IWL,dn0,rtp,fthrd  &
-       ,rtgt,f13t,f23t,glat,glon,rshort,rlong,albedt,cosz,rlongup  &
-       ,mynum,fmapt,pm,patch_area,npat)
-!kmlnew      
-       USE mem_carma, ONLY: carma
-       USE mem_grid , ONLY: ngrid
-
-       ! For specific optimization depending the type of machine
-!       use machine_arq, only: machine ! INTENT(IN)
-
-       INTEGER,INTENT(IN) :: m1,m2,m3,ia,iz,ja,jz,mynum,npat
+      use mem_grid   , only : nzpmax  ! ! intent(in)
+      use mem_globrad, only : nwave   & ! intent(in)
+                            , nsolp   & ! intent(in)
+                            , ntotal  & ! intent(in)
+                            , nlayer  & ! intent(in)
+                            , ngauss  & ! intent(in)
+                            , gweight & ! intent(in)
+                            , nprob   ! ! intent(in)
+      use mem_radiate, only : ilwrtyp ! ! intent(in)
+      implicit none
   
-       REAL,INTENT(IN)    :: solfac
-       REAL,INTENT(IN)    :: theta(m1,m2,m3)
-       REAL,INTENT(IN)    :: pi0(m1,m2,m3)
-       REAL,INTENT(IN)    :: pp(m1,m2,m3)
-       REAL,INTENT(IN)    :: rv(m1,m2,m3)
-!kmlnew
-       REAL,INTENT(IN)    :: LWL(m1,m2,m3)
-       REAL,INTENT(IN)    :: IWL(m1,m2,m3)
-       REAL,INTENT(IN)    :: RAIN(m2,m3)
-       REAL,INTENT(IN)    :: patch_area(m2,m3,npat)
-!kmlnew      
-       REAL,INTENT(IN)    :: dn0(m1,m2,m3)
-       REAL,INTENT(IN)    :: rtp(m1,m2,m3)
-       REAL,INTENT(IN)    :: rtgt(m2,m3)
-       REAL,INTENT(IN)    :: f13t(m2,m3)
-       REAL,INTENT(IN)    :: f23t(m2,m3)
-       REAL,INTENT(IN)    :: glat(m2,m3)
-       REAL,INTENT(IN)    :: glon(m2,m3)
-       REAL,INTENT(IN)    :: cosz(m2,m3) 
-       REAL,INTENT(IN)    :: albedt(m2,m3)
-       REAL,INTENT(IN)    :: fmapt(m2,m3)
-       REAL,INTENT(IN)    :: pm(m1,m2,m3) 
-  
-       REAL,INTENT(INOUT) :: rshort(m2,m3)
-       REAL,INTENT(INOUT) :: rlong(m2,m3)
-!kml       REAL,INTENT(INOUT) :: fthrd(m2,m3)
-       REAL,INTENT(INOUT) :: fthrd(m1,m2,m3)
-       
-       REAL,INTENT(INOUT) :: rlongup(m2,m3)
-       !kmlnew
-       REAL :: xland(m2,m3)
-       
-       INTEGER :: ia1,iz1,ja1,jz1,ii,jj,iend,ipat
-       
-       iend=(iz-ia+1)*(jz-ja+1)
+      !----- Arguments. -------------------------------------------------------------------!
+      integer                   , intent(in)    :: m1,mynum
+      real                      , intent(out)   :: rshort
+      real                      , intent(out)   :: rlong
+      real   , dimension(nwave) , intent(out)   :: aotr
+      real   , dimension(nzpmax), intent(inout) :: fthrl
+      real   , dimension(nzpmax), intent(inout) :: fthrs
+      !----- Local variables. -------------------------------------------------------------!
+      real   , dimension(nzpmax)                :: duml
+      real   , dimension(nzpmax)                :: dums
+      real   , dimension(nwave)                 :: dumaot
+      real   , dimension(ntotal,nzpmax)         :: dum2aot
+      integer                                   :: k
+      integer                                   :: j1
+      integer                                   :: i1
+      integer                                   :: k1
+      integer                                   :: kr
+      integer                                   :: ib
+      integer                                   :: ig
+      integer                                   :: nzz
+      integer                                   :: l
+      !------------------------------------------------------------------------------------!
 
-       ! For specific optimization
-!       if (machine==1) then
-          !-sx6 
-!          p_isize=16;p_jsize=16
-!       elseif(machine==0) then
-          !-cluster ! Generic IA32
-          p_isize=2;p_jsize=2
-!       endif
-       
-!srf      DO ipat= 1,2
-       DO ii=ia,iz,p_isize
-  	 DO jj=ja,jz,p_jsize
-  	   ia1=min(ii,iz);iz1=min(ii+p_isize-1,iz)
-  	   ja1=min(jj,jz);jz1=min(jj+p_jsize-1,jz)
-  	 END DO
-       END DO
-!srf      END DO           
+      nzz  = m1 - 1
+      aotr = 0.0
 
-       DO ii=ia,iz
-  	 DO jj=ja,jz
-	   xland(ii,jj) = patch_area(ii,jj,2)
-  	 END DO
-       END DO
+      !----- Reverse the vertical and transfer values from CARMA grid to BRAMS grid. ------!
+      do k=2,m1
+         kr = nzz+2- k 
+         fthrl(k) = heati_aerad(kr)
+         fthrs(k) = heats_aerad(kr)
+      end do
 
-      
-       DO ii=ia,iz,p_isize
-  	 DO jj=ja,jz,p_jsize
-  	   ia1=min(ii,iz);iz1=min(ii+p_isize-1,iz)
-  	   ja1=min(jj,jz);jz1=min(jj+p_jsize-1,jz)
+      rshort = solnet  ! Total short wave absorbed by the surface.
+      rlong  = xirdown ! Surface long wave radiation.
+      if (rlong < 50. .and. ilwrtyp == 4) then 
+         write(unit=*,fmt='(a)') '-------------------------------------------------------'
+         call abort_run('Weird RLONG... ','radtrans_to_rams','rad_carma.f90')
+      end if
+      dumaot=0.0
 
-  	   CALL radcarma(m1,m2,m3,ia1,iz1,ja1,jz1,solfac  &
-  			    ,theta,pi0,pp,rv,RAIN,LWL,IWL,dn0,rtp,fthrd  &
-  			    ,rtgt,f13t,f23t,glat,glon,rshort &
-  			    ,rlong,albedt,cosz,rlongup,mynum  &
-  			    ,fmapt,pm,carma(ngrid)%aot,xland)
-			    
-!xxxxxxxxxxxxxx
-!	    if (rlong(ii,jj).lt.10.0) print*,'apos radcarma',ii,jj,rlong(ii,jj)
-!
-!		 do k=2,m1-1
-!		   if ( (fthrd(k,ii,jj))*86400 .lt. -20.0)then
-!		    print*,'apos radcarma i j k mynum',ii,jj,k,mynum
-!		    print*,'apos radcarma rlong fthrd',rlong(ii,jj),fthrd(k,ii,jj)*86400
-!		   endif
-!  	     end do
-!xxxxxxxxxxxxxx
-	    		    
-  	 END DO
-       END DO
-       
-       
-       
-  END SUBROUTINE radcomp_carma
-  
-    SUBROUTINE AllocIndex(ia,ja,iz,jz,IsAlloc)
-      IMPLICIT NONE
-      INTEGER,INTENT(IN) :: ia,iz,ja,jz,IsAlloc
-      INTEGER :: ij,i1,j1
-      
-      IF(IsAlloc==1) THEN
-  	ALLOCATE(indexi((iz-ia+1)*(jz-ja+1)))
-  	ALLOCATE(indexj((iz-ia+1)*(jz-ja+1)))
-      
-  	ij=0
-  	DO i1=ia,iz
-  	  DO j1=ja,jz
-  	    ij=ij+1
-  	    indexi(ij)=i1
-  	    indexj(ij)=j1
-  	  END DO
-  	END DO
-      ELSE
-  	DEALLOCATE(indexi)
-  	DEALLOCATE(indexj)
-      END IF
-    
-    END SUBROUTINE AllocIndex
-    
-    SUBROUTINE C_2d_1d(A2d,A1d,ia,iz,ja,jz,iend)
-  
-       INTEGER,INTENT(IN) :: ia,iz,ja,jz,iend
-       REAL,INTENT(IN) :: A2d(ia:iz,ja:jz)
-       REAL,INTENT(OUT) :: A1d(iend)
-       INTEGER :: ij
-       
-       DO ij=1,iend
-  	 A1d(ij)=A2d(indexi(ij),indexj(ij))
-       END DO
-       
-    END SUBROUTINE C_2d_1d
-    
-    SUBROUTINE C_1d_2d(A1d,A2d,ia,iz,ja,jz,iend)
-  
-       INTEGER,INTENT(IN) :: ia,iz,ja,jz,iend
-       REAL,INTENT(IN) :: A1d(iend)
-       REAL,INTENT(OUT) :: A2d(ia:iz,ja:jz)
-       INTEGER :: ij
-       
-       DO ij=1,iend
-  	A2d(indexi(ij),indexj(ij))=A1d(ij)
-       END DO
-       
-    END SUBROUTINE C_1d_2d
+      do l=1,ntotal
+         do k=1,m1                                  
+            dum2aot(nprob(l),k)=tauaer(nprob(l),k)
+         end do                                     
+      end do
+
+      do l=1,nwave
+         do k=1,m1                                  
+            dumaot(l) = dumaot(l) + dum2aot(l,k)   
+         end do                                     
+      end do
      
-    SUBROUTINE C_3d_2d(A3d,A2d,m,ia,iz,ja,jz,iend)
-  
-       INTEGER,INTENT(IN) :: ia,iz,ja,jz,iend,m
-       REAL,INTENT(IN) :: A3d(m,ia:iz,ja:jz)
-       REAL,INTENT(OUT) :: A2d(iend,m)
-       INTEGER :: ij,l
-       
-       DO l=1,m
-  	 DO ij=1,iend
-  	   A2d(ij,l)=A3d(l,indexi(ij),indexj(ij))
-  	 END DO
-       END DO
-       
-    END SUBROUTINE C_3d_2d
-  
-    SUBROUTINE C_2d_3d(A2d,A3d,m,ia,iz,ja,jz,iend)
-  
-       INTEGER,INTENT(IN) :: ia,iz,ja,jz,iend,m
-       REAL,INTENT(OUT)   :: A3d(m,ia:iz,ja:jz)
-       REAL,INTENT(IN)    :: A2d(iend,m)
-       INTEGER :: ij,l
-       
-       DO l=1,m
-  	 DO ij=1,iend
-  	   A3d(l,indexi(ij),indexj(ij))=A2d(ij,l)
-  	 END DO
-       END DO
-       
-    END SUBROUTINE C_2d_3d
-    
-    SUBROUTINE Ci_3d_2d(A3d,A2d,m,ia,iz,ja,jz,iend)
-  
-       INTEGER,INTENT(IN) :: ia,iz,ja,jz,iend,m
-       REAL,INTENT(IN) :: A3d(ia:iz,ja:jz,m)
-       REAL,INTENT(OUT) :: A2d(iend,m)
-       INTEGER :: ij,l
-       
-       DO l=1,m
-  	 DO ij=1,iend
-  	   A2d(ij,l)=A3d(indexi(ij),indexj(ij),l)
-  	 END DO
-       END DO
-       
-    END SUBROUTINE Ci_3d_2d
+      do l=1,nwave
+         aotr(l)= dumaot(l)
+      end do
 
-    SUBROUTINE Ci_2d_3d(A2d,A3d,m,ia,iz,ja,jz,iend)
-  
-       INTEGER,INTENT(IN) :: ia,iz,ja,jz,iend,m
-       REAL,INTENT(OUT)   :: A3d(ia:iz,ja:jz,m)
-       REAL,INTENT(IN)    :: A2d(iend,m)
-       INTEGER :: ij,l
-       
-       DO l=1,m
-  	 DO ij=1,iend
-  	   A3d(indexi(ij),indexj(ij),l)=A2d(ij,l)
-  	 END DO
-       END DO
-       
-    END SUBROUTINE Ci_2d_3d
+      return
+   end subroutine radtran_to_rams
+   !=======================================================================================!
+   !=======================================================================================!
 
-  
-END MODULE rad_carma
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !    This subroutine converts the 3-D, wavenumber-like arrays into 2-D (X*Y,WN).        !
+   !---------------------------------------------------------------------------------------!
+   subroutine ci_3d_1d(m2,m3,m4,a3d,a1d,i,j)
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      integer                     , intent(in)  :: m2
+      integer                     , intent(in)  :: m3
+      integer                     , intent(in)  :: m4
+      integer                     , intent(in)  :: i
+      integer                     , intent(in)  :: j
+      real   , dimension(m2,m3,m4), intent(in)  :: a3d
+      real   , dimension(m4)      , intent(out) :: a1d
+      !----- Local variables. -------------------------------------------------------------!
+      integer                                   :: w
+      !------------------------------------------------------------------------------------!
+
+      do w=1,m4
+         a1d(w)=a3d(i,j,w)
+      end do
+
+      return
+   end subroutine ci_3d_1d
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !    This subroutine converts back the 2-D, wavenumber-like arrays into 3-D (X,Y,WN).   !
+   !---------------------------------------------------------------------------------------!
+   subroutine ci_1d_3d(m2,m3,m4,a1d,a3d,i,j)
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      integer                     , intent(in)    :: m2
+      integer                     , intent(in)    :: m3
+      integer                     , intent(in)    :: m4
+      integer                     , intent(in)    :: i
+      integer                     , intent(in)    :: j
+      real   , dimension(m2,m3,m4), intent(inout) :: a3d
+      real   , dimension(m4)      , intent(in)    :: a1d
+      !----- Local variables. -------------------------------------------------------------!
+      integer                                     :: w
+      !------------------------------------------------------------------------------------!
+
+      do w=1,m4
+         a3d(i,j,w)=a1d(w)
+      end do
+
+      return
+   end subroutine ci_1d_3d
+   !=======================================================================================!
+   !=======================================================================================!
+end module rad_carma
+!==========================================================================================!
+!==========================================================================================!

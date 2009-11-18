@@ -274,10 +274,10 @@ harr_coms.o : $(RADIATE)/harr_coms.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90) 
 
-harr_rad.o : $(RADIATE)/harr_rad.f90
-	cp -f $< $(<F:.f90=.f90)
-	$(F90_COMMAND) $(<F:.f90=.f90)
-	rm -f $(<F:.f90=.f90) 
+harr_rad.o : $(RADIATE)/harr_rad.F90
+	cp -f $< $(<F:.f90=.F90)
+	$(FPP_COMMAND) $(<F:.f90=.F90)
+	rm -f $(<F:.f90=.F90)
 
 harr_raddriv.o : $(RADIATE)/harr_raddriv.f90
 	cp -f $< $(<F:.f90=.f90)
@@ -490,11 +490,6 @@ mem_oda.o : $(FDDA)/mem_oda.f90
 	rm -f $(<F:.f90=.f90) 
 
 mem_opt_scratch.o : $(TURB)/mem_opt_scratch.f90
-	cp -f $< $(<F:.f90=.f90)
-	$(F90_COMMAND) $(<F:.f90=.f90)
-	rm -f $(<F:.f90=.f90) 
-
-mem_precision.o : $(RADIATE)/mem_precision.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90) 
@@ -1349,11 +1344,6 @@ decomp_coms.o : $(ED_MEMORY)/decomp_coms.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
-decomposition.o : $(ED_DYNAMICS)/decomposition.f90
-	cp -f $< $(<F:.f90=.f90)
-	$(F90_COMMAND) $(<F:.f90=.f90)
-	rm -f $(<F:.f90=.f90)
-
 disturb_coms.o : $(ED_MEMORY)/disturb_coms.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
@@ -1529,10 +1519,10 @@ h5_output.o : $(ED_IO)/h5_output.F90
 	$(FPP_COMMAND) $(HDF5_INCS) $(<F:.F90=.F90)
 	rm -f $(<F:.F90=.F90)
 
-hdf5_coms.o : $(ED_MEMORY)/hdf5_coms.f90
-	cp -f $< $(<F:.f90=.f90)
-	$(F90_COMMAND) $(HDF5_INCS) $(<F:.f90=.f90)
-	rm -f $(<F:.f90=.f90)
+hdf5_coms.o : $(ED_MEMORY)/hdf5_coms.F90
+	cp -f $< $(<F:.F90=.F90)
+	$(FPP_COMMAND) $(HDF5_INCS) $(<F:.F90=.F90)
+	rm -f $(<F:.F90=.F90)
 
 hdf5_utils.o : $(ED_UTILS)/hdf5_utils.f90
 	cp -f $< $(<F:.f90=.f90)
@@ -1683,6 +1673,11 @@ soil_coms.o : $(ED_MEMORY)/soil_coms.F90
 	cp -f $< $(<F:.F90=.F90)
 	$(FPP_COMMAND) $(<F:.F90=.F90)
 	rm -f $(<F:.F90=.F90)
+
+soil_respiration.o : $(ED_DYNAMICS)/soil_respiration.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
 
 stable_cohorts.o : $(ED_UTILS)/stable_cohorts.f90
 	cp -f $< $(<F:.f90=.f90)

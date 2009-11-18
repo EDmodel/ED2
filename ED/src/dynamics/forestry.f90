@@ -279,10 +279,7 @@ subroutine inventory_mat_forests(cpoly,isi,area_mature_primary,agb_mature_primar
       csite%plant_ag_biomass(ipa) = 0.0
       do ico=1,cpatch%ncohorts
          csite%plant_ag_biomass(ipa) = csite%plant_ag_biomass(ipa)                         &
-                                     + ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)     &
-                                                 ,cpatch%bleaf(ico),cpatch%pft(ico)        &
-                                                 ,cpatch%hite(ico),cpatch%bstorage(ico))   &
-                                     * cpatch%nplant(ico)
+                                     + cpatch%agb(ico) * cpatch%nplant(ico)
       end do
 
       if (csite%plant_ag_biomass(ipa) < 0.01) cycle
@@ -624,8 +621,8 @@ subroutine norm_harv_patch(csite,newp)
    csite%can_depth(newp)                   = csite%can_depth(newp)           * area_fac
    csite%rough(newp)                       = csite%rough(newp)               * area_fac
    csite%mean_rh(newp)                     = csite%mean_rh(newp)             * area_fac
-   csite%dmean_A_decomp(newp)              = csite%dmean_A_decomp(newp)      * area_fac
-   csite%dmean_Af_decomp(newp)             = csite%dmean_Af_decomp(newp)     * area_fac
+   csite%today_A_decomp(newp)              = csite%today_A_decomp(newp)      * area_fac
+   csite%today_Af_decomp(newp)             = csite%today_Af_decomp(newp)     * area_fac
    csite%repro(1:n_pft,newp)               = csite%repro(1:n_pft,newp)       * area_fac
    csite%fsc_in(newp)                      = csite%fsc_in(newp)              * area_fac
    csite%ssc_in(newp)                      = csite%ssc_in(newp)              * area_fac

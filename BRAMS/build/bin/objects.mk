@@ -108,7 +108,6 @@ OBJ_MODEL =                         \
 	mem_nestb.o                 \
 	mem_oda.o                   \
 	mem_opt_scratch.o           \
-	mem_precision.o             \
 	mem_radiate.o               \
 	mem_scalar.o                \
 	mem_scratch.o               \
@@ -275,7 +274,6 @@ OBJ_MODEL =                         \
 	canopy_update_euler.o       \
 	consts_coms.o               \
 	decomp_coms.o               \
-	decomposition.o             \
 	disturb_coms.o              \
 	disturbance.o               \
 	ed_filelist.o               \
@@ -341,6 +339,7 @@ OBJ_MODEL =                         \
 	rk4_misc.o                  \
 	rk4_stepper.o               \
 	soil_coms.o                 \
+	soil_respiration.o          \
 	stable_cohorts.o            \
 	structural_growth.o         \
 	twostream_rad.o             \

@@ -20,6 +20,7 @@ subroutine calc_met_lapse(cgrid,ipy)
    real                          :: ebar   !! mean elevation
    real                          :: delE   !! deviation from mean elevation
    real                          :: aterr  !! terrestrial area
+   real                          :: hillshade
    !----- Local constants -----------------------------------------------------------------!
    real             , parameter  :: offset=tiny(1.)/epsilon(1.) !! Tiny offset to avoid FPE
    logical          , parameter  :: bypass=.true.
@@ -39,6 +40,7 @@ subroutine calc_met_lapse(cgrid,ipy)
 
    if (bypass) then
       do isi = 1,cpoly%nsites
+         hillshade = cpoly%slope(isi)/180.
          cpoly%met(isi)%geoht       = cgrid%met(ipy)%geoht
          cpoly%met(isi)%atm_tmp     = cgrid%met(ipy)%atm_tmp
          cpoly%met(isi)%atm_shv     = cgrid%met(ipy)%atm_shv
@@ -58,6 +60,8 @@ subroutine calc_met_lapse(cgrid,ipy)
          if ( cpoly%met(isi)%rlong < rlong_min) then
             write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
             write(unit=*,fmt='(a)')           '+ RLONG is too low!!!'
+            write(unit=*,fmt='(a,1x,i12)')    '+ X point         : ',cgrid%ilon(ipy)
+            write(unit=*,fmt='(a,1x,i12)')    '+ Y point         : ',cgrid%ilat(ipy)
             write(unit=*,fmt='(a,1x,es12.5)') '+ Longitude       : ',cgrid%lon(ipy)
             write(unit=*,fmt='(a,1x,es12.5)') '+ Latitude        : ',cgrid%lat(ipy)
             write(unit=*,fmt='(a,1x,es12.5)') '+ Site-level      : ',cpoly%met(isi)%rlong
@@ -150,9 +154,9 @@ subroutine calc_met_lapse(cgrid,ipy)
          !----- Perform linear adjustments. -----------------------------------------------!
          cpoly%met(isi)%geoht   = cgrid%met(ipy)%geoht   + cgrid%lapse(ipy)%geoht   * delE
          cpoly%met(isi)%atm_tmp = cgrid%met(ipy)%atm_tmp + cgrid%lapse(ipy)%atm_tmp * delE
-         cpoly%met(isi)%atm_shv = cgrid%met(ipy)%atm_shv + cgrid%lapse(ipy)%atm_shv * delE
+         cpoly%met(isi)%atm_shv = max(toodry, cgrid%met(ipy)%atm_shv                       &
+                                            + cgrid%lapse(ipy)%atm_shv * delE)
          cpoly%met(isi)%prss    = cgrid%met(ipy)%prss    + cgrid%lapse(ipy)%prss    * delE
-         cpoly%met(isi)%pcpg    = cgrid%met(ipy)%pcpg    + cgrid%lapse(ipy)%pcpg    * delE
          cpoly%met(isi)%atm_co2 = cgrid%met(ipy)%atm_co2 + cgrid%lapse(ipy)%atm_co2 * delE
          cpoly%met(isi)%rlong   = cgrid%met(ipy)%rlong   + cgrid%lapse(ipy)%rlong   * delE
          cpoly%met(isi)%par_diffuse = cgrid%met(ipy)%par_diffuse                           &
@@ -168,6 +172,12 @@ subroutine calc_met_lapse(cgrid,ipy)
          !       not wind SPEED.                                                           !
          !---------------------------------------------------------------------------------!
          cpoly%met(isi)%vels    = cgrid%met(ipy)%vels    + cgrid%lapse(ipy)%vels*delE
+
+         !---------------------------------------------------------------------------------!
+         ! Note: Precipitation adjustment is based on proportional change rather than a    !
+         !       linear scaling.                                                           !
+         !---------------------------------------------------------------------------------!
+         cpoly%met(isi)%pcpg    = cgrid%met(ipy)%pcpg*cpoly%pptweight(isi)
 
          !---------------------------------------------------------------------------------!
          !     Sanity check:                                                               !
@@ -241,9 +251,151 @@ subroutine calc_met_lapse(cgrid,ipy)
             call fatal_error('Problems with solar radiation','calc_met_lapse'              &
                             ,'ed_met_driver.f90')
          end if
+
+         call MetDiagnostics(cpoly,ipy,isi)
+
       end do
    end if
    return
 end subroutine calc_met_lapse
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+subroutine MetDiagnostics(cpoly,ipy,isi)
+  use ed_state_vars,only    : edtype,polygontype
+  use canopy_radiation_coms,only : rlong_min
+  
+  implicit none
+  integer, intent(in) :: ipy
+  integer, intent(in) :: isi
+  type(polygontype),target :: cpoly
+
+  logical, parameter :: fixRad = .true.
+
+
+  if(cpoly%met(isi)%geoht .le. 0.)  then
+     print*,cpoly%met(isi)%geoht
+     call fatal_error('Problems with GEOHT','MetDiagnostics','ed_met_driver.f90')
+  endif
+  if(cpoly%met(isi)%atm_tmp .le. 200. .or. cpoly%met(isi)%atm_tmp .ge. 350.)  then
+     print*,cpoly%met(isi)%atm_tmp
+     call fatal_error('Problems with atm_tmp','MetDiagnostics','ed_met_driver.f90')
+  endif
+  if(cpoly%met(isi)%atm_shv .le. 0. .or. cpoly%met(isi)%atm_shv .ge. 1.)  then
+     print*,cpoly%met(isi)%atm_shv
+     call fatal_error('Problems with atm_shv','MetDiagnostics','ed_met_driver.f90')
+  endif
+  if(cpoly%met(isi)%prss .le. 0.)  then
+     print*,cpoly%met(isi)%prss
+     call fatal_error('Problems with prss','MetDiagnostics','ed_met_driver.f90')
+  endif
+  if(cpoly%met(isi)%pcpg .lt. 0. .or. cpoly%met(isi)%pcpg .gt. 0.1)  then
+     print*,cpoly%met(isi)%pcpg
+     call fatal_error('Problems with precipitation','MetDiagnostics','ed_met_driver.f90')
+  endif
+  if(cpoly%met(isi)%atm_co2 .le. 100. .or. cpoly%met(isi)%atm_co2 .gt. 2000.)  then
+     print*,cpoly%met(isi)%atm_co2
+     call fatal_error('Problems with ATM CO2','MetDiagnostics','ed_met_driver.f90')
+  endif
+  if(cpoly%met(isi)%rlong .le. rlong_min)  then
+     print*,cpoly%met(isi)%rlong
+     call fatal_error('Problems with LONGWAVE RADIATION','MetDiagnostics','ed_met_driver.f90')
+  endif
+  if(cpoly%met(isi)%par_diffuse .lt. 0. .or. cpoly%met(isi)%par_diffuse .gt. 1400.)  then
+     if(cpoly%met(isi)%par_diffuse .lt. 0. .and. fixRad) then
+        cpoly%met(isi)%par_diffuse = 0.0
+     else
+        print*,cpoly%met(isi)%par_diffuse
+        call fatal_error('Problems with DIFFUSE PAR','MetDiagnostics','ed_met_driver.f90')
+     endif
+  endif
+  if(cpoly%met(isi)%par_beam .lt. 0. .or. cpoly%met(isi)%par_beam .gt. 1400.)  then
+     if(cpoly%met(isi)%par_beam .lt. 0. .and. fixRad) then
+        cpoly%met(isi)%par_beam = 0.0
+     else
+        print*,cpoly%met(isi)%par_beam
+        call fatal_error('Problems with DIRECT BEAM PAR','MetDiagnostics','ed_met_driver.f90')
+     end if
+  endif
+  if(cpoly%met(isi)%nir_diffuse .lt. 0. .or. cpoly%met(isi)%nir_diffuse .gt. 1400.)  then
+     if(cpoly%met(isi)%nir_diffuse .lt. 0. .and. fixRad) then
+        cpoly%met(isi)%nir_diffuse = 0.0
+     else
+        print*,cpoly%met(isi)%nir_diffuse
+        call fatal_error('Problems with DIFUSE NIR','MetDiagnostics','ed_met_driver.f90')
+     endif
+  end if
+
+  if(cpoly%met(isi)%nir_beam .lt. 0. .or. cpoly%met(isi)%nir_beam .gt. 1400.)  then
+     if(cpoly%met(isi)%nir_beam .lt. 0. .and. fixRad) then
+        cpoly%met(isi)%nir_beam = 0.0
+     else
+        print*,cpoly%met(isi)%nir_beam
+        call fatal_error('Problems with DIRECT BEAM NIR','MetDiagnostics','ed_met_driver.f90')
+     end if
+  endif
+  if(cpoly%met(isi)%vels .lt. 0.)  then
+     print*,cpoly%met(isi)%vels
+     call fatal_error('Problems with WIND VELOCITY','MetDiagnostics','ed_met_driver.f90')
+  endif
+
+  return
+end subroutine MetDiagnostics
+
+
+!==========================================================================================!
+!==========================================================================================!
+subroutine setLapseParms(cgrid)
+  
+  use ed_state_vars,only:edtype,polygontype
+  use met_driver_coms, only: lapse
+
+   implicit none
+
+  integer :: ipy,isi
+  type(edtype), target :: cgrid
+  type(polygontype),pointer :: cpoly
+  real :: ebar, aterr
+
+   !! right now, simply transfer lapse rates from ed_data
+   !! in future, could set parms based on spatial maps of parms
+  
+  do ipy = 1,cgrid%npolygons
+     
+     cgrid%lapse(ipy)%geoht   = lapse%geoht
+     cgrid%lapse(ipy)%vels    = lapse%vels
+     cgrid%lapse(ipy)%atm_tmp = lapse%atm_tmp
+     cgrid%lapse(ipy)%atm_shv = lapse%atm_shv
+     cgrid%lapse(ipy)%prss    = lapse%prss
+     cgrid%lapse(ipy)%pcpg    = lapse%pcpg
+     cgrid%lapse(ipy)%atm_co2 = lapse%atm_co2
+     cgrid%lapse(ipy)%rlong   = lapse%rlong
+     cgrid%lapse(ipy)%nir_beam    = lapse%nir_beam
+     cgrid%lapse(ipy)%nir_diffuse = lapse%nir_diffuse
+     cgrid%lapse(ipy)%par_beam    = lapse%par_beam
+     cgrid%lapse(ipy)%par_diffuse = lapse%par_diffuse
+     cgrid%lapse(ipy)%pptnorm = lapse%pptnorm
+
+     !!! PRECIP WEIGHTS !!!
+     cpoly => cgrid%polygon(ipy)
+     ebar = 0.0
+     aterr = 0.0
+     do isi = 1,cpoly%nsites
+        ebar = ebar + cpoly%area(isi)*cpoly%elevation(isi)
+        aterr = aterr + cpoly%area(isi)
+     enddo
+     ebar = ebar/aterr
+     do isi = 1,cpoly%nsites
+        cpoly%pptweight(isi) = (cgrid%lapse(ipy)%pptnorm + &
+             cgrid%lapse(ipy)%pcpg*(cpoly%elevation(isi) - ebar))&
+             /cgrid%lapse(ipy)%pptnorm
+     enddo
+
+  enddo
+
+  return
+end subroutine setLapseParms
 !==========================================================================================!
 !==========================================================================================!

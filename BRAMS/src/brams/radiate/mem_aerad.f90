@@ -73,7 +73,7 @@ module mem_aerad
   !  Define logical unit number for print output from radiation submodel
   integer,parameter :: lunorad = 16 
 !!!!!!!!!/kml
-  integer,parameter :: iprocopio = 1 
+  logical, parameter :: lprocopio = .true. 
 !!!!!!!!!/kml
  
   !$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$

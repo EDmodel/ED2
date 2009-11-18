@@ -124,7 +124,7 @@ subroutine rad_mclat(m1,nrad,koff,glat,rtgt)
      
      !----- Copy the CO2 at the top level to the remainder levels. ------------------------!
      do k = kadd,nrad
-        co2l(k) = co2l(kadd-1)
+        co2l(k) = co2l(kadd-1) * dl(kadd-1) / dl(k)
      end do
   end if
 
