@@ -730,7 +730,7 @@ subroutine update_met_drivers(cgrid)
                              , wdnsi         & ! intent(in)
                              , tsupercool    ! ! intent(in)
    use therm_lib      , only : rslif         & ! function
-                             , ptqz2enthalpy ! ! function
+                             , ptqz2enthalpy,qtk ! ! function
 
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
@@ -750,6 +750,9 @@ subroutine update_met_drivers(cgrid)
    real                       :: t1, T0
    real                       :: t2
    real                       :: rvaux, rvsat
+   real                       :: snden !! snow density (kg/m3)
+   real                       :: fice  !! precipication ice fraction
+real:: fliq,tsnow
    !----- External functions --------------------------------------------------------------!
    logical         , external :: isleap
    !---------------------------------------------------------------------------------------!
@@ -1026,8 +1029,8 @@ subroutine update_met_drivers(cgrid)
      T0 = cgrid%met(ipy)%atm_tmp
      cgrid%met(ipy)%atm_tmp = atm_tmp_intercept + &
           cgrid%met(ipy)%atm_tmp * atm_tmp_slope
-     cgrid%met(ipy)%pcpg = prec_intercept + &
-          cgrid%met(ipy)%pcpg * prec_slope
+     cgrid%met(ipy)%pcpg = max(0.0,prec_intercept + &
+          cgrid%met(ipy)%pcpg * prec_slope)
      if(humid_scenario == 1) then 
         !! change SHV to keep RH const
         cgrid%met(ipy)%atm_shv = cgrid%met(ipy)%atm_shv * &
@@ -1141,25 +1144,50 @@ subroutine update_met_drivers(cgrid)
 
 
          !---------------------------------------------------------------------------------!
-         !     Precipitation internal energy and "depth".  The decision on whether it's    !
-         ! rain or snow is rather simple: above the triple point is rain, below it's snow. !
+         !  Precipitation internal energy and "depth".                                     !
+         !  fcns derived from                                                              !
+         !  Jin et al 1999 Hydrol Process. 13:2467-2482 Table 2                            !
+         !  [[modified 11/16/09 by MCD]]                                                   !
          !---------------------------------------------------------------------------------!
-         if (cpoly%met(isi)%atm_tmp > t3ple) then
-            cpoly%met(isi)%qpcpg = cliq * (cpoly%met(isi)%atm_tmp - tsupercool)            &
-                                        * max(0.0, cpoly%met(isi)%pcpg)
-            cpoly%met(isi)%dpcpg = max(0.0, cpoly%met(isi)%pcpg * wdnsi)
+         
+         fice  = 0  !! fraction of ice in precipitation
+         snden = 0  !! partial density of ice in precipitation
+         if (cpoly%met(isi)%atm_tmp .le. (t3ple + 2.5) .and. cpoly%met(isi)%atm_tmp > (t3ple + 2.0)) then
+            fice  = 0.6
+            snden = 189.0
          else
-            cpoly%met(isi)%qpcpg = cice * cpoly%met(isi)%atm_tmp * cpoly%met(isi)%pcpg
+            if (cpoly%met(isi)%atm_tmp .le. (t3ple + 2.0) .and. cpoly%met(isi)%atm_tmp > (t3ple)) then
+               fice = min(1.0,1.+(54.62 - 0.2*cpoly%met(isi)%atm_tmp))
+            else
+               fice = 1
+            end if
             
-            !------------------------------------------------------------------------------!
-            !  fcn derived from CLM3.0 documentation which is based on                     !
-            !  Anderson 1975 NWS Technical Doc # 19                                        !
-            !  which I have yet to find   <mcd>                                            !
-            !------------------------------------------------------------------------------!
-            cpoly%met(isi)%dpcpg = cpoly%met(isi)%pcpg &
-               / (50.0+1.5*max(cpoly%met(isi)%atm_tmp-258.15,0.))**1.5
-            !-------------------------------------------------------------------------------!
+            if (cpoly%met(isi)%atm_tmp .le. (t3ple + 2.0) .and. cpoly%met(isi)%atm_tmp > (t3ple-15)) then
+               snden = (50.0+1.7*(cpoly%met(isi)%atm_tmp-258.15)**1.5 )
+            else
+               snden = 50
+            end if
          end if
+
+         !! set rate of snow depth accumulation
+         cpoly%met(isi)%dpcpg = max(0.0, cpoly%met(isi)%pcpg) &
+              * ((1-fice)*wdnsi + fice/snden)
+         
+         !! set internal energy
+         cpoly%met(isi)%qpcpg = max(0.0, cpoly%met(isi)%pcpg) * &                   !! precipitation   
+              ((1-fice)*cliq * (max(t3ple,cpoly%met(isi)%atm_tmp) - tsupercool) + & !! liquid fraction
+              fice *cice * min(cpoly%met(isi)%atm_tmp,t3ple))                       !! ice fraction 
+
+         !! check
+!!         if(snden .gt. 0.0 .and. cpoly%met(isi)%pcpg .gt. 0.0) then
+!!            call qtk(cpoly%met(isi)%qpcpg/cpoly%met(isi)%pcpg,tsnow,fliq)
+!!            print*,"snow",snden,cpoly%met(isi)%pcpg/cpoly%met(isi)%dpcpg,&
+!!                 fice,cpoly%met(isi)%pcpg,&
+!!                 cpoly%met(isi)%dpcpg,cpoly%met(isi)%qpcpg,tsnow,(1-fliq)
+!!         endif
+         !-------------------------------------------------------------------------------!
+
+
       end do siteloop
            
    end do polyloop

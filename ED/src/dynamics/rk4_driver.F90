@@ -175,7 +175,7 @@ module rk4_driver
                !---------------------------------------------------------------------------!
                !    This is the driver for the integration process...                      !
                !---------------------------------------------------------------------------!
-               call integrate_patch(csite,integration_buff%initp,ipa,isi,ipy,ifm           &
+               call integrate_patch(cpoly,csite,integration_buff%initp,ipa,isi,ipy,ifm     &
                                    ,wcurr_loss2atm,ecurr_loss2atm,co2curr_loss2atm         &
                                    ,wcurr_loss2drainage,ecurr_loss2drainage                &
                                    ,wcurr_loss2runoff,ecurr_loss2runoff,ecurr_latent)
@@ -229,11 +229,12 @@ module rk4_driver
    !=======================================================================================!
    !     This subroutine will drive the integration process.                               !
    !---------------------------------------------------------------------------------------!
-   subroutine integrate_patch(csite,initp,ipa,isi,ipy,ifm,wcurr_loss2atm,ecurr_loss2atm    &
+   subroutine integrate_patch(cpoly,csite,initp,ipa,isi,ipy,ifm,wcurr_loss2atm,ecurr_loss2atm &
                              ,co2curr_loss2atm,wcurr_loss2drainage,ecurr_loss2drainage     &
                              ,wcurr_loss2runoff,ecurr_loss2runoff,ecurr_latent)
       use ed_state_vars   , only : sitetype             & ! structure
-                                 , patchtype            ! ! structure
+                                 , patchtype            & ! structure
+                                 , polygontype
       use ed_misc_coms    , only : dtlsm                ! ! intent(in)
       use soil_coms       , only : soil_rough           & ! intent(in)
                                  , snow_rough           ! ! intent(in)
@@ -256,6 +257,7 @@ module rk4_driver
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype)        , target      :: csite   
+      type(polygontype)     , target      :: cpoly   
       type(rk4patchtype)    , target      :: initp
       integer               , intent(in)  :: ifm     
       integer               , intent(in)  :: ipy     
@@ -318,7 +320,7 @@ module rk4_driver
       initp%wpwp = 0.d0
 
       !----- Go into the ODE integrator. --------------------------------------------------!
-      call odeint(hbeg,csite,ipa,isi,ipy,ifm)
+      call odeint(hbeg,csite,ipa,isi,ipy,ifm,cpoly)
 
       !------------------------------------------------------------------------------------!
       !      Normalize canopy-atmosphere flux values.  These values are updated every      !

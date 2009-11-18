@@ -10,7 +10,7 @@ module rk4_stepper
    !=======================================================================================!
    !   This subroutine is the main Runge-Kutta step driver.                                !
    !---------------------------------------------------------------------------------------!
-   subroutine rkqs(x,htry,hdid,hnext,csite,ipa,isi,ipy,ifm)
+   subroutine rkqs(x,htry,hdid,hnext,csite,ipa,isi,ipy,ifm,cpoly)
 
       use rk4_coms      , only : rk4patchtype        & ! structure
                                , integration_buff    & ! intent(inout)
@@ -25,6 +25,7 @@ module rk4_stepper
                                , print_diags
       use ed_state_vars , only : sitetype            & ! structure
                                , patchtype           & ! structure
+                               , polygontype           & ! structure
                                , edtype              & ! structure
                                , edgrid_g            ! ! structure
 
@@ -32,6 +33,7 @@ module rk4_stepper
       !----- Arguments --------------------------------------------------------------------!
       integer                  , intent(in)    :: ipa,isi,ipy,ifm
       type(sitetype)           , target        :: csite
+      type(polygontype)        , target        :: cpoly
       real(kind=8)             , intent(in)    :: htry
       real(kind=8)             , intent(inout) :: x
       real(kind=8)             , intent(out)   :: hdid,hnext
@@ -54,8 +56,7 @@ module rk4_stepper
          call rkck(integration_buff%y,integration_buff%dydx,integration_buff%ytemp         &
                      ,integration_buff%yerr,integration_buff%ak2,integration_buff%ak3      &
                      ,integration_buff%ak4,integration_buff%ak5,integration_buff%ak6       &
-                     ,integration_buff%ak7,x,h,csite,ipa,isi,ipy,reject_step,reject_result)
-
+                     ,integration_buff%ak7,x,h,csite,ipa,isi,ipy,reject_step,reject_result,cpoly)
 
          !---------------------------------------------------------------------------------!
          ! 2. Check to see how accurate the step was.  Errors were calculated by integrat- !
@@ -106,7 +107,7 @@ module rk4_stepper
              call rkck(integration_buff%y,integration_buff%dydx,integration_buff%ytemp         &
                      ,integration_buff%yerr,integration_buff%ak2,integration_buff%ak3      &
                      ,integration_buff%ak4,integration_buff%ak5,integration_buff%ak6       &
-                     ,integration_buff%ak7,x,h,csite,ipa,isi,ipy,reject_step,reject_result)
+                     ,integration_buff%ak7,x,h,csite,ipa,isi,ipy,reject_step,reject_result,cpoly)
              call get_errmax(errmax, integration_buff%yerr,integration_buff%yscal           &
                   ,csite%patch(ipa),integration_buff%y,integration_buff%ytemp,.true.)
              print_diags = pdo
@@ -215,7 +216,7 @@ module rk4_stepper
    !    This subroutine will update the variables and perform the actual time stepping.    !
    !---------------------------------------------------------------------------------------!
    subroutine rkck(y,dydx,yout,yerr,ak2,ak3,ak4,ak5,ak6,ak7,x,h,csite,ipa,isi,ipy          &
-                     ,reject_step,reject_result)
+                     ,reject_step,reject_result,cpoly)
 
       use rk4_coms      , only : rk4patchtype        & ! structure
                                , integration_vars    & ! structure
@@ -251,7 +252,8 @@ module rk4_stepper
                                , dc4                 & ! intent(in)
                                , dc6                 ! ! intent(in)
       use ed_state_vars , only : sitetype            & ! structure
-                               , patchtype           ! ! structure
+                               , patchtype           & ! structure
+                               , polygontype           ! ! structure
       implicit none
 
       !----- Arguments --------------------------------------------------------------------!
@@ -260,6 +262,7 @@ module rk4_stepper
       type(rk4patchtype), target      :: y,dydx,yout,yerr
       type(rk4patchtype), target      :: ak2,ak3,ak4,ak5,ak6,ak7
       type(sitetype)    , target      :: csite
+      type(polygontype)    , target      :: cpoly
       logical           , intent(out) :: reject_step
       logical           , intent(out) :: reject_result
       !----- Local variables --------------------------------------------------------------!
@@ -271,14 +274,15 @@ module rk4_stepper
       !----- Interfaces, in case the model is compiled without forcing them. --------------!
 #if USE_INTERF
       interface
-         subroutine leaf_derivs(initp,dydx,csite,ipa,isi,ipy)
+         subroutine leaf_derivs(initp,dydx,csite,ipa,isi,ipy,cpoly)
             use rk4_coms      ,only : rk4patchtype
-            use ed_state_vars ,only : sitetype
+            use ed_state_vars ,only : sitetype,polygontype
             implicit none
             integer             , intent(in) :: ipa,isi,ipy
             type (rk4patchtype) , target     :: initp
             type (rk4patchtype) , target     :: dydx
             type (sitetype)     , target     :: csite
+            type (polygontype)  , target     :: cpoly
          end subroutine leaf_derivs
       end interface
 #endif
@@ -302,9 +306,7 @@ module rk4_stepper
       call rk4_sanity_check(ak7, reject_step, csite, ipa,dydx,h,print_diags)
       if (reject_step) return
 
-
-
-      call leaf_derivs(ak7, ak2, csite, ipa,isi,ipy)
+      call leaf_derivs(ak7, ak2, csite, ipa,isi,ipy,cpoly)
       call copy_rk4_patch(y, ak7, cpatch)
       call inc_rk4_patch(ak7, dydx, b31*h, cpatch)
       call inc_rk4_patch(ak7, ak2, b32*h, cpatch)
@@ -318,7 +320,7 @@ module rk4_stepper
 
 
 
-      call leaf_derivs(ak7, ak3, csite,ipa,isi,ipy)
+      call leaf_derivs(ak7, ak3, csite,ipa,isi,ipy,cpoly)
       call copy_rk4_patch(y, ak7, cpatch)
       call inc_rk4_patch(ak7, dydx, b41*h, cpatch)
       call inc_rk4_patch(ak7,  ak2, b42*h, cpatch)
@@ -333,7 +335,7 @@ module rk4_stepper
 
 
 
-      call leaf_derivs(ak7, ak4, csite, ipa,isi,ipy)
+      call leaf_derivs(ak7, ak4, csite, ipa,isi,ipy,cpoly)
       call copy_rk4_patch(y, ak7, cpatch)
       call inc_rk4_patch(ak7, dydx, b51*h, cpatch)
       call inc_rk4_patch(ak7,  ak2, b52*h, cpatch)
@@ -349,7 +351,7 @@ module rk4_stepper
 
 
 
-      call leaf_derivs(ak7, ak5, csite, ipa,isi,ipy)
+      call leaf_derivs(ak7, ak5, csite, ipa,isi,ipy,cpoly)
       call copy_rk4_patch(y, ak7, cpatch)
       call inc_rk4_patch(ak7, dydx, b61*h, cpatch)
       call inc_rk4_patch(ak7,  ak2, b62*h, cpatch)
@@ -364,7 +366,7 @@ module rk4_stepper
       call rk4_sanity_check(ak7, reject_step, csite,ipa,dydx,h,print_diags)
       if(reject_step)return
 
-      call leaf_derivs(ak7, ak6, csite,ipa,isi,ipy)
+      call leaf_derivs(ak7, ak6, csite,ipa,isi,ipy,cpoly)
       call copy_rk4_patch(y, yout, cpatch)
       call inc_rk4_patch(yout, dydx, c1*h, cpatch)
       call inc_rk4_patch(yout,  ak3, c3*h, cpatch)
