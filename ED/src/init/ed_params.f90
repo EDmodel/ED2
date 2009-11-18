@@ -134,9 +134,9 @@ subroutine init_ed_misc_coms
                            , maxage              & ! intent(out)
                            , dagei               & ! intent(out)
                            , maxdbh              & ! intent(out)
-                           , ddbhi               ! ! intent(out)
-                           , vary_elev
-                           , vary_hyd
+                           , ddbhi               & ! intent(out)
+                           , vary_elev           &
+                           , vary_hyd            &
                            , vary_rad
    implicit none
 

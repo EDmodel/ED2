@@ -461,7 +461,7 @@ subroutine integrate_ed_daily_output_state(cgrid)
    integer                     :: ipy, isi, ipa, ico, imt
    real                        :: poly_area_i,site_area_i
    real                        :: forest_site,forest_site_i, forest_poly
-   real                        :: poly_lai,site_lai,patch_lai
+   real                        :: poly_lai,site_lai,patch_lai,patch_lai_i
    real                        :: poly_lma,site_lma,patch_lma
    real                        :: sss_fsn, sss_fsw, pss_fsn, pss_fsw
    real                        :: sss_can_theta, sss_can_shv, sss_can_co2, sss_can_prss
@@ -775,12 +775,12 @@ subroutine integrate_ed_daily_output_flux(cgrid)
             if (cpatch%ncohorts > 0) then
                patchsum_leaf_resp = patchsum_leaf_resp + sum(cpatch%mean_leaf_resp, cpatch%solvable)  * csite%area(ipa) 
                patchsum_root_resp = patchsum_root_resp + sum(cpatch%mean_root_resp                 )  * csite%area(ipa)  
-               patchsum_root_litter = patchsum_root_litter + sum(cpatch%root_maintenance_costs)  * csite%area(ipa) 
-               patchsum_leaf_litter = patchsum_leaf_litter + sum(cpatch%leaf_maintenance_costs)  * csite%area(ipa) 
+               patchsum_root_litter = patchsum_root_litter + sum(cpatch%root_maintenance)  * csite%area(ipa) 
+               patchsum_leaf_litter = patchsum_leaf_litter + sum(cpatch%leaf_maintenance)  * csite%area(ipa) 
                patchsum_root_litterN = patchsum_root_litterN &
-                    + sum(cpatch%root_maintenance_costs*c2n_leaf(cpatch%pft))  * csite%area(ipa) 
+                    + sum(cpatch%root_maintenance*c2n_leaf(cpatch%pft))  * csite%area(ipa) 
                patchsum_leaf_litterN = patchsum_leaf_litterN &
-                    + sum(cpatch%leaf_maintenance_costs*c2n_leaf(cpatch%pft))  * csite%area(ipa)               
+                    + sum(cpatch%leaf_maintenance*c2n_leaf(cpatch%pft))  * csite%area(ipa)               
             end if
             csite%dmean_co2_residual(ipa)    = csite%dmean_co2_residual(ipa)               &
                                              + csite%co2budget_residual(ipa)
@@ -849,18 +849,6 @@ subroutine integrate_ed_daily_output_flux(cgrid)
          sitesum_Nmin_input = sitesum_Nmin_input + sum(csite%mineralized_N_input*csite%area)*site_area_i*cpoly%area(isi)
          sitesum_Nuptake      = sitesum_Nuptake + (sum(csite%total_plant_nitrogen_uptake*csite%area)*site_area_i)*cpoly%area(isi)
 
-         luloop: do lu=1,n_dist_types
-            sitesum_rh_lu(lu)    = sitesum_rh_lu(lu) + &
-                                   (sum(csite%co2budget_rh*csite%area,csite%dist_type == lu)   * site_area_i) &
-                                   * cpoly%area(isi)
-            sitesum_gpp_lu(lu)   = sitesum_gpp_lu(lu) + &
-                                   (sum(csite%co2budget_gpp*csite%area,csite%dist_type == lu)  * site_area_i) &
-                                   * cpoly%area(isi)
-            sitesum_nep_lu(lu)   = sitesum_nep_lu(lu) + &
-                                   (sum((csite%co2budget_gpp-csite%co2budget_rh-csite%co2budget_plresp)*csite%area &
-                                        ,csite%dist_type == lu) * site_area_i) * cpoly%area(isi)
-         end do luloop
-
          dbhloop: do idbh=1,n_dbh
             sitesum_gpp_dbh(idbh) = sitesum_gpp_dbh(idbh)                                  &
                                   + ( sum(csite%co2budget_gpp_dbh(idbh,:) * csite%area)    &
@@ -882,11 +870,6 @@ subroutine integrate_ed_daily_output_flux(cgrid)
       cgrid%Nnet_min(ipy)   = cgrid%Nnet_min(ipy)   + (sitesum_Nmin_input-sitesum_Nmin_loss)  * poly_area_i
       cgrid%Nbiomass_uptake(ipy)    = cgrid%Nbiomass_uptake(ipy) + sitesum_Nuptake*poly_area_i
 
-      do lu=1,n_dist_types
-         cgrid%dmean_gpp_lu(lu,ipy) = cgrid%dmean_gpp_lu(lu,ipy)    + sitesum_gpp_lu(lu)   * poly_area_i
-         cgrid%dmean_nep_lu(lu,ipy) = cgrid%dmean_nep_lu(lu,ipy)    + sitesum_nep_lu(lu)   * poly_area_i
-         cgrid%dmean_rh_lu(lu,ipy)  = cgrid%dmean_rh_lu(lu,ipy)     + sitesum_rh_lu(lu)    * poly_area_i
-      end do
       
       cgrid%dmean_gpp(ipy)    = cgrid%dmean_gpp(ipy)          + sitesum_gpp          * poly_area_i
 
