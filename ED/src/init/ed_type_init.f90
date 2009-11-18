@@ -77,8 +77,9 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
       
       
   cpatch%stomatal_resistance(ico) = 0.0
-  cpatch%maintenance_costs(ico)   = 0.0
-  cpatch%leaf_litter      (ico)   = 0.0
+  cpatch%leaf_maintenance   (ico) = 0.0
+  cpatch%root_maintenance   (ico) = 0.0
+  cpatch%leaf_drop          (ico) = 0.0
   cpatch%paw_avg(ico)             = 0.5 !0.0 - [KIM] starting from the mid point.  if starting from the driest point, plants'll drop leaves initially due to the water stress
 
 
@@ -145,8 +146,9 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
      cpatch%mmean_fsw              (ico) = 0.0
      cpatch%mmean_fsn              (ico) = 0.0
      cpatch%mmean_lambda_light     (ico) = 0.0
-     cpatch%mmean_mnt_cost         (ico) = 0.0
-     cpatch%mmean_leaf_litter      (ico) = 0.0
+     cpatch%mmean_leaf_maintenance (ico) = 0.0
+     cpatch%mmean_root_maintenance (ico) = 0.0
+     cpatch%mmean_leaf_drop        (ico) = 0.0
      cpatch%mmean_cb               (ico) = 0.0
      cpatch%mmean_mort_rate      (:,ico) = 0.0
   end if
@@ -247,6 +249,7 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
   csite%A_c_max(1:n_pft,ip1:ip2) = 0.0
 
   csite%htry(ip1:ip2) = 1.0
+  
 
   csite%co2budget_gpp(ip1:ip2)            = 0.0
   csite%co2budget_gpp_dbh(:,ip1:ip2)      = 0.0
@@ -283,6 +286,7 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
      csite%dmean_energy_residual (ip1:ip2) = 0.0
      csite%dmean_water_residual  (ip1:ip2) = 0.0
      csite%dmean_lambda_light    (ip1:ip2) = 0.0
+     csite%dmean_rk4step         (ip1:ip2) = 0.0
   end if
 
   if (imoutput > 0) then
@@ -293,26 +297,31 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
      csite%mmean_energy_residual (ip1:ip2) = 0.0
      csite%mmean_water_residual  (ip1:ip2) = 0.0
      csite%mmean_lambda_light    (ip1:ip2) = 0.0
+     csite%mmean_rk4step         (ip1:ip2) = 0.0
   end if
 
   !----------------------------------------------------------------------------------------!
   !    These variables need to be initialized here otherwise it will fail when new patches !
   ! are created.                                                                           !
   !----------------------------------------------------------------------------------------!
+  csite%avg_rk4step      (ip1:ip2)  = 0.0
   csite%avg_carbon_ac    (ip1:ip2)  = 0.0
   csite%avg_vapor_vc     (ip1:ip2)  = 0.0
   csite%avg_dew_cg       (ip1:ip2)  = 0.0
   csite%avg_vapor_gc     (ip1:ip2)  = 0.0
   csite%avg_wshed_vg     (ip1:ip2)  = 0.0
+  csite%avg_intercepted  (ip1:ip2)  = 0.0
   csite%avg_vapor_ac     (ip1:ip2)  = 0.0
   csite%avg_transp       (ip1:ip2)  = 0.0
   csite%avg_evap         (ip1:ip2)  = 0.0
   csite%avg_netrad       (ip1:ip2)  = 0.0
   csite%avg_runoff       (ip1:ip2)  = 0.0
   csite%avg_drainage     (ip1:ip2)  = 0.0
+  csite%avg_drainage_heat(ip1:ip2)  = 0.0
   csite%aux              (ip1:ip2)  = 0.0
   csite%avg_sensible_vc  (ip1:ip2)  = 0.0
   csite%avg_qwshed_vg    (ip1:ip2)  = 0.0
+  csite%avg_qintercepted (ip1:ip2)  = 0.0
   csite%avg_sensible_gc  (ip1:ip2)  = 0.0
   csite%avg_sensible_ac  (ip1:ip2)  = 0.0
   csite%avg_runoff_heat  (ip1:ip2)  = 0.0
@@ -464,23 +473,47 @@ subroutine init_ed_site_vars(cpoly, lat)
   
   return
 end subroutine init_ed_site_vars
+!==========================================================================================!
+!==========================================================================================!
 
-!======================================================================
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
 subroutine init_ed_poly_vars(cgrid)
   
-   use ed_state_vars,only:edtype
-  
+   use ed_state_vars, only : edtype      & ! structure
+                           , polygontype & ! structure
+                           , sitetype    ! ! structure
+   use ed_misc_coms , only : dtlsm       ! ! intent(in)
+   use consts_coms  , only : day_sec     ! ! intent(in)
    implicit none
-  
-   type(edtype),target :: cgrid
-   integer :: ipy
-  
-   real :: soil_C
-   real :: soil_N
-   real :: veg_C
-   real :: veg_N
-  
-  
+   !----- Arguments. ----------------------------------------------------------------------!  
+   type(edtype)     , target  :: cgrid
+   !----- Local variables. ----------------------------------------------------------------!
+   type(polygontype), pointer :: cpoly
+   type(sitetype)   , pointer :: csite
+   integer                    :: ipy
+   integer                    :: isi
+   integer                    :: ipa
+   real                       :: soil_C
+   real                       :: soil_N
+   real                       :: veg_C
+   real                       :: veg_N
+   real                       :: patchload
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Defining a nominal initial value of patch workload.  Normally we start with the  !
+   ! RK4 time step to be 1 second, so each patch will contribute with 86400 time steps per !
+   ! day.                                                                                  !
+   !---------------------------------------------------------------------------------------!
+   patchload = day_sec
 
    do ipy = 1,cgrid%npolygons
       !Moved inside the loop for the cases in which npolygons is 0
@@ -491,6 +524,15 @@ subroutine init_ed_poly_vars(cgrid)
       cgrid%cbudget_initialstorage(ipy) = soil_C + veg_C
       cgrid%nbudget_initialstorage(ipy) = soil_N + veg_N
       cgrid%cbudget_nep(ipy) = 0.0
+
+      !----- Count how many patches we have, and add to the workload. ---------------------!
+      cgrid%workload(:,ipy)  = 0.0
+      cpoly => cgrid%polygon(ipy)
+      do isi = 1, cpoly%nsites
+         csite => cpoly%site(isi)
+         cgrid%workload(1:12,ipy) = cgrid%workload(1:12,ipy)                               &
+                                  + real(csite%npatches) * patchload
+      end do
    end do
 
    return

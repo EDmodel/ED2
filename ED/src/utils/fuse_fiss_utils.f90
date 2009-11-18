@@ -781,6 +781,8 @@ module fuse_fiss_utils
       cpatch%dbh(idt)                 = cpatch%dbh(isc)
       cpatch%bdead(idt)               = cpatch%bdead(isc)
       cpatch%bleaf(idt)               = cpatch%bleaf(isc)
+      cpatch%broot(idt)               = cpatch%broot(isc)
+      cpatch%bsapwood(idt)            = cpatch%bsapwood(isc)
       cpatch%phenology_status(idt)    = cpatch%phenology_status(isc)
       cpatch%balive(idt)              = cpatch%balive(isc)
       cpatch%lai(idt)                 = cpatch%lai(isc)
@@ -847,8 +849,9 @@ module fuse_fiss_utils
       cpatch%fsw(idt)                 = cpatch%fsw(isc)
       cpatch%fs_open(idt)             = cpatch%fs_open(isc)
       cpatch%stomatal_resistance(idt) = cpatch%stomatal_resistance(isc)
-      cpatch%maintenance_costs(idt)   = cpatch%maintenance_costs(isc)
-      cpatch%leaf_litter(idt)         = cpatch%leaf_litter(isc)
+      cpatch%leaf_maintenance(idt)    = cpatch%leaf_maintenance(isc)
+      cpatch%root_maintenance(idt)    = cpatch%root_maintenance(isc)
+      cpatch%leaf_drop(idt)           = cpatch%leaf_drop(isc)
       cpatch%bseeds(idt)              = cpatch%bseeds(isc)
       cpatch%leaf_respiration(idt)    = cpatch%leaf_respiration(isc)
       cpatch%root_respiration(idt)    = cpatch%root_respiration(isc)
@@ -912,8 +915,9 @@ module fuse_fiss_utils
          cpatch%mmean_fs_open           (idt) = cpatch%mmean_fs_open           (isc)
          cpatch%mmean_fsw               (idt) = cpatch%mmean_fsw               (isc)
          cpatch%mmean_fsn               (idt) = cpatch%mmean_fsn               (isc)
-         cpatch%mmean_mnt_cost          (idt) = cpatch%mmean_mnt_cost          (isc)
-         cpatch%mmean_leaf_litter       (idt) = cpatch%mmean_leaf_litter       (isc)
+         cpatch%mmean_leaf_maintenance  (idt) = cpatch%mmean_leaf_maintenance  (isc)
+         cpatch%mmean_root_maintenance  (idt) = cpatch%mmean_root_maintenance  (isc)
+         cpatch%mmean_leaf_drop         (idt) = cpatch%mmean_leaf_drop         (isc)
          cpatch%mmean_cb                (idt) = cpatch%mmean_cb                (isc)
          cpatch%mmean_lambda_light      (idt) = cpatch%mmean_lambda_light      (isc)
          cpatch%mmean_light_level       (idt) = cpatch%mmean_light_level       (isc)
@@ -993,18 +997,25 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------!
       !     Conserving carbon to get balive, bleaf, and bstorage.                          !
       !------------------------------------------------------------------------------------!
-      cpatch%balive(recc) = ( cpatch%nplant(recc) * cpatch%balive(recc)                    &
-                            + cpatch%nplant(donc) * cpatch%balive(donc) ) *newni
-      cpatch%bstorage(recc) = ( cpatch%nplant(recc) * cpatch%bstorage(recc)                &
-                              + cpatch%nplant(donc) * cpatch%bstorage(donc) ) * newni
-      cpatch%bseeds(recc)   = ( cpatch%nplant(recc) * cpatch%bseeds(recc)                  &
-                              + cpatch%nplant(donc) * cpatch%bseeds(donc) ) * newni
-      cpatch%maintenance_costs(recc) = newni                                               &
-                            * ( cpatch%nplant(recc) * cpatch%maintenance_costs(recc)       &
-                              + cpatch%nplant(donc) * cpatch%maintenance_costs(donc) )
-      cpatch%leaf_litter(recc) = newni                                                     &
-                               * ( cpatch%nplant(recc) * cpatch%leaf_litter(recc)          &
-                                 + cpatch%nplant(donc) * cpatch%leaf_litter(donc) )
+      cpatch%balive(recc)    = ( cpatch%nplant(recc) * cpatch%balive(recc)                 &
+                               + cpatch%nplant(donc) * cpatch%balive(donc) ) *newni
+      cpatch%broot(recc)     = ( cpatch%nplant(recc) * cpatch%broot(recc)                  &
+                               + cpatch%nplant(donc) * cpatch%broot(donc) ) *newni
+      cpatch%bsapwood(recc)  = ( cpatch%nplant(recc) * cpatch%bsapwood(recc)               &
+                             + cpatch%nplant(donc) * cpatch%bsapwood(donc) ) *newni
+      cpatch%bstorage(recc)  = ( cpatch%nplant(recc) * cpatch%bstorage(recc)               &
+                               + cpatch%nplant(donc) * cpatch%bstorage(donc) ) * newni
+      cpatch%bseeds(recc)    = ( cpatch%nplant(recc) * cpatch%bseeds(recc)                 &
+                               + cpatch%nplant(donc) * cpatch%bseeds(donc) ) * newni
+      cpatch%leaf_maintenance(recc) = newni                                                &
+                            * ( cpatch%nplant(recc) * cpatch%leaf_maintenance(recc)        &
+                              + cpatch%nplant(donc) * cpatch%leaf_maintenance(donc) )
+      cpatch%root_maintenance(recc) = newni                                                &
+                            * ( cpatch%nplant(recc) * cpatch%root_maintenance(recc)        &
+                              + cpatch%nplant(donc) * cpatch%root_maintenance(donc) )
+      cpatch%leaf_drop(recc) = newni                                                       &
+                             * ( cpatch%nplant(recc) * cpatch%leaf_drop(recc)              &
+                               + cpatch%nplant(donc) * cpatch%leaf_drop(donc) )  
       !------------------------------------------------------------------------------------!
 
 
@@ -1336,13 +1347,17 @@ module fuse_fiss_utils
                                                * cpatch%nplant(recc)                       &
                                                + cpatch%mmean_fsn(donc)                    &
                                                * cpatch%nplant(donc) ) * newni
-         cpatch%mmean_mnt_cost        (recc) = ( cpatch%mmean_mnt_cost(recc)               &
+         cpatch%mmean_leaf_maintenance(recc) = ( cpatch%mmean_leaf_maintenance(recc)       &
                                                * cpatch%nplant(recc)                       &
-                                               + cpatch%mmean_mnt_cost(donc)               &
+                                               + cpatch%mmean_leaf_maintenance(donc)       &
                                                * cpatch%nplant(donc) ) * newni
-         cpatch%mmean_leaf_litter     (recc) = ( cpatch%mmean_leaf_litter(recc)            &
+         cpatch%mmean_root_maintenance(recc) = ( cpatch%mmean_root_maintenance(recc)       &
                                                * cpatch%nplant(recc)                       &
-                                               + cpatch%mmean_leaf_litter(donc)            &
+                                               + cpatch%mmean_root_maintenance(donc)       &
+                                               * cpatch%nplant(donc) ) * newni
+         cpatch%mmean_leaf_drop       (recc) = ( cpatch%mmean_leaf_drop(recc)              &
+                                               * cpatch%nplant(recc)                       &
+                                               + cpatch%mmean_leaf_drop(donc)              &
                                                * cpatch%nplant(donc) ) * newni
          cpatch%mmean_cb              (recc) = ( cpatch%mmean_cb(recc)                     &
                                                * cpatch%nplant(recc)                       &
@@ -2011,6 +2026,10 @@ module fuse_fiss_utils
                                       ( csite%avg_wshed_vg(donp)      * csite%area(donp)   &
                                       + csite%avg_wshed_vg(recp)      * csite%area(recp) )  
 
+      csite%avg_intercepted(recp)     = newareai *                                         &
+                                      ( csite%avg_intercepted(donp)   * csite%area(donp)   &
+                                      + csite%avg_intercepted(recp)   * csite%area(donp) )
+
       csite%avg_vapor_ac(recp)        = newareai *                                         &
                                       ( csite%avg_vapor_ac(donp)      * csite%area(donp)   &
                                       + csite%avg_vapor_ac(recp)      * csite%area(recp) )  
@@ -2027,6 +2046,10 @@ module fuse_fiss_utils
                                       ( csite%avg_runoff(donp)        * csite%area(donp)   &
                                       + csite%avg_runoff(recp)        * csite%area(recp) )  
 
+      csite%avg_drainage(recp)        = newareai *                                         &
+                                      ( csite%avg_drainage(donp)      * csite%area(donp)   &
+                                      + csite%avg_drainage(recp)      * csite%area(recp) )  
+
       csite%aux(recp)                 = newareai *                                         &
                                       ( csite%aux(donp)               * csite%area(donp)   &
                                       + csite%aux(recp)               * csite%area(recp) )  
@@ -2039,6 +2062,10 @@ module fuse_fiss_utils
                                       ( csite%avg_qwshed_vg(donp)     * csite%area(donp)   &
                                       + csite%avg_qwshed_vg(recp)     * csite%area(recp) )  
 
+      csite%avg_qintercepted(recp)    = newareai *                                         &
+                                      ( csite%avg_qintercepted(donp)  * csite%area(donp)   &
+                                      + csite%avg_qintercepted(recp)  * csite%area(donp) )
+
       csite%avg_sensible_gc(recp)     = newareai *                                         &
                                       ( csite%avg_sensible_gc(donp)   * csite%area(donp)   &
                                       + csite%avg_sensible_gc(recp)   * csite%area(recp) )  
@@ -2050,6 +2077,10 @@ module fuse_fiss_utils
       csite%avg_runoff_heat(recp)     = newareai *                                         &
                                       ( csite%avg_runoff_heat(donp)   * csite%area(donp)   &
                                       + csite%avg_runoff_heat(recp)   * csite%area(recp) )  
+
+      csite%avg_drainage_heat(recp)   = newareai *                                         &
+                                      ( csite%avg_drainage_heat(donp) * csite%area(donp)   &
+                                      + csite%avg_drainage_heat(recp) * csite%area(recp) )  
 
       csite%avg_veg_energy(recp)      = newareai *                                         &
                                       ( csite%avg_veg_energy(donp)    * csite%area(donp)   &
@@ -2204,6 +2235,11 @@ module fuse_fiss_utils
                                              * csite%area(donp)                            &
                                              + csite%dmean_Af_decomp(recp)                 &
                                              * csite%area(recp) )
+         csite%dmean_rk4step(recp)         = newareai                                      &
+                                           * ( csite%dmean_rk4step(donp)                   &
+                                             * csite%area(donp)                            &
+                                             + csite%dmean_rk4step(recp)                   &
+                                             * csite%area(recp) )
       end if
       if (imoutput > 0) then
          csite%mmean_rh(recp)           = newareai                                         &
@@ -2234,11 +2270,15 @@ module fuse_fiss_utils
                                              * csite%area(donp)                            &
                                              + csite%mmean_A_decomp(recp)                  &
                                              * csite%area(recp) )
-
          csite%mmean_Af_decomp(recp)       = newareai                                      &
                                            * ( csite%mmean_Af_decomp(donp)                 &
                                              * csite%area(donp)                            &
                                              + csite%mmean_Af_decomp(recp)                 &
+                                             * csite%area(recp) )
+         csite%mmean_rk4step(recp)         = newareai                                      &
+                                           * ( csite%mmean_rk4step(donp)                   &
+                                             * csite%area(donp)                            &
+                                             + csite%mmean_rk4step(recp)                   &
                                              * csite%area(recp) )
       end if
 

@@ -238,6 +238,9 @@ subroutine rams_f_open(iunit, filenm, formt, stat, act, iclob)
      stop 'rams_f_open - exists'
   endif
 
+
+  print*, filenm(1:len_trim(filenm))
+
   open(iunit,STATUS=stat,FILE=filenm(1:len_trim(filenm)),FORM=formt)
 !!$  print*,'F_open - ',filenm(1:len_trim(filenm))
 

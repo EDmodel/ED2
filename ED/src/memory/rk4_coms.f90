@@ -119,6 +119,9 @@ module rk4_coms
       !----- Mass and energy fluxes due to water shedding. --------------------------------!
       real(kind=8) :: avg_wshed_vg      ! Mass flux
       real(kind=8) :: avg_qwshed_vg     ! Energy flux
+      !----- Mass and energy input due to intercepted water. ------------------------------!
+      real(kind=8) :: avg_intercepted   ! Mass flux
+      real(kind=8) :: avg_qintercepted  ! Energy flux
       !----- Sensible heat flux -----------------------------------------------------------!
       real(kind=8) :: avg_sensible_vc   ! Leaf      -> canopy air
       real(kind=8) :: avg_sensible_gc   ! Ground    -> canopy air
@@ -127,10 +130,11 @@ module rk4_coms
       !----- Carbon flux ------------------------------------------------------------------!
       real(kind=8) :: avg_carbon_ac     ! Free atm. -> canopy air
       !----- Soil fluxes ------------------------------------------------------------------!
-      real(kind=8),pointer,dimension(:) :: avg_smoist_gg   ! Moisture flux between layers
-      real(kind=8),pointer,dimension(:) :: avg_smoist_gc   ! Trabspired soil moisture sink
-      real(kind=8),pointer,dimension(:) :: avg_sensible_gg ! Soil heat flux between layers
-      real(kind=8)                      :: avg_drainage    ! Drainage at the bottom.
+      real(kind=8),pointer,dimension(:) :: avg_smoist_gg     ! Moisture flux between layers
+      real(kind=8),pointer,dimension(:) :: avg_smoist_gc     ! Transpired soil moisture sink
+      real(kind=8),pointer,dimension(:) :: avg_sensible_gg   ! Soil heat flux between layers
+      real(kind=8)                      :: avg_drainage      ! Drainage at the bottom.
+      real(kind=8)                      :: avg_drainage_heat ! Drainage at the bottom.
       !----- Full budget variables --------------------------------------------------------!
       real(kind=8) :: co2budget_storage
       real(kind=8) :: co2budget_loss2atm
@@ -595,17 +599,20 @@ module rk4_coms
       y%avg_dew_cg                     = 0.d0
       y%avg_vapor_gc                   = 0.d0
       y%avg_wshed_vg                   = 0.d0
+      y%avg_intercepted                = 0.d0
       y%avg_vapor_ac                   = 0.d0
       y%avg_transp                     = 0.d0
       y%avg_evap                       = 0.d0
       y%avg_netrad                     = 0.d0
       y%avg_sensible_vc                = 0.d0
       y%avg_qwshed_vg                  = 0.d0
+      y%avg_qintercepted               = 0.d0
       y%avg_sensible_gc                = 0.d0
       y%avg_sensible_ac                = 0.d0
       y%avg_heatstor_veg               = 0.d0
 
       y%avg_drainage                   = 0.d0
+      y%avg_drainage_heat              = 0.d0
 
       !----- The following variables are pointers, check whether they are linked or not. --!
       if(associated(y%soil_energy           ))   y%soil_energy(:)                 = 0.d0

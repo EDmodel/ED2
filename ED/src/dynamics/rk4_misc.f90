@@ -207,13 +207,16 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
       targetp%avg_dew_cg         = dble(sourcesite%avg_dew_cg(ipa)        )
       targetp%avg_vapor_gc       = dble(sourcesite%avg_vapor_gc(ipa)      )
       targetp%avg_wshed_vg       = dble(sourcesite%avg_wshed_vg(ipa)      )
+      targetp%avg_intercepted    = dble(sourcesite%avg_intercepted(ipa)   )
       targetp%avg_vapor_ac       = dble(sourcesite%avg_vapor_ac(ipa)      )
       targetp%avg_transp         = dble(sourcesite%avg_transp(ipa)        )
       targetp%avg_evap           = dble(sourcesite%avg_evap(ipa)          )
       targetp%avg_drainage       = dble(sourcesite%avg_drainage(ipa)      )
+      targetp%avg_drainage_heat  = dble(sourcesite%avg_drainage_heat(ipa) )
       targetp%avg_netrad         = dble(sourcesite%avg_netrad(ipa)        )
       targetp%avg_sensible_vc    = dble(sourcesite%avg_sensible_vc(ipa)   )
       targetp%avg_qwshed_vg      = dble(sourcesite%avg_qwshed_vg(ipa)     )
+      targetp%avg_qintercepted   = dble(sourcesite%avg_qintercepted(ipa)  )
       targetp%avg_sensible_gc    = dble(sourcesite%avg_sensible_gc(ipa)   )
       targetp%avg_sensible_ac    = dble(sourcesite%avg_sensible_ac(ipa)   )
 
@@ -1437,8 +1440,10 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
                initp%virtual_depth   = initp%virtual_depth + veg_dwshed
             end if
             !----- Updating output fluxes -------------------------------------------------!
-            initp%avg_wshed_vg  = initp%avg_wshed_vg  + veg_wshed  * hdidi
-            initp%avg_qwshed_vg = initp%avg_qwshed_vg + veg_qwshed * hdidi
+            initp%avg_wshed_vg     = initp%avg_wshed_vg     + veg_wshed  * hdidi
+            initp%avg_qwshed_vg    = initp%avg_qwshed_vg    + veg_qwshed * hdidi
+            initp%avg_intercepted  = initp%avg_intercepted  - veg_wshed  * hdidi
+            initp%avg_qintercepted = initp%avg_qintercepted - veg_qwshed * hdidi
 
          !---------------------------------------------------------------------------------!
          !    If veg_water is tiny, exchange moisture with the air.  If the tiny number is !

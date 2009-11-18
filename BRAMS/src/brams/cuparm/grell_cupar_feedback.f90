@@ -248,7 +248,7 @@ subroutine grell_cupar_output(comp_down,m1,mgmzp,maxens_cap,rtgt,zm,zt,dnmf,upmf
           ,sigw                & ! intent(in) - Vertical velocity std. dev.       [    m/s]
           ,tke                 & ! intent(in) - Turbulent kinetic energy          [   J/kg]
           ,wwind               ! ! intent(in) - Vertical velocity                 [    m/s]
-   use consts_coms      , only : &
+   use rconstants       , only : &
            toodry              ! ! intent(in) - Minimum mixing ratio              [  kg/kg]
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!

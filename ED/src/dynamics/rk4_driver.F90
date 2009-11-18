@@ -39,6 +39,7 @@ module rk4_driver
       integer                                 :: ipy,isi,ipa
       integer                                 :: iun
       integer, dimension(nzg)                 :: ed_ktrans
+      integer                                 :: nsteps
       real                                    :: sum_lai_rbi
       real                                    :: wcurr_loss2atm
       real                                    :: ecurr_loss2atm
@@ -193,7 +194,11 @@ module rk4_driver
                call integrate_patch(csite,integration_buff%initp,ipa,isi,ipy,ifm           &
                                    ,wcurr_loss2atm,ecurr_loss2atm,co2curr_loss2atm         &
                                    ,wcurr_loss2drainage,ecurr_loss2drainage                &
-                                   ,wcurr_loss2runoff,ecurr_loss2runoff,ecurr_latent)
+                                   ,wcurr_loss2runoff,ecurr_loss2runoff,ecurr_latent       &
+                                   ,nsteps)
+
+               !----- Add the number of steps into the step counter. ----------------------!
+               cgrid%workload(13,ipy) = cgrid%workload(13,ipy) + real(nsteps)
 
                !---------------------------------------------------------------------------!
                !    Update the minimum monthly temperature, based on canopy temperature.   !
@@ -245,7 +250,7 @@ module rk4_driver
    !---------------------------------------------------------------------------------------!
    subroutine integrate_patch(csite,initp,ipa,isi,ipy,ifm,wcurr_loss2atm,ecurr_loss2atm    &
                              ,co2curr_loss2atm,wcurr_loss2drainage,ecurr_loss2drainage     &
-                             ,wcurr_loss2runoff,ecurr_loss2runoff,ecurr_latent)
+                             ,wcurr_loss2runoff,ecurr_loss2runoff,ecurr_latent,nsteps)
       use ed_state_vars   , only : sitetype             & ! structure
                                  , patchtype            ! ! structure
       use ed_misc_coms    , only : dtlsm                ! ! intent(in)
@@ -283,6 +288,7 @@ module rk4_driver
       real                  , intent(out) :: wcurr_loss2runoff
       real                  , intent(out) :: ecurr_loss2runoff
       real                  , intent(out) :: ecurr_latent
+      integer               , intent(out) :: nsteps
       !----- Local variables --------------------------------------------------------------!
       real(kind=8)                          :: hbeg
       !----- Locally saved variable -------------------------------------------------------!
@@ -332,7 +338,7 @@ module rk4_driver
       initp%wpwp = 0.d0
 
       !----- Go into the ODE integrator. --------------------------------------------------!
-      call odeint(hbeg,csite,ipa,isi,ipy,ifm)
+      call odeint(hbeg,csite,ipa,isi,ipy,ifm,nsteps)
 
       !------------------------------------------------------------------------------------!
       !      Normalize canopy-atmosphere flux values.  These values are updated every      !
@@ -460,13 +466,16 @@ module rk4_driver
          csite%avg_dew_cg(ipa)           =sngloff(initp%avg_dew_cg        ,tiny_offset)
          csite%avg_vapor_gc(ipa)         =sngloff(initp%avg_vapor_gc      ,tiny_offset)
          csite%avg_wshed_vg(ipa)         =sngloff(initp%avg_wshed_vg      ,tiny_offset)
+         csite%avg_intercepted(ipa)      =sngloff(initp%avg_intercepted   ,tiny_offset)
          csite%avg_vapor_ac(ipa)         =sngloff(initp%avg_vapor_ac      ,tiny_offset)
          csite%avg_transp(ipa)           =sngloff(initp%avg_transp        ,tiny_offset)
          csite%avg_evap(ipa)             =sngloff(initp%avg_evap          ,tiny_offset)
          csite%avg_drainage(ipa)         =sngloff(initp%avg_drainage      ,tiny_offset)
+         csite%avg_drainage_heat(ipa)    =sngloff(initp%avg_drainage_heat ,tiny_offset)
          csite%avg_netrad(ipa)           =sngloff(initp%avg_netrad        ,tiny_offset)
          csite%avg_sensible_vc(ipa)      =sngloff(initp%avg_sensible_vc   ,tiny_offset)
          csite%avg_qwshed_vg(ipa)        =sngloff(initp%avg_qwshed_vg     ,tiny_offset)
+         csite%avg_qintercepted(ipa)     =sngloff(initp%avg_qintercepted  ,tiny_offset)
          csite%avg_sensible_gc(ipa)      =sngloff(initp%avg_sensible_gc   ,tiny_offset)
          csite%avg_sensible_ac(ipa)      =sngloff(initp%avg_sensible_ac   ,tiny_offset)
          csite%avg_carbon_ac(ipa)        =sngloff(initp%avg_carbon_ac     ,tiny_offset)
