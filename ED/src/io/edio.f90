@@ -377,11 +377,11 @@ subroutine spatial_averages
             !cpoly%avg_co2can(isi)         = sum(csite%can_co2            * csite%area ) * site_area_i           
             cpoly%avg_fsn(isi)         = sum(csite%fast_soil_N        * csite%area ) * site_area_i
             cpoly%avg_msn(isi)         = sum(csite%mineralized_soil_N        * csite%area ) * site_area_i
-            cpoly%avg_snowdepth(isi)   = 0.0
-            cpoly%avg_snowenergy(isi)  = 0.0
-            cpoly%avg_snowmass(isi)    = 0.0
-            cpoly%avg_snowtempk(isi)   = 0.0
-            cpoly%avg_snowfracliq(isi) = 0.0
+            cpoly%avg_sfcw_depth(isi)   = 0.0
+            cpoly%avg_sfcw_energy(isi)  = 0.0
+            cpoly%avg_sfcw_mass(isi)    = 0.0
+            cpoly%avg_sfcw_tempk(isi)   = 0.0
+            cpoly%avg_sfcw_fracliq(isi) = 0.0
 
             !----- Available water. -------------------------------------------------------!
             cpoly%avg_available_water(isi) = sum(csite%avg_available_water * csite%area)   &

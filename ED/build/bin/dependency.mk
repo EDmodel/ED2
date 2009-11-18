@@ -101,8 +101,6 @@ phenology_init.o: grid_coms.mod phenology_coms.mod
 average_utils.o: allometry.mod canopy_radiation_coms.mod consts_coms.mod
 average_utils.o: ed_max_dims.mod ed_misc_coms.mod ed_state_vars.mod
 average_utils.o: grid_coms.mod pft_coms.mod therm_lib.mod
-ed21_restart.o: allometry.mod consts_coms.mod ed_max_dims.mod ed_misc_coms.mod
-ed21_restart.o: ed_state_vars.mod fuse_fiss_utils.mod grid_coms.mod pft_coms.mod
 ed_history_io.o: allometry.mod c34constants.mod consts_coms.mod disturb_coms.mod
 ed_history_io.o: ed_max_dims.mod ed_misc_coms.mod ed_node_coms.mod
 ed_history_io.o: ed_state_vars.mod ed_therm_lib.mod fuse_fiss_utils.mod
@@ -197,7 +195,7 @@ update_derived_props.o: allometry.mod canopy_air_coms.mod consts_coms.mod
 update_derived_props.o: ed_misc_coms.mod ed_state_vars.mod ed_therm_lib.mod
 update_derived_props.o: fuse_fiss_utils.mod grid_coms.mod soil_coms.mod
 update_derived_props.o: therm_lib.mod
-utils_c.o: /n/Moorcroft_Lab/Users/mlongo/EDBRAMS/ED/src/include/utils_sub_names.h
+utils_c.o: /home/mdietze/r31/EDBRAMS/ED/src/include/utils_sub_names.h
 utils_c.o:
 allometry.mod: allometry.o
 an_header.mod: an_header.o
@@ -233,6 +231,7 @@ libxml2f90_strings_module.mod: libxml2f90.f90_pp.o
 ll_module.mod: libxml2f90.f90_pp.o
 mem_sites.mod: mem_sites.o
 met_driver_coms.mod: met_driver_coms.o
+misc_coms.mod: misc_coms.o
 mortality.mod: mortality.o
 optimiz_coms.mod: optimiz_coms.o
 pft_coms.mod: pft_coms.o

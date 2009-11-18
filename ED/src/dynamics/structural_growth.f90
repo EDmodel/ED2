@@ -337,7 +337,7 @@ subroutine structural_growth_eq_0(cgrid, month)
                ! necessarily equal c2n_storage.                                            !
                !---------------------------------------------------------------------------!
                net_stem_N_uptake = (cpatch%bdead(ico) - bdead_in) * cpatch%nplant(ico)     &
-                                 * ( 1.0 / c2n_stem - 1.0 / c2n_storage)
+                                 * ( 1.0 / c2n_stem(cpatch%pft(ico)) - 1.0 / c2n_storage)
                
                !---------------------------------------------------------------------------!
                !      Calculate total seed production and seed litter.  The seed pool gets !
@@ -363,9 +363,9 @@ subroutine structural_growth_eq_0(cgrid, month)
                                  + seed_litter / c2n_recruit(ipft)
                csite%ssc_in(ipa) = csite%ssc_in(ipa) + struct_litter                       &
                                  + (1.0 - f_labile(ipft)) * balive_mort_litter
-               csite%ssl_in(ipa) = csite%ssl_in(ipa)                                       &
-                                 + ( (1.0 - f_labile(ipft)) * balive_mort_litter           &
-                                    + struct_litter ) * l2n_stem / c2n_stem
+               csite%ssl_in(ipa) = csite%ssl_in(ipa) +                                     &
+                                   ((1.0 - f_labile(ipft)) * balive_mort_litter             &
+                                    + struct_litter ) * l2n_stem / c2n_stem(ipft)
                csite%total_plant_nitrogen_uptake(ipa) =                                    &
                       csite%total_plant_nitrogen_uptake(ipa) + net_seed_N_uptake           &
                     + net_stem_N_uptake

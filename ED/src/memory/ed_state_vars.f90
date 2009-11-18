@@ -1562,9 +1562,6 @@ module ed_state_vars
      real,pointer,dimension(:) :: avg_storage_resp
      real,pointer,dimension(:) :: avg_vleaf_resp
      real,pointer,dimension(:) :: avg_plant_resp
-     real,pointer,dimension(:) :: avg_growth_resp
-     real,pointer,dimension(:) :: avg_vleaf_resp
-     real,pointer,dimension(:) :: avg_storage_resp
      real,pointer,dimension(:) :: avg_htroph_resp
      real,pointer,dimension(:) :: avg_leaf_drop
      real,pointer,dimension(:) :: avg_leaf_maintenance
@@ -2935,11 +2932,11 @@ contains
        nullify(cgrid%avg_root_maintenance)
 
        !!! added for NACP intercomparison (MCD)
-       nullify(cgrid%avg_snowdepth     )
-       nullify(cgrid%avg_snowenergy    )
-       nullify(cgrid%avg_snowmass      )
-       nullify(cgrid%avg_snowtempk     )
-       nullify(cgrid%avg_snowfracliq   )
+       nullify(cgrid%avg_sfcw_depth     )
+       nullify(cgrid%avg_sfcw_energy    )
+       nullify(cgrid%avg_sfcw_mass      )
+       nullify(cgrid%avg_sfcw_tempk     )
+       nullify(cgrid%avg_sfcw_fracliq   )
        nullify(cgrid%avg_bdead         )
        nullify(cgrid%avg_balive        )
        nullify(cgrid%avg_bleaf          )
@@ -7270,7 +7267,8 @@ contains
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_qintercepted(1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'AVG_QINTERCEPTED :11:hist:anal') 
-       call metadata_edio(nvar,igr,'Polygon averaged internal energy flux of intercepted precipitation by vegetation','[W/m2]','ipoly') 
+       call metadata_edio(nvar,igr,&
+'Polygon averaged internal energy flux of intercepted precipitation by vegetation','[W/m2]','ipoly') 
     endif
    
     if (associated(cgrid%avg_sensible_gc)) then
@@ -7438,33 +7436,33 @@ contains
 
 
        !!! added for NACP intercomparison (MCD)
-    if (associated(cgrid%avg_snowdepth)) then
+    if (associated(cgrid%avg_sfcw_depth)) then
        nvar=nvar+1
-       call vtable_edio_r(cgrid%avg_snowdepth(1),nvar,igr,init,cgrid%pyglob_id, &
+       call vtable_edio_r(cgrid%avg_sfcw_depth(1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'AVG_SNOWDEPTH :11:hist:anal:opti') 
        call metadata_edio(nvar,igr,'Poly Avg. Snow Depth ','[m]','ipoly') 
     endif
-    if (associated(cgrid%avg_snowenergy)) then
+    if (associated(cgrid%avg_sfcw_energy)) then
        nvar=nvar+1
-       call vtable_edio_r(cgrid%avg_snowenergy(1),nvar,igr,init,cgrid%pyglob_id, &
+       call vtable_edio_r(cgrid%avg_sfcw_energy(1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'AVG_SNOWENERGY :11:hist:anal') 
        call metadata_edio(nvar,igr,'Poly Avg. Snow Energy ','[J/kg]','ipoly') 
     endif
-    if (associated(cgrid%avg_snowmass)) then
+    if (associated(cgrid%avg_sfcw_mass)) then
        nvar=nvar+1
-       call vtable_edio_r(cgrid%avg_snowmass(1),nvar,igr,init,cgrid%pyglob_id, &
+       call vtable_edio_r(cgrid%avg_sfcw_mass(1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'AVG_SNOWMASS :11:hist:anal:opti') 
        call metadata_edio(nvar,igr,'Poly Avg. Snow Mass (SWE) ','[kg/m2]','ipoly') 
     endif
-    if (associated(cgrid%avg_snowtempk)) then
+    if (associated(cgrid%avg_sfcw_tempk)) then
        nvar=nvar+1
-       call vtable_edio_r(cgrid%avg_snowtempk(1),nvar,igr,init,cgrid%pyglob_id, &
+       call vtable_edio_r(cgrid%avg_sfcw_tempk(1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'AVG_SNOWTEMP :11:hist:anal:opti') 
        call metadata_edio(nvar,igr,'Poly Avg. Snow Temperature','[K]','ipoly') 
     endif
-    if (associated(cgrid%avg_snowfracliq)) then
+    if (associated(cgrid%avg_sfcw_fracliq)) then
        nvar=nvar+1
-       call vtable_edio_r(cgrid%avg_snowfracliq(1),nvar,igr,init,cgrid%pyglob_id, &
+       call vtable_edio_r(cgrid%avg_sfcw_fracliq(1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'AVG_SNOWFRACLIQ :11:hist:anal:opti') 
        call metadata_edio(nvar,igr,'Poly Avg. Snow liquid fraction','[proportion]','ipoly') 
     endif
