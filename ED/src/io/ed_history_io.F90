@@ -703,7 +703,7 @@ end subroutine read_ed1_history_file
 
 subroutine read_ed21_history_file
 
-  use ed_max_dims, only: n_pft
+  use ed_max_dims, only: n_pft,str_len
   use pft_coms, only: SLA, q, qsw, hgt_min, include_pft, include_pft_ag,&
        phenology,pft_1st_check,include_these_pft
   use ed_misc_coms, only: sfilin,current_time, imonthh,iyearh,idateh,itimeh
@@ -736,7 +736,7 @@ subroutine read_ed21_history_file
 
   character(len=1)  :: vnam
   character(len=3)  :: cgr
-  character(len=128) :: hnamel
+  character(len=str_len) :: hnamel
 
   integer,allocatable :: pysi_n(:),pysi_id(:)
   integer,allocatable :: sipa_n(:),sipa_id(:)
@@ -1285,11 +1285,6 @@ subroutine read_ed21_history_file
   ! Close the HDF environment
   
   call h5close_f(hdferr)
-
-  !----------------------------------------------------------------------------------------!
-  !    Because depending on the pft_1st_check the number of cohorts may have changed,      !
-  ! we call all init_vars subroutines in a second loop.                                    !
-  !----------------------------------------------------------------------------------------!
   
   return
 end subroutine read_ed21_history_file
@@ -3131,23 +3126,23 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
      if (associated(cpatch%dmean_gpp       )) &
           call hdf_getslab_r(cpatch%dmean_gpp,'DMEAN_GPP_CO ',dsetrank,iparallel,.false.)
      if (associated(cpatch%dmean_fs_open       )) &
-     call hdf_getslab_r(cpatch%dmean_fs_open,'DMEAN_FS_OPEN ',dsetrank,iparallel,.false.)
+     call hdf_getslab_r(cpatch%dmean_fs_open,'DMEAN_FS_OPEN_CO ',dsetrank,iparallel,.false.)
      if (associated(cpatch%mmean_fs_open       )) &
-     call hdf_getslab_r(cpatch%mmean_fs_open,'MMEAN_FS_OPEN ',dsetrank,iparallel,.false.) 
+     call hdf_getslab_r(cpatch%mmean_fs_open,'MMEAN_FS_OPEN_CO ',dsetrank,iparallel,.false.) 
      if (associated(cpatch%dmean_fsw       )) &
-     call hdf_getslab_r(cpatch%dmean_fsw,'DMEAN_FSW ',dsetrank,iparallel,.false.)
+     call hdf_getslab_r(cpatch%dmean_fsw,'DMEAN_FSW_CO ',dsetrank,iparallel,.false.)
      if (associated(cpatch%mmean_fsw       )) &
-     call hdf_getslab_r(cpatch%mmean_fsw,'MMEAN_FSW ',dsetrank,iparallel,.false.) 
+     call hdf_getslab_r(cpatch%mmean_fsw,'MMEAN_FSW_CO ',dsetrank,iparallel,.false.) 
      if (associated(cpatch%dmean_fsn       )) &
-     call hdf_getslab_r(cpatch%dmean_fsn,'DMEAN_FSN ',dsetrank,iparallel,.false.)
+     call hdf_getslab_r(cpatch%dmean_fsn,'DMEAN_FSN_CO ',dsetrank,iparallel,.false.)
      if (associated(cpatch%mmean_fsn       )) &
-     call hdf_getslab_r(cpatch%mmean_fsn,'MMEAN_FSN ',dsetrank,iparallel,.false.) 
+     call hdf_getslab_r(cpatch%mmean_fsn,'MMEAN_FSN_CO ',dsetrank,iparallel,.false.) 
      if (associated(cpatch%mmean_leaf_maintenance )) &
      call hdf_getslab_r(cpatch%mmean_leaf_maintenance,'MMEAN_LEAF_MAINTENANCE ',dsetrank,iparallel,.false.)   
      if (associated(cpatch%mmean_root_maintenance )) &
      call hdf_getslab_r(cpatch%mmean_root_maintenance,'MMEAN_ROOT_MAINTENANCE ',dsetrank,iparallel,.false.)   
      if (associated(cpatch%mmean_leaf_drop       )) &
-     call hdf_getslab_r(cpatch%mmean_leaf_drop,'MMEAN_LEAF_DROP ',dsetrank,iparallel,.false.)   
+     call hdf_getslab_r(cpatch%mmean_leaf_drop,'MMEAN_LEAF_DROP_CO ',dsetrank,iparallel,.false.)   
      if (associated(cpatch%mmean_cb       )) &
      call hdf_getslab_r(cpatch%mmean_cb,'MMEAN_CB ',dsetrank,iparallel,.false.)   
      if (associated(cpatch%dmean_light_level       )) &

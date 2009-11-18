@@ -133,7 +133,7 @@ subroutine ed_1st_master (ipara, nnodestotal,nslaves, headnode_num, name_name)
   call ed_node_decomp(1,standalone,masterworks)
   if (iparallel == 1) call MPI_Barrier(MPI_COMM_WORLD,ierr)
   
-  call ed_masterput_poly_dims(iparallel)
+  call ed_masterput_poly_dims(iparallel,masterworks)
   
   if (iparallel == 1) call MPI_Barrier(MPI_COMM_WORLD,ierr)
   

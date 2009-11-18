@@ -909,7 +909,6 @@ module ed_state_vars
      real,pointer,dimension(:) :: avg_veg_fliq      ! The mean patch level leaf surf liquid frac 
      real,pointer,dimension(:) :: avg_veg_water     ! The sum of water residing on all leaf surface
                                                     ! [kg/m2]
-
      !----- Hydrology variables ------------------------------------------------------------!
 
      real,pointer,dimension(:)   :: watertable
@@ -3685,6 +3684,7 @@ contains
        if(associated(cgrid%avg_atm_co2             )) deallocate(cgrid%avg_atm_co2             )
        if(associated(cgrid%avg_albedt              )) deallocate(cgrid%avg_albedt              )
        if(associated(cgrid%avg_rlongup             )) deallocate(cgrid%avg_rlongup             )
+
 
        if(associated(cgrid%runoff                  )) deallocate(cgrid%runoff                  )
        
@@ -8283,7 +8283,7 @@ contains
             var_len,var_len_global,max_ptrs,'WORKLOAD :19:hist:mont') 
        call metadata_edio(nvar,igr,'Disturbance Rates','[NA]','NA') 
     end if
-    
+ 
     if (init == 0) niogrid=nvar-nioglobal
     
     return

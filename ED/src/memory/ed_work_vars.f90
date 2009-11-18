@@ -1,5 +1,7 @@
 module ed_work_vars
 
+   use ed_max_dims, only : maxgrds
+
    type work_vars
       ! Variables to be dimensioned by (nxp,nyp)
       real   , dimension(:,:), pointer :: glon
@@ -16,6 +18,7 @@ module ed_work_vars
       ! Polygon vectors
       real   , dimension(:  ), pointer :: glon
       real   , dimension(:  ), pointer :: glat
+      real   , dimension(:  ), pointer :: work
       real   , dimension(:  ), pointer :: landfrac
       integer, dimension(:  ), pointer :: ntext
       integer, dimension(:  ), pointer :: xid
@@ -25,6 +28,9 @@ module ed_work_vars
 
    type (work_vars), dimension(:), allocatable :: work_e
    type (work_vecs), dimension(:), allocatable :: work_v
+
+   !----- Auxiliary variable to count number of polygons in this run. ---------------------!
+   integer, dimension(maxgrds)  :: npolys_run
 
    !=======================================================================================!
    !=======================================================================================!
@@ -125,6 +131,7 @@ module ed_work_vars
       !----- Allocate arrays based on options (if necessary). -----------------------------!
       allocate (workv%glon    (npolys))
       allocate (workv%glat    (npolys))
+      allocate (workv%work    (npolys))
       allocate (workv%landfrac(npolys))
       allocate (workv%ntext   (npolys))
       allocate (workv%xid     (npolys))
@@ -152,6 +159,7 @@ module ed_work_vars
 
       if (associated(workv%glon    ))   nullify(workv%glon    )
       if (associated(workv%glat    ))   nullify(workv%glat    )
+      if (associated(workv%work    ))   nullify(workv%work    )
       if (associated(workv%landfrac))   nullify(workv%landfrac)
       if (associated(workv%ntext   ))   nullify(workv%ntext   )
       if (associated(workv%xid     ))   nullify(workv%xid     )
@@ -176,12 +184,13 @@ module ed_work_vars
       !------------------------------------------------------------------------------------!
 
 
-      if (associated(workv%glon    ))   nullify(workv%glon    )
-      if (associated(workv%glat    ))   nullify(workv%glat    )
-      if (associated(workv%landfrac))   nullify(workv%landfrac)
-      if (associated(workv%ntext   ))   nullify(workv%ntext   )
-      if (associated(workv%xid     ))   nullify(workv%xid     )
-      if (associated(workv%yid     ))   nullify(workv%yid     )
+      if (associated(workv%glon    ))   deallocate(workv%glon    )
+      if (associated(workv%glat    ))   deallocate(workv%glat    )
+      if (associated(workv%work    ))   deallocate(workv%work    )
+      if (associated(workv%landfrac))   deallocate(workv%landfrac)
+      if (associated(workv%ntext   ))   deallocate(workv%ntext   )
+      if (associated(workv%xid     ))   deallocate(workv%xid     )
+      if (associated(workv%yid     ))   deallocate(workv%yid     )
 
       return
    end subroutine ed_dealloc_work_vec
