@@ -293,7 +293,8 @@ subroutine update_phenology(doy, cpoly, isi, lat)
                                     * (1.0 - f_labile(ipft))
                   csite%ssl_in(ipa) = csite%ssl_in(ipa)                                    &
                                     + cpatch%nplant(ico) * cpatch%leaf_drop(ico)           &
-                                    * (1.0 - f_labile(ipft)) * l2n_stem / c2n_stem
+                                    * (1.0 - f_labile(ipft)) * l2n_stem / c2n_stem(ipft)
+
                   
                   !----- Update plant carbon pools. ---------------------------------------!
                   cpatch%balive(ico)   = cpatch%balive(ico) - cpatch%bleaf(ico)
@@ -355,7 +356,7 @@ subroutine update_phenology(doy, cpoly, isi, lat)
                                     * (1.0 - f_labile(ipft))
                   csite%ssl_in(ipa) = csite%ssl_in(ipa)                                    &
                                     + cpatch%nplant(ico) * cpatch%leaf_drop(ico)           &
-                                    * (1.0 - f_labile(ipft)) * l2n_stem / c2n_stem
+                                    * (1.0 - f_labile(ipft)) * l2n_stem / c2n_stem(ipft)
                   
                   !----- Adjust plant carbon pools. ---------------------------------------!
                   cpatch%balive(ico)   = cpatch%balive(ico) - delta_bleaf
@@ -420,7 +421,7 @@ subroutine update_phenology(doy, cpoly, isi, lat)
                                  * (1.0-f_labile(ipft))
                csite%ssl_in(ipa) = csite%ssl_in(ipa)                                       &
                                  + cpatch%nplant(ico) * cpatch%leaf_drop(ico)              &
-                                 * (1.0 - f_labile(ipft)) * l2n_stem / c2n_stem
+                                 * (1.0 - f_labile(ipft)) * l2n_stem / c2n_stem(ipft)
 
                !----- Adjust plant carbon pools. ------------------------------------------!
                cpatch%balive(ico)   = cpatch%balive(ico) - delta_bleaf

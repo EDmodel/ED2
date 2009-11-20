@@ -81,6 +81,7 @@ subroutine h5_output(vtype)
   integer :: outyear,outmonth,outdate,outhour
   type(var_table_vector),pointer :: vtvec
   integer :: irec, nrec
+  integer, save ::irec_opt = 0
 
   integer :: mpierror
   integer :: comm,info
@@ -92,6 +93,7 @@ subroutine h5_output(vtype)
 
   logical,parameter :: collective_mpi = .false.
 
+  logical, external :: isleap
   new_file=.true.
 
   comm = MPI_COMM_WORLD
@@ -124,6 +126,8 @@ subroutine h5_output(vtype)
      vnam='E'
   case ('YEAR') 
      vnam='Y'
+  case ('OPTI') 
+     vnam='T'
   case('HIST') 
      vnam='S'  ! S for reStart, don't want confusion with RAMS' H or R files
   end select  
@@ -180,7 +184,33 @@ subroutine h5_output(vtype)
            outhour = 0
            call makefnam(anamel,ffilout,zero,outyear,0,0, &
                 0,vnam,cgrid,'h5 ')
+
+        case('OPTI')
            
+           new_file = .false.
+           irec_opt = irec_opt + 1
+           call date_add_to (iyeara,imontha,idatea,itimea*100,  &
+                time-21600.0d0,'s',outyear,outmonth,outdate,outhour)
+
+           if(isleap(outyear)) then
+              nrec = int(366*86400/frqfast)!+1
+           else
+              nrec = int(365*86400/frqfast)!+1
+           endif
+
+           call date_add_to (iyeara,imontha,idatea,itimea*100,  &
+                time-21600.0d0,'s',outyear,outmonth,outdate,outhour)
+           
+           call makefnam(anamel,ffilout,zero,outyear,0,0, &
+                0,vnam,cgrid,'h5 ')
+
+           if(outmonth == 1 .and. outdate == 1 .and. outhour == 0) then
+              new_file = .true.
+              irec_opt = 1
+           end if
+           irec = irec_opt
+           if(irec == 1) new_file = .true.
+
         case('HIST')
 
            call makefnam(anamel,sfilout,time,iyeara,imontha,idatea,  &
@@ -323,6 +353,7 @@ subroutine h5_output(vtype)
            !        vtinfo => vt_info(nv,ngr)
            
            if ((vtype == 'INST' .and. vt_info(nv,ngr)%ianal == 1) .or. &
+                (vtype == 'OPTI' .and. vt_info(nv,ngr)%iopti == 1) .or. &
                 (vtype == 'LITE' .and. vt_info(nv,ngr)%ilite == 1) .or. &
                 (vtype == 'DAIL' .and. vt_info(nv,ngr)%idail == 1) .or. &
                 (vtype == 'MONT' .and. vt_info(nv,ngr)%imont == 1) .or. &
@@ -658,6 +689,8 @@ subroutine h5_output(vtype)
         subaname='  Monthly average analysis HDF write   '
      case ('YEAR')
         subaname='  Annual average analysis HDF write   '
+     case ('OPTI')
+        subaname='  Opt update   '
      case ('HIST')
 
         ! -------------------------------------------------------------------

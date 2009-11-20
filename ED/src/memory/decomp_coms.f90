@@ -39,4 +39,7 @@ Module decomp_coms
   ! nitrogen availability.
   integer :: n_decomp_lim
 
+  ! Specifies whether to use Lloyd and Taylor (1994) temperature dependence
+  logical :: LloydTaylor
+
 end Module decomp_coms

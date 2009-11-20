@@ -20,6 +20,9 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
   cpatch%mean_gpp(ico)        = 0.0
   cpatch%mean_leaf_resp(ico)  = 0.0
   cpatch%mean_root_resp(ico)  = 0.0
+  cpatch%mean_growth_resp(ico) = 0.0
+  cpatch%mean_storage_resp(ico) = 0.0
+  cpatch%mean_vleaf_resp(ico) = 0.0
   
   cpatch%today_leaf_resp(ico) = 0.0
   cpatch%today_root_resp(ico) = 0.0
@@ -37,6 +40,7 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
   cpatch%norm_par_beam   (ico)  = 0.0
   cpatch%norm_par_diff   (ico)  = 0.0
   cpatch%lambda_light(ico)      = 0.0
+
   cpatch%gpp(ico) = 0.0
   cpatch%leaf_respiration(ico) = 0.0
   cpatch%root_respiration(ico) = 0.0
@@ -81,7 +85,6 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
   cpatch%root_maintenance   (ico) = 0.0
   cpatch%leaf_drop          (ico) = 0.0
   cpatch%paw_avg(ico)             = 0.5 !0.0 - [KIM] starting from the mid point.  if starting from the driest point, plants'll drop leaves initially due to the water stress
-
 
   cpatch%Psi_open(ico) = 0.0
 
@@ -351,11 +354,13 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
   csite%rlong_albedo(ip1:ip2) = 0.0
   csite%lambda_light(ip1:ip2) = 0.0
 
-  csite%fsc_in(ip1:ip2)                      = 0.0
-  csite%ssc_in(ip1:ip2)                      = 0.0
-  csite%ssl_in(ip1:ip2)                      = 0.0
-  csite%fsn_in(ip1:ip2)                      = 0.0
-  csite%total_plant_nitrogen_uptake(ip1:ip2) = 0.0
+  csite%fsc_in                      (ip1:ip2) = 0.0
+  csite%ssc_in                      (ip1:ip2) = 0.0
+  csite%ssl_in                      (ip1:ip2) = 0.0
+  csite%fsn_in                      (ip1:ip2) = 0.0
+  csite%total_plant_nitrogen_uptake (ip1:ip2) = 0.0
+  csite%mineralized_N_loss          (ip1:ip2) = 0.0
+  csite%mineralized_N_input         (ip1:ip2) = 0.0
   
   csite%watertable(ip1:ip2)                  = slz(lsl)
   csite%ustar(ip1:ip2) = 0.0

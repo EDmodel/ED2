@@ -25,6 +25,7 @@ subroutine load_ed_ecosystem_params()
    call init_decomp_params()
    call init_ff_coms()
    call init_disturb_params()
+   call init_met_params()
    call init_lapse_params()
    call init_can_rad_params()
    call init_can_air_params()
@@ -85,7 +86,8 @@ subroutine load_ed_ecosystem_params()
       p = p+1
    end do
    if (sum(include_pft_ag) == 0 .and. ianth_disturb == 1) then
-      call fatal_error ('No grass included in include_these_pft,'//&
+!!      call fatal_error ('No grass included in include_these_pft,'//&
+      call warning ('No grass included in include_these_pft,'//&
                        &' you should have at least one kind of grass...'                   &
                        ,'load_ecosystem_params','ed_params.f90')
    end if
@@ -133,8 +135,17 @@ subroutine init_ed_misc_coms
                            , maxage              & ! intent(out)
                            , dagei               & ! intent(out)
                            , maxdbh              & ! intent(out)
-                           , ddbhi               ! ! intent(out)
+                           , ddbhi               & ! intent(out)
+                           , vary_elev           &
+                           , vary_hyd            &
+                           , vary_rad
    implicit none
+
+
+   !----- Flags that allow components of subgrid heterogeneity to be turned on/off --------!
+   vary_elev = 1
+   vary_rad = 1
+   vary_hyd = 1
 
    !----- Number of years to ignore demography when starting a run. -----------------------!
    burnin = 0
@@ -173,26 +184,117 @@ end subroutine init_ed_misc_coms
 
 !==========================================================================================!
 !==========================================================================================!
+!     This subroutine defines the minimum and maximum acceptable values in the meteoro-    !
+! logical forcing.                                                                         !
+!------------------------------------------------------------------------------------------!
+subroutine init_met_params()
+
+   use met_driver_coms, only : rshort_min   & ! intent(out)
+                             , rshort_max   & ! intent(out)
+                             , rlong_min    & ! intent(out)
+                             , rlong_max    & ! intent(out)
+                             , atm_tmp_min  & ! intent(out)
+                             , atm_tmp_max  & ! intent(out)
+                             , atm_shv_min  & ! intent(out)
+                             , atm_shv_max  & ! intent(out)
+                             , atm_rhv_min  & ! intent(out)
+                             , atm_rhv_max  & ! intent(out)
+                             , atm_co2_min  & ! intent(out)
+                             , atm_co2_max  & ! intent(out)
+                             , prss_min     & ! intent(out)
+                             , prss_max     & ! intent(out)
+                             , pcpg_min     & ! intent(out)
+                             , pcpg_max     & ! intent(out)
+                             , vels_min     & ! intent(out)
+                             , vels_max     & ! intent(out)
+                             , geoht_min    & ! intent(out)
+                             , geoht_max    ! ! intent(out)
+
+   !----- Minimum and maximum acceptable shortwave radiation [W/m²]. ----------------------!
+   rshort_min  = 0.
+   rshort_max  = 1400.
+   !----- Minimum and maximum acceptable longwave radiation [W/m²]. -----------------------!
+   rlong_min   = 100.
+   rlong_max   = 600.
+   !----- Minimum and maximum acceptable air temperature    [   K]. -----------------------!
+   atm_tmp_min = 184.     ! Lowest temperature ever measured, in Vostok Basin, Antarctica
+   atm_tmp_max = 331.     ! Highest temperature ever measured, in El Azizia, Libya
+   !----- Minimum and maximum acceptable air specific humidity [kg_H2O/kg_air]. -----------!
+   atm_shv_min = 1.e-6    ! That corresponds to a relative humidity of 0.1% at 1000hPa
+   atm_shv_max = 3.e-2    ! That corresponds to a dew point of 32°C at 1000hPa.
+   !----- Minimum and maximum acceptable CO2 mixing ratio [µmol/mol]. ---------------------!
+   atm_co2_min = 100.     ! 
+   atm_co2_max = 1100.    ! 
+   !----- Minimum and maximum acceptable pressure [Pa]. -----------------------------------!
+   prss_min =  45000. ! It may crash if you run a simulation in Mt. Everest.
+   prss_max = 110000. ! It may crash if you run a simulation under water.
+   !----- Minimum and maximum acceptable precipitation rates [kg/m²/s]. -------------------!
+   pcpg_min     = 0.0     ! No negative precipitation is allowed
+   pcpg_max     = 0.0833  ! This is a precipitation rate of 300mm/hr.
+   !----- Minimum and maximum acceptable wind speed [m/s]. --------------------------------!
+   vels_min     =  0.0    ! No negative wind is acceptable.
+   vels_max     = 85.0    ! Maximum sustained winds recorded during Typhoon Tip (1970).
+   !----- Minimum and maximum reference heights [m]. --------------------------------------!
+   geoht_min    =   1.0   ! This should be above-canopy measurement, but 1.0 is okay for
+                          !     grasslands...
+   geoht_max    = 120.0   ! This should be not that much above the canopy, but tall towers
+                          !     do exist...
+   !---------------------------------------------------------------------------------------!
+
+   !---------------------------------------------------------------------------------------!
+   !     Minimum and maximum acceptable relative humidity (fraction).  This is not going   !
+   ! cause the simulation to crash, instead it will just impose these numbers to the       !
+   ! meteorological forcing.                                                               !
+   !---------------------------------------------------------------------------------------!
+   atm_rhv_min = 5.e-3 ! 0.5%
+   atm_rhv_max = 1.0   ! 100.0%.  Although canopy air space can experience super-
+                       !    saturation, we don't allow the air above to be super-saturated.
+   return
+end subroutine init_met_params
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine defines defaults for lapse rates.                                    !
+!------------------------------------------------------------------------------------------!
 subroutine init_lapse_params()
-!! define defaults for lapse rates
 
-  use met_driver_coms, only: lapse
+   use met_driver_coms, only : lapse             & ! intent(out)
+                             , atm_tmp_intercept & ! intent(out)
+                             , atm_tmp_slope     & ! intent(out)
+                             , prec_intercept    & ! intent(out)
+                             , prec_slope        & ! intent(out)
+                             , humid_scenario    ! ! intent(out)
 
-  lapse%geoht        = 0.0
-  lapse%vels         = 0.0
-  lapse%atm_tmp      = 0.0
-  lapse%atm_theta    = 0.0
-  lapse%atm_enthalpy = 0.0
-  lapse%atm_shv      = 0.0
-  lapse%prss         = 0.0
-  lapse%pcpg         = 0.0
-  lapse%atm_co2      = 0.0
-  lapse%rlong        = 0.0
-  lapse%nir_beam     = 0.0
-  lapse%nir_diffuse  = 0.0
-  lapse%par_beam     = 0.0
-  lapse%par_diffuse  = 0.0
+   lapse%geoht        = 0.0
+   lapse%vels         = 0.0
+   lapse%atm_tmp      = 0.0
+   lapse%atm_theta    = 0.0
+   lapse%atm_enthalpy = 0.0
+   lapse%atm_shv      = 0.0
+   lapse%prss         = 0.0
+   lapse%pcpg         = 0.0
+   lapse%atm_co2      = 0.0
+   lapse%rlong        = 0.0
+   lapse%nir_beam     = 0.0
+   lapse%nir_diffuse  = 0.0
+   lapse%par_beam     = 0.0
+   lapse%par_diffuse  = 0.0
+   lapse%pptnorm      = 1.0
 
+   atm_tmp_intercept = 0.0
+   atm_tmp_slope     = 1.0
+   prec_intercept    = 0.0
+   prec_slope        = 1.0
+   humid_scenario    = 0
+
+   return
 end subroutine init_lapse_params
 !==========================================================================================!
 !==========================================================================================!
@@ -227,10 +329,8 @@ subroutine init_can_rad_params()
                                     , leaf_trans_nir              & ! intent(out)
                                     , lai_min                     & ! intent(out)
                                     , tai_min                     & ! intent(out)
-                                    , blfac_min                   & ! intent(out)
-                                    , rlong_min                   & ! intent(out)
-                                    , veg_temp_min                ! ! intent(out)
-   use ed_max_dims              , only : n_pft                       ! ! intent(out)
+                                    , blfac_min                   ! ! intent(out)
+   use ed_max_dims              , only : n_pft                    ! ! intent(out)
    use pft_coms              , only : phenology                   ! ! intent(out)
 
    implicit none
@@ -285,8 +385,6 @@ subroutine init_can_rad_params()
    lai_min       = 1.0e-5
    tai_min       = 1.0e-5
    blfac_min     = 1.0e-2
-   rlong_min     = 50.0
-   veg_temp_min  = 150.0
 
    return
 end subroutine init_can_rad_params
@@ -663,6 +761,7 @@ subroutine init_pft_alloc_params()
                           , b2Bl                  & ! intent(out)
                           , C2B                   & ! intent(out)
                           , hgt_ref               & ! intent(out)
+                          , sapwood_ratio         & ! intent(out)
                           , rbranch               & ! intent(out)
                           , rdiamet               & ! intent(out)
                           , rlength               & ! intent(out)
@@ -757,6 +856,7 @@ subroutine init_pft_alloc_params()
    q(9:11)  = 1.1274
    q(12:15) = 1.0
 
+   sapwood_ratio(1:15) = 3900.0
 
    !---------------------------------------------------------------------------------------!
    !    Finding the ratio between sapwood and leaves [kg_sapwood/kg_leaves]                !
@@ -765,9 +865,10 @@ subroutine init_pft_alloc_params()
    ! latitude parameters have been optimized using the wrong SLA, we keep the bug until    !
    ! it is updated...                                                                      !
    !---------------------------------------------------------------------------------------!
-   qsw(1:4)    = SLA(1:4)   / 3900.0  !new is SLA(1:4)/(3900.0*2.0/1000.0)
-   qsw(5:13)   = SLA(5:13)  / 3900.0
-   qsw(14:15)  = SLA(14:15) / 3900.0  !new is SLA(14:15)(3900.0*2.0/1000.0)
+   qsw(1:4)    = SLA(1:4)   / sapwood_ratio(1:4)    !new is SLA(1:4)/(3900.0*2.0/1000.0)
+   qsw(5:13)   = SLA(5:13)  / sapwood_ratio(5:13)
+   qsw(14:15)  = SLA(14:15) / sapwood_ratio(14:15)  !new is SLA(14:15)(3900.0*2.0/1000.0)
+
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
@@ -1192,10 +1293,11 @@ subroutine init_pft_derived_params()
       !----- Finding the recruit carbon to nitrogen ratio. --------------------------------!
       c2n_recruit(ipft)      = (balive + bdead)                                            &
                              / (balive * ( f_labile(ipft) / c2n_leaf(ipft)                 &
-                                         + (1.0 - f_labile(ipft)) / c2n_stem)              &
-                               + bdead/c2n_stem)
+                             + (1.0 - f_labile(ipft)) / c2n_stem(ipft))                    &
+                             + bdead/c2n_stem(ipft))
       write (unit=61,fmt='(i5,1x,7(es12.5,1x))') ipft,hgt_min(ipft),dbh,bleaf,bdead,balive &
                                                 ,init_density(ipft),min_recruit_size(ipft)
+
    end do
 
 end subroutine init_pft_derived_params
@@ -1469,7 +1571,6 @@ subroutine init_rk4_params()
    use soil_coms            , only : water_stab_thresh     & ! intent(in)
                                    , snowmin               & ! intent(in)
                                    , min_sfcwater_mass     ! ! intent(in)
-   use canopy_radiation_coms, only : veg_temp_min          ! ! intent(in)
    use canopy_air_coms      , only : dry_veg_lwater        & ! intent(in)
                                    , fullveg_lwater        ! ! intent(in)
    use rk4_coms             , only : maxstp                & ! intent(out)
@@ -1478,6 +1579,7 @@ subroutine init_rk4_params()
                                    , hmin                  & ! intent(out)
                                    , print_diags           & ! intent(out)
                                    , checkbudget           & ! intent(out)
+                                   , newsnow               & ! intent(out)
                                    , debug                 & ! intent(out)
                                    , toocold               & ! intent(out)
                                    , toohot                & ! intent(out)
@@ -1512,7 +1614,6 @@ subroutine init_rk4_params()
    !---------------------------------------------------------------------------------------!
    !     Copying some variables to the Runge-Kutta counterpart (double precision).         !
    !---------------------------------------------------------------------------------------!
-   rk4min_veg_temp      = dble(veg_temp_min     )
    rk4water_stab_thresh = dble(water_stab_thresh)
    rk4min_sfcwater_mass = dble(min_sfcwater_mass)
    rk4dry_veg_lwater    = dble(dry_veg_lwater   )
@@ -1573,6 +1674,7 @@ subroutine init_rk4_params()
    rk4max_can_co2    =  1.2000d3  ! Maximum canopy    CO2 mixing ratio          [ µmol/mol]
    rk4min_soil_temp  =  1.8400d2  ! Minimum soil      temperature               [        K]
    rk4max_soil_temp  =  3.4100d2  ! Maximum soil      temperature               [        K]
+   rk4min_veg_temp   =  1.8400d2  ! Minimum leaf      temperature               [        K]
    rk4max_veg_temp   =  3.4100d2  ! Maximum leaf      temperature               [        K]
    rk4min_sfcw_temp  =  1.9315d2  ! Minimum snow/pond temperature               [        K]
    rk4max_sfcw_temp  =  3.4100d2  ! Maximum snow/pond temperature               [        K]
@@ -1614,6 +1716,11 @@ subroutine init_rk4_params()
    !---------------------------------------------------------------------------------------!
    supersat_ok = .true.
 
+   !---------------------------------------------------------------------------------------!
+   !     This flag is used to control the method used to define water percolation through  !
+   ! snow layers.                                                                          !
+   !---------------------------------------------------------------------------------------!
+   newsnow = .true.
 
    return
 end subroutine init_rk4_params
@@ -1660,7 +1767,7 @@ subroutine overwrite_with_xml_config(thisnode)
          !! SECOND, update parameter defaults from XML
          call read_ed_xml_config(trim(iedcnfgf))
 
-         !! THIRD, reset any values based on xml
+         !! THIRD, recalculate any derived values based on xml
 
          !! FINALLY, write out copy of settings
          call write_ed_xml_config()

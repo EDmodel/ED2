@@ -546,11 +546,11 @@ module canopy_struct_dynamics
             call fatal_error('Bad reference height for M97','canopy_turbulence'            &
                             ,'canopy_struct_dynamics.f90')
             !----- 2. Say that zref is really h+zref (sketchy...). ------------------------!
-            !zref     = rk4met%geoht + h
-            !vels_ref = rk4met%vels
+            !zref     = rk4site%geoht + h
+            !vels_ref = rk4site%vels
             !----- 3. Say that zref is 2*h (sketchy...). ----------------------------------!
-            !zref     = 2.d0 * rk4met%geoht
-            !vels_ref = rk4met%vels
+            !zref     = 2.d0 * rk4site%geoht
+            !vels_ref = rk4site%vels
          else
             !----- Get the appropriate characteristic wind speed. -------------------------!
             if (csite%can_theta(ipa) < cmet%atm_theta) then
@@ -772,13 +772,13 @@ module canopy_struct_dynamics
    ! SCHEME.  THE SINGLE-PRECISIION VERSION, WHICH IS USED BY THE EULER INTEGRATION IS     !
    ! DEFINED ABOVE.                                                                        !
    !---------------------------------------------------------------------------------------!
-   subroutine canopy_turbulence8(csite,initp,isi,ipa,get_flow_geom)
+   subroutine canopy_turbulence8(csite,initp,ipa,get_flow_geom)
       use ed_state_vars  , only : polygontype          & ! structure
                                 , sitetype             & ! structure
                                 , patchtype            ! ! structure
       use rk4_coms       , only : ibranch_thermo       & ! intent(in)
                                 , rk4patchtype         & ! structure
-                                , rk4met               & ! intent(in)
+                                , rk4site              & ! intent(in)
                                 , tiny_offset          & ! intent(in)
                                 , ibranch_thermo
       use pft_coms       , only : crown_depth_fraction & ! intent(in)
@@ -807,7 +807,6 @@ module canopy_struct_dynamics
       type(sitetype)     , target     :: csite
       type(patchtype)    , pointer    :: cpatch
       type(rk4patchtype) , target     :: initp
-      integer            , intent(in) :: isi           ! Site loop
       integer            , intent(in) :: ipa           ! Patch loop
       logical            , intent(in) :: get_flow_geom
       !----- Local variables --------------------------------------------------------------!
@@ -866,8 +865,8 @@ module canopy_struct_dynamics
       !------------------------------------------------------------------------------------!
       if (cpatch%ncohorts == 0) then
          
-         vels_ref = rk4met%vels
-         zref     = rk4met%geoht
+         vels_ref = rk4site%vels
+         zref     = rk4site%geoht
          h        = initp%can_depth
          d0       = 0.d0
 
@@ -876,9 +875,9 @@ module canopy_struct_dynamics
                      + dble(snow_rough)*dble(csite%snowfac(ipa))
          
          !----- Finding the characteristic scales (a.k.a. stars). -------------------------!
-         call ed_stars8(rk4met%atm_theta,rk4met%atm_enthalpy,rk4met%atm_shv,rk4met%atm_co2 &
-                       ,initp%can_theta ,initp%can_enthalpy ,initp%can_shv ,initp%can_co2  &
-                       ,zref,d0,vels_ref,initp%rough                                       &
+         call ed_stars8(rk4site%atm_theta,rk4site%atm_enthalpy,rk4site%atm_shv             &
+                       ,rk4site%atm_co2,initp%can_theta ,initp%can_enthalpy ,initp%can_shv &
+                       ,initp%can_co2,zref,d0,vels_ref,initp%rough                         &
                        ,initp%ustar,initp%tstar,initp%estar,initp%qstar,initp%cstar,fm)
 
          !---------------------------------------------------------------------------------!
@@ -913,7 +912,7 @@ module canopy_struct_dynamics
          h        = dble(csite%veg_height(ipa)) * (1.d0 - dble(csite%snowfac(ipa)))
          !----- 0-plane displacement height. ----------------------------------------------!
          d0       = vh2dh8 * h     
-         zref     = rk4met%geoht
+         zref     = rk4site%geoht
          
 
          !---------------------------------------------------------------------------------!
@@ -925,7 +924,7 @@ module canopy_struct_dynamics
                        + dble(snow_rough) * dble(csite%snowfac(ipa))
 
          !----- Get the appropriate characteristic wind speed. ----------------------------!
-         vels_ref = max(ubmin8,rk4met%vels)
+         vels_ref = max(ubmin8,rk4site%vels)
 
 
          !---------------------------------------------------------------------------------!
@@ -938,9 +937,9 @@ module canopy_struct_dynamics
          !                 is at the ground surface when computing the log wind profile,   !
          !                 hence the 0.0 as the argument to ed_stars.                      !
          !---------------------------------------------------------------------------------!
-         call ed_stars8(rk4met%atm_theta,rk4met%atm_enthalpy,rk4met%atm_shv,rk4met%atm_co2 &
-                       ,initp%can_theta ,initp%can_enthalpy ,initp%can_shv ,initp%can_co2  &
-                       ,zref,0.d0,vels_ref,initp%rough                                     &
+         call ed_stars8(rk4site%atm_theta,rk4site%atm_enthalpy,rk4site%atm_shv             &
+                       ,rk4site%atm_co2,initp%can_theta ,initp%can_enthalpy ,initp%can_shv &
+                       ,initp%can_co2,zref,0.d0,vels_ref,initp%rough                       &
                        ,initp%ustar,initp%tstar,initp%estar,initp%qstar,initp%cstar,fm)
 
          if (csite%snowfac(ipa) < 0.9) then
@@ -1004,8 +1003,8 @@ module canopy_struct_dynamics
       case (0)
          h        = initp%can_depth   ! Canopy air space depth
          d0       = vh2dh8 * h        ! 0-plane displacement
-         vels_ref = rk4met%vels
-         zref     = rk4met%geoht
+         vels_ref = rk4site%vels
+         zref     = rk4site%geoht
 
          !---------------------------------------------------------------------------------!
          !      Calculate a surface roughness that is visible to the ABL.  Roughness of    !
@@ -1029,9 +1028,9 @@ module canopy_struct_dynamics
          !                 is at the ground surface when computing the log wind profile,   !
          !                 hence the 0.0 as the argument to ed_stars8.                     !
          !---------------------------------------------------------------------------------!
-         call ed_stars8(rk4met%atm_theta,rk4met%atm_enthalpy,rk4met%atm_shv,rk4met%atm_co2 &
-                       ,initp%can_theta ,initp%can_enthalpy ,initp%can_shv ,initp%can_co2  &
-                       ,zref,0.d0,vels_ref,initp%rough                                     &
+         call ed_stars8(rk4site%atm_theta,rk4site%atm_enthalpy,rk4site%atm_shv             &
+                       ,rk4site%atm_co2,initp%can_theta ,initp%can_enthalpy ,initp%can_shv &
+                       ,initp%can_co2,zref,0.d0,vels_ref,initp%rough                       &
                        ,initp%ustar,initp%tstar,initp%estar,initp%qstar,initp%cstar,fm)
 
          K_top = vonk8 * initp%ustar*(h-d0)
@@ -1101,7 +1100,7 @@ module canopy_struct_dynamics
       !------------------------------------------------------------------------------------!
       case(1)
          h    = initp%can_depth             ! Canopy height
-         zref = rk4met%geoht                ! Initial reference height
+         zref = rk4site%geoht               ! Initial reference height
          d0   = vh2dh8 * h                  ! 0-plane displacement
          
          !----- Calculate a surface roughness that is visible to the ABL. -----------------!
@@ -1113,9 +1112,9 @@ module canopy_struct_dynamics
                     + dble(snow_rough)*dble(csite%snowfac(ipa))
          
          !----- Check what is the relative position of our reference data. ----------------!
-         if (rk4met%geoht < h) then
+         if (rk4site%geoht < h) then
             !----- First, find the wind speed at the canopy top. --------------------------!
-            vels_ref = rk4met%vels / exp(-exar8 *(1.d0 - zref/h))
+            vels_ref = rk4site%vels / exp(-exar8 *(1.d0 - zref/h))
             !----- Assume a new reference elevation at the canopy top. --------------------!
             zref = h
             if (get_flow_geom) then
@@ -1123,8 +1122,8 @@ module canopy_struct_dynamics
             end if 
 
          else
-            vels_ref = rk4met%vels
-            zref     = rk4met%geoht
+            vels_ref = rk4site%vels
+            zref     = rk4site%geoht
             if (get_flow_geom) then
                call can_whcap8(csite,ipa,initp%can_rhos,initp%can_depth)
             end if
@@ -1134,9 +1133,9 @@ module canopy_struct_dynamics
          !      Get ustar for the ABL, assume it is a dynamic shear layer that generates a !
          ! logarithmic profile of velocity.                                                !
          !---------------------------------------------------------------------------------!
-         call ed_stars8(rk4met%atm_theta,rk4met%atm_enthalpy,rk4met%atm_shv,rk4met%atm_co2 &
-                       ,initp%can_theta ,initp%can_enthalpy ,initp%can_shv ,initp%can_co2  &
-                       ,zref,d0,vels_ref,initp%rough                                       &
+         call ed_stars8(rk4site%atm_theta,rk4site%atm_enthalpy,rk4site%atm_shv             &
+                       ,rk4site%atm_co2,initp%can_theta ,initp%can_enthalpy ,initp%can_shv &
+                       ,initp%can_co2,zref,d0,vels_ref,initp%rough                         &
                        ,initp%ustar,initp%tstar,initp%estar,initp%qstar,initp%cstar,fm)
 
          K_top = vonk8 * initp%ustar * (h-d0)
@@ -1202,23 +1201,23 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          h = dble(cpatch%hite(1))
 
-         if (rk4met%geoht < h) then
+         if (rk4site%geoht < h) then
 
             !----- 1. Stop the run. -------------------------------------------------------!
             write (unit=*,fmt='(a)') ' Your reference height is too low...'
-            write (unit=*,fmt='(a,1x,es12.5)') ' Ref. height:           ',rk4met%geoht
+            write (unit=*,fmt='(a,1x,es12.5)') ' Ref. height:           ',rk4site%geoht
             write (unit=*,fmt='(a,1x,es12.5)') ' Tallest cohort height: ',h
             call fatal_error('Bad reference height for M97','canopy_turbulence'            &
                             ,'canopy_struct_dynamics.f90')
             !----- 2. Say that zref is really h+zref (sketchy...). ------------------------!
-            !zref     = rk4met%geoht + h
-            !vels_ref = rk4met%vels
+            !zref     = rk4site%geoht + h
+            !vels_ref = rk4site%vels
             !----- 3. Say that zref is 2*h (sketchy...). ----------------------------------!
-            !zref     = 2.d0 * rk4met%geoht
-            !vels_ref = rk4met%vels
+            !zref     = 2.d0 * rk4site%geoht
+            !vels_ref = rk4site%vels
          else
-            vels_ref = rk4met%vels
-            zref     = rk4met%geoht
+            vels_ref = rk4site%vels
+            zref     = rk4site%geoht
          end if
 
          zcan = ceiling(h/dz8)
@@ -1315,9 +1314,9 @@ module canopy_struct_dynamics
          
 
          !----- Calculate ustar, tstar, qstar, and cstar. ---------------------------------!
-         call ed_stars8(rk4met%atm_theta,rk4met%atm_enthalpy,rk4met%atm_shv,rk4met%atm_co2 &
-                       ,initp%can_theta ,initp%can_enthalpy ,initp%can_shv ,initp%can_co2  &
-                       ,zref,d0,vels_ref,initp%rough                                       &
+         call ed_stars8(rk4site%atm_theta,rk4site%atm_enthalpy,rk4site%atm_shv             &
+                       ,rk4site%atm_co2,initp%can_theta ,initp%can_enthalpy ,initp%can_shv &
+                       ,initp%can_co2,zref,d0,vels_ref,initp%rough                         &
                        ,initp%ustar,initp%tstar,initp%estar,initp%qstar,initp%cstar,fm)
 
          if(get_flow_geom) then
@@ -1965,7 +1964,7 @@ module canopy_struct_dynamics
    !---------------------------------------------------------------------------------------!
    subroutine can_whcap8(csite,ipa,can_rhos,can_depth)
 
-      use rk4_coms             , only : rk4met                & ! intent(in)
+      use rk4_coms             , only : rk4site               & ! intent(in)
                                       , wcapcan               & ! intent(out)
                                       , wcapcani              & ! intent(out)
                                       , hcapcani              & ! intent(out)

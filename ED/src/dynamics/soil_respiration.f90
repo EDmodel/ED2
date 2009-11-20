@@ -64,20 +64,26 @@ subroutine resp_index(nsoil,tempk,theta,slmsts,resp_weight)
        resp_water_below_opt, resp_water_above_opt
 
   implicit none
-
+  
+  logical :: LloydTaylor = .true.
   integer :: nsoil
-  real :: tempk
-  real :: theta
-  real :: slmsts
-  real :: resp_weight
-  real :: temperature_limitation
-  real :: water_limitation
-  real :: Ws
+  real    :: tempk
+  real    :: theta
+  real    :: slmsts
+  real    :: resp_weight
+  real    :: temperature_limitation
+  real    :: water_limitation
+  real    :: Ws
 
   ! temperature dependence
-  temperature_limitation = min(1.0,exp(resp_temperature_increase *   &
-       (tempk-318.15)))
-
+  if(LloydTaylor)then 
+     !! Use Lloyd and Taylor 1994 temperature dependence
+     temperature_limitation = min(1.0, &
+          resp_temperature_increase*exp(308.56*(1./56.02-1./(tempk-227.15))))
+  else !! use original exponential temperature dependence
+     temperature_limitation = min(1.0,exp(resp_temperature_increase *   &
+          (tempk-318.15)))
+  end if
   ! moisture dependence
   Ws = theta/slmsts
 
@@ -191,8 +197,6 @@ subroutine update_C_and_N_pools(cgrid)
   real :: structural_L_loss
   real :: slow_C_input
   real :: slow_C_loss
-  real :: mineralized_N_input
-  real :: mineralized_N_loss
 
   do ipy = 1,cgrid%npolygons
 
@@ -233,8 +237,8 @@ subroutine update_C_and_N_pools(cgrid)
 !slow_C_loss = 0.0
            
            ! mineralized pool
-           mineralized_N_input = fast_N_loss + slow_C_loss / c2n_slow
-           mineralized_N_loss = csite%total_plant_nitrogen_uptake(ipa) +   &
+           csite%mineralized_N_input = fast_N_loss + slow_C_loss / c2n_slow
+           csite%mineralized_N_loss = csite%total_plant_nitrogen_uptake(ipa) +   &
                 csite%today_Af_decomp(ipa) * Lc * K1 *   &
                 csite%structural_soil_C(ipa)   &
                 * ( (1.0 - r_stsc) / c2n_slow - 1.0 / c2n_structural)
@@ -255,8 +259,8 @@ subroutine update_C_and_N_pools(cgrid)
            csite%fast_soil_N(ipa) = csite%fast_soil_N(ipa) + csite%fsn_in(ipa) -   &
                 fast_N_loss
            csite%mineralized_soil_N(ipa) = csite%mineralized_soil_N(ipa) +   &
-                mineralized_N_input - mineralized_N_loss
-          
+                csite%mineralized_N_input(ipa) - csite%mineralized_N_loss(ipa)
+
            ! require pools to be >= 0.0
            csite%fast_soil_C(ipa) = max(0.0,csite%fast_soil_C(ipa))
            csite%structural_soil_C(ipa) = max(0.0,csite%structural_soil_C(ipa))

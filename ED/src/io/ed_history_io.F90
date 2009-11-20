@@ -268,7 +268,9 @@ subroutine read_ed1_history_file
                     endif
                  enddo
                  if(.not.site_match) then
-                    print*,"error reading from patch file",pss_name
+                print*,isi,cpoly%nsites,ip
+                    print*,"error reading from patch file",trim(pss_name)
+                    print*,cpoly%sitenum
                     print*,"site number", sitenum,"not found"
                     stop
                  endif
@@ -422,7 +424,7 @@ subroutine read_ed1_history_file
         read_cohorts: do
 
            ic = ic + 1
-           add_this_cohort(ic) = .false.
+           add_this_cohort(ic) = .true. ! .false.
            
            if (ic>huge_cohort) call fatal_error('IC too high','read_ed1_history_file','ed_history_io.f90')
 
@@ -458,6 +460,12 @@ subroutine read_ed1_history_file
               continue
            endif
 
+         !! check that nplant > 0 
+          if(nplant(ic) < tiny(1.0)) then
+            add_this_cohort(ic) = .false.
+            continue
+          endif
+
            ! Find site and patch and start counting how many to allocate
            
            put_cohort:do isi=1,cpoly%nsites
@@ -476,14 +484,11 @@ subroutine read_ed1_history_file
                        include_these_pft(sum(include_pft)) = ipft(ic)
                        call sort_up(include_these_pft,n_pft)
                        if (ipft(ic) == 1 .or. ipft(ic) == 5) include_pft_ag(ipft(ic)) = 1
-                       add_this_cohort(ic) = .true.
                     case(2)
                        write (unit=*,fmt='(a,1x,i5,1x,a)') &
                             'I found a cohort with PFT=',ipft(ic),'... Ignoring it...'
                        add_this_cohort(ic) = .false.
                     end select
-                 else
-                    add_this_cohort(ic)=.true.
                  end if
                  
                  if(trim(csite%pname(ipa)) == trim(cpname(ic) ) .and. add_this_cohort(ic)) then
@@ -555,6 +560,13 @@ subroutine read_ed1_history_file
 
                        !print*,cpatch%lai(ic2),cpatch%bleaf(ic2),cpatch%nplant(ic2),SLA(ipft(ic)),ipft(ic)
                        
+                       cpatch%lai(ic2) = cpatch%bleaf(ic2) * cpatch%nplant(ic2) *   &
+                            SLA(ipft(ic))
+if(cpatch%lai(ic2) /= cpatch%lai(ic2)) then
+print*,"invalid initial LAI" 
+                       print*,cpatch%lai(ic2),cpatch%bleaf(ic2),cpatch%nplant(ic2),SLA(ipft(ic)),ipft(ic)
+                       stop
+endif
                        ! START COLD-DECIDUOUS TREES WITHOUT LEAVES.  ALL OTHER TREES
                        ! ARE FULLY FLUSHED.
                        if(phenology(ipft(ic)) /= 2)then
@@ -564,6 +576,7 @@ subroutine read_ed1_history_file
                        else
                           cpatch%phenology_status(ic2) = 2
                           cpatch%bleaf(ic2) = 0.0
+                          cpatch%lai(ic2) = 0.0
                           cpatch%bstorage(ic2) = 0.5 * cpatch%balive(ic2)
                        endif
                                   
@@ -2428,6 +2441,7 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
 
    call hdf_getslab_i(cpoly%num_landuse_years,'NUM_LANDUSE_YEARS ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(cpoly%TCI,'TCI ',dsetrank,iparallel,.true.)      
+   call hdf_getslab_r(cpoly%pptweight,'pptweight ',dsetrank,iparallel,.true.)      
    call hdf_getslab_i(cpoly%hydro_next,'HYDRO_NEXT ',dsetrank,iparallel,.true.)
    call hdf_getslab_i(cpoly%hydro_prev,'HYDRO_PREV ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(cpoly%moist_W,'MOIST_W ',dsetrank,iparallel,.true.)
@@ -3740,6 +3754,26 @@ subroutine create_ed1_fname(lat, ed_res, lon, sfilin, pss_name, css_name,   &
         write(ed_fname,'(a,f3.1)')trim(ed_fname)//'lon',flon
      else
         write(ed_fname,'(a,f4.1)')trim(ed_fname)//'lon',flon
+     endif
+  elseif(ed_res > 0.0999 .and. ed_res < 0.1001)then
+
+     if(flat <= -10.0)then
+        write(ed_fname,'(a,f6.2)')trim(sfilin)//'lat',flat
+     elseif(flat < 0.0 .or. flat >= 10.0)then
+        write(ed_fname,'(a,f5.2)')trim(sfilin)//'lat',flat
+     else
+        write(ed_fname,'(a,f4.2)')trim(sfilin)//'lat',flat
+     endif
+     if(flon <= -100.0)then
+        write(ed_fname,'(a,f7.2)')trim(ed_fname)//'lon',flon
+     elseif(flon <= -10.0 .or. flon >= 100.0)then
+        write(ed_fname,'(a,f6.2)')trim(ed_fname)//'lon',flon
+     elseif(flon < 0.0)then
+        write(ed_fname,'(a,f5.2)')trim(ed_fname)//'lon',flon
+     elseif(flon < 10.0)then
+        write(ed_fname,'(a,f4.2)')trim(ed_fname)//'lon',flon
+     else
+        write(ed_fname,'(a,f5.2)')trim(ed_fname)//'lon',flon
      endif
   else
      print*,'bad ed_res in create_ed1_fname'
