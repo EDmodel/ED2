@@ -331,8 +331,25 @@ subroutine met_sanity_check(cgrid,ipy)
          ifaterr = ifaterr + 1
       end if
 
-      if (cpoly%met(isi)%vels < vels_min .or.                                              &
-          cpoly%met(isi)%vels > vels_max) then
+      !------------------------------------------------------------------------------------!
+      !     At this point, vels is twice the kinetic energy.  Check the square root of     !
+      ! vels, so we are comparing apples to apples.                                        !
+      !------------------------------------------------------------------------------------!
+      if (cpoly%met(isi)%vels < vels_min * vels_min) then
+         write (unit=*,fmt=fmtc) '---------------------------------------------------'
+         write (unit=*,fmt=fmtc) ' Kinetic energy is negative...'
+         write (unit=*,fmt=fmtc) ' '
+         write (unit=*,fmt=fmti) ' - Polygon                :',ipy
+         write (unit=*,fmt=fmti) ' - Site                   :',isi
+         write (unit=*,fmt=fmtf) ' - Longitude              :',cgrid%lon(ipy)
+         write (unit=*,fmt=fmtf) ' - Latitude               :',cgrid%lat(ipy)
+         write (unit=*,fmt=fmtf) ' - Site kinetic energy    :',0.5 * cpoly%met(isi)%vels
+         write (unit=*,fmt=fmtf) ' - Polygon kinetic energy :',0.5 * cgrid%met(ipy)%vels
+         write (unit=*,fmt=fmtf) ' - Minimum OK             :',0.5 * vels_min * vels_min
+         write (unit=*,fmt=fmtc) '---------------------------------------------------'
+         write (unit=*,fmt=fmtc) ' '
+         ifaterr = ifaterr + 1
+      elseif (cpoly%met(isi)%vels > vels_max * vels_max) then
          write (unit=*,fmt=fmtc) '---------------------------------------------------'
          write (unit=*,fmt=fmtc) ' Wind speed doesn''t make sense... '
          write (unit=*,fmt=fmtc) ' '
@@ -340,14 +357,15 @@ subroutine met_sanity_check(cgrid,ipy)
          write (unit=*,fmt=fmti) ' - Site           :',isi
          write (unit=*,fmt=fmtf) ' - Longitude      :',cgrid%lon(ipy)
          write (unit=*,fmt=fmtf) ' - Latitude       :',cgrid%lat(ipy)
-         write (unit=*,fmt=fmtf) ' - Site height    :',cpoly%met(isi)%vels
-         write (unit=*,fmt=fmtf) ' - Polygon height :',cgrid%met(ipy)%vels
+         write (unit=*,fmt=fmtf) ' - Site wind      :',sqrt(cpoly%met(isi)%vels)
+         write (unit=*,fmt=fmtf) ' - Polygon wind   :',sqrt(max(0.,cgrid%met(ipy)%vels))
          write (unit=*,fmt=fmtf) ' - Minimum OK     :',vels_min
          write (unit=*,fmt=fmtf) ' - Maximum OK     :',vels_max
          write (unit=*,fmt=fmtc) '---------------------------------------------------'
          write (unit=*,fmt=fmtc) ' '
          ifaterr = ifaterr + 1
       end if
+      !------------------------------------------------------------------------------------!
 
       if (cpoly%met(isi)%rlong < rlong_min .or.                                            &
           cpoly%met(isi)%rlong > rlong_max) then

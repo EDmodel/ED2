@@ -604,7 +604,8 @@ module fuse_fiss_utils
       integer                              :: ipa,ico,inew      ! Counters
       integer                              :: ncohorts_new      ! New # of cohorts
       integer                              :: tobesplit         ! # of cohorts to be split
-      real                                 :: slai              ! LAI
+      integer                              :: ipft              ! PFT type
+      real                                 :: stai              ! Potential TAI
       real                                 :: old_nplant        ! Old nplant
       real                                 :: new_nplant        ! New nplant
       real                                 :: old_size          ! Old size
@@ -619,15 +620,18 @@ module fuse_fiss_utils
       old_size   = 0.
       !----- Loop through cohorts ---------------------------------------------------------!
       do ico = 1,cpatch%ncohorts
+         ipft = cpatch%pft(ico)
 
-         slai = cpatch%nplant(ico)                                                         &
-              * cpatch%balive(ico)                                                         &
-              * green_leaf_factor(cpatch%pft(ico))                                         &
-              / ( 1.0 + q(cpatch%pft(ico)) + qsw(cpatch%pft(ico)) * cpatch%hite(ico) )     &
-              * cpatch%sla(ico)
+         !---------------------------------------------------------------------------------! 
+         !     STAI is the potential TAI that this cohort has when its leaves are fully    !
+         ! flushed.                                                                        !
+         !---------------------------------------------------------------------------------! 
+         stai = cpatch%nplant(ico) * cpatch%balive(ico) * green_leaf_factor(ipft)          &
+              * q(ipft) / ( 1.0 + q(ipft) + qsw(ipft) * cpatch%hite(ico) )                 &
+              * cpatch%sla(ico) + cpatch%wai(ico)
 
-         !----- If the resulting LAI is too large, split this cohort. ---------------------!
-         split_mask(ico) = slai > lai_tol
+         !----- If the resulting TAI is too large, split this cohort. ---------------------!
+         split_mask(ico) = stai > lai_tol
          
          old_nplant = old_nplant + cpatch%nplant(ico)
          old_size   = old_size   + cpatch%nplant(ico) * ( cpatch%balive(ico)               &

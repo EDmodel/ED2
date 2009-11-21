@@ -485,29 +485,63 @@ subroutine leaftw_derivs(initp,dinitp,csite,ipa)
 
    !----- Boundary condition at the lowest soil level -------------------------------------!
    nsoil = csite%ntext_soil(rk4site%lsl,ipa)
-   if (nsoil /= 13 .and. isoilbc == 1) then
-      !----- Free drainage ----------------------------------------------------------------!
-      wgpmid      = sngl(initp%soil_water(rk4site%lsl))
-      freezeCor   = initp%soil_fracliq(rk4site%lsl)
-      if(freezeCor < 1.d0) freezeCor = 1.d1**(-freezeCoef*(1.d0-freezeCor))
-      w_flux(rk4site%lsl) = dslzti8(rk4site%lsl) * slcons18(rk4site%lsl,nsoil)             &
-                         * (wgpmid/soil8(nsoil)%slmsts)**(2.d0 * soil8(nsoil)%slbs + 3.d0) &
-                         * freezeCor
+   if (nsoil /= 13) then
+      select case(isoilbc)
+      case (0) !----- Bedrock, no flux accross it. ----------------------------------------!
+         w_flux(rk4site%lsl)       = 0.d0
+         qw_flux(rk4site%lsl)      = 0.d0
+         dinitp%avg_drainage       = 0.d0
+         dinitp%avg_drainage_heat  = 0.d0
 
-      !-----  Make it kg/s instead of m3. -------------------------------------------------!
-      dinitp%avg_drainage      = w_flux(rk4site%lsl) * wdns8
-      dinitp%avg_drainage_heat = qw_flux(rk4site%lsl)  
-      !------------------------------------------------------------------------------------!
-      !      Limit water transfers to prevent over-saturation and over-depletion.          !
-      !------------------------------------------------------------------------------------!
-      if (w_flux(rk4site%lsl) > 0.d0) then
-         if (initp%soilair99(rk4site%lsl) <= 0.d0) w_flux(rk4site%lsl) = 0.d0
-      else
-         if (initp%soilair01(rk4site%lsl) <= 0.d0) w_flux(rk4site%lsl) = 0.d0
-      end if
-      !----- Only liquid water is allowed to flow, find qw_flux (W/m2) accordingly --------!
-      qw_flux(rk4site%lsl) = w_flux(rk4site%lsl)                                           &
-                          * cliqvlme8 * (initp%soil_tempk(rk4site%lsl) - tsupercool8)
+      case (1) !----- Free drainage -------------------------------------------------------!
+         wgpmid      = initp%soil_water(rk4site%lsl)
+         freezeCor   = initp%soil_fracliq(rk4site%lsl)
+         if (freezeCor < 1.d0) freezeCor = 1.d1**(-freezeCoef*(1.d0-freezeCor))
+         w_flux(rk4site%lsl) =  dslzti8(rk4site%lsl) * slcons18(rk4site%lsl,nsoil)         &
+                             *  (wgpmid/soil8(nsoil)%slmsts)                               &
+                             ** (2.d0 * soil8(nsoil)%slbs + 3.d0)                          &
+                             *  freezeCor
+
+         !-----  Make it kg/s instead of m3. ----------------------------------------------!
+         dinitp%avg_drainage      = - w_flux(rk4site%lsl) * wdns8
+         dinitp%avg_drainage_heat = - qw_flux(rk4site%lsl)  
+
+         !---------------------------------------------------------------------------------!
+         !      Limit water transfers to prevent over-saturation and over-depletion.       !
+         !---------------------------------------------------------------------------------!
+         if (w_flux(rk4site%lsl) > 0.d0) then
+            if (initp%soilair99(rk4site%lsl) <= 0.d0) w_flux(rk4site%lsl) = 0.d0
+         else
+            if (initp%soilair01(rk4site%lsl) <= 0.d0) w_flux(rk4site%lsl) = 0.d0
+         end if
+         !----- Only liquid water is allowed to flow, find qw_flux (W/m2) accordingly -----!
+         qw_flux(rk4site%lsl) = w_flux(rk4site%lsl)                                        &
+                              * cliqvlme8 * (initp%soil_tempk(rk4site%lsl) - tsupercool8)
+      case (2) !----- Half drainage. ------------------------------------------------------!
+         wgpmid      = initp%soil_water(rk4site%lsl)
+         freezeCor   = initp%soil_fracliq(rk4site%lsl)
+         if (freezeCor < 1.d0) freezeCor = 1.d1**(-freezeCoef*(1.d0-freezeCor))
+         w_flux(rk4site%lsl) =  dslzti8(rk4site%lsl) * slcons18(rk4site%lsl,nsoil)         &
+                             *  (wgpmid/soil8(nsoil)%slmsts)                               &
+                             ** (2.d0 * soil8(nsoil)%slbs + 3.d0)                          &
+                             *  freezeCor * 5.d-1
+
+         !-----  Make it kg/s instead of m3. ----------------------------------------------!
+         dinitp%avg_drainage      = - w_flux(rk4site%lsl) * wdns8
+         dinitp%avg_drainage_heat = - qw_flux(rk4site%lsl)  
+
+         !---------------------------------------------------------------------------------!
+         !      Limit water transfers to prevent over-saturation and over-depletion.       !
+         !---------------------------------------------------------------------------------!
+         if (w_flux(rk4site%lsl) > 0.d0) then
+            if (initp%soilair99(rk4site%lsl) <= 0.d0) w_flux(rk4site%lsl) = 0.d0
+         else
+            if (initp%soilair01(rk4site%lsl) <= 0.d0) w_flux(rk4site%lsl) = 0.d0
+         end if
+         !----- Only liquid water is allowed to flow, find qw_flux (W/m2) accordingly -----!
+         qw_flux(rk4site%lsl) = w_flux(rk4site%lsl)                                        &
+                              * cliqvlme8 * (initp%soil_tempk(rk4site%lsl) - tsupercool8)
+      end select
    else
       !----- Bedrock, no flux accross it. -------------------------------------------------!
       w_flux(rk4site%lsl)       = 0.d0
@@ -518,11 +552,11 @@ subroutine leaftw_derivs(initp,dinitp,csite,ipa)
 
    !----- Copying the variables to the budget arrays. -------------------------------------!
    if (checkbudget) then
-      dinitp%wbudget_loss2drainage = -dinitp%avg_drainage
-      dinitp%ebudget_loss2drainage = -dinitp%avg_drainage_heat
+      dinitp%wbudget_loss2drainage = dinitp%avg_drainage
+      dinitp%ebudget_loss2drainage = dinitp%avg_drainage_heat
 
-      dinitp%wbudget_storage = dinitp%wbudget_storage + dinitp%avg_drainage
-      dinitp%ebudget_storage = dinitp%ebudget_storage + dinitp%avg_drainage_heat
+      dinitp%wbudget_storage = dinitp%wbudget_storage - dinitp%avg_drainage
+      dinitp%ebudget_storage = dinitp%ebudget_storage - dinitp%avg_drainage_heat
    end if
 
    !----- Finally, update soil moisture (impose minimum value of soilcp) and soil energy. -!
@@ -605,6 +639,7 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,dewgnd
                                     , alli8                & ! intent(in)
                                     , umol_2_kgC8          & ! intent(in)
                                     , pi18                 & ! intent(in)
+                                    , halfpi8              & ! intent(in)
                                     , mmdry8               & ! intent(in)
                                     , mmdryi8              & ! intent(in)
                                     , wdns8                & ! intent(in)
@@ -963,7 +998,8 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,dewgnd
          c3lai  = sngloff( flux_area * initp%can_rhos * (veg_ssh - initp%can_shv)          &
                          , tiny_offset)
          !----- Evaporation/condensation "flux" -------------------------------------------!
-         flux_area = effarea_water * initp%lai(ico) + pi18 * initp%wpa(ico)
+         !flux_area = effarea_water * initp%tai(ico) + halfpi8 * initp%wpa(ico)
+         flux_area = effarea_water * initp%tai(ico)
          c3tai  = flux_area * initp%can_rhos * (veg_ssh - initp%can_shv)
          rbi    = 1.d0 / initp%rb(ico)
 
@@ -1028,7 +1064,8 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,dewgnd
          ! leaves plus the actual projected branch area (not the effective), thus the pi   !
          ! factor (which to make it scalable with the cilinder.                            !
          !---------------------------------------------------------------------------------!
-         flux_area = effarea_heat * initp%lai(ico) + pi18 * initp%wpa(ico)
+         !flux_area = effarea_heat * initp%lai(ico) + pi18 * initp%wpa(ico)
+         flux_area = effarea_heat * initp%lai(ico) + pi18 * initp%wai(ico)
          hflxvc    = flux_area * cp8 * initp%can_rhos * rbi                                &
                    * (initp%veg_temp(ico) - initp%can_temp)
 

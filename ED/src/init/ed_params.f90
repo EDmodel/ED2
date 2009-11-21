@@ -885,8 +885,8 @@ subroutine init_pft_alloc_params()
    !---------------------------------------------------------------------------------------!
    !    Minimum height of an individual.                                                   !
    !---------------------------------------------------------------------------------------!
-   hgt_min(1)     = 0.50  ! Used to be 1.5
-   hgt_min(2:4)   = 0.50  ! Used to be 1.5
+   hgt_min(1)     = 0.80  ! Used to be 1.5
+   hgt_min(2:4)   = 0.80  ! Used to be 1.5
    hgt_min(5)     = 0.15
    hgt_min(6:7)   = 1.82  ! Used to be 1.5
    hgt_min(8)     = 1.80
@@ -1720,7 +1720,7 @@ subroutine init_rk4_params()
    !     This flag is used to control the method used to define water percolation through  !
    ! snow layers.                                                                          !
    !---------------------------------------------------------------------------------------!
-   newsnow = .true.
+   newsnow = .false.
 
    return
 end subroutine init_rk4_params

@@ -64,7 +64,7 @@ module rk4_stepper
             errmax = 1.d1
          else
             call get_errmax(errmax, integration_buff%yerr,integration_buff%yscal           &
-                              ,csite%patch(ipa),integration_buff%y,integration_buff%ytemp,.false.)
+                           ,csite%patch(ipa),integration_buff%y,integration_buff%ytemp)
             errmax = errmax * rk4epsi
          end if
 
@@ -95,19 +95,6 @@ module rk4_stepper
             !------------------------------------------------------------------------------!
             if (minstep .or. stuck) then
 
-               !----- Redo calculations so we can see where the RK4 step fails. -----------!
-               pdo         = print_diags
-               print_diags = .true.
-               call rkck(integration_buff%y,integration_buff%dydx,integration_buff%ytemp   &
-                       ,integration_buff%yerr,integration_buff%ak2,integration_buff%ak3    &
-                       ,integration_buff%ak4,integration_buff%ak5,integration_buff%ak6     &
-                       ,integration_buff%ak7,x,h,csite,ipa,reject_step,reject_result)
-               call get_errmax(errmax, integration_buff%yerr,integration_buff%yscal        &
-                              ,csite%patch(ipa),integration_buff%y,integration_buff%ytemp  &
-                              ,.true.)
-               print_diags = pdo
-
-
                write (unit=*,fmt='(80a)')         ('=',k=1,80)
                write (unit=*,fmt='(a)')           '   STEPSIZE UNDERFLOW IN RKQS'
                write (unit=*,fmt='(80a)')         ('-',k=1,80)
@@ -126,7 +113,6 @@ module rk4_stepper
                write (unit=*,fmt='(a,1x,es12.4)') ' + OLDH:          ',oldh
                write (unit=*,fmt='(a,1x,es12.4)') ' + NEWH:          ',newh
                write (unit=*,fmt='(a,1x,es12.4)') ' + SAFETY:        ',safety
-               write (unit=*,fmt='(a,1x,es12.4)') ' + ERRMAX:        ',errmax
                write (unit=*,fmt='(80a)') ('-',k=1,80)
                if (reject_step .or. reject_result) then
                   write (unit=*,fmt='(a)') '   Likely to be a rejected step problem.'
@@ -150,8 +136,8 @@ module rk4_stepper
                                       ,csite%patch(ipa),integration_buff%y                 &
                                       ,integration_buff%ytemp)
                   write (unit=*,fmt='(80a)') ('=',k=1,80)
-                  write (unit=*,fmt='(a,1x,es12.4)') ' - Rel. errmax:',errmax*rk4epsi
-                  write (unit=*,fmt='(a,1x,es12.4)') ' - Raw errmax: ',errmax
+                  write (unit=*,fmt='(a,1x,es12.4)') ' - Rel. errmax:',errmax
+                  write (unit=*,fmt='(a,1x,es12.4)') ' - Raw errmax: ',errmax*rk4eps
                   write (unit=*,fmt='(a,1x,es12.4)') ' - Epsilon:',rk4eps
                   write (unit=*,fmt='(80a)') ('=',k=1,80)
                end if
@@ -761,6 +747,7 @@ module rk4_stepper
                   write(unit=*,fmt='(a)')           '--------------------------------------'
                   write(unit=*,fmt='(a,1x,i6)')     ' PFT:          ',cpatch%pft(ico)
                   write(unit=*,fmt='(a,1x,es12.4)') ' LAI:          ',y%lai(ico)
+                  write(unit=*,fmt='(a,1x,es12.4)') ' WAI:          ',y%wai(ico)
                   write(unit=*,fmt='(a,1x,es12.4)') ' WPA:          ',y%wpa(ico)
                   write(unit=*,fmt='(a,1x,es12.4)') ' TAI:          ',y%tai(ico)
                   write(unit=*,fmt='(a,1x,es12.4)') ' HCAPVEG:      ',y%hcapveg(ico)
@@ -785,6 +772,7 @@ module rk4_stepper
                   write(unit=*,fmt='(a)')           '--------------------------------------'
                   write(unit=*,fmt='(a,1x,i6)')     ' PFT:          ',cpatch%pft(ico)
                   write(unit=*,fmt='(a,1x,es12.4)') ' LAI:          ',y%lai(ico)
+                  write(unit=*,fmt='(a,1x,es12.4)') ' WAI:          ',y%wai(ico)
                   write(unit=*,fmt='(a,1x,es12.4)') ' WPA:          ',y%wpa(ico)
                   write(unit=*,fmt='(a,1x,es12.4)') ' TAI:          ',y%tai(ico)
                   write(unit=*,fmt='(a,1x,es12.4)') ' HCAPVEG:      ',y%hcapveg(ico)
@@ -882,13 +870,13 @@ module rk4_stepper
       write(unit=*,fmt='(a)') ' '
       write(unit=*,fmt='(78a)') ('-',k=1,78)
       cpatch => csite%patch(ipa)
-      write (unit=*,fmt='(2(a5,1x),7(a12,1x))')                                            &
-         '  COH','  PFT','         LAI','         WPA','         TAI','  VEG_ENERGY'       &
-                        ,'OLD_VEG_ENER','    VEG_TEMP','OLD_VEG_TEMP'
+      write (unit=*,fmt='(2(a5,1x),8(a12,1x))')                                            &
+         '  COH','  PFT','         LAI','         WAI','         WPA','         TAI'       &
+                        ,'  VEG_ENERGY','OLD_VEG_ENER','    VEG_TEMP','OLD_VEG_TEMP'
       do ico = 1,cpatch%ncohorts
          if(y%solvable(ico)) then
-            write(unit=*,fmt='(2(i5,1x),7(es12.4,1x))')                                    &
-               ico,cpatch%pft(ico),y%lai(ico),y%wpa(ico),y%tai(ico)                        &
+            write(unit=*,fmt='(2(i5,1x),8(es12.4,1x))')                                    &
+               ico,cpatch%pft(ico),y%lai(ico),y%wai(ico),y%wpa(ico),y%tai(ico)             &
                   ,y%veg_energy(ico),cpatch%veg_energy(ico),y%veg_temp(ico)                &
                   ,cpatch%veg_temp(ico)
          end if
@@ -897,14 +885,14 @@ module rk4_stepper
 
       write(unit=*,fmt='(a)') ' '
       write(unit=*,fmt='(78a)') ('-',k=1,78)
-      write (unit=*,fmt='(2(a5,1x),8(a12,1x))') &
-         '  COH','  PFT','         LAI','         WPA','         TAI'                      &
+      write (unit=*,fmt='(2(a5,1x),9(a12,1x))') &
+         '  COH','  PFT','         LAI','         WAI','         WPA','         TAI'       &
                         ,'   VEG_WATER',' OLD_VEG_H2O','    HEAT_CAP','RK4_HEAT_CAP'       &
                         ,'     FRACLIQ'
       do ico = 1,cpatch%ncohorts
          if(y%solvable(ico)) then
-            write(unit=*,fmt='(2(i5,1x),8(es12.4,1x))')                                    &
-               ico,cpatch%pft(ico),y%lai(ico),y%wpa(ico),y%tai(ico)                        &
+            write(unit=*,fmt='(2(i5,1x),9(es12.4,1x))')                                    &
+               ico,cpatch%pft(ico),y%lai(ico),y%wai(ico),y%wpa(ico),y%tai(ico)             &
                   ,y%veg_water(ico),cpatch%veg_water(ico),cpatch%hcapveg(ico)              &
                   ,y%hcapveg(ico),y%veg_fliq(ico)
          end if

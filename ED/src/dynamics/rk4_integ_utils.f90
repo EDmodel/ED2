@@ -660,7 +660,7 @@ end subroutine get_yscal
 !    This subroutine loops through the integrating variables, seeking for the largest      !
 ! error.                                                                                   !
 !------------------------------------------------------------------------------------------!
-subroutine get_errmax(errmax,yerr,yscal,cpatch,y,ytemp,verbose)
+subroutine get_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
 
    use rk4_coms              , only : rk4patchtype       & ! structure
                                     , rk4eps             & ! intent(in)
@@ -678,7 +678,6 @@ subroutine get_errmax(errmax,yerr,yscal,cpatch,y,ytemp,verbose)
    type(rk4patchtype) , target      :: ytemp            ! Structure with attempted values
    type(patchtype)    , target      :: cpatch           ! Current patch
    real(kind=8)       , intent(out) :: errmax           ! Maximum error
-   logical            , intent(in)  :: verbose
    !----- Local variables -----------------------------------------------------------------!
    integer                          :: ico              ! Current cohort ID
    real(kind=8)                     :: errh2o           ! Scratch error variable
@@ -700,56 +699,46 @@ subroutine get_errmax(errmax,yerr,yscal,cpatch,y,ytemp,verbose)
    err    = abs(yerr%can_enthalpy/yscal%can_enthalpy)
    errmax = max(errmax,err)
    if(record_err .and. err > rk4eps) integ_err(1,1) = integ_err(1,1) + 1_8 
-   if(verbose .and. err .gt. rk4eps) print*,err,errmax,"CAN TEMP"
 
    err    = abs(yerr%can_shv/yscal%can_shv)
-   !  err = 100.0*abs(yerr%can_shv)
    errmax = max(errmax,err)
    if(record_err .and. err > rk4eps) integ_err(2,1) = integ_err(2,1) + 1_8 
-   if(verbose .and. err .gt. rk4eps) print*,err,errmax,"CAN_SHV"
 
    err    = abs(yerr%can_co2/yscal%can_co2)
    errmax = max(errmax,err)
    if(record_err .and. err > rk4eps) integ_err(3,1) = integ_err(3,1) + 1_8 
-   if(verbose .and. err .gt. rk4eps) print*,err,errmax,"CAN_CO2"
   
    do k=rk4site%lsl,nzg
       err    = abs(yerr%soil_water(k)/yscal%soil_water(k))
       errmax = max(errmax,err)
       if(record_err .and. err > rk4eps) integ_err(3+k,1) = integ_err(3+k,1) + 1_8 
-      if(verbose .and. err .gt. rk4eps) print*,err,errmax,"SOIL WATER",k   
    end do
 
    do k=rk4site%lsl,nzg
       err    = abs(yerr%soil_energy(k)/yscal%soil_energy(k))
       errmax = max(errmax,err)
-      if(record_err .and. err > rk4eps) integ_err(15+k,1) = integ_err(15+k,1) + 1_8   
-      if(verbose .and. err .gt. rk4eps) print*,err,errmax,"SOIL ENERGY",k
-   enddo
+      if(record_err .and. err > rk4eps) integ_err(15+k,1) = integ_err(15+k,1) + 1_8
+   end do
 
    do k=1,ytemp%nlev_sfcwater
       err = abs(yerr%sfcwater_energy(k) / yscal%sfcwater_energy(k))
       errmax = max(errmax,err)
-      if(record_err .and. err .gt. rk4eps) integ_err(27+k,1) = integ_err(27+k,1) + 1_8      
-      if(verbose .and. err .gt. rk4eps) print*,err,errmax,"SFC ENERGY",k
-   enddo
+      if(record_err .and. err > rk4eps) integ_err(27+k,1) = integ_err(27+k,1) + 1_8
+   end do
 
    do k=1,ytemp%nlev_sfcwater
       err    = abs(yerr%sfcwater_mass(k) / yscal%sfcwater_mass(k))
       errmax = max(errmax,err)
-      if(record_err .and. err > rk4eps) integ_err(32+k,1) = integ_err(32+k,1) + 1_8      
-      if(verbose .and. err .gt. rk4eps) print*,err,errmax,"SFC MASS",k
-   enddo
+      if(record_err .and. err > rk4eps) integ_err(32+k,1) = integ_err(32+k,1) + 1_8
+   end do
 
    err    = abs(yerr%virtual_heat/yscal%virtual_heat)
    errmax = max(errmax,err)
-   if(record_err .and. err > rk4eps) integ_err(38,1) = integ_err(38,1) + 1_8      
-   if(verbose .and. err .gt. rk4eps) print*,err,errmax,"VIRTUAL HEAT"
+   if(record_err .and. err > rk4eps) integ_err(38,1) = integ_err(38,1) + 1_8
 
    err    = abs(yerr%virtual_water/yscal%virtual_water)
    errmax = max(errmax,err)
    if(record_err .and. err > rk4eps) integ_err(39,1) = integ_err(39,1) + 1_8      
-   if(verbose .and. err .gt. rk4eps) print*,err,errmax,"VIRTUAL WATER"
 
    !---------------------------------------------------------------------------------------!
    !     Getting the worst error only amongst the cohorts in which leaf properties were    !
@@ -764,13 +753,11 @@ subroutine get_errmax(errmax,yerr,yscal,cpatch,y,ytemp,verbose)
          errmax     = max(errmax,errh2o,errene)
          errh2oMAX  = max(errh2oMAX,errh2o)
          erreneMAX  = max(erreneMAX,errene)
-         if(verbose .and. errh2o .gt. rk4eps) print*,errh2o,errmax,"VEG WATER",ico
-         if(verbose .and. errene .gt. rk4eps) print*,errene,errmax,"VEG ENR",ico
       end if
    end do
    if(cpatch%ncohorts > 0 .and. record_err) then
-      if(errh2oMAX > rk4eps) integ_err(40,1) = integ_err(40,1) + 1_8
-      if(erreneMAX > rk4eps) integ_err(41,1) = integ_err(41,1) + 1_8
+      if (errh2oMAX > rk4eps) integ_err(40,1) = integ_err(40,1) + 1_8
+      if (erreneMAX > rk4eps) integ_err(41,1) = integ_err(41,1) + 1_8
    end if
 
    !-------------------------------------------------------------------------!
@@ -905,6 +892,7 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
       targetp%hcapveg     (k) = sourcep%hcapveg     (k)
       targetp%nplant      (k) = sourcep%nplant      (k)
       targetp%lai         (k) = sourcep%lai         (k)
+      targetp%wai         (k) = sourcep%wai         (k)
       targetp%wpa         (k) = sourcep%wpa         (k)
       targetp%tai         (k) = sourcep%tai         (k)
       targetp%solvable    (k) = sourcep%solvable    (k)

@@ -163,6 +163,7 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
       ipft=cpatch%pft(ico)
       !----- Copy the leaf area index and total (leaf+branch+twig) area index. ------------!
       targetp%lai(ico)    = dble(cpatch%lai(ico))
+      targetp%wai(ico)    = dble(cpatch%wai(ico))
       targetp%wpa(ico)    = dble(cpatch%wpa(ico))
       targetp%tai(ico)    = targetp%lai(ico) + dble(cpatch%wai(ico))
 
@@ -1545,22 +1546,24 @@ subroutine print_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
    !----- Constants -----------------------------------------------------------------------!
    character(len=28)  , parameter    :: onefmt = '(a16,1x,3(es12.4,1x),11x,l1)'
    character(len=34)  , parameter    :: lyrfmt = '(a16,1x,i6,1x,3(es12.4,1x),11x,l1)'
-   character(len=34)  , parameter    :: cohfmt = '(a16,1x,i6,1x,6(es12.4,1x),11x,l1)'
+   character(len=34)  , parameter    :: cohfmt = '(a16,1x,i6,1x,7(es12.4,1x),11x,l1)'
    !----- Functions -----------------------------------------------------------------------!
    logical            , external     :: large_error
    !---------------------------------------------------------------------------------------!
 
 
+   write(unit=*,fmt='(80a)'    ) ('=',k=1,80)
+   write(unit=*,fmt='(a)'      ) '  ..... PRINTING MAXIMUM ERROR INFORMATION: .....'
    write(unit=*,fmt='(80a)'    ) ('-',k=1,80)
-   write(unit=*,fmt='(a)'      ) '  >>>>> PRINTING MAXIMUM ERROR INFORMATION: '
    write(unit=*,fmt='(a)'      ) 
    write(unit=*,fmt='(a)'      ) ' Patch level variables, single layer:'
+   write(unit=*,fmt='(80a)'    ) ('-',k=1,80)
    write(unit=*,fmt='(5(a,1x))')  'Name            ','   Max.Error','   Abs.Error'&
                                 &,'       Scale','Problem(T|F)'
 
    errmax       = max(0.0,abs(yerr%can_enthalpy/yscal%can_enthalpy))
    troublemaker = large_error(yerr%can_enthalpy,yscal%can_enthalpy)
-   write(unit=*,fmt=onefmt) 'CAN_ENTHALPY:',errmax,yerr%can_enthalpy,yscal%can_enthalpy &
+   write(unit=*,fmt=onefmt) 'CAN_ENTHALPY:',errmax,yerr%can_enthalpy,yscal%can_enthalpy    &
                                            ,troublemaker
 
    errmax       = max(errmax,abs(yerr%can_shv/yscal%can_shv))
@@ -1581,6 +1584,7 @@ subroutine print_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
    write(unit=*,fmt=onefmt) 'VIRTUAL_WATER:',errmax,yerr%virtual_water,yscal%virtual_water &
                                             ,troublemaker
 
+   write(unit=*,fmt='(80a)') ('-',k=1,80)
    write(unit=*,fmt='(a)'  ) 
    write(unit=*,fmt='(80a)') ('-',k=1,80)
    write(unit=*,fmt='(a)'      ) ' Patch level variables, soil layers:'
@@ -1600,6 +1604,7 @@ subroutine print_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
    enddo
 
    if (yerr%nlev_sfcwater > 0) then
+      write(unit=*,fmt='(80a)') ('-',k=1,80)
       write(unit=*,fmt='(a)'  ) 
       write(unit=*,fmt='(80a)') ('-',k=1,80)
       write(unit=*,fmt='(a)'      ) ' Patch level variables, water/snow layers:'
@@ -1618,107 +1623,117 @@ subroutine print_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
       end do
    end if
 
+   write(unit=*,fmt='(80a)') ('-',k=1,80)
    write(unit=*,fmt='(a)'  ) 
    write(unit=*,fmt='(80a)') ('-',k=1,80)
    write(unit=*,fmt='(a)'      ) ' Cohort_level variables (only the solvable ones):'
-   write(unit=*,fmt='(9(a,1x))')  'Name            ','         PFT','         LAI'         &
-                                     ,'         WPA','         TAI','   Max.Error'         &
-                                     ,'   Abs.Error','       Scale','Problem(T|F)'
+   write(unit=*,fmt='(10(a,1x))')        'Name            ','   PFT','         LAI'        &
+                                      ,'         WAI','         WPA','         TAI'        &
+                                      ,'   Max.Error','   Abs.Error','       Scale'        &
+                                      ,'Problem(T|F)'
    do ico = 1,cpatch%ncohorts
       if (y%solvable(ico)) then
          errmax       = max(errmax,abs(yerr%veg_water(ico)/yscal%veg_water(ico)))
          troublemaker = large_error(yerr%veg_water(ico),yscal%veg_water(ico))
-         write(unit=*,fmt=cohfmt) 'VEG_WATER:',cpatch%pft(ico),y%lai(ico),y%wpa(ico)       &
-                                              ,y%tai(ico),errmax,yerr%veg_water(ico)       &
-                                              ,yscal%veg_water(ico),troublemaker
+         write(unit=*,fmt=cohfmt) 'VEG_WATER:',cpatch%pft(ico),y%lai(ico),y%wai(ico)       &
+                                              ,y%wpa(ico),y%tai(ico),errmax                &
+                                              ,yerr%veg_water(ico),yscal%veg_water(ico)    &
+                                              ,troublemaker
               
 
          errmax       = max(errmax,abs(yerr%veg_energy(ico)/yscal%veg_energy(ico)))
          troublemaker = large_error(yerr%veg_energy(ico),yscal%veg_energy(ico))
-         write(unit=*,fmt=cohfmt) 'VEG_ENERGY:',cpatch%pft(ico),cpatch%lai(ico),y%wpa(ico) &
-                                               ,y%tai(ico),errmax,yerr%veg_energy(ico)     &
-                                               ,yscal%veg_energy(ico),troublemaker
+         write(unit=*,fmt=cohfmt) 'VEG_ENERGY:',cpatch%pft(ico),cpatch%lai(ico),y%wai(ico) &
+                                               ,y%wpa(ico),y%tai(ico),errmax               &
+                                               ,yerr%veg_energy(ico),yscal%veg_energy(ico) &
+                                               ,troublemaker
 
       end if
    end do
 
-   !-------------------------------------------------------------------------!
-   !     Here we just need to make sure the user is checking mass, otherwise !
-   ! these variables will not be computed at all.  If this turns out to be   !
-   ! essential, we will make this permanent and not dependent on             !
-   ! checkbudget.  The only one that is not checked is the runoff, because   !
-   ! it is computed after a step was accepted.                               !
-   !-------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+   !     Here we just need to make sure the user is checking mass, otherwise these         !
+   ! variables will not be computed.  If this turns out to be essential, we will make this !
+   ! permanent and not dependent on checkbudget.  The only one that is not checked is the  !
+   ! runoff, because it is computed only after a step is accepted.                         !
+   !---------------------------------------------------------------------------------------!
    if (checkbudget) then
-      errmax = max(errmax                                                    &
+      write(unit=*,fmt='(80a)'    ) ('-',k=1,80)
+      write(unit=*,fmt='(a)'      ) 
+      write(unit=*,fmt='(a)'      ) ' Budget variables, single layer:'
+      write(unit=*,fmt='(80a)'    ) ('-',k=1,80)
+      write(unit=*,fmt='(5(a,1x))')  'Name            ','   Max.Error','   Abs.Error'      &
+                                   &,'       Scale','Problem(T|F)'
+      errmax = max(errmax                                                                  &
                   ,abs(yerr%co2budget_loss2atm/yscal%co2budget_loss2atm))
-      troublemaker = large_error(yerr%co2budget_loss2atm                     &
+      troublemaker = large_error(yerr%co2budget_loss2atm                                   &
                                 ,yscal%co2budget_loss2atm)
-      write(unit=*,fmt=onefmt) 'CO2LOSS2ATM:',errmax,yerr%co2budget_loss2atm &
+      write(unit=*,fmt=onefmt) 'CO2LOSS2ATM:',errmax,yerr%co2budget_loss2atm               &
                               ,yscal%co2budget_loss2atm,troublemaker
 
-      errmax = max(errmax                                                    &
+      errmax = max(errmax                                                                  &
                   ,abs(yerr%ebudget_loss2atm/yscal%ebudget_loss2atm))
-      troublemaker = large_error(yerr%ebudget_loss2atm                       &
+      troublemaker = large_error(yerr%ebudget_loss2atm                                     &
                                 ,yscal%ebudget_loss2atm)
-      write(unit=*,fmt=onefmt) 'ENLOSS2ATM:',errmax,yerr%ebudget_loss2atm    &
+      write(unit=*,fmt=onefmt) 'ENLOSS2ATM:',errmax,yerr%ebudget_loss2atm                  &
                               ,yscal%ebudget_loss2atm,troublemaker
 
-      errmax = max(errmax                                                    &
+      errmax = max(errmax                                                                  &
                   ,abs(yerr%wbudget_loss2atm/yscal%wbudget_loss2atm))
-      troublemaker = large_error(yerr%wbudget_loss2atm                       &
+      troublemaker = large_error(yerr%wbudget_loss2atm                                     &
                                 ,yscal%wbudget_loss2atm)
-      write(unit=*,fmt=onefmt) 'H2OLOSS2ATM:',errmax,yerr%wbudget_loss2atm   &
+      write(unit=*,fmt=onefmt) 'H2OLOSS2ATM:',errmax,yerr%wbudget_loss2atm                 &
                               ,yscal%wbudget_loss2atm,troublemaker
 
-      errmax = max(errmax                                                    &
+      errmax = max(errmax                                                                  &
                   ,abs(yerr%ebudget_latent/yscal%ebudget_latent))
-      troublemaker = large_error(yerr%ebudget_latent                         &
+      troublemaker = large_error(yerr%ebudget_latent                                       &
                                 ,yscal%ebudget_latent)
-      write(unit=*,fmt=onefmt) 'EN_LATENT:',errmax,yerr%ebudget_latent       &
+      write(unit=*,fmt=onefmt) 'EN_LATENT:',errmax,yerr%ebudget_latent                     &
                               ,yscal%ebudget_latent,troublemaker
 
 
-      errmax = max(errmax,abs( yerr%ebudget_loss2drainage                    &
+      errmax = max(errmax,abs( yerr%ebudget_loss2drainage                                  &
                              / yscal%ebudget_loss2drainage))
-      troublemaker = large_error(yerr%ebudget_loss2drainage                  &
+      troublemaker = large_error(yerr%ebudget_loss2drainage                                &
                                 ,yscal%ebudget_loss2drainage)
-      write(unit=*,fmt=onefmt) 'ENDRAINAGE:',errmax                          &
-                              ,yerr%ebudget_loss2drainage                    &
+      write(unit=*,fmt=onefmt) 'ENDRAINAGE:',errmax                                        &
+                              ,yerr%ebudget_loss2drainage                                  &
                               ,yscal%ebudget_loss2drainage,troublemaker
 
-      errmax = max(errmax,abs( yerr%wbudget_loss2drainage                    &
+      errmax = max(errmax,abs( yerr%wbudget_loss2drainage                                  &
                              / yscal%wbudget_loss2drainage))
-      troublemaker = large_error(yerr%wbudget_loss2drainage                  &
+      troublemaker = large_error(yerr%wbudget_loss2drainage                                &
                                 ,yscal%wbudget_loss2drainage)
-      write(unit=*,fmt=onefmt) 'H2ODRAINAGE:',errmax                         &
-                              ,yerr%wbudget_loss2drainage                    &
+      write(unit=*,fmt=onefmt) 'H2ODRAINAGE:',errmax                                       &
+                              ,yerr%wbudget_loss2drainage                                  &
                               ,yscal%wbudget_loss2drainage,troublemaker
 
-      errmax = max(errmax                                                    &
+      errmax = max(errmax                                                                  &
                   ,abs(yerr%co2budget_storage/yscal%co2budget_storage))
-      troublemaker = large_error(yerr%co2budget_storage                      &
+      troublemaker = large_error(yerr%co2budget_storage                                    &
                                 ,yscal%co2budget_storage)
-      write(unit=*,fmt=onefmt) 'CO2STORAGE:',errmax,yerr%co2budget_storage   &
+      write(unit=*,fmt=onefmt) 'CO2STORAGE:',errmax,yerr%co2budget_storage                 &
                               ,yscal%co2budget_storage,troublemaker
 
-      errmax = max(errmax                                                    &
+      errmax = max(errmax                                                                  &
                   ,abs(yerr%ebudget_storage/yscal%ebudget_storage))
-      troublemaker = large_error(yerr%ebudget_storage                        &
+      troublemaker = large_error(yerr%ebudget_storage                                      &
                                 ,yscal%ebudget_storage)
-      write(unit=*,fmt=onefmt) 'ENSTORAGE:',errmax,yerr%ebudget_storage      &
+      write(unit=*,fmt=onefmt) 'ENSTORAGE:',errmax,yerr%ebudget_storage                    &
                               ,yscal%ebudget_storage,troublemaker
 
-      errmax = max(errmax                                                    &
+      errmax = max(errmax                                                                  &
                   ,abs(yerr%wbudget_storage/yscal%wbudget_storage))
-      troublemaker = large_error(yerr%wbudget_storage                        &
+      troublemaker = large_error(yerr%wbudget_storage                                      &
                                 ,yscal%wbudget_storage)
-      write(unit=*,fmt=onefmt) 'H2OSTORAGE:',errmax,yerr%wbudget_storage     &
+      write(unit=*,fmt=onefmt) 'H2OSTORAGE:',errmax,yerr%wbudget_storage                   &
                               ,yscal%wbudget_storage,troublemaker
    end if
 
    write(unit=*,fmt='(a)'  ) 
-   write(unit=*,fmt='(80a)') ('-',k=1,80)
+   write(unit=*,fmt='(80a)') ('=',k=1,80)
+   write(unit=*,fmt='(a)'  ) 
 
    return
 end subroutine print_errmax
@@ -1794,7 +1809,7 @@ subroutine print_csiteipa(csite, ipa)
 
    write (unit=*,fmt='(80a)') ('-',k=1,80)
 
-   write (unit=*,fmt='(10(a12,1x))') '  VEG_HEIGHT','   VEG_ROUGH','         LAI'          &
+   write (unit=*,fmt='(11(a12,1x))') '  VEG_HEIGHT','   VEG_ROUGH','         LAI'          &
                                     ,'        HTRY','     CAN_CO2','    CAN_TEMP'          &
                                     ,'     CAN_SHV','    CAN_RHOS','    CAN_PRSS'          &
                                     ,'CAN_ENTHALPY','   CAN_DEPTH'

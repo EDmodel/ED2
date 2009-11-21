@@ -161,7 +161,7 @@ module canopy_struct_dynamics
       cpatch => csite%patch(ipa)
 
       !---- Finding the maximum aerodynamic resistance. -----------------------------------!
-      rb_max = rb_inter + rb_slope * (csite%lai(ipa) + csite%wpa(ipa))
+      rb_max = rb_inter + rb_slope * (csite%lai(ipa) + csite%wai(ipa))
 
       !------------------------------------------------------------------------------------!
       !     If there is no vegetation in this patch, then we apply turbulence to bare      !
@@ -573,7 +573,7 @@ module canopy_struct_dynamics
             !------------------------------------------------------------------------------!
             zetac = 0.0  ! Cumulative zeta
 
-            if (ibranch_thermo /= 0 .and. (sum(cpatch%wpa)+sum(cpatch%lai)) == 0.) then
+            if (ibranch_thermo /= 0 .and. (sum(cpatch%wai)+sum(cpatch%lai)) == 0.) then
                call fatal_error('Your plants must have some TAI, M97','canopy_turbulence'  &
                                ,'canopy_struct_dynamics.f90')
             end if
@@ -613,9 +613,9 @@ module canopy_struct_dynamics
                                           * (dz/crowndepth) 
                      case default
                         !------------------------------------------------------------------!
-                        !    Use LAI and WPA to define the frontal area of drag surface.   !
+                        !    Use LAI and WAI to define the frontal area of drag surface.   !
                         !------------------------------------------------------------------!
-                        layertai = layertai + (cpatch%lai(ico) + cpatch%wpa(ico))          &
+                        layertai = layertai + (cpatch%lai(ico) + cpatch%wai(ico))          &
                                             * (dz /crowndepth)
                      end select
 
@@ -857,7 +857,7 @@ module canopy_struct_dynamics
 
       !---- Finding the maximum aerodynamic resistance. -----------------------------------!
       rb_max = dble(rb_inter)                                                              &
-             + dble(rb_slope) * (dble(csite%lai(ipa)) + dble(csite%wpa(ipa)))
+             + dble(rb_slope) * (dble(csite%lai(ipa)) + dble(csite%wai(ipa)))
 
       !------------------------------------------------------------------------------------!
       !     If there is no vegetation in this patch, then we apply turbulence to bare      !
@@ -1232,7 +1232,7 @@ module canopy_struct_dynamics
             !------------------------------------------------------------------------------!
             zetac = 0.d0  ! Cumulative zeta
 
-            if( ibranch_thermo /= 0 .and. (sum(initp%wpa)+sum(initp%lai)) == 0. ) then
+            if( ibranch_thermo /= 0 .and. (sum(initp%wai)+sum(initp%lai)) == 0. ) then
                call fatal_error('Your plants must have some TAI, M97','canopy_turbulence'  &
                                ,'canopy_struct_dynamics.f90')
             end if
@@ -1273,9 +1273,9 @@ module canopy_struct_dynamics
                                           * (dz8/crowndepth) 
                      case default
                         !------------------------------------------------------------------!
-                        !    Use LAI and WPA to define the frontal area of drag surface.   !
+                        !    Use LAI and WAI to define the frontal area of drag surface.   !
                         !------------------------------------------------------------------!
-                        layertai = layertai + (initp%lai(ico) + initp%wpa(ico))            &
+                        layertai = layertai + (initp%lai(ico) + initp%wai(ico))            &
                                             * (dz8 /crowndepth)
                      end select
 

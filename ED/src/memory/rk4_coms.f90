@@ -94,6 +94,7 @@ module rk4_coms
       real(kind=8), pointer, dimension(:) :: hcapveg      ! Heat capacity       [   J/m²/K]
       real(kind=8), pointer, dimension(:) :: nplant       ! Plant density       [ plant/m²]
       real(kind=8), pointer, dimension(:) :: lai          ! Leaf area index     [    m²/m²]
+      real(kind=8), pointer, dimension(:) :: wai          ! Wood area index     [    m²/m²]
       real(kind=8), pointer, dimension(:) :: wpa          ! Wood projected area [    m²/m²]
       real(kind=8), pointer, dimension(:) :: tai          ! Tree area index     [    m²/m²]
       real(kind=8), pointer, dimension(:) :: rb           ! Aerodynamic resist. [      s/m]
@@ -717,6 +718,7 @@ module rk4_coms
       allocate(y%hcapveg      (maxcohort))
       allocate(y%nplant       (maxcohort))
       allocate(y%lai          (maxcohort))
+      allocate(y%wai          (maxcohort))
       allocate(y%wpa          (maxcohort))
       allocate(y%tai          (maxcohort))
       allocate(y%rb           (maxcohort))
@@ -757,6 +759,7 @@ module rk4_coms
       nullify(y%hcapveg      )
       nullify(y%nplant       )
       nullify(y%lai          )
+      nullify(y%wai          )
       nullify(y%wpa          )
       nullify(y%tai          )
       nullify(y%rb           )
@@ -795,6 +798,7 @@ module rk4_coms
       if(associated(y%hcapveg       ))  y%hcapveg       = 0.d0
       if(associated(y%nplant        ))  y%nplant        = 0.d0
       if(associated(y%lai           ))  y%lai           = 0.d0
+      if(associated(y%wai           ))  y%wai           = 0.d0
       if(associated(y%wpa           ))  y%wpa           = 0.d0
       if(associated(y%tai           ))  y%tai           = 0.d0
       if(associated(y%rb            ))  y%rb            = 0.d0
@@ -833,6 +837,7 @@ module rk4_coms
       if(associated(y%hcapveg       ))  deallocate(y%hcapveg     )
       if(associated(y%nplant        ))  deallocate(y%nplant      )
       if(associated(y%lai           ))  deallocate(y%lai         )
+      if(associated(y%wai           ))  deallocate(y%wai         )
       if(associated(y%wpa           ))  deallocate(y%wpa         )
       if(associated(y%tai           ))  deallocate(y%tai         )
       if(associated(y%rb            ))  deallocate(y%rb          )
