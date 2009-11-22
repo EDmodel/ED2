@@ -233,6 +233,9 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------!
       !    Renormalize the total area.  We must also rescale all extensive properties from !
       ! cohorts, since they are per unit area and we are effectively changing the area.    !
+      ! IMPORTANT: Only cohort-level variables that have units per area (m2) should be     !
+      !            rescaled.  Variables whose units are per plant should _NOT_ be included !
+      !            here.                                                                   !
       !------------------------------------------------------------------------------------!
       new_area=0.
       area_scale = 1./(1. - elim_area)
@@ -249,6 +252,9 @@ module fuse_fiss_utils
             cpatch%mean_gpp(ico)            = cpatch%mean_gpp(ico)            * area_scale
             cpatch%mean_leaf_resp(ico)      = cpatch%mean_leaf_resp(ico)      * area_scale
             cpatch%mean_root_resp(ico)      = cpatch%mean_root_resp(ico)      * area_scale
+            cpatch%mean_growth_resp(ico)    = cpatch%mean_growth_resp(ico)    * area_scale
+            cpatch%mean_storage_resp(ico)   = cpatch%mean_storage_resp(ico)   * area_scale
+            cpatch%mean_vleaf_resp(ico)     = cpatch%mean_vleaf_resp(ico)     * area_scale
             cpatch%Psi_open(ico)            = cpatch%Psi_open(ico)            * area_scale
             cpatch%gpp(ico)                 = cpatch%gpp(ico)                 * area_scale
             cpatch%leaf_respiration(ico)    = cpatch%leaf_respiration(ico)    * area_scale
@@ -674,6 +680,9 @@ module fuse_fiss_utils
                !---------------------------------------------------------------------------!
                !   Half the densities of the original cohort.  All "extensive" variables   !
                ! need to be rescaled.                                                      !
+               ! IMPORTANT: Only cohort-level variables that have units per area (m2)      !
+               !            should be rescaled.  Variables whose units are per plant       !
+               !            should _NOT_ be included here.                                 !
                !---------------------------------------------------------------------------!
                cpatch%lai(ico)                 = cpatch%lai(ico)                  * 0.5
                cpatch%wpa(ico)                 = cpatch%wpa(ico)                  * 0.5
@@ -698,9 +707,6 @@ module fuse_fiss_utils
                cpatch%veg_water(ico)           = cpatch%veg_water(ico)            * 0.5
                cpatch%hcapveg(ico)             = cpatch%hcapveg(ico)              * 0.5
                cpatch%veg_energy(ico)          = cpatch%veg_energy(ico)           * 0.5
-               cpatch%growth_respiration(ico)  = cpatch%growth_respiration(ico)   * 0.5
-               cpatch%storage_respiration(ico) = cpatch%storage_respiration(ico)  * 0.5
-               cpatch%vleaf_respiration(ico)   = cpatch%vleaf_respiration(ico)    * 0.5
                if (idoutput > 0 .or. imoutput > 0 ) then
                   cpatch%dmean_par_v     (ico) = cpatch%dmean_par_v     (ico)     * 0.5
                   cpatch%dmean_par_v_beam(ico) = cpatch%dmean_par_v_beam(ico)     * 0.5
@@ -2325,6 +2331,11 @@ module fuse_fiss_utils
       cpatch => csite%patch(recp)
       nrc = cpatch%ncohorts
       area_scale = csite%area(recp) * newareai
+      !------------------------------------------------------------------------------------!
+      ! IMPORTANT: Only cohort-level variables that have units per area (m2) should be     !
+      !            rescaled.  Variables whose units are per plant should _NOT_ be included !
+      !            here.                                                                   !
+      !------------------------------------------------------------------------------------!
       do ico = 1,nrc
          cpatch%lai(ico)                 = cpatch%lai(ico)                  * area_scale
          cpatch%wpa(ico)                 = cpatch%wpa(ico)                  * area_scale
@@ -2336,9 +2347,6 @@ module fuse_fiss_utils
          cpatch%mean_growth_resp(ico)    = cpatch%mean_growth_resp(ico)     * area_scale
          cpatch%mean_storage_resp(ico)   = cpatch%mean_storage_resp(ico)    * area_scale
          cpatch%mean_vleaf_resp(ico)     = cpatch%mean_vleaf_resp(ico)      * area_scale
-         cpatch%growth_respiration(ico)  = cpatch%growth_respiration(ico)   * area_scale
-         cpatch%storage_respiration(ico) = cpatch%storage_respiration(ico)  * area_scale
-         cpatch%vleaf_respiration(ico)   = cpatch%vleaf_respiration(ico)    * area_scale
          cpatch%today_gpp(ico)           = cpatch%today_gpp(ico)            * area_scale
          cpatch%today_gpp_pot(ico)       = cpatch%today_gpp_pot(ico)        * area_scale
          cpatch%today_gpp_max(ico)       = cpatch%today_gpp_max(ico)        * area_scale
@@ -2367,6 +2375,11 @@ module fuse_fiss_utils
       cpatch => csite%patch(donp)
       ndc = cpatch%ncohorts
       area_scale = csite%area(donp) * newareai
+      !------------------------------------------------------------------------------------!
+      ! IMPORTANT: Only cohort-level variables that have units per area (m2) should be     !
+      !            rescaled.  Variables whose units are per plant should _NOT_ be included !
+      !            here.                                                                   !
+      !------------------------------------------------------------------------------------!
       do ico = 1,ndc
          cpatch%lai(ico)                 = cpatch%lai(ico)                  * area_scale
          cpatch%wpa(ico)                 = cpatch%wpa(ico)                  * area_scale
@@ -2378,9 +2391,6 @@ module fuse_fiss_utils
          cpatch%mean_growth_resp(ico)    = cpatch%mean_growth_resp(ico)     * area_scale
          cpatch%mean_storage_resp(ico)   = cpatch%mean_storage_resp(ico)    * area_scale
          cpatch%mean_vleaf_resp(ico)     = cpatch%mean_vleaf_resp(ico)      * area_scale
-         cpatch%growth_respiration(ico)  = cpatch%growth_respiration(ico)   * area_scale
-         cpatch%storage_respiration(ico) = cpatch%storage_respiration(ico)  * area_scale
-         cpatch%vleaf_respiration(ico)   = cpatch%vleaf_respiration(ico)    * area_scale
          cpatch%today_gpp(ico)           = cpatch%today_gpp(ico)            * area_scale
          cpatch%today_gpp_pot(ico)       = cpatch%today_gpp_pot(ico)        * area_scale
          cpatch%today_gpp_max(ico)       = cpatch%today_gpp_max(ico)        * area_scale

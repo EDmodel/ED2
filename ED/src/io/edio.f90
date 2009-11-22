@@ -410,17 +410,16 @@ subroutine spatial_averages
                                          * site_area_i
 
             !----- Extra variables for NACP intercomparision (MCD) ------------------------!
-            cpoly%avg_fsc(isi)    = sum(csite%fast_soil_C       * csite%area ) * site_area_i
-            cpoly%avg_ssc(isi)    = sum(csite%slow_soil_C       * csite%area ) * site_area_i
-            cpoly%avg_stsc(isi)   = sum(csite%structural_soil_C * csite%area ) * site_area_i
-            !cpoly%avg_co2can(isi)         = sum(csite%can_co2            * csite%area ) * site_area_i           
-            cpoly%avg_fsn(isi)         = sum(csite%fast_soil_N        * csite%area ) * site_area_i
-            cpoly%avg_msn(isi)         = sum(csite%mineralized_soil_N        * csite%area ) * site_area_i
-            cpoly%avg_sfcw_depth(isi)   = 0.0
-            cpoly%avg_sfcw_energy(isi)  = 0.0
-            cpoly%avg_sfcw_mass(isi)    = 0.0
-            cpoly%avg_sfcw_tempk(isi)   = 0.0
-            cpoly%avg_sfcw_fracliq(isi) = 0.0
+            cpoly%avg_fsc(isi)          = sum(csite%fast_soil_C        * csite%area )      &
+                                        * site_area_i
+            cpoly%avg_ssc(isi)          = sum(csite%slow_soil_C        * csite%area )      &
+                                        * site_area_i
+            cpoly%avg_stsc(isi)         = sum(csite%structural_soil_C  * csite%area )      &
+                                        * site_area_i
+            cpoly%avg_fsn(isi)          = sum(csite%fast_soil_N        * csite%area )      &
+                                        * site_area_i
+            cpoly%avg_msn(isi)          = sum(csite%mineralized_soil_N * csite%area )      &
+                                        * site_area_i
 
             !----- Available water. -------------------------------------------------------!
             cpoly%avg_available_water(isi) = sum(csite%avg_available_water * csite%area)   &
@@ -462,7 +461,7 @@ subroutine spatial_averages
                                         * csite%area(ipa) * site_area_i
                   !----- Integrate soil wetness. ------------------------------------------!
                   cpoly%avg_soil_wetness(isi) = cpoly%avg_soil_wetness(isi)                &
-                       + ((csite%soil_water(k,ipa) - soil(nsoil)%soilcp))              &
+                       + ((csite%soil_water(k,ipa) - soil(nsoil)%soilcp))                  &
                        / (soil(nsoil)%slmsts - soil(nsoil)%soilcp)                         &
                        * dslz(k) * dslzsum_i * csite%area(ipa) * site_area_i
                end do
@@ -552,56 +551,35 @@ subroutine spatial_averages
                            ,csite%hcapveg(ipa),csite%avg_veg_temp(ipa)                     &
                            ,csite%avg_veg_fliq(ipa))
 
-                  cgrid%avg_gpp(ipy)        = cgrid%avg_gpp(ipy)                           &
-                                            + sum(cpatch%mean_gpp)                         &
-                                            * csite%area(ipa)*cpoly%area(isi)              &
-                                            * site_area_i * poly_area_i
-
-                  cgrid%avg_leaf_resp(ipy)  = cgrid%avg_leaf_resp(ipy)                     &
-                                            + sum(cpatch%mean_leaf_resp)                   &
-                                            * csite%area(ipa)*cpoly%area(isi)              &
-                                            * site_area_i * poly_area_i
-
-                  cgrid%avg_root_resp(ipy)  = cgrid%avg_root_resp(ipy)                     &
-                                            + sum(cpatch%mean_root_resp)                   &
-                                            * csite%area(ipa)*cpoly%area(isi)              &
-                                            * site_area_i * poly_area_i
-
-                  cgrid%avg_growth_resp(ipy) = cgrid%avg_growth_resp(ipy) + &
-                       csite%area(ipa)*cpoly%area(isi)*sum(cpatch%mean_growth_resp) &
-                       *site_area_i * poly_area_i
-                 cgrid%avg_storage_resp(ipy) = cgrid%avg_storage_resp(ipy) + &
-                      csite%area(ipa)*cpoly%area(isi)*sum(cpatch%mean_storage_resp) &
-                      *site_area_i * poly_area_i
-                 cgrid%avg_vleaf_resp(ipy) = cgrid%avg_vleaf_resp(ipy) + &
-                      csite%area(ipa)*cpoly%area(isi)*sum(cpatch%mean_vleaf_resp) &
-                      *site_area_i * poly_area_i
-
-                  !------------------------------------------------------------------------!
-                  !     Growth, storage, and vleaf respiration are in kgC/plant/day.       !
-                  ! Since leaf and fine root respiration are in umol/m2/s, we convert them !
-                  ! to umol/m2/s.                                                          !
-                  !------------------------------------------------------------------------!
-                  cgrid%avg_growth_resp(ipy)  = cgrid%avg_growth_resp(ipy)                 &
-                                              + sum( cpatch%growth_respiration             &
-                                                   * cpatch%nplant)                        &
+                  cgrid%avg_gpp(ipy)          = cgrid%avg_gpp(ipy)                         &
+                                              + sum(cpatch%mean_gpp)                       &
                                               * csite%area(ipa)*cpoly%area(isi)            &
-                                              * site_area_i * poly_area_i                  &
-                                              / (day_sec * umol_2_kgC)
+                                              * site_area_i * poly_area_i
+
+                  cgrid%avg_leaf_resp(ipy)    = cgrid%avg_leaf_resp(ipy)                   &
+                                              + sum(cpatch%mean_leaf_resp)                 &
+                                              * csite%area(ipa)*cpoly%area(isi)            &
+                                              * site_area_i * poly_area_i
+
+                  cgrid%avg_root_resp(ipy)    = cgrid%avg_root_resp(ipy)                   &
+                                              + sum(cpatch%mean_root_resp)                 &
+                                              * csite%area(ipa)*cpoly%area(isi)            &
+                                              * site_area_i * poly_area_i
+
+                  cgrid%avg_growth_resp(ipy)  = cgrid%avg_growth_resp(ipy)                 &
+                                              + sum(cpatch%mean_growth_resp)               &
+                                              * csite%area(ipa)*cpoly%area(isi)            &
+                                              * site_area_i * poly_area_i
 
                   cgrid%avg_storage_resp(ipy) = cgrid%avg_storage_resp(ipy)                &
-                                              + sum( cpatch%storage_respiration            &
-                                                   * cpatch%nplant)                        &
+                                              + sum(cpatch%mean_storage_resp)              &
                                               * csite%area(ipa)*cpoly%area(isi)            &
-                                              * site_area_i * poly_area_i                  &
-                                              / (day_sec * umol_2_kgC)
+                                              * site_area_i * poly_area_i
 
                   cgrid%avg_vleaf_resp(ipy)   = cgrid%avg_vleaf_resp(ipy)                  &
-                                              + sum( cpatch%vleaf_respiration              &
-                                                   * cpatch%nplant)                        &
+                                              + sum(cpatch%mean_vleaf_resp)                &
                                               * csite%area(ipa)*cpoly%area(isi)            &
-                                              * site_area_i * poly_area_i                  &
-                                              / (day_sec * umol_2_kgC)
+                                              * site_area_i * poly_area_i
                   !------------------------------------------------------------------------!
 
                   cgrid%avg_balive(ipy)     = cgrid%avg_balive(ipy)                        &

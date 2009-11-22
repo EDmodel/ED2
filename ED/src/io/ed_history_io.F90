@@ -272,7 +272,8 @@ subroutine read_ed1_history_file
                     print*,"error reading from patch file",trim(pss_name)
                     print*,cpoly%sitenum
                     print*,"site number", sitenum,"not found"
-                    stop
+                    call fatal_error('Error reading from patch file'//trim(pss_name)       &
+                                    ,'read_ed1_history_file','ed_history_io.F90')
                  endif
               case default !Nearly bare ground
                  exit count_patches
@@ -558,15 +559,7 @@ subroutine read_ed1_history_file
                        cpatch%bsapwood(ic2) = cpatch%balive(ic2) * qsw(ipft(ic)) * cpatch%hite(ic2) &
                                             /(1.0 + q(ipft(ic)) + qsw(ipft(ic2)) * cpatch%hite(ic2))
 
-                       !print*,cpatch%lai(ic2),cpatch%bleaf(ic2),cpatch%nplant(ic2),SLA(ipft(ic)),ipft(ic)
-                       
-                       cpatch%lai(ic2) = cpatch%bleaf(ic2) * cpatch%nplant(ic2) *   &
-                            SLA(ipft(ic))
-if(cpatch%lai(ic2) /= cpatch%lai(ic2)) then
-print*,"invalid initial LAI" 
-                       print*,cpatch%lai(ic2),cpatch%bleaf(ic2),cpatch%nplant(ic2),SLA(ipft(ic)),ipft(ic)
-                       stop
-endif
+
                        ! START COLD-DECIDUOUS TREES WITHOUT LEAVES.  ALL OTHER TREES
                        ! ARE FULLY FLUSHED.
                        if(phenology(ipft(ic)) /= 2)then
@@ -576,7 +569,6 @@ endif
                        else
                           cpatch%phenology_status(ic2) = 2
                           cpatch%bleaf(ic2) = 0.0
-                          cpatch%lai(ic2) = 0.0
                           cpatch%bstorage(ic2) = 0.5 * cpatch%balive(ic2)
                        endif
                                   

@@ -4,7 +4,7 @@ subroutine ed_init_coup_atm
   
   use ed_misc_coms,  only: ied_init_mode,runtype
   use ed_state_vars, only: edtype,polygontype,sitetype,patchtype,edgrid_g
-  use soil_coms,     only: soil_rough, isoilstateinit, soil, slmstr,dslz
+  use soil_coms,     only: soil_rough, isoilstateinit, soil, slmstr, stgoff
   use rconstants,    only: tsupercool, cliqvlme, cicevlme, t3ple, cp, alvl,p00i,rocp
   use grid_coms,      only: nzs, nzg, ngrids
   use fuse_fiss_utils, only: fuse_patches,fuse_cohorts,terminate_cohorts,split_cohorts
@@ -165,12 +165,12 @@ subroutine ed_init_coup_atm
               
               cpatch => csite%patch(ipa)
               
-              if(csite%soil_tempk(1,ipa) == -100.0 .or. isoilstateinit == 0)then
-                 
-                 csite%soil_tempk(1:nzg,ipa) = csite%can_temp(ipa)
-                 
-                 if(csite%can_temp(ipa) > t3ple)then
-                    do k = 1, nzg
+              if (csite%soil_tempk(1,ipa) == -100.0 .or. isoilstateinit == 0) then
+
+                 do k = 1, nzg
+                    csite%soil_tempk(k,ipa) = csite%can_temp(ipa) + stgoff(k)
+
+                    if (csite%soil_tempk(k,ipa) > t3ple)then
                        nsoil=csite%ntext_soil(k,ipa)
                        csite%soil_fracliq(k,ipa) = 1.0
                        csite%soil_water(k,ipa) = max( soil(nsoil)%soilcp                   &
@@ -179,9 +179,7 @@ subroutine ed_init_coup_atm
                                                 * csite%soil_tempk(k,ipa)                  &
                                                 + csite%soil_water(k,ipa) * cliqvlme       &
                                                 * (csite%soil_tempk(k,ipa) - tsupercool)
-                    end do
-                 else
-                    do k = 1, nzg
+                    else
                        nsoil=csite%ntext_soil(k,ipa)
                        csite%soil_fracliq(k,ipa) = 0.0
                        csite%soil_water(k,ipa) = max( soil(nsoil)%soilcp                   &
@@ -190,8 +188,8 @@ subroutine ed_init_coup_atm
                                                 * csite%soil_tempk(k,ipa)                  &
                                                 + csite%soil_water(k,ipa)                  &
                                                 * cicevlme * csite%soil_tempk(k,ipa)
-                    end do
-                 end if
+                    end if
+                 end do
 
                  !----- Initial condition is with no snow/pond. ---------------------------!
                  csite%nlev_sfcwater(ipa) = 0

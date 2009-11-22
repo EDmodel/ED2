@@ -1059,7 +1059,7 @@ subroutine update_met_drivers(cgrid)
       ! init_met_params subroutine in ed_params.f90).                                      !
       !------------------------------------------------------------------------------------!
       rvaux  = cgrid%met(ipy)%atm_shv / (1. - cgrid%met(ipy)%atm_shv)
-      relhum = rehuil(cgrid%met(ipy)%prss,temp0,rvaux)
+      relhum = rehuil(cgrid%met(ipy)%prss,cgrid%met(ipy)%atm_tmp,rvaux)
       !------------------------------------------------------------------------------------!
       !      Check whether the relative humidity is off-bounds.  If it is, then we re-     !
       ! calculate the mixing ratio and convert to specific humidity.                       !
@@ -1118,7 +1118,7 @@ subroutine update_met_drivers(cgrid)
          ! defined at the init_met_params subroutine in ed_params.f90).                    !
          !---------------------------------------------------------------------------------!
          rvaux  = cpoly%met(isi)%atm_shv / (1. - cpoly%met(isi)%atm_shv)
-         relhum = rehuil(cpoly%met(isi)%prss,temp0,rvaux)
+         relhum = rehuil(cpoly%met(isi)%prss,cpoly%met(isi)%atm_tmp,rvaux)
          !---------------------------------------------------------------------------------!
          !      Check whether the relative humidity is off-bounds.  If it is, then we re-  !
          ! calculate the mixing ratio and convert to specific humidity.                    !
@@ -1153,31 +1153,48 @@ subroutine update_met_drivers(cgrid)
          !  Jin et al 1999 Hydrol Process. 13:2467-2482 Table 2                            !
          !  [[modified 11/16/09 by MCD]]                                                   !
          !---------------------------------------------------------------------------------!
-         fice  = 0.  !----- Fraction of ice in precipitation
-         snden = 0.  !----- Partial density of ice in precipitation
-         if (cpoly%met(isi)%atm_tmp <= (t3ple + 2.5) .and.                                 &
-             cpoly%met(isi)%atm_tmp  > (t3ple + 2.0) ) then
+         if (cpoly%met(isi)%atm_tmp > (t3ple + 2.5)) then
+            !----- Rain only. -------------------------------------------------------------!
+            fice = 0.0
+            cpoly%met(isi)%dpcpg = max(0.0, cpoly%met(isi)%pcpg) *wdnsi
+
+         elseif (cpoly%met(isi)%atm_tmp <= (t3ple + 2.5) .and.                             &
+                 cpoly%met(isi)%atm_tmp  > (t3ple + 2.0) ) then
+            !------------------------------------------------------------------------------!
+            !     60% snow, 40% rain. (N.B. May not be appropriate for sub-tropical        !
+            ! regions where the level of the melting layer is higher...).                  !
+            !------------------------------------------------------------------------------!
             fice  = 0.6
             snden = 189.0
-         else
-            if (cpoly%met(isi)%atm_tmp <= (t3ple + 2.0) .and.                              &
-                cpoly%met(isi)%atm_tmp > (t3ple)          ) then
-               fice = min(1.0,1.+(54.62 - 0.2*cpoly%met(isi)%atm_tmp))
-            else
-               fice = 1.0
-            end if
+            cpoly%met(isi)%dpcpg = max(0.0, cpoly%met(isi)%pcpg)                           &
+                                 * ((1.0-fice) * wdnsi + fice / snden)
 
-            if (cpoly%met(isi)%atm_tmp <= (t3ple + 2.0) .and.                              &
-                cpoly%met(isi)%atm_tmp > (t3ple  -15.0)) then
-               snden = (50.0+1.7*(cpoly%met(isi)%atm_tmp-258.15)**1.5 )
-            else
-               snden = 50.
-            end if
+         elseif (cpoly%met(isi)%atm_tmp <= (t3ple + 2.0) .and.                             &
+                 cpoly%met(isi)%atm_tmp > t3ple          ) then
+            !------------------------------------------------------------------------------!
+            !     Increasing the fraction of snow. (N.B. May not be appropriate for        !
+            ! sub-tropical regions where the level of the melting layer is higher...).     !
+            !------------------------------------------------------------------------------!
+            fice  = min(1.0, 1.+(54.62 - 0.2*cpoly%met(isi)%atm_tmp))
+            snden = (50.0+1.7*(cpoly%met(isi)%atm_tmp-258.15)**1.5 )
+            cpoly%met(isi)%dpcpg = max(0.0, cpoly%met(isi)%pcpg)                           &
+                                 * ((1.0-fice) * wdnsi + fice / snden)
+
+         elseif (cpoly%met(isi)%atm_tmp <= t3ple         .and.                             &
+                 cpoly%met(isi)%atm_tmp > (t3ple - 15.0) ) then
+            !----- Below freezing point, snow only. ---------------------------------------!
+            fice  = 1.0
+            snden = (50.0+1.7*(cpoly%met(isi)%atm_tmp-258.15)**1.5 )
+            cpoly%met(isi)%dpcpg = max(0.0, cpoly%met(isi)%pcpg) / snden
+
+         else ! if (copy%met(isi)%atm_tmp < (t3ple - 15.0)) then
+            !----- Below freezing point, snow only. ---------------------------------------!
+            fice  = 1.0
+            snden = 50.
+            cpoly%met(isi)%dpcpg = max(0.0, cpoly%met(isi)%pcpg) / snden
+
          end if
-
-         !----- Set rate of snow depth accumulation. --------------------------------------!
-         cpoly%met(isi)%dpcpg = max(0.0, cpoly%met(isi)%pcpg)                              &
-                              * ((1.0-fice)*wdnsi + fice/snden)
+         !---------------------------------------------------------------------------------!
 
          !---------------------------------------------------------------------------------!
          !     Set internal energy.  This will be the precipitation times the specific     !
@@ -1187,7 +1204,7 @@ subroutine update_met_drivers(cgrid)
          !---------------------------------------------------------------------------------!
          cpoly%met(isi)%qpcpg = max(0.0, cpoly%met(isi)%pcpg)                              &
                               * ( (1.0-fice) * cliq * ( max(t3ple,cpoly%met(isi)%atm_tmp)  &
-                                                     - tsupercool)                         &
+                                                      - tsupercool)                        &
                                 + fice *cice * min(cpoly%met(isi)%atm_tmp,t3ple))
          !---------------------------------------------------------------------------------!
 

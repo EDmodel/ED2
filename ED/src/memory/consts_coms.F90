@@ -295,10 +295,12 @@ Module consts_coms
    !---------------------------------------------------------------------------------------!
    ! Unit conversion, it must be defined locally even for coupled runs.                    !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: umol_2_kgC     = 1.20107e-8          ! µmol(CO2)   => kg(C)
-   real, parameter :: kgom2_2_tonoha = 10.                 ! kg(C)/m²    => ton(C)/ha
-   real, parameter :: tonoha_2_kgom2 = 0.1                 ! ton(C)/ha   => kg(C)/m²
-   real, parameter :: umols_2_kgCyr  = umol_2_kgC * yr_sec ! µmol(CO2)/s => kg(C)/yr
+   real, parameter :: umol_2_kgC     = 1.20107e-8           ! µmol(CO2)   => kg(C)
+   real, parameter :: kgC_2_umol     = 1. / umol_2_kgC      ! kg(C)       => µmol(CO2)
+   real, parameter :: kgom2_2_tonoha = 10.                  ! kg(C)/m²    => ton(C)/ha
+   real, parameter :: tonoha_2_kgom2 = 0.1                  ! ton(C)/ha   => kg(C)/m²
+   real, parameter :: umols_2_kgCyr  = umol_2_kgC * yr_sec  ! µmol(CO2)/s => kg(C)/yr
+   real, parameter :: kgCday_2_umols = kgC_2_umol / day_sec ! kg(C)/day   => µmol(CO2)/s
    !---------------------------------------------------------------------------------------!
 
 

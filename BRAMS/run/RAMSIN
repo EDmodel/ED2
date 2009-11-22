@@ -953,9 +953,9 @@
                         ! This option is ignored in near bare ground runs.
 
 !----- Patch and cohort dimension settings ------------------------------------------------!
-   MAXPATCH  = 10,   ! If number of patches in a given site exceeds 
+   MAXPATCH  = 20,   ! If number of patches in a given site exceeds 
                      ! MAXPATCH, force patch fusion.
-   MAXCOHORT = 10,   ! If number of cohorts in a given patch exceeds
+   MAXCOHORT = 80,   ! If number of cohorts in a given patch exceeds
                      ! MAXCOHORT, force cohort fusion.
                      !
                      ! For both MAXPATCH and MAXCOHORT, 0 means that fusion
@@ -968,7 +968,7 @@
 ! Commonly changed parameters                                                              !
 !------------------------------------------------------------------------------------------!
 
-   TREEFALL_DISTURBANCE_RATE  = 0.01,  ! Treefall disturbance rate, 1/years
+   TREEFALL_DISTURBANCE_RATE  = 0.014,  ! Treefall disturbance rate, 1/years
 
    RUNOFF_TIME     = 21600.0,          ! the forest could get saturated and 
                                        ! develop a sfcwater pool of meters or 

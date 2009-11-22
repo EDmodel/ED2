@@ -286,7 +286,7 @@ subroutine init_lapse_params()
    lapse%nir_diffuse  = 0.0
    lapse%par_beam     = 0.0
    lapse%par_diffuse  = 0.0
-   lapse%pptnorm      = 1.0
+   lapse%pptnorm      = 0.0
 
    atm_tmp_intercept = 0.0
    atm_tmp_slope     = 1.0
@@ -536,7 +536,7 @@ subroutine init_pft_photo_params()
    Vm_low_temp(14:15)        = 5.0     ! tropical PFTs
 
    Vm_high_temp(1)           = 100.0    ! C4
-   Vm_high_temp(2:12)        =  45.0    ! C3
+   Vm_high_temp(2:13)        =  45.0    ! C3
    Vm_high_temp(14:15)       = 100.0    ! C4
 
    Vm0(1)                    = 12.5
@@ -578,28 +578,48 @@ end subroutine init_pft_photo_params
 !==========================================================================================!
 !==========================================================================================!
 
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
 subroutine init_decomp_params()
-  
-  use decomp_coms,only:resp_opt_water,resp_water_below_opt, &
-       resp_water_above_opt,resp_temperature_increase, &
-       N_immobil_supply_scale,cwd_frac,r_fsc,r_stsc,r_ssc,K1,K2,K3
+   use consts_coms , only : yr_day                      ! ! intent(in)
+   use decomp_coms , only : resp_opt_water              & ! intent(in)
+                          , resp_water_below_opt        & ! intent(in)
+                          , resp_water_above_opt        & ! intent(in)
+                          , resp_temperature_increase   & ! intent(in)
+                          , N_immobil_supply_scale      & ! intent(in)
+                          , cwd_frac                    & ! intent(in)
+                          , r_fsc                       & ! intent(in)
+                          , r_stsc                      & ! intent(in)
+                          , r_ssc                       & ! intent(in)
+                          , K1                          & ! intent(in)
+                          , K2                          & ! intent(in)
+                          , K3                          ! ! intent(in)
 
-  resp_opt_water = 0.8938
-  resp_water_below_opt = 5.0786
-  resp_water_above_opt = 4.5139
-  resp_temperature_increase = 0.0757
-  N_immobil_supply_scale = 40.0 / 365.2425
-  cwd_frac = 0.2
-  r_fsc=1.0  
-  r_stsc=0.3 
-  r_ssc=1.0  
-  K1=4.5 / 365.2425
-  K2=11.0 / 365.2425
-  K3=100.2 / 365.2425
+   resp_opt_water            = 0.8938
+   resp_water_below_opt      = 5.0786
+   resp_water_above_opt      = 4.5139
+   resp_temperature_increase = 0.0757
+   N_immobil_supply_scale    = 40.0 / yr_day
+   cwd_frac                  = 0.2
+   r_fsc                     = 1.0
+   r_stsc                    = 0.3
+   r_ssc                     = 1.0
+   K1                        = 4.5   / yr_day
+   K2                        = 11.0  / yr_day
+   K3                        = 100.2 / yr_day
 
-  return
+   return
 
 end subroutine init_decomp_params
+!==========================================================================================!
+!==========================================================================================!
+
+
 
 
 
@@ -752,6 +772,7 @@ subroutine init_pft_alloc_params()
                           , q                     & ! intent(out)
                           , qsw                   & ! intent(out)
                           , init_density          & ! intent(out)
+                          , agf_bs                & ! intent(out)
                           , hgt_min               & ! intent(out)
                           , b1Ht                  & ! intent(out)
                           , b2Ht                  & ! intent(out)
@@ -901,6 +922,9 @@ subroutine init_pft_alloc_params()
    hgt_ref(6:11)  = 1.3
    hgt_ref(12:15) = 0.0
 
+   !----- Fraction of structural stem that is assumed to be above ground. -----------------!
+   agf_bs = 0.7
+
    !---------------------------------------------------------------------------------------!
    !    DBH/height allometry parameters.  They are used only for temperate PFTs.           !
    !---------------------------------------------------------------------------------------!
@@ -1036,7 +1060,7 @@ subroutine init_pft_nitro_params()
 
 use pft_coms, only: c2n_leaf, Vm0, SLA, water_conductance, &
      c2n_slow,c2n_structural,c2n_storage,c2n_stem,l2n_stem, &
-     C2B,agf_bs,plant_N_supply_scale
+     C2B,plant_N_supply_scale
 
 implicit none
 
@@ -1047,7 +1071,6 @@ c2n_stem       = 150.0 ! Carbon to Nitrogen ratio, structural stem.
 l2n_stem       = 150.0 ! Carbon to Nitrogen ratio, structural stem.
 
 
-agf_bs = 0.7  ! fraction of structural stem that is assumed to be above ground.
 plant_N_supply_scale = 0.5 
 
 c2n_leaf = 1000.0 / ((0.11289 + 0.12947 * Vm0) * SLA)
@@ -1714,13 +1737,13 @@ subroutine init_rk4_params()
    ! again.  The air can still become super-saturated because mixing with the free atmo-   !
    ! sphere will not stop.                                                                 !
    !---------------------------------------------------------------------------------------!
-   supersat_ok = .true.
+   supersat_ok = .false.
 
    !---------------------------------------------------------------------------------------!
    !     This flag is used to control the method used to define water percolation through  !
    ! snow layers.                                                                          !
    !---------------------------------------------------------------------------------------!
-   newsnow = .false.
+   newsnow = .true.
 
    return
 end subroutine init_rk4_params

@@ -153,7 +153,6 @@ subroutine leaftw_derivs(initp,dinitp,csite,ipa)
    real(kind=8), dimension(nzg+nzs+1)       :: qw_flux       ! Heat flux (aux. variable)
    real(kind=8), dimension(nzs+1)           :: d_flux        ! Density flux
    !----- Constants -----------------------------------------------------------------------!
-   logical     , parameter  :: debug = .false.   ! Debugging output flag (T/F)
    real(kind=8), parameter  :: freezeCoef = 7.d0 ! Exponent in the frozen soil hydraulic 
                                                  !    conductivity correction.
    !---------------------------------------------------------------------------------------!
@@ -606,7 +605,6 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,dewgnd
                             ,qdewgndflx,ddewgndflx,wshed_tot,qwshed_tot,dwshed_tot)
    use rk4_coms              , only : rk4patchtype         & ! Structure
                                     , rk4site              & ! intent(in)
-                                    , debug                & ! intent(in)
                                     , toocold              & ! intent(in)
                                     , toohot               & ! intent(in)
                                     , lai_to_cover         & ! intent(in)
@@ -752,7 +750,6 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,dewgnd
    ! or water) surface is from John Garratt.  It is 5/ustar and replaces the one from old  !
    ! leaf.                                                                                 !
    !---------------------------------------------------------------------------------------!
-   if(debug .and. abs(initp%ustar) < tiny(1.d0)) print*,"USTAR = 0"
    rasgnd = 5.d0 / initp%ustar
 
    !---------------------------------------------------------------------------------------!
@@ -998,7 +995,6 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,dewgnd
          c3lai  = sngloff( flux_area * initp%can_rhos * (veg_ssh - initp%can_shv)          &
                          , tiny_offset)
          !----- Evaporation/condensation "flux" -------------------------------------------!
-         !flux_area = effarea_water * initp%tai(ico) + halfpi8 * initp%wpa(ico)
          flux_area = effarea_water * initp%tai(ico)
          c3tai  = flux_area * initp%can_rhos * (veg_ssh - initp%can_shv)
          rbi    = 1.d0 / initp%rb(ico)
@@ -1064,7 +1060,6 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,dewgnd
          ! leaves plus the actual projected branch area (not the effective), thus the pi   !
          ! factor (which to make it scalable with the cilinder.                            !
          !---------------------------------------------------------------------------------!
-         !flux_area = effarea_heat * initp%lai(ico) + pi18 * initp%wpa(ico)
          flux_area = effarea_heat * initp%lai(ico) + pi18 * initp%wai(ico)
          hflxvc    = flux_area * cp8 * initp%can_rhos * rbi                                &
                    * (initp%veg_temp(ico) - initp%can_temp)
@@ -1208,7 +1203,6 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,dewgnd
    dinitp%qpwp = -(initp%ustar*initp%qstar)
    dinitp%cpwp = -(initp%ustar*initp%cstar)
    dinitp%tpwp = -(initp%ustar*initp%tstar)
-   if(debug .and. abs(rk4site%atm_tmp) < tiny(1.d0)) print*,"atm_tmp = 0"
    gzotheta = grav8 * rk4site%geoht * cpi8 * rk4site%atm_exner / rk4site%atm_tmp
    dinitp%wpwp = vertical_vel_flux8(gzotheta,initp%tstar,initp%ustar)
 

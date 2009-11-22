@@ -41,10 +41,11 @@ subroutine copy_atm2lsm(ifm,init)
                                    , t3ple         & ! intent(in)
                                    , t00           & ! intent(in)
                                    , cpor          & ! intent(in)
+                                   , wdnsi         & ! intent(in)
                                    , tsupercool    ! ! intent(in)
    use ed_node_coms         , only : mynum         ! ! intent(in)
    use therm_lib            , only : ptqz2enthalpy ! ! intent(in)
-   use canopy_radiation_coms, only : rlong_min     ! ! intent(in)
+   use met_driver_coms      , only : rlong_min     ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    integer                             , intent(in) :: ifm
@@ -65,7 +66,7 @@ subroutine copy_atm2lsm(ifm,init)
    real, dimension(mmxp(ifm),mmyp(ifm))             :: map_2d_lsm
    real                                             :: rshort1,cosz1,rshortd1,scalar1
    real                                             :: topma_t,wtw,wtu1,wtu2,wtv1,wtv2
-   real                                             :: fice, slden
+   real                                             :: fice,snden
    !---------------------------------------------------------------------------------------!
   
    !----- Assigning some aliases. ---------------------------------------------------------!
@@ -365,31 +366,48 @@ subroutine copy_atm2lsm(ifm,init)
          ! Jin et al. 1999, Hydrol. Process. 13: 2467-2482, table 2                        !
          !    (modified 11/16/09 by MCD).                                                  !
          !---------------------------------------------------------------------------------!
-         fice  = 0.  !----- Fraction of ice in precipitation
-         snden = 0.  !----- Partial density of ice in precipitation
-         if (cpoly%met(isi)%atm_tmp <= (t3ple + 2.5) .and.                                 &
-             cpoly%met(isi)%atm_tmp  > (t3ple + 2.0) ) then
+         if (cpoly%met(isi)%atm_tmp > (t3ple + 2.5)) then
+            !----- Rain only. -------------------------------------------------------------!
+            fice = 0.0
+            cpoly%met(isi)%dpcpg = max(0.0, cpoly%met(isi)%pcpg) *wdnsi
+
+         elseif (cpoly%met(isi)%atm_tmp <= (t3ple + 2.5) .and.                             &
+                 cpoly%met(isi)%atm_tmp  > (t3ple + 2.0) ) then
+            !------------------------------------------------------------------------------!
+            !     60% snow, 40% rain. (N.B. May not be appropriate for sub-tropical        !
+            ! regions where the level of the melting layer is higher...).                  !
+            !------------------------------------------------------------------------------!
             fice  = 0.6
             snden = 189.0
-         else
-            if (cpoly%met(isi)%atm_tmp <= (t3ple + 2.0) .and.                              &
-                cpoly%met(isi)%atm_tmp > (t3ple)          ) then
-               fice = min(1.0,1.+(54.62 - 0.2*cpoly%met(isi)%atm_tmp))
-            else
-               fice = 1.0
-            end if
+            cpoly%met(isi)%dpcpg = max(0.0, cpoly%met(isi)%pcpg)                           &
+                                 * ((1.0-fice) * wdnsi + fice / snden)
 
-            if (cpoly%met(isi)%atm_tmp <= (t3ple + 2.0) .and.                              &
-                cpoly%met(isi)%atm_tmp > (t3ple  -15.0)) then
-               snden = (50.0+1.7*(cpoly%met(isi)%atm_tmp-258.15)**1.5 )
-            else
-               snden = 50.
-            end if
+         elseif (cpoly%met(isi)%atm_tmp <= (t3ple + 2.0) .and.                             &
+                 cpoly%met(isi)%atm_tmp > t3ple          ) then
+            !------------------------------------------------------------------------------!
+            !     Increasing the fraction of snow. (N.B. May not be appropriate for        !
+            ! sub-tropical regions where the level of the melting layer is higher...).     !
+            !------------------------------------------------------------------------------!
+            fice  = min(1.0, 1.+(54.62 - 0.2*cpoly%met(isi)%atm_tmp))
+            snden = (50.0+1.7*(cpoly%met(isi)%atm_tmp-258.15)**1.5 )
+            cpoly%met(isi)%dpcpg = max(0.0, cpoly%met(isi)%pcpg)                           &
+                                 * ((1.0-fice) * wdnsi + fice / snden)
+
+         elseif (cpoly%met(isi)%atm_tmp <= t3ple         .and.                             &
+                 cpoly%met(isi)%atm_tmp > (t3ple - 15.0) ) then
+            !----- Below freezing point, snow only. ---------------------------------------!
+            fice  = 1.0
+            snden = (50.0+1.7*(cpoly%met(isi)%atm_tmp-258.15)**1.5 )
+            cpoly%met(isi)%dpcpg = max(0.0, cpoly%met(isi)%pcpg) / snden
+
+         else ! if (copy%met(isi)%atm_tmp < (t3ple - 15.0)) then
+            !----- Below freezing point, snow only. ---------------------------------------!
+            fice  = 1.0
+            snden = 50.
+            cpoly%met(isi)%dpcpg = max(0.0, cpoly%met(isi)%pcpg) / snden
+
          end if
-
-         !----- Set rate of snow depth accumulation. --------------------------------------!
-         cpoly%met(isi)%dpcpg = max(0.0, cpoly%met(isi)%pcpg)                              &
-                              * ((1.0-fice)*wdnsi + fice/snden)
+         !---------------------------------------------------------------------------------!
 
          !---------------------------------------------------------------------------------!
          !     Set internal energy.  This will be the precipitation times the specific     !
@@ -398,10 +416,11 @@ subroutine copy_atm2lsm(ifm,init)
          ! point) multiplied by the ice fraction.                                          !
          !---------------------------------------------------------------------------------!
          cpoly%met(isi)%qpcpg = max(0.0, cpoly%met(isi)%pcpg)                              &
-                              * ( (1.0-fice) * cliq * ( max(t3ple,cpoly%met(isi)%atm_tmp)
-                                                     - tsupercool)
+                              * ( (1.0-fice) * cliq * ( max(t3ple,cpoly%met(isi)%atm_tmp)  &
+                                                      - tsupercool)                        &
                                 + fice *cice * min(cpoly%met(isi)%atm_tmp,t3ple))
          !---------------------------------------------------------------------------------!
+
       end do siteloop
    end do polyloop2nd
 
@@ -1421,9 +1440,9 @@ subroutine copy_avgvars_to_leaf(ifm)
       end do
       !----- Surface water is always 1, because we give the averaged value. ---------------!
       leaf_g(ifm)%sfcwater_nlev     (ix,iy,2) = 1.
-      leaf_g(ifm)%sfcwater_energy (1,ix,iy,2) = cgrid%avg_snowenergy(ipy)
-      leaf_g(ifm)%sfcwater_mass   (1,ix,iy,2) = cgrid%avg_snowmass  (ipy)
-      leaf_g(ifm)%sfcwater_depth  (1,ix,iy,2) = cgrid%avg_snowdepth (ipy)
+      leaf_g(ifm)%sfcwater_energy (1,ix,iy,2) = cgrid%avg_sfcw_energy(ipy)
+      leaf_g(ifm)%sfcwater_mass   (1,ix,iy,2) = cgrid%avg_sfcw_mass  (ipy)
+      leaf_g(ifm)%sfcwater_depth  (1,ix,iy,2) = cgrid%avg_sfcw_depth (ipy)
       do k=2,nzs
          leaf_g(ifm)%sfcwater_energy (k,ix,iy,2) = 0.
          leaf_g(ifm)%sfcwater_mass   (k,ix,iy,2) = 0.

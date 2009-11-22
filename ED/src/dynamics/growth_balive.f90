@@ -758,7 +758,7 @@ module growth_balive
          cpatch%bleaf(ico)    = cpatch%balive(ico) * salloci                 &
                               * green_leaf_factor
          cpatch%broot(ico)    = cpatch%balive(ico) * q(ipft) * salloci
-         cpatch%bstorage(ico) = cpatch%balive(ico) * cpatch%hite(ico)        &
+         cpatch%bsapwood(ico) = cpatch%balive(ico) * cpatch%hite(ico)        &
                               * qsw(ipft) * salloci
 
       elseif (cpatch%phenology_status(ico) < 2) then
@@ -820,7 +820,7 @@ module growth_balive
             cpatch%bleaf(ico)    = cpatch%balive(ico) * salloci              &
                                  * green_leaf_factor
             cpatch%broot(ico)    = cpatch%balive(ico) * q(ipft) * salloci
-            cpatch%bstorage(ico) = cpatch%balive(ico) * cpatch%hite(ico)     &
+            cpatch%bsapwood(ico) = cpatch%balive(ico) * cpatch%hite(ico)     &
                                  * qsw(ipft) * salloci
 
             !----------------------------------------------------------------!
@@ -850,7 +850,7 @@ module growth_balive
          cpatch%balive(ico)   = max(0.0,cpatch%balive(ico) + carbon_balance)
          cpatch%bleaf(ico)    = 0.0
          cpatch%broot(ico)    = cpatch%balive(ico) * q(ipft) * salloci
-         cpatch%bstorage(ico) = cpatch%balive(ico) * cpatch%hite(ico)        &
+         cpatch%bsapwood(ico) = cpatch%balive(ico) * cpatch%hite(ico)        &
                               * qsw(ipft) * salloci
          csite%fsn_in(ipa)  = csite%fsn_in(ipa)                              &
                             - carbon_balance                                 &

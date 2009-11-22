@@ -58,13 +58,13 @@ Module mem_mksfc
   integer, parameter :: maxsfcgrids=10
   
   ! SST file creation variables
-  integer, parameter :: maxsstdata=100
+  integer, parameter :: maxsstdata=6666
   integer, dimension(maxsstdata,maxsfcgrids):: iyearvs,imonthvs,idatevs,ihourvs
   integer,dimension(maxsfcgrids)         :: nvsstf
   character(len=128), dimension(maxsstdata,maxsfcgrids)     :: vsstfil
   
   ! NDVI file creation variables
-  integer, parameter :: maxndvidata=100
+  integer, parameter :: maxndvidata=6666
   integer, dimension(maxndvidata,maxsfcgrids):: iyearvn,imonthvn,idatevn,ihourvn
   integer,dimension(maxsfcgrids)         :: nvndvif
   character(len=128), dimension(maxndvidata,maxsfcgrids)     :: vndvifil

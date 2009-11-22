@@ -158,7 +158,7 @@ subroutine setLapseParms(cgrid)
                                    + cgrid%lapse(ipy)%pcpg*(cpoly%elevation(isi) - ebar) ) &
                                  / cgrid%lapse(ipy)%pptnorm
          else
-            cpoly%pptweight(isi) = 0.0
+            cpoly%pptweight(isi) = 1.0
          end if
       end do
 
