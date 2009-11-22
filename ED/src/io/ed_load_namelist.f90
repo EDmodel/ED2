@@ -28,7 +28,7 @@ subroutine copy_nl(copy_type)
 
   use ed_max_dims , only: n_pft, nzgmax
   use ename_coms, only: nl
-  use soil_coms, only: isoilflg, nslcon, slmstr, zrough, soil_database, &
+  use soil_coms, only: isoilflg, nslcon, slmstr, stgoff, zrough, soil_database, &
        isoilstateinit, isoildepthflg, isoilbc, soilstate_db, soildepth_db,   &
                        runoff_time, slz,veg_database
   use met_driver_coms, only: ed_met_driver_db, ishuffle, metcyc1, metcycf,imettype,initial_co2, lapse_scheme
@@ -37,7 +37,7 @@ subroutine copy_nl(copy_type)
        maxpatch, maxcohort
   use physiology_coms, only: istoma_scheme, n_plant_lim
   use phenology_coms, only: iphen_scheme,iphenys1,iphenysf,iphenyf1,iphenyff,phenpath,repro_scheme
-  use decomp_coms, only: n_decomp_lim
+  use decomp_coms, only: n_decomp_lim, LloydTaylor
   use disturb_coms, only: include_fire, ianth_disturb,   &
        treefall_disturbance_rate
   use pft_coms, only: include_these_pft,agri_stock,plantation_stock,pft_1st_check
@@ -46,7 +46,8 @@ subroutine copy_nl(copy_type)
        itimea, idatea, imontha, iyeara, itimeh, idateh, imonthh, iyearh, &
        ifoutput, iclobber, frqfast, &
        sfilin, ied_init_mode, current_time, ed_inputs_dir,   &
-       end_time, radfrq, integration_scheme, ffilout, idoutput,imoutput,iyoutput, dtlsm, &
+       end_time, radfrq, integration_scheme, ffilout, idoutput,imoutput,&
+       iyoutput, itoutput, dtlsm, &
        frqstate,sfilout,isoutput,iprintpolys,printvars,npvars,pfmtstr,ipmax,ipmin, &
        iedcnfgf, outfast, outstate,unitfast,unitstate,event_file
 
@@ -88,6 +89,7 @@ subroutine copy_nl(copy_type)
      idoutput = nl%idoutput
      imoutput = nl%imoutput
      iyoutput = nl%iyoutput
+     itoutput = nl%itoutput
      isoutput = nl%isoutput
 
      attach_metadata = nl%attach_metadata
@@ -113,6 +115,7 @@ subroutine copy_nl(copy_type)
      isoilflg      = nl%isoilflg
      nslcon        = nl%nslcon
      slmstr(1:nzgmax) = nl%slmstr(1:nzgmax)
+     stgoff(1:nzgmax) = nl%stgoff(1:nzgmax)
 
      soil_database = nl%soil_database
      veg_database = nl%veg_database
@@ -147,6 +150,9 @@ subroutine copy_nl(copy_type)
      n_decomp_lim       = nl%n_decomp_lim
      include_fire       = nl%include_fire
      ianth_disturb      = nl%ianth_disturb
+
+     !----- Decomp_scheme is not a true ED variable, we save it in LloydTaylor instead. ---!
+     LloydTaylor        = nl%decomp_scheme == 1
      
      icanturb           = nl%icanturb
      isfclyrm           = nl%isfclyrm

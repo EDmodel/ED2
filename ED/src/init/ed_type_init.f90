@@ -20,6 +20,9 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
   cpatch%mean_gpp(ico)        = 0.0
   cpatch%mean_leaf_resp(ico)  = 0.0
   cpatch%mean_root_resp(ico)  = 0.0
+  cpatch%mean_growth_resp(ico) = 0.0
+  cpatch%mean_storage_resp(ico) = 0.0
+  cpatch%mean_vleaf_resp(ico) = 0.0
   
   cpatch%today_leaf_resp(ico) = 0.0
   cpatch%today_root_resp(ico) = 0.0
@@ -37,6 +40,7 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
   cpatch%norm_par_beam   (ico)  = 0.0
   cpatch%norm_par_diff   (ico)  = 0.0
   cpatch%lambda_light(ico)      = 0.0
+
   cpatch%gpp(ico) = 0.0
   cpatch%leaf_respiration(ico) = 0.0
   cpatch%root_respiration(ico) = 0.0
@@ -81,7 +85,6 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
   cpatch%root_maintenance   (ico) = 0.0
   cpatch%leaf_drop          (ico) = 0.0
   cpatch%paw_avg(ico)             = 0.5 !0.0 - [KIM] starting from the mid point.  if starting from the driest point, plants'll drop leaves initially due to the water stress
-
 
   cpatch%Psi_open(ico) = 0.0
 
@@ -304,36 +307,36 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
   !    These variables need to be initialized here otherwise it will fail when new patches !
   ! are created.                                                                           !
   !----------------------------------------------------------------------------------------!
-  csite%avg_rk4step      (ip1:ip2)  = 0.0
-  csite%avg_carbon_ac    (ip1:ip2)  = 0.0
-  csite%avg_vapor_vc     (ip1:ip2)  = 0.0
-  csite%avg_dew_cg       (ip1:ip2)  = 0.0
-  csite%avg_vapor_gc     (ip1:ip2)  = 0.0
-  csite%avg_wshed_vg     (ip1:ip2)  = 0.0
-  csite%avg_intercepted  (ip1:ip2)  = 0.0
-  csite%avg_vapor_ac     (ip1:ip2)  = 0.0
-  csite%avg_transp       (ip1:ip2)  = 0.0
-  csite%avg_evap         (ip1:ip2)  = 0.0
-  csite%avg_netrad       (ip1:ip2)  = 0.0
-  csite%avg_runoff       (ip1:ip2)  = 0.0
-  csite%avg_drainage     (ip1:ip2)  = 0.0
-  csite%avg_drainage_heat(ip1:ip2)  = 0.0
-  csite%aux              (ip1:ip2)  = 0.0
-  csite%avg_sensible_vc  (ip1:ip2)  = 0.0
-  csite%avg_qwshed_vg    (ip1:ip2)  = 0.0
-  csite%avg_qintercepted (ip1:ip2)  = 0.0
-  csite%avg_sensible_gc  (ip1:ip2)  = 0.0
-  csite%avg_sensible_ac  (ip1:ip2)  = 0.0
-  csite%avg_runoff_heat  (ip1:ip2)  = 0.0
-  csite%avg_sensible_gg(:,ip1:ip2)  = 0.0
-  csite%avg_smoist_gg  (:,ip1:ip2)  = 0.0
-  csite%avg_smoist_gc  (:,ip1:ip2)  = 0.0
-  csite%aux_s          (:,ip1:ip2)  = 0.0
-
-  csite%avg_veg_energy(ip1:ip2)     = 0.0
-  csite%avg_veg_temp(ip1:ip2)       = 0.0
-  csite%avg_veg_fliq(ip1:ip2)       = 0.0
-  csite%avg_veg_water(ip1:ip2)      = 0.0
+  csite%avg_rk4step       (ip1:ip2)  = 0.0
+  csite%avg_carbon_ac     (ip1:ip2)  = 0.0
+  csite%avg_vapor_vc      (ip1:ip2)  = 0.0
+  csite%avg_dew_cg        (ip1:ip2)  = 0.0
+  csite%avg_vapor_gc      (ip1:ip2)  = 0.0
+  csite%avg_wshed_vg      (ip1:ip2)  = 0.0
+  csite%avg_intercepted   (ip1:ip2)  = 0.0
+  csite%avg_vapor_ac      (ip1:ip2)  = 0.0
+  csite%avg_transp        (ip1:ip2)  = 0.0
+  csite%avg_evap          (ip1:ip2)  = 0.0
+  csite%avg_netrad        (ip1:ip2)  = 0.0
+  csite%avg_runoff        (ip1:ip2)  = 0.0
+  csite%avg_drainage      (ip1:ip2)  = 0.0
+  csite%avg_drainage_heat (ip1:ip2)  = 0.0
+  csite%aux               (ip1:ip2)  = 0.0
+  csite%avg_sensible_vc   (ip1:ip2)  = 0.0
+  csite%avg_qwshed_vg     (ip1:ip2)  = 0.0
+  csite%avg_qintercepted  (ip1:ip2)  = 0.0
+  csite%avg_sensible_gc   (ip1:ip2)  = 0.0
+  csite%avg_sensible_ac   (ip1:ip2)  = 0.0
+  csite%avg_runoff_heat   (ip1:ip2)  = 0.0
+  csite%avg_sensible_gg (:,ip1:ip2)  = 0.0
+  csite%avg_smoist_gg   (:,ip1:ip2)  = 0.0
+  csite%avg_smoist_gc   (:,ip1:ip2)  = 0.0
+  csite%aux_s           (:,ip1:ip2)  = 0.0
+  csite%avg_available_water(ip1:ip2) = 0.0
+  csite%avg_veg_energy(ip1:ip2)      = 0.0 
+  csite%avg_veg_temp(ip1:ip2)        = 0.0 
+  csite%avg_veg_fliq(ip1:ip2)        = 0.0 
+  csite%avg_veg_water(ip1:ip2)       = 0.0 
 
   csite%rshort_g(ip1:ip2) = 0.0
   csite%rshort_g_beam(ip1:ip2) = 0.0
@@ -351,11 +354,13 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
   csite%rlong_albedo(ip1:ip2) = 0.0
   csite%lambda_light(ip1:ip2) = 0.0
 
-  csite%fsc_in(ip1:ip2)                      = 0.0
-  csite%ssc_in(ip1:ip2)                      = 0.0
-  csite%ssl_in(ip1:ip2)                      = 0.0
-  csite%fsn_in(ip1:ip2)                      = 0.0
-  csite%total_plant_nitrogen_uptake(ip1:ip2) = 0.0
+  csite%fsc_in                      (ip1:ip2) = 0.0
+  csite%ssc_in                      (ip1:ip2) = 0.0
+  csite%ssl_in                      (ip1:ip2) = 0.0
+  csite%fsn_in                      (ip1:ip2) = 0.0
+  csite%total_plant_nitrogen_uptake (ip1:ip2) = 0.0
+  csite%mineralized_N_loss          (ip1:ip2) = 0.0
+  csite%mineralized_N_input         (ip1:ip2) = 0.0
   
   csite%watertable(ip1:ip2)                  = slz(lsl)
   csite%ustar(ip1:ip2) = 0.0

@@ -20,7 +20,8 @@ subroutine canopy_photosynthesis(csite,ipa,vels,atm_tmp,prss,ed_ktrans,ntext_soi
    use consts_coms           , only : t00                & ! intent(in)
                                     , epi                & ! intent(in)
                                     , wdnsi              & ! intent(in)
-                                    , wdns               ! ! intent(in)
+                                    , wdns               & ! intent(in)
+                                    , kgCday_2_umols     ! ! intent(in)
    use ed_misc_coms          , only : current_time       ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
@@ -313,6 +314,20 @@ subroutine canopy_photosynthesis(csite,ipa,vels,atm_tmp,prss,ed_ktrans,ntext_soi
          cpatch%gpp(ico)                 = 0.0
          cpatch%leaf_respiration(ico)    = 0.0
       end if
+      
+      !------------------------------------------------------------------------------------!
+      !    Not really a part of the photosynthesis scheme, but this will do it.  We must   !
+      ! ontegrate the "mean" of the remaining respiration terms, except for the root one.  !
+      ! This is done regardless on whether the cohort is doing photosynthesis.  Also, we   !
+      ! convert units so all fast respiration terms are in [µmol/m²ground/s].              !
+      !------------------------------------------------------------------------------------!
+      cpatch%mean_growth_resp (ico) = cpatch%mean_growth_resp (ico)                        &
+                                    + cpatch%growth_respiration (ico) * kgCday_2_umols
+      cpatch%mean_storage_resp(ico) = cpatch%mean_storage_resp(ico)                        &
+                                    + cpatch%storage_respiration(ico) * kgCday_2_umols
+      cpatch%mean_vleaf_resp  (ico) = cpatch%mean_vleaf_resp  (ico)                        &
+                                    + cpatch%vleaf_respiration  (ico) * kgCday_2_umols
+      !------------------------------------------------------------------------------------!
    end do cohortloop
 
    !---------------------------------------------------------------------------------------!

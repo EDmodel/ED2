@@ -97,12 +97,6 @@ module canopy_radiation_coms
    real :: blfac_min
    !---------------------------------------------------------------------------------------!
 
-   !---------------------------------------------------------------------------------------!
-   !     The following variables are minimum values that are considered acceptable.
-   !---------------------------------------------------------------------------------------!
-   real :: rlong_min     !----- Minimum allowed downward longwave radiation [W/m²] --------!
-   real :: veg_temp_min  !----- Minimum allowed vegetation temperature      [   K] --------!
-   !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
    !     Crown model flag (set at the namelist):                                           !

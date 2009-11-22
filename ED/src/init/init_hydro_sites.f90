@@ -7,12 +7,16 @@ subroutine read_site_file(cgrid)
   
    use soil_coms, only: soil,slz
    use grid_coms, only: nzg
-   use ed_misc_coms, only: ied_init_mode,sfilin
+   use ed_misc_coms, only: ied_init_mode,sfilin, vary_elev, vary_rad, vary_hyd
    use mem_sites, only: edres
    use ed_state_vars, only: edtype,polygontype,sitetype,allocate_polygontype
    use ed_max_dims, only: max_site,n_pft
 
    implicit none
+
+   logical :: no_rad   = .false.  !! true turns effect OFF
+   logical :: no_lapse = .false.
+   logical :: no_hyd   = .false.
 
    character(len=256) :: site_name,pss_name,css_name
   
@@ -32,6 +36,12 @@ subroutine read_site_file(cgrid)
    integer,allocatable :: soilclass(:)
    integer :: ipy,isi,k
    integer :: ierr
+
+   if(vary_elev == 0)  no_lapse = .true.
+   if(vary_rad == 0)   no_rad = .true.
+   if(vary_hyd == 0) no_hyd = .true.
+
+
 
 
    ! ASSUMING FOR NOW THAT THERE IS NO WATER SITE
@@ -122,7 +132,9 @@ subroutine read_site_file(cgrid)
          
          !/* read data*/
          allocate(soilclass(nzg))
-         
+         lcount = 0 
+         mcount = 0
+         found_mat_header = 0
          isi = 0
          area_sum = 0.0d+0
          count_sites: do
@@ -198,10 +210,20 @@ subroutine read_site_file(cgrid)
 
                   area_sum = area_sum + dble(area)
                   cpoly%sitenum(isi)      = sitenum
-                  cpoly%elevation(isi)    = area
-                  cpoly%slope(isi)        = TCI+13.96962
+                  cpoly%elevation(isi)    = elevation
+                  cpoly%slope(isi)        = slope
                   cpoly%aspect(isi)       = aspect
-                  cpoly%TCI(isi)          = elevation
+                  cpoly%TCI(isi)          = TCI+13.96962
+
+                  !! flags to turn effects off
+                  if(no_lapse) cpoly%elevation(isi) = 0.0
+                  if(no_hyd)   cpoly%TCI(isi)       = 8.0
+                  if(no_rad) then
+                               cpoly%slope(isi)     = 0.0
+                               cpoly%aspect(isi)    = 0.0
+                  end if
+
+!print*,"SITE",cpoly%elevation(isi),cpoly%TCI(isi),cpoly%slope(isi),cpoly%aspect(isi)
 
                   if(fformat == 3) then
                      do i=1,nzg

@@ -676,10 +676,6 @@ subroutine ed_load_work_from_history()
          iph                   = minloc(polydist,dim=1)
          work_v(ifm)%work(ipr) = histowork(iph)
          maxwork               = max(maxwork,work_v(ifm)%work(ipr))
-         write(unit=*,fmt='(2(i6,1x),4(f9.4,1x))')  ipr,iph,work_v(ifm)%glon(ipr)          &
-                                                           ,histolon(iph)                  &
-                                                           ,work_v(ifm)%glat(ipr)          &
-                                                           ,histolat(iph)
       end do runpolyloop
       !------------------------------------------------------------------------------------!
 

@@ -99,7 +99,10 @@
    NL%IDOUTPUT  =  0            ! Daily means (site average)
    NL%IMOUTPUT  =  3            ! Monthly means (site average)
    NL%IYOUTPUT  =  0            ! Annual output
-   NL%ISOUTPUT  =  3            ! History files
+   NL%ITOUTPUT  =  0            ! Instantaneous fluxes (site average)
+                                ! single annual file, no patch/cohort, for optimization or 
+                                !     flux tower comparision 
+   NL%ISOUTPUT  =  0            ! History files
                                 ! 0 - no file;
                                 ! 1 - save ascii (deprecated);
                                 ! 2 - save RAMS-vfm file (deprecated);
@@ -235,6 +238,7 @@
    NL%ISOILBC        = 1  ! Soil boundary condition at lowest soil level
                           ! 0 - Bedrock;
                           ! 1 - Free drainage.
+                          ! 2 - Half drainage.
 !------------------------------------------------------------------------------------------!
 
 
@@ -260,10 +264,11 @@
                               ! the full, exact calculation each time.  Set to 1 
                               ! to do the 'small perturbation' scheme.
 
+
    NL%IPHEN_SCHEME    = 2     ! This specifies the phenology scheme:
                               !  0 -- the cold-deciuous (Botta et al.)
                               !       and old drought-deciduous (same with ED2.0);
-                              !  1 -- the Harvard Forest observations
+                              !  1 -- presecribed phenology based on observations
                               !  2 -- the cold-deciduous and new drought-deciduous;
                               !  3 -- the cold-deciduous, new drought-deciduous 
                               !       and light phenology (not fully tested);
@@ -276,13 +281,18 @@
                               !  0 -- lapse rates off
                               !  1 -- phenomenological, global
                               !  2 -- phenomenological, local (not yet implemented)
-                              !  2 -- mechanistic(not yet implemented)
+                              !  3 -- mechanistic(not yet implemented)
   
    NL%CROWN_MOD       = 0     ! Specifies how tree crowns are represent in the 
                               ! canopy radiation model
                               !  0  - ED1 default (continuous horizontal)
                               !  1  - finite radius mixing model (Dietze)
-  
+
+   NL%DECOMP_SCHEME   = 0     ! Specifies soil decomposition temperature dependence
+                              ! 0 -- original exponential
+                              ! 1 -- Lloyd and Taylor (1994) model
+                              !      [[requires parameters to be set in xml]]
+
    NL%N_PLANT_LIM     = 0     ! Determines whether (1) or not (0) plants can
                               !    be limited by nitrogen
 
@@ -449,6 +459,7 @@
    NL%IPHENYSF = 2003        ! final year for spring
    NL%IPHENYF1 = 1992        ! initial year for fall
    NL%IPHENYFF = 2003        ! final year for fall
+   NL%PHENPATH   = '/n/Moorcroft_Lab/Users/mlongo/EDBRAMS/ed-test/inputs' !! path/prefix for where to find presecribed phenology driver
 !------------------------------------------------------------------------------------------!
 
 
@@ -458,7 +469,6 @@
 !------------------------------------------------------------------------------------------!
    NL%IEDCNFGF   = 'config.xml'
    NL%EVENT_FILE = 'myevents.xml'
-   NL%PHENPATH   = '/n/Moorcroft_Lab/Users/mlongo/EDBRAMS/ed-test/inputs'
 !------------------------------------------------------------------------------------------!
 
 

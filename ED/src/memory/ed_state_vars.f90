@@ -176,6 +176,16 @@ module ed_state_vars
      ! Mean root respiration rate (umol/m2 ground/s), averaged over FRQSTATE
      real ,pointer,dimension(:) :: mean_root_resp
 
+     ! Mean growth respiration rate (umol/m2 ground/s), averaged over FRQSTATE
+     real ,pointer,dimension(:) :: mean_growth_resp
+
+     ! Mean storage respiration rate (umol/m2 ground/s), averaged over FRQSTATE
+     real ,pointer,dimension(:) :: mean_storage_resp
+
+     ! Mean vleaf respiration rate (umol/m2 ground/s), averaged over FRQSTATE
+     real ,pointer,dimension(:) :: mean_vleaf_resp
+
+
      ! Mean leaf respiration rate (umol/m2 ground/s), averaged over 1 day
      real ,pointer,dimension(:) :: today_leaf_resp
 
@@ -720,6 +730,11 @@ module ed_state_vars
      ! Plant nitrogen update summed over all cohorts [kgN/m2/day]
      real , pointer,dimension(:) :: total_plant_nitrogen_uptake
 
+     !real, pointer,dimension(:) :: Nnet_min
+     !real, pointer,dimension(:) :: Ngross_min
+     real, pointer,dimension(:) :: mineralized_N_input
+     real, pointer,dimension(:) :: mineralized_N_loss
+
      ! Short wave radiation absorbed by the ground (W/m2)
      real , pointer,dimension(:) :: rshort_g
      
@@ -989,6 +1004,8 @@ module ed_state_vars
 
      integer,pointer,dimension(:) :: lsl          ! Index of the lowest soil layer
 
+     real,pointer,dimension(:) :: pptweight       ! lapse weight for precip
+
      ! The Following variables used to point to structures
      ! Now they point to the array index of the site
      !   type(site), pointer :: hydro_next  !site run-off goes to
@@ -1140,6 +1157,7 @@ module ed_state_vars
 
      !---- Polygon LAI, WPA, and WAI ------------------------------------------------------!
      real, pointer, dimension(:) :: lai
+     real, pointer, dimension(:) :: avg_lma
      real, pointer, dimension(:) :: wpa
      real, pointer, dimension(:) :: wai
 
@@ -1204,9 +1222,10 @@ module ed_state_vars
      real,pointer,dimension(:) :: avg_broot
      real,pointer,dimension(:) :: avg_bsapwood
      real,pointer,dimension(:) :: avg_bdead
+     real,pointer,dimension(:) :: avg_fsn
+     real,pointer,dimension(:) :: avg_msn
      real,pointer,dimension(:) :: avg_bstorage
      real,pointer,dimension(:) :: avg_bseeds
-
 
      ! Daily average residuals
      real, pointer, dimension(:) :: dmean_co2_residual    ! [umol_CO2/m2]
@@ -1410,6 +1429,7 @@ module ed_state_vars
 
      !----- LAI, WPA, and WAI ------------------------------------------------!
      real,pointer,dimension(:) :: lai
+     real,pointer,dimension(:) :: avg_lma
      real,pointer,dimension(:) :: wpa
      real,pointer,dimension(:) :: wai
 
@@ -1472,6 +1492,42 @@ module ed_state_vars
      real,pointer,dimension(:) :: avg_fsc
      real,pointer,dimension(:) :: avg_ssc
      real,pointer,dimension(:) :: avg_stsc
+
+     real,pointer,dimension(:) :: avg_fsn
+     real,pointer,dimension(:) :: avg_msn
+
+     !-------- TOTAL CARBON AND NITROGEN POOLS  ---------------
+     ! Added by MCD for NCEAS/FACE intercomparison (Apr 7 2009)
+     real,pointer,dimension(:) :: Cleaf
+     real,pointer,dimension(:) :: Croot
+     real,pointer,dimension(:) :: Cstore
+     real,pointer,dimension(:) :: Ccwd
+     real,pointer,dimension(:) :: Nleaf
+     real,pointer,dimension(:) :: Ndead
+     real,pointer,dimension(:) :: Nroot
+     real,pointer,dimension(:) :: Nstore
+     real,pointer,dimension(:) :: Ncwd
+     
+     
+     !-------- TOTAL CARBON AND NITROGEN FLUX  ---------------
+     ! Added by MCD for NCEAS/FACE intercomparison (Apr 7 2009)
+     real,pointer,dimension(:) :: Cleaf_grow
+     real,pointer,dimension(:) :: Croot_grow
+     real,pointer,dimension(:) :: Cdead_grow
+     real,pointer,dimension(:) :: Cstore_grow
+     real,pointer,dimension(:) :: Cleaf_litter_flux
+     real,pointer,dimension(:) :: Croot_litter_flux
+     real,pointer,dimension(:) :: Ccwd_flux
+     real,pointer,dimension(:) :: Nleaf_grow
+     real,pointer,dimension(:) :: Ndead_grow
+     real,pointer,dimension(:) :: Nroot_grow
+     real,pointer,dimension(:) :: Nstore_grow
+     real,pointer,dimension(:) :: Nleaf_litter_flux
+     real,pointer,dimension(:) :: Nroot_litter_flux
+     real,pointer,dimension(:) :: Ncwd_flux
+     real,pointer,dimension(:) :: Nbiomass_uptake
+     real,pointer,dimension(:) :: Ngross_min
+     real,pointer,dimension(:) :: Nnet_min
 
      !----- Meteorologic Conditions ----------------------------------------------------!
      real,pointer,dimension(:) :: avg_nir_beam
@@ -1772,7 +1828,7 @@ contains
     integer :: ngrids
     
     if (associated(edgrid_g))  then
-       print*,"SHOULD NOT HAVE ASSOCIATED GLOBAS"
+       print*,"SHOULD NOT HAVE ASSOCIATED GLOBALS"
     else
        nullify(edgrid_g)
        allocate(edgrid_g(ngrids))
@@ -1873,6 +1929,7 @@ contains
        allocate(cgrid%lapse(npolygons))
 
        allocate(cgrid%lai  (npolygons))
+       allocate(cgrid%avg_lma(npolygons))
        allocate(cgrid%wpa  (npolygons))
        allocate(cgrid%wai  (npolygons))
 
@@ -1938,7 +1995,10 @@ contains
        allocate(cgrid%avg_storage_resp  (npolygons))
        allocate(cgrid%avg_vleaf_resp  (npolygons))
        allocate(cgrid%avg_plant_resp  (npolygons))
-       allocate(cgrid%avg_htroph_resp     (npolygons))
+       allocate(cgrid%avg_growth_resp  (npolygons))
+       allocate(cgrid%avg_storage_resp  (npolygons))
+       allocate(cgrid%avg_vleaf_resp  (npolygons))
+       allocate(cgrid%avg_htroph_resp  (npolygons))
        allocate(cgrid%avg_leaf_drop       (npolygons))
        allocate(cgrid%avg_leaf_maintenance(npolygons))
        allocate(cgrid%avg_root_maintenance(npolygons))
@@ -1959,6 +2019,37 @@ contains
        allocate(cgrid%avg_fsc         (npolygons))
        allocate(cgrid%avg_ssc         (npolygons))
        allocate(cgrid%avg_stsc        (npolygons))
+       allocate(cgrid%avg_fsn         (npolygons))
+       allocate(cgrid%avg_msn         (npolygons))
+
+       !! C & N fluxes and pools for NCEAS/FACE
+       allocate(cgrid%Cleaf  (npolygons))
+     allocate(cgrid%Croot  (npolygons))
+     allocate(cgrid%Cstore (npolygons))
+     allocate(cgrid%Ccwd   (npolygons))
+     allocate(cgrid%Nleaf  (npolygons))
+     allocate(cgrid%Ndead  (npolygons))
+     allocate(cgrid%Nroot  (npolygons))
+     allocate(cgrid%Nstore (npolygons))
+     allocate(cgrid%Ncwd   (npolygons))
+     allocate(cgrid%Cleaf_grow       (npolygons))
+     allocate(cgrid%Croot_grow       (npolygons))
+     allocate(cgrid%Cdead_grow       (npolygons))
+     allocate(cgrid%Cstore_grow      (npolygons))
+     allocate(cgrid%Cleaf_litter_flux(npolygons))
+     allocate(cgrid%Croot_litter_flux(npolygons))
+     allocate(cgrid%Ccwd_flux        (npolygons))
+     allocate(cgrid%Nleaf_grow       (npolygons))
+     allocate(cgrid%Ndead_grow       (npolygons))
+     allocate(cgrid%Nroot_grow       (npolygons))
+     allocate(cgrid%Nstore_grow      (npolygons))
+     allocate(cgrid%Nleaf_litter_flux(npolygons))
+     allocate(cgrid%Nroot_litter_flux(npolygons))
+     allocate(cgrid%Ncwd_flux        (npolygons))
+     allocate(cgrid%Nbiomass_uptake  (npolygons))
+     allocate(cgrid%Ngross_min       (npolygons))
+     allocate(cgrid%Nnet_min         (npolygons))
+
 
 
        ! Meteorologic conditions (forcing)
@@ -1985,6 +2076,8 @@ contains
        allocate(cgrid%lai_pft            (n_pft       ,npolygons))
        allocate(cgrid%wpa_pft            (n_pft       ,npolygons))
        allocate(cgrid%wai_pft            (n_pft       ,npolygons))
+
+          allocate(cgrid%workload             (13          ,npolygons))
 
        !-----------------------------------------------------------------!
        ! Allocating the daily means, only if daily or monthly means were !
@@ -2098,7 +2191,6 @@ contains
           allocate(cgrid%stdev_nep            (             npolygons))
           allocate(cgrid%stdev_rh             (             npolygons))
           allocate(cgrid%disturbance_rates    (n_dist_types,n_dist_types,npolygons))
-          allocate(cgrid%workload             (13          ,npolygons))
 
        end if
 
@@ -2151,6 +2243,7 @@ contains
     allocate(cpoly%wai_pft(n_pft,nsites))
 
     allocate(cpoly%TCI(nsites))      
+    allocate(cpoly%pptweight(nsites))      
     allocate(cpoly%hydro_next(nsites))
     allocate(cpoly%hydro_prev(nsites))
     allocate(cpoly%moist_W(nsites))
@@ -2204,7 +2297,8 @@ contains
     allocate(cpoly%rlongup(nsites))
     allocate(cpoly%daylight(nsites))
 
-    allocate(cpoly%lai  (nsites))
+    allocate(cpoly%lai  (nsites)) 
+    allocate(cpoly%avg_lma(nsites))
     allocate(cpoly%wpa  (nsites))
     allocate(cpoly%wai  (nsites))
     ! Fast time flux diagnostics
@@ -2276,8 +2370,13 @@ contains
     allocate(cpoly%avg_broot               (nsites))
     allocate(cpoly%avg_bsapwood            (nsites))
     allocate(cpoly%avg_bdead               (nsites))
+    allocate(cpoly%avg_fsn                 (nsites))
+    allocate(cpoly%avg_msn                 (nsites))
+
+
     allocate(cpoly%avg_bstorage            (nsites))
     allocate(cpoly%avg_bseeds              (nsites))
+
 
     allocate(cpoly%dmean_co2_residual      (nsites))
     allocate(cpoly%dmean_energy_residual   (nsites))
@@ -2408,6 +2507,8 @@ contains
     allocate(csite%ssl_in(npatches))
     allocate(csite%fsn_in(npatches))
     allocate(csite%total_plant_nitrogen_uptake(npatches))
+    allocate(csite%mineralized_N_loss(npatches))
+    allocate(csite%mineralized_N_input(npatches))
     allocate(csite%rshort_g(npatches))
     allocate(csite%rshort_g_beam(npatches))
     allocate(csite%rshort_g_diffuse(npatches))
@@ -2579,6 +2680,9 @@ contains
     allocate(cpatch%mean_gpp(ncohorts))
     allocate(cpatch%mean_leaf_resp(ncohorts))
     allocate(cpatch%mean_root_resp(ncohorts))
+    allocate(cpatch%mean_growth_resp(ncohorts))
+    allocate(cpatch%mean_storage_resp(ncohorts))
+    allocate(cpatch%mean_vleaf_resp(ncohorts))
     allocate(cpatch%today_leaf_resp(ncohorts))
     allocate(cpatch%today_root_resp(ncohorts))
     allocate(cpatch%today_gpp(ncohorts))
@@ -2763,6 +2867,7 @@ contains
        nullify(cgrid%lapse                   )
 
        nullify(cgrid%lai                     )
+       nullify(cgrid%avg_lma                 )
        nullify(cgrid%wpa                     )
        nullify(cgrid%wai                     )
 
@@ -2833,17 +2938,55 @@ contains
        nullify(cgrid%avg_sfcw_mass      )
        nullify(cgrid%avg_sfcw_tempk     )
        nullify(cgrid%avg_sfcw_fracliq   )
-       nullify(cgrid%avg_bdead          )
-       nullify(cgrid%avg_balive         )
+       nullify(cgrid%avg_bdead         )
+       nullify(cgrid%avg_balive        )
        nullify(cgrid%avg_bleaf          )
        nullify(cgrid%avg_broot          )
        nullify(cgrid%avg_bsapwood       )
        nullify(cgrid%avg_bstorage       )
        nullify(cgrid%avg_bseeds         )
-       nullify(cgrid%avg_fsc            )
-       nullify(cgrid%avg_ssc            )
-       nullify(cgrid%avg_stsc           )
+
+       nullify(cgrid%avg_fsc           )
+       nullify(cgrid%avg_ssc           )
+       nullify(cgrid%avg_stsc          )
+       nullify(cgrid%avg_fsn           )
+       nullify(cgrid%avg_msn           )
+
+
        
+     !-------- TOTAL CARBON AND NITROGEN POOLS  ---------------
+     ! Added by MCD for NCEAS/FACE intercomparison (Apr 7 2009)
+     nullify(cgrid%Cleaf  )
+     nullify(cgrid%Croot  )
+     nullify(cgrid%Cstore )
+     nullify(cgrid%Ccwd   )
+     nullify(cgrid%Nleaf  )
+     nullify(cgrid%Ndead  )
+     nullify(cgrid%Nroot  )
+     nullify(cgrid%Nstore )
+     nullify(cgrid%Ncwd   )
+     
+     
+     !-------- TOTAL CARBON AND NITROGEN FLUX  ---------------
+     ! Added by MCD for NCEAS/FACE intercomparison (Apr 7 2009)
+     nullify(cgrid%Cleaf_grow       )
+     nullify(cgrid%Croot_grow       )
+     nullify(cgrid%Cdead_grow       )
+     nullify(cgrid%Cstore_grow      )
+     nullify(cgrid%Cleaf_litter_flux)
+     nullify(cgrid%Croot_litter_flux)
+     nullify(cgrid%Ccwd_flux        )
+     nullify(cgrid%Nleaf_grow       )
+     nullify(cgrid%Ndead_grow       )
+     nullify(cgrid%Nroot_grow       )
+     nullify(cgrid%Nstore_grow      )
+     nullify(cgrid%Nleaf_litter_flux)
+     nullify(cgrid%Nroot_litter_flux)
+     nullify(cgrid%Ncwd_flux        )
+     nullify(cgrid%Nbiomass_uptake  )
+     nullify(cgrid%Ngross_min       )
+     nullify(cgrid%Nnet_min         )
+
 
        ! Meteorologic conditions (forcing)
        nullify(cgrid%avg_nir_beam            )
@@ -3004,6 +3147,7 @@ contains
     nullify(cpoly%wai_pft)
 
     nullify(cpoly%TCI)   
+    nullify(cpoly%pptweight)   
     nullify(cpoly%lsl)   
     nullify(cpoly%hydro_next)
     nullify(cpoly%hydro_prev)
@@ -3053,6 +3197,7 @@ contains
     
     nullify(cpoly%albedt)
     nullify(cpoly%rlongup)
+    nullify(cpoly%avg_lma    )
     nullify(cpoly%daylight)
     nullify(cpoly%lai    )
     nullify(cpoly%wpa    )
@@ -3125,6 +3270,8 @@ contains
     nullify(cpoly%avg_broot        )
     nullify(cpoly%avg_bsapwood     )
     nullify(cpoly%avg_bdead        )
+    nullify(cpoly%avg_fsn          )
+    nullify(cpoly%avg_msn          )
     nullify(cpoly%avg_bstorage     )
     nullify(cpoly%avg_bseeds       )
 
@@ -3250,6 +3397,8 @@ contains
     nullify(csite%ssl_in)
     nullify(csite%fsn_in)
     nullify(csite%total_plant_nitrogen_uptake)
+    nullify(csite%mineralized_N_loss)
+    nullify(csite%mineralized_N_input)
     nullify(csite%rshort_g)
     nullify(csite%rshort_g_beam)
     nullify(csite%rshort_g_diffuse)
@@ -3400,6 +3549,9 @@ contains
     nullify(cpatch%mean_gpp)
     nullify(cpatch%mean_leaf_resp)
     nullify(cpatch%mean_root_resp)
+    nullify(cpatch%mean_storage_resp)
+    nullify(cpatch%mean_growth_resp)
+    nullify(cpatch%mean_vleaf_resp)
     nullify(cpatch%today_leaf_resp)
     nullify(cpatch%today_root_resp)
     nullify(cpatch%today_gpp)
@@ -3571,7 +3723,8 @@ contains
        if(associated(cgrid%met                     )) deallocate(cgrid%met                     )
        if(associated(cgrid%lapse                   )) deallocate(cgrid%lapse                   )
 
-       if(associated(cgrid%lai                     )) deallocate(cgrid%lai                     )
+       if(associated(cgrid%lai                     )) deallocate(cgrid%lai                     ) 
+       if(associated(cgrid%avg_lma                 )) deallocate(cgrid%avg_lma                    )
        if(associated(cgrid%wpa                     )) deallocate(cgrid%wpa                     )
        if(associated(cgrid%wai                     )) deallocate(cgrid%wai                     )
 
@@ -3659,8 +3812,45 @@ contains
        if(associated(cgrid%avg_ssc                 )) deallocate(cgrid%avg_ssc             )
        if(associated(cgrid%avg_stsc                )) deallocate(cgrid%avg_stsc            )
 
+       if(associated(cgrid%avg_fsn                 )) deallocate(cgrid%avg_fsn             )
+       if(associated(cgrid%avg_msn                 )) deallocate(cgrid%avg_msn             )
 
 
+     !-------- TOTAL CARBON AND NITROGEN POOLS  ---------------
+     ! Added by MCD for NCEAS/FACE intercomparison (Apr 7 2009)
+     if(associated(cgrid%Cleaf  )) deallocate(cgrid%Cleaf)
+     if(associated(cgrid%Croot  )) deallocate(cgrid%Croot)
+     if(associated(cgrid%Cstore )) deallocate(cgrid%Cstore)
+     if(associated(cgrid%Ccwd   )) deallocate(cgrid%Ccwd)
+     if(associated(cgrid%Nleaf  )) deallocate(cgrid%Nleaf)
+     if(associated(cgrid%Ndead  )) deallocate(cgrid%Ndead)
+     if(associated(cgrid%Nroot  )) deallocate(cgrid%Nroot)
+     if(associated(cgrid%Nstore )) deallocate(cgrid%Nstore)
+     if(associated(cgrid%Ncwd   )) deallocate(cgrid%Ncwd)
+     
+     
+     !-------- TOTAL CARBON AND NITROGEN FLUX  ---------------
+     ! Added by MCD for NCEAS/FACE intercomparison (Apr 7 2009)
+     if(associated(cgrid%Cleaf_grow       )) deallocate(cgrid%Cleaf_grow)
+     if(associated(cgrid%Croot_grow       )) deallocate(cgrid%Croot_grow)
+     if(associated(cgrid%Cdead_grow       )) deallocate(cgrid%Cdead_grow)
+     if(associated(cgrid%Cstore_grow      )) deallocate(cgrid%Cstore_grow)
+     if(associated(cgrid%Cleaf_litter_flux)) deallocate(cgrid%Cleaf_litter_flux)
+     if(associated(cgrid%Croot_litter_flux)) deallocate(cgrid%Croot_litter_flux)
+     if(associated(cgrid%Ccwd_flux        )) deallocate(cgrid%Ccwd_flux)
+     if(associated(cgrid%Nleaf_grow       )) deallocate(cgrid%Nleaf_grow)
+     if(associated(cgrid%Ndead_grow       )) deallocate(cgrid%Ndead_grow)
+     if(associated(cgrid%Nroot_grow       )) deallocate(cgrid%Nroot_grow)
+     if(associated(cgrid%Nstore_grow      )) deallocate(cgrid%Nstore_grow)
+     if(associated(cgrid%Nleaf_litter_flux)) deallocate(cgrid%Nleaf_litter_flux)
+     if(associated(cgrid%Nroot_litter_flux)) deallocate(cgrid%Nroot_litter_flux)
+     if(associated(cgrid%Ncwd_flux        )) deallocate(cgrid%Ncwd_flux)
+     if(associated(cgrid%Nbiomass_uptake  )) deallocate(cgrid%Nbiomass_uptake)
+     if(associated(cgrid%Ngross_min       )) deallocate(cgrid%Ngross_min)
+     if(associated(cgrid%Nnet_min         )) deallocate(cgrid%Nnet_min)
+
+
+ 
 
 
        ! ----------------------------------------------
@@ -3830,6 +4020,7 @@ contains
     if(associated(cpoly%wai_pft                     )) deallocate(cpoly%wai_pft                     )
 
     if(associated(cpoly%TCI                         )) deallocate(cpoly%TCI                         )
+    if(associated(cpoly%pptweight                   )) deallocate(cpoly%pptweight                         )
     if(associated(cpoly%lsl                         )) deallocate(cpoly%lsl                         )
     if(associated(cpoly%hydro_next                  )) deallocate(cpoly%hydro_next                  )
     if(associated(cpoly%hydro_prev                  )) deallocate(cpoly%hydro_prev                  )
@@ -3882,6 +4073,7 @@ contains
     if(associated(cpoly%daylight                    )) deallocate(cpoly%daylight                    )
     
     if(associated(cpoly%lai                         )) deallocate(cpoly%lai                         )
+    if(associated(cpoly%avg_lma                     )) deallocate(cpoly%avg_lma                         )
     if(associated(cpoly%wpa                         )) deallocate(cpoly%wpa                         )
     if(associated(cpoly%wai                         )) deallocate(cpoly%wai                         )
 
@@ -3946,6 +4138,9 @@ contains
     if(associated(cpoly%avg_ssc                   )) deallocate(cpoly%avg_ssc                   )
     if(associated(cpoly%avg_bdead                 )) deallocate(cpoly%avg_bdead                 )
     if(associated(cpoly%avg_balive                )) deallocate(cpoly%avg_balive                )
+    if(associated(cpoly%avg_fsn                   )) deallocate(cpoly%avg_fsn                   )
+    if(associated(cpoly%avg_msn                   )) deallocate(cpoly%avg_msn                   )
+
     if(associated(cpoly%avg_bleaf                 )) deallocate(cpoly%avg_bleaf                 )
     if(associated(cpoly%avg_broot                 )) deallocate(cpoly%avg_broot                 )
     if(associated(cpoly%avg_bsapwood              )) deallocate(cpoly%avg_bsapwood              )
@@ -4077,6 +4272,8 @@ contains
     if(associated(csite%ssl_in                       )) deallocate(csite%ssl_in                       )
     if(associated(csite%fsn_in                       )) deallocate(csite%fsn_in                       )
     if(associated(csite%total_plant_nitrogen_uptake  )) deallocate(csite%total_plant_nitrogen_uptake  )
+    if(associated(csite%mineralized_N_input )) deallocate(csite%mineralized_N_input  )
+    if(associated(csite%mineralized_N_loss  )) deallocate(csite%mineralized_N_loss  )
     if(associated(csite%rshort_g                     )) deallocate(csite%rshort_g                     )
     if(associated(csite%rshort_g_beam                )) deallocate(csite%rshort_g_beam                )
     if(associated(csite%rshort_g_diffuse             )) deallocate(csite%rshort_g_diffuse             )
@@ -4228,6 +4425,9 @@ contains
     if(associated(cpatch%mean_gpp))            deallocate(cpatch%mean_gpp)
     if(associated(cpatch%mean_leaf_resp))      deallocate(cpatch%mean_leaf_resp)
     if(associated(cpatch%mean_root_resp))      deallocate(cpatch%mean_root_resp)
+    if(associated(cpatch%mean_growth_resp))    deallocate(cpatch%mean_growth_resp)
+    if(associated(cpatch%mean_storage_resp))   deallocate(cpatch%mean_storage_resp)
+    if(associated(cpatch%mean_vleaf_resp))     deallocate(cpatch%mean_vleaf_resp)
     if(associated(cpatch%today_leaf_resp))     deallocate(cpatch%today_leaf_resp)
     if(associated(cpatch%today_root_resp))     deallocate(cpatch%today_root_resp)
     if(associated(cpatch%today_gpp))           deallocate(cpatch%today_gpp)
@@ -4326,7 +4526,6 @@ contains
     if(associated(cpatch%llspan))                 deallocate(cpatch%llspan)
     if(associated(cpatch%vm_bar))                 deallocate(cpatch%vm_bar)
     if(associated(cpatch%sla))                    deallocate(cpatch%sla)
-
 
     return
   end subroutine deallocate_patchtype
@@ -4451,6 +4650,7 @@ contains
     end if                         
 
     if(associated(cgrid%lai                     )) cgrid%lai                      = large_real
+    if(associated(cgrid%avg_lma                 )) cgrid%avg_lma                  = large_real
     if(associated(cgrid%wpa                     )) cgrid%wpa                      = large_real
     if(associated(cgrid%wai                     )) cgrid%wai                      = large_real
     ! Fast time flux diagnostics
@@ -4523,7 +4723,41 @@ contains
     if(associated(cgrid%avg_fsc                 )) cgrid%avg_fsc                  = large_real
     if(associated(cgrid%avg_ssc                 )) cgrid%avg_ssc                  = large_real
     if(associated(cgrid%avg_stsc                )) cgrid%avg_stsc                 = large_real
+  if(associated(cgrid%avg_fsn                 )) cgrid%avg_fsn                  = large_real
+       if(associated(cgrid%avg_msn                 )) cgrid%avg_msn                  = large_real
 
+     !-------- TOTAL CARBON AND NITROGEN POOLS  ---------------
+     ! Added by MCD for NCEAS/FACE intercomparison (Apr 7 2009)
+     if(associated(cgrid%Cleaf  )) cgrid%Cleaf   = large_real
+     if(associated(cgrid%Croot  )) cgrid%Croot   = large_real
+     if(associated(cgrid%Cstore )) cgrid%Cstore  = large_real 
+     if(associated(cgrid%Ccwd   )) cgrid%Ccwd    = large_real
+     if(associated(cgrid%Nleaf  )) cgrid%Nleaf   = large_real
+     if(associated(cgrid%Ndead  )) cgrid%Ndead   = large_real
+     if(associated(cgrid%Nroot  )) cgrid%Nroot   = large_real
+     if(associated(cgrid%Nstore )) cgrid%Nstore  = large_real
+     if(associated(cgrid%Ncwd   )) cgrid%Ncwd    = large_real
+     
+     
+     !-------- TOTAL CARBON AND NITROGEN FLUX  ---------------
+     ! Added by MCD for NCEAS/FACE intercomparison (Apr 7 2009)
+     if(associated(cgrid%Cleaf_grow       )) cgrid%Cleaf_grow   = large_real
+     if(associated(cgrid%Croot_grow       )) cgrid%Croot_grow   = large_real
+     if(associated(cgrid%Cdead_grow       )) cgrid%Cdead_grow   = large_real
+     if(associated(cgrid%Cstore_grow      )) cgrid%Cstore_grow  = large_real
+     if(associated(cgrid%Cleaf_litter_flux)) cgrid%Cleaf_litter_flux = large_real
+     if(associated(cgrid%Croot_litter_flux)) cgrid%Croot_litter_flux = large_real
+     if(associated(cgrid%Ccwd_flux        )) cgrid%Ccwd_flux    = large_real
+     if(associated(cgrid%Nleaf_grow       )) cgrid%Nleaf_grow   = large_real
+     if(associated(cgrid%Ndead_grow       )) cgrid%Ndead_grow   = large_real
+     if(associated(cgrid%Nroot_grow       )) cgrid%Nroot_grow   = large_real
+     if(associated(cgrid%Nstore_grow      )) cgrid%Nstore_grow  = large_real
+     if(associated(cgrid%Nleaf_litter_flux)) cgrid%Nleaf_litter_flux = large_real
+     if(associated(cgrid%Nroot_litter_flux)) cgrid%Nroot_litter_flux = large_real 
+     if(associated(cgrid%Ncwd_flux        )) cgrid%Ncwd_flux    = large_real
+     if(associated(cgrid%Nbiomass_uptake  )) cgrid%Nbiomass_uptake = large_real
+     if(associated(cgrid%Ngross_min       )) cgrid%Ngross_min   = large_real
+     if(associated(cgrid%Nnet_min         )) cgrid%Nnet_min     = large_real
 
     ! ---------------------------------------------
 
@@ -4681,6 +4915,7 @@ contains
     if(associated(cpoly%wai_pft                     )) cpoly%wai_pft                     = large_real
 
     if(associated(cpoly%TCI                         )) cpoly%TCI                         = large_real
+    if(associated(cpoly%pptweight                   )) cpoly%pptweight                   = large_real
     if(associated(cpoly%lsl                         )) cpoly%lsl                         = large_integer  ! Integer
     if(associated(cpoly%hydro_next                  )) cpoly%hydro_next                  = large_integer  ! Integer
     if(associated(cpoly%hydro_prev                  )) cpoly%hydro_prev                  = large_integer  ! Integer
@@ -4761,6 +4996,7 @@ contains
     if(associated(cpoly%daylight                    )) cpoly%daylight                    = large_real
     
     if(associated(cpoly%lai                         )) cpoly%lai                         = large_real
+    if(associated(cpoly%avg_lma                     )) cpoly%avg_lma                     = large_real
     if(associated(cpoly%wpa                         )) cpoly%wpa                         = large_real
     if(associated(cpoly%wai                         )) cpoly%wai                         = large_real
 
@@ -4827,6 +5063,8 @@ contains
     if(associated(cpoly%avg_bsapwood                )) cpoly%avg_bsapwood                = large_real
     if(associated(cpoly%avg_broot                   )) cpoly%avg_broot                   = large_real
     if(associated(cpoly%avg_bdead                   )) cpoly%avg_bdead                   = large_real
+    if(associated(cpoly%avg_fsn                     )) cpoly%avg_fsn                     = large_real
+    if(associated(cpoly%avg_msn                     )) cpoly%avg_msn                     = large_real
     if(associated(cpoly%avg_bstorage                )) cpoly%avg_bstorage                = large_real
     if(associated(cpoly%avg_bseeds                  )) cpoly%avg_bseeds                  = large_real
 
@@ -4970,6 +5208,8 @@ contains
     if(associated(csite%ssl_in                       )) csite%ssl_in                       = large_real
     if(associated(csite%fsn_in                       )) csite%fsn_in                       = large_real
     if(associated(csite%total_plant_nitrogen_uptake  )) csite%total_plant_nitrogen_uptake  = large_real
+    if(associated(csite%mineralized_N_input  )) csite%mineralized_N_input  = large_real
+    if(associated(csite%mineralized_N_loss  )) csite%mineralized_N_loss  = large_real
     if(associated(csite%rshort_g                     )) csite%rshort_g                     = large_real
     if(associated(csite%rshort_g_beam                )) csite%rshort_g_beam                = large_real
     if(associated(csite%rshort_g_diffuse             )) csite%rshort_g_diffuse             = large_real
@@ -5112,6 +5352,10 @@ contains
     if(associated(cpatch%mean_gpp))             cpatch%mean_gpp            = large_real
     if(associated(cpatch%mean_leaf_resp))       cpatch%mean_leaf_resp      = large_real
     if(associated(cpatch%mean_root_resp))       cpatch%mean_root_resp      = large_real
+    if(associated(cpatch%mean_growth_resp))     cpatch%mean_growth_resp      = large_real
+    if(associated(cpatch%mean_storage_resp))    cpatch%mean_storage_resp      = large_real
+    if(associated(cpatch%mean_vleaf_resp))      cpatch%mean_vleaf_resp      = large_real
+    if(associated(cpatch%dmean_leaf_resp))      cpatch%dmean_leaf_resp     = large_real
     if(associated(cpatch%today_leaf_resp))      cpatch%today_leaf_resp     = large_real
     if(associated(cpatch%today_root_resp))      cpatch%today_root_resp     = large_real
     if(associated(cpatch%today_gpp))            cpatch%today_gpp           = large_real
@@ -5356,6 +5600,8 @@ contains
     polyout%slope(isout)                     = polyin%slope(isin)
     polyout%aspect(isout)                    = polyin%aspect(isin)
     polyout%TCI(isout)                       = polyin%TCI(isin)
+    polyout%pptweight(isout)                 = polyin%pptweight(isin)
+
 
     return
   end subroutine copy_polygontype
@@ -5525,6 +5771,8 @@ contains
     siteout%ssl_in(1:inc)               = pack(sitein%ssl_in,logmask)
     siteout%fsn_in(1:inc)               = pack(sitein%fsn_in,logmask)
     siteout%total_plant_nitrogen_uptake(1:inc)    = pack(sitein%total_plant_nitrogen_uptake,logmask)
+    siteout%mineralized_N_loss(1:inc)    = pack(sitein%mineralized_N_loss,logmask)
+    siteout%mineralized_N_input(1:inc)    = pack(sitein%mineralized_N_input,logmask)
     siteout%rshort_g(1:inc)             = pack(sitein%rshort_g,logmask)
     siteout%rshort_g_beam(1:inc)        = pack(sitein%rshort_g_beam,logmask)
     siteout%rshort_g_diffuse(1:inc)     = pack(sitein%rshort_g_diffuse,logmask)
@@ -5777,6 +6025,9 @@ contains
     patchout%mean_gpp(1:inc)         = pack(patchin%mean_gpp,mask)
     patchout%mean_leaf_resp(1:inc)   = pack(patchin%mean_leaf_resp,mask)
     patchout%mean_root_resp(1:inc)   = pack(patchin%mean_root_resp,mask)
+    patchout%mean_growth_resp(1:inc) = pack(patchin%mean_growth_resp,mask)
+    patchout%mean_storage_resp(1:inc)= pack(patchin%mean_storage_resp,mask)
+    patchout%mean_vleaf_resp(1:inc)  = pack(patchin%mean_vleaf_resp,mask)
     patchout%today_leaf_resp(1:inc)  = pack(patchin%today_leaf_resp,mask)
     patchout%today_root_resp(1:inc)  = pack(patchin%today_root_resp,mask)
     patchout%today_gpp(1:inc)        = pack(patchin%today_gpp,mask)
@@ -5989,6 +6240,9 @@ contains
        patchout%mean_gpp(iout)         = patchin%mean_gpp(iin)
        patchout%mean_leaf_resp(iout)   = patchin%mean_leaf_resp(iin)
        patchout%mean_root_resp(iout)   = patchin%mean_root_resp(iin)
+       patchout%mean_growth_resp(iout) = patchin%mean_growth_resp(iin)
+       patchout%mean_storage_resp(iout)= patchin%mean_storage_resp(iin)
+       patchout%mean_vleaf_resp(iout)  = patchin%mean_vleaf_resp(iin)
        patchout%today_leaf_resp(iout)  = patchin%today_leaf_resp(iin)
        patchout%today_root_resp(iout)  = patchin%today_root_resp(iin)
        patchout%today_gpp(iout)        = patchin%today_gpp(iin)
@@ -6576,10 +6830,10 @@ contains
 !!    var_len        = ed_nstyp
 !!    var_len_global = ed_nstyp
 !!    call vtable_edio_r(soil(1)%slmsts,nvar,igr,0,0, &
-!!         var_len,var_len_global,max_ptrs,'SOIL_POROSITY :90:hist:anal:dail:mont:mpti:mpt3')
+!!         var_len,var_len_global,max_ptrs,'SOIL_POROSITY :90:hist:anal:dail:mont')
 
 !!    call vtable_edio_r(soil(1)%slmsts,nvar,igr,1,0, &
-!!         var_len,var_len_global,max_ptrs,'SOIL_POROSITY :90:hist:anal:dail:mont:mpti:mpt3')
+!!         var_len,var_len_global,max_ptrs,'SOIL_POROSITY :90:hist:anal:dail:mont')
 !!    call metadata_edio(nvar,igr,'Porosity of s-ls-sl-sil-l-scl-sicl-cl-sc-sic-c-p','m3/m3','12 classes')
 
 
@@ -6714,7 +6968,7 @@ contains
        nvar=nvar+1
        call vtable_edio_r(cgrid%wbar(1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'WBAR :11:hist') 
-       call metadata_edio(nvar,igr,'NA','NA','ipoly')
+       call metadata_edio(nvar,igr,'Polygon average topographic moisture index','NA','ipoly')
        
     endif
     
@@ -6744,20 +6998,20 @@ contains
        nvar=nvar+1
        call vtable_edio_r(cgrid%sheat(1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'SHEAT :11:hist') 
-       call metadata_edio(nvar,igr,'NA','NA','ipoly')
+       call metadata_edio(nvar,igr,'soil heat pool for lateral hydrology','NA','ipoly')
     endif
     
     if (associated(cgrid%baseflow)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%baseflow(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'BASEFLOW :11:hist:anal') 
+            var_len,var_len_global,max_ptrs,'BASEFLOW :11:hist:anal:opti') 
        call metadata_edio(nvar,igr,'loss of water from site to watershed discharge','kg/m2/s','ipoly')
     endif
     
     if (associated(cgrid%runoff)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%runoff(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'RUNOFF :11:hist:anal') 
+            var_len,var_len_global,max_ptrs,'RUNOFF :11:hist:anal:opti') 
        call metadata_edio(nvar,igr,'NA','NA','ipoly')
     endif
     
@@ -6786,42 +7040,42 @@ contains
     if (associated(cgrid%total_agb_growth)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%total_agb_growth(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'TOTAL_AGB_GROWTH:11:hist:anal') 
+            var_len,var_len_global,max_ptrs,'TOTAL_AGB_GROWTH:11:hist:anal:year') 
         call metadata_edio(nvar,igr,'Polygon AGB gain through growth','[kgC/m2/yr]','ipoly')
     endif
     
     if (associated(cgrid%total_agb_mort)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%total_agb_mort(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'TOTAL_AGB_MORT :11:hist:anal') 
+            var_len,var_len_global,max_ptrs,'TOTAL_AGB_MORT :11:hist:anal:year') 
        call metadata_edio(nvar,igr,'Polygon AGB lost due to mortality','[kgC/m2/yr]','ipoly')
     endif
     
     if (associated(cgrid%total_agb_recruit)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%total_agb_recruit(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'TOTAL_AGB_RECRUIT :11:hist:anal') 
+            var_len,var_len_global,max_ptrs,'TOTAL_AGB_RECRUIT :11:hist:anal:year') 
        call metadata_edio(nvar,igr,'Polygon AGB used to generate recruits','[kgC/m2/yr]','ipoly')
     endif
     
     if (associated(cgrid%total_basal_area_growth)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%total_basal_area_growth(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'TOTAL_BASAL_AREA_GROWTH :11:hist:anal') 
+            var_len,var_len_global,max_ptrs,'TOTAL_BASAL_AREA_GROWTH :11:hist:anal:year') 
        call metadata_edio(nvar,igr,'Polygon basal area gained through growth ','[kgC/m2/yr]','ipoly')
     endif
     
     if (associated(cgrid%total_basal_area_mort)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%total_basal_area_mort(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'TOTAL_BASAL_AREA_MORT :11:hist:anal') 
+            var_len,var_len_global,max_ptrs,'TOTAL_BASAL_AREA_MORT :11:hist:anal:year') 
        call metadata_edio(nvar,igr,'Polygon basal area lost through growth ','[cm2/m2/yr]','ipoly')
     endif
     
     if (associated(cgrid%total_basal_area_recruit)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%total_basal_area_recruit(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'TOTAL_BASAL_AREA_RECRUIT :11:hist:anal') 
+            var_len,var_len_global,max_ptrs,'TOTAL_BASAL_AREA_RECRUIT :11:hist:anal:year') 
        call metadata_edio(nvar,igr,'Polygon basal area gained by recruits','[cm2/m2/yr]','ipoly')
     endif
     
@@ -6894,23 +7148,21 @@ contains
     if (associated(cgrid%avg_vapor_vc)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_vapor_vc(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_VAPOR_VC :11:hist:anal') 
+            var_len,var_len_global,max_ptrs,'AVG_VAPOR_VC :11:hist:anal:opti') 
        call metadata_edio(nvar,igr,'polygon vegetation to canopy air vapor flux','[kg/m2/s]','ipoly') 
-
-
     endif
     
     if (associated(cgrid%avg_dew_cg)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_dew_cg(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_DEW_CG :11:hist:anal') 
+            var_len,var_len_global,max_ptrs,'AVG_DEW_CG :11:hist:anal:opti') 
        call metadata_edio(nvar,igr,'Polygon averaged dew to ground flux','[kg/m2/s]','ipoly') 
     endif
     
     if (associated(cgrid%avg_vapor_gc)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_vapor_gc(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_VAPOR_GC :11:hist:anal') 
+            var_len,var_len_global,max_ptrs,'AVG_VAPOR_GC :11:hist:anal:opti') 
        call metadata_edio(nvar,igr,'polygon moisture flux ground to canopy air','[kg/m2/s]','ipoly') 
     endif
     
@@ -6931,21 +7183,21 @@ contains
     if (associated(cgrid%avg_vapor_ac)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_vapor_ac(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_VAPOR_AC :11:hist:anal') 
+            var_len,var_len_global,max_ptrs,'AVG_VAPOR_AC :11:hist:anal:opti') 
        call metadata_edio(nvar,igr,'polygon vapor flux atmosphere to canopy air','[kg/m2/s]','ipoly') 
     endif
     
     if (associated(cgrid%avg_transp)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_transp(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_TRANSP :11:hist:anal') 
+            var_len,var_len_global,max_ptrs,'AVG_TRANSP :11:hist:anal:opti') 
        call metadata_edio(nvar,igr,'polygon transpiration from stomata to canopy air space','[kg/m2/s]','ipoly') 
     endif
     
     if (associated(cgrid%avg_evap)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_evap(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_EVAP :11:hist:anal') 
+            var_len,var_len_global,max_ptrs,'AVG_EVAP :11:hist:anal:opti') 
        call metadata_edio(nvar,igr,'Polygon averaged evap/dew from ground and leaves to CAS','[kg/m2/s]','ipoly') 
     endif
     
@@ -6966,7 +7218,7 @@ contains
     if (associated(cgrid%avg_runoff)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_runoff(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_RUNOFF :11:hist:anal') 
+            var_len,var_len_global,max_ptrs,'AVG_RUNOFF :11:hist:anal:opti') 
        call metadata_edio(nvar,igr,'Polygon average surface runoff','[kg/m2/s]','NA') 
     endif
     
@@ -7016,7 +7268,8 @@ contains
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_qintercepted(1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'AVG_QINTERCEPTED :11:hist:anal') 
-       call metadata_edio(nvar,igr,'Polygon averaged internal energy flux of intercepted precipitation by vegetation','[W/m2]','ipoly') 
+       call metadata_edio(nvar,igr,&
+'Polygon averaged internal energy flux of intercepted precipitation by vegetation','[W/m2]','ipoly') 
     endif
    
     if (associated(cgrid%avg_sensible_gc)) then
@@ -7029,7 +7282,7 @@ contains
     if (associated(cgrid%avg_sensible_ac)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_sensible_ac(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_SENSIBLE_AC :11:hist:anal') 
+            var_len,var_len_global,max_ptrs,'AVG_SENSIBLE_AC :11:hist:anal:opti') 
        call metadata_edio(nvar,igr,'Polygon averaged sensible heat flux atmosphere  to canopy','[W/m2]','ipoly') 
     endif
     
@@ -7059,14 +7312,14 @@ contains
     if (associated(cgrid%avg_gpp)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_gpp(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_GPP :11:hist:anal') 
+            var_len,var_len_global,max_ptrs,'AVG_GPP :11:hist:anal:opti') 
        call metadata_edio(nvar,igr,'Polygon Average GPP','[umol/m2/s]','ipoly') 
     endif
 
     if (associated(cgrid%lai)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%lai(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'LAI :11:hist:anal') 
+            var_len,var_len_global,max_ptrs,'LAI :11:hist:anal:dail') 
        call metadata_edio(nvar,igr,'Polygon  LAI','[m2/m2]','ipoly') 
     endif
 
@@ -7075,6 +7328,13 @@ contains
        call vtable_edio_r(cgrid%wpa(1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'WPA :11:hist:anal') 
        call metadata_edio(nvar,igr,'Polygon  WPA','[m2/m2]','ipoly') 
+    endif
+
+    if (associated(cgrid%avg_lma)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%avg_lma(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'AVG_LMA :11:hist:dail') 
+       call metadata_edio(nvar,igr,'Polygon LMA','[NA]','ipoly') 
     endif
 
     if (associated(cgrid%wai)) then
@@ -7087,14 +7347,14 @@ contains
     if (associated(cgrid%avg_leaf_resp)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_leaf_resp(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_LEAF_RESP :11:hist:anal') 
+            var_len,var_len_global,max_ptrs,'AVG_LEAF_RESP :11:hist:anal:opti') 
        call metadata_edio(nvar,igr,'Polygon Average Leaf Respiration','[umol/m2/s]','ipoly') 
     endif
 
     if (associated(cgrid%avg_root_resp)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_root_resp(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_ROOT_RESP :11:hist:anal') 
+            var_len,var_len_global,max_ptrs,'AVG_ROOT_RESP :11:hist:anal:opti') 
        call metadata_edio(nvar,igr,'Polygon Average Root Respiration','[umol/m2/s]','ipoly') 
     endif
 
@@ -7122,14 +7382,35 @@ contains
     if (associated(cgrid%avg_plant_resp)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_plant_resp(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_PLANT_RESP :11:hist:anal') 
+            var_len,var_len_global,max_ptrs,'AVG_PLANT_RESP :11:hist:anal:opti') 
        call metadata_edio(nvar,igr,'Polygon Average Plant Respiration','[umol/m2/s]','ipoly') 
+    endif
+
+    if (associated(cgrid%avg_growth_resp)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%avg_growth_resp(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'AVG_GROWTH_RESP :11:opti') 
+       call metadata_edio(nvar,igr,'Polygon Average Growth Respiration','[umol/m2/s]','ipoly') 
+    endif
+
+    if (associated(cgrid%avg_storage_resp)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%avg_storage_resp(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'AVG_STORAGE_RESP :11:opti') 
+       call metadata_edio(nvar,igr,'Polygon Average Storage Respiration','[umol/m2/s]','ipoly') 
+    endif
+
+    if (associated(cgrid%avg_vleaf_resp)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%avg_vleaf_resp(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'AVG_VLEAF_RESP :11:opti') 
+       call metadata_edio(nvar,igr,'Polygon Average VLeaf Respiration','[umol/m2/s]','ipoly') 
     endif
 
     if (associated(cgrid%avg_htroph_resp)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_htroph_resp(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_HTROPH_RESP :11:hist:anal') 
+            var_len,var_len_global,max_ptrs,'AVG_HTROPH_RESP :11:hist:anal:opti') 
        call metadata_edio(nvar,igr,'Polygon Average Heterotrohic Respiration','[umol/m2/s]','ipoly') 
     endif
 
@@ -7159,37 +7440,37 @@ contains
     if (associated(cgrid%avg_sfcw_depth)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_sfcw_depth(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_SFCW_DEPTH :11:hist:anal') 
-       call metadata_edio(nvar,igr,'Poly Avg. Sfc. Water/Snow Depth ','[m]','ipoly') 
+            var_len,var_len_global,max_ptrs,'AVG_SNOWDEPTH :11:hist:anal:opti') 
+       call metadata_edio(nvar,igr,'Poly Avg. Snow Depth ','[m]','ipoly') 
     endif
     if (associated(cgrid%avg_sfcw_energy)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_sfcw_energy(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_SFCW_ENERGY :11:hist:anal') 
-       call metadata_edio(nvar,igr,'Poly Avg. Sfc. Water/Snow Energy ','[J/kg]','ipoly') 
+            var_len,var_len_global,max_ptrs,'AVG_SNOWENERGY :11:hist:anal') 
+       call metadata_edio(nvar,igr,'Poly Avg. Snow Energy ','[J/kg]','ipoly') 
     endif
     if (associated(cgrid%avg_sfcw_mass)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_sfcw_mass(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_SFCW_MASS :11:hist:anal') 
-       call metadata_edio(nvar,igr,'Poly Avg. Sfc.Water/Snow Mass (SWE) ','[kg/m2]','ipoly') 
+            var_len,var_len_global,max_ptrs,'AVG_SNOWMASS :11:hist:anal:opti') 
+       call metadata_edio(nvar,igr,'Poly Avg. Snow Mass (SWE) ','[kg/m2]','ipoly') 
     endif
     if (associated(cgrid%avg_sfcw_tempk)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_sfcw_tempk(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_SFCW_TEMP :11:hist:anal') 
-       call metadata_edio(nvar,igr,'Poly Avg. Sfc. Water/Snow Temperature','[K]','ipoly') 
+            var_len,var_len_global,max_ptrs,'AVG_SNOWTEMP :11:hist:anal:opti') 
+       call metadata_edio(nvar,igr,'Poly Avg. Snow Temperature','[K]','ipoly') 
     endif
     if (associated(cgrid%avg_sfcw_fracliq)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_sfcw_fracliq(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_SFCW_FRACLIQ :11:hist:anal') 
-       call metadata_edio(nvar,igr,'Poly Avg. Sfc. Water/Snow liquid fraction','[proportion]','ipoly') 
+            var_len,var_len_global,max_ptrs,'AVG_SNOWFRACLIQ :11:hist:anal:opti') 
+       call metadata_edio(nvar,igr,'Poly Avg. Snow liquid fraction','[proportion]','ipoly') 
     endif
     if (associated(cgrid%avg_bdead)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_bdead(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_BDEAD :11:hist:anal:year') 
+            var_len,var_len_global,max_ptrs,'AVG_BDEAD :11:hist:opti:dail:anal:year') 
        call metadata_edio(nvar,igr,'Poly Avg. Biomass - structural','[kgC/m2]','ipoly') 
     endif
     if (associated(cgrid%avg_bstorage)) then
@@ -7236,22 +7517,200 @@ contains
     if (associated(cgrid%avg_fsc)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_fsc(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_FSC :11:hist:anal:year') 
+            var_len,var_len_global,max_ptrs,'AVG_FSC :11:hist:anal:opti:dail:year') 
        call metadata_edio(nvar,igr,'Poly Avg. Fast Soil Carbon','[kg/m2]','ipoly') 
     endif
     if (associated(cgrid%avg_ssc)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_stsc(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_SSC :11:hist:anal:year') 
+            var_len,var_len_global,max_ptrs,'AVG_SSC :11:hist:anal:opti:dail:year') 
        call metadata_edio(nvar,igr,'Poly Avg. Slow Soil Carbon','[kg/m2]','ipoly') 
     endif
     if (associated(cgrid%avg_stsc)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_stsc(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_STSC :11:hist:anal:year') 
+            var_len,var_len_global,max_ptrs,'AVG_STSC :11:hist:anal:opti:year:dail') 
        call metadata_edio(nvar,igr,'Poly Avg. Structural Soil Carbon','[kg/m2]','ipoly') 
     endif
 
+
+    if (associated(cgrid%avg_fsn)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%avg_fsn(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'AVG_FSN :11:hist:anal:opti:dail:year') 
+       call metadata_edio(nvar,igr,'Poly Avg. Fast Soil Nitrogen','[kg/m2]','ipoly') 
+    endif
+    if (associated(cgrid%avg_msn)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%avg_msn(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'AVG_MSN :11:hist:anal:opti:dail:year') 
+       call metadata_edio(nvar,igr,'Poly Avg. Mineralized Soil Carbon','[kg/m2]','ipoly') 
+    endif
+
+
+
+
+     !-------- TOTAL CARBON AND NITROGEN POOLS  ---------------
+     ! Added by MCD for NCEAS/FACE intercomparison (Apr 7 2009)
+    if (associated(cgrid%Cleaf)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%Cleaf(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'CLEAF :11:dail') 
+       call metadata_edio(nvar,igr,'Poly Avg. Leaf Carbon','?','ipoly') 
+    endif
+    if (associated(cgrid%Croot)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%Croot(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'CROOT :11:dail') 
+       call metadata_edio(nvar,igr,'Poly Avg. Fine Root Carbon','?','ipoly') 
+    endif
+    if (associated(cgrid%Cstore)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%cstore(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'CSTORE :11:dail') 
+       call metadata_edio(nvar,igr,'Poly Avg. Storage/TNC Carbon','?','ipoly') 
+    endif
+    if (associated(cgrid%Ccwd)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%Ccwd(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'CCWD :11:dail') 
+       call metadata_edio(nvar,igr,'Poly Avg. Coarse Woody Debris Carbon','?','ipoly') 
+    endif
+    if (associated(cgrid%Nleaf)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%Nleaf(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'NLEAF :11:dail') 
+       call metadata_edio(nvar,igr,'Poly Avg. Leaf Nitrogen','?','ipoly') 
+    endif
+    if (associated(cgrid%Ndead)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%Ndead(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'NDEAD :11:dail') 
+       call metadata_edio(nvar,igr,'Poly Avg. Wood Nitrogen','?','ipoly') 
+    endif
+    if (associated(cgrid%Nroot)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%Nroot(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'NROOT :11:dail') 
+       call metadata_edio(nvar,igr,'Poly Avg. Fine Root Nitrogen','?','ipoly') 
+    endif
+    if (associated(cgrid%Nstore)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%Nstore(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'NSTORE :11:dail') 
+       call metadata_edio(nvar,igr,'Poly Avg. Storage Nitrogen','?','ipoly') 
+    endif
+    if (associated(cgrid%Ncwd)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%Ncwd(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'NCWD :11:dail') 
+       call metadata_edio(nvar,igr,'Poly Avg. Leaf Carbon','?','ipoly') 
+    endif
+
+     !-------- TOTAL CARBON AND NITROGEN FLUX  ---------------
+     ! Added by MCD for NCEAS/FACE intercomparison (Apr 7 2009)
+    if (associated(cgrid%Cleaf_grow)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%Cleaf_grow(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'CLEAF_GROW :11:dail') 
+       call metadata_edio(nvar,igr,'Poly Avg. Leaf Carbon Growth','?','ipoly') 
+    endif
+   if (associated(cgrid%Croot_grow)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%Croot_grow(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'CROOT_GROW :11:dail') 
+       call metadata_edio(nvar,igr,'Poly Avg. Fine Root Carbon Growth','?','ipoly') 
+    endif
+   if (associated(cgrid%Cdead_grow)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%Cdead_grow(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'CDEAD_GROW :11:dail') 
+       call metadata_edio(nvar,igr,'Poly Avg. Wood Carbon Growth','?','ipoly') 
+    endif
+   if (associated(cgrid%Cstore_grow)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%Cstore_Grow(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'CSTORE_GROW :11:dail') 
+       call metadata_edio(nvar,igr,'Poly Avg. Storage Carbon growth','?','ipoly') 
+    endif
+   if (associated(cgrid%Cleaf_litter_flux)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%Cleaf_litter_flux(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'CLEAF_LITTER_FLUX :11:dail') 
+       call metadata_edio(nvar,igr,'Poly Avg. Leaf Litter Carbon Flux','?','ipoly') 
+    endif
+   if (associated(cgrid%Croot_litter_flux)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%Croot_litter_flux(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'CROOT_LITTER_FLUX :11:dail') 
+       call metadata_edio(nvar,igr,'Poly Avg. Fine Root Litter Carbon Flux','?','ipoly') 
+    endif
+   if (associated(cgrid%Ccwd_flux)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%Ccwd_flux(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'CCWD_FLUX :11:dail') 
+       call metadata_edio(nvar,igr,'Poly Avg. Coarse Woody Debris Carbon FLUX','?','ipoly') 
+    endif
+   if (associated(cgrid%Nleaf_grow)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%Nleaf_grow(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'NLEAF_GROW :11:dail') 
+       call metadata_edio(nvar,igr,'Poly Avg. Leaf Nitrogen growth','?','ipoly') 
+    endif
+   if (associated(cgrid%Nroot_grow)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%Nroot_grow(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'NROOT_GROW :11:dail') 
+       call metadata_edio(nvar,igr,'Poly Avg. Fine Root Nitrogen Growth','?','ipoly') 
+    endif
+   if (associated(cgrid%Ndead_grow)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%Ndead_grow(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'NDEAD_GROW :11:dail') 
+       call metadata_edio(nvar,igr,'Poly Avg. Wood Nitrogen growth','?','ipoly') 
+    endif
+   if (associated(cgrid%Nstore_grow)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%Nstore_grow(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'NSTORE_GROW :11:dail') 
+       call metadata_edio(nvar,igr,'Poly Avg. Storage Nitrogen Growth','?','ipoly') 
+    endif
+   if (associated(cgrid%Nleaf_litter_flux)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%Nleaf_litter_flux(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'NLEAF_LITTER_FLUX :11:dail') 
+       call metadata_edio(nvar,igr,'Poly Avg. Leaf litter Nitrogen flux','?','ipoly') 
+    endif
+   if (associated(cgrid%Nroot_litter_flux)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%Nroot_litter_flux(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'NROOT_LITTER_FLUX :11:dail') 
+       call metadata_edio(nvar,igr,'Poly Avg. fine root litter Nitrogen flux','?','ipoly') 
+    endif
+   if (associated(cgrid%Ncwd_flux)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%Ncwd_flux(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'NCWD_FLUX :11:dail') 
+       call metadata_edio(nvar,igr,'Poly Avg. CWD Nitrogen flux','?','ipoly') 
+    endif
+   if (associated(cgrid%Nbiomass_uptake)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%Nbiomass_uptake(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'NBIOMASS_UPTAKE :11:dail') 
+       call metadata_edio(nvar,igr,'Poly Avg. Nitrogen Uptake','?','ipoly') 
+    endif
+   if (associated(cgrid%Ngross_min)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%Ngross_min(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'NGROSS_MIN :11:dail') 
+       call metadata_edio(nvar,igr,'Poly Avg. Gross Nitrogen mineralization','?','ipoly') 
+    endif
+   if (associated(cgrid%Nnet_min)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%Nnet_min(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'NNET_MIN :11:dail') 
+       call metadata_edio(nvar,igr,'Poly Avg. Net Nitrogen mineralization','?','ipoly') 
+    endif
 
     ! ----------------------------------------------
     
@@ -7272,21 +7731,21 @@ contains
     if (associated(cgrid%avg_par_beam)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_par_beam(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_PAR_BEAM :11:hist:anal') 
+            var_len,var_len_global,max_ptrs,'AVG_PAR_BEAM :11:hist:opti:anal') 
        call metadata_edio(nvar,igr,'Polygon Averaged Incident Beam Photosynthetically Active Radiation','[W/m2]','ipoly') 
     endif
     
     if (associated(cgrid%avg_par_diffuse)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_par_diffuse(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_PAR_DIFFUSE :11:hist:anal') 
+            var_len,var_len_global,max_ptrs,'AVG_PAR_DIFFUSE :11:hist:opti:anal') 
        call metadata_edio(nvar,igr,'Polygon Averaged Incident Diffuse Photosynthetically Active Radiation','[W/m2]','ipoly') 
     endif
     
     if (associated(cgrid%avg_atm_tmp)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_atm_tmp(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_ATM_TMP :11:hist:anal') 
+            var_len,var_len_global,max_ptrs,'AVG_ATM_TMP :11:hist:opti:anal') 
        call metadata_edio(nvar,igr,'Polygon Averaged Atmospheric Temperature at Reference Height','[K]','ipoly') 
     endif
     
@@ -7314,14 +7773,14 @@ contains
     if (associated(cgrid%avg_rlong)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_rlong(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_RLONG :11:hist:anal') 
+            var_len,var_len_global,max_ptrs,'AVG_RLONG :11:hist:opti:anal') 
        call metadata_edio(nvar,igr,'Polygon Average Incident Longwave Radiation','[W/m2]','ipoly') 
     endif
     
     if (associated(cgrid%avg_pcpg)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_pcpg(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_PCPG :11:hist:anal') 
+            var_len,var_len_global,max_ptrs,'AVG_PCPG :11:hist:opti:anal') 
        call metadata_edio(nvar,igr,'Polygon Average Total Precipitation Rate','[kg/m2/s]','ipoly') 
     endif
     
@@ -7370,14 +7829,14 @@ contains
     if (associated(cgrid%avg_atm_co2)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_atm_co2(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_ATM_CO2 :11:hist:anal') 
+            var_len,var_len_global,max_ptrs,'AVG_ATM_CO2 :11:hist:opti:anal') 
        call metadata_edio(nvar,igr,'Polygon Average Atmospheric CO2 Concentration at Ref. Height','[ppm]','ipoly') 
     endif
     
     if (associated(cgrid%avg_albedt)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_albedt(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_ALBEDT :11:hist:anal') 
+            var_len,var_len_global,max_ptrs,'AVG_ALBEDT :11:hist:anal:opti') 
        call metadata_edio(nvar,igr,'Polygon Average Surface Albedo','[W/W]','ipoly') 
     endif
     
@@ -7454,14 +7913,14 @@ contains
     if (associated(cgrid%avg_can_temp)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_can_temp(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_CAN_TEMP :11:hist:anal') 
+            var_len,var_len_global,max_ptrs,'AVG_CAN_TEMP :11:hist:anal:opti') 
        call metadata_edio(nvar,igr,'Polygon Average Temperature of Canopy Air Space','[K]','ipoly') 
     endif
     
     if (associated(cgrid%avg_can_shv)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_can_shv(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_CAN_SHV :11:hist:anal') 
+            var_len,var_len_global,max_ptrs,'AVG_CAN_SHV :11:hist:anal:opti') 
        call metadata_edio(nvar,igr,'Polygon Average Specific Humidity of Canopy Air','[kg/kg]','NA') 
     endif
     
@@ -7517,14 +7976,14 @@ contains
     if (associated(cgrid%avg_soil_water)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_soil_water(1,1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_SOIL_WATER :12:hist:anal') 
+            var_len,var_len_global,max_ptrs,'AVG_SOIL_WATER :12:hist:anal:opti') 
        call metadata_edio(nvar,igr,'Polygon Average Volumetric Soil Water','[m/m]','ipoly - nzg') 
     endif
     
     if (associated(cgrid%avg_soil_temp)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_soil_temp(1,1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_SOIL_TEMP :12:hist:anal') 
+            var_len,var_len_global,max_ptrs,'AVG_SOIL_TEMP :12:hist:anal:opti') 
        call metadata_edio(nvar,igr,'Polygon Average Soil Temperature','[K]','ipoly - nzg') 
     endif
 
@@ -8414,7 +8873,14 @@ contains
        nvar=nvar+1
          call vtable_edio_r(cpoly%TCI(1),nvar,igr,init,cpoly%siglob_id, &
          var_len,var_len_global,max_ptrs,'TCI :21:hist') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+       call metadata_edio(nvar,igr,'Topographic convergence index','[NA]','NA') 
+    endif      
+
+    if (associated(cpoly%pptweight)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpoly%TCI(1),nvar,igr,init,cpoly%siglob_id, &
+         var_len,var_len_global,max_ptrs,'pptweight :21:hist') 
+       call metadata_edio(nvar,igr,'precip lapse weighting','[NA]','NA') 
     endif      
 
     if (associated(cpoly%hydro_next)) then
@@ -8693,42 +9159,42 @@ contains
     if (associated(cpoly%basal_area_growth)) then
        nvar=nvar+1
          call vtable_edio_r(cpoly%basal_area_growth(1,1,1),nvar,igr,init,cpoly%siglob_id, &
-         var_len,var_len_global,max_ptrs,'BASAL_AREA_GROWTH :246:hist') 
+         var_len,var_len_global,max_ptrs,'BASAL_AREA_GROWTH :246:hist:year') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpoly%agb_growth)) then
        nvar=nvar+1
          call vtable_edio_r(cpoly%agb_growth(1,1,1),nvar,igr,init,cpoly%siglob_id, &
-         var_len,var_len_global,max_ptrs,'AGB_GROWTH :246:hist') 
+         var_len,var_len_global,max_ptrs,'AGB_GROWTH :246:hist:year') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpoly%basal_area_mort)) then
        nvar=nvar+1
          call vtable_edio_r(cpoly%basal_area_mort(1,1,1),nvar,igr,init,cpoly%siglob_id, &
-         var_len,var_len_global,max_ptrs,'BASAL_AREA_MORT :246:hist') 
+         var_len,var_len_global,max_ptrs,'BASAL_AREA_MORT :246:hist:year') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpoly%basal_area_cut)) then
        nvar=nvar+1
          call vtable_edio_r(cpoly%basal_area_cut(1,1,1),nvar,igr,init,cpoly%siglob_id, &
-         var_len,var_len_global,max_ptrs,'BASAL_AREA_CUT :246:hist') 
+         var_len,var_len_global,max_ptrs,'BASAL_AREA_CUT :246:year:hist') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpoly%agb_mort)) then
        nvar=nvar+1
          call vtable_edio_r(cpoly%agb_mort(1,1,1),nvar,igr,init,cpoly%siglob_id, &
-         var_len,var_len_global,max_ptrs,'AGB_MORT :246:hist') 
+         var_len,var_len_global,max_ptrs,'AGB_MORT :246:hist:year') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpoly%agb_cut)) then
        nvar=nvar+1
          call vtable_edio_r(cpoly%agb_cut(1,1,1),nvar,igr,init,cpoly%siglob_id, &
-         var_len,var_len_global,max_ptrs,'AGB_CUT :246:hist') 
+         var_len,var_len_global,max_ptrs,'AGB_CUT :246:hist:year') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
  
@@ -9031,8 +9497,8 @@ contains
     if (associated(csite%sfcwater_depth)) then
        nvar=nvar+1
          call vtable_edio_r(csite%sfcwater_depth(1,1),nvar,igr,init,csite%paglob_id, &
-         var_len,var_len_global,max_ptrs,'SFCWATER_DEPTH :33:hist') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+         var_len,var_len_global,max_ptrs,'SFCWATER_DEPTH :33:hist:opti') 
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','m') 
     endif
 
     if (associated(csite%rshort_s)) then
@@ -9445,6 +9911,21 @@ contains
        nvar=nvar+1
          call vtable_edio_r(csite%total_plant_nitrogen_uptake(1),nvar,igr,init,csite%paglob_id, &
          var_len,var_len_global,max_ptrs,'TOTAL_PLANT_NITROGEN_UPTAKE :31:hist') 
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
+
+    if (associated(csite%mineralized_N_loss)) then
+       nvar=nvar+1
+         call vtable_edio_r(csite%mineralized_N_loss(1),nvar,igr,init,csite%paglob_id, &
+         var_len,var_len_global,max_ptrs,'NMIN_LOSS :31:hist') 
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
+
+
+    if (associated(csite%mineralized_N_input)) then
+       nvar=nvar+1
+         call vtable_edio_r(csite%mineralized_N_input(1),nvar,igr,init,csite%paglob_id, &
+         var_len,var_len_global,max_ptrs,'NMIN_INPUT :31:hist') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
