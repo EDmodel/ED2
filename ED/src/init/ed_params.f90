@@ -1737,7 +1737,7 @@ subroutine init_rk4_params()
    ! again.  The air can still become super-saturated because mixing with the free atmo-   !
    ! sphere will not stop.                                                                 !
    !---------------------------------------------------------------------------------------!
-   supersat_ok = .false.
+   supersat_ok = .true.
 
    !---------------------------------------------------------------------------------------!
    !     This flag is used to control the method used to define water percolation through  !
