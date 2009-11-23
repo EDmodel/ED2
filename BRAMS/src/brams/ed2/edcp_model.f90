@@ -137,6 +137,7 @@ subroutine ed_coup_model(ifm)
                            , isoutput           & ! intent(in)
                            , idoutput           & ! intent(in)
                            , imoutput           & ! intent(in)
+                           , itoutput           & ! intent(in)
                            , iyoutput           & ! intent(in)
                            , frqsum             & ! intent(inout)
                            , unitfast           & ! intent(in)
@@ -263,12 +264,14 @@ subroutine ed_coup_model(ifm)
       select case (unitfast)
       case (0,1) !----- Now both are in seconds -------------------------------------------!
          analysis_time   = mod(current_time%time, frqfast) < dtlsm .and.                   &
-                           (ifoutput /= 0 .or. ioutput /= 0)
+                           (ifoutput /= 0 .or. itoutput /= 0 .or. ioutput /= 0)
       case (2)   !----- Months, analysis time is at the new month -------------------------!
-         analysis_time   = new_month .and. ifoutput /= 0 .and.                             &
+         analysis_time   = new_month .and.                                                 &
+                           (ifoutput /= 0 .or. itoutput /= 0 .or. ioutput /= 0) .and.      &
                            mod(real(12+current_time%month-imontha),frqfast) == 0.
       case (3) !----- Year, analysis time is at the same month as initial time ------------!
-         analysis_time   = new_month .and. ifoutput /= 0 .and.                             &
+         analysis_time   = new_month  .and.                                                &
+                           (ifoutput /= 0 .or. itoutput /= 0 .or. ioutput /= 0) .and.      &
                            current_time%month == imontha .and.                             &
                            mod(real(current_time%year-iyeara),frqfast) == 0.
       end select
@@ -493,6 +496,9 @@ subroutine vegetation_dynamics(new_month,new_year)
       call dbalive_dt(cgrid,tfact2)
 
       if(new_month)then
+
+         call update_workload(cgrid)
+
          call structural_growth(cgrid, current_time%month)
          call reproduction(cgrid,current_time%month)
 

@@ -9,7 +9,7 @@
 
 module ed_para_coms
 
-  use ed_max_dims
+  use ed_max_dims, only : maxmach
 
   !---------------------------------------------------------------------------
   integer                             :: mainnum,nmachs,iparallel,machsize

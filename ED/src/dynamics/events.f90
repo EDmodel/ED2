@@ -364,6 +364,8 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                  !! [[this needs to be more sophisticated]] 
                  
                  cpatch%balive(ico)   = max(0.0,bleaf_new + bfr_new + bsw_new)
+                 cpatch%broot(ico)    = max(0.0,bfr_new)
+                 cpatch%bsapwood(ico) = max(0.0,bsw_new)
                  cpatch%bdead(ico)    = max(0.0,bdead_new)
                  cpatch%bstorage(ico) = max(0.0,bstore_new)
                  if(bleaf_new .le. tiny(1.0)) then
@@ -736,8 +738,8 @@ subroutine event_till(rval8)
                       (1.0-f_labile(pft))*cpatch%balive(ico) + &
                       cpatch%bdead(ico) 
                  csite%structural_soil_L(ipa) = csite%structural_soil_L(ipa) + &
-                      (1.0-f_labile(pft))*cpatch%balive(ico)* l2n_stem / c2n_stem + &
-                      cpatch%bdead(ico)* l2n_stem / c2n_stem
+                      (1.0-f_labile(pft))*cpatch%balive(ico)* l2n_stem / c2n_stem(pft) + &
+                      cpatch%bdead(ico)* l2n_stem / c2n_stem(pft)
                  csite%fast_soil_N(ipa) = csite%fast_soil_N(ipa) &
                       + f_labile(pft)*cpatch%balive(ico)/c2n_leaf(pft) &
                       + cpatch%bstorage(ico)/c2n_storage
@@ -746,6 +748,8 @@ subroutine event_till(rval8)
 
                  !! update biomass pools
                  cpatch%balive(ico)     = 0.0
+                 cpatch%broot(ico)      = 0.0
+                 cpatch%bsapwood(ico)   = 0.0
                  cpatch%bdead(ico)      = 0.0
                  cpatch%bstorage(ico)   = 0.0
                  cpatch%nplant(ico)     = 0.0

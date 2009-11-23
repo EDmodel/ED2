@@ -765,7 +765,7 @@ module therm_lib8
             write (unit=*,fmt='(a)') ' No second guess for you...'
             write (unit=*,fmt='(2(a,1x,es14.7))') 'tempa=',tempa,'funa=',funa
             write (unit=*,fmt='(2(a,1x,es14.7))') 'tempz=',tempz,'func=',funz
-            call fatal_error('Failed finding the second guess for regula falsi'            &
+            call abort_run('Failed finding the second guess for regula falsi'            &
                           ,'tslf8','therm_lib8.f90')
          end if
       end if
@@ -803,7 +803,7 @@ module therm_lib8
       end do bisloop
 
       if (.not.converged) then
-         call fatal_error('Temperature didn''t converge, giving up!!!'                     &
+         call abort_run('Temperature didn''t converge, giving up!!!'                     &
                        ,'tslf8','therm_lib8.f90')
       end if
       
@@ -898,7 +898,7 @@ module therm_lib8
             write (unit=*,fmt='(a)') ' No second guess for you...'
             write (unit=*,fmt='(2(a,1x,es14.7))') 'tempa=',tempa,'funa=',funa
             write (unit=*,fmt='(2(a,1x,es14.7))') 'tempz=',tempz,'func=',funz
-            call fatal_error('Failed finding the second guess for regula falsi'            &
+            call abort_run('Failed finding the second guess for regula falsi'            &
                           ,'tsif8','therm_lib8.f90')
          end if
       end if
@@ -936,7 +936,7 @@ module therm_lib8
       end do bisloop
 
       if (.not.converged) then
-         call fatal_error('Temperature didn''t converge, giving up!!!'                     &
+         call abort_run('Temperature didn''t converge, giving up!!!'                     &
                        ,'tsif8','therm_lib8.f90')
       end if
       
@@ -1896,7 +1896,7 @@ module therm_lib8
             write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'tempa=',tempa,'funa=',funa
             write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'tempz=',tempz,'funz=',funz
             write (unit=*,fmt='(1(a,1x,es14.7,1x))') 'delta=',delta
-            call fatal_error('Failed finding the second guess for regula falsi'            &
+            call abort_run('Failed finding the second guess for regula falsi'            &
                           ,'thil2temp8','therm_lib8.f90')
          end if
       end if
@@ -1975,7 +1975,7 @@ module therm_lib8
                                                           ,abs(thil2temp8-tempa)/thil2temp8
          write (unit=*,fmt='(a,1x,f12.4)' ) 'thil2temp8      [     K] =',thil2temp8
 
-         call fatal_error('Temperature didn''t converge, giving up!!!'                     &
+         call abort_run('Temperature didn''t converge, giving up!!!'                     &
                        ,'thil2temp8','therm_lib8.f90')
       end if
 
@@ -2452,7 +2452,7 @@ module therm_lib8
                write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'theta =',theta ,'delta =',delta
                write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'tlcla =',tlcla ,'funa  =',funa
                write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'tlclz =',tlclz ,'funz  =',funz
-               call fatal_error('Failed finding the second guess for regula falsi'         &
+               call abort_run('Failed finding the second guess for regula falsi'         &
                              ,'thetaeiv2thil8','therm_lib8.f90')
          end if
          !---- Continue iterative method --------------------------------------------------!
@@ -2510,7 +2510,7 @@ module therm_lib8
          !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
          !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       else
-         call fatal_error('TLCL didn''t converge, gave up!','thetaeiv2thil8'               &
+         call abort_run('TLCL didn''t converge, gave up!','thetaeiv2thil8'               &
                          ,'therm_lib8.f90')
       end if
 
@@ -2637,7 +2637,7 @@ module therm_lib8
                if (zside) exit zgssloop
             end do zgssloop
             if (.not. zside)                                                               &
-               call fatal_error('Failed finding the second guess for regula falsi'         &
+               call abort_run('Failed finding the second guess for regula falsi'         &
                              ,'thetaes2temp','therm_lib.f90')
          end if
          !---- Continue iterative method --------------------------------------------------!
@@ -2681,7 +2681,7 @@ module therm_lib8
          theta = temp * exnernormi
          rsat  = rslif8(pres,temp,brrr_cold)
       else
-         call fatal_error('Temperature didn''t converge, I gave up!'                       &
+         call abort_run('Temperature didn''t converge, I gave up!'                       &
                        ,'thetaes2temp8','therm_lib8.f90')
       end if
 
@@ -2900,7 +2900,7 @@ module therm_lib8
                write (unit=*,fmt='(2(a,1x,es14.7))') 'TLCLA =',tlcla,'FUNA =',funa
                write (unit=*,fmt='(2(a,1x,es14.7))') 'TLCLZ =',tlclz,'FUNC =',funz
                write (unit=*,fmt='(2(a,1x,es14.7))') 'DELTA =',delta,'FUNN =',funnow
-               call fatal_error('Failed finding the second guess for regula falsi'         &
+               call abort_run('Failed finding the second guess for regula falsi'         &
                              ,'lcl_il8','therm_lib8.f90')
             end if
          end if
@@ -2983,7 +2983,7 @@ module therm_lib8
          write (unit=*,fmt='(a,1x,es12.4)') 'error           [  ----] ='                   &
                                                             ,abs(tlclz-tlcla)/tlclz
          write (unit=*,fmt='(a,1x,f12.4)' ) 'tlcl            [    °C] =',tlcl
-         call fatal_error('TLCL didn''t converge, gave up!','lcl_il8','therm_lib8.f90')
+         call abort_run('TLCL didn''t converge, gave up!','lcl_il8','therm_lib8.f90')
       end if
       return
    end subroutine lcl_il8

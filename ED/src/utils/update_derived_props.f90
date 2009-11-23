@@ -567,3 +567,45 @@ subroutine update_rad_avg(cgrid)
 end subroutine update_rad_avg
 !==========================================================================================!
 !==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine will convert the integrated number of time steps in steps/day, then  !
+! it will update the monthly mean workload.                                                !
+!------------------------------------------------------------------------------------------!
+subroutine update_workload(cgrid)
+   use ed_state_vars, only : edtype        ! ! structure
+   use ed_misc_coms , only : current_time  & ! intent(in)
+                           , simtime       ! ! intent(in)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   type(edtype), target     :: cgrid
+   !----- Local variables. ----------------------------------------------------------------!
+   type(simtime)            :: lastmonth
+   integer                  :: lmon
+   integer                  :: ipy
+   real                     :: ndaysi
+   !---------------------------------------------------------------------------------------!
+
+   !----- Find last month information. ----------------------------------------------------!
+   call lastmonthdate(current_time,lastmonth,ndaysi)
+   lmon = lastmonth%month
+
+   !---------------------------------------------------------------------------------------!
+   !     Loop over all polygons, normalise the workload, then copy it to the corresponding !
+   ! month.  Then copy the scratch column (13) to the appropriate month, and reset it.     !
+   !---------------------------------------------------------------------------------------!
+   do ipy=1,cgrid%npolygons
+      cgrid%workload(lmon,ipy) = cgrid%workload(13,ipy) * ndaysi
+      cgrid%workload(13,ipy)   = 0.
+   end do
+
+   return
+end subroutine update_workload
+!==========================================================================================!
+!==========================================================================================!

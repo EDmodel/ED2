@@ -20,7 +20,8 @@ subroutine canopy_photosynthesis(csite,ipa,vels,atm_tmp,prss,ed_ktrans,ntext_soi
    use consts_coms           , only : t00                & ! intent(in)
                                     , epi                & ! intent(in)
                                     , wdnsi              & ! intent(in)
-                                    , wdns               ! ! intent(in)
+                                    , wdns               & ! intent(in)
+                                    , kgCday_2_umols     ! ! intent(in)
    use ed_misc_coms          , only : current_time       ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
@@ -57,6 +58,9 @@ subroutine canopy_photosynthesis(csite,ipa,vels,atm_tmp,prss,ed_ktrans,ntext_soi
    real                                    :: swp
    real                                    :: water_demand
    real                                    :: water_supply
+   real                                    :: broot_tot
+   real                                    :: broot_loc
+   real                                    :: pss_available_water
    !----- Local constants -----------------------------------------------------------------!
    real   , parameter                      :: vels_min    = 1.0
    logical, parameter                      :: print_debug = .false.
@@ -170,8 +174,12 @@ subroutine canopy_photosynthesis(csite,ipa,vels,atm_tmp,prss,ed_ktrans,ntext_soi
    !---------------------------------------------------------------------------------------!
    !----- LAI/rb, summed over all cohorts.  Used in the Euler scheme. ---------------------!
    sum_lai_rbi = 0.0
+   !----- Total root biomass (in kgC/m2) and patch sum available water. -------------------!
+   pss_available_water = 0.0
+   broot_tot           = 0.0
    !----- Initialize variables for transpiration calculation. -----------------------------!
    root_depth_indices(:) = .false.
+   !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
    !    Loop over all cohorts, from tallest to shortest.                                   !
@@ -241,6 +249,13 @@ subroutine canopy_photosynthesis(csite,ipa,vels,atm_tmp,prss,ed_ktrans,ntext_soi
 
             root_depth_indices(cpatch%krdepth(ico)) = .true.
 
+            broot_loc = q(ipft) * cpatch%balive(ico)                                       &
+                      / (1.0 + q(ipft) + cpatch%hite(ico) * qsw(ipft) )                    &
+                      * cpatch%nplant(ico)
+            broot_tot = broot_tot + broot_loc
+            pss_available_water = pss_available_water                                      &
+                                + available_liquid_water(cpatch%krdepth(ico)) * broot_loc
+
             !----- Weighting between open/closed stomata. ---------------------------------!
             cpatch%fsw(ico) = water_supply / max(1.0e-30,water_supply + water_demand)
 
@@ -299,7 +314,31 @@ subroutine canopy_photosynthesis(csite,ipa,vels,atm_tmp,prss,ed_ktrans,ntext_soi
          cpatch%gpp(ico)                 = 0.0
          cpatch%leaf_respiration(ico)    = 0.0
       end if
+      
+      !------------------------------------------------------------------------------------!
+      !    Not really a part of the photosynthesis scheme, but this will do it.  We must   !
+      ! ontegrate the "mean" of the remaining respiration terms, except for the root one.  !
+      ! This is done regardless on whether the cohort is doing photosynthesis.  Also, we   !
+      ! convert units so all fast respiration terms are in [µmol/m²ground/s].              !
+      !------------------------------------------------------------------------------------!
+      cpatch%mean_growth_resp (ico) = cpatch%mean_growth_resp (ico)                        &
+                                    + cpatch%growth_respiration (ico) * kgCday_2_umols
+      cpatch%mean_storage_resp(ico) = cpatch%mean_storage_resp(ico)                        &
+                                    + cpatch%storage_respiration(ico) * kgCday_2_umols
+      cpatch%mean_vleaf_resp  (ico) = cpatch%mean_vleaf_resp  (ico)                        &
+                                    + cpatch%vleaf_respiration  (ico) * kgCday_2_umols
+      !------------------------------------------------------------------------------------!
    end do cohortloop
+
+   !---------------------------------------------------------------------------------------!
+   !     Add the contribution of this time step to the average available water.            !
+   !---------------------------------------------------------------------------------------!
+   if (broot_tot > 1.e-20) then
+      csite%avg_available_water(ipa) = csite%avg_available_water(ipa)                      &
+                                     + pss_available_water / broot_tot
+   !else
+   !  Add nothing, the contribution of this time is zero since no cohort can transpire... 
+   end if
 
    !---------------------------------------------------------------------------------------!
    !     For plants of a given rooting depth, determine soil level from which transpired   !

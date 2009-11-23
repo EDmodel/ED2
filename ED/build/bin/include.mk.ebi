@@ -26,33 +26,17 @@ LIBUTILS=$(BASE)/libutils-$(UTILS_VERSION)-opt.a
 
 # Activate appropriate parts below, comment out others.
 
-# NCAR Graphics.
-
-#---------------------------------------------------------------
-# If you are using a standard installation of NCAR Graphics, set:
-#       LOADER=ncargf90
-# in the machine-dependent sections below
-#LIBNCARG=
-#---------------------------------------------------------------
-# If you are using the NCAR dummy libraries...
-
-NCARG_DIR=$(BASE)
-#LIBNCARG=-L$(NCARG_DIR) -lncarg-$(UTILS_VERSION) -lncarg_c-$(UTILS_VERSION) \
-#                        -lncarg_gks-$(UTILS_VERSION)
-#LIBNCARG=-L$(NCARG_DIR) -lncarg-$(UTILS_VERSION) 
-LIBNCARG=$(BASE)/libncarg-$(UTILS_VERSION).a
 #---------------------------------------------------------------
 # If you are using a real distribution of NCAR Graphics...
 #NCARG_DIR=/usr/local/ncarg-4.3.0/lib
 #LIBNCARG=-L$(NCARG_DIR) -lncarg -lncarg_gks -lncarg_c -L/usr/X11R6/lib -lX11 -ldl
 #---------------------------------------------------------------
 
-# HDF libraries-------------------------------------------------
+# HDF libraries  -----------------------------------------------
 # HDF4 library: Instructions to install: www.cptec.inpe.br/brams
 # If you run "configure" script, you don't need to edit line bellow
-HDF_LIBS=-L./.hdf4_libs -lmfhdf -ldf -lz -ljpeg -lsz
+#HDF_LIBS=-L.hdf4_libs -lmfhdf -ldf -lz -ljpeg -lsz
 # --------------------------------------------------------------
-
 
 # HDF 5  Libraries
 # ED2 HAS OPTIONAL HDF 5 I/O
@@ -60,7 +44,6 @@ HDF_LIBS=-L./.hdf4_libs -lmfhdf -ldf -lz -ljpeg -lsz
 # and specify the location of the include directory
 # library files. Make sure you include the zlib.a location too.
 
-# For 64-bit 
 USE_HDF5=1
 USE_COLLECTIVE_MPIO=0
 HDF5_INCS=-I/home/mdietze/hdf5-1.8.1/hdf5/include
@@ -69,14 +52,13 @@ HDF5_LIBS=-L/home/mdietze/hdf5-1.8.1/hdf5/lib -lhdf5 -lm -lhdf5_fortran -lhdf5 -
 
 
 # netCDF libraries ---------------------------------------------
-# If you have netCDF set USENC=.TRUE. and type the lib folder
+# If you have netCDF set USENC=1 and type the lib folder
 # at NC_LIBS, with the leading -L (e.g. -L/usr/local/lib).
-# If you don't have it, leave USENC=.FALSE. and type a dummy
+# If you don't have it, leave USENC=0 and type a dummy
 # folder for NC_LIBS (e.g. -L/dev/null or leave it blank)
-USENC=.FALSE.
+USENC=0
 NC_LIBS=-L/dev/null
 # --------------------------------------------------------------
-
 
 # interface ----------------------------------------------------
 # This should be 1 unless you are running with -gen-interfaces.
@@ -141,7 +123,7 @@ LIBS=
 MOD_EXT=mod
 #Compiler options
 ### debugging
-F_OPTS= -g -Wall -W -ffpe-trap=invalid,zero,overflow -Wconversion -fbounds-check #-fbacktrace -fdump-core
+#F_OPTS= -g -Wall -W -ffpe-trap=invalid,zero,overflow -Wconversion -fbounds-check #-fbacktrace -fdump-core
 ## FAST
 F_OPTS= -O3 ##-static -fno-second-underscore
 C_OPTS=-O3 -DLITTLE

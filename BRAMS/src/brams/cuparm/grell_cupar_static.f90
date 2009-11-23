@@ -175,7 +175,7 @@ subroutine grell_cupar_static(comp_down,comp_noforc_cldwork,checkmass,iupmethod,
       ,theivs_cup   & ! intent(out) - Sat. Ice-vapour equiv. pot. temp. w/ forcing[      K]
       ,wbuoymin0    & ! intent(out) - Updraft Minimum buoyant velocity            [    m/s]
       ,wbuoymin     ! ! intent(out) - Minimum buoyancy velocity                   [    ---]
-   use consts_coms, only : toodry
+   use rconstants, only : toodry
    implicit none
    
    !---------------------------------------------------------------------------------------!

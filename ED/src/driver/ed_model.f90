@@ -15,6 +15,7 @@ subroutine ed_model()
                             , idoutput            & ! intent(in)
                             , imoutput            & ! intent(in)
                             , iyoutput            & ! intent(in)
+                            , itoutput            & ! intent(in)
                             , frqsum              & ! intent(in)
                             , unitfast            & ! intent(in)
                             , unitstate           & ! intent(in)
@@ -104,17 +105,17 @@ subroutine ed_model()
    out_time_fast%month = -1
 
    !---------------------------------------------------------------------------------------!
-   !     Checking if the user has indicated a need for any of the fast flux diagnostic
-   ! variables, these are used in conditions of ifoutput,idoutput and imoutput conditions.
-   ! If they are not >0, then set the logical, fast_diagnostics to false.
+   !     Checking if the user has indicated a need for any of the fast flux diagnostic     !
+   ! variables, these are used in conditions of ifoutput,idoutput and imoutput conditions. !
+   ! If they are not >0, then set the logical, fast_diagnostics to false.                  !
    !---------------------------------------------------------------------------------------!
-   fast_diagnostics = checkbudget .or. ifoutput /= 0 .or. idoutput /= 0 .or. imoutput /= 0
+   fast_diagnostics = checkbudget .or. ifoutput /= 0 .or. idoutput /= 0 .or.               &
+                      imoutput /= 0 .or. itoutput /= 0
 
-   !------------------------------------------------------------------------!
-   ! If this is not a history restart - then zero out the
-   ! long term diagnostics
-   !------------------------------------------------------------------------!
-   if (trim(runtype) .ne. 'HISTORY') then
+   !---------------------------------------------------------------------------------------!
+   !      If this is not a history restart, then zero out the long term diagnostics.       !
+   !---------------------------------------------------------------------------------------!
+   if (trim(runtype) /= 'HISTORY') then
       
       if (writing_mont) then
          do ifm=1,ngrids
@@ -203,7 +204,7 @@ subroutine ed_model()
       time=time+dble(dtlsm)
       call update_model_time_dm(current_time, dtlsm)
 
-      !----- Checking whether it is some special time... -----------------------------------!
+      !----- Checking whether it is some special time... ----------------------------------!
       new_day         = current_time%time < dtlsm
       if (.not. past_one_day .and. new_day) past_one_day=.true.
       
@@ -215,57 +216,60 @@ subroutine ed_model()
       dail_analy_time = new_day   .and. writing_dail
       reset_time      = mod(time,dble(frqsum)) < dble(dtlsm)
       the_end         = mod(time,timmax) < dble(dtlsm)
-      annual_time     = new_month .and. writing_year .and. current_time%month == outputMonth
+      annual_time     = new_month .and. writing_year .and.                                 &
+                        current_time%month == outputMonth
 
-      !----- Checking whether this is time to write fast analysis output or not. -----------!
+      !----- Checking whether this is time to write fast analysis output or not. ----------!
       select case (unitfast)
-      case (0,1) !----- Now both are in seconds --------------------------------------------!
-         analysis_time   = mod(current_time%time, frqfast) < dtlsm .and. ifoutput /= 0
-      case (2)   !----- Months, analysis time is at the new month --------------------------!
-         analysis_time   = new_month .and. ifoutput /= 0 .and.                              &
+      case (0,1) !----- Now both are in seconds -------------------------------------------!
+         analysis_time   = mod(current_time%time, frqfast) < dtlsm .and.                   &
+                           (ifoutput /= 0 .or. itoutput /=0)
+      case (2)   !----- Months, analysis time is at the new month -------------------------!
+         analysis_time   = new_month .and. (ifoutput /= 0 .or. itoutput /=0) .and.         &
                            mod(real(12+current_time%month-imontha),frqfast) == 0.
-      case (3) !----- Year, analysis time is at the same month as initial time -------------!
-         analysis_time   = new_month .and. ifoutput /= 0 .and.                              &
-                           current_time%month == imontha .and.                              &
+      case (3) !----- Year, analysis time is at the same month as initial time ------------!
+         analysis_time   = new_month .and. (ifoutput /= 0 .or. itoutput /= 0) .and.        &
+                           current_time%month == imontha .and.                             &
                            mod(real(current_time%year-iyeara),frqfast) == 0.
       end select
 
-      !----- Checking whether this is time to write restart output or not. -----------------!
+      !----- Checking whether this is time to write restart output or not. ----------------!
       select case(unitstate)
-      case (0,1) !----- Now both are in seconds --------------------------------------------!
+      case (0,1) !----- Now both are in seconds -------------------------------------------!
          history_time   = mod(current_time%time, frqstate) < dtlsm .and. isoutput /= 0
-      case (2)   !----- Months, history time is at the new month ---------------------------!
-         history_time   = new_month .and. isoutput /= 0 .and.                               &
+      case (2)   !----- Months, history time is at the new month --------------------------!
+         history_time   = new_month .and. isoutput /= 0 .and.                              &
                           mod(real(12+current_time%month-imontha),frqstate) == 0.
-      case (3) !----- Year, history time is at the same month as initial time --------------!
-         history_time   = new_month .and. isoutput /= 0 .and.                               &
-                          current_time%month == imontha .and.                               &
+      case (3) !----- Year, history time is at the same month as initial time -------------!
+         history_time   = new_month .and. isoutput /= 0 .and.                              &
+                          current_time%month == imontha .and.                              &
                           mod(real(current_time%year-iyeara),frqstate) == 0.
       end select
 
-      !-------------------------------------------------------------------------------------!
-      !    Updating nrec_fast and nrec_state if it is a new month and outfast/outstate are  !
-      ! monthly and frqfast/frqstate are daily or by seconds.                               !
-      !-------------------------------------------------------------------------------------!
+      !------------------------------------------------------------------------------------!
+      !    Updating nrec_fast and nrec_state if it is a new month and outfast/outstate are !
+      ! monthly and frqfast/frqstate are daily or by seconds.                              !
+      !------------------------------------------------------------------------------------!
       if (new_month) then
          ndays=num_days(current_time%month,current_time%year)
          if (outfast  == -2.) nrec_fast  = ndays*ceiling(day_sec/frqfast)
          if (outstate == -2.) nrec_state = ndays*ceiling(day_sec/frqstate)
       end if
 
-      ! Check if this is the beginning of a new simulated day.
+      !----- Check if this is the beginning of a new simulated day. -----------------------!
       if(new_day)then
          if(record_err) then
-            open(unit=77,file=trim(integ_fname),form="formatted",access="append",status="old")
+            open(unit=77,file=trim(integ_fname),form="formatted",access="append"           &
+                ,status="old")
             do i = 1,46
-               if(sum(integ_err(i,1:2)) .gt. 0_8)then                 
-                  write(unit=77,fmt='(2(i4,1x),a,2(1x,i7))') mynum,i,trim(err_label(i)),integ_err(i,1:2)
-!                  print*,i,trim(err_label(i)),integ_err(i,1:2)
-               endif
-            enddo
+               if(sum(integ_err(i,1:2)) > 0_8) then
+                  write(unit=77,fmt='(2(i4,1x),a,2(1x,i7))') mynum,i,trim(err_label(i))    &
+                                                                    ,integ_err(i,1:2)
+               end if
+            end do
             close(unit=77,status='keep')
             integ_err = 0_8
-         endif
+         end if
 
          ! Do phenology, growth, mortality, recruitment, disturbance.
          call vegetation_dynamics(new_month,new_year)
@@ -512,7 +516,10 @@ subroutine vegetation_dynamics(new_month,new_year)
         call dbalive_dt(cgrid,tfact2)
      end if
 
-     if(new_month)then
+     if (new_month) then
+
+!        write (unit=*,fmt='(a)') '^^^ Update_workload...'
+        call update_workload(cgrid)
 
 !        write (unit=*,fmt='(a)') '^^^ Structural_growth...'
         if (ied_init_mode == -8) then

@@ -405,7 +405,7 @@ subroutine harr_lwrad(nz,mynum)
    real   , dimension(nz)    :: tg, tcr,src, t, r, tc, sigu, sigd, re, vd, td, vu
    real   , dimension(mb)    :: wlenlo,wlenhi
    !---------------------------------------------------------------------------------------!
-
+#if USE_INTERF
    interface
       subroutine flxlw(nz,nzmax,tg,tp,tcr,omgp,src,t,r,tc,sigu,sigd,re,vd,td,vu,fu, &
            fd,chck,xgry,asym,mynum)
@@ -421,7 +421,7 @@ subroutine harr_lwrad(nz,mynum)
         !---------------------------------------------------------------------------------------!
       end subroutine flxlw
    end interface
-
+#endif
 
    !---------------------------------------------------------------------------------------!
    !     Remember, for this code it is assumed that u, the gaseous absorber amounts, are   !

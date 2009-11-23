@@ -8,6 +8,7 @@
 !        definition is wrong, please correct it. Thanks!                                   !
 !------------------------------------------------------------------------------------------!
 module rk4_coms
+   use ed_max_dims, only : n_pft
 
    implicit none
 
@@ -91,7 +92,9 @@ module rk4_coms
       real(kind=8), pointer, dimension(:) :: veg_temp     ! Temperature         [        K]
       real(kind=8), pointer, dimension(:) :: veg_fliq     ! Liquid fraction     [      ---]
       real(kind=8), pointer, dimension(:) :: hcapveg      ! Heat capacity       [   J/m²/K]
+      real(kind=8), pointer, dimension(:) :: nplant       ! Plant density       [ plant/m²]
       real(kind=8), pointer, dimension(:) :: lai          ! Leaf area index     [    m²/m²]
+      real(kind=8), pointer, dimension(:) :: wai          ! Wood area index     [    m²/m²]
       real(kind=8), pointer, dimension(:) :: wpa          ! Wood projected area [    m²/m²]
       real(kind=8), pointer, dimension(:) :: tai          ! Tree area index     [    m²/m²]
       real(kind=8), pointer, dimension(:) :: rb           ! Aerodynamic resist. [      s/m]
@@ -119,6 +122,9 @@ module rk4_coms
       !----- Mass and energy fluxes due to water shedding. --------------------------------!
       real(kind=8) :: avg_wshed_vg      ! Mass flux
       real(kind=8) :: avg_qwshed_vg     ! Energy flux
+      !----- Mass and energy input due to intercepted water. ------------------------------!
+      real(kind=8) :: avg_intercepted   ! Mass flux
+      real(kind=8) :: avg_qintercepted  ! Energy flux
       !----- Sensible heat flux -----------------------------------------------------------!
       real(kind=8) :: avg_sensible_vc   ! Leaf      -> canopy air
       real(kind=8) :: avg_sensible_gc   ! Ground    -> canopy air
@@ -127,10 +133,11 @@ module rk4_coms
       !----- Carbon flux ------------------------------------------------------------------!
       real(kind=8) :: avg_carbon_ac     ! Free atm. -> canopy air
       !----- Soil fluxes ------------------------------------------------------------------!
-      real(kind=8),pointer,dimension(:) :: avg_smoist_gg   ! Moisture flux between layers
-      real(kind=8),pointer,dimension(:) :: avg_smoist_gc   ! Trabspired soil moisture sink
-      real(kind=8),pointer,dimension(:) :: avg_sensible_gg ! Soil heat flux between layers
-      real(kind=8)                      :: avg_drainage    ! Drainage at the bottom.
+      real(kind=8),pointer,dimension(:) :: avg_smoist_gg     ! Moisture flux between layers
+      real(kind=8),pointer,dimension(:) :: avg_smoist_gc     ! Transpired soil moisture sink
+      real(kind=8),pointer,dimension(:) :: avg_sensible_gg   ! Soil heat flux between layers
+      real(kind=8)                      :: avg_drainage      ! Drainage at the bottom.
+      real(kind=8)                      :: avg_drainage_heat ! Drainage at the bottom.
       !----- Full budget variables --------------------------------------------------------!
       real(kind=8) :: co2budget_storage
       real(kind=8) :: co2budget_loss2atm
@@ -147,26 +154,30 @@ module rk4_coms
    !---------------------------------------------------------------------------------------!
 
 
-   !----- Structure with atmospheric data -------------------------------------------------!
-   type rk4mettype
-      integer      :: lsl
-      real(kind=8) :: rhos
-      real(kind=8) :: vels
-      real(kind=8) :: atm_tmp
-      real(kind=8) :: atm_theta
-      real(kind=8) :: atm_enthalpy
-      real(kind=8) :: atm_shv
-      real(kind=8) :: atm_co2
-      real(kind=8) :: zoff
-      real(kind=8) :: atm_exner
-      real(kind=8) :: pcpg
-      real(kind=8) :: qpcpg
-      real(kind=8) :: dpcpg
-      real(kind=8) :: atm_prss
-      real(kind=8) :: geoht
-      real(kind=8) :: lon
-      real(kind=8) :: lat
-   end type rk4mettype
+   !---------------------------------------------------------------------------------------!
+   !    Structure with atmospheric and some other site-level data that is often used       !
+   ! inside the Runge-Kutta integrator and do not change over time.                        !
+   !---------------------------------------------------------------------------------------!
+   type rk4sitetype
+      integer                        :: lsl
+      real(kind=8), dimension(n_pft) :: green_leaf_factor
+      real(kind=8)                   :: rhos
+      real(kind=8)                   :: vels
+      real(kind=8)                   :: atm_tmp
+      real(kind=8)                   :: atm_theta
+      real(kind=8)                   :: atm_enthalpy
+      real(kind=8)                   :: atm_shv
+      real(kind=8)                   :: atm_co2
+      real(kind=8)                   :: zoff
+      real(kind=8)                   :: atm_exner
+      real(kind=8)                   :: pcpg
+      real(kind=8)                   :: qpcpg
+      real(kind=8)                   :: dpcpg
+      real(kind=8)                   :: atm_prss
+      real(kind=8)                   :: geoht
+      real(kind=8)                   :: lon
+      real(kind=8)                   :: lat
+   end type rk4sitetype
    !---------------------------------------------------------------------------------------!
 
 
@@ -194,7 +205,7 @@ module rk4_coms
 
    !----- This is the actual integration buffer structure. --------------------------------!
    type(integration_vars) :: integration_buff
-   type(rk4mettype)          :: rk4met
+   type(rk4sitetype)      :: rk4site
    !=======================================================================================!
    !=======================================================================================!
 
@@ -296,6 +307,8 @@ module rk4_coms
    logical      :: checkbudget ! Flag to decide whether we will check whether the budgets 
                                !    close every time step (and stop the run if they don't)
                                !    or if we will skip this part.
+   logical      :: newsnow     ! Flag to decide whether we use the new snow percolation
+                               !    scheme or not. 
    !---------------------------------------------------------------------------------------!
 
 
@@ -595,17 +608,20 @@ module rk4_coms
       y%avg_dew_cg                     = 0.d0
       y%avg_vapor_gc                   = 0.d0
       y%avg_wshed_vg                   = 0.d0
+      y%avg_intercepted                = 0.d0
       y%avg_vapor_ac                   = 0.d0
       y%avg_transp                     = 0.d0
       y%avg_evap                       = 0.d0
       y%avg_netrad                     = 0.d0
       y%avg_sensible_vc                = 0.d0
       y%avg_qwshed_vg                  = 0.d0
+      y%avg_qintercepted               = 0.d0
       y%avg_sensible_gc                = 0.d0
       y%avg_sensible_ac                = 0.d0
       y%avg_heatstor_veg               = 0.d0
 
       y%avg_drainage                   = 0.d0
+      y%avg_drainage_heat              = 0.d0
 
       !----- The following variables are pointers, check whether they are linked or not. --!
       if(associated(y%soil_energy           ))   y%soil_energy(:)                 = 0.d0
@@ -700,7 +716,9 @@ module rk4_coms
       allocate(y%veg_temp     (maxcohort))
       allocate(y%veg_fliq     (maxcohort))
       allocate(y%hcapveg      (maxcohort))
+      allocate(y%nplant       (maxcohort))
       allocate(y%lai          (maxcohort))
+      allocate(y%wai          (maxcohort))
       allocate(y%wpa          (maxcohort))
       allocate(y%tai          (maxcohort))
       allocate(y%rb           (maxcohort))
@@ -739,7 +757,9 @@ module rk4_coms
       nullify(y%veg_temp     )
       nullify(y%veg_fliq     )
       nullify(y%hcapveg      )
+      nullify(y%nplant       )
       nullify(y%lai          )
+      nullify(y%wai          )
       nullify(y%wpa          )
       nullify(y%tai          )
       nullify(y%rb           )
@@ -776,7 +796,9 @@ module rk4_coms
       if(associated(y%veg_temp      ))  y%veg_temp      = 0.d0
       if(associated(y%veg_fliq      ))  y%veg_fliq      = 0.d0
       if(associated(y%hcapveg       ))  y%hcapveg       = 0.d0
+      if(associated(y%nplant        ))  y%nplant        = 0.d0
       if(associated(y%lai           ))  y%lai           = 0.d0
+      if(associated(y%wai           ))  y%wai           = 0.d0
       if(associated(y%wpa           ))  y%wpa           = 0.d0
       if(associated(y%tai           ))  y%tai           = 0.d0
       if(associated(y%rb            ))  y%rb            = 0.d0
@@ -813,7 +835,9 @@ module rk4_coms
       if(associated(y%veg_temp      ))  deallocate(y%veg_temp    )
       if(associated(y%veg_fliq      ))  deallocate(y%veg_fliq    )
       if(associated(y%hcapveg       ))  deallocate(y%hcapveg     )
+      if(associated(y%nplant        ))  deallocate(y%nplant      )
       if(associated(y%lai           ))  deallocate(y%lai         )
+      if(associated(y%wai           ))  deallocate(y%wai         )
       if(associated(y%wpa           ))  deallocate(y%wpa         )
       if(associated(y%tai           ))  deallocate(y%tai         )
       if(associated(y%rb            ))  deallocate(y%rb          )

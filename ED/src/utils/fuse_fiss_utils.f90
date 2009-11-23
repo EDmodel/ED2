@@ -136,7 +136,7 @@ module fuse_fiss_utils
             csite%ssl_in(ipa) = csite%ssl_in(ipa) + cpatch%nplant(ico)                     &
                               * ((1.0 - f_labile(cpatch%pft(ico)))                         &
                                  *cpatch%balive(ico) + cpatch%bdead(ico))                  &
-                              * l2n_stem/c2n_stem
+                              * l2n_stem/c2n_stem(cpatch%pft(ico))
 
          end if
       end do
@@ -233,6 +233,9 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------!
       !    Renormalize the total area.  We must also rescale all extensive properties from !
       ! cohorts, since they are per unit area and we are effectively changing the area.    !
+      ! IMPORTANT: Only cohort-level variables that have units per area (m2) should be     !
+      !            rescaled.  Variables whose units are per plant should _NOT_ be included !
+      !            here.                                                                   !
       !------------------------------------------------------------------------------------!
       new_area=0.
       area_scale = 1./(1. - elim_area)
@@ -249,6 +252,9 @@ module fuse_fiss_utils
             cpatch%mean_gpp(ico)            = cpatch%mean_gpp(ico)            * area_scale
             cpatch%mean_leaf_resp(ico)      = cpatch%mean_leaf_resp(ico)      * area_scale
             cpatch%mean_root_resp(ico)      = cpatch%mean_root_resp(ico)      * area_scale
+            cpatch%mean_growth_resp(ico)    = cpatch%mean_growth_resp(ico)    * area_scale
+            cpatch%mean_storage_resp(ico)   = cpatch%mean_storage_resp(ico)   * area_scale
+            cpatch%mean_vleaf_resp(ico)     = cpatch%mean_vleaf_resp(ico)     * area_scale
             cpatch%Psi_open(ico)            = cpatch%Psi_open(ico)            * area_scale
             cpatch%gpp(ico)                 = cpatch%gpp(ico)                 * area_scale
             cpatch%leaf_respiration(ico)    = cpatch%leaf_respiration(ico)    * area_scale
@@ -296,23 +302,25 @@ module fuse_fiss_utils
    ! to live with that and accept life is not always fair with those with limited          !
    ! computational resources.                                                              !
    !---------------------------------------------------------------------------------------!
+
    subroutine fuse_cohorts(csite,ipa, green_leaf_factor, lsl)
 
       use ed_state_vars       , only : sitetype            & ! Structure
                                      , patchtype           ! ! Structure
       use pft_coms            , only : rho                 & ! intent(in)
                                      , b1Ht                & ! intent(in)
-                                     , max_dbh               ! intent(in)
+                                     , max_dbh             & ! intent(in)
+                                     , sla                 & ! intent(in)
+                                     , hgt_ref             ! ! intent(in)
       use fusion_fission_coms , only : fusetol_h           & ! intent(in)
                                      , fusetol             & ! intent(in)
                                      , lai_fuse_tol        & ! intent(in)
                                      , fuse_relax          & ! intent(in)
                                      , coh_tolerance_max   ! ! intent(in)
-      use ed_max_dims            , only : n_pft               ! ! intent(in)
+      use ed_max_dims         , only : n_pft               ! ! intent(in)
       use mem_sites           , only : maxcohort           ! ! intent(in)
       use allometry           , only : dbh2h               & ! function
                                      , dbh2bl              ! ! function
-
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype)         , target      :: csite             ! Current site
@@ -364,7 +372,7 @@ module fuse_fiss_utils
       do ico3 = 1,cpatch%ncohorts
          !----- Get fusion height threshold -----------------------------------------------!
          if (rho(cpatch%pft(ico3)) == 0.0)then
-            hite_threshold = b1Ht(cpatch%pft(ico3))
+            hite_threshold = b1Ht(cpatch%pft(ico3)) !+hgt_ref(cpatch%(ico3))
          else
             hite_threshold = dbh2h(cpatch%pft(ico3),max_dbh(cpatch%pft(ico3)))
          end if
@@ -581,7 +589,7 @@ module fuse_fiss_utils
 
       use ed_state_vars        , only : patchtype              ! ! structure
       use pft_coms             , only : q                      & ! intent(in), lookup table
-                                      , qsw                      ! intent(in), lookup table
+                                      , qsw                    ! ! intent(in), lookup table
       use fusion_fission_coms  , only : lai_tol                ! ! intent(in)
       use ed_max_dims          , only : n_pft                  ! ! intent(in)
       use allometry            , only : dbh2h                  & ! function
@@ -602,7 +610,8 @@ module fuse_fiss_utils
       integer                              :: ipa,ico,inew      ! Counters
       integer                              :: ncohorts_new      ! New # of cohorts
       integer                              :: tobesplit         ! # of cohorts to be split
-      real                                 :: slai              ! LAI
+      integer                              :: ipft              ! PFT type
+      real                                 :: stai              ! Potential TAI
       real                                 :: old_nplant        ! Old nplant
       real                                 :: new_nplant        ! New nplant
       real                                 :: old_size          ! Old size
@@ -617,15 +626,18 @@ module fuse_fiss_utils
       old_size   = 0.
       !----- Loop through cohorts ---------------------------------------------------------!
       do ico = 1,cpatch%ncohorts
+         ipft = cpatch%pft(ico)
 
-         slai = cpatch%nplant(ico)                                                         &
-              * cpatch%balive(ico)                                                         &
-              * green_leaf_factor(cpatch%pft(ico))                                         &
-              / ( 1.0 + q(cpatch%pft(ico)) + qsw(cpatch%pft(ico)) * cpatch%hite(ico) )     &
-              * cpatch%sla(ico)
+         !---------------------------------------------------------------------------------! 
+         !     STAI is the potential TAI that this cohort has when its leaves are fully    !
+         ! flushed.                                                                        !
+         !---------------------------------------------------------------------------------! 
+         stai = cpatch%nplant(ico) * cpatch%balive(ico) * green_leaf_factor(ipft)          &
+              * q(ipft) / ( 1.0 + q(ipft) + qsw(ipft) * cpatch%hite(ico) )                 &
+              * cpatch%sla(ico) + cpatch%wai(ico)
 
-         !----- If the resulting LAI is too large, split this cohort. ---------------------!
-         split_mask(ico) = slai > lai_tol
+         !----- If the resulting TAI is too large, split this cohort. ---------------------!
+         split_mask(ico) = stai > lai_tol
          
          old_nplant = old_nplant + cpatch%nplant(ico)
          old_size   = old_size   + cpatch%nplant(ico) * ( cpatch%balive(ico)               &
@@ -668,6 +680,9 @@ module fuse_fiss_utils
                !---------------------------------------------------------------------------!
                !   Half the densities of the original cohort.  All "extensive" variables   !
                ! need to be rescaled.                                                      !
+               ! IMPORTANT: Only cohort-level variables that have units per area (m2)      !
+               !            should be rescaled.  Variables whose units are per plant       !
+               !            should _NOT_ be included here.                                 !
                !---------------------------------------------------------------------------!
                cpatch%lai(ico)                 = cpatch%lai(ico)                  * 0.5
                cpatch%wpa(ico)                 = cpatch%wpa(ico)                  * 0.5
@@ -676,6 +691,9 @@ module fuse_fiss_utils
                cpatch%mean_gpp(ico)            = cpatch%mean_gpp(ico)             * 0.5
                cpatch%mean_leaf_resp(ico)      = cpatch%mean_leaf_resp(ico)       * 0.5
                cpatch%mean_root_resp(ico)      = cpatch%mean_root_resp(ico)       * 0.5
+               cpatch%mean_growth_resp(ico)    = cpatch%mean_growth_resp(ico)     * 0.5
+               cpatch%mean_storage_resp(ico)   = cpatch%mean_storage_resp(ico)    * 0.5
+               cpatch%mean_vleaf_resp(ico)     = cpatch%mean_vleaf_resp(ico)      * 0.5               
                cpatch%today_gpp(ico)           = cpatch%today_gpp(ico)            * 0.5
                cpatch%today_gpp_pot(ico)       = cpatch%today_gpp_pot(ico)        * 0.5
                cpatch%today_gpp_max(ico)       = cpatch%today_gpp_max(ico)        * 0.5
@@ -699,6 +717,7 @@ module fuse_fiss_utils
                   cpatch%mmean_par_v_beam(ico) = cpatch%mmean_par_v_beam(ico)     * 0.5
                   cpatch%mmean_par_v_diff(ico) = cpatch%mmean_par_v_diff(ico)     * 0.5
                end if
+
                !---------------------------------------------------------------------------!
 
 
@@ -781,6 +800,8 @@ module fuse_fiss_utils
       cpatch%dbh(idt)                 = cpatch%dbh(isc)
       cpatch%bdead(idt)               = cpatch%bdead(isc)
       cpatch%bleaf(idt)               = cpatch%bleaf(isc)
+      cpatch%broot(idt)               = cpatch%broot(isc)
+      cpatch%bsapwood(idt)            = cpatch%bsapwood(isc)
       cpatch%phenology_status(idt)    = cpatch%phenology_status(isc)
       cpatch%balive(idt)              = cpatch%balive(isc)
       cpatch%lai(idt)                 = cpatch%lai(isc)
@@ -802,6 +823,9 @@ module fuse_fiss_utils
       cpatch%mean_gpp(idt)            = cpatch%mean_gpp(isc)
       cpatch%mean_leaf_resp(idt)      = cpatch%mean_leaf_resp(isc)
       cpatch%mean_root_resp(idt)      = cpatch%mean_root_resp(isc)
+      cpatch%mean_storage_resp(idt)   = cpatch%mean_storage_resp(isc)
+      cpatch%mean_growth_resp(idt)    = cpatch%mean_growth_resp(isc)
+      cpatch%mean_vleaf_resp(idt)     = cpatch%mean_vleaf_resp(isc)
       cpatch%today_leaf_resp(idt)     = cpatch%today_leaf_resp(isc)
       cpatch%today_root_resp(idt)     = cpatch%today_root_resp(isc)
       cpatch%today_gpp(idt)           = cpatch%today_gpp(isc)
@@ -847,8 +871,9 @@ module fuse_fiss_utils
       cpatch%fsw(idt)                 = cpatch%fsw(isc)
       cpatch%fs_open(idt)             = cpatch%fs_open(isc)
       cpatch%stomatal_resistance(idt) = cpatch%stomatal_resistance(isc)
-      cpatch%maintenance_costs(idt)   = cpatch%maintenance_costs(isc)
-      cpatch%leaf_litter(idt)         = cpatch%leaf_litter(isc)
+      cpatch%leaf_maintenance(idt)    = cpatch%leaf_maintenance(isc)
+      cpatch%root_maintenance(idt)    = cpatch%root_maintenance(isc)
+      cpatch%leaf_drop(idt)           = cpatch%leaf_drop(isc)
       cpatch%bseeds(idt)              = cpatch%bseeds(isc)
       cpatch%leaf_respiration(idt)    = cpatch%leaf_respiration(isc)
       cpatch%root_respiration(idt)    = cpatch%root_respiration(isc)
@@ -856,12 +881,12 @@ module fuse_fiss_utils
       cpatch%mort_rate(:,idt)         = cpatch%mort_rate(:,isc)
 
       cpatch%gpp(idt)                 = cpatch%gpp(isc)
-      cpatch%paw_avg(idt)          = cpatch%paw_avg(isc)
+      cpatch%paw_avg(idt)             = cpatch%paw_avg(isc)
 
-      cpatch%turnover_amp(idt)  = cpatch%turnover_amp(isc)     
-      cpatch%llspan(idt)  = cpatch%llspan(isc)     
-      cpatch%vm_bar(idt)  = cpatch%vm_bar(isc)  
-      cpatch%sla(idt)  = cpatch%sla(isc)  
+      cpatch%turnover_amp(idt)        = cpatch%turnover_amp(isc)     
+      cpatch%llspan(idt)              = cpatch%llspan(isc)     
+      cpatch%vm_bar(idt)              = cpatch%vm_bar(isc)  
+      cpatch%sla(idt)                 = cpatch%sla(isc)  
 
       cpatch%old_stoma_vector(:,idt) = cpatch%old_stoma_vector(:,isc)
 
@@ -912,8 +937,9 @@ module fuse_fiss_utils
          cpatch%mmean_fs_open           (idt) = cpatch%mmean_fs_open           (isc)
          cpatch%mmean_fsw               (idt) = cpatch%mmean_fsw               (isc)
          cpatch%mmean_fsn               (idt) = cpatch%mmean_fsn               (isc)
-         cpatch%mmean_mnt_cost          (idt) = cpatch%mmean_mnt_cost          (isc)
-         cpatch%mmean_leaf_litter       (idt) = cpatch%mmean_leaf_litter       (isc)
+         cpatch%mmean_leaf_maintenance  (idt) = cpatch%mmean_leaf_maintenance  (isc)
+         cpatch%mmean_root_maintenance  (idt) = cpatch%mmean_root_maintenance  (isc)
+         cpatch%mmean_leaf_drop         (idt) = cpatch%mmean_leaf_drop         (isc)
          cpatch%mmean_cb                (idt) = cpatch%mmean_cb                (isc)
          cpatch%mmean_lambda_light      (idt) = cpatch%mmean_lambda_light      (isc)
          cpatch%mmean_light_level       (idt) = cpatch%mmean_light_level       (isc)
@@ -993,18 +1019,25 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------!
       !     Conserving carbon to get balive, bleaf, and bstorage.                          !
       !------------------------------------------------------------------------------------!
-      cpatch%balive(recc) = ( cpatch%nplant(recc) * cpatch%balive(recc)                    &
-                            + cpatch%nplant(donc) * cpatch%balive(donc) ) *newni
-      cpatch%bstorage(recc) = ( cpatch%nplant(recc) * cpatch%bstorage(recc)                &
-                              + cpatch%nplant(donc) * cpatch%bstorage(donc) ) * newni
-      cpatch%bseeds(recc)   = ( cpatch%nplant(recc) * cpatch%bseeds(recc)                  &
-                              + cpatch%nplant(donc) * cpatch%bseeds(donc) ) * newni
-      cpatch%maintenance_costs(recc) = newni                                               &
-                            * ( cpatch%nplant(recc) * cpatch%maintenance_costs(recc)       &
-                              + cpatch%nplant(donc) * cpatch%maintenance_costs(donc) )
-      cpatch%leaf_litter(recc) = newni                                                     &
-                               * ( cpatch%nplant(recc) * cpatch%leaf_litter(recc)          &
-                                 + cpatch%nplant(donc) * cpatch%leaf_litter(donc) )
+      cpatch%balive(recc)    = ( cpatch%nplant(recc) * cpatch%balive(recc)                 &
+                               + cpatch%nplant(donc) * cpatch%balive(donc) ) *newni
+      cpatch%broot(recc)     = ( cpatch%nplant(recc) * cpatch%broot(recc)                  &
+                               + cpatch%nplant(donc) * cpatch%broot(donc) ) *newni
+      cpatch%bsapwood(recc)  = ( cpatch%nplant(recc) * cpatch%bsapwood(recc)               &
+                             + cpatch%nplant(donc) * cpatch%bsapwood(donc) ) *newni
+      cpatch%bstorage(recc)  = ( cpatch%nplant(recc) * cpatch%bstorage(recc)               &
+                               + cpatch%nplant(donc) * cpatch%bstorage(donc) ) * newni
+      cpatch%bseeds(recc)    = ( cpatch%nplant(recc) * cpatch%bseeds(recc)                 &
+                               + cpatch%nplant(donc) * cpatch%bseeds(donc) ) * newni
+      cpatch%leaf_maintenance(recc) = newni                                                &
+                            * ( cpatch%nplant(recc) * cpatch%leaf_maintenance(recc)        &
+                              + cpatch%nplant(donc) * cpatch%leaf_maintenance(donc) )
+      cpatch%root_maintenance(recc) = newni                                                &
+                            * ( cpatch%nplant(recc) * cpatch%root_maintenance(recc)        &
+                              + cpatch%nplant(donc) * cpatch%root_maintenance(donc) )
+      cpatch%leaf_drop(recc) = newni                                                       &
+                             * ( cpatch%nplant(recc) * cpatch%leaf_drop(recc)              &
+                               + cpatch%nplant(donc) * cpatch%leaf_drop(donc) )  
       !------------------------------------------------------------------------------------!
 
 
@@ -1072,11 +1105,18 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------!
       cpatch%mean_gpp(recc) = cpatch%mean_gpp(recc) + cpatch%mean_gpp(donc)
 
-      cpatch%mean_leaf_resp(recc) = cpatch%mean_leaf_resp(recc)                            &
-                                  + cpatch%mean_leaf_resp(donc)
+      cpatch%mean_leaf_resp(recc)    = cpatch%mean_leaf_resp(recc)                         &
+                                     + cpatch%mean_leaf_resp(donc)
+      cpatch%mean_root_resp(recc)    = cpatch%mean_root_resp(recc)                         &
+                                     + cpatch%mean_root_resp(donc)
+      cpatch%mean_storage_resp(recc) = cpatch%mean_storage_resp(recc)                      &
+                                     + cpatch%mean_storage_resp(donc)
+      cpatch%mean_growth_resp(recc)  = cpatch%mean_growth_resp(recc)                       &
+                                     + cpatch%mean_growth_resp(donc)
+      cpatch%mean_vleaf_resp(recc)   = cpatch%mean_vleaf_resp(recc)                        &
+                                     + cpatch%mean_vleaf_resp(donc)
 
-      cpatch%mean_root_resp(recc) = cpatch%mean_root_resp(recc)                            &
-                                  + cpatch%mean_root_resp(donc)
+       !------------------------------------------------------------------------------------!
 
       cpatch%today_gpp(recc)     = cpatch%today_gpp(recc)                                  &
                                  + cpatch%today_gpp(donc)
@@ -1336,13 +1376,17 @@ module fuse_fiss_utils
                                                * cpatch%nplant(recc)                       &
                                                + cpatch%mmean_fsn(donc)                    &
                                                * cpatch%nplant(donc) ) * newni
-         cpatch%mmean_mnt_cost        (recc) = ( cpatch%mmean_mnt_cost(recc)               &
+         cpatch%mmean_leaf_maintenance(recc) = ( cpatch%mmean_leaf_maintenance(recc)       &
                                                * cpatch%nplant(recc)                       &
-                                               + cpatch%mmean_mnt_cost(donc)               &
+                                               + cpatch%mmean_leaf_maintenance(donc)       &
                                                * cpatch%nplant(donc) ) * newni
-         cpatch%mmean_leaf_litter     (recc) = ( cpatch%mmean_leaf_litter(recc)            &
+         cpatch%mmean_root_maintenance(recc) = ( cpatch%mmean_root_maintenance(recc)       &
                                                * cpatch%nplant(recc)                       &
-                                               + cpatch%mmean_leaf_litter(donc)            &
+                                               + cpatch%mmean_root_maintenance(donc)       &
+                                               * cpatch%nplant(donc) ) * newni
+         cpatch%mmean_leaf_drop       (recc) = ( cpatch%mmean_leaf_drop(recc)              &
+                                               * cpatch%nplant(recc)                       &
+                                               + cpatch%mmean_leaf_drop(donc)              &
                                                * cpatch%nplant(donc) ) * newni
          cpatch%mmean_cb              (recc) = ( cpatch%mmean_cb(recc)                     &
                                                * cpatch%nplant(recc)                       &
@@ -1421,7 +1465,6 @@ module fuse_fiss_utils
    ! limited computational resources.                                                      !
    !---------------------------------------------------------------------------------------!
    subroutine fuse_patches(cgrid,ifm)
-     
       use ed_state_vars       , only :  edtype            & ! structure
                                       , polygontype       & ! structure
                                       , sitetype          & ! structure
@@ -2011,6 +2054,10 @@ module fuse_fiss_utils
                                       ( csite%avg_wshed_vg(donp)      * csite%area(donp)   &
                                       + csite%avg_wshed_vg(recp)      * csite%area(recp) )  
 
+      csite%avg_intercepted(recp)     = newareai *                                         &
+                                      ( csite%avg_intercepted(donp)   * csite%area(donp)   &
+                                      + csite%avg_intercepted(recp)   * csite%area(donp) )
+
       csite%avg_vapor_ac(recp)        = newareai *                                         &
                                       ( csite%avg_vapor_ac(donp)      * csite%area(donp)   &
                                       + csite%avg_vapor_ac(recp)      * csite%area(recp) )  
@@ -2027,6 +2074,10 @@ module fuse_fiss_utils
                                       ( csite%avg_runoff(donp)        * csite%area(donp)   &
                                       + csite%avg_runoff(recp)        * csite%area(recp) )  
 
+      csite%avg_drainage(recp)        = newareai *                                         &
+                                      ( csite%avg_drainage(donp)      * csite%area(donp)   &
+                                      + csite%avg_drainage(recp)      * csite%area(recp) )  
+
       csite%aux(recp)                 = newareai *                                         &
                                       ( csite%aux(donp)               * csite%area(donp)   &
                                       + csite%aux(recp)               * csite%area(recp) )  
@@ -2039,6 +2090,10 @@ module fuse_fiss_utils
                                       ( csite%avg_qwshed_vg(donp)     * csite%area(donp)   &
                                       + csite%avg_qwshed_vg(recp)     * csite%area(recp) )  
 
+      csite%avg_qintercepted(recp)    = newareai *                                         &
+                                      ( csite%avg_qintercepted(donp)  * csite%area(donp)   &
+                                      + csite%avg_qintercepted(recp)  * csite%area(donp) )
+
       csite%avg_sensible_gc(recp)     = newareai *                                         &
                                       ( csite%avg_sensible_gc(donp)   * csite%area(donp)   &
                                       + csite%avg_sensible_gc(recp)   * csite%area(recp) )  
@@ -2050,6 +2105,10 @@ module fuse_fiss_utils
       csite%avg_runoff_heat(recp)     = newareai *                                         &
                                       ( csite%avg_runoff_heat(donp)   * csite%area(donp)   &
                                       + csite%avg_runoff_heat(recp)   * csite%area(recp) )  
+
+      csite%avg_drainage_heat(recp)   = newareai *                                         &
+                                      ( csite%avg_drainage_heat(donp) * csite%area(donp)   &
+                                      + csite%avg_drainage_heat(recp) * csite%area(recp) )  
 
       csite%avg_veg_energy(recp)      = newareai *                                         &
                                       ( csite%avg_veg_energy(donp)    * csite%area(donp)   &
@@ -2204,6 +2263,11 @@ module fuse_fiss_utils
                                              * csite%area(donp)                            &
                                              + csite%dmean_Af_decomp(recp)                 &
                                              * csite%area(recp) )
+         csite%dmean_rk4step(recp)         = newareai                                      &
+                                           * ( csite%dmean_rk4step(donp)                   &
+                                             * csite%area(donp)                            &
+                                             + csite%dmean_rk4step(recp)                   &
+                                             * csite%area(recp) )
       end if
       if (imoutput > 0) then
          csite%mmean_rh(recp)           = newareai                                         &
@@ -2234,11 +2298,15 @@ module fuse_fiss_utils
                                              * csite%area(donp)                            &
                                              + csite%mmean_A_decomp(recp)                  &
                                              * csite%area(recp) )
-
          csite%mmean_Af_decomp(recp)       = newareai                                      &
                                            * ( csite%mmean_Af_decomp(donp)                 &
                                              * csite%area(donp)                            &
                                              + csite%mmean_Af_decomp(recp)                 &
+                                             * csite%area(recp) )
+         csite%mmean_rk4step(recp)         = newareai                                      &
+                                           * ( csite%mmean_rk4step(donp)                   &
+                                             * csite%area(donp)                            &
+                                             + csite%mmean_rk4step(recp)                   &
                                              * csite%area(recp) )
       end if
 
@@ -2263,6 +2331,11 @@ module fuse_fiss_utils
       cpatch => csite%patch(recp)
       nrc = cpatch%ncohorts
       area_scale = csite%area(recp) * newareai
+      !------------------------------------------------------------------------------------!
+      ! IMPORTANT: Only cohort-level variables that have units per area (m2) should be     !
+      !            rescaled.  Variables whose units are per plant should _NOT_ be included !
+      !            here.                                                                   !
+      !------------------------------------------------------------------------------------!
       do ico = 1,nrc
          cpatch%lai(ico)                 = cpatch%lai(ico)                  * area_scale
          cpatch%wpa(ico)                 = cpatch%wpa(ico)                  * area_scale
@@ -2271,6 +2344,9 @@ module fuse_fiss_utils
          cpatch%mean_gpp(ico)            = cpatch%mean_gpp(ico)             * area_scale
          cpatch%mean_leaf_resp(ico)      = cpatch%mean_leaf_resp(ico)       * area_scale
          cpatch%mean_root_resp(ico)      = cpatch%mean_root_resp(ico)       * area_scale
+         cpatch%mean_growth_resp(ico)    = cpatch%mean_growth_resp(ico)     * area_scale
+         cpatch%mean_storage_resp(ico)   = cpatch%mean_storage_resp(ico)    * area_scale
+         cpatch%mean_vleaf_resp(ico)     = cpatch%mean_vleaf_resp(ico)      * area_scale
          cpatch%today_gpp(ico)           = cpatch%today_gpp(ico)            * area_scale
          cpatch%today_gpp_pot(ico)       = cpatch%today_gpp_pot(ico)        * area_scale
          cpatch%today_gpp_max(ico)       = cpatch%today_gpp_max(ico)        * area_scale
@@ -2299,6 +2375,11 @@ module fuse_fiss_utils
       cpatch => csite%patch(donp)
       ndc = cpatch%ncohorts
       area_scale = csite%area(donp) * newareai
+      !------------------------------------------------------------------------------------!
+      ! IMPORTANT: Only cohort-level variables that have units per area (m2) should be     !
+      !            rescaled.  Variables whose units are per plant should _NOT_ be included !
+      !            here.                                                                   !
+      !------------------------------------------------------------------------------------!
       do ico = 1,ndc
          cpatch%lai(ico)                 = cpatch%lai(ico)                  * area_scale
          cpatch%wpa(ico)                 = cpatch%wpa(ico)                  * area_scale
@@ -2307,6 +2388,9 @@ module fuse_fiss_utils
          cpatch%mean_gpp(ico)            = cpatch%mean_gpp(ico)             * area_scale
          cpatch%mean_leaf_resp(ico)      = cpatch%mean_leaf_resp(ico)       * area_scale
          cpatch%mean_root_resp(ico)      = cpatch%mean_root_resp(ico)       * area_scale
+         cpatch%mean_growth_resp(ico)    = cpatch%mean_growth_resp(ico)     * area_scale
+         cpatch%mean_storage_resp(ico)   = cpatch%mean_storage_resp(ico)    * area_scale
+         cpatch%mean_vleaf_resp(ico)     = cpatch%mean_vleaf_resp(ico)      * area_scale
          cpatch%today_gpp(ico)           = cpatch%today_gpp(ico)            * area_scale
          cpatch%today_gpp_pot(ico)       = cpatch%today_gpp_pot(ico)        * area_scale
          cpatch%today_gpp_max(ico)       = cpatch%today_gpp_max(ico)        * area_scale

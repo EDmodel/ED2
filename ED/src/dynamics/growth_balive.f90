@@ -62,6 +62,7 @@ module growth_balive
       real                          :: old_hcapveg
       real                          :: nitrogen_uptake
       real                          :: N_uptake_pot
+      real                          :: temp_dep
 
 
       do ipy = 1,cgrid%npolygons
@@ -107,7 +108,7 @@ module growth_balive
                   !     If plants are off allometry, move carbon from        !
                   ! bstorage to balive.                                      !
                   !----------------------------------------------------------!
-                  call transfer_C_from_storage(cpatch,ico,salloc             &
+                  call transfer_C_from_storage(cpatch,ico,salloc,salloci     &
                                               ,nitrogen_uptake,N_uptake_pot)
                   
                   !----- Calculate leaf, fine root biomass. -----------------!
@@ -128,11 +129,14 @@ module growth_balive
                   
                   !----- Subtract maintenance costs from balive. ------------!
                   cpatch%balive(ico)    = cpatch%balive(ico)                 &
-                                        - cpatch%maintenance_costs(ico)
+                                        - cpatch%leaf_maintenance(ico)       &
+                                        - cpatch%root_maintenance(ico)
                   cpatch%cb(13,ico)     = cpatch%cb(13,ico)                  &
-                                        - cpatch%maintenance_costs(ico)
+                                        - cpatch%leaf_maintenance(ico)       &
+                                        - cpatch%root_maintenance(ico)
                   cpatch%cb_max(13,ico) = cpatch%cb_max(13,ico)              &
-                                        - cpatch%maintenance_costs(ico)
+                                        - cpatch%leaf_maintenance(ico)       &
+                                        - cpatch%root_maintenance(ico)
 
                   !----------------------------------------------------------!
                   !      Calculate actual, potential and maximum carbon      !
@@ -149,14 +153,23 @@ module growth_balive
                   !----------------------------------------------------------!
                   cpatch%growth_respiration(ico) =                           &
                           max(0.0, daily_C_gain * growth_resp_factor(ipft))
+
+                  !----------------------------------------------------------!
+                  !     The commented line is an experimental and arbitrary  !
+                  ! test, borrowed from maintainence temperature             !
+                  ! dependency. [[MCD]]                                      !
+                  !----------------------------------------------------------!
+                  ! temp_dep = 1.0 / ( 1.0  + exp(0.4                        &
+                  !          * (278.15 - csite%avg_daily_temp(ipa))))
+                  temp_dep = 1.0
                   cpatch%storage_respiration(ico) =                          &
                           cpatch%bstorage(ico) * storage_turnover_rate(ipft) &
-                        * tfact
+                        * tfact * temp_dep
                   cpatch%vleaf_respiration(ico) =                            &
                           (1.0 - cpoly%green_leaf_factor(ipft,isi))          &
                         / (1.0 + q(ipft) + qsw(ipft) * cpatch%hite(ico))     &
                         * cpatch%balive(ico) * storage_turnover_rate(ipft)   &
-                        * tfact
+                        * tfact * temp_dep
 
 
                   !----------------------------------------------------------!
@@ -351,7 +364,7 @@ module growth_balive
                   
                   !----- Leaf and root biomass. -----------------------------!
                   bl = cpatch%bleaf(ico)
-                  br = q(ipft) * cpatch%balive(ico) * salloci 
+                  br = cpatch%broot(ico)
 
                   !----------------------------------------------------------!
                   !     Compute maintenance costs.                           !
@@ -361,9 +374,11 @@ module growth_balive
 
                   !----- Subtract maintenance costs from balive. ------------!
                   cpatch%cb(13,ico)     = cpatch%cb(13,ico)                  &
-                                        - cpatch%maintenance_costs(ico)
+                                        - cpatch%leaf_maintenance(ico)       &
+                                        - cpatch%root_maintenance(ico)
                   cpatch%cb_max(13,ico) = cpatch%cb_max(13,ico)              &
-                                        - cpatch%maintenance_costs(ico)
+                                        - cpatch%leaf_maintenance(ico)       &
+                                        - cpatch%root_maintenance(ico)
 
                   !----------------------------------------------------------!
                   !      Calculate actual, potential and maximum carbon      !
@@ -447,12 +462,14 @@ module growth_balive
    !    This subroutine will transfer some of the stored carbon to balive in !
    ! order to put the plant back on allometry.                               !
    !-------------------------------------------------------------------------!
-   subroutine transfer_C_from_storage(cpatch,ico,salloc,nitrogen_uptake      &
-                                     ,N_uptake_pot)
+   subroutine transfer_C_from_storage(cpatch,ico,salloc,salloci              &
+                                     ,nitrogen_uptake,N_uptake_pot)
       use ed_state_vars , only : patchtype
       use pft_coms      , only : c2n_leaf    & ! intent(in)
                                , c2n_storage & ! intent(in)
-                               , c2n_stem    ! ! intent(in)
+                               , c2n_stem    & ! intent(in)
+                               , q           & ! intent(in)
+                               , qsw         ! ! intent(in)
       use decomp_coms   , only : f_labile    ! ! intent(in)
       use allometry     , only : dbh2bl      ! ! function
       implicit none
@@ -460,6 +477,7 @@ module growth_balive
       type(patchtype), target        :: cpatch
       integer        , intent(in)    :: ico
       real           , intent(in)    :: salloc
+      real           , intent(in)    :: salloci
       real           , intent(inout) :: nitrogen_uptake
       real           , intent(inout) :: N_uptake_pot
       !----- Local variables. -----------------------------------------------!
@@ -487,13 +505,18 @@ module growth_balive
       cpatch%balive(ico)   = cpatch%balive(ico) + increment
       cpatch%bstorage(ico) = cpatch%bstorage(ico) - increment
 
+      !----- Compute sapwood and fine root biomass. -------------------------!
+      cpatch%broot(ico)    = q(ipft) * cpatch%balive(ico) * salloci
+      cpatch%bsapwood(ico) = qsw(ipft) * cpatch%hite(ico)                    &
+                           * cpatch%balive(ico) * salloci
+
       !----------------------------------------------------------------------!
       !      N uptake is required since c2n_leaf < c2n_storage.  Units are   !
       ! kgN/plant/day.                                                       !
       !----------------------------------------------------------------------!
       nitrogen_uptake = increment                                            &
                       * (        f_labile(ipft)  / c2n_leaf(ipft)            &
-                        + (1.0 - f_labile(ipft)) / c2n_stem                  &
+                        + (1.0 - f_labile(ipft)) / c2n_stem(ipft)            &
                         -  1.0 / c2n_storage)
       N_uptake_pot    = nitrogen_uptake
 
@@ -541,20 +564,21 @@ module growth_balive
       end if
 
       !----- Calculate maintenance demand (kgC/plant/year). -----------------!
-      if (phenology(ipft) /= 3) then
-         cpatch%maintenance_costs(ico) = maintenance_temp_dep                &
-                                       * ( root_turnover_rate(ipft) * br     &
-                                         + leaf_turnover_rate(ipft) * bl)
+      cpatch%root_maintenance(ico) = root_turnover_rate(ipft)                &
+                                   * br * maintenance_temp_dep
+      if(phenology(ipft) /= 3)then
+         cpatch%leaf_maintenance(ico) = leaf_turnover_rate(ipft) * bl        &
+                                      * maintenance_temp_dep
       else
-         cpatch%maintenance_costs(ico) = maintenance_temp_dep                &
-                                       * ( root_turnover_rate(ipft) * br     &
-                                         + leaf_turnover_rate(ipft) * bl     &
-                                         * cpatch%turnover_amp(ico)      )
-      end if
+         cpatch%leaf_maintenance(ico) = leaf_turnover_rate(ipft) * bl        &
+                                      * cpatch%turnover_amp(ico)             &
+                                      * maintenance_temp_dep
+      endif
+
 
       !----- Convert units of maintenance to [kgC/plant/day]. ---------------!
-
-      cpatch%maintenance_costs(ico) = cpatch%maintenance_costs(ico) * tfact
+      cpatch%leaf_maintenance(ico) = cpatch%leaf_maintenance(ico) * tfact
+      cpatch%root_maintenance(ico) = cpatch%root_maintenance(ico) * tfact
 
 
       !----- Compute daily C uptake [kgC/plant/day]. ------------------------!
@@ -657,22 +681,22 @@ module growth_balive
 
          if (first_time(ipft)) then
             first_time(ipft) = .false.
-            write (unit=30+ipft,fmt='(a10,14(1x,a12))')                      &
+            write (unit=30+ipft,fmt='(a10,15(1x,a12))')                      &
                 '      TIME','       PATCH','      COHORT','      NPLANT'    &
                             ,'    CB_TODAY',' GROWTH_RESP','  VLEAF_RESP'    &
                             ,'   TODAY_GPP','TODAY_GPPMAX','  TODAY_LEAF'    &
                             ,'  TODAY_ROOT',' CBMAX_TODAY','          CB'    &
-                            ,'       CBMAX',' MAINTENANCE'
+                            ,'       CBMAX','  LEAF_MAINT','  ROOT_MAINT'
          end if
 
-         write(unit=30+ipft,fmt='(2(i2.2,a1),i4.4,2(1x,i12),12(1x,es12.5))') &
+         write(unit=30+ipft,fmt='(2(i2.2,a1),i4.4,2(1x,i12),13(1x,es12.5))') &
               current_time%month,'/',current_time%date,'/',current_time%year &
              ,ipa,ico,cpatch%nplant(ico),carbon_balance                      &
              ,cpatch%growth_respiration(ico),cpatch%vleaf_respiration(ico)   &
              ,cpatch%today_gpp(ico),cpatch%today_gpp_max(ico)                &
              ,cpatch%today_leaf_resp(ico),cpatch%today_root_resp(ico)        &
              ,carbon_balance_max,cpatch%cb(13,ico),cpatch%cb_max(13,ico)     &
-             ,cpatch%maintenance_costs(ico)
+             ,cpatch%leaf_maintenance(ico),cpatch%root_maintenance(ico)
       end if
 
       return
@@ -695,6 +719,8 @@ module growth_balive
       use pft_coms     , only : c2n_storage  & ! intent(in)
                               , c2n_leaf     & ! intent(in)
                               , sla          & ! intent(in)
+                              , q            & ! intent(in)
+                              , qsw          & ! intent(in)
                               , c2n_stem     ! ! intent(in)
       use decomp_coms  , only : f_labile     ! ! intent(in)
       use allometry    , only : dbh2bl       ! ! function
@@ -731,6 +757,9 @@ module growth_balive
                                                 / c2n_storage
          cpatch%bleaf(ico)    = cpatch%balive(ico) * salloci                 &
                               * green_leaf_factor
+         cpatch%broot(ico)    = cpatch%balive(ico) * q(ipft) * salloci
+         cpatch%bsapwood(ico) = cpatch%balive(ico) * cpatch%hite(ico)        &
+                              * qsw(ipft) * salloci
 
       elseif (cpatch%phenology_status(ico) < 2) then
          !-------------------------------------------------------------------!
@@ -759,16 +788,20 @@ module growth_balive
             !----------------------------------------------------------------!
             !    Compute nitrogen uptake in order to conserve C/N ratio.     !
             !----------------------------------------------------------------!
-            nitrogen_uptake    = nitrogen_uptake + increment / c2n_storage
-            increment          = dbh2bl(cpatch%dbh(ico),ipft) * salloc       &
-                               - cpatch%balive(ico)
-            cpatch%balive(ico) = cpatch%balive(ico) + increment
-            nitrogen_uptake    = nitrogen_uptake                             &
-                               + increment * ( f_labile(ipft)                &
-                                             / c2n_leaf(ipft)                &
-                                             + (1.0 - f_labile(ipft))        &
-                                             / c2n_stem )
-            cpatch%bleaf(ico)  = bl_max
+            nitrogen_uptake      = nitrogen_uptake + increment / c2n_storage
+            increment            = dbh2bl(cpatch%dbh(ico),ipft) * salloc     &
+                                 - cpatch%balive(ico)
+            cpatch%balive(ico)   = cpatch%balive(ico) + increment
+            nitrogen_uptake      = nitrogen_uptake                           &
+                                 + increment * ( f_labile(ipft)              &
+                                               / c2n_leaf(ipft)              &
+                                               + (1.0 - f_labile(ipft))      &
+                                               / c2n_stem(ipft) )
+            cpatch%bleaf(ico)    = bl_max
+            cpatch%broot(ico)    = cpatch%balive(ico) * q(ipft) * salloci
+            cpatch%bsapwood(ico) = cpatch%balive(ico) * cpatch%hite(ico)     &
+                                 * qsw(ipft) * salloci
+
             !----------------------------------------------------------------!
             !    That is the maximum leaf biomass that this cohort can have. !
             ! Therefore, we set phenology status to 0 (leaves not growing).  !
@@ -784,8 +817,11 @@ module growth_balive
             !----------------------------------------------------------------!
             cpatch%balive(ico) = max(0.0,cpatch%balive(ico) + carbon_balance)
             cpatch%phenology_status(ico) = 1
-            cpatch%bleaf(ico) = cpatch%balive(ico) * salloci                 &
-                              * green_leaf_factor
+            cpatch%bleaf(ico)    = cpatch%balive(ico) * salloci              &
+                                 * green_leaf_factor
+            cpatch%broot(ico)    = cpatch%balive(ico) * q(ipft) * salloci
+            cpatch%bsapwood(ico) = cpatch%balive(ico) * cpatch%hite(ico)     &
+                                 * qsw(ipft) * salloci
 
             !----------------------------------------------------------------!
             !     Update nitrogen uptake/soil nitrogen to preserve the C/N   !
@@ -795,13 +831,14 @@ module growth_balive
                csite%fsn_in(ipa) = csite%fsn_in(ipa)                         &
                                  - carbon_balance                            &
                                  * ( f_labile(ipft) / c2n_leaf(ipft)         &
-                                   + (1.0 - f_labile(ipft)) / c2n_stem )     &
+                                   + (1.0 - f_labile(ipft))                  &
+                                   / c2n_stem(ipft))                         &
                                  * cpatch%nplant(ico)
             else
                nitrogen_uptake = nitrogen_uptake                             &
                                + carbon_balance                              &
                                * ( f_labile(ipft) / c2n_leaf(ipft)           &
-                                 + (1.0 - f_labile(ipft)) / c2n_stem)
+                                 + (1.0 - f_labile(ipft)) / c2n_stem(ipft))
             end if
          end if
 
@@ -810,12 +847,15 @@ module growth_balive
          !      In this case, either carbon balance is negative.  Simply add !
          ! the carbon balance.                                               !
          !-------------------------------------------------------------------!
-         cpatch%balive(ico) = max(0.0,cpatch%balive(ico) + carbon_balance)
-         cpatch%bleaf(ico)  = 0.0
+         cpatch%balive(ico)   = max(0.0,cpatch%balive(ico) + carbon_balance)
+         cpatch%bleaf(ico)    = 0.0
+         cpatch%broot(ico)    = cpatch%balive(ico) * q(ipft) * salloci
+         cpatch%bsapwood(ico) = cpatch%balive(ico) * cpatch%hite(ico)        &
+                              * qsw(ipft) * salloci
          csite%fsn_in(ipa)  = csite%fsn_in(ipa)                              &
                             - carbon_balance                                 &
                             * ( f_labile(ipft) / c2n_leaf(ipft)              &
-                              + (1.0 - f_labile(ipft)) / c2n_stem)           &
+                              + (1.0 - f_labile(ipft)) / c2n_stem(ipft))     &
                             * cpatch%nplant(ico)
 
       end if
@@ -868,12 +908,12 @@ module growth_balive
 
       elseif (cpatch%phenology_status(ico) < 2) then
 
-         !-------------------------------------------------------------------! 
+         !-------------------------------------------------------------------!
          !    There are at least some leaves.  First we compute the maximum  !
          ! possible bleaf and the how much leaf biomass we could attain if   !
          ! all carbon balance went to leaf biomass.  We then decide what to  !
          ! do based on whether we would exceed the limit or not.             !
-         !-------------------------------------------------------------------! 
+         !-------------------------------------------------------------------!
          bl_max = dbh2bl(cpatch%dbh(ico),ipft) * green_leaf_factor
          bl_pot = green_leaf_factor * (balive_in + carbon_balance_pot)       &
                 * salloci
@@ -890,7 +930,8 @@ module growth_balive
             increment    = dbh2bl(cpatch%dbh(ico),ipft)*salloc - balive_in
             N_uptake_pot = N_uptake_pot                                      &
                          + increment * ( f_labile(ipft) / c2n_leaf(ipft)     &
-                                       + (1.0 - f_labile(ipft)) / c2n_stem)
+                                       + (1.0 - f_labile(ipft))              &
+                                       / c2n_stem(ipft))
          elseif (carbon_balance_pot > 0.0) then
 
             !----------------------------------------------------------------!
@@ -901,7 +942,7 @@ module growth_balive
             N_uptake_pot = N_uptake_pot                                      &
                          + carbon_balance_pot                                &
                          * ( f_labile(ipft) / c2n_leaf(ipft)                 &
-                           + (1.0 - f_labile(ipft)) / c2n_stem)
+                           + (1.0 - f_labile(ipft)) / c2n_stem(ipft))
 
          end if
       end if
@@ -947,7 +988,9 @@ module growth_balive
       do ico=1,cpatch%ncohorts
          ipft = cpatch%pft(ico)
 
-         plant_litter   = cpatch%maintenance_costs(ico) * cpatch%nplant(ico)
+         plant_litter   = ( cpatch%leaf_maintenance(ico)                     &
+                          + cpatch%root_maintenance(ico) )                   &
+                        * cpatch%nplant(ico)
          plant_litter_f = plant_litter * f_labile(ipft)
          plant_litter_s = plant_litter - plant_litter_f
 
@@ -957,7 +1000,7 @@ module growth_balive
 
          csite%ssc_in(ipa) = csite%ssc_in(ipa) + plant_litter_s
          csite%ssl_in(ipa) = csite%ssl_in(ipa)                               &
-                           + plant_litter_s * l2n_stem / c2n_stem
+                           + plant_litter_s * l2n_stem / c2n_stem(ipft)
       end do
       return
    end subroutine litter

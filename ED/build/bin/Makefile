@@ -8,7 +8,7 @@ include paths.mk
 include include.mk.$(OPT)
 
 #----- Compiler commands. -----------------------------------------------------------------#
-INCLUDES    = $(PAR_INCS) -I$(ED_INCS)
+INCLUDES    = $(PAR_INCS) -I$(ED_INCS) $(HDF5_INCS) $(MPI_INCS) 
 F90_COMMAND = $(F_COMP) -c $(F_OPTS) $(INCLUDES) $(PAR_DEFS)
 FPP_COMMAND = $(F_COMP) -c -DUSE_INTERF=$(USE_INTERF) -DUSENC=$(USENC) -D$(CMACH)          \
               -DUSE_HDF5=$(USE_HDF5) -DUSE_COLLECTIVE_MPIO=$(USE_COLLECTIVE_MPIO)          \

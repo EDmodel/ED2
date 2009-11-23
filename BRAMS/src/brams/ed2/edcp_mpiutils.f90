@@ -1,312 +1,486 @@
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine will send the namelist information to the slave nodes.               !
+!------------------------------------------------------------------------------------------!
 subroutine masterput_ednl(mainnum)
-  
-  use ed_max_dims,     only: str_len,n_pft,maxpvars,nzgmax,str_len_short,maxgrds,max_soi   &
-                           ,max_ed_regions,n_pft
-  use ed_misc_coms,    only: expnme, runtype,itimea,iyeara,imontha,idatea ,itimez,iyearz   &
-                           ,imonthz,idatez,dtlsm,radfrq,ifoutput,idoutput,imoutput         &
-                           ,iclobber,frqfast,sfilin,ffilout,ied_init_mode,ed_inputs_dir    &
-                           ,integration_scheme,end_time,current_time,sfilout,frqstate      &
-                           ,isoutput,iprintpolys,printvars,npvars,pfmtstr,ipmin,ipmax      &
-                           ,iedcnfgf,event_file,iyoutput,outfast,outstate,unitfast         &
-                           ,unitstate,attach_metadata, itimeh,iyearh,imonthh,idateh
-  use grid_coms,       only: nzg,nzs,ngrids,nnxp,nnyp,time,timmax
-  use soil_coms,       only: isoilflg,nslcon,slz,slmstr,stgoff,veg_database,soil_database  &
-                            ,soilstate_db,soildepth_db,isoilstateinit,isoildepthflg        &
-                            ,isoilbc,runoff_time,zrough
-  use met_driver_coms, only: lapse_scheme
-  use mem_sites,       only: edres,maxpatch,maxcohort
-  use physiology_coms, only: istoma_scheme,n_plant_lim
-  use phenology_coms , only: iphen_scheme,repro_scheme,iphenys1,iphenysf,iphenyf1,iphenyff &
-                             ,phenpath
-  use decomp_coms,     only: n_decomp_lim
-  use pft_coms,        only: include_these_pft,agri_stock,plantation_stock,pft_1st_check
-  use disturb_coms,    only: include_fire,ianth_disturb, treefall_disturbance_rate
-  use optimiz_coms,    only: ioptinpt
-  use canopy_radiation_coms, only: crown_mod
-  use rk4_coms,        only: ibranch_thermo
-  use canopy_air_coms, only : icanturb, isfclyrm
+   use ed_max_dims          , only : str_len                    & ! intent(in)
+                                   , n_pft                      & ! intent(in)
+                                   , maxpvars                   & ! intent(in)
+                                   , nzgmax                     & ! intent(in)
+                                   , str_len_short              & ! intent(in)
+                                   , maxgrds                    & ! intent(in)
+                                   , max_soi                    & ! intent(in)
+                                   , max_ed_regions             & ! intent(in)
+                                   , n_pft                      ! ! intent(in)
+   use ed_misc_coms         , only : expnme                     & ! intent(in)
+                                   , runtype                    & ! intent(in)
+                                   , itimea                     & ! intent(in)
+                                   , iyeara                     & ! intent(in)
+                                   , imontha                    & ! intent(in)
+                                   , idatea                     & ! intent(in)
+                                   , itimez                     & ! intent(in)
+                                   , iyearz                     & ! intent(in)
+                                   , imonthz                    & ! intent(in)
+                                   , idatez                     & ! intent(in)
+                                   , dtlsm                      & ! intent(in)
+                                   , radfrq                     & ! intent(in)
+                                   , ifoutput                   & ! intent(in)
+                                   , idoutput                   & ! intent(in)
+                                   , imoutput                   & ! intent(in)
+                                   , iyoutput                   & ! intent(in)
+                                   , itoutput                   & ! intent(in)
+                                   , iclobber                   & ! intent(in)
+                                   , frqfast                    & ! intent(in)
+                                   , sfilin                     & ! intent(in)
+                                   , ffilout                    & ! intent(in)
+                                   , ied_init_mode              & ! intent(in)
+                                   , ed_inputs_dir              & ! intent(in)
+                                   , integration_scheme         & ! intent(in)
+                                   , end_time                   & ! intent(in)
+                                   , current_time               & ! intent(in)
+                                   , sfilout                    & ! intent(in)
+                                   , frqstate                   & ! intent(in)
+                                   , isoutput                   & ! intent(in)
+                                   , iprintpolys                & ! intent(in)
+                                   , printvars                  & ! intent(in)
+                                   , npvars                     & ! intent(in)
+                                   , pfmtstr                    & ! intent(in)
+                                   , ipmin                      & ! intent(in)
+                                   , ipmax                      & ! intent(in)
+                                   , iedcnfgf                   & ! intent(in)
+                                   , event_file                 & ! intent(in)
+                                   , outfast                    & ! intent(in)
+                                   , outstate                   & ! intent(in)
+                                   , unitfast                   & ! intent(in)
+                                   , unitstate                  & ! intent(in)
+                                   , attach_metadata            & ! intent(in)
+                                   , itimeh                     & ! intent(in)
+                                   , iyearh                     & ! intent(in)
+                                   , imonthh                    & ! intent(in)
+                                   , idateh                     ! ! intent(in)
+   use grid_coms            , only : nzg                        & ! intent(in)
+                                   , nzs                        & ! intent(in)
+                                   , ngrids                     & ! intent(in)
+                                   , nnxp                       & ! intent(in)
+                                   , nnyp                       & ! intent(in)
+                                   , time                       & ! intent(in)
+                                   , timmax                     ! ! intent(in)
+   use soil_coms            , only : isoilflg                   & ! intent(in)
+                                   , nslcon                     & ! intent(in)
+                                   , slz                        & ! intent(in)
+                                   , slmstr                     & ! intent(in)
+                                   , stgoff                     & ! intent(in)
+                                   , veg_database               & ! intent(in)
+                                   , soil_database              & ! intent(in)
+                                   , soilstate_db               & ! intent(in)
+                                   , soildepth_db               & ! intent(in)
+                                   , isoilstateinit             & ! intent(in)
+                                   , isoildepthflg              & ! intent(in)
+                                   , isoilbc                    & ! intent(in)
+                                   , runoff_time                & ! intent(in)
+                                   , zrough                     ! ! intent(in)
+   use met_driver_coms      , only : lapse_scheme               ! ! intent(in)
+   use mem_sites            , only : edres                      & ! intent(in)
+                                   , maxpatch                   & ! intent(in)
+                                   , maxcohort                  ! ! intent(in)
+   use physiology_coms      , only : istoma_scheme              & ! intent(in)
+                                   , n_plant_lim                ! ! intent(in)
+   use phenology_coms       , only : iphen_scheme               & ! intent(in)
+                                   , repro_scheme               & ! intent(in)
+                                   , iphenys1                   & ! intent(in)
+                                   , iphenysf                   & ! intent(in)
+                                   , iphenyf1                   & ! intent(in)
+                                   , iphenyff                   & ! intent(in)
+                                   , phenpath                   ! ! intent(in)
+   use decomp_coms          , only : n_decomp_lim               & ! intent(in)
+                                   , LloydTaylor                ! ! intent(in)
+   use pft_coms             , only : include_these_pft          & ! intent(in)
+                                   , agri_stock                 & ! intent(in)
+                                   , plantation_stock           & ! intent(in)
+                                   , pft_1st_check              ! ! intent(in)
+   use disturb_coms         , only : include_fire               & ! intent(in)
+                                   , ianth_disturb              & ! intent(in)
+                                   , treefall_disturbance_rate  ! ! intent(in)
+   use optimiz_coms         , only : ioptinpt                   ! ! intent(in)
+   use canopy_radiation_coms, only : crown_mod                  ! ! intent(in)
+   use rk4_coms             , only : ibranch_thermo             ! ! intent(in)
+   use canopy_air_coms      , only : icanturb                   & ! intent(in)
+                                   , isfclyrm                   ! ! intent(in)
+   implicit none
+   include 'mpif.h'
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer, intent(in) :: mainnum
+   !----- Local variables. ----------------------------------------------------------------!
+   integer             :: ierr
+   integer             :: npv
+   !---------------------------------------------------------------------------------------!
 
+   call MPI_Bcast(time,1,MPI_DOUBLE_PRECISION,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(timmax,1,MPI_DOUBLE_PRECISION,mainnum,MPI_COMM_WORLD,ierr)
 
+   call MPI_Bcast(current_time%year,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(current_time%month,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(current_time%date,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(current_time%time,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(current_time%ifirst,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
 
-  implicit none
-  include 'mpif.h'
-  integer :: ierr,mainnum
-  integer :: npv
-  
-  call MPI_Bcast(time,1,MPI_DOUBLE_PRECISION,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(timmax,1,MPI_DOUBLE_PRECISION,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(end_time%year,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(end_time%month,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(end_time%date,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(end_time%time,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(end_time%ifirst,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
 
-  call MPI_Bcast(current_time%year,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(current_time%month,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(current_time%date,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(current_time%time,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(current_time%ifirst,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(dtlsm,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(ifoutput,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(idoutput,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(imoutput,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(iyoutput,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(itoutput,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(isoutput,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(attach_metadata,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(outfast,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(outstate,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(unitfast,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(unitstate,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(ffilout,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(sfilout,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(ied_init_mode,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(edres,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(sfilin,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(veg_database,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(soil_database,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(ed_inputs_dir,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(soilstate_db,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(soildepth_db,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(isoilstateinit,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(isoildepthflg,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(isoilbc,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(integration_scheme,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(ibranch_thermo,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(istoma_scheme,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(iphen_scheme,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(repro_scheme,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(lapse_scheme,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(crown_mod,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(LloydTaylor,1,MPI_LOGICAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(n_plant_lim,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(n_decomp_lim,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(include_fire,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(ianth_disturb,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(icanturb,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(include_these_pft,n_pft,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(agri_stock,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(plantation_stock,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(pft_1st_check,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(maxpatch,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(maxcohort,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(treefall_disturbance_rate,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(runoff_time,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(iprintpolys,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(npvars,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   do npv=1,npvars
+      call MPI_Bcast(printvars(npv),str_len_short,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
+      call MPI_Bcast(pfmtstr(npv),str_len_short,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
+   end do
+   call MPI_Bcast(ipmin,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(ipmax,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(iphenys1,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(iphenysf,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(iphenyf1,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(iphenyff,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(iedcnfgf,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(event_file,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(phenpath,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
 
-  call MPI_Bcast(end_time%year,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(end_time%month,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(end_time%date,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(end_time%time,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(end_time%ifirst,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   !---------------------------------------------------------------------------------------!
+   !      These are ED2 variables that have the same function as certain BRAMS namelist    !
+   ! variables under a different name.                                                     !
+   !---------------------------------------------------------------------------------------!
+  
+   call MPI_Bcast(frqfast,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(frqstate,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
+  
+   call MPI_Bcast(expnme,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(ngrids,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(runtype,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(itimez,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(idatez,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(imonthz,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(iyearz,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(itimeh,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(idateh,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(imonthh,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(iyearh,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(itimea,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(idatea,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(imontha,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(iyeara,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
 
-  call MPI_Bcast(dtlsm,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(ifoutput,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(idoutput,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(imoutput,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(iyoutput,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(isoutput,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(attach_metadata,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(outfast,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(outstate,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(unitfast,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(unitstate,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(ffilout,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(sfilout,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(ied_init_mode,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(edres,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(sfilin,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(veg_database,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(soil_database,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(ed_inputs_dir,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(soilstate_db,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(soildepth_db,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(isoilstateinit,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(isoildepthflg,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(isoilbc,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(integration_scheme,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(ibranch_thermo,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(istoma_scheme,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(iphen_scheme,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(repro_scheme,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(lapse_scheme,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(crown_mod,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(n_plant_lim,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(n_decomp_lim,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(include_fire,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(ianth_disturb,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(icanturb,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(isfclyrm,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(include_these_pft,n_pft,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(agri_stock,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(plantation_stock,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(pft_1st_check,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(maxpatch,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(maxcohort,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(treefall_disturbance_rate,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(runoff_time,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(iprintpolys,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(npvars,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  do npv=1,npvars
-     call MPI_Bcast(printvars(npv),str_len_short,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
-     call MPI_Bcast(pfmtstr(npv),str_len_short,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
-  end do
-  call MPI_Bcast(ipmin,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(ipmax,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(iphenys1,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(iphenysf,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(iphenyf1,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(iphenyff,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(iedcnfgf,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(event_file,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(phenpath,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
-  
-  ! These are ED2 variables that have the same function as certain BRAMS
-  ! namelist variables under a different name
-  ! --------------------------------------------------------------------
-  
-  call MPI_Bcast(frqfast,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(frqstate,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
-  
-  call MPI_Bcast(expnme,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(ngrids,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(runtype,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(itimez,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(idatez,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(imonthz,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(iyearz,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(itimeh,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(idateh,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(imonthh,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(iyearh,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(itimea,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(idatea,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(imontha,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(iyeara,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  
-  call MPI_Bcast(radfrq,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
-  
-  call MPI_Bcast(iclobber,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  
-  ! We should only need the grid sizes, because we expect to import
-  ! the coordinates and sizes to allocate our polygons,
-  ! The geometry is handled by BRAMS
-  
-  call MPI_Bcast(nnxp,maxgrds,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(nnyp,maxgrds,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  
-  call MPI_Bcast(nzg,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(nzs,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-  
-  call MPI_Bcast(slz,nzgmax,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(slmstr,nzgmax,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(stgoff,nzgmax,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(zrough,nzgmax,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(radfrq,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(iclobber,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(isfclyrm,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+
+   !---------------------------------------------------------------------------------------!
+   !      We should only need the grid sizes, because we expect to import the coordinates  !
+   ! and sizes to allocate our polygons.  The geometry is handled by BRAMS, but we want to !
+   ! ensure that the variables are correctly set in the nodes should they are ever needed. !
+   !---------------------------------------------------------------------------------------!
+   call MPI_Bcast(nnxp,maxgrds,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(nnyp,maxgrds,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+
+   call MPI_Bcast(nzg,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(nzs,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+
+   call MPI_Bcast(slz,nzgmax,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(slmstr,nzgmax,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(stgoff,nzgmax,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(zrough,nzgmax,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
   
   
-  return
+   return
 end subroutine masterput_ednl
+!==========================================================================================!
+!==========================================================================================!
 
-!===================================================================
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
 subroutine nodeget_ednl(master_num)
-  
-  use ed_max_dims,      only: str_len,max_soi,max_ed_regions,nzgmax,n_pft,maxgrds,maxpvars &
-                            ,str_len_short
-  use ed_misc_coms,     only: expnme, runtype,itimea,iyeara,imontha,idatea ,itimez,iyearz  &
-                           ,imonthz,idatez,dtlsm,radfrq,ifoutput,idoutput,imoutput        &
-                           ,iclobber,frqfast,sfilin,ffilout,ied_init_mode,ed_inputs_dir   &
-                           ,integration_scheme,end_time,current_time,sfilout,frqstate     &
-                           ,isoutput,iprintpolys,printvars,npvars,pfmtstr,ipmin,ipmax     &
-                           ,iedcnfgf,event_file,iyoutput,outfast,outstate,unitfast        &
-                           ,unitstate,attach_metadata,itimeh,iyearh,imonthh,idateh
-  use grid_coms,       only: nzg,nzs,ngrids,nnxp,nnyp,time,timmax
-  use soil_coms,       only: isoilflg,nslcon,slz,slmstr,stgoff,veg_database,soil_database &
-                             ,soilstate_db,soildepth_db,isoilstateinit,isoildepthflg       &
-                             ,isoilbc,runoff_time,zrough
-  use met_driver_coms, only: lapse_scheme
-  use mem_sites,       only: edres,maxpatch,maxcohort
-  use physiology_coms, only: istoma_scheme,n_plant_lim
-  use phenology_coms , only: iphen_scheme,repro_scheme,iphenys1,iphenysf,iphenyf1,iphenyff &
-                            ,phenpath
-  use decomp_coms,     only: n_decomp_lim
-  use pft_coms,        only: include_these_pft,agri_stock,plantation_stock,pft_1st_check
-  use disturb_coms,    only: include_fire,ianth_disturb, treefall_disturbance_rate
-  use optimiz_coms,    only: ioptinpt
-  use canopy_radiation_coms, only: crown_mod
-  use rk4_coms,        only: ibranch_thermo
-  use canopy_air_coms, only: icanturb, isfclyrm
+   use ed_max_dims          , only : str_len                    & ! intent(in)
+                                   , n_pft                      & ! intent(in)
+                                   , maxpvars                   & ! intent(in)
+                                   , nzgmax                     & ! intent(in)
+                                   , str_len_short              & ! intent(in)
+                                   , maxgrds                    & ! intent(in)
+                                   , max_soi                    & ! intent(in)
+                                   , max_ed_regions             & ! intent(in)
+                                   , n_pft                      ! ! intent(in)
+   use ed_misc_coms         , only : expnme                     & ! intent(in)
+                                   , runtype                    & ! intent(in)
+                                   , itimea                     & ! intent(in)
+                                   , iyeara                     & ! intent(in)
+                                   , imontha                    & ! intent(in)
+                                   , idatea                     & ! intent(in)
+                                   , itimez                     & ! intent(in)
+                                   , iyearz                     & ! intent(in)
+                                   , imonthz                    & ! intent(in)
+                                   , idatez                     & ! intent(in)
+                                   , dtlsm                      & ! intent(in)
+                                   , radfrq                     & ! intent(in)
+                                   , ifoutput                   & ! intent(in)
+                                   , idoutput                   & ! intent(in)
+                                   , imoutput                   & ! intent(in)
+                                   , iyoutput                   & ! intent(in)
+                                   , itoutput                   & ! intent(in)
+                                   , iclobber                   & ! intent(in)
+                                   , frqfast                    & ! intent(in)
+                                   , sfilin                     & ! intent(in)
+                                   , ffilout                    & ! intent(in)
+                                   , ied_init_mode              & ! intent(in)
+                                   , ed_inputs_dir              & ! intent(in)
+                                   , integration_scheme         & ! intent(in)
+                                   , end_time                   & ! intent(in)
+                                   , current_time               & ! intent(in)
+                                   , sfilout                    & ! intent(in)
+                                   , frqstate                   & ! intent(in)
+                                   , isoutput                   & ! intent(in)
+                                   , iprintpolys                & ! intent(in)
+                                   , printvars                  & ! intent(in)
+                                   , npvars                     & ! intent(in)
+                                   , pfmtstr                    & ! intent(in)
+                                   , ipmin                      & ! intent(in)
+                                   , ipmax                      & ! intent(in)
+                                   , iedcnfgf                   & ! intent(in)
+                                   , event_file                 & ! intent(in)
+                                   , outfast                    & ! intent(in)
+                                   , outstate                   & ! intent(in)
+                                   , unitfast                   & ! intent(in)
+                                   , unitstate                  & ! intent(in)
+                                   , attach_metadata            & ! intent(in)
+                                   , itimeh                     & ! intent(in)
+                                   , iyearh                     & ! intent(in)
+                                   , imonthh                    & ! intent(in)
+                                   , idateh                     ! ! intent(in)
+   use grid_coms            , only : nzg                        & ! intent(in)
+                                   , nzs                        & ! intent(in)
+                                   , ngrids                     & ! intent(in)
+                                   , nnxp                       & ! intent(in)
+                                   , nnyp                       & ! intent(in)
+                                   , time                       & ! intent(in)
+                                   , timmax                     ! ! intent(in)
+   use soil_coms            , only : isoilflg                   & ! intent(in)
+                                   , nslcon                     & ! intent(in)
+                                   , slz                        & ! intent(in)
+                                   , slmstr                     & ! intent(in)
+                                   , stgoff                     & ! intent(in)
+                                   , veg_database               & ! intent(in)
+                                   , soil_database              & ! intent(in)
+                                   , soilstate_db               & ! intent(in)
+                                   , soildepth_db               & ! intent(in)
+                                   , isoilstateinit             & ! intent(in)
+                                   , isoildepthflg              & ! intent(in)
+                                   , isoilbc                    & ! intent(in)
+                                   , runoff_time                & ! intent(in)
+                                   , zrough                     ! ! intent(in)
+   use met_driver_coms      , only : lapse_scheme               ! ! intent(in)
+   use mem_sites            , only : edres                      & ! intent(in)
+                                   , maxpatch                   & ! intent(in)
+                                   , maxcohort                  ! ! intent(in)
+   use physiology_coms      , only : istoma_scheme              & ! intent(in)
+                                   , n_plant_lim                ! ! intent(in)
+   use phenology_coms       , only : iphen_scheme               & ! intent(in)
+                                   , repro_scheme               & ! intent(in)
+                                   , iphenys1                   & ! intent(in)
+                                   , iphenysf                   & ! intent(in)
+                                   , iphenyf1                   & ! intent(in)
+                                   , iphenyff                   & ! intent(in)
+                                   , phenpath                   ! ! intent(in)
+   use decomp_coms          , only : n_decomp_lim               & ! intent(in)
+                                   , LloydTaylor                ! ! intent(in)
+   use pft_coms             , only : include_these_pft          & ! intent(in)
+                                   , agri_stock                 & ! intent(in)
+                                   , plantation_stock           & ! intent(in)
+                                   , pft_1st_check              ! ! intent(in)
+   use disturb_coms         , only : include_fire               & ! intent(in)
+                                   , ianth_disturb              & ! intent(in)
+                                   , treefall_disturbance_rate  ! ! intent(in)
+   use optimiz_coms         , only : ioptinpt                   ! ! intent(in)
+   use canopy_radiation_coms, only : crown_mod                  ! ! intent(in)
+   use rk4_coms             , only : ibranch_thermo             ! ! intent(in)
+   use canopy_air_coms      , only : icanturb                   & ! intent(in)
+                                   , isfclyrm                   ! ! intent(in)
 
 
-  implicit none
-  include 'mpif.h'
-  integer :: ierr,master_num
-  integer :: npv
+   implicit none
+   include 'mpif.h'
+   integer :: ierr,master_num
+   integer :: npv
 
-  call MPI_Bcast(time,1,MPI_DOUBLE_PRECISION,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(timmax,1,MPI_DOUBLE_PRECISION,master_num,MPI_COMM_WORLD,ierr)  
+   call MPI_Bcast(time,1,MPI_DOUBLE_PRECISION,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(timmax,1,MPI_DOUBLE_PRECISION,master_num,MPI_COMM_WORLD,ierr)  
 
-  call MPI_Bcast(current_time%year,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(current_time%month,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(current_time%date,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(current_time%time,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(current_time%ifirst,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(current_time%year,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(current_time%month,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(current_time%date,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(current_time%time,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(current_time%ifirst,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
 
-  call MPI_Bcast(end_time%year,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(end_time%month,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(end_time%date,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(end_time%time,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(end_time%ifirst,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(end_time%year,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(end_time%month,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(end_time%date,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(end_time%time,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(end_time%ifirst,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
 
-  call MPI_Bcast(dtlsm,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(ifoutput,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(idoutput,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(imoutput,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(iyoutput,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(isoutput,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(attach_metadata,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(outfast,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(outstate,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(unitfast,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(unitstate,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(ffilout,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(sfilout,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(ied_init_mode,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(edres,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(sfilin,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(veg_database,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(soil_database,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(ed_inputs_dir,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(soilstate_db,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(soildepth_db,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(isoilstateinit,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(isoildepthflg,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(isoilbc,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(integration_scheme,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(ibranch_thermo,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(istoma_scheme,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(iphen_scheme,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(repro_scheme,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(lapse_scheme,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(crown_mod,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(n_plant_lim,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(n_decomp_lim,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(include_fire,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(ianth_disturb,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(icanturb,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(isfclyrm,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(include_these_pft,n_pft,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(agri_stock,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(plantation_stock,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(pft_1st_check,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(maxpatch,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(maxcohort,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(treefall_disturbance_rate,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(runoff_time,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(iprintpolys,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(npvars,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  do npv=1,npvars
-     call MPI_Bcast(printvars(npv),str_len_short,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
-     call MPI_Bcast(pfmtstr(npv),str_len_short,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
-  end do
-  call MPI_Bcast(ipmin,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(ipmax,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(iphenys1,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(iphenysf,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(iphenyf1,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(iphenyff,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(iedcnfgf,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(event_file,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(phenpath,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(dtlsm,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(ifoutput,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(idoutput,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(imoutput,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(iyoutput,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(itoutput,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(isoutput,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(attach_metadata,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(outfast,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(outstate,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(unitfast,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(unitstate,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(ffilout,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(sfilout,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(ied_init_mode,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(edres,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(sfilin,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(veg_database,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(soil_database,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(ed_inputs_dir,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(soilstate_db,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(soildepth_db,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(isoilstateinit,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(isoildepthflg,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(isoilbc,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(integration_scheme,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(ibranch_thermo,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(istoma_scheme,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(iphen_scheme,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(repro_scheme,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(lapse_scheme,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(crown_mod,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(LloydTaylor,1,MPI_LOGICAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(n_plant_lim,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(n_decomp_lim,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(include_fire,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(ianth_disturb,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(icanturb,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(include_these_pft,n_pft,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(agri_stock,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(plantation_stock,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(pft_1st_check,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(maxpatch,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(maxcohort,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(treefall_disturbance_rate,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(runoff_time,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(iprintpolys,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(npvars,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   do npv=1,npvars
+      call MPI_Bcast(printvars(npv),str_len_short,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
+      call MPI_Bcast(pfmtstr(npv),str_len_short,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
+   end do
+   call MPI_Bcast(ipmin,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(ipmax,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(iphenys1,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(iphenysf,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(iphenyf1,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(iphenyff,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(iedcnfgf,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(event_file,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(phenpath,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
+
+   !---------------------------------------------------------------------------------------!
+   !      These are ED2 variables that have the same function as certain BRAMS namelist    !
+   ! variables under a different name.                                                     !
+   !---------------------------------------------------------------------------------------!
+   call MPI_Bcast(frqfast,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(frqstate,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
   
-  ! These are ED2 variables that have the same function as certain BRAMS
-  ! namelist variables under a different name
-  ! --------------------------------------------------------------------
+   call MPI_Bcast(expnme,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(ngrids,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(runtype,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(itimez,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(idatez,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(imonthz,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(iyearz,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(itimeh,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(idateh,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(imonthh,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(iyearh,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(itimea,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(idatea,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(imontha,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(iyeara,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
   
-  call MPI_Bcast(frqfast,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(frqstate,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(radfrq,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(iclobber,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(isfclyrm,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+
+   !---------------------------------------------------------------------------------------!
+   !      We should only need the grid sizes, because we expect to import the coordinates  !
+   ! and sizes to allocate our polygons.  The geometry is handled by BRAMS, but we want to !
+   ! ensure that the variables are correctly set in the nodes should they are ever needed. !
+   !---------------------------------------------------------------------------------------!
+   call MPI_Bcast(nnxp,maxgrds,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(nnyp,maxgrds,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
   
-  call MPI_Bcast(expnme,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(ngrids,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(runtype,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(itimez,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(idatez,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(imonthz,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(iyearz,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(itimeh,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(idateh,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(imonthh,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(iyearh,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(itimea,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(idatea,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(imontha,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(iyeara,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(nzg,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(nzs,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
   
-  call MPI_Bcast(radfrq,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(slz,nzgmax,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(slmstr,nzgmax,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(stgoff,nzgmax,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(zrough,nzgmax,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
   
-  call MPI_Bcast(iclobber,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  
-  ! We should only need the grid sizes, because we expect to import
-  ! the coordinates and sizes to allocate our polygons,
-  ! The geometry is handled by BRAMS
-  
-  call MPI_Bcast(nnxp,maxgrds,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(nnyp,maxgrds,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  
-  call MPI_Bcast(nzg,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(nzs,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  
-  call MPI_Bcast(slz,nzgmax,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(slmstr,nzgmax,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(stgoff,nzgmax,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-  call MPI_Bcast(zrough,nzgmax,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-  
-  return
+   return
 end subroutine nodeget_ednl
+!==========================================================================================!
+!==========================================================================================!

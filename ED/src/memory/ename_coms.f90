@@ -43,6 +43,7 @@ Module ename_coms
       integer :: idoutput  = 1
       integer :: imoutput  = 1
       integer :: iyoutput  = 0
+      integer :: itoutput  = 0
       integer :: isoutput  = 1
       
       integer :: attach_metadata=0
@@ -136,6 +137,7 @@ Module ename_coms
       integer                   :: crown_mod          = 0
       integer                   :: n_plant_lim        = 0
       integer                   :: n_decomp_lim       = 0
+      integer                   :: decomp_scheme = 0
       integer                   :: include_fire       = 0
       integer                   :: ianth_disturb      = 0
       integer                   :: icanturb           = 0
