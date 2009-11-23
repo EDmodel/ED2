@@ -324,9 +324,6 @@ old_grell_cupar_driver.o: mem_scratch2_grell.mod mem_scratch2_grell_sh.mod
 old_grell_cupar_driver.o: mem_scratch3_grell.mod mem_scratch3_grell_sh.mod
 old_grell_cupar_driver.o: mem_tend.mod mem_turb.mod node_mod.mod rconstants.mod
 old_grell_cupar_driver.o: therm_lib.mod
-100_carma.o: catt_start.mod grid_dims.mod mem_aerad.mod mem_carma.mod
-100_carma.o: mem_globaer.mod mem_globrad.mod mem_grid.mod mem_radiate.mod
-100_carma.o: node_mod.mod rconstants.mod
 harr_coms.o: mem_harr.mod
 harr_rad.o: harr_coms.mod mem_harr.mod rconstants.mod
 harr_raddriv.o: harr_coms.mod mem_grid.mod mem_harr.mod mem_leaf.mod micphys.mod

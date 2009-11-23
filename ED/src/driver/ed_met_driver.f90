@@ -754,12 +754,15 @@ subroutine update_met_drivers(cgrid)
    integer                    :: ipy,isi
    real                       :: t1
    real                       :: t2
+
+   real                       :: rvaux, rvsat, min_shv 
+
    real                       :: temp0
-   real                       :: rvaux
    real                       :: relhum
    real                       :: snden !! snow density (kg/m3)
    real                       :: fice  !! precipication ice fraction
    real                       :: fliq,tsnow
+
    !----- External functions --------------------------------------------------------------!
    logical         , external :: isleap
    !---------------------------------------------------------------------------------------!
