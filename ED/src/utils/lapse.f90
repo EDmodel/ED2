@@ -79,17 +79,17 @@ subroutine calc_met_lapse(cgrid,ipy)
             write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
             call fatal_error('Problems with ATM_TMP','calc_met_lapse'                      &
                             ,'edcp_met.f90')
-         else if ( cpoly%met(isi)%atm_shv < toodry) then
-            write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            write(unit=*,fmt='(a)')           '+ ATM_SHV is too low!!!'
-            write(unit=*,fmt='(a,1x,es12.5)') '+ Longitude       : ',cgrid%lon(ipy)
-            write(unit=*,fmt='(a,1x,es12.5)') '+ Latitude        : ',cgrid%lat(ipy)
-            write(unit=*,fmt='(a,1x,es12.5)') '+ Site-level      : ',cpoly%met(isi)%atm_shv
-            write(unit=*,fmt='(a,1x,es12.5)') '+ Polygon-level   : ',cgrid%met(ipy)%atm_shv
-            write(unit=*,fmt='(a,1x,es12.5)') '+ Minimum OK value: ',1.e-5
-            write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            call fatal_error('Problems with ATM_SHV','calc_met_lapse'                      &
-                            ,'edcp_met.f90')
+!         else if ( cpoly%met(isi)%atm_shv < toodry) then
+!            write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+!            write(unit=*,fmt='(a)')           '+ ATM_SHV is too low!!!'
+!            write(unit=*,fmt='(a,1x,es12.5)') '+ Longitude       : ',cgrid%lon(ipy)
+!            write(unit=*,fmt='(a,1x,es12.5)') '+ Latitude        : ',cgrid%lat(ipy)
+!            write(unit=*,fmt='(a,1x,es12.5)') '+ Site-level      : ',cpoly%met(isi)%atm_shv
+!            write(unit=*,fmt='(a,1x,es12.5)') '+ Polygon-level   : ',cgrid%met(ipy)%atm_shv
+!            write(unit=*,fmt='(a,1x,es12.5)') '+ Minimum OK value: ',1.e-5
+!            write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+!            call fatal_error('Problems with ATM_SHV','calc_met_lapse'                      &
+!                            ,'edcp_met.f90')
          elseif ( cpoly%met(isi)%rlong > 600.0) then
             write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
             write(unit=*,fmt='(a)')           '+ RLONG is too high!!!'

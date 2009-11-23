@@ -101,8 +101,6 @@ phenology_init.o: grid_coms.mod phenology_coms.mod
 average_utils.o: allometry.mod canopy_radiation_coms.mod consts_coms.mod
 average_utils.o: ed_max_dims.mod ed_misc_coms.mod ed_state_vars.mod
 average_utils.o: grid_coms.mod pft_coms.mod therm_lib.mod
-ed21_restart.o: allometry.mod consts_coms.mod ed_max_dims.mod ed_misc_coms.mod
-ed21_restart.o: ed_state_vars.mod fuse_fiss_utils.mod grid_coms.mod pft_coms.mod
 ed_history_io.o: allometry.mod c34constants.mod consts_coms.mod disturb_coms.mod
 ed_history_io.o: ed_max_dims.mod ed_misc_coms.mod ed_node_coms.mod
 ed_history_io.o: ed_state_vars.mod ed_therm_lib.mod fuse_fiss_utils.mod

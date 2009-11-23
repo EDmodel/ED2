@@ -744,7 +744,7 @@ subroutine update_met_drivers(cgrid)
    integer                    :: ipy,isi
    real                       :: t1
    real                       :: t2
-   real                       :: rvaux, rvsat
+   real                       :: rvaux, rvsat, min_shv 
    !----- External functions --------------------------------------------------------------!
    logical         , external :: isleap
    !---------------------------------------------------------------------------------------!
@@ -1030,7 +1030,11 @@ subroutine update_met_drivers(cgrid)
       rvaux = min(rvaux,rvsat)
 
       !------ Converting back to specific humidity. ---------------------------------------!
-      cgrid%met(ipy)%atm_shv = max(toodry,rvaux / (1. + rvaux))
+
+      ! Calculate the minimum allowable specific humidity (approximated via mixing ratio)
+      min_shv = toodry*rslif(cgrid%met(ipy)%prss,cgrid%met(ipy)%atm_tmp,.true.)
+
+      cgrid%met(ipy)%atm_shv = max(min_shv,rvaux / (1. + rvaux))
 
       !------------------------------------------------------------------------------------!
       !    We now find the Exner function, potential temperature, and the enthalpy.        !

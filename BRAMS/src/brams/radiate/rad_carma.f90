@@ -941,6 +941,7 @@ module rad_carma
       do j = 1,nlayer
 
          do l = 1,31
+
             pah2o(nsolp+l,j) = akh2o(l,ik(j))                                              &
                              * ps(j)**(log(akh2o(l,ii(j)-1) / akh2o(l,ii(j))) / dp(j))
          end do

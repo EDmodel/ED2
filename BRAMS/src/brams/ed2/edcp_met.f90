@@ -43,8 +43,11 @@ subroutine copy_atm2lsm(ifm,init)
                                    , cpor          & ! intent(in)
                                    , tsupercool    ! ! intent(in)
    use ed_node_coms         , only : mynum         ! ! intent(in)
-   use therm_lib            , only : ptqz2enthalpy ! ! intent(in)
+   use therm_lib            , only : ptqz2enthalpy & ! intent(in)
+                                   , rslif
    use canopy_radiation_coms, only : rlong_min     ! ! intent(in)
+   use consts_coms          , only : toodry 
+
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    integer                             , intent(in) :: ifm
@@ -65,6 +68,7 @@ subroutine copy_atm2lsm(ifm,init)
    real, dimension(mmxp(ifm),mmyp(ifm))             :: map_2d_lsm
    real                                             :: rshort1,cosz1,rshortd1,scalar1
    real                                             :: topma_t,wtw,wtu1,wtu2,wtv1,wtv2
+   real                                             :: min_shv
    !---------------------------------------------------------------------------------------!
   
    !----- Assigning some aliases. ---------------------------------------------------------!
@@ -258,10 +262,17 @@ subroutine copy_atm2lsm(ifm,init)
       ! potential temperature, so we must convert before sending to ED.  CO2 is already in !
       ! µmol_CO2 / mol_air, no conversion needed...                                        !
       !------------------------------------------------------------------------------------!
-      cgrid%met(ipy)%atm_shv      = rv_mean(ix,iy) / (1.+rtp_mean(ix,iy))
+      
       cgrid%met(ipy)%atm_theta    = theta_mean(ix,iy)
       cgrid%met(ipy)%atm_tmp      = cpi * cgrid%met(ipy)%atm_theta * cgrid%met(ipy)%exner
       cgrid%met(ipy)%atm_co2      = co2p_mean(ix,iy)
+
+      ! Calculate the minimum allowable specific humidity (approximated via mixing ratio)
+
+      min_shv = toodry*rslif(cgrid%met(ipy)%prss,cgrid%met(ipy)%atm_tmp,.true.)
+
+      cgrid%met(ipy)%atm_shv = max(min_shv,rv_mean(ix,iy) / (1.+rtp_mean(ix,iy)))
+
 
       if (cgrid%met(ipy)%atm_tmp < 180.   .or. cgrid%met(ipy)%atm_tmp > 400.   .or.        &
           cgrid%met(ipy)%atm_shv < 1.e-8  .or. cgrid%met(ipy)%atm_shv > 0.04   .or.        &

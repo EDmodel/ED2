@@ -159,8 +159,9 @@ subroutine radiate(mzp,mxp,myp,ia,iz,ja,jz,mynum)
          call ae1p1(mzp*mxp*myp,iwl,iwl,scratch%vt3de) ! Aggregates
          !----- Graupel: if available, we need to split between ice and liquid. -----------!
          if (availcat(6)) then
+
             do j=ja,jz
-               do i=ia,jz
+               do i=ia,iz
                   ka = nint(grid_g(ngrid)%flpw(i,j))
                   do k=ka,kz
                      call qtk(micro_g(ngrid)%q6(k,i,j),tcoal,fracliq)
@@ -173,7 +174,7 @@ subroutine radiate(mzp,mxp,myp,ia,iz,ja,jz,mynum)
          !----- Hail: if available, we need to split between ice and liquid. --------------!
          if (availcat(7)) then
             do j=ja,jz
-               do i=ia,jz
+               do i=ia,iz
                   ka = nint(grid_g(ngrid)%flpw(i,j))
                   do k=ka,kz
                      call qtk(micro_g(ngrid)%q7(k,i,j),tcoal,fracliq)
