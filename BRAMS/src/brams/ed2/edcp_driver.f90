@@ -390,7 +390,7 @@ subroutine set_edtype_atm(ifm)
 
    use ed_work_vars,only:work_e
    use ed_state_vars,only:edtype,edgrid_g
-   use ed_node_coms,only:mmxp,mmyp
+   use ed_node_coms,only:mmxp,mmyp,iwest,jsouth
    
    implicit none
 
@@ -404,8 +404,22 @@ subroutine set_edtype_atm(ifm)
       do i=1,mmxp(ifm)
          if (work_e(ifm)%land(i,j)) then
             ipy = ipy + 1
+
+            ! THE FOLLOWING VECTORS SHOULD STAY LOCAL! THEY ARE NEEDED FOR
+            ! MATCHING POLYGONS WITH THE ATMOSPHERIC GRIDS
             cgrid%ilon(ipy) = work_e(ifm)%xatm(i,j)
             cgrid%ilat(ipy) = work_e(ifm)%yatm(i,j)
+
+
+            ! THE FOLLOWING VECTORS SHOULD HAVE GLOBAL INDEXING FOR DIAGNOSTICS
+            ! This was also set when the ed set polygon routine was celled
+            ! but unlike the offline version xatm in the work array
+            ! is locally indexed in the coupled version, so we need to add
+            ! back in the tile offsets.  This will fix that and overwrite
+
+            cgrid%yatm(ipy) = work_e(ifm)%yatm(i,j) + jsouth(ifm) - 1
+            cgrid%xatm(ipy) = work_e(ifm)%xatm(i,j) + iwest(ifm) - 1
+
          endif
       end do
    end do

@@ -151,6 +151,7 @@ module rad_carma
                              , p00        & ! intent(in)
                              , pio180     & ! intent(in)
                              , halfpi     & ! intent(in)
+                             , wdns       & ! intent(in)
                              , stefan     & ! intent(in)
                              , toodry     ! ! intent(in)
       use mem_aerad   , only : ngas       & ! intent(in)
@@ -273,8 +274,8 @@ module rad_carma
          p(k)    =    prd(k+1)
          t(k)    = temprd(k+1)
          rhoa(k) =   dn0r(k+1)
-         lwlr(k) = lwl(k+1)*dn0r(k+1) * 1.e+3  ![kg/m3]
-         iwlr(k) = iwl(k+1)*dn0r(k+1) * 1.e+3  ![kg/m3]
+         lwlr(k) = lwl(k+1)*dn0r(k+1) * wdns  ![kg/m3]
+         iwlr(k) = iwl(k+1)*dn0r(k+1) * wdns  ![kg/m3]
       end do
 
 
@@ -341,13 +342,12 @@ module rad_carma
          sinz   = max(0.000001,sqrt(max(0., (1. - cosz * cosz ) ) ))
   
          sazmut = asin(max(-1.,min(1.,cdec*sin(hrangl)/sinz)))
-
          !---------------------------------------------------------------------------------!
-         !    Imposing a lower threshold for dzsdx and dzsdy.  This can't be too small be- !
-         ! cause the number will be squared later.                                         !
-         if (abs(dzsdx) < 1.e-16) dzsdx = 1.e-16
-         if (abs(dzsdy) < 1.e-16) dzsdy = 1.e-16
+         !    Imposing a lower bound for dzsdx and dzsdy, they will be squared soon after  !
+         ! and we don't want it to cause underflow.                                        !
          !---------------------------------------------------------------------------------!
+         if (abs(dzsdx) < 1e-16) dzsdx = 1.e-16
+         if (abs(dzsdy) < 1e-16) dzsdy = 1.e-16
          slazim     = halfpi - atan2(dzsdy,dzsdx)
          slangl     = atan(sqrt(dzsdx*dzsdx+dzsdy*dzsdy))
          cosi       = cos(slangl) * cosz + sin(slangl) * sinz * cos(sazmut-slazim)
@@ -2827,6 +2827,7 @@ module rad_carma
                             , nwave         & ! intent(something)
                             , ngroup        & ! intent(something)
                             , nrad          & ! intent(something)
+                            , nirp          & ! intent(something)
                             , xsecta        & ! intent(something)
                             , rdqext        & ! intent(something)
                             , qscat         & ! intent(something)
@@ -2870,142 +2871,214 @@ module rad_carma
       implicit none
 
       !----- Arguments. -------------------------------------------------------------------!
-      integer                               , intent(in) :: m1
-      real                                  , intent(in) :: aot11
+      integer                                    , intent(in) :: m1
+      real                                       , intent(in) :: aot11
       !----- Local variables. -------------------------------------------------------------!
-      real(kind=8), dimension(ntotal,nlayer)             :: taua
-      real(kind=8), dimension(ntotal,nlayer)             :: taus
-      real(kind=8), dimension(ntotal,nlayer)             :: g01
-      real(kind=8), dimension(ntotal,nlayer)             :: wol
-      real(kind=8), dimension(ntotal,nlayer)             :: gol
-      real(kind=8), dimension(ntotal,nlayer)             :: tauh2o
-      real(kind=8), dimension(ntotal,nlayer)             :: utaul
-      real(kind=8), dimension(ntotal,nlayer)             :: taucld
-      real(kind=8), dimension(ntotal,nlayer)             :: wcld
-      real(kind=8), dimension(ntotal,nlayer)             :: gcld 
-      real(kind=8), dimension(ntotal,nlayer)             :: wolc
-      real(kind=8), dimension(ntotal,nlayer)             :: woice
-      real(kind=8), dimension(ntotal,nlayer)             :: worain
-      real(kind=8), dimension(ntotal,nlayer)             :: gl
-      real(kind=8), dimension(ntotal,nlayer)             :: gice
-      real(kind=8), dimension(ntotal,nlayer)             :: grain
-      real(kind=8), dimension(ntotal,nlayer)             :: denc
-      real(kind=8), dimension(ntotal,nlayer)             :: taucldlw
-      real(kind=8), dimension(ntotal,nlayer)             :: taucldice
-      real(kind=8), dimension(ntotal,nlayer)             :: taurain
-      real(kind=8), dimension(ntotal)                    :: wot
-      real(kind=8), dimension(ntotal)                    :: got
-      real(kind=8), dimension(nlayer)                    :: corr
-      real(kind=8), dimension(nlayer)                    :: reffi
-      real(kind=8), dimension(nwave)                     :: rdqextnew
-      real(kind=8), dimension(nwave)                     :: wonew
-      real(kind=8), dimension(nwave)                     :: gonew
-      integer                                            :: i,i1,j1,kk
-      integer                                            :: ig
-      integer                                            :: iradgas
-      integer                                            :: j
-      integer                                            :: l
-      real(kind=8)                                       :: ttas
-      real(kind=8)                                       :: x_teste
-      real(kind=8)                                       :: cco
-      real(kind=8)                                       :: denom
-      real(kind=8)                                       :: pcorr
-      real(kind=8)                                       :: qcorr
-      real                                               :: den 
-      real                                               :: fo
-      real                                               :: expo
-      integer                                            :: idaot
-      integer                                            :: jjj
-      !----- Scratch scalars with the double precision values of some variables. ----------!
-      real(kind=8)                                       :: aot118
-      real(kind=8)                                       :: xsecta8
-      real(kind=8)                                       :: caer8
-      real(kind=8)                                       :: rdqext8
-      real(kind=8)                                       :: qscat8
-      real(kind=8)                                       :: qbrqs8
-      real(kind=8)                                       :: tauaer8
-      real(kind=8)                                       :: ttc8
-      real(kind=8)                                       :: taul8
-      real(kind=8)                                       :: wot8
-      real(kind=8)                                       :: got8
-      !----- External function, which converts double precision to single precision. ------!
-      real                                  , external   :: sngloff
+      real(kind=8), dimension(ntotal,nlayer)                  :: taua8
+      real(kind=8), dimension(ntotal,nlayer)                  :: taus8
+      real(kind=8), dimension(ntotal,nlayer)                  :: g018
+      real(kind=8), dimension(ntotal,nlayer)                  :: wol8
+      real(kind=8), dimension(ntotal,nlayer)                  :: gol8
+      real(kind=8), dimension(ntotal,nlayer)                  :: tauh2o8
+      real(kind=8), dimension(ntotal,nlayer)                  :: utaul8
+      real(kind=8), dimension(ntotal,nlayer)                  :: taucld8
+      real(kind=8), dimension(ntotal,nlayer)                  :: wcld8
+      real(kind=8), dimension(ntotal,nlayer)                  :: gcld8
+      real(kind=8), dimension(ntotal,nlayer)                  :: wolc8
+      real(kind=8), dimension(ntotal,nlayer)                  :: woice8
+      real(kind=8), dimension(ntotal,nlayer)                  :: worain8
+      real(kind=8), dimension(ntotal,nlayer)                  :: gl8
+      real(kind=8), dimension(ntotal,nlayer)                  :: gice8
+      real(kind=8), dimension(ntotal,nlayer)                  :: grain8
+      real(kind=8), dimension(ntotal,nlayer)                  :: denc8
+      real(kind=8), dimension(ntotal,nlayer)                  :: taucldlw8
+      real(kind=8), dimension(ntotal,nlayer)                  :: taucldice8
+      real(kind=8), dimension(ntotal,nlayer)                  :: taurain8
+      real(kind=8), dimension(ntotal)                         :: wot8
+      real(kind=8), dimension(ntotal)                         :: got8
+      real(kind=8), dimension(nlayer)                         :: corr8
+      real(kind=8), dimension(nlayer)                         :: reffi8
+      real(kind=8), dimension(nwave)                          :: rdqextnew8
+      real(kind=8), dimension(nwave)                          :: wonew8
+      real(kind=8), dimension(nwave)                          :: gonew8
+      integer                                                 :: i,i1,j1,kk
+      integer                                                 :: ig
+      integer                                                 :: iradgas
+      integer                                                 :: j
+      integer                                                 :: l
+      real(kind=8)                                            :: cco8
+      real(kind=8)                                            :: den8
+      real(kind=8)                                            :: denom8
+      real(kind=8)                                            :: fo8
+      real(kind=8)                                            :: pcorr8
+      real(kind=8)                                            :: qcorr8
+      real(kind=8)                                            :: ttas8
+      real(kind=8)                                            :: x_teste8
+      integer                                                 :: idaot
+      integer                                                 :: jjj
+      !----- Double precision version of most variables in this subroutine. ---------------!
+      real(kind=8)                                            :: rain_aerad8
+      real(kind=8)                                            :: p_top8
+      real(kind=8), dimension(nrad,ngroup)                    :: xsecta8
+      real(kind=8), dimension(nlayer,nrad,ngroup)             :: caer8
+      real(kind=8), dimension(ntotal,nlayer)                  :: tauaer8
+      real(kind=8), dimension(nrad,ngroup,nwave)              :: rdqext8
+      real(kind=8), dimension(nrad,ngroup,nwave)              :: qscat8
+      real(kind=8), dimension(nrad,ngroup,nwave)              :: qbrqs8
+      real(kind=8), dimension(ntotal)                         :: ta8
+      real(kind=8), dimension(ntotal)                         :: tb8
+      real(kind=8), dimension(ntotal)                         :: wa8
+      real(kind=8), dimension(ntotal)                         :: wb8
+      real(kind=8), dimension(ntotal)                         :: ga8
+      real(kind=8), dimension(ntotal)                         :: gb8
+      real(kind=8), dimension(ntotal)                         :: tia8
+      real(kind=8), dimension(ntotal)                         :: tib8
+      real(kind=8), dimension(ntotal)                         :: wia8
+      real(kind=8), dimension(ntotal)                         :: wib8
+      real(kind=8), dimension(ntotal)                         :: gia8
+      real(kind=8), dimension(ntotal)                         :: gib8
+      real(kind=8), dimension(ntotal)                         :: alpha8
+      real(kind=8), dimension(ntotal)                         :: gama8
+      real(kind=8), dimension(ngauss)                         :: gangle8
+      real(kind=8), dimension(ntotal,nlayer)                  :: paray8
+      real(kind=8), dimension(ntotal,nlayer)                  :: taugas8
+      real(kind=8), dimension(ntotal,nlayer)                  :: pah2o8
+      real(kind=8), dimension(nlayer)                         :: rdh2o8
+      real(kind=8), dimension(nlayer)                         :: tt8
+      real(kind=8), dimension(nirp)                           :: contnm8
+      real(kind=8), dimension(m1)                             :: p_aerad8
+      real(kind=8), dimension(m1)                             :: qv_aerad8
+      real(kind=8), dimension(m1)                             :: t_aerad8
+      real(kind=8), dimension(m1)                             :: lwl_aerad8
+      real(kind=8), dimension(m1)                             :: iwl_aerad8
+      real(kind=8), dimension(m1)                             :: lwp_aerad8
+      real(kind=8), dimension(m1)                             :: iwp_aerad8
+      real(kind=8), dimension(ntotal,nlayer)                  :: taul8
+      real(kind=8), dimension(ntotal,nlayer)                  :: w08
+      real(kind=8), dimension(ntotal,nlayer)                  :: g08
+      real(kind=8), dimension(ntotal,nlayer)                  :: opd8
+      real(kind=8), dimension(ntotal,nlayer)                  :: uopd8
+      real(kind=8)                                            :: y38
       !------------------------------------------------------------------------------------!
-  
-      !----- Initialise a bunch of variables. ---------------------------------------------!
-      aot118    = dble(aot11)
-      corr      = 0.d0
-      denc      = 0.d0
-      reffi     = 0.d0
-      taucldlw  = 0.d0
-      taucldice = 0.d0
-      taurain   = 0.d0
-      wolc      = 0.d0
-      woice     = 0.d0
-      worain    = 0.d0
-      gl        = 0.d0
-      gice      = 0.d0
-      grain     = 0.d0
-      taucld    = 0.d0
-      wcld      = 0.d0
-      gcld      = 0.d0
-      rdqextnew = 0.d0
-      wonew     = 0.d0
-      gonew     = 0.d0
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Initialise all local arrays.                                                   !
+      !------------------------------------------------------------------------------------!
+      corr8      = 0.d0
+      denc8      = 0.d0
+      reffi8     = 0.d0
+      taucldlw8  = 0.d0
+      taucldice8 = 0.d0
+      taurain8   = 0.d0
+      wolc8      = 0.d0
+      woice8     = 0.d0
+      worain8    = 0.d0
+      gl8        = 0.d0
+      gice8      = 0.d0
+      grain8     = 0.d0
+      taucld8    = 0.d0
+      wcld8      = 0.d0
+      gcld8      = 0.d0
+      rdqextnew8 = 0.d0
+      wonew8     = 0.d0
+      gonew8     = 0.d0
+      !------------------------------------------------------------------------------------!
+
+
+
+      !----- Copy the following values to the scratch double precision variables. ---------!
+      xsecta8      = dble(xsecta    )
+      caer8        = dble(caer      )
+      tauaer8      = dble(tauaer    )
+      rdqext8      = dble(rdqext    )
+      qscat8       = dble(qscat     )
+      qbrqs8       = dble(qbrqs     )
+      ta8          = dble(ta        )
+      tb8          = dble(tb        )
+      wa8          = dble(wa        )
+      wb8          = dble(wb        )
+      ga8          = dble(ga        )
+      gb8          = dble(gb        )
+      tia8         = dble(tia       )
+      tib8         = dble(tib       )
+      wia8         = dble(wia       )
+      wib8         = dble(wib       )
+      gia8         = dble(gia       )
+      gib8         = dble(gib       )
+      alpha8       = dble(alpha     )
+      gama8        = dble(gama      )
+      gangle8      = dble(gangle    )
+      paray8       = dble(paray     )
+      taugas8      = dble(taugas    )
+      pah2o8       = dble(pah2o     )
+      rdh2o8       = dble(rdh2o     )
+      p_aerad8     = dble(p_aerad   )
+      qv_aerad8    = dble(qv_aerad  )
+      t_aerad8     = dble(t_aerad   )
+      lwl_aerad8   = dble(lwl_aerad )
+      iwl_aerad8   = dble(iwl_aerad )
+      lwp_aerad8   = dble(lwp_aerad )
+      iwp_aerad8   = dble(iwp_aerad )
+      contnm8      = dble(contnm    )
+      rain_aerad8  = dble(rain_aerad)
+      p_top8       = dble(p_top     )
+      !------------------------------------------------------------------------------------!
+
 
       if (lprocopio .and. lmie) then
  
          idaot = max(min(int(10*((anint(10.*aot11)/10.)+0.1)/2.),9),1)
 
          do l = 1,nwave
-            rdqextnew(l) = dble(casee(idaot,l))
-            wonew(l)     = dble(casew(idaot,l))
-            gonew(l)     = dble(caseg(idaot,l))
+            rdqextnew8(l) = dble(casee(idaot,l)) 
+            wonew8(l)     = dble(casew(idaot,l)) 
+            gonew8(l)     = dble(caseg(idaot,l))
          end do
 
-         taua=0.d0
+         
+
+         taua8=0.d0
          do j=1,nlayer
             do ig = 1,ngroup
                do i = 1,nrad
                  do l = 1,ntotal
-                    xsecta8     = dble(xsecta(i,ig))
-                    caer8       = dble(caer(j,i,ig))
-                    taua(l,j)   = taua(l,j) + rdqextnew(nprob(l)) * xsecta8 * caer8
-                    tauaer(l,j) = sngl(max(taua(nprob(l),j),roundoff8))                 
-                    wol(l,j)    = wonew(nprob(l))
-                    gol(l,j)    = gonew(nprob(l))
+                    taua8(l,j)   = taua8(l,j)                                              &
+                                 + rdqextnew8(nprob(l)) * xsecta8(i,ig) * caer8(j,i,ig)
+                    tauaer8(l,j) = max(taua8(nprob(l),j),roundoff8)                 
+                    wol8(l,j)    = wonew8(nprob(l))
+                    gol8(l,j)    = gonew8(nprob(l))
                  end do
                end do
             end do
          end do
       else
-         taua = 0.d0
-         taus = 0.d0
-         g01  = 0.d0
+         taua8 = 0.0
+         taus8 = 0.0
+         g018  = 0.0
          do j=1,nlayer
             do ig = 1,ngroup
                do  i = 1,nrad
-                  do l = 1,nwave
-                     xsecta8   = dble(xsecta(i,ig))
-                     caer8     = dble(caer(j,i,ig))
-                     rdqext8   = dble(rdqext(i,ig,l))
-                     qscat8    = dble(qscat(i,ig,l))
-                     qbrqs8    = dble(qbrqs(i,ig,l))
-                     taua(l,j) = taua(l,j) + rdqext8 * xsecta8 * caer8
-                     taus(l,j) = taus(l,j) + qscat8  * xsecta8 * caer8
-                     g01(l,j)  = g01(l,j)  + qbrqs8  * xsecta8 * caer8
+                  do  l = 1,nwave
+                      taua8(l,j) = taua8(l,j)                                              &
+                                 + rdqext8(i,ig,l) * xsecta8(i,ig) * caer8(j,i,ig)
+                      taus8(l,j) = taus8(l,j)                                              &
+                                 + qscat8(i,ig,l)  * xsecta8(i,ig) * caer8(j,i,ig)
+                      g018(l,j)  = g018(l,j)                                               &
+                                 + qbrqs8(i,ig,l)  * xsecta8(i,ig) * caer8(j,i,ig)
                   end do
                end do
             end do
 
 
             do l= 1,ntotal
-               tauaer8     = max(taua(nprob(l),j),roundoff8)
-               tauaer(l,j) = sngl(tauaer8)
-               wol(l,j)    = taus(nprob(l),j)/tauaer8
-               ttas        = 1.d0
-               if(wol(l,j) /= 0.d0) ttas = taus(nprob(l),j)
-               gol(l,j)    = g01(nprob(l),j)/ttas
+               tauaer8(l,j) = max(taua8(nprob(l),j),roundoff8)
+               wol8(l,j)    = taus8(nprob(l),j)/tauaer8(l,j)
+               ttas8        = 1.d0
+               if(wol8(l,j) /= 0.d0) ttas8 = taus8(nprob(l),j)
+               gol8(l,j)    = g018(nprob(l),j)/ttas8
             end do
          end do
          lmie = .true.
@@ -3013,71 +3086,68 @@ module rad_carma
 
       do j=1,nlayer
          if (xland_aerad >= .009) then
-           reffi(j) =  7.0d0 * 1.d3 * dble(lwl_aerad(j)) + 5.5d0
+           reffi8(j) =  7.0d0 * 1.d3 * lwl_aerad8(j) + 5.5d0 
          else 
-           reffi(j) =  9.5d0 * 1.d3 * dble(lwl_aerad(j)) + 4.0d0
+           reffi8(j) =  9.5d0 * 1.d3 * lwl_aerad8(j) + 4.0d0
          end if
-         ttc8    = dble(tt(j))-t008
-         corr(j) = 1.047d0 - 0.913d-4 * ttc8 + 0.203d-3 * ttc8 **2 - 0.106d-4 * ttc8 **3
-         corr(j) = max(corr(j),roundoff8)  
+         
+         corr8(j) = 1.047d0 - 0.913d-4 * (tt8(j)-t008) + 0.203d-3 * (tt8(j)-t008) **2      &
+                            - 0.106d-4 * (tt8(j)-t008) **3
+         corr8(j) = max(corr8(j),roundoff8)  
       end do
 
       do j=1,nlayer
          do l= 1,ntotal        
-            if (j == 1) taurain(l,j) = 1.8d-4 * dble(rain_aerad) * 2.d3
-            taucldlw  (l,j) = 1.d+3 * dble(lwp_aerad(j))                                   &
-                            * (dble(ta(l))/reffi(j)+dble(tb(l))/reffi(j)**2)
-            worain    (l,j) = 5.5d-1
-            wolc      (l,j) = (1.d0 - dble(wa(l))) + dble(wb(l)) * reffi(j)
-            gl        (l,j) = dble(ga(l)) + dble(gb(l)) * reffi(j)
-            grain     (l,j) = 9.5d-1
-            denc      (l,j) = 1.d0                                                         &
-                            / (dble(tia(l)) + dble(tib(l)) * 1.0d3 * dble(iwl_aerad(j)))
-            taucldice (l,j) = corr(j) * 1.0d+3 * dble(iwp_aerad(j)) * denc(l,j)
+            if (j == 1) taurain8(l,j) = 1.8d-4 * rain_aerad8 * 2.0d3
             
-            if (wib(l) < 1.e-5) then
-               x_teste = 0.d0
+            taucldlw8  (l,j) = 1.d3 * lwp_aerad8(j) *(ta8(l)/reffi8(j)+tb8(l)/reffi8(j)**2)
+            worain8    (l,j) = 5.5d-1
+            wolc8      (l,j) = (1.d0 - wa8(l)) + wb8(l) * reffi8(j)
+            gl8        (l,j) = ga8(l) + gb8(l) * reffi8(j)
+            grain8     (l,j) = 9.5d-1
+            denc8      (l,j) = 1.d0 / (tia8(l) + tib8(l) * 1.d3 * iwl_aerad8(j))
+            taucldice8 (l,j) = corr8(j) * 1.0d3 * iwp_aerad8(j) * denc8(l,j)
+            
+            if (wib8(l) < 1.d-5) then
+               x_teste8 = 0.d0
             else
-               x_teste = (1.0d3 * dble(iwl_aerad(j)))**dble(wib(l))
+               x_teste8 = (1.0d3 * iwl_aerad8(j))**wib8(l)
             end if
 
-            woice(l,j) = ( 1.d0 -  dble(wia(l))  * x_teste)                                &
-                       * ( 1.d0 -  dble(gama(l)) * (corr(j) - 1.d0) / corr(j) )
+            woice8(l,j) = ( 1.d0 -  wia8(l) * x_teste8)                                    &
+                        * ( 1.d0 - gama8(l) * (corr8(j) - 1.d0)/ corr8(j) )
             
-            if(gib(l) < 1.e-5) then
-               x_teste = 1.d0
+            if(gib8(l) < 1.d-5) then
+               x_teste8 = 1.d0
             else
-               x_teste = (1.0d3 * dble(iwl_aerad(j)))**dble(gib(l))
+               x_teste8 = (1.0d3 * iwl_aerad8(j))**gib8(l)
             end if
-            gice(l,j)  = (dble(gia(l)) * x_teste)                                          &
-                       * ( 1.d0 + dble(alpha(l)) * (corr(j) - 1.d0)/ corr(j) )
+            gice8(l,j)  = (gia8(l) * x_teste8)                                             &
+                        * ( 1.d0 + alpha8(l) * (corr8(j) - 1.d0)/ corr8(j) )
                            
             
             select case (l)
             case (91:113)
-               taucldlw(l,j) = 1.0d3 * dble(lwp_aerad(j)) * dble(ta(l))                    &
-                             * exp(dble(tb(l))* reffi(j))
+               taucldlw8(l,j)= 1.0d3 * lwp_aerad8(j) * ta8(l) * exp(tb8(l)* reffi8(j))
 
             case (114:154)
-               taucldlw(l,j) =  1.0d3 * dble(lwp_aerad(j))                                 &
-                             * ( dble(ta(l)) + dble(tb(l))* reffi(j))
-
-               gl(l,j)       = 1.d0 - dble(ga(l)) * exp( dble(gb(l)) * reffi(j))
+               taucldlw8(l,j) = 1.0d3 * lwp_aerad8(j) * ( ta8(l) + tb8(l)* reffi8(j))
+               gl8(l,j)       = 1.d0 - ga8(l) * exp( gb8(l) * reffi8(j))
 
             end select
             
-            taucld(l,j) = taucldlw(l,j) + taucldice(l,j) + taurain(l,j)
+            taucld8(l,j) = taucldlw8(l,j) + taucldice8(l,j) + taurain8(l,j)
 
-            if ( taucld(l,j) > roundoff8) then
-               wcld(l,j) = ( wolc(l,j) * taucldlw(l,j)  + woice(l,j) * taucldice(l,j)      &
-                           + worain(l,j) * taurain(l,j)) / taucld(l,j)
-               gcld(l,j) = ( wolc(l,j) *  taucldlw(l,j) * gl(l,j)                          &
-                           + woice(l,j) * taucldice(l,j)* gice(l,j)                        &
-                           + worain(l,j) * taurain(l,j) * grain(l,j))                      &
-                           / (wcld(l,j) * taucld(l,j))            
+            if ( taucld8(l,j) > roundoff8) then
+               wcld8(l,j) = ( wolc8(l,j) * taucldlw8(l,j)  + woice8(l,j) * taucldice8(l,j) &
+                            + worain8(l,j) * taurain8(l,j)) / taucld8(l,j)
+               gcld8(l,j) = ( wolc8(l,j) *  taucldlw8(l,j) * gl8(l,j)                      &
+                            + woice8(l,j) * taucldice8(l,j)* gice8(l,j)                    &
+                            + worain8(l,j) * taurain8(l,j) * grain8(l,j))                  &
+                            / (wcld8(l,j) * taucld8(l,j))            
             else 
-              wcld(l,j)  = 1.d0
-              gcld(l,j)  = 0.d0
+              wcld8(l,j)  = 1.d0
+              gcld8(l,j)  = 0.d0
             end if
          end do
       end do
@@ -3088,74 +3158,79 @@ module rad_carma
          !---------------------------------------------------------------------------------!
          !   Bergstrom water vapor continuum fix:                                          !
          !                                                                                 !
-         !    <qcorr> is layer average water vapor mixing ratio                            !
-         !    <pcorr> is layer average pressure                                            !
+         !    <qcorr8> is layer average water vapor mixing ratio                           !
+         !    <pcorr8> is layer average pressure                                           !
          !                                                                                 !
          !   For layer 0, calculate mixing ratio [g/g] from vapor column [g/cm^2]          !
          !   and average pressure [dyne/cm^2].                                             !
          !---------------------------------------------------------------------------------!
          if (j == 1)then
-            qcorr = dble(rdh2o(1)) * dble(gcgs) / dble(p_top)
-            pcorr = dble(p_aerad(1)) / 2.d0
+            qcorr8 = rdh2o8(1) * dble(gcgs) / dble(p_top)
+            pcorr8 = 5.d-1 * p_aerad8(1)
+            cco8   = exp(1.8d3/t_aerad8(kk))*(qcorr8*pcorr8/2.87d0 + pcorr8/4.61d3)
          else
-            qcorr = dble(qv_aerad(kk))
-            pcorr = dble(p_aerad(kk))
+            qcorr8 = qv_aerad8(kk)
+            pcorr8 = p_aerad8(kk)
+            cco8 = exp(1.8d3/t_aerad8(kk))*(qcorr8*pcorr8/2.87d0 + pcorr8/4.61d3)
          end if
-         cco   = exp(1.8d3 / dble(t_aerad(kk))) * (qcorr*pcorr/2.87d0 + pcorr/4.61d3)
   
          do l = 1,ntotal
             if (l >= lls .and. l <= lla) then
                !---- Bergstrom water vapor continuum. -------------------------------------!
                select case (l-nsolp)
                case (:30)
-                  tauh2o(l,j) = dble(rdh2o(j)) * dble(pah2o(l,j))
+                  tauh2o8(l,j) = rdh2o8(j) * pah2o8(l,j)
                case (31:36)
-                  tauh2o(l,j) = dble(rdh2o(j)) * dble(pah2o(l,j)) * cco
+                  tauh2o8(l,j) = rdh2o8(j) * pah2o8(l,j) * cco8
                case (37:)
-                  tauh2o(l,j) = dble(rdh2o(j)) * dble(pah2o(l,j))                          &
-                              + cco * dble(rdh2o(j)) * dble(contnm(l-nsolp))
+                  tauh2o8(l,j) = rdh2o8(j) * pah2o8(l,j)                                   &
+                               + cco8 * rdh2o8(j) * contnm8(l-nsolp)
                end select
-               taul8     = tauh2o(l,j) + dble(taugas(l,j)) + dble(paray(l,j))              &
-                         + dble(tauaer(l,j)) + taucld(l,j)
-               if (iradgas == 0)  taul8 = tauaer(l,j)
-               
-               taul(l,j) = sngl(max(taul8,roundoff8))
+               taul8(l,j) = tauh2o8(l,j) + taugas8(l,j) + paray8(l,j)                      &
+                          + tauaer8(l,j) + taucld8(l,j)
+               if (iradgas == 0)           taul8(l,j) = tauaer8(l,j)
+               if (taul8(l,j) < roundoff8) taul8(l,j) = roundoff8
             end if
          end do
 
          do l = 1,ntotal
             if (l>=lls .and. l<=lla) then
-              utaul(l,j)  = taul(l,j)
-              wot8        = ( dble(paray(l,j)) + dble(tauaer(l,j)) * wol(l,j)              &
-                            + taucld(l,j) * wcld(l,j) ) / dble(taul(l,j))
-              if (iradgas == 0) wot8 = wol(l,j)
-              wot(l)      = sngl(min(1.d0 - roundoff8,wot8))
+              utaul8(l,j)  = taul8(l,j)
+              wot8(l)      = ( paray8(l,j) + tauaer8(l,j) * wol8(l,j)                      &
+                             + taucld8(l,j) * wcld8(l,j) ) / taul8(l,j)
+              if (iradgas == 0) wot8(l) = wol8(l,j)
+              wot8(l)      = min(1.d0 - roundoff8,wot8(l))
+              denom8       = paray8(l,j) + taucld8(l,j)*wcld8(l,j) + tauaer8(l,j)*wol8(l,j)
 
-              denom       = dble(paray(l,j)) + taucld(l,j)*wcld(l,j)                       &
-                          + dble(tauaer(l,j))*wol(l,j)
-
-              if (denom > roundoff8) then
-                 got8   = ( wcld(l,j) * gcld(l,j) * taucld(l,j)                            &
-                          + gol(l,j)  * wol(l,j)  * dble(tauaer(l,j)) ) / denom
-                 got(l) = sngl(max(roundoff8, got8))
+              if (denom8 > roundoff8 ) then
+                 got8(l) = ( wcld8(l,j) * gcld8(l,j) * taucld8(l,j)                        &
+                           + gol8(l,j)  * wol8(l,j)  * tauaer8(l,j) ) / denom8
+                 got8(l)=max(roundoff8, got8(l))
               else
-                 got(l) = 0.
+                 got8(l) = 0.d0
               end if
-              if (iradgas == 0) got(l) = sngl(max(roundoff8,gol(l,j)))
+              if (iradgas == 0) got8(l) = gol8(l,j)
             end if
          end do
 
          do l   = 1,ntotal
             if (l>=lls .and. l<=lla) then
-               fo        = got(l)**2
-               den       = 1.0 - wot(l)*fo
-               taul(l,j) = taul(l,j) * den
-               w0(l,j)   = (1.0-fo) * wot(l) / den
-               g0(l,j)   = got(l) / (1. + got(l))
-               opd(l,j)  = 0.0
-               opd(l,j)  = opd(l,kk) + taul(l,j)
-               uopd(l,j) = 0.0
-               uopd(l,j) = uopd(l,kk) + utaul(l,j)
+               fo8        = got8(l) * got8(l)
+               den8       = 1.d0 - wot8(l) * fo8
+               taul8(l,j) = taul8(l,j) * den8
+               w08  (l,j) = (1.d0 - fo8) * wot8(l) / den8
+               g08  (l,j) = got8(l) / (1.d0 + got8(l))
+               opd8 (l,j) = 0.d0
+               opd8 (l,j) = opd8(l,kk) + taul8(l,j)
+               uopd8(l,j) = 0.d0
+               uopd8(l,j) = uopd8 (l,kk) + utaul8(l,j)
+               
+               !----- Copying the double precision arrays to the single precision. --------!
+               taul (l,j) = sngl(taul8(l,j))
+               w0   (l,j) = sngl(w08  (l,j))
+               g0   (l,j) = sngl(g08  (l,j))
+               opd  (l,j) = sngl(opd8 (l,j))
+               uopd (l,j) = sngl(uopd8(l,j))
             end if
          end do
       end do
@@ -3165,12 +3240,8 @@ module rad_carma
             do i = 1,ngauss
                do l = 1,ntotal
                   if (l>=lls .and. l<=lla) then
-                     !---------------------------------------------------------------------!
-                     !    Expo will be the term inside the exponential, levelled in -46.   !
-                     ! to avoid underflow.                                                 !
-                     !---------------------------------------------------------------------!
-                     expo = min(46., taul(i,j) / gangle(i))
-                     y3(l,i,j) = exp(-expo)
+                     y38        = exp(-min(4.6d1,taul8(l,j)/gangle8(i)))
+                     y3 (l,i,j) = sngl(y38)
                   end if
                end do
             end do
