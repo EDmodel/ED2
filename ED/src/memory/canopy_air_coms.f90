@@ -103,8 +103,8 @@ module canopy_air_coms
    real, parameter   :: dl79     = 5.0    ! ???
    !----- Oncley and Dudhia (1995) model. -------------------------------------------------!
    real, parameter   :: bbeta      = 5.0           ! Beta 
-   real, parameter   :: gamm       = 16.0          ! Gamma for momentum.
-   real, parameter   :: gamh       = 16.0          ! Gamma for heat.
+   real, parameter   :: gamm       = 11.0          ! Gamma for momentum.
+   real, parameter   :: gamh       = 11.0          ! Gamma for heat.
    real, parameter   :: ribmaxod95 = 0.20          ! Maximum bulk Richardson number
    real, parameter   :: tprandtl   = 0.74          ! Turbulent Prandtl number.
    real, parameter   :: vkopr      = vonk/tprandtl ! Von Karman / Prandtl number
@@ -119,7 +119,7 @@ module canopy_air_coms
    real, parameter   :: bcod       = bbh91 * cod   ! b*c/d
    real, parameter   :: fcod       = fbh91 * cod   ! f*c/d
    real, parameter   :: etf        = ebh91 * fbh91 ! e * f
-   real, parameter   :: ribmaxbh91 = 6.00          ! Maximum bulk Richardson number
+   real, parameter   :: ribmaxbh91 = 5.00          ! Maximum bulk Richardson number
    !----- Double precision of all these variables. ----------------------------------------!
    real(kind=8), parameter   :: bl798       = dble(bl79      )
    real(kind=8), parameter   :: csm8        = dble(csm       )

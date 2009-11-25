@@ -185,7 +185,7 @@ module leaf_coms
    !---------------------------------------------------------------------------------------!
    !     Speed-related minimum values we will consider.                                    !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: ubmin    = 0.25 ! Minimum velocity                         [     m/s]
+   real, parameter :: ubmin    = 0.65 ! Minimum velocity                         [     m/s]
    real, parameter :: ustmin   = 0.1  ! Minimum ustar                            [     m/s]
    !---------------------------------------------------------------------------------------!
 
@@ -199,8 +199,8 @@ module leaf_coms
    real, parameter :: dl79       = 5.0    ! ???
    !----- Oncley and Dudhia (1995) model. -------------------------------------------------!
    real, parameter :: bbeta      = 5.0    ! Beta used by Businger et al. (1971)
-   real, parameter :: gamm       = 15.0   ! Gamma used by Businger et al. (1971) - momentum.
-   real, parameter :: gamh       = 9.0    ! Gamma used by Businger et al. (1971) - heat.
+   real, parameter :: gamm       = 11.0   ! Gamma used by Businger et al. (1971) - momentum.
+   real, parameter :: gamh       = 11.0   ! Gamma used by Businger et al. (1971) - heat.
    real, parameter :: ribmaxod95 = 0.20   ! Maximum bulk Richardson number
    real, parameter :: tprandtl   = 0.74   ! Turbulent Prandtl number.
    real, parameter :: vkopr      = vonk/tprandtl ! von Karman / turbulent Prandtl
@@ -215,7 +215,7 @@ module leaf_coms
    real, parameter :: bcod       = bbh91 * cod   ! b*c/d
    real, parameter :: fcod       = fbh91 * cod   ! f*c/d
    real, parameter :: etf        = ebh91 * fbh91 ! e * f
-   real, parameter :: ribmaxbh91 = 6.00          ! Maximum bulk Richardson number
+   real, parameter :: ribmaxbh91 = 5.00          ! Maximum bulk Richardson number
    !---------------------------------------------------------------------------------------!
 
 
@@ -326,7 +326,8 @@ module leaf_coms
          case (2) !----- Oncley and Dudhia (1995). ----------------------------------------!
             psim = - bbeta * zeta 
          case (3,4) !----- Beljaars and Holtslag (1991). ----------------------------------!
-            psim = abh91 * zeta + bbh91 * (zeta - cod) * exp(-dbh91 * zeta) + bcod
+            psim = abh91 * zeta + bbh91 * (zeta - cod) * exp(max(-38.,-dbh91 * zeta))      &
+                 + bcod
          end select
       else
          !----- Unstable case, both papers use the same expression. -----------------------!

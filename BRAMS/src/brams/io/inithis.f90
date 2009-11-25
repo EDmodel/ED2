@@ -37,7 +37,7 @@ subroutine inithis()
    implicit none
 
    !----- Local variables -----------------------------------------------------------------!
-   character (len=80)                                   :: hnameinh
+   character (len=256)                                  :: hnamel, hnamelh
    character (len=2)                                    :: cng
    integer                                              :: ngrids1,ioutput1,nzg1,nzs1
    integer                                              :: npatch1,nclouds1
@@ -64,10 +64,10 @@ subroutine inithis()
 
 
    !----- Open the input history header file and read some of the info. -------------------!
-   nc=len_trim(hfilin)
-   hnameinh=hfilin(1:nc-9)//'.vfm'
+   call makefnam(hnamel ,hfilin,0.d0,iyearh,imonthh,idateh,itimeh*100,'H'   ,'$','vfm')
+   call makefnam(hnamelh,hfilin,0.d0,iyearh,imonthh,idateh,itimeh*100,'H','head','txt')
 
-   call rams_f_open(iunhd,hfilin,'FORMATTED','OLD','READ',0)
+   call rams_f_open(iunhd,hnamelh,'FORMATTED','OLD','READ',0)
 
    ie=cio_i_sca(iunhd,1,'ngrids',ngrids1,1)
 
@@ -162,7 +162,7 @@ subroutine inithis()
    allocate (scr2(maxarr))
    allocate (scr3(maxarr))
 
-   call rams_f_open(inhunt,hnameinh,'UNFORMATTED','OLD','READ',0)
+   call rams_f_open(inhunt,hnamel,'UNFORMATTED','OLD','READ',0)
 
    !-----  Read variable header info ------------------------------------------------------!
    rewind(iunhd)

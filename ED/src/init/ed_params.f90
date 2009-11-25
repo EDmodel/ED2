@@ -1260,12 +1260,13 @@ subroutine init_pft_derived_params()
                           , dbh2bd               ! ! function
    implicit none
    !----- Local variables. ----------------------------------------------------------------!
-   integer :: ipft
-   real    :: dbh
-   real    :: balive
-   real    :: bleaf
-   real    :: bdead
-   real    :: min_plant_dens
+   integer            :: ipft
+   real               :: dbh
+   real               :: balive
+   real               :: bleaf
+   real               :: bdead
+   real               :: min_plant_dens
+   logical, parameter :: print_zero_table = .false.
    !---------------------------------------------------------------------------------------!
 
    !----- Root turnover rate.  It could be done in other routines... ----------------------!
@@ -1295,9 +1296,12 @@ subroutine init_pft_derived_params()
    ! parameters actually depend on which PFT we are solving, since grasses always have     !
    ! significantly less biomass.                                                           !
    !---------------------------------------------------------------------------------------!
-   write (unit=61,fmt='(8(a,1x))') '  PFT','     HGT_MIN','         DBH','       BLEAF'    &
-                                          ,'       BDEAD','      BALIVE','   INIT_DENS'    &
-                                          ,'MIN_REC_SIZE'
+   if (print_zero_table) then
+      write (unit=61,fmt='(8(a,1x))') '  PFT','     HGT_MIN','         DBH'                &
+                                             ,'       BLEAF','       BDEAD'                &
+                                             ,'      BALIVE','   INIT_DENS'                &
+                                             ,'MIN_REC_SIZE'
+   end if
    min_plant_dens = onesixth * minval(init_density)
    do ipft = 1,n_pft
       !----- Finding the DBH and carbon pools associated with a newly formed recruit. -----!
@@ -1318,9 +1322,11 @@ subroutine init_pft_derived_params()
                              / (balive * ( f_labile(ipft) / c2n_leaf(ipft)                 &
                              + (1.0 - f_labile(ipft)) / c2n_stem(ipft))                    &
                              + bdead/c2n_stem(ipft))
-      write (unit=61,fmt='(i5,1x,7(es12.5,1x))') ipft,hgt_min(ipft),dbh,bleaf,bdead,balive &
-                                                ,init_density(ipft),min_recruit_size(ipft)
-
+      if (print_zero_table) then
+         write (unit=61,fmt='(i5,1x,7(es12.5,1x))') ipft,hgt_min(ipft),dbh,bleaf,bdead     &
+                                                   ,balive,init_density(ipft)              &
+                                                   ,min_recruit_size(ipft)
+      end if
    end do
 
 end subroutine init_pft_derived_params
