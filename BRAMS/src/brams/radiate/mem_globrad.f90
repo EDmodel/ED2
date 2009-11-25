@@ -91,8 +91,8 @@ module mem_globrad
    integer, dimension(:,:) , allocatable :: nprobi
 
    !----- Roundoff error precision (aka. machine epsilon). --------------------------------!
-   real, parameter :: roundoff  = epsilon(1.)
-   real, parameter :: roundoff8 = dble(roundoff)
+   real        , parameter :: roundoff  = epsilon(1.)
+   real(kind=8), parameter :: roundoff8 = dble(roundoff)
 
    !----- Bergstrom's water vapour continuum fix. -----------------------------------------!
    real, dimension(nirp) :: contnm

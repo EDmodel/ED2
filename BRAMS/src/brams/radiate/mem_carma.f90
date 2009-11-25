@@ -218,7 +218,6 @@ module mem_carma
       type (carma_v), dimension(:), intent(inout) :: car
       integer                     , intent(in)    :: ng
       !------------------------------------------------------------------------------------!
-
       if (associated(car(ng)%aot )) car(ng)%aot(:,:,:)=0. 
 
       return

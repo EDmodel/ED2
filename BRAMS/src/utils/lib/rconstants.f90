@@ -146,7 +146,7 @@ Module rconstants
    real, parameter :: epi     = mmdry/mmh2o ! or Rv/Ra, 1/epsilon               [    kg/kg]
    real, parameter :: epim1   = epi-1.      ! that 0.61 term of virtual temp.   [    kg/kg]
    real, parameter :: rh2oocp = rh2o / cp   ! Rv/cp                             [     ----]
-   real, parameter :: toodry  = 0.005       ! Minimum acceptable relative hum   [ -       ]
+   real, parameter :: toodry  = 1.e-8       ! Minimum acceptable mixing ratio.  [    kg/kg]
    !---------------------------------------------------------------------------------------!
 
 

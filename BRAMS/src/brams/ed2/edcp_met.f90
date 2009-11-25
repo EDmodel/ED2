@@ -44,13 +44,12 @@ subroutine copy_atm2lsm(ifm,init)
                                    , wdnsi         & ! intent(in)
                                    , tsupercool    ! ! intent(in)
    use ed_node_coms         , only : mynum         ! ! intent(in)
-
    use therm_lib            , only : ptqz2enthalpy & ! intent(in)
-                                   , rslif
-
-   use consts_coms          , only : toodry 
-
-   use met_driver_coms      , only : rlong_min     ! ! intent(in)
+                                   , rehuil        & ! intent(in)
+                                   , ptrh2rvapil   ! ! intent(in)
+   use met_driver_coms      , only : rlong_min     & ! intent(in)
+                                   , atm_rhv_min   & ! intent(in)
+                                   , atm_rhv_max   ! ! intent(in)
 
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
@@ -72,7 +71,8 @@ subroutine copy_atm2lsm(ifm,init)
    real, dimension(mmxp(ifm),mmyp(ifm))             :: map_2d_lsm
    real                                             :: rshort1,cosz1,rshortd1,scalar1
    real                                             :: topma_t,wtw,wtu1,wtu2,wtv1,wtv2
-   real                                             :: min_shv
+   real                                             :: relhum
+   real                                             :: rvaux
    real                                             :: fice,snden
 
    !---------------------------------------------------------------------------------------!
@@ -273,28 +273,33 @@ subroutine copy_atm2lsm(ifm,init)
       cgrid%met(ipy)%atm_tmp      = cpi * cgrid%met(ipy)%atm_theta * cgrid%met(ipy)%exner
       cgrid%met(ipy)%atm_co2      = co2p_mean(ix,iy)
 
-      ! Calculate the minimum allowable specific humidity (approximated via mixing ratio)
 
-      min_shv = toodry*rslif(cgrid%met(ipy)%prss,cgrid%met(ipy)%atm_tmp,.true.)
-
-      cgrid%met(ipy)%atm_shv = max(min_shv,rv_mean(ix,iy) / (1.+rtp_mean(ix,iy)))
-
-
-      if (cgrid%met(ipy)%atm_tmp < 180.   .or. cgrid%met(ipy)%atm_tmp > 400.   .or.        &
-          cgrid%met(ipy)%atm_shv < 1.e-8  .or. cgrid%met(ipy)%atm_shv > 0.04   .or.        &
-          cgrid%met(ipy)%prss    < 40000. .or. cgrid%met(ipy)%prss    > 110000.) then
-          write (unit=*,fmt='(a)') '======== Weird polygon properties... ========'
-          write (unit=*,fmt='(a,i5)')   'Node             = ',mynum
-          write (unit=*,fmt='(a,i5)')   'X                = ',ix
-          write (unit=*,fmt='(a,i5)')   'Y                = ',iy
-          write (unit=*,fmt='(a,f8.2)') 'LONG      [degE] = ',cgrid%lon(ipy)
-          write (unit=*,fmt='(a,f8.2)') 'LAT       [degN] = ',cgrid%lat(ipy)
-          write (unit=*,fmt='(a,f7.2)') 'POLY_PRSS [ hPa] = ',cgrid%met(ipy)%prss    * 0.01
-          write (unit=*,fmt='(a,f7.2)') 'POLY_TEMP [degC] = ',cgrid%met(ipy)%atm_tmp - t00
-          write (unit=*,fmt='(a,f7.2)') 'POLY_SHV  [g/kg] = ',cgrid%met(ipy)%atm_shv * 1.e3
-          call fatal_error('Non-sense polygon met values!!!'                               &
-                          ,'copy_atm2lsm','edcp_met.f90')
+      !------------------------------------------------------------------------------------!
+      !     Check the relative humidity associated with the current pressure, temperature, !
+      ! and mixing ratio.  Impose lower and upper bounds as prescribed by the variables    !
+      ! atm_rhv_min and atm_rhv_max (from met_driver_coms.f90, and defined at the          !
+      ! init_met_params subroutine in ed_params.f90).                                      !
+      !------------------------------------------------------------------------------------!
+      relhum = rehuil(cgrid%met(ipy)%prss,cgrid%met(ipy)%atm_tmp,rv_mean(ix,iy))
+      !------------------------------------------------------------------------------------!
+      !      Check whether the relative humidity is off-bounds.  If it is, then we re-     !
+      ! calculate mixing ratio exactly at the limit, then convert it to specific humidity. !
+      ! Also, in case we update rv_mean, we must make sure that rv_mean doesn't become     !
+      ! larger than rtp_mean.                                                              !
+      !------------------------------------------------------------------------------------!
+      if (relhum < atm_rhv_min) then
+         relhum          = atm_rhv_min
+         rv_mean(ix,iy)  = ptrh2rvapil(relhum,cgrid%met(ipy)%prss,cgrid%met(ipy)%atm_tmp)
+         rtp_mean(ix,iy) = max(rtp_mean(ix,iy), rv_mean(ix,iy))
+      elseif (relhum > atm_rhv_max) then
+         relhum          = atm_rhv_max
+         rv_mean(ix,iy)  = ptrh2rvapil(relhum,cgrid%met(ipy)%prss,cgrid%met(ipy)%atm_tmp)
+         rtp_mean(ix,iy) = max(rtp_mean(ix,iy), rv_mean(ix,iy))
       end if
+      !----- Find the specific humidity. --------------------------------------------------!
+      cgrid%met(ipy)%atm_shv = rv_mean(ix,iy) / (1. + rtp_mean(ix,iy))
+      !------------------------------------------------------------------------------------!
+
 
       cgrid%met(ipy)%atm_enthalpy = ptqz2enthalpy(cgrid%met(ipy)%prss                      &
                                                  ,cgrid%met(ipy)%atm_tmp                   &
@@ -330,6 +335,8 @@ subroutine copy_atm2lsm(ifm,init)
          cpoly%met(isi)%vels_stab   = max(0.1,cpoly%met(isi)%vels)
          cpoly%met(isi)%vels_unstab = max(1.0,cpoly%met(isi)%vels_stab)
 
+
+
          !---------------------------------------------------------------------------------!
          !     Exner function, potential temperature, and enthalpy must be calculated for  !
          ! site level instead of being directly copied from the polygon level.  This will  !
@@ -339,25 +346,28 @@ subroutine copy_atm2lsm(ifm,init)
          cpoly%met(isi)%exner        = cp * (p00i * cpoly%met(isi)%prss) **rocp
          cpoly%met(isi)%atm_theta    = cp * cpoly%met(isi)%atm_tmp / cpoly%met(isi)%exner
 
-
-         if (cpoly%met(isi)%atm_tmp < 180.   .or. cpoly%met(isi)%atm_tmp > 400.   .or.     &
-             cpoly%met(isi)%atm_shv < 1.e-8  .or. cpoly%met(isi)%atm_shv > 0.04   .or.     &
-             cpoly%met(isi)%prss    < 40000. .or. cpoly%met(isi)%prss    > 110000.) then
-             write (unit=*,fmt='(a)') '======== Weird site properties... ========'
-             write (unit=*,fmt='(a,i5)')   'Node             = ',mynum
-             write (unit=*,fmt='(a,i5)')   'X                = ',ix
-             write (unit=*,fmt='(a,i5)')   'Y                = ',iy
-             write (unit=*,fmt='(a,f8.2)') 'LONG      [degE] = ',cgrid%lon(ipy)
-             write (unit=*,fmt='(a,f8.2)') 'LAT       [degN] = ',cgrid%lat(ipy)
-             write (unit=*,fmt='(a,f7.2)')                                                 &
-                                  'SITE_PRSS [ hPa] = ',cpoly%met(isi)%prss    * 0.01
-             write (unit=*,fmt='(a,f7.2)')                                                 &
-                                  'SITE_TEMP [degC] = ',cpoly%met(isi)%atm_tmp - t00
-             write (unit=*,fmt='(a,f7.2)')                                                 &
-                                  'SITE_SHV  [g/kg] = ',cpoly%met(isi)%atm_shv * 1.e3
-             call fatal_error('Non-sense site met values!!!'                               &
-                             ,'copy_atm2lsm','edcp_met.f90')
+         !---------------------------------------------------------------------------------!
+         !     Check the relative humidity associated with the current pressure, temper-   !
+         ! ature, and specific humidity.  Impose lower and upper bounds as prescribed by   !
+         ! the variables atm_rhv_min and atm_rhv_max (from met_driver_coms.f90, and        !
+         ! defined at the init_met_params subroutine in ed_params.f90).                    !
+         !---------------------------------------------------------------------------------!
+         rvaux  = cpoly%met(isi)%atm_shv / (1. - cpoly%met(isi)%atm_shv)
+         relhum = rehuil(cpoly%met(isi)%prss,cpoly%met(isi)%atm_tmp,rvaux)
+         !---------------------------------------------------------------------------------!
+         !      Check whether the relative humidity is off-bounds.  If it is, then we re-  !
+         ! calculate the mixing ratio and convert to specific humidity.                    !
+         !---------------------------------------------------------------------------------!
+         if (relhum < atm_rhv_min) then
+            relhum = atm_rhv_min
+            rvaux  = ptrh2rvapil(relhum,cpoly%met(isi)%prss,cpoly%met(isi)%atm_tmp)
+            cpoly%met(isi)%atm_shv = rvaux / (1. + rvaux)
+         elseif (relhum > atm_rhv_max) then
+            relhum = atm_rhv_max
+            rvaux  = ptrh2rvapil(relhum,cpoly%met(isi)%prss,cpoly%met(isi)%atm_tmp)
+            cpoly%met(isi)%atm_shv = rvaux / (1. + rvaux)
          end if
+         !---------------------------------------------------------------------------------!
 
          cpoly%met(isi)%atm_enthalpy = ptqz2enthalpy(cpoly%met(isi)%prss                   &
                                                     ,cpoly%met(isi)%atm_tmp                &

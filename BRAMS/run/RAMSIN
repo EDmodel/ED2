@@ -847,6 +847,7 @@
    ISOILBC        = 1,  ! Soil boundary condition at lowest soil level
                         ! 0 - Bedrock;
                         ! 1 - Free drainage.
+                        ! 2 - Half drainage.
 !-------------------------------------------------------------------------!
 
 

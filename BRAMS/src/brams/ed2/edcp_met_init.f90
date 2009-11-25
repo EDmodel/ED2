@@ -198,7 +198,7 @@ subroutine ed_init_coup_atm
                     csite%sfcwater_depth  (k,ipa) = 0.
                     csite%sfcwater_mass   (k,ipa) = 0.
                     csite%sfcwater_tempk  (k,ipa) = csite%soil_tempk(nzg,ipa)
-                    csite%sfcwater_fracliq(k,ipa) = csite%sfcwater_fracliq(nzg,ipa)
+                    csite%sfcwater_fracliq(k,ipa) = csite%soil_fracliq(nzg,ipa)
                  end do
               
                  !----- Compute patch-level LAI, vegetation height, and roughness. --------!
