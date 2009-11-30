@@ -136,7 +136,7 @@ module mem_globrad
    real, allocatable :: xsecta(:,:)
    real, allocatable :: rup(:,:)
    real, allocatable :: qscat(:,:,:)
-   integer           :: iblackbody_above
+   logical           :: iblackbody_above
    real, allocatable :: qbrqs(:,:,:)
    real              :: t_above
    real, allocatable :: rdqext(:,:,:)

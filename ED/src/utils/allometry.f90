@@ -476,6 +476,7 @@ module allometry
       real                  :: bdiamet ! Diameter of current branch          [           m]
       real                  :: blength ! Length of each branch of this order [           m]
       real                  :: nbranch ! Number of branches of this order    [        ----]
+      real                  :: bdmin   ! Minimum diameter                    [           m]
       !----- External functions -----------------------------------------------------------!
       real    , external    :: errorfun ! Error function.
       !------------------------------------------------------------------------------------!
@@ -519,6 +520,8 @@ module allometry
          blength = h2trunkh(hite)
          !----- Main branch diameter is DBH (in meters) -----------------------------------!
          bdiamet = dbh * 0.01
+         !----- Minimum branch diameter (in meters) ---------------------------------------!
+         bdmin   = diammin(pft) * 0.01
          !----- Number of main "branches" (trunk), this is usually 1. ---------------------!
          nbranch = ntrunk(pft)
 
@@ -527,7 +530,7 @@ module allometry
          !     Initialize branch values with trunk.                                        !
          !---------------------------------------------------------------------------------!
          branchloop: do
-            if (bdiamet < diammin(pft)) exit branchloop
+            if (bdiamet < bdmin) exit branchloop
             !----- Updating branch habits. ------------------------------------------------!
             bdiamet = bdiamet / rdiamet(pft)
             blength = blength / rlength(pft)

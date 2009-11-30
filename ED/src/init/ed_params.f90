@@ -484,11 +484,11 @@ subroutine init_can_air_params()
    covr = 2.16
    
    !----- This is the minimum ustar under stable and unstable conditions. -----------------!
-   ustmin    = 0.10
+   ustmin    = 0.01
    ustmin8   = dble(ustmin)
    
    !----- This is the minimum wind scale under stable and unstable conditions. ------------!
-   ubmin         = 0.65
+   ubmin         = 0.25
    ubmin8        = dble(ubmin)
    
    !----- This is the relation between displacement height and roughness when icanturb=-1. !
@@ -628,45 +628,61 @@ end subroutine init_decomp_params
 !==========================================================================================!
 subroutine init_pft_resp_params()
 
-use pft_coms, only: growth_resp_factor, leaf_turnover_rate,   &
-     dark_respiration_factor, storage_turnover_rate,  &
-     root_respiration_factor
-use decomp_coms, only: f_labile
+   use pft_coms   , only : growth_resp_factor        & ! intent(out)
+                         , leaf_turnover_rate        & ! intent(out)
+                         , root_turnover_rate        & ! intent(out)
+                         , dark_respiration_factor   & ! intent(out)
+                         , storage_turnover_rate     & ! intent(out)
+                         , root_respiration_factor   ! ! intent(out)
+   use decomp_coms, only : f_labile                  ! ! intent(out)
 
-implicit none
+   implicit none
 
-growth_resp_factor(1:5) = 0.333
-growth_resp_factor(6:8) = 0.4503
-growth_resp_factor(9:11) = 0.0
-growth_resp_factor(12:15) = 0.333
+   growth_resp_factor(1:5)        = 0.333
+   growth_resp_factor(6:8)        = 0.4503
+   growth_resp_factor(9:11)       = 0.0
+   growth_resp_factor(12:15)      = 0.333
 
-leaf_turnover_rate(1) = 2.0
-leaf_turnover_rate(2) = 1.0
-leaf_turnover_rate(3) = 0.5
-leaf_turnover_rate(4) = 0.333
-leaf_turnover_rate(5) = 2.0
-leaf_turnover_rate(6:8) = 0.333
-leaf_turnover_rate(9:11) = 0.0
-leaf_turnover_rate(12:15) = 2.0
+   leaf_turnover_rate(1)          = 2.0
+   leaf_turnover_rate(2)          = 1.0
+   leaf_turnover_rate(3)          = 0.5
+   leaf_turnover_rate(4)          = 0.333
+   leaf_turnover_rate(5)          = 2.0
+   leaf_turnover_rate(6:8)        = 0.333
+   leaf_turnover_rate(9:11)       = 0.0
+   leaf_turnover_rate(12:15)      = 2.0
 
-dark_respiration_factor(1) = 0.04
-dark_respiration_factor(2:4) = 0.02
-dark_respiration_factor(5) = 0.04
-dark_respiration_factor(6:11) = 0.02
-dark_respiration_factor(12:15) = 0.04
+   !----- Root turnover rate.  ------------------------------------------------------------!
+   root_turnover_rate(1)          = 2.0
+   root_turnover_rate(2)          = 1.0
+   root_turnover_rate(3)          = 0.5
+   root_turnover_rate(4:5)        = 0.333
+   root_turnover_rate(6)          = 3.927218
+   root_turnover_rate(7)          = 0.333    ! 4.117847
+   root_turnover_rate(8)          = 3.800132
+   root_turnover_rate(9)          = 5.772506
+   root_turnover_rate(10)         = 5.083700
+   root_turnover_rate(11)         = 5.070992
+   root_turnover_rate(12:13)      = 0.333
+   root_turnover_rate(14:15)      = 2.0
 
-storage_turnover_rate(1:8) = 0.0
-storage_turnover_rate(9:11) = 0.6243
-storage_turnover_rate(12:15) = 0.0
+   dark_respiration_factor(1)     = 0.04
+   dark_respiration_factor(2:4)   = 0.02
+   dark_respiration_factor(5)     = 0.04
+   dark_respiration_factor(6:11)  = 0.02
+   dark_respiration_factor(12:15) = 0.04
 
-root_respiration_factor = 0.528
+   storage_turnover_rate(1:8)     = 0.0
+   storage_turnover_rate(9:11)    = 0.6243
+   storage_turnover_rate(12:15)   = 0.0
 
-!!!! Added f_labile  [[MCD]]
-f_labile(1:5) = 1.0
-f_labile(6:11) = 0.79
-f_labile(12:15) = 1.0
+   root_respiration_factor        = 0.528
 
-return
+   f_labile(1:5)                  = 1.0
+   f_labile(6:11)                 = 0.79
+   f_labile(12:15)                = 1.0
+
+   return
 end subroutine init_pft_resp_params
 !==========================================================================================!
 !==========================================================================================!
@@ -871,10 +887,16 @@ subroutine init_pft_alloc_params()
 
    !----- Ratio between fine roots and leaves [kg_fine_roots/kg_leaves] -------------------!
    q(1)     = 1.0
-   q(2:4)   = 1.0
+   q(2)     = 1.0
+   q(3)     = 1.0
+   q(4)     = 1.0
    q(5)     = 1.0
-   q(6:8)   = 0.3463
-   q(9:11)  = 1.1274
+   q(6)     = 0.3463
+   q(7)     = 1.0
+   q(8)     = 0.3463
+   q(9)     = 1.1274
+   q(10)    = 1.1274
+   q(11)    = 1.1274
    q(12:15) = 1.0
 
    sapwood_ratio(1:15) = 3900.0
@@ -906,16 +928,16 @@ subroutine init_pft_alloc_params()
    !---------------------------------------------------------------------------------------!
    !    Minimum height of an individual.                                                   !
    !---------------------------------------------------------------------------------------!
-   hgt_min(1)     = 0.80  ! Used to be 1.5
-   hgt_min(2:4)   = 0.80  ! Used to be 1.5
+   hgt_min(1)     = 0.80
+   hgt_min(2:4)   = 0.80
    hgt_min(5)     = 0.15
-   hgt_min(6:7)   = 1.82  ! Used to be 1.5
-   hgt_min(8)     = 1.80
-   hgt_min(9)     = 2.02
-   hgt_min(10)    = 1.91
-   hgt_min(11)    = 1.92
+   hgt_min(6:7)   = 1.50
+   hgt_min(8)     = 1.50
+   hgt_min(9)     = 1.50
+   hgt_min(10)    = 1.50
+   hgt_min(11)    = 1.50
    hgt_min(12:13) = 0.15
-   hgt_min(14:15) = 1.50! Used to be 1.5
+   hgt_min(14:15) = 0.80
 
    !----- Reference height for diameter/height allometry (temperates only). ---------------!
    hgt_ref(1:5)   = 0.0
@@ -1014,8 +1036,8 @@ subroutine init_pft_alloc_params()
    rdiamet(12:15) = 5.00
    !----- Length ratio. Järvelä used rdiamet^2/3, so do we... -----------------------------!
    rlength(1:15)  = rdiamet(1:15)**twothirds
-   !----- Minimum diameter to consider. ---------------------------------------------------!
-   diammin(1:15)  = 0.006
+   !----- Minimum diameter to consider [cm]. ----------------------------------------------!
+   diammin(1:15)  = 1.0
    !----- Number of trunks.  Usually this is 1. -------------------------------------------!
    ntrunk(1:15)   = 1.0
    
@@ -1251,7 +1273,6 @@ subroutine init_pft_derived_params()
                           , hgt_ref              & ! intent(in)
                           , q                    & ! intent(in)
                           , qsw                  & ! intent(in)
-                          , root_turnover_rate   & ! intent(out)
                           , max_dbh              & ! intent(out)
                           , min_recruit_size     & ! intent(out)
                           , c2n_recruit          ! ! intent(out)
@@ -1268,20 +1289,6 @@ subroutine init_pft_derived_params()
    real               :: min_plant_dens
    logical, parameter :: print_zero_table = .false.
    !---------------------------------------------------------------------------------------!
-
-   !----- Root turnover rate.  It could be done in other routines... ----------------------!
-   root_turnover_rate(1)     = 2.0
-   root_turnover_rate(2)     = 1.0
-   root_turnover_rate(3)     = 0.5
-   root_turnover_rate(4:5)   = 0.333
-   root_turnover_rate(6)     = 3.927218
-   root_turnover_rate(7)     = 4.117847
-   root_turnover_rate(8)     = 3.800132
-   root_turnover_rate(9)     = 5.772506
-   root_turnover_rate(10)    = 5.083700
-   root_turnover_rate(11)    = 5.070992
-   root_turnover_rate(12:13) = 0.333
-   root_turnover_rate(14:15) = 2.0
 
    !----- Maximum DBH. --------------------------------------------------------------------!
    max_dbh(1)     = 0.498
@@ -1743,7 +1750,7 @@ subroutine init_rk4_params()
    ! again.  The air can still become super-saturated because mixing with the free atmo-   !
    ! sphere will not stop.                                                                 !
    !---------------------------------------------------------------------------------------!
-   supersat_ok = .true.
+   supersat_ok = .false.
 
    !---------------------------------------------------------------------------------------!
    !     This flag is used to control the method used to define water percolation through  !

@@ -97,7 +97,7 @@ module rad_carma
             !----- Copying the scratch array back to the CARMA structure. -----------------!
             call ci_1d_3d(m2,m3,nwave,aotl,carma(ngrid)%aot,i,j)
             
-            if (ilwrtyp == 4 .and. rlong(i,j) < 50.) then
+            if (ilwrtyp == 4 .and. rlong(i,j) /= rlong(i,j)) then
                write (unit=*,fmt='(a)')       '==========================================='
                write (unit=*,fmt='(a,1x,i5)')     ' MYNUM   = ',mynum
                write (unit=*,fmt='(a,1x,i5)')     ' IA      = ',ia
@@ -1077,7 +1077,7 @@ module rad_carma
     !	  and calculate cross-sectional area for each bin.
     use rconstants, only : pii, pi1, twopi, stefan
     USE mem_aerad, ONLY: is_grp_ice_aerad,r_aerad,rcore_aerad,rup_aerad, &
-         rcoreup_aerad,lunmie,lunoprt,ir_above_aerad, tabove_aerad
+         rcoreup_aerad,lunmie,lunoprt, tabove_aerad
   
     USE mem_globrad, ONLY: ngroup,nrad,core_rad,xsecta, &
          coreup_rad,l_write,l_read,nwave,rmin,rdqext, &
@@ -2485,10 +2485,10 @@ module rad_carma
     !
     ! **********************************************************************
     !
-    !	set <iblackbody_above> = 1 to include a source of radiation
+    !	set <iblackbody_above> = .true. to include a source of radiation
     !	at the top of the radiative transfer model DOmain
     
-    iblackbody_above = ir_above_aerad
+    iblackbody_above = .false.
     t_above = tabove_aerad
     !
     !	set <ibeyond_spectrum> = 1 to include blackbody radiation at
@@ -2959,6 +2959,9 @@ module rad_carma
       real(kind=8), dimension(ntotal,nlayer)                  :: opd8
       real(kind=8), dimension(ntotal,nlayer)                  :: uopd8
       real(kind=8)                                            :: y38
+      logical                                                 :: alright
+      !----- External functions. ----------------------------------------------------------!
+      logical, external                                       :: is_finite
       !------------------------------------------------------------------------------------!
 
 
@@ -3050,6 +3053,7 @@ module rad_carma
                     tauaer8(l,j) = max(taua8(nprob(l),j),roundoff8)                 
                     wol8(l,j)    = wonew8(nprob(l))
                     gol8(l,j)    = gonew8(nprob(l))
+                    tauaer(l,j)  = sngl(tauaer8(l,j))
                  end do
                end do
             end do
@@ -3075,9 +3079,13 @@ module rad_carma
 
             do l= 1,ntotal
                tauaer8(l,j) = max(taua8(nprob(l),j),roundoff8)
+               tauaer(l,j)  = sngl(tauaer8(l,j))
                wol8(l,j)    = taus8(nprob(l),j)/tauaer8(l,j)
-               ttas8        = 1.d0
-               if(wol8(l,j) /= 0.d0) ttas8 = taus8(nprob(l),j)
+               if (wol8(l,j) /= 0.d0) then
+                  ttas8 = taus8(nprob(l),j)
+               else
+                  ttas8 = 1.d0
+               end if
                gol8(l,j)    = g018(nprob(l),j)/ttas8
             end do
          end do
@@ -3091,8 +3099,8 @@ module rad_carma
            reffi8(j) =  9.5d0 * 1.d3 * lwl_aerad8(j) + 4.0d0
          end if
          
-         corr8(j) = 1.047d0 - 0.913d-4 * (tt8(j)-t008) + 0.203d-3 * (tt8(j)-t008) **2      &
-                            - 0.106d-4 * (tt8(j)-t008) **3
+         corr8(j) = 1.047d0 - 9.13d-5 * (tt8(j)-t008) + 2.03d-4 * (tt8(j)-t008) **2        &
+                            - 1.06d-5 * (tt8(j)-t008) **3
          corr8(j) = max(corr8(j),roundoff8)  
       end do
 
@@ -3108,7 +3116,7 @@ module rad_carma
             denc8      (l,j) = 1.d0 / (tia8(l) + tib8(l) * 1.d3 * iwl_aerad8(j))
             taucldice8 (l,j) = corr8(j) * 1.0d3 * iwp_aerad8(j) * denc8(l,j)
             
-            if (wib8(l) < 1.d-5) then
+            if (wib8(l) < roundoff8) then
                x_teste8 = 0.d0
             else
                x_teste8 = (1.0d3 * iwl_aerad8(j))**wib8(l)
@@ -3117,7 +3125,7 @@ module rad_carma
             woice8(l,j) = ( 1.d0 -  wia8(l) * x_teste8)                                    &
                         * ( 1.d0 - gama8(l) * (corr8(j) - 1.d0)/ corr8(j) )
             
-            if(gib8(l) < 1.d-5) then
+            if(gib8(l) < roundoff8) then
                x_teste8 = 1.d0
             else
                x_teste8 = (1.0d3 * iwl_aerad8(j))**gib8(l)
@@ -3174,79 +3182,107 @@ module rad_carma
             cco8 = exp(1.8d3/t_aerad8(kk))*(qcorr8*pcorr8/2.87d0 + pcorr8/4.61d3)
          end if
   
-         do l = 1,ntotal
-            if (l >= lls .and. l <= lla) then
-               !---- Bergstrom water vapor continuum. -------------------------------------!
-               select case (l-nsolp)
-               case (:30)
-                  tauh2o8(l,j) = rdh2o8(j) * pah2o8(l,j)
-               case (31:36)
-                  tauh2o8(l,j) = rdh2o8(j) * pah2o8(l,j) * cco8
-               case (37:)
-                  tauh2o8(l,j) = rdh2o8(j) * pah2o8(l,j)                                   &
-                               + cco8 * rdh2o8(j) * contnm8(l-nsolp)
-               end select
-               taul8(l,j) = tauh2o8(l,j) + taugas8(l,j) + paray8(l,j)                      &
-                          + tauaer8(l,j) + taucld8(l,j)
-               if (iradgas == 0)           taul8(l,j) = tauaer8(l,j)
-               if (taul8(l,j) < roundoff8) taul8(l,j) = roundoff8
+         do l = lls, lla
+            !---- Bergstrom water vapor continuum. ----------------------------------------!
+            select case (l-nsolp)
+            case (:30)
+               tauh2o8(l,j) = rdh2o8(j) * pah2o8(l,j)
+            case (31:36)
+               tauh2o8(l,j) = rdh2o8(j) * pah2o8(l,j) * cco8
+            case (37:)
+               tauh2o8(l,j) = rdh2o8(j) * pah2o8(l,j) + cco8 * rdh2o8(j) * contnm8(l-nsolp)
+            end select
+
+            if (iradgas == 0) then
+               taul8(l,j) = max(roundoff8,tauaer8(l,j))
+            else
+               taul8(l,j) = max( roundoff8, tauh2o8(l,j) + taugas8(l,j) + paray8(l,j)      &
+                                          + tauaer8(l,j) + taucld8(l,j))
             end if
          end do
 
-         do l = 1,ntotal
-            if (l>=lls .and. l<=lla) then
-              utaul8(l,j)  = taul8(l,j)
-              wot8(l)      = ( paray8(l,j) + tauaer8(l,j) * wol8(l,j)                      &
-                             + taucld8(l,j) * wcld8(l,j) ) / taul8(l,j)
-              if (iradgas == 0) wot8(l) = wol8(l,j)
-              wot8(l)      = min(1.d0 - roundoff8,wot8(l))
-              denom8       = paray8(l,j) + taucld8(l,j)*wcld8(l,j) + tauaer8(l,j)*wol8(l,j)
+         do l = lls,lla
+            utaul8(l,j)  = taul8(l,j)
+            if (iradgas == 0) then
+               wot8(l) = wol8(l,j)
+            else
+               wot8(l)      = ( paray8(l,j) + tauaer8(l,j) * wol8(l,j)                     &
+                              + taucld8(l,j) * wcld8(l,j) ) / taul8(l,j)
+            end if
+            wot8(l)      = min(1.d0 - roundoff8,wot8(l))
 
-              if (denom8 > roundoff8 ) then
-                 got8(l) = ( wcld8(l,j) * gcld8(l,j) * taucld8(l,j)                        &
-                           + gol8(l,j)  * wol8(l,j)  * tauaer8(l,j) ) / denom8
-                 got8(l)=max(roundoff8, got8(l))
-              else
-                 got8(l) = 0.d0
-              end if
-              if (iradgas == 0) got8(l) = gol8(l,j)
+            if (iradgas == 0) then
+               got8(l) = gol8(l,j)
+            else
+               denom8       = paray8(l,j) + taucld8(l,j) * wcld8(l,j)                      &
+                                          + tauaer8(l,j) * wol8(l,j)
+               if (denom8 > roundoff8 ) then
+                  got8(l) = ( wcld8(l,j) * gcld8(l,j) * taucld8(l,j)                       &
+                            + gol8(l,j)  * wol8(l,j)  * tauaer8(l,j) ) / denom8
+                  got8(l) = max(roundoff8, got8(l))
+               else
+                  got8(l) = roundoff8 !----- Used to be zero... ---------------------------!
+               end if
             end if
          end do
 
-         do l   = 1,ntotal
-            if (l>=lls .and. l<=lla) then
-               fo8        = got8(l) * got8(l)
-               den8       = 1.d0 - wot8(l) * fo8
-               taul8(l,j) = taul8(l,j) * den8
-               w08  (l,j) = (1.d0 - fo8) * wot8(l) / den8
-               g08  (l,j) = got8(l) / (1.d0 + got8(l))
-               opd8 (l,j) = 0.d0
-               opd8 (l,j) = opd8(l,kk) + taul8(l,j)
-               uopd8(l,j) = 0.d0
-               uopd8(l,j) = uopd8 (l,kk) + utaul8(l,j)
-               
-               !----- Copying the double precision arrays to the single precision. --------!
-               taul (l,j) = sngl(taul8(l,j))
-               w0   (l,j) = sngl(w08  (l,j))
-               g0   (l,j) = sngl(g08  (l,j))
-               opd  (l,j) = sngl(opd8 (l,j))
-               uopd (l,j) = sngl(uopd8(l,j))
-            end if
+         do l = lls, lla
+            fo8        = got8(l) * got8(l)
+            den8       = 1.d0 - wot8(l) * fo8
+            taul8(l,j) = taul8(l,j) * den8
+            w08  (l,j) = (1.d0 - fo8) * wot8(l) / den8
+            g08  (l,j) = got8(l) / (1.d0 + got8(l))
+            opd8 (l,j) = 0.d0
+            opd8 (l,j) = opd8(l,kk) + taul8(l,j)
+            uopd8(l,j) = 0.d0
+            uopd8(l,j) = uopd8 (l,kk) + utaul8(l,j)
+            
+            !----- Copying the double precision arrays to the single precision. -----------!
+            taul (l,j) = sngl(taul8(l,j))
+            w0   (l,j) = sngl(w08  (l,j))
+            g0   (l,j) = sngl(g08  (l,j))
+            opd  (l,j) = sngl(opd8 (l,j))
+            uopd (l,j) = sngl(uopd8(l,j))
          end do
       end do
   
       if (ir_aerad) then
          do j = 1,nlayer
             do i = 1,ngauss
-               do l = 1,ntotal
-                  if (l>=lls .and. l<=lla) then
-                     y38        = exp(-min(4.6d1,taul8(l,j)/gangle8(i)))
-                     y3 (l,i,j) = sngl(y38)
-                  end if
+               do l = lls, lla
+                  y38        = exp(-min(4.6d1,taul8(l,j)/gangle8(i)))
+                  y3 (l,i,j) = sngl(y38)
                end do
             end do
          end do
       end if
+      
+      !----- Sanity check. ----------------------------------------------------------------!
+      alright = .true.
+      okloop1: do j=1,nlayer
+         okloop2: do l=lls,lla
+            alright = is_finite(taul(l,j))
+            if (.not. alright) exit okloop1
+         end do okloop2
+      end do okloop1
+
+      if (.not. alright) then
+         write (unit=*,fmt='(13(a,1x))') '   KK','   IB','        TAUL','       TAUL8'     &
+                                                        ,'     TAUCLD8','    TAUCLDW8'     &
+                                                        ,'    TAUCLDI8','    TAURAIN8'     &
+                                                        ,'        LWL8','        LWP8'     &
+                                                        ,'        IWL8','        IWP8'     &
+                                                        ,'       RAIN8'
+         do j=1,nlayer
+            do l=lls,lla
+               write (unit=*,fmt='(2(i5,1x),11(es12.5,1x))')                               &
+                  j,l,taul(l,j),taul8(l,j),taucld8(l,j),taucldlw8(l,j),taucldice8(l,j)     &
+                     ,taurain8(l,j),lwl_aerad8(j),lwp_aerad8(j),iwl_aerad8(j)              &
+                     ,iwp_aerad8(j),rain_aerad8
+            end do
+         end do
+      end if
+      !------------------------------------------------------------------------------------!
 
       return
    end subroutine oppr 
@@ -3260,98 +3296,102 @@ module rad_carma
 
    !=======================================================================================!
    !=======================================================================================!
-  SUBROUTINE oppr1(m1)
-    !
-    !	  **********************************************************
-    !	  *  Purpose		 :  Calculate Planck Function and  *
-    !	  *			    and its derivative at ground   *
-    !	  *			    and at all altitudes.	   *
-    !	  *  Subroutines Called  :  None			   *
-    !	  *  Input		 :  TGRND, NLOW, WEIGHT 	   *
-    !	  *  Output		 :  PTEMP, PTEMPG, SLOPE	   *
-    !	  * ********************************************************
-    !
-    USE mem_globrad, ONLY: ntotal,tgrnd,nlow,nirp,planck,ltemp,nsolp, &
-  			   weight,iblackbody_above,t_above, &
-  			   nlayer,ncount
-    
-    IMPLICIT NONE
-    
-    INTEGER,INTENT(IN) :: m1
-    INTEGER :: it1(nlayer)
-    INTEGER :: itg
-    INTEGER :: itp
-    INTEGER :: j
-    INTEGER :: kindex
-    INTEGER :: l,i1,j1
-    REAL :: pltemp1(ntotal)
-    REAL :: ptemp2(ntotal,nlayer)
-    INTEGER :: i
-      !
-    !	  **************************************
-    !	  * CALCULATE PTEMP AND SLOPE	       *
-    !	  **************************************
-    !
-    !	  CALCULATE THE WAVELENGTH DEPENDENT PLANCK FUNCTION AT THE GROUND.
-  
-    itg= ANINT(100.*t_surf) - nlow
-!srf
-!      if( itg < 0. .OR. itg > ncount) print*,'1-ITG=',itg
-!srf      
-    DO i=1,nirp
-        pltemp1(i)=planck(ltemp(i),itg)
-    END DO
-    DO  l =   nsolp+1,ntotal
-  	 ptempg(l)=   pltemp1(l-nsolp)*weight(l)
-    END DO
-    !
-    IF( iblackbody_above /= 0 )THEN
-    !	    CALCULATE THE WAVELENGTH DEPENDENT PLANCK FUNCTION AT THE TOP
-    !	    OF THE MODEL.
-  	  itp = ANINT(100.*tabove_aerad) - nlow
-!srf
-!      if( itp < 0. .OR. itp > ncount) print*,'2-ITP=',itp
-!srf      
-      DO i=1,nirp
-	   pltemp1(i)=planck(ltemp(i),itp)
-	   !CALL gather(nirp,pltemp1(:),planck(1,itp),ltemp)
-      END DO
-      DO  l =	nsolp+1,ntotal
-  	    ptempt(l)	=   pltemp1(l-nsolp)*weight(l)
-      END DO
-  
-    END IF
-    !
-    DO  j	     =   1,nlayer
-  	it1(j) = ANINT(100.*tt(j)) - nlow
-!srf
-!      if( it1(j) < 0. .OR. it1(j) > ncount) print*,'3-IT1=',it1(j)
-!srf      
-    END DO
-    DO  j	     =   1,nlayer
-      DO i=1,nirp
-           ptemp2(i,j)=planck(ltemp(i),it1(j))
-      END DO
-    END DO
-    
-   ! kindex makes the top layer isothermal. using kindex, find
-   ! planck function at bottom of each layer.
-   ! note: if you force slope=0, then you have isothermal
-   ! layers with tt(j) corresponding to average temperature
-   ! of layer and tt(nlayer) should be set to tgrnd.
-    DO  j	     =   1,nlayer
-      kindex	      = MAX( 1, j-1 )
-      DO  l	   = nsolp+1,ntotal
-  	  ptemp(l,j)   = ptemp2(l-nsolp,j)*weight(l)
-  	  slope(l,j)   = (ptemp(l,j)-ptemp(l,kindex))/ &
-  				 taul(l,j)
-  	  IF( taul(l,j) <= 1.0E-6 ) slope(l,j) = 0.
-      END DO
-    END DO
-  
-    !
-  END SUBROUTINE oppr1
-  
+   !     This subroutine computes the Planck function and its derivative, at the ground as !
+   ! well as the other levels.                                                             !
+   !---------------------------------------------------------------------------------------!
+   subroutine oppr1(m1)
+      use mem_globrad, only : ntotal            & ! intent(in)
+                            , tgrnd             & ! intent(in)
+                            , nlow              & ! intent(in)
+                            , nirp              & ! intent(in)
+                            , planck            & ! intent(in)
+                            , ltemp             & ! intent(in)
+                            , nsolp             & ! intent(in)
+                            , weight            & ! intent(in)
+                            , iblackbody_above  & ! intent(in)
+                            , t_above           & ! intent(in)
+                            , nlayer            & ! intent(in)
+                            , ncount            & ! intent(in)
+                            , roundoff          ! ! intent(in)
+
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      integer, intent(in) :: m1
+      !----- Local variables. -------------------------------------------------------------!
+      integer, dimension(nlayer)        :: it1
+      integer                           :: itg
+      integer                           :: itp
+      integer                           :: i
+      integer                           :: j
+      integer                           :: kindex
+      integer                           :: l
+      integer                           :: i1
+      integer                           :: j1
+      real   , dimension(ntotal)        :: pltemp1
+      real   , dimension(ntotal,nlayer) :: ptemp2
+      !------------------------------------------------------------------------------------!
+
+      !----- Calculate the wavelength dependent Planck's function at the ground. ----------!
+      itg = anint(100. * t_surf) - nlow
+      do i = 1,nirp
+         pltemp1(i) = planck(ltemp(i),itg)
+      end do
+      do l = nsolp+1,ntotal
+         ptempg(l) = pltemp1(l-nsolp)*weight(l)
+      end do
+      if (iblackbody_above) then
+         !---------------------------------------------------------------------------------!
+         !     Calculate the wavelength dependent planck function at the top of the model. !
+         !---------------------------------------------------------------------------------!
+         itp = anint(100. * tabove_aerad) - nlow
+         do i = 1,nirp
+            pltemp1(i) = planck(ltemp(i),itp)
+         end do
+         do l = nsolp+1,ntotal
+            ptempt(l) = pltemp1(l-nsolp)*weight(l)
+         end do
+      end if
+
+      do j = 1,nlayer
+         it1(j) = anint(100.*tt(j)) - nlow
+      end do
+      do j = 1,nlayer
+         do i = 1,nirp
+            ptemp2(i,j)=planck(ltemp(i),it1(j))
+         end do
+      end do
+
+      !------------------------------------------------------------------------------------!
+      !      kindex makes the top layer isothermal.  Using kindex, find Planck's function  !
+      ! at the bottom of each layer.  Please notice that when slope is set to 0, then      !
+      ! there will be isothermal layers with tt(j) corresponding to average temperature    !
+      ! of layer.  In this case, tt(nlayer) must be set to tgrnd.                          !
+      !------------------------------------------------------------------------------------!
+      do j = 1,nlayer
+         kindex = max(1,j-1)
+         do l = nsolp+1, ntotal
+            ptemp(l,j) = ptemp2(l-nsolp,j) * weight(l)
+            slope(l,j) = (ptemp(l,j)-ptemp(l,kindex)) / taul(l,j)
+            if (taul(l,j) <= roundoff) then
+               slope(l,j) = 0.
+            else 
+               slope(l,j) = (ptemp(l,j)-ptemp(l,kindex)) / taul(l,j)
+            end if
+         end do
+      end do
+
+      return
+   end subroutine oppr1
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
   SUBROUTINE twostr(m1)
     !
     !	 ******************************************************************
@@ -3709,8 +3749,9 @@ module rad_carma
       real                                                  :: yb
       integer                                               :: i1
       integer                                               :: j1
-      !----- Local constants. -------------------------------------------------------------!
-      logical                                  , parameter  :: print_debug=.false.
+      logical                                               :: alright
+      !----- External functions. ----------------------------------------------------------!
+      logical                                  , external   :: is_finite
       !------------------------------------------------------------------------------------!
 
       do j =  1,nlayer
@@ -3771,7 +3812,7 @@ module rad_carma
       !------------------------------------------------------------------------------------!
       do i = 1,ngauss
          do l = nsolp+1,ntotal
-            if (iblackbody_above == 1) then
+            if (iblackbody_above) then
                dintent(l,i,1) = ptempt(l) * y3(l,i,1) * twopi                              &
                               + y1(l,i,1) + (1.-y3(l,i,1)) * y4(l,i,1)
             else
@@ -3817,19 +3858,31 @@ module rad_carma
          end do
       end do
       
-      if (print_debug) then
-         write (unit=20+mynum,fmt='(8(a,1x))') '   ib','   ig'                             &
+      !----- Sanity check. ----------------------------------------------------------------!
+      alright = .true.
+      okloop1: do j=1, nlayer
+         okloop2: do l=nsolp+1,ntotal
+            alright = is_finite(direc(l,j)) .and. is_finite(taul(l,j))
+            if (.not. alright) exit okloop1
+         end do okloop2
+      end do okloop1
+      if (.not. alright) then
+         write (unit=*,fmt='(13(a,1x))')       '   kk',       '   ig',       '   ib'       &
                                        ,'      ptempt','          y1','          y3'       &
-                                       ,'          y4','          y5','     dintent'
-         write (unit=20+mynum,fmt='(78a)') ('-',i=1,78)
-         do i=1,ngauss
-            do l=nsolp+1,ntotal
-               write (unit=20+mynum,fmt='(2(i5,1x),6(es12.5,1x))')                         &
-                  l,i,ptempt(l),y1(l,i,nlayer),y3(l,i,nlayer)                              &
-                       ,y4(l,i,nlayer),y5(l,nlayer),dintent(l,i,nlayer)
+                                       ,'          y4','          y5','       slope'       &
+                                       ,'          a4','        taul','     dintent'       &
+                                       ,'       direc'
+         write (unit=*,fmt='(148a)') ('-',i=1,148)
+         do j=1,nlayer
+            do i=1,ngauss
+               do l=nsolp+1,ntotal
+                  write (unit=*,fmt='(3(i5,1x),10(es12.5,1x))')                            &
+                         j,i,l,ptempt(l),y1(l,i,j),y3(l,i,j),y4(l,i,j),y5(l,j)             &
+                        ,slope(l,j),a4(l,j),taul(l,j),dintent(l,i,j),direc(l,j)
+               end do
             end do
          end do
-         write (unit=20+mynum,fmt='(78a)') ('-',i=1,78)
+         write (unit=*,fmt='(148a)') ('-',i=1,148)
       end if
 
       return
@@ -4467,7 +4520,7 @@ module rad_carma
 
       rshort = solnet  ! Total short wave absorbed by the surface.
       rlong  = xirdown ! Surface long wave radiation.
-      if (rlong < 50. .and. ilwrtyp == 4) then 
+      if (rlong /= rlong .and. ilwrtyp == 4) then 
          write(unit=*,fmt='(a)') '-------------------------------------------------------'
          call abort_run('Weird RLONG... ','radtrans_to_rams','rad_carma.f90')
       end if

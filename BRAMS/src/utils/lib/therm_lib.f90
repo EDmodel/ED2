@@ -3050,15 +3050,20 @@ module therm_lib
          fracliq = 1.
          tempk   = (qw + w * cliq * tsupercool) / (dryhcap + w*cliq)
       !------------------------------------------------------------------------------------!
+      !    We are at the freezing point.  If water mass is so tiny that the internal       !
+      ! energy of frozen and melted states are the same given the machine precision, then  !
+      ! we assume that water content is negligible and we impose 50% frozen for            !
+      ! simplicity.                                                                        !
+      !------------------------------------------------------------------------------------!
+      elseif (qwfroz == qwmelt) then
+         fracliq = 0.5
+         tempk   = t3ple
+      !------------------------------------------------------------------------------------!
       !    Changing phase, it must be at freezing point.  The max and min are here just to !
       ! avoid tiny deviations beyond 0. and 1. due to floating point arithmetics.          !
       !------------------------------------------------------------------------------------!
-      elseif (w > 0.) then
-         fracliq = min(1.,max(0.,(qw - qwfroz) * allii / w))
-         tempk = t3ple
-      !----- No water, but it must be at freezing point (qw = qwfroz = qwmelt) ------------!
       else
-         fracliq = 0.5
+         fracliq = min(1.,max(0.,(qw - qwfroz) * allii / w))
          tempk   = t3ple
       end if
       !------------------------------------------------------------------------------------!
