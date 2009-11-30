@@ -2967,26 +2967,7 @@ module rad_carma
       !------------------------------------------------------------------------------------!
       !     Initialise all local arrays.                                                   !
       !------------------------------------------------------------------------------------!
-      corr8      = 0.d0
-      denc8      = 0.d0
-      reffi8     = 0.d0
-
-      taurain8   = 0.d0
-
-      woice8     = 0.d0
-      worain8    = 0.d0
-
-      grain8     = 0.d0
-      taucld8    = 0.d0
-      wcld8      = 0.d0
-      gcld8      = 0.d0
-      rdqextnew8 = 0.d0
-      wonew8     = 0.d0
-      gonew8     = 0.d0
-      !------------------------------------------------------------------------------------!
-
-
-
+      
       !----- Copy the following values to the scratch double precision variables. ---------!
       xsecta8      = dble(xsecta    )
       
@@ -3039,6 +3020,28 @@ module rad_carma
       woice8       = dble(woice     )
       gice8        = dble(gice      )
       taul8        = dble(taul      )
+      opd8         = dble(opd       )
+      uopd8        = dble(uopd      )
+
+      corr8      = 0.d0
+      denc8      = 0.d0
+      reffi8     = 0.d0
+      taucldlw8  = 0.d0
+      taucldice8 = 0.d0
+      taurain8   = 0.d0
+      wolc8      = 0.d0
+      woice8     = 0.d0
+      worain8    = 0.d0
+      gl8        = 0.d0
+      gice8      = 0.d0
+      grain8     = 0.d0
+      taucld8    = 0.d0
+      wcld8      = 0.d0
+      gcld8      = 0.d0
+      rdqextnew8 = 0.d0
+      wonew8     = 0.d0
+      gonew8     = 0.d0
+
 
       if (lprocopio .and. lmie) then
  
@@ -3094,6 +3097,7 @@ module rad_carma
             end do
          end do
          lmie = .true.
+
       end if
 
 
@@ -3108,7 +3112,6 @@ module rad_carma
                             - 0.106d-4 * (tt8(j)-t008) **3
          corr8(j) = max(corr8(j),roundoff8)  
       end do
-
 
       do j=1,nlayer
          do l= 1,ntotal        
@@ -3169,7 +3172,6 @@ module rad_carma
          end do
       end do
 
-        
       iradgas = 1
       do  j = 1,nlayer
          kk = max( 1, j-1 )
@@ -3191,7 +3193,7 @@ module rad_carma
             pcorr8 = p_aerad8(kk)
             cco8 = exp(1.8d3/t_aerad8(kk))*(qcorr8*pcorr8/2.87d0 + pcorr8/4.61d3)
          end if
-  
+
          do l = 1,ntotal
             if (l >= lls .and. l <= lla) then
                !---- Bergstrom water vapor continuum. -------------------------------------!
@@ -3282,6 +3284,8 @@ module rad_carma
       woice       = sngl(woice8     )
       gice        = sngl(gice8      )
       taul        = sngl(taul8      )
+      opd         = sngl(opd8       )
+      uopd        = sngl(uopd8      )
 
 
 

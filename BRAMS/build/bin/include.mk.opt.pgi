@@ -97,11 +97,11 @@ USE_MPIWTIME=1
 #CMACH=PC_LINUX1
 #F_COMP=mpif90
 #F_OPTS=-O2 #-march=native
-F_OPTS= -O2 #-ffpe-trap=invalid,zero -fbounds-check
+F_OPTS= -ffpe-trap=invalid,zero -fbounds-check
 #C_COMP=mpicc
 #C_OPTS=-O2 #-march=native
-C_OPTS= -O2 #-ffpe-trap=invalid,zero -fbounds-check
-#USE_INTERF=1
+C_OPTS= -ffpe-trap=invalid,zero -fbounds-check
+#USE_INTERF=
 #CPP_OPTS=
 #LOADER=$(F_COMP)
 #LOADER_OPTS=$(F_OPTS)
