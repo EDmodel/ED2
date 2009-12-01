@@ -28,6 +28,8 @@ module canopy_air_coms
                        !      This is the ED-2.0 default, also used in (B)RAMS
                        !  2 - Oncley and Dudhia, 1995: Mon. Wea. Rev., 123, 3344-3357.
                        !      This is used in MM5 and WRF.
+                       !  3 - Beljaars and Holtslag, 1991: J. Appl. Meteor., 30, 328-341.
+                       !  4 - BH91, using OD95 to find zeta.
    !---------------------------------------------------------------------------------------!
 
    !=======================================================================================!

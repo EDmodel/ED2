@@ -402,6 +402,7 @@ end subroutine init_can_rad_params
 !------------------------------------------------------------------------------------------!
 subroutine init_can_air_params()
    use canopy_air_coms, only : icanturb              & ! intent(in)
+                             , isfclyrm              & ! intent(in)
                              , dry_veg_lwater        & ! intent(out) 
                              , fullveg_lwater        & ! intent(out) 
                              , rb_inter              & ! intent(out) 
@@ -483,13 +484,30 @@ subroutine init_can_air_params()
    !----- This is the scaling factor of tree area index (not sure if it is used...) -------!
    covr = 2.16
    
-   !----- This is the minimum ustar under stable and unstable conditions. -----------------!
-   ustmin    = 0.01
-   ustmin8   = dble(ustmin)
+   !---------------------------------------------------------------------------------------!
+   !     For the time being we keep the old values of ustmin and ubmin when the user wants !
+   ! to run using Louis (1979).  This should be tested because often the value of u* is    !
+   ! forced to 0.10m/s, which means that the model is not being applied.                   !
+   !---------------------------------------------------------------------------------------!
+   select case (isfclyrm)
+   case (1)
+      !----- This is the minimum ustar under stable and unstable conditions. --------------!
+      ustmin    = 0.10
+      ustmin8   = dble(ustmin)
+      !----- This is the minimum wind scale under stable and unstable conditions. ---------!
+      ubmin     = 0.65
+      ubmin8    = dble(ubmin)
+   case default
+      !----- This is the minimum ustar under stable and unstable conditions. --------------!
+      ustmin    = 0.01
+      ustmin8   = dble(ustmin)
+      !----- This is the minimum wind scale under stable and unstable conditions. ---------!
+      ubmin     = 0.25
+      ubmin8    = dble(ubmin)
+
+   end select
+   !---------------------------------------------------------------------------------------!
    
-   !----- This is the minimum wind scale under stable and unstable conditions. ------------!
-   ubmin         = 0.25
-   ubmin8        = dble(ubmin)
    
    !----- This is the relation between displacement height and roughness when icanturb=-1. !
    ez  = 0.172
@@ -658,7 +676,7 @@ subroutine init_pft_resp_params()
    root_turnover_rate(3)          = 0.5
    root_turnover_rate(4:5)        = 0.333
    root_turnover_rate(6)          = 3.927218
-   root_turnover_rate(7)          = 0.333    ! 4.117847
+   root_turnover_rate(7)          = 4.117847
    root_turnover_rate(8)          = 3.800132
    root_turnover_rate(9)          = 5.772506
    root_turnover_rate(10)         = 5.083700
@@ -892,7 +910,7 @@ subroutine init_pft_alloc_params()
    q(4)     = 1.0
    q(5)     = 1.0
    q(6)     = 0.3463
-   q(7)     = 1.0
+   q(7)     = 0.3463
    q(8)     = 0.3463
    q(9)     = 1.1274
    q(10)    = 1.1274
