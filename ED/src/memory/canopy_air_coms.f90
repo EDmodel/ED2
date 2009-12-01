@@ -28,6 +28,8 @@ module canopy_air_coms
                        !      This is the ED-2.0 default, also used in (B)RAMS
                        !  2 - Oncley and Dudhia, 1995: Mon. Wea. Rev., 123, 3344-3357.
                        !      This is used in MM5 and WRF.
+                       !  3 - Beljaars and Holtslag, 1991: J. Appl. Meteor., 30, 328-341.
+                       !  4 - BH91, using OD95 to find zeta.
    !---------------------------------------------------------------------------------------!
 
    !=======================================================================================!
@@ -103,11 +105,7 @@ module canopy_air_coms
    real, parameter   :: dl79     = 5.0    ! ???
    !----- Oncley and Dudhia (1995) model. -------------------------------------------------!
    real, parameter   :: bbeta      = 5.0           ! Beta 
-   real, parameter   :: gamm       = 16.0          ! Gamma for momentum.
-   real, parameter   :: gamh       = 16.0          ! Gamma for heat.
    real, parameter   :: ribmaxod95 = 0.20          ! Maximum bulk Richardson number
-   real, parameter   :: tprandtl   = 0.74          ! Turbulent Prandtl number.
-   real, parameter   :: vkopr      = vonk/tprandtl ! Von Karman / Prandtl number
    !----- Beljaars and Holtslag (1991) model. ---------------------------------------------!
    real, parameter   :: abh91      = -0.70         ! -a from equation  (28) 
    real, parameter   :: bbh91      = -0.75         ! -b from equation  (28)
@@ -119,7 +117,16 @@ module canopy_air_coms
    real, parameter   :: bcod       = bbh91 * cod   ! b*c/d
    real, parameter   :: fcod       = fbh91 * cod   ! f*c/d
    real, parameter   :: etf        = ebh91 * fbh91 ! e * f
+   real, parameter   :: z0moz0h    = 1.0           ! z0(M)/z0(h)
+   real, parameter   :: z0hoz0m    = 1. / z0moz0h  ! z0(M)/z0(h)
    real, parameter   :: ribmaxbh91 = 6.00          ! Maximum bulk Richardson number
+   !----- Used by OD95 and BH91. ----------------------------------------------------------!
+   real, parameter   :: gamm       = 13.0          ! Gamma for momentum.
+   real, parameter   :: gamh       = 13.0          ! Gamma for heat.
+   real, parameter   :: tprandtl   = 1.00          ! Turbulent Prandtl number.
+   real, parameter   :: vkopr      = vonk/tprandtl ! Von Karman / Prandtl number
+   !---------------------------------------------------------------------------------------!
+
    !----- Double precision of all these variables. ----------------------------------------!
    real(kind=8), parameter   :: bl798       = dble(bl79      )
    real(kind=8), parameter   :: csm8        = dble(csm       )
@@ -142,6 +149,8 @@ module canopy_air_coms
    real(kind=8), parameter   :: bcod8       = dble(bcod      )
    real(kind=8), parameter   :: fcod8       = dble(fcod      )
    real(kind=8), parameter   :: etf8        = dble(etf       )
+   real(kind=8), parameter   :: z0moz0h8    = dble(z0moz0h   )
+   real(kind=8), parameter   :: z0hoz0m8    = dble(z0hoz0m   )
    !=======================================================================================!
    !=======================================================================================!
 
@@ -505,7 +514,7 @@ module canopy_air_coms
    ! the unlikely case in which Newton's method fails, switch back to modified Regula      !
    ! Falsi method (Illinois).                                                              !
    !---------------------------------------------------------------------------------------!
-   real function zoobukhov(rib,zref,rough,zoz0,lnzoz0,stable)
+   real function zoobukhov(rib,zref,rough,zoz0m,lnzoz0m,zoz0h,lnzoz0h,stable)
       use therm_lib, only : toler  & ! intent(in)
                           , maxfpo & ! intent(in)
                           , maxit  ! ! intent(in)
@@ -514,16 +523,20 @@ module canopy_air_coms
       real   , intent(in) :: rib       ! Bulk Richardson number                    [   ---]
       real   , intent(in) :: zref      ! Reference height                          [     m]
       real   , intent(in) :: rough     ! Roughness length scale                    [     m]
-      real   , intent(in) :: zoz0      ! zref/roughness                            [   ---]
-      real   , intent(in) :: lnzoz0    ! ln(zref/roughness)                        [   ---]
+      real   , intent(in) :: zoz0m     ! zref/roughness(momentum)                  [   ---]
+      real   , intent(in) :: lnzoz0m   ! ln[zref/roughness(momentum)]              [   ---]
+      real   , intent(in) :: zoz0h     ! zref/roughness(heat)                      [   ---]
+      real   , intent(in) :: lnzoz0h   ! ln[zref/roughness(heat)]                  [   ---]
       logical, intent(in) :: stable    ! Flag... This surface layer is stable      [   T|F]
       !----- Local variables. -------------------------------------------------------------!
       real                :: fm        ! lnzoz0 - psim(zeta) + psim(zeta0)         [   ---]
       real                :: fh        ! lnzoz0 - psih(zeta) + psih(zeta0)         [   ---]
       real                :: dfmdzeta  ! d(fm)/d(zeta)                             [   ---]
       real                :: dfhdzeta  ! d(fh)/d(zeta)                             [   ---]
-      real                :: z0oz      ! Roughness / Reference height              [   ---]
-      real                :: zeta0     ! Roughness / Obukhov length                [   ---]
+      real                :: z0moz     ! Roughness(momentum) / Reference height    [   ---]
+      real                :: zeta0m    ! Roughness(momentum) / Obukhov length      [   ---]
+      real                :: z0hoz     ! Roughness(heat) / Reference height        [   ---]
+      real                :: zeta0h    ! Roughness(heat) / Obukhov length          [   ---]
       real                :: zetaa     ! Smallest guess (or previous guess)        [   ---]
       real                :: zetaz     ! Largest guess (or new guess in Newton's)  [   ---]
       real                :: deriv     ! Function Derivative                       [   ---]
@@ -531,8 +544,9 @@ module canopy_air_coms
       real                :: funa      ! Smallest guess function.                  [   ---]
       real                :: funz      ! Largest guess function.                   [   ---]
       real                :: delta     ! Aux. var --- 2nd guess for bisection      [   ---]
-      real                :: zetamin   ! Minimum zeta for stable case.        [   ---]
-      real                :: zetamax   ! Maximum zeta for unstable case.      [   ---]
+      real                :: zetamin   ! Minimum zeta for stable case.             [   ---]
+      real                :: zetamax   ! Maximum zeta for unstable case.           [   ---]
+      real                :: zetasmall ! Number sufficiently close to zero         [   ---]
       integer             :: itb       ! Iteration counters                        [   ---]
       integer             :: itn       ! Iteration counters                        [   ---]
       integer             :: itp       ! Iteration counters                        [   ---]
@@ -545,11 +559,12 @@ module canopy_air_coms
       ! rather just assign z/L to be the one given by Oncley and Dudhia (1995).  This      !
       ! saves time and also avoids the risk of having zeta with the opposite sign.         !
       !------------------------------------------------------------------------------------!
-      if (rib <= 0. .and. vkopr * rib * lnzoz0 > -toler) then
-         zoobukhov = vkopr * rib * lnzoz0
+      zetasmall = vkopr * rib * min(lnzoz0m,lnzoz0h)
+      if (rib <= 0. .and. zetasmall > - z0moz0h * toler) then
+         zoobukhov = zetasmall
          return
-      elseif (rib > 0. .and. vkopr * rib * lnzoz0 < toler) then
-         zoobukhov = vkopr * rib * lnzoz0 / (1.1 - 5.0 * rib)
+      elseif (rib > 0. .and. zetasmall < z0moz0h * toler) then
+         zoobukhov = zetasmall / (1.1 - 5.0 * rib)
          return
       else
          zetamin    =  toler
@@ -567,24 +582,26 @@ module canopy_air_coms
 
 
       !----- Defining some values that won't change during the iterative method. ----------!
-      z0oz = 1. / zoz0
+      z0moz = 1. / zoz0m
+      z0hoz = 1. / zoz0h
 
       !------------------------------------------------------------------------------------!
       !     First guess, using Oncley and Dudhia (1995) approximation for unstable case.   !
       ! We won't use the stable case to avoid FPE or zeta with opposite sign when          !
       ! Ri > 0.20.                                                                         !
       !------------------------------------------------------------------------------------!
-      zetaa = vkopr * rib * lnzoz0
+      zetaa = vkopr * rib * lnzoz0m
 
       !----- Finding the function and its derivative. -------------------------------------!
-      zeta0    = zetaa * z0oz
-      fm       = lnzoz0 - psim(zetaa,stable) + psim(zeta0,stable)
-      fh       = lnzoz0 - psih(zetaa,stable) + psih(zeta0,stable)
-      dfmdzeta = z0oz * dpsimdzeta(zeta0,stable) - dpsimdzeta(zetaa,stable)
-      dfhdzeta = z0oz * dpsihdzeta(zeta0,stable) - dpsihdzeta(zetaa,stable)
+      zeta0m   = zetaa * z0moz
+      zeta0h   = zetaa * z0hoz
+      fm       = lnzoz0m - psim(zetaa,stable) + psim(zeta0m,stable)
+      fh       = lnzoz0h - psih(zetaa,stable) + psih(zeta0h,stable)
+      dfmdzeta = z0moz * dpsimdzeta(zeta0m,stable) - dpsimdzeta(zetaa,stable)
+      dfhdzeta = z0hoz * dpsihdzeta(zeta0h,stable) - dpsihdzeta(zetaa,stable)
       funa     = vkopr * rib * fm * fm / fh - zetaa
-      deriv    = vkopr * rib * (2. * fm * dfmdzeta * fh - fm * fm * dfhdzeta) / (fh * fh)  &
-               - 1.
+      deriv    = vkopr * rib * (2. * fm * dfmdzeta * fh - fm * fm * dfhdzeta)              &
+               / (fh * fh) - 1.
 
       !----- Copying just in case it fails at the first iteration. ------------------------!
       zetaz = zetaa
@@ -626,11 +643,12 @@ module canopy_air_coms
          !----- New guess, its function and derivative evaluation -------------------------!
          zetaz = zetaa - fun/deriv
 
-         zeta0    = zetaz * z0oz
-         fm       = lnzoz0 - psim(zetaz,stable) + psim(zeta0,stable)
-         fh       = lnzoz0 - psih(zetaz,stable) + psih(zeta0,stable)
-         dfmdzeta = z0oz * dpsimdzeta(zeta0,stable) - dpsimdzeta(zetaz,stable)
-         dfhdzeta = z0oz * dpsihdzeta(zeta0,stable) - dpsihdzeta(zetaz,stable)
+         zeta0m   = zetaz * z0moz
+         zeta0h   = zetaz * z0hoz
+         fm       = lnzoz0m - psim(zetaz,stable) + psim(zeta0m,stable)
+         fh       = lnzoz0h - psih(zetaz,stable) + psih(zeta0h,stable)
+         dfmdzeta = z0moz * dpsimdzeta(zeta0m,stable) - dpsimdzeta(zetaz,stable)
+         dfhdzeta = z0hoz * dpsihdzeta(zeta0h,stable) - dpsihdzeta(zetaz,stable)
          fun      = vkopr * rib * fm * fm / fh - zetaz
          deriv    = vkopr * rib * (2. * fm * dfmdzeta * fh - fm * fm * dfhdzeta)           &
                   / (fh * fh) - 1.
@@ -692,9 +710,10 @@ module canopy_air_coms
             else
                zetaz    = min(zetamax,zetaa + real((-1)**itp * (itp+3)/2) * delta)
             end if
-            zeta0    = zetaz * z0oz
-            fm       = lnzoz0 - psim(zetaz,stable) + psim(zeta0,stable)
-            fh       = lnzoz0 - psih(zetaz,stable) + psih(zeta0,stable)
+            zeta0m   = zetaz * z0moz
+            zeta0h   = zetaz * z0hoz
+            fm       = lnzoz0m - psim(zetaz,stable) + psim(zeta0m,stable)
+            fh       = lnzoz0h - psih(zetaz,stable) + psih(zeta0h,stable)
             funz     = vkopr * rib * fm * fm / fh - zetaz
             zside    = funa * funz < 0.0
             !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
@@ -710,12 +729,13 @@ module canopy_air_coms
             write (unit=*,fmt='(a)') '=================================================='
             write (unit=*,fmt='(a)') '    No second guess for you...'
             write (unit=*,fmt='(a)') '=================================================='
-            write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'zref   =',zref  ,'rough  =',rough
-            write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'rib    =',rib   ,'lnzoz0 =',lnzoz0
+            write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'zref   =',zref   ,'rough  =',rough
+            write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'lnzoz0m=',lnzoz0m,'lnzoz0h=',lnzoz0h
+            write (unit=*,fmt='(1(a,1x,es14.7,1x))') 'rib    =',rib
             write (unit=*,fmt='(1(a,1x,l1,1x))')     'stable =',stable
-            write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'fun    =',fun   ,'delta  =',delta
-            write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'zetaa  =',zetaa ,'funa   =',funa
-            write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'zetaz  =',zetaz ,'funz   =',funz
+            write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'fun    =',fun    ,'delta  =',delta
+            write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'zetaa  =',zetaa  ,'funa   =',funa
+            write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'zetaz  =',zetaz  ,'funz   =',funz
             call fatal_error('Failed finding the second guess for regula falsi'            &
                             ,'zoobukhov','canopy_air_coms.f90')
          end if
@@ -733,9 +753,10 @@ module canopy_air_coms
          if (converged) exit bisloop
 
          !------ Finding the new function -------------------------------------------------!
-         zeta0    = zoobukhov * z0oz
-         fm       = lnzoz0 - psim(zoobukhov,stable) + psim(zeta0,stable)
-         fh       = lnzoz0 - psih(zoobukhov,stable) + psih(zeta0,stable)
+         zeta0m   = zoobukhov * z0moz
+         zeta0h   = zoobukhov * z0hoz
+         fm       = lnzoz0m - psim(zoobukhov,stable) + psim(zeta0m,stable)
+         fh       = lnzoz0h - psih(zoobukhov,stable) + psih(zeta0h,stable)
          fun      = vkopr * rib * fm * fm / fh - zoobukhov
 
          !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
@@ -774,8 +795,10 @@ module canopy_air_coms
          write (unit=*,fmt='(a,1x,f12.4)' ) 'rib             [   ---] =',rib
          write (unit=*,fmt='(a,1x,f12.4)' ) 'zref            [     m] =',zref
          write (unit=*,fmt='(a,1x,f12.4)' ) 'rough           [     m] =',rough
-         write (unit=*,fmt='(a,1x,f12.4)' ) 'zoz0            [   ---] =',zoz0
-         write (unit=*,fmt='(a,1x,f12.4)' ) 'lnzoz0          [   ---] =',lnzoz0
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'zoz0m           [   ---] =',zoz0m
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'lnzoz0m         [   ---] =',lnzoz0m
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'zoz0h           [   ---] =',zoz0h
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'lnzoz0h         [   ---] =',lnzoz0h
          write (unit=*,fmt='(a,1x,l1)'    ) 'stable          [   T|F] =',stable
          write (unit=*,fmt='(a)') ' '
          write (unit=*,fmt='(a)') ' Last iteration outcome (downdraft values).'
@@ -790,7 +813,7 @@ module canopy_air_coms
          write (unit=*,fmt='(a,1x,es12.4)') 'toler           [   ---] =',toler
          write (unit=*,fmt='(a,1x,es12.4)') 'error           [   ---] ='                   &
                                                             ,abs(zetaz-zetaa)/abs(zetaz)
-         write (unit=*,fmt='(a,1x,f12.4)' ) 'thil2temp       [   ---] =',zoobukhov
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'zoobukhov       [   ---] =',zoobukhov
          write (unit=*,fmt='(a)') '-------------------------------------------------------'
 
          call fatal_error('Zeta didn''t converge, giving up!!!'                            &
@@ -817,7 +840,7 @@ module canopy_air_coms
    ! the unlikely case in which Newton's method fails, switch back to modified Regula      !
    ! Falsi method (Illinois).                                                              !
    !---------------------------------------------------------------------------------------!
-   real(kind=8) function zoobukhov8(rib,zref,rough,zoz0,lnzoz0,stable)
+   real(kind=8) function zoobukhov8(rib,zref,rough,zoz0m,lnzoz0m,zoz0h,lnzoz0h,stable)
       use therm_lib8, only : toler8 & ! intent(in)
                            , maxfpo & ! intent(in)
                            , maxit  ! ! intent(in)
@@ -826,16 +849,20 @@ module canopy_air_coms
       real(kind=8), intent(in) :: rib       ! Bulk Richardson number               [   ---]
       real(kind=8), intent(in) :: zref      ! Reference height                     [     m]
       real(kind=8), intent(in) :: rough     ! Roughness length scale               [     m]
-      real(kind=8), intent(in) :: zoz0      ! zref/roughness                       [   ---]
-      real(kind=8), intent(in) :: lnzoz0    ! ln(zref/roughness)                   [   ---]
+      real(kind=8), intent(in) :: zoz0m     ! zref/roughness(momentum)             [   ---]
+      real(kind=8), intent(in) :: lnzoz0m   ! ln[zref/roughness(momentum)]         [   ---]
+      real(kind=8), intent(in) :: zoz0h     ! zref/roughness(heat)                 [   ---]
+      real(kind=8), intent(in) :: lnzoz0h   ! ln[zref/roughness(heat)]             [   ---]
       logical     , intent(in) :: stable    ! Flag... This surface layer is stable [   T|F]
       !----- Local variables. -------------------------------------------------------------!
       real(kind=8)             :: fm        ! lnzoz0 - psim(zeta) + psim(zeta0)    [   ---]
       real(kind=8)             :: fh        ! lnzoz0 - psih(zeta) + psih(zeta0)    [   ---]
       real(kind=8)             :: dfmdzeta  ! d(fm)/d(zeta)                        [   ---]
       real(kind=8)             :: dfhdzeta  ! d(fh)/d(zeta)                        [   ---]
-      real(kind=8)             :: z0oz      ! Roughness / Reference height         [   ---]
-      real(kind=8)             :: zeta0     ! Roughness / Obukhov length           [   ---]
+      real(kind=8)             :: z0moz     ! Roughness(momentum) / Reference hgt. [   ---]
+      real(kind=8)             :: zeta0m    ! Roughness(momentum) / Obukhov length [   ---]
+      real(kind=8)             :: z0hoz     ! Roughness(heat) / Reference height   [   ---]
+      real(kind=8)             :: zeta0h    ! Roughness(heat) / Obukhov length     [   ---]
       real(kind=8)             :: zetaa     ! Smallest guess (or previous guess)   [   ---]
       real(kind=8)             :: zetaz     ! Largest guess (new guess in Newton)  [   ---]
       real(kind=8)             :: deriv     ! Function Derivative                  [   ---]
@@ -845,6 +872,7 @@ module canopy_air_coms
       real(kind=8)             :: delta     ! Aux. var --- 2nd guess for bisection [   ---]
       real(kind=8)             :: zetamin   ! Minimum zeta for stable case.        [   ---]
       real(kind=8)             :: zetamax   ! Maximum zeta for unstable case.      [   ---]
+      real(kind=8)             :: zetasmall ! Zeta dangerously close to zero       [   ---]
       integer                  :: itn       ! Iteration counters                   [   ---]
       integer                  :: itb       ! Iteration counters                   [   ---]
       integer                  :: itp       ! Iteration counters                   [   ---]
@@ -858,11 +886,12 @@ module canopy_air_coms
       ! rather just assign z/L to be the one given by Oncley and Dudhia (1995).  This      !
       ! saves time and also avoids the risk of having zeta with the opposite sign.         !
       !------------------------------------------------------------------------------------!
-      if (rib <= 0.d0 .and. vkopr8*rib*lnzoz0 > -toler8) then
-         zoobukhov8 = vkopr8*rib * lnzoz0
+      zetasmall = vkopr8 * rib * min(lnzoz0m,lnzoz0h)
+      if (rib <= 0.d0 .and. zetasmall > - z0moz0h8 * toler8) then
+         zoobukhov8 = zetasmall
          return
-      elseif (rib > 0.d0 .and. vkopr8*rib * lnzoz0 < toler8) then
-         zoobukhov8 = vkopr8 * rib * lnzoz0 / (1.1d0 - 5.0d0 * rib)
+      elseif (rib > 0.d0 .and. zetasmall < z0moz0h8 * toler8) then
+         zoobukhov8 = zetasmall / (1.1d0 - 5.0d0 * rib)
          return
       else
          zetamin    =  toler8
@@ -880,21 +909,23 @@ module canopy_air_coms
 
 
       !----- Defining some values that won't change during the iterative method. ----------!
-      z0oz = 1.d0 / zoz0
+      z0moz = 1.d0 / zoz0m
+      z0hoz = 1.d0 / zoz0h
 
       !------------------------------------------------------------------------------------!
       !     First guess, using Oncley and Dudhia (1995) approximation for unstable case.   !
       ! We won't use the stable case to avoid FPE or zeta with opposite sign when          !
       ! Ri > 0.20.                                                                         !
       !------------------------------------------------------------------------------------!
-      zetaa = vkopr8 * rib * lnzoz0
+      zetaa = vkopr8 * rib * lnzoz0m
 
       !----- Finding the function and its derivative. -------------------------------------!
-      zeta0    = zetaa * z0oz
-      fm       = lnzoz0 - psim8(zetaa,stable) + psim8(zeta0,stable)
-      fh       = lnzoz0 - psih8(zetaa,stable) + psih8(zeta0,stable)
-      dfmdzeta = z0oz * dpsimdzeta8(zeta0,stable) - dpsimdzeta8(zetaa,stable)
-      dfhdzeta = z0oz * dpsihdzeta8(zeta0,stable) - dpsihdzeta8(zetaa,stable)
+      zeta0m   = zetaa * z0moz
+      zeta0h   = zetaa * z0hoz
+      fm       = lnzoz0m - psim8(zetaa,stable) + psim8(zeta0m,stable)
+      fh       = lnzoz0h - psih8(zetaa,stable) + psih8(zeta0h,stable)
+      dfmdzeta = z0moz * dpsimdzeta8(zeta0m,stable) - dpsimdzeta8(zetaa,stable)
+      dfhdzeta = z0hoz * dpsihdzeta8(zeta0h,stable) - dpsihdzeta8(zetaa,stable)
       funa     = vkopr8 * rib * fm * fm / fh - zetaa
       deriv    = vkopr8 * rib * (2.d0 * fm * dfmdzeta * fh - fm * fm * dfhdzeta)           &
                / (fh * fh) - 1.d0
@@ -939,11 +970,12 @@ module canopy_air_coms
          !----- New guess, its function and derivative evaluation -------------------------!
          zetaz = zetaa - fun/deriv
 
-         zeta0    = zetaz * z0oz
-         fm       = lnzoz0 - psim8(zetaz,stable) + psim8(zeta0,stable)
-         fh       = lnzoz0 - psih8(zetaz,stable) + psih8(zeta0,stable)
-         dfmdzeta = z0oz * dpsimdzeta8(zeta0,stable) - dpsimdzeta8(zetaz,stable)
-         dfhdzeta = z0oz * dpsihdzeta8(zeta0,stable) - dpsihdzeta8(zetaz,stable)
+         zeta0m   = zetaz * z0moz
+         zeta0h   = zetaz * z0hoz
+         fm       = lnzoz0m - psim8(zetaz,stable) + psim8(zeta0m,stable)
+         fh       = lnzoz0h - psih8(zetaz,stable) + psih8(zeta0h,stable)
+         dfmdzeta = z0moz * dpsimdzeta8(zeta0m,stable) - dpsimdzeta8(zetaz,stable)
+         dfhdzeta = z0hoz * dpsihdzeta8(zeta0h,stable) - dpsihdzeta8(zetaz,stable)
          fun      = vkopr8 * rib * fm * fm / fh - zetaz
          deriv    = vkopr8 * rib * (2.d0 * fm * dfmdzeta * fh - fm * fm * dfhdzeta)        &
                   / (fh * fh) - 1.d0
@@ -1005,9 +1037,10 @@ module canopy_air_coms
             else
                zetaz    = min(zetamax,zetaa + dble((-1)**itp * (itp+3)/2) * delta)
             end if
-            zeta0    = zetaz * z0oz
-            fm       = lnzoz0 - psim8(zetaz,stable) + psim8(zeta0,stable)
-            fh       = lnzoz0 - psih8(zetaz,stable) + psih8(zeta0,stable)
+            zeta0m   = zetaz * z0moz
+            zeta0h   = zetaz * z0hoz
+            fm       = lnzoz0m - psim8(zetaz,stable) + psim8(zeta0m,stable)
+            fh       = lnzoz0h - psih8(zetaz,stable) + psih8(zeta0h,stable)
             funz     = vkopr8 * rib * fm * fm / fh - zetaz
             zside    = funa * funz < 0.d0
             !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
@@ -1024,7 +1057,8 @@ module canopy_air_coms
             write (unit=*,fmt='(a)') '    No second guess for you...'
             write (unit=*,fmt='(a)') '=================================================='
             write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'zref   =',zref  ,'rough  =',rough
-            write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'rib    =',rib   ,'lnzoz0 =',lnzoz0
+            write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'lnzoz0m=',lnzoz0m,'lnzoz0h=',lnzoz0h
+            write (unit=*,fmt='(1(a,1x,es14.7,1x))') 'rib    =',rib
             write (unit=*,fmt='(1(a,1x,l1,1x))')     'stable =',stable
             write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'fun    =',fun   ,'delta  =',delta
             write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'zetaa  =',zetaa ,'funa   =',funa
@@ -1046,9 +1080,10 @@ module canopy_air_coms
          if (converged) exit bisloop
 
          !------ Finding the new function -------------------------------------------------!
-         zeta0    = zoobukhov8 * z0oz
-         fm       = lnzoz0 - psim8(zoobukhov8,stable) + psim8(zeta0,stable)
-         fh       = lnzoz0 - psih8(zoobukhov8,stable) + psih8(zeta0,stable)
+         zeta0m   = zoobukhov8 * z0moz
+         zeta0h   = zoobukhov8 * z0hoz
+         fm       = lnzoz0m - psim8(zoobukhov8,stable) + psim8(zeta0m,stable)
+         fh       = lnzoz0h - psih8(zoobukhov8,stable) + psih8(zeta0h,stable)
          fun      = vkopr8 * rib * fm * fm / fh - zoobukhov8
 
          !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
@@ -1087,8 +1122,10 @@ module canopy_air_coms
          write (unit=*,fmt='(a,1x,f12.4)' ) 'rib             [   ---] =',rib
          write (unit=*,fmt='(a,1x,f12.4)' ) 'zref            [     m] =',zref
          write (unit=*,fmt='(a,1x,f12.4)' ) 'rough           [     m] =',rough
-         write (unit=*,fmt='(a,1x,f12.4)' ) 'zoz0            [   ---] =',zoz0
-         write (unit=*,fmt='(a,1x,f12.4)' ) 'lnzoz0          [   ---] =',lnzoz0
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'zoz0m           [   ---] =',zoz0m
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'lnzoz0m         [   ---] =',lnzoz0m
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'zoz0h           [   ---] =',zoz0h
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'lnzoz0h         [   ---] =',lnzoz0h
          write (unit=*,fmt='(a,1x,l1)'    ) 'stable          [   T|F] =',stable
          write (unit=*,fmt='(a)') ' '
          write (unit=*,fmt='(a)') ' Last iteration outcome (downdraft values).'
@@ -1103,7 +1140,7 @@ module canopy_air_coms
          write (unit=*,fmt='(a,1x,es12.4)') 'toler           [   ---] =',toler8
          write (unit=*,fmt='(a,1x,es12.4)') 'error           [   ---] ='                   &
                                                             ,abs(zetaz-zetaa)/abs(zetaz)
-         write (unit=*,fmt='(a,1x,f12.4)' ) 'thil2temp       [   ---] =',zoobukhov8
+         write (unit=*,fmt='(a,1x,f12.4)' ) 'zoobukhov8      [   ---] =',zoobukhov8
          write (unit=*,fmt='(a)') '-------------------------------------------------------'
 
          call fatal_error('Zeta didn''t converge, giving up!!!'                            &

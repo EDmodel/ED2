@@ -3011,11 +3011,11 @@ module therm_lib8
 
 
       !----- Internal energy below qwfroz, all ice  ---------------------------------------!
-      if (q <= dble(qicet38)) then
+      if (q <= qicet38) then
          fracliq = 0.d0
          tempk   = q * cicei8 
       !----- Internal energy, above qwmelt, all liquid ------------------------------------!
-      elseif (q >= dble(qliqt38)) then
+      elseif (q >= qliqt38) then
          fracliq = 1.d0
          tempk   = q * cliqi8 + tsupercool8
       !----- Changing phase, it must be at freezing point ---------------------------------!
@@ -3076,16 +3076,21 @@ module therm_lib8
          fracliq = 1.d0
          tempk   = (qw + w * cliq8 * tsupercool8) / (dryhcap + w*cliq8)
       !------------------------------------------------------------------------------------!
+      !    We are at the freezing point.  If water mass is so tiny that the internal       !
+      ! energy of frozen and melted states are the same given the machine precision, then  !
+      ! we assume that water content is negligible and we impose 50% frozen for            !
+      ! simplicity.                                                                        !
+      !------------------------------------------------------------------------------------!
+      elseif (qwfroz == qwmelt) then
+         fracliq = 5.d-1
+         tempk   = t3ple8
+      !------------------------------------------------------------------------------------!
       !    Changing phase, it must be at freezing point.  The max and min are here just to !
       ! avoid tiny deviations beyond 0. and 1. due to floating point arithmetics.          !
       !------------------------------------------------------------------------------------!
-      elseif (w > 0.d0) then
+      else
          fracliq = min(1.d0,max(0.d0,(qw - qwfroz) * allii8 / w))
          tempk = t3ple8
-      !----- No water, but it must be at freezing point (qw = qwfroz = qwmelt) ------------!
-      else
-         fracliq = 5.d-1
-         tempk   = t3ple8
       end if
       !------------------------------------------------------------------------------------!
 

@@ -281,6 +281,7 @@ subroutine geonest_nofile(ngra,ngrb)
           , leaf_g(ifm)%leaf_class                , leaf_g(ifm)%soil_rough                 &
           , leaf_g(ifm)%sfcwater_nlev             , leaf_g(ifm)%stom_resist                &
           , leaf_g(ifm)%ground_rsat               , leaf_g(ifm)%ground_rvap                &
+          , leaf_g(ifm)%ground_temp               , leaf_g(ifm)%ground_fliq                &
           , leaf_g(ifm)%veg_water                 , leaf_g(ifm)%veg_hcap                   &
           , leaf_g(ifm)%veg_energy                , leaf_g(ifm)%can_prss                   &
           , leaf_g(ifm)%can_theta                 , leaf_g(ifm)%can_rvap                   &
@@ -349,6 +350,10 @@ subroutine geonest_nofile(ngra,ngrb)
                          leaf_g(icm)%ground_rsat     (ic,jc,ipat)
                     leaf_g(ifm)%ground_rvap          (i,j,ipat) = &
                          leaf_g(icm)%ground_rvap     (ic,jc,ipat)
+                    leaf_g(ifm)%ground_temp          (i,j,ipat) = &
+                         leaf_g(icm)%ground_temp     (ic,jc,ipat)
+                    leaf_g(ifm)%ground_fliq          (i,j,ipat) = &
+                         leaf_g(icm)%ground_fliq     (ic,jc,ipat)
                     leaf_g(ifm)%veg_water            (i,j,ipat) = &
                          leaf_g(icm)%veg_water       (ic,jc,ipat)
                     leaf_g(ifm)%veg_energy           (i,j,ipat) = &
@@ -424,6 +429,7 @@ subroutine geonest_nofile(ngra,ngrb)
                , leaf_g(ifm)%leaf_class              , leaf_g(ifm)%soil_rough              &
                , leaf_g(ifm)%sfcwater_nlev           , leaf_g(ifm)%stom_resist             &
                , leaf_g(ifm)%ground_rsat             , leaf_g(ifm)%ground_rvap             &
+               , leaf_g(ifm)%ground_temp             , leaf_g(ifm)%ground_fliq             &
                , leaf_g(ifm)%veg_water               , leaf_g(ifm)%veg_hcap                &
                , leaf_g(ifm)%veg_energy              , leaf_g(ifm)%can_prss                &
                , leaf_g(ifm)%can_theta               , leaf_g(ifm)%can_rvap                &
@@ -701,6 +707,14 @@ subroutine patch_interp_driver(icm,ifm)
                     ,scratch%vt3da,scratch%vt3db,scratch%vt2da,scratch%vt2db )
    call patch_interp(icm,ifm,1,nnxp(icm),nnyp(icm),npatch,1,nnxp(ifm),nnyp(ifm),npatch     &
                     ,leaf_g(icm)%ground_rvap,leaf_g(ifm)%ground_rvap                       &
+                    ,leaf_g(icm)%patch_area,leaf_g(icm)%patch_area                         &
+                    ,scratch%vt3da,scratch%vt3db,scratch%vt2da,scratch%vt2db )
+   call patch_interp(icm,ifm,1,nnxp(icm),nnyp(icm),npatch,1,nnxp(ifm),nnyp(ifm),npatch     &
+                    ,leaf_g(icm)%ground_temp,leaf_g(ifm)%ground_temp                       &
+                    ,leaf_g(icm)%patch_area,leaf_g(icm)%patch_area                         &
+                    ,scratch%vt3da,scratch%vt3db,scratch%vt2da,scratch%vt2db )
+   call patch_interp(icm,ifm,1,nnxp(icm),nnyp(icm),npatch,1,nnxp(ifm),nnyp(ifm),npatch     &
+                    ,leaf_g(icm)%ground_fliq,leaf_g(ifm)%ground_fliq                       &
                     ,leaf_g(icm)%patch_area,leaf_g(icm)%patch_area                         &
                     ,scratch%vt3da,scratch%vt3db,scratch%vt2da,scratch%vt2db )
    call patch_interp(icm,ifm,1,nnxp(icm),nnyp(icm),npatch,1,nnxp(ifm),nnyp(ifm),npatch     &

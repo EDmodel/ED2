@@ -833,6 +833,7 @@ subroutine ReadNamelist(fileName)
        drtcon, &
        dthcon, &
        isfcl, &
+       dtleaf, &
        istar, &
        nslcon, &
        nvegpat, &
@@ -1098,13 +1099,13 @@ subroutine ReadNamelist(fileName)
   namelist /MODEL_OPTIONS/ &
        naddsc, icorflg, iexev,imassflx, ibnd, jbnd, cphas, lsflg, nfpt,   &
        distim,iswrtyp, ilwrtyp,icumfdbk,                                  &
-       raddatfn,radfrq, lonrad, npatch, nvegpat, isfcl,istar,ico2,co2con, &
-       nvgcon, pctlcon, nslcon, drtcon, zrough, albedo, seatmp, dthcon,   &
-       soil_moist, soil_moist_fail, usdata_in, usmodel_in, slz, slmstr,   &
-       stgoff, if_urban_canopy, idiffk, ibruvais, ibotflx, ihorgrad,      &
-       csx, csz, xkhkm, zkhkm, akmin, akmax, hgtmin, hgtmax, level,       &
-       icloud, irain, ipris, isnow, iaggr, igraup, ihail, cparm, rparm,   &
-       pparm, sparm, aparm, gparm, hparm, gnu
+       raddatfn,radfrq, lonrad, npatch, nvegpat, isfcl,dtleaf,istar,ico2, &
+       co2con, nvgcon, pctlcon, nslcon, drtcon, zrough, albedo, seatmp,   &
+       dthcon, soil_moist, soil_moist_fail, usdata_in, usmodel_in, slz,   &
+       slmstr, stgoff, if_urban_canopy, idiffk, ibruvais, ibotflx,        &
+       ihorgrad, csx, csz, xkhkm, zkhkm, akmin, akmax, hgtmin, hgtmax,    &
+       level, icloud, irain, ipris, isnow, iaggr, igraup, ihail, cparm,   &
+       rparm, pparm, sparm, aparm, gparm, hparm, gnu
 
   namelist /MODEL_SOUND/ &
        ipsflg, itsflg, irtsflg, iusflg, hs, ps, ts, rts, us, vs, co2s
@@ -1681,6 +1682,7 @@ subroutine ReadNamelist(fileName)
      write (*, *) "npatch=",npatch
      write (*, *) "nvegpat=",nvegpat
      write (*, *) "isfcl=",isfcl
+     write (*, *) "dtleaf=",dtleaf
      write (*, *) "istar=",istar
      write (*, *) "ico2=",ico2
      write (*, *) "co2con=",co2con

@@ -37,7 +37,9 @@ Module mem_leaf
       ! by (nxp,nyp,npatch).                                                               !
       !------------------------------------------------------------------------------------!
       real, dimension(:,:,:), pointer :: ground_rsat & ! Sat. mixing ratio      [    kg/kg]
-                                       , ground_rvap ! ! Vapour mixing ratio    [    kg/kg]
+                                       , ground_rvap & ! Vapour mixing ratio    [    kg/kg]
+                                       , ground_temp & ! Temperature            [        K]
+                                       , ground_fliq ! ! Liquid water fraction  [      ---]
 
       !------------------------------------------------------------------------------------!
       !     Vegetation properties, dimensioned by (nxp,nyp,npatch).                        !
@@ -121,6 +123,12 @@ Module mem_leaf
    integer                 :: isfcl   ! Surface model (1. LEAF3, 2. LEAF-Hydro, 5. ED2)
    integer                 :: istar   ! Which surface layer model should I use?
                                       !    1. Louis (1979), 2. Oncley and Dudhia (1995).
+                                      !    3. Beljaars and Holtslag (1991)
+                                      !    4. BH91, using OD95 to find zeta.
+   real                    :: dtleaf  ! LEAF-3 target time step.  It will be either this
+                                      !    or the actual BRAMS time step (whichever is 
+                                      !    lower).
+
    real, dimension(nzgmax) :: stgoff  ! Initial soil temperature offset
    real, dimension(nzgmax) :: slmstr  ! Initial soil moisture if constant for entire domain
    real, dimension(nzgmax) :: slz     ! Soil levels
@@ -173,6 +181,8 @@ Module mem_leaf
 
       allocate (leaf%ground_rsat      (    nx,ny,np))
       allocate (leaf%ground_rvap      (    nx,ny,np))
+      allocate (leaf%ground_temp      (    nx,ny,np))
+      allocate (leaf%ground_fliq      (    nx,ny,np))
 
       allocate (leaf%veg_fracarea     (    nx,ny,np))
       allocate (leaf%veg_lai          (    nx,ny,np))
@@ -256,6 +266,8 @@ Module mem_leaf
 
       if (associated(leaf%ground_rsat      ))  nullify(leaf%ground_rsat      )
       if (associated(leaf%ground_rvap      ))  nullify(leaf%ground_rvap      )
+      if (associated(leaf%ground_temp      ))  nullify(leaf%ground_temp      )
+      if (associated(leaf%ground_fliq      ))  nullify(leaf%ground_fliq      )
 
       if (associated(leaf%veg_fracarea     ))  nullify(leaf%veg_fracarea     )
       if (associated(leaf%veg_lai          ))  nullify(leaf%veg_lai          )
@@ -336,6 +348,8 @@ Module mem_leaf
 
       if (associated(leaf%ground_rsat      ))  deallocate(leaf%ground_rsat      )
       if (associated(leaf%ground_rvap      ))  deallocate(leaf%ground_rvap      )
+      if (associated(leaf%ground_temp      ))  deallocate(leaf%ground_temp      )
+      if (associated(leaf%ground_fliq      ))  deallocate(leaf%ground_fliq      )
 
       if (associated(leaf%veg_fracarea     ))  deallocate(leaf%veg_fracarea     )
       if (associated(leaf%veg_lai          ))  deallocate(leaf%veg_lai          )
@@ -484,6 +498,14 @@ Module mem_leaf
       if (associated(leaf%ground_rvap))                                                    &
          call vtables2(leaf%ground_rvap(1,1,1),leafm%ground_rvap(1,1,1),ng,npts,imean      &
                       ,'GROUND_RVAP :6:hist:anal:mpti:mpt3'//trim(str_recycle))
+
+      if (associated(leaf%ground_temp))                                                    &
+         call vtables2(leaf%ground_temp(1,1,1),leafm%ground_temp(1,1,1),ng,npts,imean      &
+                      ,'GROUND_TEMP :6:hist:anal:mpti:mpt3'//trim(str_recycle))
+
+      if (associated(leaf%ground_fliq))                                                    &
+         call vtables2(leaf%ground_fliq(1,1,1),leafm%ground_fliq(1,1,1),ng,npts,imean      &
+                      ,'GROUND_FLIQ :6:hist:anal:mpti:mpt3'//trim(str_recycle))
 
       if (associated(leaf%veg_fracarea))                                                   &
          call vtables2(leaf%veg_fracarea(1,1,1),leafm%veg_fracarea(1,1,1),ng,npts,imean    &

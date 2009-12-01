@@ -268,6 +268,10 @@ elseif (vnam == 'ground_rsat'    ) then
         vnam2 = '[ground_rsat (g/kg)]     '
 elseif (vnam == 'ground_rvap'    ) then
         vnam2 = '[ground_rvap (g/kg)]     '
+elseif (vnam == 'ground_temp'    ) then
+        vnam2 = '[ground_temp    (K)]     '
+elseif (vnam == 'ground_fliq'    ) then
+        vnam2 = '[ground_fliq    (%)]     '
 elseif (vnam == 'veg_water'      ) then
         vnam2 = '[veg_water (kg/m2)]      '
 elseif (vnam == 'veg_hcap'       ) then
@@ -434,6 +438,14 @@ do k = k1,k2
             elseif (vnam == 'ground_rvap'    ) then
                call plin(nc,j,ipat,3,1.e3             &
                   ,leaf%ground_rvap(i1:i2,j,ipat)        &
+                  ,leaf%patch_area(i1:i2,j,ipat))
+            elseif (vnam == 'ground_temp'    ) then
+               call plin(nc,j,ipat,3,1.               &
+                  ,leaf%ground_temp(i1:i2,j,ipat)        &
+                  ,leaf%patch_area(i1:i2,j,ipat))
+            elseif (vnam == 'ground_fliq'    ) then
+               call plin(nc,j,ipat,3,1.e2             &
+                  ,leaf%ground_fliq(i1:i2,j,ipat)        &
                   ,leaf%patch_area(i1:i2,j,ipat))
             elseif (vnam == 'veg_water'      ) then
                call plin(nc,j,ipat,3,1.               &
