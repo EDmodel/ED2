@@ -150,11 +150,9 @@ subroutine copy_nl(copy_type)
      n_decomp_lim       = nl%n_decomp_lim
      include_fire       = nl%include_fire
      ianth_disturb      = nl%ianth_disturb
-     if(nl%decomp_scheme == 1) then
-        LloydTaylor = .true.
-     else
-        LloydTaylor = .false.
-     endif
+
+     !----- Decomp_scheme is not a true ED variable, we save it in LloydTaylor instead. ---!
+     LloydTaylor        = nl%decomp_scheme == 1
      
      icanturb           = nl%icanturb
      isfclyrm           = nl%isfclyrm

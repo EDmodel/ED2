@@ -35,7 +35,7 @@ subroutine history_start(name_name)
    !----- Arguments -----------------------------------------------------------------------!
    character(len=*)           , intent(in) :: name_name
    !----- Local variables -----------------------------------------------------------------!
-   character (len=80)                      :: hnameinh,prefix
+   character (len=256)                     :: hnamel, hnamelh
    character (len=2)                       :: cng
    integer                    , save       :: iunhd=11
    integer                                 :: ngrids1,ioutput1,nzg1,nzs1,npatch1,nclouds1
@@ -44,11 +44,11 @@ subroutine history_start(name_name)
    !----- External functions --------------------------------------------------------------!
    integer                    , external   :: cio_i,cio_f,cio_i_sca,cio_f_sca,cio_f8_sca
    !--------------------------------------------------------------------------------------
-   !----- Open the input history header file and read some of the info. -------------------!
-   nc=len_trim(hfilin)
-   hnameinh=hfilin(1:nc-9)//'.vfm'
 
-   call rams_f_open(iunhd,hfilin,'FORMATTED','OLD','READ',0)
+   !----- Open the input history header file and read some of the info. -------------------!
+   call makefnam(hnamel ,hfilin,0.d0,iyearh,imonthh,idateh,itimeh*100,'H'   ,'$','vfm')
+   call makefnam(hnamelh,hfilin,0.d0,iyearh,imonthh,idateh,itimeh*100,'H','head','txt')
+   call rams_f_open(iunhd,hnamelh,'FORMATTED','OLD','READ',0)
 
    ie=cio_i_sca(iunhd,1,'ngrids',ngrids1,1)
    ngridsh=ngrids1
@@ -103,7 +103,7 @@ subroutine history_start(name_name)
    end do
 
    !----- Read stuff here -----------------------------------------------------------------!
-   call hist_read(maxarr,hnameinh,iunhd)
+   call hist_read(maxarr,hnamel,iunhd)
 
    write (unit=*,fmt=*) 'Back from read! '
    close (unit=iunhd)

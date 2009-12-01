@@ -65,6 +65,7 @@ subroutine sfclyr(mzp,mxp,myp,ia,iz,ja,jz,ibcon)
                   , leaf_g(ng)%leaf_class          , leaf_g(ng)%soil_rough                 &
                   , leaf_g(ng)%sfcwater_nlev       , leaf_g(ng)%stom_resist                &
                   , leaf_g(ng)%ground_rsat         , leaf_g(ng)%ground_rvap                &
+                  , leaf_g(ng)%ground_temp         , leaf_g(ng)%ground_fliq                &
                   , leaf_g(ng)%veg_water           , leaf_g(ng)%veg_hcap                   &
                   , leaf_g(ng)%veg_energy          , leaf_g(ng)%can_prss                   &
                   , leaf_g(ng)%can_theta           , leaf_g(ng)%can_rvap                   &
@@ -100,6 +101,7 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz,leaf,basic,turb,radiate,grid,cu
    use mem_teb        , only : teb_vars      ! ! type
    use mem_teb_common , only : teb_common    ! ! type
    use therm_lib      , only : rslif         & ! function
+                             , tslif         & ! function
                              , reducedpress  & ! function
                              , ptqz2enthalpy & ! function
                              , hpqz2temp     & ! function
@@ -122,7 +124,7 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz,leaf,basic,turb,radiate,grid,cu
    !----- Local variables -----------------------------------------------------------------!
    type(teb_vars)                      :: teb
    type(teb_common)                    :: tebc
-   integer                             :: i,j,k,ksn,ip,iter_leaf
+   integer                             :: i,j,k,ksn,ip,iter_leaf,nveg
    real                                :: dvelu,dvelv,velnew,sflux_uv,cosine1,sine1
    real                                :: psup1,psup2,depe,alt2,deze,dpdz,exn1st,airt
    real                                :: zh_town,zle_town,zsfu_town,zsfv_town
@@ -149,17 +151,13 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz,leaf,basic,turb,radiate,grid,cu
    endif
 
    !---------------------------------------------------------------------------------------!
-   !    Define LEAF-3 and canopy time-split timesteps here.  This ensures that LEAF-3 will !
-   ! not use a timestep longer than about 40 seconds, and canopy will not use a timestep   !
-   ! longer than about 15 seconds.  This allows values of can_depth = 20. and              !
-   ! hcapveg = 3.e4 as are now defined below.                                              !
+   !    Define LEAF-3 time-split timesteps here.  This ensures that LEAF-3 will never use  !
+   ! a timestep longer than about 30 seconds, but the actual number depends on the user's  !
+   ! choice and the actual time step.                                                      !
    !---------------------------------------------------------------------------------------!
-   niter_leaf  = max(1,nint(dtlt/40.+.4))
-   niter_can   = max(1,nint(dtll/15.+.4))
+   niter_leaf  = max(1,nint(dtlt/dtleaf + .4))
    dtll_factor = 1. / float(niter_leaf)
    dtll        = dtlt * dtll_factor
-   dtlc_factor = 1. / float(niter_can)
-   dtlc        = dtll * dtlc_factor
 
    !----- Check whether we have CO2, and copy to an scratch array. ------------------------!
    if (co2_on) then
@@ -290,19 +288,17 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz,leaf,basic,turb,radiate,grid,cu
             leaf%can_prss(i,j,ip) = reducedpress(atm_prss,atm_theta,atm_shv,geoht          &
                                                 ,leaf%can_theta(i,j,ip),can_shv,can_depth)
 
-            !----- Update canopy air temperature, density, and enthalpy. ------------------!
-            can_temp     = leaf%can_theta(i,j,ip)                                          &
-                         * (p00i * leaf%can_prss(i,j,ip)) ** rocp
-            can_rhos     = idealdenssh (leaf%can_prss(i,j,ip),can_temp,can_shv)
-            can_enthalpy = ptqz2enthalpy(leaf%can_prss(i,j,ip),can_temp,can_shv,can_depth)
-
+            !----- Define the canopy depth. -----------------------------------------------!
+            nveg      = nint(leaf%leaf_class(i,j,ip))
+            if (nveg == 0 .or. ip == 1) then
+               can_depth = can_depth_min
+            else
+               can_depth = max(can_depth_min,veg_ht(nveg))
+            end if
 
             !----- Begin LEAF-3 small timestep here. --------------------------------------!
             tloop: do iter_leaf = 1,niter_leaf
 
-               !----- Finding vegetation temperature and surface liquid water fraction. ---!
-               call qwtk(leaf%veg_energy(i,j,ip),leaf%veg_water(i,j,ip)                    &
-                        ,leaf%veg_hcap(i,j,ip),veg_temp,veg_fliq)
 
                !---------------------------------------------------------------------------!
                !    Calculate radiative fluxes between atmosphere, vegetation, and ground/ !
@@ -323,7 +319,11 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz,leaf,basic,turb,radiate,grid,cu
                         alb_town  = tebc%alb_town(i,j)
                         ts_town   = tebc%ts_town(i,j)
                      end if
-
+                     !---------------------------------------------------------------------!
+                     !     Find the radiation terms, and update canopy air temperature,    !
+                     ! density, and enthalpy, and vegetation temperature and liquid water. !
+                     ! fraction.                                                           !
+                     !---------------------------------------------------------------------!
                      call sfcrad(mzg,mzs,ip              , leaf%soil_energy     (:,i,j,ip) &
                        , leaf%soil_water      (:,i,j,ip) , leaf%soil_text       (:,i,j,ip) &
                        , leaf%sfcwater_energy (:,i,j,ip) , leaf%sfcwater_mass   (:,i,j,ip) &
@@ -338,7 +338,27 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz,leaf,basic,turb,radiate,grid,cu
                        , radiate%rlongup      (  i,j   ) , radiate%cosz         (  i,j   ) &
                        , g_urban                         , emis_town                       &
                        , alb_town                        , ts_town                         )
+                  else
+                     !----- Update canopy air temperature, density, and enthalpy. ---------!
+                     can_temp     = leaf%can_theta(i,j,ip)                                 &
+                                  * (p00i * leaf%can_prss(i,j,ip)) ** rocp
+                     can_rhos     = idealdenssh (leaf%can_prss(i,j,ip),can_temp,can_shv)
+                     can_enthalpy = ptqz2enthalpy(leaf%can_prss(i,j,ip),can_temp,can_shv   &
+                                                 ,can_depth)
+                     !----- Find vegetation temperature and surface liquid water fraction. !
+                     call qwtk(leaf%veg_energy(i,j,ip),leaf%veg_water(i,j,ip)              &
+                              ,leaf%veg_hcap(i,j,ip),veg_temp,veg_fliq)
                   end if
+               else
+                  !----- Update canopy air temperature, density, and enthalpy. ------------!
+                  can_temp     = leaf%can_theta(i,j,ip)                                    &
+                               * (p00i * leaf%can_prss(i,j,ip)) ** rocp
+                  can_rhos     = idealdenssh (leaf%can_prss(i,j,ip),can_temp,can_shv)
+                  can_enthalpy = ptqz2enthalpy(leaf%can_prss(i,j,ip),can_temp,can_shv      &
+                                              ,can_depth)
+                  !----- Find vegetation temperature and surface liquid water fraction. ---!
+                  call qwtk(leaf%veg_energy(i,j,ip),leaf%veg_water(i,j,ip)                 &
+                           ,leaf%veg_hcap(i,j,ip),veg_temp,veg_fliq)
                end if
 
                !---------------------------------------------------------------------------!
@@ -348,7 +368,14 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz,leaf,basic,turb,radiate,grid,cu
                !---------------------------------------------------------------------------!
                if (ip == 1) then
 
+                  leaf%ground_temp(i,j,ip) = tempk(mzg)
                   leaf%ground_rsat(i,j,ip) = rslif(leaf%can_prss(i,j,ip),tempk(mzg))
+                  leaf%ground_rvap(i,j,ip) = leaf%ground_rsat(i,j,ip)
+                  if (tempk(mzg) >= t3ple) then
+                     leaf%ground_fliq(i,j,ip) = 1.
+                  else
+                     leaf%ground_fliq(i,j,ip) = 0.
+                  end if
                   leaf%patch_rough(i,j,ip) = max( z0fac_water * leaf%ustar(i,j,ip) ** 2    &
                                                 , min_waterrough)
 
@@ -366,6 +393,7 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz,leaf,basic,turb,radiate,grid,cu
                !    Imposing minimum wind speed.                                           !
                !---------------------------------------------------------------------------!
                vels_pat = max(ubmin,vels)
+
 
                !----- Compute the characteristic scales. ----------------------------------!
                call leaf_stars(atm_theta,atm_enthalpy,atm_shv,atm_rvap,atm_co2             &
@@ -403,7 +431,7 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz,leaf,basic,turb,radiate,grid,cu
                   dtlloccc  = mmdry * dtllowcc
 
                   !----- Compute the fluxes from water body to canopy. --------------------!
-                  hflxgc  = rdi * cp * (tempk(mzg) - can_temp)
+                  hflxgc  = rdi * cp * (leaf%ground_temp(i,j,ip) - can_temp)
                   wflxgc  = rdi * (leaf%ground_rsat(i,j,ip) - leaf%can_rvap(i,j,ip))
                   qwflxgc = wflxgc * alvl
                   cflxgc  = 0. !----- No water carbon emission model available...
@@ -518,6 +546,7 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz,leaf,basic,turb,radiate,grid,cu
                           , leaf%leaf_class       (i,j,ip), leaf%soil_rough       (i,j,ip) &
                           , leaf%sfcwater_nlev    (i,j,ip), leaf%stom_resist      (i,j,ip) &
                           , leaf%ground_rsat      (i,j,ip), leaf%ground_rvap      (i,j,ip) &
+                          , leaf%ground_temp      (i,j,ip), leaf%ground_fliq      (i,j,ip) &
                           , leaf%veg_water        (i,j,ip), leaf%veg_hcap         (i,j,ip) &
                           , leaf%veg_energy       (i,j,ip), leaf%can_prss         (i,j,ip) &
                           , leaf%can_theta        (i,j,ip), leaf%can_rvap         (i,j,ip) &
@@ -589,9 +618,9 @@ subroutine leaftw(mzg,mzs,np,soil_water, soil_energy,soil_text,sfcwater_mass    
                  ,sfcwater_depth,ustar,tstar,rstar,cstar,veg_albedo,veg_fracarea,veg_lai   &
                  ,veg_tai,veg_rough,veg_height,patch_area,patch_rough,patch_wetind         &
                  ,leaf_class,soil_rough,sfcwater_nlev,stom_resist,ground_rsat,ground_rvap  &
-                 ,veg_water,veg_hcap,veg_energy,can_prss,can_theta,can_rvap,can_co2        &
-                 ,sensible,evap,transp,gpp,plresp,resphet,veg_ndvip,veg_ndvic,veg_ndvif    &
-                 ,rshort,cosz,ip,i,j)
+                 ,ground_temp,ground_fliq,veg_water,veg_hcap,veg_energy,can_prss,can_theta &
+                 ,can_rvap,can_co2,sensible,evap,transp,gpp,plresp,resphet,veg_ndvip       &
+                 ,veg_ndvic,veg_ndvif,rshort,cosz,ip,i,j)
 
    use leaf_coms
    use mem_leaf
@@ -604,32 +633,104 @@ subroutine leaftw(mzg,mzs,np,soil_water, soil_energy,soil_text,sfcwater_mass    
    use catt_start  , only : CATT        ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
-   integer                , intent(in)    :: mzg,mzs,np
-   real   , dimension(mzg), intent(inout) :: soil_water,soil_energy,soil_text
-   real   , dimension(mzs), intent(inout) :: sfcwater_mass,sfcwater_depth
-   real                   , intent(in)    :: ustar,tstar,rstar,cstar
-   real                   , intent(in)    :: veg_albedo,veg_fracarea,veg_lai,veg_tai
-   real                   , intent(in)    :: veg_rough,veg_height,patch_area,patch_rough
-   real                   , intent(in)    :: patch_wetind,leaf_class,soil_rough
-   real                   , intent(inout) :: sfcwater_nlev, stom_resist
-   real                   , intent(inout) :: ground_rsat,ground_rvap
-   real                   , intent(inout) :: veg_water,veg_hcap,veg_energy
-   real                   , intent(inout) :: can_prss,can_theta,can_rvap,can_co2
-   real                   , intent(inout) :: sensible,evap,transp
-   real                   , intent(inout) :: gpp,plresp,resphet
-   real                   , intent(in)    :: veg_ndvip,veg_ndvic,veg_ndvif
-   real                   , intent(in)    :: rshort,cosz
+   integer                , intent(in)    :: mzg
+   integer                , intent(in)    :: mzs
+   integer                , intent(in)    :: np
+   real   , dimension(mzg), intent(inout) :: soil_water
+   real   , dimension(mzg), intent(inout) :: soil_energy
+   real   , dimension(mzg), intent(inout) :: soil_text
+   real   , dimension(mzs), intent(inout) :: sfcwater_mass
+   real   , dimension(mzs), intent(inout) :: sfcwater_depth
+   real                   , intent(in)    :: ustar
+   real                   , intent(in)    :: tstar
+   real                   , intent(in)    :: rstar
+   real                   , intent(in)    :: cstar
+   real                   , intent(in)    :: veg_albedo
+   real                   , intent(in)    :: veg_fracarea
+   real                   , intent(in)    :: veg_lai
+   real                   , intent(in)    :: veg_tai
+   real                   , intent(in)    :: veg_rough
+   real                   , intent(in)    :: veg_height
+   real                   , intent(in)    :: patch_area
+   real                   , intent(in)    :: patch_rough
+   real                   , intent(in)    :: patch_wetind
+   real                   , intent(in)    :: leaf_class
+   real                   , intent(in)    :: soil_rough
+   real                   , intent(inout) :: sfcwater_nlev
+   real                   , intent(inout) :: stom_resist
+   real                   , intent(inout) :: ground_rsat
+   real                   , intent(inout) :: ground_rvap
+   real                   , intent(inout) :: ground_temp
+   real                   , intent(inout) :: ground_fliq
+   real                   , intent(inout) :: veg_water
+   real                   , intent(inout) :: veg_hcap
+   real                   , intent(inout) :: veg_energy
+   real                   , intent(inout) :: can_prss
+   real                   , intent(inout) :: can_theta
+   real                   , intent(inout) :: can_rvap
+   real                   , intent(inout) :: can_co2
+   real                   , intent(inout) :: sensible
+   real                   , intent(inout) :: evap
+   real                   , intent(inout) :: transp
+   real                   , intent(inout) :: gpp
+   real                   , intent(inout) :: plresp
+   real                   , intent(inout) :: resphet
+   real                   , intent(in)    :: veg_ndvip
+   real                   , intent(in)    :: veg_ndvic
+   real                   , intent(in)    :: veg_ndvif
+   real                   , intent(in)    :: rshort
+   real                   , intent(in)    :: cosz
    !----- Local variables. ----------------------------------------------------------------!
-   integer :: ip,k,nveg,ksn,nsoil,ksnnew,newlayers,nlayers,kold,ktrans,nsl,kzs
-   integer :: i,j
-   real    :: sfcw_energy_int,stretch,thik,pf,snden,vegfracc,qwfree,wfree
-   real    :: depthgain,totsnow,qw,w,qwt,wt,soilhcap,fac,wfreeb,depthloss,soilcap
-   real    :: sndenmax,sndenmin,snowmin,hold,wtnew,wtold,wdiff,watermid,availwat,wg
-   real    :: wloss,soilcond,waterfrac
+   integer                                :: ip
+   integer                                :: k
+   integer                                :: nveg
+   integer                                :: ksn
+   integer                                :: nsoil
+   integer                                :: ksnnew
+   integer                                :: newlayers
+   integer                                :: nlayers
+   integer                                :: kold
+   integer                                :: ktrans
+   integer                                :: nsl
+   integer                                :: kzs
+   integer                                :: i
+   integer                                :: j
+   real                                   :: sfcw_energy_int
+   real                                   :: stretch
+   real                                   :: thik
+   real                                   :: pf
+   real                                   :: snden
+   real                                   :: vegfracc
+   real                                   :: qwfree
+   real                                   :: wfree
+   real                                   :: depthgain
+   real                                   :: totsnow
+   real                                   :: qw
+   real                                   :: w
+   real                                   :: qwt
+   real                                   :: wt
+   real                                   :: soilhcap
+   real                                   :: fac
+   real                                   :: wfreeb
+   real                                   :: depthloss
+   real                                   :: soilcap
+   real                                   :: sndenmax
+   real                                   :: sndenmin
+   real                                   :: snowmin
+   real                                   :: hold
+   real                                   :: wtnew
+   real                                   :: wtold
+   real                                   :: wdiff
+   real                                   :: watermid
+   real                                   :: availwat
+   real                                   :: wg
+   real                                   :: wloss
+   real                                   :: soilcond
+   real                                   :: waterfrac
    !----- Locally saved variables. --------------------------------------------------------!
-   logical               , save :: ncall=.true.
-   real, dimension(20)   , save :: thicknet
-   real, dimension(20,20), save :: thick
+   logical                , save          :: ncall=.true.
+   real, dimension(20)    , save          :: thicknet
+   real, dimension(20,20) , save          :: thick
    !---------------------------------------------------------------------------------------!
 
 
@@ -674,11 +775,11 @@ subroutine leaftw(mzg,mzs,np,soil_water, soil_energy,soil_text,sfcwater_mass    
    ! ure and heat changes to vegetation, and evaluate the resistance parameter rd between  !
    ! canopy air and the top soil or snow surface.                                          !
    !---------------------------------------------------------------------------------------!
-   call canopy(mzg,mzs,ksn,nveg,soil_energy,soil_water,soil_text,sfcwater_mass,ustar,tstar &
-              ,rstar,cstar,soil_rough,veg_rough,veg_height,veg_lai,veg_tai,veg_water       &
-              ,veg_hcap,veg_energy,leaf_class,veg_fracarea,stom_resist,can_prss,can_theta  &
-              ,can_rvap,can_co2,sensible,evap,transp,gpp,plresp,resphet,ground_rsat        &
-              ,ground_rvap,rshort,i,j,ip)
+   call leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mass,ustar       &
+                   ,tstar,rstar,cstar,soil_rough,veg_rough,veg_height,veg_lai,veg_tai      &
+                   ,veg_water,veg_hcap,veg_energy,leaf_class,veg_fracarea,stom_resist      &
+                   ,can_prss,can_theta,can_rvap,can_co2,sensible,evap,transp,gpp,plresp    &
+                   ,resphet,ground_rsat,ground_rvap,ground_temp,ground_fliq,rshort,i,j,ip)
 
    !----- Compute soil and effective snow heat resistance times layer depth (rfactor). ----!
    do k = 1,mzg
@@ -816,7 +917,8 @@ subroutine leaftw(mzg,mzs,np,soil_water, soil_energy,soil_text,sfcwater_mass    
          sfcwater_depth(k) = sfcwater_depth(k) * (1. - dtll / 1.e5)
          snden             = sfcwater_mass(k)  / max(min_sfcwater_depth,sfcwater_depth(k))
          sndenmax          =  wdns
-         sndenmin          = max(30.,200. * (wfree + wfreeb) / max(min_sfcwater_mass,sfcwater_mass(k)))
+         sndenmin          = max( 30., 200. * (wfree + wfreeb)                             &
+                                     / max(min_sfcwater_mass,sfcwater_mass(k)))
          snden             = min (sndenmax, max (sndenmin, snden))
          sfcwater_depth(k) = sfcwater_mass(k) / snden
          wfree             = wfreeb
@@ -901,8 +1003,8 @@ subroutine leaftw(mzg,mzs,np,soil_water, soil_energy,soil_text,sfcwater_mass    
    do k = 2,mzg
       nsoil    = nint(soil_text(k))
       watermid = 0.5 * (soil_water(k) + soil_water(k-1))
-      wflux(k) = dslztidt(k) * slcons1(k,nsoil)  &
-               * (watermid / slmsts(nsoil)) ** (2. * slbs(nsoil) + 3.)  &
+      wflux(k) = dslztidt(k) * slcons1(k,nsoil)                                            &
+               * (watermid / slmsts(nsoil)) ** (2. * slbs(nsoil) + 3.)                     &
                * (psiplusz(k-1) - psiplusz(k)) * .5 * (fracliq(k) + fracliq(k-1))
 
       !------------------------------------------------------------------------------------!
@@ -953,14 +1055,19 @@ subroutine leaftw(mzg,mzs,np,soil_water, soil_energy,soil_text,sfcwater_mass    
    !---------------------------------------------------------------------------------------!
    ! Compute ground vap mxrat for availability on next timestep; put into ground_rsat.     !
    !---------------------------------------------------------------------------------------!
-   newlayers = max(1,nint(sfcwater_nlev))
-   if (sfcwater_mass(newlayers) > min_sfcwater_mass) then
-      sfcw_energy_int = sfcw_energy_ext(newlayers) / sfcwater_mass(newlayers)
-   else
+   newlayers = nint(sfcwater_nlev)
+   if (newlayers == 0) then
       sfcw_energy_int = 0.
+   else
+      if (sfcwater_mass(newlayers) > min_sfcwater_mass) then
+         sfcw_energy_int = sfcw_energy_ext(newlayers) / sfcwater_mass(newlayers)
+      else 
+         sfcw_energy_int = 0.
+      end if
    end if
-   call grndvap(soil_energy(mzg),soil_water(mzg),soil_text(mzg),sfcw_energy_int            &
-               ,sfcwater_nlev,ground_rsat,ground_rvap,can_rvap,can_prss)
+   call leaf_grndvap(soil_energy(mzg),soil_water(mzg),soil_text(mzg),sfcw_energy_int       &
+                    ,sfcwater_nlev,can_rvap,can_prss,ground_rsat,ground_rvap,ground_temp   &
+                    ,ground_fliq)
 
    return
 end subroutine leaftw
@@ -977,44 +1084,125 @@ end subroutine leaftw
 !     This subroutine computes the variables that depend on heat, water, and (eventually)  !
 ! carbon exchanges with the canopy air space and vegetation.                               !
 !------------------------------------------------------------------------------------------!
-subroutine canopy(mzg,mzs,ksn,nveg,soil_energy,soil_water,soil_text,sfcwater_mass,ustar    &
-                 ,tstar,rstar,cstar,soil_rough,veg_rough,veg_height,veg_lai,veg_tai        &
-                 ,veg_water,veg_hcap,veg_energy,leaf_class,veg_fracarea,stom_resist        &
-                 ,can_prss,can_theta,can_rvap,can_co2,sensible,evap,transp,gpp,plresp      &
-                 ,resphet,ground_rsat,ground_rvap,rshort,i,j,ip)
+subroutine leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mass          &
+                      ,ustar,tstar,rstar,cstar,soil_rough,veg_rough,veg_height,veg_lai     &
+                      ,veg_tai,veg_water,veg_hcap,veg_energy,leaf_class,veg_fracarea       &
+                      ,stom_resist,can_prss,can_theta,can_rvap,can_co2,sensible,evap       &
+                      ,transp,gpp,plresp,resphet,ground_rsat,ground_rvap,ground_temp       &
+                      ,ground_fliq,rshort,i,j,ip)
    use leaf_coms
    use rconstants
    use therm_lib , only : eslif       & ! function
                         , rslif       & ! function
                         , hpqz2temp   & ! function
                         , idealdenssh & ! function
+                        , tslif       & ! function
                         , qwtk        ! ! subroutine
    use catt_start, only : CATT
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
-   integer             , intent(in)    :: mzg,mzs,ksn
-   integer             , intent(inout) :: nveg
-   real, dimension(mzg), intent(in)    :: soil_energy,soil_water,soil_text
+   integer             , intent(in)    :: mzg
+   integer             , intent(in)    :: mzs
+   integer             , intent(in)    :: ksn
+   real, dimension(mzg), intent(in)    :: soil_energy
+   real, dimension(mzg), intent(in)    :: soil_water
+   real, dimension(mzg), intent(in)    :: soil_text
    real, dimension(mzs), intent(in)    :: sfcwater_mass
-   real                , intent(in)    :: ustar,tstar,rstar,cstar
-   real                , intent(in)    :: soil_rough,veg_rough,veg_height,veg_lai,veg_tai
-   real                , intent(in)    :: leaf_class,veg_fracarea
-   real                , intent(in)    :: ground_rsat,ground_rvap,rshort
-   real                , intent(inout) :: veg_water,veg_hcap,veg_energy
-   real                , intent(inout) :: stom_resist,can_prss,can_theta,can_rvap,can_co2
-   real                , intent(inout) :: sensible,evap,transp,gpp,plresp,resphet
+   real                , intent(in)    :: ustar
+   real                , intent(in)    :: tstar
+   real                , intent(in)    :: rstar
+   real                , intent(in)    :: cstar
+   real                , intent(in)    :: soil_rough
+   real                , intent(in)    :: veg_rough
+   real                , intent(in)    :: veg_height
+   real                , intent(in)    :: veg_lai
+   real                , intent(in)    :: veg_tai
+   real                , intent(in)    :: leaf_class
+   real                , intent(in)    :: veg_fracarea
+   real                , intent(in)    :: ground_rsat
+   real                , intent(in)    :: ground_rvap
+   real                , intent(in)    :: ground_temp
+   real                , intent(in)    :: ground_fliq
+   real                , intent(in)    :: rshort
+   real                , intent(inout) :: veg_water
+   real                , intent(inout) :: veg_hcap
+   real                , intent(inout) :: veg_energy
+   real                , intent(inout) :: stom_resist
+   real                , intent(inout) :: can_prss
+   real                , intent(inout) :: can_theta
+   real                , intent(inout) :: can_rvap
+   real                , intent(inout) :: can_co2
+   real                , intent(inout) :: sensible
+   real                , intent(inout) :: evap
+   real                , intent(inout) :: transp
+   real                , intent(inout) :: gpp
+   real                , intent(inout) :: plresp
+   real                , intent(inout) :: resphet
    !----- Local arguments. ----------------------------------------------------------------!
-   integer                             :: k,kk,nsoil,iter_can
-   integer                             :: i,j,ip
-   real                                :: aux,c2,c3,c4,dsm
-   real                                :: es,fac,factv
-   real                                :: fthi,ftlo,frad,fswp,fvpd,qwtot
-   real                                :: rasgnd,rasveg,rleaf,rsatveg
-   real                                :: sigmaw ,slai,stai,slpotv,swp
-   real                                :: vpd,wtemp,wtroot,x,zognd,zoveg,zdisp,zveg
-   real                                :: wflx,dewgndflx,qdewgndflx
-   real                                :: transp_test,rc,rc_inf
-   real                                :: wshed_loc,qwshed_loc
+   integer                             :: k
+   integer                             :: kk
+   integer                             :: nveg
+   integer                             :: nsoil
+   integer                             :: i
+   integer                             :: j
+   integer                             :: ip
+   real                                :: aux
+   real                                :: c2
+   real                                :: c3
+   real                                :: c4
+   real                                :: dsm
+   real                                :: es
+   real                                :: fac
+   real                                :: factv
+   real                                :: fthi
+   real                                :: ftlo
+   real                                :: frad
+   real                                :: fswp
+   real                                :: fvpd
+   real                                :: qwtot
+   real                                :: rasgnd
+   real                                :: rasveg
+   real                                :: rleaf
+   real                                :: rsatveg
+   real                                :: sigmaw 
+   real                                :: slai
+   real                                :: stai
+   real                                :: slpotv
+   real                                :: swp
+   real                                :: vpd
+   real                                :: wtemp
+   real                                :: wtroot
+   real                                :: x
+   real                                :: zognd
+   real                                :: zoveg
+   real                                :: zdisp
+   real                                :: zveg
+   real                                :: wflx
+   real                                :: dewgndflx
+   real                                :: qdewgndflx
+   real                                :: transp_test
+   real                                :: rc
+   real                                :: rc_inf
+   real                                :: wshed_loc
+   real                                :: qwshed_loc
+   real                                :: old_veg_water
+   real                                :: old_veg_energy
+   real                                :: old_can_rvap
+   real                                :: old_can_enthalpy
+   !----- Local constants. ----------------------------------------------------------------!
+   character(len=9)      , parameter   :: fmti='(a,1x,i6)'
+   character(len=13)     , parameter   :: fmtf='(a,1x,es12.5)'
+   character(len=3)      , parameter   :: fmtc='(a)'
+   character(len=9)      , parameter   :: fmtl='(a,1x,l1)'
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Find the time step auxiliary variables. -----------------------------------------!
+   dtllowcc = dtll / (can_depth * can_rhos)
+   dtlloccc = dtllowcc * mmdry
+   !---------------------------------------------------------------------------------------!
+
 
 
    !---------------------------------------------------------------------------------------!
@@ -1071,9 +1259,14 @@ subroutine canopy(mzg,mzs,ksn,nveg,soil_energy,soil_water,soil_text,sfcwater_mas
    !---------------------------------------------------------------------------------------!
    rdi = can_rhos / rd
 
-   hflxgc     = cp * rdi * (tempk(mzg+ksn) - can_temp)
-   wflx       =      rdi * (ground_rsat    - can_rvap)
-   dewgndflx  = max(0.,-wflx)
+   hflxgc     = cp * rdi * (ground_temp - can_temp)
+   wflx       =      rdi * (ground_rsat - can_rvap)
+   
+   if (wflx >= 0.) then
+      dewgndflx = 0.
+   else
+      dewgndflx = min(-wflx,(can_rvap - toodry) / dtllowcc)
+   end if
    dewgnd_tot = dewgndflx * dtll
 
    if (ksn == 0) then
@@ -1100,7 +1293,7 @@ subroutine canopy(mzg,mzs,ksn,nveg,soil_energy,soil_water,soil_text,sfcwater_mas
       ! involve rb and/or rc.                                                              !
       !------------------------------------------------------------------------------------!
       c4 = .01 * sqrt(ustar * c1)
-      rb  = (1. + .5 * veg_tai) / (.01 * sqrt(ustar * c1))
+      rb  = (1. + .5 * veg_tai) / c4
 
       !----- Soil water potential factor for stomatal control. ----------------------------!
       swp = -200.0
@@ -1114,150 +1307,213 @@ subroutine canopy(mzg,mzs,ksn,nveg,soil_energy,soil_water,soil_text,sfcwater_mas
       swp = swp * grav * wdns
 
       !------------------------------------------------------------------------------------!
-      !      Begin canopy time-split iterations.                                           !
+      !      Begin canopy air computations.                                                !
       !------------------------------------------------------------------------------------!
-      do iter_can = 1,niter_can
 
-         !----- Calculate the saturation vapor pressure at TVEG. --------------------------!
-         es      = eslif(veg_temp)
-         rsatveg = rslif(can_prss,veg_temp)
-         
-         !----- Compute mixing ratio at leaf surface using previous rc --------------------!
-         rc    = stom_resist
-         rleaf = (rb * rsatveg + rc * can_rvap) / (rb + rc)
-         vpd   = max((es - rleaf * can_prss / (ep + rleaf)),0.)
+      !----- Calculate the saturation vapor pressure at TVEG. -----------------------------!
+      es      = eslif(veg_temp)
+      rsatveg = rslif(can_prss,veg_temp)
+      
+      !----- Compute mixing ratio at leaf surface using previous rc -----------------------!
+      rc    = stom_resist
+      rleaf = (rb * rsatveg + rc * can_rvap) / (rb + rc)
+      vpd   = max((es - rleaf * can_prss / (ep + rleaf)),0.)
 
-         !----- Evaluate 5 environmental factors and new rc -------------------------------!
-         ftlo = 1. + exp(-stlo * (veg_temp - btlo))
-         fthi = 1. + exp(-sthi * (veg_temp - bthi))
-         frad = 1. + exp(-srad * (rshort   - brad))
-         fswp = 1. + exp(-sswp * (swp      - bswp))
-         fvpd = 1. + exp(-svpd * (vpd      - bvpd))
+      !----- Evaluate 5 environmental factors and new rc ----------------------------------!
+      ftlo = 1. + exp(-stlo * (veg_temp - btlo))
+      fthi = 1. + exp(-sthi * (veg_temp - bthi))
+      frad = 1. + exp(-srad * (rshort   - brad))
+      fswp = 1. + exp(-sswp * (swp      - bswp))
+      fvpd = 1. + exp(-svpd * (vpd      - bvpd))
 
-         !----- 15-minute response time for stomatal conductance (must have dtlc <= 900.). !
-         rc_inf = ftlo * fthi * frad * fvpd * fswp * rcmin(nveg)
-         rc     = 1. / (1. / rc + .0011 * dtlc * (1. / rc_inf - 1. / rc))
+      !----- 15-minute response time for stomatal conductance (must have dtll <= 900.). ---!
+      rc_inf = ftlo * fthi * frad * fvpd * fswp * rcmin(nveg)
+      rc     = 1. / (1. / rc + .0011 * dtll * (1. / rc_inf - 1. / rc))
 
-         !---------------------------------------------------------------------------------!
-         !    Limit maximum transpiration to be <= 400 w m-2 by increasing rc if           !
-         ! necessary.                                                                      !
-         !---------------------------------------------------------------------------------!
-         transp_test = alvl * can_rhos * veg_lai * (rsatveg - can_rvap) / (rb + rc)
-         if (transp_test > 400.) then
-            rc = (rb + rc) * transp_test * .0025 - rb
-         endif
-         stom_resist = rc
+      !------------------------------------------------------------------------------------!
+      !    Limit maximum transpiration to be <= 400 w m-2 by increasing rc if              !
+      ! necessary.                                                                         !
+      !------------------------------------------------------------------------------------!
+      transp_test = alvl * can_rhos * veg_lai * (rsatveg - can_rvap) / (rb + rc)
+      if (transp_test > 400.) then
+         rc = (rb + rc) * transp_test * .0025 - rb
+      endif
+      stom_resist = rc
 
-         !----- Flux of heat and moisture from vegetation to canopy. ----------------------!
-         stai = veg_tai * (1. - snowfac)
-         slai = veg_lai * (1. - snowfac)
+      !----- Flux of heat and moisture from vegetation to canopy. -------------------------!
+      stai = veg_tai * (1. - snowfac)
+      slai = veg_lai * (1. - snowfac)
 
-         !----- Sensible heat flux from leaf to canopy. -----------------------------------!
-         hflxvc = 2. * stai * cp * can_rhos * (veg_temp - can_temp) / rb
+      !----- Sensible heat flux from leaf to canopy. --------------------------------------!
+      hflxvc = 2. * stai * cp * can_rhos * (veg_temp - can_temp) / rb
 
-         c3     = can_rhos * (rsatveg - can_rvap)
+      c3     = can_rhos * (rsatveg - can_rvap)
 
-         if (c3 >= 0.) then
-            !----- Flow will go towards the canopy, allow evaporation and transpiration. --!
-            sigmaw     = min(1.,(veg_water / (.2 * stai)) ** .66667)
-            wflxvc     = min(c3 * 2. * stai * sigmaw / rb,veg_water/dtlc)
-            transp_loc = max(0.,c3 * slai * (1.-sigmaw) / (rb + rc))
-         else
-            !----- Flow is towards the leaf, dew/frost formation and no transpiration. ----!
-            wflxvc     = c3 * 2. * stai / rb
-            transp_loc = 0.
-         end if
-         transp_tot = transp_tot + transp_loc
+      if (c3 >= 0.) then
+         !----- Flow will go towards the canopy, allow evaporation and transpiration. -----!
+         sigmaw     = min(1.,(veg_water / (.2 * stai)) ** .66667)
+         wflxvc     = min(c3 * 2. * stai * sigmaw / rb,veg_water/dtll)
+         transp_loc = max(0.,c3 * slai * (1.-sigmaw) / (rb + rc))
+      else
+         !----- Flow is towards the leaf, dew/frost formation and no transpiration. -------!
+         wflxvc     = max(c3 * 2. * stai / rb,min(0.,(toodry-can_rvap)/ dtllowcc))
+         transp_loc = 0.
+      end if
+      transp_tot = transp_tot + transp_loc
 
-         !---------------------------------------------------------------------------------!
-         !     Update vegetation moisture from precipitation, vapor flux with canopy,      !
-         ! and shedding of excess moisture.                                                !
-         !---------------------------------------------------------------------------------!
-         wtemp     = veg_water - wflxvc * dtlc + pcpgc * vf
-         !----- If this result will lead to negative solution, then reduce evaporation. ---!
-         if (wtemp < 0.) then
-            wtemp     = 0.
-            wshed_loc = 0.
-            wflxvc    = (veg_water + pcpgc * vf) / dtlc
-         else
-            wshed_loc = max(0.,wtemp - 0.2 * stai)
-            wshed_tot = wshed_tot + wshed_loc
-            veg_water = wtemp - wshed_loc
-         end if
-         !---------------------------------------------------------------------------------!
+      !------------------------------------------------------------------------------------!
+      !     Update vegetation moisture from precipitation, vapor flux with canopy,         !
+      ! and shedding of excess moisture.                                                   !
+      !------------------------------------------------------------------------------------!
+      old_veg_water = veg_water
+      wtemp         = veg_water - wflxvc * dtll + pcpgl * vf
+      !----- If this result will lead to negative solution, then reduce evaporation. ------!
+      if (wtemp < 0.0005 * stai) then
+         wshed_loc = 0.
+         wflxvc    = (veg_water + pcpgl * vf) / dtll
+         veg_water = 0.
+      else
+         wshed_loc = max(0.,wtemp - 0.2 * stai)
+         wshed_tot = wshed_tot + wshed_loc
+         veg_water = wtemp - wshed_loc
+      end if
+      !------------------------------------------------------------------------------------!
 
-         !------ Find the associated latent heat flux from vegetation to canopy. ----------!
-         qwflxvc     = wflxvc     * (alvi - alli * veg_fliq)
-         qtransp_loc = transp_loc *  alvl !----- Liquid phase only in transpiration. ------!
-         !---------------------------------------------------------------------------------!
+      !------ Find the associated latent heat flux from vegetation to canopy. -------------!
+      qwflxvc     = wflxvc     * (alvi - alli * veg_fliq)
+      qtransp_loc = transp_loc *  alvl !----- Liquid phase only in transpiration. ---------!
+      !------------------------------------------------------------------------------------!
 
 
-         !----- Exchange heat between vegetation and precipitation in implicit scheme -----!
-         qwshed_loc = wshed_loc * (     veg_fliq  * cliq * (veg_temp - tsupercool)         &
-                                  + (1.-veg_fliq) * cice *  veg_temp )
-         qwshed_tot = qwshed_tot + qwshed_loc
+      !----- Exchange heat between vegetation and precipitation in implicit scheme --------!
+      qwshed_loc = wshed_loc * (     veg_fliq  * cliq * (veg_temp - tsupercool)            &
+                               + (1.-veg_fliq) * cice *  veg_temp )
+      qwshed_tot = qwshed_tot + qwshed_loc
 
-         !---------------------------------------------------------------------------------!
-         !      Update vegetation internal energy from radiative fluxes and sensible and   !
-         ! latent heat transfer with canopy air.                                           !
-         !---------------------------------------------------------------------------------!
-         veg_energy = veg_energy                                                           &
-                    + dtlc * ( rshort_v + rlonga_v + rlonggs_v - rlongv_gs - rlongv_a      &
-                             - hflxvc   - qwflxvc   - qtransp_loc)                         &
-                    + qpcpgc * vf - qwshed_loc
+      !------------------------------------------------------------------------------------!
+      !      Update vegetation internal energy from radiative fluxes and sensible and      !
+      ! latent heat transfer with canopy air.                                              !
+      !------------------------------------------------------------------------------------!
+      old_veg_energy = veg_energy
+      veg_energy     = veg_energy                                                          &
+                     + dtll * ( rshort_v + rlonga_v + rlonggs_v - rlongv_gs - rlongv_a     &
+                              - hflxvc   - qwflxvc   - qtransp_loc)                        &
+                     + qpcpgl * vf - qwshed_loc
 
-         !---------------------------------------------------------------------------------!
-         !     Find the atmosphere -> canopy fluxes.                                       !
-         !---------------------------------------------------------------------------------!
-         rho_ustar  = can_rhos  * ustar
-         eflxac     = rho_ustar * estar          ! Enthalpy exchange
-         wflxac     = rho_ustar * rstar          ! Water vapour exchange
-         cflxac     = rho_ustar * mmdryi * cstar ! CO2 exchange
-         
-         dtlcowcc = dtlc / (can_depth * can_rhos)
-         dtlcoccc = dtlcowcc * mmdry
+      !------------------------------------------------------------------------------------!
+      !     Find the atmosphere -> canopy fluxes.                                          !
+      !------------------------------------------------------------------------------------!
+      rho_ustar  = can_rhos  * ustar
+      eflxac     = rho_ustar * estar          ! Enthalpy exchange
+      wflxac     = rho_ustar * rstar          ! Water vapour exchange
+      cflxac     = rho_ustar * mmdryi * cstar ! CO2 exchange
+      !------------------------------------------------------------------------------------!
 
-         !---------------------------------------------------------------------------------!
-         !      Update enthalpy, CO2, and canopy mixing ratio.                             !
-         !---------------------------------------------------------------------------------!
-         can_enthalpy = can_enthalpy                                                       &
-                      + dtlcowcc * ( hflxgc + hflxvc + eflxac                              &
-                                   + qwflxgc - qdewgndflx + qwflxvc + qtransp_loc)
 
-         can_rvap     = can_rvap                                                           &
-                      + dtlcowcc * (wflxgc - dewgndflx + wflxvc + transp_loc + wflxac)
-         !---------------------------------------------------------------------------------!
-         !      CO2 exchange with biosphere is currently not computed in LEAF-3... Feel    !
-         ! free to include here: cflxgc would be the root respiration, and cflxvc R-GPP.   !
-         !---------------------------------------------------------------------------------!
-         cflxgc   = 0.
-         cflxvc   = 0.
-         cflxcv   = 0.
-         can_co2  = can_co2  + dtlcowcc * mmdry * (cflxgc + cflxvc + cflxcv + cflxac)
 
-         !----- Update the fluxes. --------------------------------------------------------!
-         sensible = sensible + (hflxvc  + hflxgc ) * dtlc_factor
-         evap     = evap     + (qwflxvc + qwflxgc) * dtlc_factor
-         transp   = transp   + (qtransp_loc      ) * dtlc_factor
-         ! gpp      = gpp     + cflxcv * dtlc_factor
-         ! plresp   = plresp  + cflxvc * dtlc_factor
-         ! resphet  = resphet + cflxgc * dtlc_factor
 
-         !----- Find the vegetation diagnostic variables for next time step. --------------!
-         call qwtk(veg_energy,veg_water,veg_hcap,veg_temp,veg_fliq)
+      !------------------------------------------------------------------------------------!
+      !      Update enthalpy, CO2, and canopy mixing ratio.                                !
+      !------------------------------------------------------------------------------------!
+      old_can_enthalpy = can_enthalpy
+      old_can_rvap     = can_rvap
+      can_enthalpy     = can_enthalpy                                                      &
+                       + dtllowcc * ( hflxgc + hflxvc + eflxac                             &
+                                    + qwflxgc - qdewgndflx + qwflxvc + qtransp_loc)
+      can_rvap         = can_rvap                                                          &
+                       + dtllowcc * (wflxgc - dewgndflx + wflxvc + transp_loc + wflxac)
+      !------------------------------------------------------------------------------------!
 
-         !----- Find the canopy air diagnostic variables for next time step. --------------!
-         can_shv   = can_rvap / (can_rvap + 1.)
-         can_temp  = hpqz2temp(can_enthalpy,can_prss,can_shv,can_depth)
-         can_rhos  = idealdenssh(can_prss,can_temp,can_shv)
-         can_theta = can_temp * (p00 / can_prss) ** rocp
 
-      end do
+
+      !------------------------------------------------------------------------------------!
+      !      CO2 exchange with biosphere is currently not computed in LEAF-3... Feel       !
+      ! free to include here: cflxgc would be the root respiration, and cflxvc R-GPP.      !
+      !------------------------------------------------------------------------------------!
+      cflxgc   = 0.
+      cflxvc   = 0.
+      cflxcv   = 0.
+      can_co2  = can_co2  + dtllowcc * mmdry * (cflxgc + cflxvc + cflxcv + cflxac)
+      !------------------------------------------------------------------------------------!
+
+
+
+      if (can_enthalpy /= can_enthalpy) then
+         nsoil = nint(soil_text(mzg))
+         write (unit=*,fmt=fmtc) '------------ Canopy enthalpy is screwed. ------------'
+         write (unit=*,fmt=fmtc) ' - Vegetated patch. '
+         write (unit=*,fmt=fmti) ' - SOIL_TEXT        = ',nsoil
+         write (unit=*,fmt=fmti) ' - LEAF_CLASS       = ',nveg
+         write (unit=*,fmt=fmti) ' - KSN              = ',ksn
+         write (unit=*,fmt=fmtc) ' '
+         write (unit=*,fmt=fmtf) ' - CAN_ENTHALPY     = ',can_enthalpy
+         write (unit=*,fmt=fmtf) ' - OLD_CAN_ENTHALPY = ',old_can_enthalpy
+         write (unit=*,fmt=fmtf) ' - CAN_RVAP         = ',can_rvap
+         write (unit=*,fmt=fmtf) ' - OLD_CAN_RVAP     = ',old_can_rvap
+         write (unit=*,fmt=fmtf) ' - CAN_CO2          = ',can_co2
+         write (unit=*,fmt=fmtf) ' - CAN_PRSS         = ',can_prss
+         write (unit=*,fmt=fmtf) ' - CAN_THETA        = ',can_theta
+         write (unit=*,fmt=fmtf) ' - CAN_TEMP         = ',can_temp
+         write (unit=*,fmt=fmtf) ' - CAN_RHOS         = ',can_rhos
+         write (unit=*,fmt=fmtc) ' '
+         write (unit=*,fmt=fmtf) ' - VEG_ENERGY       = ',veg_energy
+         write (unit=*,fmt=fmtf) ' - OLD_VEG_ENERGY   = ',old_veg_energy
+         write (unit=*,fmt=fmtf) ' - VEG_WATER        = ',veg_water
+         write (unit=*,fmt=fmtf) ' - OLD_VEG_WATER    = ',old_veg_water
+         write (unit=*,fmt=fmtf) ' - VEG_HCAP         = ',veg_hcap
+         write (unit=*,fmt=fmtf) ' - VEG_TEMP         = ',veg_temp
+         write (unit=*,fmt=fmtf) ' - VEG_FLIQ         = ',veg_fliq
+         write (unit=*,fmt=fmtc) ' '
+         write (unit=*,fmt=fmtf) ' - GROUND_RVAP      = ',ground_rvap
+         write (unit=*,fmt=fmtf) ' - GROUND_RSAT      = ',ground_rsat
+         write (unit=*,fmt=fmtf) ' - GROUND_TEMP      = ',ground_temp
+         write (unit=*,fmt=fmtf) ' - GROUND_FLIQ      = ',ground_fliq
+         write (unit=*,fmt=fmtc) ' '
+         write (unit=*,fmt=fmtf) ' - HFLXGC           = ',hflxgc
+         write (unit=*,fmt=fmtf) ' - HFLXVC           = ',hflxvc
+         write (unit=*,fmt=fmtf) ' - EFLXAC           = ',eflxac
+         write (unit=*,fmt=fmtf) ' - QWFLXGC          = ',qwflxgc
+         write (unit=*,fmt=fmtf) ' - QDEWGNDFLX       = ',qdewgndflx
+         write (unit=*,fmt=fmtf) ' - QWFLXVC          = ',qwflxvc
+         write (unit=*,fmt=fmtf) ' - QTRANSP_LOC      = ',qtransp_loc
+         write (unit=*,fmt=fmtc) ' '
+         write (unit=*,fmt=fmtf) ' - RSHORT_V         = ',rshort_v
+         write (unit=*,fmt=fmtf) ' - RLONGA_V         = ',rlonga_v
+         write (unit=*,fmt=fmtf) ' - RLONGGS_V        = ',rlonggs_v
+         write (unit=*,fmt=fmtf) ' - RLONGV_GS        = ',rlongv_gs
+         write (unit=*,fmt=fmtf) ' - RLONGV_A         = ',rlongv_a
+         write (unit=*,fmt=fmtf) ' - QPCPGL           = ',qpcpgl
+         write (unit=*,fmt=fmtf) ' - VF               = ',vf
+         write (unit=*,fmt=fmtf) ' - QWSHED_LOC       = ',qwshed_loc
+         write (unit=*,fmt=fmtc) ' '
+         write (unit=*,fmt=fmtf) ' - WFLXGC           = ',wflxgc
+         write (unit=*,fmt=fmtf) ' - DEWGNDFLX        = ',dewgndflx
+         write (unit=*,fmt=fmtf) ' - TRANSP_LOC       = ',transp_loc
+         write (unit=*,fmt=fmtf) ' - WFLXAC           = ',wflxac
+         write (unit=*,fmt=fmtf) ' - WFLXVC           = ',wflxvc
+         write (unit=*,fmt=fmtf) ' - PCPGL            = ',pcpgl
+         write (unit=*,fmt=fmtf) ' - WSHED_LOC        = ',wshed_loc
+         write (unit=*,fmt=fmtf) ' - VF               = ',vf
+         write (unit=*,fmt=fmtc) '-----------------------------------------------------'
+      end if
+
+      !----- Update the fluxes. -----------------------------------------------------------!
+      sensible = sensible + (hflxvc  + hflxgc ) * dtll_factor
+      evap     = evap     + (qwflxvc + qwflxgc) * dtll_factor
+      transp   = transp   + (qtransp_loc      ) * dtll_factor
+
+      !----- Find the vegetation diagnostic variables for next time step. -----------------!
+      call qwtk(veg_energy,veg_water,veg_hcap,veg_temp,veg_fliq)
+
+      !----- Find the canopy air diagnostic variables for next time step. -----------------!
+      can_shv   = can_rvap / (can_rvap + 1.)
+      can_temp  = hpqz2temp(can_enthalpy,can_prss,can_shv,can_depth)
+      can_rhos  = idealdenssh(can_prss,can_temp,can_shv)
+      can_theta = can_temp * (p00 / can_prss) ** rocp
 
    else
       !------------------------------------------------------------------------------------!
-      !    No vegetation, or vegetation buried in snow... Update the canopy properties and !
-      ! move to the next time step without nesting.                                        !
+      !    No vegetation, or vegetation buried in snow...                                  !
       !------------------------------------------------------------------------------------!
 
       !------------------------------------------------------------------------------------!
@@ -1269,8 +1525,6 @@ subroutine canopy(mzg,mzs,ksn,nveg,soil_energy,soil_water,soil_text,sfcwater_mas
       cflxac     = rho_ustar * mmdryi * cstar ! CO2 exchange
       !------------------------------------------------------------------------------------!
 
-      dtllowcc = dtll / (can_depth * can_rhos)
-      dtlloccc = dtllowcc * mmdry
 
       !----- Update the canopy prognostic variables. --------------------------------------!
       can_enthalpy = can_enthalpy + dtllowcc * (hflxgc + qwflxgc - qdewgndflx + eflxac)
@@ -1280,23 +1534,39 @@ subroutine canopy(mzg,mzs,ksn,nveg,soil_energy,soil_water,soil_text,sfcwater_mas
       ! free to include here: cflxgc would be the root respiration, and cflxvc R-GPP.      !
       !------------------------------------------------------------------------------------!
       cflxgc       = 0.
-      can_co2      = can_co2      + dtlcoccc * (cflxgc + cflxac)
+      can_co2      = can_co2      + dtlloccc * (cflxgc + cflxac)
       !------------------------------------------------------------------------------------!
 
       !----- Update the fluxes. -----------------------------------------------------------!
       sensible = sensible + hflxgc  * dtll_factor
       evap     = evap     + qwflxgc * dtll_factor
-      ! resphet  = resphet  + cflxgc  * dtll_factor
 
-      !----- Find the canopy air diagnostic variables for next time step. -----------------!
+      !----- Find the diagnostic canopy air variables for next time step. -----------------!
       can_shv   = can_rvap / (can_rvap + 1.)
       can_temp  = hpqz2temp(can_enthalpy,can_prss,can_shv,can_depth)
       can_rhos  = idealdenssh(can_prss,can_temp,can_shv)
       can_theta = can_temp * (p00 / can_prss) ** rocp
       !------------------------------------------------------------------------------------!
+      if (can_enthalpy /= can_enthalpy) then
+         write (unit=*,fmt=fmtc) '------------ Canopy enthalpy is screwed. ------------'
+         write (unit=*,fmt=fmtc) ' - Non-vegetated patch. '
+         write (unit=*,fmt=fmtf) ' - CAN_ENTHALPY = ',can_enthalpy
+         write (unit=*,fmt=fmtf) ' - CAN_RVAP     = ',can_rvap
+         write (unit=*,fmt=fmtf) ' - CAN_CO2      = ',can_co2
+         write (unit=*,fmt=fmtf) ' - CAN_PRSS     = ',can_prss
+         write (unit=*,fmt=fmtf) ' - HFLXGC       = ',hflxgc
+         write (unit=*,fmt=fmtf) ' - EFLXAC       = ',eflxac
+         write (unit=*,fmt=fmtf) ' - QWFLXGC      = ',qwflxgc
+         write (unit=*,fmt=fmtf) ' - QDEWGNDFLX   = ',qdewgndflx
+         write (unit=*,fmt=fmtc) ' '
+         write (unit=*,fmt=fmtf) ' - WFLXGC       = ',wflxgc
+         write (unit=*,fmt=fmtf) ' - DEWGNDFLX    = ',dewgndflx
+         write (unit=*,fmt=fmtf) ' - WFLXAC       = ',wflxac
+         write (unit=*,fmt=fmtc) '-----------------------------------------------------'
+      end if
    end if
 
    return
-end subroutine canopy
+end subroutine leaf_canopy
 !==========================================================================================!
 !==========================================================================================!

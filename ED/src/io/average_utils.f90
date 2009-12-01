@@ -393,14 +393,13 @@ subroutine reset_averaged_vars(cgrid)
             csite%avg_available_water(ipa)  = 0.0
             csite%aux(ipa)                  = 0.0
             csite%aux_s(:,ipa)              = 0.0
-!!            csite%avg_heatstor_veg(ipa)     = 0.0  !SHOULD THIS BE ZERO'D ALSO?
          
             do ico=1,cpatch%ncohorts
                cpatch%leaf_respiration(ico)      = 0.0
                cpatch%root_respiration(ico)      = 0.0
                cpatch%gpp(ico)                   = 0.0
-               cpatch%mean_leaf_resp(ico)        = 0.0 !!
-               cpatch%mean_root_resp(ico)        = 0.0 !!
+               cpatch%mean_leaf_resp(ico)        = 0.0
+               cpatch%mean_root_resp(ico)        = 0.0
                cpatch%mean_gpp(ico)              = 0.0
                cpatch%mean_storage_resp(ico)     = 0.0 
                cpatch%mean_growth_resp(ico)      = 0.0
@@ -475,8 +474,8 @@ subroutine integrate_ed_daily_output_state(cgrid)
 
       
       !----- Initialize auxiliary variables to add sitetype variables. --------------------!
-      site_lma       = 0.
-      site_lai       = 0.
+      site_lma         = 0.
+      site_lai         = 0.
       sss_fsn          = 0.
       sss_fsw          = 0.
       sss_veg_energy   = 0.
@@ -513,11 +512,11 @@ subroutine integrate_ed_daily_output_state(cgrid)
          !----- Initialize auxiliary variables to add patchtype variables. ----------------!
          pss_fsn          = 0.
          pss_fsw          = 0.
-         patch_lai = 0.
-         patch_lma = 0.
-         pss_veg_energy        = 0.
-         pss_veg_water         = 0.
-         pss_veg_hcap          = 0.
+         patch_lai        = 0.
+         patch_lma        = 0.
+         pss_veg_energy   = 0.
+         pss_veg_water    = 0.
+         pss_veg_hcap     = 0.
 
          !----- Looping through the patches to normalize the sum of all cohorts. ----------!
          patchloop: do ipa=1, csite%npatches
@@ -529,7 +528,8 @@ subroutine integrate_ed_daily_output_state(cgrid)
                pss_veg_hcap   = pss_veg_hcap   + sum(cpatch%hcapveg   ) * csite%area(ipa)
                patch_lai_i = 1./max(tiny(1.),sum(cpatch%lai,cpatch%solvable))
                patch_lai = patch_lai + csite%area(ipa)*sum(cpatch%lai,cpatch%solvable)
-               patch_lma = patch_lma + csite%area(ipa)*sum(cpatch%lai/sla(cpatch%pft),cpatch%solvable)
+               patch_lma = patch_lma + csite%area(ipa)*sum(cpatch%lai/sla(cpatch%pft)      &
+                                                          ,cpatch%solvable)
                pss_fsn = pss_fsn + csite%area(ipa)                                         &
                        * (sum(cpatch%fsn * cpatch%lai,cpatch%solvable) * patch_lai_i)
                pss_fsw = pss_fsw + csite%area(ipa)                                         &
@@ -693,7 +693,9 @@ subroutine integrate_ed_daily_output_flux(cgrid)
    real                          :: sitesum_plresp
    real                          :: sitesum_gpp
    real, dimension(n_dbh)        :: sitesum_gpp_dbh
-   real, dimension(n_dist_types) :: sitesum_gpp_lu, sitesum_rh_lu,sitesum_nep_lu
+   real, dimension(n_dist_types) :: sitesum_gpp_lu
+   real, dimension(n_dist_types) :: sitesum_rh_lu
+   real, dimension(n_dist_types) :: sitesum_nep_lu
    real                          :: sitesum_rh
    real                          :: sitesum_evap
    real                          :: sitesum_transp
@@ -702,23 +704,28 @@ subroutine integrate_ed_daily_output_flux(cgrid)
    real                          :: sitesum_co2_residual
    real                          :: sitesum_energy_residual
    real                          :: sitesum_water_residual
-   real :: sitesum_root_litter,sitesum_leaf_litter
-   real :: sitesum_root_litterN,sitesum_leaf_litterN
-   real :: sitesum_Nmin_input, sitesum_Nmin_loss
+   real                          :: sitesum_root_litter
+   real                          :: sitesum_leaf_litter
+   real                          :: sitesum_root_litterN
+   real                          :: sitesum_leaf_litterN
+   real                          :: sitesum_Nmin_input
+   real                          :: sitesum_Nmin_loss
    real                          :: patchsum_leaf_resp
    real                          :: patchsum_root_resp
-   real :: patchsum_leaf_litter,patchsum_root_litter
-   real :: patchsum_leaf_litterN,patchsum_root_litterN
+   real                          :: patchsum_leaf_litter
+   real                          :: patchsum_root_litter
+   real                          :: patchsum_leaf_litterN
+   real                          :: patchsum_root_litterN
 
    !---------------------------------------------------------------------------------------!
 
-   cgrid%Nbiomass_uptake = 0.
+   cgrid%Nbiomass_uptake   = 0.
    cgrid%Cleaf_litter_flux = 0.
    cgrid%Croot_litter_flux = 0.
    cgrid%Nleaf_litter_flux = 0.
    cgrid%Nroot_litter_flux = 0.
-   cgrid%Ngross_min = 0.
-   cgrid%Nnet_min   = 0.
+   cgrid%Ngross_min        = 0.
+   cgrid%Nnet_min          = 0.
 
    polyloop: do ipy=1,cgrid%npolygons
       cpoly => cgrid%polygon(ipy)
@@ -726,13 +733,13 @@ subroutine integrate_ed_daily_output_flux(cgrid)
 
       
       !---- Initialize auxiliary variables to add sitetype variables. ---------------------!
-      sitesum_leaf_litter  = 0.
-      sitesum_root_litter  = 0.
-      sitesum_leaf_litterN = 0.
-      sitesum_root_litterN = 0.
-      sitesum_Nuptake      = 0.
-      sitesum_Nmin_loss    = 0.
-      sitesum_Nmin_input   = 0.
+      sitesum_leaf_litter     = 0.
+      sitesum_root_litter     = 0.
+      sitesum_leaf_litterN    = 0.
+      sitesum_root_litterN    = 0.
+      sitesum_Nuptake         = 0.
+      sitesum_Nmin_loss       = 0.
+      sitesum_Nmin_input      = 0.
       sitesum_rh              = 0.
       sitesum_leaf_resp       = 0.
       sitesum_root_resp       = 0.
@@ -773,14 +780,21 @@ subroutine integrate_ed_daily_output_flux(cgrid)
          patchloop: do ipa=1, csite%npatches
             cpatch => csite%patch(ipa)
             if (cpatch%ncohorts > 0) then
-               patchsum_leaf_resp = patchsum_leaf_resp + sum(cpatch%mean_leaf_resp, cpatch%solvable)  * csite%area(ipa) 
-               patchsum_root_resp = patchsum_root_resp + sum(cpatch%mean_root_resp                 )  * csite%area(ipa)  
-               patchsum_root_litter = patchsum_root_litter + sum(cpatch%root_maintenance)  * csite%area(ipa) 
-               patchsum_leaf_litter = patchsum_leaf_litter + sum(cpatch%leaf_maintenance)  * csite%area(ipa) 
-               patchsum_root_litterN = patchsum_root_litterN &
-                    + sum(cpatch%root_maintenance*c2n_leaf(cpatch%pft))  * csite%area(ipa) 
-               patchsum_leaf_litterN = patchsum_leaf_litterN &
-                    + sum(cpatch%leaf_maintenance*c2n_leaf(cpatch%pft))  * csite%area(ipa)               
+               patchsum_leaf_resp    = patchsum_leaf_resp                                  &
+                                     + sum(cpatch%mean_leaf_resp, cpatch%solvable)         &
+                                     * csite%area(ipa) 
+               patchsum_root_resp    = patchsum_root_resp                                  &
+                                     + sum(cpatch%mean_root_resp)   * csite%area(ipa)  
+               patchsum_root_litter  = patchsum_root_litter                                &
+                                     + sum(cpatch%root_maintenance) * csite%area(ipa) 
+               patchsum_leaf_litter  = patchsum_leaf_litter                                &
+                                     + sum(cpatch%leaf_maintenance) * csite%area(ipa) 
+               patchsum_root_litterN = patchsum_root_litterN                               &
+                                     + sum(cpatch%root_maintenance*c2n_leaf(cpatch%pft))   &
+                                     * csite%area(ipa) 
+               patchsum_leaf_litterN = patchsum_leaf_litterN                               &
+                                     + sum(cpatch%leaf_maintenance*c2n_leaf(cpatch%pft))   & 
+                                     * csite%area(ipa)
             end if
             csite%dmean_co2_residual(ipa)    = csite%dmean_co2_residual(ipa)               &
                                              + csite%co2budget_residual(ipa)
@@ -798,27 +812,27 @@ subroutine integrate_ed_daily_output_flux(cgrid)
          !      Variables already averaged at the sitetype level, add them to polygontype  !
          ! level.                                                                          !
          !---------------------------------------------------------------------------------!
-         sitesum_leaf_resp    = sitesum_leaf_resp                                          &
-                              + (patchsum_leaf_resp * site_area_i) * cpoly%area(isi)
-         sitesum_root_resp    = sitesum_root_resp                                          &
-                              + (patchsum_root_resp * site_area_i) * cpoly%area(isi)
+         sitesum_leaf_resp       = sitesum_leaf_resp                                       &
+                                 + (patchsum_leaf_resp * site_area_i) * cpoly%area(isi)
+         sitesum_root_resp       = sitesum_root_resp                                       &
+                                 + (patchsum_root_resp * site_area_i) * cpoly%area(isi)
 
-         sitesum_gpp          = sitesum_gpp                                                &
-                              + (sum(csite%co2budget_gpp * csite%area) * site_area_i)      &
-                              * cpoly%area(isi)
-         sitesum_rh           = sitesum_rh                                                 &
-                              + (sum(csite%co2budget_rh    *csite%area) * site_area_i)     &
-                              * cpoly%area(isi)
-         sitesum_plresp       = sitesum_plresp                                             &
-                              + (sum(csite%co2budget_plresp * csite%area) * site_area_i)   &
-                              * cpoly%area(isi)
+         sitesum_gpp             = sitesum_gpp                                             &
+                                 + (sum(csite%co2budget_gpp * csite%area) * site_area_i)   &
+                                 * cpoly%area(isi)
+         sitesum_rh              = sitesum_rh                                              &
+                                 + (sum(csite%co2budget_rh    *csite%area) * site_area_i)  &
+                                 * cpoly%area(isi)
+         sitesum_plresp          = sitesum_plresp                                          &
+                                 + (sum(csite%co2budget_plresp * csite%area)* site_area_i) &
+                                 * cpoly%area(isi)
          
-         sitesum_evap         = sitesum_evap                                               &
-                              + (sum(csite%avg_evap * csite%area) * site_area_i)           &
-                              * cpoly%area(isi)
-         sitesum_transp       = sitesum_transp                                             &
-                              + (sum(csite%avg_transp * csite%area) * site_area_i)         &
-                              * cpoly%area(isi)
+         sitesum_evap            = sitesum_evap                                            &
+                                 + (sum(csite%avg_evap * csite%area) * site_area_i)        &
+                                 * cpoly%area(isi)
+         sitesum_transp          = sitesum_transp                                          &
+                                 + (sum(csite%avg_transp * csite%area) * site_area_i)      &
+                                 * cpoly%area(isi)
          
          sitesum_co2_residual    = sitesum_co2_residual                                    &
                                  + (sum(csite%co2budget_residual*csite%area)*site_area_i)  &
@@ -840,14 +854,24 @@ subroutine integrate_ed_daily_output_flux(cgrid)
                                           + sum(csite%wbudget_residual  *csite%area)       &
                                           * site_area_i
 
-         sitesum_root_litter    = sitesum_root_litter    + (patchsum_root_litter      *site_area_i) * cpoly%area(isi)
-         sitesum_leaf_litter    = sitesum_leaf_litter    + (patchsum_leaf_litter      *site_area_i) * cpoly%area(isi)
+         sitesum_root_litter    = sitesum_root_litter                                      &
+                                + (patchsum_root_litter * site_area_i) * cpoly%area(isi)
+         sitesum_leaf_litter    = sitesum_leaf_litter                                      &
+                                + (patchsum_leaf_litter * site_area_i) * cpoly%area(isi)
 
-         sitesum_root_litterN    = sitesum_root_litterN    + (patchsum_root_litterN      *site_area_i) * cpoly%area(isi)
-         sitesum_leaf_litterN    = sitesum_leaf_litterN    + (patchsum_leaf_litterN      *site_area_i) * cpoly%area(isi)
-         sitesum_Nmin_loss  = sitesum_Nmin_loss + sum(csite%mineralized_N_loss*csite%area)*site_area_i*cpoly%area(isi)
-         sitesum_Nmin_input = sitesum_Nmin_input + sum(csite%mineralized_N_input*csite%area)*site_area_i*cpoly%area(isi)
-         sitesum_Nuptake      = sitesum_Nuptake + (sum(csite%total_plant_nitrogen_uptake*csite%area)*site_area_i)*cpoly%area(isi)
+         sitesum_root_litterN    = sitesum_root_litterN                                    &
+                                 + (patchsum_root_litterN * site_area_i) * cpoly%area(isi)
+         sitesum_leaf_litterN    = sitesum_leaf_litterN                                    &
+                                 + (patchsum_leaf_litterN * site_area_i) * cpoly%area(isi)
+         sitesum_Nmin_loss       = sitesum_Nmin_loss                                       &
+                                 + sum(csite%mineralized_N_loss*csite%area) * site_area_i  &
+                                 * cpoly%area(isi)
+         sitesum_Nmin_input      = sitesum_Nmin_input                                      &
+                                 + sum(csite%mineralized_N_input*csite%area)* site_area_i  &
+                                 * cpoly%area(isi)
+         sitesum_Nuptake         = sitesum_Nuptake                                         &
+                                 + (sum(csite%total_plant_nitrogen_uptake * csite%area)    &
+                                   *site_area_i ) * cpoly%area(isi)
 
          dbhloop: do idbh=1,n_dbh
             sitesum_gpp_dbh(idbh) = sitesum_gpp_dbh(idbh)                                  &
@@ -857,28 +881,39 @@ subroutine integrate_ed_daily_output_flux(cgrid)
 
       end do siteloop
 
-      cgrid%dmean_leaf_resp(ipy)    = cgrid%dmean_leaf_resp(ipy)    + sitesum_leaf_resp    * poly_area_i
-      cgrid%dmean_root_resp(ipy)    = cgrid%dmean_root_resp(ipy)    + sitesum_root_resp    * poly_area_i
+      cgrid%dmean_leaf_resp(ipy)       = cgrid%dmean_leaf_resp(ipy)                        &
+                                       + sitesum_leaf_resp * poly_area_i
+      cgrid%dmean_root_resp(ipy)       = cgrid%dmean_root_resp(ipy)                        &
+                                       + sitesum_root_resp * poly_area_i
 
-      cgrid%Croot_litter_flux(ipy)    = cgrid%Croot_litter_flux(ipy)    + sitesum_root_litter    * poly_area_i
-      cgrid%Cleaf_litter_flux(ipy)    = cgrid%Cleaf_litter_flux(ipy)    + sitesum_leaf_litter    * poly_area_i
+      cgrid%Croot_litter_flux(ipy)     = cgrid%Croot_litter_flux(ipy)                      &
+                                       + sitesum_root_litter * poly_area_i
+      cgrid%Cleaf_litter_flux(ipy)     = cgrid%Cleaf_litter_flux(ipy)                      &
+                                       + sitesum_leaf_litter * poly_area_i
 
-      cgrid%Nroot_litter_flux(ipy)    = cgrid%Nroot_litter_flux(ipy)    + sitesum_root_litterN    * poly_area_i
-      cgrid%Nleaf_litter_flux(ipy)    = cgrid%Nleaf_litter_flux(ipy)    + sitesum_leaf_litterN    * poly_area_i
+      cgrid%Nroot_litter_flux(ipy)     = cgrid%Nroot_litter_flux(ipy)                      &
+                                       + sitesum_root_litterN * poly_area_i
+      cgrid%Nleaf_litter_flux(ipy)     = cgrid%Nleaf_litter_flux(ipy)                      &
+                                       + sitesum_leaf_litterN    * poly_area_i
 
-      cgrid%Ngross_min(ipy) = cgrid%Ngross_min(ipy) + sitesum_Nmin_input* poly_area_i
-      cgrid%Nnet_min(ipy)   = cgrid%Nnet_min(ipy)   + (sitesum_Nmin_input-sitesum_Nmin_loss)  * poly_area_i
-      cgrid%Nbiomass_uptake(ipy)    = cgrid%Nbiomass_uptake(ipy) + sitesum_Nuptake*poly_area_i
+      cgrid%Ngross_min(ipy)            = cgrid%Ngross_min(ipy)                             &
+                                       + sitesum_Nmin_input * poly_area_i
+      cgrid%Nnet_min(ipy)              = cgrid%Nnet_min(ipy)                               &
+                                       + (sitesum_Nmin_input-sitesum_Nmin_loss)            &
+                                       * poly_area_i
+      cgrid%Nbiomass_uptake(ipy)       = cgrid%Nbiomass_uptake(ipy)                        &
+                                       + sitesum_Nuptake*poly_area_i
 
       
-      cgrid%dmean_gpp(ipy)    = cgrid%dmean_gpp(ipy)          + sitesum_gpp          * poly_area_i
-
-      cgrid%dmean_rh(ipy)     = cgrid%dmean_rh(ipy)                                        &
-                              + sitesum_rh * poly_area_i
-      cgrid%dmean_plresp(ipy) = cgrid%dmean_plresp(ipy)                                    &
-                              + sitesum_plresp * poly_area_i
-      cgrid%dmean_nep(ipy)    = cgrid%dmean_nep(ipy)                                       &
-                              + (sitesum_gpp-sitesum_rh-sitesum_plresp) * poly_area_i
+      cgrid%dmean_gpp(ipy)             = cgrid%dmean_gpp(ipy)                              &
+                                       + sitesum_gpp * poly_area_i
+      cgrid%dmean_rh(ipy)              = cgrid%dmean_rh(ipy)                               &
+                                       + sitesum_rh * poly_area_i
+      cgrid%dmean_plresp(ipy)          = cgrid%dmean_plresp(ipy)                           &
+                                       + sitesum_plresp * poly_area_i
+      cgrid%dmean_nep(ipy)             = cgrid%dmean_nep(ipy)                              &
+                                       + (sitesum_gpp-sitesum_rh-sitesum_plresp)           &
+                                       * poly_area_i
 
       cgrid%dmean_co2_residual(ipy)    = cgrid%dmean_co2_residual(ipy)                     &
                                        + sitesum_co2_residual * poly_area_i

@@ -99,7 +99,7 @@ subroutine read_site_file(cgrid)
             cpoly%moist_f(1) = fa
          endif
 
-         cpoly%sitenum(1)   = 2
+         cpoly%sitenum(1)   = 1
          cpoly%elevation(1) = 0.0
          cpoly%slope(1)     = 0.0
          cpoly%aspect(1)    = 0.0

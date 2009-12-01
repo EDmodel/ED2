@@ -31,7 +31,8 @@ subroutine simple_lake_model(time,dtlongest)
    use io_params              , only : ssttime1          & ! intent(in)
                                      , ssttime2          & ! intent(in)
                                      , iupdsst           ! ! intent(in)
-   use mem_leaf               , only : leaf_g            ! ! structure
+   use mem_leaf               , only : leaf_g            & ! structure
+                                     , dtleaf            ! ! intent(in)
    use mem_basic              , only : co2_on            & ! intent(in)
                                      , co2con            & ! intent(in)
                                      , basic_g           ! ! structure
@@ -46,9 +47,14 @@ subroutine simple_lake_model(time,dtlongest)
                                      , jdim              & ! intent(in)
                                      , ngrid             & ! intent(in)
                                      , nzs               ! ! intent(in)
-   use met_driver_coms        , only : initial_co2       ! ! intent(in)
+   use met_driver_coms        , only : atm_tmp_min       & ! intent(in)
+                                     , atm_tmp_max       & ! intent(in)
+                                     , atm_shv_min       & ! intent(in)
+                                     , atm_shv_max       & ! intent(in)
+                                     , prss_min          & ! intent(in)
+                                     , prss_max          ! ! intent(in)
    use leaf_coms              , only : min_waterrough    & ! intent(in)
-                                     , can_depth         ! ! intent(in)
+                                     , can_depth_min     ! ! intent(in)
    use rk4_coms               , only : rk4min_can_shv    & ! intent(in)
                                      , rk4max_can_shv    & ! intent(in)
                                      , rk4min_can_temp   & ! intent(in)
@@ -106,10 +112,10 @@ subroutine simple_lake_model(time,dtlongest)
 
    !---------------------------------------------------------------------------------------!
    !      Define lake time-split timesteps here.  This ensures that the lake model will    !
-   ! not use a timestep longer than about 40 seconds.  This allows values of hcapcan and   !
-   ! wcapcan at which we are aiming.                                                       !
+   ! never use a timestep longer than about 30 seconds, but the actual number depends on   !
+   ! the user's choice and the actual time step.                                           !
    !---------------------------------------------------------------------------------------!
-   niter_leaf  = max(1,nint(dtlongest/40.+.4))
+   niter_leaf  = max(1,nint(dtlongest/dtleaf+.4))
    dtll_factor = 1. / float(niter_leaf)
    dtll        = dtlongest * dtll_factor
    
@@ -262,9 +268,9 @@ subroutine simple_lake_model(time,dtlongest)
          !---------------------------------------------------------------------------------!
 
          !----- Finding the atmospheric enthalpy and density. -----------------------------!
-         if (atm_temp < 180.   .or. atm_temp > 400.   .or.                                 &
-             atm_shv  < 1.e-8  .or. atm_shv  > 0.04   .or.                                 &
-             atm_prss < 40000. .or. atm_prss > 110000.) then
+         if (atm_temp < atm_tmp_min .or. atm_temp > atm_tmp_max  .or.                      &
+             atm_shv  < atm_shv_min .or. atm_shv  > atm_shv_max  .or.                      &
+             atm_prss < prss_min    .or. atm_prss > prss_max   ) then
              write (unit=*,fmt='(a)') '======== Weird atm properties... ========'
              write (unit=*,fmt='(a,i5)')   'Node             = ',mynum
              write (unit=*,fmt='(a,i5)')   'X                = ',i
@@ -303,10 +309,10 @@ subroutine simple_lake_model(time,dtlongest)
 
          !------ Finding the derived properties. ------------------------------------------!
          can_prss     = reducedpress(atm_prss,atm_theta,atm_shv,geoht                      &
-                                             ,can_theta,can_shv,can_depth)
+                                             ,can_theta,can_shv,can_depth_min)
          can_exner    = cp * (can_prss * p00i) ** rocp
          can_temp     = cpi * can_theta * can_exner
-         can_enthalpy = ptqz2enthalpy(can_prss,can_temp,can_shv,can_depth)
+         can_enthalpy = ptqz2enthalpy(can_prss,can_temp,can_shv,can_depth_min)
          can_rhos     = idealdenssh(can_prss,can_temp,can_shv)
          !---------------------------------------------------------------------------------!
 
@@ -342,7 +348,7 @@ subroutine simple_lake_model(time,dtlongest)
             !     Finding standard values for vapour and heat capacity of our layer.  This !
             ! assumes a constant thickness canopy.                                         !
             !------------------------------------------------------------------------------!
-            wcapcan = can_depth * can_rhos
+            wcapcan = can_depth_min * can_rhos
             hcapcan = wcapcan * cp
             ccapcan = wcapcan * mmdryi
             
@@ -391,7 +397,7 @@ subroutine simple_lake_model(time,dtlongest)
             carbon_ac       = can_rhos * ustar * cstar * mmdryi
 
             !----- Finding the scales for fluxes. -----------------------------------------!
-            dtllowcc = dtll / (can_depth * can_rhos)
+            dtllowcc = dtll / (can_depth_min * can_rhos)
             dtlloccc = mmdry * dtllowcc
 
             !------------------------------------------------------------------------------!
@@ -409,7 +415,7 @@ subroutine simple_lake_model(time,dtlongest)
             !     Updating the thermodynamic properties.  Notice that we assume pressure   !
             ! to remain constant over the full time step, which is a simplification...     !
             !------------------------------------------------------------------------------!
-            can_temp     = hpqz2temp(can_enthalpy,can_prss,can_shv,can_depth)
+            can_temp     = hpqz2temp(can_enthalpy,can_prss,can_shv,can_depth_min)
             can_theta    = cp * can_temp / can_exner
             can_rhos     = idealdenssh(can_prss,can_temp,can_shv)
 

@@ -1035,6 +1035,15 @@ subroutine opspec3
      ifaterr=ifaterr+1
   end if
 
+  ! Check whether the time step makes sense for LEAF or ED.
+  if (isfcl /= 0 .and. dtleaf <= 0.) then
+     print *, 'fatal - DTLEAF must be positive, and yours is set to ',dtleaf,'...'
+     ifaterr=ifaterr+1
+  elseif (isfcl /= 0 .and. dtleaf > 30.) then
+     print *, 'fatal - DTLEAF must be less than 30 sec, and yours is set to ',dtleaf,'...'
+     ifaterr=ifaterr+1
+  end if
+
   ! check whether the soil model will be run and make sure that the
   !   number of soil levels are correct.(severity - f,i )
 

@@ -41,10 +41,16 @@ subroutine copy_atm2lsm(ifm,init)
                                    , t3ple         & ! intent(in)
                                    , t00           & ! intent(in)
                                    , cpor          & ! intent(in)
+                                   , wdnsi         & ! intent(in)
                                    , tsupercool    ! ! intent(in)
    use ed_node_coms         , only : mynum         ! ! intent(in)
-   use therm_lib            , only : ptqz2enthalpy ! ! intent(in)
-   use canopy_radiation_coms, only : rlong_min     ! ! intent(in)
+   use therm_lib            , only : ptqz2enthalpy & ! intent(in)
+                                   , rehuil        & ! intent(in)
+                                   , ptrh2rvapil   ! ! intent(in)
+   use met_driver_coms      , only : rlong_min     & ! intent(in)
+                                   , atm_rhv_min   & ! intent(in)
+                                   , atm_rhv_max   ! ! intent(in)
+
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    integer                             , intent(in) :: ifm
@@ -65,6 +71,10 @@ subroutine copy_atm2lsm(ifm,init)
    real, dimension(mmxp(ifm),mmyp(ifm))             :: map_2d_lsm
    real                                             :: rshort1,cosz1,rshortd1,scalar1
    real                                             :: topma_t,wtw,wtu1,wtu2,wtv1,wtv2
+   real                                             :: relhum
+   real                                             :: rvaux
+   real                                             :: fice,snden
+
    !---------------------------------------------------------------------------------------!
   
    !----- Assigning some aliases. ---------------------------------------------------------!
@@ -219,7 +229,7 @@ subroutine copy_atm2lsm(ifm,init)
    !---------------------------------------------------------------------------------------!
    !     With these averages, we can start copying the values to the ED structures.        !
    !---------------------------------------------------------------------------------------!
-   do ipy=1,cgrid%npolygons
+   polyloop1st: do ipy=1,cgrid%npolygons
       
       !---- Aliases for grid points of interest. ------------------------------------------!
       ix =  cgrid%ilon(ipy)
@@ -258,38 +268,50 @@ subroutine copy_atm2lsm(ifm,init)
       ! potential temperature, so we must convert before sending to ED.  CO2 is already in !
       ! µmol_CO2 / mol_air, no conversion needed...                                        !
       !------------------------------------------------------------------------------------!
-      cgrid%met(ipy)%atm_shv      = rv_mean(ix,iy) / (1.+rtp_mean(ix,iy))
+      
       cgrid%met(ipy)%atm_theta    = theta_mean(ix,iy)
       cgrid%met(ipy)%atm_tmp      = cpi * cgrid%met(ipy)%atm_theta * cgrid%met(ipy)%exner
       cgrid%met(ipy)%atm_co2      = co2p_mean(ix,iy)
 
-      if (cgrid%met(ipy)%atm_tmp < 180.   .or. cgrid%met(ipy)%atm_tmp > 400.   .or.        &
-          cgrid%met(ipy)%atm_shv < 1.e-8  .or. cgrid%met(ipy)%atm_shv > 0.04   .or.        &
-          cgrid%met(ipy)%prss    < 40000. .or. cgrid%met(ipy)%prss    > 110000.) then
-          write (unit=*,fmt='(a)') '======== Weird polygon properties... ========'
-          write (unit=*,fmt='(a,i5)')   'Node             = ',mynum
-          write (unit=*,fmt='(a,i5)')   'X                = ',ix
-          write (unit=*,fmt='(a,i5)')   'Y                = ',iy
-          write (unit=*,fmt='(a,f8.2)') 'LONG      [degE] = ',cgrid%lon(ipy)
-          write (unit=*,fmt='(a,f8.2)') 'LAT       [degN] = ',cgrid%lat(ipy)
-          write (unit=*,fmt='(a,f7.2)') 'POLY_PRSS [ hPa] = ',cgrid%met(ipy)%prss    * 0.01
-          write (unit=*,fmt='(a,f7.2)') 'POLY_TEMP [degC] = ',cgrid%met(ipy)%atm_tmp - t00
-          write (unit=*,fmt='(a,f7.2)') 'POLY_SHV  [g/kg] = ',cgrid%met(ipy)%atm_shv * 1.e3
-          call fatal_error('Non-sense polygon met values!!!'                               &
-                          ,'copy_atm2lsm','edcp_met.f90')
+
+      !------------------------------------------------------------------------------------!
+      !     Check the relative humidity associated with the current pressure, temperature, !
+      ! and mixing ratio.  Impose lower and upper bounds as prescribed by the variables    !
+      ! atm_rhv_min and atm_rhv_max (from met_driver_coms.f90, and defined at the          !
+      ! init_met_params subroutine in ed_params.f90).                                      !
+      !------------------------------------------------------------------------------------!
+      relhum = rehuil(cgrid%met(ipy)%prss,cgrid%met(ipy)%atm_tmp,rv_mean(ix,iy))
+      !------------------------------------------------------------------------------------!
+      !      Check whether the relative humidity is off-bounds.  If it is, then we re-     !
+      ! calculate mixing ratio exactly at the limit, then convert it to specific humidity. !
+      ! Also, in case we update rv_mean, we must make sure that rv_mean doesn't become     !
+      ! larger than rtp_mean.                                                              !
+      !------------------------------------------------------------------------------------!
+      if (relhum < atm_rhv_min) then
+         relhum          = atm_rhv_min
+         rv_mean(ix,iy)  = ptrh2rvapil(relhum,cgrid%met(ipy)%prss,cgrid%met(ipy)%atm_tmp)
+         rtp_mean(ix,iy) = max(rtp_mean(ix,iy), rv_mean(ix,iy))
+      elseif (relhum > atm_rhv_max) then
+         relhum          = atm_rhv_max
+         rv_mean(ix,iy)  = ptrh2rvapil(relhum,cgrid%met(ipy)%prss,cgrid%met(ipy)%atm_tmp)
+         rtp_mean(ix,iy) = max(rtp_mean(ix,iy), rv_mean(ix,iy))
       end if
+      !----- Find the specific humidity. --------------------------------------------------!
+      cgrid%met(ipy)%atm_shv = rv_mean(ix,iy) / (1. + rtp_mean(ix,iy))
+      !------------------------------------------------------------------------------------!
+
 
       cgrid%met(ipy)%atm_enthalpy = ptqz2enthalpy(cgrid%met(ipy)%prss                      &
                                                  ,cgrid%met(ipy)%atm_tmp                   &
                                                  ,cgrid%met(ipy)%atm_shv                   &
                                                  ,cgrid%met(ipy)%geoht)
-   end do
+   end do polyloop1st
 
    !----- Filling the precipitation arrays. -----------------------------------------------!
    call fill_site_precip(ifm,cgrid,m2,m3,ia,iz,ja,jz,pi0_mean,theta_mean)
 
   
-   do ipy = 1,cgrid%npolygons
+   polyloop2nd: do ipy = 1,cgrid%npolygons
 
       !------------------------------------------------------------------------------------!
       !      If this is the first call, it is only looking for atm_tmp and atm_shv, so we  !
@@ -306,12 +328,14 @@ subroutine copy_atm2lsm(ifm,init)
 
 
       cpoly => cgrid%polygon(ipy)
-      do isi = 1,cpoly%nsites
+      siteloop: do isi = 1,cpoly%nsites
          
          !----- Vels.  At this point vels is 2*Kinetic Energy, take the square root. ------!
          cpoly%met(isi)%vels        = sqrt(max(0.0,cpoly%met(isi)%vels))
          cpoly%met(isi)%vels_stab   = max(0.1,cpoly%met(isi)%vels)
          cpoly%met(isi)%vels_unstab = max(1.0,cpoly%met(isi)%vels_stab)
+
+
 
          !---------------------------------------------------------------------------------!
          !     Exner function, potential temperature, and enthalpy must be calculated for  !
@@ -322,25 +346,28 @@ subroutine copy_atm2lsm(ifm,init)
          cpoly%met(isi)%exner        = cp * (p00i * cpoly%met(isi)%prss) **rocp
          cpoly%met(isi)%atm_theta    = cp * cpoly%met(isi)%atm_tmp / cpoly%met(isi)%exner
 
-
-         if (cpoly%met(isi)%atm_tmp < 180.   .or. cpoly%met(isi)%atm_tmp > 400.   .or.     &
-             cpoly%met(isi)%atm_shv < 1.e-8  .or. cpoly%met(isi)%atm_shv > 0.04   .or.     &
-             cpoly%met(isi)%prss    < 40000. .or. cpoly%met(isi)%prss    > 110000.) then
-             write (unit=*,fmt='(a)') '======== Weird site properties... ========'
-             write (unit=*,fmt='(a,i5)')   'Node             = ',mynum
-             write (unit=*,fmt='(a,i5)')   'X                = ',ix
-             write (unit=*,fmt='(a,i5)')   'Y                = ',iy
-             write (unit=*,fmt='(a,f8.2)') 'LONG      [degE] = ',cgrid%lon(ipy)
-             write (unit=*,fmt='(a,f8.2)') 'LAT       [degN] = ',cgrid%lat(ipy)
-             write (unit=*,fmt='(a,f7.2)')                                                 &
-                                  'SITE_PRSS [ hPa] = ',cpoly%met(isi)%prss    * 0.01
-             write (unit=*,fmt='(a,f7.2)')                                                 &
-                                  'SITE_TEMP [degC] = ',cpoly%met(isi)%atm_tmp - t00
-             write (unit=*,fmt='(a,f7.2)')                                                 &
-                                  'SITE_SHV  [g/kg] = ',cpoly%met(isi)%atm_shv * 1.e3
-             call fatal_error('Non-sense site met values!!!'                               &
-                             ,'copy_atm2lsm','edcp_met.f90')
+         !---------------------------------------------------------------------------------!
+         !     Check the relative humidity associated with the current pressure, temper-   !
+         ! ature, and specific humidity.  Impose lower and upper bounds as prescribed by   !
+         ! the variables atm_rhv_min and atm_rhv_max (from met_driver_coms.f90, and        !
+         ! defined at the init_met_params subroutine in ed_params.f90).                    !
+         !---------------------------------------------------------------------------------!
+         rvaux  = cpoly%met(isi)%atm_shv / (1. - cpoly%met(isi)%atm_shv)
+         relhum = rehuil(cpoly%met(isi)%prss,cpoly%met(isi)%atm_tmp,rvaux)
+         !---------------------------------------------------------------------------------!
+         !      Check whether the relative humidity is off-bounds.  If it is, then we re-  !
+         ! calculate the mixing ratio and convert to specific humidity.                    !
+         !---------------------------------------------------------------------------------!
+         if (relhum < atm_rhv_min) then
+            relhum = atm_rhv_min
+            rvaux  = ptrh2rvapil(relhum,cpoly%met(isi)%prss,cpoly%met(isi)%atm_tmp)
+            cpoly%met(isi)%atm_shv = rvaux / (1. + rvaux)
+         elseif (relhum > atm_rhv_max) then
+            relhum = atm_rhv_max
+            rvaux  = ptrh2rvapil(relhum,cpoly%met(isi)%prss,cpoly%met(isi)%atm_tmp)
+            cpoly%met(isi)%atm_shv = rvaux / (1. + rvaux)
          end if
+         !---------------------------------------------------------------------------------!
 
          cpoly%met(isi)%atm_enthalpy = ptqz2enthalpy(cpoly%met(isi)%prss                   &
                                                     ,cpoly%met(isi)%atm_tmp                &
@@ -356,21 +383,71 @@ subroutine copy_atm2lsm(ifm,init)
 
          !---------------------------------------------------------------------------------!
          !    Finding the mean energy and depth of precipitation rates: qpcpg and dpcpg,   !
-         ! respectively.  This is just an approximation, because we are assuming all ice   !
-         ! or all liquid, and a standard snow density.  We could do better by using the    !
-         ! actual values of these things from the microphysics. For the cumulus parameter- !
-         ! ization, that's the best we can do...                                           !
+         ! respectively.  This is currently using the same parametrisation from the off-   !
+         ! line model.  While this is the best we can do for cumulus precipitation, we     !
+         ! should be using the actual rates from the microphysics for the microphysics     !
+         ! precipitation.                                                                  !
+         !    The fractions of ice and snow density are based on:                          !
+         ! Jin et al. 1999, Hydrol. Process. 13: 2467-2482, table 2                        !
+         !    (modified 11/16/09 by MCD).                                                  !
          !---------------------------------------------------------------------------------!
-         if (cpoly%met(isi)%atm_tmp > t3ple) then
-            cpoly%met(isi)%qpcpg = cliq * (cpoly%met(isi)%atm_tmp - tsupercool)            &
-                                 * cpoly%met(isi)%pcpg
-            cpoly%met(isi)%dpcpg = max(0.0, cpoly%met(isi)%pcpg * 0.001)
-         else
-            cpoly%met(isi)%qpcpg = cice * cpoly%met(isi)%atm_tmp * cpoly%met(isi)%pcpg
-            cpoly%met(isi)%dpcpg = max(0.0, cpoly%met(isi)%pcpg * 0.01)
+         if (cpoly%met(isi)%atm_tmp > (t3ple + 2.5)) then
+            !----- Rain only. -------------------------------------------------------------!
+            fice = 0.0
+            cpoly%met(isi)%dpcpg = max(0.0, cpoly%met(isi)%pcpg) *wdnsi
+
+         elseif (cpoly%met(isi)%atm_tmp <= (t3ple + 2.5) .and.                             &
+                 cpoly%met(isi)%atm_tmp  > (t3ple + 2.0) ) then
+            !------------------------------------------------------------------------------!
+            !     60% snow, 40% rain. (N.B. May not be appropriate for sub-tropical        !
+            ! regions where the level of the melting layer is higher...).                  !
+            !------------------------------------------------------------------------------!
+            fice  = 0.6
+            snden = 189.0
+            cpoly%met(isi)%dpcpg = max(0.0, cpoly%met(isi)%pcpg)                           &
+                                 * ((1.0-fice) * wdnsi + fice / snden)
+
+         elseif (cpoly%met(isi)%atm_tmp <= (t3ple + 2.0) .and.                             &
+                 cpoly%met(isi)%atm_tmp > t3ple          ) then
+            !------------------------------------------------------------------------------!
+            !     Increasing the fraction of snow. (N.B. May not be appropriate for        !
+            ! sub-tropical regions where the level of the melting layer is higher...).     !
+            !------------------------------------------------------------------------------!
+            fice  = min(1.0, 1.+(54.62 - 0.2*cpoly%met(isi)%atm_tmp))
+            snden = (50.0+1.7*(cpoly%met(isi)%atm_tmp-258.15)**1.5 )
+            cpoly%met(isi)%dpcpg = max(0.0, cpoly%met(isi)%pcpg)                           &
+                                 * ((1.0-fice) * wdnsi + fice / snden)
+
+         elseif (cpoly%met(isi)%atm_tmp <= t3ple         .and.                             &
+                 cpoly%met(isi)%atm_tmp > (t3ple - 15.0) ) then
+            !----- Below freezing point, snow only. ---------------------------------------!
+            fice  = 1.0
+            snden = (50.0+1.7*(cpoly%met(isi)%atm_tmp-258.15)**1.5 )
+            cpoly%met(isi)%dpcpg = max(0.0, cpoly%met(isi)%pcpg) / snden
+
+         else ! if (copy%met(isi)%atm_tmp < (t3ple - 15.0)) then
+            !----- Below freezing point, snow only. ---------------------------------------!
+            fice  = 1.0
+            snden = 50.
+            cpoly%met(isi)%dpcpg = max(0.0, cpoly%met(isi)%pcpg) / snden
+
          end if
-      end do
-   end do
+         !---------------------------------------------------------------------------------!
+
+         !---------------------------------------------------------------------------------!
+         !     Set internal energy.  This will be the precipitation times the specific     !
+         ! internal energy of water (above or at triple point) multiplied by the liquid    !
+         ! fraction plus the specific internal energy of ice (below or at the triple       !
+         ! point) multiplied by the ice fraction.                                          !
+         !---------------------------------------------------------------------------------!
+         cpoly%met(isi)%qpcpg = max(0.0, cpoly%met(isi)%pcpg)                              &
+                              * ( (1.0-fice) * cliq * ( max(t3ple,cpoly%met(isi)%atm_tmp)  &
+                                                      - tsupercool)                        &
+                                + fice *cice * min(cpoly%met(isi)%atm_tmp,t3ple))
+         !---------------------------------------------------------------------------------!
+
+      end do siteloop
+   end do polyloop2nd
 
    return
 end subroutine copy_atm2lsm
@@ -1388,9 +1465,9 @@ subroutine copy_avgvars_to_leaf(ifm)
       end do
       !----- Surface water is always 1, because we give the averaged value. ---------------!
       leaf_g(ifm)%sfcwater_nlev     (ix,iy,2) = 1.
-      leaf_g(ifm)%sfcwater_energy (1,ix,iy,2) = cgrid%avg_snowenergy(ipy)
-      leaf_g(ifm)%sfcwater_mass   (1,ix,iy,2) = cgrid%avg_snowmass  (ipy)
-      leaf_g(ifm)%sfcwater_depth  (1,ix,iy,2) = cgrid%avg_snowdepth (ipy)
+      leaf_g(ifm)%sfcwater_energy (1,ix,iy,2) = cgrid%avg_sfcw_energy(ipy)
+      leaf_g(ifm)%sfcwater_mass   (1,ix,iy,2) = cgrid%avg_sfcw_mass  (ipy)
+      leaf_g(ifm)%sfcwater_depth  (1,ix,iy,2) = cgrid%avg_sfcw_depth (ipy)
       do k=2,nzs
          leaf_g(ifm)%sfcwater_energy (k,ix,iy,2) = 0.
          leaf_g(ifm)%sfcwater_mass   (k,ix,iy,2) = 0.
@@ -1457,5 +1534,52 @@ subroutine copy_avgvars_to_leaf(ifm)
 
    
 end subroutine copy_avgvars_to_leaf
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine is an adaptation from the SiB2 model (Sellars et al. 1986), and it   !
+! splits the radiation into diffuse and direct radiation.  This is currently used to       !
+! convert the radiation from BRAMS.  In the future, we should use the values that come     !
+! from the radiation schemes.                                                              !
+!------------------------------------------------------------------------------------------!
+subroutine short2diff(rshort_tot,cosz,rshort_diff)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   real, intent(in)    :: rshort_tot  ! Surface incident shortwave radiation
+   real, intent(inout) :: cosz        ! Cosine of the zenith distance
+   real, intent(out)   :: rshort_diff ! Surface incident diffuse shortwave radiation.
+   !----- Local variables. ----------------------------------------------------------------!
+   real                :: stemp
+   real                :: cloud
+   real                :: difrat
+   real                :: vnrat
+   !----- Local constants. ----------------------------------------------------------------!
+   real, parameter     :: c1 = 580.
+   real, parameter     :: c2 = 464.
+   real, parameter     :: c3 = 499.
+   real, parameter     :: c4 = 963.
+   real, parameter     :: c5 = 1160.
+   !---------------------------------------------------------------------------------------!
+
+   cosz        = max(cosz, 0.001)
+   stemp       = max(rshort_tot, 0.01)
+
+   cloud       = min(1.,max(0.,(c5 * cosz - stemp) / (c4 * cosz)))
+   difrat      = min(1.,max(0.,0.0604 / ( cosz -0.0223 ) + 0.0683))
+   
+   difrat      = difrat + ( 1. - difrat ) * cloud
+   vnrat       = ( c1 - cloud*c2 ) / ( ( c1 - cloud*c3 ) + ( c1 - cloud*c2 ))
+   
+   rshort_diff = difrat*vnrat*stemp
+   
+   return
+end subroutine short2diff
 !==========================================================================================!
 !==========================================================================================!

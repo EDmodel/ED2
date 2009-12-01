@@ -17,7 +17,7 @@ module rk4_driver
                                         , zero_rk4_patch       & ! subroutine
                                         , zero_rk4_cohort      & ! subroutine
                                         , integration_buff     & ! intent(out)
-                                        , rk4met               ! ! intent(out)
+                                        , rk4site              ! ! intent(out)
       use ed_state_vars          , only : edtype               & ! structure
                                         , polygontype          & ! structure
                                         , sitetype             & ! structure
@@ -147,16 +147,17 @@ module rk4_driver
                end if
 
                !---------------------------------------------------------------------------!
-               !    Copy the meteorological variables to the rk4met structure.             !
+               !    Copy the meteorological variables to the rk4site structure.            !
                !---------------------------------------------------------------------------!
-               call copy_met_2_rk4met(cpoly%met(isi)%vels,cpoly%met(isi)%atm_enthalpy      &
-                                     ,cpoly%met(isi)%atm_theta,cpoly%met(isi)%atm_tmp      &
-                                     ,cpoly%met(isi)%atm_shv,cpoly%met(isi)%atm_co2        &
-                                     ,cpoly%met(isi)%geoht,cpoly%met(isi)%exner            &
-                                     ,cpoly%met(isi)%pcpg,cpoly%met(isi)%qpcpg             &
-                                     ,cpoly%met(isi)%dpcpg,cpoly%met(isi)%prss             &
-                                     ,cpoly%met(isi)%geoht,cpoly%lsl(isi)                  &
-                                     ,cgrid%lon(ipy),cgrid%lat(ipy))
+               call copy_met_2_rk4site(cpoly%met(isi)%vels,cpoly%met(isi)%atm_enthalpy     &
+                                      ,cpoly%met(isi)%atm_theta,cpoly%met(isi)%atm_tmp     &
+                                      ,cpoly%met(isi)%atm_shv,cpoly%met(isi)%atm_co2       &
+                                      ,cpoly%met(isi)%geoht,cpoly%met(isi)%exner           &
+                                      ,cpoly%met(isi)%pcpg,cpoly%met(isi)%qpcpg            &
+                                      ,cpoly%met(isi)%dpcpg,cpoly%met(isi)%prss            &
+                                      ,cpoly%met(isi)%geoht,cpoly%lsl(isi)                 &
+                                      ,cpoly%green_leaf_factor(:,isi)                      &
+                                      ,cgrid%lon(ipy),cgrid%lat(ipy))
 
                !----- Compute current storage terms. --------------------------------------!
                call update_budget(csite,cpoly%lsl(isi),ipa,ipa)
@@ -169,7 +170,7 @@ module rk4_driver
                !---------------------------------------------------------------------------!
                !     Calculate the canopy geometry, and the scalar transport coefficients. !
                !---------------------------------------------------------------------------!
-               call canopy_turbulence8(csite,integration_buff%initp,isi,ipa,.true.)
+               call canopy_turbulence8(csite,integration_buff%initp,ipa,.true.)
 
 
 
@@ -191,11 +192,10 @@ module rk4_driver
                !---------------------------------------------------------------------------!
                !    This is the driver for the integration process...                      !
                !---------------------------------------------------------------------------!
-               call integrate_patch(cpoly,csite,integration_buff%initp,ipa,isi,ipy,ifm     &
-                                   ,wcurr_loss2atm,ecurr_loss2atm,co2curr_loss2atm         &
-                                   ,wcurr_loss2drainage,ecurr_loss2drainage                &
-                                   ,wcurr_loss2runoff,ecurr_loss2runoff,ecurr_latent       &
-                                   ,nsteps)
+               call integrate_patch(csite,integration_buff%initp,ipa,wcurr_loss2atm        &
+                                   ,ecurr_loss2atm,co2curr_loss2atm,wcurr_loss2drainage    &
+                                   ,ecurr_loss2drainage,wcurr_loss2runoff                  &
+                                   ,ecurr_loss2runoff,ecurr_latent,nsteps)
 
                !----- Add the number of steps into the step counter. ----------------------!
                cgrid%workload(13,ipy) = cgrid%workload(13,ipy) + real(nsteps)
@@ -248,12 +248,11 @@ module rk4_driver
    !=======================================================================================!
    !     This subroutine will drive the integration process.                               !
    !---------------------------------------------------------------------------------------!
-   subroutine integrate_patch(cpoly,csite,initp,ipa,isi,ipy,ifm,wcurr_loss2atm,ecurr_loss2atm &
+   subroutine integrate_patch(csite,initp,ipa,wcurr_loss2atm,ecurr_loss2atm                &
                              ,co2curr_loss2atm,wcurr_loss2drainage,ecurr_loss2drainage     &
                              ,wcurr_loss2runoff,ecurr_loss2runoff,ecurr_latent,nsteps)
       use ed_state_vars   , only : sitetype             & ! structure
-                                 , patchtype            & ! structure
-                                 , polygontype
+                                 , patchtype            ! ! structure
       use ed_misc_coms    , only : dtlsm                ! ! intent(in)
       use soil_coms       , only : soil_rough           & ! intent(in)
                                  , snow_rough           ! ! intent(in)
@@ -263,7 +262,7 @@ module rk4_driver
                                  , cpi8                 ! ! intent(in)
       use rk4_coms        , only : integration_vars     & ! structure
                                  , rk4patchtype         & ! structure
-                                 , rk4met               & ! intent(inout)
+                                 , rk4site              & ! intent(inout)
                                  , zero_rk4_patch       & ! subroutine
                                  , zero_rk4_cohort      & ! subroutine
                                  , tbeg                 & ! intent(inout)
@@ -275,13 +274,9 @@ module rk4_driver
                                  , effarea_heat         ! ! intent(out)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      type(sitetype)        , target      :: csite   
-      type(polygontype)     , target      :: cpoly   
+      type(sitetype)        , target      :: csite
       type(rk4patchtype)    , target      :: initp
-      integer               , intent(in)  :: ifm     
-      integer               , intent(in)  :: ipy     
-      integer               , intent(in)  :: isi     
-      integer               , intent(in)  :: ipa     
+      integer               , intent(in)  :: ipa
       real                  , intent(out) :: wcurr_loss2atm
       real                  , intent(out) :: ecurr_loss2atm
       real                  , intent(out) :: co2curr_loss2atm
@@ -340,7 +335,7 @@ module rk4_driver
       initp%wpwp = 0.d0
 
       !----- Go into the ODE integrator. --------------------------------------------------!
-      call odeint(hbeg,csite,ipa,isi,ipy,ifm,nsteps,cpoly)
+      call odeint(hbeg,csite,ipa,nsteps)
 
       !------------------------------------------------------------------------------------!
       !      Normalize canopy-atmosphere flux values.  These values are updated every      !
@@ -356,7 +351,7 @@ module rk4_driver
       !------------------------------------------------------------------------------------!
       ! Move the state variables from the integrated patch to the model patch.             !
       !------------------------------------------------------------------------------------!
-      call initp2modelp(tend-tbeg,initp,csite,ipa,isi,ipy,wcurr_loss2atm,ecurr_loss2atm    &
+      call initp2modelp(tend-tbeg,initp,csite,ipa,wcurr_loss2atm,ecurr_loss2atm            &
                        ,co2curr_loss2atm,wcurr_loss2drainage,ecurr_loss2drainage           &
                        ,wcurr_loss2runoff,ecurr_loss2runoff,ecurr_latent)
 
@@ -375,11 +370,11 @@ module rk4_driver
    !     This subroutine will copy the variables from the integration buffer to the state  !
    ! patch and cohorts.                                                                    !
    !---------------------------------------------------------------------------------------!
-   subroutine initp2modelp(hdid,initp,csite,ipa,isi,ipy,wbudget_loss2atm,ebudget_loss2atm  &
+   subroutine initp2modelp(hdid,initp,csite,ipa,wbudget_loss2atm,ebudget_loss2atm          &
                           ,co2budget_loss2atm,wbudget_loss2drainage,ebudget_loss2drainage  &
                           ,wbudget_loss2runoff,ebudget_loss2runoff,ebudget_latent)
       use rk4_coms             , only : rk4patchtype         & ! structure
-                                      , rk4met               & ! intent(in)
+                                      , rk4site              & ! intent(in)
                                       , rk4min_veg_temp      & ! intent(in)
                                       , rk4max_veg_temp      & ! intent(in)
                                       , tiny_offset          & ! intent(in) 
@@ -403,8 +398,6 @@ module rk4_driver
       type(sitetype)    , target      :: csite
       real(kind=8)      , intent(in)  :: hdid
       integer           , intent(in)  :: ipa
-      integer           , intent(in)  :: ipy
-      integer           , intent(in)  :: isi
       real              , intent(out) :: wbudget_loss2atm
       real              , intent(out) :: ebudget_loss2atm
       real              , intent(out) :: co2budget_loss2atm
@@ -481,7 +474,7 @@ module rk4_driver
          csite%avg_sensible_gc(ipa)      =sngloff(initp%avg_sensible_gc   ,tiny_offset)
          csite%avg_sensible_ac(ipa)      =sngloff(initp%avg_sensible_ac   ,tiny_offset)
          csite%avg_carbon_ac(ipa)        =sngloff(initp%avg_carbon_ac     ,tiny_offset)
-         do k = rk4met%lsl, nzg
+         do k = rk4site%lsl, nzg
             csite%avg_sensible_gg(k,ipa) =sngloff(initp%avg_sensible_gg(k)   ,tiny_offset)
             csite%avg_smoist_gg(k,ipa)   =sngloff(initp%avg_smoist_gg(k)     ,tiny_offset)
             csite%avg_smoist_gc(k,ipa)   =sngloff(initp%avg_smoist_gc(k)     ,tiny_offset)
@@ -548,7 +541,7 @@ module rk4_driver
       end do
 
       
-      do k = rk4met%lsl, nzg
+      do k = rk4site%lsl, nzg
          csite%soil_water(k,ipa)   = sngloff(initp%soil_water(k)  ,tiny_offset)
          csite%soil_energy(k,ipa)  = sngloff(initp%soil_energy(k) ,tiny_offset)
          csite%soil_tempk(k,ipa)   = sngloff(initp%soil_tempk(k)  ,tiny_offset)
@@ -643,10 +636,8 @@ module rk4_driver
             write (unit=*,fmt='(80a)')         ('=',k=1,80)
             write (unit=*,fmt='(a)')           'FINAL VEG_TEMP IS WRONG IN INITP2MODELP'
             write (unit=*,fmt='(80a)')         ('-',k=1,80)
-            write (unit=*,fmt='(a,1x,f9.4)')   ' + LONGITUDE:    ',rk4met%lon
-            write (unit=*,fmt='(a,1x,f9.4)')   ' + LATITUDE:     ',rk4met%lat
-            write (unit=*,fmt='(a,1x,i6)')     ' + POLYGON:      ',ipy
-            write (unit=*,fmt='(a,1x,i6)')     ' + SITE:         ',isi
+            write (unit=*,fmt='(a,1x,f9.4)')   ' + LONGITUDE:    ',rk4site%lon
+            write (unit=*,fmt='(a,1x,f9.4)')   ' + LATITUDE:     ',rk4site%lat
             write (unit=*,fmt='(a,1x,i6)')     ' + PATCH:        ',ipa
             write (unit=*,fmt='(a,1x,i6)')     ' + COHORT:       ',ico
             write (unit=*,fmt='(a)')           ' + PATCH AGE:    ',csite%age(ipa)
@@ -682,46 +673,6 @@ module rk4_driver
                      ,surface_temp,surface_fliq)
       return
    end subroutine initp2modelp
-   !=======================================================================================!
-   !=======================================================================================!
-
-
-
-
-
-
-   !=======================================================================================!
-   !=======================================================================================!
-   !    Currently not in use.                                                              !
-   !---------------------------------------------------------------------------------------!
-   subroutine canopy_atm_fluxes(csite,cpoly,ipa,isi)
-      use ed_state_vars , only : polygontype  & ! structure
-                               , sitetype     & ! structure
-                               , patchtype    ! ! structure
-      use consts_coms   , only : cpi          ! ! intent(in)
-      implicit none
-    
-      !----- Arguments --------------------------------------------------------------------!
-      type(polygontype) , target     :: cpoly
-      type(sitetype)    , target     :: csite
-      integer           , intent(in) :: ipa
-      integer           , intent(in) :: isi
-      !------------------------------------------------------------------------------------!
-
-      call fatal_error('Decide how to set vels in canopy_atm_fluxes.'                      &
-                     &,'canopy_atm_fluxes','rk4_driver.f90')
-
-      !----- Calculate turbulent fluxes between atmosphere and canopy. --------------------!
-      !    pis = cpoly%pi0 * cpi
-      !    thetacan = pss%can_temp / pis
-      !    if(thetacan.lt.cpoly%theta)then
-      !       cpoly%vels = cpoly%vels_stab
-      !    else
-      !       cpoly%vels = cpoly%vels_unstab
-      !    endif
-
-      return
-   end subroutine canopy_atm_fluxes
    !=======================================================================================!
    !=======================================================================================! 
 end module rk4_driver

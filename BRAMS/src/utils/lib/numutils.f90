@@ -1819,3 +1819,25 @@ subroutine lisys_solver(nsiz,AA,Y,X,sing)
 end subroutine lisys_solver
 !==========================================================================================!
 !==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This function checks whether a number is finite or not.  This test will return true  !
+! if the number is a valid one, and false if the number is either +Infinity, -Infinity, or !
+! NaN.                                                                                     !
+!------------------------------------------------------------------------------------------!
+logical function is_finite(number)
+   implicit none
+   real, intent(in) :: number
+   real, parameter  :: largeneg = -huge(1.)
+   real, parameter  :: largepos =  huge(1.)
+   is_finite = number >= largeneg .and. number <= largepos
+   return
+end function is_finite
+!==========================================================================================!
+!==========================================================================================!

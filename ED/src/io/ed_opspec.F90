@@ -1131,9 +1131,9 @@ subroutine ed_opspec_misc
       ifaterr = ifaterr +1
    end if
 
-   if (isoilbc < 0 .or. isoilbc > 1) then
+   if (isoilbc < 0 .or. isoilbc > 2) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-        'Invalid ISOILBC, it must be between 0 and 1. Yours is set to',isoilbc,'...'
+        'Invalid ISOILBC, it must be between 0 and 2. Yours is set to',isoilbc,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if

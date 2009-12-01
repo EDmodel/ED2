@@ -726,6 +726,13 @@ module disturbance_utils
           call copy_patchtype(cpatch,tpatch,ico,ico,nco,nco)
 
           ! Adjust area-based variables
+          !------------------------------------------------------------------------------------!
+          !    Renormalize the total area.  We must also rescale all extensive properties from !
+          ! cohorts, since they are per unit area and we are effectively changing the area.    !
+          ! IMPORTANT: Only cohort-level variables that have units per area (m2) should be     !
+          !            rescaled.  Variables whose units are per plant should _NOT_ be included !
+          !            here.                                                                   !
+          !------------------------------------------------------------------------------------!
           tpatch%lai(nco)                 = tpatch%lai(nco)                  * cohort_area_fac
           tpatch%wai(nco)                 = tpatch%wai(nco)                  * cohort_area_fac
           tpatch%wpa(nco)                 = tpatch%wpa(nco)                  * cohort_area_fac
@@ -733,6 +740,9 @@ module disturbance_utils
           tpatch%mean_gpp(nco)            = tpatch%mean_gpp(nco)             * cohort_area_fac
           tpatch%mean_leaf_resp(nco)      = tpatch%mean_leaf_resp(nco)       * cohort_area_fac
           tpatch%mean_root_resp(nco)      = tpatch%mean_root_resp(nco)       * cohort_area_fac
+          tpatch%mean_growth_resp(nco)    = tpatch%mean_growth_resp(nco)     * cohort_area_fac
+          tpatch%mean_storage_resp(nco)   = tpatch%mean_storage_resp(nco)    * cohort_area_fac
+          tpatch%mean_vleaf_resp(nco)     = tpatch%mean_vleaf_resp(nco)      * cohort_area_fac
           tpatch%today_gpp(nco)           = tpatch%today_gpp(nco)            * cohort_area_fac
           tpatch%today_gpp_pot(nco)       = tpatch%today_gpp_pot(nco)        * cohort_area_fac
           tpatch%today_gpp_max(nco)       = tpatch%today_gpp_max(nco)        * cohort_area_fac

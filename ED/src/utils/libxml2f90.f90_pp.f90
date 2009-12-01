@@ -1938,6 +1938,22 @@ return
 end subroutine libxml2f90__ll_getch
 
 !================================================================
+!    MLO.  Added this function for the case that val is a scalar in the call.  If it is
+!          not, and we use libxml2f90__ll_getch, then the interface check will fail
+subroutine libxml2f90__ll_getch_scal(id,size_,val)
+implicit none
+character(len=*),intent(in)        :: id
+integer(4),intent(in)              :: size_
+character(len=size_),intent(out)   :: val
+character(len=1), dimension(size_) :: val_loc
+
+!........................................
+call libxml2f90_ll_getch(1,id,size_,val_loc)
+write (val(1:size_),'(a)') val_loc(1:size_)
+return
+end subroutine libxml2f90__ll_getch_scal
+
+!================================================================
 subroutine libxml2f90__ll_getstring(id,size_,val)
 implicit none
 character(*),intent(in)         :: id

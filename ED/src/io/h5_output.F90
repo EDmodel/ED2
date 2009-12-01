@@ -93,6 +93,7 @@ subroutine h5_output(vtype)
 
   logical,parameter :: collective_mpi = .false.
 
+  logical, external :: isleap
   new_file=.true.
 
   comm = MPI_COMM_WORLD
@@ -191,7 +192,7 @@ subroutine h5_output(vtype)
            call date_add_to (iyeara,imontha,idatea,itimea*100,  &
                 time-21600.0d0,'s',outyear,outmonth,outdate,outhour)
 
-           if(MOD(outyear,4) == 0) then
+           if(isleap(outyear)) then
               nrec = int(366*86400/frqfast)!+1
            else
               nrec = int(365*86400/frqfast)!+1

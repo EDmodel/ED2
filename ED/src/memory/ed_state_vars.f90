@@ -2077,6 +2077,8 @@ contains
        allocate(cgrid%wpa_pft            (n_pft       ,npolygons))
        allocate(cgrid%wai_pft            (n_pft       ,npolygons))
 
+          allocate(cgrid%workload             (13          ,npolygons))
+
        !-----------------------------------------------------------------!
        ! Allocating the daily means, only if daily or monthly means were !
        ! requested by the user.                                          !
@@ -2189,7 +2191,6 @@ contains
           allocate(cgrid%stdev_nep            (             npolygons))
           allocate(cgrid%stdev_rh             (             npolygons))
           allocate(cgrid%disturbance_rates    (n_dist_types,n_dist_types,npolygons))
-          allocate(cgrid%workload             (13          ,npolygons))
 
        end if
 

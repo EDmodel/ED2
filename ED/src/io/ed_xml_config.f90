@@ -73,12 +73,13 @@ recursive subroutine read_ed_xml_config(filename)
   use soil_coms  !, only: infiltration_method, dewmax, water_stab_thresh
 !  use ed_data
   use ed_misc_coms, only: ied_init_mode,ffilout,integration_scheme,ed_inputs_dir,sfilin,sfilout
+  use rk4_coms, only : rk4min_veg_temp
   implicit none
   integer(4) :: i,npft,ntag,myPFT,len,ival = 0
   logical(4) :: texist = .false.
   real(8) :: rval
   character*(*) :: filename
-  character(256)  :: cval
+  character(len=256)  :: cval
 !  type(eddata) :: data
 
   print*,"Opening ED2 XML Config file",trim(filename)
@@ -100,7 +101,8 @@ recursive subroutine read_ed_xml_config(filename)
         call libxml2f90__existid('extern',texist)
         if(texist) then 
            call libxml2f90__ll_getsize('extern',len)
-           call libxml2f90__ll_getch('extern',len,cval)
+           !----- MLO. Changed this to scalar so the interface check will work. -----------!
+           call libxml2f90__ll_getch_scal('extern',len,cval)
            cval = cval(1:len)
            print*,"XML recursively loading ",trim(cval)
            call read_ed_xml_config(trim(cval))
@@ -475,7 +477,7 @@ recursive subroutine read_ed_xml_config(filename)
         call getConfigREAL  ('rlong_min','radiation',i,rval,texist)
         if(texist) rlong_min = real(rval) 
         call getConfigREAL  ('veg_temp_min','radiation',i,rval,texist)
-        if(texist) veg_temp_min = real(rval) 
+        if(texist) rk4min_veg_temp = rval ! This is double precision. 
         call getConfigREAL  ('lai_min','radiation',i,rval,texist)
         if(texist) lai_min = real(rval)       
         call getConfigREAL  ('mubar','radiation',i,rval,texist)
