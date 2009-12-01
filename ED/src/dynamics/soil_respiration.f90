@@ -61,11 +61,11 @@ end subroutine soil_respiration
 subroutine resp_index(nsoil,tempk,theta,slmsts,resp_weight)
 
   use decomp_coms, only: resp_temperature_increase, resp_opt_water,  &
-       resp_water_below_opt, resp_water_above_opt
+       resp_water_below_opt, resp_water_above_opt, LloydTaylor
 
   implicit none
   
-  logical :: LloydTaylor = .true.
+!!  logical :: LloydTaylor = .true.
   integer :: nsoil
   real :: tempk
   real(kind=8) :: theta
