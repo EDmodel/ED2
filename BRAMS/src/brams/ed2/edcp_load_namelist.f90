@@ -1,348 +1,476 @@
-
-subroutine read_ednl(iunit)
-  
-  use ed_max_dims , only: n_pft
-
-  use soil_coms, only: ed_zrough => zrough, soil_database, &
-       isoilstateinit, isoildepthflg, isoilbc, soilstate_db, soildepth_db,   &
-       runoff_time,veg_database
-
-  use met_driver_coms,only: ed_met_driver_db,imettype,metcyc1,metcycf &
-                           ,lapse_scheme
-
-  use mem_sites, only: n_soi, soi_lat, soi_lon, n_ed_region, ed_reg_latmin,  &
-       ed_reg_latmax, ed_reg_lonmin, ed_reg_lonmax, grid_res, grid_type, edres, &
-       maxpatch, maxcohort
-  
-  use physiology_coms, only: istoma_scheme, n_plant_lim
-
-  use phenology_coms, only: iphen_scheme,repro_scheme,iphenys1,iphenysf,iphenyf1,iphenyff,phenpath
- 
-  use decomp_coms, only: n_decomp_lim
-  
-  use disturb_coms, only: include_fire, ianth_disturb,   &
-       treefall_disturbance_rate
-  
-  use pft_coms, only: include_these_pft,agri_stock,plantation_stock,pft_1st_check
-  
-  use ed_misc_coms, only:  ifoutput,idoutput,imoutput,iyoutput,isoutput, &
-       frqfast, frqstate, outfast,outstate,unitfast,unitstate,        &
-       ied_init_mode, current_time,ed_inputs_dir,                     &
-       end_time, integration_scheme, ffilout,  dtlsm,                 &
-       iprintpolys,printvars,npvars,pfmtstr,ipmax,ipmin,              &
-       iedcnfgf,ffilout,sfilout,sfilin,event_file, attach_metadata
-  use canopy_air_coms, only:  icanturb, isfclyrm
-
-  use grid_coms, only: timmax,time
-  
-  
-  use optimiz_coms, only : ioptinpt
-  
-  use rk4_coms, only : ibranch_thermo
-  
-  use canopy_radiation_coms, only: crown_mod
-
-
-  !====== BRAMS modules ======!
-  
-  use mem_grid,only:expnme,runtype,itimez, idatez, imonthz, iyearz,  &
-       itimea, idatea, imontha, iyeara,centlon,centlat,deltax,deltay,nnxp,nnyp,nstratx, &
-       nstraty,polelat,polelon,ngrids,nzg, nzs,npatch
-  
-  use io_params,only: ioutput, iclobber, frqanl,frqhis,iyearh,idateh,itimeh,imonthh,isoilflg
-  use mem_leaf,only:nslcon,leaf_zrough => zrough,slz, stgoff,slmstr,isfcl,nvegpat,istar
-  use mem_radiate, only: radfrq
-
-  !============================!
-  
-  implicit none
-
-  integer :: iunit                    ! io unit number
-  integer :: err
-
-  logical :: fexists,op
-  namelist /ED2_INFO/  dtlsm,ifoutput,idoutput,imoutput,iyoutput,isoutput,   &
-       attach_metadata,outfast,outstate,ffilout,sfilout,ied_init_mode,       &
-       edres,sfilin,veg_database,soil_database,ed_inputs_dir,soilstate_db,   &
-       soildepth_db,isoilstateinit,isoildepthflg,isoilbc,integration_scheme, &
-       ibranch_thermo,istoma_scheme,iphen_scheme,repro_scheme,lapse_scheme,  &
-       crown_mod,n_plant_lim,n_decomp_lim,include_fire,ianth_disturb,        &
-       icanturb,isfclyrm,include_these_pft,agri_stock,plantation_stock,      &
-       pft_1st_check, &
-       maxpatch,maxcohort,treefall_disturbance_rate,runoff_time,iprintpolys, &
-       npvars,printvars,pfmtstr,ipmin,ipmax,iphenys1,iphenysf,               &
-       iphenyf1,iphenyff,iedcnfgf,event_file,phenpath
-
-  read (iunit, iostat=err, NML=ED2_INFO)
-  if (err /= 0) then
-     write(*,"(a)") "**(ERROR)** reading section ED2_INFO "//&
-          &"of namelist file "
-     write(*,"(a)") " compare values read with file contents:"
-     write(*,*) "dtlsm=",dtlsm
-     write(*,*) "ifoutput=",ifoutput
-     write(*,*) "idoutput=",idoutput
-     write(*,*) "imoutput=",imoutput
-     write(*,*) "iyoutput=",iyoutput
-     write(*,*) "isoutput=",isoutput
-     write(*,*) "attach_metadata=",attach_metadata
-     write(*,*) "outfast=",outfast
-     write(*,*) "outstate=",outstate
-     write(*,*) "ffilout=",ffilout
-     write(*,*) "sfilout=",sfilout
-     write(*,*) "ied_init_mode=",ied_init_mode
-     write(*,*) "edres=",edres
-     write(*,*) "sfilin=",sfilin
-     write(*,*) "veg_database=",veg_database
-     write(*,*) "soil_database=",soil_database
-     write(*,*) "ed_inputs_dir=",ed_inputs_dir
-     write(*,*) "soilstate_db=",soilstate_db
-     write(*,*) "soildepth_db=",soildepth_db
-     write(*,*) "isoilstateinit=",isoilstateinit
-     write(*,*) "isoildepthflg=",isoildepthflg
-     write(*,*) "isoilbc=",isoilbc
-     write(*,*) "integration_scheme=",integration_scheme
-     write(*,*) "ibranch_thermo=",ibranch_thermo
-     write(*,*) "istoma_scheme=",istoma_scheme
-     write(*,*) "iphen_scheme",iphen_scheme
-     write(*,*) "repro_scheme",repro_scheme
-     write(*,*) "lapse_scheme",lapse_scheme
-     write(*,*) "crown_mod",crown_mod
-     write(*,*) "n_plant_lim=",n_plant_lim
-     write(*,*) "n_decomp_lim=",n_decomp_lim
-     write(*,*) "include_fire=",include_fire
-     write(*,*) "ianth_disturb=",ianth_disturb
-     write(*,*) "icanturb=",icanturb
-     write(*,*) "isfclyrm=",isfclyrm
-     write(*,*) "include_these_pft=",include_these_pft
-     write(*,*) "agri_stock=",agri_stock
-     write(*,*) "plantation_stock=",plantation_stock
-     write(*,*) "pft_1st_check=",pft_1st_check
-     write(*,*) "maxpatch=",maxpatch
-     write(*,*) "maxcohort=",maxcohort
-     write(*,*) "treefall_disturbance_rate=",treefall_disturbance_rate
-     write(*,*) "runoff_time=",runoff_time
-     write(*,*) "iprintpolys=",iprintpolys
-     write(*,*) "npvars=",npvars
-     write(*,*) "printvars=",printvars
-     write(*,*) "pfmtstr=",pfmtstr
-     write(*,*) "ipmin=",ipmin
-     write(*,*) "ipmax=",ipmax
-     write(*,*) "iphenys1=",iphenys1
-     write(*,*) "iphenysf=",iphenysf
-     write(*,*) "iphenyf1=",iphenyf1
-     write(*,*) "iphenyff=",iphenyff
-     write(*,*) "iedcnfgf=",iedcnfgf
-     write(*,*) "event_file=",event_file
-     write(*,*) "phenpath =",phenpath 
-     call abort_run('Error reading namelist, ED2_INFO block.' &
-          ,'read_ednl','ed_load_namelist.f90')
-  end if
-
-  call copy_in_bramsnl(expnme, runtype, itimez, idatez, imonthz, iyearz, &
-       itimea, idatea, imontha, iyeara, itimeh, idateh, imonthh, iyearh, &
-       radfrq, nnxp,nnyp,deltax,        &
-       deltay,polelat,polelon,centlat,centlon,nstratx,nstraty,           &
-       iclobber,nzg,nzs,isoilflg,nslcon,slz,slmstr,stgoff,leaf_zrough,istar,ngrids)
-  
-  ! The following are standard namelist variables from ED2 in stand-alone
-  ! for a coupled run, these can be fixed to any old value
-  ! ---------------------------------------------------------------------
-  
-  
-  n_ed_region   = ngrids   ! SAME THING
-  grid_res      = 0        ! NOT USED - THIS IS FOR LAT-LON STYLE
-  grid_type     = 1        ! This must be polar-stereo for now
-  ed_reg_latmin = 0        ! NOT USED IN COUPLED
-  ed_reg_latmax = 0        ! NOT USED IN COUPLED
-  ed_reg_lonmin = 0        ! NOT USED IN COUPLED
-  ed_reg_lonmax = 0        ! NOT USED IN COUPLED
-  n_soi = 0                ! NO SOI IN COUPLED RUN
-  soi_lat = 0              ! NO SOI IN COUPLED RUN
-  soi_lon = 0              ! NO SOI IN COUPLED RUN
-  ed_met_driver_db = ''    ! NOT USED IN COUPLED
-  imettype = 1             ! NOT USED IN COUPLED
-  metcyc1  = 0000          ! NOT USED IN COUPLED
-  metcycf  = 0000          ! NOT USED IN COUPLED
-  ioptinpt = ''            !NOT USED, DEPRICATED? It will be used once optimization is 
-                           ! implemented in the new version.
-  
-  unitfast  = 0           ! Since BRAMS uses frqanl and frqhist in seconds, there is no
-  unitstate = 0           ! reason to ask the user for units for outfast and outstate, the
-                          ! special flags cover all possibilities.
-  ! Force LEAF3's number of patches to be 2. This is necessary for
-  ! filling the lower boundary condition arrays correctly
-  ! --------------------------------------------------------------------
-  if (isfcl==5) then
-     npatch   = 2
-     nvegpat  = 1
-  endif
-
-
-  ! These are ED2 variables that have the same function as certain BRAMS
-  ! namelist variables under a different name
-  ! --------------------------------------------------------------------
-  
-  frqfast  = frqanl
-  frqstate = frqhis
-
-  ! set current time to initial time here.  If this is a history run,
-     ! reset current time in subroutine history_start.
-     end_time%year = iyearz
-     end_time%month = imonthz
-     end_time%date = idatez
-     end_time%time = int(itimez * 0.01) * 3600.0   &
-          + (itimez * 0.01 - int(itimez*0.01))*100.0*60.0
-
-     if (runtype == 'INITIAL') then
-        
-        ! The namelist variables in this section either must not be changed on a
-        ! history restart or changing them would be irrelevant.  Thus, they are
-        ! only copied to main model memory if this is not a history restart.
-        
-        ! set current time to initial time here.  If this is a history run,
-        ! reset current time in subroutine history_start.
-        current_time%year = iyeara
-        current_time%month = imontha
-        current_time%date = idatea
-        current_time%time = int(itimea * 0.01) * 3600.0   &
-             + (itimea * 0.01 - int(itimea*0.01))*100.0*60.0
-        
-        time = 0.0
-     elseif (runtype == 'HISTORY') then
-        
-        ! The namelist variables in this section either must not be changed on a
-        ! history restart or changing them would be irrelevant.  Thus, they are
-        ! only copied to main model memory if this is not a history restart.
-        ! If this is a history run,
-        ! reset current time in subroutine history_start.
-        
-        current_time%year  = iyearh
-        current_time%month = imonthh
-        current_time%date  = idateh
-        current_time%time  = int(itimeh * 0.01) * 3600.0   &
-             + (itimeh * 0.01 - int(itimeh*0.01))*100.0*60.0
-        
-        ! Calculate the current time
-        call date_2_seconds (iyearh,imonthh,idateh,itimeh*100, &
-             iyeara,imontha,idatea,itimea*100,time)
-        
-     end if
-     
-     ! Sorting up the chosen PFTs
-     where (include_these_pft < 1) include_these_pft=huge(1)
-     call sort_up(include_these_pft,n_pft)
-     
-     !  Determine the length of simuation
-     call date_2_seconds (iyearz,imonthz,idatez,itimez*100, &
-          iyeara,imontha,idatea,itimea*100,timmax)
-
-     return
-   end subroutine read_ednl
-   
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine will read the ED parameters from the ED2_INFO namelist (part of the  !
+! RAMSIN file).                                                                            !
 !------------------------------------------------------------------------------------------!
+subroutine read_ednl(iunit)
+   !----- ED2 modules. --------------------------------------------------------------------!
+   use ed_max_dims          , only : n_pft                     ! ! intent(in)
+   use soil_coms            , only : ed_zrough => zrough       & ! intent(out)
+                                   , soil_database             & ! intent(out)
+                                   , isoilstateinit            & ! intent(out)
+                                   , isoildepthflg             & ! intent(out)
+                                   , isoilbc                   & ! intent(out)
+                                   , soilstate_db              & ! intent(out)
+                                   , soildepth_db              & ! intent(out)
+                                   , runoff_time               & ! intent(out)
+                                   , veg_database              ! ! intent(out)
+   use met_driver_coms      , only : ed_met_driver_db          & ! intent(out)
+                                   , imettype                  & ! intent(out)
+                                   , metcyc1                   & ! intent(out)
+                                   , metcycf                   & ! intent(out)
+                                   , lapse_scheme              ! ! intent(out)
+   use mem_sites            , only : n_soi                     & ! intent(out)
+                                   , soi_lat                   & ! intent(out)
+                                   , soi_lon                   & ! intent(out)
+                                   , n_ed_region               & ! intent(out)
+                                   , ed_reg_latmin             & ! intent(out)
+                                   , ed_reg_latmax             & ! intent(out)
+                                   , ed_reg_lonmin             & ! intent(out)
+                                   , ed_reg_lonmax             & ! intent(out)
+                                   , grid_res                  & ! intent(out)
+                                   , grid_type                 & ! intent(out)
+                                   , edres                     & ! intent(out)
+                                   , maxpatch                  & ! intent(out)
+                                   , maxcohort                 ! ! intent(out)
+   use physiology_coms      , only : istoma_scheme             & ! intent(out)
+                                   , n_plant_lim               ! ! intent(out)
+   use phenology_coms       , only : iphen_scheme              & ! intent(out)
+                                   , repro_scheme              & ! intent(out)
+                                   , iphenys1                  & ! intent(out)
+                                   , iphenysf                  & ! intent(out)
+                                   , iphenyf1                  & ! intent(out)
+                                   , iphenyff                  & ! intent(out)
+                                   , phenpath                  ! ! intent(out)
+   use decomp_coms          , only : n_decomp_lim              & ! intent(out)
+                                   , LloydTaylor               ! ! intent(out)
+   use disturb_coms         , only : include_fire              & ! intent(out)
+                                   , ianth_disturb             & ! intent(out)
+                                   , treefall_disturbance_rate ! ! intent(out)
+   use pft_coms             , only : include_these_pft         & ! intent(out)
+                                   , agri_stock                & ! intent(out)
+                                   , plantation_stock          & ! intent(out)
+                                   , pft_1st_check             ! ! intent(out)
+   use ed_misc_coms         , only : ifoutput                  & ! intent(out)
+                                   , idoutput                  & ! intent(out)
+                                   , imoutput                  & ! intent(out)
+                                   , iyoutput                  & ! intent(out)
+                                   , itoutput                  & ! intent(out)
+                                   , isoutput                  & ! intent(out)
+                                   , frqfast                   & ! intent(out)
+                                   , frqstate                  & ! intent(out)
+                                   , outfast                   & ! intent(out)
+                                   , outstate                  & ! intent(out)
+                                   , unitfast                  & ! intent(out)
+                                   , unitstate                 & ! intent(out)
+                                   , ied_init_mode             & ! intent(out)
+                                   , current_time              & ! intent(out)
+                                   , ed_inputs_dir             & ! intent(out)
+                                   , end_time                  & ! intent(out)
+                                   , integration_scheme        & ! intent(out)
+                                   , ffilout                   & ! intent(out)
+                                   , dtlsm                     & ! intent(out)
+                                   , iprintpolys               & ! intent(out)
+                                   , printvars                 & ! intent(out)
+                                   , npvars                    & ! intent(out)
+                                   , pfmtstr                   & ! intent(out)
+                                   , ipmax                     & ! intent(out)
+                                   , ipmin                     & ! intent(out)
+                                   , iedcnfgf                  & ! intent(out)
+                                   , ffilout                   & ! intent(out)
+                                   , sfilout                   & ! intent(out)
+                                   , sfilin                    & ! intent(out)
+                                   , event_file                & ! intent(out)
+                                   , attach_metadata           ! ! intent(out)
+   use canopy_air_coms      , only : icanturb                  & ! intent(out)
+                                   , isfclyrm                  ! ! intent(out)
+   use grid_coms            , only : timmax                    & ! intent(out)
+                                   , time                      ! ! intent(out)
+   use optimiz_coms         , only : ioptinpt                  ! ! intent(out)
+   use rk4_coms             , only : ibranch_thermo            ! ! intent(out)
+   use canopy_radiation_coms, only : crown_mod                 ! ! intent(out)
+   !----- BRAMS modules. ------------------------------------------------------------------!
+   use mem_grid             , only : expnme                    & ! intent(in)
+                                   , runtype                   & ! intent(in)
+                                   , itimez                    & ! intent(in)
+                                   , idatez                    & ! intent(in)
+                                   , imonthz                   & ! intent(in)
+                                   , iyearz                    & ! intent(in)
+                                   , itimea                    & ! intent(in)
+                                   , idatea                    & ! intent(in)
+                                   , imontha                   & ! intent(in)
+                                   , iyeara                    & ! intent(in)
+                                   , centlon                   & ! intent(in)
+                                   , centlat                   & ! intent(in)
+                                   , deltax                    & ! intent(in)
+                                   , deltay                    & ! intent(in)
+                                   , nnxp                      & ! intent(in)
+                                   , nnyp                      & ! intent(in)
+                                   , nstratx                   & ! intent(in)
+                                   , nstraty                   & ! intent(in)
+                                   , polelat                   & ! intent(in)
+                                   , polelon                   & ! intent(in)
+                                   , ngrids                    & ! intent(in)
+                                   , nzg                       & ! intent(in)
+                                   , nzs                       & ! intent(in)
+                                   , npatch                    ! ! intent(in)
+   use io_params            , only : ioutput                   & ! intent(in)
+                                   , iclobber                  & ! intent(in)
+                                   , frqanl                    & ! intent(in)
+                                   , frqhis                    & ! intent(in)
+                                   , iyearh                    & ! intent(in)
+                                   , idateh                    & ! intent(in)
+                                   , itimeh                    & ! intent(in)
+                                   , imonthh                   & ! intent(in)
+                                   , isoilflg                  ! ! intent(in)
+   use mem_leaf             , only : nslcon                    & ! intent(in)
+                                   , leaf_zrough => zrough     & ! intent(in)
+                                   , slz                       & ! intent(in)
+                                   , stgoff                    & ! intent(in)
+                                   , slmstr                    & ! intent(in)
+                                   , isfcl                     & ! intent(in)
+                                   , nvegpat                   & ! intent(in)
+                                   , istar                     ! ! intent(in)
+   use mem_radiate          , only : radfrq                    ! ! intent(in)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer, intent(in) :: iunit ! Namelist unit number
+   !----- Local variables. ----------------------------------------------------------------!
+   integer             :: err
+   integer             :: decomp_scheme
+   logical             :: fexists
+   logical             :: op
+   !----- Namelist. -----------------------------------------------------------------------!
+   namelist /ED2_INFO/  dtlsm,ifoutput,idoutput,imoutput,iyoutput,itoutput,isoutput        &
+                       ,attach_metadata,outfast,outstate,ffilout,sfilout,ied_init_mode     &
+                       ,edres,sfilin,veg_database,soil_database,ed_inputs_dir,soilstate_db &
+                       ,soildepth_db,isoilstateinit,isoildepthflg,isoilbc                  &
+                       ,integration_scheme,ibranch_thermo,istoma_scheme,iphen_scheme       &
+                       ,repro_scheme,lapse_scheme,crown_mod,decomp_scheme,n_plant_lim      &
+                       ,n_decomp_lim,include_fire,ianth_disturb,icanturb,include_these_pft &
+                       ,agri_stock,plantation_stock,pft_1st_check,maxpatch,maxcohort       &
+                       ,treefall_disturbance_rate,runoff_time,iprintpolys,npvars,printvars &
+                       ,pfmtstr,ipmin,ipmax,iphenys1,iphenysf,iphenyf1,iphenyff,iedcnfgf   &
+                       ,event_file,phenpath
+
+   read (unit=iunit, iostat=err, NML=ED2_INFO)
+   if (err /= 0) then
+      write (unit=*,fmt='(a)') '**(ERROR)** reading section ED2_INFO of namelist file. '
+      write (unit=*,fmt='(a)') ' Compare values read with file contents:' 
+      write (unit=*,fmt=*) 'dtlsm=',dtlsm
+      write (unit=*,fmt=*) 'ifoutput=',ifoutput
+      write (unit=*,fmt=*) 'idoutput=',idoutput
+      write (unit=*,fmt=*) 'imoutput=',imoutput
+      write (unit=*,fmt=*) 'iyoutput=',iyoutput
+      write (unit=*,fmt=*) 'itoutput=',itoutput
+      write (unit=*,fmt=*) 'isoutput=',isoutput
+      write (unit=*,fmt=*) 'attach_metadata=',attach_metadata
+      write (unit=*,fmt=*) 'outfast=',outfast
+      write (unit=*,fmt=*) 'outstate=',outstate
+      write (unit=*,fmt=*) 'ffilout=',ffilout
+      write (unit=*,fmt=*) 'sfilout=',sfilout
+      write (unit=*,fmt=*) 'ied_init_mode=',ied_init_mode
+      write (unit=*,fmt=*) 'edres=',edres
+      write (unit=*,fmt=*) 'sfilin=',sfilin
+      write (unit=*,fmt=*) 'veg_database=',veg_database
+      write (unit=*,fmt=*) 'soil_database=',soil_database
+      write (unit=*,fmt=*) 'ed_inputs_dir=',ed_inputs_dir
+      write (unit=*,fmt=*) 'soilstate_db=',soilstate_db
+      write (unit=*,fmt=*) 'soildepth_db=',soildepth_db
+      write (unit=*,fmt=*) 'isoilstateinit=',isoilstateinit
+      write (unit=*,fmt=*) 'isoildepthflg=',isoildepthflg
+      write (unit=*,fmt=*) 'isoilbc=',isoilbc
+      write (unit=*,fmt=*) 'integration_scheme=',integration_scheme
+      write (unit=*,fmt=*) 'ibranch_thermo=',ibranch_thermo
+      write (unit=*,fmt=*) 'istoma_scheme=',istoma_scheme
+      write (unit=*,fmt=*) 'iphen_scheme=',iphen_scheme
+      write (unit=*,fmt=*) 'repro_scheme=',repro_scheme
+      write (unit=*,fmt=*) 'lapse_scheme=',lapse_scheme
+      write (unit=*,fmt=*) 'crown_mod=',crown_mod
+      write (unit=*,fmt=*) 'decomp_scheme=',decomp_scheme
+      write (unit=*,fmt=*) 'n_plant_lim=',n_plant_lim
+      write (unit=*,fmt=*) 'n_decomp_lim=',n_decomp_lim
+      write (unit=*,fmt=*) 'include_fire=',include_fire
+      write (unit=*,fmt=*) 'ianth_disturb=',ianth_disturb
+      write (unit=*,fmt=*) 'icanturb=',icanturb
+      write (unit=*,fmt=*) 'include_these_pft=',include_these_pft
+      write (unit=*,fmt=*) 'agri_stock=',agri_stock
+      write (unit=*,fmt=*) 'plantation_stock=',plantation_stock
+      write (unit=*,fmt=*) 'pft_1st_check=',pft_1st_check
+      write (unit=*,fmt=*) 'maxpatch=',maxpatch
+      write (unit=*,fmt=*) 'maxcohort=',maxcohort
+      write (unit=*,fmt=*) 'treefall_disturbance_rate=',treefall_disturbance_rate
+      write (unit=*,fmt=*) 'runoff_time=',runoff_time
+      write (unit=*,fmt=*) 'iprintpolys=',iprintpolys
+      write (unit=*,fmt=*) 'npvars=',npvars
+      write (unit=*,fmt=*) 'printvars=',printvars
+      write (unit=*,fmt=*) 'pfmtstr=',pfmtstr
+      write (unit=*,fmt=*) 'ipmin=',ipmin
+      write (unit=*,fmt=*) 'ipmax=',ipmax
+      write (unit=*,fmt=*) 'iphenys1=',iphenys1
+      write (unit=*,fmt=*) 'iphenysf=',iphenysf
+      write (unit=*,fmt=*) 'iphenyf1=',iphenyf1
+      write (unit=*,fmt=*) 'iphenyff=',iphenyff
+      write (unit=*,fmt=*) 'iedcnfgf=',iedcnfgf
+      write (unit=*,fmt=*) 'event_file=',event_file
+      write (unit=*,fmt=*) 'phenpath =',phenpath 
+      call abort_run('Error reading namelist, ED2_INFO block.','read_ednl'                 &
+                    ,'edcp_load_namelist.f90')
+   end if
+   
+   !---------------------------------------------------------------------------------------!
+   !    Decomposition scheme is not a real variable in the model, internally we use        !
+   ! Lloyd_Taylor instead.                                                                 !
+   !---------------------------------------------------------------------------------------!
+   LloydTaylor = decomp_scheme == 1
+
+   !---------------------------------------------------------------------------------------!
+   !     Some variables that ED needs are also defined and used by other BRAMS modules.    !
+   ! To avoid defining these variabes twice, or even worse, to avoid mismatches, we copy   !
+   ! the variables from BRAMS modules to the ED modules.                                   !
+   !---------------------------------------------------------------------------------------!
+   call copy_in_bramsnl(expnme,runtype,itimez,idatez,imonthz,iyearz,itimea,idatea,imontha  &
+                       ,iyeara,itimeh,idateh,imonthh,iyearh,radfrq,nnxp,nnyp,deltax        &
+                       ,deltay,polelat,polelon,centlat,centlon,nstratx,nstraty,iclobber    &
+                       ,nzg,nzs,isoilflg,nslcon,slz,slmstr,stgoff,leaf_zrough,ngrids)
   
-subroutine copy_in_bramsnl(expnme_b, runtype_b, itimez_b, idatez_b, &
-     imonthz_b, iyearz_b, itimea_b, idatea_b, imontha_b, iyeara_b,  &
-     itimeh_b, idateh_b, imonthh_b, iyearh_b,                       &
-     radfrq_b,nnxp_b,nnyp_b,deltax_b,deltay_b,polelat_b,polelon_b,  &
-     centlat_b,centlon_b,nstratx_b,nstraty_b,iclobber_b,nzg_b,nzs_b,&
-     isoilflg_b,nslcon_b,slz_b,slmstr_b,stgoff_b,zrough_b,isfclyrm_b,ngrids_b)
-  
-  use ed_misc_coms, only: expnme, runtype, itimez, idatez, imonthz, iyearz, &
-       itimea, idatea, imontha, iyeara, itimeh, idateh, imonthh, iyearh, iclobber,radfrq
-  
-  use grid_coms, only: centlon,centlat,deltax,deltay,nnxp,nnyp,nstratx, &
-       nstraty,polelat,polelon,ngrids,timmax,time,nzg, nzs
+   !---------------------------------------------------------------------------------------!
+   !      The following variables can be defined in the regular ED2IN file for stand-alone !
+   ! runs, but they cannot be changed in the coupled simulation (or they are never used    !
+   ! in the coupled run.  We assign some standard values to these variables.               !
+   !---------------------------------------------------------------------------------------!
+   n_ed_region   = ngrids   ! No SOI/POI is allowed in coupled runs.
+   n_soi = 0                ! No SOI/POI is allowed in coupled runs.
+   grid_res      = 0        ! Not used: this is for lat-lon style.
+   grid_type     = 1        ! We reinforce polar-stereo for now, it actually grabs the
+                            !   BRAMS coordinates.
+   ed_reg_latmin = 0        ! Not used in coupled runs.
+   ed_reg_latmax = 0        ! Not used in coupled runs.
+   ed_reg_lonmin = 0        ! Not used in coupled runs.
+   ed_reg_lonmax = 0        ! Not used in coupled runs.
+   soi_lat = 0              ! SOI/POI is not an option in coupled runs.
+   soi_lon = 0              ! SOI/POI is not an option in coupled runs.
+   ed_met_driver_db = ''    ! BRAMS is the meteorology driver... 
+   imettype = 1             ! BRAMS is the meteorology driver...
+   metcyc1  = 0000          ! BRAMS is the meteorology driver...
+   metcycf  = 0000          ! BRAMS is the meteorology driver...
+   ioptinpt = ''            ! It will be used once optimization is 
+                            !    implemented in ED-2.1.
+   unitfast  = 0            ! Since BRAMS uses frqanl and frqhist in seconds, there is no
+   unitstate = 0            !     reason to ask the user for units for outfast and 
+                            !     outstate, the special flags cover all possibilities.
 
-  use soil_coms, only: isoilflg, nslcon, slmstr, zrough, slz,stgoff
-
-  use grid_dims,  only: maxgrds,nzgmax
-  
-  use canopy_air_coms, only: isfclyrm
-
-  implicit none
-  
-  character(len=64)         , intent(in) :: expnme_b   ! experiment name
-  integer                   , intent(in) :: ngrids_b   ! how many grids
-  character(len=16)         , intent(in) :: runtype_b
-  integer                   , intent(in) :: iyeara_b
-  integer                   , intent(in) :: imontha_b
-  integer                   , intent(in) :: idatea_b
-  integer                   , intent(in) :: itimea_b
-  integer                   , intent(in) :: iyearz_b
-  integer                   , intent(in) :: imonthz_b
-  integer                   , intent(in) :: idatez_b
-  integer                   , intent(in) :: itimez_b
-  integer                   , intent(in) :: iyearh_b
-  integer                   , intent(in) :: imonthh_b
-  integer                   , intent(in) :: idateh_b
-  integer                   , intent(in) :: itimeh_b
-  real                      , intent(in) :: radfrq_b
-  integer                   , intent(in) :: iclobber_b
-  integer,dimension(maxgrds), intent(in) :: nnxp_b
-  integer,dimension(maxgrds), intent(in) :: nnyp_b
-  real                      , intent(in) :: deltax_b
-  real                      , intent(in) :: deltay_b
-  real                      , intent(in) :: polelat_b
-  real                      , intent(in) :: polelon_b
-  real   ,dimension(maxgrds), intent(in) :: centlat_b ! grid center latitude (degrees)
-  real   ,dimension(maxgrds), intent(in) :: centlon_b ! grid center longitude (degrees)
-  integer,dimension(maxgrds), intent(in) :: nstratx_b ! nest ratio for next coarser grid
-  integer,dimension(maxgrds), intent(in) :: nstraty_b ! nest ratio for next coarser grid
-  integer                   , intent(in) :: nzg_b     ! soil layers
-  integer                   , intent(in) :: nzs_b     ! snow layers
-  integer,dimension(maxgrds), intent(in) :: isoilflg_b
-  integer                   , intent(in) :: nslcon_b
-  integer                   , intent(in) :: isfclyrm_b
-  real                      , intent(in) :: zrough_b
-  real, dimension(nzgmax)   , intent(in) :: slmstr_b
-  real, dimension(nzgmax)   , intent(in) :: stgoff_b
-  real, dimension(nzgmax)   , intent(in) :: slz_b
-
-  expnme   = expnme_b
-  ngrids   = ngrids_b
-  runtype  = runtype_b
-  itimez   = itimez_b
-  idatez   = idatez_b
-  imonthz  = imonthz_b
-  iyearz   = iyearz_b
-  itimeh   = itimeh_b
-  idateh   = idateh_b
-  imonthh  = imonthh_b
-  iyearh   = iyearh_b
-  itimea   = itimea_b
-  idatea   = idatea_b
-  imontha  = imontha_b
-  iyeara   = iyeara_b
-
-  radfrq   = radfrq_b
-
-  iclobber = iclobber_b
-
-  centlon  = centlon_b
-  centlat  = centlat_b
-  deltax   = deltax_b
-  deltay   = deltay_b
-  nnxp     = nnxp_b
-  nnyp     = nnyp_b
-  nstratx  = nstratx_b
-  nstraty  = nstraty_b
-  polelat  = polelat_b
-  polelon  = polelon_b
-  ngrids   = ngrids_b
-
-  nzg      = nzg_b
-  nzs      = nzs_b
-
-  slz      = slz_b
-  slmstr   = slmstr_b
-  stgoff   = stgoff_b
-  zrough   = zrough_b
-
-  isoilflg = isoilflg_b
-  isfclyrm = isfclyrm_b
+   !---------------------------------------------------------------------------------------!
+   !      We force LEAF-3's number of patches to be 2.  We fill some LEAF-3 variables that !
+   ! are used by other BRAMS routines with ED values.  Two is the minimum number needed,   !
+   ! and patch 1 corresponds to water, which is solved by the simple lake model, and patch !
+   ! 2 received the polygon-averaged state from ED-2.                                      !
+   !---------------------------------------------------------------------------------------!
+   if (isfcl==5) then
+      npatch   = 2
+      nvegpat  = 1
+   endif
 
 
-  
-  return
+   !---------------------------------------------------------------------------------------!
+   !      These are ED2 variables that have the same function as certain BRAMS namelist    !
+   ! variables under a different name.                                                     !
+   !---------------------------------------------------------------------------------------!
+   frqfast  = frqanl
+   frqstate = frqhis
+   isfclyrm = istar
+
+   !---------------------------------------------------------------------------------------!
+   !      Set current time to initial time here.  If this is a history run, reset current  !
+   ! time in subroutine history_start.                                                     !
+   !---------------------------------------------------------------------------------------!
+   end_time%year  = iyearz
+   end_time%month = imonthz
+   end_time%date  = idatez
+   end_time%time  = int(itimez * 0.01) * 3600.0                                            &
+                  + (itimez * 0.01 - int(itimez*0.01))*100.0*60.0
+
+   !---------------------------------------------------------------------------------------!
+   !     Here we set up the current time.  The time depends on whether this is a history   !
+   ! or initial run.                                                                       !
+   !---------------------------------------------------------------------------------------!
+   select case(trim(runtype))
+   case('INITIAL')
+      current_time%year  = iyeara
+      current_time%month = imontha
+      current_time%date  = idatea
+      current_time%time  = int(itimea * 0.01) * 3600.0                                     &
+                         + (itimea * 0.01 - int(itimea*0.01))*100.0*60.0
+      time               = 0.0
+
+   case ('HISTORY')
+      current_time%year  = iyearh
+      current_time%month = imonthh
+      current_time%date  = idateh
+      current_time%time  = int(itimeh * 0.01) * 3600.0                                     &
+                         + (itimeh * 0.01 - int(itimeh*0.01))*100.0*60.0
+
+      !----- Calculate the current time. --------------------------------------------------!
+      call date_2_seconds (iyearh,imonthh,idateh,itimeh*100,iyeara,imontha,idatea          &
+                          ,itimea*100,time)
+
+   end select
+      
+   !----- Sort up the chosen PFTs. --------------------------------------------------------!
+   where (include_these_pft < 1) include_these_pft=huge(1)
+   call sort_up(include_these_pft,n_pft)
+
+   !----- Determine the length of simuation. ----------------------------------------------!
+   call date_2_seconds(iyearz,imonthz,idatez,itimez*100,iyeara,imontha,idatea,itimea*100   &
+                      ,timmax)
+
+   return
+end subroutine read_ednl
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine copies variables that have the same name in both BRAMS and ED2       !
+! modules, from BRAMS to ED.                                                               !
+!------------------------------------------------------------------------------------------!
+subroutine copy_in_bramsnl(expnme_b,runtype_b,itimez_b,idatez_b,imonthz_b,iyearz_b         &
+                          ,itimea_b,idatea_b,imontha_b,iyeara_b,itimeh_b,idateh_b          &
+                          ,imonthh_b,iyearh_b,radfrq_b,nnxp_b,nnyp_b,deltax_b,deltay_b     &
+                          ,polelat_b,polelon_b,centlat_b,centlon_b,nstratx_b,nstraty_b     &
+                          ,iclobber_b,nzg_b,nzs_b,isoilflg_b,nslcon_b,slz_b,slmstr_b       &
+                          ,stgoff_b,zrough_b,ngrids_b)
+   use ed_misc_coms, only : expnme            & ! intent(out)
+                          , runtype           & ! intent(out)
+                          , itimez            & ! intent(out)
+                          , idatez            & ! intent(out)
+                          , imonthz           & ! intent(out)
+                          , iyearz            & ! intent(out)
+                          , itimea            & ! intent(out)
+                          , idatea            & ! intent(out)
+                          , imontha           & ! intent(out)
+                          , iyeara            & ! intent(out)
+                          , itimeh            & ! intent(out)
+                          , idateh            & ! intent(out)
+                          , imonthh           & ! intent(out)
+                          , iyearh            & ! intent(out)
+                          , iclobber          & ! intent(out)
+                          , radfrq            ! ! intent(out)
+   use grid_coms   , only : centlon           & ! intent(out)
+                          , centlat           & ! intent(out)
+                          , deltax            & ! intent(out)
+                          , deltay            & ! intent(out)
+                          , nnxp              & ! intent(out)
+                          , nnyp              & ! intent(out)
+                          , nstratx           & ! intent(out)
+                          , nstraty           & ! intent(out)
+                          , polelat           & ! intent(out)
+                          , polelon           & ! intent(out)
+                          , ngrids            & ! intent(out)
+                          , timmax            & ! intent(out)
+                          , time              & ! intent(out)
+                          , nzg               & ! intent(out)
+                          , nzs               ! ! intent(out)
+   use soil_coms   , only : isoilflg          & ! intent(out)
+                          , nslcon            & ! intent(out)
+                          , slmstr            & ! intent(out)
+                          , zrough            & ! intent(out)
+                          , slz               & ! intent(out)
+                          , stgoff            ! ! intent(out)
+   use grid_dims   , only : maxgrds           & ! intent(out)
+                          , nzgmax            ! ! intent(out)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   character(len=64)         , intent(in) :: expnme_b   ! Experiment name
+   integer                   , intent(in) :: ngrids_b   ! Number of grids
+   character(len=16)         , intent(in) :: runtype_b  ! Simulation type (HISTORY/INITIAL)
+   integer                   , intent(in) :: iyeara_b   ! Initial year
+   integer                   , intent(in) :: imontha_b  ! Initial month
+   integer                   , intent(in) :: idatea_b   ! Initial day
+   integer                   , intent(in) :: itimea_b   ! Initial hour
+   integer                   , intent(in) :: iyearz_b   ! Final year
+   integer                   , intent(in) :: imonthz_b  ! Final month
+   integer                   , intent(in) :: idatez_b   ! Final day
+   integer                   , intent(in) :: itimez_b   ! Final hour
+   integer                   , intent(in) :: iyearh_b   ! History year
+   integer                   , intent(in) :: imonthh_b  ! History month
+   integer                   , intent(in) :: idateh_b   ! History day
+   integer                   , intent(in) :: itimeh_b   ! History hour
+   real                      , intent(in) :: radfrq_b   ! Radiation time step
+   integer                   , intent(in) :: iclobber_b ! Flag to decide whether files can
+                                                        !   be overwritten or not
+   integer,dimension(maxgrds), intent(in) :: nnxp_b     ! Number of points in X
+   integer,dimension(maxgrds), intent(in) :: nnyp_b     ! Number of points in Y
+   real                      , intent(in) :: deltax_b   ! Grid resolution close to the pole
+   real                      , intent(in) :: deltay_b   ! Grid resolution close to the pole
+   real                      , intent(in) :: polelat_b  ! Pole latitude (degrees)
+   real                      , intent(in) :: polelon_b  ! Pole longitude (degrees)
+   real   ,dimension(maxgrds), intent(in) :: centlat_b  ! Grid center latitude (degrees)
+   real   ,dimension(maxgrds), intent(in) :: centlon_b  ! Grid center longitude (degrees)
+   integer,dimension(maxgrds), intent(in) :: nstratx_b  ! Nest ratio for next coarser grid
+   integer,dimension(maxgrds), intent(in) :: nstraty_b  ! Nest ratio for next coarser grid
+   integer                   , intent(in) :: nzg_b      ! Number of soil layers
+   integer                   , intent(in) :: nzs_b      ! Number of snow layers
+   integer,dimension(maxgrds), intent(in) :: isoilflg_b ! Method to initialise soil type
+   integer                   , intent(in) :: nslcon_b   ! Soil type if constant for all grid
+   real                      , intent(in) :: zrough_b   ! Soil roughness if constant...
+   real, dimension(nzgmax)   , intent(in) :: slmstr_b   ! Initial soil moisture if constant
+   real, dimension(nzgmax)   , intent(in) :: stgoff_b   ! Initial soil temperature offset
+   real, dimension(nzgmax)   , intent(in) :: slz_b      ! Soil layers
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Copy the variables. -------------------------------------------------------------!
+   expnme   = expnme_b
+   ngrids   = ngrids_b
+   runtype  = runtype_b
+   itimez   = itimez_b
+   idatez   = idatez_b
+   imonthz  = imonthz_b
+   iyearz   = iyearz_b
+   itimeh   = itimeh_b
+   idateh   = idateh_b
+   imonthh  = imonthh_b
+   iyearh   = iyearh_b
+   itimea   = itimea_b
+   idatea   = idatea_b
+   imontha  = imontha_b
+   iyeara   = iyeara_b
+
+   radfrq   = radfrq_b
+
+   iclobber = iclobber_b
+
+   centlon  = centlon_b
+   centlat  = centlat_b
+   deltax   = deltax_b
+   deltay   = deltay_b
+   nnxp     = nnxp_b
+   nnyp     = nnyp_b
+   nstratx  = nstratx_b
+   nstraty  = nstraty_b
+   polelat  = polelat_b
+   polelon  = polelon_b
+   ngrids   = ngrids_b
+
+   nzg      = nzg_b
+   nzs      = nzs_b
+
+   slz      = slz_b
+   slmstr   = slmstr_b
+   stgoff   = stgoff_b
+   zrough   = zrough_b
+
+   isoilflg = isoilflg_b
+   !---------------------------------------------------------------------------------------!
+
+   return
 end subroutine copy_in_bramsnl
+!==========================================================================================!
+!==========================================================================================!

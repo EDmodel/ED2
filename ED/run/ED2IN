@@ -100,7 +100,8 @@
    NL%IMOUTPUT  =  3            ! Monthly means (site average)
    NL%IYOUTPUT  =  0            ! Annual output
    NL%ITOUTPUT  =  0            ! Instantaneous fluxes (site average)
-				! single annual file, no patch/cohort, for optimization or flux tower comparision 
+                                ! single annual file, no patch/cohort, for optimization or 
+                                !     flux tower comparision 
    NL%ISOUTPUT  =  0            ! History files
                                 ! 0 - no file;
                                 ! 1 - save ascii (deprecated);
@@ -237,6 +238,7 @@
    NL%ISOILBC        = 1  ! Soil boundary condition at lowest soil level
                           ! 0 - Bedrock;
                           ! 1 - Free drainage.
+                          ! 2 - Half drainage.
 !------------------------------------------------------------------------------------------!
 
 
@@ -287,8 +289,9 @@
                               !  1  - finite radius mixing model (Dietze)
 
    NL%DECOMP_SCHEME   = 0     ! Specifies soil decomposition temperature dependence
-			      ! 0 -- original exponential
-			      ! 1 -- Lloyd and Taylor (1994) model [[requires parameters to be set in xml]]
+                              ! 0 -- original exponential
+                              ! 1 -- Lloyd and Taylor (1994) model
+                              !      [[requires parameters to be set in xml]]
 
    NL%N_PLANT_LIM     = 0     ! Determines whether (1) or not (0) plants can
                               !    be limited by nitrogen

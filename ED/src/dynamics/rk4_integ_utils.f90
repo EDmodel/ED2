@@ -5,14 +5,14 @@
 !     This subroutine will drive the integration of several ODEs that drive the fast-scale !
 ! state variables.                                                                         !
 !------------------------------------------------------------------------------------------!
-subroutine odeint(h1,csite,ipa,isi,ipy,ifm,nsteps,cpoly)
+subroutine odeint(h1,csite,ipa,nsteps)
 
    use ed_state_vars  , only : sitetype               & ! structure
                              , patchtype              & ! structure
                              , polygontype
    use rk4_coms       , only : integration_vars       & ! structure
                              , integration_buff       & ! intent(inout)
-                             , rk4met                 & ! intent(in)
+                             , rk4site                & ! intent(in)
                              , rk4min_sfcwater_mass   & ! intent(in)
                              , maxstp                 & ! intent(in)
                              , tbeg                   & ! intent(in)
@@ -34,11 +34,7 @@ subroutine odeint(h1,csite,ipa,isi,ipy,ifm,nsteps,cpoly)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(sitetype)            , target      :: csite            ! Current site
-   type(polygontype)         , target      :: cpoly            ! Current polygon
    integer                   , intent(in)  :: ipa              ! Current patch ID
-   integer                   , intent(in)  :: isi              ! Current site ID
-   integer                   , intent(in)  :: ipy              ! Current polygon ID
-   integer                   , intent(in)  :: ifm              ! Current grid ID
    real(kind=8)              , intent(in)  :: h1               ! First guess of delta-t
    integer                   , intent(out) :: nsteps           ! Number of steps taken.
    !----- Local variables -----------------------------------------------------------------!
@@ -101,7 +97,7 @@ subroutine odeint(h1,csite,ipa,isi,ipy,ifm,nsteps,cpoly)
    timesteploop: do i=1,maxstp
 
       !----- Get initial derivatives ------------------------------------------------------!
-      call leaf_derivs(integration_buff%y,integration_buff%dydx,csite,ipa,isi,ipy,cpoly)
+      call leaf_derivs(integration_buff%y,integration_buff%dydx,csite,ipa)
 
       !----- Get scalings used to determine stability -------------------------------------!
       call get_yscal(integration_buff%y, integration_buff%dydx,h,integration_buff%yscal    &
@@ -111,7 +107,7 @@ subroutine odeint(h1,csite,ipa,isi,ipy,ifm,nsteps,cpoly)
       if((x+h-tend)*(x+h-tbeg) > 0.d0) h=tend-x
 
       !----- Take the step ----------------------------------------------------------------!
-      call rkqs(x,h,hdid,hnext,csite,ipa,isi,ipy,ifm,cpoly)
+      call rkqs(x,h,hdid,hnext,csite,ipa)
 
       !----- If the integration reached the next step, make some final adjustments --------!
       if((x-tend)*dtrk4 >= 0.d0)then
@@ -222,51 +218,57 @@ end subroutine odeint
 ! is to ensure all variables are in double precision, so consistent with the buffer vari-  !
 ! ables.                                                                                   !
 !------------------------------------------------------------------------------------------!
-subroutine copy_met_2_rk4met(vels,atm_enthalpy,atm_theta,atm_tmp,atm_shv,atm_co2,zoff      &
-                            ,exner,pcpg,qpcpg,dpcpg,prss,geoht,lsl,lon,lat)
-   use rk4_coms       , only : rk4met        ! ! structure
+subroutine copy_met_2_rk4site(vels,atm_enthalpy,atm_theta,atm_tmp,atm_shv,atm_co2,zoff     &
+                            ,exner,pcpg,qpcpg,dpcpg,prss,geoht,lsl,green_leaf_factor       &
+                            ,lon,lat)
+   use ed_max_dims    , only : n_pft         ! ! intent(in)
+   use rk4_coms       , only : rk4site       ! ! structure
    use canopy_air_coms, only : ubmin8        ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
-   integer, intent(in) :: lsl
-   real   , intent(in) :: vels
-   real   , intent(in) :: atm_enthalpy
-   real   , intent(in) :: atm_theta
-   real   , intent(in) :: atm_tmp
-   real   , intent(in) :: atm_shv
-   real   , intent(in) :: atm_co2
-   real   , intent(in) :: zoff
-   real   , intent(in) :: exner
-   real   , intent(in) :: pcpg
-   real   , intent(in) :: qpcpg
-   real   , intent(in) :: dpcpg
-   real   , intent(in) :: prss
-   real   , intent(in) :: geoht
-   real   , intent(in) :: lon
-   real   , intent(in) :: lat
+   integer                  , intent(in) :: lsl
+   real                     , intent(in) :: vels
+   real                     , intent(in) :: atm_enthalpy
+   real                     , intent(in) :: atm_theta
+   real                     , intent(in) :: atm_tmp
+   real                     , intent(in) :: atm_shv
+   real                     , intent(in) :: atm_co2
+   real                     , intent(in) :: zoff
+   real                     , intent(in) :: exner
+   real                     , intent(in) :: pcpg
+   real                     , intent(in) :: qpcpg
+   real                     , intent(in) :: dpcpg
+   real                     , intent(in) :: prss
+   real                     , intent(in) :: geoht
+   real   , dimension(n_pft), intent(in) :: green_leaf_factor
+   real                     , intent(in) :: lon
+   real                     , intent(in) :: lat
+   !----- Local variables. ----------------------------------------------------------------!
+   integer             :: ipft
    !---------------------------------------------------------------------------------------!
 
    
-   rk4met%lsl     = lsl
+   rk4site%lsl     = lsl
    !----- Converting to double precision. -------------------------------------------------!
-   rk4met%vels         = max(ubmin8,dble(vels))
-   rk4met%atm_enthalpy = dble(atm_enthalpy)
-   rk4met%atm_theta    = dble(atm_theta   )
-   rk4met%atm_tmp      = dble(atm_tmp     )
-   rk4met%atm_shv      = dble(atm_shv     )
-   rk4met%atm_co2      = dble(atm_co2     )
-   rk4met%zoff         = dble(zoff        )
-   rk4met%atm_exner    = dble(exner       )
-   rk4met%pcpg         = dble(pcpg        )
-   rk4met%qpcpg        = dble(qpcpg       )
-   rk4met%dpcpg        = dble(dpcpg       )
-   rk4met%atm_prss     = dble(prss        )
-   rk4met%geoht        = dble(geoht       )
-   rk4met%lon          = dble(lon         )
-   rk4met%lat          = dble(lat         )
+   rk4site%vels                  = max(ubmin8,dble(vels))
+   rk4site%atm_enthalpy          = dble(atm_enthalpy)
+   rk4site%atm_theta             = dble(atm_theta   )
+   rk4site%atm_tmp               = dble(atm_tmp     )
+   rk4site%atm_shv               = dble(atm_shv     )
+   rk4site%atm_co2               = dble(atm_co2     )
+   rk4site%zoff                  = dble(zoff        )
+   rk4site%atm_exner             = dble(exner       )
+   rk4site%pcpg                  = dble(pcpg        )
+   rk4site%qpcpg                 = dble(qpcpg       )
+   rk4site%dpcpg                 = dble(dpcpg       )
+   rk4site%atm_prss              = dble(prss        )
+   rk4site%geoht                 = dble(geoht       )
+   rk4site%lon                   = dble(lon         )
+   rk4site%lat                   = dble(lat         )
+   rk4site%green_leaf_factor(:)  = dble(green_leaf_factor(:))
 
    return
-end subroutine copy_met_2_rk4met
+end subroutine copy_met_2_rk4site
 !==========================================================================================!
 !==========================================================================================!
 
@@ -284,7 +286,7 @@ subroutine inc_rk4_patch(rkp, inc, fac, cpatch)
    use ed_state_vars , only : sitetype           & ! structure
                             , patchtype          ! ! structure
    use rk4_coms      , only : rk4patchtype       & ! structure
-                            , rk4met             & ! intent(in)
+                            , rk4site            & ! intent(in)
                             , checkbudget        ! ! intent(in)
    use grid_coms     , only : nzg                & ! intent(in)
                             , nzs                ! ! intent(in)
@@ -306,7 +308,7 @@ subroutine inc_rk4_patch(rkp, inc, fac, cpatch)
    rkp%can_shv      = rkp%can_shv      + fac * inc%can_shv
    rkp%can_co2      = rkp%can_co2      + fac * inc%can_co2
 
-   do k=rk4met%lsl,nzg
+   do k=rk4site%lsl,nzg
       rkp%soil_water(k)       = rkp%soil_water(k)  + fac * inc%soil_water(k)
       rkp%soil_energy(k)      = rkp%soil_energy(k) + fac * inc%soil_energy(k)
    end do
@@ -320,10 +322,6 @@ subroutine inc_rk4_patch(rkp, inc, fac, cpatch)
    rkp%virtual_heat  = rkp%virtual_heat  + fac * inc%virtual_heat
    rkp%virtual_water = rkp%virtual_water + fac * inc%virtual_water
    rkp%virtual_depth = rkp%virtual_depth + fac * inc%virtual_depth
-
-!print*,"depth",rkp%virtual_depth,rkp%sfcwater_depth(k)
-!print*,"mass ",rkp%virtual_water,rkp%sfcwater_mass
-!print*,"dens ",rkp%virtual_water/rkp%virtual_depth,rkp%sfcwater_mass/rkp%sfcwater_depth(k)
 
   
    rkp%upwp = rkp%upwp + fac * inc%upwp
@@ -340,16 +338,18 @@ subroutine inc_rk4_patch(rkp, inc, fac, cpatch)
 
    if(checkbudget) then
 
-     rkp%co2budget_storage     = rkp%co2budget_storage     + fac * inc%co2budget_storage
-     rkp%co2budget_loss2atm    = rkp%co2budget_loss2atm    + fac * inc%co2budget_loss2atm
+     rkp%co2budget_storage      = rkp%co2budget_storage     + fac * inc%co2budget_storage
+     rkp%co2budget_loss2atm     = rkp%co2budget_loss2atm    + fac * inc%co2budget_loss2atm
 
       rkp%wbudget_storage       = rkp%wbudget_storage       + fac * inc%wbudget_storage
       rkp%wbudget_loss2atm      = rkp%wbudget_loss2atm      + fac * inc%wbudget_loss2atm
-      rkp%wbudget_loss2drainage = rkp%wbudget_loss2drainage + fac * inc%wbudget_loss2drainage
+      rkp%wbudget_loss2drainage = rkp%wbudget_loss2drainage                                &
+                                + fac * inc%wbudget_loss2drainage
 
       rkp%ebudget_storage       = rkp%ebudget_storage       + fac * inc%ebudget_storage
       rkp%ebudget_loss2atm      = rkp%ebudget_loss2atm      + fac * inc%ebudget_loss2atm
-      rkp%ebudget_loss2drainage = rkp%ebudget_loss2drainage + fac * inc%ebudget_loss2drainage
+      rkp%ebudget_loss2drainage = rkp%ebudget_loss2drainage                                &
+                                + fac * inc%ebudget_loss2drainage
       rkp%ebudget_latent        = rkp%ebudget_latent        + fac * inc%ebudget_latent
    end if
    if (fast_diagnostics) then
@@ -372,7 +372,7 @@ subroutine inc_rk4_patch(rkp, inc, fac, cpatch)
       rkp%avg_sensible_gc    = rkp%avg_sensible_gc    + fac * inc%avg_sensible_gc
       rkp%avg_sensible_ac    = rkp%avg_sensible_ac    + fac * inc%avg_sensible_ac
 
-      do k=rk4met%lsl,nzg
+      do k=rk4site%lsl,nzg
          rkp%avg_sensible_gg(k)  = rkp%avg_sensible_gg(k)  + fac * inc%avg_sensible_gg(k)
          rkp%avg_smoist_gg(k)    = rkp%avg_smoist_gg(k)    + fac * inc%avg_smoist_gg(k)  
          rkp%avg_smoist_gc(k)    = rkp%avg_smoist_gc(k)    + fac * inc%avg_smoist_gc(k)  
@@ -395,10 +395,10 @@ end subroutine inc_rk4_patch
 !    This subroutine finds the error scale for the integrated variables, which will be     !
 ! later used to define the relative error.                                                 !
 !------------------------------------------------------------------------------------------!
-subroutine get_yscal(y, dy, htry, yscal, cpatch)
+subroutine get_yscal(y,dy,htry,yscal,cpatch)
    use ed_state_vars        , only : patchtype            ! ! structure
    use rk4_coms             , only : rk4patchtype         & ! structure
-                                   , rk4met               & ! intent(in)
+                                   , rk4site              & ! intent(in)
                                    , tiny_offset          & ! intent(in)
                                    , huge_offset          & ! intent(in)
                                    , rk4water_stab_thresh & ! intent(in)
@@ -435,7 +435,7 @@ subroutine get_yscal(y, dy, htry, yscal, cpatch)
 
 
   
-   do k=rk4met%lsl,nzg
+   do k=rk4site%lsl,nzg
       yscal%soil_water(k)  = abs(y%soil_water(k))  + abs(dy%soil_water(k)*htry)            &
                            + tiny_offset
       yscal%soil_energy(k) = abs(y%soil_energy(k)) + abs(dy%soil_energy(k)*htry)           &
@@ -660,11 +660,11 @@ end subroutine get_yscal
 !    This subroutine loops through the integrating variables, seeking for the largest      !
 ! error.                                                                                   !
 !------------------------------------------------------------------------------------------!
-subroutine get_errmax(errmax,yerr,yscal,cpatch,y,ytemp,verbose)
+subroutine get_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
 
    use rk4_coms              , only : rk4patchtype       & ! structure
                                     , rk4eps             & ! intent(in)
-                                    , rk4met             & ! intent(in)
+                                    , rk4site            & ! intent(in)
                                     , checkbudget        ! ! intent(in)
    use ed_state_vars         , only : patchtype          ! ! structure
    use grid_coms             , only : nzg                ! ! intent(in)
@@ -678,7 +678,6 @@ subroutine get_errmax(errmax,yerr,yscal,cpatch,y,ytemp,verbose)
    type(rk4patchtype) , target      :: ytemp            ! Structure with attempted values
    type(patchtype)    , target      :: cpatch           ! Current patch
    real(kind=8)       , intent(out) :: errmax           ! Maximum error
-   logical            , intent(in)  :: verbose
    !----- Local variables -----------------------------------------------------------------!
    integer                          :: ico              ! Current cohort ID
    real(kind=8)                     :: errh2o           ! Scratch error variable
@@ -700,56 +699,46 @@ subroutine get_errmax(errmax,yerr,yscal,cpatch,y,ytemp,verbose)
    err    = abs(yerr%can_enthalpy/yscal%can_enthalpy)
    errmax = max(errmax,err)
    if(record_err .and. err > rk4eps) integ_err(1,1) = integ_err(1,1) + 1_8 
-   if(verbose .and. err .gt. rk4eps) print*,err,errmax,"CAN TEMP"
 
    err    = abs(yerr%can_shv/yscal%can_shv)
-   !  err = 100.0*abs(yerr%can_shv)
    errmax = max(errmax,err)
    if(record_err .and. err > rk4eps) integ_err(2,1) = integ_err(2,1) + 1_8 
-   if(verbose .and. err .gt. rk4eps) print*,err,errmax,"CAN_SHV"
 
    err    = abs(yerr%can_co2/yscal%can_co2)
    errmax = max(errmax,err)
    if(record_err .and. err > rk4eps) integ_err(3,1) = integ_err(3,1) + 1_8 
-   if(verbose .and. err .gt. rk4eps) print*,err,errmax,"CAN_CO2"
   
-   do k=rk4met%lsl,nzg
+   do k=rk4site%lsl,nzg
       err    = abs(yerr%soil_water(k)/yscal%soil_water(k))
       errmax = max(errmax,err)
       if(record_err .and. err > rk4eps) integ_err(3+k,1) = integ_err(3+k,1) + 1_8 
-      if(verbose .and. err .gt. rk4eps) print*,err,errmax,"SOIL WATER",k   
    end do
 
-   do k=rk4met%lsl,nzg
+   do k=rk4site%lsl,nzg
       err    = abs(yerr%soil_energy(k)/yscal%soil_energy(k))
       errmax = max(errmax,err)
-      if(record_err .and. err > rk4eps) integ_err(15+k,1) = integ_err(15+k,1) + 1_8   
-      if(verbose .and. err .gt. rk4eps) print*,err,errmax,"SOIL ENERGY",k
-   enddo
+      if(record_err .and. err > rk4eps) integ_err(15+k,1) = integ_err(15+k,1) + 1_8
+   end do
 
    do k=1,ytemp%nlev_sfcwater
       err = abs(yerr%sfcwater_energy(k) / yscal%sfcwater_energy(k))
       errmax = max(errmax,err)
-      if(record_err .and. err .gt. rk4eps) integ_err(27+k,1) = integ_err(27+k,1) + 1_8      
-      if(verbose .and. err .gt. rk4eps) print*,err,errmax,"SFC ENERGY",k
-   enddo
+      if(record_err .and. err > rk4eps) integ_err(27+k,1) = integ_err(27+k,1) + 1_8
+   end do
 
    do k=1,ytemp%nlev_sfcwater
       err    = abs(yerr%sfcwater_mass(k) / yscal%sfcwater_mass(k))
       errmax = max(errmax,err)
-      if(record_err .and. err > rk4eps) integ_err(32+k,1) = integ_err(32+k,1) + 1_8      
-      if(verbose .and. err .gt. rk4eps) print*,err,errmax,"SFC MASS",k
-   enddo
+      if(record_err .and. err > rk4eps) integ_err(32+k,1) = integ_err(32+k,1) + 1_8
+   end do
 
    err    = abs(yerr%virtual_heat/yscal%virtual_heat)
    errmax = max(errmax,err)
-   if(record_err .and. err > rk4eps) integ_err(38,1) = integ_err(38,1) + 1_8      
-   if(verbose .and. err .gt. rk4eps) print*,err,errmax,"VIRTUAL HEAT"
+   if(record_err .and. err > rk4eps) integ_err(38,1) = integ_err(38,1) + 1_8
 
    err    = abs(yerr%virtual_water/yscal%virtual_water)
    errmax = max(errmax,err)
    if(record_err .and. err > rk4eps) integ_err(39,1) = integ_err(39,1) + 1_8      
-   if(verbose .and. err .gt. rk4eps) print*,err,errmax,"VIRTUAL WATER"
 
    !---------------------------------------------------------------------------------------!
    !     Getting the worst error only amongst the cohorts in which leaf properties were    !
@@ -764,13 +753,11 @@ subroutine get_errmax(errmax,yerr,yscal,cpatch,y,ytemp,verbose)
          errmax     = max(errmax,errh2o,errene)
          errh2oMAX  = max(errh2oMAX,errh2o)
          erreneMAX  = max(erreneMAX,errene)
-         if(verbose .and. errh2o .gt. rk4eps) print*,errh2o,errmax,"VEG WATER",ico
-         if(verbose .and. errene .gt. rk4eps) print*,errene,errmax,"VEG ENR",ico
       end if
    end do
    if(cpatch%ncohorts > 0 .and. record_err) then
-      if(errh2oMAX > rk4eps) integ_err(40,1) = integ_err(40,1) + 1_8
-      if(erreneMAX > rk4eps) integ_err(41,1) = integ_err(41,1) + 1_8
+      if (errh2oMAX > rk4eps) integ_err(40,1) = integ_err(40,1) + 1_8
+      if (erreneMAX > rk4eps) integ_err(41,1) = integ_err(41,1) + 1_8
    end if
 
    !-------------------------------------------------------------------------!
@@ -818,7 +805,7 @@ end subroutine get_errmax
 !------------------------------------------------------------------------------------------!
 subroutine copy_rk4_patch(sourcep, targetp, cpatch)
 
-   use rk4_coms      , only : rk4met            & ! intent(in)
+   use rk4_coms      , only : rk4site           & ! intent(in)
                             , rk4patchtype      & ! structure
                             , checkbudget       ! ! intent(in)
    use ed_state_vars , only : sitetype          & ! structure
@@ -875,7 +862,7 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
    targetp%cwd_rh        = sourcep%cwd_rh
    targetp%rh            = sourcep%rh
 
-   do k=rk4met%lsl,nzg
+   do k=rk4site%lsl,nzg
       
       targetp%soil_water            (k) = sourcep%soil_water            (k)
       targetp%soil_energy           (k) = sourcep%soil_energy           (k)
@@ -903,7 +890,9 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
       targetp%veg_temp    (k) = sourcep%veg_temp    (k)
       targetp%veg_fliq    (k) = sourcep%veg_fliq    (k)
       targetp%hcapveg     (k) = sourcep%hcapveg     (k)
+      targetp%nplant      (k) = sourcep%nplant      (k)
       targetp%lai         (k) = sourcep%lai         (k)
+      targetp%wai         (k) = sourcep%wai         (k)
       targetp%wpa         (k) = sourcep%wpa         (k)
       targetp%tai         (k) = sourcep%tai         (k)
       targetp%solvable    (k) = sourcep%solvable    (k)
@@ -948,7 +937,7 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
       targetp%avg_drainage           = sourcep%avg_drainage
       targetp%avg_drainage_heat      = sourcep%avg_drainage_heat
 
-      do k=rk4met%lsl,nzg
+      do k=rk4site%lsl,nzg
          targetp%avg_sensible_gg(k) = sourcep%avg_sensible_gg(k)
          targetp%avg_smoist_gg(k)   = sourcep%avg_smoist_gg(k)  
          targetp%avg_smoist_gc(k)   = sourcep%avg_smoist_gc(k)  

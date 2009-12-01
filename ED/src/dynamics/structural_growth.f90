@@ -19,7 +19,7 @@ subroutine structural_growth(cgrid, month)
                             , c2n_stem               & ! intent(in)
                             , l2n_stem               ! ! intent(in)
    use decomp_coms   , only : f_labile               ! ! intent(in)
-   use ed_max_dims      , only : n_pft                  & ! intent(in)
+   use ed_max_dims   , only : n_pft                  & ! intent(in)
                             , n_dbh                  ! ! intent(in)
    use ed_therm_lib  , only : calc_hcapveg           & ! function
                             , update_veg_energy_cweh ! ! function
@@ -114,8 +114,8 @@ subroutine structural_growth(cgrid, month)
                cpatch%monthly_dndt(ico) = 0.0
 
                !----- Determine how to distribute what is in bstorage. --------------------!
-               call plant_structural_allocation(cpatch%pft(ico),cpatch%hite(ico)        &
-                                                  ,cgrid%lat(ipy),month,f_bseeds,f_bdead)
+               call plant_structural_allocation(cpatch%pft(ico),cpatch%hite(ico)           &
+                                               ,cgrid%lat(ipy),month,f_bseeds,f_bdead)
 
                !----- Grow plants; bdead gets fraction f_bdead of bstorage. ---------------!
                cpatch%bdead(ico) = cpatch%bdead(ico) + f_bdead * cpatch%bstorage(ico)
@@ -364,7 +364,7 @@ subroutine structural_growth_eq_0(cgrid, month)
                csite%ssc_in(ipa) = csite%ssc_in(ipa) + struct_litter                       &
                                  + (1.0 - f_labile(ipft)) * balive_mort_litter
                csite%ssl_in(ipa) = csite%ssl_in(ipa) +                                     &
-                                   ((1.0 - f_labile(ipft)) * balive_mort_litter             &
+                                   ((1.0 - f_labile(ipft)) * balive_mort_litter            &
                                     + struct_litter ) * l2n_stem / c2n_stem(ipft)
                csite%total_plant_nitrogen_uptake(ipa) =                                    &
                       csite%total_plant_nitrogen_uptake(ipa) + net_seed_N_uptake           &
@@ -527,7 +527,7 @@ subroutine update_derived_cohort_props(cpatch,ico,green_leaf_factor,lsl)
    !----- Finding the new basal area and above-ground biomass. ----------------------------!
    cpatch%basarea(ico) = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)                
    cpatch%agb(ico)     = ed_biomass(cpatch%bdead(ico),cpatch%balive(ico),cpatch%bleaf(ico) &
-                                   ,cpatch%pft(ico),cpatch%hite(ico) ,cpatch%bstorage(ico))     
+                                   ,cpatch%pft(ico),cpatch%hite(ico) ,cpatch%bstorage(ico))
 
    !----- Update rooting depth ------------------------------------------------------------!
    rootdepth = calc_root_depth(cpatch%hite(ico), cpatch%dbh(ico), cpatch%pft(ico))

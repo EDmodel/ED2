@@ -357,11 +357,11 @@ subroutine sfcinit_nofile_user(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,so
                               ,sfcwater_depth,ustar,tstar,rstar,cstar,veg_fracarea,veg_lai &
                               ,veg_tai,veg_rough,veg_height,veg_albedo,patch_area          &
                               ,patch_rough,patch_wetind,leaf_class,soil_rough              &
-                              ,sfcwater_nlev,stom_resist,ground_rsat,ground_rvap,veg_water &
-                              ,veg_hcap,veg_energy,can_prss,can_theta,can_rvap,can_co2     &
-                              ,sensible,evap,transp,gpp,plresp,resphet,veg_ndvip,veg_ndvic &
-                              ,veg_ndvif,snow_mass,snow_depth,rvv,prsv,piv,vt2da,vt2db     &
-                              ,glat,glon,zot,flpw,rtgt)
+                              ,sfcwater_nlev,stom_resist,ground_rsat,ground_rvap           &
+                              ,ground_temp,ground_fliq,veg_water,veg_hcap,veg_energy       &
+                              ,can_prss,can_theta,can_rvap,can_co2,sensible,evap,transp    &
+                              ,gpp,plresp,resphet,veg_ndvip,veg_ndvic,veg_ndvif,snow_mass  &
+                              ,snow_depth,rvv,prsv,piv,vt2da,vt2db,glat,glon,zot,flpw,rtgt)
 
    use mem_grid
    use mem_leaf
@@ -385,6 +385,7 @@ subroutine sfcinit_nofile_user(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,so
    real, dimension(    n2,n3,npat), intent(inout) :: patch_rough,patch_wetind,leaf_class
    real, dimension(    n2,n3,npat), intent(inout) :: soil_rough,sfcwater_nlev,stom_resist
    real, dimension(    n2,n3,npat), intent(inout) :: ground_rsat,ground_rvap
+   real, dimension(    n2,n3,npat), intent(inout) :: ground_temp,ground_fliq
    real, dimension(    n2,n3,npat), intent(inout) :: veg_water,veg_energy,veg_hcap
    real, dimension(    n2,n3,npat), intent(inout) :: can_prss,can_theta,can_rvap,can_co2
    real, dimension(    n2,n3,npat), intent(inout) :: sensible,evap,transp
@@ -570,11 +571,12 @@ subroutine sfcinit_nofile_user(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,so
    !                            ,veg_ndvip   (i,j,ipat) ,veg_ndvic (i,j,ipat)              &
    !                            ,veg_ndvif   (i,j,ipat)                                    )
 
-   !            call grndvap(soil_energy(mzg,i,j,ipat)  ,soil_water     (mzg,i,j,ipat)     &
-   !                        ,soil_text  (mzg,i,j,ipat)  ,sfcwater_energy(mzs,i,j,ipat)     &
-   !                        ,sfcwater_nlev  (i,j,ipat)  ,ground_rsat        (i,j,ipat)     &
-   !                        ,ground_rvap    (i,j,ipat)  ,can_rvap       (i,j,ipat)         &
-   !                        ,can_prss       (i,j,ipat)  )
+   !            call leaf_grndvap(soil_energy(mzg,i,j,ipat),soil_water     (mzg,i,j,ipat)  &
+   !                             ,soil_text  (mzg,i,j,ipat),sfcwater_energy(mzs,i,j,ipat)  &
+   !                             ,sfcwater_nlev  (i,j,ipat),can_rvap       (i,j,ipat)      &
+   !                             ,can_prss       (i,j,ipat),ground_rsat        (i,j,ipat)  &
+   !                             ,ground_rvap    (i,j,ipat),ground_temp        (i,j,ipat)  &
+   !                             ,ground_fliq    (i,j,ipat))
    !         end do patchloop
    !      end do iloop
    !   end do jloop

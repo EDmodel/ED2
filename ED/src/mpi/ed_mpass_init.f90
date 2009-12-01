@@ -73,11 +73,11 @@ subroutine ed_masterput_nl(par_run)
    use ed_para_coms,    only: mainnum
    use ed_max_dims,     only: str_len,max_soi,max_ed_regions,nzgmax,n_pft,maxgrds,maxpvars
    use ed_misc_coms,    only: expnme, runtype,itimea,iyeara,imontha,idatea ,itimez,iyearz  &
-                             ,imonthz,idatez,dtlsm,radfrq,ifoutput,idoutput,imoutput, itoutput &
-                             ,iyoutput,iclobber,frqfast,sfilin,ffilout,ied_init_mode       &
-                             ,ed_inputs_dir,integration_scheme,end_time,current_time       &
-                             ,sfilout,frqstate,isoutput,iprintpolys,printvars,pfmtstr      &
-                             ,ipmin,ipmax,iedcnfgf,outfast,outstate,out_time_fast          &
+                             ,imonthz,idatez,dtlsm,radfrq,ifoutput,idoutput,imoutput       &
+                             ,itoutput,iyoutput,iclobber,frqfast,sfilin,ffilout            &
+                             ,ied_init_mode,ed_inputs_dir,integration_scheme,end_time      &
+                             ,current_time,sfilout,frqstate,isoutput,iprintpolys,printvars &
+                             ,pfmtstr,ipmin,ipmax,iedcnfgf,outfast,outstate,out_time_fast  &
                              ,out_time_state,nrec_fast,nrec_state,irec_fast,irec_state     &
                              ,unitfast,unitstate,event_file,itimeh,iyearh,imonthh,idateh
 
@@ -94,7 +94,8 @@ subroutine ed_masterput_nl(par_run)
                              ,ed_reg_latmin,ed_reg_latmax,ed_reg_lonmin,ed_reg_lonmax      &
                              ,edres,maxpatch,maxcohort
    use physiology_coms, only: istoma_scheme,n_plant_lim
-   use phenology_coms , only: iphen_scheme,iphenys1,iphenysf,iphenyf1,iphenyff,phenpath,repro_scheme
+   use phenology_coms , only: iphen_scheme,iphenys1,iphenysf,iphenyf1,iphenyff,phenpath    &
+                             ,repro_scheme
    use decomp_coms,     only: n_decomp_lim
    use pft_coms,        only: include_these_pft,agri_stock,plantation_stock,pft_1st_check
    use disturb_coms,    only: include_fire,ianth_disturb, treefall_disturbance_rate

@@ -19,7 +19,7 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
                                    , p00i8                 & ! intent(in)
                                    , rocp8                 ! ! intent(in)
    use rk4_coms             , only : rk4patchtype          & ! structure
-                                   , rk4met                & ! structure
+                                   , rk4site               & ! structure
                                    , hcapveg_ref           & ! intent(in)
                                    , rk4eps                & ! intent(in)
                                    , min_height            & ! intent(in)
@@ -67,8 +67,8 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    targetp%can_co2      = dble(sourcesite%can_co2(ipa))
    targetp%can_depth    = dble(sourcesite%can_depth(ipa))
    !----- 2. Update the canopy pressure based on the new atmospheric pressure. ------------!
-   targetp%can_prss     = reducedpress8(rk4met%atm_prss,rk4met%atm_theta,rk4met%atm_shv    &
-                                       ,rk4met%geoht,targetp%can_theta,targetp%can_shv     &
+   targetp%can_prss     = reducedpress8(rk4site%atm_prss,rk4site%atm_theta,rk4site%atm_shv &
+                                       ,rk4site%geoht,targetp%can_theta,targetp%can_shv    &
                                        ,targetp%can_depth)
    !----- 3. Update temperature, enthalpy, and density. -----------------------------------!
    targetp%can_temp     = targetp%can_theta * (p00i8 * targetp%can_prss) ** rocp8
@@ -77,7 +77,7 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    targetp%can_rhos     = idealdenssh8(targetp%can_prss,targetp%can_temp,targetp%can_shv)
    !---------------------------------------------------------------------------------------!
 
-   do k = rk4met%lsl, nzg
+   do k = rk4site%lsl, nzg
       targetp%soil_water(k)   = dble(sourcesite%soil_water(k,ipa))
       targetp%soil_energy(k)  = dble(sourcesite%soil_energy(k,ipa))
       targetp%soil_tempk(k)   = dble(sourcesite%soil_tempk(k,ipa))
@@ -161,11 +161,11 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
 
    do ico = 1,cpatch%ncohorts
       ipft=cpatch%pft(ico)
-    
-      !----- Copying the leaf area index and total (leaf+branch+twig) area index. ---------!
-      targetp%lai(ico)  = dble(cpatch%lai(ico))
-      targetp%wpa(ico)  = dble(cpatch%wpa(ico))
-      targetp%tai(ico) = targetp%lai(ico) + dble(cpatch%wai(ico))
+      !----- Copy the leaf area index and total (leaf+branch+twig) area index. ------------!
+      targetp%lai(ico)    = dble(cpatch%lai(ico))
+      targetp%wai(ico)    = dble(cpatch%wai(ico))
+      targetp%wpa(ico)    = dble(cpatch%wpa(ico))
+      targetp%tai(ico)    = targetp%lai(ico) + dble(cpatch%wai(ico))
 
       !------------------------------------------------------------------------------------!
       !    If the cohort is too small, we give some extra heat capacity, so the model can  !
@@ -220,7 +220,7 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
       targetp%avg_sensible_gc    = dble(sourcesite%avg_sensible_gc(ipa)   )
       targetp%avg_sensible_ac    = dble(sourcesite%avg_sensible_ac(ipa)   )
 
-      do k = rk4met%lsl, nzg
+      do k = rk4site%lsl, nzg
          targetp%avg_sensible_gg(k) = dble(sourcesite%avg_sensible_gg(k,ipa))
          targetp%avg_smoist_gg(k)   = dble(sourcesite%avg_smoist_gg(k,ipa)  )
          targetp%avg_smoist_gc(k)   = dble(sourcesite%avg_smoist_gc(k,ipa)  )
@@ -278,6 +278,10 @@ subroutine copy_patch_init_carbon(sourcesite,ipa,targetp)
    !---------------------------------------------------------------------------------------!
    cpatch => sourcesite%patch(ipa)
    do ico = 1,cpatch%ncohorts
+      !----- Copy the plant density. ------------------------------------------------------!
+      targetp%nplant(ico) = dble(cpatch%nplant(ico))
+
+      !----- Copy the variables that are already in µmol/m²/s. ----------------------------!
       targetp%gpp         (ico) = dble(cpatch%gpp                (ico))
       targetp%leaf_resp   (ico) = dble(cpatch%leaf_respiration   (ico))
       targetp%root_resp   (ico) = dble(cpatch%root_respiration   (ico))
@@ -286,11 +290,11 @@ subroutine copy_patch_init_carbon(sourcesite,ipa,targetp)
       !     The following variables are in kgC/plant/day, convert them to µmol/m²/s.       !
       !------------------------------------------------------------------------------------!
       targetp%growth_resp (ico) = dble(cpatch%growth_respiration (ico))                    &
-                                * dble(cpatch%nplant(ico)) / (day_sec8 * umol_2_kgC8)
+                                * targetp%nplant(ico) / (day_sec8 * umol_2_kgC8)
       targetp%storage_resp(ico) = dble(cpatch%storage_respiration(ico))                    &
-                                * dble(cpatch%nplant(ico)) / (day_sec8 * umol_2_kgC8)
+                                * targetp%nplant(ico) / (day_sec8 * umol_2_kgC8)
       targetp%vleaf_resp  (ico) = dble(cpatch%vleaf_respiration  (ico))                    &
-                                * dble(cpatch%nplant(ico)) / (day_sec8 * umol_2_kgC8)
+                                * targetp%nplant(ico) / (day_sec8 * umol_2_kgC8)
    end do
 
    !----- Heterotrophic respiration terms. ------------------------------------------------!
@@ -340,7 +344,7 @@ end function large_error
 ! temporary snow/pond layers.                                                                      !
 !------------------------------------------------------------------------------------------!
 subroutine update_diagnostic_vars(initp, csite,ipa)
-   use rk4_coms              , only : rk4met               & ! intent(in)
+   use rk4_coms              , only : rk4site              & ! intent(in)
                                     , rk4min_sfcwater_mass & ! intent(in)
                                     , rk4min_can_shv       & ! intent(in)
                                     , rk4min_can_temp      & ! intent(in)
@@ -382,18 +386,27 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
    !---------------------------------------------------------------------------------------!
    !     Here we convert enthalpy into temperature, potential temperature, and density.    !
    !---------------------------------------------------------------------------------------!
+!   if (initp%can_shv >= rk4min_can_shv .and. initp%can_shv <= rk4max_can_shv) then 
+!      initp%can_temp  = hpqz2temp8(initp%can_enthalpy,initp%can_prss,initp%can_shv         &
+!                                  ,initp%can_depth)
+!   else
+!      initp%can_temp  = rk4min_can_temp
+!   end if 
+   
    if (initp%can_shv >= rk4min_can_shv .and. initp%can_shv <= rk4max_can_shv) then 
       initp%can_temp  = hpqz2temp8(initp%can_enthalpy,initp%can_prss,initp%can_shv         &
-                                  ,initp%can_depth)
+           ,initp%can_depth)
    else
-      initp%can_temp  = rk4min_can_temp
-   end if 
+      initp%can_temp  = hpqz2temp8(initp%can_enthalpy,initp%can_prss,rk4min_can_shv        &
+           ,initp%can_depth)
+   end if
+
    initp%can_theta = initp%can_temp * (p008 / initp%can_prss) ** rocp8
    initp%can_rhos  = idealdenssh8(initp%can_prss,initp%can_temp,initp%can_shv)
    !---------------------------------------------------------------------------------------!
 
    !----- Updating soil temperature and liquid water fraction. ----------------------------!
-   do k = rk4met%lsl, nzg - 1
+   do k = rk4site%lsl, nzg - 1
       soilhcap = soil8(csite%ntext_soil(k,ipa))%slcpd
       call qwtk8(initp%soil_energy(k),initp%soil_water(k)*wdns8,soilhcap                   &
                 ,initp%soil_tempk(k),initp%soil_fracliq(k))
@@ -468,7 +481,8 @@ subroutine redistribute_snow(initp,csite,ipa)
                             , rk4min_virt_water    & ! intent(in)
                             , rk4water_stab_thresh & ! intent(in)
                             , rk4min_sfcwater_mass & ! intent(in)
-                            , rk4snowmin           ! ! intent(in)
+                            , rk4snowmin           & ! intent(in)
+                            , newsnow              ! ! intent(in)
    use ed_state_vars , only : sitetype             & ! structure
                             , patchtype            ! ! structure
    use grid_coms     , only : nzs                  & ! intent(in)
@@ -513,6 +527,9 @@ subroutine redistribute_snow(initp,csite,ipa)
    real(kind=8)                        :: qwfree
    real(kind=8)                        :: qw
    real(kind=8)                        :: w
+   real(kind=8)                        :: dw
+   real(kind=8)                        :: wtemp
+   real(kind=8)                        :: wfliq
    real(kind=8)                        :: wfreeb
    real(kind=8)                        :: depthloss
    real(kind=8)                        :: snden
@@ -522,17 +539,14 @@ subroutine redistribute_snow(initp,csite,ipa)
    real(kind=8)                        :: wt
    real(kind=8)                        :: soilhcap
    real(kind=8)                        :: free_surface_water_demand
+   real(kind=8)                        :: Cr    ! snow waterholding capacity
+   real(kind=8)                        :: gi    ! Partial density of ice
    integer                             :: nsoil
    !----- Constants -----------------------------------------------------------------------!
-   logical                , parameter  :: debug = .false.
-   !----- New Snow  -----------------------------------------------------------------------!
-   logical                , parameter  :: newsnow = .true.
-   real(kind=8)                        :: Cr      !! snow waterholding capacity
-   real(kind=8)                        :: Crmin = 3.d-2
-   real(kind=8)                        :: Crmax = 1.d-1 
-   real(kind=8)                        :: gi      !! partial density of ice
-   real(kind=8)                        :: ge = 2.d2
-   real(kind=8)                        :: wf0
+   logical                , parameter  :: debug   = .false.
+   real(kind=8)           , parameter  :: Crmin   = 3.d-2
+   real(kind=8)           , parameter  :: Crmax   = 1.d-1
+   real(kind=8)           , parameter  :: ge      = 2.d2
    
    !---------------------------------------------------------------------------------------!
 
@@ -620,18 +634,18 @@ subroutine redistribute_snow(initp,csite,ipa)
    end if
    !---------------------------------------------------------------------------------------!
 
-!if(abs(depthgain) > tiny(1.0)) print*,"depthgain",depthgain,wfree,wfree/depthgain
 
    !---------------------------------------------------------------------------------------!
    ! 3. We now update the diagnostic variables, and ensure the layers are stable.  Loop    !
    !    over layers, from top to bottom this time.                                         !
    !---------------------------------------------------------------------------------------!
-   totsnow =0.d0
+   totsnow = 0.d0
    do k = ksnnew,1,-1
 
       !----- Update current mass and energy of temporary layer ----------------------------!
       qw = initp%sfcwater_energy(k) + qwfree
-      w = initp%sfcwater_mass(k) + wfree
+      w  = initp%sfcwater_mass(k)   + wfree
+      dw = initp%sfcwater_depth(k)  + depthgain
 
       !------------------------------------------------------------------------------------!
       !    Single layer, and this is a very thin one, which can cause numerical instabili- !
@@ -683,27 +697,32 @@ subroutine redistribute_snow(initp,csite,ipa)
       ! this shed amount (wfreeb) in lowest snow layer to amount top soil layer can hold.  !
       !------------------------------------------------------------------------------------!
       if (w > rk4min_sfcwater_mass) then
-         wfreeb = max(0.d0, w * (initp%sfcwater_fracliq(k)-1.d-1)/9.d-1)
+
+         !----- Find the fraction of liquid water of the shed amount. ---------------------!
+         call qtk8(qw/w,wtemp,wfliq)
 
          if(newsnow) then
-            wf0 = wfreeb
 
-            !!! Alternative "free" water calculation
-            !!! Anderson 1976 NOAA Tech Report NWS 19
-            gi = initp%sfcwater_mass(k)/initp%sfcwater_depth(k)*(1-initp%sfcwater_fracliq(k))
-            Cr = Crmin
-            if(gi < ge) then
-               Cr = Crmin + (Crmax-Crmin)*(ge-gi)/ge
-            endif
-            wfreeb = 0
-            if(initp%sfcwater_fracliq(k) > Cr/(1+Cr)) then
-               wfreeb = w*(initp%sfcwater_fracliq(k) - Cr/(1+Cr))
+            !------------------------------------------------------------------------------!
+            !    Alternative "free" water calculation.                                     !
+            !    Anderson (1976), NOAA Tech Report NWS 19.                                 !
+            !------------------------------------------------------------------------------!
+            gi = w/dw * (1.d0 - wfliq)
+
+            if (gi < ge) then
+               Cr = Crmin + (Crmax - Crmin) * (ge - gi) / ge
+            else
+               Cr = Crmin
             end if
-            !!if(wf0 .gt.0.0d0 .or. wfreeb .gt. 0.0d0)then
-            !!   print*,wf0,wfreeb,gi,Cr
-            !!endif
-         end if
 
+            if (wfliq > Cr / (1.d0 + Cr)) then
+               wfreeb = w * (wfliq - Cr / (1.d0 + Cr))
+            else
+               wfreeb = 0.d0
+            end if
+         else
+            wfreeb = max(0.d0, w * (wfliq-1.d-1)/9.d-1)
+         end if
       else
          wfreeb = 0.0
       end if
@@ -758,7 +777,6 @@ subroutine redistribute_snow(initp,csite,ipa)
       sndenmin = max(3.d1, 2.d2 * (wfree + wfreeb)                                         &
                / max(rk4min_sfcwater_mass,initp%sfcwater_mass(k)))
       snden    = min(sndenmax, max(sndenmin,snden))
-      !!newsnow -- check snden
       initp%sfcwater_depth(k) = initp%sfcwater_mass(k) / snden
 
       !----- Set up input to next layer ---------------------------------------------------!
@@ -793,7 +811,6 @@ subroutine redistribute_snow(initp,csite,ipa)
          if (      initp%sfcwater_mass(k)   >  rk4min_sfcwater_mass                        &
              .and. rk4snowmin * thicknet(k) <= totsnow                                     &
              .and. initp%sfcwater_energy(k) <  initp%sfcwater_mass(k)*qliqt38 ) then
-            !!newsnow -- alt criteria for number of layers
 
             newlayers = newlayers + 1
          end if
@@ -803,7 +820,6 @@ subroutine redistribute_snow(initp,csite,ipa)
       kold  = 1
       wtnew = 1.d0
       wtold = 1.d0
-      !!newsnow -- check thickness criteria
       do k = 1,newlayers
          newsfcw_mass(k)   = totsnow * thick(k,newlayers)
          newsfcw_energy(k) = 0.d0
@@ -895,7 +911,7 @@ end subroutine redistribute_snow
 !------------------------------------------------------------------------------------------!
 subroutine adjust_topsoil_properties(initp,hdid,csite,ipa)
    use rk4_coms             , only : rk4patchtype     & ! structure
-                                   , rk4met           & ! intent(in)
+                                   , rk4site          & ! intent(in)
                                    , rk4eps           & ! intent(in)
                                    , rk4min_sfcw_mass & ! intent(in)
                                    , rk4min_can_shv   & ! intent(in)
@@ -1388,7 +1404,7 @@ end subroutine adjust_topsoil_properties
 !------------------------------------------------------------------------------------------!
 subroutine adjust_veg_properties(initp,hdid,csite,ipa)
    use rk4_coms             , only : rk4patchtype       & ! structure
-                                   , rk4met             & ! intent(in)
+                                   , rk4site            & ! intent(in)
                                    , rk4eps             & ! intent(in)
                                    , rk4min_veg_lwater  & ! intent(in)
                                    , wcapcani           & ! intent(in)
@@ -1521,7 +1537,7 @@ end subroutine adjust_veg_properties
 subroutine print_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
    use rk4_coms              , only : rk4patchtype       & ! Structure
                                     , rk4eps             & ! intent(in)
-                                    , rk4met             & ! intent(in)
+                                    , rk4site            & ! intent(in)
                                     , checkbudget        ! ! intent(in)
    use ed_state_vars         , only : patchtype          ! ! Structure
    use grid_coms             , only : nzg                & ! intent(in)
@@ -1539,22 +1555,24 @@ subroutine print_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
    !----- Constants -----------------------------------------------------------------------!
    character(len=28)  , parameter    :: onefmt = '(a16,1x,3(es12.4,1x),11x,l1)'
    character(len=34)  , parameter    :: lyrfmt = '(a16,1x,i6,1x,3(es12.4,1x),11x,l1)'
-   character(len=34)  , parameter    :: cohfmt = '(a16,1x,i6,1x,6(es12.4,1x),11x,l1)'
+   character(len=34)  , parameter    :: cohfmt = '(a16,1x,i6,1x,7(es12.4,1x),11x,l1)'
    !----- Functions -----------------------------------------------------------------------!
    logical            , external     :: large_error
    !---------------------------------------------------------------------------------------!
 
 
+   write(unit=*,fmt='(80a)'    ) ('=',k=1,80)
+   write(unit=*,fmt='(a)'      ) '  ..... PRINTING MAXIMUM ERROR INFORMATION: .....'
    write(unit=*,fmt='(80a)'    ) ('-',k=1,80)
-   write(unit=*,fmt='(a)'      ) '  >>>>> PRINTING MAXIMUM ERROR INFORMATION: '
    write(unit=*,fmt='(a)'      ) 
    write(unit=*,fmt='(a)'      ) ' Patch level variables, single layer:'
+   write(unit=*,fmt='(80a)'    ) ('-',k=1,80)
    write(unit=*,fmt='(5(a,1x))')  'Name            ','   Max.Error','   Abs.Error'&
                                 &,'       Scale','Problem(T|F)'
 
    errmax       = max(0.0,abs(yerr%can_enthalpy/yscal%can_enthalpy))
    troublemaker = large_error(yerr%can_enthalpy,yscal%can_enthalpy)
-   write(unit=*,fmt=onefmt) 'CAN_ENTHALPY:',errmax,yerr%can_enthalpy,yscal%can_enthalpy &
+   write(unit=*,fmt=onefmt) 'CAN_ENTHALPY:',errmax,yerr%can_enthalpy,yscal%can_enthalpy    &
                                            ,troublemaker
 
    errmax       = max(errmax,abs(yerr%can_shv/yscal%can_shv))
@@ -1575,13 +1593,14 @@ subroutine print_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
    write(unit=*,fmt=onefmt) 'VIRTUAL_WATER:',errmax,yerr%virtual_water,yscal%virtual_water &
                                             ,troublemaker
 
+   write(unit=*,fmt='(80a)') ('-',k=1,80)
    write(unit=*,fmt='(a)'  ) 
    write(unit=*,fmt='(80a)') ('-',k=1,80)
    write(unit=*,fmt='(a)'      ) ' Patch level variables, soil layers:'
    write(unit=*,fmt='(6(a,1x))')  'Name            ',' Level','   Max.Error'               &
                                 &,'   Abs.Error','       Scale','Problem(T|F)'
 
-   do k=rk4met%lsl,nzg
+   do k=rk4site%lsl,nzg
       errmax = max(errmax,abs(yerr%soil_water(k)/yscal%soil_water(k)))
       troublemaker = large_error(yerr%soil_water(k),yscal%soil_water(k))
       write(unit=*,fmt=lyrfmt) 'SOIL_WATER:',k,errmax,yerr%soil_water(k)                   &
@@ -1594,6 +1613,7 @@ subroutine print_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
    enddo
 
    if (yerr%nlev_sfcwater > 0) then
+      write(unit=*,fmt='(80a)') ('-',k=1,80)
       write(unit=*,fmt='(a)'  ) 
       write(unit=*,fmt='(80a)') ('-',k=1,80)
       write(unit=*,fmt='(a)'      ) ' Patch level variables, water/snow layers:'
@@ -1612,107 +1632,117 @@ subroutine print_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
       end do
    end if
 
+   write(unit=*,fmt='(80a)') ('-',k=1,80)
    write(unit=*,fmt='(a)'  ) 
    write(unit=*,fmt='(80a)') ('-',k=1,80)
    write(unit=*,fmt='(a)'      ) ' Cohort_level variables (only the solvable ones):'
-   write(unit=*,fmt='(9(a,1x))')  'Name            ','         PFT','         LAI'         &
-                                     ,'         WPA','         TAI','   Max.Error'         &
-                                     ,'   Abs.Error','       Scale','Problem(T|F)'
+   write(unit=*,fmt='(10(a,1x))')        'Name            ','   PFT','         LAI'        &
+                                      ,'         WAI','         WPA','         TAI'        &
+                                      ,'   Max.Error','   Abs.Error','       Scale'        &
+                                      ,'Problem(T|F)'
    do ico = 1,cpatch%ncohorts
       if (y%solvable(ico)) then
          errmax       = max(errmax,abs(yerr%veg_water(ico)/yscal%veg_water(ico)))
          troublemaker = large_error(yerr%veg_water(ico),yscal%veg_water(ico))
-         write(unit=*,fmt=cohfmt) 'VEG_WATER:',cpatch%pft(ico),y%lai(ico),y%wpa(ico)       &
-                                              ,y%tai(ico),errmax,yerr%veg_water(ico)       &
-                                              ,yscal%veg_water(ico),troublemaker
+         write(unit=*,fmt=cohfmt) 'VEG_WATER:',cpatch%pft(ico),y%lai(ico),y%wai(ico)       &
+                                              ,y%wpa(ico),y%tai(ico),errmax                &
+                                              ,yerr%veg_water(ico),yscal%veg_water(ico)    &
+                                              ,troublemaker
               
 
          errmax       = max(errmax,abs(yerr%veg_energy(ico)/yscal%veg_energy(ico)))
          troublemaker = large_error(yerr%veg_energy(ico),yscal%veg_energy(ico))
-         write(unit=*,fmt=cohfmt) 'VEG_ENERGY:',cpatch%pft(ico),cpatch%lai(ico),y%wpa(ico) &
-                                               ,y%tai(ico),errmax,yerr%veg_energy(ico)     &
-                                               ,yscal%veg_energy(ico),troublemaker
+         write(unit=*,fmt=cohfmt) 'VEG_ENERGY:',cpatch%pft(ico),cpatch%lai(ico),y%wai(ico) &
+                                               ,y%wpa(ico),y%tai(ico),errmax               &
+                                               ,yerr%veg_energy(ico),yscal%veg_energy(ico) &
+                                               ,troublemaker
 
       end if
    end do
 
-   !-------------------------------------------------------------------------!
-   !     Here we just need to make sure the user is checking mass, otherwise !
-   ! these variables will not be computed at all.  If this turns out to be   !
-   ! essential, we will make this permanent and not dependent on             !
-   ! checkbudget.  The only one that is not checked is the runoff, because   !
-   ! it is computed after a step was accepted.                               !
-   !-------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+   !     Here we just need to make sure the user is checking mass, otherwise these         !
+   ! variables will not be computed.  If this turns out to be essential, we will make this !
+   ! permanent and not dependent on checkbudget.  The only one that is not checked is the  !
+   ! runoff, because it is computed only after a step is accepted.                         !
+   !---------------------------------------------------------------------------------------!
    if (checkbudget) then
-      errmax = max(errmax                                                    &
+      write(unit=*,fmt='(80a)'    ) ('-',k=1,80)
+      write(unit=*,fmt='(a)'      ) 
+      write(unit=*,fmt='(a)'      ) ' Budget variables, single layer:'
+      write(unit=*,fmt='(80a)'    ) ('-',k=1,80)
+      write(unit=*,fmt='(5(a,1x))')  'Name            ','   Max.Error','   Abs.Error'      &
+                                   &,'       Scale','Problem(T|F)'
+      errmax = max(errmax                                                                  &
                   ,abs(yerr%co2budget_loss2atm/yscal%co2budget_loss2atm))
-      troublemaker = large_error(yerr%co2budget_loss2atm                     &
+      troublemaker = large_error(yerr%co2budget_loss2atm                                   &
                                 ,yscal%co2budget_loss2atm)
-      write(unit=*,fmt=onefmt) 'CO2LOSS2ATM:',errmax,yerr%co2budget_loss2atm &
+      write(unit=*,fmt=onefmt) 'CO2LOSS2ATM:',errmax,yerr%co2budget_loss2atm               &
                               ,yscal%co2budget_loss2atm,troublemaker
 
-      errmax = max(errmax                                                    &
+      errmax = max(errmax                                                                  &
                   ,abs(yerr%ebudget_loss2atm/yscal%ebudget_loss2atm))
-      troublemaker = large_error(yerr%ebudget_loss2atm                       &
+      troublemaker = large_error(yerr%ebudget_loss2atm                                     &
                                 ,yscal%ebudget_loss2atm)
-      write(unit=*,fmt=onefmt) 'ENLOSS2ATM:',errmax,yerr%ebudget_loss2atm    &
+      write(unit=*,fmt=onefmt) 'ENLOSS2ATM:',errmax,yerr%ebudget_loss2atm                  &
                               ,yscal%ebudget_loss2atm,troublemaker
 
-      errmax = max(errmax                                                    &
+      errmax = max(errmax                                                                  &
                   ,abs(yerr%wbudget_loss2atm/yscal%wbudget_loss2atm))
-      troublemaker = large_error(yerr%wbudget_loss2atm                       &
+      troublemaker = large_error(yerr%wbudget_loss2atm                                     &
                                 ,yscal%wbudget_loss2atm)
-      write(unit=*,fmt=onefmt) 'H2OLOSS2ATM:',errmax,yerr%wbudget_loss2atm   &
+      write(unit=*,fmt=onefmt) 'H2OLOSS2ATM:',errmax,yerr%wbudget_loss2atm                 &
                               ,yscal%wbudget_loss2atm,troublemaker
 
-      errmax = max(errmax                                                    &
+      errmax = max(errmax                                                                  &
                   ,abs(yerr%ebudget_latent/yscal%ebudget_latent))
-      troublemaker = large_error(yerr%ebudget_latent                         &
+      troublemaker = large_error(yerr%ebudget_latent                                       &
                                 ,yscal%ebudget_latent)
-      write(unit=*,fmt=onefmt) 'EN_LATENT:',errmax,yerr%ebudget_latent       &
+      write(unit=*,fmt=onefmt) 'EN_LATENT:',errmax,yerr%ebudget_latent                     &
                               ,yscal%ebudget_latent,troublemaker
 
 
-      errmax = max(errmax,abs( yerr%ebudget_loss2drainage                    &
+      errmax = max(errmax,abs( yerr%ebudget_loss2drainage                                  &
                              / yscal%ebudget_loss2drainage))
-      troublemaker = large_error(yerr%ebudget_loss2drainage                  &
+      troublemaker = large_error(yerr%ebudget_loss2drainage                                &
                                 ,yscal%ebudget_loss2drainage)
-      write(unit=*,fmt=onefmt) 'ENDRAINAGE:',errmax                          &
-                              ,yerr%ebudget_loss2drainage                    &
+      write(unit=*,fmt=onefmt) 'ENDRAINAGE:',errmax                                        &
+                              ,yerr%ebudget_loss2drainage                                  &
                               ,yscal%ebudget_loss2drainage,troublemaker
 
-      errmax = max(errmax,abs( yerr%wbudget_loss2drainage                    &
+      errmax = max(errmax,abs( yerr%wbudget_loss2drainage                                  &
                              / yscal%wbudget_loss2drainage))
-      troublemaker = large_error(yerr%wbudget_loss2drainage                  &
+      troublemaker = large_error(yerr%wbudget_loss2drainage                                &
                                 ,yscal%wbudget_loss2drainage)
-      write(unit=*,fmt=onefmt) 'H2ODRAINAGE:',errmax                         &
-                              ,yerr%wbudget_loss2drainage                    &
+      write(unit=*,fmt=onefmt) 'H2ODRAINAGE:',errmax                                       &
+                              ,yerr%wbudget_loss2drainage                                  &
                               ,yscal%wbudget_loss2drainage,troublemaker
 
-      errmax = max(errmax                                                    &
+      errmax = max(errmax                                                                  &
                   ,abs(yerr%co2budget_storage/yscal%co2budget_storage))
-      troublemaker = large_error(yerr%co2budget_storage                      &
+      troublemaker = large_error(yerr%co2budget_storage                                    &
                                 ,yscal%co2budget_storage)
-      write(unit=*,fmt=onefmt) 'CO2STORAGE:',errmax,yerr%co2budget_storage   &
+      write(unit=*,fmt=onefmt) 'CO2STORAGE:',errmax,yerr%co2budget_storage                 &
                               ,yscal%co2budget_storage,troublemaker
 
-      errmax = max(errmax                                                    &
+      errmax = max(errmax                                                                  &
                   ,abs(yerr%ebudget_storage/yscal%ebudget_storage))
-      troublemaker = large_error(yerr%ebudget_storage                        &
+      troublemaker = large_error(yerr%ebudget_storage                                      &
                                 ,yscal%ebudget_storage)
-      write(unit=*,fmt=onefmt) 'ENSTORAGE:',errmax,yerr%ebudget_storage      &
+      write(unit=*,fmt=onefmt) 'ENSTORAGE:',errmax,yerr%ebudget_storage                    &
                               ,yscal%ebudget_storage,troublemaker
 
-      errmax = max(errmax                                                    &
+      errmax = max(errmax                                                                  &
                   ,abs(yerr%wbudget_storage/yscal%wbudget_storage))
-      troublemaker = large_error(yerr%wbudget_storage                        &
+      troublemaker = large_error(yerr%wbudget_storage                                      &
                                 ,yscal%wbudget_storage)
-      write(unit=*,fmt=onefmt) 'H2OSTORAGE:',errmax,yerr%wbudget_storage     &
+      write(unit=*,fmt=onefmt) 'H2OSTORAGE:',errmax,yerr%wbudget_storage                   &
                               ,yscal%wbudget_storage,troublemaker
    end if
 
    write(unit=*,fmt='(a)'  ) 
-   write(unit=*,fmt='(80a)') ('-',k=1,80)
+   write(unit=*,fmt='(80a)') ('=',k=1,80)
+   write(unit=*,fmt='(a)'  ) 
 
    return
 end subroutine print_errmax
@@ -1729,7 +1759,7 @@ end subroutine print_errmax
 !    This subroutine prints the patch and cohort information when the model falls apart... !
 !------------------------------------------------------------------------------------------!
 subroutine print_csiteipa(csite, ipa)
-   use rk4_coms              , only : rk4met        ! ! intent(in)
+   use rk4_coms              , only : rk4site       ! ! intent(in)
    use ed_state_vars         , only : sitetype      & ! structure
                                     , patchtype     ! ! structure
    use ed_misc_coms          , only : current_time  ! ! intent(in)
@@ -1788,7 +1818,7 @@ subroutine print_csiteipa(csite, ipa)
 
    write (unit=*,fmt='(80a)') ('-',k=1,80)
 
-   write (unit=*,fmt='(10(a12,1x))') '  VEG_HEIGHT','   VEG_ROUGH','         LAI'          &
+   write (unit=*,fmt='(11(a12,1x))') '  VEG_HEIGHT','   VEG_ROUGH','         LAI'          &
                                     ,'        HTRY','     CAN_CO2','    CAN_TEMP'          &
                                     ,'     CAN_SHV','    CAN_RHOS','    CAN_PRSS'          &
                                     ,'CAN_ENTHALPY','   CAN_DEPTH'
@@ -1816,7 +1846,7 @@ subroutine print_csiteipa(csite, ipa)
 
    write (unit=*,fmt='(a5,1x,5(a12,1x))')   '  KZG','  NTEXT_SOIL',' SOIL_ENERGY'          &
                                    &,'  SOIL_TEMPK','  SOIL_WATER','SOIL_FRACLIQ'
-   do k=rk4met%lsl,nzg
+   do k=rk4site%lsl,nzg
       write (unit=*,fmt='(i5,1x,i12,4(es12.4,1x))') k,csite%ntext_soil(k,ipa)              &
             ,csite%soil_energy(k,ipa),csite%soil_tempk(k,ipa),csite%soil_water(k,ipa)      &
             ,csite%soil_fracliq(k,ipa)
@@ -1850,12 +1880,12 @@ end subroutine print_csiteipa
 
 !==========================================================================================!
 !==========================================================================================!
-!    This subroutine is similar to print_csiteipa, except that it also prints the       !
+!    This subroutine is similar to print_csite, except that it also prints the             !
 ! outcome of the Runge-Kutta integrator.                                                   !
 !------------------------------------------------------------------------------------------!
 subroutine print_rk4patch(y,csite,ipa)
    use rk4_coms              , only : rk4patchtype         & ! structure
-                                    , rk4met               & ! intent(in)
+                                    , rk4site              & ! intent(in)
                                     , rk4min_sfcwater_mass ! ! intent(in)
    use ed_state_vars         , only : sitetype             & ! structure
                                     , patchtype            ! ! structure
@@ -1894,17 +1924,17 @@ subroutine print_rk4patch(y,csite,ipa)
 
    write (unit=*,fmt='(80a)')         ('-',k=1,80)
    write (unit=*,fmt='(a)')           ' ATMOSPHERIC CONDITIONS: '
-   write (unit=*,fmt='(a,1x,es12.4)') ' Air temperature    : ',rk4met%atm_tmp
-   write (unit=*,fmt='(a,1x,es12.4)') ' Air enthalpy       : ',rk4met%atm_enthalpy
-   write (unit=*,fmt='(a,1x,es12.4)') ' H2Ov mixing ratio  : ',rk4met%atm_shv
-   write (unit=*,fmt='(a,1x,es12.4)') ' CO2  mixing ratio  : ',rk4met%atm_co2
-   write (unit=*,fmt='(a,1x,es12.4)') ' Pressure           : ',rk4met%atm_prss
-   write (unit=*,fmt='(a,1x,es12.4)') ' Exner function     : ',rk4met%atm_exner
-   write (unit=*,fmt='(a,1x,es12.4)') ' Wind speed         : ',rk4met%vels
-   write (unit=*,fmt='(a,1x,es12.4)') ' Height             : ',rk4met%geoht
-   write (unit=*,fmt='(a,1x,es12.4)') ' Precip. mass  flux : ',rk4met%pcpg
-   write (unit=*,fmt='(a,1x,es12.4)') ' Precip. heat  flux : ',rk4met%qpcpg
-   write (unit=*,fmt='(a,1x,es12.4)') ' Precip. depth flux : ',rk4met%dpcpg
+   write (unit=*,fmt='(a,1x,es12.4)') ' Air temperature    : ',rk4site%atm_tmp
+   write (unit=*,fmt='(a,1x,es12.4)') ' Air enthalpy       : ',rk4site%atm_enthalpy
+   write (unit=*,fmt='(a,1x,es12.4)') ' H2Ov mixing ratio  : ',rk4site%atm_shv
+   write (unit=*,fmt='(a,1x,es12.4)') ' CO2  mixing ratio  : ',rk4site%atm_co2
+   write (unit=*,fmt='(a,1x,es12.4)') ' Pressure           : ',rk4site%atm_prss
+   write (unit=*,fmt='(a,1x,es12.4)') ' Exner function     : ',rk4site%atm_exner
+   write (unit=*,fmt='(a,1x,es12.4)') ' Wind speed         : ',rk4site%vels
+   write (unit=*,fmt='(a,1x,es12.4)') ' Height             : ',rk4site%geoht
+   write (unit=*,fmt='(a,1x,es12.4)') ' Precip. mass  flux : ',rk4site%pcpg
+   write (unit=*,fmt='(a,1x,es12.4)') ' Precip. heat  flux : ',rk4site%qpcpg
+   write (unit=*,fmt='(a,1x,es12.4)') ' Precip. depth flux : ',rk4site%dpcpg
 
    write (unit=*,fmt='(80a)') ('=',k=1,80)
    write (unit=*,fmt='(a)'  ) 'Cohort information (only those solvable are shown): '
@@ -1974,7 +2004,7 @@ subroutine print_rk4patch(y,csite,ipa)
 
    write (unit=*,fmt='(a5,1x,5(a12,1x))')   '  KZG','  NTEXT_SOIL',' SOIL_ENERGY'          &
                                    &,'  SOIL_TEMPK','  SOIL_WATER','SOIL_FRACLIQ'
-   do k=rk4met%lsl,nzg
+   do k=rk4site%lsl,nzg
       write (unit=*,fmt='(i5,1x,i12,4(es12.4,1x))') k,csite%ntext_soil(k,ipa)              &
             ,y%soil_energy(k),y%soil_tempk(k),y%soil_water(k),y%soil_fracliq(k)
    end do

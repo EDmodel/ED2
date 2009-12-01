@@ -272,7 +272,8 @@ subroutine read_ed1_history_file
                     print*,"error reading from patch file",trim(pss_name)
                     print*,cpoly%sitenum
                     print*,"site number", sitenum,"not found"
-                    stop
+                    call fatal_error('Error reading from patch file'//trim(pss_name)       &
+                                    ,'read_ed1_history_file','ed_history_io.F90')
                  endif
               case default !Nearly bare ground
                  exit count_patches
@@ -484,14 +485,11 @@ subroutine read_ed1_history_file
                        include_these_pft(sum(include_pft)) = ipft(ic)
                        call sort_up(include_these_pft,n_pft)
                        if (ipft(ic) == 1 .or. ipft(ic) == 5) include_pft_ag(ipft(ic)) = 1
-                       !add_this_cohort(ic) = .true.
                     case(2)
                        write (unit=*,fmt='(a,1x,i5,1x,a)') &
                             'I found a cohort with PFT=',ipft(ic),'... Ignoring it...'
                        add_this_cohort(ic) = .false.
                     end select
-                 else
-                  !  add_this_cohort(ic)=.true.
                  end if
                  
                  if(trim(csite%pname(ipa)) == trim(cpname(ic) ) .and. add_this_cohort(ic)) then
@@ -561,15 +559,7 @@ subroutine read_ed1_history_file
                        cpatch%bsapwood(ic2) = cpatch%balive(ic2) * qsw(ipft(ic)) * cpatch%hite(ic2) &
                                             /(1.0 + q(ipft(ic)) + qsw(ipft(ic2)) * cpatch%hite(ic2))
 
-                       !print*,cpatch%lai(ic2),cpatch%bleaf(ic2),cpatch%nplant(ic2),SLA(ipft(ic)),ipft(ic)
-                       
-                       cpatch%lai(ic2) = cpatch%bleaf(ic2) * cpatch%nplant(ic2) *   &
-                            SLA(ipft(ic))
-if(cpatch%lai(ic2) /= cpatch%lai(ic2)) then
-print*,"invalid initial LAI" 
-                       print*,cpatch%lai(ic2),cpatch%bleaf(ic2),cpatch%nplant(ic2),SLA(ipft(ic)),ipft(ic)
-                       stop
-endif
+
                        ! START COLD-DECIDUOUS TREES WITHOUT LEAVES.  ALL OTHER TREES
                        ! ARE FULLY FLUSHED.
                        if(phenology(ipft(ic)) /= 2)then
@@ -579,7 +569,6 @@ endif
                        else
                           cpatch%phenology_status(ic2) = 2
                           cpatch%bleaf(ic2) = 0.0
-                          cpatch%lai(ic2) = 0.0
                           cpatch%bstorage(ic2) = 0.5 * cpatch%balive(ic2)
                        endif
                                   
@@ -2759,9 +2748,13 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    call hdf_getslab_r(csite%co2budget_rh,'CO2BUDGET_RH ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%today_A_decomp,'TODAY_A_DECOMP ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%today_Af_decomp,'TODAY_AF_DECOMP ',dsetrank,iparallel,.true.)
-   call hdf_getslab_r(csite%dmean_A_decomp,'DMEAN_A_DECOMP ',dsetrank,iparallel,.false.)
-   call hdf_getslab_r(csite%dmean_Af_decomp,'DMEAN_AF_DECOMP ',dsetrank,iparallel,.false.)
-   call hdf_getslab_r(csite%mmean_A_decomp,'MMEAN_A_DECOMP ',dsetrank,iparallel,.false.)
+   if (associated(csite%dmean_A_decomp       )) &
+        call hdf_getslab_r(csite%dmean_A_decomp,'DMEAN_A_DECOMP ',dsetrank,iparallel,.false.)
+   if (associated(csite%dmean_Af_decomp       )) &
+        call hdf_getslab_r(csite%dmean_Af_decomp,'DMEAN_AF_DECOMP ',dsetrank,iparallel,.false.)
+   if (associated(csite%mmean_A_decomp       )) &
+        call hdf_getslab_r(csite%mmean_A_decomp,'MMEAN_A_DECOMP ',dsetrank,iparallel,.false.)
+   if (associated(csite%mmean_Af_decomp       )) &
    call hdf_getslab_r(csite%mmean_Af_decomp,'MMEAN_AF_DECOMP ',dsetrank,iparallel,.false.)
    call hdf_getslab_r(csite%veg_rough,'VEG_ROUGH ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%veg_height ,'VEG_HEIGHT ',dsetrank,iparallel,.true.)

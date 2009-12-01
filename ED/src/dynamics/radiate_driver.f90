@@ -12,8 +12,7 @@ subroutine radiate_driver(cgrid)
                                     , sitetype              & ! structure
                                     , patchtype             ! ! structure
    use canopy_radiation_coms , only : visible_fraction_dir  & ! intent(in)
-                                    , visible_fraction_dif  & ! intent(in)
-                                    , rlong_min             ! ! intent(in)
+                                    , visible_fraction_dif  ! ! intent(in)
    use consts_coms           , only : pio180                ! ! intent(in)
    implicit none
    !----- Argument. -----------------------------------------------------------------------!
@@ -22,10 +21,14 @@ subroutine radiate_driver(cgrid)
    type(polygontype), pointer :: cpoly
    type(sitetype)   , pointer :: csite
    type(patchtype)  , pointer :: cpatch
-   real                       :: total_beam_radiation,rshort,isbeam
+   real                       :: total_beam_radiation
+   real                       :: rshort_tot
+   real                       :: isbeam
    integer                    :: maxcohort
    integer                    :: ipy,isi,ipa
    real                       :: hrangl
+   real                       :: sloperad
+   real                       :: aspectrad
    !---------------------------------------------------------------------------------------!
 
 
@@ -45,33 +48,32 @@ subroutine radiate_driver(cgrid)
 
             csite => cpoly%site(isi)
 
-           if(cpoly%met(isi)%rlong < rlong_min ) then
-              print*,"STRANGE DATA",cpoly%met(isi)%rlong,ipy,isi,int(real(isi)/4.0),rlong_min
-              print*,cpoly%met(isi)
-              call fatal_error('Rlong is too low!','radiate_driver_ar'&
-                              &,'radiate_driver.f90')
-           endif
+            !------------------------------------------------------------------------------!
+            !     Update angle of incidence.  This will check whether the sun is above or  !
+            ! below the horizon.  If the sun is below the horizon, we may still have       !
+            ! twilight, which is exclusively diffuse radiation.                            !
+            !------------------------------------------------------------------------------!
+            hrangl    = 15. * pio180                                                       &
+                      * (mod(current_time%time + cgrid%lon(ipy) / 15. + 24., 24.) - 12.)
+            sloperad  = cpoly%slope(isi)  * pio180
+            aspectrad = cpoly%aspect(isi) * pio180
+            call angle_of_incid(cpoly%cosaoi(isi),cgrid%cosz(ipy),hrangl                   &
+                               ,sloperad,aspectrad)
 
-
-           ! Update angle of incidence
-           hrangl = 15.0 * (mod(current_time%time + cgrid%lon(ipy) / 15.0 +   &
-                24.0, 24.0) - 12.0) * pio180
-           
-           call angle_of_incid(cpoly%cosaoi(isi), cgrid%cosz(ipy), hrangl,   &
-                cpoly%slope(isi) * pio180, cpoly%aspect(isi) * pio180)
-
-           rshort = cpoly%met(isi)%rshort
-           isbeam = 1.0
-           if(cpoly%cosaoi(isi) <= 0.0) then
-              rshort = cpoly%met(isi)%rshort_diffuse
-              isbeam = 0.0
-           end if
+            if (cpoly%cosaoi(isi) <= 0.0) then
+               rshort_tot = cpoly%met(isi)%rshort_diffuse
+               isbeam     = 0.0
+            else
+               rshort_tot = cpoly%met(isi)%rshort
+               isbeam     = 1.0
+            end if
 
             !------------------------------------------------------------------------------!
             !     Compute the visible fraction of diffuse and beam radiation needed by the !
             ! radiative transfer routine.                                                  !
             !------------------------------------------------------------------------------!
-            total_beam_radiation = (cpoly%met(isi)%nir_beam + cpoly%met(isi)%par_beam)*isbeam
+            total_beam_radiation = (cpoly%met(isi)%nir_beam + cpoly%met(isi)%par_beam)     &
+                                 * isbeam
 
             if (total_beam_radiation > 0.0) then
                visible_fraction_dir = cpoly%met(isi)%par_beam / total_beam_radiation
@@ -99,11 +101,11 @@ subroutine radiate_driver(cgrid)
 
             !----- Get unnormalized radiative transfer information. -----------------------!
             call sfcrad_ed(cgrid%cosz(ipy),cpoly%cosaoi(isi),csite,maxcohort               &
-                          ,rshort,cpoly%met(isi)%rshort_diffuse)
+                          ,rshort_tot,cpoly%met(isi)%rshort_diffuse)
 
             !----- Normalize the absorbed radiations. -------------------------------------!
-            call scale_ed_radiation(rshort,cpoly%met(isi)%rshort_diffuse &
-                                      ,cpoly%met(isi)%rlong,csite)
+            call scale_ed_radiation(rshort_tot,cpoly%met(isi)%rshort_diffuse               &
+                                   ,cpoly%met(isi)%rlong,csite)
 
             !----- Update all albedos and rlongup. ----------------------------------------!
             call ed2land_radiation(cpoly,isi)
@@ -137,7 +139,7 @@ end subroutine radiate_driver
 !     This subroutine will drive the distribution of radiation among crowns, snow layers,  !
 ! and soil.                                                                                !
 !------------------------------------------------------------------------------------------!
-subroutine sfcrad_ed(cosz, cosaoi, csite, maxcohort, rshort,rshort_diffuse)
+subroutine sfcrad_ed(cosz, cosaoi, csite, maxcohort, rshort_tot,rshort_diffuse)
 
    use ed_state_vars        , only : sitetype             & ! structure  
                                    , patchtype            ! ! structure  
@@ -157,7 +159,7 @@ subroutine sfcrad_ed(cosz, cosaoi, csite, maxcohort, rshort,rshort_diffuse)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    type(sitetype)  , target     :: csite
-   real            , intent(in) :: rshort
+   real            , intent(in) :: rshort_tot
    real            , intent(in) :: rshort_diffuse
    real            , intent(in) :: cosaoi
    real            , intent(in) :: cosz
@@ -389,8 +391,8 @@ subroutine sfcrad_ed(cosz, cosaoi, csite, maxcohort, rshort,rshort_diffuse)
          surface_absorbed_longwave_surf  = downward_lw_below_surf  - upward_lw_below_surf
          surface_absorbed_longwave_incid = downward_lw_below_incid - upward_lw_below_incid
          
-         !----- Compute short wave if it is daytime. --------------------------------------!
-         if (rshort > 0.5) then
+         !----- Compute short wave if it is daytime or twilight. --------------------------!
+         if (rshort_tot > 0.5) then
             call sw_twostream_clump(algs,cosz,cosaoi,cohort_count                          &
                                    ,pft_array(1:cohort_count),TAI_array(1:cohort_count)    &
                                    ,CA_array(1:cohort_count)                               &
@@ -485,12 +487,12 @@ subroutine sfcrad_ed(cosz, cosaoi, csite, maxcohort, rshort,rshort_diffuse)
       ! assign a negative light level, so we know this value is not to be considered in    !
       ! the daily integration.                                                             !
       !------------------------------------------------------------------------------------!
-      if (rshort > 0.5) then
+      if (rshort_tot > 0.5) then
          !----- Find the relative contribution of diffuse radiation to the SW total. ------!
          !difffac               = visible_fraction_dif * rshort_diffuse                     &
          !                      / ( visible_fraction_dif * rshort_diffuse                   &
          !                        + visible_fraction_dir * (rshort - rshort_diffuse) )
-         difffac = rshort_diffuse / rshort
+         difffac = rshort_diffuse / rshort_tot
 
          !----- At the top of the canopy, we start with maximum rshort. -------------------!
          remaining_par      = 1.0
@@ -808,72 +810,5 @@ subroutine angle_of_incid(aoi,cosz,solar_hour_aspect,slope,terrain_aspect)
 end subroutine angle_of_incid
 !==========================================================================================!
 !==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-subroutine short2diff(swdown,sunang,radvdc)
-
-   implicit none
-   !------------------------------------------------------------------
-   !---
-   !               radiation radive code to use the downward sw at
-   ! bottom
-   !               and the formulation to estimate radvbc,radvdc,
-   ! radndc,
-   !               radndc
-   !  This subroutine was adapted from the sib2 model (sellars et al.)
-   !  
-   !------------------------------------------------------------------
-   !---
-
-   real swdown
-   real sunang, stemp
-   real radvdc
-   real c1,c2,c3,c4,c5,cloud,difrat
-   real vnrat
-
-   ! Arguments:
-   ! nsib:
-   ! swdown: surface incident shortwave radiation
-   ! sunang: cosine of solar zenith angle
-
-
-   c1 = 580.
-   c2 = 464.
-   c3 = 499.
-   c4 = 963.
-   c5 = 1160.
-
-
-   sunang = max( 0.001 , sunang )
-   stemp = swdown
-   stemp = max(stemp,0.01 )
-   cloud = (c5 * sunang - stemp) / (c4 * sunang)
-   cloud = max(cloud,0.)
-   cloud = min(cloud,1.)
-   !         cloud = max(0.58,cloud)
-   
-   !z  use the real clouds here!
-   !         cloud = cldtot(i)
-   !         CLOUD = AMAX1(CLOUD,0.)
-   !         CLOUD = AMIN1(CLOUD,1.)
-   
-   difrat = 0.0604 / ( sunang -0.0223 ) + 0.0683
-   if ( difrat .lt. 0. ) difrat = 0.
-   if ( difrat .gt. 1. ) difrat = 1.
-   
-   difrat = difrat + ( 1. - difrat ) * cloud
-   vnrat = ( c1 - cloud*c2 ) / ( ( c1 - cloud*c3 ) + ( c1 - cloud*c2 ))
-   
-   radvdc = difrat*vnrat*stemp
-   
-   return
-end subroutine short2diff
-
 
 

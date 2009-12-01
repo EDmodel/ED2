@@ -233,6 +233,9 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------!
       !    Renormalize the total area.  We must also rescale all extensive properties from !
       ! cohorts, since they are per unit area and we are effectively changing the area.    !
+      ! IMPORTANT: Only cohort-level variables that have units per area (m2) should be     !
+      !            rescaled.  Variables whose units are per plant should _NOT_ be included !
+      !            here.                                                                   !
       !------------------------------------------------------------------------------------!
       new_area=0.
       area_scale = 1./(1. - elim_area)
@@ -249,6 +252,9 @@ module fuse_fiss_utils
             cpatch%mean_gpp(ico)            = cpatch%mean_gpp(ico)            * area_scale
             cpatch%mean_leaf_resp(ico)      = cpatch%mean_leaf_resp(ico)      * area_scale
             cpatch%mean_root_resp(ico)      = cpatch%mean_root_resp(ico)      * area_scale
+            cpatch%mean_growth_resp(ico)    = cpatch%mean_growth_resp(ico)    * area_scale
+            cpatch%mean_storage_resp(ico)   = cpatch%mean_storage_resp(ico)   * area_scale
+            cpatch%mean_vleaf_resp(ico)     = cpatch%mean_vleaf_resp(ico)     * area_scale
             cpatch%Psi_open(ico)            = cpatch%Psi_open(ico)            * area_scale
             cpatch%gpp(ico)                 = cpatch%gpp(ico)                 * area_scale
             cpatch%leaf_respiration(ico)    = cpatch%leaf_respiration(ico)    * area_scale
@@ -305,13 +311,13 @@ module fuse_fiss_utils
                                      , b1Ht                & ! intent(in)
                                      , max_dbh             & ! intent(in)
                                      , sla                 & ! intent(in)
-                                     , hgt_ref
+                                     , hgt_ref             ! ! intent(in)
       use fusion_fission_coms , only : fusetol_h           & ! intent(in)
                                      , fusetol             & ! intent(in)
                                      , lai_fuse_tol        & ! intent(in)
                                      , fuse_relax          & ! intent(in)
                                      , coh_tolerance_max   ! ! intent(in)
-      use ed_max_dims            , only : n_pft               ! ! intent(in)
+      use ed_max_dims         , only : n_pft               ! ! intent(in)
       use mem_sites           , only : maxcohort           ! ! intent(in)
       use allometry           , only : dbh2h               & ! function
                                      , dbh2bl              ! ! function
@@ -583,7 +589,7 @@ module fuse_fiss_utils
 
       use ed_state_vars        , only : patchtype              ! ! structure
       use pft_coms             , only : q                      & ! intent(in), lookup table
-                                      , qsw                      ! intent(in), lookup table
+                                      , qsw                    ! ! intent(in), lookup table
       use fusion_fission_coms  , only : lai_tol                ! ! intent(in)
       use ed_max_dims          , only : n_pft                  ! ! intent(in)
       use allometry            , only : dbh2h                  & ! function
@@ -604,7 +610,8 @@ module fuse_fiss_utils
       integer                              :: ipa,ico,inew      ! Counters
       integer                              :: ncohorts_new      ! New # of cohorts
       integer                              :: tobesplit         ! # of cohorts to be split
-      real                                 :: slai              ! LAI
+      integer                              :: ipft              ! PFT type
+      real                                 :: stai              ! Potential TAI
       real                                 :: old_nplant        ! Old nplant
       real                                 :: new_nplant        ! New nplant
       real                                 :: old_size          ! Old size
@@ -619,15 +626,18 @@ module fuse_fiss_utils
       old_size   = 0.
       !----- Loop through cohorts ---------------------------------------------------------!
       do ico = 1,cpatch%ncohorts
+         ipft = cpatch%pft(ico)
 
-         slai = cpatch%nplant(ico)                                                         &
-              * cpatch%balive(ico)                                                         &
-              * green_leaf_factor(cpatch%pft(ico))                                         &
-              / ( 1.0 + q(cpatch%pft(ico)) + qsw(cpatch%pft(ico)) * cpatch%hite(ico) )     &
-              * cpatch%sla(ico)
+         !---------------------------------------------------------------------------------! 
+         !     STAI is the potential TAI that this cohort has when its leaves are fully    !
+         ! flushed.                                                                        !
+         !---------------------------------------------------------------------------------! 
+         stai = cpatch%nplant(ico) * cpatch%balive(ico) * green_leaf_factor(ipft)          &
+              * q(ipft) / ( 1.0 + q(ipft) + qsw(ipft) * cpatch%hite(ico) )                 &
+              * cpatch%sla(ico) + cpatch%wai(ico)
 
-         !----- If the resulting LAI is too large, split this cohort. ---------------------!
-         split_mask(ico) = slai > lai_tol
+         !----- If the resulting TAI is too large, split this cohort. ---------------------!
+         split_mask(ico) = stai > lai_tol
          
          old_nplant = old_nplant + cpatch%nplant(ico)
          old_size   = old_size   + cpatch%nplant(ico) * ( cpatch%balive(ico)               &
@@ -670,6 +680,9 @@ module fuse_fiss_utils
                !---------------------------------------------------------------------------!
                !   Half the densities of the original cohort.  All "extensive" variables   !
                ! need to be rescaled.                                                      !
+               ! IMPORTANT: Only cohort-level variables that have units per area (m2)      !
+               !            should be rescaled.  Variables whose units are per plant       !
+               !            should _NOT_ be included here.                                 !
                !---------------------------------------------------------------------------!
                cpatch%lai(ico)                 = cpatch%lai(ico)                  * 0.5
                cpatch%wpa(ico)                 = cpatch%wpa(ico)                  * 0.5
@@ -678,6 +691,9 @@ module fuse_fiss_utils
                cpatch%mean_gpp(ico)            = cpatch%mean_gpp(ico)             * 0.5
                cpatch%mean_leaf_resp(ico)      = cpatch%mean_leaf_resp(ico)       * 0.5
                cpatch%mean_root_resp(ico)      = cpatch%mean_root_resp(ico)       * 0.5
+               cpatch%mean_growth_resp(ico)    = cpatch%mean_growth_resp(ico)     * 0.5
+               cpatch%mean_storage_resp(ico)   = cpatch%mean_storage_resp(ico)    * 0.5
+               cpatch%mean_vleaf_resp(ico)     = cpatch%mean_vleaf_resp(ico)      * 0.5               
                cpatch%today_gpp(ico)           = cpatch%today_gpp(ico)            * 0.5
                cpatch%today_gpp_pot(ico)       = cpatch%today_gpp_pot(ico)        * 0.5
                cpatch%today_gpp_max(ico)       = cpatch%today_gpp_max(ico)        * 0.5
@@ -691,12 +707,6 @@ module fuse_fiss_utils
                cpatch%veg_water(ico)           = cpatch%veg_water(ico)            * 0.5
                cpatch%hcapveg(ico)             = cpatch%hcapveg(ico)              * 0.5
                cpatch%veg_energy(ico)          = cpatch%veg_energy(ico)           * 0.5
-               cpatch%mean_growth_resp(ico) = cpatch%mean_growth_resp(ico)       * 0.5
-               cpatch%mean_storage_resp(ico)= cpatch%mean_storage_resp(ico)      * 0.5
-               cpatch%mean_vleaf_resp(ico)  = cpatch%mean_vleaf_resp(ico)        * 0.5               
-               cpatch%growth_respiration(ico)  = cpatch%growth_respiration(ico)  * 0.5
-               cpatch%storage_respiration(ico) = cpatch%storage_respiration(ico) * 0.5
-               cpatch%vleaf_respiration(ico)   = cpatch%vleaf_respiration(ico)   * 0.5
                if (idoutput > 0 .or. imoutput > 0 ) then
                   cpatch%dmean_par_v     (ico) = cpatch%dmean_par_v     (ico)     * 0.5
                   cpatch%dmean_par_v_beam(ico) = cpatch%dmean_par_v_beam(ico)     * 0.5
@@ -813,9 +823,9 @@ module fuse_fiss_utils
       cpatch%mean_gpp(idt)            = cpatch%mean_gpp(isc)
       cpatch%mean_leaf_resp(idt)      = cpatch%mean_leaf_resp(isc)
       cpatch%mean_root_resp(idt)      = cpatch%mean_root_resp(isc)
-     cpatch%mean_storage_resp(idt) = cpatch%mean_storage_resp(isc)
-     cpatch%mean_growth_resp(idt)= cpatch%mean_growth_resp(isc)
-     cpatch%mean_vleaf_resp(idt) = cpatch%mean_vleaf_resp(isc)
+      cpatch%mean_storage_resp(idt)   = cpatch%mean_storage_resp(isc)
+      cpatch%mean_growth_resp(idt)    = cpatch%mean_growth_resp(isc)
+      cpatch%mean_vleaf_resp(idt)     = cpatch%mean_vleaf_resp(isc)
       cpatch%today_leaf_resp(idt)     = cpatch%today_leaf_resp(isc)
       cpatch%today_root_resp(idt)     = cpatch%today_root_resp(isc)
       cpatch%today_gpp(idt)           = cpatch%today_gpp(isc)
@@ -871,12 +881,12 @@ module fuse_fiss_utils
       cpatch%mort_rate(:,idt)         = cpatch%mort_rate(:,isc)
 
       cpatch%gpp(idt)                 = cpatch%gpp(isc)
-      cpatch%paw_avg(idt)          = cpatch%paw_avg(isc)
+      cpatch%paw_avg(idt)             = cpatch%paw_avg(isc)
 
-      cpatch%turnover_amp(idt)  = cpatch%turnover_amp(isc)     
-      cpatch%llspan(idt)  = cpatch%llspan(isc)     
-      cpatch%vm_bar(idt)  = cpatch%vm_bar(isc)  
-      cpatch%sla(idt)  = cpatch%sla(isc)  
+      cpatch%turnover_amp(idt)        = cpatch%turnover_amp(isc)     
+      cpatch%llspan(idt)              = cpatch%llspan(isc)     
+      cpatch%vm_bar(idt)              = cpatch%vm_bar(isc)  
+      cpatch%sla(idt)                 = cpatch%sla(isc)  
 
       cpatch%old_stoma_vector(:,idt) = cpatch%old_stoma_vector(:,isc)
 
@@ -949,7 +959,7 @@ module fuse_fiss_utils
       end if
 
       return
-    end subroutine clone_cohort
+   end subroutine clone_cohort
    !=======================================================================================!
    !=======================================================================================!
 
@@ -1095,18 +1105,16 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------!
       cpatch%mean_gpp(recc) = cpatch%mean_gpp(recc) + cpatch%mean_gpp(donc)
 
-      cpatch%mean_leaf_resp(recc) = cpatch%mean_leaf_resp(recc)                            &
-                                  + cpatch%mean_leaf_resp(donc)
-
-      cpatch%mean_root_resp(recc) = cpatch%mean_root_resp(recc)                            &
-                                  + cpatch%mean_root_resp(donc)
-
-      cpatch%mean_storage_resp(recc) = cpatch%mean_storage_resp(recc) +   &
-           cpatch%mean_storage_resp(donc)
-      cpatch%mean_growth_resp(recc) = cpatch%mean_growth_resp(recc) +   &
-           cpatch%mean_growth_resp(donc)
-      cpatch%mean_vleaf_resp(recc) = cpatch%mean_vleaf_resp(recc) +   &
-           cpatch%mean_vleaf_resp(donc)
+      cpatch%mean_leaf_resp(recc)    = cpatch%mean_leaf_resp(recc)                         &
+                                     + cpatch%mean_leaf_resp(donc)
+      cpatch%mean_root_resp(recc)    = cpatch%mean_root_resp(recc)                         &
+                                     + cpatch%mean_root_resp(donc)
+      cpatch%mean_storage_resp(recc) = cpatch%mean_storage_resp(recc)                      &
+                                     + cpatch%mean_storage_resp(donc)
+      cpatch%mean_growth_resp(recc)  = cpatch%mean_growth_resp(recc)                       &
+                                     + cpatch%mean_growth_resp(donc)
+      cpatch%mean_vleaf_resp(recc)   = cpatch%mean_vleaf_resp(recc)                        &
+                                     + cpatch%mean_vleaf_resp(donc)
 
        !------------------------------------------------------------------------------------!
 
@@ -2323,6 +2331,11 @@ module fuse_fiss_utils
       cpatch => csite%patch(recp)
       nrc = cpatch%ncohorts
       area_scale = csite%area(recp) * newareai
+      !------------------------------------------------------------------------------------!
+      ! IMPORTANT: Only cohort-level variables that have units per area (m2) should be     !
+      !            rescaled.  Variables whose units are per plant should _NOT_ be included !
+      !            here.                                                                   !
+      !------------------------------------------------------------------------------------!
       do ico = 1,nrc
          cpatch%lai(ico)                 = cpatch%lai(ico)                  * area_scale
          cpatch%wpa(ico)                 = cpatch%wpa(ico)                  * area_scale
@@ -2334,9 +2347,6 @@ module fuse_fiss_utils
          cpatch%mean_growth_resp(ico)    = cpatch%mean_growth_resp(ico)     * area_scale
          cpatch%mean_storage_resp(ico)   = cpatch%mean_storage_resp(ico)    * area_scale
          cpatch%mean_vleaf_resp(ico)     = cpatch%mean_vleaf_resp(ico)      * area_scale
-         cpatch%growth_respiration(ico)  = cpatch%growth_respiration(ico)   * area_scale
-         cpatch%storage_respiration(ico) = cpatch%storage_respiration(ico)  * area_scale
-         cpatch%vleaf_respiration(ico)   = cpatch%vleaf_respiration(ico)    * area_scale
          cpatch%today_gpp(ico)           = cpatch%today_gpp(ico)            * area_scale
          cpatch%today_gpp_pot(ico)       = cpatch%today_gpp_pot(ico)        * area_scale
          cpatch%today_gpp_max(ico)       = cpatch%today_gpp_max(ico)        * area_scale
@@ -2365,6 +2375,11 @@ module fuse_fiss_utils
       cpatch => csite%patch(donp)
       ndc = cpatch%ncohorts
       area_scale = csite%area(donp) * newareai
+      !------------------------------------------------------------------------------------!
+      ! IMPORTANT: Only cohort-level variables that have units per area (m2) should be     !
+      !            rescaled.  Variables whose units are per plant should _NOT_ be included !
+      !            here.                                                                   !
+      !------------------------------------------------------------------------------------!
       do ico = 1,ndc
          cpatch%lai(ico)                 = cpatch%lai(ico)                  * area_scale
          cpatch%wpa(ico)                 = cpatch%wpa(ico)                  * area_scale
@@ -2376,9 +2391,6 @@ module fuse_fiss_utils
          cpatch%mean_growth_resp(ico)    = cpatch%mean_growth_resp(ico)     * area_scale
          cpatch%mean_storage_resp(ico)   = cpatch%mean_storage_resp(ico)    * area_scale
          cpatch%mean_vleaf_resp(ico)     = cpatch%mean_vleaf_resp(ico)      * area_scale
-         cpatch%growth_respiration(ico)  = cpatch%growth_respiration(ico)   * area_scale
-         cpatch%storage_respiration(ico) = cpatch%storage_respiration(ico)  * area_scale
-         cpatch%vleaf_respiration(ico)   = cpatch%vleaf_respiration(ico)    * area_scale
          cpatch%today_gpp(ico)           = cpatch%today_gpp(ico)            * area_scale
          cpatch%today_gpp_pot(ico)       = cpatch%today_gpp_pot(ico)        * area_scale
          cpatch%today_gpp_max(ico)       = cpatch%today_gpp_max(ico)        * area_scale

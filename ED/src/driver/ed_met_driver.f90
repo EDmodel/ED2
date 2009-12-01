@@ -4,7 +4,7 @@
 ! logic data to be used during the run.                                                    !
 !------------------------------------------------------------------------------------------!
 subroutine read_met_driver_head()
-   use ed_max_dims       , only : max_met_vars     ! ! intent(in)
+   use ed_max_dims    , only : max_met_vars     ! ! intent(in)
    use met_driver_coms, only : nformats         & ! intent(in)
                              , met_names        & ! intent(out)
                              , met_nlon         & ! intent(out)
@@ -109,7 +109,7 @@ end subroutine read_met_driver_head
 !------------------------------------------------------------------------------------------!
 subroutine init_met_drivers
 
-   use ed_max_dims        , only : max_met_vars
+   use ed_max_dims     , only : max_met_vars
    use met_driver_coms , only : nformats          & ! intent(in)
                               , met_names         & ! intent(out)
                               , met_nlon          & ! intent(out)
@@ -263,8 +263,7 @@ subroutine init_met_drivers
                case ('lat','lon') !---- Latitude and longitude: skip them. ----------------!
                case default
                   call fatal_error('Invalid met variable'//trim(met_vars(iformat,iv))//'!' &
-                                  ,'init_met_drivers'                                &
-                                  ,'ed_met_driver.f90')
+                                  ,'init_met_drivers','ed_met_driver.f90')
                end select
 
             end do varloop
@@ -460,8 +459,8 @@ subroutine read_met_drivers_init
          !----- Loop over variables. and read the data. -----------------------------------!
          do iv = 1, met_nv(iformat)
             offset = 0
-            call read_ol_file(iformat, iv, year_use, mname(current_time%month)          &
-                                , current_time%year, offset, cgrid)
+            call read_ol_file(iformat, iv, year_use, mname(current_time%month)             &
+                             ,current_time%year, offset, cgrid)
          end do
 
          !-----  Close the HDF5 file. -----------------------------------------------------!
@@ -495,7 +494,7 @@ subroutine read_met_drivers_init
          if (exans) then
             call shdf5_open_f(trim(infile),'R')
          else
-            call fatal_error('Cannot open met driver input file '//trim(infile)//'!' &
+            call fatal_error('Cannot open met driver input file '//trim(infile)//'!'       &
                             ,'read_met_drivers_init','ed_met_driver.f90')
          end if
          
@@ -542,7 +541,7 @@ subroutine read_met_drivers
                              , met_vars      & ! intent(in)
                              , metcyc1       & ! intent(in)
                              , metcycf       ! ! intent(in)
-   use ed_misc_coms      , only : current_time  ! ! intent(in)
+   use ed_misc_coms   , only : current_time  ! ! intent(in)
    use hdf5_utils     , only : shdf5_open_f  & ! subroutine
                              , shdf5_close_f ! ! subroutine
    use ed_state_vars  , only : edtype        & ! structure
@@ -619,12 +618,12 @@ subroutine read_met_drivers
             if (met_interp(iformat,iv) /= 1) then
                !----- If not, things are simple.  Just read in the month. -----------------!
                offset = 0
-               call read_ol_file(iformat,iv,year_use,mname(current_time%month)          &
-                                   ,current_time%year,offset,cgrid)
+               call read_ol_file(iformat,iv,year_use,mname(current_time%month)             &
+                                ,current_time%year,offset,cgrid)
             else
                !----- Here, just transfer future to current month.  -----------------------!
-               call transfer_ol_month(trim(met_vars(iformat,iv)),met_frq(iformat,iv)    &
-                                        ,cgrid)
+               call transfer_ol_month(trim(met_vars(iformat,iv)),met_frq(iformat,iv)       &
+                                     ,cgrid)
             end if
          end do
 
@@ -701,37 +700,42 @@ end subroutine read_met_drivers
 !==========================================================================================!
 subroutine update_met_drivers(cgrid)
   
-   use ed_state_vars  , only : edtype        & ! structure
-                             , polygontype   ! ! structure
-   use met_driver_coms, only : met_frq       & ! intent(in)
-                             , nformats      & ! intent(in)
-                             , met_nv        & ! intent(in)
-                             , met_interp    & ! intent(in)
-                             , met_vars      & ! intent(in)
-                             , have_co2      & ! intent(in)
-                             , initial_co2   &! ! intent(in)
-                             , atm_tmp_intercept &
-                             , atm_tmp_slope &
-                             , prec_intercept &
-                             , prec_slope &
-                             , humid_scenario
-   use ed_misc_coms   , only : current_time  ! ! intent(in)
-   use canopy_air_coms, only : ubmin         ! ! intent(in)
-   use consts_coms    , only : rdry          & ! intent(in)
-                             , cice          & ! intent(in)
-                             , cliq          & ! intent(in)
-                             , alli          & ! intent(in)
-                             , rocp          & ! intent(in)
-                             , p00i          & ! intent(in)
-                             , cp            & ! intent(in)
-                             , day_sec       & ! intent(in)
-                             , t00           & ! intent(in)
-                             , t3ple         & ! intent(in)
-                             , wdnsi         & ! intent(in)
-                             , toodry        & ! intent(in)
-                             , tsupercool    ! ! intent(in)
-   use therm_lib      , only : rslif         & ! function
-                             , ptqz2enthalpy,qtk ! ! function
+   use ed_state_vars  , only : edtype            & ! structure
+                             , polygontype       ! ! structure
+   use met_driver_coms, only : met_frq           & ! intent(in)
+                             , nformats          & ! intent(in)
+                             , met_nv            & ! intent(in)
+                             , met_interp        & ! intent(in)
+                             , met_vars          & ! intent(in)
+                             , have_co2          & ! intent(in)
+                             , initial_co2       & ! intent(in)
+                             , atm_tmp_intercept & ! intent(in)
+                             , atm_tmp_slope     & ! intent(in)
+                             , prec_intercept    & ! intent(in)
+                             , prec_slope        & ! intent(in)
+                             , humid_scenario    & ! intent(in)
+                             , atm_rhv_min       & ! intent(in)
+                             , atm_rhv_max       ! ! intent(in)
+   use ed_misc_coms   , only : current_time      ! ! intent(in)
+   use canopy_air_coms, only : ubmin             ! ! intent(in)
+   use consts_coms    , only : rdry              & ! intent(in)
+                             , cice              & ! intent(in)
+                             , cliq              & ! intent(in)
+                             , alli              & ! intent(in)
+                             , rocp              & ! intent(in)
+                             , p00i              & ! intent(in)
+                             , cp                & ! intent(in)
+                             , day_sec           & ! intent(in)
+                             , t00               & ! intent(in)
+                             , t3ple             & ! intent(in)
+                             , wdnsi             & ! intent(in)
+                             , toodry            & ! intent(in)
+                             , tsupercool        ! ! intent(in)
+   use therm_lib      , only : rslif             & ! function
+                             , ptrh2rvapil       & ! function
+                             , ptqz2enthalpy     & ! function
+                             , rehuil            & ! function
+                             , qtk               ! ! function
 
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
@@ -748,12 +752,17 @@ subroutine update_met_drivers(cgrid)
    integer                    :: iformat
    integer                    :: iv
    integer                    :: ipy,isi
-   real                       :: t1, T0
+   real                       :: t1
    real                       :: t2
-   real                       :: rvaux, rvsat
+
+   real                       :: rvaux, rvsat, min_shv 
+
+   real                       :: temp0
+   real                       :: relhum
    real                       :: snden !! snow density (kg/m3)
    real                       :: fice  !! precipication ice fraction
    real                       :: fliq,tsnow
+
    !----- External functions --------------------------------------------------------------!
    logical         , external :: isleap
    !---------------------------------------------------------------------------------------!
@@ -888,10 +897,9 @@ subroutine update_met_drivers(cgrid)
             points_per_day = nint(day_sec/met_frq(iformat,iv))
             select case (current_time%month)
             case (1,3,5,7,8,10,12)
-              nday = 31
+               nday = 31
             case (4,6,9,11)
-              nday = 30
-
+               nday = 30
             case (2)
                if (isleap(current_time%year)) then
                   nday = 29
@@ -917,8 +925,7 @@ subroutine update_met_drivers(cgrid)
             endif
             
             !----- Get interpolation factors ----------------------------------------------!
-            t1 = mod(float(nseconds_elapsed), met_frq(iformat,iv)) /   &
-                 met_frq(iformat,iv)
+            t1 = mod(float(nseconds_elapsed), met_frq(iformat,iv)) / met_frq(iformat,iv)
             t2 = 1.0 - t1
 
             !----- Find the variable and fill the sites. ----------------------------------!
@@ -1026,32 +1033,49 @@ subroutine update_met_drivers(cgrid)
       !----- CO2 --------------------------------------------------------------------------!
       if (.not.have_co2) cgrid%met(ipy)%atm_co2 = initial_co2
 
-     !! ADJUST MET FOR SIMPLE CLIMATE SCENARIOS
-     T0 = cgrid%met(ipy)%atm_tmp
-     cgrid%met(ipy)%atm_tmp = atm_tmp_intercept + &
-          cgrid%met(ipy)%atm_tmp * atm_tmp_slope
-     cgrid%met(ipy)%pcpg = max(0.0,prec_intercept + &
-          cgrid%met(ipy)%pcpg * prec_slope)
-     if(humid_scenario == 1) then 
-        !! change SHV to keep RH const
-        cgrid%met(ipy)%atm_shv = cgrid%met(ipy)%atm_shv * &
-             exp(5415*(1.0/T0 - 1.0/cgrid%met(ipy)%atm_tmp))
-     endif
+      !----- Adjust meteorological variables for simple climate scenarios. ----------------!
+      temp0 = cgrid%met(ipy)%atm_tmp
+      cgrid%met(ipy)%atm_tmp = atm_tmp_intercept + cgrid%met(ipy)%atm_tmp * atm_tmp_slope
+      cgrid%met(ipy)%pcpg = max(0.0,prec_intercept + cgrid%met(ipy)%pcpg * prec_slope)
+
+      if (humid_scenario == 1) then 
+         !---------------------------------------------------------------------------------!
+         !     Update atm_shv so the relative humidity remains the same.  We use the       !
+         ! functions from therm_lib.f90 so it is consistent with the rest of the code.     !
+         !---------------------------------------------------------------------------------!
+         !----- 1. Temporarily convert specific humidity to mixing ratio. -----------------!
+         rvaux  = cgrid%met(ipy)%atm_shv / (1. - cgrid%met(ipy)%atm_shv)
+         !----- 2. Find relative humidity. ------------------------------------------------!
+         relhum = rehuil(cgrid%met(ipy)%prss,temp0,rvaux)
+         !----- 3. Find the equivalent relative humidity with the new temperature. --------!
+         rvaux  = ptrh2rvapil(relhum,cgrid%met(ipy)%prss,cgrid%met(ipy)%atm_tmp)
+         !----- 4. Convert the mixing ratio back to specific humidity. --------------------!
+         cgrid%met(ipy)%atm_shv = rvaux / (1. + rvaux)
+         !---------------------------------------------------------------------------------!
+      end if
 
 
       !------------------------------------------------------------------------------------!
-      !     Checking whether the specific humidity provided will not cause supersatur-     !
-      ! ation.  We cannot do it using specific humidity because for that we would need     !
-      ! density, which needs the actual value to be computed consistently. So here we      !
-      ! use mixing ratio, which depends on pressure, then convert back to specific         !
-      ! humidity.                                                                          !
+      !     Check the relative humidity associated with the current pressure, temperature, !
+      ! and specific humidity.  Impose lower and upper bounds as prescribed by the vari-   !
+      ! ables atm_rhv_min and atm_rhv_max (from met_driver_coms.f90, and defined at the    !
+      ! init_met_params subroutine in ed_params.f90).                                      !
       !------------------------------------------------------------------------------------!
-      rvaux = cgrid%met(ipy)%atm_shv / (1. - cgrid%met(ipy)%atm_shv)
-      rvsat = rslif(cgrid%met(ipy)%prss,cgrid%met(ipy)%atm_tmp)
-      rvaux = min(rvaux,rvsat)
-
-      !------ Converting back to specific humidity. ---------------------------------------!
-      cgrid%met(ipy)%atm_shv = max(toodry,rvaux / (1. + rvaux))
+      rvaux  = cgrid%met(ipy)%atm_shv / (1. - cgrid%met(ipy)%atm_shv)
+      relhum = rehuil(cgrid%met(ipy)%prss,cgrid%met(ipy)%atm_tmp,rvaux)
+      !------------------------------------------------------------------------------------!
+      !      Check whether the relative humidity is off-bounds.  If it is, then we re-     !
+      ! calculate the mixing ratio and convert to specific humidity.                       !
+      !------------------------------------------------------------------------------------!
+      if (relhum < atm_rhv_min) then
+         relhum = atm_rhv_min
+         rvaux  = ptrh2rvapil(relhum,cgrid%met(ipy)%prss,cgrid%met(ipy)%atm_tmp)
+         cgrid%met(ipy)%atm_shv = rvaux / (1. + rvaux)
+      elseif (relhum > atm_rhv_max) then
+         relhum = atm_rhv_max
+         rvaux  = ptrh2rvapil(relhum,cgrid%met(ipy)%prss,cgrid%met(ipy)%atm_tmp)
+         cgrid%met(ipy)%atm_shv = rvaux / (1. + rvaux)
+      end if
 
       !------------------------------------------------------------------------------------!
       !    We now find the Exner function, potential temperature, and the enthalpy.        !
@@ -1090,32 +1114,40 @@ subroutine update_met_drivers(cgrid)
          cpoly%met(isi)%exner        = cp * (p00i * cpoly%met(isi)%prss) **rocp
          cpoly%met(isi)%atm_theta    = cp * cpoly%met(isi)%atm_tmp / cpoly%met(isi)%exner
 
+         !---------------------------------------------------------------------------------!
+         !     Check the relative humidity associated with the current pressure, temper-   !
+         ! ature, and specific humidity.  Impose lower and upper bounds as prescribed by   !
+         ! the variables atm_rhv_min and atm_rhv_max (from met_driver_coms.f90, and        !
+         ! defined at the init_met_params subroutine in ed_params.f90).                    !
+         !---------------------------------------------------------------------------------!
+         rvaux  = cpoly%met(isi)%atm_shv / (1. - cpoly%met(isi)%atm_shv)
+         relhum = rehuil(cpoly%met(isi)%prss,cpoly%met(isi)%atm_tmp,rvaux)
+         !---------------------------------------------------------------------------------!
+         !      Check whether the relative humidity is off-bounds.  If it is, then we re-  !
+         ! calculate the mixing ratio and convert to specific humidity.                    !
+         !---------------------------------------------------------------------------------!
+         if (relhum < atm_rhv_min) then
+            relhum = atm_rhv_min
+            rvaux  = ptrh2rvapil(relhum,cpoly%met(isi)%prss,cpoly%met(isi)%atm_tmp)
+            cpoly%met(isi)%atm_shv = rvaux / (1. + rvaux)
+         elseif (relhum > atm_rhv_max) then
+            relhum = atm_rhv_max
+            rvaux  = ptrh2rvapil(relhum,cpoly%met(isi)%prss,cpoly%met(isi)%atm_tmp)
+            cpoly%met(isi)%atm_shv = rvaux / (1. + rvaux)
+         end if
 
+         !----- Find the atmospheric enthalpy. --------------------------------------------!
          cpoly%met(isi)%atm_enthalpy = ptqz2enthalpy(cpoly%met(isi)%prss                   &
-                                                   ,cpoly%met(isi)%atm_tmp                 &
-                                                   ,cpoly%met(isi)%atm_shv                 &
-                                                   ,cpoly%met(isi)%geoht)
+                                                    ,cpoly%met(isi)%atm_tmp                &
+                                                    ,cpoly%met(isi)%atm_shv                &
+                                                    ,cpoly%met(isi)%geoht)
 
          !----- Solar radiation -----------------------------------------------------------!
          cpoly%met(isi)%rshort_diffuse = cpoly%met(isi)%par_diffuse                        &
                                        + cpoly%met(isi)%nir_diffuse
          cpoly%met(isi)%rshort         = cpoly%met(isi)%rshort_diffuse                     &
                                        + cpoly%met(isi)%par_beam + cpoly%met(isi)%nir_beam
-         
-         !---------------------------------------------------------------------------------!
-         !     Checking whether the specific humidity provided will not cause supersatur-  !
-         ! ation.  This must be done at the site level too, in case various sites exist in !
-         ! a polygon.  We cannot do it using specific humidity because for that we would   !
-         ! need density, which needs the actual value to be computed consistently. So here !
-         ! we use mixing ratio, which depends on pressure, then convert back to specific   !
-         ! humidity.                                                                       !
-         !---------------------------------------------------------------------------------!
-         rvaux = cpoly%met(isi)%atm_shv / (1. - cpoly%met(isi)%atm_shv)
-         rvsat = rslif(cpoly%met(isi)%prss,cpoly%met(isi)%atm_tmp)
-         rvaux = min(rvaux,rvsat)
 
-         !------ Converting back to specific humidity. ------------------------------------!
-         cpoly%met(isi)%atm_shv = rvaux / (1. + rvaux)
 
 
          !---------------------------------------------------------------------------------!
@@ -1124,43 +1156,60 @@ subroutine update_met_drivers(cgrid)
          !  Jin et al 1999 Hydrol Process. 13:2467-2482 Table 2                            !
          !  [[modified 11/16/09 by MCD]]                                                   !
          !---------------------------------------------------------------------------------!
-         
-         fice  = 0  !! fraction of ice in precipitation
-         snden = 0  !! partial density of ice in precipitation
-         if (cpoly%met(isi)%atm_tmp .le. (t3ple + 2.5) .and. cpoly%met(isi)%atm_tmp > (t3ple + 2.0)) then
+         if (cpoly%met(isi)%atm_tmp > (t3ple + 2.5)) then
+            !----- Rain only. -------------------------------------------------------------!
+            fice = 0.0
+            cpoly%met(isi)%dpcpg = max(0.0, cpoly%met(isi)%pcpg) *wdnsi
+
+         elseif (cpoly%met(isi)%atm_tmp <= (t3ple + 2.5) .and.                             &
+                 cpoly%met(isi)%atm_tmp  > (t3ple + 2.0) ) then
+            !------------------------------------------------------------------------------!
+            !     60% snow, 40% rain. (N.B. May not be appropriate for sub-tropical        !
+            ! regions where the level of the melting layer is higher...).                  !
+            !------------------------------------------------------------------------------!
             fice  = 0.6
             snden = 189.0
-         else
-            if (cpoly%met(isi)%atm_tmp .le. (t3ple + 2.0) .and. cpoly%met(isi)%atm_tmp > (t3ple)) then
-               fice = min(1.0,1.+(54.62 - 0.2*cpoly%met(isi)%atm_tmp))
-            else
-               fice = 1
-            end if
-            
-            if (cpoly%met(isi)%atm_tmp .le. (t3ple + 2.0) .and. cpoly%met(isi)%atm_tmp > (t3ple-15)) then
-               snden = (50.0+1.7*(cpoly%met(isi)%atm_tmp-258.15)**1.5 )
-            else
-               snden = 50
-            end if
+            cpoly%met(isi)%dpcpg = max(0.0, cpoly%met(isi)%pcpg)                           &
+                                 * ((1.0-fice) * wdnsi + fice / snden)
+
+         elseif (cpoly%met(isi)%atm_tmp <= (t3ple + 2.0) .and.                             &
+                 cpoly%met(isi)%atm_tmp > t3ple          ) then
+            !------------------------------------------------------------------------------!
+            !     Increasing the fraction of snow. (N.B. May not be appropriate for        !
+            ! sub-tropical regions where the level of the melting layer is higher...).     !
+            !------------------------------------------------------------------------------!
+            fice  = min(1.0, 1.+(54.62 - 0.2*cpoly%met(isi)%atm_tmp))
+            snden = (50.0+1.7*(cpoly%met(isi)%atm_tmp-258.15)**1.5 )
+            cpoly%met(isi)%dpcpg = max(0.0, cpoly%met(isi)%pcpg)                           &
+                                 * ((1.0-fice) * wdnsi + fice / snden)
+
+         elseif (cpoly%met(isi)%atm_tmp <= t3ple         .and.                             &
+                 cpoly%met(isi)%atm_tmp > (t3ple - 15.0) ) then
+            !----- Below freezing point, snow only. ---------------------------------------!
+            fice  = 1.0
+            snden = (50.0+1.7*(cpoly%met(isi)%atm_tmp-258.15)**1.5 )
+            cpoly%met(isi)%dpcpg = max(0.0, cpoly%met(isi)%pcpg) / snden
+
+         else ! if (copy%met(isi)%atm_tmp < (t3ple - 15.0)) then
+            !----- Below freezing point, snow only. ---------------------------------------!
+            fice  = 1.0
+            snden = 50.
+            cpoly%met(isi)%dpcpg = max(0.0, cpoly%met(isi)%pcpg) / snden
+
          end if
+         !---------------------------------------------------------------------------------!
 
-         !! set rate of snow depth accumulation
-         cpoly%met(isi)%dpcpg = max(0.0, cpoly%met(isi)%pcpg) &
-              * ((1-fice)*wdnsi + fice/snden)
-         
-         !! set internal energy
-         cpoly%met(isi)%qpcpg = max(0.0, cpoly%met(isi)%pcpg) * &                   !! precipitation   
-              ((1-fice)*cliq * (max(t3ple,cpoly%met(isi)%atm_tmp) - tsupercool) + & !! liquid fraction
-              fice *cice * min(cpoly%met(isi)%atm_tmp,t3ple))                       !! ice fraction 
-
-         !! check
-!!         if(snden .gt. 0.0 .and. cpoly%met(isi)%pcpg .gt. 0.0) then
-!!            call qtk(cpoly%met(isi)%qpcpg/cpoly%met(isi)%pcpg,tsnow,fliq)
-!!            print*,"snow",snden,cpoly%met(isi)%pcpg/cpoly%met(isi)%dpcpg,&
-!!                 fice,cpoly%met(isi)%pcpg,&
-!!                 cpoly%met(isi)%dpcpg,cpoly%met(isi)%qpcpg,tsnow,(1-fliq)
-!!         endif
-         !-------------------------------------------------------------------------------!
+         !---------------------------------------------------------------------------------!
+         !     Set internal energy.  This will be the precipitation times the specific     !
+         ! internal energy of water (above or at triple point) multiplied by the liquid    !
+         ! fraction plus the specific internal energy of ice (below or at the triple       !
+         ! point) multiplied by the ice fraction.                                          !
+         !---------------------------------------------------------------------------------!
+         cpoly%met(isi)%qpcpg = max(0.0, cpoly%met(isi)%pcpg)                              &
+                              * ( (1.0-fice) * cliq * ( max(t3ple,cpoly%met(isi)%atm_tmp)  &
+                                                      - tsupercool)                        &
+                                + fice *cice * min(cpoly%met(isi)%atm_tmp,t3ple))
+         !---------------------------------------------------------------------------------!
 
 
       end do siteloop
