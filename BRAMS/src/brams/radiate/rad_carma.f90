@@ -2970,37 +2970,16 @@ module rad_carma
       !------------------------------------------------------------------------------------!
       !     Initialise all local arrays.                                                   !
       !------------------------------------------------------------------------------------!
-      corr8      = 0.d0
-      denc8      = 0.d0
-      reffi8     = 0.d0
-      taucldlw8  = 0.d0
-      taucldice8 = 0.d0
-      taurain8   = 0.d0
-      wolc8      = 0.d0
-      woice8     = 0.d0
-      worain8    = 0.d0
-      gl8        = 0.d0
-      gice8      = 0.d0
-      grain8     = 0.d0
-      taucld8    = 0.d0
-      wcld8      = 0.d0
-      gcld8      = 0.d0
-      rdqextnew8 = 0.d0
-      wonew8     = 0.d0
-      gonew8     = 0.d0
-      !------------------------------------------------------------------------------------!
-
-
-
+      
       !----- Copy the following values to the scratch double precision variables. ---------!
       xsecta8      = dble(xsecta    )
-      caer8        = dble(caer      )
-      tauaer8      = dble(tauaer    )
+      
       rdqext8      = dble(rdqext    )
       qscat8       = dble(qscat     )
       qbrqs8       = dble(qbrqs     )
       ta8          = dble(ta        )
       tb8          = dble(tb        )
+      tt8          = dble(tt        )
       wa8          = dble(wa        )
       wb8          = dble(wb        )
       ga8          = dble(ga        )
@@ -3029,19 +3008,54 @@ module rad_carma
       rain_aerad8  = dble(rain_aerad)
       p_top8       = dble(p_top     )
       !------------------------------------------------------------------------------------!
+      
+      !------ Copy over the following global variables from mem_carma, to dp --------------!
+
+      tauaer8      = dble(tauaer    )
+      taucldlw8    = dble(taucldlw  )
+      taucldice8   = dble(taucldice )
+      taucld8      = dble(taucld    )
+      wcld8        = dble(wcld      )
+      gcld8        = dble(gcld      )
+      gl8          = dble(gl        )
+      gice8        = dble(gice      )
+      wolc8        = dble(wolc      )
+      caer8        = dble(caer      )
+      woice8       = dble(woice     )
+      gice8        = dble(gice      )
+      taul8        = dble(taul      )
+      opd8         = dble(opd       )
+      uopd8        = dble(uopd      )
+
+      corr8      = 0.d0
+      denc8      = 0.d0
+      reffi8     = 0.d0
+      taucldlw8  = 0.d0
+      taucldice8 = 0.d0
+      taurain8   = 0.d0
+      wolc8      = 0.d0
+      woice8     = 0.d0
+      worain8    = 0.d0
+      gl8        = 0.d0
+      gice8      = 0.d0
+      grain8     = 0.d0
+      taucld8    = 0.d0
+      wcld8      = 0.d0
+      gcld8      = 0.d0
+      rdqextnew8 = 0.d0
+      wonew8     = 0.d0
+      gonew8     = 0.d0
 
 
       if (lprocopio .and. lmie) then
  
-         idaot = max(min(int(10*((anint(10.*aot11)/10.)+0.1)/2.),9),1)
+         idaot = max(min(int(10*((anint(10.*max(aot11,1e-20))/10.)+0.1)/2.),9),1)
 
          do l = 1,nwave
             rdqextnew8(l) = dble(casee(idaot,l)) 
             wonew8(l)     = dble(casew(idaot,l)) 
             gonew8(l)     = dble(caseg(idaot,l))
          end do
-
-         
 
          taua8=0.d0
          do j=1,nlayer
@@ -3050,7 +3064,7 @@ module rad_carma
                  do l = 1,ntotal
                     taua8(l,j)   = taua8(l,j)                                              &
                                  + rdqextnew8(nprob(l)) * xsecta8(i,ig) * caer8(j,i,ig)
-                    tauaer8(l,j) = max(taua8(nprob(l),j),roundoff8)                 
+                    tauaer8(l,j) = max(taua8(nprob(l),j),roundoff8)
                     wol8(l,j)    = wonew8(nprob(l))
                     gol8(l,j)    = gonew8(nprob(l))
                     tauaer(l,j)  = sngl(tauaer8(l,j))
@@ -3058,10 +3072,12 @@ module rad_carma
                end do
             end do
          end do
+
       else
          taua8 = 0.0
          taus8 = 0.0
          g018  = 0.0
+
          do j=1,nlayer
             do ig = 1,ngroup
                do  i = 1,nrad
@@ -3075,7 +3091,7 @@ module rad_carma
                   end do
                end do
             end do
-
+            
 
             do l= 1,ntotal
                tauaer8(l,j) = max(taua8(nprob(l),j),roundoff8)
@@ -3090,7 +3106,9 @@ module rad_carma
             end do
          end do
          lmie = .true.
+
       end if
+
 
       do j=1,nlayer
          if (xland_aerad >= .009) then
@@ -3109,9 +3127,12 @@ module rad_carma
             if (j == 1) taurain8(l,j) = 1.8d-4 * rain_aerad8 * 2.0d3
             
             taucldlw8  (l,j) = 1.d3 * lwp_aerad8(j) *(ta8(l)/reffi8(j)+tb8(l)/reffi8(j)**2)
+
             worain8    (l,j) = 5.5d-1
             wolc8      (l,j) = (1.d0 - wa8(l)) + wb8(l) * reffi8(j)
+        
             gl8        (l,j) = ga8(l) + gb8(l) * reffi8(j)
+        
             grain8     (l,j) = 9.5d-1
             denc8      (l,j) = 1.d0 / (tia8(l) + tib8(l) * 1.d3 * iwl_aerad8(j))
             taucldice8 (l,j) = corr8(j) * 1.0d3 * iwp_aerad8(j) * denc8(l,j)
@@ -3159,7 +3180,7 @@ module rad_carma
             end if
          end do
       end do
-        
+
       iradgas = 1
       do  j = 1,nlayer
          kk = max( 1, j-1 )
@@ -3267,21 +3288,37 @@ module rad_carma
       end do okloop1
 
       if (.not. alright) then
-         write (unit=*,fmt='(13(a,1x))') '   KK','   IB','        TAUL','       TAUL8'     &
-                                                        ,'     TAUCLD8','    TAUCLDW8'     &
-                                                        ,'    TAUCLDI8','    TAURAIN8'     &
-                                                        ,'        LWL8','        LWP8'     &
-                                                        ,'        IWL8','        IWP8'     &
-                                                        ,'       RAIN8'
+         write (unit=*,fmt='(12(a,1x))') '   KK','   IB','        TAUL','       TAUL8'     &
+                                                        ,'    TAUCLDI8','       CORR8'     &
+                                                        ,'        TIA8','        TIB8'     &
+                                                        ,'       DENC8','         TT8'     &
+                                                        ,'        IWP8','        IWL8'
          do j=1,nlayer
             do l=lls,lla
-               write (unit=*,fmt='(2(i5,1x),11(es12.5,1x))')                               &
-                  j,l,taul(l,j),taul8(l,j),taucld8(l,j),taucldlw8(l,j),taucldice8(l,j)     &
-                     ,taurain8(l,j),lwl_aerad8(j),lwp_aerad8(j),iwl_aerad8(j)              &
-                     ,iwp_aerad8(j),rain_aerad8
+               write (unit=*,fmt='(2(i5,1x),10(es12.5,1x))')                               &
+                  j,l,taul(l,j),taul8(l,j),taucldice8(l,j),corr8(j)                        &
+                     ,tia8(l),tib8(l),denc8(l,j),tt8(j),iwl_aerad8(j),iwp_aerad8(j)
             end do
          end do
       end if
+      !------------------------------------------------------------------------------------!
+
+      !------ Copy the dp values back to their global singles -----------------------------!
+
+      tauaer      = sngl(tauaer8    )
+      taucldlw    = sngl(taucldlw8  )
+      taucldice   = sngl(taucldice8 )
+      taucld      = sngl(taucld8    )
+      wcld        = sngl(wcld8      )
+      gcld        = sngl(gcld8      )
+      gl          = sngl(gl8        )
+      gice        = sngl(gice8      )
+      wolc        = sngl(wolc8      )
+      woice       = sngl(woice8     )
+      gice        = sngl(gice8      )
+      taul        = sngl(taul8      )
+      opd         = sngl(opd8       )
+      uopd        = sngl(uopd8      )
       !------------------------------------------------------------------------------------!
 
       return
