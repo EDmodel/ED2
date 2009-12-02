@@ -1,0 +1,15 @@
+Use one this options to compile:
+
+ - Intel   : ./comp.sh intel
+ - G95     : ./comp.sh g95
+ - Portand : ./comp.sh pgi
+
+Cleanning generated files (*.o *.mod *.a and binaries):
+
+ - Intel   :   ./comp.sh intel clean
+ - g95     :   ./comp.sh g95 clean 
+ - Portand :   ./comp.sh pgi clean
+
+IMPORTANT:
+Edit ./LIB/paths.mk file and set path to BRAMS source.
+Ex: RAMS_ROOT=/home/user/BRAMS32
