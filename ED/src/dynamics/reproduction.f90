@@ -273,9 +273,9 @@ subroutine reproduction(cgrid, month)
 
                   !----- Assign initial sapwood and root biomass. -------------------------!
                   ipft    = cpatch%pft(ico)
-                  salloci = 1. / (1. + qsw(ipft) * cpatch%hite(ipft) + q(ipft))
+                  salloci = 1. / (1. + qsw(ipft) * cpatch%hite(ico) + q(ipft))
                   cpatch%broot(ico)    = q(ipft) * cpatch%balive(ico) * salloci
-                  cpatch%bsapwood(ico) = qsw(ipft) * cpatch%hite(ipft)                     &
+                  cpatch%bsapwood(ico) = qsw(ipft) * cpatch%hite(ico)                      &
                                        * cpatch%balive(ico) * salloci
 
 

@@ -1425,6 +1425,8 @@ module canopy_struct_dynamics
                                  , ribmaxod95    & ! intent(in)
                                  , ribmaxbh91    & ! intent(in)
                                  , tprandtl      & ! intent(in)
+                                 , z0moz0h       & ! intent(in)
+                                 , z0hoz0m       & ! intent(in)
                                  , psim          & ! function
                                  , psih          & ! function
                                  , zoobukhov     ! ! function
@@ -1450,8 +1452,10 @@ module canopy_struct_dynamics
       real, intent(out) :: fm           ! Stability parameter for momentum      [    -----]
       !----- Local variables, used by L79. ------------------------------------------------!
       logical           :: stable       ! Stable state
-      real              :: zoz0         ! zref/rough
-      real              :: lnzoz0       ! ln(zref/rough)
+      real              :: zoz0m        ! zref/rough(momentum)
+      real              :: lnzoz0m      ! ln[zref/rough(momentum)]
+      real              :: zoz0h        ! zref/rough(heat)
+      real              :: lnzoz0h      ! ln[zref/rough(heat)]
       real              :: rib          ! Bulk richardson number.
       real              :: c3           ! coefficient to find the other stars
       !----- Local variables --------------------------------------------------------------!
@@ -1464,7 +1468,8 @@ module canopy_struct_dynamics
       real              :: ee           ! (z/z0)^1/3 -1. for eqn. 20 w/o assuming z/z0 >> 1.
       !----- Local variables, used by OD95. -----------------------------------------------!
       real              :: zeta         ! stability parameter, roughly z/(Obukhov length).
-      real              :: zeta0        ! roughness/(Obukhov length).
+      real              :: zeta0m       ! roughness(momentum)/(Obukhov length).
+      real              :: zeta0h       ! roughness(heat)/(Obukhov length).
       !----- Aux. environment conditions. -------------------------------------------------!
       real              :: thetav_atm   ! Atmos. virtual potential temperature  [        K]
       real              :: thetav_can   ! Canopy air virtual pot. temperature   [        K]
@@ -1475,8 +1480,10 @@ module canopy_struct_dynamics
       !----- Finding the variables common to both methods. --------------------------------!
       thetav_atm = theta_atm * (1. + epim1 * shv_atm)
       thetav_can = theta_can * (1. + epim1 * shv_can)
-      zoz0       = (zref-d0)/rough
-      lnzoz0     = log(zoz0)
+      zoz0m      = (zref-d0)/rough
+      lnzoz0m    = log(zoz0m)
+      zoz0h      = z0moz0h * zoz0m
+      lnzoz0h    = log(zoz0h)
       rib        = 2.0 * grav * (zref-d0-rough) * (thetav_atm-thetav_can)                  &
                  / ( (thetav_atm+thetav_can) * uref * uref)
       stable     = thetav_atm >= thetav_can
@@ -1489,7 +1496,7 @@ module canopy_struct_dynamics
       case (1)
 
          !----- Compute the a-square factor and the coefficient to find theta*. -----------!
-         a2   = vonk * vonk / (lnzoz0 * lnzoz0)
+         a2   = vonk * vonk / (lnzoz0m * lnzoz0m)
          c1   = a2 * uref
 
          if (stable) then
@@ -1504,7 +1511,7 @@ module canopy_struct_dynamics
             !     Unstable case.  The only difference from the original method is that we  !
             ! no longer assume z >> z0, so the "c" coefficient uses the full z/z0 term.    !
             !------------------------------------------------------------------------------!
-            ee = cbrt(zoz0) - 1.
+            ee = cbrt(zoz0m) - 1.
             c2 = bl79 * a2 * ee * sqrt(ee * abs(rib))
             cm = csm * c2
             ch = csh * c2
@@ -1537,23 +1544,23 @@ module canopy_struct_dynamics
          !----- We now compute the stability correction functions. ------------------------!
          if (stable) then
             !----- Stable case. -----------------------------------------------------------!
-            zeta  = rib * lnzoz0 / (1.1 - 5.0 * rib)
+            zeta  = rib * lnzoz0m / (1.1 - 5.0 * rib)
          else
             !----- Unstable case. ---------------------------------------------------------!
-            zeta = rib * lnzoz0
+            zeta = rib * lnzoz0m
          end if
-         zeta0 = rough * zeta / (zref - d0)
+         zeta0m = rough * zeta / (zref - d0)
 
          !----- Finding the equivalent to fm, which is an output variable. ----------------!
-         fm = lnzoz0 * lnzoz0 / ( (lnzoz0 - psim(zeta,stable) + psim(zeta0,stable))        &
-                                * (lnzoz0 - psim(zeta,stable) + psim(zeta0,stable) ))
+         fm = lnzoz0m * lnzoz0m / ( (lnzoz0m - psim(zeta,stable) + psim(zeta0m,stable))    &
+                                  * (lnzoz0m - psim(zeta,stable) + psim(zeta0m,stable) ))
 
          !----- Finding ustar, making sure it is not too small. ---------------------------!
          ustar = max (ustmin, vonk * uref                                                  &
-                            / (lnzoz0 - psim(zeta,stable) + psim(zeta0,stable)))
+                            / (lnzoz0m - psim(zeta,stable) + psim(zeta0m,stable)))
 
          !----- Finding the coefficient to scale the other stars. -------------------------!
-         c3    = vonk / (tprandtl * (lnzoz0 - psih(zeta,stable) + psih(zeta0,stable)))
+         c3    = vonk / (tprandtl * (lnzoz0m - psih(zeta,stable) + psih(zeta0m,stable)))
 
          !---------------------------------------------------------------------------------!
 
@@ -1573,19 +1580,20 @@ module canopy_struct_dynamics
          rib = min(rib,ribmaxbh91)
          
          !----- We now compute the stability correction functions. ------------------------!
-         zeta  = zoobukhov(rib,zref-d0,rough,zoz0,lnzoz0,stable)
-         zeta0 = rough * zeta / (zref - d0)
+         zeta   = zoobukhov(rib,zref-d0,rough,zoz0m,lnzoz0m,zoz0h,lnzoz0h,stable)
+         zeta0m = rough * zeta / (zref-d0)
+         zeta0h = z0hoz0m * zeta0m
 
          !----- Finding the equivalent to fm, which is an output variable. ----------------!
-         fm = lnzoz0 * lnzoz0 / ( (lnzoz0 - psim(zeta,stable) + psim(zeta0,stable))        &
-                                * (lnzoz0 - psim(zeta,stable) + psim(zeta0,stable)) )
+         fm = lnzoz0m * lnzoz0m / ( (lnzoz0m - psim(zeta,stable) + psim(zeta0m,stable))    &
+                                  * (lnzoz0m - psim(zeta,stable) + psim(zeta0m,stable)) )
 
          !----- Finding ustar, making sure it is not too small. ---------------------------!
          ustar = max (ustmin, vonk * uref                                                  &
-                            / (lnzoz0 - psim(zeta,stable) + psim(zeta0,stable)))
+                            / (lnzoz0m - psim(zeta,stable) + psim(zeta0m,stable)))
 
          !----- Finding the coefficient to scale the other stars. -------------------------!
-         c3    = vonk / (tprandtl * (lnzoz0 - psih(zeta,stable) + psih(zeta0,stable)))
+         c3    = vonk / (tprandtl * (lnzoz0h - psih(zeta,stable) + psih(zeta0h,stable)))
 
          !---------------------------------------------------------------------------------!
       end select
@@ -1650,6 +1658,8 @@ module canopy_struct_dynamics
                                  , ribmaxod958   & ! intent(in)
                                  , ribmaxbh918   & ! intent(in)
                                  , tprandtl8     & ! intent(in)
+                                 , z0moz0h8      & ! intent(in)
+                                 , z0hoz0m8      & ! intent(in)
                                  , psim8         & ! function
                                  , psih8         & ! function
                                  , zoobukhov8    ! ! function
@@ -1675,8 +1685,10 @@ module canopy_struct_dynamics
       real(kind=8), intent(out) :: fm           ! Stability parameter for momentum
       !----- Local variables, used by L79. ------------------------------------------------!
       logical           :: stable       ! Stable state
-      real(kind=8)      :: zoz0         ! zref/rough
-      real(kind=8)      :: lnzoz0       ! ln(zref/rough)
+      real(kind=8)      :: zoz0m        ! zref/rough(momentum)
+      real(kind=8)      :: lnzoz0m      ! ln[zref/rough(momentum)]
+      real(kind=8)      :: zoz0h        ! zref/rough(heat)
+      real(kind=8)      :: lnzoz0h      ! ln[zref/rough(heat)]
       real(kind=8)      :: rib          ! Bulk richardson number.
       real(kind=8)      :: c3           ! coefficient to find the other stars
       !----- Local variables --------------------------------------------------------------!
@@ -1689,7 +1701,8 @@ module canopy_struct_dynamics
       real(kind=8)      :: ee           ! (z/z0)^1/3 -1. for eqn. 20 w/o assuming z/z0 >> 1.
       !----- Local variables, used by OD95. -----------------------------------------------!
       real(kind=8)      :: zeta         ! stability parameter, roughly z/(Obukhov length).
-      real(kind=8)      :: zeta0        ! roughness/(Obukhov length).
+      real(kind=8)      :: zeta0m       ! roughness(momentum)/(Obukhov length).
+      real(kind=8)      :: zeta0h       ! roughness(heat)/(Obukhov length).
       !----- Aux. environment conditions. -------------------------------------------------!
       real(kind=8)      :: thetav_atm   ! Atmos. virtual potential temperature  [        K]
       real(kind=8)      :: thetav_can   ! Canopy air virtual pot. temperature   [        K]
@@ -1700,8 +1713,10 @@ module canopy_struct_dynamics
       !----- Finding the variables common to both methods. --------------------------------!
       thetav_atm = theta_atm * (1.d0 + epim18 * shv_atm)
       thetav_can = theta_can * (1.d0 + epim18 * shv_can)
-      zoz0       = (zref-d0)/rough
-      lnzoz0     = log(zoz0)
+      zoz0m      = (zref-d0)/rough
+      lnzoz0m    = log(zoz0m)
+      zoz0h      = z0moz0h8 * zoz0m
+      lnzoz0h    = log(zoz0h)
       rib        = 2.d0 * grav8 * (zref-d0-rough) * (thetav_atm-thetav_can)                &
                  / ( (thetav_atm+thetav_can) * uref * uref)
       stable     = thetav_atm >= thetav_can
@@ -1714,7 +1729,7 @@ module canopy_struct_dynamics
       case (1)
 
          !----- Compute the a-square factor and the coefficient to find theta*. -----------!
-         a2   = vonk8 * vonk8 / (lnzoz0 * lnzoz0)
+         a2   = vonk8 * vonk8 / (lnzoz0m * lnzoz0m)
          c1   = a2 * uref
 
          if (stable) then
@@ -1729,7 +1744,7 @@ module canopy_struct_dynamics
             !     Unstable case.  The only difference from the original method is that we  !
             ! no longer assume z >> z0, so the "c" coefficient uses the full z/z0 term.    !
             !------------------------------------------------------------------------------!
-            ee = cbrt8(zoz0) - 1.d0
+            ee = cbrt8(zoz0m) - 1.d0
             c2 = bl798 * a2 * ee * sqrt(ee * abs(rib))
             cm = csm8 * c2
             ch = csh8 * c2
@@ -1762,24 +1777,24 @@ module canopy_struct_dynamics
          !----- We now compute the stability correction functions. ------------------------!
          if (stable) then
             !----- Stable case. -----------------------------------------------------------!
-            zeta  = rib * lnzoz0 / (1.1d0 - 5.0d0 * rib)
+            zeta  = rib * lnzoz0m / (1.1d0 - 5.0d0 * rib)
          else
             !----- Unstable case. ---------------------------------------------------------!
-            zeta  = rib * lnzoz0
+            zeta  = rib * lnzoz0m
          end if
 
-         zeta0 = rough * zeta / (zref - d0)
+         zeta0m = rough * zeta / (zref - d0)
 
          !----- Finding the equivalent to fm, which is an output variable. ----------------!
-         fm = lnzoz0 * lnzoz0 / ( (lnzoz0 - psim8(zeta,stable) + psim8(zeta0,stable))      &
-                                * (lnzoz0 - psim8(zeta,stable) + psim8(zeta0,stable)) )
+         fm = lnzoz0m * lnzoz0m / ( (lnzoz0m - psim8(zeta,stable) + psim8(zeta0m,stable))  &
+                                  * (lnzoz0m - psim8(zeta,stable) + psim8(zeta0m,stable)) )
 
          !----- Finding ustar, making sure it is not too small. ---------------------------!
          ustar = max (ustmin8, vonk8 * uref                                                &
-                             / (lnzoz0 - psim8(zeta,stable) + psim8(zeta0,stable)))
+                             / (lnzoz0m - psim8(zeta,stable) + psim8(zeta0m,stable)))
 
          !----- Finding the coefficient to scale the other stars. -------------------------!
-         c3    = vonk8 / (tprandtl8 * (lnzoz0 - psih8(zeta,stable) + psih8(zeta0,stable)))
+         c3    = vonk8 / (tprandtl8 * (lnzoz0m - psih8(zeta,stable) + psih8(zeta0m,stable)))
 
          !---------------------------------------------------------------------------------!
 
@@ -1799,19 +1814,21 @@ module canopy_struct_dynamics
          rib = min(rib,ribmaxbh918)
 
          !----- We now compute the stability correction functions. ------------------------!
-         zeta  = zoobukhov8(rib,zref-d0,rough,zoz0,lnzoz0,stable)
-         zeta0 = rough * zeta / (zref - d0)
+         zeta   = zoobukhov8(rib,zref-d0,rough,zoz0m,lnzoz0m,zoz0h,lnzoz0h,stable)
+         zeta0m = rough * zeta / (zref - d0)
+         zeta0h = z0hoz0m8 * zeta0m
 
          !----- Finding the equivalent to fm, which is an output variable. ----------------!
-         fm = lnzoz0 * lnzoz0 / ( (lnzoz0 - psim8(zeta,stable) + psim8(zeta0,stable))      &
-                                * (lnzoz0 - psim8(zeta,stable) + psim8(zeta0,stable)) )
+         fm = lnzoz0m * lnzoz0m / ( (lnzoz0m - psim8(zeta,stable) + psim8(zeta0m,stable))  &
+                                  * (lnzoz0m - psim8(zeta,stable) + psim8(zeta0m,stable)) )
 
          !----- Finding ustar, making sure it is not too small. ---------------------------!
          ustar = max (ustmin8, vonk8 * uref                                                &
-                             / (lnzoz0 - psim8(zeta,stable) + psim8(zeta0,stable)))
+                             / (lnzoz0m - psim8(zeta,stable) + psim8(zeta0m,stable)))
 
          !----- Finding the coefficient to scale the other stars. -------------------------!
-         c3    = vonk8 / (tprandtl8 * (lnzoz0 - psih8(zeta,stable) + psih8(zeta0,stable)))
+         c3    = vonk8                                                                     &
+               / (tprandtl8 * (lnzoz0h - psih8(zeta,stable) + psih8(zeta0h,stable)))
 
          !---------------------------------------------------------------------------------!
       end select

@@ -123,7 +123,6 @@ module mem_aerad
   logical :: do_below
   real :: sl_aerad
   integer :: ir_aerad
-  integer :: ir_above_aerad
   !INTEGER :: isl_aerad
   integer :: iaerad1
  

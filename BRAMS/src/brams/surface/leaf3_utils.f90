@@ -26,6 +26,7 @@ subroutine leaf_stars(theta_atm,enthalpy_atm,shv_atm,rvap_atm,co2_atm,theta_can 
    use mem_leaf  , only : istar      ! ! intent(in)
    use rconstants, only : grav       & ! intent(in)
                         , vonk       & ! intent(in)
+                        , epim1      & ! intent(in)
                         , halfpi     ! ! intent(in)
    use leaf_coms , only : ustmin     & ! intent(in)
                         , bl79       & ! intent(in)
@@ -34,10 +35,12 @@ subroutine leaf_stars(theta_atm,enthalpy_atm,shv_atm,rvap_atm,co2_atm,theta_can 
                         , dl79       & ! intent(in)
                         , ribmaxod95 & ! intent(in)
                         , ribmaxbh91 & ! intent(in)
-                        , tprandtl   & ! intent(in)  
-                        , psim       & ! function    
-                        , psih       & ! function    
-                        , zoobukhov  ! ! function    
+                        , tprandtl   & ! intent(in)
+                        , z0moz0h    & ! intent(in)
+                        , z0hoz0m    & ! intent(in)
+                        , psim       & ! function
+                        , psih       & ! function
+                        , zoobukhov  ! ! function
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    real, intent(in)  :: theta_atm    ! Above canopy air pot. temperature        [        K]
@@ -63,8 +66,10 @@ subroutine leaf_stars(theta_atm,enthalpy_atm,shv_atm,rvap_atm,co2_atm,theta_can 
    real, intent(out) :: r_aer        ! Aerodynamic resistance                   [      s/m]
    !----- Local variables, common to both models. -----------------------------------------!
    logical           :: stable       ! Stable state
-   real              :: zoz0         ! zref/rough
-   real              :: lnzoz0       ! ln(zref/rough)
+   real              :: zoz0m        ! zref/rough(momentum)
+   real              :: lnzoz0m      ! ln[zref/rough(momentum)]
+   real              :: zoz0h        ! zref/rough(heat)
+   real              :: lnzoz0h      ! ln[zref/rough(heat)]
    real              :: rib          ! Bulk richardson number.
    real              :: c3           ! coefficient to find the other stars
    real              :: delz         !
@@ -79,19 +84,28 @@ subroutine leaf_stars(theta_atm,enthalpy_atm,shv_atm,rvap_atm,co2_atm,theta_can 
    real              :: cm           ! c coefficient times |Rib|^1/2 for momentum.
    real              :: ch           ! c coefficient times |Rib|^1/2 for heat.
    real              :: ee           ! (z/z0)^1/3 -1. for eqn. 20 w/o assuming z/z0 >> 1.
-   !----- Local variables, used by OD95. --------------------------------------------------!
+   !----- Local variables, used by OD95 and/or BH91. --------------------------------------!
    real              :: zeta         ! stability parameter, roughly z/(Obukhov length).
-   real              :: zeta0        ! roughness/(Obukhov length).
+   real              :: zeta0m       ! roughness(momentum)/(Obukhov length).
+   real              :: zeta0h       ! roughness(heat)/(Obukhov length).
+   real              :: ribold       ! Bulk richardson number.
+   !----- Aux. environment conditions. ----------------------------------------------------!
+   real              :: thetav_atm   ! Atmos. virtual potential temperature     [        K]
+   real              :: thetav_can   ! Canopy air virtual pot. temperature      [        K]
    !----- External functions. -------------------------------------------------------------!
-   real, external    :: cbrt
+   real, external    :: cbrt         ! Cubic root
    !---------------------------------------------------------------------------------------!
 
    !----- Finding the variables common to both methods. -----------------------------------!
-   zoz0   = zref/rough
-   lnzoz0 = log(zoz0)
-   rib    = 2.0 * grav * zref * (theta_atm-theta_can)                                      &
-          / ( (theta_atm+theta_can) * uref * uref)
-   stable = theta_atm >= theta_can
+   thetav_atm = theta_atm * (1. + epim1 * shv_atm)
+   thetav_can = theta_can * (1. + epim1 * shv_can)
+   zoz0m      = zref/rough
+   lnzoz0m    = log(zoz0m)
+   zoz0h      = z0moz0h * zoz0m
+   lnzoz0h    = log(zoz0h)
+   rib        = 2.0 * grav * zref * (thetav_atm-thetav_can)                                &
+              / ( (thetav_atm+thetav_can) * uref * uref)
+   stable     = thetav_atm >= thetav_can
 
    !---------------------------------------------------------------------------------------!
    !     Here we find u* and the coefficient to find the other stars based on the chosen   !
@@ -104,7 +118,7 @@ subroutine leaf_stars(theta_atm,enthalpy_atm,shv_atm,rvap_atm,co2_atm,theta_can 
       !------------------------------------------------------------------------------------!
 
       !----- Compute the a-square factor and the coefficient to find theta*. --------------!
-      a2   = (vonk / lnzoz0) ** 2.
+      a2   = (vonk / lnzoz0m) ** 2.
       c1   = a2 * uref
 
       if (stable) then
@@ -119,7 +133,7 @@ subroutine leaf_stars(theta_atm,enthalpy_atm,shv_atm,rvap_atm,co2_atm,theta_can 
          !     Unstable case.  The only difference from the original method is that we no  !
          ! longer assume z >> z0, so the "c" coefficient uses the full z/z0 term.          !
          !---------------------------------------------------------------------------------!
-         ee = cbrt(zoz0) - 1.
+         ee = cbrt(zoz0m) - 1.
          c2 = bl79 * a2 * ee * sqrt(ee * abs(rib))
          cm = csm * c2
          ch = csh * c2
@@ -153,26 +167,26 @@ subroutine leaf_stars(theta_atm,enthalpy_atm,shv_atm,rvap_atm,co2_atm,theta_can 
       !----- We now compute the stability correction functions. ---------------------------!
       if (stable) then
          !----- Stable case. --------------------------------------------------------------!
-         zeta  = rib * lnzoz0 / (1.1 - 5.0 * rib)
+         zeta  = rib * lnzoz0m / (1.1 - 5.0 * rib)
       else
          !----- Unstable case. ------------------------------------------------------------!
-         zeta = rib * lnzoz0
+         zeta = rib * lnzoz0m
       end if
-      zeta0 = rough * zeta / zref
+      zeta0m = rough * zeta / zref
 
       !----- Finding the aerodynamic resistance similarly to L79. -------------------------!
-      r_aer = tprandtl * (lnzoz0 - psih(zeta,stable) + psih(zeta0,stable))                 &
-                       * (lnzoz0 - psim(zeta,stable) + psim(zeta0,stable))                 &
+      r_aer = tprandtl * (lnzoz0m - psih(zeta,stable) + psih(zeta0m,stable))               &
+                       * (lnzoz0m - psim(zeta,stable) + psim(zeta0m,stable))               &
                        / (vonk * vonk * uref)
 
       !----- Finding ustar, making sure it is not too small. ------------------------------!
       ustar = max (ustmin, vonk * uref                                                     &
-                         / (lnzoz0 - psim(zeta,stable) + psim(zeta0,stable)))
+                         / (lnzoz0m - psim(zeta,stable) + psim(zeta0m,stable)))
 
       !----- Finding the coefficient to scale the other stars. ----------------------------!
-      c3    = vonk / (tprandtl * (lnzoz0 - psih(zeta,stable) + psih(zeta0,stable)))
+      c3    = vonk / (tprandtl * (lnzoz0m - psih(zeta,stable) + psih(zeta0m,stable)))
 
-         !---------------------------------------------------------------------------------!
+      !------------------------------------------------------------------------------------!
 
    case (3)
       !------------------------------------------------------------------------------------!
@@ -183,26 +197,31 @@ subroutine leaf_stars(theta_atm,enthalpy_atm,shv_atm,rvap_atm,co2_atm,theta_can 
       !    oft-used approximation (-beta*zeta) can cause poor ventilation of the stable    !
       !    layer, leading to decoupling between the atmosphere and the canopy air space    !
       !    and excessive cooling.                                                          !
+      ! 3. Here we distinguish the fluxes between roughness for momentum and for heat, as  !
+      !    BH91 did.                                                                       !
       !------------------------------------------------------------------------------------!
 
       !----- Make sure that the bulk Richardson number is not above ribmax. ---------------!
-      rib = min(rib,ribmaxbh91)
-      
+      ribold = rib
+      rib    = min(rib,ribmaxbh91)
+
+
       !----- We now compute the stability correction functions. ---------------------------!
-      zeta  = zoobukhov(rib,zref,rough,zoz0,lnzoz0,stable)
-      zeta0 = rough * zeta / zref
+      zeta  = zoobukhov(rib,zref,rough,zoz0m,lnzoz0m,zoz0h,lnzoz0h,stable)
+      zeta0m = rough * zeta / zref
+      zeta0h = z0hoz0m * zeta0m
 
       !----- Finding the aerodynamic resistance similarly to L79. -------------------------!
-      r_aer = tprandtl * (lnzoz0 - psih(zeta,stable) + psih(zeta0,stable))                 &
-                       * (lnzoz0 - psim(zeta,stable) + psim(zeta0,stable))                 &
+      r_aer = tprandtl * (lnzoz0h - psih(zeta,stable) + psih(zeta0h,stable))               &
+                       * (lnzoz0m - psim(zeta,stable) + psim(zeta0m,stable))               &
                        / (vonk * vonk * uref)
 
       !----- Finding ustar, making sure it is not too small. ------------------------------!
       ustar = max (ustmin, vonk * uref                                                     &
-                         / (lnzoz0 - psim(zeta,stable) + psim(zeta0,stable)))
+                         / (lnzoz0m - psim(zeta,stable) + psim(zeta0m,stable)))
 
       !----- Finding the coefficient to scale the other stars. ----------------------------!
-      c3    = vonk / (tprandtl * (lnzoz0 - psih(zeta,stable) + psih(zeta0,stable)))
+      c3    = vonk / (tprandtl * (lnzoz0h - psih(zeta,stable) + psih(zeta0h,stable)))
 
       !------------------------------------------------------------------------------------!
 
@@ -305,50 +324,85 @@ end subroutine sfclmcv
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine grndvap(soil_energy,soil_water,soil_text,sfcw_energy_int  &
-   ,sfcwater_nlev,ground_rsat,ground_rvap,can_rvap,prsg)
+!     This subroutine computes the ground properties.  By ground we mean the top soil      !
+! layer if no temporary surface water/snow exists, or the top temporary surface water/snow !
+! layer if it exists.                                                                      !
+!------------------------------------------------------------------------------------------!
+subroutine leaf_grndvap(soil_energy,soil_water,soil_text,sfcw_energy_int,sfcwater_nlev     &
+                       ,can_rvap,can_prss,ground_rsat,ground_rvap,ground_temp,ground_fliq)
 
-  use leaf_coms
-  use rconstants
-  use therm_lib, only: rslif,qwtk,qtk
+   use leaf_coms  , only : slcpd       & ! intent(in)
+                         , slpots      & ! intent(in)
+                         , slmsts      & ! intent(in)
+                         , slbs        & ! intent(in)
+                         , sfldcap     ! ! intent(in)
+   use rconstants , only : gorh2o      & ! intent(in)
+                         , pi1         & ! intent(in)
+                         , wdns        ! ! intent(in)
+   use therm_lib  , only : rslif       & ! function
+                         , qwtk        & ! function
+                         , qtk         ! ! function
 
-  implicit none
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   real, intent(in)  :: soil_energy
+   real, intent(in)  :: soil_water
+   real, intent(in)  :: soil_text
+   real, intent(in)  :: sfcw_energy_int
+   real, intent(in)  :: sfcwater_nlev
+   real, intent(in)  :: can_rvap
+   real, intent(in)  :: can_prss
+   real, intent(out) :: ground_rsat
+   real, intent(out) :: ground_rvap
+   real, intent(out) :: ground_temp
+   real, intent(out) :: ground_fliq
+   !----- Local variables. ----------------------------------------------------------------!
+   integer           :: ksn
+   integer           :: nsoil
+   real              :: slpotvn
+   real              :: alpha
+   real              :: beta
+   !---------------------------------------------------------------------------------------!
 
-  real :: soil_energy,soil_water,soil_text,sfcw_energy_int
-  real :: sfcwater_nlev,ground_rsat,ground_rvap,can_rvap,prsg
 
-  integer :: ksn,nsoil
-
-  real :: slpotvn,alpha,beta
+   !----- Set the number of temporary surface water (or snow) layers. ---------------------!
+   ksn = nint(sfcwater_nlev)
 
 
-  ksn = nint(sfcwater_nlev)
+   !---------------------------------------------------------------------------------------!
+   !    Ground_rsat is the saturation mixing ratio of the top soil/snow surface and is     !
+   ! used for dew formation and snow evaporation.  
+   !---------------------------------------------------------------------------------------!
 
-  ! ground_rsat(i,j) is the saturation mixing ratio of the top soil/snow surface
-  ! and is used for dew formation and snow evaporation.
+   if (ksn > 0 .and. sfcw_energy_int > 0.) then
+      
+      !------------------------------------------------------------------------------------!
+      !    With snowcover, ground_rvap is assumed to be the same as rsat.                  !
+      !------------------------------------------------------------------------------------!
+      call qtk(sfcw_energy_int,ground_temp,ground_fliq)
+      ground_rsat = rslif(can_prss,ground_temp)
+      ground_rvap = ground_rsat
+   else
 
-  if (ksn > 0 .and. sfcw_energy_int > 0.) then
-     call qtk(sfcw_energy_int,ground_temp,ground_fliq)
-     ground_rsat = rslif(prsg,ground_temp)
-  else
+      !------------------------------------------------------------------------------------!
+      !    Without snowcover, ground_rvap is the effective saturation mixing ratio of soil !
+      ! and is used for soil evaporation.  First, compute the "alpha" term or soil         !
+      ! "relative humidity" and the "beta" term.                                           !
+      !------------------------------------------------------------------------------------!
 
-  ! Without snowcover, ground_rvap is the effective saturation mixing
-  ! ratio of soil and is used for soil evaporation.  First, compute the
-  ! "alpha" term or soil "relative humidity" and the "beta" term.
+      nsoil = nint(soil_text)
 
-     nsoil = nint(soil_text)
+      call qwtk(soil_energy,soil_water*wdns,slcpd(nsoil),ground_temp,ground_fliq)
+      ground_rsat = rslif(can_prss,ground_temp)
 
-     call qwtk(soil_energy,soil_water*wdns,slcpd(nsoil),ground_temp,ground_fliq)
-     ground_rsat = rslif(prsg,ground_temp)
+      slpotvn     = slpots(nsoil) * (slmsts(nsoil) / soil_water) ** slbs(nsoil)
+      alpha       = exp(gorh2o * slpotvn / ground_temp)
+      beta        = .25 * (1. - cos (min(1.,soil_water / sfldcap(nsoil)) * pi1)) ** 2
+      ground_rvap = ground_rsat * alpha * beta + (1. - beta) * can_rvap
+   end if
 
-     slpotvn = slpots(nsoil) * (slmsts(nsoil) / soil_water) ** slbs(nsoil)
-     alpha = exp(gorh2o * slpotvn / ground_temp)
-     beta = .25 * (1. - cos (min(1.,soil_water / sfldcap(nsoil)) * pi1)) ** 2
-     ground_rvap = ground_rsat * alpha * beta + (1. - beta) * can_rvap
-  end if
-
-  return
-end subroutine grndvap
+   return
+end subroutine leaf_grndvap
 !==========================================================================================!
 !==========================================================================================!
 
@@ -366,9 +420,10 @@ subroutine leaf_bcond(m2,m3,mzg,mzs,npat,jdim,soil_water,sfcwater_mass,soil_ener
                      ,sfcwater_energy,soil_text,sfcwater_depth,ustar,tstar,rstar,cstar     &
                      ,veg_albedo,veg_fracarea,veg_lai,veg_tai,veg_rough,veg_height         &
                      ,patch_area,patch_rough,patch_wetind,leaf_class,soil_rough            &
-                     ,sfcwater_nlev,stom_resist,ground_rsat,ground_rvap,veg_water          &
-                     ,veg_hcap,veg_energy,can_prss,can_theta,can_rvap,can_co2,sensible     &
-                     ,evap,transp,gpp,plresp,resphet,veg_ndvip,veg_ndvic,veg_ndvif)
+                     ,sfcwater_nlev,stom_resist,ground_rsat,ground_rvap,ground_temp        &
+                     ,ground_fliq,veg_water,veg_hcap,veg_energy,can_prss,can_theta         &
+                     ,can_rvap,can_co2,sensible,evap,transp,gpp,plresp,resphet,veg_ndvip   &
+                     ,veg_ndvic,veg_ndvif)
 
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
@@ -382,6 +437,7 @@ subroutine leaf_bcond(m2,m3,mzg,mzs,npat,jdim,soil_water,sfcwater_mass,soil_ener
    real, dimension(m2,m3,npat)    , intent(inout) :: patch_area,patch_rough,patch_wetind
    real, dimension(m2,m3,npat)    , intent(inout) :: leaf_class,soil_rough,sfcwater_nlev
    real, dimension(m2,m3,npat)    , intent(inout) :: stom_resist,ground_rsat,ground_rvap
+   real, dimension(m2,m3,npat)    , intent(inout) :: ground_temp,ground_fliq
    real, dimension(m2,m3,npat)    , intent(inout) :: veg_water,veg_energy,veg_hcap
    real, dimension(m2,m3,npat)    , intent(inout) :: can_prss,can_theta,can_rvap,can_co2
    real, dimension(m2,m3,npat)    , intent(inout) :: sensible,evap,transp
@@ -411,6 +467,8 @@ subroutine leaf_bcond(m2,m3,mzg,mzs,npat,jdim,soil_water,sfcwater_mass,soil_ener
          stom_resist    (1,j,ipat) = stom_resist      (2,j,ipat)
          ground_rsat    (1,j,ipat) = ground_rsat      (2,j,ipat)
          ground_rvap    (1,j,ipat) = ground_rvap      (2,j,ipat)
+         ground_temp    (1,j,ipat) = ground_temp      (2,j,ipat)
+         ground_fliq    (1,j,ipat) = ground_fliq      (2,j,ipat)
          veg_water      (1,j,ipat) = veg_water        (2,j,ipat)
          veg_hcap       (1,j,ipat) = veg_hcap         (2,j,ipat)
          veg_energy     (1,j,ipat) = veg_energy       (2,j,ipat)
@@ -447,6 +505,8 @@ subroutine leaf_bcond(m2,m3,mzg,mzs,npat,jdim,soil_water,sfcwater_mass,soil_ener
          stom_resist   (m2,j,ipat) = stom_resist   (m2-1,j,ipat)
          ground_rsat   (m2,j,ipat) = ground_rsat   (m2-1,j,ipat)
          ground_rvap   (m2,j,ipat) = ground_rvap   (m2-1,j,ipat)
+         ground_temp   (m2,j,ipat) = ground_temp   (m2-1,j,ipat)
+         ground_fliq   (m2,j,ipat) = ground_fliq   (m2-1,j,ipat)
          veg_water     (m2,j,ipat) = veg_water     (m2-1,j,ipat)
          veg_hcap      (m2,j,ipat) = veg_hcap      (m2-1,j,ipat)
          veg_energy    (m2,j,ipat) = veg_energy    (m2-1,j,ipat)
@@ -507,6 +567,8 @@ subroutine leaf_bcond(m2,m3,mzg,mzs,npat,jdim,soil_water,sfcwater_mass,soil_ener
             stom_resist    (i,1,ipat) = stom_resist      (i,2,ipat)
             ground_rsat    (i,1,ipat) = ground_rsat      (i,2,ipat)
             ground_rvap    (i,1,ipat) = ground_rvap      (i,2,ipat)
+            ground_temp    (i,1,ipat) = ground_temp      (i,2,ipat)
+            ground_fliq    (i,1,ipat) = ground_fliq      (i,2,ipat)
             veg_water      (i,1,ipat) = veg_water        (i,2,ipat)
             veg_hcap       (i,1,ipat) = veg_hcap         (i,2,ipat)
             veg_energy     (i,1,ipat) = veg_energy       (i,2,ipat)
@@ -543,6 +605,8 @@ subroutine leaf_bcond(m2,m3,mzg,mzs,npat,jdim,soil_water,sfcwater_mass,soil_ener
             stom_resist   (i,m3,ipat) = stom_resist   (i,m3-1,ipat)
             ground_rsat   (i,m3,ipat) = ground_rsat   (i,m3-1,ipat)
             ground_rvap   (i,m3,ipat) = ground_rvap   (i,m3-1,ipat)
+            ground_temp   (i,m3,ipat) = ground_temp   (i,m3-1,ipat)
+            ground_fliq   (i,m3,ipat) = ground_fliq   (i,m3-1,ipat)
             veg_water     (i,m3,ipat) = veg_water     (i,m3-1,ipat)
             veg_hcap      (i,m3,ipat) = veg_hcap      (i,m3-1,ipat)
             veg_energy    (i,m3,ipat) = veg_energy    (i,m3-1,ipat)
@@ -622,7 +686,7 @@ subroutine sfc_fields(m1,m2,m3,ia,iz,ja,jz,jd  &
          co2s2(i,j) = co2p(2,i,j)
          ups2(i,j) = (up(2,i-1,j) + up(2,i,j)) * .5
          vps2(i,j) = (vp(2,i,j-jd) + vp(2,i,j)) * .5
-         zts2(i,j) = zt(2) * rtgt(i,j)
+         zts2(i,j) = (zt(2)-zm(1)) * rtgt(i,j)
          pis2(i,j) = (pp(1,i,j) + pi0(1,i,j) + pp(2,i,j) + pi0(2,i,j)) * hcpi
          dens2(i,j) = (dn0(1,i,j) + dn0(2,i,j)) * .5
       enddo
@@ -731,16 +795,12 @@ subroutine sfc_pcp(nqparm,level,i,j,cuparm,micro)
       pcpgl  = pcpgl  * dtll
       qpcpgl = pcpgl  * cliq * (atm_temp - tsupercool)
       dpcpgl = pcpgl  * wdnsi
-      pcpgc  = dtlc_factor * pcpgl
-      qpcpgc = dtlc_factor * qpcpgl
 
    else
 
       pcpgl  = 0.
       qpcpgl = 0.
       dpcpgl = 0.
-      pcpgc  = 0.
-      qpcpgc = 0.
 
    endif
 
@@ -749,8 +809,6 @@ subroutine sfc_pcp(nqparm,level,i,j,cuparm,micro)
       pcpgl  = pcpgl  + dtll_factor * micro%pcpg(i,j)
       qpcpgl = qpcpgl + dtll_factor * micro%qpcpg(i,j)
       dpcpgl = dpcpgl + dtll_factor * micro%dpcpg(i,j)
-      pcpgc  = pcpgc  + dtlc_factor * dtll_factor * micro%pcpg(i,j)
-      qpcpgc = qpcpgc + dtlc_factor * dtll_factor * micro%qpcpg(i,j)
 
    endif
 
@@ -917,6 +975,15 @@ subroutine sfcrad(mzg,mzs,ip,soil_energy,soil_water,soil_text,sfcwater_energy   
    integer                                :: k,m,nsoil,nveg,ksn
    real                                   :: alb,vfc,fcpct,alg,rad,als,fractrans
    real                                   :: absg,algs,emv,emgs,gslong,vlong,alv
+   !----- Local constants. ----------------------------------------------------------------!
+   character(len=9)      , parameter   :: fmti='(a,1x,i6)'
+   character(len=13)     , parameter   :: fmtf='(a,1x,es12.5)'
+   character(len=3)      , parameter   :: fmtc='(a)'
+   character(len=9)      , parameter   :: fmtl='(a,1x,l1)'
+   character(len=9)      , parameter   :: fmth='(7(a,1x))'
+   character(len=23)     , parameter   :: fmts='(2(i5,1x),5(es12.5,1x))'
+   character(len=9)      , parameter   :: fmte='(5(a,1x))'
+   character(len=23)     , parameter   :: fmtw='(1(i5,1x),4(es12.5,1x))'
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
@@ -928,7 +995,7 @@ subroutine sfcrad(mzg,mzs,ip,soil_energy,soil_water,soil_text,sfcwater_energy   
    can_rhos     = idealdenssh(can_prss,can_temp,can_shv)
 
    if (ip == 1) then
-      !----- Combuting the albedo and upward longwave for water patches. ------------------!
+      !----- Compute the albedo and upward longwave for water patches. --------------------!
       if (cosz > .03) then
          alb = min(max(-.0139 + .0467 * tan(acos(cosz)),.03),.999)
          albedt = albedt + patch_area * alb
@@ -1030,6 +1097,63 @@ subroutine sfcrad(mzg,mzs,ip,soil_energy,soil_water,soil_text,sfcwater_energy   
       rlonggs_v = gslong * vf * emv
       rlonggs_a = gslong * vfc
       rlonga_a  = rlong  * (vf * (1. - emv) + vfc * vfc * (1. - emgs))
+      
+      !----- Sanity check. ----------------------------------------------------------------!
+      if (rlonga_v /= rlonga_v) then
+         write (unit=*,fmt=fmtc) '------------ Longwave radiation is screwed. ------------'
+         write (unit=*,fmt=fmti) ' - PATCH        = ',ip
+         write (unit=*,fmt=fmti) ' - LEAF_CLASS   = ',nveg
+         write (unit=*,fmt=fmti) ' - KSN          = ',ksn
+         write (unit=*,fmt=fmtc) ' '
+         write (unit=*,fmt=fmtf) ' - RLONGA_V     = ',rlonga_v
+         write (unit=*,fmt=fmtf) ' - RLONG        = ',rlong
+         write (unit=*,fmt=fmtf) ' - EMV          = ',emv
+         write (unit=*,fmt=fmtf) ' - VF           = ',vf
+         write (unit=*,fmt=fmtf) ' - VFC          = ',vfc
+         write (unit=*,fmt=fmtf) ' - EMGS         = ',emgs
+         write (unit=*,fmt=fmtc) ' '
+         write (unit=*,fmt=fmtf) ' - CAN_THETA    = ',can_theta
+         write (unit=*,fmt=fmtf) ' - CAN_RVAP     = ',can_rvap
+         write (unit=*,fmt=fmtf) ' - CAN_PRSS     = ',can_prss
+         write (unit=*,fmt=fmtf) ' - CAN_ENTHALPY = ',can_enthalpy
+         write (unit=*,fmt=fmtf) ' - CAN_TEMP     = ',can_temp
+         write (unit=*,fmt=fmtf) ' - CAN_RHOS     = ',can_rhos
+         write (unit=*,fmt=fmtc) ' '
+         write (unit=*,fmt=fmtf) ' - VEG_ENERGY   = ',veg_energy
+         write (unit=*,fmt=fmtf) ' - VEG_WATER    = ',veg_water
+         write (unit=*,fmt=fmtf) ' - VEG_HCAP     = ',veg_hcap
+         write (unit=*,fmt=fmtf) ' - VEG_TEMP     = ',veg_temp
+         write (unit=*,fmt=fmtf) ' - VEG_FLIQ     = ',veg_fliq
+         write (unit=*,fmt=fmtc) ' '
+         if (ip == 1) then
+            write (unit=*,fmt=fmtf) ' - SST_ENERGY   = ',soil_energy(mzg)
+            write (unit=*,fmt=fmtf) ' - SST_TEMP     = ',tempk(mzg)
+            write (unit=*,fmt=fmtf) ' - SST_FLIQ     = ',fracliq(mzg)
+         write (unit=*,fmt=fmtc) ' '
+         else
+            write (unit=*,fmt=fmth) '    K','NSOIL',' SOIL_ENERGY','  SOIL_WATER'         &
+                                                   ,'   SOIL_HCAP','   SOIL_TEMP'         &
+                                                   ,'   SOIL_FLIQ'
+            do k=1,mzg
+               nsoil = nint(soil_text(k))
+               write(unit=*,fmt=fmts) k,nsoil,soil_energy(k),soil_water(k),slcpd(nsoil)   &
+                                             ,tempk(k),fracliq(k)
+            end do
+            write (unit=*,fmt=fmtc) ' '
+            if (ksn > 0) then
+               write (unit=*,fmt=fmte) '    K',' SFCW_ENERGY','   SFCW_MASS'              &
+                                              ,'   SFCW_TEMP','   SFCW_FLIQ'
+               do k=1,mzg
+                  nsoil = nint(soil_text(k))
+                  write(unit=*,fmt=fmtw) k,sfcwater_energy(k),sfcwater_mass(k)            &
+                                          ,tempk(k+mzg),fracliq(k+mzg)
+               end do
+               write (unit=*,fmt=fmtc) ' '
+            end if
+         end if
+         write (unit=*,fmt=fmtc) '-----------------------------------------------------'
+         
+      end if
 
       !----- Adding urban contribution if running TEB. ------------------------------------!
       if (teb_spm==1) then

@@ -120,7 +120,8 @@ subroutine NAMEOUT
 ! mass:
   write(6,298) IEXEV,IMASSFLX,IBRUVAIS,IBOTFLX
 ! ED2:
-  write(6,205)LONRAD,IMONTHA,IDATEA,IYEARA,ITIMEA,ISFCL,ISTAR
+  write(6,205)LONRAD,IMONTHA,IDATEA,IYEARA,ITIMEA
+  write(6,297) ISFCL,DTLEAF,ISTAR
   write(6,299) IMONTHZ,IDATEZ,IYEARZ,ITIMEZ
 !MLO]
 
@@ -139,7 +140,8 @@ subroutine NAMEOUT
 204 format('    JBND=',I4,'      LSFLG=',I4,'       NFPT=',I4  &
        ,'    IDELTAT=',I4,'    ISWRTYP=',I4,'    ILWRTYP=',I4,'    ICUMFDBK=',I4)
 205 format('  LONRAD=',I4,'    IMONTHA=',I4,'     IDATEA=',I4  &
-       ,'     IYEARA=',I4,'     ITIMEA=',I4,'      ISFCL=',I4,'      ISTAR=',I4)
+       ,'     IYEARA=',I4,'     ITIMEA=',I4)
+297 format('   ISFCL=',I4,'    DTLEAF=',E12.5,'      ISTAR=',I4)
 298 format('   IEXEV=',I4,'   IMASSFLX=',I4,'   IBRUVAIS=',I4,'   IBOTFLX=',I4)
 299 format('  IMONTHZ=',I4,'     IDATEZ=',I4  &
        ,'     IYEARZ=',I4,'     ITIMEZ=',I4)
@@ -182,7 +184,7 @@ subroutine NAMEOUT
   write(6,405)POLELAT,POLELON,DELTAZ
   write(6,406)DZRAT,DZMAX,SSPCT
   write(6,407)CPHAS,DISTIM,RADFRQ
-  write(6,409)WCLDBS
+  write(6,409)WCLDBS,DTLEAF
 
   write(6,410)PCTLCON,ZROUGH,ALBEDO
   write(6,411)SEATMP,DTHCON,DRTCON
@@ -204,7 +206,7 @@ subroutine NAMEOUT
        ,'          SSPCT=',E12.5)
 407 format('    CPHAS=',E12.5,'         DISTIM=',E12.5  &
        ,'         RADFRQ=',E12.5)
-409 format('   WCLDBS=',E12.5)
+409 format('   WCLDBS=',E12.5,'         DTLEAF=',E12.5)
 
 
 410 format('  PCTLCON=',E12.5,'         ZROUGH=',E12.5  &

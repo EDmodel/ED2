@@ -139,7 +139,6 @@ subroutine radiate(mzp,mxp,myp,ia,iz,ja,jz,mynum)
          call azero(mzp*mxp*myp, lwl)
          call azero(mzp*mxp*myp, iwl)
          call azero(    mxp*myp,rain)
-
          !------ Accumulating the precipitation -------------------------------------------!
          if (nnqparm(ngrid) > 0 ) then
             do icld=1,nclouds

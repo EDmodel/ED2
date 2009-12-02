@@ -96,11 +96,11 @@ USE_MPIWTIME=1
 #----------------- gcc and gfortran compiler on tormenta
 #CMACH=PC_LINUX1
 #F_COMP=mpif90
-#F_OPTS=-O2 #-march=native
-F_OPTS= -ffpe-trap=invalid,zero -fbounds-check
+F_OPTS=-O2 #-march=native
+#F_OPTS= -ffpe-trap=invalid,zero -fbounds-check
 #C_COMP=mpicc
-#C_OPTS=-O2 #-march=native
-C_OPTS= -ffpe-trap=invalid,zero -fbounds-check
+C_OPTS=-O2 #-march=native
+#C_OPTS= -ffpe-trap=invalid,zero -fbounds-check
 #USE_INTERF=
 #CPP_OPTS=
 #LOADER=$(F_COMP)

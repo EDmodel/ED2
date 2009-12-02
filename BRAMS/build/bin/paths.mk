@@ -2,7 +2,7 @@
 
 # RAMS root directory.
 #
-EDBRAMS_ROOT=/home/rknox/Models/Mainline/EDBRAMS
+#EDBRAMS_ROOT=/n/Moorcroft_Lab/Users/mlongo/EDBRAMS
 
 # MCD: EDBRAMS_ROOT=/n/Moorcroft_Lab/Users/mcd/EDBRAMS
 # KIM: EDBRAMS_ROOT=/n/Moorcroft_Lab/Users/kim/ed-code/EDBRAMS
@@ -11,6 +11,8 @@ EDBRAMS_ROOT=/home/rknox/Models/Mainline/EDBRAMS
 # MLO: EDBRAMS_ROOT=/n/Moorcroft_Lab/Users/mlongo/EDBRAMS
 
 #EDBRAMS_ROOT=/home/rknox/Models/Mainline/EDBRAMS
+
+EDBRAMS_ROOT=/home/rknox/Models/Mainline/EDBRAMS
 
 BRAMS_ROOT=$(EDBRAMS_ROOT)/BRAMS
 ED_ROOT=$(EDBRAMS_ROOT)/ED
