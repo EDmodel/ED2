@@ -558,7 +558,7 @@
                              !  4 - GEMTM submodel (not available)
                              !  5 - ED2 submodel
 
-   DTLEAF  = 9.              ! Nominal LEAF-3 time step.  This should be positive, and
+   DTLEAF  = 9.,             ! Nominal LEAF-3 time step.  This should be positive, and
                              !    less than 30 seconds. If DTLONG is less than DTLEAF, 
                              !    then LEAF-3 will use DTLONG instead.  This is also used
                              !    in coupled ED-BRAMS runs, to drive the simple lake model.
