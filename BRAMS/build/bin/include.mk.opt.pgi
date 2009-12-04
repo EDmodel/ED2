@@ -95,12 +95,12 @@ USE_MPIWTIME=1
 
 #----------------- gcc and gfortran compiler on tormenta
 #CMACH=PC_LINUX1
-#F_COMP=mpif90
-F_OPTS=-O2 #-march=native
-#F_OPTS= -ffpe-trap=invalid,zero -fbounds-check
-#C_COMP=mpicc
-C_OPTS=-O2 #-march=native
-#C_OPTS= -ffpe-trap=invalid,zero -fbounds-check
+F_COMP=mpif90
+#F_OPTS=-O2 #-march=native
+F_OPTS= -g -ffpe-trap=invalid,zero -fbounds-check
+C_COMP=mpicc
+#C_OPTS=-O2 #-march=native
+C_OPTS= -g -ffpe-trap=invalid,zero -fbounds-check
 #USE_INTERF=
 #CPP_OPTS=
 #LOADER=$(F_COMP)
@@ -116,9 +116,9 @@ CMACH=PC_LINUX1
 F_COMP=mpif90
 #F_OPTS= -fastsse
 #F_OPTS=-O2
-#F_OPTS= -g #-Ktrap=divz,fp,inv
-C_COMP=mpicc
-#C_OPTS= -g -Ktrap=divz,fp,inv
+#F_OPTS= -g -Ktrap=divz,fp,inv -Mbounds
+#C_COMP=mpicc
+#C_OPTS= -g -Ktrap=divz,fp,inv -Mbounds
 #C_OPTS=-O2
 #C_OPTS= -fastsse
 USE_INTERF=1

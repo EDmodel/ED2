@@ -209,10 +209,10 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,npat,ifm,can_theta,can_prss,glat,glon
          end if
       end if
 
-      write(unit=*,fmt='(a)') '/---------------------------------------------\'
+      write(unit=*,fmt='(a)') '|---------------------------------------------|'
       write(unit=*,fmt='(a)') '|  Homogenous Soil Moisture initialisation on |'
       write(unit=*,fmt='(a)') '|     points outside the input domain         |'
-      write(unit=*,fmt='(a)') '\---------------------------------------------/'
+      write(unit=*,fmt='(a)') '|---------------------------------------------|'
 
       hoploop: do ipat= 2,npat
          hojloop: do j = 1,n3
@@ -240,10 +240,10 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,npat,ifm,can_theta,can_prss,glat,glon
       end do hoploop
 
 
-      write(unit=*,fmt='(a)') '/------------------------------------------------\'
+      write(unit=*,fmt='(a)') '|------------------------------------------------|'
       write(unit=*,fmt='(a)') '|  Heterogeneous Soil Moisture initialisation on |'
       write(unit=*,fmt='(a)') '|     points within the input domain             |'
-      write(unit=*,fmt='(a)') '\------------------------------------------------/'
+      write(unit=*,fmt='(a)') '|------------------------------------------------|'
        
       !----- Defining the domain boundaries. ----------------------------------------------!
       inquire (file=TRIM(usdata_in)//'_ENT', exist=general)

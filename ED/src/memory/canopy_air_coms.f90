@@ -96,61 +96,61 @@ module canopy_air_coms
 
    !=======================================================================================!
    !=======================================================================================!
-   !      Constants for surface layer models.                                              !
+   !      Parameters for surface layer models.                                             !
    !---------------------------------------------------------------------------------------!
    !----- Louis (1979) model. -------------------------------------------------------------!
-   real, parameter   :: bl79     = 5.0    ! b prime parameter
-   real, parameter   :: csm      = 7.5    ! C* for momentum (eqn. 20, not co2 char. scale)
-   real, parameter   :: csh      = 5.0    ! C* for heat (eqn.20, not co2 char. scale)
-   real, parameter   :: dl79     = 5.0    ! ???
+   real   :: bl79        ! b prime parameter
+   real   :: csm         ! C* for momentum (eqn. 20, not co2 char. scale)
+   real   :: csh         ! C* for heat (eqn.20, not co2 char. scale)
+   real   :: dl79        ! ???
    !----- Oncley and Dudhia (1995) model. -------------------------------------------------!
-   real, parameter   :: bbeta      = 5.0           ! Beta 
-   real, parameter   :: ribmaxod95 = 0.20          ! Maximum bulk Richardson number
+   real   :: bbeta       ! Beta 
+   real   :: ribmaxod95  ! Maximum bulk Richardson number
    !----- Beljaars and Holtslag (1991) model. ---------------------------------------------!
-   real, parameter   :: abh91      = -0.70         ! -a from equation  (28) 
-   real, parameter   :: bbh91      = -0.75         ! -b from equation  (28)
-   real, parameter   :: cbh91      =  5.0          !  c from equations (28) and (32)
-   real, parameter   :: dbh91      =  0.35         !  d from equations (28) and (32)
-   real, parameter   :: ebh91      = -1.00         ! -a from equation  (32)
-   real, parameter   :: fbh91      = -twothirds    ! -b from equation  (32)
-   real, parameter   :: cod        = cbh91/dbh91   ! c/d
-   real, parameter   :: bcod       = bbh91 * cod   ! b*c/d
-   real, parameter   :: fcod       = fbh91 * cod   ! f*c/d
-   real, parameter   :: etf        = ebh91 * fbh91 ! e * f
-   real, parameter   :: z0moz0h    = 1.0           ! z0(M)/z0(h)
-   real, parameter   :: z0hoz0m    = 1. / z0moz0h  ! z0(M)/z0(h)
-   real, parameter   :: ribmaxbh91 = 6.00          ! Maximum bulk Richardson number
+   real   :: abh91       ! -a from equation  (28) 
+   real   :: bbh91       ! -b from equation  (28)
+   real   :: cbh91       !  c from equations (28) and (32)
+   real   :: dbh91       !  d from equations (28) and (32)
+   real   :: ebh91       ! -a from equation  (32)
+   real   :: fbh91       ! -b from equation  (32)
+   real   :: cod         ! c/d
+   real   :: bcod        ! b*c/d
+   real   :: fcod        ! f*c/d
+   real   :: etf         ! e * f
+   real   :: z0moz0h     ! z0(M)/z0(h)
+   real   :: z0hoz0m     ! z0(M)/z0(h)
+   real   :: ribmaxbh91  ! Maximum bulk Richardson number
    !----- Used by OD95 and BH91. ----------------------------------------------------------!
-   real, parameter   :: gamm       = 13.0          ! Gamma for momentum.
-   real, parameter   :: gamh       = 13.0          ! Gamma for heat.
-   real, parameter   :: tprandtl   = 1.00          ! Turbulent Prandtl number.
-   real, parameter   :: vkopr      = vonk/tprandtl ! Von Karman / Prandtl number
+   real   :: gamm        ! Gamma for momentum.
+   real   :: gamh        ! Gamma for heat.
+   real   :: tprandtl    ! Turbulent Prandtl number.
+   real   :: vkopr       ! Von Karman / Prandtl number
    !---------------------------------------------------------------------------------------!
 
    !----- Double precision of all these variables. ----------------------------------------!
-   real(kind=8), parameter   :: bl798       = dble(bl79      )
-   real(kind=8), parameter   :: csm8        = dble(csm       )
-   real(kind=8), parameter   :: csh8        = dble(csh       )
-   real(kind=8), parameter   :: dl798       = dble(dl79      )
-   real(kind=8), parameter   :: bbeta8      = dble(bbeta     )
-   real(kind=8), parameter   :: gamm8       = dble(gamm      )
-   real(kind=8), parameter   :: gamh8       = dble(gamh      )
-   real(kind=8), parameter   :: ribmaxod958 = dble(ribmaxod95)
-   real(kind=8), parameter   :: ribmaxbh918 = dble(ribmaxbh91)
-   real(kind=8), parameter   :: tprandtl8   = dble(tprandtl  )
-   real(kind=8), parameter   :: vkopr8      = dble(vkopr     )
-   real(kind=8), parameter   :: abh918      = dble(abh91     )
-   real(kind=8), parameter   :: bbh918      = dble(bbh91     )
-   real(kind=8), parameter   :: cbh918      = dble(cbh91     )
-   real(kind=8), parameter   :: dbh918      = dble(dbh91     )
-   real(kind=8), parameter   :: ebh918      = dble(ebh91     )
-   real(kind=8), parameter   :: fbh918      = dble(fbh91     )
-   real(kind=8), parameter   :: cod8        = dble(cod       )
-   real(kind=8), parameter   :: bcod8       = dble(bcod      )
-   real(kind=8), parameter   :: fcod8       = dble(fcod      )
-   real(kind=8), parameter   :: etf8        = dble(etf       )
-   real(kind=8), parameter   :: z0moz0h8    = dble(z0moz0h   )
-   real(kind=8), parameter   :: z0hoz0m8    = dble(z0hoz0m   )
+   real(kind=8)   :: bl798
+   real(kind=8)   :: csm8
+   real(kind=8)   :: csh8
+   real(kind=8)   :: dl798
+   real(kind=8)   :: bbeta8
+   real(kind=8)   :: gamm8
+   real(kind=8)   :: gamh8
+   real(kind=8)   :: ribmaxod958
+   real(kind=8)   :: ribmaxbh918
+   real(kind=8)   :: tprandtl8
+   real(kind=8)   :: vkopr8
+   real(kind=8)   :: abh918
+   real(kind=8)   :: bbh918
+   real(kind=8)   :: cbh918
+   real(kind=8)   :: dbh918
+   real(kind=8)   :: ebh918
+   real(kind=8)   :: fbh918
+   real(kind=8)   :: cod8
+   real(kind=8)   :: bcod8
+   real(kind=8)   :: fcod8
+   real(kind=8)   :: etf8
+   real(kind=8)   :: z0moz0h8
+   real(kind=8)   :: z0hoz0m8
    !=======================================================================================!
    !=======================================================================================!
 

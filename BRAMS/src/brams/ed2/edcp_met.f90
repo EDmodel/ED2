@@ -487,12 +487,36 @@ subroutine fill_site_precip(ifm,cgrid,m2,m3,ia,iz,ja,jz,pi0_mean,theta_mean)
    real, dimension(m2,m3)             :: conprr_mean,bulkprr_mean
    real                               :: totpcp, dtlsmi
    logical                            :: cumulus_on
+   logical, save                      :: first=.false.
    !---------------------------------------------------------------------------------------!
 
 
    !----- Some aliases.  ------------------------------------------------------------------!
    cumulus_on   = nnqparm(ifm) > 0
    dtlsmi = 1./dtlsm
+
+   if (first)then
+      do i=ia,iz
+         do j=ja,jz
+            ed_precip_g(ifm)%prev_aconpr(i,j)=cuparm_g(ifm)%aconpr(i,j)
+         end do
+      end do
+      if (bulk_on) then
+         do i=ia,iz
+            do j=ja,jz
+               totpcp = 0.
+               if (availcat(2)) totpcp = totpcp + micro_g(ifm)%accpr(i,j) ! Rain
+               if (availcat(3)) totpcp = totpcp + micro_g(ifm)%accpp(i,j) ! Pristine ice
+               if (availcat(4)) totpcp = totpcp + micro_g(ifm)%accps(i,j) ! Snow
+               if (availcat(5)) totpcp = totpcp + micro_g(ifm)%accpa(i,j) ! Aggregates
+               if (availcat(6)) totpcp = totpcp + micro_g(ifm)%accpg(i,j) ! Graupel
+               if (availcat(7)) totpcp = totpcp + micro_g(ifm)%accph(i,j) ! Hail
+               ed_precip_g(ifm)%prev_abulkpr(i,j) = totpcp
+            end do
+         end do
+      end if
+      first=.false.
+   end if
 
 
    !----- Zero the precipitation structures. ----------------------------------------------!
@@ -522,6 +546,7 @@ subroutine fill_site_precip(ifm,cgrid,m2,m3,ia,iz,ja,jz,pi0_mean,theta_mean)
       !------------------------------------------------------------------------------------!
       do i=ia,iz
          do j=ja,jz
+
             conprr_mean(i,j) = dtlsmi * ( cuparm_g(ifm)%aconpr(i,j)                        &
                                         - ed_precip_g(ifm)%prev_aconpr(i,j) )
             ed_precip_g(ifm)%prev_aconpr(i,j) = cuparm_g(ifm)%aconpr(i,j)
