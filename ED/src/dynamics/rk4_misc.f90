@@ -910,33 +910,34 @@ end subroutine redistribute_snow
 !     (rk4eps).                                                                            !
 !------------------------------------------------------------------------------------------!
 subroutine adjust_topsoil_properties(initp,hdid,csite,ipa)
-   use rk4_coms             , only : rk4patchtype     & ! structure
-                                   , rk4site          & ! intent(in)
-                                   , rk4eps           & ! intent(in)
-                                   , rk4min_sfcw_mass & ! intent(in)
-                                   , rk4min_can_shv   & ! intent(in)
-                                   , wcapcan          & ! intent(in)
-                                   , wcapcani         ! ! intent(in)
-   use ed_state_vars        , only : sitetype         & ! structure
-                                   , patchtype        ! ! structure
-   use consts_coms          , only : cice8            & ! intent(in)
-                                   , cliq8            & ! intent(in)
-                                   , alvl8            & ! intent(in)
-                                   , alvi8            & ! intent(in)
-                                   , alli8            & ! intent(in)
-                                   , t3ple8           & ! intent(in)
-                                   , wdns8            & ! intent(in)
-                                   , idns8            & ! intent(in)
-                                   , toodry8          & ! intent(in)
-                                   , tsupercool8      & ! intent(in)
-                                   , qliqt38          & ! intent(in)
-                                   , wdnsi8           ! ! intent(in)
-   use therm_lib8           , only : qwtk8            & ! subroutine
-                                   , qtk8             ! ! subroutine
-   use grid_coms            , only : nzg              ! ! intent(in)
-   use soil_coms            , only : soil8            & ! intent(in)
-                                   , dslzi8           & ! intent(in)
-                                   , dslz8            ! ! intent(in)
+   use rk4_coms             , only : rk4patchtype         & ! structure
+                                   , rk4site              & ! intent(in)
+                                   , rk4eps               & ! intent(in)
+                                   , rk4min_sfcwater_mass & ! intent(in)
+                                   , rk4min_sfcw_mass     & ! intent(in)
+                                   , rk4min_can_shv       & ! intent(in)
+                                   , wcapcan              & ! intent(in)
+                                   , wcapcani             ! ! intent(in)
+   use ed_state_vars        , only : sitetype             & ! structure
+                                   , patchtype            ! ! structure
+   use consts_coms          , only : cice8                & ! intent(in)
+                                   , cliq8                & ! intent(in)
+                                   , alvl8                & ! intent(in)
+                                   , alvi8                & ! intent(in)
+                                   , alli8                & ! intent(in)
+                                   , t3ple8               & ! intent(in)
+                                   , wdns8                & ! intent(in)
+                                   , idnsi8               & ! intent(in)
+                                   , toodry8              & ! intent(in)
+                                   , tsupercool8          & ! intent(in)
+                                   , qliqt38              & ! intent(in)
+                                   , wdnsi8               ! ! intent(in)
+   use therm_lib8           , only : qwtk8                & ! subroutine
+                                   , qtk8                 ! ! subroutine
+   use grid_coms            , only : nzg                  ! ! intent(in)
+   use soil_coms            , only : soil8                & ! intent(in)
+                                   , dslzi8               & ! intent(in)
+                                   , dslz8                ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(rk4patchtype)     , target     :: initp  ! Integration buffer
@@ -970,7 +971,7 @@ subroutine adjust_topsoil_properties(initp,hdid,csite,ipa)
    logical                             :: slightlymoist
    logical                             :: slightlydry
    !---------------------------------------------------------------------------------------!
-
+   return
    !----- Inverse of time increment -------------------------------------------------------!
    hdidi = 1.d0 / hdid
    
@@ -1212,6 +1213,8 @@ subroutine adjust_topsoil_properties(initp,hdid,csite,ipa)
 
          initp%can_shv         = initp%can_shv        - water_needed  * wcapcani
          initp%can_enthalpy    = initp%can_enthalpy   - energy_needed * wcapcani
+         
+         initp%avg_vapor_gc    = initp%avg_vapor_gc  - water_needed * hdidi
          return
 
       elseif (water_available > 0.d0) then
@@ -1234,6 +1237,7 @@ subroutine adjust_topsoil_properties(initp,hdid,csite,ipa)
 
          initp%can_shv         = initp%can_shv        - water_available  * wcapcani
          initp%can_enthalpy    = initp%can_enthalpy   - energy_available * wcapcani
+         initp%avg_vapor_gc    = initp%avg_vapor_gc   - water_available  * hdidi
 
          return
       end if
@@ -1253,7 +1257,7 @@ subroutine adjust_topsoil_properties(initp,hdid,csite,ipa)
                                      + (1.d0 - initp%soil_fracliq(kt)) * cice8             &
                                      * initp%soil_tempk(kt))
       depth_excess  = water_excess * ( initp%soil_fracliq(kt) * wdnsi8                     &
-                                     + (1.d0 - initp%soil_fracliq(kt)) * idns8)
+                                     + (1.d0 - initp%soil_fracliq(kt)) * idnsi8)
       !------------------------------------------------------------------------------------!
 
       if (initp%nlev_sfcwater > 0) then
@@ -1270,7 +1274,7 @@ subroutine adjust_topsoil_properties(initp,hdid,csite,ipa)
          initp%sfcwater_depth(1)  = initp%sfcwater_depth(1)  + depth_excess
 
          return
-      elseif (initp%virtual_water + water_excess > rk4min_sfcw_mass) then
+      elseif (initp%virtual_water + water_excess > rk4min_sfcwater_mass) then
          !---------------------------------------------------------------------------------!
          !     If the virtual layer will have some significant mass after adding the water !
          ! excess, we transfer the water to there.  It will likely become the new          !
@@ -1297,7 +1301,7 @@ subroutine adjust_topsoil_properties(initp,hdid,csite,ipa)
       ! the atmosphere.  This is a tiny amount and even if supersaturation occurs, it      !
       ! shouldn't be enough to cause trouble.                                              !
       !------------------------------------------------------------------------------------!
-      if (initp%virtual_water > 0.d0) then 
+      if (initp%virtual_water > rk4eps * rk4eps * rk4min_sfcwater_mass) then 
          call qtk8(initp%virtual_heat/initp%virtual_water,virtual_temp,virtual_fliq)
          initp%can_shv      = initp%can_shv      + initp%virtual_water  * wcapcani 
 
@@ -1308,6 +1312,15 @@ subroutine adjust_topsoil_properties(initp,hdid,csite,ipa)
          initp%avg_vapor_gc = initp%avg_vapor_gc + initp%virtual_water  * hdidi
          
          !----- Say goodbye to the virtual layer... ---------------------------------------!
+         initp%virtual_heat   = 0.d0
+         initp%virtual_water  = 0.d0
+         initp%virtual_depth  = 0.d0
+      elseif (initp%virtual_water > 0.d0) then
+         !---------------------------------------------------------------------------------!
+         !    The amount of water is so small that round-off errors are bound to become    !
+         ! more important than the error of not conserving energy and water.  Simply       !
+         ! extinguish the virtual layer.                                                   !
+         !---------------------------------------------------------------------------------!
          initp%virtual_heat   = 0.d0
          initp%virtual_water  = 0.d0
          initp%virtual_depth  = 0.d0
@@ -1380,6 +1393,7 @@ subroutine adjust_topsoil_properties(initp,hdid,csite,ipa)
          initp%soil_energy(kt) = initp%soil_energy(kt) - energy_excess * dslzi8(kt)
          initp%can_enthalpy    = initp%can_enthalpy    + energy_excess * wcapcani
          initp%can_shv         = initp%can_shv         + water_excess  * wcapcani
+         initp%avg_vapor_gc    = initp%avg_vapor_gc    + water_excess  * hdidi
       end if
    end if
 

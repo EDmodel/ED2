@@ -401,6 +401,8 @@ end subroutine init_can_rad_params
 !    This subroutine will assign some canopy air related parameters.                       !
 !------------------------------------------------------------------------------------------!
 subroutine init_can_air_params()
+   use consts_coms    , only : twothirds             & ! intent(in)
+                             , vonk                  ! ! intent(in)
    use canopy_air_coms, only : icanturb              & ! intent(in)
                              , isfclyrm              & ! intent(in)
                              , dry_veg_lwater        & ! intent(out)
@@ -468,7 +470,7 @@ subroutine init_can_air_params()
                              , etf8                  & ! intent(out)
                              , z0moz0h8              & ! intent(out)
                              , z0hoz0m8              ! ! intent(out)
-
+   implicit none
    !---------------------------------------------------------------------------------------!
    !    Minimum leaf water content to be considered.  Values smaller than this will be     !
    ! flushed to zero.  This value is in kg/[m2 plant], so it will be always scaled by      !
