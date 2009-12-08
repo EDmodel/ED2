@@ -553,3 +553,9 @@ ED/8lyrbuild
 ED/grassbuild
 ED/build/bin/mortality.mod
 BRAMS/build/bin/mortality.mod
+Ramspost/build/ramspost_6.2
+Ramspost/build/bin/an_header.mod
+Ramspost/build/bin/rconstants.mod
+Ramspost/build/bin/somevars.mod
+Ramspost/build/bin/therm_lib.mod
+Ramspost/build/bin/include_ramspost.mk

@@ -1,0 +1,18 @@
+To set up the ramspost with one file per time:
+
+1. Copy or create a link of your ramspost executable here.
+2. Edit 1eachtime-sigma.sh. There you must change at least two variables:
+   a. Variable ramspost by your link
+   b. Create a scratch directory where the files can be copied during the process and
+      set the directory at tmpfolder variable.
+3. Edit ramspost.inp. There you will set up the variables as if you were going to run the
+   normal ramspost. The only requirement is that FPREFIX must contain the absolute path. 
+   The output can be in a subdirectory (which must be created beforehand), and the binaries
+   will be output there and the template will access the files from the current directory.
+----------------------------------------
+   
+   
+Variable list: Many new variables are now available, and some of them were changed to 
+               reflect the new dimensions of some cumulus-related variables. There is
+               no guide for this, but all variables are declared at src/variables.f90
+               Also, the example ramspost.inp is a useful starting point.

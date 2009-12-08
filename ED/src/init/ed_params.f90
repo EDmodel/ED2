@@ -401,28 +401,76 @@ end subroutine init_can_rad_params
 !    This subroutine will assign some canopy air related parameters.                       !
 !------------------------------------------------------------------------------------------!
 subroutine init_can_air_params()
+   use consts_coms    , only : twothirds             & ! intent(in)
+                             , vonk                  ! ! intent(in)
    use canopy_air_coms, only : icanturb              & ! intent(in)
                              , isfclyrm              & ! intent(in)
-                             , dry_veg_lwater        & ! intent(out) 
-                             , fullveg_lwater        & ! intent(out) 
-                             , rb_inter              & ! intent(out) 
-                             , rb_slope              & ! intent(out) 
-                             , veg_height_min        & ! intent(out) 
-                             , minimum_canopy_depth  & ! intent(out) 
-                             , minimum_canopy_depth8 & ! intent(out) 
-                             , exar                  & ! intent(out) 
-                             , covr                  & ! intent(out) 
-                             , ustmin                & ! intent(out) 
-                             , ubmin                 & ! intent(out) 
-                             , exar8                 & ! intent(out) 
-                             , ez                    & ! intent(out) 
-                             , vh2vr                 & ! intent(out) 
-                             , vh2dh                 & ! intent(out) 
-                             , ustmin8               & ! intent(out) 
-                             , ubmin8                & ! intent(out) 
-                             , ez8                   & ! intent(out) 
-                             , vh2dh8                ! ! intent(out)
-
+                             , dry_veg_lwater        & ! intent(out)
+                             , fullveg_lwater        & ! intent(out)
+                             , rb_inter              & ! intent(out)
+                             , rb_slope              & ! intent(out)
+                             , veg_height_min        & ! intent(out)
+                             , minimum_canopy_depth  & ! intent(out)
+                             , minimum_canopy_depth8 & ! intent(out)
+                             , exar                  & ! intent(out)
+                             , covr                  & ! intent(out)
+                             , ustmin                & ! intent(out)
+                             , ubmin                 & ! intent(out)
+                             , exar8                 & ! intent(out)
+                             , ez                    & ! intent(out)
+                             , vh2vr                 & ! intent(out)
+                             , vh2dh                 & ! intent(out)
+                             , ustmin8               & ! intent(out)
+                             , ubmin8                & ! intent(out)
+                             , ez8                   & ! intent(out)
+                             , vh2dh8                & ! intent(out)
+                             , bl79                  & ! intent(out)
+                             , csm                   & ! intent(out)
+                             , csh                   & ! intent(out)
+                             , dl79                  & ! intent(out)
+                             , bbeta                 & ! intent(out)
+                             , ribmaxod95            & ! intent(out)
+                             , abh91                 & ! intent(out)
+                             , bbh91                 & ! intent(out)
+                             , cbh91                 & ! intent(out)
+                             , dbh91                 & ! intent(out)
+                             , ebh91                 & ! intent(out)
+                             , fbh91                 & ! intent(out)
+                             , cod                   & ! intent(out)
+                             , bcod                  & ! intent(out)
+                             , fcod                  & ! intent(out)
+                             , etf                   & ! intent(out)
+                             , z0moz0h               & ! intent(out)
+                             , z0hoz0m               & ! intent(out)
+                             , ribmaxbh91            & ! intent(out)
+                             , gamm                  & ! intent(out)
+                             , gamh                  & ! intent(out)
+                             , tprandtl              & ! intent(out)
+                             , vkopr                 & ! intent(out)
+                             , bl798                 & ! intent(out)
+                             , csm8                  & ! intent(out)
+                             , csh8                  & ! intent(out)
+                             , dl798                 & ! intent(out)
+                             , bbeta8                & ! intent(out)
+                             , gamm8                 & ! intent(out)
+                             , gamh8                 & ! intent(out)
+                             , ribmaxod958           & ! intent(out)
+                             , ribmaxbh918           & ! intent(out)
+                             , tprandtl8             & ! intent(out)
+                             , vkopr8                & ! intent(out)
+                             , abh918                & ! intent(out)
+                             , bbh918                & ! intent(out)
+                             , cbh918                & ! intent(out)
+                             , dbh918                & ! intent(out)
+                             , ebh918                & ! intent(out)
+                             , fbh918                & ! intent(out)
+                             , cod8                  & ! intent(out)
+                             , bcod8                 & ! intent(out)
+                             , fcod8                 & ! intent(out)
+                             , etf8                  & ! intent(out)
+                             , z0moz0h8              & ! intent(out)
+                             , z0hoz0m8              ! ! intent(out)
+   implicit none
    !---------------------------------------------------------------------------------------!
    !    Minimum leaf water content to be considered.  Values smaller than this will be     !
    ! flushed to zero.  This value is in kg/[m2 plant], so it will be always scaled by      !
@@ -461,14 +509,12 @@ subroutine init_can_air_params()
       ! moisture storage capacity in the canopy air [m].                                   !
       !------------------------------------------------------------------------------------!
       minimum_canopy_depth  = 0.2
-      minimum_canopy_depth8 = dble(minimum_canopy_depth)
    case default
       !------------------------------------------------------------------------------------!
       !      This is the minimum canopy depth that is used to calculate the heat and       !
       ! moisture storage capacity in the canopy air [m].                                   !
       !------------------------------------------------------------------------------------!
       minimum_canopy_depth  = 5.0
-      minimum_canopy_depth8 = dble(minimum_canopy_depth)
 
       !------------------------------------------------------------------------------------!
       !     This is the minimum vegetation height, used to calculate drag coefficients and !
@@ -479,12 +525,13 @@ subroutine init_can_air_params()
 
    !----- This is the dimensionless exponential wind atenuation factor. -------------------!
    exar  = 2.5
-   exar8 = dble(exar)
 
    !----- This is the scaling factor of tree area index (not sure if it is used...) -------!
    covr = 2.16
-   
+
+
    !---------------------------------------------------------------------------------------!
+   !      Parameters for surface layer models.                                             !
    !     For the time being we keep the old values of ustmin and ubmin when the user wants !
    ! to run using Louis (1979).  This should be tested because often the value of u* is    !
    ! forced to 0.10m/s, which means that the model is not being applied.                   !
@@ -493,32 +540,85 @@ subroutine init_can_air_params()
    case (1)
       !----- This is the minimum ustar under stable and unstable conditions. --------------!
       ustmin    = 0.10
-      ustmin8   = dble(ustmin)
       !----- This is the minimum wind scale under stable and unstable conditions. ---------!
       ubmin     = 0.65
-      ubmin8    = dble(ubmin)
    case default
       !----- This is the minimum ustar under stable and unstable conditions. --------------!
       ustmin    = 0.01
-      ustmin8   = dble(ustmin)
       !----- This is the minimum wind scale under stable and unstable conditions. ---------!
       ubmin     = 0.25
-      ubmin8    = dble(ubmin)
-
    end select
+   !----- Louis (1979) model. -------------------------------------------------------------!
+   bl79        = 5.0    ! b prime parameter
+   csm         = 7.5    ! C* for momentum (eqn. 20, not co2 char. scale)
+   csh         = 5.0    ! C* for heat (eqn.20, not co2 char. scale)
+   dl79        = 5.0    ! ???
+   !----- Oncley and Dudhia (1995) model. -------------------------------------------------!
+   bbeta       = 5.0           ! Beta 
+   ribmaxod95  = 0.20          ! Maximum bulk Richardson number
+   !----- Beljaars and Holtslag (1991) model. ---------------------------------------------!
+   abh91       = -0.70         ! -a from equation  (28) 
+   bbh91       = -0.75         ! -b from equation  (28)
+   cbh91       =  5.0          !  c from equations (28) and (32)
+   dbh91       =  0.35         !  d from equations (28) and (32)
+   ebh91       = -1.00         ! -a from equation  (32)
+   fbh91       = -twothirds    ! -b from equation  (32)
+   cod         = cbh91/dbh91   ! c/d
+   bcod        = bbh91 * cod   ! b*c/d
+   fcod        = fbh91 * cod   ! f*c/d
+   etf         = ebh91 * fbh91 ! e * f
+   z0moz0h     = 1.0           ! z0(M)/z0(h)
+   z0hoz0m     = 1. / z0moz0h  ! z0(M)/z0(h)
+   ribmaxbh91  = 6.00          ! Maximum bulk Richardson number
+   !----- Used by OD95 and BH91. ----------------------------------------------------------!
+   gamm        = 13.0          ! Gamma for momentum.
+   gamh        = 13.0          ! Gamma for heat.
+   tprandtl    = 1.00          ! Turbulent Prandtl number.
+   vkopr       = vonk/tprandtl ! Von Karman / Prandtl number
    !---------------------------------------------------------------------------------------!
-   
+
+
    
    !----- This is the relation between displacement height and roughness when icanturb=-1. !
    ez  = 0.172
-   ez8 = dble(ez)
 
    !----- This is the conversion from veg. height to roughness when icanturb /= -1. -------!
    vh2vr = 0.13
    
    !----- This is the conversion from vegetation height to displacement height. -----------!
    vh2dh  = 0.63
-   vh2dh8 = dble(vh2dh)
+
+
+   !----- Set the double precision variables. ---------------------------------------------!
+   minimum_canopy_depth8 = dble(minimum_canopy_depth)
+   exar8                 = dble(exar                )
+   ubmin8                = dble(ubmin               )
+   ustmin8               = dble(ustmin              )
+   ez8                   = dble(ez                  )
+   vh2dh8                = dble(vh2dh               )
+   bl798                 = dble(bl79                )
+   csm8                  = dble(csm                 )
+   csh8                  = dble(csh                 )
+   dl798                 = dble(dl79                )
+   bbeta8                = dble(bbeta               )
+   gamm8                 = dble(gamm                )
+   gamh8                 = dble(gamh                )
+   ribmaxod958           = dble(ribmaxod95          )
+   ribmaxbh918           = dble(ribmaxbh91          )
+   tprandtl8             = dble(tprandtl            )
+   vkopr8                = dble(vkopr               )
+   abh918                = dble(abh91               )
+   bbh918                = dble(bbh91               )
+   cbh918                = dble(cbh91               )
+   dbh918                = dble(dbh91               )
+   ebh918                = dble(ebh91               )
+   fbh918                = dble(fbh91               )
+   cod8                  = dble(cod                 )
+   bcod8                 = dble(bcod                )
+   fcod8                 = dble(fcod                )
+   etf8                  = dble(etf                 )
+   z0moz0h8              = dble(z0moz0h             )
+   z0hoz0m8              = dble(z0hoz0m             )
 
    return
 end subroutine init_can_air_params
