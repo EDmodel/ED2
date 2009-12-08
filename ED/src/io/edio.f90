@@ -120,6 +120,9 @@ subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,annua
 
      call h5_output('YEAR')
 
+     do ifm=1,ngrids
+        call zero_ed_yearly_vars(edgrid_g(ifm))
+     end do
   endif
 
   ! History files should only be output at a frequency which

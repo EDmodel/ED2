@@ -95,15 +95,20 @@ recursive subroutine read_ed_xml_config(filename)
   call libxml2f90__ll_selecttag('ACT','config',1) !select upper level tag
   call libxml2f90__ll_exist('DOWN','extern',ntag)    !get number of pft tags
   print*,"EXTERN READ FROM FILE ::",ntag
+
+ call getConfigSTRING  ('output_filepath','misc',i,cval,texist)
+
   if(ntag .ge. 1) then
      do i=1,ntag
-        call libxml2f90__ll_selecttag('DOWN','extern',i)
-        call libxml2f90__existid('extern',texist)
+        call getConfigSTRING  ('extern','config',i,cval,texist)
+
+!        call libxml2f90__ll_selecttag('DOWN','extern',i)
+!        call libxml2f90__existid('extern',texist)
         if(texist) then 
-           call libxml2f90__ll_getsize('extern',len)
+!           call libxml2f90__ll_getsize('extern',len)
            !----- MLO. Changed this to scalar so the interface check will work. -----------!
-           call libxml2f90__ll_getch_scal('extern',len,cval)
-           cval = cval(1:len)
+!           call libxml2f90__ll_getch_scal('extern',len,cval)
+!           cval = cval(1:len)
            print*,"XML recursively loading ",trim(cval)
            call read_ed_xml_config(trim(cval))
         endif
@@ -737,6 +742,42 @@ recursive subroutine read_ed_xml_config(filename)
         if(texist) istoma_scheme = ival
         call getConfigINT  ('n_plant_lim','physiology',i,ival,texist)
         if(texist) n_plant_lim = ival
+        
+        call libxml2f90__ll_selecttag('UP','config',1) !move back up to top level
+     enddo
+  endif
+
+
+  !********** INITIAL CONDITIONS
+  call libxml2f90__ll_selectlist(TRIM(FILENAME))       
+  call libxml2f90__ll_selecttag('ACT','config',1) !select upper level tag
+  call libxml2f90__ll_exist('DOWN','initcond',ntag)    !get number of pft tags
+  init_fsc = -1.0
+  init_stsc = -1.0
+  init_ssc = -1.0
+  init_stsl = -1.0
+  init_fsn = -1.0
+  init_msn = -1.0
+  print*,"INITCOND READ FROM FILE ::",ntag
+  if(ntag .ge. 1) then
+     do i=1,ntag
+        
+        call libxml2f90__ll_selecttag('DOWN','initcond',i)
+
+        call getConfigREAL  ('fsc','initcond',i,rval,texist)
+        if(texist) init_fsc = rval
+        call getConfigREAL  ('stsc','initcond',i,rval,texist)
+        if(texist) init_stsc = rval
+        call getConfigREAL  ('ssc','initcond',i,rval,texist)
+        if(texist) init_ssc = rval
+        call getConfigREAL  ('stsl','initcond',i,rval,texist)
+        if(texist) init_stsl = rval
+        call getConfigREAL  ('fsn','initcond',i,rval,texist)
+        if(texist) init_fsn = rval
+        call getConfigREAL  ('msn','initcond',i,rval,texist)
+        if(texist) init_msn = rval
+        
+
         
         call libxml2f90__ll_selecttag('UP','config',1) !move back up to top level
      enddo

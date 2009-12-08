@@ -309,6 +309,16 @@ subroutine ed_model()
          
       endif
 
+      if(analysis_time)then
+         if(new_month .and. new_day)then
+            if(current_time%month == outputMonth)then
+               do ifm = 1,ngrids                     
+                  call update_ed_yearly_vars(edgrid_g(ifm))
+                  enddo
+            endif
+         endif
+      endif
+
       !   Call the model output driver 
       !   ====================================================
       call ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,annual_time &
@@ -333,19 +343,7 @@ subroutine ed_model()
          end do
       endif
       
-
-      if(analysis_time)then
-         if(new_month .and. new_day)then
-            if(current_time%month == 6)then
-               do ifm = 1,ngrids
-                     
-                  call update_ed_yearly_vars(edgrid_g(ifm))
-                  enddo
-                  !call zero_ed_yearly_vars(polygon_list_g(1)%first_polygon)
-            endif
-         endif
-      endif
-
+ 
       !!Update Lateral Hydrology
       call calcHydroSubsurface()
       call calcHydroSurface()

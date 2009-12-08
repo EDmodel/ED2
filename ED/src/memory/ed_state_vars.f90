@@ -1995,9 +1995,6 @@ contains
        allocate(cgrid%avg_storage_resp  (npolygons))
        allocate(cgrid%avg_vleaf_resp  (npolygons))
        allocate(cgrid%avg_plant_resp  (npolygons))
-       allocate(cgrid%avg_growth_resp  (npolygons))
-       allocate(cgrid%avg_storage_resp  (npolygons))
-       allocate(cgrid%avg_vleaf_resp  (npolygons))
        allocate(cgrid%avg_htroph_resp  (npolygons))
        allocate(cgrid%avg_leaf_drop       (npolygons))
        allocate(cgrid%avg_leaf_maintenance(npolygons))
@@ -7361,21 +7358,21 @@ contains
     if (associated(cgrid%avg_growth_resp)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_growth_resp(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_GROWTH_RESP :11:hist:anal') 
+            var_len,var_len_global,max_ptrs,'AVG_GROWTH_RESP :11:hist:anal:opti') 
        call metadata_edio(nvar,igr,'Polygon Average Growth Respiration','[umol/m2/s]','ipoly') 
     endif
 
     if (associated(cgrid%avg_storage_resp)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_storage_resp(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_STORAGE_RESP :11:hist:anal') 
+            var_len,var_len_global,max_ptrs,'AVG_STORAGE_RESP :11:hist:anal:opti') 
        call metadata_edio(nvar,igr,'Polygon Average Storage Respiration','[umol/m2/s]','ipoly') 
     endif
 
     if (associated(cgrid%avg_vleaf_resp)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_vleaf_resp(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_VLEAF_RESP :11:hist:anal') 
+            var_len,var_len_global,max_ptrs,'AVG_VLEAF_RESP :11:hist:anal:opti') 
        call metadata_edio(nvar,igr,'Polygon Average Virtual Leaf Respiration','[umol/m2/s]','ipoly') 
     endif
 
@@ -7384,27 +7381,6 @@ contains
        call vtable_edio_r(cgrid%avg_plant_resp(1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'AVG_PLANT_RESP :11:hist:anal:opti') 
        call metadata_edio(nvar,igr,'Polygon Average Plant Respiration','[umol/m2/s]','ipoly') 
-    endif
-
-    if (associated(cgrid%avg_growth_resp)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%avg_growth_resp(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_GROWTH_RESP :11:opti') 
-       call metadata_edio(nvar,igr,'Polygon Average Growth Respiration','[umol/m2/s]','ipoly') 
-    endif
-
-    if (associated(cgrid%avg_storage_resp)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%avg_storage_resp(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_STORAGE_RESP :11:opti') 
-       call metadata_edio(nvar,igr,'Polygon Average Storage Respiration','[umol/m2/s]','ipoly') 
-    endif
-
-    if (associated(cgrid%avg_vleaf_resp)) then
-       nvar=nvar+1
-       call vtable_edio_r(cgrid%avg_vleaf_resp(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_VLEAF_RESP :11:opti') 
-       call metadata_edio(nvar,igr,'Polygon Average VLeaf Respiration','[umol/m2/s]','ipoly') 
     endif
 
     if (associated(cgrid%avg_htroph_resp)) then
