@@ -4,7 +4,8 @@ subroutine read_ed1_history_file
   use ed_max_dims, only: n_pft,huge_patch,huge_cohort,max_water,str_len,maxfiles,maxlist
   use pft_coms, only: SLA, q, qsw, hgt_min, include_pft, include_pft_ag, &
        phenology,pft_1st_check,include_these_pft
-  use ed_misc_coms, only: sfilin, ied_init_mode
+  use ed_misc_coms, only: sfilin, ied_init_mode, &
+       init_fsc,init_stsc,init_stsl,init_ssc,init_msn,init_fsn
   use mem_sites, only: grid_res,edres
   use consts_coms, only: pio180,pio4
   use ed_misc_coms, only: use_target_year, restart_target_year
@@ -390,6 +391,16 @@ subroutine read_ed1_history_file
         endif
         
         close(12)
+
+        !! optional over-ride of soil biogeochem
+        do ip=1,npatches
+           if(init_fsc > 0.0)  csite%fast_soil_C(ip)        = init_fsc
+           if(init_ssc > 0.0)  csite%slow_soil_C(ip)        = init_ssc
+           if(init_stsc > 0.0) csite%structural_soil_C(ip)  = init_stsc
+           if(init_stsl > 0.0) csite%structural_soil_L(ip)  = init_stsl
+           if(init_msn > 0.0)  csite%mineralized_soil_N(ip) = init_msn
+           if(init_fsn > 0.0)  csite%fast_soil_N(ip)        = init_fsn
+        enddo
 
         ! =================================
         ! Part III: Add the cohorts
