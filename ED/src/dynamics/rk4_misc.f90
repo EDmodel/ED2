@@ -482,7 +482,8 @@ subroutine redistribute_snow(initp,csite,ipa)
                             , rk4water_stab_thresh & ! intent(in)
                             , rk4min_sfcwater_mass & ! intent(in)
                             , rk4snowmin           & ! intent(in)
-                            , newsnow              ! ! intent(in)
+                            , newsnow              & ! intent(in)
+                            , rk4eps2              ! ! intent(in)
    use ed_state_vars , only : sitetype             & ! structure
                             , patchtype            ! ! structure
    use grid_coms     , only : nzs                  & ! intent(in)
@@ -565,8 +566,10 @@ subroutine redistribute_snow(initp,csite,ipa)
          return
       elseif (totsnow <= rk4min_sfcwater_mass) then
          !---------------------------------------------------------------------------------!
-         ! 1.a. Too little or negative mass.  Eliminate layers, ensuring that it will  not !
-         !      leak mass or energy, by "stealing" them from the top soil layer.           !
+         ! 1.a. Tiny amount of mass, positive or negative.  Eliminate layers, ensuring     !
+         !      that neither mass nor energy leak giving away all surface water mass and   !
+         !      internal energy to the top soil layer (or stealing the amount needed if    !
+         !      the mass is negative).                                                     !
          !---------------------------------------------------------------------------------!
          initp%sfcwater_energy(1) = sum(initp%sfcwater_energy(1:ksn))
          initp%sfcwater_mass(1)   = sum(initp%sfcwater_mass(1:ksn))
@@ -580,8 +583,8 @@ subroutine redistribute_snow(initp,csite,ipa)
          initp%sfcwater_mass      = 0.d0
          initp%sfcwater_energy    = 0.d0
          initp%sfcwater_tempk     = initp%soil_tempk(nzg)
-         initp%sfcwater_fracliq   = 0.d0
-         initp%sfcwater_depth     = 0.d0       
+         initp%sfcwater_fracliq   = initp%soil_fracliq(nzg)
+         initp%sfcwater_depth     = 0.d0
          initp%nlev_sfcwater      = 0
          ksnnew                   = 0
       else
@@ -701,8 +704,7 @@ subroutine redistribute_snow(initp,csite,ipa)
          !----- Find the fraction of liquid water of the shed amount. ---------------------!
          call qtk8(qw/w,wtemp,wfliq)
 
-         if(newsnow) then
-
+         if (newsnow) then
             !------------------------------------------------------------------------------!
             !    Alternative "free" water calculation.                                     !
             !    Anderson (1976), NOAA Tech Report NWS 19.                                 !
@@ -971,7 +973,7 @@ subroutine adjust_topsoil_properties(initp,hdid,csite,ipa)
    logical                             :: slightlymoist
    logical                             :: slightlydry
    !---------------------------------------------------------------------------------------!
-   return
+
    !----- Inverse of time increment -------------------------------------------------------!
    hdidi = 1.d0 / hdid
    
@@ -1356,7 +1358,7 @@ subroutine adjust_topsoil_properties(initp,hdid,csite,ipa)
          !---------------------------------------------------------------------------------!
 
          return
-      else
+      elseif (water_room > 0.d0) then
          !---------------------------------------------------------------------------------!
          !   The layer beneath the top layer can't take all water, but we send all that we !
          ! can to that layer so we reduce the amount that will be "boiled".  The remaining !
@@ -1376,7 +1378,7 @@ subroutine adjust_topsoil_properties(initp,hdid,csite,ipa)
          initp%soil_water(kt)  = initp%soil_water(kt)  - water_room  * dslzi8(kt)*wdnsi8
          initp%soil_energy(kt) = initp%soil_energy(kt) - energy_room * dslzi8(kt)
          initp%soil_water(kb)  = initp%soil_water(kb)  + water_room  * dslzi8(kb)*wdnsi8
-         initp%soil_water(kb)  = initp%soil_water(kb)  + energy_room * dslzi8(kb)
+         initp%soil_energy(kb) = initp%soil_energy(kb) + energy_room * dslzi8(kb)
          !----- Update the fluxes too... --------------------------------------------------!
          initp%avg_smoist_gg(kt) = initp%avg_smoist_gg(kt) - water_room * hdidi
          initp%avg_smoist_gg(kb) = initp%avg_smoist_gg(kb) + water_room * hdidi
