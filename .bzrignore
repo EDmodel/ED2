@@ -560,3 +560,4 @@ Ramspost/build/bin/somevars.mod
 Ramspost/build/bin/therm_lib.mod
 Ramspost/build/bin/include_ramspost.mk
 ED/src/init/notop_ed_params.f90
+ED/src/init/optim_ed_params.f90

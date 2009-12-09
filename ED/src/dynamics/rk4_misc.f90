@@ -1351,7 +1351,7 @@ subroutine adjust_topsoil_properties(initp,hdid,csite,ipa)
          initp%soil_water(kt)  = initp%soil_water(kt)  - water_excess  * dslzi8(kt)*wdnsi8
          initp%soil_energy(kt) = initp%soil_energy(kt) - energy_excess * dslzi8(kt)
          initp%soil_water(kb)  = initp%soil_water(kb)  + water_excess  * dslzi8(kb)*wdnsi8
-         initp%soil_water(kb)  = initp%soil_water(kb)  + energy_excess * dslzi8(kb)
+         initp%soil_energy(kb) = initp%soil_energy(kb) + energy_excess * dslzi8(kb)
          !----- Update the fluxes too... --------------------------------------------------!
          initp%avg_smoist_gg(kt) = initp%avg_smoist_gg(kt) - water_excess * hdidi
          initp%avg_smoist_gg(kb) = initp%avg_smoist_gg(kb) + water_excess * hdidi
