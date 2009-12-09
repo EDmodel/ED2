@@ -14,7 +14,7 @@ subroutine load_ed_ecosystem_params()
                           , C2B                 & ! intent(out)
                           , frost_mort          & ! intent(out)
                           , grass_pft           ! ! intent(out)
-   use disturb_coms, only : ianth_disturb
+   use disturb_coms, only : ianth_disturb       ! ! intent(in)
 
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
@@ -649,13 +649,37 @@ subroutine init_pft_photo_params()
 
    D0(1:15)                  = 0.01 ! same for all PFTs
 
-   Vm_low_temp(1:4)          = 5.0     ! tropical PFTs
-   Vm_low_temp(5:13)         = 4.7137  ! temperate PFTs
-   Vm_low_temp(14:15)        = 5.0     ! tropical PFTs
+   Vm_low_temp(1)            = 5.0     ! c4 grass
+   Vm_low_temp(2)            = 5.0     ! early tropical
+   Vm_low_temp(3)            = 5.0     ! mid tropical
+   Vm_low_temp(4)            = 5.0     ! late tropical
+   Vm_low_temp(5)            = 4.7137  ! c3 grass
+   Vm_low_temp(6)            = 4.7137  ! northern pines  ! 5.0
+   Vm_low_temp(7)            = 4.7137  ! southern pines  ! 5.0
+   Vm_low_temp(8)            = 4.7137  ! late conifers   ! 5.0
+   Vm_low_temp(9)            = 4.7137  ! early hardwoods
+   Vm_low_temp(10)           = 4.7137  ! mid hardwoods
+   Vm_low_temp(11)           = 4.7137  ! late hardwoods
+   Vm_low_temp(12)           = 4.7137  ! c3 pasture
+   Vm_low_temp(13)           = 4.7137  ! c3 crop
+   Vm_low_temp(14)           = 5.0     ! c4 pasture
+   Vm_low_temp(15)           = 5.0     ! c4 crop
 
    Vm_high_temp(1)           = 100.0    ! C4
-   Vm_high_temp(2:13)        =  45.0    ! C3
-   Vm_high_temp(14:15)       = 100.0    ! C4
+   Vm_high_temp(2)           =  45.0    ! C3
+   Vm_high_temp(3)           =  45.0    ! C3
+   Vm_high_temp(4)           =  45.0    ! C3
+   Vm_high_temp(5)           =  45.0    ! C3
+   Vm_high_temp(6)           =  45.0    ! C3
+   Vm_high_temp(7)           =  45.0    ! C3
+   Vm_high_temp(8)           =  45.0    ! C3
+   Vm_high_temp(9)           =  45.0    ! C3
+   Vm_high_temp(10)          =  45.0    ! C3
+   Vm_high_temp(11)          =  45.0    ! C3
+   Vm_high_temp(12)          =  45.0    ! C3
+   Vm_high_temp(13)          =  45.0    ! C3
+   Vm_high_temp(14)          = 100.0    ! C4
+   Vm_high_temp(15)          = 100.0    ! C4
 
    Vm0(1)                    = 12.5
    Vm0(2)                    = 18.8
@@ -672,18 +696,52 @@ subroutine init_pft_photo_params()
    Vm0(14:15)                = 12.5
 
    stomatal_slope(1)         = 10.0
-   stomatal_slope(2:4)       = 8.0
-   stomatal_slope(5:13)      = 6.3949
-   stomatal_slope(14:15)     = 10.0 
+   stomatal_slope(2)         = 8.0
+   stomatal_slope(3)         = 8.0
+   stomatal_slope(4)         = 8.0
+   stomatal_slope(5)         = 6.3949
+   stomatal_slope(6)         = 6.3949 ! 8.0
+   stomatal_slope(7)         = 6.3949 ! 8.0
+   stomatal_slope(8)         = 6.3949 ! 8.0
+   stomatal_slope(9)         = 6.3949
+   stomatal_slope(10)        = 6.3949
+   stomatal_slope(11)        = 6.3949
+   stomatal_slope(12)        = 6.3949
+   stomatal_slope(13)        = 6.3949
+   stomatal_slope(14)        = 10.0 
+   stomatal_slope(15)        = 10.0 
 
-   cuticular_cond(1:5)       = 10000.0
-   cuticular_cond(6:8)       = 1000.0
-   cuticular_cond(9:11)      = 20000.0
-   cuticular_cond(12:15)     = 10000.0
+   cuticular_cond(1)         = 10000.0
+   cuticular_cond(2)         = 10000.0
+   cuticular_cond(3)         = 10000.0
+   cuticular_cond(4)         = 10000.0
+   cuticular_cond(5)         = 10000.0
+   cuticular_cond(6)         = 1000.0
+   cuticular_cond(7)         = 1000.0
+   cuticular_cond(8)         = 1000.0
+   cuticular_cond(9)         = 20000.0
+   cuticular_cond(10)        = 20000.0
+   cuticular_cond(11)        = 20000.0
+   cuticular_cond(12)        = 10000.0
+   cuticular_cond(13)        = 10000.0
+   cuticular_cond(14)        = 10000.0
+   cuticular_cond(15)        = 10000.0
 
    quantum_efficiency(1)     = 0.06
-   quantum_efficiency(2:13)  = 0.08
-   quantum_efficiency(14:15) = 0.06
+   quantum_efficiency(2)     = 0.08
+   quantum_efficiency(3)     = 0.08
+   quantum_efficiency(4)     = 0.08
+   quantum_efficiency(5)     = 0.08
+   quantum_efficiency(6)     = 0.08
+   quantum_efficiency(7)     = 0.08
+   quantum_efficiency(8)     = 0.08
+   quantum_efficiency(9)     = 0.08
+   quantum_efficiency(10)    = 0.08
+   quantum_efficiency(11)    = 0.08
+   quantum_efficiency(12)    = 0.08
+   quantum_efficiency(13)    = 0.08
+   quantum_efficiency(14)    = 0.06
+   quantum_efficiency(15)    = 0.06
 
    photosyn_pathway(1)       = 4
    photosyn_pathway(2:4)     = 3
@@ -756,43 +814,86 @@ subroutine init_pft_resp_params()
 
    implicit none
 
-   growth_resp_factor(1:5)        = 0.333
-   growth_resp_factor(6:8)        = 0.4503
-   growth_resp_factor(9:11)       = 0.0
-   growth_resp_factor(12:15)      = 0.333
+   growth_resp_factor(1)          = 0.333
+   growth_resp_factor(2)          = 0.333
+   growth_resp_factor(3)          = 0.333
+   growth_resp_factor(4)          = 0.333
+   growth_resp_factor(5)          = 0.333
+   growth_resp_factor(6)          = 0.4503 ! 0.333
+   growth_resp_factor(7)          = 0.4503 ! 0.333
+   growth_resp_factor(8)          = 0.4503 ! 0.333
+   growth_resp_factor(9)          = 0.0
+   growth_resp_factor(10)         = 0.0
+   growth_resp_factor(11)         = 0.0
+   growth_resp_factor(12)         = 0.333
+   growth_resp_factor(13)         = 0.333
+   growth_resp_factor(14)         = 0.333
+   growth_resp_factor(15)         = 0.333
 
    leaf_turnover_rate(1)          = 2.0
    leaf_turnover_rate(2)          = 1.0
    leaf_turnover_rate(3)          = 0.5
    leaf_turnover_rate(4)          = 0.333
    leaf_turnover_rate(5)          = 2.0
-   leaf_turnover_rate(6:8)        = 0.333
-   leaf_turnover_rate(9:11)       = 0.0
-   leaf_turnover_rate(12:15)      = 2.0
+   leaf_turnover_rate(6)          = 0.333
+   leaf_turnover_rate(7)          = 0.333
+   leaf_turnover_rate(8)          = 0.333
+   leaf_turnover_rate(9)          = 0.0
+   leaf_turnover_rate(10)         = 0.0
+   leaf_turnover_rate(11)         = 0.0
+   leaf_turnover_rate(12)         = 2.0
+   leaf_turnover_rate(13)         = 2.0
+   leaf_turnover_rate(14)         = 2.0
+   leaf_turnover_rate(15)         = 2.0
 
    !----- Root turnover rate.  ------------------------------------------------------------!
    root_turnover_rate(1)          = 2.0
    root_turnover_rate(2)          = 1.0
    root_turnover_rate(3)          = 0.5
-   root_turnover_rate(4:5)        = 0.333
-   root_turnover_rate(6)          = 3.927218
-   root_turnover_rate(7)          = 4.117847
-   root_turnover_rate(8)          = 3.800132
+   root_turnover_rate(4)          = 0.333
+   root_turnover_rate(5)          = 0.333
+   root_turnover_rate(6)          = 3.927218 ! 0.333
+   root_turnover_rate(7)          = 4.117847 ! 0.333
+   root_turnover_rate(8)          = 3.800132 ! 0.333
    root_turnover_rate(9)          = 5.772506
    root_turnover_rate(10)         = 5.083700
    root_turnover_rate(11)         = 5.070992
-   root_turnover_rate(12:13)      = 0.333
-   root_turnover_rate(14:15)      = 2.0
+   root_turnover_rate(12)         = 0.333
+   root_turnover_rate(13)         = 0.333
+   root_turnover_rate(14)         = 2.0
+   root_turnover_rate(15)         = 2.0
 
    dark_respiration_factor(1)     = 0.04
-   dark_respiration_factor(2:4)   = 0.02
+   dark_respiration_factor(2)     = 0.02
+   dark_respiration_factor(3)     = 0.02
+   dark_respiration_factor(4)     = 0.02
    dark_respiration_factor(5)     = 0.04
-   dark_respiration_factor(6:11)  = 0.02
-   dark_respiration_factor(12:15) = 0.04
+   dark_respiration_factor(6)     = 0.02
+   dark_respiration_factor(7)     = 0.02
+   dark_respiration_factor(8)     = 0.02
+   dark_respiration_factor(9)     = 0.02
+   dark_respiration_factor(10)    = 0.02
+   dark_respiration_factor(11)    = 0.02
+   dark_respiration_factor(12)    = 0.04
+   dark_respiration_factor(13)    = 0.04
+   dark_respiration_factor(14)    = 0.04
+   dark_respiration_factor(15)    = 0.04
 
-   storage_turnover_rate(1:8)     = 0.0
-   storage_turnover_rate(9:11)    = 0.6243
-   storage_turnover_rate(12:15)   = 0.0
+   storage_turnover_rate(1)       = 0.0
+   storage_turnover_rate(2)       = 0.0
+   storage_turnover_rate(3)       = 0.0
+   storage_turnover_rate(4)       = 0.0
+   storage_turnover_rate(5)       = 0.0
+   storage_turnover_rate(6)       = 0.0
+   storage_turnover_rate(7)       = 0.0
+   storage_turnover_rate(8)       = 0.0
+   storage_turnover_rate(9)       = 0.6243
+   storage_turnover_rate(10)      = 0.6243
+   storage_turnover_rate(11)      = 0.6243
+   storage_turnover_rate(12)      = 0.0
+   storage_turnover_rate(13)      = 0.0
+   storage_turnover_rate(14)      = 0.0
+   storage_turnover_rate(15)      = 0.0
 
    root_respiration_factor        = 0.528
 
@@ -838,26 +939,53 @@ subroutine init_pft_mort_params()
    frost_mort(14:15) = 3.0
 
 
-   mort1(1:4) = 10.0
-   mort1(5:11) = 1.0
-   mort1(12:13) = 1.0
-   mort1(14:15) = 10.0
+   mort1(1)  = 10.0
+   mort1(2)  = 10.0
+   mort1(3)  = 10.0
+   mort1(4)  = 10.0
+   mort1(5)  = 1.0
+   mort1(6)  = 1.0
+   mort1(7)  = 1.0
+   mort1(8)  = 1.0
+   mort1(9)  = 1.0
+   mort1(10) = 1.0
+   mort1(11) = 1.0
+   mort1(12) = 1.0
+   mort1(13) = 1.0
+   mort1(14) = 10.0
+   mort1(15) = 10.0
 
-   mort2 = 20.0
+   mort2(1)  = 20.0
+   mort2(2)  = 20.0
+   mort2(3)  = 20.0
+   mort2(4)  = 20.0
+   mort2(5)  = 20.0
+   mort2(6)  = 20.0
+   mort2(7)  = 20.0
+   mort2(8)  = 20.0
+   mort2(9)  = 20.0
+   mort2(10) = 20.0
+   mort2(11) = 20.0
+   mort2(12) = 20.0
+   mort2(13) = 20.0
+   mort2(14) = 20.0
+   mort2(15) = 20.0
 
-   mort3(1) =  0.06167 ! 0.037
-   mort3(2) =  0.06167 ! 0.037
-   mort3(3) =  0.03167 ! 0.019
-   mort3(4) = 0.0
-   mort3(5) = 0.066
-   mort3(6) = 0.0033928
-   mort3(7) = 0.0043
-   mort3(8) = 0.0023568
-   mort3(9) = 0.006144
-   mort3(10) = 0.003808
-   mort3(11) = 0.00428
-   mort3(12:13) = 0.066
-   mort3(14:15) = 0.037
+   mort3(1)  =  0.06167    ! 0.037
+   mort3(2)  =  0.06167    ! 0.037
+   mort3(3)  =  0.03167    ! 0.019
+   mort3(4)  =  0.0
+   mort3(5)  =  0.066
+   mort3(6)  =  0.0033928
+   mort3(7)  =  0.0043
+   mort3(8)  =  0.0023568
+   mort3(9)  =  0.006144
+   mort3(10) =  0.003808
+   mort3(11) =  0.00428
+   mort3(12) =  0.066
+   mort3(13) =  0.066
+   mort3(14) =  0.037
+   mort3(15) =  0.037
    
    if (treefall_disturbance_rate < 0.) then
       mort3(:) = mort3(:) - treefall_disturbance_rate
@@ -1009,9 +1137,9 @@ subroutine init_pft_alloc_params()
    q(3)     = 1.0
    q(4)     = 1.0
    q(5)     = 1.0
-   q(6)     = 0.3463
-   q(7)     = 0.3463
-   q(8)     = 0.3463
+   q(6)     = 0.3463 ! 1.0
+   q(7)     = 0.3463 ! 1.0
+   q(8)     = 0.3463 ! 1.0
    q(9)     = 1.1274
    q(10)    = 1.1274
    q(11)    = 1.1274
@@ -1038,7 +1166,7 @@ subroutine init_pft_alloc_params()
    init_density(1)     = 0.6
    init_density(2:4)   = 0.1
    init_density(5)     = 0.6
-   init_density(6:8)   = 0.3
+   init_density(6:8)   = 0.1
    init_density(9:11)  = 0.1
    init_density(12:13) = 0.1
    init_density(14:15) = 0.6 
@@ -1729,6 +1857,7 @@ subroutine init_rk4_params()
                                    , fullveg_lwater        ! ! intent(in)
    use rk4_coms             , only : maxstp                & ! intent(out)
                                    , rk4eps                & ! intent(out)
+                                   , rk4eps2               & ! intent(out)
                                    , rk4epsi               & ! intent(out)
                                    , hmin                  & ! intent(out)
                                    , print_diags           & ! intent(out)
@@ -1782,6 +1911,7 @@ subroutine init_rk4_params()
    maxstp      = 100000000    ! Maximum number of intermediate steps. 
    rk4eps      = 1.d-2        ! The desired accuracy.
    rk4epsi     = 1.d0/rk4eps  ! The inverse of desired accuracy.
+   rk4eps2     = rk4eps**2    ! square of the accuracy
    hmin        = 1.d-7        ! The minimum step size.
    print_diags = .false.      ! Flag to print the diagnostic check.
    checkbudget = .false.      ! Flag to check CO2, water, and energy budgets every time
@@ -1827,7 +1957,7 @@ subroutine init_rk4_params()
    rk4min_can_co2    =  2.0000d2  ! Minimum canopy    CO2 mixing ratio          [ µmol/mol]
    rk4max_can_co2    =  1.2000d3  ! Maximum canopy    CO2 mixing ratio          [ µmol/mol]
    rk4min_soil_temp  =  1.8400d2  ! Minimum soil      temperature               [        K]
-   rk4max_soil_temp  =  3.4100d2  ! Maximum soil      temperature               [        K]
+   rk4max_soil_temp  =  3.4600d2  ! Maximum soil      temperature               [        K]
    rk4min_veg_temp   =  1.8400d2  ! Minimum leaf      temperature               [        K]
    rk4max_veg_temp   =  3.4100d2  ! Maximum leaf      temperature               [        K]
    rk4min_sfcw_temp  =  1.9315d2  ! Minimum snow/pond temperature               [        K]
