@@ -259,26 +259,16 @@ module mem_scratch_grell
 
 
 
-   !------ 1D dependence (mgmzp), forcing due to convectivion -----------------------------!
-   real, allocatable, dimension(:) :: &
-            outco2    & ! Total CO2 mixing ratio tendency due to cumulus         [   ppm/s]
-           ,outqtot   & ! Total water mixing ratio tendency due to cumulus       [ kg/kg/s]
-           ,outthil   ! ! Ice-liquid potential temperature tendency due to Cu    [     K/s]
-   !---------------------------------------------------------------------------------------!
-
-   !----- Scalar, forcing due to convection -----------------------------------------------!
-   real :: precip     ! ! Precipitation rate
-   !---------------------------------------------------------------------------------------!
-
-
    !----- Scalars. ------------------------------------------------------------------------!
    integer :: ierr      ! Flag for convection error                              [     ---]
-   integer :: jmin      ! Level in which downdrafts originate                    [     ---]
-   integer :: k22       ! Level in which updrafts originate                      [     ---]
-   integer :: kbcon     ! Level of free convection                               [     ---]
+   integer :: klod      ! Level of origin of downdrafts                          [     ---]
+   integer :: klou      ! Level of origin of updrafts                            [     ---]
+   integer :: klcl      ! Lifting condensation level                             [     ---]
+   integer :: klfc      ! Level of free convection                               [     ---]
    integer :: kdet      ! Top of downdraft detrainemnt layer                     [     ---]
    integer :: kstabi    ! cloud stable layer base                                [     ---]
    integer :: kstabm    ! cloud stable layer top                                 [     ---]
+   integer :: klnb      ! cloud level of neutral buoyancy                        [     ---]
    integer :: ktop      ! cloud top                                              [     ---]
    real    :: aa0u      ! ! Updraft work function                                [    J/kg]
    real    :: aa0d      ! ! Updraft work function                                [    J/kg]
@@ -484,10 +474,6 @@ module mem_scratch_grell
       allocate (x_tu_cld      (mgmzp))
       allocate (x_thilu_cld   (mgmzp))
       allocate (x_theivu_cld  (mgmzp))
-     
-      allocate (outqtot       (mgmzp))
-      allocate (outthil       (mgmzp))
-      allocate (outco2        (mgmzp))
 
       return
    end subroutine alloc_scratch_grell
@@ -680,10 +666,6 @@ module mem_scratch_grell
       if(allocated(x_thilu_cld   )) deallocate (x_thilu_cld   )
       if(allocated(x_theivu_cld  )) deallocate (x_theivu_cld  )
 
-      if(allocated(outco2        )) deallocate (outco2        )
-      if(allocated(outqtot       )) deallocate (outqtot       )
-      if(allocated(outthil       )) deallocate (outthil       )
-
       return
    end subroutine dealloc_scratch_grell
    !=======================================================================================!
@@ -773,7 +755,6 @@ module mem_scratch_grell
          tsur              = 0.
          theivsur          = 0.
          thilsur           = 0.
-         precip            = 0.
          !---------------------------------------------------------------------------------!
 
       case(1)
@@ -875,21 +856,19 @@ module mem_scratch_grell
          if(allocated(thilu_cld     )) thilu_cld     = 0.
          if(allocated(theivu_cld    )) theivu_cld    = 0.
 
-         if(allocated(outqtot       )) outqtot       = 0.
-         if(allocated(outthil       )) outthil       = 0.
-         if(allocated(outco2        )) outco2        = 0.
-
          !---------------------------------------------------------------------------------!
          ! Flushing scalars, we don't need to check for allocation here...                 !
          !---------------------------------------------------------------------------------!
          !----- Integer variables ---------------------------------------------------------!
          ierr              = 0
-         jmin              = 0
-         k22               = 0
-         kbcon             = 0
+         klod              = 0
+         klou              = 0
+         klcl              = 0
+         klfc              = 0
          kdet              = 0
          kstabi            = 0
          kstabm            = 0
+         klnb              = 0
          ktop              = 0
          !----- Real variables. -----------------------------------------------------------!
          aa0u              = 0.

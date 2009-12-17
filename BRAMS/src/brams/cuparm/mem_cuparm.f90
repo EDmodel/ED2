@@ -36,13 +36,20 @@ module mem_cuparm
            ,areaup                       & ! Updraft relative area.
            ,conprr                       & ! Convective precipitation rate
            ,dnmf                         & ! Reference downdraft mass flux
+           ,dnmx                         & ! Potential downdraft mass flux
            ,edt                          & ! dnmf/upmf (cloud work related)
            ,upmf                         & ! Reference updraft mass flux
+           ,upmx                         & ! Potential updraft mass flux
+           ,wdndraft                     & ! Expected downdraft velocity at the LOD
+           ,wupdraft                     & ! Expected updraft velocity at the LOU
+           ,wbuoymin                     & ! Minimum velocity for buoyant updraft 
            ,xierr                        & ! Error flag
-           ,zjmin                        & ! Downdraft originating level
-           ,zk22                         & ! Updraft originating level
-           ,zkdt                         & ! Top of detrainment level
-           ,zkbcon                       & ! Level of free convection
+           ,zklod                        & ! Level of origin of downdraft (LOD)
+           ,zklou                        & ! Level of origin of updraft   (LOU)
+           ,zkdet                        & ! Top of detrainment level
+           ,zklcl                        & ! Lifting condensation level
+           ,zklfc                        & ! Level of free convection
+           ,zklnb                        & ! Level of neutral buoyancy
            ,zktop                        & ! Cloud top
            ,xiact_c                      & ! For old Grell
            ,xiact_p                      ! ! For old Grell
@@ -232,13 +239,20 @@ module mem_cuparm
          allocate (cuparm%aadn       (n2,n3,nclouds))
          allocate (cuparm%aaup       (n2,n3,nclouds))
          allocate (cuparm%dnmf       (n2,n3,nclouds))
+         allocate (cuparm%dnmx       (n2,n3,nclouds))
          allocate (cuparm%edt        (n2,n3,nclouds))
          allocate (cuparm%upmf       (n2,n3,nclouds))
+         allocate (cuparm%upmx       (n2,n3,nclouds))
+         allocate (cuparm%wdndraft   (n2,n3,nclouds))
+         allocate (cuparm%wupdraft   (n2,n3,nclouds))
+         allocate (cuparm%wbuoymin   (n2,n3,nclouds))
          allocate (cuparm%xierr      (n2,n3,nclouds))
-         allocate (cuparm%zjmin      (n2,n3,nclouds))
-         allocate (cuparm%zk22       (n2,n3,nclouds))
-         allocate (cuparm%zkdt       (n2,n3,nclouds))
-         allocate (cuparm%zkbcon     (n2,n3,nclouds))
+         allocate (cuparm%zklod      (n2,n3,nclouds))
+         allocate (cuparm%zklou      (n2,n3,nclouds))
+         allocate (cuparm%zkdet      (n2,n3,nclouds))
+         allocate (cuparm%zklcl      (n2,n3,nclouds))
+         allocate (cuparm%zklfc      (n2,n3,nclouds))
+         allocate (cuparm%zklnb      (n2,n3,nclouds))
          allocate (cuparm%zktop      (n2,n3,nclouds))
       end if
 
@@ -277,13 +291,20 @@ module mem_cuparm
       if(associated(cuparm%aadn       ))  nullify (cuparm%aadn       )
       if(associated(cuparm%aaup       ))  nullify (cuparm%aaup       )
       if(associated(cuparm%dnmf       ))  nullify (cuparm%dnmf       )
+      if(associated(cuparm%dnmx       ))  nullify (cuparm%dnmx       )
       if(associated(cuparm%edt        ))  nullify (cuparm%edt        )
       if(associated(cuparm%upmf       ))  nullify (cuparm%upmf       )
+      if(associated(cuparm%upmx       ))  nullify (cuparm%upmx       )
+      if(associated(cuparm%wdndraft   ))  nullify (cuparm%wdndraft   )
+      if(associated(cuparm%wupdraft   ))  nullify (cuparm%wupdraft   )
+      if(associated(cuparm%wbuoymin   ))  nullify (cuparm%wbuoymin   )
       if(associated(cuparm%xierr      ))  nullify (cuparm%xierr      )
-      if(associated(cuparm%zjmin      ))  nullify (cuparm%zjmin      )
-      if(associated(cuparm%zk22       ))  nullify (cuparm%zk22       )
-      if(associated(cuparm%zkdt       ))  nullify (cuparm%zkdt       )
-      if(associated(cuparm%zkbcon     ))  nullify (cuparm%zkbcon     )
+      if(associated(cuparm%zklod      ))  nullify (cuparm%zklod      )
+      if(associated(cuparm%zklou      ))  nullify (cuparm%zklou      )
+      if(associated(cuparm%zkdet      ))  nullify (cuparm%zkdet      )
+      if(associated(cuparm%zklcl      ))  nullify (cuparm%zklcl      )
+      if(associated(cuparm%zklfc      ))  nullify (cuparm%zklfc      )
+      if(associated(cuparm%zklnb      ))  nullify (cuparm%zklnb      )
       if(associated(cuparm%zktop      ))  nullify (cuparm%zktop      )
       if(associated(cuparm%xiact_c    ))  nullify (cuparm%xiact_c    )
       if(associated(cuparm%xiact_p    ))  nullify (cuparm%xiact_p    )
@@ -323,13 +344,20 @@ module mem_cuparm
       if(associated(cuparm%aadn       ))  deallocate (cuparm%aadn       )
       if(associated(cuparm%aaup       ))  deallocate (cuparm%aaup       )
       if(associated(cuparm%dnmf       ))  deallocate (cuparm%dnmf       )
+      if(associated(cuparm%dnmx       ))  deallocate (cuparm%dnmx       )
       if(associated(cuparm%edt        ))  deallocate (cuparm%edt        )
       if(associated(cuparm%upmf       ))  deallocate (cuparm%upmf       )
+      if(associated(cuparm%upmx       ))  deallocate (cuparm%upmx       )
+      if(associated(cuparm%wdndraft   ))  deallocate (cuparm%wdndraft   )
+      if(associated(cuparm%wupdraft   ))  deallocate (cuparm%wupdraft   )
+      if(associated(cuparm%wbuoymin   ))  deallocate (cuparm%wbuoymin   )
       if(associated(cuparm%xierr      ))  deallocate (cuparm%xierr      )
-      if(associated(cuparm%zjmin      ))  deallocate (cuparm%zjmin      )
-      if(associated(cuparm%zk22       ))  deallocate (cuparm%zk22       )
-      if(associated(cuparm%zkdt       ))  deallocate (cuparm%zkdt       )
-      if(associated(cuparm%zkbcon     ))  deallocate (cuparm%zkbcon     )
+      if(associated(cuparm%zklod      ))  deallocate (cuparm%zklod      )
+      if(associated(cuparm%zklou      ))  deallocate (cuparm%zklou      )
+      if(associated(cuparm%zkdet      ))  deallocate (cuparm%zkdet      )
+      if(associated(cuparm%zklcl      ))  deallocate (cuparm%zklcl      )
+      if(associated(cuparm%zklfc      ))  deallocate (cuparm%zklfc      )
+      if(associated(cuparm%zklnb      ))  deallocate (cuparm%zklnb      )
       if(associated(cuparm%zktop      ))  deallocate (cuparm%zktop      )
       if(associated(cuparm%xiact_c    ))  deallocate (cuparm%xiact_c    )
       if(associated(cuparm%xiact_p    ))  deallocate (cuparm%xiact_p    )
@@ -370,13 +398,20 @@ module mem_cuparm
       if(associated(cuparm%aadn       ))  cuparm%aadn       = 0.
       if(associated(cuparm%aaup       ))  cuparm%aaup       = 0.
       if(associated(cuparm%dnmf       ))  cuparm%dnmf       = 0.
+      if(associated(cuparm%dnmx       ))  cuparm%dnmx       = 0.
       if(associated(cuparm%edt        ))  cuparm%edt        = 0.
       if(associated(cuparm%upmf       ))  cuparm%upmf       = 0.
+      if(associated(cuparm%upmx       ))  cuparm%upmx       = 0.
+      if(associated(cuparm%wdndraft   ))  cuparm%wdndraft   = 0.
+      if(associated(cuparm%wupdraft   ))  cuparm%wupdraft   = 0.
+      if(associated(cuparm%wbuoymin   ))  cuparm%wbuoymin   = 0.
       if(associated(cuparm%xierr      ))  cuparm%xierr      = 1. !---- No convection
-      if(associated(cuparm%zjmin      ))  cuparm%zjmin      = 0.
-      if(associated(cuparm%zk22       ))  cuparm%zk22       = 0.
-      if(associated(cuparm%zkdt       ))  cuparm%zkdt       = 0.
-      if(associated(cuparm%zkbcon     ))  cuparm%zkbcon     = 0.
+      if(associated(cuparm%zklod      ))  cuparm%zklod      = 0.
+      if(associated(cuparm%zklou      ))  cuparm%zklou      = 0.
+      if(associated(cuparm%zkdet      ))  cuparm%zkdet      = 0.
+      if(associated(cuparm%zklcl      ))  cuparm%zklcl      = 0.
+      if(associated(cuparm%zklfc      ))  cuparm%zklfc      = 0.
+      if(associated(cuparm%zklnb      ))  cuparm%zklnb      = 0.
       if(associated(cuparm%zktop      ))  cuparm%zktop      = 0.
       if(associated(cuparm%xiact_c    ))  cuparm%xiact_c    = 0.
       if(associated(cuparm%xiact_p    ))  cuparm%xiact_p    = 0.
@@ -485,6 +520,10 @@ module mem_cuparm
          call vtables2(cuparm%dnmf(1,1,1),cuparmm%dnmf(1,1,1),ng,npts,imean                &
                       ,'DNMF :9:hist:anal:mpti:mpt3')
 
+      if (associated(cuparm%dnmx))                                                         &
+         call vtables2(cuparm%dnmx(1,1,1),cuparmm%dnmx(1,1,1),ng,npts,imean                &
+                      ,'DNMX :9:hist:anal:mpti:mpt3')
+
       if (associated(cuparm%edt))                                                          &
          call vtables2(cuparm%edt(1,1,1),cuparmm%edt(1,1,1),ng,npts,imean                  &
                       ,'EDT :9:hist:anal:mpti:mpt3')
@@ -493,25 +532,49 @@ module mem_cuparm
          call vtables2(cuparm%upmf(1,1,1),cuparmm%upmf(1,1,1),ng,npts,imean                &
                       ,'UPMF :9:hist:anal:mpti:mpt3')
 
+      if (associated(cuparm%upmx))                                                         &
+         call vtables2(cuparm%upmx(1,1,1),cuparmm%upmx(1,1,1),ng,npts,imean                &
+                      ,'UPMX :9:hist:anal:mpti:mpt3')
+
+      if (associated(cuparm%wdndraft))                                                     &
+         call vtables2(cuparm%wdndraft(1,1,1),cuparmm%wdndraft(1,1,1),ng,npts,imean        &
+                      ,'WDNDRAFT :9:hist:anal:mpti:mpt3')
+
+      if (associated(cuparm%wupdraft))                                                     &
+         call vtables2(cuparm%wupdraft(1,1,1),cuparmm%wupdraft(1,1,1),ng,npts,imean        &
+                      ,'WUPDRAFT :9:hist:anal:mpti:mpt3')
+
+      if (associated(cuparm%wbuoymin))                                                     &
+         call vtables2(cuparm%wbuoymin(1,1,1),cuparmm%wbuoymin(1,1,1),ng,npts,imean        &
+                      ,'WBUOYMIN :9:hist:anal:mpti:mpt3')
+
       if (associated(cuparm%xierr))                                                        &
          call vtables2(cuparm%xierr(1,1,1),cuparmm%xierr(1,1,1),ng,npts,imean              &
                       ,'XIERR :9:hist:anal:mpti:mpt3')
 
-      if (associated(cuparm%zjmin))                                                        &
-         call vtables2(cuparm%zjmin(1,1,1),cuparmm%zjmin(1,1,1),ng,npts,imean              &
-                      ,'ZJMIN :9:hist:anal:mpti:mpt3')
+      if (associated(cuparm%zklod))                                                        &
+         call vtables2(cuparm%zklod(1,1,1),cuparmm%zklod(1,1,1),ng,npts,imean              &
+                      ,'ZKLOD :9:hist:anal:mpti:mpt3')
 
-      if (associated(cuparm%zk22))                                                         &
-         call vtables2(cuparm%zk22(1,1,1),cuparmm%zk22(1,1,1),ng,npts,imean                &
-                      ,'ZK22 :9:hist:anal:mpti:mpt3')
+      if (associated(cuparm%zklou))                                                        &
+         call vtables2(cuparm%zklou(1,1,1),cuparmm%zklou(1,1,1),ng,npts,imean              &
+                      ,'ZKLOU :9:hist:anal:mpti:mpt3')
 
-      if (associated(cuparm%zkdt))                                                         &
-         call vtables2(cuparm%zkdt(1,1,1),cuparmm%zkdt(1,1,1),ng,npts,imean                &
-                      ,'ZKDT :9:hist:anal:mpti:mpt3')
+      if (associated(cuparm%zkdet))                                                        &
+         call vtables2(cuparm%zkdet(1,1,1),cuparmm%zkdet(1,1,1),ng,npts,imean              &
+                      ,'ZKDET :9:hist:anal:mpti:mpt3')
 
-      if (associated(cuparm%zkbcon))                                                       &
-         call vtables2(cuparm%zkbcon(1,1,1),cuparmm%zkbcon(1,1,1),ng,npts,imean            &
-                      ,'ZKBCON :9:hist:anal:mpti:mpt3')
+      if (associated(cuparm%zklcl))                                                        &
+         call vtables2(cuparm%zklcl(1,1,1),cuparmm%zklcl(1,1,1),ng,npts,imean              &
+                      ,'ZKLCL :9:hist:anal:mpti:mpt3')
+
+      if (associated(cuparm%zklfc))                                                        &
+         call vtables2(cuparm%zklfc(1,1,1),cuparmm%zklfc(1,1,1),ng,npts,imean              &
+                      ,'ZKLFC :9:hist:anal:mpti:mpt3')
+
+      if (associated(cuparm%zklnb))                                                        &
+         call vtables2(cuparm%zklnb(1,1,1),cuparmm%zklnb(1,1,1),ng,npts,imean              &
+                      ,'ZKLNB :9:hist:anal:mpti:mpt3')
 
       if (associated(cuparm%zktop))                                                        &
          call vtables2(cuparm%zktop(1,1,1),cuparmm%zktop(1,1,1),ng,npts,imean              &

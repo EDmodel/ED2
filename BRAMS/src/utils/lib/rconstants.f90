@@ -11,18 +11,20 @@ Module rconstants
    !---------------------------------------------------------------------------------------!
    ! Trigonometric constants                                                               !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: pi1       = 3.14159265358979  ! Pi                        [      ---]
-   real, parameter :: pii       = 1./pi1            ! 1/Pi                      [      ---]
-   real, parameter :: halfpi    = pi1/2             ! Pi/2                      [      ---]
-   real, parameter :: sqrtpii   = 0.564189583547756 ! 1/(pi**0.5)               [      ---]
-   real, parameter :: twopi     = pi1* 2.           ! 2 Pi                      [      ---]
-   real, parameter :: pio180    = pi1/ 180.         ! Pi/180 (deg -> rad)       [      ---]
-   real, parameter :: onerad    = 180. / pi1        ! 180/pi (rad -> deg)       [      ---]
-   real, parameter :: pi4       = pi1 * 4.          ! 4 Pi                      [      ---]
-   real, parameter :: pi4o3     = pi1 * 4. / 3.     ! 4 Pi / 3                  [      ---]
-   real, parameter :: pio4      = pi1 /4.           ! Pi/4                      [      ---]
-   real, parameter :: pio6      = pi1 /6.           ! Pi/6                      [      ---]
-   real, parameter :: pio6i     = 6.  /pi1          ! 6/Pi                      [      ---]
+   real, parameter :: pi1        = 3.14159265358979  ! Pi                       [      ---]
+   real, parameter :: pii        = 1./pi1            ! 1/Pi                     [      ---]
+   real, parameter :: halfpi     = pi1/2.            ! Pi/2                     [      ---]
+   real, parameter :: twopi      = pi1* 2.           ! 2 Pi                     [      ---]
+   real, parameter :: pio180     = pi1/ 180.         ! Pi/180 (deg -> rad)      [      ---]
+   real, parameter :: onerad     = 180. / pi1        ! 180/pi (rad -> deg)      [      ---]
+   real, parameter :: pi4        = pi1 * 4.          ! 4 Pi                     [      ---]
+   real, parameter :: pi4o3      = pi1 * 4. / 3.     ! 4 Pi / 3                 [      ---]
+   real, parameter :: pio4       = pi1 /4.           ! Pi/4                     [      ---]
+   real, parameter :: pio6       = pi1 /6.           ! Pi/6                     [      ---]
+   real, parameter :: pio6i      = 6.  /pi1          ! 6/Pi                     [      ---]
+   real, parameter :: sqrtpii    = 0.564189583547756 ! 1/(pi**0.5)              [      ---]
+   real, parameter :: sqrthalfpi = 1.2533141373155   ! (pi/2)**0.5              [      ---]
+   real, parameter :: sqrttwopi  = 2. * sqrthalfpi   ! (2*pi)**0.5              [      ---]
    !---------------------------------------------------------------------------------------!
 
 

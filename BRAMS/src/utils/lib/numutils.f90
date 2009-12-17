@@ -1590,13 +1590,91 @@ real function errorfun(x)
    !---------------------------------------------------------------------------------------!
    !     Computing the function. erf is known to be bounded by -1.and 1 and here we will   !
    ! ensure that that will be the case. Due to numerical precision the final value of      !
-   ! x) may be such that 1 <= erf(x) <= 1.+toler. Although within the tolerance, this  !
+   ! x) may be such that 1 <= erf(x) <= 1.+toler. Although within the tolerance, this      !
    ! can cause problems elsewhere.                                                         !
    !---------------------------------------------------------------------------------------!
    errorfun = max(-1.,min(1.,2. * app * sqrtpii * sign(1.,x)))
    
    return
 end function errorfun
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!    This function computes the expect value based on the normal distribution, with mean   !
+! xmean and standard deviation sigmax, but only for values above xmin.  This is actually a !
+! generalisation of the concept of mean, but for a subset of the distribution function.    !
+! Let p(x) be the normal PDF of x for a mean value of xmean and a standard deviation       !
+! sigmax.  The expected value will solve:                                                  !
+!                                                                                          !
+!                 Inf                                                                      !
+!              INT     x p(x) dx                                                           !
+!                 xmin                                                                     !
+! xexpected = -------------------                                                          !
+!                 Inf                                                                      !
+!              INT     p(x) dx                                                             !
+!                 xmin                                                                     !
+!                                                                                          !
+!     When xmin tends to -Infinity, xexpected tends to xmean. If xmin tends to Infinity,   !
+! xexpected will tend to xmin.                                                             !
+!------------------------------------------------------------------------------------------!
+real function expected(xmin,xmean,sigmax)
+   use rconstants, only : srtwo      & ! intent(in)
+                        , srtwoi     & ! intent(in)
+                        , sqrttwopi  & ! intent(in)
+                        , sqrthalfpi ! ! intent(in)
+   !----- Arguments. ----------------------------------------------------------------------!
+   real, intent(in) :: xmin
+   real, intent(in) :: xmean
+   real, intent(in) :: sigmax
+   !----- Local variables. ----------------------------------------------------------------!
+   real             :: xnorm
+   real             :: oneodenom
+   real             :: expnorm
+   real             :: erfnorm
+   !----- Local constants. ----------------------------------------------------------------!
+   real, parameter  :: xnormmin = -5. ! This makes a cdf close to machine epsilon
+   real, parameter  :: xnormmax =  5. ! This makes a cdf close to 1 - machine epsilon
+   !----- External functions. -------------------------------------------------------------!
+   real, external   :: errorfun
+   real, external   :: cdf
+   !---------------------------------------------------------------------------------------!
+
+   !---------------------------------------------------------------------------------------!
+   !     First we find the normalised xmin, which goes into the PDF and CDF functions.     !
+   !---------------------------------------------------------------------------------------!
+   xnorm = (xmin - xmean) / sigmax
+
+   !---------------------------------------------------------------------------------------!
+   !     Then we integrate the probability distribution function above xnorm. If the cdf   !
+   ! is very small or very close to one, we apply what we know about the limits, and skip  !
+   ! the calculation.                                                                      !
+   !---------------------------------------------------------------------------------------!
+   if (xnorm >= xnormmax) then
+      !----- cdf is too close to 1, apply the limit of x -> infinity. ---------------------!
+      expected = xmin
+
+   elseif (xnorm <= xnormmin) then
+      !----- cdf is too close to 0, apply the limit of x -> - infinity. -------------------!
+      expected = xmean
+
+   else
+      !----- Nice range, let's find the results. ------------------------------------------!
+      oneodenom = 1. / (sqrttwopi * sigmax * (1. - cdf(xnorm)))
+      expnorm   = exp(- 0.5 * xnorm * xnorm)
+      erfnorm   = errorfun(srtwoi * xnorm)
+      expected  = oneodenom * ( sigmax * sigmax * expnorm                                  &
+                              + sqrthalfpi * xmean * sigmax * (1 - erfnorm))
+   end if
+
+   return
+end function expected
 !==========================================================================================!
 !==========================================================================================!
 

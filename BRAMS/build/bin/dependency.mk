@@ -61,7 +61,7 @@ grell_cupar_ensemble.o: rconstants.mod
 grell_cupar_environment.o: grell_coms.mod rconstants.mod therm_lib.mod
 grell_cupar_feedback.o: mem_ensemble.mod mem_scratch_grell.mod rconstants.mod
 grell_cupar_static.o: mem_ensemble.mod mem_scratch_grell.mod rconstants.mod
-grell_cupar_updraft.o: rconstants.mod therm_lib.mod
+grell_cupar_updraft.o: mem_cuparm.mod rconstants.mod therm_lib.mod
 grell_extras_catt.o: grell_coms.mod mem_basic.mod mem_ensemble.mod mem_grid.mod
 grell_extras_catt.o: mem_scalar.mod mem_scratch.mod mem_scratch_grell.mod
 grell_extras_catt.o: mem_tconv.mod rconstants.mod
@@ -69,6 +69,7 @@ kuo_cupar_driver.o: conv_coms.mod mem_basic.mod mem_cuparm.mod mem_grid.mod
 kuo_cupar_driver.o: mem_scratch.mod mem_tend.mod node_mod.mod rconstants.mod
 kuo_cupar_driver.o: therm_lib.mod
 mem_cuparm.o: grid_dims.mod var_tables.mod
+mem_ensemble.o: grell_coms.mod
 rconv_driver.o: mem_basic.mod mem_cuparm.mod mem_grid.mod mem_scratch.mod
 rconv_driver.o: mem_tend.mod mem_turb.mod node_mod.mod
 shcu_vars_const.o: conv_coms.mod grid_dims.mod
@@ -509,6 +510,16 @@ init_hydro_sites.o: ed_max_dims.mod ed_misc_coms.mod ed_state_vars.mod
 init_hydro_sites.o: grid_coms.mod mem_sites.mod soil_coms.mod
 landuse_init.o: consts_coms.mod disturb_coms.mod ed_max_dims.mod
 landuse_init.o: ed_misc_coms.mod ed_state_vars.mod grid_coms.mod
+notop_ed_params.o: allometry.mod canopy_air_coms.mod canopy_radiation_coms.mod
+notop_ed_params.o: consts_coms.mod decomp_coms.mod disturb_coms.mod
+notop_ed_params.o: ed_max_dims.mod ed_misc_coms.mod fusion_fission_coms.mod
+notop_ed_params.o: hydrology_coms.mod met_driver_coms.mod pft_coms.mod
+notop_ed_params.o: phenology_coms.mod rk4_coms.mod soil_coms.mod
+optim_ed_params.o: allometry.mod canopy_air_coms.mod canopy_radiation_coms.mod
+optim_ed_params.o: consts_coms.mod decomp_coms.mod disturb_coms.mod
+optim_ed_params.o: ed_max_dims.mod ed_misc_coms.mod fusion_fission_coms.mod
+optim_ed_params.o: hydrology_coms.mod met_driver_coms.mod pft_coms.mod
+optim_ed_params.o: phenology_coms.mod rk4_coms.mod soil_coms.mod
 phenology_init.o: ed_max_dims.mod ed_misc_coms.mod ed_state_vars.mod
 phenology_init.o: grid_coms.mod phenology_coms.mod
 average_utils.o: allometry.mod canopy_radiation_coms.mod consts_coms.mod

@@ -17,7 +17,7 @@
 !                                                                                          !
 !------------------------------------------------------------------------------------------!
 subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,maxens_lsf    &
-                              ,maxens_dyn,mgmzp,closure_type,comp_modif_thermo,comp_down   &
+                              ,maxens_dyn,mgmzp,closure_type,comp_modif_thermo,cld2prec    &
                               ,mynum,i,j)
    use mem_ensemble     , only : ensemble_vars & ! structure
                                , ensemble_e    ! ! intent(inout)
@@ -137,9 +137,9 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
    !----- Character, containing the closure type(s) for dynamic control -------------------!
    character(len=2), intent(in) :: closure_type! Short name to define the method.
    !----- Logical flags, to bypass uncessary steps ----------------------------------------!
-   logical, dimension(nclouds), intent(in) :: comp_down         ! Compute downdrafts.
    logical                    , intent(in) :: comp_modif_thermo ! Compute interactions.
    !----- Miscellaneous variables ---------------------------------------------------------!
+   real, intent(in)  :: cld2prec     ! Fraction of cloud water converted to prec. [    ---]
    real, intent(in)  :: dtime        ! Time step.                                 [      s]
    !---------------------------------------------------------------------------------------!
 
@@ -162,25 +162,30 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
    ! later.                                                                                !
    !---------------------------------------------------------------------------------------!
    !----- Scalars. ------------------------------------------------------------------------!
-   integer :: jmin      ! Level in which downdrafts originate
+   integer :: klod      ! Level in which downdrafts originate
    integer :: kdet      ! Top of downdraft detrainemnt layer
    integer :: kstabi    ! cloud stable layer base
    integer :: kstabm    ! cloud stable layer top
    !----- Combined variables --------------------------------------------------------------!
+   logical, dimension(nclouds)            :: comp_dn  ! Downdrafts were computed.
    integer, dimension(nclouds)            :: ierr     ! Cloud error flag        [      ---]
-   integer, dimension(nclouds)            :: k22      ! Level in which updrafts originate
-   integer, dimension(nclouds)            :: kbcon    ! Level of free convection
-   integer, dimension(nclouds)            :: ktop     ! Cloud top               [      ---]
+   integer, dimension(nclouds)            :: klou     ! Level of origin of updrafts
+   integer, dimension(nclouds)            :: klfc     ! Level of free convection
+   integer, dimension(nclouds)            :: klnb     ! Level of newtral buoyancy
+   integer, dimension(nclouds)            :: ktop     ! Cloud top
    real   , dimension(nclouds,nclouds)    :: mfke     ! Mass flux kernel        [ J m2/kg2]
    real   , dimension(nclouds)            :: aatot    ! Forced cloud work fctn. [     J/kg]
    real   , dimension(nclouds)            :: aatot0   ! Prev. cloud work fctn.  [     J/kg]
    real   , dimension(nclouds)            :: pwav     ! Int. condensed water    [    kg/kg]
    real   , dimension(nclouds)            :: pwev     ! Int. evaporated water   [    kg/kg]
-   real   , dimension(nclouds)            :: prev_dnmf! Ref. upward mass flux   [  kg/m2/s]
+   real   , dimension(nclouds)            :: prev_dnmf! Prev. dnward mass flux  [  kg/m2/s]
    real   , dimension(nclouds,maxens_dyn) :: upmf_dyn ! Ref. upward mass flux   [  kg/m2/s]
-   real   , dimension(nclouds,maxens_dyn) :: dnmf_dyn ! Ref. upward mass flux   [  kg/m2/s]
+   real   , dimension(nclouds,maxens_dyn) :: dnmf_dyn ! Ref. dnward mass flux   [  kg/m2/s]
+   real   , dimension(nclouds,maxens_dyn) :: upmx_dyn ! Max. upward mass flux   [  kg/m2/s]
+   real   , dimension(nclouds,maxens_dyn) :: dnmx_dyn ! Max. dnward mass flux   [  kg/m2/s]
    !----- Dummy variables, needed as arguments for subroutines but not really used. -------!
    integer                                :: x_ierr   ! Flag for convection error
+   integer                                :: x_klnb   ! Level of neutral buoyancy
    integer                                :: x_ktop   ! Cloud top level
    real                                   :: x_qsat
    !---------------------------------------------------------------------------------------!
@@ -211,15 +216,17 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
          !---------------------------------------------------------------------------------!
          ! 1. Copying the variables stored at the ensemble structure to temporary arrays.  !
          !---------------------------------------------------------------------------------!
-         !----- ierr and ktop have the cloud index because of the dyn. control ensemble. --!
-         ierr    (icld) = ensemble_e(icld)%ierr_cap   (icap)
-         k22     (icld) = ensemble_e(icld)%k22_cap    (icap)
-         kbcon   (icld) = ensemble_e(icld)%kbcon_cap  (icap)
-         ktop    (icld) = ensemble_e(icld)%ktop_cap   (icap)
-         jmin           = ensemble_e(icld)%jmin_cap   (icap)
-         kdet           = ensemble_e(icld)%kdet_cap   (icap)
-         kstabi         = ensemble_e(icld)%kstabi_cap (icap)
-         kstabm         = ensemble_e(icld)%kstabm_cap (icap)
+         !----- ierr and klnb have the cloud index because of the dyn. control ensemble. --!
+         ierr    (icld) = ensemble_e(icld)%ierr_cap     (icap)
+         comp_dn (icld) = ensemble_e(icld)%comp_down_cap(icap)
+         klou    (icld) = ensemble_e(icld)%klou_cap     (icap)
+         klfc    (icld) = ensemble_e(icld)%klfc_cap     (icap)
+         klnb    (icld) = ensemble_e(icld)%klnb_cap     (icap)
+         ktop    (icld) = ensemble_e(icld)%ktop_cap     (icap)
+         klod           = ensemble_e(icld)%klod_cap     (icap)
+         kdet           = ensemble_e(icld)%kdet_cap     (icap)
+         kstabi         = ensemble_e(icld)%kstabi_cap   (icap)
+         kstabm         = ensemble_e(icld)%kstabm_cap   (icap)
 
          do k=1,mkx
             cdd(k)         = ensemble_e(icld)%cdd_cap(k,icap)
@@ -332,7 +339,7 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
                         ! 5c. Finding the updraft thermodynamics between the updraft       !
                         !     origin and the level of free convection.                     !
                         !------------------------------------------------------------------!
-                        call grell_buoy_below_lfc(mkx,mgmzp,k22(icld),kbcon(icld)          &
+                        call grell_buoy_below_lfc(mkx,mgmzp,klou(icld),klfc(icld)          &
                                                  ,x_exner_cup,x_p_cup,x_theiv_cup          &
                                                  ,x_thil_cup,x_t_cup,x_qtot_cup,x_qvap_cup &
                                                  ,x_qliq_cup,x_qice_cup,x_qsat_cup         &
@@ -345,15 +352,15 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
                         ! 5d. Compute the updraft profiles ice-vapour equivalent potential !
                         !     temperature.                                                 !
                         !------------------------------------------------------------------!
-                        call grell_theiv_updraft(mkx,mgmzp,k22(icld),kbcon(icld),cdu       &
+                        call grell_theiv_updraft(mkx,mgmzp,klou(icld),klfc(icld),cdu       &
                                                 ,mentru_rate,x_theiv,x_theiv_cup,dzu_cld   &
                                                 ,x_theivu_cld)
 
                         !------------------------------------------------------------------!
                         ! 5e. Getting the updraft moisture profile                         !
                         !------------------------------------------------------------------!
-                        call grell_most_thermo_updraft(comp_down(icld),.false.,mkx,mgmzp   &
-                                                      ,kbcon(icld),ktop(icld),cdu          &
+                        call grell_most_thermo_updraft(comp_dn(icld),.false.,mkx,mgmzp     &
+                                                      ,klfc(icld),ktop(icld),cld2prec,cdu  &
                                                       ,mentru_rate,x_qtot,x_co2,x_p_cup    &
                                                       ,x_exner_cup,x_theiv_cup,x_thil_cup  &
                                                       ,x_t_cup,x_qtot_cup,x_qvap_cup       &
@@ -363,27 +370,28 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
                                                       ,x_tu_cld,x_qtotu_cld,x_qvapu_cld    &
                                                       ,x_qliqu_cld,x_qiceu_cld,x_qsatu_cld &
                                                       ,x_co2u_cld,x_rhou_cld,x_dbyu        &
-                                                      ,x_pwu_cld,x_pwav,x_ktop,x_ierr)
+                                                      ,x_pwu_cld,x_pwav,x_klnb,x_ktop      &
+                                                      ,x_ierr)
 
                         !------------------------------------------------------------------!
                         ! 5f. Recalculating the updraft cloud work                         !
                         !------------------------------------------------------------------!
-                        call grell_cldwork_updraft(mkx,mgmzp,kbcon(icld),ktop(icld),x_dbyu &
+                        call grell_cldwork_updraft(mkx,mgmzp,klfc(icld),ktop(icld),x_dbyu  &
                                                   ,dzu_cld,etau_cld,x_aau)
 
-                        modif_down: if (comp_down(icld)) then
+                        modif_down: if (comp_dn(icld)) then
 
                            !---------------------------------------------------------------!
                            ! 5g. Finding moist static energy                               !
                            !---------------------------------------------------------------!
-                           call grell_theiv_downdraft(mkx,mgmzp,jmin,cdd,mentrd_rate       &
+                           call grell_theiv_downdraft(mkx,mgmzp,klod,cdd,mentrd_rate       &
                                                      ,x_theiv,x_theiv_cup,x_theivs_cup     &
                                                      ,dzd_cld,x_ierr,x_theivd_cld)
 
                            !---------------------------------------------------------------!
                            ! 5h. Moisture properties                                       !
                            !---------------------------------------------------------------!
-                           call grell_most_thermo_downdraft(mkx,mgmzp,jmin,x_qtot,x_co2    &
+                           call grell_most_thermo_downdraft(mkx,mgmzp,klod,x_qtot,x_co2    &
                                                            ,mentrd_rate,cdd,x_p_cup        &
                                                            ,x_exner_cup,x_thil_cup,x_t_cup &
                                                            ,x_qtot_cup,x_qvap_cup          &
@@ -401,7 +409,7 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
                            !---------------------------------------------------------------!
                            ! 5i. Computing cloud work function associated with downdrafts. !
                            !---------------------------------------------------------------!
-                           call grell_cldwork_downdraft(mkx,mgmzp,jmin,x_dbyd,dzd_cld      &
+                           call grell_cldwork_downdraft(mkx,mgmzp,klod,x_dbyd,dzd_cld      &
                                                        ,etad_cld,x_aad)
                         end if modif_down
                      end if modif_comp_if
@@ -486,6 +494,7 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
             !------------------------------------------------------------------------------!
             mfke   = 0.
             ierr   = 1
+            klnb   = 1
             ktop   = 1
             aatot0 = 0.
             aatot  = 0.
@@ -493,8 +502,9 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
                edt(icld)       = ensemble_e(icld)%edt_eff(iedt,icap)
                aatot0(icld)    = ensemble_e(icld)%aatot0_eff(iedt,icap)
                aatot(icld)     = ensemble_e(icld)%aatot_eff(iedt,icap)
-               k22(icld)       = ensemble_e(icld)%k22_cap(icap)
-               kbcon(icld)     = ensemble_e(icld)%kbcon_cap(icap)
+               klou(icld)      = ensemble_e(icld)%klou_cap(icap)
+               klfc(icld)      = ensemble_e(icld)%klfc_cap(icap)
+               klnb(icld)      = ensemble_e(icld)%klnb_cap(icap)
                ktop(icld)      = ensemble_e(icld)%ktop_cap(icap)
                ierr(icld)      = ensemble_e(icld)%ierr_cap(icap)
                pwav(icld)      = ensemble_e(icld)%pwav_cap(icap)
@@ -508,11 +518,14 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
                   write(unit=uni,fmt=fmtf ) '     EDT      =', edt(icld)
                   write(unit=uni,fmt=fmtf ) '     TSCAL_KF =', tscal_kf
                   write(unit=uni,fmt=fmtf ) '     DTIME    =', dtime
-                  if (k22(icld) > 0) then
-                     write(unit=uni,fmt=fmtf ) '     K22      =', z(k22(icld))
+                  if (klou(icld) > 0) then
+                     write(unit=uni,fmt=fmtf ) '     KLOU     =', z(klou(icld))
                   end if
-                  if (kbcon(icld) > 0) then
-                     write(unit=uni,fmt=fmtf ) '     KBCON    =', z(kbcon(icld))
+                  if (klfc(icld) > 0) then
+                     write(unit=uni,fmt=fmtf ) '     KLFC     =', z(klfc(icld))
+                  end if
+                  if (klnb(icld) > 0) then
+                     write(unit=uni,fmt=fmtf ) '     KLNB     =', z(klnb(icld))
                   end if
                   if (ktop(icld) > 0) then
                      write(unit=uni,fmt=fmtf ) '     KTOP     =', z(ktop(icld))
@@ -538,7 +551,7 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
                   !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
                   !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
                   if (printing) then
-                     write(unit=uni,fmt=fmti ) '      JCLD     =', icld
+                     write(unit=uni,fmt=fmti ) '      JCLD     =', jcld
                      write(unit=uni,fmt=fmtf ) '      X_AATOT  =',                         &
                                               ensemble_e(icld)%x_aatot(jcld,imbp,iedt,icap)
                      write(unit=uni,fmt=fmtf ) '      MFKE     =', mfke(icld,jcld)
@@ -555,10 +568,10 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
             !     this member.                                                             !
             !------------------------------------------------------------------------------!
             call grell_dyncontrol_ensemble(nclouds,mgmzp,maxens_dyn,cldd,clds,dtime        &
-                                          ,closure_type,comp_down,tscal_kf,mconv           &
+                                          ,closure_type,comp_dn,tscal_kf,mconv             &
                                           ,omeg,x_p_cup,edt,mbprime(imbp),one_b(imbp)      &
-                                          ,aatot0,aatot,ierr,k22,kbcon,ktop,mfke,pwav,pwev &
-                                          ,prev_dnmf,dnmf_dyn,upmf_dyn)
+                                          ,aatot0,aatot,ierr,klou,klfc,ktop,mfke,pwav,pwev &
+                                          ,prev_dnmf,dnmf_dyn,upmf_dyn,dnmx_dyn,upmx_dyn)
             
             !------------------------------------------------------------------------------!
             ! 6d. Copying back the error flag and mass fluxes to the ensemble structures.  !
@@ -576,6 +589,8 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
                do idyn=1,maxens_dyn
                   ensemble_e(icld)%dnmf_ens(idyn,imbp,iedt,icap) = dnmf_dyn(icld,idyn)
                   ensemble_e(icld)%upmf_ens(idyn,imbp,iedt,icap) = upmf_dyn(icld,idyn)
+                  ensemble_e(icld)%dnmx_ens(idyn,imbp,iedt,icap) = dnmx_dyn(icld,idyn)
+                  ensemble_e(icld)%upmx_ens(idyn,imbp,iedt,icap) = upmx_dyn(icld,idyn)
                   !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
                   !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
                   if (printing) then
@@ -627,8 +642,8 @@ end subroutine grell_cupar_dynamic
 !------------------------------------------------------------------------------------------!
 subroutine grell_dyncontrol_ensemble(nclouds,mgmzp,maxens_dyn,cldd,clds,dtime,closure_type &
                                     ,comp_down,tscal_kf,mconv,omeg,p_cup,edt,mbprime,one_b &
-                                    ,aatot0,aatot,ierr,k22,kbcon,ktop,mfke,pwav,pwev       &
-                                    ,prev_dnmf,dnmf_dyn,upmf_dyn)
+                                    ,aatot0,aatot,ierr,klou,klfc,ktop,mfke,pwav,pwev       &
+                                    ,prev_dnmf,dnmf_dyn,upmf_dyn,dnmx_dyn,upmx_dyn)
    use rconstants  , only : grav           ! ! Gravity acceleration.
 
    implicit none
@@ -660,12 +675,14 @@ subroutine grell_dyncontrol_ensemble(nclouds,mgmzp,maxens_dyn,cldd,clds,dtime,cl
    real   , dimension(nclouds)        , intent(in) :: pwev      ! Int. evaporated water
    real   , dimension(nclouds)        , intent(in) :: prev_dnmf ! Int. evaporated water
    integer, dimension(nclouds)        , intent(in) :: ierr      ! Error flag
-   integer, dimension(nclouds)        , intent(in) :: k22       ! Updraft origin
-   integer, dimension(nclouds)        , intent(in) :: kbcon     ! Level of free convection
+   integer, dimension(nclouds)        , intent(in) :: klou      ! Updraft origin
+   integer, dimension(nclouds)        , intent(in) :: klfc      ! Level of free convection
    integer, dimension(nclouds)        , intent(in) :: ktop      ! Cloud top
    !----- Output variables. ---------------------------------------------------------------!
    real, dimension(nclouds,maxens_dyn), intent(inout) :: dnmf_dyn ! Ref. dndraft mass flux
    real, dimension(nclouds,maxens_dyn), intent(inout) :: upmf_dyn ! Ref. updraft mass flux
+   real, dimension(nclouds,maxens_dyn), intent(inout) :: dnmx_dyn ! Max. dndraft mass flux
+   real, dimension(nclouds,maxens_dyn), intent(inout) :: upmx_dyn ! Max. updraft mass flux
    !----- Local variables -----------------------------------------------------------------!
    integer                      :: icld      ! Cloud index
    integer                      :: idyn      ! Dynamic control counter
@@ -680,6 +697,8 @@ subroutine grell_dyncontrol_ensemble(nclouds,mgmzp,maxens_dyn,cldd,clds,dtime,cl
       do icld=1,nclouds
          upmf_dyn(icld,idyn) = 0.
          dnmf_dyn(icld,idyn) = 0.
+         upmx_dyn(icld,idyn) = 0.
+         dnmx_dyn(icld,idyn) = 0.
       end do
    end do
 
@@ -692,21 +711,21 @@ subroutine grell_dyncontrol_ensemble(nclouds,mgmzp,maxens_dyn,cldd,clds,dtime,cl
    !---------------------------------------------------------------------------------------!
    case ('gr')
       call grell_grell_solver(nclouds,cldd,clds,dtime,1.0,aatot0,aatot,mfke,ierr           &
-                            ,upmf_dyn(1:nclouds,1))
+                             ,upmf_dyn(1:nclouds,1),upmx_dyn(1:nclouds,1))
 
    !---------------------------------------------------------------------------------------!
    ! 2. Standard Arakawa and Schubert (1974), quasi-equilibrium buoyant energy.            !
    !---------------------------------------------------------------------------------------!
    case ('as')
       call grell_arakschu_solver(nclouds,cldd,clds,mgmzp,dtime,p_cup,1,1,ktop,aatot,mfke   &
-                                ,ierr,upmf_dyn(1:nclouds,1))
+                                ,ierr,upmf_dyn(1:nclouds,1),upmx_dyn(1:nclouds,1))
 
    !---------------------------------------------------------------------------------------!
    ! 3. Standard Kain and Fritsch (1990), instability removal.                             !
    !---------------------------------------------------------------------------------------!
    case ('kf')
       call grell_inre_solver(nclouds,cldd,clds,tscal_kf,1.0,aatot0,mfke,ierr               &
-                            ,upmf_dyn(1:nclouds,1))
+                            ,upmf_dyn(1:nclouds,1),upmx_dyn(1:nclouds,1))
 
    !---------------------------------------------------------------------------------------!
    ! 4. Standard Frank and Cohen (1987), low-level environment mass flux                   !
@@ -714,7 +733,8 @@ subroutine grell_dyncontrol_ensemble(nclouds,mgmzp,maxens_dyn,cldd,clds,dtime,cl
    case ('lo')
       loloop: do icld = cldd,clds
          if (ierr(icld) /= 0) cycle loloop
-         upmf_dyn(icld,1) = max(0.,-omeg(k22(icld))/grav - prev_dnmf(icld))
+         upmf_dyn(icld,1) = max(0.,-omeg(klou(icld))/grav - prev_dnmf(icld))
+         upmx_dyn(icld,1) = upmf_dyn(icld,1)
       end do loloop
 
    !---------------------------------------------------------------------------------------!
@@ -726,6 +746,7 @@ subroutine grell_dyncontrol_ensemble(nclouds,mgmzp,maxens_dyn,cldd,clds,dtime,cl
          divisor     = sign(max(tinyden,abs(pwav(icld)- edt(icld) * pwev(icld)))           &
                            ,pwav(icld)-edt(icld)*pwev(icld))
          upmf_dyn(icld,1) = max(0.,mconv * 1.4 * one_b / divisor)
+         upmx_dyn(icld,1) = upmf_dyn(icld,1)
       end do mcloop
 
    !---------------------------------------------------------------------------------------!
@@ -739,34 +760,34 @@ subroutine grell_dyncontrol_ensemble(nclouds,mgmzp,maxens_dyn,cldd,clds,dtime,cl
       ! 6a. Grell (1993), modified quasi-equilibrium buoyant energy.                       !
       !------------------------------------------------------------------------------------!
       call grell_grell_solver(nclouds,cldd,clds,dtime,1.0,aatot0,aatot,mfke,ierr           &
-                             ,upmf_dyn(1:nclouds,1))
+                             ,upmf_dyn(1:nclouds,1),upmx_dyn(1:nclouds,1))
       call grell_grell_solver(nclouds,cldd,clds,dtime,0.9,aatot0,aatot,mfke,ierr           &
-                             ,upmf_dyn(1:nclouds,2))
+                             ,upmf_dyn(1:nclouds,2),upmx_dyn(1:nclouds,2))
       call grell_grell_solver(nclouds,cldd,clds,dtime,1.1,aatot0,aatot,mfke,ierr           &
-                             ,upmf_dyn(1:nclouds,3))
+                             ,upmf_dyn(1:nclouds,3),upmx_dyn(1:nclouds,3))
 
       !------------------------------------------------------------------------------------!
       ! 6b. Arakawa and Schubert (1974), quasi-equilibrium buoyant energy.                 !
       !------------------------------------------------------------------------------------!
       !------ Computing the upward mass flux ----------------------------------------------!
       call grell_arakschu_solver(nclouds,cldd,clds,mgmzp,dtime,p_cup,1,1,ktop,aatot,mfke   &
-                                ,ierr,upmf_dyn(1:nclouds,4))
+                                ,ierr,upmf_dyn(1:nclouds,4),upmx_dyn(1:nclouds,4))
       call grell_arakschu_solver(nclouds,cldd,clds,mgmzp,dtime,p_cup,2,1,ktop,aatot,mfke   &
-                                ,ierr,upmf_dyn(1:nclouds,5))
+                                ,ierr,upmf_dyn(1:nclouds,5),upmx_dyn(1:nclouds,5))
       call grell_arakschu_solver(nclouds,cldd,clds,mgmzp,dtime,p_cup,1,2,ktop,aatot,mfke   &
-                                ,ierr,upmf_dyn(1:nclouds,6))
+                                ,ierr,upmf_dyn(1:nclouds,6),upmx_dyn(1:nclouds,6))
       call grell_arakschu_solver(nclouds,cldd,clds,mgmzp,dtime,p_cup,2,2,ktop,aatot,mfke   &
-                                ,ierr,upmf_dyn(1:nclouds,7))
+                                ,ierr,upmf_dyn(1:nclouds,7),upmx_dyn(1:nclouds,7))
 
       !------------------------------------------------------------------------------------!
       ! 6c. Kain and Fritsch (1990), instability removal.                                  !
       !------------------------------------------------------------------------------------!
       call grell_inre_solver(nclouds,cldd,clds,tscal_kf,1.0,aatot0,mfke,ierr               &
-                            ,upmf_dyn(1:nclouds,8))
+                            ,upmf_dyn(1:nclouds,8),upmx_dyn(1:nclouds,8))
       call grell_inre_solver(nclouds,cldd,clds,tscal_kf,0.9,aatot0,mfke,ierr               &
-                            ,upmf_dyn(1:nclouds,9))
+                            ,upmf_dyn(1:nclouds,9),upmx_dyn(1:nclouds,9))
       call grell_inre_solver(nclouds,cldd,clds,tscal_kf,1.1,aatot0,mfke,ierr               &
-                            ,upmf_dyn(1:nclouds,10))
+                            ,upmf_dyn(1:nclouds,10),upmx_dyn(1:nclouds,10))
 
       if (closure_type == 'en') then
          !---------------------------------------------------------------------------------!
@@ -774,12 +795,15 @@ subroutine grell_dyncontrol_ensemble(nclouds,mgmzp,maxens_dyn,cldd,clds,dtime,cl
          !---------------------------------------------------------------------------------!
          enloloop: do icld=cldd,clds
             if (ierr(icld) /= 0) cycle enloloop
-            upmf_dyn(icld,11) = max(0.,-omeg(k22(icld))/grav   - prev_dnmf(icld))
-            upmf_dyn(icld,12) = max(0.,-omeg(kbcon(icld))/grav - prev_dnmf(icld))
-            !----- Picking up the strongest mass flux below the LFC (except k22) ----------!
-            ksmf = minloc(omeg(1:(kbcon(icld)-1)),dim=1                                    &
-                         ,mask=omeg(1:(kbcon(icld)-1)) /= omeg(k22(icld)))
+            upmf_dyn(icld,11) = max(0.,-omeg(klou(icld))/grav   - prev_dnmf(icld))
+            upmf_dyn(icld,12) = max(0.,-omeg(klfc(icld))/grav - prev_dnmf(icld))
+            !----- Picking up the strongest mass flux below the LFC (except klou) ---------!
+            ksmf = minloc(omeg(1:(klfc(icld)-1)),dim=1                                     &
+                         ,mask=omeg(1:(klfc(icld)-1)) /= omeg(klou(icld)))
             upmf_dyn(icld,13) = max(0.,-omeg(ksmf)/grav - prev_dnmf(icld))
+            upmx_dyn(icld,11) = upmf_dyn(icld,11)
+            upmx_dyn(icld,12) = upmf_dyn(icld,12)
+            upmx_dyn(icld,13) = upmf_dyn(icld,13)
          end do enloloop
 
          
@@ -796,6 +820,9 @@ subroutine grell_dyncontrol_ensemble(nclouds,mgmzp,maxens_dyn,cldd,clds,dtime,cl
             upmf_dyn(icld,14) = max(0.,mconv * 1.4 * one_b / divisor)
             upmf_dyn(icld,15) = 1.1 * upmf_dyn(icld,14)
             upmf_dyn(icld,16) = 0.9 * upmf_dyn(icld,14)
+            upmx_dyn(icld,14) = upmf_dyn(icld,14)
+            upmx_dyn(icld,15) = upmf_dyn(icld,15)
+            upmx_dyn(icld,16) = upmf_dyn(icld,16)
          end do enmcloop
       end if
    end select
@@ -803,6 +830,7 @@ subroutine grell_dyncontrol_ensemble(nclouds,mgmzp,maxens_dyn,cldd,clds,dtime,cl
    do idyn=1,maxens_dyn
       do icld=cldd,clds
          dnmf_dyn(icld,idyn) = edt(icld) * upmf_dyn(icld,idyn)
+         dnmx_dyn(icld,idyn) = edt(icld) * upmx_dyn(icld,idyn)
       end do
    end do
 
@@ -821,7 +849,7 @@ end subroutine grell_dyncontrol_ensemble
 !     This subroutine will solve the mass fluxes of a collection of Grell clouds using     !
 ! the quasi-equilibrium assumption.  This is used by Grell (1993) dynamic control.         !
 !------------------------------------------------------------------------------------------!
-subroutine grell_grell_solver(nclouds,cldd,clds,dtime,fac,aatot0,aatot,mfke,ierr,upmf)
+subroutine grell_grell_solver(nclouds,cldd,clds,dtime,fac,aatot0,aatot,mfke,ierr,upmf,upmx)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer                            , intent(in)    :: cldd    ! Deepest Grell cloud
@@ -835,6 +863,7 @@ subroutine grell_grell_solver(nclouds,cldd,clds,dtime,fac,aatot0,aatot,mfke,ierr
    !----- Downdraft is inout because I may not compute it ---------------------------------!
    integer, dimension(nclouds)        , intent(in)    :: ierr    ! Error flag
    real   , dimension(nclouds)        , intent(inout) :: upmf    ! Ref. updraft mass flux
+   real   , dimension(nclouds)        , intent(inout) :: upmx    ! Max. updraft mass flux
    !----- Local variables. ----------------------------------------------------------------!
    integer                              :: icld    ! Cloud index
    integer                              :: jcld    ! Cloud index too
@@ -880,6 +909,7 @@ subroutine grell_grell_solver(nclouds,cldd,clds,dtime,fac,aatot0,aatot,mfke,ierr
    !----- Assign zero to the fluxes, just in case something prevents the calculation. -----!
    do icld=1,nclouds
       upmf(icld) = 0.
+      upmx(icld) = 0.
    end do
 
    !----- Initialise the cloud arrays. ----------------------------------------------------!
@@ -948,6 +978,8 @@ subroutine grell_grell_solver(nclouds,cldd,clds,dtime,fac,aatot0,aatot,mfke,ierr
          do jsol=1,nsolv
             jcld = cldidx(jsol)
             upmf(jcld) = mb(jsol)
+            !----- UPMX is the maximum cloud mass flux if it was the only cloud present. --!
+            upmx(jcld) = max(0.,mfo(jsol) / kke(jsol,jsol))
          end do
          !----- Free memory before leaving the subroutine. --------------------------------!
          deallocate(kke,mfo,mb,cldidx)
@@ -974,7 +1006,7 @@ end subroutine grell_grell_solver
 ! value instead of the previous step value.                                                !
 !------------------------------------------------------------------------------------------!
 subroutine grell_arakschu_solver(nclouds,cldd,clds,mgmzp,dtime,p_cup,clim,whlev,ktop,aatot &
-                                ,mfke,ierr,upmf)
+                                ,mfke,ierr,upmf,upmx)
    use grell_coms  , only : pclim  & ! Levels with available climatological aatot
                           , aclim1 & ! Standard cloud work function climatology
                           , aclim2 ! ! Alternative cloud work function climatology
@@ -994,6 +1026,7 @@ subroutine grell_arakschu_solver(nclouds,cldd,clds,mgmzp,dtime,p_cup,clim,whlev,
    !----- Downdraft is inout because I may not compute it ---------------------------------!
    integer, dimension(nclouds)        , intent(in)    :: ierr    ! Error flag
    real   , dimension(nclouds)        , intent(inout) :: upmf    ! Ref. updraft mass flux
+   real   , dimension(nclouds)        , intent(inout) :: upmx    ! Max. updraft mass flux
    !----- Local variables. ----------------------------------------------------------------!
    integer                              :: icld    ! Cloud index
    integer                              :: jcld    ! Cloud index too
@@ -1040,6 +1073,7 @@ subroutine grell_arakschu_solver(nclouds,cldd,clds,mgmzp,dtime,p_cup,clim,whlev,
    !----- Assign zero to the fluxes, just in case something prevents the calculation. -----!
    do icld=1,nclouds
       upmf(icld) = 0.
+      upmx(icld) = 0.
    end do
 
    !----- Initialise the cloud arrays. ----------------------------------------------------!
@@ -1129,6 +1163,8 @@ subroutine grell_arakschu_solver(nclouds,cldd,clds,mgmzp,dtime,p_cup,clim,whlev,
          do jsol=1,nsolv
             jcld = cldidx(jsol)
             upmf(jcld) = mb(jsol)
+            !----- UPMX is the maximum cloud mass flux if it was the only cloud present. --!
+            upmx(jcld) = max(0.,mfo(jsol) / kke(jsol,jsol))
          end do
          !----- Free memory before leaving the subroutine. --------------------------------!
          deallocate(kke,mfo,mb,cldidx)
@@ -1153,7 +1189,7 @@ end subroutine grell_arakschu_solver
 ! the instability removal assumption.  This is what is used by Kain-Fristsch (1987) dyna-  !
 ! mic control.                                                                             !
 !------------------------------------------------------------------------------------------!
-subroutine grell_inre_solver(nclouds,cldd,clds,tscal,fac,aatot0,mfke,ierr,upmf)
+subroutine grell_inre_solver(nclouds,cldd,clds,tscal,fac,aatot0,mfke,ierr,upmf,upmx)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer                            , intent(in)    :: cldd    ! Deepest Grell cloud
@@ -1166,6 +1202,7 @@ subroutine grell_inre_solver(nclouds,cldd,clds,tscal,fac,aatot0,mfke,ierr,upmf)
    !----- Downdraft is inout because I may not compute it ---------------------------------!
    integer, dimension(nclouds)        , intent(in)    :: ierr    ! Error flag
    real   , dimension(nclouds)        , intent(inout) :: upmf    ! Ref. updraft mass flux
+   real   , dimension(nclouds)        , intent(inout) :: upmx    ! Max. updraft mass flux
    !----- Local variables. ----------------------------------------------------------------!
    integer                              :: icld    ! Cloud index
    integer                              :: jcld    ! Cloud index too
@@ -1211,6 +1248,7 @@ subroutine grell_inre_solver(nclouds,cldd,clds,tscal,fac,aatot0,mfke,ierr,upmf)
    !----- Assign zero to the fluxes, just in case something prevents the calculation. -----!
    do icld=1,nclouds
       upmf(icld) = 0.
+      upmx(icld) = 0.
    end do
 
    !----- Initialise the cloud arrays. ----------------------------------------------------!
@@ -1280,6 +1318,8 @@ subroutine grell_inre_solver(nclouds,cldd,clds,tscal,fac,aatot0,mfke,ierr,upmf)
          do jsol=1,nsolv
             jcld       = cldidx(jsol)
             upmf(jcld) = mb(jsol)
+            !----- UPMX is the maximum cloud mass flux if it was the only cloud present. --!
+            upmx(jcld) = max(0.,mfo(jsol) / kke(jsol,jsol))
          end do
          !----- Free memory before leaving the subroutine. --------------------------------!
          deallocate(kke,mfo,mb,cldidx)

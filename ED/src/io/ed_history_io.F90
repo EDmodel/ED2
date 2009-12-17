@@ -975,10 +975,10 @@ subroutine read_ed21_history_file
            memdims(1)  = 1_8
            memoffs(1)  = 0_8
            memsize(1)  = 1_8
-           
-           call hdf_getslab_i(cgrid%load_adjacency(ipy),'LOAD_ADJACENCY ',&
+           !---- The ipy:ipy notation is needed for ifort when checking interfaces. -------!
+           call hdf_getslab_i(cgrid%load_adjacency(ipy:ipy),'LOAD_ADJACENCY ',&
                 dsetrank,iparallel,.true.)
-           call hdf_getslab_r(cgrid%wbar(ipy),'WBAR ',dsetrank,iparallel,.true.)
+           call hdf_getslab_r(cgrid%wbar(ipy:ipy),'WBAR ',dsetrank,iparallel,.true.)
            
            ! Load the workload (2D)
            dsetrank    = 2

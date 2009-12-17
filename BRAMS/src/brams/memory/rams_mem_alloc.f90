@@ -227,7 +227,7 @@ subroutine rams_mem_alloc(proc_type)
          call nullify_ensemble(ensemble_e(ne))
          call alloc_ensemble(ensemble_e(ne),nclouds,mgmzp,maxens_dyn,maxens_lsf,maxens_eff &
                             ,maxens_cap)
-         call zero_ensemble(ensemble_e(ne))
+         call zero_ensemble(ensemble_e(ne),ne)
       end do
    end if
    !---------------------------------------------------------------------------------------!

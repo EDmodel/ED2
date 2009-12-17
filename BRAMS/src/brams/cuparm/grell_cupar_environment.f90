@@ -146,7 +146,7 @@ end subroutine grell_thermo_cldlev
 ! Our expression is just slightly different in formulation because WC93 approximated       !
 ! 1/(1+x) ~= 1-x, and we didn't do it here because there was no advantage to simplify in   !
 ! our case.                                                                                !
-!---------------------------------------------------------------------------=--------------!
+!------------------------------------------------------------------------------------------!
 real function buoyancy_acc(rho_cup,rhoz_cld)
 
    use rconstants, only : grav
