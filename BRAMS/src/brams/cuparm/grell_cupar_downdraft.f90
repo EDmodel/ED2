@@ -746,7 +746,7 @@ subroutine grell_cldwork_downdraft(mkx,mgmzp,klod,dbyd,dzd_cld,etad_cld,aad)
    do k=klod-1,1,-1
       aad = aad - etad_cld(k) * dbyd(k) *dzd_cld(k)
    end do
-   aad = max(0.,aad)
+   ! aad = max(0.,aad)
 
    return
 end subroutine grell_cldwork_downdraft

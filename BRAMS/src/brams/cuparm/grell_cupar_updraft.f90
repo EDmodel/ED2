@@ -212,7 +212,14 @@ recursive subroutine grell_find_cloud_lfc(mkx,mgmzp,kbmax,cap_max,wnorm_max,wwin
       if (klcl == mkx .or. plcl >= p_cup(klcl)) exit klclloop
       klcl = klcl + 1
    end do klclloop
-   klfc  = klcl
+   
+   !---------------------------------------------------------------------------------------!
+   !     Although the level of free convection is usually beneath the lifting condensation !
+   ! level, that may not always be the case.  If the level of origin of updrafts is within !
+   ! the boundary layer, it can actually become buoyant even before reaching LCL.  That is !
+   ! particularly true in shallow convection and oceanic clouds (kind of stratocumulus...) ! 
+   !---------------------------------------------------------------------------------------!
+   klfc  = klou
    
    !---------------------------------------------------------------------------------------!
    !   First step: finding the level in which the air lifted from the level that updrafts  !
@@ -949,8 +956,9 @@ subroutine grell_most_thermo_updraft(comp_down,check_top,mkx,mgmzp,klfc,ktpse,cl
       dbyu(k) = buoyancy_acc(rho_cup(k),rhou_cld(k))
       
       !------------------------------------------------------------------------------------!
-      !    If buoyancy is negative, we found the cloud top. We can skip this loop and set  !
-      ! all the other variables to either 0 or the environment, whichever is suitable.     !
+      !    If buoyancy is negative, we found the level of neutral buoyancy. We can skip    !
+      ! this loop and set all the other variables to either 0 or the environment, which-   !
+      ! ever is suitable.                                                                  !
       !------------------------------------------------------------------------------------!
       if (check_top .and. dbyu(k) < 0.) then
          pwavu        = pwavu - pwu_cld(k)
@@ -1031,13 +1039,9 @@ subroutine grell_cldwork_updraft(mkx,mgmzp,klfc,ktop,dbyu,dzu_cld,etau_cld,aau)
    ! final value should represent the cloud function for the entire cloud thus the         !
    ! integral between the LFC and cloud top.                                               !
    !---------------------------------------------------------------------------------------!
-   do k=klfc,ktop-1
+   do k=klfc,ktop
       aau = aau + etau_cld(k)*dbyu(k-1) *dzu_cld(k)
    end do
-
-   !----- Include ktop only if buoyancy is positive there ---------------------------------!
-   if (dbyu(ktop-1) > 0) aau = aau + etau_cld(ktop)*dbyu(ktop-1)*dzu_cld(ktop)
-   aau = max(0.,aau)
 
    return
 end subroutine grell_cldwork_updraft

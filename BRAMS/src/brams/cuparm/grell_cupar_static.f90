@@ -512,7 +512,7 @@ subroutine grell_cupar_static(comp_noforc_cldwork,checkmass,iupmethod,maxens_cap
       !10. Finding the cloud work function associated with updrafts. If this cloud doesn't !
       !    produce cloud work, break the run, we don't simulate lazy clouds in this model. !
       !------------------------------------------------------------------------------------!
-      call grell_cldwork_updraft(mkx,mgmzp,klfc,klnb,dbyu,dzu_cld,etau_cld,aau)
+      call grell_cldwork_updraft(mkx,mgmzp,klou,ktop,dbyu,dzu_cld,etau_cld,aau)
       if (aau == 0.) then
          ierr_cap(icap) = 10
          cycle stacloop
@@ -702,7 +702,7 @@ subroutine grell_cupar_static(comp_noforc_cldwork,checkmass,iupmethod,maxens_cap
          !---------------------------------------------------------------------------------!
          ! vii.   Finding the cloud work function                                          !
          !---------------------------------------------------------------------------------!
-         call grell_cldwork_updraft(mkx,mgmzp,klfc,ktop,dby0u,dzu_cld,etau_cld,aa0u)
+         call grell_cldwork_updraft(mkx,mgmzp,klou,ktop,dby0u,dzu_cld,etau_cld,aa0u)
          
          !----- Downdraft properties ------------------------------------------------------!
          if (comp_down_cap(icap)) then

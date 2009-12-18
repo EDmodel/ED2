@@ -376,7 +376,7 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
                         !------------------------------------------------------------------!
                         ! 5f. Recalculating the updraft cloud work                         !
                         !------------------------------------------------------------------!
-                        call grell_cldwork_updraft(mkx,mgmzp,klfc(icld),ktop(icld),x_dbyu  &
+                        call grell_cldwork_updraft(mkx,mgmzp,klou(icld),ktop(icld),x_dbyu  &
                                                   ,dzu_cld,etau_cld,x_aau)
 
                         modif_down: if (comp_dn(icld)) then
