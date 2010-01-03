@@ -17,8 +17,8 @@
 !                                                                                          !
 !------------------------------------------------------------------------------------------!
 subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,maxens_lsf    &
-                              ,maxens_dyn,mgmzp,closure_type,comp_modif_thermo,cld2prec    &
-                              ,mynum,i,j)
+                              ,maxens_dyn,mgmzp,closure_type,comp_modif_thermo,prec_cld    &
+                              ,cld2prec,mynum,i,j)
    use mem_ensemble     , only : ensemble_vars & ! structure
                                , ensemble_e    ! ! intent(inout)
 
@@ -138,6 +138,7 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
    character(len=2), intent(in) :: closure_type! Short name to define the method.
    !----- Logical flags, to bypass uncessary steps ----------------------------------------!
    logical                    , intent(in) :: comp_modif_thermo ! Compute interactions.
+   logical, dimension(nclouds), intent(in) :: prec_cld          ! Precipitating cloud
    !----- Miscellaneous variables ---------------------------------------------------------!
    real, intent(in)  :: cld2prec     ! Fraction of cloud water converted to prec. [    ---]
    real, intent(in)  :: dtime        ! Time step.                                 [      s]
@@ -187,6 +188,7 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
    integer                                :: x_ierr   ! Flag for convection error
    integer                                :: x_klnb   ! Level of neutral buoyancy
    integer                                :: x_ktop   ! Cloud top level
+   logical                                :: x_comp_dn! Downdraft flag
    real                                   :: x_qsat
    !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
@@ -311,10 +313,11 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
                      !---------------------------------------------------------------------!
                      ! 5a. Initialise some variables.                                      !
                      !---------------------------------------------------------------------!
-                     x_ierr   = 0
+                     x_ierr    = 0
+                     x_comp_dn = comp_dn(icld)
                      !----- Cloud work ----------------------------------------------------!
-                     x_aad    = 0.
-                     x_aau    = 0.
+                     x_aad     = 0.
+                     x_aau     = 0.
  
                      modif_comp_if: if (comp_modif_thermo .and.                            &
                                         ensemble_e(icld)%ierr_cap(icap) == 0) then
@@ -359,7 +362,7 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
                         !------------------------------------------------------------------!
                         ! 5e. Getting the updraft moisture profile                         !
                         !------------------------------------------------------------------!
-                        call grell_most_thermo_updraft(comp_dn(icld),.false.,mkx,mgmzp     &
+                        call grell_most_thermo_updraft(prec_cld(icld),.false.,mkx,mgmzp    &
                                                       ,klfc(icld),ktop(icld),cld2prec,cdu  &
                                                       ,mentru_rate,x_qtot,x_co2,x_p_cup    &
                                                       ,x_exner_cup,x_theiv_cup,x_thil_cup  &
@@ -386,7 +389,7 @@ subroutine grell_cupar_dynamic(cldd,clds,nclouds,dtime,maxens_cap,maxens_eff,max
                            !---------------------------------------------------------------!
                            call grell_theiv_downdraft(mkx,mgmzp,klod,cdd,mentrd_rate       &
                                                      ,x_theiv,x_theiv_cup,x_theivs_cup     &
-                                                     ,dzd_cld,x_ierr,x_theivd_cld)
+                                                     ,dzd_cld,x_theivd_cld)
 
                            !---------------------------------------------------------------!
                            ! 5h. Moisture properties                                       !

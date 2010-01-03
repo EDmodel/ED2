@@ -38,8 +38,13 @@ module grell_coms
   logical                                       :: comp_noforc_cldwork
   !----- I will compute the cloud work function with the arbitrary mass flux --------------!
   logical                                       :: comp_modif_thermo
-  !----- There is any chance I will compute downdrafts ------------------------------------!
-  logical     , dimension(maxclouds)            :: comp_down
+
+  !----------------------------------------------------------------------------------------!
+  !     This is a precipitating cloud.  This is used to assign the initial value for down- !
+  ! drafts too.  Non-precipitating clouds will always lack downdrafts, whereas precipitat- !
+  ! ing clouds may or may not have downdrafts.                                             !
+  !----------------------------------------------------------------------------------------!
+  logical     , dimension(maxclouds)            :: prec_cld
 
   !----------------------------------------------------------------------------------------!
   !    These variables are obtained from RAMSIN.                                           !
@@ -202,12 +207,10 @@ module grell_coms
 
          !---------------------------------------------------------------------------------!
          !   First I decide whether this cloud will be allowed to have precipitation and   !
-         ! downdrafts. If not, reduce the dimension of precipitation efficiency since it   !
-         ! won't matter. For now precipitating clouds come together with downdrafts (both  !
-         ! or nothing). And this decision is currently defined by a single number          !
+         ! downdrafts.  This decision is currently defined by a single number,             !
          ! min_down_radius...                                                              !
          !---------------------------------------------------------------------------------!
-         comp_down(icld) = radius(icld) > min_down_radius
+         prec_cld(icld) = radius(icld) > min_down_radius
 
 
          !----- Finding the maximum depth. ------------------------------------------------!
@@ -233,7 +236,7 @@ module grell_coms
       !------------------------------------------------------------------------------------!
       select case (closure_type)
       case ('en')
-         if (.not. comp_down(icld)) then
+         if (.not. prec_cld(icld)) then
             write(unit=*,fmt='(a)') '--------------------------------------------------'
             write(unit=*,fmt='(a,1x,i4)')   ' - For cloud #',icld
             write(unit=*,fmt='(a,1x,f8.2)') ' - Radius is ',radius(icld)
@@ -263,7 +266,7 @@ module grell_coms
          comp_modif_thermo   = .true.
 
       case default
-         if (.not. comp_down(icld)) then
+         if (.not. prec_cld(icld)) then
             write(unit=*,fmt='(a)') '--------------------------------------------------'
             write(unit=*,fmt='(a,1x,i4)')   ' - For cloud #',icld
             write(unit=*,fmt='(a,1x,f8.2)') ' - Radius is ',radius(icld)

@@ -510,7 +510,7 @@ end subroutine grell_nms_updraft
 !     This subroutine computes most thermodynamic variables associated with the updraft,   !
 ! in particular those affected by phase change.                                            !
 !------------------------------------------------------------------------------------------!
-subroutine grell_most_thermo_updraft(comp_down,check_top,mkx,mgmzp,klfc,ktpse,cld2prec,cdu &
+subroutine grell_most_thermo_updraft(preccld,check_top,mkx,mgmzp,klfc,ktpse,cld2prec,cdu   &
                                     ,mentru_rate,qtot,co2,p_cup,exner_cup,theiv_cup        &
                                     ,thil_cup,t_cup,qtot_cup,qvap_cup,qliq_cup,qice_cup    &
                                     ,qsat_cup,co2_cup,rho_cup,theivu_cld,etau_cld,dzu_cld  &
@@ -521,7 +521,7 @@ subroutine grell_most_thermo_updraft(comp_down,check_top,mkx,mgmzp,klfc,ktpse,cl
    use therm_lib , only : thetaeiv2thil, idealdens, toler, maxfpo
    implicit none
    !----- Several scalars. ----------------------------------------------------------------!
-   logical               , intent(in)    :: comp_down   ! Flag for downdraft/precipitation
+   logical               , intent(in)    :: preccld     ! Flag for precipitation
    logical               , intent(in)    :: check_top   ! Flag for checking top
    integer               , intent(in)    :: mkx         ! Levels 
    integer               , intent(in)    :: mgmzp       ! Levels
@@ -596,14 +596,12 @@ subroutine grell_most_thermo_updraft(comp_down,check_top,mkx,mgmzp,klfc,ktpse,cl
 
 
    !---------------------------------------------------------------------------------------!
-   ! 1. First of all, I'll check whether this is a precipitating cloud or not. Currently,  !
-   !    precipitating clouds are the ones that contain downdrafts. This does not need to   !
-   !    be the requirement, it was just for convenience. The conversion rate from cloud to !
-   !    rain should be a function of the cloud size and wind shear, but it is only a step  !
-   !    function, 0 if the radius is small, or a non-zero constant otherwise. Perhaps this !
-   !    should be done in a different way in the future.                                   !
+   ! 1. First of all, I'll check whether this is a precipitating cloud or not.  The        !
+   !    conversion rate from cloud to rain should be a function of the cloud size and wind !
+   !    shear, but it is only a step function, 0 if the radius is small, or a non-zero     !
+   !    constant otherwise. Perhaps this should be done in a different way in the future.  !
    !---------------------------------------------------------------------------------------!
-   if (comp_down) then
+   if (preccld) then
       c0 = cld2prec
    else 
       c0 = 0.

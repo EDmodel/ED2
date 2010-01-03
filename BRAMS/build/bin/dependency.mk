@@ -69,7 +69,6 @@ kuo_cupar_driver.o: conv_coms.mod mem_basic.mod mem_cuparm.mod mem_grid.mod
 kuo_cupar_driver.o: mem_scratch.mod mem_tend.mod node_mod.mod rconstants.mod
 kuo_cupar_driver.o: therm_lib.mod
 mem_cuparm.o: grid_dims.mod var_tables.mod
-mem_ensemble.o: grell_coms.mod
 rconv_driver.o: mem_basic.mod mem_cuparm.mod mem_grid.mod mem_scratch.mod
 rconv_driver.o: mem_tend.mod mem_turb.mod node_mod.mod
 shcu_vars_const.o: conv_coms.mod grid_dims.mod

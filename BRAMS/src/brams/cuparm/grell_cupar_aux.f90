@@ -409,7 +409,7 @@ end subroutine initial_thermo_grell
 !   This subroutine intialises the wind information and the previous downdraft mass flux,  !
 ! which may affect current convection depending on the dynamic control chosen.             !
 !------------------------------------------------------------------------------------------!
-subroutine initial_winds_grell(comp_down,m1,m2,m3,i,j,jdim,last_dnmf,ua,va,prev_dnmf)
+subroutine initial_winds_grell(prec_cld,m1,m2,m3,i,j,jdim,last_dnmf,ua,va,prev_dnmf)
 
    use mem_scratch_grell, only: &
             mkx                 & ! intent(in)  - Number of Grell levels.
@@ -428,7 +428,7 @@ subroutine initial_winds_grell(comp_down,m1,m2,m3,i,j,jdim,last_dnmf,ua,va,prev_
    integer                      , intent(in)    :: m3        ! Number of y points
    integer                      , intent(in)    :: i,j       ! Current x, y & cld position
    integer                      , intent(in)    :: jdim      ! Dimension in y
-   logical                      , intent(in)    :: comp_down ! Computing downdrafts (T/F)
+   logical                      , intent(in)    :: prec_cld  ! Precipitating cloud (T/F)
    real   , dimension(m2,m3)    , intent(in)    :: last_dnmf ! Last time downdraft
    real   , dimension(m1,m2,m3) , intent(in)    :: ua        ! Zonal wind
    real   , dimension(m1,m2,m3) , intent(in)    :: va        ! Meridional wind

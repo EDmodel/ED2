@@ -260,6 +260,7 @@ module mem_scratch_grell
 
 
    !----- Scalars. ------------------------------------------------------------------------!
+   logical :: comp_dn   ! Flag for downdraft thermodynamics.                     [     ---]
    integer :: ierr      ! Flag for convection error                              [     ---]
    integer :: klod      ! Level of origin of downdrafts                          [     ---]
    integer :: klou      ! Level of origin of updrafts                            [     ---]
@@ -860,6 +861,7 @@ module mem_scratch_grell
          ! Flushing scalars, we don't need to check for allocation here...                 !
          !---------------------------------------------------------------------------------!
          !----- Integer variables ---------------------------------------------------------!
+         comp_dn           = .true.
          ierr              = 0
          klod              = 0
          klou              = 0

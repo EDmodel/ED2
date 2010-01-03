@@ -394,12 +394,10 @@ module mem_ensemble
 
    !=======================================================================================!
    !=======================================================================================!
-   subroutine zero_ensemble(ensemble,icld)
-      use grell_coms, only : comp_down
+   subroutine zero_ensemble(ensemble)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(ensemble_vars), intent(inout) :: ensemble
-      integer            , intent(in)    :: icld
       !------------------------------------------------------------------------------------!
 
       if(associated(ensemble%dnmf_ens       ))  ensemble%dnmf_ens        = 0.
@@ -419,8 +417,8 @@ module mem_ensemble
       if(associated(ensemble%dellaco2_eff   ))  ensemble%dellaco2_eff    = 0.
       if(associated(ensemble%pw_eff         ))  ensemble%pw_eff          = 0.
 
-      if(associated(ensemble%ierr_cap       ))  ensemble%ierr_cap        = 1  ! Integer
-      if(associated(ensemble%comp_down_cap  ))  ensemble%comp_down_cap   = comp_down(icld)
+      if(associated(ensemble%ierr_cap       ))  ensemble%ierr_cap        = 1      ! Integer
+      if(associated(ensemble%comp_down_cap  ))  ensemble%comp_down_cap   = .true. ! Logical
       if(associated(ensemble%klod_cap       ))  ensemble%klod_cap        = 0
       if(associated(ensemble%klou_cap       ))  ensemble%klou_cap        = 0
       if(associated(ensemble%klcl_cap       ))  ensemble%klcl_cap        = 0

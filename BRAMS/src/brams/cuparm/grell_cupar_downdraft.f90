@@ -15,11 +15,13 @@
 !   This subroutine computes the level in which the downdraft originates.                  !
 !------------------------------------------------------------------------------------------!
 subroutine grell_find_downdraft_origin(mkx,mgmzp,klou,ktop,relheight_down,zcutdown,z_cup   &
-                                      ,theivs_cup,dzd_cld,ierr,kdet,klod)
+                                      ,theivs_cup,dzd_cld,comp_down,kdet,klod)
 
    implicit none
    
-   integer, intent(in)                   :: mkx, mgmzp     ! Grid variables
+   !------ Level variables. ---------------------------------------------------------------!
+   integer, intent(in)                   :: mkx            ! Grid variable
+   integer, intent(in)                   :: mgmzp          ! Grid variable
    integer, intent(in)                   :: klou           ! Level of origin of updrafts
    integer, intent(in)                   :: ktop           ! Cloud top level
    
@@ -32,13 +34,20 @@ subroutine grell_find_downdraft_origin(mkx,mgmzp,klou,ktop,relheight_down,zcutdo
 
    integer               , intent(out)   :: klod           ! Level of origin of downdrafts
    integer               , intent(inout) :: kdet           ! Top of dndraft detrainm. layer
-   integer               , intent(inout) :: ierr           ! Error flag
+   logical               , intent(inout) :: comp_down      ! Downdraft flag
 
    real, dimension(mgmzp)                :: theivd_tmp     ! Temporary downdraft thetae_iv
    real                                  :: ssbuoy         ! Integrated buoyancy term
    real                                  :: zktop          ! Top Height allowed for dndfts.
    integer                               :: kzdown         ! Top level allowed for dndrafts
    integer                               :: k              ! Level counter
+   !---------------------------------------------------------------------------------------!
+
+   if (.not. comp_down) then
+      klod = 0
+      kdet = 0
+      return
+   end if
 
    !---------------------------------------------------------------------------------------!
    !   Initializing theivd_tmp. This is temporary because it neglects entrainment and      !
@@ -62,11 +71,11 @@ subroutine grell_find_downdraft_origin(mkx,mgmzp,klou,ktop,relheight_down,zcutdo
    end do kzdownloop
 
    !---------------------------------------------------------------------------------------!
-   !    If klou is above kzdown, then this cloud doesn't make sense.  Assign error flag    !
-   ! and leave the subroutine.                                                             !
+   !    If klou is above kzdown, then this cloud downdraft doesn't make sense.  Switch the !
+   ! downdraft off and leave the subroutine.                                               !
    !---------------------------------------------------------------------------------------!
    if (kzdown < klou) then
-      ierr = 12
+      comp_down = .false.
       return
    end if
 
@@ -87,11 +96,11 @@ subroutine grell_find_downdraft_origin(mkx,mgmzp,klou,ktop,relheight_down,zcutdo
    klodloop: do
 
       !------------------------------------------------------------------------------------!
-      !    First thing to check: Is this klod too low? If so, I won't allow this cloud to  !
-      ! happen.                                                                            !
+      !    First thing to check: Is this klod too low? If so, this cloud cannot have a     !
+      ! downdraft.                                                                         !
       !------------------------------------------------------------------------------------!
       if (klod <= 3) then
-         ierr = 4
+         comp_down = .false.
          return
       end if
 
@@ -216,12 +225,11 @@ end subroutine grell_nms_downdraft
 ! and buoyancy effect associated with downdrafts.                                          !
 !------------------------------------------------------------------------------------------!
 subroutine grell_theiv_downdraft(mkx,mgmzp,klod,cdd,mentrd_rate,theiv,theiv_cup,theivs_cup &
-                                ,dzd_cld,ierr,theivd_cld)
-  implicit none
+                                ,dzd_cld,theivd_cld)
+   implicit none
 
    integer               , intent(in)    :: mkx, mgmzp  ! Grid dimesnsions;
    integer               , intent(in)    :: klod        ! Downdrafts begin here;
-   integer               , intent(inout) :: ierr        ! Error flag;
 
    real, dimension(mgmzp), intent(in)    :: mentrd_rate ! Entrainment rate;
    real, dimension(mgmzp), intent(in)    :: cdd         ! Detrainment function;
@@ -321,7 +329,7 @@ subroutine grell_most_thermo_downdraft(mkx,mgmzp,klod,qtot,co2,mentrd_rate,cdd,p
    !----- Output variables ----------------------------------------------------------------!
    real, dimension(mgmzp), intent(inout) :: pwd_cld     ! Normal. evap. flux       [ kg/kg]
    real                  , intent(out)   :: pwev        ! Total evaporation flux   [ kg/kg]
-   !----- Transit variable ----------------------------------------------------------------!
+   !----- Variable that may change in this subroutine -------------------------------------!
    integer               , intent(inout) :: ierr        ! Error flag
    !----- Local variables -----------------------------------------------------------------!
    integer                :: k              ! Counter                              [  ----]
@@ -345,8 +353,6 @@ subroutine grell_most_thermo_downdraft(mkx,mgmzp,klod,qtot,co2,mentrd_rate,cdd,p
    !----- Constants -----------------------------------------------------------------------!
    real, parameter        :: toowet=0.030   ! Max. mix. ratio for initial guesses  [ kg/kg]
    !---------------------------------------------------------------------------------------!
-
-
 
 
    !---------------------------------------------------------------------------------------!
@@ -701,7 +707,7 @@ subroutine grell_most_thermo_downdraft(mkx,mgmzp,klod,qtot,co2,mentrd_rate,cdd,p
    ! 3. Now we should check whether the downdraft buoyancy makes sense. Downdrafts, as we  !
    !    can imagine from their names, must go down... This will be possible only if there  !
    !    is negative acceleration, provided by buoyancy. If that's not the case this cloud  !
-   !    makes no sense so its existence will be denied...                                  !
+   !    makes no sense so we won't allow it to happen...                                   !
    !---------------------------------------------------------------------------------------!
    if (bytot > 0.) ierr = 8
 
@@ -746,7 +752,6 @@ subroutine grell_cldwork_downdraft(mkx,mgmzp,klod,dbyd,dzd_cld,etad_cld,aad)
    do k=klod-1,1,-1
       aad = aad - etad_cld(k) * dbyd(k) *dzd_cld(k)
    end do
-   ! aad = max(0.,aad)
 
    return
 end subroutine grell_cldwork_downdraft

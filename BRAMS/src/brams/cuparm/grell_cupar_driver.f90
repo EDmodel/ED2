@@ -16,13 +16,13 @@ subroutine grell_cupar_driver(banneron,cldd,clds)
    use grell_coms        , only : & ! All variables here are intent(in)
            cld2prec               & ! Fraction of cloud water lost to precipitation
           ,closure_type           & ! Flag for closure to be used on dyn. control
-          ,comp_down              & ! I will compute downdrafts.              [T|F]
           ,comp_modif_thermo      & ! I will compute the x_* variables        [T|F]
           ,maxens_cap             & ! Ensemble size on level of capping inversion
           ,maxens_dyn             & ! Ensemble size on dynamic control
           ,maxens_eff             & ! Ensemble size on precipitation efficiency
           ,maxens_lsf             & ! Ensemble size on large scale perturbations
-          ,mgmzp                  ! ! Vertical grid size
+          ,mgmzp                  & ! Vertical grid size
+          ,prec_cld               ! ! This is a precipitating cloud.          [T|F]
 
    use io_params         , only : &
            frqanl                 ! ! intent(in) - Frequency of analysis.
@@ -135,7 +135,7 @@ subroutine grell_cupar_driver(banneron,cldd,clds)
                              '       [~] Calling grell_cupar_dynamic... i=',i,'j=',j
          call grell_cupar_dynamic(cldd,clds,nclouds,dtlt,maxens_cap,maxens_eff,maxens_lsf  &
                                  ,maxens_dyn,mgmzp,closure_type,comp_modif_thermo          &
-                                 ,cld2prec,mynum,i,j)
+                                 ,prec_cld,cld2prec,mynum,i,j)
 
          !---------------------------------------------------------------------------------!
          ! 6. We now go through the cloud sizes again, to compute the feedback to the      !
@@ -332,8 +332,7 @@ end subroutine grell_cupar_initial
 !------------------------------------------------------------------------------------------!
 subroutine grell_cupar_static_driver(banneron,i,j,icld)
    use grell_coms        , only: & ! All variables here are intent(in)
-           comp_down             & ! I will compute downdrafts.              [T/F]
-          ,comp_noforc_cldwork   & ! I will compute no forced cloud work     [T/F]
+           comp_noforc_cldwork   & ! I will compute no forced cloud work     [T/F]
           ,checkmass             & ! I will check mass balance               [T/F]
           ,maxens_cap            & ! Ensemble size on level of capping inversion
           ,maxens_eff            & ! Ensemble size on precipitation efficiency
@@ -348,6 +347,7 @@ subroutine grell_cupar_static_driver(banneron,i,j,icld)
           ,iupmethod             & ! Method to define updraft originating level.
           ,masstol               & ! Maximum mass leak allowed to happen    [ ---]
           ,pmass_left            & ! Fraction of mass left at the ground    [ ---]
+          ,prec_cld              & ! This cloud can precipitate             [ T/F]
           ,radius                & ! Radius, for entrainment rate.          [   m]
           ,relheight_down        & ! Relative height for downdraft origin   [ ---]
           ,wnorm_max             & ! Normalised trigger vertical velocity
@@ -392,7 +392,7 @@ subroutine grell_cupar_static_driver(banneron,i,j,icld)
    ! A. Reset the entire ensemble structure for this cloud.                                !
    !---------------------------------------------------------------------------------------!
    call zero_scratch_grell(1)
-   call zero_ensemble(ensemble_e(icld),icld)
+   call zero_ensemble(ensemble_e(icld))
 
    !---------------------------------------------------------------------------------------!
    ! B. Initialise the remainder Grell's scratch variables that uses wind data.  Because   !
@@ -400,7 +400,7 @@ subroutine grell_cupar_static_driver(banneron,i,j,icld)
    !---------------------------------------------------------------------------------------!
    if (banneron) write (unit=60+mynum,fmt='(3(a,1x,i5,1x))')                               &
           '       [~] Calling initial_upstream_grell... i=',i,'j=',j,'icld=',icld
-   call initial_winds_grell(comp_down(icld),mzp,mxp,myp,i,j,jdim                           &
+   call initial_winds_grell(prec_cld(icld),mzp,mxp,myp,i,j,jdim                            &
                          , cuparm_g(ngrid)%dnmf (:,:,icld), basic_g(ngrid)%up              &
                          , basic_g(ngrid)%vp              , ensemble_e(icld)%prev_dnmf     )
 
@@ -414,6 +414,7 @@ subroutine grell_cupar_static_driver(banneron,i,j,icld)
                      , mgmzp,cap_maxs,cap_max_increment,wnorm_max,wnorm_increment          &
                      , depth_min(icld),depth_max(icld),edtmax,edtmin,masstol,pmass_left    &
                      , radius(icld),relheight_down,zkbmax,zcutdown,z_detr,cld2prec         &
+                     , prec_cld(icld)                                                      &
                      , cuparm_g(ngrid)%aadn(i,j,icld)   , cuparm_g(ngrid)%aaup(i,j,icld)   &
                      , ensemble_e(icld)%dellatheiv_eff  , ensemble_e(icld)%dellathil_eff   &
                      , ensemble_e(icld)%dellaqtot_eff   , ensemble_e(icld)%dellaco2_eff    &
