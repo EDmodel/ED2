@@ -53,15 +53,8 @@ module rk4_driver
       real                                    :: old_can_shv
       real                                    :: old_can_co2
       real                                    :: old_can_rhos
-      !----- Variables declared differently depending on the user's compilation options. --!
-#if USE_MPIWTIME
-      real(kind=8)                            :: time_py_start
-      real(kind=8)                            :: time_py_end
-#else
-      real                                    :: time_py_start
-      real                                    :: time_py_spent
-#endif
-      !----- Locally saved variables. -----------------------------------------------------!
+
+
       logical                   , save        :: first_time=.true.
       !----- Local constants. -------------------------------------------------------------!
       logical                   , parameter   :: print_fields = .false.
@@ -71,12 +64,6 @@ module rk4_driver
       
       polygonloop: do ipy = 1,cgrid%npolygons
          cpoly => cgrid%polygon(ipy)
-
-#if USE_MPIWTIME
-         time_py_start = MPI_Wtime() 
-#else
-         time_py_start = walltime(0.)
-#endif
 
          siteloop: do isi = 1,cpoly%nsites
             csite => cpoly%site(isi)
@@ -220,16 +207,6 @@ module rk4_driver
 
             end do patchloop
          end do siteloop
-
-#if USE_MPIWTIME
-         time_py_end            = MPI_Wtime() 
-         cgrid%walltime_py(ipy) = cgrid%walltime_py(ipy) + (time_py_end-time_py_start)
-#else
-         ! You will get funky results unless you use MPI_Wtime, best to flag as
-         ! nonesense so the analysis is not misleading
-!         time_py_spent          = walltime(time_py_start)
-         cgrid%walltime_py(ipy) = cgrid%walltime_py(ipy) -9.9 !+ dble(time_py_spent)
-#endif
 
       end do polygonloop
 

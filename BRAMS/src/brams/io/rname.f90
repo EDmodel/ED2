@@ -143,7 +143,7 @@ subroutine NAMEOUT
        ,'    IDELTAT=',I4,'    ISWRTYP=',I4,'    ILWRTYP=',I4,'    ICUMFDBK=',I4)
 205 format('  LONRAD=',I4,'    IMONTHA=',I4,'     IDATEA=',I4  &
        ,'     IYEARA=',I4,'     ITIMEA=',I4)
-297 format('   ISFCL=',I4,'      ISTAR=',I4)
+297 format('   ISFCL=',I4,'    DTLEAF=',E12.5,'      ISTAR=',I4)
 298 format('   IEXEV=',I4,'   IMASSFLX=',I4,'   IBRUVAIS=',I4,'   IBOTFLX=',I4)
 299 format('  IMONTHZ=',I4,'     IDATEZ=',I4  &
        ,'     IYEARZ=',I4,'     ITIMEZ=',I4)
