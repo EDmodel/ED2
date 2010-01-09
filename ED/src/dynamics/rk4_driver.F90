@@ -553,7 +553,8 @@ module rk4_driver
       !    Surface water energy is computed in J/m² inside the integrator. Converting it   !
       ! back to J/kg in the layers that surface water/snow still exists.                   !
       !------------------------------------------------------------------------------------!
-      csite%nlev_sfcwater(ipa) = initp%nlev_sfcwater
+      csite%nlev_sfcwater(ipa)    = initp%nlev_sfcwater
+      csite%total_snow_depth(ipa) = 0.
       do k = 1, csite%nlev_sfcwater(ipa)
          csite%sfcwater_depth(k,ipa)   = sngloff(initp%sfcwater_depth(k)   ,tiny_offset)
          csite%sfcwater_mass(k,ipa)    = sngloff(initp%sfcwater_mass(k)    ,tiny_offset)
@@ -561,6 +562,8 @@ module rk4_driver
          csite%sfcwater_fracliq(k,ipa) = sngloff(initp%sfcwater_fracliq(k) ,tiny_offset)
          tmp_energy                    = initp%sfcwater_energy(k)/initp%sfcwater_mass(k)
          csite%sfcwater_energy(k,ipa)  = sngloff(tmp_energy                ,tiny_offset)
+         csite%total_snow_depth(ipa)   = csite%total_snow_depth(ipa)                       &
+                                       + csite%sfcwater_depth(k,ipa)
       end do
       !------------------------------------------------------------------------------------!
       !    For the layers that no longer exist, assign zeroes for prognostic variables,    !
