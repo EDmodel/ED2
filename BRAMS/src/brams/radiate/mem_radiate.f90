@@ -44,7 +44,9 @@ Module mem_radiate
    real(kind=8)       :: sdec            ! sine of declination
    real(kind=8)       :: declin          ! Declination
    real(kind=8)       :: sun_longitude   ! longitude where Sun is at zenith
-     
+
+!MLO Adding a variable to be used in the cumulus-radiation feedback.
+   integer            :: ncrad     ! Number of clouds that affect radiation
 Contains
 
    subroutine alloc_radiate(radiate,n1,n2,n3,ng)

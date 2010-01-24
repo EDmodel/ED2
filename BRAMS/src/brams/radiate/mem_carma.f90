@@ -42,7 +42,10 @@ module mem_carma
    real                                :: t_surf 
    real                                :: tabove_aerad 
    real                                :: solnet
+   real                                :: soldowntoa
+   real                                :: soluptoa
    real                                :: xirdown
+   real                                :: xirup
    real                                :: RAIN_aerad
    real                                :: xland_aerad
 
@@ -390,7 +393,10 @@ module mem_carma
       lla          = 0
       lls          = 0
       solnet       = 0.0
+      soldowntoa   = 0.0
+      soluptoa     = 0.0
       xirdown      = 0.0
+      xirup        = 0.0
 
       !----- 2D variables. ----------------------------------------------------------------!
       p            = 0.0

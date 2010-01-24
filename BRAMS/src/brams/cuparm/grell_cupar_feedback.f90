@@ -318,10 +318,11 @@ subroutine grell_cupar_area_scaler(cldd,clds,m1,mgmzp,maxens_cap)
    integer                         :: icap       ! Static control counter.
    integer                         :: klod       ! Level of origin of downdrafts
    integer                         :: klou       ! Level of origin of updrafts
-   real                            :: maxdnarea  ! Maximum area for a given cloud and SC
-   real                            :: sumdnmf    ! Total area for a given cloud and SC
-   real                            :: maxuparea  ! Maximum area for a given cloud and SC
-   real                            :: sumupmf    ! Total area for a given cloud and SC
+   real                            :: sumdnarea  ! Total area for a SC
+   real                            :: sumdnmf    ! Sum of downdraft MF for a given SC
+   real                            :: sumuparea  ! Total area for a SC
+   real                            :: sumupmf    ! Sum of updraft MF for a given SC
+   real                            :: scalfac    ! Scaling factor
    !---------------------------------------------------------------------------------------!
    
    cloudloop1: do icld = cldd, clds
@@ -372,23 +373,22 @@ subroutine grell_cupar_area_scaler(cldd,clds,m1,mgmzp,maxens_cap)
    ! the areas overlap.  I.e., if the updraft that generates a cloud of size 1 has 20%     !
    ! of the area that may support, and cloud of size 2 has 30%, that does not mean that    !
    ! their areas are 20% and 30% of the grid respectively.  That would be true if they     !
-   ! were the only clouds.  Because there is overlap then we must scale the areas (the     !
-   ! correct way would be to apply some sort of random number here...).                    !
+   ! were the only clouds.  Because there is overlap then we must scale the areas.         !
    !---------------------------------------------------------------------------------------!
    stacloop2: do icap = 1, maxens_cap
-      maxdnarea = 0.
-      maxuparea = 0.
+      sumdnarea = 0.
+      sumuparea = 0.
       sumdnmf   = 0.
       sumupmf   = 0.
       !----- Find the total area and the sum of all areas. --------------------------------!
       cloudloop2: do icld = cldd,clds
          if (ensemble_e(icld)%ierr_cap(icap) == 0) then
-            maxdnarea = max(maxdnarea,ensemble_e(icld)%areadn_cap(icap))
-            maxuparea = max(maxuparea,ensemble_e(icld)%areaup_cap(icap))
             sumdnmf   = sumdnmf + ensemble_e(icld)%dnmf_cap(icap)
             sumupmf   = sumupmf + ensemble_e(icld)%upmf_cap(icap)
          end if
       end do cloudloop2
+      sumdnarea = 0.
+      sumuparea = 0.
       !----- Scale the areas. -------------------------------------------------------------!
       cloudloop3: do icld = cldd,clds
          klod = ensemble_e(icld)%klod_cap(icap)
@@ -400,7 +400,39 @@ subroutine grell_cupar_area_scaler(cldd,clds,m1,mgmzp,maxens_cap)
             ensemble_e(icld)%areadn_cap(icap)   = ensemble_e(icld)%areadn_cap(icap)        &
                                                 * ensemble_e(icld)%dnmf_cap(icap)          &
                                                 / sumdnmf
+         end if
 
+         !----- Find the scaled area and reference updraft. -------------------------------!
+         if (ensemble_e(icld)%ierr_cap(icap) == 0 .and. sumupmf > 0.) then
+            ensemble_e(icld)%areaup_cap(icap)   = ensemble_e(icld)%areaup_cap(icap)        &
+                                                * ensemble_e(icld)%upmf_cap(icap)          &
+                                                / sumupmf
+         end if
+         sumdnarea = sumdnarea + ensemble_e(icld)%areadn_cap(icap)
+         sumuparea = sumuparea + ensemble_e(icld)%areaup_cap(icap)
+      end do cloudloop3
+
+      !----- Avoid the total area of this static control to exceed 99% of the area. -------!
+      if (sumdnarea + sumuparea > 0.99) then
+         scalfac = 0.99 / (sumdnarea + sumuparea) 
+         cloudloop4: do icld = cldd,clds
+            ensemble_e(icld)%areadn_cap(icap) = ensemble_e(icld)%areadn_cap(icap) * scalfac
+            ensemble_e(icld)%areaup_cap(icap) = ensemble_e(icld)%areaup_cap(icap) * scalfac
+         end do cloudloop4
+      end if
+   end do stacloop2
+
+   !---------------------------------------------------------------------------------------!
+   !    Final loop, this time we find the characteristic downdraft and updraft velocities, !
+   ! which are currently simple diagnostic variables.                                      !
+   !---------------------------------------------------------------------------------------!
+   cloudloop5: do icld = cldd,clds
+      stacloop3: do icap = 1, maxens_cap
+         klod = ensemble_e(icld)%klod_cap(icap)
+         klou = ensemble_e(icld)%klou_cap(icap)
+         !----- Find the scaled area and reference downdraft. -----------------------------!
+         if ( ensemble_e(icld)%comp_down_cap(icap) .and.                                   &
+              ensemble_e(icld)%ierr_cap(icap) == 0 .and. sumdnmf > 0. ) then
             ensemble_e(icld)%wdndraft_cap(icap) = ensemble_e(icld)%dnmf_cap(icap)          &
                                                 * ensemble_e(icld)%etad_cld_cap(klod,icap) &
                                                 / (ensemble_e(icld)%rhod_cld_cap(klod,icap)&
@@ -409,17 +441,15 @@ subroutine grell_cupar_area_scaler(cldd,clds,m1,mgmzp,maxens_cap)
 
          !----- Find the scaled area and reference updraft. -------------------------------!
          if (ensemble_e(icld)%ierr_cap(icap) == 0 .and. sumupmf > 0.) then
-            ensemble_e(icld)%areaup_cap(icap)   = ensemble_e(icld)%areaup_cap(icap)        &
-                                                * ensemble_e(icld)%upmf_cap(icap)          &
-                                                / sumupmf
             ensemble_e(icld)%wupdraft_cap(icap) = ensemble_e(icld)%upmf_cap(icap)          &
-                                                * ensemble_e(icld)%etau_cld_cap(klou,icap)  &
-                                                / (ensemble_e(icld)%rhou_cld_cap(klou,icap) &
+                                                * ensemble_e(icld)%etau_cld_cap(klou,icap) &
+                                                / (ensemble_e(icld)%rhou_cld_cap(klou,icap)&
                                                   *ensemble_e(icld)%areaup_cap(icap) )
          end if
+      end do stacloop3
+   end do cloudloop5
 
-      end do cloudloop3
-   end do stacloop2
+
    return
 end subroutine grell_cupar_area_scaler
 !==========================================================================================!
@@ -646,10 +676,12 @@ subroutine grell_cupar_output(m1,mgmzp,maxens_cap,rtgt,zm,zt,dnmf,upmf,dnmx,upmx
          !---------------------------------------------------------------------------------!
          do k=1,ktop_cap(icap)
             kr=k+kgoff
-            cuprliq_cap(kr,icap) = max(0., qliqd_cld_cap(k,icap) * areadn_cap(icap)        &
-                                 + qliqu_cld_cap(k,icap) * areaup_cap(icap) )
-            cuprice_cap(kr,icap) = max(0., qiced_cld_cap(k,icap) * areadn_cap(icap)        &
-                                 + qiceu_cld_cap(k,icap) * areaup_cap(icap) )
+            cuprliq_cap(kr,icap) = max(0., ( qliqd_cld_cap(k,icap) * areadn_cap(icap)      &
+                                           + qliqu_cld_cap(k,icap) * areaup_cap(icap) )    &
+                                           / (areadn_cap(icap) + areaup_cap(icap) ) )
+            cuprice_cap(kr,icap) = max(0., ( qiced_cld_cap(k,icap) * areadn_cap(icap)      &
+                                           + qiceu_cld_cap(k,icap) * areaup_cap(icap) )    &
+                                           / (areadn_cap(icap) + areaup_cap(icap) ) )
          end do
       end if
    end do stacloop

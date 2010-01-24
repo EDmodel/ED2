@@ -38,15 +38,15 @@
 !===============================================================================
 subroutine harr_radinit(m1)  ! Bob's interface subroutine
 
-  use mem_harr, only: ng,nb,nsolb,npsb,nuum,prf,alpha,trf,beta  &
-                      ,xp,wght,wlenlo,wlenhi,solar0,ralcs,a0,a1,a2,a3  &
-                      ,exptabc,ulim,npartob,npartg,ncog,ncb  &
-                      ,ocoef,bcoef,gcoef,solara,solarb,mb,mpb,mg
-
-  use mem_radiate, only: maxadd_rad, nadd_rad, zmrad
-  use micphys,  only: gnu,ncat
-  use mem_grid,    only: zm
-  use harr_coms, only : nradmax,alloc_harr_scratch
+  use mem_harr   , only : ng,nb,nsolb,npsb,nuum,prf,alpha,trf,beta  &
+                        , xp,wght,wlenlo,wlenhi,solar0,ralcs,a0,a1,a2,a3  &
+                        , exptabc,ulim,npartob,npartg,ncog,ncb  &
+                        , ocoef,bcoef,gcoef,solara,solarb,mb,mpb,mg
+  use mem_radiate, only : maxadd_rad, nadd_rad, zmrad, icumfdbk, ncrad
+  use micphys    , only : gnu,ncat
+  use mem_grid   , only : zm
+  use harr_coms  , only : nradmax,alloc_harr_scratch
+  use mem_cuparm , only : nclouds
   implicit none
 
   real :: deltaz
@@ -98,8 +98,15 @@ subroutine harr_radinit(m1)  ! Bob's interface subroutine
 
   nradmax = m1 + nadd_rad
   
+  ! Determine the number of clouds affecting the radiation scheme. 
+  if (icumfdbk == 1) then
+     ncrad = nclouds
+  else
+     ncrad = 0
+  end if
+  
   ! Perform the allocation of several scratch variables
-  call alloc_harr_scratch(m1,ncat,nradmax,mg,mb,mpb)
+  call alloc_harr_scratch(m1,ncat,nradmax,mg,mb,mpb,ncrad)
 
   return
 end subroutine harr_radinit

@@ -1635,14 +1635,11 @@ real function expected(xmin,xmean,sigmax)
    real, intent(in) :: sigmax
    !----- Local variables. ----------------------------------------------------------------!
    real             :: xnorm
-   real             :: oneodenom
    real             :: expnorm
-   real             :: erfnorm
    !----- Local constants. ----------------------------------------------------------------!
    real, parameter  :: xnormmin = -5. ! This makes a cdf close to machine epsilon
    real, parameter  :: xnormmax =  5. ! This makes a cdf close to 1 - machine epsilon
    !----- External functions. -------------------------------------------------------------!
-   real, external   :: errorfun
    real, external   :: cdf
    !---------------------------------------------------------------------------------------!
 
@@ -1666,11 +1663,8 @@ real function expected(xmin,xmean,sigmax)
 
    else
       !----- Nice range, let's find the results. ------------------------------------------!
-      oneodenom = 1. / (sqrttwopi * sigmax * (1. - cdf(xnorm)))
-      expnorm   = exp(- 0.5 * xnorm * xnorm)
-      erfnorm   = errorfun(srtwoi * xnorm)
-      expected  = oneodenom * ( sigmax * sigmax * expnorm                                  &
-                              + sqrthalfpi * xmean * sigmax * (1 - erfnorm))
+      expnorm   = exp(- 0.5 * xnorm * xnorm) / (sqrttwopi * (1. - cdf(xnorm)))
+      expected  = xbar + sigx * expnorm
    end if
 
    return

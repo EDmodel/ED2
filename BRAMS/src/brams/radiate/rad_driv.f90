@@ -35,7 +35,8 @@ subroutine radiate(mzp,mxp,myp,ia,iz,ja,jz,mynum)
                           ,prsnzp         & ! intent(in)
                           ,jday           & ! intent(inout)
                           ,solfac         & ! intent(inout)
-                          ,nadd_rad       ! ! intent(in)
+                          ,nadd_rad       & ! intent(in)
+                          ,ncrad          ! ! intent(in)
    use mem_basic  ,  only: basic_g        ! ! intent(in)
    use mem_scratch,  only: vctr1          & ! intent(inout)
                           ,vctr2          & ! intent(inout)
@@ -111,6 +112,11 @@ subroutine radiate(mzp,mxp,myp,ia,iz,ja,jz,mynum)
       !----- Resetting the radiative forcing ----------------------------------------------!
       call azero(mzp*mxp*myp,radiate_g(ngrid)%fthrd)
       call azero(mzp*mxp*myp,radiate_g(ngrid)%fthrd_lw)
+      call azero(mxp*myp,radiate_g(ngrid)%rshort)
+      call azero(mxp*myp,radiate_g(ngrid)%rshort_top)
+      call azero(mxp*myp,radiate_g(ngrid)%rshortup_top)
+      call azero(mxp*myp,radiate_g(ngrid)%rlongup_top)
+      call azero(mxp*myp,radiate_g(ngrid)%rlong)
 
       !------------------------------------------------------------------------------------!
       !    Compute solar zenith angle, multiplier for solar constant, surface albedo, and  !
@@ -186,19 +192,22 @@ subroutine radiate(mzp,mxp,myp,ia,iz,ja,jz,mynum)
          end if
 
          !----- Calling CARMA radiation driver --------------------------------------------!
-         call radcomp_carma(mzp,mxp,myp,ia,iz,ja,jz,solfac                                 &
+         call radcomp_carma(mzp,mxp,myp,npatch,nclouds,ncrad,ia,iz,ja,jz,mynum,iswrtyp     &
+                           ,ilwrtyp,icumfdbk,solfac                                        &
                            ,basic_g(ngrid)%theta           ,basic_g(ngrid)%pi0             &
                            ,basic_g(ngrid)%pp              ,basic_g(ngrid)%rv              &
-                           ,rain,lwl,iwl                   ,basic_g(ngrid)%dn0             &
+                           ,rain,lwl,iwl                   ,scratch%vt4da                  &
+                           ,scratch%vt4dc                  ,scratch%vt3dr                  &
+                           ,scratch%vt3ds                  ,basic_g(ngrid)%dn0             &
                            ,basic_g(ngrid)%rtp             ,radiate_g(ngrid)%fthrd         &
                            ,grid_g(ngrid)%rtgt             ,grid_g(ngrid)%f13t             &
                            ,grid_g(ngrid)%f23t             ,grid_g(ngrid)%glat             &
                            ,grid_g(ngrid)%glon             ,radiate_g(ngrid)%rshort        &
-                           ,radiate_g(ngrid)%rlong         ,radiate_g(ngrid)%albedt        &
-                           ,radiate_g(ngrid)%cosz          ,radiate_g(ngrid)%rlongup       &
-                           ,mynum                          ,grid_g(ngrid)%fmapt            &
-                           ,scalar_g(3,ngrid)%sclp         ,leaf_g(ngrid)%patch_area       &
-                           ,npatch                         )
+                           ,radiate_g(ngrid)%rshort_top    ,radiate_g(ngrid)%rshortup_top  &
+                           ,radiate_g(ngrid)%rlong         ,radiate_g(ngrid)%rlongup_top   &
+                           ,radiate_g(ngrid)%albedt        ,radiate_g(ngrid)%cosz          &
+                           ,radiate_g(ngrid)%rlongup       ,grid_g(ngrid)%fmapt            &
+                           ,scalar_g(3,ngrid)%sclp         ,leaf_g(ngrid)%patch_area       )
       end if
 
       if (ilwrtyp <= 2 .or. iswrtyp <= 2) then
@@ -218,7 +227,7 @@ subroutine radiate(mzp,mxp,myp,ia,iz,ja,jz,mynum)
 
       !----- Using Harrington radiation ---------------------------------------------------!
       if (iswrtyp == 3 .or. ilwrtyp == 3) then
-         call harr_raddriv(mzp,mxp,myp,nclouds,ngrid,if_adap,time,dtlt,ia,iz,ja,jz         &
+         call harr_raddriv(mzp,mxp,myp,nclouds,ncrad,ngrid,if_adap,time,dtlt,ia,iz,ja,jz   &
                           ,nadd_rad,iswrtyp,ilwrtyp,icumfdbk                               &
                           ,grid_g(ngrid)%flpw              ,grid_g(ngrid)%topt             &
                           ,grid_g(ngrid)%glat              ,grid_g(ngrid)%rtgt             &
@@ -237,7 +246,8 @@ subroutine radiate(mzp,mxp,myp,ia,iz,ja,jz,mynum)
                           ,scratch%vt3di                   ,scratch%vt3dj                  &
                           ,scratch%vt3dk                   ,scratch%vt3dl                  &
                           ,scratch%vt3dm                   ,scratch%vt3dn                  &
-                          ,scratch%vt4da                   ,scratch%vt4db                  &
+                          ,scratch%vt4da                   ,scratch%vt4dc                  &
+                          ,scratch%vt3dr                   ,scratch%vt3ds                  &
                           ,mynum                           )
       end if
    end if
@@ -269,6 +279,7 @@ subroutine rad_copy2scratch(mzp,mxp,myp,mpp)
    use mem_cuparm    , only : nnqparm   & ! intent(in)
                              ,nclouds   & ! intent(in)
                              ,cuparm_g  ! ! intent(in)
+   use mem_radiate   , only : icumfdbk  ! ! intent(in)
    use mem_scratch   , only : scratch   ! ! intent(inout)
    use mem_leaf      , only : leaf_g    ! ! intent(in)
    use mem_teb_common, only : tebc_g    ! ! intent(in)
@@ -393,12 +404,17 @@ subroutine rad_copy2scratch(mzp,mxp,myp,mpp)
    !     Checking whether the user wants the cumulus clouds to interact with the radiation !
    ! scheme. This will happen only if the user is running Harrington scheme, though.       !
    !---------------------------------------------------------------------------------------!
-   if (nnqparm(ngrid) > 0) then
-      call atob(mzp*mxp*myp*nclouds,cuparm_g(ngrid)%cuprliq,scratch%vt4da)
-      call atob(mzp*mxp*myp*nclouds,cuparm_g(ngrid)%cuprice,scratch%vt4dc)
+   call azero(mxp*myp*nclouds,scratch%vt3dr)
+   if (icumfdbk == 1 .and. nnqparm(ngrid) > 0) then
+      call atob (mzp*mxp*myp*nclouds,cuparm_g(ngrid)%cuprliq,scratch%vt4da)
+      call atob (mzp*mxp*myp*nclouds,cuparm_g(ngrid)%cuprice,scratch%vt4dc)
+      call accum(    mxp*myp*nclouds,scratch%vt3dr,cuparm_g(ngrid)%areadn)
+      call accum(    mxp*myp*nclouds,scratch%vt3dr,cuparm_g(ngrid)%areaup)
+      call atob (    mxp*myp*nclouds,cuparm_g(ngrid)%xierr,scratch%vt3ds)
    else
       call azero(mzp*mxp*myp*nclouds,scratch%vt4da)
       call azero(mzp*mxp*myp*nclouds,scratch%vt4dc)
+      call aone (    mxp*myp*nclouds,scratch%vt3ds)
    end if
 
    !---------------------------------------------------------------------------------------!

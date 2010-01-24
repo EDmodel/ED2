@@ -997,18 +997,18 @@ subroutine opspec3
 
   ! Just adding a warning message that cumulus parameterization feedback will be ignored 
   ! because the user didn't set iswrtyp or ilwrtyp to 3 (Harrington);
-  if (iswrtyp /= 3 .and. icumfdbk /=0) then
+  if (iswrtyp /= 3 .and. iswrtyp /= 4 .and. icumfdbk /=0) then
     print *, '------------------------------------------------------------------------'
     print *, 'INFO - Shortwave radiation won''t have cumulus parameterization feedback'
-    print *, '       You should use Harrington scheme to have this effect.'
+    print *, '       You should use Harrington scheme or CARMA to have this effect.'
     print *, '------------------------------------------------------------------------'
     print *, ' '
     infoerr = infoerr + 1
   end if
-  if (ilwrtyp /= 3 .and. icumfdbk /=0) then
+  if (ilwrtyp /= 3 .and. ilwrtyp /= 4 .and. icumfdbk /=0) then
     print *, '------------------------------------------------------------------------'
     print *, 'INFO - Longwave radiation won''t have cumulus parameterization feedback '
-    print *, '       You should use Harrington scheme to have this effect.'
+    print *, '       You should use Harrington scheme or CARMA to have this effect.'
     print *, '------------------------------------------------------------------------'
     print *, ' '
     infoerr = infoerr + 1
@@ -1018,6 +1018,15 @@ subroutine opspec3
         (iswrtyp == 3 .or. ilwrtyp == 3)) then
        print *, '-------------------------------------------------------------------------'
        print *, 'INFO - Cumulus parameterization will have no effect on Harrington scheme '
+       print *, '       on grid',ng,' because the cumulus parameterizations are off.      '
+       print *, '-------------------------------------------------------------------------'
+       print *, ' '
+       infoerr = infoerr + 1
+    end if 
+    if (nnqparm(ng) == 0 .and. icumfdbk == 1 .and. & 
+        (iswrtyp == 4 .or. ilwrtyp == 4)) then
+       print *, '-------------------------------------------------------------------------'
+       print *, 'INFO - Cumulus parameterization will have no effect on CARMA             '
        print *, '       on grid',ng,' because the cumulus parameterizations are off.      '
        print *, '-------------------------------------------------------------------------'
        print *, ' '
