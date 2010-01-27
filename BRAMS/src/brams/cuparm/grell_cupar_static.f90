@@ -18,18 +18,19 @@
 !                      parameterizations are used.                                         !
 !                                                                                          !
 !------------------------------------------------------------------------------------------!
-subroutine grell_cupar_static(comp_down,comp_noforc_cldwork,checkmass,iupmethod,maxens_cap &
+subroutine grell_cupar_static(comp_noforc_cldwork,checkmass,iupmethod,maxens_cap           &
                              ,maxens_eff,mgmzp,cap_maxs,cap_max_increment,wnorm_max        &
                              ,wnorm_increment,depth_min,depth_max,edtmax,edtmin,masstol    &
                              ,pmass_left,radius,relheight_down,zkbmax,zcutdown,z_detr      &
-                             ,aad,aau,dellatheiv_eff,dellathil_eff,dellaqtot_eff           &
-                             ,dellaco2_eff,pw_eff,edt_eff,aatot0_eff,aatot_eff,ierr_cap    &
-                             ,jmin_cap,k22_cap,kbcon_cap,kdet_cap,kstabi_cap,kstabm_cap    &
-                             ,ktop_cap,pwav_cap,pwev_cap,wbuoymin_cap,cdd_cap,cdu_cap      &
+                             ,cld2prec,prec_cld,aad,aau,dellatheiv_eff,dellathil_eff       &
+                             ,dellaqtot_eff,dellaco2_eff,pw_eff,edt_eff,aatot0_eff         &
+                             ,aatot_eff,ierr_cap,comp_down_cap,klod_cap,klou_cap,klcl_cap  &
+                             ,klfc_cap,kdet_cap,kstabi_cap,kstabm_cap,klnb_cap,ktop_cap    &
+                             ,pwav_cap,pwev_cap,wbuoymin_cap,cdd_cap,cdu_cap               &
                              ,mentrd_rate_cap,mentru_rate_cap,dbyd_cap,dbyu_cap            &
                              ,etad_cld_cap,etau_cld_cap,rhod_cld_cap,rhou_cld_cap          &
-                             ,qliqd_cld_cap,qliqu_cld_cap,qiced_cld_cap,qiceu_cld_cap      &
-                             ,i,j,icld,mynum)
+                             ,qliqd_cld_cap,qliqu_cld_cap,qiced_cld_cap,qiceu_cld_cap,i,j  &
+                             ,icld,mynum)
    use mem_ensemble     , only : &
        ensemble_vars             ! ! structure - The ensemble scratch structure. ----------!
 
@@ -89,6 +90,7 @@ subroutine grell_cupar_static(comp_down,comp_noforc_cldwork,checkmass,iupmethod,
       ,co20d_cld    & ! intent(out) - Dndraft CO2 mixing ratio                    [    ppm]
       ,co20u_cld    & ! intent(out) - Updraft CO2 water mixing ratio              [    ppm]
       ,co2u_cld     & ! intent(out) - Updraft CO2 water mixing ratio w/ forcing   [    ppm]
+      ,comp_dn      & ! intent(out) - Downdraft thermodynamics is computed.       [    ---]
       ,dby0d        & ! intent(out) - Dndraft Buoyancy acceleration               [   m/s²]
       ,dbyd         & ! intent(out) - Dndraft Buoyancy acceleration w/ forcing    [   m/s²]
       ,dby0u        & ! intent(out) - Updraft Buoyancy acceleration               [   m/s²]
@@ -98,12 +100,14 @@ subroutine grell_cupar_static(comp_down,comp_noforc_cldwork,checkmass,iupmethod,
       ,exner0_cup   & ! intent(out) - Exner function                              [   J/kg]
       ,exner_cup    & ! intent(out) - Exner function with forcing                 [   J/kg]
       ,ierr         & ! intent(out) - Flag for convection error                   [    ---]
-      ,jmin         & ! intent(out) - Level in which downdrafts originate         [    ---]
-      ,k22          & ! intent(out) - Level in which updrafts originate           [    ---]
-      ,kbcon        & ! intent(out) - Level of free convection                    [    ---]
+      ,klod         & ! intent(out) - Level of origin of downdrafts               [    ---]
+      ,klou         & ! intent(out) - Level of origin of updrafts                 [    ---]
+      ,klcl         & ! intent(out) - Lifting condensation level                  [    ---]
+      ,klfc         & ! intent(out) - Level of free convection                    [    ---]
       ,kdet         & ! intent(out) - Top of downdraft detrainemnt layer          [    ---]
       ,kstabi       & ! intent(out) - cloud stable layer base                     [    ---]
       ,kstabm       & ! intent(out) - cloud stable layer top                      [    ---]
+      ,klnb         & ! intent(out) - level of neutral buoyancy                   [    ---]
       ,ktop         & ! intent(out) - cloud top                                   [    ---]
       ,mentrd_rate  & ! intent(out) - Norm. dndraft entrainment rate w/ forcing   [    ---]
       ,mentru_rate  & ! intent(out) - Norm. updraft entrainment rate              [    ---]
@@ -182,7 +186,6 @@ subroutine grell_cupar_static(comp_down,comp_noforc_cldwork,checkmass,iupmethod,
    ! List of arguments                                                                     !
    !---------------------------------------------------------------------------------------!
    !----- Logical flags, to bypass uncessary steps ----------------------------------------!
-   logical , intent(in) :: comp_down           ! I will compute downdrafts.           [T/F]
    logical , intent(in) :: comp_noforc_cldwork ! I will compute no forced cloud work  [T/F]
    logical , intent(in) :: checkmass           ! I will check mass balance            [T/F]
    !----- Integer, global dimensions ------------------------------------------------------!
@@ -211,6 +214,10 @@ subroutine grell_cupar_static(comp_down,comp_noforc_cldwork,checkmass,iupmethod,
    real    , intent(in) :: zkbmax           ! Top height for updrafts to originate   [   m]
    real    , intent(in) :: zcutdown         ! Top height for downdrafts to originate [   m]
    real    , intent(in) :: z_detr           ! Top height for downdraft detrainment   [   m]
+   real    , intent(in) :: cld2prec         ! Fraction of cloud that becomes prec.   [   m]
+
+   !----- Logical, parameters to define the cloud -----------------------------------------!
+   logical , intent(in) :: prec_cld         ! Precipitating cloud.                   [ T|F]
 
    !----- The ensemble scratch structure variables. ---------------------------------------!
    real   , dimension(mgmzp,maxens_eff,maxens_cap), intent(inout) ::                       &
@@ -223,14 +230,18 @@ subroutine grell_cupar_static(comp_down,comp_noforc_cldwork,checkmass,iupmethod,
             edt_eff         & ! Precipitation efficiency for each member    [          ---]
            ,aatot0_eff      & ! Current total cloud work function           [         J/kg]
            ,aatot_eff       ! ! Total cloud work func. (forced)             [         J/kg]
+   logical, dimension(maxens_cap), intent(inout) ::                                        &
+            comp_down_cap   ! ! I will compute downdrafts.           [T/F]
    integer, dimension(maxens_cap), intent(inout) ::                                        &
             ierr_cap        & ! Convection failure flag.                    [          ---]
-           ,jmin_cap        & ! Level in which downdrafts originate         [          ---]
-           ,k22_cap         & ! Level in which updrafts originate           [          ---]
-           ,kbcon_cap       & ! Level of free convection                    [          ---]
+           ,klod_cap        & ! Level in which downdrafts originate         [          ---]
+           ,klou_cap        & ! Level in which updrafts originate           [          ---]
+           ,klcl_cap        & ! Lifting condensation level                  [          ---]
+           ,klfc_cap        & ! Level of free convection                    [          ---]
            ,kdet_cap        & ! Top of downdraft detrainemnt layer          [          ---]
            ,kstabi_cap      & ! cloud stable layer base                     [          ---]
            ,kstabm_cap      & ! cloud stable layer top                      [          ---]
+           ,klnb_cap        & ! Level of neutral buoyancy                   [          ---]
            ,ktop_cap        ! ! cloud top                                   [          ---]
    real   , dimension(maxens_cap), intent(inout) ::                                        &
             pwav_cap        & ! Integrated condensation                     [        kg/kg]
@@ -277,14 +288,15 @@ subroutine grell_cupar_static(comp_down,comp_noforc_cldwork,checkmass,iupmethod,
    !    Flag for convection error when using the "0"  variables.                           !
    !---------------------------------------------------------------------------------------!
    integer :: ierr0     ! Flag for convection error
+   integer :: klnb0     ! klnb, but it is just a dummy variable.
    integer :: ktop0     ! ktop, but it is just a dummy variable.
    integer :: iun       ! Unit number, for debugging only
+   logical :: comp_dn0  ! Flag for downdraft
    !---------------------------------------------------------------------------------------!
    !    Miscellaneous parameters                                                           !
    !---------------------------------------------------------------------------------------!
    real :: cap_max    ! Actual "Depth" of inversion capping                       [     Pa]
    real :: wbuoy_max  ! Maximum acceptable buoyant velocity                       [    m/s]
-   real :: zktop      ! Actual maximum height that downdrafts can originate.      [      m]
    real :: pmass_kept ! 1.-pmass_left                                             [    ---]
    real :: edt        ! dnmf/upmf                                                 [    ---]
    !----- Scratch array -------------------------------------------------------------------!
@@ -371,13 +383,15 @@ subroutine grell_cupar_static(comp_down,comp_noforc_cldwork,checkmass,iupmethod,
       !    some may never be assigned when convection fails. Except for kstabm, I am set-  !
       !    ting all to a non-sense value to make the point that convection did not happen. !
       !------------------------------------------------------------------------------------!
-      jmin   = 0
-      k22    = 0
-      kbcon  = 0
-      kdet   = 0
-      ktop   = 0
-      kstabi = 0
-      kstabm = mkx -2
+      klod    = 0
+      klou    = 0
+      klcl    = 0
+      klfc    = 0
+      kdet    = 0
+      klnb    = 0
+      kstabi  = 0
+      kstabm  = mkx -2
+      comp_dn = prec_cld
 
       !------------------------------------------------------------------------------------!
       ! G. Calculate all thermodynamic properties at the cloud level. The cloud levels are !
@@ -415,11 +429,11 @@ subroutine grell_cupar_static(comp_down,comp_noforc_cldwork,checkmass,iupmethod,
       end do kbmaxloop
 
       !------------------------------------------------------------------------------------!
-      ! 2. Determine a first guess for k22, the level of origin of updrafts. Check if that !
+      ! 2. Determine a first guess for klou, the level of origin of updrafts. Check if that !
       !    didn't prevent convection to happen.                                            !
       !------------------------------------------------------------------------------------!
       call grell_updraft_origin(mkx,mgmzp,iupmethod,kpbl,kbmax,z,wwind,sigw,tke,qice,qliq  &
-                               ,theiv_cup,ierr,k22)
+                               ,theiv_cup,ierr,klou)
 
 
       if (ierr /= 0) then
@@ -436,8 +450,8 @@ subroutine grell_cupar_static(comp_down,comp_noforc_cldwork,checkmass,iupmethod,
                                ,p_cup,theiv_cup,thil_cup,t_cup,qtot_cup,qvap_cup,qliq_cup  &
                                ,qice_cup,qsat_cup,co2_cup,rho_cup,dzd_cld,mentru_rate      &
                                ,theivu_cld,thilu_cld,tu_cld,qtotu_cld,qvapu_cld,qliqu_cld  &
-                               ,qiceu_cld,qsatu_cld,co2u_cld,rhou_cld,dbyu,k22,ierr,kbcon  &
-                               ,wbuoymin)
+                               ,qiceu_cld,qsatu_cld,co2u_cld,rhou_cld,dbyu,klou,ierr,klcl  &
+                               ,klfc,wbuoymin)
 
       if (ierr /= 0) then
          ierr_cap(icap) = ierr
@@ -448,7 +462,7 @@ subroutine grell_cupar_static(comp_down,comp_noforc_cldwork,checkmass,iupmethod,
       ! 4. Finding the minimum saturation thetae_iv. This will be the bottom of the stable !
       !    layer.                                                                          !
       !------------------------------------------------------------------------------------!
-      kstabi=(kbcon - 1) + minloc(theivs_cup(kbcon:kstabm),dim=1)
+      kstabi=(klfc - 1) + minloc(theivs_cup(klfc:kstabm),dim=1)
 
       !------------------------------------------------------------------------------------!
       ! 5. Increasing the detrainment in stable layers provided that there is such layer.  !
@@ -462,7 +476,7 @@ subroutine grell_cupar_static(comp_down,comp_noforc_cldwork,checkmass,iupmethod,
       !------------------------------------------------------------------------------------!
       ! 6. Calculate the incloud ice-vapour equivalent potential temperature               !
       !------------------------------------------------------------------------------------!
-      call grell_theiv_updraft(mkx,mgmzp,k22,kbcon,cdu,mentru_rate,theiv,theiv_cup,dzu_cld &
+      call grell_theiv_updraft(mkx,mgmzp,klou,klfc,cdu,mentru_rate,theiv,theiv_cup,dzu_cld &
                               ,theivu_cld)
 
       !------------------------------------------------------------------------------------!
@@ -470,18 +484,18 @@ subroutine grell_cupar_static(comp_down,comp_noforc_cldwork,checkmass,iupmethod,
       !    height-based vertical coordinate, there is no need to find the forced           !
       !    normalized mass flux, they'll be the same, so just copy it afterwards.          !
       !------------------------------------------------------------------------------------!
-      call grell_nms_updraft(mkx,mgmzp,k22,kbcon,ktpse,mentru_rate,cdu,dzu_cld,etau_cld)
+      call grell_nms_updraft(mkx,mgmzp,klou,klfc,ktpse,mentru_rate,cdu,dzu_cld,etau_cld)
 
       !------------------------------------------------------------------------------------!
       ! 8. Finding the moisture profiles associated with updrafts.                         !
       !------------------------------------------------------------------------------------!
-      call grell_most_thermo_updraft(comp_down,.true.,mkx,mgmzp,kbcon,ktpse,cdu            &
-                                    ,mentru_rate,qtot,co2,p_cup,exner_cup,theiv_cup        &
-                                    ,thil_cup,t_cup,qtot_cup,qvap_cup,qliq_cup,qice_cup    &
-                                    ,qsat_cup,co2_cup,rho_cup,theivu_cld,etau_cld,dzu_cld  &
-                                    ,thilu_cld,tu_cld,qtotu_cld,qvapu_cld,qliqu_cld        &
-                                    ,qiceu_cld,qsatu_cld,co2u_cld,rhou_cld,dbyu,pwu_cld    &
-                                    ,pwav,ktop,ierr)
+      call grell_most_thermo_updraft(prec_cld,.true.,mkx,mgmzp,klfc,ktpse                  &
+                                    ,cld2prec,cdu,mentru_rate,qtot,co2,p_cup,exner_cup     &
+                                    ,theiv_cup,thil_cup,t_cup,qtot_cup,qvap_cup,qliq_cup   &
+                                    ,qice_cup,qsat_cup,co2_cup,rho_cup,theivu_cld,etau_cld &
+                                    ,dzu_cld,thilu_cld,tu_cld,qtotu_cld,qvapu_cld          &
+                                    ,qliqu_cld,qiceu_cld,qsatu_cld,co2u_cld,rhou_cld,dbyu  &
+                                    ,pwu_cld,pwav,klnb,ktop,ierr)
 
       !------------------------------------------------------------------------------------!
       ! 9. Checking whether we found a cloud top. Since this may keep convection to        !
@@ -493,10 +507,10 @@ subroutine grell_cupar_static(comp_down,comp_noforc_cldwork,checkmass,iupmethod,
       if (ierr /= 0) then
          ierr_cap(icap) = ierr
          cycle stacloop
-      elseif (z_cup(ktop)-z_cup(k22) < depth_min) then
+      elseif (z_cup(ktop)-z_cup(klou) < depth_min) then
          ierr_cap(icap) = 6
          cycle stacloop
-      elseif (z_cup(ktop)-z_cup(k22) > depth_max) then
+      elseif (z_cup(ktop)-z_cup(klou) > depth_max) then
          ierr_cap(icap) = 7
          cycle stacloop
       end if
@@ -505,7 +519,7 @@ subroutine grell_cupar_static(comp_down,comp_noforc_cldwork,checkmass,iupmethod,
       !10. Finding the cloud work function associated with updrafts. If this cloud doesn't !
       !    produce cloud work, break the run, we don't simulate lazy clouds in this model. !
       !------------------------------------------------------------------------------------!
-      call grell_cldwork_updraft(mkx,mgmzp,kbcon,ktop,dbyu,dzu_cld,etau_cld,aau)
+      call grell_cldwork_updraft(mkx,mgmzp,klou,ktop,dbyu,dzu_cld,etau_cld,aau)
       if (aau == 0.) then
          ierr_cap(icap) = 10
          cycle stacloop
@@ -520,57 +534,58 @@ subroutine grell_cupar_static(comp_down,comp_noforc_cldwork,checkmass,iupmethod,
       ! J. Finding the downdraft counterpart of the above properties, namely where the     !
       !    downdrafts detrain all its mass, where they originate, their mass, energy and   !
       !    moisture properties. This should be done only when it is a cloud that has       !
-      !    downdrafts. !                                                                   !
+      !    downdrafts.  In case we cannot find a suitable level in which downdrafts        !
+      !    originate, we allow clouds to happen, but with no downdrafts.  Once downdrafts  !
+      !    are assumed to exist, they are integral part of clouds, so if the cloud doesn't !
+      !    behave well, the entire cloud is forbidden.  Downdrafts will never be allowed   !
+      !    in non-precipitating clouds.                                                    !
       !------------------------------------------------------------------------------------!
-      if (comp_down) then
+      if (comp_dn) then
          !---------------------------------------------------------------------------------!
          ! 1. The level in which downdrafts should detrain (almost) all its mass.          !
          !---------------------------------------------------------------------------------!
          kdetloop: do kdet = 1,mkx
             if (z_cup(kdet) > z_detr) exit kdetloop
          end do kdetloop
-         !---------------------------------------------------------------------------------!
-         ! 2. The level in which downdrafts will originate in this cloud. Since this may   !
-         !    lead to an impossible cloud, check for success.                              !
-         !---------------------------------------------------------------------------------!
-         call grell_find_downdraft_origin(mkx,mgmzp,k22,ktop,relheight_down,zcutdown,z_cup &
-                                         ,theivs_cup,dzd_cld,ierr,kdet,jmin)
-         if (ierr /= 0) then
-            ierr_cap(icap) = ierr
-            cycle stacloop
-         end if
 
          !---------------------------------------------------------------------------------!
-         ! 3. Now that we know kdet, change detrainment rate below this level.             !
+         ! 2. The level in which downdrafts will originate in this cloud.                  !
          !---------------------------------------------------------------------------------!
+         call grell_find_downdraft_origin(mkx,mgmzp,klou,ktop,relheight_down,zcutdown      &
+                                         ,z_cup,theivs_cup,dzd_cld,comp_dn,kdet,klod)
+      end if
+
+      !------------------------------------------------------------------------------------!
+      !     In case we didn't find a good downdraft level, comp_dn has become .false..     !
+      ! Check again.                                                                       !
+      !------------------------------------------------------------------------------------!
+      if (comp_dn) then
+         !---------------------------------------------------------------------------------!
+         ! 3. Now that we know kdet, change detrainment rate below this level.             !
+         !------------------------------------------------------------------------------------!
          do k=kdet,1,-1
             cdd(k) = mentrd_rate(k)                                                        &
                    + (1. - (pmass_kept*z_cup(k) + pmass_left*z_cup(kdet))                  &
                      / (pmass_kept*z_cup(k+1) + pmass_left*z_cup(kdet)) )/dzd_cld(k)
          end do
 
-
          !---------------------------------------------------------------------------------!
-         ! 4. Normalized mass fluxes.                                                      !
+         ! 4. Normalised mass fluxes.                                                      !
          !---------------------------------------------------------------------------------!
-         call grell_nms_downdraft(mkx,mgmzp,kdet,jmin,mentrd_rate,cdd,z_cup,dzd_cld        &
+         call grell_nms_downdraft(mkx,mgmzp,kdet,klod,mentrd_rate,cdd,z_cup,dzd_cld        &
                                  ,etad_cld)
 
          !---------------------------------------------------------------------------------!
-         ! 5. Moist static energy. This may prevent convection to happen, check for        !
-         !    success.                                                                     !
+         ! 5. Moist static energy.                                                         !
          !---------------------------------------------------------------------------------!
-         call grell_theiv_downdraft(mkx,mgmzp,jmin,cdd,mentrd_rate,theiv,theiv_cup         &
-                                   ,theivs_cup,dzd_cld,ierr,theivd_cld)
-         if (ierr /= 0) then
-            ierr_cap(icap) = ierr
-            cycle stacloop
-         end if
+         call grell_theiv_downdraft(mkx,mgmzp,klod,cdd,mentrd_rate,theiv,theiv_cup         &
+                                   ,theivs_cup,dzd_cld,theivd_cld)
 
          !---------------------------------------------------------------------------------!
-         ! 6. Moisture properties of downdraft                                             !
+         ! 6. Moisture properties of downdraft.  If buoyancy happens to be non-sense, we   !
+         !    will assign an error flag to this cloud and don't let it happen.             !
          !---------------------------------------------------------------------------------!
-         call grell_most_thermo_downdraft(mkx,mgmzp,jmin,qtot,co2,mentrd_rate,cdd,p_cup    &
+         call grell_most_thermo_downdraft(mkx,mgmzp,klod,qtot,co2,mentrd_rate,cdd,p_cup    &
                                          ,exner_cup,thil_cup,t_cup,qtot_cup,qvap_cup       &
                                          ,qliq_cup,qice_cup,qsat_cup,co2_cup,rho_cup,pwav  &
                                          ,theivd_cld,etad_cld,dzd_cld,thild_cld,td_cld     &
@@ -581,11 +596,12 @@ subroutine grell_cupar_static(comp_down,comp_noforc_cldwork,checkmass,iupmethod,
             ierr_cap(icap) = ierr
             cycle stacloop
          end if
+
          !---------------------------------------------------------------------------------!
-         ! 7. Compute the downdraft strength in terms of windshear. Remembering that edt   !
-         !    is the fraction between downdraft and updraft.                               !
+         ! 7. Compute the downdraft strength in terms of windshear.  Remembering that edt  !
+         !    is also the fraction between downdraft and updraft.                          !
          !---------------------------------------------------------------------------------!
-         call grell_efficiency_ensemble(mkx,mgmzp,maxens_eff,k22,kbcon,ktop,edtmin,edtmax  &
+         call grell_efficiency_ensemble(mkx,mgmzp,maxens_eff,klou,klfc,klnb,edtmin,edtmax  &
                                        ,pwav,pwev,z_cup,uwind,vwind,dzd_cld                &
                                        ,edt_eff(:,icap))
 
@@ -594,29 +610,24 @@ subroutine grell_cupar_static(comp_down,comp_noforc_cldwork,checkmass,iupmethod,
          !    downdraft is always saturated, and it gets the moisture from the rain.  How- !
          !    ever, it cannot require more rain than what is available, so if that would   !
          !    be the case, we don't allow this cloud to exist.                             !
-         !---------------------------------------------------------------------------------!
+         !------------------------------------------------------------------------------------!
          ddcheckloop: do iedt = 1, maxens_eff
             if (pwav + edt_eff(iedt,icap) * pwev < 0. ) then
-               !edt_eff(iedt,icap) = - 0.9999 * pwav / pwev 
                ierr_cap(icap) = 9
                cycle stacloop
             end if
          end do ddcheckloop
 
          !---------------------------------------------------------------------------------!
-         ! 9. Computing cloud work function associated with downdrafts.  If downdrafts     !
-         !    were forbidden, then reset all information and make cloud work due to down-  !
-         !    drafts zero.                                                                 !
+         ! 9. Computing cloud work function associated with downdrafts.                    !
          !---------------------------------------------------------------------------------!
-         call grell_cldwork_downdraft(mkx,mgmzp,jmin,dbyd,dzd_cld,etad_cld,aad)
+         call grell_cldwork_downdraft(mkx,mgmzp,klod,dbyd,dzd_cld,etad_cld,aad)
 
       else
          !---------------------------------------------------------------------------------!
-         !    Now we assume that if a cloud doesn't have dowdrafts, it doesn't precipitate !
-         ! either. In the future we may revisit this assumption. For now, if the cloud is  !
-         ! shallow, then we set up some of the above parameters for non existent dowdraft  !
-         ! (i.e. no mass flux, downdraft thermodynamic variables coincident to cloud       !
-         ! levels etc.). kdet and jmin were already initialized to zero.                   !
+         !    If the cloud doesn't have dowdrafts, we set some key variables to innocuous  !
+         ! values, just to avoid them to be undefined.  kdet and klod were already         !
+         ! initialised to zero.                                                            !
          !---------------------------------------------------------------------------------!
          etad_cld           = 0.
          dbyd               = 0.
@@ -647,7 +658,8 @@ subroutine grell_cupar_static(comp_down,comp_noforc_cldwork,checkmass,iupmethod,
          !---------------------------------------------------------------------------------!
          ! i.     Initialising error flag                                                  !
          !---------------------------------------------------------------------------------!
-         ierr0   = 0
+         ierr0    = 0
+         comp_dn0 = comp_dn
       
          !---------------------------------------------------------------------------------!
          ! ii.    Initialise detrainment and cloud work variables.                         !
@@ -669,7 +681,7 @@ subroutine grell_cupar_static(comp_down,comp_noforc_cldwork,checkmass,iupmethod,
          ! iv.    Calculate the thermodynamic properties below the level of free convec-   !
          !        tion.                                                                    !
          !---------------------------------------------------------------------------------!
-         call grell_buoy_below_lfc(mkx,mgmzp,k22,kbcon,exner0_cup,p0_cup,theiv0_cup        &
+         call grell_buoy_below_lfc(mkx,mgmzp,klou,klfc,exner0_cup,p0_cup,theiv0_cup        &
                                   ,thil0_cup,t0_cup,qtot0_cup,qvap0_cup,qliq0_cup          &
                                   ,qice0_cup,qsat0_cup,co20_cup,rho0_cup,theiv0u_cld       &
                                   ,thil0u_cld,t0u_cld,qtot0u_cld,qvap0u_cld,qliq0u_cld     &
@@ -678,49 +690,49 @@ subroutine grell_cupar_static(comp_down,comp_noforc_cldwork,checkmass,iupmethod,
          !---------------------------------------------------------------------------------!
          ! v.     Calculate the incloud ice-vapour equivalent potential temperature        !
          !---------------------------------------------------------------------------------!
-         call grell_theiv_updraft(mkx,mgmzp,k22,kbcon,cdu,mentru_rate,theiv0,theiv0_cup    &
+         call grell_theiv_updraft(mkx,mgmzp,klou,klfc,cdu,mentru_rate,theiv0,theiv0_cup    &
                                  ,dzu_cld,theiv0u_cld)
 
          !---------------------------------------------------------------------------------!
          ! vi.    Finding the moisture profiles associated with updrafts.                  !
          !---------------------------------------------------------------------------------!
-         call grell_most_thermo_updraft(comp_down,.false.,mkx,mgmzp,kbcon,ktop,cdu         &
-                                       ,mentru_rate,qtot0,co20,p0_cup,exner0_cup           &
-                                       ,theiv0_cup,thil0_cup,t0_cup,qtot0_cup,qvap0_cup    &
-                                       ,qliq0_cup,qice0_cup,qsat0_cup,co20_cup,rho0_cup    &
-                                       ,theiv0u_cld,etau_cld,dzu_cld,thil0u_cld,t0u_cld    &
-                                       ,qtot0u_cld,qvap0u_cld,qliq0u_cld,qice0u_cld        &
-                                       ,qsat0u_cld,co2u_cld,rho0u_cld,dby0u,pw0u_cld,pwav0 &
-                                       ,ktop0,ierr0)
+         call grell_most_thermo_updraft(comp_down_cap(icap),.false.,mkx,mgmzp,klfc,ktop    &
+                                       ,cld2prec,cdu,mentru_rate,qtot0,co20,p0_cup         &
+                                       ,exner0_cup,theiv0_cup,thil0_cup,t0_cup,qtot0_cup   &
+                                       ,qvap0_cup,qliq0_cup,qice0_cup,qsat0_cup,co20_cup   &
+                                       ,rho0_cup,theiv0u_cld,etau_cld,dzu_cld,thil0u_cld   &
+                                       ,t0u_cld,qtot0u_cld,qvap0u_cld,qliq0u_cld           &
+                                       ,qice0u_cld,qsat0u_cld,co2u_cld,rho0u_cld,dby0u     &
+                                       ,pw0u_cld,pwav0,klnb0,ktop0,ierr0)
          !---------------------------------------------------------------------------------!
          ! vii.   Finding the cloud work function                                          !
          !---------------------------------------------------------------------------------!
-         call grell_cldwork_updraft(mkx,mgmzp,kbcon,ktop,dby0u,dzu_cld,etau_cld,aa0u)
+         call grell_cldwork_updraft(mkx,mgmzp,klou,ktop,dby0u,dzu_cld,etau_cld,aa0u)
          
          !----- Downdraft properties ------------------------------------------------------!
-         if (comp_down) then
+         if (comp_dn) then
 
             !------------------------------------------------------------------------------!
             ! viii.  Moist static energy.                                                  !
             !------------------------------------------------------------------------------!
-            call grell_theiv_downdraft(mkx,mgmzp,jmin,cdd,mentrd_rate,theiv0,theiv0_cup    &
-                                      ,theivs0_cup,dzd_cld,ierr0,theiv0d_cld)
+            call grell_theiv_downdraft(mkx,mgmzp,klod,cdd,mentrd_rate,theiv0,theiv0_cup    &
+                                      ,theivs0_cup,dzd_cld,theiv0d_cld)
             !------------------------------------------------------------------------------!
             ! ix.    Moisture properties of downdraft                                      !
             !------------------------------------------------------------------------------!
-            call grell_most_thermo_downdraft(mkx,mgmzp,jmin,qtot0,co20,mentrd_rate,cdd     &
+            call grell_most_thermo_downdraft(mkx,mgmzp,klod,qtot0,co20,mentrd_rate,cdd     &
                                             ,p0_cup,exner0_cup,thil0_cup,t0_cup,qtot0_cup  &
                                             ,qvap0_cup,qliq0_cup,qice0_cup,qsat0_cup       &
                                             ,co20_cup,rho0_cup,pwav0,theiv0d_cld,etad_cld  &
                                             ,dzd_cld,thil0d_cld,t0d_cld,qtot0d_cld         &
                                             ,qvap0d_cld,qliq0d_cld,qice0d_cld,qsat0d_cld   &
-                                            ,co2d_cld,rho0d_cld,dby0d,pw0d_cld,pwev0,ierr0)
+                                            ,co2d_cld,rho0d_cld,dby0d,pw0d_cld,pwev0       &
+                                            ,ierr0)
 
             !------------------------------------------------------------------------------!
             ! x.     Downdraft cloud work function.                                        !
             !------------------------------------------------------------------------------!
-            call grell_cldwork_downdraft(mkx,mgmzp,jmin,dby0d,dzd_cld,etad_cld,aa0d)
-
+            call grell_cldwork_downdraft(mkx,mgmzp,klod,dby0d,dzd_cld,etad_cld,aa0d)
          end if
 
       end if
@@ -756,7 +768,7 @@ subroutine grell_cupar_static(comp_down,comp_noforc_cldwork,checkmass,iupmethod,
          !    bottom, considering downdraft effects. If this cloud doesn't have down-      !
          !    drafts, it should be zero so skip it.                                        !
          !---------------------------------------------------------------------------------!
-         if (comp_down) then
+         if (comp_dn) then
             call  grell_dellabot_ensemble(mgmzp,checkmass,masstol,edt,theiv,p_cup          &
                                          ,theiv_cup,mentrd_rate,cdd,dzd_cld,etad_cld       &
                                          ,theivd_cld,dellatheiv_eff(1,iedt,icap))
@@ -776,19 +788,19 @@ subroutine grell_cupar_static(comp_down,comp_noforc_cldwork,checkmass,iupmethod,
          !    case downdrafts are absent, this will work fine too, since the mass fluxes   !
          !    will be all zero.                                                            !
          !---------------------------------------------------------------------------------!
-         call grell_dellas_ensemble(mgmzp,checkmass,masstol,edt,kdet,k22,kbcon,jmin,ktop   &
+         call grell_dellas_ensemble(mgmzp,checkmass,masstol,edt,kdet,klou,klfc,klod,ktop   &
                                    ,theiv,p_cup,theiv_cup,mentrd_rate,mentru_rate,cdd      &
                                    ,cdu,dzd_cld,etad_cld,etau_cld,theivd_cld,theivu_cld    &
                                    ,dellatheiv_eff(:,iedt,icap))
-         call grell_dellas_ensemble(mgmzp,checkmass,masstol,edt,kdet,k22,kbcon,jmin,ktop   &
+         call grell_dellas_ensemble(mgmzp,checkmass,masstol,edt,kdet,klou,klfc,klod,ktop   &
                                    ,qtot,p_cup,qtot_cup,mentrd_rate,mentru_rate,cdd,cdu    &
                                    ,dzd_cld,etad_cld,etau_cld,qtotd_cld,qtotu_cld          &
                                    ,dellaqtot_eff(:,iedt,icap))
-         call grell_dellas_ensemble(mgmzp,checkmass,masstol,edt,kdet,k22,kbcon,jmin,ktop   &
+         call grell_dellas_ensemble(mgmzp,checkmass,masstol,edt,kdet,klou,klfc,klod,ktop   &
                                    ,thil,p_cup,thil_cup,mentrd_rate,mentru_rate,cdd,cdu    &
                                    ,dzd_cld,etad_cld,etau_cld,thild_cld,thilu_cld          &
                                    ,dellathil_eff(:,iedt,icap))
-         call grell_dellas_ensemble(mgmzp,checkmass,masstol,edt,kdet,k22,kbcon,jmin,ktop   &
+         call grell_dellas_ensemble(mgmzp,checkmass,masstol,edt,kdet,klou,klfc,klod,ktop   &
                                    ,co2,p_cup,co2_cup,mentrd_rate,mentru_rate,cdd,cdu      &
                                    ,dzd_cld,etad_cld,etau_cld,co2d_cld,co2u_cld            &
                                    ,dellaco2_eff(:,iedt,icap))
@@ -801,10 +813,12 @@ subroutine grell_cupar_static(comp_down,comp_noforc_cldwork,checkmass,iupmethod,
             write(unit=iun,fmt='(a)') '---------------------------------------------------'
             write(unit=iun,fmt='(2(a,1x,i5,1x))') ' I=',i,'J=',icap
             write(unit=iun,fmt='(2(a,1x,i5,1x))') ' IEDT=',iedt,'ICAP=',icap
-            write(unit=iun,fmt='(5(a,1x,f10.4,1x))') ' K22   =',z(k22)                     &
-                                                     ,'KBCON =',z(kbcon)                   &
+            write(unit=iun,fmt='(7(a,1x,f10.4,1x))') ' KLOU  =',z(klou)                    &
+                                                     ,'KLCL  =',z(klcl)                    &
+                                                     ,'KLFC  =',z(klfc)                    &
                                                      ,'KDET  =',z(kdet)                    &
-                                                     ,'JMIN  =',z(jmin)                    &
+                                                     ,'KLOD  =',z(klod)                    &
+                                                     ,'KLNB  =',z(klnb)                    &
                                                      ,'KTOP  =',z(ktop)
             write(unit=iun,fmt='(a,34(1x,a))')  'Level'                                    &
                    ,'       THIL','      THIL0','   THIL_CUP','  THILD_CLD','  THILD_CLD'  &
@@ -849,13 +863,16 @@ subroutine grell_cupar_static(comp_down,comp_noforc_cldwork,checkmass,iupmethod,
       !     on the static control.  In case this static control didn't happen and we don't !
       !     reach this point, no problem, the values will keep the original value (zero).  !
       !------------------------------------------------------------------------------------!
-      ierr_cap(icap)          = 0
-      jmin_cap(icap)          = jmin
-      k22_cap(icap)           = k22
-      kbcon_cap(icap)         = kbcon
+      ierr_cap     (icap)     = 0
+      comp_down_cap(icap)     = comp_dn
+      klod_cap(icap)          = klod
+      klou_cap(icap)          = klou
+      klcl_cap(icap)          = klcl
+      klfc_cap(icap)          = klfc
       kdet_cap(icap)          = kdet
       kstabi_cap(icap)        = kstabi
       kstabm_cap(icap)        = kstabm
+      klnb_cap(icap)          = klnb
       ktop_cap(icap)          = ktop
 
       pwav_cap(icap)          = pwav

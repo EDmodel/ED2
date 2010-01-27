@@ -38,24 +38,36 @@ module grell_coms
   logical                                       :: comp_noforc_cldwork
   !----- I will compute the cloud work function with the arbitrary mass flux --------------!
   logical                                       :: comp_modif_thermo
-  !----- I will compute downdrafts --------------------------------------------------------!
-  logical     , dimension(maxclouds)            :: comp_down
+
+  !----------------------------------------------------------------------------------------!
+  !     This is a precipitating cloud.  This is used to assign the initial value for down- !
+  ! drafts too.  Non-precipitating clouds will always lack downdrafts, whereas precipitat- !
+  ! ing clouds may or may not have downdrafts.                                             !
+  !----------------------------------------------------------------------------------------!
+  logical     , dimension(maxclouds)            :: prec_cld
 
   !----------------------------------------------------------------------------------------!
   !    These variables are obtained from RAMSIN.                                           !
   !----------------------------------------------------------------------------------------!
   !----- Method to choose updraft originating level (1. Max. Moist static energy; 2. PBL) -!
-  integer                 :: iupmethod
+  integer                                  :: iupmethod
   
   !----- Minimum depth for the cloud to be considered [m] ---------------------------------!
   real              , dimension(maxclouds) :: depth_min
   
   !----------------------------------------------------------------------------------------!
   !   Maximum depth of inversion capping [hPa]. If negative, then the absolute value is    !
-  ! the percentage of area that needs to be have enough buoyancy to reach the LFC.         !
+  ! the percentage of area that needs to be have enough buoyancy to reach the LFC if it is !
+  ! a "deep" cloud, or the minimum depth if it is a "shallow" cloud.                       !
   !----------------------------------------------------------------------------------------!
-  real              , dimension(maxclouds) :: cap_maxs
-  
+  real                                     :: cap_maxs
+
+  !----------------------------------------------------------------------------------------!
+  !    If the cloud is "deep", cld2prec is the fraction of condensed hydrometeors that is  !
+  ! converted to precipitation.                                                            !
+  !----------------------------------------------------------------------------------------!
+  real                                     :: cld2prec
+
   !----- Closure type to use for dynamic control ------------------------------------------!
   character (len=2)                        :: closure_type
   
@@ -63,16 +75,16 @@ module grell_coms
   real              , dimension(maxclouds) :: radius
   
   !------ Maximum height in which updrafts can originate [m] ------------------------------!
-  real              , dimension(maxclouds) :: zkbmax
+  real                                     :: zkbmax
   
   !------ Maximum heat rate allowed for feedback [K/day] ----------------------------------!
-  real              , dimension(maxclouds)  :: max_heat
+  real                                     :: max_heat
   
   !------ Height above which downdrafts cannot originate ----------------------------------!
-  real              , dimension(maxclouds) :: zcutdown
+  real                                     :: zcutdown
   
   !------ Top of downdraft detrainment layer ----------------------------------------------!
-  real              , dimension(maxclouds) :: z_detr
+  real                                     :: z_detr
 
   !----------------------------------------------------------------------------------------!
 
@@ -82,7 +94,7 @@ module grell_coms
   ! debugging options.                                                                     !
   !----------------------------------------------------------------------------------------!
   !------ This is the maximum normalized vertical velocity in which convection is called --!
-  real              , dimension(maxclouds) :: wnorm_max
+  real                 :: wnorm_max
 
   !------ Maximum depth that the cloud can have to still belong to this class -------------!
   real              , dimension(maxclouds) :: depth_max
@@ -195,29 +207,27 @@ module grell_coms
 
          !---------------------------------------------------------------------------------!
          !   First I decide whether this cloud will be allowed to have precipitation and   !
-         ! downdrafts. If not, reduce the dimension of precipitation efficiency since it   !
-         ! won't matter. For now precipitating clouds come together with downdrafts (both  !
-         ! or nothing). And this decision is currently defined by a single number          !
+         ! downdrafts.  This decision is currently defined by a single number,             !
          ! min_down_radius...                                                              !
          !---------------------------------------------------------------------------------!
-         comp_down(icld) = radius(icld) > min_down_radius
+         prec_cld(icld) = radius(icld) > min_down_radius
 
 
          !----- Finding the maximum depth. ------------------------------------------------!
-         depth_max(icld)=min(18000.,4.*radius(icld))
-
-         !---------------------------------------------------------------------------------!
-         !  Configure the maximum normalized wind based on cap_maxs                        !
-         !---------------------------------------------------------------------------------!
-         if (cap_maxs(icld) < 0.) then
-            mycdf = (100.+cap_maxs(icld))/100.
-            wnorm_max(icld) = cdf2normal(mycdf)
-         else
-            cap_maxs(icld) = cap_maxs(icld) * 100.
-            wnorm_max(icld) = 0.
-         end if
+         depth_max(icld)=min(zmaxtpse,4.*radius(icld))
 
       end do cloudloop
+
+      !------------------------------------------------------------------------------------!
+      !  Configure the maximum normalized wind based on cap_maxs                           !
+      !------------------------------------------------------------------------------------!
+      if (cap_maxs < 0.) then
+         mycdf = (100.+cap_maxs)/100.
+         wnorm_max = cdf2normal(mycdf)
+      else
+         cap_maxs  = cap_maxs * 100.
+         wnorm_max = 0.
+      end if
 
       !------------------------------------------------------------------------------------!
       !    Then I define the dynamic control dimension and the step bypasses. I will also  !
@@ -226,7 +236,7 @@ module grell_coms
       !------------------------------------------------------------------------------------!
       select case (closure_type)
       case ('en')
-         if (.not. comp_down(icld)) then
+         if (.not. prec_cld(icld)) then
             write(unit=*,fmt='(a)') '--------------------------------------------------'
             write(unit=*,fmt='(a,1x,i4)')   ' - For cloud #',icld
             write(unit=*,fmt='(a,1x,f8.2)') ' - Radius is ',radius(icld)
@@ -256,7 +266,7 @@ module grell_coms
          comp_modif_thermo   = .true.
 
       case default
-         if (.not. comp_down(icld)) then
+         if (.not. prec_cld(icld)) then
             write(unit=*,fmt='(a)') '--------------------------------------------------'
             write(unit=*,fmt='(a,1x,i4)')   ' - For cloud #',icld
             write(unit=*,fmt='(a,1x,f8.2)') ' - Radius is ',radius(icld)

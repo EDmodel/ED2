@@ -17,7 +17,7 @@
 ! convection.                                                                              !
 !------------------------------------------------------------------------------------------!
 subroutine grell_updraft_origin(mkx,mgmzp,iupmethod,kpbl,kbmax,z,wwind,sigw,tke,qice,qliq  &
-                               ,theiv_cup,ierr,k22)
+                               ,theiv_cup,ierr,klou)
 
    implicit none
    integer               , intent(in)     :: mkx,mgmzp ! Grid dimensions
@@ -35,7 +35,7 @@ subroutine grell_updraft_origin(mkx,mgmzp,iupmethod,kpbl,kbmax,z,wwind,sigw,tke,
    real, dimension(mgmzp), intent(in)     :: theiv_cup ! Thetae_iv                 [     K]
    !----- Output and sort of output variables ---------------------------------------------!
    integer               , intent(inout)  :: ierr      ! Error flag
-   integer               , intent(out)    :: k22       ! Updraft origin level
+   integer               , intent(out)    :: klou      ! Updraft origin level
    !----- Local variable ------------------------------------------------------------------!
    real, dimension(mgmzp)                 :: wboth     ! Combination of w and sigw [   m/s]
    integer                                :: kpblloc   ! Local PBL top level       [   ---]
@@ -59,28 +59,30 @@ subroutine grell_updraft_origin(mkx,mgmzp,iupmethod,kpbl,kbmax,z,wwind,sigw,tke,
    !---------------------------------------------------------------------------------------!
    select case (iupmethod)
    case (1) ! Maximum Thetae_iv
-      k22 = (kstart-1) + maxloc(theiv_cup(kstart:kbmax),dim=1)
+      klou = (kstart-1) + maxloc(theiv_cup(kstart:kbmax),dim=1)
    case (2) ! PBL top  
       if (kpbl /= 0) then
-         k22 = kpbl
+         klou = kpbl
       else
-         call grell_find_pbl_height(mkx,mgmzp,z,tke,qliq,qice,k22)
+         call grell_find_pbl_height(mkx,mgmzp,z,tke,qliq,qice,klou)
       end if
    case (3) ! Most turbulent
-      k22 = (kstart-1) + maxloc(tke(kstart:kbmax),dim=1)
+      klou = (kstart-1) + maxloc(tke(kstart:kbmax),dim=1)
    case (4) ! Combined mechanical forcing and turbulent
       if (kpbl /= 0) then ! Nakanishi and Niino is used, sigw is available
          wboth = wwind + sigw
-         k22 = (kstart-1) + maxloc(wboth(kstart:kpbl),dim=1)
+         klou = (kstart-1) + maxloc(wboth(kstart:kpbl),dim=1)
       else ! Estimate sigw as the square root of 2 TKE
          call grell_find_pbl_height(mkx,mgmzp,z,tke,qliq,qice,kpblloc)
          wboth = wwind + sqrt(2.*tke)
          if (kpblloc > kstart) then
-            k22 = (kstart-1) + maxloc(wboth(kstart:kpblloc),dim=1)
+            klou = (kstart-1) + maxloc(wboth(kstart:kpblloc),dim=1)
          else 
-            k22 = kstart
+            klou = kstart
          end if
       end if
+   case (5) ! Just try from the second layer upwards
+      klou = kstart
    end select
    !---------------------------------------------------------------------------------------!
 
@@ -89,7 +91,7 @@ subroutine grell_updraft_origin(mkx,mgmzp,iupmethod,kpbl,kbmax,z,wwind,sigw,tke,
    !   If the level of updraft origin is too high, then cumulus parameterization should    !
    ! not be called here.                                                                   !
    !---------------------------------------------------------------------------------------!
-   if (k22 >= kbmax) ierr = 2
+   if (klou >= kbmax) ierr = 2
 
    return
 end subroutine grell_updraft_origin
@@ -112,10 +114,13 @@ recursive subroutine grell_find_cloud_lfc(mkx,mgmzp,kbmax,cap_max,wnorm_max,wwin
                                          ,qtot_cup,qvap_cup,qliq_cup,qice_cup,qsat_cup     &
                                          ,co2_cup,rho_cup,dzd_cld,mentru_rate,theivu_cld   &
                                          ,thilu_cld,tu_cld,qtotu_cld,qvapu_cld,qliqu_cld   &
-                                         ,qiceu_cld,qsatu_cld,co2u_cld,rhou_cld,dbyu,k22   &
-                                         ,ierr,kbcon,wbuoymin)
-   use rconstants, only : epi,rdry
-   use therm_lib , only : idealdens
+                                         ,qiceu_cld,qsatu_cld,co2u_cld,rhou_cld,dbyu,klou  &
+                                         ,ierr,klcl,klfc,wbuoymin)
+   use rconstants, only : epi        & ! intent(in)
+                        , rdry       ! ! intent(in)
+   use therm_lib , only : idealdens  & ! function
+                        , lcl_il     ! ! subroutine
+   use mem_cuparm, only : wcldbs     ! ! intent(in)
    implicit none
 
    !----- Input variables -----------------------------------------------------------------!
@@ -154,27 +159,30 @@ recursive subroutine grell_find_cloud_lfc(mkx,mgmzp,kbmax,cap_max,wnorm_max,wwin
    real, dimension(mgmzp), intent(inout):: rhou_cld   ! Updraft density            [ kg/m³]
    real, dimension(mgmzp), intent(inout):: dbyu       ! Buoyancy acceleration      [  m/s²]
    !----- These variables may or may not be assigned here so use inout --------------------!
-   integer               , intent(inout):: k22        ! Level of origin of updrafts
+   integer               , intent(inout):: klou       ! Level of origin of updrafts
    integer               , intent(inout):: ierr       ! Error flag
    !----- Output variable -----------------------------------------------------------------!
-   integer               , intent(out)  :: kbcon      ! Level of free convection
+   integer               , intent(out)  :: klcl       ! Lifting condensation level
+   integer               , intent(out)  :: klfc       ! Level of free convection
    real                  , intent(out)  :: wbuoymin   ! Min. buoyanct velocity     [   m/s]
    !----- External functions --------------------------------------------------------------!
    real   , external                    :: buoyancy_acc ! Buoyancy acceleration funtion.
    !----- Local variables -----------------------------------------------------------------!
    integer                              :: k       ! Counter
-   real                                 :: pcdiff  ! Pres. diff. b/w k22 and kbcon [    Pa]
-   logical                              :: pushup  ! Push k22 upwards              [   T/F]
+   real                                 :: pcdiff  ! Pres. diff. b/w klou and klfc [    Pa]
+   real                                 :: tlcl    ! LCL temperature               [     K]
+   real                                 :: plcl    ! LCL pressure                  [    Pa]
+   real                                 :: dzlcl   ! LCL sub-layer thickness       [     m]
+   logical                              :: pushup  ! Push klou upwards             [   T/F]
    !---------------------------------------------------------------------------------------!
 
 
 
    !---------------------------------------------------------------------------------------!
-   !    Start with the first guess: the Level of free convection (kbcon) is at the level   !
+   !    Start with the first guess: the Level of free convection (klfc) is at the level    !
    ! in which updrafts originate.                                                          !
    !---------------------------------------------------------------------------------------!
    pushup = .false.
-   kbcon  = k22
    
    !---------------------------------------------------------------------------------------!
    !    Initialise draft-related variables. Some levels will be overwritten later on.      !
@@ -192,49 +200,70 @@ recursive subroutine grell_find_cloud_lfc(mkx,mgmzp,kbmax,cap_max,wnorm_max,wwin
    dbyu       = 0.  
    
    !---------------------------------------------------------------------------------------!
+   !    Set the lifting condensation level based on this klou.  The lifting condensation   !
+   ! level may not be a grid level, most likely it will be in between two levels.  There-  !
+   ! fore klcl will be set to the nearest level above the actual LCL (or at it if we are   !
+   ! really lucky...).                                                                     !
+   !---------------------------------------------------------------------------------------!
+   call lcl_il(thil_cup(klou),p_cup(klou),t_cup(klou),qtot_cup(klou),qvap_cup(klou)        &
+              ,tlcl,plcl,dzlcl,19)
+   klcl = klou
+   klclloop: do
+      if (klcl == mkx .or. plcl >= p_cup(klcl)) exit klclloop
+      klcl = klcl + 1
+   end do klclloop
+   
+   !---------------------------------------------------------------------------------------!
+   !     Although the level of free convection is usually beneath the lifting condensation !
+   ! level, that may not always be the case.  If the level of origin of updrafts is within !
+   ! the boundary layer, it can actually become buoyant even before reaching LCL.  That is !
+   ! particularly true in shallow convection and oceanic clouds (kind of stratocumulus...) ! 
+   !---------------------------------------------------------------------------------------!
+   klfc  = klou
+   
+   !---------------------------------------------------------------------------------------!
    !   First step: finding the level in which the air lifted from the level that updrafts  !
    ! originate would become buoyant.                                                       !
    !---------------------------------------------------------------------------------------!
-   kbconloop: do
-      kbcon=kbcon+1
-      if (kbcon > kbmax + 2) then 
+   klfcloop: do
+      klfc=klfc+1
+      if (klfc > kbmax + 2) then 
          !------ Gave up... Cloud would be too high to be a cumulus. ----------------------!
          ierr = 3
          return
       end if
 
       !----- No entrainment below the LFC, so theiv, thil, and qtot shouldn't change ------!
-      theivu_cld(kbcon) = theiv_cup(k22)
-      thilu_cld (kbcon) = thil_cup (k22)
-      qtotu_cld (kbcon) = qtot_cup (k22)
-      co2u_cld  (kbcon) = co2_cup  (k22)
+      theivu_cld(klfc) = theiv_cup(klou)
+      thilu_cld (klfc) = thil_cup (klou)
+      qtotu_cld (klfc) = qtot_cup (klou)
+      co2u_cld  (klfc) = co2_cup  (klou)
       !------ Finding a consistent set of temperature and mixing ratios -------------------!
-      call thil2tqall(thilu_cld(kbcon),exner_cup(kbcon),p_cup(kbcon),qtotu_cld(kbcon)      &
-                     ,qliqu_cld(kbcon),qiceu_cld(kbcon),tu_cld(kbcon),qvapu_cld(kbcon)     &
-                     ,qsatu_cld(kbcon))
+      call thil2tqall(thilu_cld(klfc),exner_cup(klfc),p_cup(klfc),qtotu_cld(klfc)          &
+                     ,qliqu_cld(klfc),qiceu_cld(klfc),tu_cld(klfc),qvapu_cld(klfc)         &
+                     ,qsatu_cld(klfc))
       !------ Finding the draft density, assuming pu_cld = p_cup... -----------------------!
-      rhou_cld(kbcon) = idealdens(p_cup(kbcon),tu_cld(kbcon),qvapu_cld(kbcon)              &
-                                 ,qtotu_cld(kbcon))
+      rhou_cld(klfc) = idealdens(p_cup(klfc),tu_cld(klfc),qvapu_cld(klfc),qtotu_cld(klfc))
 
       !------ Finding buoyancy ------------------------------------------------------------!
-      dbyu(kbcon) = buoyancy_acc(rho_cup(kbcon),rhou_cld(kbcon))
+      dbyu(klfc) = buoyancy_acc(rho_cup(klfc),rhou_cld(klfc))
       !------ First guess for buoyancy. LFC is the first one to have it positive ----------!
-      if (dbyu(kbcon) > 0. ) exit kbconloop
+      if (dbyu(klfc) > 0. ) exit klfcloop
 
-   end do kbconloop
+   end do klfcloop
 
    !---------------------------------------------------------------------------------------!
    !   Finding the minimum velocity an updraft would need to have to reach the tentative   !
-   ! LFC. This may not be needed here depending on the test the user asked for, but it     !
+   ! LFC still with some minimum velocity (defined by . This may not be needed here depending on the test the user asked for, but it     !
    ! will be needed when computing the fractional area covered by clouds.                  !
    !---------------------------------------------------------------------------------------!
    wbuoymin=0.
-   do k=kbcon-1,k22,-1
+   do k=klfc-1,klou,-1
       !------------------------------------------------------------------------------------!
       !     The only risk for this sqrt have negative value is if positive buoyancy at     !
-      ! kbcon. But in this case, the LFC is actually closer to kbcon-1 rather than kbcon,  !
-      ! so keep it zero again. Again, the updraft experiences no entrainment nor           !
-      ! detrainment below kbcon, which simplifies the equation below. However, we must     !
+      ! klfc. But in this case, the LFC is actually closer to klfc-1 rather than klfc,     !
+      ! so keep it wbuoymin again. Again, the updraft experiences no entrainment nor       !
+      ! detrainment below klfc, which simplifies the equation below. However, we must      !
       ! account the friction, which is defined based on the constant entrainment rate,     !
       ! following Zhang and Fritsch (1986) parametrisation).                               !
       !------------------------------------------------------------------------------------!
@@ -242,35 +271,35 @@ recursive subroutine grell_find_cloud_lfc(mkx,mgmzp,kbmax,cap_max,wnorm_max,wwin
    end do
    !---------------------------------------------------------------------------------------!
    !    Now I use either cap_max or wnorm_max to decide whether convection can happen with !
-   ! the k22/kbcon combination we got at this point.                                       !
+   ! the klou/klfc combination we got at this point.                                       !
    !---------------------------------------------------------------------------------------!
    if (cap_max > 0.) then
       !------------------------------------------------------------------------------------!
       !    So the LFC is kind of far from the level in which updrafts originate. If there  !
       ! is an inversion capping entirely within the layer, then I may not develop any      !
-      ! convection, so I try an alternative approach. If the "gap" between k22 and kbcon   !
-      ! is larger than the maximum depth of the inversion capping, I will try to push k22  !
-      ! upwards. If kbcon is just the next level, take it.                                 !
+      ! convection, so I try an alternative approach. If the "gap" between klou and klfc   !
+      ! is larger than the maximum depth of the inversion capping, I will try to push klou !
+      ! upwards. If klfc is just the next level, take it.                                  !
       !------------------------------------------------------------------------------------!
-      pcdiff = p_cup(k22) - p_cup(kbcon) !----- Pressure decreases with height... ---------!
-      pushup = (pcdiff > cap_max) .and. (kbcon-k22 > 1)
+      pcdiff = p_cup(klou) - p_cup(klfc) !----- Pressure decreases with height... ---------!
+      pushup = (pcdiff > cap_max) .and. (klfc-klou > 1)
    else
       !------------------------------------------------------------------------------------!
-      !    We now compare this buoyant velocity with the velocity at k22. If this is too   !
-      ! unlikely to happen, move k22 up and give one more try, otherwise, we found the     !
+      !    We now compare this buoyant velocity with the velocity at klou. If this is too  !
+      ! unlikely to happen, move klou up and give one more try, otherwise, we found the    !
       ! combination.                                                                       !
       !------------------------------------------------------------------------------------!
-      pushup = wbuoymin > wwind(k22) + wnorm_max*sigw(k22)
+      pushup = wbuoymin > wwind(klou) + wnorm_max*sigw(klou)
    end if
 
    if (pushup) then
-      k22 = k22 + 1
+      klou = klou + 1
       call grell_find_cloud_lfc(mkx,mgmzp,kbmax,cap_max,wnorm_max,wwind,sigw,exner_cup     &
                                ,p_cup,theiv_cup,thil_cup,t_cup,qtot_cup,qvap_cup,qliq_cup  &
                                ,qice_cup,qsat_cup,co2_cup,rho_cup,dzd_cld,mentru_rate      &
                                ,theivu_cld,thilu_cld,tu_cld,qtotu_cld,qvapu_cld,qliqu_cld  &
-                               ,qiceu_cld,qsatu_cld,co2u_cld,rhou_cld,dbyu,k22,ierr,kbcon  &
-                               ,wbuoymin)
+                               ,qiceu_cld,qsatu_cld,co2u_cld,rhou_cld,dbyu,klou,ierr,klcl  &
+                               ,klfc,wbuoymin)
 
    end if
 
@@ -287,9 +316,9 @@ end subroutine grell_find_cloud_lfc
 !==========================================================================================!
 !==========================================================================================!
 !   This subroutine should be used only for "0" and "x" thermodynamics. This is using the  !
-! k22 and kbcon already found, and computing the buoyancy at this lowest part.             !
+! klou and klfc already found, and computing the buoyancy at this lowest part.             !
 !------------------------------------------------------------------------------------------!
-subroutine grell_buoy_below_lfc(mkx,mgmzp,k22,kbcon,exner_cup,p_cup,theiv_cup,thil_cup     &
+subroutine grell_buoy_below_lfc(mkx,mgmzp,klou,klfc,exner_cup,p_cup,theiv_cup,thil_cup     &
                                ,t_cup,qtot_cup,qvap_cup,qliq_cup,qice_cup,qsat_cup,co2_cup &
                                ,rho_cup,theivu_cld,thilu_cld,tu_cld,qtotu_cld,qvapu_cld    &
                                ,qliqu_cld,qiceu_cld,qsatu_cld,co2u_cld,rhou_cld,dbyu)
@@ -299,8 +328,8 @@ subroutine grell_buoy_below_lfc(mkx,mgmzp,k22,kbcon,exner_cup,p_cup,theiv_cup,th
 
    integer               , intent(in)   :: mkx        ! # of vertical layers
    integer               , intent(in)   :: mgmzp      ! Vertical dimension
-   integer               , intent(in)   :: k22        ! Level of origin of updrafts
-   integer               , intent(in)   :: kbcon      ! Level of free convection
+   integer               , intent(in)   :: klou        ! Level of origin of updrafts
+   integer               , intent(in)   :: klfc      ! Level of free convection
    !----- Input environment variables -----------------------------------------------------!
    real, dimension(mgmzp), intent(in)   :: exner_cup  ! Exner f. @ cloud level     [J/kg/K]
    real, dimension(mgmzp), intent(in)   :: p_cup      ! Pressure @ cloud level     [    Pa]
@@ -353,11 +382,11 @@ subroutine grell_buoy_below_lfc(mkx,mgmzp,k22,kbcon,exner_cup,p_cup,theiv_cup,th
    !    ment, so theivu_cld, thilu_cld and qtotu_cld are conserved. Then we find the other !
    !    variables.                                                                         !
    !---------------------------------------------------------------------------------------!
-   do k=k22,kbcon
-      theivu_cld(k) = theiv_cup(k22)
-      thilu_cld (k) = thil_cup (k22)
-      qtotu_cld (k) = qtot_cup (k22)
-      co2u_cld  (k) = co2_cup  (k22)
+   do k=klou,klfc
+      theivu_cld(k) = theiv_cup(klou)
+      thilu_cld (k) = thil_cup (klou)
+      qtotu_cld (k) = qtot_cup (klou)
+      co2u_cld  (k) = co2_cup  (klou)
       !------ Finding a consistent set of temperature and mixing ratios -------------------!
       call thil2tqall(thilu_cld(k),exner_cup(k),p_cup(k),qtotu_cld(k),qliqu_cld(k)         &
                      ,qiceu_cld(k),tu_cld(k),qvapu_cld(k),qsatu_cld(k))
@@ -382,12 +411,12 @@ end subroutine grell_buoy_below_lfc
 !==========================================================================================!
 !   This subroutine computes the incloud moist static energy                               !
 !------------------------------------------------------------------------------------------!
-subroutine grell_theiv_updraft(mkx,mgmzp,k22,kbcon,cdu,mentru_rate,theiv,theiv_cup,dzu_cld &
+subroutine grell_theiv_updraft(mkx,mgmzp,klou,klfc,cdu,mentru_rate,theiv,theiv_cup,dzu_cld &
                               ,theivu_cld)
    implicit none
    integer               , intent(in)    :: mkx, mgmzp  ! Grid dimesnsions
-   integer               , intent(in)    :: k22         ! Level in which updrafts begin
-   integer               , intent(in)    :: kbcon       ! Level of free convection
+   integer               , intent(in)    :: klou         ! Level in which updrafts begin
+   integer               , intent(in)    :: klfc       ! Level of free convection
 
    real, dimension(mgmzp), intent(in)    :: cdu         ! Updraft detrainment function;
    real, dimension(mgmzp), intent(in)    :: mentru_rate ! Updraft entrainment rate
@@ -402,7 +431,7 @@ subroutine grell_theiv_updraft(mkx,mgmzp,k22,kbcon,cdu,mentru_rate,theiv,theiv_c
    ! cloud, the updraft will no longer conserve thetae_iv because there is entrainment and !
    ! detrainment (the phase change only doesn't change thetae_iv).                         !
    !---------------------------------------------------------------------------------------!
-   do k=kbcon+1,mkx-1
+   do k=klfc+1,mkx-1
       theivu_cld(k) = (theivu_cld(k-1)*(1.-.5*cdu(k)*dzu_cld(k))                           &
                       + mentru_rate(k)*dzu_cld(k)*theiv(k-1))                              &
                       / (1.+mentru_rate(k)*dzu_cld(k) - .5*cdu(k)*dzu_cld(k))
@@ -422,12 +451,12 @@ end subroutine grell_theiv_updraft
 !==========================================================================================!
 !   This subroutine computes the normalized mass flux associated with updrafts             !
 !------------------------------------------------------------------------------------------!
-subroutine grell_nms_updraft(mkx,mgmzp,k22,kbcon,ktpse,mentru_rate,cdu,dzu_cld,etau_cld)
+subroutine grell_nms_updraft(mkx,mgmzp,klou,klfc,ktpse,mentru_rate,cdu,dzu_cld,etau_cld)
    implicit none
 
    integer               , intent(in)    :: mkx, mgmzp  ! Grid dimesnsions
-   integer               , intent(in)    :: k22         ! Level in which updrafts begin
-   integer               , intent(in)    :: kbcon       ! Level of free convection
+   integer               , intent(in)    :: klou         ! Level in which updrafts begin
+   integer               , intent(in)    :: klfc       ! Level of free convection
    integer               , intent(in)    :: ktpse       ! Maximum cloud top possible
                                         
    real, dimension(mgmzp), intent(in)    :: mentru_rate ! Updraft entrainment rate
@@ -440,7 +469,7 @@ subroutine grell_nms_updraft(mkx,mgmzp,k22,kbcon,ktpse,mentru_rate,cdu,dzu_cld,e
    !---------------------------------------------------------------------------------------!
    ! 1. Below the updraft origin there is no upward mass flux, set it to zero.             !
    !---------------------------------------------------------------------------------------!
-   etau_cld(1:(k22-1)) = 0.
+   etau_cld(1:(klou-1)) = 0.
    
    
    
@@ -448,7 +477,7 @@ subroutine grell_nms_updraft(mkx,mgmzp,k22,kbcon,ktpse,mentru_rate,cdu,dzu_cld,e
    ! 2. There is no entrainment/detrainment between the updraft origin and the level of    !
    !    free convection,so I assume that the normalized mass flux is one.                  !
    !---------------------------------------------------------------------------------------!
-   etau_cld(k22:kbcon) = 1.
+   etau_cld(klou:klfc) = 1.
 
 
 
@@ -456,7 +485,7 @@ subroutine grell_nms_updraft(mkx,mgmzp,k22,kbcon,ktpse,mentru_rate,cdu,dzu_cld,e
    ! 3. Between the LFC and cloud top, need to consider entrainment and detrainment        !
    !    contributions, loop through levels.                                                !
    !---------------------------------------------------------------------------------------!
-   do k=kbcon+1,ktpse
+   do k=klfc+1,ktpse
       etau_cld(k)=etau_cld(k-1)*(1.+(mentru_rate(k)-cdu(k))*dzu_cld(k))
    end do
 
@@ -481,23 +510,25 @@ end subroutine grell_nms_updraft
 !     This subroutine computes most thermodynamic variables associated with the updraft,   !
 ! in particular those affected by phase change.                                            !
 !------------------------------------------------------------------------------------------!
-subroutine grell_most_thermo_updraft(comp_down,check_top,mkx,mgmzp,kbcon,ktpse,cdu         &
+subroutine grell_most_thermo_updraft(preccld,check_top,mkx,mgmzp,klfc,ktpse,cld2prec,cdu   &
                                     ,mentru_rate,qtot,co2,p_cup,exner_cup,theiv_cup        &
                                     ,thil_cup,t_cup,qtot_cup,qvap_cup,qliq_cup,qice_cup    &
                                     ,qsat_cup,co2_cup,rho_cup,theivu_cld,etau_cld,dzu_cld  &
                                     ,thilu_cld,tu_cld,qtotu_cld,qvapu_cld,qliqu_cld        &
                                     ,qiceu_cld,qsatu_cld,co2u_cld,rhou_cld,dbyu,pwu_cld    &
-                                    ,pwavu,ktop,ierr)
+                                    ,pwavu,klnb,ktop,ierr)
    use rconstants, only : epi,rdry, t00, toodry
    use therm_lib , only : thetaeiv2thil, idealdens, toler, maxfpo
    implicit none
-   logical               , intent(in)    :: comp_down   ! Flag for downdraft/precipitation
+   !----- Several scalars. ----------------------------------------------------------------!
+   logical               , intent(in)    :: preccld     ! Flag for precipitation
    logical               , intent(in)    :: check_top   ! Flag for checking top
    integer               , intent(in)    :: mkx         ! Levels 
    integer               , intent(in)    :: mgmzp       ! Levels
-   integer               , intent(in)    :: kbcon       ! Level of free convection
+   integer               , intent(in)    :: klfc        ! Level of free convection
    integer               , intent(in)    :: ktpse       ! Maximum cloud top possible
-
+   real                  , intent(in)    :: cld2prec    ! Level of free convection
+   !----- Entrainment and detrainment rates. ----------------------------------------------!
    real, dimension(mgmzp), intent(in)    :: cdu         ! Detrainment function     [   1/m]
    real, dimension(mgmzp), intent(in)    :: mentru_rate ! Entrainment function     [   1/m]
    !----- Variables at model levels -------------------------------------------------------!
@@ -518,7 +549,7 @@ subroutine grell_most_thermo_updraft(comp_down,check_top,mkx,mgmzp,kbcon,ktpse,c
    real, dimension(mgmzp), intent(in)    :: co2_cup     ! CO2 mixing ratio         [   ppm]
    !----- Input variables at updraft ------------------------------------------------------!
    real, dimension(mgmzp), intent(in)    :: dzu_cld     ! Layer thickness          [     m]
-   !----- Transit variables, which will be changed between kbcon and ktop -----------------!
+   !----- Transit variables, which will be changed between klfc and klnb -----------------!
    real, dimension(mgmzp), intent(inout) :: etau_cld    ! Normalized mass flux     [   ---]
    real, dimension(mgmzp), intent(inout) :: pwu_cld     ! Fall-out rain            [ kg/kg]
    real, dimension(mgmzp), intent(inout) :: theivu_cld  ! Thetae_iv @ updraft      [     K]
@@ -535,6 +566,7 @@ subroutine grell_most_thermo_updraft(comp_down,check_top,mkx,mgmzp,kbcon,ktpse,c
    integer               , intent(inout) :: ierr        ! Error flag               [   ---]
    !----- Output variables ----------------------------------------------------------------!
    real                  , intent(out)   :: pwavu       ! Total normalized integrated cond.
+   integer               , intent(out)   :: klnb        ! Level of neutral buoyancy.
    integer               , intent(out)   :: ktop        ! Cloud top.
    !----- Local variables -----------------------------------------------------------------!
    integer                :: k              ! Counter                              [  ----]
@@ -564,15 +596,13 @@ subroutine grell_most_thermo_updraft(comp_down,check_top,mkx,mgmzp,kbcon,ktpse,c
 
 
    !---------------------------------------------------------------------------------------!
-   ! 1. First of all, I'll check whether this is a precipitating cloud or not. Currently,  !
-   !    precipitating clouds are the ones that contain downdrafts. This does not need to   !
-   !    be the requirement, it was just for convenience. The conversion rate from cloud to !
-   !    rain should be a function of the cloud size and wind shear, but it is only a step  !
-   !    function, 0 if the radius is small, or a non-zero constant otherwise. Perhaps this !
-   !    should be done in a different way in the future.                                   !
+   ! 1. First of all, I'll check whether this is a precipitating cloud or not.  The        !
+   !    conversion rate from cloud to rain should be a function of the cloud size and wind !
+   !    shear, but it is only a step function, 0 if the radius is small, or a non-zero     !
+   !    constant otherwise. Perhaps this should be done in a different way in the future.  !
    !---------------------------------------------------------------------------------------!
-   if (comp_down) then
-      c0 = 0.002
+   if (preccld) then
+      c0 = cld2prec
    else 
       c0 = 0.
    end if
@@ -593,6 +623,7 @@ subroutine grell_most_thermo_updraft(comp_down,check_top,mkx,mgmzp,kbcon,ktpse,c
       foundtop  = .false.
    else
       foundtop  = .true.
+      klnb      = ktpse
       ktop      = ktpse
    end if
 
@@ -603,15 +634,15 @@ subroutine grell_most_thermo_updraft(comp_down,check_top,mkx,mgmzp,kbcon,ktpse,c
    !    the environment. Above the cloud top, no mass flux, nothing happens in terms of    !
    !    updraft, so I will set up the variables with environment values.                   !
    !---------------------------------------------------------------------------------------!
-   thilu_cld((kbcon+1):mkx) = thil_cup((kbcon+1):mkx)
-   tu_cld   ((kbcon+1):mkx) = t_cup   ((kbcon+1):mkx)
-   qvapu_cld((kbcon+1):mkx) = qvap_cup((kbcon+1):mkx)
-   qliqu_cld((kbcon+1):mkx) = qliq_cup((kbcon+1):mkx)
-   qiceu_cld((kbcon+1):mkx) = qice_cup((kbcon+1):mkx)
-   qtotu_cld((kbcon+1):mkx) = qtot_cup((kbcon+1):mkx)
-   co2u_cld ((kbcon+1):mkx) = co2_cup ((kbcon+1):mkx)
-   rhou_cld ((kbcon+1):mkx) = rho_cup ((kbcon+1):mkx)
-   dbyu     ((kbcon+1):mkx) = 0.
+   thilu_cld((klfc+1):mkx) = thil_cup((klfc+1):mkx)
+   tu_cld   ((klfc+1):mkx) = t_cup   ((klfc+1):mkx)
+   qvapu_cld((klfc+1):mkx) = qvap_cup((klfc+1):mkx)
+   qliqu_cld((klfc+1):mkx) = qliq_cup((klfc+1):mkx)
+   qiceu_cld((klfc+1):mkx) = qice_cup((klfc+1):mkx)
+   qtotu_cld((klfc+1):mkx) = qtot_cup((klfc+1):mkx)
+   co2u_cld ((klfc+1):mkx) = co2_cup ((klfc+1):mkx)
+   rhou_cld ((klfc+1):mkx) = rho_cup ((klfc+1):mkx)
+   dbyu     ((klfc+1):mkx) = 0.
 
 
 
@@ -621,7 +652,7 @@ subroutine grell_most_thermo_updraft(comp_down,check_top,mkx,mgmzp,kbcon,ktpse,c
    !    a fraction of this condensation will fall out as rainfall. Here we will compute    !
    !    all these variables, some of them in an iterative way.                             !
    !---------------------------------------------------------------------------------------!
-   vertiloop: do k=kbcon,ktpse
+   vertiloop: do k=klfc,ktpse
       !------------------------------------------------------------------------------------!
       !    The total mixing ratio is what came from level immediately beneath us plus      !
       ! entrainment and detrainment, plus the water and ice that is about to leave the     !
@@ -652,7 +683,7 @@ subroutine grell_most_thermo_updraft(comp_down,check_top,mkx,mgmzp,kbcon,ktpse,c
       !------------------------------------------------------------------------------------!
       !    The solution of Grell (1993) equation's (A.12) is now done iteratively rather   !
       ! than using the original method. By doing this we don't need to use the approxima-  !
-      ! tion for qsat, although we still assume the downdraft is saturated. We will use    !
+      ! tion for qsat, although we still assume the updraft is saturated.  We will use     !
       ! the zeroin method, which is just a combination of secant and bisection to find the !
       ! new qtotd_cld. In zero-in method, secant is the standard because it usually        !
       ! converges fast. If secant turns out to be a bad choice (because the secant is too  !
@@ -837,7 +868,7 @@ subroutine grell_most_thermo_updraft(comp_down,check_top,mkx,mgmzp,kbcon,ktpse,c
 
             !------------------------------------------------------------------------------!
             ! e4. Testing for convergence, depending on the method. We may be lucky and    !
-            !     hit the zero-error, depending on 
+            !     hit the zero-error.                                                      !
             !------------------------------------------------------------------------------!
             if (funnow == 0.) then
                converged = .true.
@@ -923,8 +954,9 @@ subroutine grell_most_thermo_updraft(comp_down,check_top,mkx,mgmzp,kbcon,ktpse,c
       dbyu(k) = buoyancy_acc(rho_cup(k),rhou_cld(k))
       
       !------------------------------------------------------------------------------------!
-      !    If buoyancy is negative, we found the cloud top. We can skip this loop and set  !
-      ! all the other variables to either 0 or the environment, whichever is suitable.     !
+      !    If buoyancy is negative, we found the level of neutral buoyancy. We can skip    !
+      ! this loop and set all the other variables to either 0 or the environment, which-   !
+      ! ever is suitable.                                                                  !
       !------------------------------------------------------------------------------------!
       if (check_top .and. dbyu(k) < 0.) then
          pwavu        = pwavu - pwu_cld(k)
@@ -938,7 +970,8 @@ subroutine grell_most_thermo_updraft(comp_down,check_top,mkx,mgmzp,kbcon,ktpse,c
          co2u_cld(k)  = co2_cup(k)
          rhou_cld (k) = rho_cup (k)
          dbyu(k)      = 0.
-         ktop         = k -1
+         klnb         = k -1
+         ktop         = klnb
          foundtop     = .true.
          exit vertiloop
       end if
@@ -949,15 +982,16 @@ subroutine grell_most_thermo_updraft(comp_down,check_top,mkx,mgmzp,kbcon,ktpse,c
    !   If I found the cloud top, I need to reset values beyond that point.                 !
    !---------------------------------------------------------------------------------------!
    if (check_top .and. foundtop) then
-      etau_cld(ktop+1:mkx)   = 0.
-      theivu_cld(ktop+1:mkx) = theiv_cup(ktop+1:mkx)
-      dbyu(ktop+1:mkx)       = 0.
+      etau_cld   (ktop+1:mkx) = 0.
+      theivu_cld (ktop+1:mkx) = theiv_cup(ktop+1:mkx)
+      dbyu       (ktop+1:mkx) = 0.
    elseif (check_top) then
       !----- Cloud is way too thick! Don't allow such cloud -------------------------------!
-      ierr = 5
-      ktop = 0
-      etau_cld = 0.
-      dbyu = 0.
+      ierr       = 5
+      klnb       = 0
+      ktop       = 0
+      etau_cld   = 0.
+      dbyu       = 0.
       theivu_cld = theiv_cup
    end if
 
@@ -978,12 +1012,13 @@ end subroutine grell_most_thermo_updraft
 ! often used. From Grell (1993) paper, we are using the cloud work definition from equa-   !
 ! tion A.38 rather than equation A.40, remembering that both are equivalent.               !
 !------------------------------------------------------------------------------------------!
-subroutine grell_cldwork_updraft(mkx,mgmzp,kbcon,ktop,dbyu,dzu_cld,etau_cld,aau)
+subroutine grell_cldwork_updraft(mkx,mgmzp,klfc,ktop,dbyu,dzu_cld,etau_cld,aau)
 
    implicit none
 
-   integer               , intent(in)  :: mkx, mgmzp ! Grid dimesnsions
-   integer               , intent(in)  :: kbcon      ! Level of free convection
+   integer               , intent(in)  :: mkx        ! Grid dimesnsions
+   integer               , intent(in)  :: mgmzp      ! Grid dimesnsions
+   integer               , intent(in)  :: klfc       ! Level of free convection
    integer               , intent(in)  :: ktop       ! Cloud top
 
    real, dimension(mgmzp), intent(in)  :: dbyu       ! Buoyancy acceleration       [  m/s²]
@@ -1002,13 +1037,9 @@ subroutine grell_cldwork_updraft(mkx,mgmzp,kbcon,ktop,dbyu,dzu_cld,etau_cld,aau)
    ! final value should represent the cloud function for the entire cloud thus the         !
    ! integral between the LFC and cloud top.                                               !
    !---------------------------------------------------------------------------------------!
-   do k=kbcon,ktop-1
+   do k=klfc,ktop
       aau = aau + etau_cld(k)*dbyu(k-1) *dzu_cld(k)
    end do
-
-   !----- Include ktop only if buoyancy is positive there ---------------------------------!
-   if (dbyu(ktop-1) > 0) aau = aau + etau_cld(ktop)*dbyu(ktop-1)*dzu_cld(ktop)
-   aau = max(0.,aau)
 
    return
 end subroutine grell_cldwork_updraft

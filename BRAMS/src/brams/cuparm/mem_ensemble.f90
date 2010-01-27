@@ -11,8 +11,10 @@ module mem_ensemble
 
       !------ 4D dependence (maxens_dyn,maxens_lsf,maxens_eff,maxens_cap) -----------------!
       real, pointer, dimension(:,:,:,:) :: &
-            dnmf_ens,                      & ! Reference downdraft mass flux      [kg/m²/s]
-            upmf_ens                       ! ! Reference updraft mass flux        [kg/m²/s]
+            dnmf_ens                       & ! Reference downdraft mass flux      [kg/m²/s]
+           ,upmf_ens                       & ! Reference updraft mass flux        [kg/m²/s]
+           ,dnmx_ens                       & ! Potential downdraft mass flux      [kg/m²/s]
+           ,upmx_ens                       ! ! Potential updraft mass flux        [kg/m²/s]
       !------------------------------------------------------------------------------------!
       
       !------------------------------------------------------------------------------------!
@@ -81,26 +83,37 @@ module mem_ensemble
       !------ 1D dependence (maxens_cap) --------------------------------------------------!
       integer, pointer, dimension(:) :: &
             ierr_cap                    ! ! Convection failure flag.
-      !------------------------------------------------------------------------------------!
+       !------ 1D dependence (maxens_cap) --------------------------------------------------!
+      logical, pointer, dimension(:) :: &
+            comp_down_cap               ! ! Downdraft flag.
+     !------------------------------------------------------------------------------------!
       !------ 1D dependence (maxens_cap) --------------------------------------------------!
       integer, pointer, dimension(:)   :: &
-            jmin_cap                      & ! Level in which downdrafts originate
-           ,k22_cap                       & ! Level in which updrafts originate
-           ,kbcon_cap                     & ! Level of free convection
+            klod_cap                      & ! Level of origin of downdrafts
+           ,klou_cap                      & ! Level of origin of updrafts
+           ,klfc_cap                      & ! Level of free convection
+           ,klcl_cap                      & ! Level of free convection
            ,kdet_cap                      & ! Top of downdraft detrainemnt layer
            ,kstabi_cap                    & ! cloud stable layer base
            ,kstabm_cap                    & ! cloud stable layer top
+           ,klnb_cap                      & ! Level of neutral buoyancy
            ,ktop_cap                      ! ! cloud top
       real   , pointer, dimension(:)   :: &
             pwav_cap                      & ! Integrated condensation             [  kg/kg]
            ,pwev_cap                      & ! Integrated evaporation              [  kg/kg]
+           ,dnmf_cap                      & ! Reference downdraft mass flux       [    m/s]
+           ,upmf_cap                      & ! Reference updraft mass flux         [    m/s]
+           ,areadn_cap                    & ! Downdraft relative area             [    ---]
+           ,areaup_cap                    & ! Updraft relative area               [    ---]
+           ,wdndraft_cap                  & ! Downdraft velocity at LOD           [    m/s]
+           ,wupdraft_cap                  & ! Updraft velocity at LOU             [    m/s]
            ,wbuoymin_cap                  ! ! Minimum buoyant velocity            [    m/s]
       !------------------------------------------------------------------------------------!
 
 
       !------------------------------------------------------------------------------------!
-      !     These variables depend on the static controllevel, and they must be saved here !
-      ! in order to compute the proper dynamic control and feedback.                       !
+      !     These variables depend on the static control level, and they must be saved     !
+      ! here in order to compute the proper dynamic control and feedback.                  !
       !------------------------------------------------------------------------------------!
       real, pointer, dimension(:,:) ::   &
             cdd_cap                      & ! normalised downdraft detrainment rate  [  ---]
@@ -161,6 +174,8 @@ module mem_ensemble
 
       allocate (ensemble%dnmf_ens       (maxens_dyn,maxens_lsf,maxens_eff,maxens_cap))
       allocate (ensemble%upmf_ens       (maxens_dyn,maxens_lsf,maxens_eff,maxens_cap))
+      allocate (ensemble%dnmx_ens       (maxens_dyn,maxens_lsf,maxens_eff,maxens_cap))
+      allocate (ensemble%upmx_ens       (maxens_dyn,maxens_lsf,maxens_eff,maxens_cap))
 
       allocate (ensemble%x_aatot        (nclouds   ,maxens_lsf,maxens_eff,maxens_cap))
 
@@ -175,16 +190,25 @@ module mem_ensemble
       allocate (ensemble%pw_eff                         (mgmzp,maxens_eff,maxens_cap))
 
       allocate (ensemble%ierr_cap                                        (maxens_cap))
-      allocate (ensemble%jmin_cap                                        (maxens_cap))
-      allocate (ensemble%k22_cap                                         (maxens_cap))
-      allocate (ensemble%kbcon_cap                                       (maxens_cap))
+      allocate (ensemble%comp_down_cap                                   (maxens_cap))
+      allocate (ensemble%klod_cap                                        (maxens_cap))
+      allocate (ensemble%klou_cap                                        (maxens_cap))
+      allocate (ensemble%klcl_cap                                        (maxens_cap))
+      allocate (ensemble%klfc_cap                                        (maxens_cap))
       allocate (ensemble%kdet_cap                                        (maxens_cap))
       allocate (ensemble%kstabi_cap                                      (maxens_cap))
       allocate (ensemble%kstabm_cap                                      (maxens_cap))
+      allocate (ensemble%klnb_cap                                        (maxens_cap))
       allocate (ensemble%ktop_cap                                        (maxens_cap))
 
       allocate (ensemble%pwav_cap                                        (maxens_cap))
       allocate (ensemble%pwev_cap                                        (maxens_cap))
+      allocate (ensemble%dnmf_cap                                        (maxens_cap))
+      allocate (ensemble%upmf_cap                                        (maxens_cap))
+      allocate (ensemble%areadn_cap                                      (maxens_cap))
+      allocate (ensemble%areaup_cap                                      (maxens_cap))
+      allocate (ensemble%wdndraft_cap                                    (maxens_cap))
+      allocate (ensemble%wupdraft_cap                                    (maxens_cap))
       allocate (ensemble%wbuoymin_cap                                    (maxens_cap))
 
       allocate (ensemble%cdd_cap                        (mgmzp           ,maxens_cap))
@@ -225,6 +249,8 @@ module mem_ensemble
 
       if(associated(ensemble%dnmf_ens       ))  nullify(ensemble%dnmf_ens       )
       if(associated(ensemble%upmf_ens       ))  nullify(ensemble%upmf_ens       )
+      if(associated(ensemble%dnmx_ens       ))  nullify(ensemble%dnmx_ens       )
+      if(associated(ensemble%upmx_ens       ))  nullify(ensemble%upmx_ens       )
 
       if(associated(ensemble%x_aatot        ))  nullify(ensemble%x_aatot        )
 
@@ -239,15 +265,24 @@ module mem_ensemble
       if(associated(ensemble%pw_eff         ))  nullify(ensemble%pw_eff         )
 
       if(associated(ensemble%ierr_cap       ))  nullify(ensemble%ierr_cap       )
-      if(associated(ensemble%jmin_cap       ))  nullify(ensemble%jmin_cap       )
-      if(associated(ensemble%k22_cap        ))  nullify(ensemble%k22_cap        )
-      if(associated(ensemble%kbcon_cap      ))  nullify(ensemble%kbcon_cap      )
+      if(associated(ensemble%comp_down_cap  ))  nullify(ensemble%comp_down_cap  )
+      if(associated(ensemble%klod_cap       ))  nullify(ensemble%klod_cap       )
+      if(associated(ensemble%klou_cap       ))  nullify(ensemble%klou_cap       )
+      if(associated(ensemble%klcl_cap       ))  nullify(ensemble%klcl_cap       )
+      if(associated(ensemble%klfc_cap       ))  nullify(ensemble%klfc_cap       )
       if(associated(ensemble%kdet_cap       ))  nullify(ensemble%kdet_cap       )
       if(associated(ensemble%kstabi_cap     ))  nullify(ensemble%kstabi_cap     )
       if(associated(ensemble%kstabm_cap     ))  nullify(ensemble%kstabm_cap     )
+      if(associated(ensemble%klnb_cap       ))  nullify(ensemble%klnb_cap       )
       if(associated(ensemble%ktop_cap       ))  nullify(ensemble%ktop_cap       )
       if(associated(ensemble%pwav_cap       ))  nullify(ensemble%pwav_cap       )
       if(associated(ensemble%pwev_cap       ))  nullify(ensemble%pwev_cap       )
+      if(associated(ensemble%dnmf_cap       ))  nullify(ensemble%dnmf_cap       )
+      if(associated(ensemble%upmf_cap       ))  nullify(ensemble%upmf_cap       )
+      if(associated(ensemble%areadn_cap     ))  nullify(ensemble%areadn_cap     )
+      if(associated(ensemble%areaup_cap     ))  nullify(ensemble%areaup_cap     )
+      if(associated(ensemble%wdndraft_cap   ))  nullify(ensemble%wdndraft_cap   )
+      if(associated(ensemble%wupdraft_cap   ))  nullify(ensemble%wupdraft_cap   )
       if(associated(ensemble%wbuoymin_cap   ))  nullify(ensemble%wbuoymin_cap   )
 
 
@@ -290,6 +325,8 @@ module mem_ensemble
 
       if(associated(ensemble%dnmf_ens       ))  deallocate(ensemble%dnmf_ens       )
       if(associated(ensemble%upmf_ens       ))  deallocate(ensemble%upmf_ens       )
+      if(associated(ensemble%dnmx_ens       ))  deallocate(ensemble%dnmx_ens       )
+      if(associated(ensemble%upmx_ens       ))  deallocate(ensemble%upmx_ens       )
 
       if(associated(ensemble%x_aatot        ))  deallocate(ensemble%x_aatot        )
 
@@ -304,15 +341,24 @@ module mem_ensemble
       if(associated(ensemble%pw_eff         ))  deallocate(ensemble%pw_eff         )
 
       if(associated(ensemble%ierr_cap       ))  deallocate(ensemble%ierr_cap       )
-      if(associated(ensemble%jmin_cap       ))  deallocate(ensemble%jmin_cap       )
-      if(associated(ensemble%k22_cap        ))  deallocate(ensemble%k22_cap        )
-      if(associated(ensemble%kbcon_cap      ))  deallocate(ensemble%kbcon_cap      )
+      if(associated(ensemble%comp_down_cap  ))  deallocate(ensemble%comp_down_cap  )
+      if(associated(ensemble%klod_cap       ))  deallocate(ensemble%klod_cap       )
+      if(associated(ensemble%klou_cap       ))  deallocate(ensemble%klou_cap       )
+      if(associated(ensemble%klcl_cap       ))  deallocate(ensemble%klcl_cap       )
+      if(associated(ensemble%klfc_cap       ))  deallocate(ensemble%klfc_cap       )
       if(associated(ensemble%kdet_cap       ))  deallocate(ensemble%kdet_cap       )
       if(associated(ensemble%kstabi_cap     ))  deallocate(ensemble%kstabi_cap     )
       if(associated(ensemble%kstabm_cap     ))  deallocate(ensemble%kstabm_cap     )
+      if(associated(ensemble%klnb_cap       ))  deallocate(ensemble%klnb_cap       )
       if(associated(ensemble%ktop_cap       ))  deallocate(ensemble%ktop_cap       )
       if(associated(ensemble%pwav_cap       ))  deallocate(ensemble%pwav_cap       )
       if(associated(ensemble%pwev_cap       ))  deallocate(ensemble%pwev_cap       )
+      if(associated(ensemble%dnmf_cap       ))  deallocate(ensemble%dnmf_cap       )
+      if(associated(ensemble%upmf_cap       ))  deallocate(ensemble%upmf_cap       )
+      if(associated(ensemble%areadn_cap     ))  deallocate(ensemble%areadn_cap     )
+      if(associated(ensemble%areaup_cap     ))  deallocate(ensemble%areaup_cap     )
+      if(associated(ensemble%wdndraft_cap   ))  deallocate(ensemble%wdndraft_cap   )
+      if(associated(ensemble%wupdraft_cap   ))  deallocate(ensemble%wupdraft_cap   )
       if(associated(ensemble%wbuoymin_cap   ))  deallocate(ensemble%wbuoymin_cap   )
 
 
@@ -349,12 +395,15 @@ module mem_ensemble
    !=======================================================================================!
    !=======================================================================================!
    subroutine zero_ensemble(ensemble)
-
       implicit none
-      type(ensemble_vars) :: ensemble
+      !----- Arguments. -------------------------------------------------------------------!
+      type(ensemble_vars), intent(inout) :: ensemble
+      !------------------------------------------------------------------------------------!
 
       if(associated(ensemble%dnmf_ens       ))  ensemble%dnmf_ens        = 0.
       if(associated(ensemble%upmf_ens       ))  ensemble%upmf_ens        = 0.
+      if(associated(ensemble%dnmx_ens       ))  ensemble%dnmx_ens        = 0.
+      if(associated(ensemble%upmx_ens       ))  ensemble%upmx_ens        = 0.
 
       if(associated(ensemble%x_aatot        ))  ensemble%x_aatot         = 0.
 
@@ -368,17 +417,26 @@ module mem_ensemble
       if(associated(ensemble%dellaco2_eff   ))  ensemble%dellaco2_eff    = 0.
       if(associated(ensemble%pw_eff         ))  ensemble%pw_eff          = 0.
 
-      if(associated(ensemble%ierr_cap       ))  ensemble%ierr_cap        = 1  ! Integer
-      if(associated(ensemble%jmin_cap       ))  ensemble%jmin_cap        = 0
-      if(associated(ensemble%k22_cap        ))  ensemble%k22_cap         = 0
-      if(associated(ensemble%kbcon_cap      ))  ensemble%kbcon_cap       = 0
+      if(associated(ensemble%ierr_cap       ))  ensemble%ierr_cap        = 1      ! Integer
+      if(associated(ensemble%comp_down_cap  ))  ensemble%comp_down_cap   = .true. ! Logical
+      if(associated(ensemble%klod_cap       ))  ensemble%klod_cap        = 0
+      if(associated(ensemble%klou_cap       ))  ensemble%klou_cap        = 0
+      if(associated(ensemble%klcl_cap       ))  ensemble%klcl_cap        = 0
+      if(associated(ensemble%klfc_cap       ))  ensemble%klfc_cap        = 0
       if(associated(ensemble%kdet_cap       ))  ensemble%kdet_cap        = 0
       if(associated(ensemble%kstabi_cap     ))  ensemble%kstabi_cap      = 0
       if(associated(ensemble%kstabm_cap     ))  ensemble%kstabm_cap      = 0
+      if(associated(ensemble%klnb_cap       ))  ensemble%klnb_cap        = 0
       if(associated(ensemble%ktop_cap       ))  ensemble%ktop_cap        = 0
 
       if(associated(ensemble%pwav_cap       ))  ensemble%pwav_cap        = 0.
       if(associated(ensemble%pwev_cap       ))  ensemble%pwev_cap        = 0.
+      if(associated(ensemble%dnmf_cap       ))  ensemble%dnmf_cap        = 0.
+      if(associated(ensemble%upmf_cap       ))  ensemble%upmf_cap        = 0.
+      if(associated(ensemble%areadn_cap     ))  ensemble%areadn_cap      = 0.
+      if(associated(ensemble%areaup_cap     ))  ensemble%areaup_cap      = 0.
+      if(associated(ensemble%wdndraft_cap   ))  ensemble%wdndraft_cap    = 0.
+      if(associated(ensemble%wupdraft_cap   ))  ensemble%wupdraft_cap    = 0.
       if(associated(ensemble%wbuoymin_cap   ))  ensemble%wbuoymin_cap    = 0.
 
       if(associated(ensemble%cdd_cap        ))  ensemble%cdd_cap         = 0.

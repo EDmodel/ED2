@@ -35,8 +35,11 @@ subroutine micro_1st()
    !     This should be needed if one of the following situations occur                    !
    ! 1. Bulk microphysics is activated;                                                    !
    ! 2. Harrington radiation (either SW or LW) will be run with cumulus feedback;          !
+   ! 3. CARMA (either SW or LW) will be run with cumulus feedback;                         !
    !---------------------------------------------------------------------------------------!
-   if (bulk_on .or. ((iswrtyp == 3 .or. ilwrtyp == 3) .and. icumfdbk == 1)) then
+   if (bulk_on .or.                                                                        &
+       ((iswrtyp == 3 .or. ilwrtyp == 3 .or. iswrtyp == 4 .or. ilwrtyp == 4) .and.         &
+        icumfdbk == 1)) then
       call micinit()
       call make_autotab()
       call haznuc()

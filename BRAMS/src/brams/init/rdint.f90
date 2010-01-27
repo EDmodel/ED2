@@ -760,6 +760,7 @@ subroutine ReadNamelist(fileName)
           iupmethod,     & ! intent(out)
           depth_min,     & ! intent(out)
           cap_maxs,      & ! intent(out)
+          cld2prec,      & ! intent(out)
           maxens_lsf,    & ! intent(out)
           maxens_eff,    & ! intent(out)
           maxens_dyn,    & ! intent(out)
@@ -1093,7 +1094,7 @@ subroutine ReadNamelist(fileName)
 
   namelist /CUPARM_OPTIONS/ &
        nnqparm,nclouds,ndeepest,nshallowest,wcldbs,confrq,cptime,        &
-       iupmethod,radius,depth_min,cap_maxs,zkbmax,zcutdown,              &
+       iupmethod,radius,depth_min,cap_maxs,cld2prec,zkbmax,zcutdown,     &
        z_detr,max_heat,closure_type,maxens_lsf,maxens_eff,maxens_cap
 
   namelist /MODEL_OPTIONS/ &
@@ -1343,6 +1344,7 @@ subroutine ReadNamelist(fileName)
   radius=0.
   depth_min=0.
   cap_maxs=0.
+  cld2prec=0.
   zkbmax=0.
   zcutdown=0.
   z_detr=0.
@@ -1644,6 +1646,7 @@ subroutine ReadNamelist(fileName)
      write (*, *) "radius=",radius
      write (*, *) "depth_min=",depth_min
      write (*, *) "cap_maxs=",depth_min
+     write (*, *) "cld2prec=",cld2prec
      write (*, *) "zkbmax=",zkbmax
      write (*, *) "zcutdown=",zcutdown
      write (*, *) "z_detr=",z_detr

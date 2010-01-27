@@ -1972,15 +1972,17 @@ module fuse_fiss_utils
          csite%sfcwater_energy(1,recp) = newareai *                                        &
                                          (csite%sfcwater_energy(1,recp) * csite%area(recp) &
                                          +csite%sfcwater_energy(1,donp) * csite%area(donp) )
+         csite%total_snow_depth(recp)  = csite%sfcwater_depth(1,recp)
       else
          csite%sfcwater_mass(1,recp)   = 0.
          csite%sfcwater_depth(1,recp)  = 0.
          csite%sfcwater_energy(1,recp) = 0.
+         csite%total_snow_depth(recp)  = 0.
       end if
       !------------------------------------------------------------------------------------!
       ! 4. Converting energy back to J/kg;                                                 !
       ! 5. Finding temperature and liquid water fraction;                                  !
-      !    (Both are done in new_patch_sfc_props).                                      !
+      !    (Both are done in new_patch_sfc_props).                                         !
       !------------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
 

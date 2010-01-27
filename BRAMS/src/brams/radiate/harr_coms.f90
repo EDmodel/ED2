@@ -131,12 +131,18 @@ module harr_coms
    real   , allocatable, dimension(:) :: rhoe     ! Air density                   [  kg/m³]
    real   , allocatable, dimension(:) :: rhov     ! Vapour density                [  kg/m³]
    real   , allocatable, dimension(:) :: press    ! Atmospheric pressure          [     Pa]
-   real   , allocatable, dimension(:) :: rcl_parm ! Cumulus liquid mixing ratio   [  kg/kg]
-   real   , allocatable, dimension(:) :: rpl_parm ! Cumulus ice mixing rati       [  kg/kg]
    integer, allocatable, dimension(:) :: nsharr   ! Habit table class: moisture
    integer, allocatable, dimension(:) :: ntharr   ! Habit table class: temperature
    !---------------------------------------------------------------------------------------!
 
+   !----- Dimension(m1) -------------------------------------------------------------------!
+   real   , allocatable, dimension(:)   :: rcl_parm     ! Cum. liquid mix. ratio  [  kg/kg]
+   real   , allocatable, dimension(:)   :: rpl_parm     ! Cum. ice mixing ratio   [  kg/kg]
+   !---------------------------------------------------------------------------------------!
+
+   !----- Scalars. ------------------------------------------------------------------------!
+   real                                 :: area_parm        ! Cumulus area        [   ----]
+   !---------------------------------------------------------------------------------------!
 
 
    !----- Dimension(m1,ncat) --------------------------------------------------------------!
@@ -159,47 +165,47 @@ module harr_coms
 
    !=======================================================================================!
    !=======================================================================================!
-   !   This subroutine allocates some specific scratch arrays used by LEAF-3.              !
+   !   This subroutine allocates some specific scratch arrays used by Harrington.          !
    !---------------------------------------------------------------------------------------!
-   subroutine alloc_harr_scratch(m1,ncat,nrad,mgl,mb,mpb)
+   subroutine alloc_harr_scratch(m1,ncat,nrad,mgl,mb,mpb,ncrad)
       implicit none
       !----- Arguments -------------------------------------------------------------------!
-      integer, intent(in) :: m1,ncat,nrad,mgl,mb,mpb
+      integer, intent(in) :: m1,ncat,nrad,mgl,mb,mpb,ncrad
       !-----------------------------------------------------------------------------------!
-      allocate (rl       (nrad    ))
-      allocate (dzl      (nrad    ))
-      allocate (dl       (nrad    ))
-      allocate (pl       (nrad    ))
-      allocate (o3l      (nrad    ))
-      allocate (co2l     (nrad    ))
-      allocate (vp       (nrad    ))
-      allocate (zml      (nrad    ))
-      allocate (ztl      (nrad    ))
-      allocate (tl       (nrad    ))
-      allocate (flxus    (nrad    ))
-      allocate (flxds    (nrad    ))
-      allocate (flxul    (nrad    ))
-      allocate (flxdl    (nrad    ))
-      allocate (u        (nrad,mgl))
-      allocate (tp       (nrad,mb ))
-      allocate (omgp     (nrad,mb ))
-      allocate (gp       (nrad,mb ))
-      allocate (fu       (nrad,mpb))
-      allocate (fd       (nrad,mpb))
-      allocate (tairk    (m1)      )
-      allocate (rhoi     (m1)      )
-      allocate (rhoe     (m1)      )
-      allocate (rhov     (m1)      )
-      allocate (press    (m1)      )
-      allocate (rcl_parm (m1)      )
-      allocate (rpl_parm (m1)      )
-      allocate (nsharr   (m1)      )
-      allocate (ntharr   (m1)      )
-      allocate (jhcatharr(m1,ncat) )
-      allocate (rxharr   (m1,ncat) )
-      allocate (cxharr   (m1,ncat) )
-      allocate (embharr  (m1,ncat) )
-       
+      allocate (rl              (nrad    )  )
+      allocate (dzl             (nrad    )  )
+      allocate (dl              (nrad    )  )
+      allocate (pl              (nrad    )  )
+      allocate (o3l             (nrad    )  )
+      allocate (co2l            (nrad    )  )
+      allocate (vp              (nrad    )  )
+      allocate (zml             (nrad    )  )
+      allocate (ztl             (nrad    )  )
+      allocate (tl              (nrad    )  )
+      allocate (flxus           (nrad    )  )
+      allocate (flxds           (nrad    )  )
+      allocate (flxul           (nrad    )  )
+      allocate (flxdl           (nrad    )  )
+      allocate (u               (nrad,mgl)  )
+      allocate (tp              (nrad,mb )  )
+      allocate (omgp            (nrad,mb )  )
+      allocate (gp              (nrad,mb )  )
+      allocate (fu              (nrad,mpb)  )
+      allocate (fd              (nrad,mpb)  )
+      allocate (tairk           (m1)        )
+      allocate (rhoi            (m1)        )
+      allocate (rhoe            (m1)        )
+      allocate (rhov            (m1)        )
+      allocate (press           (m1)        )
+      allocate (nsharr          (m1)        )
+      allocate (ntharr          (m1)        )
+      allocate (jhcatharr       (m1,ncat)   )
+      allocate (rxharr          (m1,ncat)   )
+      allocate (cxharr          (m1,ncat)   )
+      allocate (embharr         (m1,ncat)   )
+      allocate (rcl_parm        (m1)        )
+      allocate (rpl_parm        (m1)        )
+
       return
    end subroutine alloc_harr_scratch
    !=======================================================================================!
@@ -212,15 +218,15 @@ module harr_coms
 
    !=======================================================================================!
    !=======================================================================================!
-   !   This subroutine allocates some specific scratch arrays used by LEAF-3.              !
+   !   This subroutine allocates some specific scratch arrays used by Harrington.          !
    !---------------------------------------------------------------------------------------!
-   subroutine zero_harr_scratch(m1,ncat,nrad,mgl,mb,mpb)
+   subroutine zero_harr_met_scratch(m1,ncat,nrad,mgl,mb,mpb,ncrad)
       implicit none
 
       !----- Arguments -------------------------------------------------------------------!
-      integer, intent(in) :: m1,ncat,nrad,mgl,mb,mpb
+      integer, intent(in) :: m1,ncat,nrad,mgl,mb,mpb,ncrad
       !----- Local variables -------------------------------------------------------------!
-      integer             :: k,icat,ig,ib,ipb
+      integer             :: k,icat,ig,ib,ipb,icld
       !-----------------------------------------------------------------------------------!
       do k=1,nrad
          rl   (k) = 0.0
@@ -233,6 +239,50 @@ module harr_coms
          zml  (k) = 0.0
          ztl  (k) = 0.0
          tl   (k) = 0.0
+      end do
+
+      do k=1,m1
+         tairk    (k) = 0.0
+         rhoi     (k) = 0.0
+         rhoe     (k) = 0.0
+         rhov     (k) = 0.0
+         press    (k) = 0.0
+         nsharr   (k) =   1
+         ntharr   (k) =   1
+      end do
+
+      do icat=1,ncat
+         do k=1,m1
+            jhcatharr(k,icat) = 0
+            rxharr   (k,icat) = 0.
+            cxharr   (k,icat) = 0.
+            embharr  (k,icat) = 0.
+         end do
+      end do
+
+      return
+   end subroutine zero_harr_met_scratch
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !   This subroutine allocates some specific scratch arrays used by Harrington.          !
+   !---------------------------------------------------------------------------------------!
+   subroutine zero_harr_flx_scratch(m1,ncat,nrad,mgl,mb,mpb,ncrad)
+      implicit none
+
+      !----- Arguments -------------------------------------------------------------------!
+      integer, intent(in) :: m1,ncat,nrad,mgl,mb,mpb,ncrad
+      !----- Local variables -------------------------------------------------------------!
+      integer             :: k,icat,ig,ib,ipb,icld
+      !-----------------------------------------------------------------------------------!
+      do k=1,nrad
          flxus(k) = 0.0
          flxds(k) = 0.0
          flxul(k) = 0.0
@@ -260,29 +310,8 @@ module harr_coms
          end do
       end do
 
-      do k=1,m1
-         tairk    (k) = 0.0
-         rhoi     (k) = 0.0
-         rhoe     (k) = 0.0
-         rhov     (k) = 0.0
-         press    (k) = 0.0
-         rcl_parm (k) = 0.0
-         rpl_parm (k) = 0.0
-         nsharr   (k) =   1
-         ntharr   (k) =   1
-      end do
-
-      do icat=1,ncat
-         do k=1,m1
-            jhcatharr(k,icat) = 0
-            rxharr   (k,icat) = 0.
-            cxharr   (k,icat) = 0.
-            embharr  (k,icat) = 0.
-         end do
-      end do
-
       return
-   end subroutine zero_harr_scratch
+   end subroutine zero_harr_flx_scratch
    !=======================================================================================!
    !=======================================================================================!
 end module harr_coms

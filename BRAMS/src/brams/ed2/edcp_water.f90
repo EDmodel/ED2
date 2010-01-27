@@ -268,21 +268,21 @@ subroutine simple_lake_model(time,dtlongest)
          !---------------------------------------------------------------------------------!
 
          !----- Finding the atmospheric enthalpy and density. -----------------------------!
-         if (atm_temp < atm_tmp_min .or. atm_temp > atm_tmp_max  .or.                      &
-             atm_shv  < atm_shv_min .or. atm_shv  > atm_shv_max  .or.                      &
-             atm_prss < prss_min    .or. atm_prss > prss_max   ) then
-             write (unit=*,fmt='(a)') '======== Weird atm properties... ========'
-             write (unit=*,fmt='(a,i5)')   'Node             = ',mynum
-             write (unit=*,fmt='(a,i5)')   'X                = ',i
-             write (unit=*,fmt='(a,i5)')   'Y                = ',j
-             write (unit=*,fmt='(a,f8.2)') 'LONG      [degE] = ',grid_g(ngrid)%glon(i,j)
-             write (unit=*,fmt='(a,f8.2)') 'LAT       [degN] = ',grid_g(ngrid)%glat(i,j)
-             write (unit=*,fmt='(a,f7.2)') 'ATM_PRSS  [ hPa] = ',atm_prss    * 0.01
-             write (unit=*,fmt='(a,f7.2)') 'ATM_TEMP  [degC] = ',atm_temp - t00
-             write (unit=*,fmt='(a,f7.2)') 'ATM_SHV   [g/kg] = ',atm_shv  * 1.e3
-             call fatal_error('Non-sense atm met values!!!'                                &
-                             ,'simple_lake_model','edcp_water.f90')
-         end if
+         !if (atm_temp < atm_tmp_min .or. atm_temp > atm_tmp_max  .or.                      &
+         !    atm_shv  < atm_shv_min .or. atm_shv  > atm_shv_max  .or.                      &
+         !    atm_prss < prss_min    .or. atm_prss > prss_max   ) then
+         !    write (unit=*,fmt='(a)') '======== Weird atm properties... ========'
+         !    write (unit=*,fmt='(a,i5)')   'Node             = ',mynum
+         !    write (unit=*,fmt='(a,i5)')   'X                = ',i
+         !    write (unit=*,fmt='(a,i5)')   'Y                = ',j
+         !    write (unit=*,fmt='(a,f8.2)') 'LONG      [degE] = ',grid_g(ngrid)%glon(i,j)
+         !    write (unit=*,fmt='(a,f8.2)') 'LAT       [degN] = ',grid_g(ngrid)%glat(i,j)
+         !    write (unit=*,fmt='(a,f7.2)') 'ATM_PRSS  [ hPa] = ',atm_prss    * 0.01
+         !    write (unit=*,fmt='(a,f7.2)') 'ATM_TEMP  [degC] = ',atm_temp - t00
+         !    write (unit=*,fmt='(a,f7.2)') 'ATM_SHV   [g/kg] = ',atm_shv  * 1.e3
+         !    call fatal_error('Non-sense atm met values!!!'                                &
+         !                    ,'simple_lake_model','edcp_water.f90')
+         !end if
 
          atm_enthalpy = ptqz2enthalpy(atm_prss,atm_temp,atm_shv,geoht)
          atm_rhos     = idealdenssh(atm_prss,atm_temp,atm_shv)

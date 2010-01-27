@@ -999,7 +999,6 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,dewgnd
          c3tai  = flux_area * initp%can_rhos * (veg_ssh - initp%can_shv)
          rbi    = 1.d0 / initp%rb(ico)
 
-
          !---------------------------------------------------------------------------------!
          !    Computing the evapotranspiration or dew/frost deposition.                    !
          !---------------------------------------------------------------------------------!
@@ -1170,7 +1169,7 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,dewgnd
       dinitp%avg_sensible_vc   = hflxvc_tot                     ! Sens. heat,  Leaf->Canopy
       dinitp%avg_vapor_vc      = wflxvc_tot                     ! Lat.  heat,  Leaf->Canopy
       dinitp%avg_sensible_gc   = hflxgc                         ! Sens. heat,  Gnd ->Canopy
-      dinitp%avg_sensible_ac   = hflxac / rk4site%atm_exner     ! Sens. heat,  Atmo->Canopy
+      dinitp%avg_sensible_ac   = hflxac                         ! Sens. heat,  Atmo->Canopy
       dinitp%avg_vapor_ac      = wflxac                         ! Lat.  heat,  Atmo->Canopy
       dinitp%avg_transp        = transp_tot                     ! Transpiration
       dinitp%avg_evap          = wflxgc-dewgndflx+wflxvc_tot ! Evaporation/Condensation

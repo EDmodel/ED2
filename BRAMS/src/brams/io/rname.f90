@@ -22,6 +22,7 @@ subroutine NAMEOUT
           iupmethod,     & ! INTENT(IN)
           depth_min,     & ! INTENT(IN)
           cap_maxs,      & ! INTENT(IN)
+          cld2prec,      & ! INTENT(IN)
           maxens_lsf,    & ! INTENT(IN)
           maxens_dyn,    & ! INTENT(IN)
           maxens_eff,    & ! INTENT(IN)
@@ -89,10 +90,11 @@ subroutine NAMEOUT
   write(*,fmt='(a,1x,i5)')       'IUPMETHOD    = ',iupmethod
   write(*,fmt='(a,10(1x,f8.2))') 'RADIUS       = ',radius
   write(*,fmt='(a,10(1x,f8.2))') 'DEPTH_MIN    = ',depth_min
-  write(*,fmt='(a,10(1x,f8.2))') 'CAP_MAXS     = ',cap_maxs
-  write(*,fmt='(a,10(1x,f8.2))') 'ZKBMAX       = ',zkbmax  
-  write(*,fmt='(a,10(1x,f8.2))') 'ZCUTDOWN     = ',zcutdown
-  write(*,fmt='(a,10(1x,f8.2))') 'Z_DETR       = ',z_detr
+  write(*,fmt='(a,1x,f8.2)')     'CAP_MAXS     = ',cap_maxs
+  write(*,fmt='(a,1x,f8.2)')     'CLD2PREC     = ',cld2prec
+  write(*,fmt='(a,1x,f8.2)')     'ZKBMAX       = ',zkbmax  
+  write(*,fmt='(a,1x,f8.2)')     'ZCUTDOWN     = ',zcutdown
+  write(*,fmt='(a,1x,f8.2)')     'Z_DETR       = ',z_detr
 
   write(6,103)(' ',NJNEST(NG),NKNEST(NG),NNSTTOP(NG)  &
        ,NNSTBOT(NG),ITOPTFLG(NG),NG=1,NGRIDS)
@@ -121,7 +123,7 @@ subroutine NAMEOUT
   write(6,298) IEXEV,IMASSFLX,IBRUVAIS,IBOTFLX
 ! ED2:
   write(6,205)LONRAD,IMONTHA,IDATEA,IYEARA,ITIMEA
-  write(6,297) ISFCL,DTLEAF,ISTAR
+  write(6,297) ISFCL,ISTAR
   write(6,299) IMONTHZ,IDATEZ,IYEARZ,ITIMEZ
 !MLO]
 

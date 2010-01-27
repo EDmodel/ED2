@@ -654,9 +654,9 @@ subroutine init_pft_photo_params()
    Vm_low_temp(3)            = 5.0     ! mid tropical
    Vm_low_temp(4)            = 5.0     ! late tropical
    Vm_low_temp(5)            = 4.7137  ! c3 grass
-   Vm_low_temp(6)            = 4.7137  ! northern pines  ! 5.0
-   Vm_low_temp(7)            = 4.7137  ! southern pines  ! 5.0
-   Vm_low_temp(8)            = 4.7137  ! late conifers   ! 5.0
+   Vm_low_temp(6)            = 4.7137  ! northern pines ! 5.0
+   Vm_low_temp(7)            = 4.7137  ! southern pines ! 5.0
+   Vm_low_temp(8)            = 4.7137  ! late conifers  ! 5.0
    Vm_low_temp(9)            = 4.7137  ! early hardwoods
    Vm_low_temp(10)           = 4.7137  ! mid hardwoods
    Vm_low_temp(11)           = 4.7137  ! late hardwoods

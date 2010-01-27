@@ -14,13 +14,15 @@
 !==========================================================================================!
 !   This subroutine computes the level in which the downdraft originates.                  !
 !------------------------------------------------------------------------------------------!
-subroutine grell_find_downdraft_origin(mkx,mgmzp,k22,ktop,relheight_down,zcutdown,z_cup    &
-                                      ,theivs_cup,dzd_cld,ierr,kdet,jmin)
+subroutine grell_find_downdraft_origin(mkx,mgmzp,klou,ktop,relheight_down,zcutdown,z_cup   &
+                                      ,theivs_cup,dzd_cld,comp_down,kdet,klod)
 
    implicit none
    
-   integer, intent(in)                   :: mkx, mgmzp     ! Grid variables
-   integer, intent(in)                   :: k22            ! Updrafts originating level
+   !------ Level variables. ---------------------------------------------------------------!
+   integer, intent(in)                   :: mkx            ! Grid variable
+   integer, intent(in)                   :: mgmzp          ! Grid variable
+   integer, intent(in)                   :: klou           ! Level of origin of updrafts
    integer, intent(in)                   :: ktop           ! Cloud top level
    
    !------ The next two variables define the uppermost possible level for downdrafts ------!
@@ -30,15 +32,22 @@ subroutine grell_find_downdraft_origin(mkx,mgmzp,k22,ktop,relheight_down,zcutdow
    real, dimension(mgmzp), intent(in)    :: theivs_cup     ! Sat. thetae_iv        
    real, dimension(mgmzp), intent(in)    :: dzd_cld        ! Delta-z for downdrafts.
 
-   integer               , intent(out)   :: jmin           ! Downdraft originating level
+   integer               , intent(out)   :: klod           ! Level of origin of downdrafts
    integer               , intent(inout) :: kdet           ! Top of dndraft detrainm. layer
-   integer               , intent(inout) :: ierr           ! Error flag
+   logical               , intent(inout) :: comp_down      ! Downdraft flag
 
    real, dimension(mgmzp)                :: theivd_tmp     ! Temporary downdraft thetae_iv
    real                                  :: ssbuoy         ! Integrated buoyancy term
-   real                                  :: zktop          ! Top Height allowed for dndrafts.
+   real                                  :: zktop          ! Top Height allowed for dndfts.
    integer                               :: kzdown         ! Top level allowed for dndrafts
    integer                               :: k              ! Level counter
+   !---------------------------------------------------------------------------------------!
+
+   if (.not. comp_down) then
+      klod = 0
+      kdet = 0
+      return
+   end if
 
    !---------------------------------------------------------------------------------------!
    !   Initializing theivd_tmp. This is temporary because it neglects entrainment and      !
@@ -62,83 +71,83 @@ subroutine grell_find_downdraft_origin(mkx,mgmzp,k22,ktop,relheight_down,zcutdow
    end do kzdownloop
 
    !---------------------------------------------------------------------------------------!
-   !    If k22 is above kzdown, then this cloud doesn't make sense. Assign error message   !
-   ! and leave the subroutine. s                                                            !
+   !    If klou is above kzdown, then this cloud downdraft doesn't make sense.  Switch the !
+   ! downdraft off and leave the subroutine.                                               !
    !---------------------------------------------------------------------------------------!
-   if (kzdown < k22) then
-      ierr = 12
+   if (kzdown < klou) then
+      comp_down = .false.
       return
    end if
 
 
    !---------------------------------------------------------------------------------------!
-   !    Between k22 and the downdraft upper bound, look for the minimum theivs_cup. This   !
-   ! will be the 1st. guess for the level that downdrafts originate (aka jmin).            !
+   !    Between klou and the downdraft upper bound, look for the minimum theivs_cup.  This !
+   ! will be the 1st. guess for the level that downdrafts originate (klod).                !
    !---------------------------------------------------------------------------------------!
-   jmin=(k22-1) + minloc(theivs_cup(k22:kzdown),dim=1)
+   klod=(klou-1) + minloc(theivs_cup(klou:kzdown),dim=1)
 
 
 
    !---------------------------------------------------------------------------------------!
-   !    This is going to be done iteractively until a suitable jmin that will be associat- !
+   !    This is going to be done iteractively until a suitable klod that will be associat- !
    ! ed with a layer of negative buoyancy, do I will try to find such  combination. In     !
    ! I can't dind one, this cloud won't exist.                                             !
    !---------------------------------------------------------------------------------------!
-   jminloop: do
+   klodloop: do
 
       !------------------------------------------------------------------------------------!
-      !    First thing to check: Is this jmin too low? If so, I won't allow this cloud to  !
-      ! happen.                                                                            !
+      !    First thing to check: Is this klod too low? If so, this cloud cannot have a     !
+      ! downdraft.                                                                         !
       !------------------------------------------------------------------------------------!
-      if (jmin <= 3) then
-         ierr = 4
+      if (klod <= 3) then
+         comp_down = .false.
          return
       end if
 
       !------------------------------------------------------------------------------------!
-      !    If jmin is at the same level or below the level in which downdrafts should      !
+      !    If klod is at the same level or below the level in which downdrafts should      !
       ! start detraining all their mass, move the detrainment level to the one immediately !
-      ! below jmin.                                                                              !
+      ! below klod.                                                                        !
       !------------------------------------------------------------------------------------!
-      if (jmin <= kdet) kdet = jmin - 1
+      if (klod <= kdet) kdet = klod - 1
             
       !----- The downdraft starts with the saturation moist static energy -----------------!
-      theivd_tmp(jmin) = theivs_cup(jmin)
+      theivd_tmp(klod) = theivs_cup(klod)
       
       !----- Initialize the integrated buoyancy term --------------------------------------!
       ssbuoy = 0
 
-      !----- Loop over layers beneath jmin, find the integrated buoyancy factor -----------!
-      do k=jmin-1,1,-1
+      !----- Loop over layers beneath klod, find the integrated buoyancy factor -----------!
+      do k=klod-1,1,-1
       
          !---------------------------------------------------------------------------------!
          !    Downdrafts are moist adiabatic at this point. Since they detrain all mass    !
-         ! below kdet, between jmin and kdet the downdraft moist static energy is conserv- !
-         ! ed. Therefore, it should be the same as at jmin.                                !
+         ! below kdet, between klod and kdet the downdraft moist static energy is conserv- !
+         ! ed. Therefore, it should be the same as at klod.                                !
          !---------------------------------------------------------------------------------!
-         theivd_tmp(k)=theivs_cup(jmin)
+         theivd_tmp(k)=theivs_cup(klod)
 
          !----- Finding the integrated buoyancy term --------------------------------------!
          ssbuoy = ssbuoy + dzd_cld(k)*(theivd_tmp(k)-theivs_cup(k))
          
          !---------------------------------------------------------------------------------!
          !   Check the sign of the integrated buoyancy. If it is positive, then the        !
-         ! current jmin is not suitable, so I will try the level below and repeat the      !
+         ! current klod is not suitable, so I will try the level below and repeat the      !
          ! procedure.                                                                      !
          !---------------------------------------------------------------------------------!
          if (ssbuoy > 0) then
-            jmin = jmin -1
-            cycle jminloop
+            klod = klod -1
+            cycle klodloop
          end if
       end do
       
       !------------------------------------------------------------------------------------!
-      ! If I reached this point, it means that I found a decent jmin, stick with it and    !
+      ! If I reached this point, it means that I found a decent klod, stick with it and    !
       ! leave the subroutine                                                               !
       !------------------------------------------------------------------------------------!
-      exit jminloop
+      exit klodloop
 
-   end do jminloop
+   end do klodloop
 
    return
 end subroutine grell_find_downdraft_origin
@@ -154,12 +163,12 @@ end subroutine grell_find_downdraft_origin
 !==========================================================================================!
 !   This subroutine computes the normalized mass flux associated with downdrafts           !
 !------------------------------------------------------------------------------------------!
-subroutine grell_nms_downdraft(mkx,mgmzp,kdet,jmin,mentrd_rate,cdd,z_cup,dzd_cld,etad_cld)
+subroutine grell_nms_downdraft(mkx,mgmzp,kdet,klod,mentrd_rate,cdd,z_cup,dzd_cld,etad_cld)
    implicit none
 
    integer               , intent(in)    :: mkx, mgmzp  ! Grid dimesnsions
    integer               , intent(in)    :: kdet        ! Level in which downdrafts detrain
-   integer               , intent(in)    :: jmin        ! Level in which downdrafts begin
+   integer               , intent(in)    :: klod        ! Level in which downdrafts begin
 
    real, dimension(mgmzp), intent(in)    :: mentrd_rate ! Dndraft entrainment rate
    real, dimension(mgmzp), intent(in)    :: cdd         ! Dndraft detrainment function;
@@ -172,21 +181,21 @@ subroutine grell_nms_downdraft(mkx,mgmzp,kdet,jmin,mentrd_rate,cdd,z_cup,dzd_cld
    !---------------------------------------------------------------------------------------!
    ! 1. Above the level in which downdrafts begin, set the mass flux to zero.              !
    !---------------------------------------------------------------------------------------!
-   etad_cld((jmin+1):mkx) = 0.
+   etad_cld((klod+1):mkx) = 0.
    
    
    
    !---------------------------------------------------------------------------------------!
    ! 2. At the level in which downdrafts begin, set the mass flux to one.                  !
    !---------------------------------------------------------------------------------------!
-   etad_cld(jmin) = 1.
+   etad_cld(klod) = 1.
    
    
    !---------------------------------------------------------------------------------------!
    ! 3. Between the level in which downdrafts originate and the level of detrainment,      !
    !    include the entrainment effect.                                                    !
    !---------------------------------------------------------------------------------------!
-   do k=jmin-1,kdet+1,-1
+   do k=klod-1,kdet+1,-1
       etad_cld(k)=etad_cld(k+1)*(1+mentrd_rate(k)*dzd_cld(k))
    end do
    
@@ -215,13 +224,12 @@ end subroutine grell_nms_downdraft
 !   This subroutine computes the downdraft ice-vapour equivalent potential temperature     !
 ! and buoyancy effect associated with downdrafts.                                          !
 !------------------------------------------------------------------------------------------!
-subroutine grell_theiv_downdraft(mkx,mgmzp,jmin,cdd,mentrd_rate,theiv,theiv_cup,theivs_cup &
-                                ,dzd_cld,ierr,theivd_cld)
-  implicit none
+subroutine grell_theiv_downdraft(mkx,mgmzp,klod,cdd,mentrd_rate,theiv,theiv_cup,theivs_cup &
+                                ,dzd_cld,theivd_cld)
+   implicit none
 
    integer               , intent(in)    :: mkx, mgmzp  ! Grid dimesnsions;
-   integer               , intent(in)    :: jmin        ! Downdrafts begin here;
-   integer               , intent(inout) :: ierr        ! Error flag;
+   integer               , intent(in)    :: klod        ! Downdrafts begin here;
 
    real, dimension(mgmzp), intent(in)    :: mentrd_rate ! Entrainment rate;
    real, dimension(mgmzp), intent(in)    :: cdd         ! Detrainment function;
@@ -236,21 +244,21 @@ subroutine grell_theiv_downdraft(mkx,mgmzp,jmin,cdd,mentrd_rate,theiv,theiv_cup,
 
 
    !---------------------------------------------------------------------------------------!
-   ! 1. Between jmin and the top, the moist static energy is set to be the same as the     !
-   !    environment saturation moist static energy. This makes sense at jmin, as the       !
+   ! 1. Between klod and the top, the moist static energy is set to be the same as the     !
+   !    environment saturation moist static energy. This makes sense at klod, as the       !
    !    downdrafts originate there so they must have the same energy as the level. Above   !
-   !    jmin is just a way not to leave it empty.                                          !
+   !    klod is just a way not to leave it empty.                                          !
    !---------------------------------------------------------------------------------------!
-   theivd_cld(jmin:mkx) = theiv_cup(jmin:mkx)
+   theivd_cld(klod:mkx) = theiv_cup(klod:mkx)
    
 
 
    !---------------------------------------------------------------------------------------!
-   ! 2. Below jmin, the downdraft would have the same moist static energy as the level     !
+   ! 2. Below klod, the downdraft would have the same moist static energy as the level     !
    !    right above if no entrainment or entrainment ever happened. Since they may happen  !
    !    we need to take them into account.                                                 !
    !---------------------------------------------------------------------------------------!
-   do k = jmin-1,1,-1
+   do k = klod-1,1,-1
       theivd_cld(k) = (theivd_cld(k+1)*(1.-0.5*cdd(k)*dzd_cld(k))                          &
                     + mentrd_rate(k)*dzd_cld(k)*theiv(k))                                  &
                     / (1.+(mentrd_rate(k)- 0.5*cdd(k))*dzd_cld(k))
@@ -271,7 +279,7 @@ end subroutine grell_theiv_downdraft
 !     This subroutine computes the moisture profile, as well as the evaporation rate       !
 ! associated with each level.                                                              !
 !------------------------------------------------------------------------------------------!
-subroutine grell_most_thermo_downdraft(mkx,mgmzp,jmin,qtot,co2,mentrd_rate,cdd,p_cup       &
+subroutine grell_most_thermo_downdraft(mkx,mgmzp,klod,qtot,co2,mentrd_rate,cdd,p_cup       &
                                       ,exner_cup,thil_cup,t_cup,qtot_cup,qvap_cup,qliq_cup &
                                       ,qice_cup,qsat_cup,co2_cup,rho_cup,pwav,theivd_cld   &
                                       ,etad_cld,dzd_cld,thild_cld,td_cld,qtotd_cld         &
@@ -282,7 +290,7 @@ subroutine grell_most_thermo_downdraft(mkx,mgmzp,jmin,qtot,co2,mentrd_rate,cdd,p
    implicit none
    
    integer               , intent(in)    :: mkx, mgmzp  ! Grid dimesnsions
-   integer               , intent(in)    :: jmin        ! Level in which downdrafts begin
+   integer               , intent(in)    :: klod        ! Level in which downdrafts begin
 
    !----- Variables at model levels -------------------------------------------------------!
    real, dimension(mgmzp), intent(in)    :: qtot        ! Total mixing ratio       [ kg/kg]
@@ -307,7 +315,7 @@ subroutine grell_most_thermo_downdraft(mkx,mgmzp,jmin,qtot,co2,mentrd_rate,cdd,p
    real, dimension(mgmzp), intent(in)    :: theivd_cld  ! Thetae_iv                [     K]
    real, dimension(mgmzp), intent(in)    :: etad_cld    ! Normalized mass flux     [   ---]
    real, dimension(mgmzp), intent(in)    :: dzd_cld     ! Layer thickness          [     m]
-   !----- Transit variables, which will be changed between the surface and jmin -----------!
+   !----- Transit variables, which will be changed between the surface and klod -----------!
    real, dimension(mgmzp), intent(inout) :: thild_cld   ! Theta_il                 [     K]
    real, dimension(mgmzp), intent(inout) :: td_cld      ! Temperature              [     K]
    real, dimension(mgmzp), intent(inout) :: qtotd_cld   ! Total mixing ratio       [ kg/kg]
@@ -321,7 +329,7 @@ subroutine grell_most_thermo_downdraft(mkx,mgmzp,jmin,qtot,co2,mentrd_rate,cdd,p
    !----- Output variables ----------------------------------------------------------------!
    real, dimension(mgmzp), intent(inout) :: pwd_cld     ! Normal. evap. flux       [ kg/kg]
    real                  , intent(out)   :: pwev        ! Total evaporation flux   [ kg/kg]
-   !----- Transit variable ----------------------------------------------------------------!
+   !----- Variable that may change in this subroutine -------------------------------------!
    integer               , intent(inout) :: ierr        ! Error flag
    !----- Local variables -----------------------------------------------------------------!
    integer                :: k              ! Counter                              [  ----]
@@ -345,8 +353,6 @@ subroutine grell_most_thermo_downdraft(mkx,mgmzp,jmin,qtot,co2,mentrd_rate,cdd,p
    !----- Constants -----------------------------------------------------------------------!
    real, parameter        :: toowet=0.030   ! Max. mix. ratio for initial guesses  [ kg/kg]
    !---------------------------------------------------------------------------------------!
-
-
 
 
    !---------------------------------------------------------------------------------------!
@@ -374,17 +380,17 @@ subroutine grell_most_thermo_downdraft(mkx,mgmzp,jmin,qtot,co2,mentrd_rate,cdd,p
    rhod_cld (1:mkx)  = rho_cup (1:mkx)
    evapd_cld(1:mkx)  = 0.
    dbyd     (1:mkx)  = 0.
-   pwd_cld  (1:mkx)  = 0. !---- No evaporation above jmin. --------------------------------!
+   pwd_cld  (1:mkx)  = 0. !---- No evaporation above klod. --------------------------------!
    pwev              = 0.
-   bytot             = 0. !---- This will have the column integrated buoyancy. -----------!
+   bytot             = 0. !---- This will have the column integrated buoyancy. ------------!
 
 
    !---------------------------------------------------------------------------------------!
-   ! 2. Now loop through the levels beneath jmin, using the same idea as above, but now    !
+   ! 2. Now loop through the levels beneath klod, using the same idea as above, but now    !
    !    considering entrainment/detrainment. In principle q should be conserved should     !
    !    entrainment and detrainment not happen.                                            !
    !---------------------------------------------------------------------------------------!
-   do k=jmin,1,-1
+   do k=klod,1,-1
       !------------------------------------------------------------------------------------!
       !    This is the mixing ratio the downdraft would have did evaporation not happen.   !
       !------------------------------------------------------------------------------------!
@@ -701,7 +707,7 @@ subroutine grell_most_thermo_downdraft(mkx,mgmzp,jmin,qtot,co2,mentrd_rate,cdd,p
    ! 3. Now we should check whether the downdraft buoyancy makes sense. Downdrafts, as we  !
    !    can imagine from their names, must go down... This will be possible only if there  !
    !    is negative acceleration, provided by buoyancy. If that's not the case this cloud  !
-   !    makes no sense so its existence will be denied...                                  !
+   !    makes no sense so we won't allow it to happen...                                   !
    !---------------------------------------------------------------------------------------!
    if (bytot > 0.) ierr = 8
 
@@ -719,12 +725,12 @@ end subroutine grell_most_thermo_downdraft
 !==========================================================================================!
 !  This subroutine computes the cloud work function associated with downdrafts             !
 !------------------------------------------------------------------------------------------!
-subroutine grell_cldwork_downdraft(mkx,mgmzp,jmin,dbyd,dzd_cld,etad_cld,aad)
+subroutine grell_cldwork_downdraft(mkx,mgmzp,klod,dbyd,dzd_cld,etad_cld,aad)
    use rconstants, only : gocp
    implicit none
 
    integer               , intent(in)  :: mkx, mgmzp  ! Grid dimesnsions
-   integer               , intent(in)  :: jmin        ! Downdraft origin level
+   integer               , intent(in)  :: klod        ! Downdraft origin level
 
    real, dimension(mgmzp), intent(in)  :: dbyd        ! Buoyancy term               [ J/kg]
    real, dimension(mgmzp), intent(in)  :: dzd_cld     ! Delta-z for downdrafts      [    m]
@@ -743,10 +749,9 @@ subroutine grell_cldwork_downdraft(mkx,mgmzp,jmin,dbyd,dzd_cld,etad_cld,aad)
    ! the integral between the surface and the level in which downdrafts originate cloud    !
    ! base and cloud top. Note that dbyd is negative so this will give a positive function. !
    !---------------------------------------------------------------------------------------!
-   do k=jmin-1,1,-1
+   do k=klod-1,1,-1
       aad = aad - etad_cld(k) * dbyd(k) *dzd_cld(k)
    end do
-   aad = max(0.,aad)
 
    return
 end subroutine grell_cldwork_downdraft

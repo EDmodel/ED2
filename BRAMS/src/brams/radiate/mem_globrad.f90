@@ -73,9 +73,6 @@ module mem_globrad
    real   , dimension(:)   , allocatable :: heati
    real   , dimension(:)   , allocatable :: heats
    real   , dimension(:)   , allocatable :: heat
-   real                                  :: solnet
-   real                                  :: xirdown
-   real                                  :: xirup
  
    !----- Variables initialised in setuprad. ----------------------------------------------!
    integer                               :: jdble
