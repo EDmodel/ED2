@@ -491,7 +491,8 @@ subroutine integrate_ed_daily_output_state(cgrid)
       siteloop: do isi=1, cpoly%nsites
       
          !----- Including this time step if it is day time. -------------------------------!
-         if (cpoly%met(isi)%rshort > 0.5) then
+!         if (cpoly%met(isi)%rshort > 0.5) then
+         if (cgrid%cosz(ipy) > 0.03) then
             cpoly%daylight(isi) = cpoly%daylight(isi) + dtlsm
          end if
 
@@ -551,7 +552,8 @@ subroutine integrate_ed_daily_output_state(cgrid)
                                                 + cpatch%par_v_diffuse (ico)
 
                   !----- Integrate light level only if it is day time. --------------------!
-                  if (cpoly%met(isi)%rshort > 0.5) then
+                  !if (cpoly%met(isi)%rshort > 0.5) then
+                  if (cgrid%cosz(ipy) > 0.03) then
                      cpatch%dmean_light_level(ico)  = cpatch%dmean_light_level(ico)        &
                                                     + cpatch%light_level(ico)
                      cpatch%dmean_light_level_beam(ico) =                                  &
@@ -574,7 +576,8 @@ subroutine integrate_ed_daily_output_state(cgrid)
 
                end if
             end do
-            if (cpoly%met(isi)%rshort > 0.5) then
+            !if (cpoly%met(isi)%rshort > 0.5) then
+            if (cgrid%cosz(ipy) > 0.03) then
                csite%dmean_lambda_light(ipa) = csite%dmean_lambda_light(ipa)               &
                                              + csite%lambda_light(ipa)
             end if
