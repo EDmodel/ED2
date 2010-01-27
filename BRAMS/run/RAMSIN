@@ -13,24 +13,24 @@
  
 !  Start of simulation or ISAN processing
 
-   IMONTHA  =    12,
-   IDATEA   =    16,
-   IYEARA   =  1998,
+   IMONTHA  =    05,
+   IDATEA   =    01,
+   IYEARA   =  2009,
    ITIMEA   =  0000,
 
 !  End of simulation or ISAN processing
 
-   IMONTHZ  =    12,
-   IDATEZ   =    21,
-   IYEARZ   =  1998,
+   IMONTHZ  =    05,
+   IDATEZ   =    31,
+   IYEARZ   =  2009,
    ITIMEZ   =  0000,
 
 ! Grid specifications
 
    NGRIDS   = 1,            ! Number of grids to run
  
-   NNXP     =  138,  68, 230,     ! Number of x gridpoints
-   NNYP     =  114,  56, 161,     ! Number of y gridpoints
+   NNXP     =  191,  68, 230,     ! Number of x gridpoints
+   NNYP     =  111,  56, 161,     ! Number of y gridpoints
    NNZP     =   56,  56,  41,     ! Number of z gridpoints
    NZG      =   14,          ! Number of soil layers
    NZS      =    4,          ! Maximum number of snow layers
@@ -43,8 +43,8 @@
    IF_ADAP  = 0,            !Vertical coordinate: 0- sigma_z, 1- shaved ETA
    
    IHTRAN   = 1,            ! 0-Cartesian, 1-Polar stereo
-   DELTAX   = 48000.,
-   DELTAY   = 48000.,       ! X and Y grid spacing
+   DELTAX   = 32000.,
+   DELTAY   = 32000.,       ! X and Y grid spacing
 
    DELTAZ   =   95.,         ! Z grid spacing (set to 0. to use ZZ)
    DZRAT    =  1.06,         ! Vertical grid stretch ratio
@@ -77,11 +77,11 @@
    NSTRATZ2 = 3,3,3,2,2,2,2,1,   !
 
 
-   POLELAT  = -7.5,          ! Latitude of pole point
-   POLELON  = -57.0,         ! Longitude of pole point
+   POLELAT  = -2.0,          ! Latitude of pole point
+   POLELON  = -58.5,         ! Longitude of pole point
 
-   CENTLAT  = -7.5,
-   CENTLON  = -57.0,
+   CENTLAT  = -2.0,
+   CENTLON  = -58.5,
                               ! Grid point on the next coarser
                               !  nest where the lower southwest
                               !  corner of this nest will start.
@@ -133,7 +133,7 @@
                              ! =2 - nudge from varfiles
                              ! =0 - no analysis nudging
                              
-   VARFPFX  = '/n/moorcroft_scratch/mlongo/EDBRAMS/wetamc/48km/isean/ecmwf',
+   VARFPFX  = '/n/moorcroft_scratch/mlongo/EDBRAMS/bbarca/isean/ecmwf',
    VWAIT1   = 0.,            ! wait between each VFILE check (s)
    VWAITTOT = 0.,            ! total wait before giving up on a VFILE (s)
    
@@ -234,11 +234,11 @@
 ! History file input
 
 ! History time input 
-   IMONTHH  = 01,
-   IDATEH   = 10,
-   IYEARH   = 1999,
+   IMONTHH  = 05,
+   IDATEH   = 11,
+   IYEARH   = 2009,
    ITIMEH   = 0000,
-   HFILIN   = '/n/moorcroft_scratch/mlongo/EDBRAMS/wetamc/48km/histo/wetamc-48km',
+   HFILIN   = '/n/moorcroft_scratch/mlongo/EDBRAMS/bbarca/histo/bbarca',
                              ! Input history file name
  
 ! Analysis file input for assimilation (currently LEAF variables)
@@ -251,12 +251,12 @@
 ! History/analysis file output
  
    IOUTPUT  =  2,                                ! 0-no files, 1-save ASCII, 2-save binary
-   HFILOUT  = '/n/moorcroft_scratch/mlongo/EDBRAMS/wetamc/48km/histo/wetamc-48km', 
-   AFILOUT  = '/n/moorcroft_scratch/mlongo/EDBRAMS/wetamc/48km/analy/wetamc-48km',
+   HFILOUT  = '/n/moorcroft_scratch/mlongo/EDBRAMS/bbarca/histo/bbarca', 
+   AFILOUT  = '/n/moorcroft_scratch/mlongo/EDBRAMS/bbarca/analy/bbarca',
    ICLOBBER = 1,                                 ! 0=stop if files exist, 1=overwite files
    IHISTDEL = 0,                                 ! 0=keep all hist files, 1=delete previous
-   FRQHIS   =  7200.,          ! History file frequency
-   FRQANL   =  7200.,          ! Analysis file frequency
+   FRQHIS   =  86400.,          ! History file frequency
+   FRQANL   =   3600.,          ! Analysis file frequency
 !-----------------------------------------------------------------------
    FRQLITE  = 0.,            ! Analysis freq. for "lite" variables
                              !   = 0 : no lite files
@@ -295,10 +295,10 @@
  
 ! Input topography variables
 
-   TOPFILES = '/n/moorcroft_scratch/mlongo/EDBRAMS/wetamc/48km/surfa/topog',  ! File path and prefix for topography files.
-   SFCFILES = '/n/moorcroft_scratch/mlongo/EDBRAMS/wetamc/48km/surfa/surfa',  ! File path and prefix for surface files.
-   SSTFPFX  = '/n/moorcroft_scratch/mlongo/EDBRAMS/wetamc/48km/surfa/seast',  ! File path and prefix for SST files.
-   NDVIFPFX = '/n/moorcroft_scratch/mlongo/EDBRAMS/wetamc/48km/surfa/ndvi_',  ! File path and prefix for NDVI files
+   TOPFILES = '/n/moorcroft_scratch/mlongo/EDBRAMS/bbarca/surfa/topog',  ! File path and prefix for topography files.
+   SFCFILES = '/n/moorcroft_scratch/mlongo/EDBRAMS/bbarca/surfa/surfa',  ! File path and prefix for surface files.
+   SSTFPFX  = '/n/moorcroft_scratch/mlongo/EDBRAMS/bbarca/surfa/seast',  ! File path and prefix for SST files.
+   NDVIFPFX = '/n/moorcroft_scratch/mlongo/EDBRAMS/bbarca/surfa/ndvi_',  ! File path and prefix for NDVI files
               
 
    ITOPTFLG = 1,1,1,           ! 0 - Interpolate from coarser grid
@@ -321,7 +321,7 @@
    ! respectively.                                                                         !
    !---------------------------------------------------------------------------------------!
    ITOPTFN  = '/n/Moorcroft_Lab/Lab/data/brams_data/topo/EL',
-   ISSTFN   = '/n/Moorcroft_Lab/Lab/data/brams_data/weeklysst/OISST/W',
+   ISSTFN   = '/n/Moorcroft_Lab/Lab/data/brams_data/weeklysst/2009/W',
    IVEGTFN  = '/n/Moorcroft_Lab/Lab/data/brams_data/veg_usgs/VUSGS_',
    ISOILFN  = '/n/Moorcroft_Lab/Lab/data/brams_data/soil_radam+fao/LReFAO',
     NDVIFN  = '/n/Moorcroft_Lab/Lab/data/brams_data/ndvi-modis/N',
@@ -350,7 +350,7 @@
 ! Microphysics collection tables
 
    MKCOLTAB = 1,             ! Make table: 0 = no, 1 = yes
-   COLTABFN = '/n/moorcroft_scratch/mlongo/EDBRAMS/wetamc/48km/micro/coltab_4.0.6',
+   COLTABFN = '/n/moorcroft_scratch/mlongo/EDBRAMS/bbarca/micro/coltab_4.0.6',
                              ! Filename to read or write
 
  $END
@@ -374,7 +374,7 @@
    ! PS3: If NCLOUDS >= 3, then the middle ones will necessarily use Grell's               !
    !      parameterization.                                                                !
    !---------------------------------------------------------------------------------------!
-    NCLOUDS  = 4,
+    NCLOUDS  = 2,
 
 
    !---------------------------------------------------------------------------------------!
@@ -425,8 +425,8 @@
    !             (grell_coms.f90).  Default min_down_radius is 900.                        !
    ! DEPTH_MIN - Minimum depth that the cloud must have [m].                               !
    !---------------------------------------------------------------------------------------!
-   RADIUS    = 12000., 4577., 1746., 666.,
-   DEPTH_MIN =  1200., 457.7, 174.6, 66.6,
+   RADIUS    = 12000., 600., ! 4577., 1746., 666.,
+   DEPTH_MIN =  1200., 100., ! 457.7, 174.6, 66.6,
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
@@ -548,7 +548,7 @@
                              ! vegetation files 
                              !    (min of 1, max of NPATCH-1)
                        
-   ISFCL    = 1,             ! Surface layer/soil/veg model
+   ISFCL    = 5,             ! Surface layer/soil/veg model
                              !  0 - specified surface layer gradients
                              !  1 - LEAF-3 submodel
                              !  2 - LEAF-3/TOPMODEL submodel
@@ -636,8 +636,8 @@
                              ! l => Looking for 5 days old files,
                              !      and if not found again then stop.
 
-   USDATA_IN  = '/n/Moorcroft_Lab/Lab/data/brams_data/soilmoisture/1998/GL_SM.GPCP.',  ! Soil Moisture File prefix
-   USMODEL_IN = '/n/moorcroft_scratch/mlongo/EDBRAMS/wetamc/48km/surfa/lesmo',  ! File prefix with pre-calculated data by BRAMS
+   USDATA_IN  = '/n/Moorcroft_Lab/Lab/data/brams_data/soilmoisture/2009/GL_SM.GPNR.',  ! Soil Moisture File prefix
+   USMODEL_IN = '/n/moorcroft_scratch/mlongo/EDBRAMS/bbarca/surfa/lesmo',  ! File prefix with pre-calculated data by BRAMS
 
 
 
@@ -777,8 +777,8 @@
 !-------------------------------------------------------------------------!
 ! Analysis/history/restart file: path, prefix, settings                   !
 !-------------------------------------------------------------------------!
-   FFILOUT   = '/n/moorcroft_scratch/mlongo/EDBRAMS/wetamc/48km/ecoss/bbarca',       ! Fast-time scal analysis output prefix
-   SFILOUT   = '/n/moorcroft_scratch/mlongo/EDBRAMS/wetamc/48km/ecoss/bbarca',       ! Output prefix for the state variables
+   FFILOUT   = '/n/moorcroft_scratch/mlongo/EDBRAMS/bbarca/ecoss/bbarca',       ! Fast-time scal analysis output prefix
+   SFILOUT   = '/n/moorcroft_scratch/mlongo/EDBRAMS/bbarca/ecoss/bbarca',       ! Output prefix for the state variables
 
    IED_INIT_MODE   =   1,           !  0 - signifies a start from near-bare ground.
                                     !
@@ -848,7 +848,7 @@
                               !         enthalpy instead of canopy 
                               !         temperature.
 
-   IBRANCH_THERMO = 2,        ! This determines whether branches should be included in
+   IBRANCH_THERMO = 0,        ! This determines whether branches should be included in
                               !    the vegetation thermodynamics or not.  This is under
                               !    development, not fully tested.
                               !  0  --  No branches in energy/radiation;
@@ -943,9 +943,9 @@
                         ! This option is ignored in near bare ground runs.
 
 !----- Patch and cohort dimension settings ------------------------------------------------!
-   MAXPATCH  = 20,   ! If number of patches in a given site exceeds 
+   MAXPATCH  =  10,  ! If number of patches in a given site exceeds 
                      ! MAXPATCH, force patch fusion.
-   MAXCOHORT = 120,  ! If number of cohorts in a given patch exceeds
+   MAXCOHORT =  80,  ! If number of cohorts in a given patch exceeds
                      ! MAXCOHORT, force cohort fusion.
                      !
                      ! For both MAXPATCH and MAXCOHORT, 0 means that fusion
@@ -1135,13 +1135,13 @@
 
 ! Input data file prefixes
 
-   IAPR    = '/n/Moorcroft_Lab/Lab/data/brams_data/wetamc/ecmwf/1stguess/e1st', ! Archived 1st guess   file name
-   IARAWI  = '/n/Moorcroft_Lab/Lab/data/brams_data/wetamc/48km/radio/ir',       ! Archived rawindsonde file name
-   IASRFCE = '/n/Moorcroft_Lab/Lab/data/brams_data/wetamc/48km/weasta/es',  ! Archived surface obs file name
+   IAPR    = '/n/Moorcroft_Lab/Lab/data/brams_data/barcab/ecmwf/1stguess/e1st', ! Archived 1st guess   file name
+   IARAWI  = '/n/Moorcroft_Lab/Lab/data/brams_data/barcab/radio/ir',       ! Archived rawindsonde file name
+   IASRFCE = '/n/Moorcroft_Lab/Lab/data/brams_data/barcab/weasta/es',  ! Archived surface obs file name
 
 ! File names and dispose flags 
 
-   VARPFX    = '/n/moorcroft_scratch/mlongo/EDBRAMS/wetamc/48km/isean/ecmwf',
+   VARPFX    = '/n/moorcroft_scratch/mlongo/EDBRAMS/bbarca/isean/ecmwf',
    IOFLGISZ  = 0,           ! Isen-sigz file flag: 0 = no write, 1 = write
    IOFLGVAR  = 1,           ! Var file flag: 0 = no write, 1 = write
 

@@ -997,10 +997,20 @@ subroutine opspec3
 
   ! Just adding a warning message that cumulus parameterization feedback will be ignored 
   ! because the user didn't set iswrtyp or ilwrtyp to 3 (Harrington);
-  if (iswrtyp /= 3 .and. iswrtyp /= 4 .and. icumfdbk /=0) then
+  if (iswrtyp == 4 .and. icumfdbk /= 0) then
+    print *, '------------------------------------------------------------------------'
+    print *, ' FATAL - CARMA shortwave radiation won''t work with partial cumulus     '
+    print *, '         scheme. The ice mixing ratio in cumulus clouds can be much     '
+    print *, '         larger than the resolved clouds, and bands 32-35 don''t        '
+    print *, '         give reasonable results.  This may be just a bug and it will   '
+    print *, '         be eventually revisited and addressed, but for the time being  '
+    print *, '         either use Harrington or turn off the cumulus feedback.        '
+    print *, '------------------------------------------------------------------------'
+    ifaterr = ifaterr + 1
+  elseif (iswrtyp /= 3 .and. icumfdbk /=0) then
     print *, '------------------------------------------------------------------------'
     print *, 'INFO - Shortwave radiation won''t have cumulus parameterization feedback'
-    print *, '       You should use Harrington scheme or CARMA to have this effect.'
+    print *, '       You should use Harrington scheme to have this effect.            '
     print *, '------------------------------------------------------------------------'
     print *, ' '
     infoerr = infoerr + 1
@@ -1024,7 +1034,7 @@ subroutine opspec3
        infoerr = infoerr + 1
     end if 
     if (nnqparm(ng) == 0 .and. icumfdbk == 1 .and. & 
-        (iswrtyp == 4 .or. ilwrtyp == 4)) then
+        (ilwrtyp == 4)) then
        print *, '-------------------------------------------------------------------------'
        print *, 'INFO - Cumulus parameterization will have no effect on CARMA             '
        print *, '       on grid',ng,' because the cumulus parameterizations are off.      '
