@@ -581,8 +581,8 @@ subroutine rams_mem_alloc(proc_type)
                          nmzp(ng),nmxp(ng),nmyp(ng),nclouds,ng)                            
    end do                                                                                  
    ! Checking the frequency I should use for averaging                                     
-   call define_frqmassave(frqlite,frqanl,ngrids,idiffk(1:ngrids),maxlite,nlite_vars        &
-                         ,lite_vars)                                                       
+   call define_frqmassave(ngrids,frqlite,frqanl,idiffk(1:ngrids),maxlite,nlite_vars        &
+                         ,lite_vars,mynum)
    !---------------------------------------------------------------------------------------!
 
 

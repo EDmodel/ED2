@@ -2028,27 +2028,6 @@ elseif(cvar(1:lv).eq.'ptropop') then
 
 ![Marcos Parâmetros da convecção para uso em STILT
 
-elseif(cvar(1:lv).eq.'afxu') then
-   ivar_type=3
-   ierr= RAMS_getvar('AFXUB',idim_type,ngrd,a,b,flnm)
-   ierr_getvar = ierr_getvar + ierr
-   cdname='Mean area zonal flux'
-   cdunits='kg/m²/s'
-
-elseif(cvar(1:lv).eq.'afxv') then
-   ivar_type=3
-   ierr= RAMS_getvar('AFXVB',idim_type,ngrd,a,b,flnm)
-   ierr_getvar = ierr_getvar + ierr
-   cdname='Mean area meridional flux'
-   cdunits='kg/m²/s'
-
-elseif(cvar(1:lv).eq.'afxw') then
-   ivar_type=3
-   ierr= RAMS_getvar('AFXWB',idim_type,ngrd,a,b,flnm)
-   ierr_getvar = ierr_getvar + ierr
-   cdname='Mean area vertical flux'
-   cdunits='kg/m²/s'
-
 elseif(cvar(1:lv).eq.'cfxup_deep') then
    ivar_type=3
    ierr= RAMS_getvar('CFXUP1',idim_type,ngrd,a,b,flnm)
