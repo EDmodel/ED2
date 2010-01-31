@@ -767,8 +767,7 @@ subroutine rams_output()
   use mem_mass, only:     &
         mass_g,           & ! intent(inout)
         imassflx,         & ! intent(in)
-        frqmassave,       & ! intent(in)
-        zero_average_mass ! ! subroutine
+        frqmassave        ! ! intent(in)
   !MLO]
 
   implicit none
@@ -924,13 +923,6 @@ subroutine rams_output()
 
      endif
   endif
-
-  !------ Reseting the mass averages if it's time to do so. -------------------------------!
-  if ( time_frqz < dtlongn(1)) then
-     do ifm=1,ngrids
-        call zero_average_mass(mass_g(ifm))
-     end do
-  end if
 
   if (iflag==1) stop 'IFLAG'
 

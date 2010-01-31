@@ -192,7 +192,7 @@ first_rams.o: rconstants.mod therm_lib.mod
 isan_io.o: isan_coms.mod
 refstate.o: rconstants.mod therm_lib.mod
 v_interps.o: isan_coms.mod rconstants.mod therm_lib.mod
-mem_mass.o: var_tables.mod
+mem_mass.o: grid_dims.mod var_tables.mod
 rexev.o: mem_basic.mod mem_grid.mod mem_mass.mod mem_scratch.mod mem_tend.mod
 rexev.o: rconstants.mod therm_lib.mod
 rmass.o: mem_grid.mod mem_mass.mod mem_scratch.mod mem_scratch_grell.mod
