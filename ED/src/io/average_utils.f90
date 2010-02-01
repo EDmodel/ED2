@@ -1299,11 +1299,15 @@ subroutine normalize_ed_daily_output_vars(cgrid)
       ! point in umol/m2/s.  We just multiply by one year in seconds and convert to kgC,   !
       ! so the units will be kgC/m2/yr.                                                    !
       !------------------------------------------------------------------------------------!
-      cgrid%dmean_plresp     (ipy)  = cgrid%dmean_plresp    (ipy) * umols_2_kgCyr
-      cgrid%dmean_nep        (ipy)  = cgrid%dmean_nep       (ipy) * umols_2_kgCyr
-      cgrid%dmean_gpp_dbh  (:,ipy)  = cgrid%dmean_gpp_dbh (:,ipy) * umols_2_kgCyr
+      cgrid%dmean_plresp     (ipy)  = cgrid%dmean_plresp    (ipy)                          &
+                                    * umols_2_kgCyr * frqsum_o_daysec
+      cgrid%dmean_nep        (ipy)  = cgrid%dmean_nep       (ipy)                          &
+                                    * umols_2_kgCyr * frqsum_o_daysec
+      cgrid%dmean_gpp_dbh  (:,ipy)  = cgrid%dmean_gpp_dbh (:,ipy)                          &
+                                    * umols_2_kgCyr * frqsum_o_daysec
 
-      cgrid%dmean_co2_residual   (ipy) = cgrid%dmean_co2_residual   (ipy) * frqsum_o_daysec
+      cgrid%dmean_co2_residual   (ipy) = cgrid%dmean_co2_residual   (ipy)                  &
+                                       * umols_2_kgCyr * frqsum_o_daysec
       cgrid%dmean_energy_residual(ipy) = cgrid%dmean_energy_residual(ipy) * frqsum_o_daysec
       cgrid%dmean_water_residual (ipy) = cgrid%dmean_water_residual (ipy) * frqsum_o_daysec
 
@@ -1321,7 +1325,7 @@ subroutine normalize_ed_daily_output_vars(cgrid)
          csite => cpoly%site(isi)
 
          cpoly%dmean_co2_residual(isi)    = cpoly%dmean_co2_residual(isi)                  &
-                                          * frqsum_o_daysec
+                                          * umols_2_kgCyr * frqsum_o_daysec
          cpoly%dmean_energy_residual(isi) = cpoly%dmean_energy_residual(isi)               &
                                           * frqsum_o_daysec
          cpoly%dmean_water_residual(isi)  = cpoly%dmean_water_residual(isi)                &
