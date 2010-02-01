@@ -149,6 +149,7 @@ Module rconstants
    real, parameter :: epim1   = epi-1.      ! that 0.61 term of virtual temp.   [    kg/kg]
    real, parameter :: rh2oocp = rh2o / cp   ! Rv/cp                             [     ----]
    real, parameter :: toodry  = 1.e-8       ! Minimum acceptable mixing ratio.  [    kg/kg]
+   real, parameter :: toowet  = 3.e-2       ! Maximum acceptable mixing ratio.  [    kg/kg]
    !---------------------------------------------------------------------------------------!
 
 
