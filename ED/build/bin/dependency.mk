@@ -98,6 +98,9 @@ landuse_init.o: consts_coms.mod disturb_coms.mod ed_max_dims.mod
 landuse_init.o: ed_misc_coms.mod ed_state_vars.mod grid_coms.mod
 phenology_init.o: ed_max_dims.mod ed_misc_coms.mod ed_state_vars.mod
 phenology_init.o: grid_coms.mod phenology_coms.mod
+OLD_average_utils.o: allometry.mod canopy_radiation_coms.mod consts_coms.mod
+OLD_average_utils.o: ed_max_dims.mod ed_misc_coms.mod ed_state_vars.mod
+OLD_average_utils.o: grid_coms.mod pft_coms.mod therm_lib.mod
 average_utils.o: allometry.mod canopy_radiation_coms.mod consts_coms.mod
 average_utils.o: ed_max_dims.mod ed_misc_coms.mod ed_state_vars.mod
 average_utils.o: grid_coms.mod pft_coms.mod therm_lib.mod

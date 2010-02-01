@@ -33,7 +33,8 @@ Module consts_coms
      , b_cpi4       => cpi4       , b_aklv       => aklv       , b_akiv       => akiv      &
      , b_rdryi      => rdryi      , b_eta3ple    => eta3ple    , b_cimcp      => cimcp     &
      , b_clmcp      => clmcp      , b_p00k       => p00k       , b_p00ki      => p00ki     &
-     , b_halfpi     => halfpi     , b_yr_sec     => yr_sec
+     , b_halfpi     => halfpi     , b_yr_sec     => yr_sec     , b_sqrttwopi  => sqrttwopi &
+     , b_sqrthalfpi => sqrthalfpi 
 
    implicit none
 
@@ -81,20 +82,23 @@ Module consts_coms
    real, parameter :: eta3ple    = b_eta3ple    , cimcp      = b_cimcp
    real, parameter :: clmcp      = b_clmcp      , p00k       = b_p00k
    real, parameter :: p00ki      = b_p00ki      , halfpi     = b_halfpi
-   real, parameter :: yr_sec     = b_yr_sec
+   real, parameter :: yr_sec     = b_yr_sec     , sqrthalfpi = b_sqrthalfpi
+   real, parameter :: sqrttwopi  = b_sqrttwopi
 #else
    implicit none
 
    !---------------------------------------------------------------------------------------!
    ! Trigonometric constants                                                               !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: pi1       = 3.14159265358979  ! Pi                        [      ---]
-   real, parameter :: halfpi    = pi1/2             ! Pi/2                      [      ---]
-   real, parameter :: twopi     = pi1* 2.           ! 2 Pi                      [      ---]
-   real, parameter :: sqrtpii   = 0.564189583547756 ! 1/(pi**0.5)               [      ---]
-   real, parameter :: pio180    = pi1/ 180.         ! Pi/180 (deg -> rad)       [      ---]
-   real, parameter :: pi4       = pi1 * 4.          ! 4 Pi                      [      ---]
-   real, parameter :: pio4      = pi1 /4.           ! Pi/4                      [      ---]
+   real, parameter :: pi1        = 3.14159265358979  ! Pi                       [      ---]
+   real, parameter :: halfpi     = pi1/2             ! Pi/2                     [      ---]
+   real, parameter :: twopi      = pi1* 2.           ! 2 Pi                     [      ---]
+   real, parameter :: sqrtpii    = 0.564189583547756 ! 1/(pi**0.5)              [      ---]
+   real, parameter :: sqrthalfpi = 1.2533141373155   ! (pi/2)**0.5              [      ---]
+   real, parameter :: sqrttwopi  = 2. * sqrthalfpi   ! (2*pi)**0.5              [      ---]
+   real, parameter :: pio180     = pi1/ 180.         ! Pi/180 (deg -> rad)      [      ---]
+   real, parameter :: pi4        = pi1 * 4.          ! 4 Pi                     [      ---]
+   real, parameter :: pio4       = pi1 /4.           ! Pi/4                     [      ---]
    !---------------------------------------------------------------------------------------!
 
 

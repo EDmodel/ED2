@@ -322,8 +322,8 @@ subroutine met_sanity_check(cgrid,ipy)
          write (unit=*,fmt=fmti) ' - Site           :',isi
          write (unit=*,fmt=fmtf) ' - Longitude      :',cgrid%lon(ipy)
          write (unit=*,fmt=fmtf) ' - Latitude       :',cgrid%lat(ipy)
-         write (unit=*,fmt=fmtf) ' - Site height    :',cpoly%met(isi)%pcpg
-         write (unit=*,fmt=fmtf) ' - Polygon height :',cgrid%met(ipy)%pcpg
+         write (unit=*,fmt=fmtf) ' - Site Precip    :',cpoly%met(isi)%pcpg
+         write (unit=*,fmt=fmtf) ' - Polygon Precip :',cgrid%met(ipy)%pcpg
          write (unit=*,fmt=fmtf) ' - Minimum OK     :',pcpg_min
          write (unit=*,fmt=fmtf) ' - Maximum OK     :',pcpg_max
          write (unit=*,fmt=fmtc) '---------------------------------------------------'

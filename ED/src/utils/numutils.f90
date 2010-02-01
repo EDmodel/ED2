@@ -1583,6 +1583,78 @@ end function expmsq
 
 !==========================================================================================!
 !==========================================================================================!
+!    This function computes the expect value based on the normal distribution, with mean   !
+! xmean and standard deviation sigmax, but only for values above xmin.  This is actually a !
+! generalisation of the concept of mean, but for a subset of the distribution function.    !
+! Let p(x) be the normal PDF of x for a mean value of xmean and a standard deviation       !
+! sigmax.  The expected value will solve:                                                  !
+!                                                                                          !
+!                 Inf                                                                      !
+!              INT     x p(x) dx                                                           !
+!                 xmin                                                                     !
+! xexpected = -------------------                                                          !
+!                 Inf                                                                      !
+!              INT     p(x) dx                                                             !
+!                 xmin                                                                     !
+!                                                                                          !
+!     When xmin tends to -Infinity, xexpected tends to xmean. If xmin tends to Infinity,   !
+! xexpected will tend to xmin.                                                             !
+!------------------------------------------------------------------------------------------!
+real function expected(xmin,xmean,sigmax)
+   use consts_coms, only : srtwo      & ! intent(in)
+                         , srtwoi     & ! intent(in)
+                         , sqrttwopi  & ! intent(in)
+                         , sqrthalfpi ! ! intent(in)
+   !----- Arguments. ----------------------------------------------------------------------!
+   real, intent(in) :: xmin
+   real, intent(in) :: xmean
+   real, intent(in) :: sigmax
+   !----- Local variables. ----------------------------------------------------------------!
+   real             :: xnorm
+   real             :: expnorm
+   !----- Local constants. ----------------------------------------------------------------!
+   real, parameter  :: xnormmin = -5. ! This makes a cdf close to machine epsilon
+   real, parameter  :: xnormmax =  5. ! This makes a cdf close to 1 - machine epsilon
+   !----- External functions. -------------------------------------------------------------!
+   real, external   :: cdf
+   !---------------------------------------------------------------------------------------!
+
+   !---------------------------------------------------------------------------------------!
+   !     First we find the normalised xmin, which goes into the PDF and CDF functions.     !
+   !---------------------------------------------------------------------------------------!
+   xnorm = (xmin - xmean) / sigmax
+
+   !---------------------------------------------------------------------------------------!
+   !     Then we integrate the probability distribution function above xnorm. If the cdf   !
+   ! is very small or very close to one, we apply what we know about the limits, and skip  !
+   ! the calculation.                                                                      !
+   !---------------------------------------------------------------------------------------!
+   if (xnorm >= xnormmax) then
+      !----- cdf is too close to 1, apply the limit of x -> infinity. ---------------------!
+      expected = xmin
+
+   elseif (xnorm <= xnormmin) then
+      !----- cdf is too close to 0, apply the limit of x -> - infinity. -------------------!
+      expected = xmean
+
+   else
+      !----- Nice range, let's find the results. ------------------------------------------!
+      expnorm   = exp(- 0.5 * xnorm * xnorm) / (sqrttwopi * (1. - cdf(xnorm)))
+      expected  = xbar + sigx * expnorm
+   end if
+
+   return
+end function expected
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
 !    This function converts the double precision variable into single, in a way to prevent !
 ! floating point exception when they are tiny.  In case the number is too small, less than !
 ! off, then the output value is flushed to 0.                                              !

@@ -53,15 +53,8 @@ module rk4_driver
       real                                    :: old_can_shv
       real                                    :: old_can_co2
       real                                    :: old_can_rhos
-      !----- Variables declared differently depending on the user's compilation options. --!
-#if USE_MPIWTIME
-      real(kind=8)                            :: time_py_start
-      real(kind=8)                            :: time_py_end
-#else
-      real                                    :: time_py_start
-      real                                    :: time_py_spent
-#endif
-      !----- Locally saved variables. -----------------------------------------------------!
+
+
       logical                   , save        :: first_time=.true.
       !----- Local constants. -------------------------------------------------------------!
       logical                   , parameter   :: print_fields = .false.
@@ -71,12 +64,6 @@ module rk4_driver
       
       polygonloop: do ipy = 1,cgrid%npolygons
          cpoly => cgrid%polygon(ipy)
-
-#if USE_MPIWTIME
-         time_py_start = MPI_Wtime() 
-#else
-         time_py_start = walltime(0.)
-#endif
 
          siteloop: do isi = 1,cpoly%nsites
             csite => cpoly%site(isi)
@@ -220,16 +207,6 @@ module rk4_driver
 
             end do patchloop
          end do siteloop
-
-#if USE_MPIWTIME
-         time_py_end            = MPI_Wtime() 
-         cgrid%walltime_py(ipy) = cgrid%walltime_py(ipy) + (time_py_end-time_py_start)
-#else
-         ! You will get funky results unless you use MPI_Wtime, best to flag as
-         ! nonesense so the analysis is not misleading
-!         time_py_spent          = walltime(time_py_start)
-         cgrid%walltime_py(ipy) = cgrid%walltime_py(ipy) -9.9 !+ dble(time_py_spent)
-#endif
 
       end do polygonloop
 
@@ -553,7 +530,8 @@ module rk4_driver
       !    Surface water energy is computed in J/m² inside the integrator. Converting it   !
       ! back to J/kg in the layers that surface water/snow still exists.                   !
       !------------------------------------------------------------------------------------!
-      csite%nlev_sfcwater(ipa) = initp%nlev_sfcwater
+      csite%nlev_sfcwater(ipa)    = initp%nlev_sfcwater
+      csite%total_snow_depth(ipa) = 0.
       do k = 1, csite%nlev_sfcwater(ipa)
          csite%sfcwater_depth(k,ipa)   = sngloff(initp%sfcwater_depth(k)   ,tiny_offset)
          csite%sfcwater_mass(k,ipa)    = sngloff(initp%sfcwater_mass(k)    ,tiny_offset)
@@ -561,6 +539,8 @@ module rk4_driver
          csite%sfcwater_fracliq(k,ipa) = sngloff(initp%sfcwater_fracliq(k) ,tiny_offset)
          tmp_energy                    = initp%sfcwater_energy(k)/initp%sfcwater_mass(k)
          csite%sfcwater_energy(k,ipa)  = sngloff(tmp_energy                ,tiny_offset)
+         csite%total_snow_depth(ipa)   = csite%total_snow_depth(ipa)                       &
+                                       + csite%sfcwater_depth(k,ipa)
       end do
       !------------------------------------------------------------------------------------!
       !    For the layers that no longer exist, assign zeroes for prognostic variables,    !

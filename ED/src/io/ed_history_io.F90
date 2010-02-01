@@ -768,6 +768,10 @@ subroutine read_ed21_history_file
 
   call h5open_f(hdferr)
 
+  ! Turn off automatic error printing
+  call h5eset_auto_f(0,hdferr)
+
+
   ! Initialize the dimensional control variables for the H5 slabs
   globdims = 0_8
   chnkdims = 0_8
@@ -975,10 +979,10 @@ subroutine read_ed21_history_file
            memdims(1)  = 1_8
            memoffs(1)  = 0_8
            memsize(1)  = 1_8
-           
-           call hdf_getslab_i(cgrid%load_adjacency(ipy),'LOAD_ADJACENCY ',&
+           !---- The ipy:ipy notation is needed for ifort when checking interfaces. -------!
+           call hdf_getslab_i(cgrid%load_adjacency(ipy:ipy),'LOAD_ADJACENCY ',&
                 dsetrank,iparallel,.true.)
-           call hdf_getslab_r(cgrid%wbar(ipy),'WBAR ',dsetrank,iparallel,.true.)
+           call hdf_getslab_r(cgrid%wbar(ipy:ipy),'WBAR ',dsetrank,iparallel,.true.)
            
            ! Load the workload (2D)
            dsetrank    = 2
@@ -1287,8 +1291,10 @@ subroutine read_ed21_history_file
      
   end do gridloop
   
-  ! Close the HDF environment
-  
+  ! Reset auto error printing to "on"
+  ! Turn off automatic error printing
+  call h5eset_auto_f(1,hdferr)
+
   call h5close_f(hdferr)
   
   return
@@ -1414,7 +1420,7 @@ subroutine init_full_history_restart()
   ! call can be bypassed. Note, that automatic error reporting
   ! is turned back on at the end.
   
-  !  call h5eset_auto_f(0,hdferr)
+  call h5eset_auto_f(0,hdferr)
 
 
   ! Construct the file name for reinitiatlizing from
@@ -1741,7 +1747,7 @@ subroutine init_full_history_restart()
   ! This is probably unecessary, because the environment
   ! is about to be flushed.
 
-  !  call h5eset_auto_f(1,hdferr)
+  call h5eset_auto_f(1,hdferr)
 
 
   ! Close the HDF environment
@@ -2793,8 +2799,10 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    call hdf_getslab_r(csite%mean_runoff,'MEAN_RUNOFF ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%mean_qrunoff,'MEAN_QRUNOFF ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%htry,'HTRY ',dsetrank,iparallel,.true.)
-   call hdf_getslab_r(csite%dmean_rk4step,'DMEAN_RK4STEP ',dsetrank,iparallel,.false.)
-   call hdf_getslab_r(csite%mmean_rk4step,'MMEAN_RK4STEP ',dsetrank,iparallel,.false.)
+   if (associated(csite%dmean_rk4step)) &
+        call hdf_getslab_r(csite%dmean_rk4step,'DMEAN_RK4STEP ',dsetrank,iparallel,.false.)
+   if (associated(csite%mmean_rk4step)) &
+        call hdf_getslab_r(csite%mmean_rk4step,'MMEAN_RK4STEP ',dsetrank,iparallel,.false.)
    
    dsetrank    = 2
    globdims(1) = int(nzs,8)

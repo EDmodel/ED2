@@ -317,16 +317,19 @@ subroutine canopy_photosynthesis(csite,ipa,vels,atm_tmp,prss,ed_ktrans,ntext_soi
       
       !------------------------------------------------------------------------------------!
       !    Not really a part of the photosynthesis scheme, but this will do it.  We must   !
-      ! ontegrate the "mean" of the remaining respiration terms, except for the root one.  !
+      ! integrate the "mean" of the remaining respiration terms, except for the root one.  !
       ! This is done regardless on whether the cohort is doing photosynthesis.  Also, we   !
       ! convert units so all fast respiration terms are in [µmol/m²ground/s].              !
       !------------------------------------------------------------------------------------!
       cpatch%mean_growth_resp (ico) = cpatch%mean_growth_resp (ico)                        &
-                                    + cpatch%growth_respiration (ico) * kgCday_2_umols
+                                    + cpatch%growth_respiration (ico) * kgCday_2_umols     &
+                                    * cpatch%nplant(ico)
       cpatch%mean_storage_resp(ico) = cpatch%mean_storage_resp(ico)                        &
-                                    + cpatch%storage_respiration(ico) * kgCday_2_umols
+                                    + cpatch%storage_respiration(ico) * kgCday_2_umols     &
+                                    * cpatch%nplant(ico)
       cpatch%mean_vleaf_resp  (ico) = cpatch%mean_vleaf_resp  (ico)                        &
-                                    + cpatch%vleaf_respiration  (ico) * kgCday_2_umols
+                                    + cpatch%vleaf_respiration  (ico) * kgCday_2_umols     &
+                                    * cpatch%nplant(ico)                                    
       !------------------------------------------------------------------------------------!
    end do cohortloop
 

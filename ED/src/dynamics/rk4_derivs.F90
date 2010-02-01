@@ -999,7 +999,6 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,dewgnd
          c3tai  = flux_area * initp%can_rhos * (veg_ssh - initp%can_shv)
          rbi    = 1.d0 / initp%rb(ico)
 
-
          !---------------------------------------------------------------------------------!
          !    Computing the evapotranspiration or dew/frost deposition.                    !
          !---------------------------------------------------------------------------------!
