@@ -1429,8 +1429,9 @@ subroutine normalize_ed_daily_output_vars(cgrid)
             !------------------------------------------------------------------------------!
             forest = csite%dist_type(ipa) /= 1
 
+            !----- CO2 residual is now in kgC/m2/yr!!! ------------------------------------!
             csite%dmean_co2_residual(ipa)    = csite%dmean_co2_residual(ipa)               &
-                                             * frqsum_o_daysec
+                                             * umols_2_kgCyr * frqsum_o_daysec
             csite%dmean_energy_residual(ipa) = csite%dmean_energy_residual(ipa)            &
                                              * frqsum_o_daysec
             csite%dmean_water_residual(ipa)  = csite%dmean_water_residual(ipa)             &
@@ -1453,7 +1454,8 @@ subroutine normalize_ed_daily_output_vars(cgrid)
             ! in µmol(CO2)/m²/s, so we multiply by the number of seconds in a year and     !
             ! convert to kgC, so the final units will be kgC/m2/yr.                        !
             !------------------------------------------------------------------------------!
-            csite%dmean_rh(ipa)              = csite%dmean_rh(ipa) * umols_2_kgCyr
+            csite%dmean_rh(ipa)              = csite%dmean_rh(ipa) * umols_2_kgCyr         &
+                                             * frqsum_o_daysec
 
             if (cpatch%ncohorts > 0) then
                pss_growth_resp  = pss_growth_resp + csite%area(ipa)                        &
