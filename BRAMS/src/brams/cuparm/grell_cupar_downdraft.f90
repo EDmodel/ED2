@@ -285,7 +285,7 @@ subroutine grell_most_thermo_downdraft(mkx,mgmzp,klod,qtot,co2,mentrd_rate,cdd,p
                                       ,etad_cld,dzd_cld,thild_cld,td_cld,qtotd_cld         &
                                       ,qvapd_cld,qliqd_cld,qiced_cld,qsatd_cld,co2d_cld    &
                                       ,rhod_cld,dbyd,pwd_cld,pwev,ierr)
-   use rconstants, only: epi,rdry,t00,cpi,toodry
+   use rconstants, only: epi,rdry,t00,cpi,toodry,toowet
    use therm_lib , only: thetaeiv2thil,toler,maxfpo,idealdens
    implicit none
    
@@ -350,8 +350,6 @@ subroutine grell_most_thermo_downdraft(mkx,mgmzp,klod,qtot,co2,mentrd_rate,cdd,p
    real                   :: delta          ! Aux. var. for bisection 2nd guess    [ kg/kg]
    !----- External functions --------------------------------------------------------------!
    real, external         :: buoyancy_acc   ! Buoyancy acceleration funtion.
-   !----- Constants -----------------------------------------------------------------------!
-   real, parameter        :: toowet=0.030   ! Max. mix. ratio for initial guesses  [ kg/kg]
    !---------------------------------------------------------------------------------------!
 
 
@@ -482,7 +480,7 @@ subroutine grell_most_thermo_downdraft(mkx,mgmzp,klod,qtot,co2,mentrd_rate,cdd,p
          funp   = funa
          !---------------------------------------------------------------------------------!
          !     Finding the current guess. As a 2nd guess, qtotdc can be way off, in which  !
-         ! case we put a lid of 30. g/kg, which is a faily large number and should never   !
+         ! case we put a lid of 30. g/kg, which is a fairly large number and should never  !
          ! be below the maximum under normal conditions.                                   !
          !---------------------------------------------------------------------------------!
          qtotdc = min(max(toodry,qtotd_0_evap - 0.5 * evapd_cld(k) * denomini),toowet)

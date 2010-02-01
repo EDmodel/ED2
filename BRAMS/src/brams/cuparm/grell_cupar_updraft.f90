@@ -517,7 +517,7 @@ subroutine grell_most_thermo_updraft(preccld,check_top,mkx,mgmzp,klfc,ktpse,cld2
                                     ,thilu_cld,tu_cld,qtotu_cld,qvapu_cld,qliqu_cld        &
                                     ,qiceu_cld,qsatu_cld,co2u_cld,rhou_cld,dbyu,pwu_cld    &
                                     ,pwavu,klnb,ktop,ierr)
-   use rconstants, only : epi,rdry, t00, toodry
+   use rconstants, only : epi,rdry, t00, toodry, toowet
    use therm_lib , only : thetaeiv2thil, idealdens, toler, maxfpo
    implicit none
    !----- Several scalars. ----------------------------------------------------------------!
@@ -660,9 +660,9 @@ subroutine grell_most_thermo_updraft(preccld,check_top,mkx,mgmzp,klfc,ktpse,cld2
       !------------------------------------------------------------------------------------!
       denomin     = 1.+(mentru_rate(k)-0.5*cdu(k))*dzu_cld(k)
       denomini    = 1./denomin
-      qeverything = ( qtotu_cld(k-1)*(1.-.5*cdu(k)*dzu_cld(k))                             &
-                     + qtot(k-1)*mentru_rate(k)*dzu_cld(k) - 0.5*leftu_cld(k-1) )          &
-                    * denomini
+      qeverything = max(toodry,( qtotu_cld(k-1)*(1.-.5*cdu(k)*dzu_cld(k))                  &
+                               + qtot(k-1)*mentru_rate(k)*dzu_cld(k) - 0.5*leftu_cld(k-1)) &
+                               * denomini )
 
       !----- CO2 will not fall through precipitation, a simple balance is enough. ---------!
       co2u_cld(k) = ( co2u_cld(k-1)*(1.-.5*cdu(k)*dzu_cld(k))                              &
@@ -739,7 +739,7 @@ subroutine grell_most_thermo_updraft(preccld,check_top,mkx,mgmzp,klfc,ktpse,cld2
          qtotup = qtotua
          funp   = funa
          !------ Finding the current guess ------------------------------------------------!
-         qtotuc = max(toodry,qeverything - 0.5 * leftu_cld(k) * denomini)
+         qtotuc = min(max(toodry,qeverything - 0.5 * leftu_cld(k) * denomini),toowet)
          thilu_cld(k) = thetaeiv2thil(theivu_cld(k),p_cup(k),qtotuc)
          call thil2tqall(thilu_cld(k),exner_cup(k),p_cup(k),qtotuc,qliqu_cld(k)            &
                         ,qiceu_cld(k),tu_cld(k),qvapu_cld(k),qsatu_cld(k))
@@ -774,13 +774,13 @@ subroutine grell_most_thermo_updraft(preccld,check_top,mkx,mgmzp,klfc,ktpse,cld2
             else
                delta = max(abs(funa*(qtotuc-qtotua)/(func-funa)),100.*toler*qtotua)
             end if
-            qtotuz    = qtotua + delta
-            tubis     = tu_cld(k) !---- Using a scratch to avoid sending td_cld too far ---!
+            qtotuz    = min(qtotua + delta,toowet)
+            tubis     = tu_cld(k) !---- Using a scratch to avoid sending tu_cld too far ---!
             funz      = funa
             bisection = .false.
             !----- Just to enter at least once. The 1st time qtotdz=qtotda-2*delta --------!
             zgssloop: do it=1,maxfpo
-               qtotuz = max(toodry,qtotua + real((-1)**it * (it+3)/2) * delta)
+               qtotuz = min(max(toodry,qtotua + real((-1)**it * (it+3)/2) * delta),toowet)
 
                !----- Finding this equilibrium state --------------------------------------!
                thilu_cld(k) = thetaeiv2thil(theivu_cld(k),p_cup(k),qtotuz)
@@ -837,7 +837,8 @@ subroutine grell_most_thermo_updraft(preccld,check_top,mkx,mgmzp,klfc,ktpse,cld2
             !     defined by the A Z pair, use bisection this time.                        !
             !------------------------------------------------------------------------------!
             if(.not. bisection) then
-               qtotu_cld(k) = max(toodry,( func*qtotup - qtotuc*funp ) / (func-funp))
+               qtotu_cld(k) = min(max(toodry,( func*qtotup - qtotuc*funp ) / (func-funp))  &
+                                 ,toowet)
                !----- Checking whether this new guess represents an improvement -----------!
                bisection    = abs(qtotu_cld(k)-qtotua) > abs(qtotuz-qtotua) .or.           &
                               abs(qtotu_cld(k)-qtotuz) > abs(qtotuz-qtotua)
