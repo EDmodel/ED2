@@ -1495,8 +1495,8 @@ subroutine normalize_ed_daily_output_vars(cgrid)
                                              * cpoly%area(isi)
          sss_vleaf_resp   = sss_vleaf_resp   + (pss_vleaf_resp   * site_area_i)            &
                                              * cpoly%area(isi)
-         sss_rh           = sss_rh  + (sum(csite%dmean_rh * csite%area) * site_area_i)     &
-                                    * cpoly%area(isi)
+         sss_rh           = sss_rh           + (sum(csite%dmean_rh * csite%area) * site_area_i)     &
+                                             * cpoly%area(isi)
       end do siteloop
       
       !------------------------------------------------------------------------------------!

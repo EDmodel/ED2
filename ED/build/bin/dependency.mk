@@ -96,16 +96,6 @@ init_hydro_sites.o: ed_max_dims.mod ed_misc_coms.mod ed_state_vars.mod
 init_hydro_sites.o: grid_coms.mod mem_sites.mod soil_coms.mod
 landuse_init.o: consts_coms.mod disturb_coms.mod ed_max_dims.mod
 landuse_init.o: ed_misc_coms.mod ed_state_vars.mod grid_coms.mod
-notop_ed_params.o: allometry.mod canopy_air_coms.mod canopy_radiation_coms.mod
-notop_ed_params.o: consts_coms.mod decomp_coms.mod disturb_coms.mod
-notop_ed_params.o: ed_max_dims.mod ed_misc_coms.mod fusion_fission_coms.mod
-notop_ed_params.o: hydrology_coms.mod met_driver_coms.mod pft_coms.mod
-notop_ed_params.o: phenology_coms.mod rk4_coms.mod soil_coms.mod
-optim_ed_params.o: allometry.mod canopy_air_coms.mod canopy_radiation_coms.mod
-optim_ed_params.o: consts_coms.mod decomp_coms.mod disturb_coms.mod
-optim_ed_params.o: ed_max_dims.mod ed_misc_coms.mod fusion_fission_coms.mod
-optim_ed_params.o: hydrology_coms.mod met_driver_coms.mod pft_coms.mod
-optim_ed_params.o: phenology_coms.mod rk4_coms.mod soil_coms.mod
 phenology_init.o: ed_max_dims.mod ed_misc_coms.mod ed_state_vars.mod
 phenology_init.o: grid_coms.mod phenology_coms.mod
 average_utils.o: allometry.mod canopy_radiation_coms.mod consts_coms.mod
@@ -204,7 +194,7 @@ update_derived_props.o: allometry.mod canopy_air_coms.mod consts_coms.mod
 update_derived_props.o: ed_misc_coms.mod ed_state_vars.mod ed_therm_lib.mod
 update_derived_props.o: fuse_fiss_utils.mod grid_coms.mod soil_coms.mod
 update_derived_props.o: therm_lib.mod
-utils_c.o: /n/Moorcroft_Lab/Users/mlongo/EDBRAMS/ED/src/include/utils_sub_names.h
+utils_c.o: /n/moorcroft_scratch/nlevine/EDBRAMS/ED/src/include/utils_sub_names.h
 utils_c.o:
 allometry.mod: allometry.o
 an_header.mod: an_header.o
