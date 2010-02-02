@@ -2415,7 +2415,7 @@ module therm_lib
                zside = funa*funz < 0
                if (zside) exit zgssloop
             end do zgssloop
-            if (.not. zside)                                                               &
+            if (.not. zside) then
                write (unit=*,fmt='(a)') ' No second guess for you...'
                write (unit=*,fmt='(2(a,1x,i14,1x))')    'itn   =',itn   ,'itb   =',itb
                write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'theiv =',theiv ,'rtot  =',rtot
@@ -2424,7 +2424,8 @@ module therm_lib
                write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'tlcla =',tlcla ,'funa  =',funa
                write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'tlclz =',tlclz ,'funz  =',funz
                call fatal_error('Failed finding the second guess for regula falsi'         &
-                             ,'thetaeiv2thil','rthrm.f90')
+                             ,'thetaeiv2thil','therm_lib.f90')
+            end if
          end if
          !---- Continue iterative method --------------------------------------------------!
          fpoloop: do itb=itn+1,maxfpo
