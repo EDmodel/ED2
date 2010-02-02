@@ -1145,12 +1145,16 @@ subroutine ed_opspec_misc
    !---------------------------------------------------------------------------------------!
    select case (integration_scheme)
    case (0)
-      if (ibranch_thermo /= 0) then
-         write (reason,fmt='(a,1x,a)') 'Invalid IBRANCH_THERMO.  You must set it to 0'     &
-                                      ,'when using the Euler integration method...'
-         call opspec_fatal(reason,'opspec_misc')
-         ifaterr = ifaterr + 1
-      end if
+      !if (ibranch_thermo /= 0) then
+      !   write (reason,fmt='(a,1x,a)') 'Invalid IBRANCH_THERMO.  You must set it to 0'    &
+      !                                ,'when using the Euler integration method...'
+      !   call opspec_fatal(reason,'opspec_misc')
+      !   ifaterr = ifaterr + 1
+      !end if
+      write (reason,fmt='(a)')                                                             &
+               'Euler scheme is currently not available, so please use Runge-Kutta.'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
    case (1)
       if (ibranch_thermo < 0 .or. ibranch_thermo > 2) then
          write (reason,fmt='(a,1x,i4,a)')                                                  &
@@ -1161,7 +1165,7 @@ subroutine ed_opspec_misc
       end if
    case default
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-               'Invalid INTEGRATION_SCHEME, it must be between 0 and 1. Yours is set to'   &
+               'Invalid INTEGRATION_SCHEME, it must be 1. Yours is set to'                 &
                ,integration_scheme,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
