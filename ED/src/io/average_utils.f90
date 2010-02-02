@@ -219,8 +219,7 @@ subroutine normalize_averaged_vars(cgrid,frqsum,dtlsm)
                !cpatch%root_respiration = cpatch%root_respiration * dtlsm
 
                ! For IO - they should be replaced by these guys
-               ! units: [umol/m2/s * steps]    -> [umol/m2/s], or
-               !        [umol/plant/s * steps] -> [umol/plant/s]
+               ! units: [umol/m2/s * steps]    -> [umol/m2/s]
                cpatch%mean_leaf_resp(ico)    = cpatch%mean_leaf_resp(ico)    * tfact
                cpatch%mean_root_resp(ico)    = cpatch%mean_root_resp(ico)    * tfact
                cpatch%mean_gpp(ico)          = cpatch%mean_gpp(ico)          * tfact
@@ -904,11 +903,6 @@ subroutine integrate_ed_daily_output_flux(cgrid)
       cgrid%Nbiomass_uptake(ipy)       = cgrid%Nbiomass_uptake(ipy)                        &
                                        + sitesum_Nuptake*poly_area_i
 
-      
-      cgrid%dmean_gpp(ipy)             = cgrid%dmean_gpp(ipy)                              &
-                                       + sitesum_gpp * poly_area_i
-      cgrid%dmean_rh(ipy)              = cgrid%dmean_rh(ipy)                               &
-                                       + sitesum_rh * poly_area_i
       cgrid%dmean_plresp(ipy)          = cgrid%dmean_plresp(ipy)                           &
                                        + sitesum_plresp * poly_area_i
       cgrid%dmean_nep(ipy)             = cgrid%dmean_nep(ipy)                              &
@@ -1522,8 +1516,7 @@ subroutine normalize_ed_daily_output_vars(cgrid)
       cgrid%dmean_fsw(ipy)     = cgrid%dmean_fsw(ipy)     + sss_fsw     * poly_area_i
       cgrid%dmean_fs_open(ipy) = cgrid%dmean_fs_open(ipy) + sss_fs_open * poly_area_i
       
-      cgrid%dmean_rh(ipy)      = cgrid%dmean_rh(ipy)      + sss_rh      * poly_area_i
-
+      cgrid%dmean_rh(ipy)      = cgrid%dmean_rh(ipy)      + sss_rh      * poly_area_i      
       cgrid%dmean_growth_resp(ipy)  = cgrid%dmean_growth_resp(ipy)                         &
                                     + sss_growth_resp  * poly_area_i
       cgrid%dmean_storage_resp(ipy) = cgrid%dmean_storage_resp(ipy)                        &
