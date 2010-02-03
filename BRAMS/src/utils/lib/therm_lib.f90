@@ -2482,6 +2482,31 @@ module therm_lib
          !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
          !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       else
+         write (unit=*,fmt='(60a1)')        ('-',ii=1,60)
+         write (unit=*,fmt='(a)')           ' THEIV2THIL failed!'
+         write (unit=*,fmt='(a)')           ' '
+         write (unit=*,fmt='(a)')           ' -> Input: '
+         write (unit=*,fmt='(a,1x,f12.5)')  '    THEIV    [     K]:',theiv
+         write (unit=*,fmt='(a,1x,f12.5)')  '    PRES     [    Pa]:',pres * 100.
+         write (unit=*,fmt='(a,1x,f12.5)')  '    RTOT     [  g/kg]:',1000.*rtot
+         write (unit=*,fmt='(a)')           ' '
+         write (unit=*,fmt='(a)')           ' -> Output: '
+         write (unit=*,fmt='(a,1x,i12)')    '    ITERATIONS       :',itb
+         write (unit=*,fmt='(a,1x,f12.5)')  '    PVAP     [   hPa]:',pvap
+         write (unit=*,fmt='(a,1x,f12.5)')  '    THETA    [     K]:',theta
+         write (unit=*,fmt='(a,1x,f12.5)')  '    RLIQ     [  g/kg]:',1000.*rliq
+         write (unit=*,fmt='(a,1x,f12.5)')  '    RICE     [  g/kg]:',1000.*rice
+         write (unit=*,fmt='(a,1x,f12.5)')  '    TLCL     [    °C]:',tlcl-t00
+         write (unit=*,fmt='(a,1x,f12.5)')  '    TLCLA    [    °C]:',tlcla-t00
+         write (unit=*,fmt='(a,1x,f12.5)')  '    TLCLZ    [    °C]:',tlclz-t00
+         write (unit=*,fmt='(a,1x,es12.5)') '    FUNA     [     K]:',funa
+         write (unit=*,fmt='(a,1x,es12.5)') '    FUNZ     [     K]:',funz
+         write (unit=*,fmt='(a,1x,es12.5)') '    DERIV    [   ---]:',deriv
+         write (unit=*,fmt='(a,1x,es12.5)') '    ERR_A    [   ---]:',abs(tlcl-tlcla)/tlcl
+         write (unit=*,fmt='(a,1x,es12.5)') '    ERR_Z    [   ---]:',abs(tlcl-tlclz)/tlcl
+         write (unit=*,fmt='(a)')           ' '
+         write (unit=*,fmt='(60a1)')        ('-',ii=1,60)
+
          call abort_run('TLCL didn''t converge, gave up!'                                  &
                        ,'thetaeiv2thil','therm_lib.f90')
       end if
