@@ -2028,27 +2028,6 @@ elseif(cvar(1:lv).eq.'ptropop') then
 
 ![Marcos Parâmetros da convecção para uso em STILT
 
-elseif(cvar(1:lv).eq.'afxu') then
-   ivar_type=3
-   ierr= RAMS_getvar('AFXUB',idim_type,ngrd,a,b,flnm)
-   ierr_getvar = ierr_getvar + ierr
-   cdname='Mean area zonal flux'
-   cdunits='kg/m²/s'
-
-elseif(cvar(1:lv).eq.'afxv') then
-   ivar_type=3
-   ierr= RAMS_getvar('AFXVB',idim_type,ngrd,a,b,flnm)
-   ierr_getvar = ierr_getvar + ierr
-   cdname='Mean area meridional flux'
-   cdunits='kg/m²/s'
-
-elseif(cvar(1:lv).eq.'afxw') then
-   ivar_type=3
-   ierr= RAMS_getvar('AFXWB',idim_type,ngrd,a,b,flnm)
-   ierr_getvar = ierr_getvar + ierr
-   cdname='Mean area vertical flux'
-   cdunits='kg/m²/s'
-
 elseif(cvar(1:lv).eq.'cfxup_deep') then
    ivar_type=3
    ierr= RAMS_getvar('CFXUP1',idim_type,ngrd,a,b,flnm)
@@ -4680,37 +4659,79 @@ elseif(cvar(1:lv).eq.'dnmf') then
    cdname='downdraft mass flux'
    cdunits='kg/m²/s'
 
-elseif(cvar(1:lv).eq.'zktop') then
+elseif(cvar(1:lv).eq.'upmx') then
    ivar_type=9
-   ierr= RAMS_getvar('ZKTOP',idim_type,ngrd,a,b,flnm)
+   ierr= RAMS_getvar('UPMX',idim_type,ngrd,a,b,flnm)
    ierr_getvar = ierr_getvar + ierr
-   cdname='Cloud top'
+   cdname='potential updraft mass flux'
+   cdunits='kg/m²/s'
+
+elseif(cvar(1:lv).eq.'dnmx') then
+   ivar_type=9
+   ierr= RAMS_getvar('DNMX',idim_type,ngrd,a,b,flnm)
+   ierr_getvar = ierr_getvar + ierr
+   cdname='potential downdraft mass flux'
+   cdunits='kg/m²/s'
+
+elseif(cvar(1:lv).eq.'wdndraft') then
+   ivar_type=9
+   ierr= RAMS_getvar('WDNDRAFT',idim_type,ngrd,a,b,flnm)
+   ierr_getvar = ierr_getvar + ierr
+   cdname='downdraft velocity at origin of downdrafts'
+   cdunits='m/s'
+
+elseif(cvar(1:lv).eq.'wupdraft') then
+   ivar_type=9
+   ierr= RAMS_getvar('WUPDRAFT',idim_type,ngrd,a,b,flnm)
+   ierr_getvar = ierr_getvar + ierr
+   cdname='updraft velocity at origin of updrafts'
+   cdunits='m/s'
+
+elseif(cvar(1:lv).eq.'wbuoymin') then
+   ivar_type=9
+   ierr= RAMS_getvar('WBUOYMIN',idim_type,ngrd,a,b,flnm)
+   ierr_getvar = ierr_getvar + ierr
+   cdname='minimum velocity to reach LCL'
+   cdunits='m/s'
+
+elseif(cvar(1:lv).eq.'zklnb') then
+   ivar_type=9
+   ierr= RAMS_getvar('ZKLNB',idim_type,ngrd,a,b,flnm)
+   ierr_getvar = ierr_getvar + ierr
+   cdname='Level of neutral buoyancy'
    cdunits='m'
 
-elseif(cvar(1:lv).eq.'zkbcon') then
+elseif(cvar(1:lv).eq.'zklfc') then
    ivar_type=9
-   ierr= RAMS_getvar('ZKBCON',idim_type,ngrd,a,b,flnm)
+   ierr= RAMS_getvar('ZKLFC',idim_type,ngrd,a,b,flnm)
    ierr_getvar = ierr_getvar + ierr
-   cdname='Cloud bottom'
+   cdname='Level of free convection'
    cdunits='m'
 
-elseif(cvar(1:lv).eq.'zjmin') then
+elseif(cvar(1:lv).eq.'zklcl') then
    ivar_type=9
-   ierr= RAMS_getvar('ZJMIN',idim_type,ngrd,a,b,flnm)
+   ierr= RAMS_getvar('ZKLCL',idim_type,ngrd,a,b,flnm)
    ierr_getvar = ierr_getvar + ierr
-   cdname='Downdraft originating height'
+   cdname='Lifting condensation level'
    cdunits='m'
 
-elseif(cvar(1:lv).eq.'zk22') then
+elseif(cvar(1:lv).eq.'zklod') then
    ivar_type=9
-   ierr= RAMS_getvar('ZK22',idim_type,ngrd,a,b,flnm)
+   ierr= RAMS_getvar('ZKLOD',idim_type,ngrd,a,b,flnm)
    ierr_getvar = ierr_getvar + ierr
-   cdname='Updraft originating height'
+   cdname='Height of origin of downdraft'
+   cdunits='m'
+
+elseif(cvar(1:lv).eq.'zklou') then
+   ivar_type=9
+   ierr= RAMS_getvar('ZKLOU',idim_type,ngrd,a,b,flnm)
+   ierr_getvar = ierr_getvar + ierr
+   cdname='Height of origin of updraft'
    cdunits='m'
 
 elseif(cvar(1:lv).eq.'zkdet') then
    ivar_type=9
-   ierr= RAMS_getvar('ZKDT',idim_type,ngrd,a,b,flnm)
+   ierr= RAMS_getvar('ZKDET',idim_type,ngrd,a,b,flnm)
    ierr_getvar = ierr_getvar + ierr
    cdname='Top of downdraft detrainment'
    cdunits='m'

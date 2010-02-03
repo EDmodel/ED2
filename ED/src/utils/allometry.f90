@@ -197,7 +197,7 @@ module allometry
 
       select case (ipft)
       case(1,5) !----- Grasses get a fixed rooting depth of 70 cm. ------------------------!
-         calc_root_depth = -0.7
+         calc_root_depth = -0.70
       case default
          volume           = h * 0.65 * pi1 * (dbh*0.11)*(dbh*0.11)
          calc_root_depth = -10.0**(0.545 + 0.277*log10(volume))

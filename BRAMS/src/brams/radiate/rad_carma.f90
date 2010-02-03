@@ -18,57 +18,108 @@ module rad_carma
    !=======================================================================================!
    !    This subroutine is an interface between BRAMS and the actual CARMA driver.         !
    !---------------------------------------------------------------------------------------!
-   subroutine radcomp_carma(m1,m2,m3,ia,iz,ja,jz,solfac,theta,pi0,pp,rv,rain,lwl,iwl,dn0   &
-                           ,rtp,fthrd,rtgt,f13t,f23t,glat,glon,rshort,rlong,albedt,cosz    &
-                           ,rlongup,mynum,fmapt,pm,patch_area,npat)
+   subroutine radcomp_carma(m1,m2,m3,npat,nclouds,ncrad,ia,iz,ja,jz,mynum,iswrtyp,ilwrtyp  &
+                           ,icumfdbk,solfac,theta,pi0,pp,rv,rain,lwl,iwl,cuprliq,cuprice   &
+                           ,cuparea,cupierr,dn0,rtp,fthrd,rtgt,f13t,f23t,glat,glon,rshort  &
+                           ,rshort_top,rshortup_top,rlong,rlongup_top,albedt,cosz,rlongup  &
+                           ,fmapt,pm,patch_area)
       use catt_start  , only : catt               ! ! intent(in)
       use mem_grid    , only : ngrid              ! ! intent(in)
       use grid_dims   , only : nzpmax             ! ! intent(in)
       use mem_aerad   , only : nwave              ! ! intent(in)
       use mem_globrad , only : rad_data_not_read  ! ! intent(inout)
-      use mem_radiate , only : ilwrtyp            & ! intent(in)
-                             , iswrtyp            ! ! intent(in)
+      use rconstants  , only : day_sec            & ! intent(in)
+                             , p00                & ! intent(in)
+                             , t00                & ! intent(in)
+                             , cpor               & ! intent(in)
+                             , cpi                ! ! intent(in)
+         
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      integer                    , intent(in)    :: m1
-      integer                    , intent(in)    :: m2
-      integer                    , intent(in)    :: m3
-      integer                    , intent(in)    :: ia
-      integer                    , intent(in)    :: iz
-      integer                    , intent(in)    :: ja
-      integer                    , intent(in)    :: jz
-      integer                    , intent(in)    :: mynum
-      integer                    , intent(in)    :: npat
-      real                       , intent(in)    :: solfac
-      real, dimension(m1,m2,m3)  , intent(in)    :: theta
-      real, dimension(m1,m2,m3)  , intent(in)    :: pi0
-      real, dimension(m1,m2,m3)  , intent(in)    :: pp
-      real, dimension(m1,m2,m3)  , intent(in)    :: rv
-      real, dimension(m1,m2,m3)  , intent(inout) :: lwl
-      real, dimension(m1,m2,m3)  , intent(inout) :: iwl
-      real, dimension(m2,m3)     , intent(in)    :: rain
-      real, dimension(m2,m3,npat), intent(in)    :: patch_area
-      real, dimension(m1,m2,m3)  , intent(in)    :: dn0
-      real, dimension(m1,m2,m3)  , intent(in)    :: rtp
-      real, dimension(m2,m3)     , intent(in)    :: rtgt
-      real, dimension(m2,m3)     , intent(in)    :: f13t
-      real, dimension(m2,m3)     , intent(in)    :: f23t
-      real, dimension(m2,m3)     , intent(in)    :: glat
-      real, dimension(m2,m3)     , intent(in)    :: glon
-      real, dimension(m2,m3)     , intent(in)    :: cosz
-      real, dimension(m2,m3)     , intent(in)    :: albedt
-      real, dimension(m2,m3)     , intent(in)    :: fmapt
-      real, dimension(m1,m2,m3)  , intent(in)    :: pm
-      real, dimension(m2,m3)     , intent(inout) :: rshort
-      real, dimension(m2,m3)     , intent(inout) :: rlong
-      real, dimension(m1,m2,m3)  , intent(inout) :: fthrd
-      real, dimension(m2,m3)     , intent(inout) :: rlongup
-      integer                                    :: i
-      integer                                    :: j
-      integer                                    :: ipat
-      real                                       :: xland
-      real, dimension(nwave)                     :: aotl
+      integer                          , intent(in)    :: m1
+      integer                          , intent(in)    :: m2
+      integer                          , intent(in)    :: m3
+      integer                          , intent(in)    :: ia
+      integer                          , intent(in)    :: iz
+      integer                          , intent(in)    :: ja
+      integer                          , intent(in)    :: jz
+      integer                          , intent(in)    :: mynum
+      integer                          , intent(in)    :: npat
+      integer                          , intent(in)    :: nclouds
+      integer                          , intent(inout) :: ncrad
+      integer                          , intent(in)    :: iswrtyp
+      integer                          , intent(in)    :: ilwrtyp
+      integer                          , intent(in)    :: icumfdbk
+      real                             , intent(in)    :: solfac
+      real, dimension(m1,m2,m3)        , intent(in)    :: theta
+      real, dimension(m1,m2,m3)        , intent(in)    :: pi0
+      real, dimension(m1,m2,m3)        , intent(in)    :: pp
+      real, dimension(m1,m2,m3)        , intent(in)    :: rv
+      real, dimension(m1,m2,m3)        , intent(inout) :: lwl
+      real, dimension(m1,m2,m3)        , intent(inout) :: iwl
+      real, dimension(m1,m2,m3,nclouds), intent(in)    :: cuprliq
+      real, dimension(m1,m2,m3,nclouds), intent(in)    :: cuprice
+      real, dimension(   m2,m3,nclouds), intent(in)    :: cuparea
+      real, dimension(   m2,m3,nclouds), intent(in)    :: cupierr
+      real, dimension(   m2,m3)        , intent(in)    :: rain
+      real, dimension(   m2,m3,npat)   , intent(in)    :: patch_area
+      real, dimension(m1,m2,m3)        , intent(in)    :: dn0
+      real, dimension(m1,m2,m3)        , intent(in)    :: rtp
+      real, dimension(m2,m3)           , intent(in)    :: rtgt
+      real, dimension(m2,m3)           , intent(in)    :: f13t
+      real, dimension(m2,m3)           , intent(in)    :: f23t
+      real, dimension(m2,m3)           , intent(in)    :: glat
+      real, dimension(m2,m3)           , intent(in)    :: glon
+      real, dimension(m2,m3)           , intent(in)    :: cosz
+      real, dimension(m2,m3)           , intent(in)    :: albedt
+      real, dimension(m2,m3)           , intent(in)    :: fmapt
+      real, dimension(m1,m2,m3)        , intent(in)    :: pm
+      real, dimension(m2,m3)           , intent(inout) :: rshort
+      real, dimension(m2,m3)           , intent(inout) :: rshort_top
+      real, dimension(m2,m3)           , intent(inout) :: rshortup_top
+      real, dimension(m2,m3)           , intent(inout) :: rlong
+      real, dimension(m2,m3)           , intent(inout) :: rlongup_top
+      real, dimension(m1,m2,m3)        , intent(inout) :: fthrd
+      real, dimension(m2,m3)           , intent(in)    :: rlongup
+      !----- Local variables. -------------------------------------------------------------!
+      integer                                          :: i
+      integer                                          :: j
+      integer                                          :: k
+      integer                                          :: ipat
+      integer                                          :: icld
+      real                                             :: xland
+      real, dimension(m1)                              :: lwl_cld
+      real, dimension(m1)                              :: iwl_cld
+      real                                             :: area_csky
+      real                                             :: area_cld
+      real                                             :: rain_eff
+      real                                             :: rshort_cld
+      real                                             :: rshort_top_cld
+      real                                             :: rshortup_top_cld
+      real                                             :: rlong_cld
+      real                                             :: rlongup_top_cld
+      real, dimension(m1)                              :: fthrd_cld
+      real, dimension(nwave)                           :: aotl_cld
+      real, dimension(nwave)                           :: aotl
+      real                                             :: press
+      real                                             :: tempk
+      real                                             :: rvcgs
+      !----- Locally saved variables. -----------------------------------------------------!
+      logical                          , save          :: first_time = .true.
       !------------------------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
+      !     If this is the first time we are calling CARMA, we must define some flags      !
+      ! and allocate scratch variables.                                                    !
+      !------------------------------------------------------------------------------------!
+      if (first_time) then
+         if (icumfdbk == 1) then
+            ncrad = nclouds
+         else
+            ncrad = 0
+         end if
+         first_time = .false.
+      end if
 
       !------------------------------------------------------------------------------------!
       !     Here we initialise some variables.                                             !
@@ -76,28 +127,154 @@ module rad_carma
       call init_carma(m1)
       call setupbins
 
-      do j=ja,jz
-         do i=ia,iz
-            !----- Resetting the scratch variables. ---------------------------------------!
-            call flush_carma()
+      jloop: do j=ja,jz
+         iloop: do i=ia,iz
             
-            !----- Copying the aerosol optical transmission to a scratch array. -----------!
-            call ci_3d_1d(m2,m3,nwave,carma(ngrid)%aot,aotl,i,j)
+            !------------------------------------------------------------------------------!
+            !      These variables turn the LW and SW radiation on or off.  The default is !
+            ! to call longwave if ILWRTYP is 4, and shortwave is turned off unless ISWRTYP !
+            ! is 4 and the sun is sufficiently above the horizon (no twilight).            !
+            !------------------------------------------------------------------------------!
+            ir_aerad  = ilwrtyp == 4
+            isl_aerad = iswrtyp == 4 .and. cosz(i,j) > .03
 
             !----- Finding the amount of land. --------------------------------------------!
             xland = 1. - patch_area(i,j,1)
 
-            !----- Calling the main CARMA driver. -----------------------------------------!
-            call radcarma(nzpmax,m1,solfac,theta(1:m1,i,j),pi0(1:m1,i,j),pp(1:m1,i,j)      &
-                         ,rv(1:m1,i,j),rain(i,j),lwl(1:m1,i,j),iwl(1:m1,i,j),dn0(1:m1,i,j) &
-                         ,rtp(1:m1,i,j),fthrd(1:m1,i,j),rtgt(i,j),f13t(i,j),f23t(i,j)      &
-                         ,glat(i,j),glon(i,j),rshort(i,j),rlong(i,j),albedt(i,j),cosz(i,j) &
-                         ,rlongup(i,j),mynum,fmapt(i,j),pm(1:m1,i,j),aotl,xland)
+            !----- Precipitation is used only if the full cumulus feedback is off. --------!
+            if (icumfdbk == 0) then
+               rain_eff = rain(i,j)
+            else
+               rain_eff = 0.
+            end if
+
+            !----- Make sure that the hydrometeor mixing ratio is non-negative. -----------!
+            do k = 1, m1
+               lwl(k,i,j) = max(0.,lwl(k,i,j))
+               iwl(k,i,j) = max(0.,iwl(k,i,j))
+            end do
+
+            !----- Initialise the clear sky area and AOT. ---------------------------------!
+            area_csky = 1.
+            aotl(:) = 0.
+            cldloop: do icld = ncrad,0,-1
+
+               !---------------------------------------------------------------------------!
+               !     Copy cumulus cloud (or environment) mixing ratio to the scratch       !
+               ! variables.  The fluxes will be an average of the area covered by cumulus  !
+               ! clouds and cumulus-free.                                                  !
+               !---------------------------------------------------------------------------!
+               if (icld == 0) then
+                  area_cld = area_csky
+                  do k = 1, m1
+                     lwl_cld(k) = 0.
+                     iwl_cld(k) = 0.
+                  end do
+               else
+                  if (cupierr(i,j,icld) /= 0.) cycle cldloop
+
+                  area_cld  = cuparea(i,j,icld)
+                  area_csky = area_csky - area_cld
+
+                  do k = 1, m1
+                     lwl_cld(k) = max(0.,cuprliq(k,i,j,icld))
+                     iwl_cld(k) = max(0.,cuprice(k,i,j,icld))
+                  end do
+               end if
+               !---------------------------------------------------------------------------!
+
+               !----- Reset the scratch variables. ----------------------------------------!
+               call flush_carma()
+               rshort_cld       = 0.
+               rshort_top_cld   = 0.
+               rshortup_top_cld = 0.
+               rlong_cld        = 0.
+               rlongup_top_cld  = 0.
+               fthrd_cld (:)    = 0.
+
+               !----- Copying the aerosol optical transmission to a scratch array. --------!
+               call ci_3d_1d(m2,m3,nwave,carma(ngrid)%aot,aotl_cld,i,j)
+               !---------------------------------------------------------------------------!
+
+               !----- Calling the main CARMA driver. --------------------------------------!
+               call radcarma(nzpmax,m1,solfac,theta(1:m1,i,j),pi0(1:m1,i,j),pp(1:m1,i,j)   &
+                            ,rv(1:m1,i,j),rain_eff,lwl(1:m1,i,j),iwl(1:m1,i,j)             &
+                            ,lwl_cld,iwl_cld,dn0(1:m1,i,j),rtp(1:m1,i,j),fthrd_cld         &
+                            ,rtgt(i,j),f13t(i,j),f23t(i,j),glat(i,j),glon(i,j),rshort_cld  &
+                            ,rshort_top_cld,rshortup_top_cld,rlong_cld,rlongup_top_cld     &
+                            ,albedt(i,j),cosz(i,j),rlongup(i,j),mynum,fmapt(i,j)           &
+                            ,pm(1:m1,i,j),aotl_cld,xland)
+
+               !----- Integrating the fluxes and optical depth. ---------------------------!
+               if (isl_aerad) then
+                   rshort      (i,j) = rshort      (i,j) + rshort_cld       * area_cld
+                   rshort_top  (i,j) = rshort_top  (i,j) + rshort_top_cld   * area_cld
+                   rshortup_top(i,j) = rshortup_top(i,j) + rshortup_top_cld * area_cld
+               end if
+               if (ir_aerad ) then
+                  rlong        (i,j) = rlong       (i,j) + rlong_cld        * area_cld
+                  rlongup_top  (i,j) = rlongup_top (i,j) + rlongup_top_cld  * area_cld
+               end if
+               do k = 1, m1
+                  fthrd(k,i,j) = fthrd(k,i,j) + fthrd_cld(k) * area_cld
+               end do
+               aotl(:) = aotl(:) + aotl_cld(:) * area_cld
+               
+               !---------------------------------------------------------------------------!
+               !     Print the output if the radiation heating rate is screwy.             !
+               !---------------------------------------------------------------------------!
+               if (any(abs(fthrd_cld) > 200./day_sec)) then
+                  do k=1,m1
+                     fthrd_cld(k) = fthrd_cld(k) * day_sec
+                     lwl(k,i,j)   = lwl(k,i,j)   * 1000.
+                     iwl(k,i,j)   = iwl(k,i,j)   * 1000.
+                     lwl_cld(k)   = lwl_cld(k)   * 1000.
+                     iwl_cld(k)   = iwl_cld(k)   * 1000.
+                  end do
+
+                  write (unit=*,fmt='(123a)') ('=',k=1,123)
+                  write (unit=*,fmt='(a)')     ' Radiative heating rate is screwy!!! '
+                  write (unit=*,fmt='(123a)') ('=',k=1,123)
+                  write (unit=*,fmt='(a,1x,i4)')     ' - I       = ',i
+                  write (unit=*,fmt='(a,1x,i4)')     ' - J       = ',j
+                  write (unit=*,fmt='(a,1x,i4)')     ' - ICLD    = ',icld
+                  write (unit=*,fmt='(a,1x,es12.5)') ' - RSHORT  = ',rshort_cld
+                  write (unit=*,fmt='(a,1x,es12.5)') ' - RLONG   = ',rlong_cld
+                  write (unit=*,fmt='(a,1x,es12.5)') ' - RLONGUP = ',rlongup(i,j)
+                  write (unit=*,fmt='(a,1x,es12.5)') ' - COSZ    = ',cosz(i,j)
+                  write (unit=*,fmt='(a,1x,es12.5)') ' - ALBEDT  = ',albedt(i,j)
+                  write (unit=*,fmt='(a,1x,es12.5)') ' - RAIN    = ',rain(i,j)
+                  write (unit=*,fmt='(a,1x,es12.5)') ' - AREA    = ',area_cld
+                  write (unit=*,fmt='(123a)') ('-',k=1,123)
+                  write (unit=*,fmt='(10(a,1x))') '    K','       TEMPK','       PRESS'    &
+                                                         ,'         DN0','          RV'    &
+                                                         ,'         LWL','         IWL'    &
+                                                         ,'      LWLCLD','      IWLCLD'    &
+                                                         ,'       FTHRD'
+                  write (unit=*,fmt='(123a)') ('-',k=1,123)
+                  do k=1,m1
+                     press = ((pp(k,i,j) + pi0(k,i,j)) * cpi) ** cpor * p00 * 0.01
+                     tempk = (theta(k,i,j) * (pp(k,i,j) + pi0(k,i,j)) * cpi) - t00
+                     rvcgs = rv(k,i,j) * 1000.
+                     write (unit=*,fmt='(i5,1x,8(f12.5,1x),es12.5,1x)')                    &
+                                                                k, tempk     , press       &
+                                                                 , dn0(k,i,j), rvcgs       &
+                                                                 , lwl(k,i,j), iwl(k,i,j)  &
+                                                                 , lwl_cld(k), iwl_cld(k)  &
+                                                                 , fthrd_cld(k)
+                  end do
+                  write (unit=*,fmt='(123a)') ('=',k=1,123)
+                  write (unit=*,fmt='(a)')     ' '
+                  call abort_run('Radiative heating rate is weird...','radcomp_carma'      &
+                                ,'rad_carma.f90')
+               end if
+               !---------------------------------------------------------------------------!
+            end do cldloop
 
             !----- Copying the scratch array back to the CARMA structure. -----------------!
             call ci_1d_3d(m2,m3,nwave,aotl,carma(ngrid)%aot,i,j)
             
-            if (ilwrtyp == 4 .and. rlong(i,j) /= rlong(i,j)) then
+            if (ir_aerad .and. rlong(i,j) /= rlong(i,j)) then
                write (unit=*,fmt='(a)')       '==========================================='
                write (unit=*,fmt='(a,1x,i5)')     ' MYNUM   = ',mynum
                write (unit=*,fmt='(a,1x,i5)')     ' IA      = ',ia
@@ -112,8 +289,8 @@ module rad_carma
                write (unit=*,fmt='(a)')       '==========================================='
                call abort_run('Weird RLONG on CARMA...','radcomp_carma','rad_carma.f90')
             end if
-         end do
-      end do
+         end do iloop
+      end do jloop
 
       return
    end subroutine radcomp_carma
@@ -127,9 +304,9 @@ module rad_carma
 
    !=======================================================================================!
    !=======================================================================================!
-   subroutine radcarma(nzpmax,m1,solfac,theta,pi0,pp,rv,rain,lwl,iwl,dn0,rtp,fthrd         &
-                      ,rtgt,f13t,f23t,glat,glon,rshort,rlong,albedt,cosz,rlongup,mynum     &
-                      ,fmapt,pm,aotl,xland)
+   subroutine radcarma(nzpmax,m1,solfac,theta,pi0,pp,rv,rain,lwl,iwl,lwl_cld,iwl_cld,dn0   &
+                      ,rtp,fthrd,rtgt,f13t,f23t,glat,glon,rshort,rshort_top,rshortup_top   &
+                      ,rlong,rlongup_top,albedt,cosz,rlongup,mynum,fmapt,pm,aotl,xland)
       use catt_start  , only : catt       ! ! intent(in)
       use mem_grid    , only : centlon    & ! intent(in)
                              , dzm        & ! intent(in)
@@ -180,13 +357,18 @@ module rad_carma
       real, dimension(m1)      , intent(in)    :: rv
       real, dimension(m1)      , intent(in)    :: dn0
       real, dimension(m1)      , intent(in)    :: rtp
-      real, dimension(m1)      , intent(inout) :: lwl
-      real, dimension(m1)      , intent(inout) :: iwl
+      real, dimension(m1)      , intent(in)    :: lwl
+      real, dimension(m1)      , intent(in)    :: iwl
+      real, dimension(m1)      , intent(in)    :: lwl_cld
+      real, dimension(m1)      , intent(in)    :: iwl_cld
+      real                     , intent(in)    :: rlongup
       real, dimension(m1)      , intent(inout) :: fthrd
+      real, dimension(nwave)   , intent(inout) :: aotl
       real                     , intent(out)   :: rshort
+      real                     , intent(out)   :: rshort_top
+      real                     , intent(out)   :: rshortup_top
       real                     , intent(out)   :: rlong
-      real                     , intent(inout) :: rlongup
-      real, dimension(nwave)   , intent(out)   :: aotl
+      real                     , intent(out)   :: rlongup_top
       !----- Local variables. -------------------------------------------------------------!
       real, dimension(nzpmax)                  :: prd
       real, dimension(nzpmax+1)                :: temprd
@@ -228,23 +410,12 @@ module rad_carma
       !------------------------------------------------------------------------------------!
 
 
-      !------------------------------------------------------------------------------------!
-      !      These variables turn the LW and SW radiation on or off.  The default is to    !
-      ! call longwave if ILWRTYP is 4, and shortwave is turned off unless ISWRTYP is 4 and !
-      ! the sun is sufficiently above the horizon (no twilight).                           !
-      !------------------------------------------------------------------------------------!
-      ir_aerad  = ilwrtyp == 4
-      isl_aerad = iswrtyp == 4 .and. cosz > .03
-
       !----- Copying environment variables to some scratch arrays. ------------------------!
       nzz = m1 - 1
       do k = 1,m1
          pird      = (pp(k) + pi0(k)) / cp
          temprd(k) = theta(k) * pird ! air temperature (k)
          rvr(k)    = max(toodry,rv(k))
-
-         lwl(k)    = max(0.,lwl(k))
-         iwl(k)    = max(0.,iwl(k))
 
          !----- Convert the next 7 variables to cgs for the time being. ----------------!
          prd(k)  = pird ** cpor * p00 * 10.  ! pressure
@@ -274,8 +445,8 @@ module rad_carma
          p(k)    =    prd(k+1)
          t(k)    = temprd(k+1)
          rhoa(k) =   dn0r(k+1)
-         lwlr(k) = lwl(k+1)*dn0r(k+1) * wdns  ![kg/m3]
-         iwlr(k) = iwl(k+1)*dn0r(k+1) * wdns  ![kg/m3]
+         lwlr(k) = (lwl(k+1)+lwl_cld(k+1)) * dn0r(k+1) * wdns  ![kg/m3]
+         iwlr(k) = (iwl(k+1)+iwl_cld(k+1)) * dn0r(k+1) * wdns  ![kg/m3]
       end do
 
 
@@ -314,13 +485,14 @@ module rad_carma
 
       call prerad(m1,nzpmax,dztr,fmapt)
       call radtran(albedt,cosz,m1,aotl(11))
-      call radtran_to_rams(m1,fthrl,rlong,fthrs,rshort,aotl,mynum)
+      call radtran_to_rams(m1,fthrl,rlong,rlongup_top,fthrs,rshort,rshort_top,rshortup_top &
+                          ,aotl,mynum)
 
       !------------------------------------------------------------------------------------!
       !    Modify the downward surface shortwave flux by considering the slope of the      !
       ! topography.                                                                        !
       !------------------------------------------------------------------------------------!
-      if (itopo == 1) then
+      if (itopo == 1 .and. isl_aerad) then
          dzsdx = f13t * rtgt
          dzsdy = f23t * rtgt
   
@@ -348,19 +520,19 @@ module rad_carma
          !---------------------------------------------------------------------------------!
          if (abs(dzsdx) < 1e-16) dzsdx = 1.e-16
          if (abs(dzsdy) < 1e-16) dzsdy = 1.e-16
-         slazim     = halfpi - atan2(dzsdy,dzsdx)
-         slangl     = atan(sqrt(dzsdx*dzsdx+dzsdy*dzsdy))
-         cosi       = cos(slangl) * cosz + sin(slangl) * sinz * cos(sazmut-slazim)
-         rshort = rshort * cosi / cosz        
+         slazim       = halfpi - atan2(dzsdy,dzsdx)
+         slangl       = atan(sqrt(dzsdx*dzsdx+dzsdy*dzsdy))
+         cosi         = cos(slangl) * cosz + sin(slangl) * sinz * cos(sazmut-slazim)
+         rshort       = max(0.,rshort       * cosi / cosz)
       end if
     
       do k = 2,m1-1
-         fthrd(k) = fthrl(k) + fthrs(k)        
+         fthrd(k) = fthrl(k) + fthrs(k)
       end do
   
-      rshort  = rshort / (1. - albedt) 
-      fthrd(1) = fthrd(2)                  
-
+      rshort  = rshort / (1. - albedt)
+      fthrd(1) = fthrd(2)
+      
       return
    end subroutine radcarma
    !=======================================================================================!
@@ -2657,8 +2829,7 @@ module rad_carma
                              , fupbi           & ! intent()
                              , fdownbi         & ! intent()
                              , fnetbi          & ! intent()
-                             , firu            & ! intent()
-                             , xirup           ! ! intent()
+                             , firu            ! ! intent()
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       integer                    , intent(in) :: m1
@@ -2747,12 +2918,14 @@ module rad_carma
       if (ir_aerad) call newflux1(m1)
 
       !----- Calculate infrafred and solar heating rates (deg/day). -----------------------!
-      do j = 1,nvert
-         if (isl_aerad) term1 = fdegday/(dpg(j) * gcgs)
-         do l =  1,nsolp
-            if (isl_aerad) heats(j) = heats(j) + (fnet(l,j+1) - fnet(l,j)) * term1
+      if (isl_aerad) then
+         do j = 1,nvert
+            term1 = fdegday/(dpg(j) * gcgs)
+            do l =  1,nsolp
+               heats(j) = heats(j) + (fnet(l,j+1) - fnet(l,j)) * term1
+            end do
          end do
-      end do
+      end if
 
       do j = 1,nvert
          if (ir_aerad) term1 = fdegday / (dpg(j) * gcgs)
@@ -2772,17 +2945,39 @@ module rad_carma
          heati_aerad(j) =  heati(j) / day_sec
       end do
 
-      solnet  = 0.0
+      if (any(abs(heats) > 200.)) then
+         write (unit=*,fmt='(77a)') ('-',j=1,77)
+         write (unit=*,fmt='(7(a,1x))') '    J','    L','       HEATS','        FNET'      &
+                                                       ,'         DPG','     FDEGDAY'      &
+                                                       ,'       TERM1'
+         write (unit=*,fmt='(77a)') ('-',j=1,77)
+         do l = 1, nsolp
+            do j = 1, nvert
+               term1 = fdegday/(dpg(j) * gcgs)
+               write (unit=*,fmt='(2(i5,1x),5(es12.5,1x))') j,l,heats(j),fnet(l,j),dpg(j)  &
+                                                               ,fdegday,term1
+            end do
+         end do
+         write (unit=*,fmt='(77a)') ('-',j=1,77)
+      end if
+
+      solnet      = 0.0
+      soldowntoa  = 0.0
+      soluptoa    = 0.0
       if (isl_aerad) then
          do l = 1,nsolp
-            solnet = solnet - fnet(l,nlayer)
+            solnet     = solnet     - fnet(l,nlayer)
+            soldowntoa = soldowntoa + direc(l,1)
+            soluptoa   = soluptoa   - fnet(l,1) - direc(l,1)
          end do
       end if
     
       xirdown = 0.0
+      xirup   = 0.0
       if (ir_aerad) then
          do l = nsolp+1,ntotal
             xirdown = xirdown + direc(l,nlayer)
+            xirup   = xirup   + directu(l,1)
          end do
       end if
 
@@ -4509,8 +4704,8 @@ module rad_carma
 
    !=======================================================================================!
    !=======================================================================================!
-   subroutine radtran_to_rams(m1,fthrl,rlong,fthrs,rshort,aotr,mynum)
-  
+   subroutine radtran_to_rams(m1,fthrl,rlong,rlongup_top,fthrs,rshort,rshort_top           &
+                             ,rshortup_top,aotr,mynum)
       use mem_grid   , only : nzpmax  ! ! intent(in)
       use mem_globrad, only : nwave   & ! intent(in)
                             , nsolp   & ! intent(in)
@@ -4524,8 +4719,11 @@ module rad_carma
   
       !----- Arguments. -------------------------------------------------------------------!
       integer                   , intent(in)    :: m1,mynum
-      real                      , intent(out)   :: rshort
       real                      , intent(out)   :: rlong
+      real                      , intent(out)   :: rlongup_top
+      real                      , intent(out)   :: rshort
+      real                      , intent(out)   :: rshort_top
+      real                      , intent(out)   :: rshortup_top
       real   , dimension(nwave) , intent(out)   :: aotr
       real   , dimension(nzpmax), intent(inout) :: fthrl
       real   , dimension(nzpmax), intent(inout) :: fthrs
@@ -4555,8 +4753,12 @@ module rad_carma
          fthrs(k) = heats_aerad(kr)
       end do
 
-      rshort = solnet  ! Total short wave absorbed by the surface.
-      rlong  = xirdown ! Surface long wave radiation.
+
+      rshort       = solnet      ! Total short wave absorbed by the surface.
+      rshort_top   = soldowntoa  ! Total incoming short wave at the top layer.
+      rshortup_top = soluptoa    ! Total outgoing short wave at the top layer.
+      rlong        = xirdown ! Surface long wave radiation.
+      rlongup_top  = xirup   ! Emerging long wave radiation at the top layer.
       if (rlong /= rlong .and. ilwrtyp == 4) then 
          write(unit=*,fmt='(a)') '-------------------------------------------------------'
          call abort_run('Weird RLONG... ','radtrans_to_rams','rad_carma.f90')

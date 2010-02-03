@@ -100,8 +100,8 @@ subroutine old_grell_cupar_driver(icld)
      call azero(mxp*myp,cuparm_g(ngrid)%conprr(:,:,icld))
 
      call cuparth(mynum,mgmxp,mgmyp,mgmzp,mzp,mxp,myp,ia,iz,ja,jz,i0,j0,maxiens         &
-                 ,icld,iupmethod,depth_min(icld),cap_maxs(icld),radius(icld)            &
-                 ,zkbmax(icld),zcutdown(icld),z_detr(icld),DTLT,time                    &
+                 ,icld,iupmethod,depth_min(icld),cap_maxs,radius(icld)                  &
+                 ,zkbmax,zcutdown,z_detr,DTLT,time                                      &
                  ,basic_g(ngrid)%UP              , basic_g(ngrid)%VP                    &
                  ,basic_g(ngrid)%WP              , sc1_grell_g(ngrid)%thetasta          &
                  ,basic_g(ngrid)%PP              , basic_g(ngrid)%PI0                   &
@@ -124,9 +124,9 @@ subroutine old_grell_cupar_driver(icld)
                  ,sc1_grell_g(ngrid)%prup5d      , sc1_grell_g(ngrid)%clwup5d           &
                  ,sc1_grell_g(ngrid)%tup5d                                              &
                  ,cuparm_g(ngrid)%upmf(:,:,icld)   , cuparm_g(ngrid)%dnmf(:,:,icld)     &
-                 ,cuparm_g(ngrid)%xierr(:,:,icld)  , cuparm_g(ngrid)%zktop(:,:,icld)    &
-                 ,cuparm_g(ngrid)%zkbcon(:,:,icld) , cuparm_g(ngrid)%zk22(:,:,icld)     &
-                 ,cuparm_g(ngrid)%zjmin(:,:,icld)  , cuparm_g(ngrid)%zkdt(:,:,icld)     &
+                 ,cuparm_g(ngrid)%xierr(:,:,icld)  , cuparm_g(ngrid)%zklnb(:,:,icld)    &
+                 ,cuparm_g(ngrid)%zklfc(:,:,icld)  , cuparm_g(ngrid)%zklou(:,:,icld)    &
+                 ,cuparm_g(ngrid)%zklod(:,:,icld)  , cuparm_g(ngrid)%zkdet(:,:,icld)    &
                  ,cuparm_g(ngrid)%xiact_p(:,:,icld), cuparm_g(ngrid)%xiact_c(:,:,icld)  )
 ! [MLO ------------- Stilt - RAMS coupling  ------------------
      if (imassflx == 1) then
@@ -159,8 +159,8 @@ subroutine old_grell_cupar_driver(icld)
      if (co2_on) call azero(mxp*myp*mzp,cuparm_g(ngrid)%co2src(:,:,:,icld))
 
      call cuparth_shal(mynum,mgmxp,mgmyp,mgmzp,mzp,mxp,myp,ia,iz,ja,jz,i0,j0,maxiens,icld &
-                      ,iupmethod,depth_min(icld),cap_maxs(icld),radius(icld),zkbmax(icld) &
-                      ,zcutdown(icld),z_detr(icld),dtlt,time                              &
+                      ,iupmethod,depth_min(icld),cap_maxs,radius(icld),zkbmax,zcutdown    &
+                      ,z_detr,dtlt,time                                                   &
                       ,basic_g(ngrid)%up            ,basic_g(ngrid)%vp                    &
                       ,basic_g(ngrid)%wp            ,basic_g(ngrid)%theta                 &
                       ,basic_g(ngrid)%pp            ,basic_g(ngrid)%pi0                   &
@@ -169,8 +169,8 @@ subroutine old_grell_cupar_driver(icld)
                       ,micro_g(ngrid)%rcp           ,grid_g(ngrid)%topt                   &
                       ,grid_g(ngrid)%rtgt           ,tend%tht                             &
                       ,tend%rtt                     ,tend%pt                              &
-                      ,cuparm_g(ngrid)%thsrc(:,:,:,icld)                               &
-                      ,cuparm_g(ngrid)%rtsrc(:,:,:,icld)                               &
+                      ,cuparm_g(ngrid)%thsrc(:,:,:,icld)                                  &
+                      ,cuparm_g(ngrid)%rtsrc(:,:,:,icld)                                  &
                       ,sc1_grell_g(ngrid)%ierr4d    ,sc1_grell_g(ngrid)%jmin4d            &
                       ,sc1_grell_g(ngrid)%kdet4d    ,sc1_grell_g(ngrid)%k224d             &
                       ,sc1_grell_g(ngrid)%kbcon4d   ,sc1_grell_g(ngrid)%ktop4d            &
@@ -183,8 +183,8 @@ subroutine old_grell_cupar_driver(icld)
                       ,sc1_grell_g(ngrid)%zdn5d     ,sc1_grell_g(ngrid)%prup5d            &
                       ,sc1_grell_g(ngrid)%clwup5d   ,sc1_grell_g(ngrid)%tup5d             &
                       ,cuparm_g(ngrid)%upmf(:,:,icld)  ,cuparm_g(ngrid)%xierr(:,:,icld)   &
-                      ,cuparm_g(ngrid)%zktop(:,:,icld) ,cuparm_g(ngrid)%zkbcon(:,:,icld)  &
-                      ,cuparm_g(ngrid)%zk22(:,:,icld)  ,cuparm_g(ngrid)%xierr(:,:,1)       &
+                      ,cuparm_g(ngrid)%zklnb(:,:,icld) ,cuparm_g(ngrid)%zklfc(:,:,icld)  &
+                      ,cuparm_g(ngrid)%zklou(:,:,icld)  ,cuparm_g(ngrid)%xierr(:,:,1)       &
                       )
 ! [MLO ------------- Stilt - RAMS coupling  ------------------
      if (imassflx == 1) then

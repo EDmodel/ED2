@@ -22,10 +22,14 @@ subroutine prep_advflx_to_mass(mzp,mxp,myp,ia,iz,ja,jz,ng)
 
    use mem_grid   ,  only: dtlt
    use mem_scratch,  only: scratch
-   use mem_mass   ,  only: mass_g,frqmassave
+   use mem_mass   ,  only: mass_g                 & ! structure
+                         , frqmassave             & ! intent(in)
+                         , etime_adve             & ! intent(inout)
+                         , zero_average_mass_adve ! ! subroutine
 
    implicit none
 
+   !----- Arguments. ----------------------------------------------------------------------!
    integer, intent(in) :: mzp
    integer, intent(in) :: mxp
    integer, intent(in) :: myp
@@ -34,12 +38,28 @@ subroutine prep_advflx_to_mass(mzp,mxp,myp,ia,iz,ja,jz,ng)
    integer, intent(in) :: ja
    integer, intent(in) :: jz
    integer, intent(in) :: ng
-
+   !----- Local variables. ----------------------------------------------------------------!
    real                :: dtlti
    real                :: frqmassi
+   !---------------------------------------------------------------------------------------!
 
+
+   !----- Find the inverse of the time step and the average time. -------------------------!
    dtlti    = 1./dtlt
    frqmassi = 1./frqmassave
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Update the step counter for advective fluxes.  If this exceeds the maximum number !
+   ! of steps, it means it is time to reset it and start integrating again.                ! 
+   !---------------------------------------------------------------------------------------!
+   etime_adve(ng) = etime_adve(ng) + dtlt
+   if (etime_adve(ng) > frqmassave + 0.1 * dtlt) then
+      etime_adve(ng) = dtlt
+      call zero_average_mass_adve(mass_g(ng))
+   end if
+   !---------------------------------------------------------------------------------------!
 
    call compute_mass_flux(mzp,mxp,myp,ia,iz,ja,jz,dtlti,frqmassi                           &
            ,scratch%vt3da            , scratch%vt3db           , scratch%vt3dc             &
@@ -72,14 +92,14 @@ subroutine compute_mass_flux(mzp,mxp,myp,ia,iz,ja,jz,dtlti,frqmassi,vt3da,vt3db,
    real   , dimension(mzp,mxp,myp), intent(in)    :: vt3da,vt3db,vt3dc
    real   , dimension(mzp,mxp,myp), intent(out)   :: afxu,afxv,afxw
    real   , dimension(mzp,mxp,myp), intent(inout) :: afxub,afxvb,afxwb
+   integer                                        :: i,j,k
 
-   integer                                         :: i,j,k
    do k=1,mzp
       do i=ia,iz
          do j=ja,jz
-            afxu(k,i,j)  =                vt3da(k,i,j) *dtlti
-            afxv(k,i,j)  =                vt3db(k,i,j) *dtlti
-            afxw(k,i,j)  =                vt3dc(k,i,j) *dtlti
+            afxu(k,i,j)  =                vt3da(k,i,j) * dtlti
+            afxv(k,i,j)  =                vt3db(k,i,j) * dtlti
+            afxw(k,i,j)  =                vt3dc(k,i,j) * dtlti
             afxub(k,i,j) = afxub(k,i,j) + vt3da(k,i,j) * frqmassi
             afxvb(k,i,j) = afxvb(k,i,j) + vt3db(k,i,j) * frqmassi
             afxwb(k,i,j) = afxwb(k,i,j) + vt3dc(k,i,j) * frqmassi
@@ -332,8 +352,11 @@ end subroutine prep_convflx_to_mass
 !==========================================================================================!
 !==========================================================================================!
 subroutine prepare_timeavg_driver(mzp,mxp,myp,ia,iz,ja,jz,dtlt,ifm,idiffkk)
-   use mem_mass , only : imassflx & ! intent(in)
-                       , mass_g   ! ! intent(inout)
+   use mem_mass , only : imassflx               & ! intent(in)    
+                       , mass_g                 & ! intent(inout) 
+                       , etime_turb             & ! intent(inout)
+                       , frqmassave             & ! intent(in)
+                       , zero_average_mass_turb ! ! subroutine
    use mem_turb , only : turb_g   ! ! intent(in)
    implicit none
    !------ Arguments ----------------------------------------------------------------------!
@@ -347,7 +370,19 @@ subroutine prepare_timeavg_driver(mzp,mxp,myp,ia,iz,ja,jz,dtlt,ifm,idiffkk)
    !---------------------------------------------------------------------------------------!
    if (imassflx /= 1 .or. idiffkk == 2 .or. idiffkk == 3) return
 
-   !----- Checking which closure ----------------------------------------------------------!
+
+   !---------------------------------------------------------------------------------------!
+   !     Update the step counter for turbulent variables.  If this exceeds the maximum     !
+   ! number of steps, it means it is time to reset it and start integrating again.         ! 
+   !---------------------------------------------------------------------------------------!
+   etime_turb(ifm) = etime_turb(ifm) + dtlt
+   if (etime_turb(ifm) > frqmassave + 0.1 * dtlt) then
+      etime_turb(ifm) = dtlt
+      call zero_average_mass_turb(mass_g(ifm))
+   end if
+   !---------------------------------------------------------------------------------------!
+
+   !----- Check which closure is in use. --------------------------------------------------!
    select case (idiffkk)
    case (1) !----- Helfand-Labraga, only TKE and sig-W are available. ---------------------!
       call prepare_timeavg_to_mass(mzp,mxp,myp,ia,iz,ja,jz,dtlt                            &

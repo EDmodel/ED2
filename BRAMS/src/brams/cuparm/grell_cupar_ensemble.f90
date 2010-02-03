@@ -86,7 +86,7 @@ end subroutine grell_dellabot_ensemble
 ! and B.16/17 (cloud top) from Grell (1993) paper and is fine for any thermodynamic        !
 ! variable, here represented by "this".                                                    !
 !------------------------------------------------------------------------------------------!
-subroutine grell_dellas_ensemble(mgmzp,checkmass,masstol,edt,kdet,k22,kbcon,jmin,ktop,this &
+subroutine grell_dellas_ensemble(mgmzp,checkmass,masstol,edt,kdet,klou,klfc,klod,ktop,this &
                                 ,p_cup,this_cup,mentrd_rate,mentru_rate,cdd,cdu,dzd_cld    &
                                 ,etad_cld,etau_cld,thisd_cld,thisu_cld,dellathis)
    use rconstants, only : grav
@@ -98,10 +98,10 @@ subroutine grell_dellas_ensemble(mgmzp,checkmass,masstol,edt,kdet,k22,kbcon,jmin
    real                  , intent(in)    :: masstol     ! Mass tolerance.
    real                  , intent(in)    :: edt         ! Efficiency, epsilon
    integer               , intent(in)    :: kdet        ! Detrainment level
-   integer               , intent(in)    :: k22         ! Updraft origin level
-   integer               , intent(in)    :: kbcon       ! Level of free convection
-   integer               , intent(in)    :: jmin        ! Downdraft origin level
-   integer               , intent(in)    :: ktop        ! Cloud top level
+   integer               , intent(in)    :: klou        ! Level of origin of updraft
+   integer               , intent(in)    :: klfc        ! Level of free convection
+   integer               , intent(in)    :: klod        ! Level of origin of downdraft
+   integer               , intent(in)    :: ktop        ! Cloud top
    
    real, dimension(mgmzp), intent(in)    :: this        ! Thermo variable @ model levels
    real, dimension(mgmzp), intent(in)    :: p_cup       ! Pressure at cloud levels [Pa]
@@ -142,21 +142,21 @@ subroutine grell_dellas_ensemble(mgmzp,checkmass,masstol,edt,kdet,k22,kbcon,jmin
       ! Computing updraft terms, depending on where I am.                                  !
       !------------------------------------------------------------------------------------!
       !----- Below the level of free convection, no entrainment or detrainment ------------!
-      if (k < kbcon .and. k /= k22-1) then 
+      if (k < klfc .and. k /= klou-1) then 
          entup = 0.
          detup = 0.
 
       !------------------------------------------------------------------------------------!
       !    Where the updrafts begin, entrainment only. You may ask yourself why only at    !
-      ! k22-1, and the levels between k22 and kbcon-1 are all zero? This is because the    !
+      ! klou-1, and the levels between klou and klfc-1 are all zero? This is because the   !
       ! net value is zero, since the rates cancel out in this layer.                       !
       !------------------------------------------------------------------------------------!
-      elseif (k == k22-1) then
-         entup = etau_cld(k22)
+      elseif (k == klou-1) then
+         entup = etau_cld(klou)
          detup = 0.
 
       !----- In-cloud, both entrainment and detrainment -----------------------------------!
-      elseif (k >= kbcon .and. k < ktop) then
+      elseif (k >= klfc .and. k < ktop) then
          entup = mentru_rate(k) * dzd_cld(k) * etau_cld(k)
          detup =       cdu(k+1) * dzd_cld(k) * etau_cld(k)
       
@@ -171,7 +171,7 @@ subroutine grell_dellas_ensemble(mgmzp,checkmass,masstol,edt,kdet,k22,kbcon,jmin
       
       !------------------------------------------------------------------------------------!
       !    Compute downdraft terms, depending on where I am. Note that it's safe to use    !
-      ! this for shallow clouds, because it kdet and jmin will be both zero, so it will    !
+      ! this for shallow clouds, because it kdet and klod will be both zero, so it will    !
       ! always fall in the "nothing happens" case.                                         !
       !------------------------------------------------------------------------------------!
       !----- Below detrainment level, both entrainment and detrainment happen -------------!
@@ -179,11 +179,11 @@ subroutine grell_dellas_ensemble(mgmzp,checkmass,masstol,edt,kdet,k22,kbcon,jmin
          detdo  = edt *         cdd(k) * dzd_cld(k) * etad_cld(k+1)
          entdo  = edt * mentrd_rate(k) * dzd_cld(k) * etad_cld(k+1)
       !----- Within the downdraft layer, but above kdet, only entrainment happens ---------!
-      elseif (k > kdet .and. k < jmin) then
+      elseif (k > kdet .and. k < klod) then
          detdo  = 0.
          entdo  = edt * mentrd_rate(k) * dzd_cld(k) * etad_cld(k+1)
-      !----- Jmin requires special assumption otherwise the entrainment would be zero -----!
-      elseif (k == jmin) then 
+      !----- klod requires special assumption otherwise the entrainment would be zero -----!
+      elseif (k == klod) then 
          detdo  = 0.
          entdo  = edt * etad_cld(k)
       !----- Outside the downdraft layer, nothing happens ---------------------------------!
@@ -203,8 +203,8 @@ subroutine grell_dellas_ensemble(mgmzp,checkmass,masstol,edt,kdet,k22,kbcon,jmin
          if (totmass > masstol) then
             write(unit=*,fmt='(a)')                 '-------- Mass check failed!!! --------'
             write(unit=*,fmt='(2(a,1x,i3,1x))')     ' k      =',     k,'kdet   =',kdet
-            write(unit=*,fmt='(2(a,1x,i3,1x))')     ' k22    =',   k22,'kbcon  =',kbcon
-            write(unit=*,fmt='(2(a,1x,i3,1x))')     ' jmin   =',  jmin,'ktop   =',ktop
+            write(unit=*,fmt='(2(a,1x,i3,1x))')     ' klou   =',  klou,'klfc   =',klfc
+            write(unit=*,fmt='(2(a,1x,i3,1x))')     ' klod   =',  klod,'ktop   =',ktop
             write(unit=*,fmt='(2(a,1x,es10.3,1x))') ' subin  =', subin,'subout =',subout
             write(unit=*,fmt='(2(a,1x,es10.3,1x))') ' detup  =', detup,'entup  =',entup
             write(unit=*,fmt='(2(a,1x,es10.3,1x))') ' entdo  =', entdo,'detdo  =',detdo
@@ -263,15 +263,15 @@ end subroutine grell_dellas_ensemble
 !      and evolution of the 1977 Johnstown flood. Part I: Model description and            !
 !      verification. J. Atm. Sci., vol. 43(18). 1913-1943. (zf or ZF86).                   !
 !------------------------------------------------------------------------------------------!
-subroutine grell_efficiency_ensemble(mkx,mgmzp,maxens_eff,k22,kbcon,ktop,edtmin,edtmax     &
+subroutine grell_efficiency_ensemble(mkx,mgmzp,maxens_eff,klou,klfc,ktop,edtmin,edtmax     &
                                     ,pwav,pwev,z_cup,uwind,vwind,dzd_cld,edt_eff)
 
    implicit none
 
    integer                 , intent(in)  :: mkx, mgmzp  ! Grid dimesnsions
    integer                 , intent(in)  :: maxens_eff  ! # of prec. efficiency members
-   integer                 , intent(in)  :: k22         ! Updraft origin
-   integer                 , intent(in)  :: kbcon       ! Level of free convection
+   integer                 , intent(in)  :: klou        ! Updraft origin
+   integer                 , intent(in)  :: klfc        ! Level of free convection
    integer                 , intent(in)  :: ktop        ! Cloud top
 
 
@@ -322,14 +322,14 @@ subroutine grell_efficiency_ensemble(mkx,mgmzp,maxens_eff,k22,kbcon,ktop,edtmin,
    !    § means integral; ß means sum; _ means from; ^ means to or exponent                !
    !    Ð?k means ?(k)-?(k-1); U=[u²+v²]^½                                                 !
    !                                                                                       !
-   !       Vsm = 1/(ztop-z22) × §_z22^ztop [ dU/dz dz]                                     !
+   !       Vsm = 1/(ztop-zlou) × §_zlou^ztop [ dU/dz dz]                                   !
    !    This is approximatedly                                                             !
    !                                                                                       !
-   !       Vsm = 1/(ztop-z22) × ß_(k=k22)^ktop [(ÐUk / Ðzk) Ðzk ]                          !
+   !       Vsm = 1/(ztop-zlou) × ß_(k=klou)^ktop [(ÐUk / Ðzk) Ðzk ]                        !
    !    Since Ðzk is never zero, and the intermediate points cancel out, we can define     !
    ! the mean wind shear simply as:                                                        !
    !                                                                                       !
-   !       Vsm = [U(ktop)-U(k22)]/(ztop-z22)                                               !
+   !       Vsm = [U(ktop)-U(klou)]/(ztop-zlou)                                             !
    !                                                                                       !
    !    Since the wind is not at the cloud level, it needs to be interpolated. Here we'll  !
    ! simply take the average between k and k+1.                                            !
@@ -337,20 +337,20 @@ subroutine grell_efficiency_ensemble(mkx,mgmzp,maxens_eff,k22,kbcon,ktop,edtmin,
 
 
    !vshear = 0.
-   !do k=k22,ktop
+   !do k=klou,ktop
    !   vshear = vshear                                                                      &
    !          + abs(sqrt(uwind(k+1)*uwind(k+1)+vwind(k+1)*vwind(k+1))                       &
    !               -sqrt(uwind(k  )*uwind(k  )+vwind(k  )*vwind(k  )))
    !end do
-   !vshear  = 1000.*vshear/(z_cup(ktop)-z_cup(k22))
+   !vshear  = 1000.*vshear/(z_cup(ktop)-z_cup(klou))
 
-   topwind = 0.5*( sqrt(uwind(ktop    )**2 + vwind(ktop    )**2)                           &
-                 + sqrt(uwind(ktop + 1)**2 + vwind(ktop + 1)**2))
-   botwind = 0.5*( sqrt(uwind(k22     )**2 + vwind(k22     )**2)                           &
-                 + sqrt(uwind(k22  + 1)**2 + vwind(k22  + 1)**2))
+   topwind = 0.5*( sqrt(uwind(ktop     )**2 + vwind(ktop     )**2)                         &
+                 + sqrt(uwind(ktop  + 1)**2 + vwind(ktop  + 1)**2))
+   botwind = 0.5*( sqrt(uwind(klou     )**2 + vwind(klou     )**2)                         &
+                 + sqrt(uwind(klou  + 1)**2 + vwind(klou  + 1)**2))
 
    !----- Fritsch-Chappell used wind shear in units of 1/(1000*s) -------------------------!
-   vshear = 1000.*abs(topwind-botwind)/(z_cup(ktop)-z_cup(k22))
+   vshear = 1000.*abs(topwind-botwind)/(z_cup(ktop)-z_cup(klou))
    
    !---------------------------------------------------------------------------------------!
    ! Computing the precipitation efficiency based on FC80 equation (58):                   !
@@ -366,7 +366,7 @@ subroutine grell_efficiency_ensemble(mkx,mgmzp,maxens_eff,k22,kbcon,ktop,edtmin,
    !    Alternative precipitation efficiency, based on ZF86 equations 12 and 13.           !
    !---------------------------------------------------------------------------------------!
    !----- Converting the height at LFC from m to thousands of feet (kft) ------------------!
-   zkbc_kft = z_cup(kbcon) * m2thfeet
+   zkbc_kft = z_cup(klfc) * m2thfeet
    !----- Using equation (13) to find Er --------------------------------------------------!
    if (zkbc_kft <= 3.) then !----- 5th order polynomial screws here, bound it. ------------!
      er_zf = 0.02
@@ -386,10 +386,10 @@ subroutine grell_efficiency_ensemble(mkx,mgmzp,maxens_eff,k22,kbcon,ktop,edtmin,
    !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
    !write (unit=57,fmt='(a)') '-------------------------------------------------------------'
    !write (unit=57,fmt='(5(a9,1x),a12,2(1x,a8))')                                           &
-   !     '  botwind','  topwind','   z(k22)','z(kbcon)','  z(ktop)','  wind_shear'          &
+   !     '  botwind','  topwind','   z(klou)','z(klfc)','  z(ktop)','  wind_shear'          &
    !     ,'  pef_fc','  pef_zf'
    !write (unit=57,fmt='(5(f9.3,1x),es12.5,2(1x,f8.4))')                                    &
-   !        botwind ,topwind ,z_cup(k22),z_cup(kbcon),z_cup(ktop),vshear,pef_fc ,pef_zf
+   !        botwind ,topwind ,z_cup(klou),z_cup(klfc),z_cup(ktop),vshear,pef_fc ,pef_zf
    !write (unit=57,fmt='(a)') ' '
    !write (unit=57,fmt='(2(a,1x,es11.4,1x))') 'pwav=',pwav,'pwev=',pwev
    !write (unit=57,fmt='(a)') '-------------------------------------------------------------'

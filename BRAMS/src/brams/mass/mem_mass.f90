@@ -5,29 +5,48 @@
 !                    Dispersion Models (currently it is fitted for STILT).                 !
 !------------------------------------------------------------------------------------------!
 module mem_mass
- 
+   use grid_dims, only : maxgrds
    type mass_vars
-      real, pointer, dimension(:,:,:) :: & ! 3-D variables (nzp,nxp,nyp)
-                              !Full Exner function equation variables
-                               thvlast,lnthetav,lnthvadv,lnthvtend  &
-                              !Advective fluxes
-                              ,afxu, afxv, afxw               &
-                              !Averaged variables:
-                              !   Mixing layer related variables
-                              ,ltscaleb, sigwb,tkepb          &
-                              !   Advective fluxes
-                              , afxub, afxvb, afxwb
-
-     real, pointer, dimension(:,:,:,:) :: & 
-                              !   Convective fluxes - (nzp,nxp,nyp,nclouds)
-                              cfxup, cfxdn, dfxup, efxup &
-                              ,dfxdn, efxdn
-
+      !------------------------------------------------------------------------------------!
+      !   3-D variables (nzp,nxp,nyp)                                                      !
+      !------------------------------------------------------------------------------------!
+      !----- Full Exner function equation variables. --------------------------------------!
+      real, pointer, dimension(:,:,:)   :: thvlast
+      real, pointer, dimension(:,:,:)   :: lnthetav
+      real, pointer, dimension(:,:,:)   :: lnthvadv
+      real, pointer, dimension(:,:,:)   :: lnthvtend
+      !----- Advective fluxes. ------------------------------------------------------------!
+      real, pointer, dimension(:,:,:)   :: afxu
+      real, pointer, dimension(:,:,:)   :: afxv
+      real, pointer, dimension(:,:,:)   :: afxw
+      !----- Averaged variables: Turbulence-related variables. ----------------------------!
+      real, pointer, dimension(:,:,:)   :: ltscaleb
+      real, pointer, dimension(:,:,:)   :: sigwb
+      real, pointer, dimension(:,:,:)   :: tkepb
+      !----- Averaged variables: Advective fluxes. ----------------------------------------!
+      real, pointer, dimension(:,:,:)   :: afxub
+      real, pointer, dimension(:,:,:)   :: afxvb
+      real, pointer, dimension(:,:,:)   :: afxwb
+      !------------------------------------------------------------------------------------!
+      !   4-D variables (nzp,nxp,nyp,nclouds)                                              !
+      !------------------------------------------------------------------------------------!
+      !----- Convective fluxes. -----------------------------------------------------------!
+      real, pointer, dimension(:,:,:,:) :: cfxup
+      real, pointer, dimension(:,:,:,:) :: cfxdn
+      real, pointer, dimension(:,:,:,:) :: dfxup
+      real, pointer, dimension(:,:,:,:) :: efxup
+      real, pointer, dimension(:,:,:,:) :: dfxdn
+      real, pointer, dimension(:,:,:,:) :: efxdn
+      !------------------------------------------------------------------------------------!
    end type
 
    type (mass_vars), allocatable :: mass_g(:), massm_g(:)
    integer                       :: iexev,imassflx
-   real                          :: frqmassave 
+   real                          :: frqmassave
+
+   !----- These variables control the time when the averages should be reset. -------------!
+   real   , dimension(maxgrds)   :: etime_adve
+   real   , dimension(maxgrds)   :: etime_turb
 
    contains
 !==========================================================================================!
@@ -44,24 +63,26 @@ module mem_mass
 ! lite analysis and the variables are in the lite analysis, then the mass flux averaging   !
 ! is done over the lite analysis. Otherwise it will be done at the full analysis           !
 !------------------------------------------------------------------------------------------!
-   subroutine define_frqmassave(frqlite,frqanl,ngrids,idiffk,maxlite,nlite_vars,lite_vars)
+   subroutine define_frqmassave(ngrids,frqlite,frqanl,idiffk,maxlite,nlite_vars    &
+                               ,lite_vars,mynum)
       implicit none
+      integer, intent(in)                               :: ngrids     ! # of grids
       real   , intent(in)                               :: frqlite    ! Lite analysis freq.
       real   , intent(in)                               :: frqanl     ! Full analysis freq.
-      integer, intent(in)                               :: ngrids     ! # of grids
       integer, dimension(ngrids)           , intent(in) :: idiffk     ! Turbulence closure
       integer, intent(in)                               :: maxlite    ! Maximum # of lite
       integer, intent(in)                               :: nlite_vars ! Actual  # of lite
       character(len=32), dimension(maxlite), intent(in) :: lite_vars  ! Lite variables
+      integer, intent(in)                               :: mynum      ! Node number
 
-      integer                               :: nlite      ! Maximum loop
-      integer                               :: l          ! Counter
-      integer                               :: listed     ! Number of listed
-      integer                               :: benchmark  ! Number of variables needed
+      integer                                           :: nlite      ! Maximum loop
+      integer                                           :: l          ! Counter
+      integer                                           :: ng         ! Counter
+      integer                                           :: listed     ! Number of listed
+      integer                                           :: benchmark  ! # of variables
       
       if (frqlite == 0.) then
          frqmassave=frqanl
-         return
       else
          !---------------------------------------------------------------------------------!
          !    frqlite will be used for average only if frqlite is set differently than     !
@@ -105,7 +126,12 @@ module mem_mass
          end if
       end if
       
-      
+      !----- Initialise the variables which control the time averages. --------------------!
+      etime_adve  (:) = 0.
+      etime_turb  (:) = 0.
+      !------------------------------------------------------------------------------------!
+
+      return
    end subroutine define_frqmassave
 !==========================================================================================!
 !==========================================================================================!
@@ -201,19 +227,39 @@ module mem_mass
 !    This subroutine flushes the average variables to zero whenever necessary. This is     !
 ! done at the output subroutine, right after the analysis (lite and full) are saved.       !
 !------------------------------------------------------------------------------------------!
-   subroutine zero_average_mass(mass)
+   subroutine zero_average_mass_adve(mass)
+      implicit none
+      type (mass_vars)   :: mass
+
+      if (associated(mass%afxub   ))  mass%afxub   = 0.0
+      if (associated(mass%afxvb   ))  mass%afxvb   = 0.0
+      if (associated(mass%afxwb   ))  mass%afxwb   = 0.0
+
+      return
+   end subroutine zero_average_mass_adve
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!    This subroutine flushes the average variables to zero whenever necessary. This is     !
+! done at the output subroutine, right after the analysis (lite and full) are saved.       !
+!------------------------------------------------------------------------------------------!
+   subroutine zero_average_mass_turb(mass)
       implicit none
       type (mass_vars)   :: mass
 
       if (associated(mass%ltscaleb))  mass%ltscaleb= 0.0
       if (associated(mass%sigwb   ))  mass%sigwb   = 0.0
       if (associated(mass%tkepb   ))  mass%tkepb   = 0.0
-      if (associated(mass%afxub   ))  mass%afxub   = 0.0
-      if (associated(mass%afxvb   ))  mass%afxvb   = 0.0
-      if (associated(mass%afxwb   ))  mass%afxwb   = 0.0
 
       return
-   end subroutine zero_average_mass
+   end subroutine zero_average_mass_turb
 !==========================================================================================!
 !==========================================================================================!
 

@@ -219,8 +219,7 @@ subroutine normalize_averaged_vars(cgrid,frqsum,dtlsm)
                !cpatch%root_respiration = cpatch%root_respiration * dtlsm
 
                ! For IO - they should be replaced by these guys
-               ! units: [umol/m2/s * steps]    -> [umol/m2/s], or
-               !        [umol/plant/s * steps] -> [umol/plant/s]
+               ! units: [umol/m2/s * steps]    -> [umol/m2/s]
                cpatch%mean_leaf_resp(ico)    = cpatch%mean_leaf_resp(ico)    * tfact
                cpatch%mean_root_resp(ico)    = cpatch%mean_root_resp(ico)    * tfact
                cpatch%mean_gpp(ico)          = cpatch%mean_gpp(ico)          * tfact
@@ -491,7 +490,8 @@ subroutine integrate_ed_daily_output_state(cgrid)
       siteloop: do isi=1, cpoly%nsites
       
          !----- Including this time step if it is day time. -------------------------------!
-         if (cpoly%met(isi)%rshort > 0.5) then
+!         if (cpoly%met(isi)%rshort > 0.5) then
+         if (cgrid%cosz(ipy) > 0.03) then
             cpoly%daylight(isi) = cpoly%daylight(isi) + dtlsm
          end if
 
@@ -551,7 +551,8 @@ subroutine integrate_ed_daily_output_state(cgrid)
                                                 + cpatch%par_v_diffuse (ico)
 
                   !----- Integrate light level only if it is day time. --------------------!
-                  if (cpoly%met(isi)%rshort > 0.5) then
+                  !if (cpoly%met(isi)%rshort > 0.5) then
+                  if (cgrid%cosz(ipy) > 0.03) then
                      cpatch%dmean_light_level(ico)  = cpatch%dmean_light_level(ico)        &
                                                     + cpatch%light_level(ico)
                      cpatch%dmean_light_level_beam(ico) =                                  &
@@ -574,7 +575,8 @@ subroutine integrate_ed_daily_output_state(cgrid)
 
                end if
             end do
-            if (cpoly%met(isi)%rshort > 0.5) then
+            !if (cpoly%met(isi)%rshort > 0.5) then
+            if (cgrid%cosz(ipy) > 0.03) then
                csite%dmean_lambda_light(ipa) = csite%dmean_lambda_light(ipa)               &
                                              + csite%lambda_light(ipa)
             end if
@@ -904,11 +906,6 @@ subroutine integrate_ed_daily_output_flux(cgrid)
       cgrid%Nbiomass_uptake(ipy)       = cgrid%Nbiomass_uptake(ipy)                        &
                                        + sitesum_Nuptake*poly_area_i
 
-      
-      cgrid%dmean_gpp(ipy)             = cgrid%dmean_gpp(ipy)                              &
-                                       + sitesum_gpp * poly_area_i
-      cgrid%dmean_rh(ipy)              = cgrid%dmean_rh(ipy)                               &
-                                       + sitesum_rh * poly_area_i
       cgrid%dmean_plresp(ipy)          = cgrid%dmean_plresp(ipy)                           &
                                        + sitesum_plresp * poly_area_i
       cgrid%dmean_nep(ipy)             = cgrid%dmean_nep(ipy)                              &
@@ -1299,11 +1296,15 @@ subroutine normalize_ed_daily_output_vars(cgrid)
       ! point in umol/m2/s.  We just multiply by one year in seconds and convert to kgC,   !
       ! so the units will be kgC/m2/yr.                                                    !
       !------------------------------------------------------------------------------------!
-      cgrid%dmean_plresp     (ipy)  = cgrid%dmean_plresp    (ipy) * umols_2_kgCyr
-      cgrid%dmean_nep        (ipy)  = cgrid%dmean_nep       (ipy) * umols_2_kgCyr
-      cgrid%dmean_gpp_dbh  (:,ipy)  = cgrid%dmean_gpp_dbh (:,ipy) * umols_2_kgCyr
+      cgrid%dmean_plresp     (ipy)  = cgrid%dmean_plresp    (ipy)                          &
+                                    * umols_2_kgCyr * frqsum_o_daysec
+      cgrid%dmean_nep        (ipy)  = cgrid%dmean_nep       (ipy)                          &
+                                    * umols_2_kgCyr * frqsum_o_daysec
+      cgrid%dmean_gpp_dbh  (:,ipy)  = cgrid%dmean_gpp_dbh (:,ipy)                          &
+                                    * umols_2_kgCyr * frqsum_o_daysec
 
-      cgrid%dmean_co2_residual   (ipy) = cgrid%dmean_co2_residual   (ipy) * frqsum_o_daysec
+      cgrid%dmean_co2_residual   (ipy) = cgrid%dmean_co2_residual   (ipy)                  &
+                                       * umols_2_kgCyr * frqsum_o_daysec
       cgrid%dmean_energy_residual(ipy) = cgrid%dmean_energy_residual(ipy) * frqsum_o_daysec
       cgrid%dmean_water_residual (ipy) = cgrid%dmean_water_residual (ipy) * frqsum_o_daysec
 
@@ -1321,7 +1322,7 @@ subroutine normalize_ed_daily_output_vars(cgrid)
          csite => cpoly%site(isi)
 
          cpoly%dmean_co2_residual(isi)    = cpoly%dmean_co2_residual(isi)                  &
-                                          * frqsum_o_daysec
+                                          * umols_2_kgCyr * frqsum_o_daysec
          cpoly%dmean_energy_residual(isi) = cpoly%dmean_energy_residual(isi)               &
                                           * frqsum_o_daysec
          cpoly%dmean_water_residual(isi)  = cpoly%dmean_water_residual(isi)                &
@@ -1429,8 +1430,9 @@ subroutine normalize_ed_daily_output_vars(cgrid)
             !------------------------------------------------------------------------------!
             forest = csite%dist_type(ipa) /= 1
 
+            !----- CO2 residual is now in kgC/m2/yr!!! ------------------------------------!
             csite%dmean_co2_residual(ipa)    = csite%dmean_co2_residual(ipa)               &
-                                             * frqsum_o_daysec
+                                             * umols_2_kgCyr * frqsum_o_daysec
             csite%dmean_energy_residual(ipa) = csite%dmean_energy_residual(ipa)            &
                                              * frqsum_o_daysec
             csite%dmean_water_residual(ipa)  = csite%dmean_water_residual(ipa)             &
@@ -1453,7 +1455,8 @@ subroutine normalize_ed_daily_output_vars(cgrid)
             ! in µmol(CO2)/m²/s, so we multiply by the number of seconds in a year and     !
             ! convert to kgC, so the final units will be kgC/m2/yr.                        !
             !------------------------------------------------------------------------------!
-            csite%dmean_rh(ipa)              = csite%dmean_rh(ipa) * umols_2_kgCyr
+            csite%dmean_rh(ipa)              = csite%dmean_rh(ipa) * umols_2_kgCyr         &
+                                             * frqsum_o_daysec
 
             if (cpatch%ncohorts > 0) then
                pss_growth_resp  = pss_growth_resp + csite%area(ipa)                        &
@@ -1516,8 +1519,7 @@ subroutine normalize_ed_daily_output_vars(cgrid)
       cgrid%dmean_fsw(ipy)     = cgrid%dmean_fsw(ipy)     + sss_fsw     * poly_area_i
       cgrid%dmean_fs_open(ipy) = cgrid%dmean_fs_open(ipy) + sss_fs_open * poly_area_i
       
-      cgrid%dmean_rh(ipy)      = cgrid%dmean_rh(ipy)      + sss_rh      * poly_area_i
-
+      cgrid%dmean_rh(ipy)      = cgrid%dmean_rh(ipy)      + sss_rh      * poly_area_i      
       cgrid%dmean_growth_resp(ipy)  = cgrid%dmean_growth_resp(ipy)                         &
                                     + sss_growth_resp  * poly_area_i
       cgrid%dmean_storage_resp(ipy) = cgrid%dmean_storage_resp(ipy)                        &

@@ -608,6 +608,7 @@ subroutine opspec3
   use grell_coms, only:  &
           closure_type,  & ! intent(in)
           cap_maxs,      & ! intent(in)
+          cld2prec,      & ! intent(in)
           maxclouds,     & ! intent(in)
           depth_min,     & ! intent(in)
           maxens_lsf,    & ! intent(in)
@@ -810,59 +811,68 @@ subroutine opspec3
      end if
 
 
+     if (iupmethod < 1 .or. iupmethod > 5) then
+         print *, 'FATAL - If Cumulus parameterization is used, iupmethod must be between 1 and 4.'
+         print *, 'Yours is currently set to ',iupmethod
+         IFATERR=IFATERR+1
+     elseif(iupmethod == 5 .and. cap_maxs > 0.) then
+         print *, 'FATAL - updraft method 5 cannot be applied when cap_maxs > 0.'
+         IFATERR=IFATERR+1
+     end if
+
+     if (cld2prec < 0. .or. cld2prec > 1.0) then
+       print *, 'FATAL - cld2prec must be between 0 and 1.'
+       print *, 'Yours is currently set to ',cld2prec
+       IFATERR=IFATERR+1
+     end if
+     if (zkbmax <= 0.) then
+       print *, 'FATAL - zkbmax must be positive when Cuparm is activated.'
+       print *, 'Yours is currently set to ',zkbmax
+       IFATERR=IFATERR+1
+     end if
+     if (zcutdown <= 0.) then
+       print *, 'FATAL - zcutdown must be positive when Cuparm is activated.'
+       print *, 'Yours is currently set to ',zcutdown
+       IFATERR=IFATERR+1
+     end if
+     if (z_detr <= 0.) then
+       print *, 'FATAL - z_detr must be positive when Cuparm is activated.'
+       print *, 'Yours is currently set to ',z_detr
+       IFATERR=IFATERR+1
+     end if
+     if (max_heat <= 0.) then
+       print *, 'FATAL - max_heat must be positive when Cuparm is activated.'
+       print *, 'Yours is currently set to ',max_heat
+       IFATERR=IFATERR+1
+     end if
+     !----------------------------------------------------------------------------------!
+     !     CAP_MAXS must be always non-zero. In addition, it is allowed to be negative  !
+     ! (fractional area method) only when when sigma-w is computed.                     !
+     !----------------------------------------------------------------------------------!
+     if (cap_maxs == 0.) then
+        print *, 'FATAL - cap_maxs must be non-zero when cuparm is activated.'
+        ifaterr = ifaterr + 1
+     elseif (cap_maxs < 0) then
+        do ng=1,ngrids
+           if (idiffk(ng) /= 1 .and. idiffk(ng) /= 7) then
+              print *, 'FATAL - cap_maxs(nc) can''t be < 0. if sigma-w is unavailable.'
+              print *, 'Yours is currently set to ',cap_maxs
+              print *, 'And your turbulence is set to ',idiffk(ng),' for grid ',ng
+              ifaterr = ifaterr + 1
+           elseif(ndeepest(ng)    == 3 .or. &
+                  (nclouds > 1 .and. nshallowest(ng) == 3)) then
+              print *, 'FATAL - cap_maxs can''t be < 0. for old Grell.'
+              print *, 'Yours is currently set to ',cap_maxs
+              print *, 'And your turbulence is set to ',idiffk(ng),' for grid ',ng
+           end if
+        end do
+     end if
+
      do nc=1,nclouds
-        if (iupmethod < 1 .or. iupmethod > 4) then
-            print *, 'FATAL - If Cumulus parameterization is used, iupmethod must be between 1 and 4.'
-            print *, 'Yours is currently set to ',iupmethod
-            IFATERR=IFATERR+1
-        end if
         if (depth_min(nc) <= 0.) then
           print *, 'FATAL - depth_min(nc) must be positive.'
           print *, 'Your is currently set to ',depth_min(nc),' for type ',nc
           IFATERR=IFATERR+1
-        end if
-        if (zkbmax(nc) <= 0.) then
-          print *, 'FATAL - zkbmax(nc) must be positive when Cuparm is activated.'
-          print *, 'Yours is currently set to ',zkbmax(nc),' for type ',nc
-          IFATERR=IFATERR+1
-        end if
-        if (zcutdown(nc) <= 0.) then
-          print *, 'FATAL - zcutdown(nc) must be positive when Cuparm is activated.'
-          print *, 'Yours is currently set to ',zcutdown(nc),' for type ',nc
-          IFATERR=IFATERR+1
-        end if
-        if (z_detr(nc) <= 0.) then
-          print *, 'FATAL - z_detr(nc) must be positive when Cuparm is activated.'
-          print *, 'Yours is currently set to ',z_detr(nc),' for type ',nc
-          IFATERR=IFATERR+1
-        end if
-        if (max_heat(nc) <= 0.) then
-          print *, 'FATAL - max_heat(nc) must be positive when Cuparm is activated.'
-          print *, 'Yours is currently set to ',max_heat(nc),' for type ',nc
-          IFATERR=IFATERR+1
-        end if
-        !----------------------------------------------------------------------------------!
-        !     CAP_MAXS must be always non-zero. In addition, it is allowed to be negative  !
-        ! (fractional area method) only when when sigma-w is computed.                     !
-        !----------------------------------------------------------------------------------!
-        if (cap_maxs(nc) == 0.) then
-           print *, 'FATAL - cap_maxs(nc) must be non-zero when cuparm is activated.'
-           print *, 'Yours is currently set to zero for cloud type ',nc
-           ifaterr = ifaterr + 1
-        elseif (cap_maxs(nc) < 0) then
-           do ng=1,ngrids
-              if (idiffk(ng) /= 1 .and. idiffk(ng) /= 7) then
-                 print *, 'FATAL - cap_maxs(nc) can''t be < 0. if sigma-w is unavailable.'
-                 print *, 'Yours is currently set to ',cap_maxs(nc),' for type ',nc
-                 print *, 'And your turbulence is set to ',idiffk(ng),' for grid ',ng
-                 ifaterr = ifaterr + 1
-              elseif(ndeepest(ng)    == 3 .or. &
-                     (nclouds > 1 .and. nshallowest(ng) == 3)) then
-                 print *, 'FATAL - cap_maxs(nc) can''t be < 0. for old Grell.'
-                 print *, 'Yours is currently set to ',cap_maxs(nc),' for type ',nc
-                 print *, 'And your turbulence is set to ',idiffk(ng),' for grid ',ng
-              end if
-           end do
         end if
      end do
   end if
@@ -987,18 +997,28 @@ subroutine opspec3
 
   ! Just adding a warning message that cumulus parameterization feedback will be ignored 
   ! because the user didn't set iswrtyp or ilwrtyp to 3 (Harrington);
-  if (iswrtyp /= 3 .and. icumfdbk /=0) then
+  if (iswrtyp == 4 .and. icumfdbk /= 0) then
+    print *, '------------------------------------------------------------------------'
+    print *, ' FATAL - CARMA shortwave radiation won''t work with partial cumulus     '
+    print *, '         scheme. The ice mixing ratio in cumulus clouds can be much     '
+    print *, '         larger than the resolved clouds, and bands 32-35 don''t        '
+    print *, '         give reasonable results.  This may be just a bug and it will   '
+    print *, '         be eventually revisited and addressed, but for the time being  '
+    print *, '         either use Harrington or turn off the cumulus feedback.        '
+    print *, '------------------------------------------------------------------------'
+    ifaterr = ifaterr + 1
+  elseif (iswrtyp /= 3 .and. icumfdbk /=0) then
     print *, '------------------------------------------------------------------------'
     print *, 'INFO - Shortwave radiation won''t have cumulus parameterization feedback'
-    print *, '       You should use Harrington scheme to have this effect.'
+    print *, '       You should use Harrington scheme to have this effect.            '
     print *, '------------------------------------------------------------------------'
     print *, ' '
     infoerr = infoerr + 1
   end if
-  if (ilwrtyp /= 3 .and. icumfdbk /=0) then
+  if (ilwrtyp /= 3 .and. ilwrtyp /= 4 .and. icumfdbk /=0) then
     print *, '------------------------------------------------------------------------'
     print *, 'INFO - Longwave radiation won''t have cumulus parameterization feedback '
-    print *, '       You should use Harrington scheme to have this effect.'
+    print *, '       You should use Harrington scheme or CARMA to have this effect.'
     print *, '------------------------------------------------------------------------'
     print *, ' '
     infoerr = infoerr + 1
@@ -1008,6 +1028,15 @@ subroutine opspec3
         (iswrtyp == 3 .or. ilwrtyp == 3)) then
        print *, '-------------------------------------------------------------------------'
        print *, 'INFO - Cumulus parameterization will have no effect on Harrington scheme '
+       print *, '       on grid',ng,' because the cumulus parameterizations are off.      '
+       print *, '-------------------------------------------------------------------------'
+       print *, ' '
+       infoerr = infoerr + 1
+    end if 
+    if (nnqparm(ng) == 0 .and. icumfdbk == 1 .and. & 
+        (ilwrtyp == 4)) then
+       print *, '-------------------------------------------------------------------------'
+       print *, 'INFO - Cumulus parameterization will have no effect on CARMA             '
        print *, '       on grid',ng,' because the cumulus parameterizations are off.      '
        print *, '-------------------------------------------------------------------------'
        print *, ' '

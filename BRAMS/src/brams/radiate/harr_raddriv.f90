@@ -49,13 +49,13 @@
 !    This is the main driver for Harrington et al. (2000) radiation scheme, called during  !
 ! the integration.                                                                         !
 !------------------------------------------------------------------------------------------!
-subroutine harr_raddriv(m1,m2,m3,nclouds,ifm,if_adap,time,deltat,ia,iz,ja,jz,nadd_rad      &
-                       ,iswrtyp,ilwrtyp,icumfdbk,flpw,topt,glat,rtgt,pi0,pp,rho,theta,rv   &
-                       ,co2p,rshort,rlong,fthrd,rlongup,cosz                               &
+subroutine harr_raddriv(m1,m2,m3,nclouds,ncrad,ifm,if_adap,time,deltat,ia,iz,ja,jz         &
+                       ,nadd_rad,iswrtyp,ilwrtyp,icumfdbk,flpw,topt,glat,rtgt,pi0,pp,rho   &
+                       ,theta,rv,co2p,rshort,rlong,fthrd,rlongup,cosz                      &
                        ,albedt,rshort_top,rshortup_top,rlongup_top,fthrd_lw                &
                        ,sh_c,sh_r,sh_p,sh_s,sh_a,sh_g,sh_h                                 &
                        ,con_c,con_r,con_p,con_s,con_a,con_g,con_h                          &
-                       ,cuprliq,cuprice,mynum)
+                       ,cuprliq,cuprice,cuparea,cupierr,mynum)
 
    use mem_harr,        only: mg, mb, mpb
    use mem_grid,        only: zm, zt
@@ -63,32 +63,39 @@ subroutine harr_raddriv(m1,m2,m3,nclouds,ifm,if_adap,time,deltat,ia,iz,ja,jz,nad
    use micphys,         only: ncat,rxmin
    use mem_leaf,        only: isfcl
    use harr_coms,       only: rl,dzl,dl,pl,co2l,o3l,vp,u,tp,omgp,gp,zml,ztl,tl             &
-                             ,flxus,flxds,flxul,flxdl,fu,fd,zero_harr_scratch,nradmax      &
-                             ,tairk,rhoi,rhoe,rhov,press,rcl_parm,rpl_parm
-
+                             ,flxus,flxds,flxul,flxdl,fu,fd,zero_harr_met_scratch          &
+                             ,zero_harr_flx_scratch,nradmax,tairk,rhoi,rhoe,rhov,press     &
+                             ,rcl_parm,rpl_parm,area_parm
+ 
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
-   integer                          , intent(in)    :: m1,m2,m3,nclouds,mynum,ifm,if_adap
-   integer                          , intent(in)    :: ia,iz,ja,jz
-   integer                          , intent(in)    :: nadd_rad,iswrtyp,ilwrtyp,icumfdbk
-   real(kind=8)                     , intent(in)    :: time
-   real                             , intent(in)    :: deltat
-   real, dimension(m2,m3)           , intent(in)    :: topt,glat,flpw,rtgt
-   real, dimension(m1,m2,m3)        , intent(in)    :: pi0,pp,rho,theta,rv,co2p
-   real, dimension(m1,m2,m3)        , intent(in)    :: sh_c,sh_r,sh_p,sh_s,sh_a,sh_g,sh_h
-   real, dimension(m1,m2,m3)        , intent(in)    :: con_c,con_r,con_p,con_s,con_a
-   real, dimension(m1,m2,m3)        , intent(in)    :: con_g,con_h
-   real, dimension(m1,m2,m3,nclouds), intent(in)    :: cuprliq,cuprice
-   real, dimension(m2,m3)           , intent(inout) :: rshort,rlong,rlongup,cosz,albedt
-   real, dimension(m2,m3)           , intent(inout) :: rshort_top,rshortup_top,rlongup_top
-   real, dimension(m1,m2,m3)        , intent(inout) :: fthrd,fthrd_lw
+   integer                            , intent(in)    :: m1,m2,m3,nclouds,ncrad
+   integer                            , intent(in)    :: mynum,ifm,if_adap
+   integer                            , intent(in)    :: ia,iz,ja,jz
+   integer                            , intent(in)    :: nadd_rad,iswrtyp,ilwrtyp,icumfdbk
+   real(kind=8)                       , intent(in)    :: time
+   real                               , intent(in)    :: deltat
+   real, dimension(m2,m3)             , intent(in)    :: topt,glat,flpw,rtgt
+   real, dimension(m1,m2,m3)          , intent(in)    :: pi0,pp,rho,theta,rv,co2p
+   real, dimension(m1,m2,m3)          , intent(in)    :: sh_c,sh_r,sh_p,sh_s,sh_a,sh_g,sh_h
+   real, dimension(m1,m2,m3)          , intent(in)    :: con_c,con_r,con_p,con_s,con_a
+   real, dimension(m1,m2,m3)          , intent(in)    :: con_g,con_h
+   real, dimension(m2,m3,nclouds)     , intent(in)    :: cuparea
+   real, dimension(m2,m3,nclouds)     , intent(in)    :: cupierr
+   real, dimension(m1,m2,m3,nclouds)  , intent(in)    :: cuprliq
+   real, dimension(m1,m2,m3,nclouds)  , intent(in)    :: cuprice
+   real, dimension(m2,m3)             , intent(inout) :: rshort,rlong,rlongup,cosz,albedt
+   real, dimension(m2,m3)             , intent(inout) :: rshort_top,rshortup_top
+   real, dimension(m2,m3)             , intent(inout) :: rlongup_top
+   real, dimension(m1,m2,m3)          , intent(inout) :: fthrd,fthrd_lw
    !------ Local arrays -------------------------------------------------------------------!
-   integer                                          :: ka
-   integer                                          :: nrad
-   integer                                          :: koff
-   integer                                          :: icld
-   integer                                          :: i,j,k,ib,ig,kk,ik,krad,mcat
-   logical                                          :: first_with_ed
+   integer                                            :: ka
+   integer                                            :: nrad
+   integer                                            :: koff
+   integer                                            :: icld
+   integer                                            :: i,j,k,ib,ig,kk,ik,krad,mcat
+   logical                                            :: first_with_ed
+   real                                               :: area_csky
    !---------------------------------------------------------------------------------------!
   
    !----- Check whether this is a coupled run and first call. -----------------------------!
@@ -98,14 +105,16 @@ subroutine harr_raddriv(m1,m2,m3,nclouds,ifm,if_adap,time,deltat,ia,iz,ja,jz,nad
    !    Copy surface and vertical-column values from model to radiation memory space.  In  !
    ! this loop, (k-koff) ranges from 2 to m1 + 1 - nint(flpw(i,j)).                        !
    !---------------------------------------------------------------------------------------!
-   do j=ja,jz
-      do i=ia,iz
-         !----- Flushing all scratch arrays to zero ---------------------------------------!
-         call zero_harr_scratch(m1,ncat,nradmax,mg,mb,mpb)
-      
+   jloop: do j=ja,jz
+      iloop: do i=ia,iz
+
+         !----- Flush all scratch arrays to zero ------------------------------------------!
+         call zero_harr_met_scratch(m1,ncat,nradmax,mg,mb,mpb,ncrad)
+
          ka=nint(flpw(i,j))
          koff=ka-2
          nrad=m1-1-koff+nadd_rad
+
 
          do k = ka,m1-1
             tairk(k)     = theta(k,i,j) * (pi0(k,i,j)+pp(k,i,j)) * cpi
@@ -121,19 +130,7 @@ subroutine harr_raddriv(m1,m2,m3,nclouds,ifm,if_adap,time,deltat,ia,iz,ja,jz,nad
          end do
 
          !---------------------------------------------------------------------------------!
-         !     Here we will account the parameterized cloud effect. This is a very simple  !
-         ! cloud, in which all liquid content is assumed to be cloud, and all ice content  !
-         ! is assumed to be pristine ice.                                                  !
-         !---------------------------------------------------------------------------------!
-         do icld=1,nclouds
-            do k=ka,m1-1
-               rcl_parm(k) = rcl_parm(k)+ cuprliq(k,i,j,icld)
-               rpl_parm(k) = rpl_parm(k)+ cuprice(k,i,j,icld)
-            end do
-         end do
-
-         !---------------------------------------------------------------------------------!
-         !     Finding the heights, considering whether we are using terrain following or  !
+         !     Find the heights, considering whether we are using terrain following or     !
          ! adaptive coordinate.                                                            !
          !---------------------------------------------------------------------------------!
          if (if_adap == 1) then
@@ -160,9 +157,9 @@ subroutine harr_raddriv(m1,m2,m3,nclouds,ifm,if_adap,time,deltat,ia,iz,ja,jz,nad
          pl(1) = pl(2) + (zml(1) - ztl(3)) / (ztl(2) - ztl(3)) * (pl(2) - pl(3))
 
          !---------------------------------------------------------------------------------!
-         !    ED doesn't initialize rlongup before the radiation is called.  Using an      !
-         ! extrapolation from the 2nd level instead. This is done only once at the begin-  !
-         ! ning.                                                                           !
+         !    ED doesn't initialise rlongup before the radiation is called.  Using an      !
+         ! extrapolation from the 2nd level instead. This is done only once at the         !
+         ! beginning.                                                                      !
          !---------------------------------------------------------------------------------!
          if (first_with_ed) then
            tl(1) = tl(2)
@@ -176,106 +173,139 @@ subroutine harr_raddriv(m1,m2,m3,nclouds,ifm,if_adap,time,deltat,ia,iz,ja,jz,nad
          !------ Filling upper levels if the domain doesn't go too far up. ----------------!
          call rad_mclat(m1,nrad,koff,glat(i,j),rtgt(i,j))
 
-         !----- Fill arrays rxharr, cxharr, and embharr with hydrometeor properties -------!
+         !----- Fill arrays rxharr, cxharr, and embharr with hydrometeor properties. ------!
          call cloudprep_rad(m1,ka,mcat,sh_c(:,i,j),sh_r(:,i,j),sh_p(:,i,j),sh_s(:,i,j)     &
-                           ,sh_a(:,i,j),sh_g(:,i,j),sh_h(:,i,j),con_c(:,i,j),con_r(:,i,j)  &
-                           ,con_p(:,i,j),con_s(:,i,j),con_a(:,i,j),con_g(:,i,j)            &
-                           ,con_h(:,i,j))
-
-         !----- Fill hydrometeor optical property arrays [tp, omgp, gp] -------------------!
-         call cloud_opt(m1,ka,nrad,koff,mcat,icumfdbk,sngl(time),mynum)
-
-         !----- Get the path lengths for the various gases... -----------------------------!
-         call path_lengths(nrad)
+                           ,sh_a(:,i,j),sh_g(:,i,j),sh_h(:,i,j),con_c(:,i,j)               &
+                           ,con_r(:,i,j),con_p(:,i,j),con_s(:,i,j),con_a(:,i,j)            &
+                           ,con_g(:,i,j),con_h(:,i,j))
 
          !---------------------------------------------------------------------------------!
-         !    Sanity check. tl(k) < 160.: This is -113 C, which is much colder than the    !
-         ! Vostok, Antarctica world record and should also be colder than any atmospheric  !
-         ! temperature.                                                                    !
+         !     Here we will account the parametrised clouds.  The way we consider it is by !
+         ! calling the radiation solver several times, for each cloud and an additional    !
+         ! time for non cumulus region.  In case the user doesn't want the cumulus feed-   !
+         ! back, then the local nclouds is 0.                                              !
          !---------------------------------------------------------------------------------!
-         do k = 1,nrad
-            if (rl(k)   <   0. .or.   dl(k) <   0. .or.   pl(k) <   0. .or.                &
-                co2l(k) <   0. .or.  o3l(k) <   0. .or.   tl(k) < 160.      ) then   
+         area_csky = 1.
+         cldloop: do icld=ncrad,0,-1
+            !----- Flush all scratch arrays to zero ---------------------------------------!
+            call zero_harr_flx_scratch(m1,ncat,nradmax,mg,mb,mpb,ncrad)
 
-                write (unit=*,fmt='(a)') '================================================'
-                write (unit=*,fmt='(a)') ' ERROR - harr_raddriv!!!'
-                write (unit=*,fmt='(a)') '         The model is about to stop!'
-                write (unit=*,fmt='(2(a,1x,i5,1x))') ' - Node:',mynum,' Grid: ',ifm
-                write (unit=*,fmt='(3(a,1x,i5,1x))') ' - k = ',k,' i = ',i,' j = ',j
-                write (unit=*,fmt='(a)') ' - Either the temperature is too low, or some'
-                write (unit=*,fmt='(a)') '   negative density, mixing ratio or pressure!'
-                write (unit=*,fmt='(a)') ' - Sanity check at Harrington:'
-                write (unit=*,fmt='(a)') '------------------------------------------------'
-                write (unit=*,fmt='(a3,1x,6(a12,1x))') &
-                   'LEV','  MIX. RATIO','     DENSITY','    PRESSURE','        CO_2'       &
-                        ,'       OZONE',' TEMPERATURE'
-                do kk=1,nrad
-                   write (unit=*,fmt='(i3,1x,6(es12.3,1x))')                               &
-                                      kk, rl(kk), dl(kk), pl(kk), co2l(kk), o3l(kk), tl(kk)
-                enddo
-                write (unit=*,fmt='(a)') '------------------------------------------------'
-                write (unit=*,fmt='(a)') ' '
-                write (unit=*,fmt='(a)') '================================================'
-                call abort_run ('Weird thermodynamic values, caught at radiation'          &
-                               ,'harr_raddriv','harr_raddriv.f90')
+            !----- Assign the area of this cloud and the related parameters. --------------!
+            if (icld == 0) then
+               area_parm = area_csky
+               do k=ka,m1-1
+                  rcl_parm(k-koff) = 0.
+                  rpl_parm(k-koff) = 0.
+               end do
+            else
+               !----- No need to compute this cloud if it didn't happen. ------------------!
+               if (cupierr(i,j,icld) /= 0.) cycle cldloop
+
+               area_parm = cuparea(i,j,icld)
+               area_csky = area_csky - area_parm
+               do k=ka,m1-1
+                  rcl_parm(k-koff) = cuprliq(k,i,j,icld)
+                  rpl_parm(k-koff) = cuprice(k,i,j,icld)
+               end do
             end if
 
-         end do
+            !----- Fill hydrometeor optical property arrays [tp, omgp, gp] ----------------!
+            call cloud_opt(m1,ka,nrad,koff,mcat,icld,sngl(time),mynum)
 
-         !---------------------------------------------------------------------------------!
-         !    Harrington shortwave scheme (valid only if cosz > .03)                       !
-         !---------------------------------------------------------------------------------!
-         if (iswrtyp == 3) then
-            !------------------------------------------------------------------------------!
-            !    First I flush rshort, rshort_top and rshortup_top to zero, and they should!
-            ! remain zero if it is between dusk and dawn.                                  !
-            !------------------------------------------------------------------------------!
-            rshort(i,j)       = 0.0
-            rshort_top(i,j)   = 0.0
-            rshortup_top(i,j) = 0.0
+            !----- Get the path lengths for the various gases... --------------------------!
+            call path_lengths(nrad)
 
-            if (cosz(i,j) > 0.03) then
-               call harr_swrad(nrad,albedt(i,j),cosz(i,j),sngl(time),mynum)
-               rshort(i,j)       = flxds(1)
-               rshort_top(i,j)   = flxds(nrad)
-               rshortup_top(i,j) = flxus(nrad)
+            !------------------------------------------------------------------------------!
+            !    Sanity check. tl(k) < 160.: This is -113 C, which is much colder than the !
+            ! Vostok, Antarctica world record and should also be colder than any atmo-     !
+            ! spheric temperature.                                                         !
+            !------------------------------------------------------------------------------!
+            do k = 1,nrad
+               if (rl(k)   <   0. .or.   dl(k) <   0. .or.   pl(k) <   0. .or.             &
+                   co2l(k) <   0. .or.  o3l(k) <   0. .or.   tl(k) < 160.      ) then   
+
+                   write (unit=*,fmt='(a)') '============================================='
+                   write (unit=*,fmt='(a)') ' ERROR - harr_raddriv!!!'
+                   write (unit=*,fmt='(a)') '         The model is about to stop!'
+                   write (unit=*,fmt='(2(a,1x,i5,1x))') ' - Node:',mynum,' Grid: ',ifm
+                   write (unit=*,fmt='(3(a,1x,i5,1x))') ' - k = ',k,' i = ',i,' j = ',j
+                   write (unit=*,fmt='(a)') ' - Either the temperature is too low, or some'
+                   write (unit=*,fmt='(a)') '   negative density, mixing ratio, '
+                   write (unit=*,fmt='(a)') '   or pressure was detected!'
+                   write (unit=*,fmt='(a)') ' - Sanity check at Harrington:'
+                   write (unit=*,fmt='(a)') '---------------------------------------------'
+                   write (unit=*,fmt='(a3,1x,6(a12,1x))') &
+                      'LEV','  MIX. RATIO','     DENSITY','    PRESSURE','        CO_2'    &
+                           ,'       OZONE',' TEMPERATURE'
+                   do kk=1,nrad
+                      write (unit=*,fmt='(i3,1x,6(es12.3,1x))')                            &
+                                         kk,rl(kk),dl(kk),pl(kk),co2l(kk),o3l(kk),tl(kk)
+                   enddo
+                   write (unit=*,fmt='(a)') '---------------------------------------------'
+                   write (unit=*,fmt='(a)') ' '
+                   write (unit=*,fmt='(a)') '============================================='
+                   call abort_run ('Weird thermodynamic values, caught at radiation'       &
+                                  ,'harr_raddriv','harr_raddriv.f90')
+               end if
+
+            end do
+
+            !------------------------------------------------------------------------------!
+            !    Harrington shortwave scheme (valid only if cosz > .03)                    !
+            !------------------------------------------------------------------------------!
+            if (iswrtyp == 3) then
+               !---------------------------------------------------------------------------!
+               !    First I flush rshort, rshort_top and rshortup_top to zero, and they    !
+               ! should remain zero if it is between dusk and dawn.                        !
+               !---------------------------------------------------------------------------!
+               if (cosz(i,j) > 0.03) then
+                  call harr_swrad(nrad,albedt(i,j),cosz(i,j),sngl(time),mynum)
+                  rshort      (i,j) = rshort(i,j)       + flxds(1)    * area_parm
+                  rshort_top  (i,j) = rshort_top  (i,j) + flxds(nrad) * area_parm
+                  rshortup_top(i,j) = rshortup_top(i,j) + flxus(nrad) * area_parm
+
+                  do k = ka,m1-1
+                     krad = k - koff
+                     fthrd(k,i,j) = fthrd(k,i,j)                                           &
+                                  + ( (flxds(krad)-flxds(krad-1)                           &
+                                    + flxus(krad-1)-flxus(krad))                           &
+                                    / (dl(krad) * dzl(krad) * cp)) * area_parm
+                  end do
+               end if
+            end if
+            !------------------------------------------------------------------------------!
+            !    Harrington longwave scheme.                                               !
+            !------------------------------------------------------------------------------!
+            if (ilwrtyp == 3) then
+
+               call harr_lwrad(nrad,mynum)
+
+               rlong      (i,j) = rlong      (i,j) + flxdl(1)    * area_parm
+               rlongup    (i,j) = rlongup    (i,j) + flxul(1)    * area_parm
+               rlongup_top(i,j) = rlongup_top(i,j) + flxul(nrad) * area_parm
 
                do k = ka,m1-1
                   krad = k - koff
-                  fthrd(k,i,j) = fthrd(k,i,j)                                              &
-                               + (flxds(krad)-flxds(krad-1) + flxus(krad-1)-flxus(krad))   &
-                               / (dl(krad) * dzl(krad) * cp)                             
+                  fthrd(k,i,j)    = fthrd(k,i,j)                                           &
+                                  + ( (flxdl(krad)-flxdl(krad-1)                           &
+                                    + flxul(krad-1)-flxul(krad))                           &
+                                    / (dl(krad) * dzl(krad) * cp)) * area_parm
+                  fthrd_lw(k,i,j) = fthrd_lw(k,i,j)                                        &
+                                  + ( (flxdl(krad)-flxdl(krad-1)                           &
+                                    + flxul(krad-1)-flxul(krad))                           &
+                                    / (dl(krad) * dzl(krad) * cp)) * area_parm
                end do
             end if
+         end do cldloop
+         !---------------------------------------------------------------------------------!
+
+         if (ilwrtyp == 3 .and. rlong(i,j) > 600.) then
+            call print_longwave(mynum,nrad,m1,i,j,time,rlong(i,j),rlongup(i,j))
+            call abort_run('Non-sense radiation','harr_raddriv','harr_raddriv.f90')
          end if
 
-         !---------------------------------------------------------------------------------!
-         !    Harrington longwave scheme.                                                  !
-         !---------------------------------------------------------------------------------!
-         if (ilwrtyp == 3) then
-
-            call harr_lwrad(nrad,mynum)
-
-            rlong(i,j)       = flxdl(1)
-            rlongup(i,j)     = flxul(1)
-            rlongup_top(i,j) = flxul(nrad)
-
-            if (rlong(i,j) > 600.) then
-               call print_longwave(mynum,nrad,m1,i,j,time,rlong(i,j),rlongup(i,j))
-               call abort_run('Non-sense radiation','harr_raddriv','harr_raddriv.f90')
-            end if
-            do k = ka,m1-1
-               krad = k - koff
-               fthrd(k,i,j) = fthrd(k,i,j)                                                 &
-                            + (flxdl(krad)-flxdl(krad-1) + flxul(krad-1)-flxul(krad))      &
-                            / (dl(krad) * dzl(krad) * cp)
-               fthrd_lw(k,i,j) = fthrd_lw(k,i,j)  &
-                               + (flxdl(krad)-flxdl(krad-1) + flxul(krad-1)-flxul(krad))   &
-                               / (dl(krad) * dzl(krad) * cp)
-            end do
-         end if
-      end do
-   end do
+      end do iloop
+   end do jloop
 
    return
 end subroutine harr_raddriv
@@ -590,7 +620,7 @@ end subroutine cloudprep_rad
 ! using fits to adt theory. It will also provide a crude first guess of properties of      !
 ! parametrised clouds, assuming all liquid is cloud droplets and all ice is pristine ice.  !
 !------------------------------------------------------------------------------------------!
-subroutine cloud_opt(m1,ka,nrad,koff,mcat,icumfdbk,time,mynum)
+subroutine cloud_opt(m1,ka,nrad,koff,mcat,icld,time,mynum)
 
    use mem_harr   , only : mb           & ! intent(in)
                          , nb           & ! intent(in)
@@ -672,7 +702,7 @@ subroutine cloud_opt(m1,ka,nrad,koff,mcat,icumfdbk,time,mynum)
    !---------------------------------------------------------------------------------------!
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
-   integer                       , intent(in)  :: m1,ka,nrad,koff,mcat,icumfdbk,mynum
+   integer                       , intent(in)  :: m1,ka,nrad,koff,mcat,icld,mynum
    real                          , intent(in)  :: time
    !----- Local variables -----------------------------------------------------------------!
    integer                                     :: ib,iz,krc,icat,k,ihcat,krad
@@ -733,7 +763,7 @@ subroutine cloud_opt(m1,ka,nrad,koff,mcat,icumfdbk,time,mynum)
    ! assumes that all the parameterized condensed water was cloud droplet or pristine ice. !
    ! It is really a 1st guess, don't expect wonderful results...                           !
    !---------------------------------------------------------------------------------------!
-   if (icumfdbk == 1) then
+   if (icld /= 0) then
 
       !----- Liquid water -----------------------------------------------------------------!
       do k=ka,m1-1

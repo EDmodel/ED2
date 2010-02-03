@@ -21,6 +21,7 @@ module mem_scratch
       !----- 3-D variables, for (Z,X,Y), (X,Y,P), (X,Y,C), and (X,Y,W) variables. ---------!
       real, pointer, dimension(:) ::  vt3da,vt3db,vt3dc,vt3dd,vt3de,vt3df,vt3dg,vt3dh
       real, pointer, dimension(:) ::  vt3di,vt3dj,vt3dk,vt3dl,vt3dm,vt3dn,vt3do,vt3dp,vt3dq
+      real, pointer, dimension(:) ::  vt3dr,vt3ds
       !----- 4-D variables, for (Z,X,Y,C), (G,X,Y,P), and (S,X,Y,P) variables -------------!
       real, pointer, dimension(:) ::  vt4da,vt4db,vt4dc
    end type scratch_vars
@@ -120,6 +121,8 @@ module mem_scratch
       allocate (scratch%vt3do(ntpts ))
       allocate (scratch%vt3dp(ntpts ))
       allocate (scratch%vt3dq(ntpts ))
+      allocate (scratch%vt3dr(ntpts ))
+      allocate (scratch%vt3ds(ntpts ))
 
       allocate (scratch%vt2da(ntpts2))
       allocate (scratch%vt2db(ntpts2))
@@ -160,6 +163,8 @@ module mem_scratch
       call azero(ntpts , scratch%vt3do)
       call azero(ntpts , scratch%vt3dp)
       call azero(ntpts , scratch%vt3dq)
+      call azero(ntpts , scratch%vt3dr)
+      call azero(ntpts , scratch%vt3ds)
       call azero(ntpts2, scratch%vt2da)
       call azero(ntpts2, scratch%vt2db)
       call azero(ntpts2, scratch%vt2dc)
@@ -206,6 +211,8 @@ module mem_scratch
       if (associated(scratch%vt3do))  nullify (scratch%vt3do)
       if (associated(scratch%vt3dp))  nullify (scratch%vt3dp)
       if (associated(scratch%vt3dq))  nullify (scratch%vt3dq)
+      if (associated(scratch%vt3dr))  nullify (scratch%vt3dr)
+      if (associated(scratch%vt3ds))  nullify (scratch%vt3ds)
       if (associated(scratch%vt2da))  nullify (scratch%vt2da)
       if (associated(scratch%vt2db))  nullify (scratch%vt2db)
       if (associated(scratch%vt2dc))  nullify (scratch%vt2dc)
@@ -252,6 +259,8 @@ module mem_scratch
       if (associated(scratch%vt3do))  deallocate (scratch%vt3do)
       if (associated(scratch%vt3dp))  deallocate (scratch%vt3dp)
       if (associated(scratch%vt3dq))  deallocate (scratch%vt3dq)
+      if (associated(scratch%vt3dr))  deallocate (scratch%vt3dr)
+      if (associated(scratch%vt3ds))  deallocate (scratch%vt3ds)
       if (associated(scratch%vt2da))  deallocate (scratch%vt2da)
       if (associated(scratch%vt2db))  deallocate (scratch%vt2db)
       if (associated(scratch%vt2dc))  deallocate (scratch%vt2dc)

@@ -222,7 +222,7 @@ subroutine initial_thermo_grell(m1,dtime,thp,theta,rtp,co2p,pi0,pp,pc,wp,dn0,tke
          ,qicesur      & ! intent(out) - Sfc. ice mixing ratio                    [  kg/kg]
          ,rho0         & ! intent(out) - Density                                  [  kg/m³]
          ,rho          & ! intent(out) - Density with forcing                     [  kg/m³]
-         ,t0           & ! intent(out) - Current Temperature                      [      K] 
+         ,t0           & ! intent(out) - Current Temperature                      [      K]
          ,t            & ! intent(out) - Forced Temperature                       [      K]
          ,tsur         & ! intent(out) - Sfc. Temperature                         [      K]
          ,theiv0       & ! intent(out) - Current ice-vapour equiv. pot. temp.     [      K]
@@ -250,7 +250,7 @@ subroutine initial_thermo_grell(m1,dtime,thp,theta,rtp,co2p,pi0,pp,pc,wp,dn0,tke
    use therm_lib, only: &
            rslif        & ! Function that finds the saturation mixing ratio
           ,thetaeiv     & ! Function that finds Thetae_iv  
-          ,thil2temp    & ! Function that gives temperature from theta_il, rliq and rice.      
+          ,thil2temp    & ! Function that gives temperature from theta_il, rliq and rice.
           ,idealdens    ! ! Function that gives the density for ideal gasses
 
    implicit none
@@ -409,7 +409,7 @@ end subroutine initial_thermo_grell
 !   This subroutine intialises the wind information and the previous downdraft mass flux,  !
 ! which may affect current convection depending on the dynamic control chosen.             !
 !------------------------------------------------------------------------------------------!
-subroutine initial_winds_grell(comp_down,m1,m2,m3,i,j,jdim,last_dnmf,ua,va,prev_dnmf)
+subroutine initial_winds_grell(prec_cld,m1,m2,m3,i,j,jdim,last_dnmf,ua,va,prev_dnmf)
 
    use mem_scratch_grell, only: &
             mkx                 & ! intent(in)  - Number of Grell levels.
@@ -428,7 +428,7 @@ subroutine initial_winds_grell(comp_down,m1,m2,m3,i,j,jdim,last_dnmf,ua,va,prev_
    integer                      , intent(in)    :: m3        ! Number of y points
    integer                      , intent(in)    :: i,j       ! Current x, y & cld position
    integer                      , intent(in)    :: jdim      ! Dimension in y
-   logical                      , intent(in)    :: comp_down ! Computing downdrafts (T/F)
+   logical                      , intent(in)    :: prec_cld  ! Precipitating cloud (T/F)
    real   , dimension(m2,m3)    , intent(in)    :: last_dnmf ! Last time downdraft
    real   , dimension(m1,m2,m3) , intent(in)    :: ua        ! Zonal wind
    real   , dimension(m1,m2,m3) , intent(in)    :: va        ! Meridional wind
@@ -467,10 +467,6 @@ end subroutine initial_winds_grell
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine grell_draft_area(comp_down,m1,mgmzp,kgoff,jmin,k22,kbcon,ktop,dzu_cld,wwind     &
-                           ,tke,sigw,wbuoymin,etad_cld,mentrd_rate,cdd,dbyd,rhod_cld,dnmf  &
-                           ,etau_cld,mentru_rate,cdu,dbyu,rhou_cld,upmf,areadn,areaup)
-!------------------------------------------------------------------------------------------!
 !    This subroutine computes the relative downdraft and updraft areas. This is used by    !
 ! some Lagrangian models and it will be also used to feedback the liquid water content.    !
 !                                                                                          !
@@ -488,6 +484,10 @@ subroutine grell_draft_area(comp_down,m1,mgmzp,kgoff,jmin,k22,kbcon,ktop,dzu_cld
 ! entrainment, but also the detrainment to estimate the draft velocities, and the entrain- !
 ! ment of environment kinetic energy (that should have a really small contribution...)     !
 !------------------------------------------------------------------------------------------!
+subroutine grell_draft_area(m1,mgmzp,kgoff,comp_down,klod,klou,klfc,klnb,ktop,dzu_cld      &
+                           ,wwind,tke,sigw,wbuoymin,etad_cld,mentrd_rate,cdd,dbyd,rhod_cld &
+                           ,dnmf,etau_cld,mentru_rate,cdu,dbyu,rhou_cld,upmf,areadn,areaup &
+                           ,wdndraft,wupdraft)
    use rconstants, only : sigwmin
    implicit none
    
@@ -498,10 +498,11 @@ subroutine grell_draft_area(comp_down,m1,mgmzp,kgoff,jmin,k22,kbcon,ktop,dzu_cld
    integer               , intent(in)  :: mgmzp       ! Number of scratch levels
    integer               , intent(in)  :: kgoff       ! BRAMS offset
    !----- Input variables, cloud boundaries -----------------------------------------------!
-   integer               , intent(in)  :: jmin        ! Downdraft origin
-   integer               , intent(in)  :: k22         ! Updraft origin
-   integer               , intent(in)  :: kbcon       ! Level of free convection
-   integer               , intent(in)  :: ktop        ! Cloud top
+   integer               , intent(in)  :: klod        ! Downdraft origin
+   integer               , intent(in)  :: klou        ! Updraft origin
+   integer               , intent(in)  :: klfc        ! Level of free convection
+   integer               , intent(in)  :: klnb        ! Level of neutral buoyancy
+   integer               , intent(in)  :: ktop        ! Level of neutral buoyancy
    !----- Input variables, vertical velocity-related variables ----------------------------!
    real, dimension(mgmzp), intent(in)  :: dzu_cld     ! Bottom-up layer thickness [      m]
    real, dimension(mgmzp), intent(in)  :: wwind       ! Vertical velocity         [    m/s]
@@ -523,14 +524,15 @@ subroutine grell_draft_area(comp_down,m1,mgmzp,kgoff,jmin,k22,kbcon,ktop,dzu_cld
    real, dimension(mgmzp), intent(in)  :: rhou_cld    ! Density                   [  kg/m³]
    real                  , intent(in)  :: upmf        ! Reference mass flux       [kg/m²/s]
    !----- Output variables ----------------------------------------------------------------!
-   real                  , intent(inout) :: areadn      ! Downdraft relative area   [    ---]
-   real                  , intent(inout) :: areaup      ! Updraft   relative area   [    ---]
+   real                  , intent(out) :: areadn      ! Downdraft relative area   [    ---]
+   real                  , intent(out) :: areaup      ! Updraft   relative area   [    ---]
+   real                  , intent(out) :: wdndraft    ! Downdraft at LOD          [    m/s]
+   real                  , intent(out) :: wupdraft    ! Updraft   at LOU          [    m/s]
    !----- Local variables -----------------------------------------------------------------!
    integer                             :: k         ! Cloud level counter
    integer                             :: kr        ! BRAMS level counter
-   real                                :: w_cld     ! Scratch draft vert. veloc.  [    m/s]
    real                                :: lske2     ! Scratch large-scale KE * 2  [   J/kg]
-   real                                :: wnorm     ! Scratch with the norm. w    [    ---]
+   real                                :: wnorm     ! Normalised buoyant velocity [    m/s]
    real                                :: cdfval    ! Scratch with CDF value      [    ---]
    !----- Minimum draft to prevent square root of negative values -------------------------!
    real, parameter                     :: min_downdraft2      = 0.01
@@ -539,7 +541,7 @@ subroutine grell_draft_area(comp_down,m1,mgmzp,kgoff,jmin,k22,kbcon,ktop,dzu_cld
    real, parameter                     :: max_areaup          = 0.50
    !----- External functions --------------------------------------------------------------!
    real, external                      :: cdf
-   real, external                      :: cdf2normal
+   real, external                      :: expected
    !---------------------------------------------------------------------------------------!
 
    
@@ -547,40 +549,44 @@ subroutine grell_draft_area(comp_down,m1,mgmzp,kgoff,jmin,k22,kbcon,ktop,dzu_cld
    !    Setting the area to zero. This will be replaced by the actual area at the draft    !
    ! layer.                                                                                !
    !---------------------------------------------------------------------------------------!
-   areadn=0.
-   areaup=0.
+   areadn   = 0.
+   areaup   = 0.
+   wdndraft = 0.
+   wupdraft = 0.
    
    !---------------------------------------------------------------------------------------!
    !    Downdraft. As in Fritsch and Chappell (1980), I assume downdraft velocity to be    !
    ! zero at the bottom, and integrate backwards to get the profile. Now I am including    !
    ! the effect of entrainment and detrainment, in a simplified way, treating kinetic      !
    ! energy as a thermodynamic variable, which means that it has entrainment and detrain-  !
-   ! ment, and also one source (namely the buoyancy), and one sink (namely the friction,   !
-   ! defined as in Zhang and Fritsch (1986), as - entrainment*w²).                         !
+   ! ment, and also one source (namely the buoyancy), and one sink (friction, defined as   !
+   ! in Zhang and Fritsch (1986), as - entrainment*w²).                                    !
    !---------------------------------------------------------------------------------------!
    if (comp_down) then
-      w_cld = 0.
-      do k=2,jmin
+      wdndraft = 0.
+      do k=2,klod
          kr     = k + kgoff
-         lske2  = wwind(k-1)*wwind(k-1) + sigw(k-1)*sigw(k-1)                        
-         w_cld  = sqrt(max(min_downdraft2,                                                 &
-                  (w_cld*w_cld*(1.+(1.5*mentrd_rate(k-1)-0.5*cdd(k-1))*dzu_cld(k-1))       &
+         lske2  = wwind(k-1)*wwind(k-1) + sigw(k-1)*sigw(k-1)
+         wdndraft = sqrt(max(min_downdraft2,                                               &
+                   (wdndraft*wdndraft*(1.+(1.5*mentrd_rate(k-1)-0.5*cdd(k-1))*dzu_cld(k-1))&
                    -(dbyd(k-1)+dbyd(k))*dzu_cld(k-1)-mentrd_rate(k-1)*lske2)               &
-                  / (1.-0.5*(mentrd_rate(k-1)+cdd(k-1))*dzu_cld(k-1))))              
+                   / (1.-0.5*(mentrd_rate(k-1)+cdd(k-1))*dzu_cld(k-1))))              
       end do
-      areadn = dnmf * etad_cld(jmin) / (rhod_cld(jmin) * w_cld)
+      areadn = dnmf * etad_cld(klod) / (rhod_cld(klod) * wdndraft)
    end if
    
    !---------------------------------------------------------------------------------------!
-   !   Updraft. Since I know the minimum vertical velocity needed at the updraft origin, I !
-   ! can will use it to define the expected updraft at k22. We already found wbuoymin, the !
-   ! minimum vertical velocity that will make w>0 at the LFC. Using the PDF again, we can  !
-   ! assume that the updraft area at k22 corresponds to the fractional area in which       !
-   ! w > wbuoymin. From this area we can estimate w_cld at the updraft origin level and    !
-   ! find the distribution of area.                                                        !
+   !   Updraft. We know that the minimum vertical velocity required at the level of free   !
+   ! convection is 0, so we can actually estimate a reference updraft velocity             !
+   ! based on the expected value.  Let p(w) be the normal probability density function     !
+   ! with average wwind(klou) and standard deviation sigw(klou).  Then the expected value  !
+   ! for updrafts wupdraft can be defined in a similar way as the average value, but       !
+   ! integrated only between wbuoymin and infinity.  With this we can use the mass flux    !
+   ! and the density at the level klou to determine the fraction of area of the cloud.     !
    !---------------------------------------------------------------------------------------!
-   wnorm   = (wbuoymin-wwind(k22))/sigw(k22)
-   areaup  = 1. - cdf(wnorm)
+   wupdraft = expected(wbuoymin,wwind(klou),sigw(klou))
+   wnorm    = (wbuoymin - wwind(klou)) / sigw(klou)
+   areaup   = 1. - cdf(wnorm)
 
    return
 end subroutine grell_draft_area

@@ -322,11 +322,14 @@ subroutine canopy_photosynthesis(csite,ipa,vels,atm_tmp,prss,ed_ktrans,ntext_soi
       ! convert units so all fast respiration terms are in [µmol/m²ground/s].              !
       !------------------------------------------------------------------------------------!
       cpatch%mean_growth_resp (ico) = cpatch%mean_growth_resp (ico)                        &
-                                    + cpatch%growth_respiration (ico) * cpatch%nplant(ico) * kgCday_2_umols
+                                    + cpatch%growth_respiration (ico) * kgCday_2_umols     &
+                                    * cpatch%nplant(ico)
       cpatch%mean_storage_resp(ico) = cpatch%mean_storage_resp(ico)                        &
-                                    + cpatch%storage_respiration(ico) * cpatch%nplant(ico) * kgCday_2_umols
+                                    + cpatch%storage_respiration(ico) * kgCday_2_umols     &
+                                    * cpatch%nplant(ico)
       cpatch%mean_vleaf_resp  (ico) = cpatch%mean_vleaf_resp  (ico)                        &
-                                    + cpatch%vleaf_respiration  (ico) * cpatch%nplant(ico) * kgCday_2_umols
+                                    + cpatch%vleaf_respiration  (ico) * kgCday_2_umols     &
+                                    * cpatch%nplant(ico)                                    
       !------------------------------------------------------------------------------------!
    end do cohortloop
 

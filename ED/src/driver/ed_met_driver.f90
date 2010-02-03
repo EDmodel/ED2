@@ -459,7 +459,7 @@ subroutine read_met_drivers_init
          !----- Loop over variables. and read the data. -----------------------------------!
          do iv = 1, met_nv(iformat)
             offset = 0
-            call read_ol_file(iformat, iv, year_use, mname(current_time%month)             &
+            call read_ol_file(infile,iformat, iv, year_use, mname(current_time%month)      &
                              ,current_time%year, offset, cgrid)
          end do
 
@@ -504,7 +504,7 @@ subroutine read_met_drivers_init
                offset = nint(day_sec / met_frq(iformat,iv)) * 31
 
                !----- Read the file. ------------------------------------------------------!
-               call read_ol_file(iformat,iv,year_use_2,mname(m2),y2,offset,cgrid)
+               call read_ol_file(infile,iformat,iv,year_use_2,mname(m2),y2,offset,cgrid)
             end if
          end do varloop
          
@@ -528,7 +528,7 @@ end subroutine read_met_drivers_init
 !==========================================================================================!
 !==========================================================================================!
 subroutine read_met_drivers
-
+   use ed_max_dims    , only : str_len       ! ! intent(in)
    use ed_state_vars  , only : edgrid_g      & ! structure
                              , edtype        & ! structure
                              , polygontype   ! ! structure
@@ -551,18 +551,18 @@ subroutine read_met_drivers
 
    implicit none
    !----- Local variables -----------------------------------------------------------------!
-   type(edtype)      , pointer :: cgrid
-   character(len=256)          :: infile
-   integer                     :: igr
-   integer                     :: year_use
-   integer                     :: ncyc
-   integer                     :: iformat
-   integer                     :: iv
-   integer                     :: offset
-   integer                     :: m2
-   integer                     :: y2
-   integer                     :: year_use_2
-   logical                     :: exans
+   type(edtype)          , pointer :: cgrid
+   character(len=str_len)          :: infile
+   integer                         :: igr
+   integer                         :: year_use
+   integer                         :: ncyc
+   integer                         :: iformat
+   integer                         :: iv
+   integer                         :: offset
+   integer                         :: m2
+   integer                         :: y2
+   integer                         :: year_use_2
+   logical                         :: exans
    !----- Local constants -----------------------------------------------------------------!
    character(len=3), dimension(12), parameter :: mname = (/ 'JAN', 'FEB', 'MAR', 'APR'     &
                                                           , 'MAY', 'JUN', 'JUL', 'AUG'     &
@@ -618,7 +618,7 @@ subroutine read_met_drivers
             if (met_interp(iformat,iv) /= 1) then
                !----- If not, things are simple.  Just read in the month. -----------------!
                offset = 0
-               call read_ol_file(iformat,iv,year_use,mname(current_time%month)             &
+               call read_ol_file(infile,iformat,iv,year_use,mname(current_time%month)      &
                                 ,current_time%year,offset,cgrid)
             else
                !----- Here, just transfer future to current month.  -----------------------!
@@ -676,7 +676,7 @@ subroutine read_met_drivers
             if(met_interp(iformat,iv) == 1)then
                offset = nint(day_sec / met_frq(iformat,iv)) * 31
                !----- Read the file. ------------------------------------------------------!
-               call read_ol_file(iformat,iv,year_use_2,mname(m2),y2,offset,cgrid)
+               call read_ol_file(infile,iformat,iv,year_use_2,mname(m2),y2,offset,cgrid)
             end if
          end do
          
@@ -1228,294 +1228,328 @@ end subroutine update_met_drivers
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine read_ol_file(iformat, iv, year_use, mname, year, offset, cgrid)
-
-  use ed_state_vars,only:edgrid_g,edtype,polygontype
-  use met_driver_coms, only: met_frq, met_nlon, met_nlat, met_vars,   &
-       met_xmin, met_dx, met_ymin, met_dy,met_interp,no_ll
-
-  use hdf5_utils, only: shdf5_irec_f,shdf5_info_f
-  use mem_sites, only: grid_type
-  use ed_state_vars,only:edtype
-  use consts_coms, only: day_sec
+!      This subroutine reads in the meteorological data.  Subroutine shdf5_irec_f uses     !
+! HDF5 routines to extract the data from the archive.  The rest of this code manages the   !
+! allocation and storage of that data.  The extracted data may be from a year, other than  !
+! the current simulation year.  This happens when we use a range of years to loop data     !
+! over, typically during very long simulations.  In such cases, the number of days in      !
+! February will change during leap years, and the number of days in February during the    !
+! model year may not match that of the simulation year, therefore this must be taken into  !
+! account.                                                                                 !
+!==========================================================================================!
+subroutine read_ol_file(infile,iformat, iv, year_use, mname, year, offset, cgrid)
+   use ed_max_dims    , only : str_len       ! ! intent(in)
+   use ed_state_vars  , only : edgrid_g      & ! structure
+                             , edtype        & ! structure
+                             , polygontype   ! ! structure
+   use met_driver_coms, only : met_frq       & ! intent(in)
+                             , met_nlon      & ! intent(in)
+                             , met_nlat      & ! intent(in)
+                             , met_vars      & ! intent(in)
+                             , met_xmin      & ! intent(in)
+                             , met_dx        & ! intent(in)
+                             , met_ymin      & ! intent(in)
+                             , met_dy        & ! intent(in)
+                             , met_interp    & ! intent(in)
+                             , no_ll         ! ! intent(in)
+   use hdf5_utils     , only : shdf5_irec_f  & ! subroutine
+                             , shdf5_info_f  ! ! subroutine
+   use mem_sites      , only : grid_type     ! ! intent(in)
+   use consts_coms    , only : day_sec       ! ! intent(in)
   
-  implicit none
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   character(len=str_len), intent(in)  :: infile
+   type(edtype)          , target      :: cgrid
+   integer               , intent(in)  :: iformat
+   integer               , intent(in)  :: iv
+   integer               , intent(in)  :: year_use
+   character(len=3)      , intent(in)  :: mname
+   integer               , intent(in)  :: year
+   integer               , intent(in)  :: offset
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                             :: ipy
+   integer                             :: points_per_day
+   integer                             :: nday
+   integer                             :: nday_dset
+   integer                             :: np
+   integer                             :: ip
+   integer                             :: np_dset
+   real, dimension(:,:,:), allocatable :: metvar
+   real, dimension(:,:,:), allocatable :: metvar_dset
+   real, dimension(:)    , allocatable :: metscalar
+   integer                             :: ndims
+   integer, dimension(3)               :: idims
+   integer                             :: ilon
+   integer                             :: ilat
+   integer                             :: d
+   !----- External functions. -------------------------------------------------------------!
+   logical, external                   :: isleap
+   !---------------------------------------------------------------------------------------!
 
-  type(edtype),target :: cgrid
-  integer, intent(in) :: iformat
-  integer, intent(in) :: iv
-  integer, intent(in) :: year_use
-  character(len=3), intent(in) :: mname
-  integer, intent(in) :: year
-  integer, intent(in) :: offset
-  integer :: ipy
-  integer :: points_per_day
-  integer :: nday,nday_dset
-  integer :: np,ip,np_dset
-  real, allocatable, dimension(:,:,:) :: metvar
-  real, allocatable, dimension(:,:,:) :: metvar_dset
-  real, allocatable, dimension(:) :: metscalar
-  integer :: ndims
-  integer, dimension(3) :: idims
-  integer :: ilon
-  integer :: ilat
-  logical, external :: isleap
 
-  ! This subroutine reads in the meteorogolical data
-  ! subroutine shdf5_irec_f uses HDF5 routines to extract the data from the archive
-  ! The rest of this code manages the allocation and storage of that data.
-  ! The extracted data may be from a year, other than the current simulation year.
-  ! This happens when we use a range of years to loop data over, typically during
-  ! very long simulations. In such cases, the number of days in February will change
-  ! during leap years, and the number of days in February during the model year may not match
-  ! that of the simulation year
-
-  ! Geoposition variables do not apply
-  if (met_vars(iformat,iv).eq.'lat' .or. met_vars(iformat,iv).eq.'lon') return
+   !----- Geoposition variables do not apply. ---------------------------------------------!
+   if (met_vars(iformat,iv).eq.'lat' .or. met_vars(iformat,iv).eq.'lon') return
   
-  !  Determine how many times to read
 
-  !  In cases 2 and 4 we are dealing with constant time, only 1 point
+   !---------------------------------------------------------------------------------------!
+   !  Determine how many times to read.                                                    !
+   !---------------------------------------------------------------------------------------!
   
-  if (met_interp(iformat,iv).eq.2 .or. met_interp(iformat,iv).eq.4) then
-     np = 1
-  else
+   select case (met_interp(iformat,iv))
+   case (2,4)
+      !------------------------------------------------------------------------------------!
+      !     In cases 2 and 4 we are dealing with constant time, only 1 point.              !
+      !------------------------------------------------------------------------------------!
+      np = 1
+   case default
 
-     ! Allocate for the number of points in the current year.  If the model year
-     ! has more data in February, we will not use that last (29th) day.  If the 
-     ! February in model time has more days, then we have to recycle the last day
-     ! of the data archive if it is not a leap year also.
+      !------------------------------------------------------------------------------------!
+      !      Allocate for the number of points in the current year. In case this month is  !
+      ! February, we must make sure that we account for the possibility of having a mis-   !
+      ! match in the number of days in the model and in the dataset.                       !
+      ! 1.  If the model year is leap but the dataset is not, we repeat February 28 twice. !
+      ! 2.  If the model year is not leap but the dataset is, we drop February 29.         !
+      !------------------------------------------------------------------------------------!
 
-     points_per_day = nint(day_sec/met_frq(iformat,iv))
+      points_per_day = nint(day_sec/met_frq(iformat,iv))
 
-     ! Determine the number of points necessary for the model year
-     select case (trim(mname))
-     case ('APR','JUN','SEP','NOV')
-        nday = 30
-        nday_dset = 30
-     case ('JAN','MAR','MAY','JUL','AUG','OCT','DEC')
-        nday = 31
-        nday_dset = 31
-     case ('FEB')
-        if (isleap(year)) then
-           nday = 29
-        else 
-           nday = 28
-        end if
-        if (isleap(year_use)) then
-           nday_dset=29
-        else
-           nday_dset=28
-        end if
-     end select 
+      !----- Determine the number of points necessary for the model year. -----------------!
+      select case (trim(mname))
+      case ('APR','JUN','SEP','NOV')
+         nday = 30
+         nday_dset = 30
+      case ('JAN','MAR','MAY','JUL','AUG','OCT','DEC')
+         nday = 31
+         nday_dset = 31
+      case ('FEB')
+         if (isleap(year)) then
+            nday = 29
+         else 
+            nday = 28
+         end if
+         if (isleap(year_use)) then
+            nday_dset=29
+         else
+            nday_dset=28
+         end if
+      end select 
 
-     np = nday * points_per_day
-     np_dset = nday_dset * points_per_day
+      np = nday * points_per_day
+      np_dset = nday_dset * points_per_day
 
-  endif
+   end select
 
-  ! Allocate the buffer space
+   !----- Allocate the buffer space. ------------------------------------------------------!
   
-  select case (met_interp(iformat,iv))
-  !  Case 3, reading in 1 value representing the whole grid,
-  !  but over all available times
-  case (3) 
-     ndims = 1
-     idims(1) = np_dset
-     
-     allocate(metvar(np,met_nlon(iformat),met_nlat(iformat)))
-     allocate(metscalar(np_dset))
-     call shdf5_irec_f(ndims, idims, trim(met_vars(iformat,iv)),  &
-          rvara = metscalar)
-     
-     if (np < np_dset) then     ! No interpolation is needed, but we
-                                ! need two buffers
-        do ip=1,np
-           metvar(ip,:,:) = metscalar(ip)
-        enddo
-        
-     elseif(np .eq. np_dset) then      ! Datasets are the same, no double allocation
-        
-        do ip=1,np
-           metvar(ip,:,:) = metscalar(ip)
-        enddo
-        
-     else              ! The dataset buffer is smaller than the models
-                       ! buffer, so we recycle the last day
-        do ip=1,np_dset
-           metvar(ip,:,:) = metscalar(ip)
-        enddo
+   select case (met_interp(iformat,iv))
+   case (3) 
+      !------------------------------------------------------------------------------------!
+      !     Case 3, reading in one value representing the entire domain, though it changes !
+      !  over time.                                                                        !
+      !------------------------------------------------------------------------------------!
+      ndims = 1
+      idims(1) = np_dset
+      
+      allocate(metvar(np,met_nlon(iformat),met_nlat(iformat)))
+      allocate(metscalar(np_dset))
+      call shdf5_irec_f(ndims,idims,trim(met_vars(iformat,iv)),rvara = metscalar)
+      
+      if (np < np_dset) then     
+         !----- No interpolation is needed, but we need two buffers. ----------------------!
+         do ip=1,np
+            metvar(ip,:,:) = metscalar(ip)
+         end do
 
-        do ip=np_dset+1,np
-           ! Then reuse the 28th for the 29th day
-           metvar(ip,:,:) = metscalar(ip-points_per_day+1)
-        enddo
-     endif
+      elseif(np == np_dset) then
+         !----- Datasets are the same, no double allocation. ------------------------------!
+         do ip=1,np
+            metvar(ip,:,:) = metscalar(ip)
+         end do
 
-     deallocate(metscalar)
+      else
+         !---------------------------------------------------------------------------------!
+         !     The dataset buffer is smaller than the models buffer, so we recycle the     !
+         ! last day.                                                                       !
+         !---------------------------------------------------------------------------------!
+         do ip=1,np_dset
+            metvar(ip,:,:) = metscalar(ip)
+         end do
 
-  !  Case 4, dont read, but use the value stored in met_freq
-  !  as the scalar value
-  case (4)
-     
-     allocate(metvar(1,met_nlon(iformat),met_nlat(iformat)))
-     metvar(1,:,:) = met_frq(iformat,iv)
-     
-  !  Case 2, 2D grid is read in, ie. np = 1
-  case (2)
+         do ip=np_dset+1,np
+            !----- Then reuse the 28th for the 29th day. ----------------------------------!
+            metvar(ip,:,:) = metscalar(ip-points_per_day+1)
+         end do
+      end if
 
-     allocate(metvar(1,met_nlon(iformat),met_nlat(iformat)))
+      deallocate(metscalar)
 
-     call shdf5_info_f(trim(met_vars(iformat,iv)),ndims,idims)
-     
-     ! Check to see if the dimensions are consistent
-     if (ndims.ne.2                          &
-          .or. idims(1).ne.met_nlon(iformat) &
-          .or. idims(2).ne.met_nlat(iformat)) then
-        print*,"DATASET: ",trim(met_vars(iformat,iv))
-        print*,"DOES NOT HAVE DIMENSIONS THAT MATCH THE"
-        print*,"SPECIFIED INPUT, OR LAT/LON GRID"
-        print*,ndims,np,met_nlon(iformat),met_nlat(iformat),idims
-        call fatal_error('Mismatch between dataset and specified input' &
-                        ,'read_ol_file','ed_met_driver.f90')
-     endif
+   case (4)
+      !------------------------------------------------------------------------------------!
+      !      Case 4, we don't read, instead we use the value stored in met_freq as the     !
+      ! scalar value.                                                                      !
+      !------------------------------------------------------------------------------------!
+      allocate (metvar(1,met_nlon(iformat),met_nlat(iformat)))
+      metvar(1,:,:) = met_frq(iformat,iv)
+      
+   case (2)
+      !----- Case 2, 2D grid is read in, ie. np = 1. --------------------------------------!
 
-     call shdf5_irec_f(ndims, idims, trim(met_vars(iformat,iv)),  &
-          rvara = metvar)
+      allocate(metvar(1,met_nlon(iformat),met_nlat(iformat)))
 
-  ! Case default (aka 1 or 0), read time-and-space variable array.
-  case default
+      call shdf5_info_f(trim(met_vars(iformat,iv)),ndims,idims)
+      
+      !----- Check to see if the dimensions are consistent. -------------------------------!
+      if (ndims /= 2 .or. idims(1) /= met_nlon(iformat)                                    &
+                     .or. idims(2) /= met_nlat(iformat)) then
+         write (unit=*,fmt='(2(a,1x))') ' In file: ',trim(infile)
+         write (unit=*,fmt='(2(a,1x))') ' Dataset: ', trim(met_vars(iformat,iv))
+         write (unit=*,fmt='(a)')       ' doesn''t have dimensions that match the'
+         write (unit=*,fmt='(a)')       ' specified input, or latitude/longitude grid...'
+         write (unit=*,fmt='(a,1x,i5)') ' MET_NLON = ',met_nlon(iformat)
+         write (unit=*,fmt='(a,1x,i5)') ' MET_NLAT = ',met_nlat(iformat)
+         write (unit=*,fmt='(a,1x,i5)') ' NDIMS    = ',ndims
+         do d=1,ndims
+            write(unit=*,fmt='(a,i5,a,1x,i5)') 'IDIMS (',d,') =', idims(d)
+         end do
+         call fatal_error('Mismatch between dataset and specified input'                   &
+                         ,'read_ol_file','ed_met_driver.f90')
+      end if
 
-     call shdf5_info_f(trim(met_vars(iformat,iv)),ndims,idims)
-     
-     ! Check to see if the dimensions are consistent
-     if (ndims.ne.3                          &
-          .or. idims(1).ne.np_dset           &
-          .or. idims(2).ne.met_nlon(iformat) &
-          .or. idims(3).ne.met_nlat(iformat)) then
-        print*,"DATASET: ",trim(met_vars(iformat,iv))
-        print*,"DOES NOT HAVE DIMENSIONS THAT MATCH THE"
-        print*,"SPECIFIED INPUT, OR LAT/LON GRID"
-        print*,ndims
-        print*,np_dset,met_nlon(iformat),met_nlat(iformat)
-        print*,idims
-        call fatal_error('Mismatch between dataset and specified input' &
-                        ,'read_ol_file','ed_met_driver.f90')
-     endif
+      call shdf5_irec_f(ndims,idims,trim(met_vars(iformat,iv)),rvara = metvar)
 
-     if (np < np_dset) then     ! No interpolation is needed, but we
-                                ! need two buffers
-        
-        allocate(metvar(np,met_nlon(iformat),met_nlat(iformat)))
-        allocate(metvar_dset(np_dset,met_nlon(iformat),met_nlat(iformat)))
-        
-        call shdf5_irec_f(ndims, idims, trim(met_vars(iformat,iv)),  &
-             rvara = metvar_dset)
-        
-        metvar(1:np,:,:) = metvar_dset(1:np,:,:)
-        
-        deallocate(metvar_dset)
-        
-        
-     elseif(np .eq. np_dset) then      ! Datasets are the same, no double allocation
-        
-        allocate(metvar(np,met_nlon(iformat),met_nlat(iformat)))
-        
-        call shdf5_irec_f(ndims, idims, trim(met_vars(iformat,iv)),  &
-             rvara = metvar)
-        
-     else                       ! The dataset buffer is smaller than the models
-                                ! buffer, so we recycle the last day
-        
-        allocate(metvar(np,met_nlon(iformat),met_nlat(iformat)))
-        allocate(metvar_dset(np_dset,met_nlon(iformat),met_nlat(iformat)))
-        
-        call shdf5_irec_f(ndims, idims, trim(met_vars(iformat,iv)),  &
-             rvara = metvar_dset)
-        
-        metvar(1:np_dset,:,:) = metvar_dset(1:np_dset,:,:)
-        
-        ! Then reuse the 28th for the 29th day
-        metvar(np_dset+1:np,:,:) = metvar_dset(np_dset-points_per_day+1:np_dset,:,:)
-        
-        deallocate(metvar_dset)
+   case default
+      !----- Case 1 or 0, we must read time-and-space variable array. ---------------------!
+      call shdf5_info_f(trim(met_vars(iformat,iv)),ndims,idims)
+      
+      ! Check to see if the dimensions are consistent
+      if (ndims /= 3 .or. idims(1).ne.np_dset .or. idims(2).ne.met_nlon(iformat)           &
+                                              .or. idims(3).ne.met_nlat(iformat)) then
+         print*,"DATASET: ",trim(met_vars(iformat,iv))
+         print*,"DOES NOT HAVE DIMENSIONS THAT MATCH THE"
+         print*,"SPECIFIED INPUT, OR LAT/LON GRID"
+         print*,ndims
+         print*,np_dset,met_nlon(iformat),met_nlat(iformat)
+         print*,idims
+         write (unit=*,fmt='(2(a,1x))') ' In file: ',trim(infile)
+         write (unit=*,fmt='(2(a,1x))') ' Dataset: ', trim(met_vars(iformat,iv))
+         write (unit=*,fmt='(a)')       ' doesn''t have dimensions that match the'
+         write (unit=*,fmt='(a)')       ' specified input, or latitude/longitude grid...'
+         write (unit=*,fmt='(a,1x,i5)') ' NP_DSET  = ', np_dset
+         write (unit=*,fmt='(a,1x,i5)') ' MET_NLON = ', met_nlon(iformat)
+         write (unit=*,fmt='(a,1x,i5)') ' MET_NLAT = ', met_nlat(iformat)
+         write (unit=*,fmt='(a,1x,i5)') ' NDIMS    = ', ndims
+         do d=1,ndims
+            write(unit=*,fmt='(a,i5,a,1x,i5)') 'IDIMS (',d,') =', idims(d)
+         end do
+         call fatal_error('Mismatch between dataset and specified input' &
+                         ,'read_ol_file','ed_met_driver.f90')
+      end if
 
-     endif
+      if (np < np_dset) then
+         !----- No interpolation is needed, but we need two buffers. ----------------------!
+         allocate(metvar(np,met_nlon(iformat),met_nlat(iformat)))
+         allocate(metvar_dset(np_dset,met_nlon(iformat),met_nlat(iformat)))
+         
+         call shdf5_irec_f(ndims, idims, trim(met_vars(iformat,iv)), rvara = metvar_dset)
+         metvar(1:np,:,:) = metvar_dset(1:np,:,:)
+         deallocate(metvar_dset)
+         
+         
+      elseif (np == np_dset) then
+         !----- Datasets are the same, no double allocation needed. -----------------------!
+         allocate(metvar(np,met_nlon(iformat),met_nlat(iformat)))
+         call shdf5_irec_f(ndims, idims, trim(met_vars(iformat,iv)), rvara = metvar)
 
+      else
+         !---------------------------------------------------------------------------------!
+         !     The dataset buffer is smaller than the models buffer, so we recycle the     !
+         ! last day.                                                                       !
+         !---------------------------------------------------------------------------------!
+         allocate(metvar(np,met_nlon(iformat),met_nlat(iformat)))
+         allocate(metvar_dset(np_dset,met_nlon(iformat),met_nlat(iformat)))
 
-  end select
+         call shdf5_irec_f(ndims,idims,trim(met_vars(iformat,iv)),rvara=metvar_dset)
+         metvar(1:np_dset,:,:) = metvar_dset(1:np_dset,:,:)
+         
+         !----- Then reuse the 28th for the 29th day. -------------------------------------!
+         metvar(np_dset+1:np,:,:) = metvar_dset(np_dset-points_per_day+1:np_dset,:,:)
+         deallocate(metvar_dset)
+      end if
+   end select
 
-
-  ! The dataset for that variable has been read into an array
-  ! Now, the polygons are cycled through, and they are associated
-  ! with an index in the grid.  If this is a lat-lon grid, the procedure
-  ! is a simple interpolation between the domain endpoints, if this is 
-  ! a polar stereo-graphic projection, we make use of the associated
-  ! indices saved in memory, ie. (cgrid%ilon(ipy))
-
-  do ipy = 1,cgrid%npolygons
-     
-     ! Get the indices.  Remember, latitude is flipped.
-     if(no_ll) then
-        ilon = min( max(1, 1 + nint( (cgrid%lon(ipy) - met_xmin(iformat)) /   &
-             met_dx(iformat) ) ), met_nlon(iformat))
-        ilat = met_nlat(iformat) -  &
-             min( max(1, 1 + nint( (cgrid%lat(ipy) - met_ymin(iformat)) /   &
-             met_dy(iformat) ) ), met_nlat(iformat)) + 1
-     else
-        ilon = cgrid%ilon(ipy)
-        ilat = cgrid%ilat(ipy)
-     endif
-     
-     ! Get the time series.
-     select case (trim(met_vars(iformat,iv)))
-     case('nbdsf')
-        cgrid%metinput(ipy)%nbdsf((offset+1):(offset+np)) =   &
-             metvar(1:np,ilon,ilat)
-     case('nddsf')
-        cgrid%metinput(ipy)%nddsf((offset+1):(offset+np)) =   &
-             metvar(1:np,ilon,ilat)
-     case('vbdsf')
-        cgrid%metinput(ipy)%vbdsf((offset+1):(offset+np)) =   &
-             metvar(1:np,ilon,ilat)
-     case('vddsf')
-        cgrid%metinput(ipy)%vddsf((offset+1):(offset+np)) =   &
-             metvar(1:np,ilon,ilat)
-     case('prate')
-        cgrid%metinput(ipy)%prate((offset+1):(offset+np)) =   &
-             metvar(1:np,ilon,ilat)
-     case('dlwrf')
-        cgrid%metinput(ipy)%dlwrf((offset+1):(offset+np)) =   &
-             metvar(1:np,ilon,ilat)
-     case('pres')
-        cgrid%metinput(ipy)%pres((offset+1):(offset+np)) =    &
-             metvar(1:np,ilon,ilat)
-     case('hgt')
-        cgrid%metinput(ipy)%hgt((offset+1):(offset+np))  =    &
-             metvar(1:np,ilon,ilat)
-     case('ugrd')
-        cgrid%metinput(ipy)%ugrd((offset+1):(offset+np)) =    &
-             metvar(1:np,ilon,ilat)
-     case('vgrd')
-        cgrid%metinput(ipy)%vgrd((offset+1):(offset+np)) =    &
-             metvar(1:np,ilon,ilat)
-     case('sh')
-        cgrid%metinput(ipy)%sh((offset+1):(offset+np)) =      &
-             metvar(1:np,ilon,ilat)
-     case('tmp')
-        cgrid%metinput(ipy)%tmp((offset+1):(offset+np)) =     &
-             metvar(1:np,ilon,ilat)
-     case('co2')
-        cgrid%metinput(ipy)%co2((offset+1):(offset+np)) =     &
-             metvar(1:np,ilon,ilat)
-     end select
-     
-  enddo
+   !---------------------------------------------------------------------------------------!
+   !      The dataset for that variable has been read into an array.  Now, the polygons    !
+   ! are cycled through, and they are associated with an index in the grid.  If this is a  !
+   ! lat-lon grid, the procedure is a simple interpolation between the domain endpoints,   !
+   ! if this is a polar stereo-graphic projection, we make use of the associated indices   !
+   ! saved in memory, ie. (cgrid%ilon(ipy)).                                               !
+   !---------------------------------------------------------------------------------------!
+   do ipy = 1,cgrid%npolygons
+      
+      !----- Get the indices.  Remember, latitude is flipped. -----------------------------!
+      if (no_ll) then
+         ilon = min(max(1                                                                  &
+                       ,1 + nint((cgrid%lon(ipy) - met_xmin(iformat)) / met_dx(iformat)))  &
+                   ,met_nlon(iformat))
+         ilat = met_nlat(iformat)                                                          &
+              - min(max(1                                                                  &
+                       ,1 + nint((cgrid%lat(ipy) - met_ymin(iformat)) / met_dy(iformat)))  &
+                   , met_nlat(iformat)) + 1
+      else
+         ilon = cgrid%ilon(ipy)
+         ilat = cgrid%ilat(ipy)
+      end if
+      
+      !----- Get the time series. ---------------------------------------------------------!
+      select case (trim(met_vars(iformat,iv)))
+      case('nbdsf')
+         cgrid%metinput(ipy)%nbdsf((offset+1):(offset+np)) =   &
+              metvar(1:np,ilon,ilat)
+      case('nddsf')
+         cgrid%metinput(ipy)%nddsf((offset+1):(offset+np)) =   &
+              metvar(1:np,ilon,ilat)
+      case('vbdsf')
+         cgrid%metinput(ipy)%vbdsf((offset+1):(offset+np)) =   &
+              metvar(1:np,ilon,ilat)
+      case('vddsf')
+         cgrid%metinput(ipy)%vddsf((offset+1):(offset+np)) =   &
+              metvar(1:np,ilon,ilat)
+      case('prate')
+         cgrid%metinput(ipy)%prate((offset+1):(offset+np)) =   &
+              metvar(1:np,ilon,ilat)
+      case('dlwrf')
+         cgrid%metinput(ipy)%dlwrf((offset+1):(offset+np)) =   &
+              metvar(1:np,ilon,ilat)
+      case('pres')
+         cgrid%metinput(ipy)%pres((offset+1):(offset+np)) =    &
+              metvar(1:np,ilon,ilat)
+      case('hgt')
+         cgrid%metinput(ipy)%hgt((offset+1):(offset+np))  =    &
+              metvar(1:np,ilon,ilat)
+      case('ugrd')
+         cgrid%metinput(ipy)%ugrd((offset+1):(offset+np)) =    &
+              metvar(1:np,ilon,ilat)
+      case('vgrd')
+         cgrid%metinput(ipy)%vgrd((offset+1):(offset+np)) =    &
+              metvar(1:np,ilon,ilat)
+      case('sh')
+         cgrid%metinput(ipy)%sh((offset+1):(offset+np)) =      &
+              metvar(1:np,ilon,ilat)
+      case('tmp')
+         cgrid%metinput(ipy)%tmp((offset+1):(offset+np)) =     &
+              metvar(1:np,ilon,ilat)
+      case('co2')
+         cgrid%metinput(ipy)%co2((offset+1):(offset+np)) =     &
+              metvar(1:np,ilon,ilat)
+      end select
+      
+   end do
   
-  ! Deallocate the buffer
-  deallocate(metvar)
+   !----- Deallocate the buffer. ----------------------------------------------------------!
+   deallocate(metvar)
   
-  return
+   return
 end subroutine read_ol_file
 !==========================================================================================!
 !==========================================================================================!

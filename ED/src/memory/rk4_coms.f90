@@ -302,6 +302,7 @@ module rk4_coms
    integer      :: maxstp      ! Maximum number of intermediate steps.
    real(kind=8) :: rk4eps      ! Desired relative accuracy
    real(kind=8) :: rk4epsi     ! Inverse of rk4eps
+   real(kind=8) :: rk4eps2     ! rk4eps * rk4eps
    real(kind=8) :: hmin        ! Minimum step size
    logical      :: print_diags ! Flag to print the diagnostic check.
    logical      :: checkbudget ! Flag to decide whether we will check whether the budgets 

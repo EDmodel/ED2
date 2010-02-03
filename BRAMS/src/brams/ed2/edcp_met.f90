@@ -522,6 +522,7 @@ subroutine fill_site_precip(ifm,cgrid,m2,m3,ia,iz,ja,jz,pi0_mean,theta_mean)
       !------------------------------------------------------------------------------------!
       do i=ia,iz
          do j=ja,jz
+
             conprr_mean(i,j) = dtlsmi * ( cuparm_g(ifm)%aconpr(i,j)                        &
                                         - ed_precip_g(ifm)%prev_aconpr(i,j) )
             ed_precip_g(ifm)%prev_aconpr(i,j) = cuparm_g(ifm)%aconpr(i,j)
