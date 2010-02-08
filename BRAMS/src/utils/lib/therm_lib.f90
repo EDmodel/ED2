@@ -2290,6 +2290,7 @@ module therm_lib
       real                          :: es00      ! Defined as p00*rt/(epsilon + rt)
       real                          :: delta     ! Aux. variable (For 2nd guess).
       integer                       :: itn,itb   ! Iteration counters
+      integer                       :: ii        ! Another counter
       logical                       :: converged ! Convergence handle
       logical                       :: zside     ! Aux. flag - check sides for Regula Falsi
       logical                       :: brrr_cold ! Flag - considering ice thermo.
@@ -2494,8 +2495,6 @@ module therm_lib
          write (unit=*,fmt='(a,1x,i12)')    '    ITERATIONS       :',itb
          write (unit=*,fmt='(a,1x,f12.5)')  '    PVAP     [   hPa]:',pvap
          write (unit=*,fmt='(a,1x,f12.5)')  '    THETA    [     K]:',theta
-         write (unit=*,fmt='(a,1x,f12.5)')  '    RLIQ     [  g/kg]:',1000.*rliq
-         write (unit=*,fmt='(a,1x,f12.5)')  '    RICE     [  g/kg]:',1000.*rice
          write (unit=*,fmt='(a,1x,f12.5)')  '    TLCL     [    °C]:',tlcl-t00
          write (unit=*,fmt='(a,1x,f12.5)')  '    TLCLA    [    °C]:',tlcla-t00
          write (unit=*,fmt='(a,1x,f12.5)')  '    TLCLZ    [    °C]:',tlclz-t00

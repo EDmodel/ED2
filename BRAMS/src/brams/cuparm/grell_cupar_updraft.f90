@@ -173,6 +173,7 @@ recursive subroutine grell_find_cloud_lfc(mkx,mgmzp,kbmax,cap_max,wnorm_max,wwin
    real                                 :: tlcl    ! LCL temperature               [     K]
    real                                 :: plcl    ! LCL pressure                  [    Pa]
    real                                 :: dzlcl   ! LCL sub-layer thickness       [     m]
+   real                                 :: wnorm   ! Normalised vertical velocity  [   ---]
    logical                              :: pushup  ! Push klou upwards             [   T/F]
    !---------------------------------------------------------------------------------------!
 

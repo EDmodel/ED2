@@ -19,7 +19,7 @@
 !                                                                                          !
 !------------------------------------------------------------------------------------------!
 subroutine grell_cupar_static(comp_noforc_cldwork,checkmass,iupmethod,maxens_cap           &
-                             ,maxens_eff,mgmzp,cap_maxs,cap_max_increment,wnorm_max        &
+                             ,maxens_eff,mgmzp,cap_maxs,cap_maxs_increment,wnorm_max       &
                              ,wnorm_increment,depth_min,depth_max,edtmax,edtmin,masstol    &
                              ,pmass_left,radius,relheight_down,zkbmax,zcutdown,z_detr      &
                              ,cld2prec,prec_cld,aad,aau,dellatheiv_eff,dellathil_eff       &
@@ -189,35 +189,35 @@ subroutine grell_cupar_static(comp_noforc_cldwork,checkmass,iupmethod,maxens_cap
    logical , intent(in) :: comp_noforc_cldwork ! I will compute no forced cloud work  [T/F]
    logical , intent(in) :: checkmass           ! I will check mass balance            [T/F]
    !----- Integer, global dimensions ------------------------------------------------------!
-   integer , intent(in) :: iupmethod        ! Method to find the updraft originatin level
-   integer , intent(in) :: maxens_cap       ! Ensemble size on static control (cap_maxs)
-   integer , intent(in) :: maxens_eff       ! Ensemble size on precipitation efficiency
-   integer , intent(in) :: mgmzp            ! Vertical grid size
-   integer , intent(in) :: i                ! Node X position
-   integer , intent(in) :: j                ! Node Y position
-   integer , intent(in) :: icld             ! Cloud type
-   integer , intent(in) :: mynum            ! Node ID, for debugging purposes only
+   integer , intent(in) :: iupmethod         ! Method to find the updraft originatin level
+   integer , intent(in) :: maxens_cap        ! Ensemble size on static control (cap_maxs)
+   integer , intent(in) :: maxens_eff        ! Ensemble size on precipitation efficiency
+   integer , intent(in) :: mgmzp             ! Vertical grid size
+   integer , intent(in) :: i                 ! Node X position
+   integer , intent(in) :: j                 ! Node Y position
+   integer , intent(in) :: icld              ! Cloud type
+   integer , intent(in) :: mynum             ! Node ID, for debugging purposes only
 
    !----- Real, parameters to define the cloud --------------------------------------------!
-   real    , intent(in) :: cap_maxs         ! Maximum depth of capping inversion     [ hPa]
-   real    , intent(in) :: cap_max_increment! Extra cap_maxs due to upstream conv.   [ hPa]
-   real    , intent(in) :: depth_min        ! Minimum cloud depth to qualify it      [   m]
-   real    , intent(in) :: depth_max        ! Maximum cloud depth to qualify it      [   m]
-   real    , intent(in) :: edtmax           ! Maximum epsilon (dnmf/upmf)            [ ---]
-   real    , intent(in) :: edtmin           ! Minimum epsilon (dnmf/upmf)            [ ---]
-   real    , intent(in) :: masstol          ! Maximum mass leak allowed to happen    [ ---]
-   real    , intent(in) :: pmass_left       ! Fraction of mass left at the ground    [ ---]
-   real    , intent(in) :: radius           ! Radius, for entrainment rate.          [   m]
-   real    , intent(in) :: relheight_down   ! Relative height for downdraft origin   [ ---]
-   real    , intent(in) :: wnorm_max        ! Maximum normalised w to be considered  [ ---]
-   real    , intent(in) :: wnorm_increment  ! Extra wnorm for ensemble               [ ---]
-   real    , intent(in) :: zkbmax           ! Top height for updrafts to originate   [   m]
-   real    , intent(in) :: zcutdown         ! Top height for downdrafts to originate [   m]
-   real    , intent(in) :: z_detr           ! Top height for downdraft detrainment   [   m]
-   real    , intent(in) :: cld2prec         ! Fraction of cloud that becomes prec.   [   m]
+   real    , intent(in) :: cap_maxs          ! Maximum depth of capping inversion    [ hPa]
+   real    , intent(in) :: cap_maxs_increment! Extra cap_maxs due to upstream conv.  [ hPa]
+   real    , intent(in) :: depth_min         ! Minimum cloud depth to qualify it     [   m]
+   real    , intent(in) :: depth_max         ! Maximum cloud depth to qualify it     [   m]
+   real    , intent(in) :: edtmax            ! Maximum epsilon (dnmf/upmf)           [ ---]
+   real    , intent(in) :: edtmin            ! Minimum epsilon (dnmf/upmf)           [ ---]
+   real    , intent(in) :: masstol           ! Maximum mass leak allowed to happen   [ ---]
+   real    , intent(in) :: pmass_left        ! Fraction of mass left at the ground   [ ---]
+   real    , intent(in) :: radius            ! Radius, for entrainment rate.         [   m]
+   real    , intent(in) :: relheight_down    ! Relative height for downdraft origin  [ ---]
+   real    , intent(in) :: wnorm_max         ! Maximum normalised w to be considered [ ---]
+   real    , intent(in) :: wnorm_increment   ! Extra wnorm for ensemble              [ ---]
+   real    , intent(in) :: zkbmax            ! Top height for updrafts to originate  [   m]
+   real    , intent(in) :: zcutdown          ! Top height for dndrafts to originate  [   m]
+   real    , intent(in) :: z_detr            ! Top height for downdraft detrainment  [   m]
+   real    , intent(in) :: cld2prec          ! Fraction of cloud that becomes prec.  [   m]
 
    !----- Logical, parameters to define the cloud -----------------------------------------!
-   logical , intent(in) :: prec_cld         ! Precipitating cloud.                   [ T|F]
+   logical , intent(in) :: prec_cld          ! Precipitating cloud.                  [ T|F]
 
    !----- The ensemble scratch structure variables. ---------------------------------------!
    real   , dimension(mgmzp,maxens_eff,maxens_cap), intent(inout) ::                       &
@@ -330,18 +330,18 @@ subroutine grell_cupar_static(comp_noforc_cldwork,checkmass,iupmethod,maxens_cap
          !     cap_max > 0). The reference given by the user will be used as               !
          !     reference, but cap_max will be perturbed for members other than the first.  !
          !---------------------------------------------------------------------------------!
-         cap_max =  max(cap_max_increment,cap_maxs + capoffset * cap_max_increment)
+         cap_max   =  max(cap_maxs_increment,cap_maxs + capoffset * cap_maxs_increment)
          wbuoy_max = 0.
       else
          !---------------------------------------------------------------------------------!
          ! A2. If the user opted by the probability, then I use capoffset to perturb the   !
-         !     threshold in which I should accept convection. threwnorm is the maximum     !
+         !     threshold in which I should accept convection. wnorm_max is the maximum     !
          !     normalised value of vertical wind that will give a cumulative probability   !
          !     density function (CPDF) greater than what the user asked, assuming that the !
          !     vertical velocity with average equals to wp and standard deviation equals   !
          !     to sigw (from Mellor-Yamada closures).                                      ! 
          !---------------------------------------------------------------------------------!
-         cap_max = cap_maxs
+         cap_max   = cap_maxs
          wbuoy_max = wnorm_max + capoffset * wnorm_increment
       end if
 

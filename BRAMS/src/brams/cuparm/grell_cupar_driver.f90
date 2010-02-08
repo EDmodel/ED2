@@ -337,8 +337,8 @@ subroutine grell_cupar_static_driver(banneron,i,j,icld)
           ,maxens_cap            & ! Ensemble size on level of capping inversion
           ,maxens_eff            & ! Ensemble size on precipitation efficiency
           ,mgmzp                 & ! Vertical grid size
-          ,cap_maxs              & ! Maximum depth of capping inversion     [ hPa]
-          ,cap_max_increment     & ! Extra cap_maxs due to upstream conv.   [ hPa]
+          ,cap_maxs              & ! Maximum depth of capping inversion     [  Pa]
+          ,cap_maxs_increment    & ! Extra cap_maxs due to upstream conv.   [  Pa]
           ,cld2prec              & ! Fraction of cloud converted to precip. [ ---]
           ,depth_min             & ! Minimum cloud depth to qualify it      [ hPa]
           ,depth_max             & ! Maximum cloud depth to qualify it      [ hPa]
@@ -411,7 +411,7 @@ subroutine grell_cupar_static_driver(banneron,i,j,icld)
    if (banneron) write (unit=60+mynum,fmt='(3(a,1x,i5,1x))')                      &
               '       [~] Calling grell_cupar_static... i=',i,'j=',j,'icld=',icld
    call grell_cupar_static(comp_noforc_cldwork,checkmass,iupmethod,maxens_cap,maxens_eff   &
-                     , mgmzp,cap_maxs,cap_max_increment,wnorm_max,wnorm_increment          &
+                     , mgmzp,cap_maxs,cap_maxs_increment,wnorm_max,wnorm_increment         &
                      , depth_min(icld),depth_max(icld),edtmax,edtmin,masstol,pmass_left    &
                      , radius(icld),relheight_down,zkbmax,zcutdown,z_detr,cld2prec         &
                      , prec_cld(icld)                                                      &

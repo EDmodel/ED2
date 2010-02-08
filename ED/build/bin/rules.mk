@@ -180,7 +180,7 @@ ed_para_coms.o : $(ED_MPI)/ed_para_coms.f90
 
 ed_para_init.o : $(ED_MPI)/ed_para_init.F90
 	cp -f $< $(<F:.F90=.F90)
-	$(FPP_COMMAND) $(<F:.F90=.F90)
+	$(FPP_COMMAND) $(HDF5_INCS) $(<F:.F90=.F90)
 	rm -f $(<F:.F90=.F90)
 
 ed_state_vars.o : $(ED_MEMORY)/ed_state_vars.f90

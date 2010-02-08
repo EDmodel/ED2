@@ -1629,6 +1629,7 @@ real function expected(xmin,xmean,sigmax)
                         , srtwoi     & ! intent(in)
                         , sqrttwopi  & ! intent(in)
                         , sqrthalfpi ! ! intent(in)
+   implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    real, intent(in) :: xmin
    real, intent(in) :: xmean
@@ -1664,7 +1665,7 @@ real function expected(xmin,xmean,sigmax)
    else
       !----- Nice range, let's find the results. ------------------------------------------!
       expnorm   = exp(- 0.5 * xnorm * xnorm) / (sqrttwopi * (1. - cdf(xnorm)))
-      expected  = xbar + sigx * expnorm
+      expected  = xmean + sigmax * expnorm
    end if
 
    return
