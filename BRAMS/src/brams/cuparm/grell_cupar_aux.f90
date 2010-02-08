@@ -572,7 +572,7 @@ subroutine grell_draft_area(m1,mgmzp,kgoff,comp_down,klod,klou,klfc,klnb,ktop,dz
                    -(dbyd(k-1)+dbyd(k))*dzu_cld(k-1)-mentrd_rate(k-1)*lske2)               &
                    / (1.-0.5*(mentrd_rate(k-1)+cdd(k-1))*dzu_cld(k-1))))              
       end do
-      areadn = dnmf * etad_cld(klod) / (rhod_cld(klod) * wdndraft)
+      areadn = max(1.e-5,dnmf * etad_cld(klod) / (rhod_cld(klod) * wdndraft))
    end if
    
    !---------------------------------------------------------------------------------------!
@@ -586,7 +586,7 @@ subroutine grell_draft_area(m1,mgmzp,kgoff,comp_down,klod,klou,klfc,klnb,ktop,dz
    !---------------------------------------------------------------------------------------!
    wupdraft = expected(wbuoymin,wwind(klou),sigw(klou))
    wnorm    = (wbuoymin - wwind(klou)) / sigw(klou)
-   areaup   = 1. - cdf(wnorm)
+   areaup   = max(1.e-5,1. - cdf(wnorm))
 
    return
 end subroutine grell_draft_area
