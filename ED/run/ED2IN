@@ -125,11 +125,17 @@
                                  !     (-1 or -2) unitfast/unitstate will be ignored for
                                  !     them
 
-   NL%OUTFAST    = 0		! Time interval between analysis files
-   NL%OUTSTATE   = 0		! Time interval between history files
-				! Values are in seconds and must be <= 1 month
-				! Values < FRQFAST/FRQSTATE are set to those values
-				! Special values: -1 = daily; -2 = monthly
+   NL%OUTFAST    = 0            ! Time interval between analysis files
+   NL%OUTSTATE   = 0            ! Time interval between history files
+                                ! Values are in seconds and must be <= 1 month
+                                ! Values < FRQFAST/FRQSTATE are set to those values
+                                ! Special values: -1 = daily; -2 = monthly
+                                ! If OUTFAST/STATE is greater than FRQFAST/STATE then
+                                !    multiple timepoints can be recorded to a single file
+                                !    reducing the number of files and i/o time in post-
+                                !    processing.  Multiple timepoints should be avoided
+                                !    in the history files if you intend to use these for
+                                !    HISTORY runs as it hasn't been tested.
 
    NL%ICLOBBER  = 1             ! 0 = stop if files exist, 1 = overwite files
    NL%FRQFAST   = 21600.            ! Time interval between analysis/history files
