@@ -54,7 +54,6 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    integer                            :: k
    !---------------------------------------------------------------------------------------!
 
-
    !---------------------------------------------------------------------------------------!
    !     Between time steps the pressure may change because of change in atmospheric       !
    ! pressure, which means that enthalpy is not conserved.  Potential temperature, on the  !
@@ -67,6 +66,7 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    targetp%can_co2      = dble(sourcesite%can_co2(ipa))
    targetp%can_depth    = dble(sourcesite%can_depth(ipa))
    !----- 2. Update the canopy pressure based on the new atmospheric pressure. ------------!
+
    targetp%can_prss     = reducedpress8(rk4site%atm_prss,rk4site%atm_theta,rk4site%atm_shv &
                                        ,rk4site%geoht,targetp%can_theta,targetp%can_shv    &
                                        ,targetp%can_depth)
