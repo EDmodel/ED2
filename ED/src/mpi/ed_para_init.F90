@@ -148,7 +148,7 @@ subroutine get_grid
       end do
 
    case (1) !----- Polar-stereographic grid. ----------------------------------------------!
-      call ed_gridset(1)
+      if (n_ed_region > 0) call ed_gridset(1)
       do ifm=1,n_ed_region
          call ed_newgrid(ifm)
          call ed_polarst(nnxp(ifm),nnyp(ifm),work_e(ifm)%glat,work_e(ifm)%glon)
