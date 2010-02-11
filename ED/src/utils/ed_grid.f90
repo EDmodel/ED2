@@ -67,13 +67,10 @@ subroutine ed_gridset(ngra)
            platn(ifm) = polelat
            plonn(ifm) = polelon
         else
-           print*,ifm
            platn(ifm) = platn(icm)
            plonn(ifm) = plonn(icm)
         endif
      enddo
-
-     stop
 
      ! just for the coarser grid:
      ! set deltax and deltay (deltaxn and deltayn)
