@@ -100,7 +100,8 @@ subroutine micro_driver()
                          ,pcp_tab(ngr)%pcpfillc          , pcp_tab(ngr)%pcpfillr           &
                          ,pcp_tab(ngr)%sfcpcp            )
 
-         call copyback(mzp,i,j                        ,basic_g(ngr)%thp     (:,i,j)        &
+         call copyback(mzp,i,j                        ,basic_g(ngr)%pp      (:,i,j)        &
+                      ,basic_g(ngr)%pi0     (:,i,j)   ,basic_g(ngr)%thp     (:,i,j)        &
                       ,basic_g(ngr)%theta   (:,i,j)   ,basic_g(ngr)%rtp     (:,i,j)        &
                       ,basic_g(ngr)%rv      (:,i,j)   ,micro_g(ngr)                        )
 
@@ -349,7 +350,7 @@ end subroutine mcphys_main
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine copyback(m1,i,j,thp,btheta,rtp,rv,micro)
+subroutine copyback(m1,i,j,pp,pi0,thp,btheta,rtp,rv,micro)
 
    use mem_micro, only: &
            micro_vars   ! ! INTENT(IN) ! Only a type structure
@@ -376,18 +377,19 @@ subroutine copyback(m1,i,j,thp,btheta,rtp,rv,micro)
    use mem_scratch, only : &
            vctr11        ! ! intent(out)
    
-   use rconstants, only: t00,cliq,cice,alli
+   use rconstants, only: t00,cliq,cice,alli,p00,cpi,cpor
    use therm_lib , only: qtk
-
+   use node_mod  , only: mynum
    implicit none
 
    !----- Arguments: ----------------------------------------------------------------------!
    integer                         , intent(in)    :: m1,i,j
-   real             , dimension(m1), intent(inout) :: thp,rtp,rv,btheta
+   real             , dimension(m1), intent(inout) :: pp,pi0,thp,rtp,rv,btheta
    type (micro_vars)               , intent(inout) :: micro
    !----- Local variables -----------------------------------------------------------------!
    integer                                         :: k,lcat
    real                                            :: tcoal, fracliq
+   real                                            :: exner, pres, temp
    !---------------------------------------------------------------------------------------!
 
   
@@ -487,6 +489,33 @@ subroutine copyback(m1,i,j,thp,btheta,rtp,rv,micro)
       end do
    end if
    !---------------------------------------------------------------------------------------!
+
+   if (rv(k) > rtp(k) .or. any(rx(k,:) < 0)) then
+      exner = pi0(k) + pp(k)
+      pres  = p00 * (cpi * exner) ** cpor
+      temp  = cpi * btheta(k) * exner
+      write (unit=*,fmt='(a)') '------ MODEL THERMODYNAMIC IS NON-SENSE... ------'
+      write (unit=*,fmt='(a,1x,i5,a)'  ) 'In node ',mynum,'...'
+      write (unit=*,fmt='(a,1x,i5)'    ) 'I     =',i
+      write (unit=*,fmt='(a,1x,i5)'    ) 'J     =',j
+      write (unit=*,fmt='(a,1x,i5)'    ) 'K     =',k
+      write (unit=*,fmt='(a,1x,es12.5)') 'EXNER =',exner
+      write (unit=*,fmt='(a,1x,es12.5)') 'PRESS =',pres
+      write (unit=*,fmt='(a,1x,es12.5)') 'THIL  =',thp(k)
+      write (unit=*,fmt='(a,1x,es12.5)') 'THETA =',btheta(k)
+      write (unit=*,fmt='(a,1x,es12.5)') 'TEMP  =',temp
+      write (unit=*,fmt='(a,1x,es12.5)') 'RTOT  =',rtp(k)
+      write (unit=*,fmt='(a,1x,es12.5)') 'RVAP  =',rv(k)
+      write (unit=*,fmt='(a,1x,es12.5)') 'CLOUD =',micro%rcp(k,i,j)
+      write (unit=*,fmt='(a,1x,es12.5)') 'RAIN  =',micro%rrp(k,i,j)
+      write (unit=*,fmt='(a,1x,es12.5)') 'PICE  =',micro%rpp(k,i,j)
+      write (unit=*,fmt='(a,1x,es12.5)') 'SNOW  =',micro%rsp(k,i,j)
+      write (unit=*,fmt='(a,1x,es12.5)') 'AGGR  =',micro%rap(k,i,j)
+      write (unit=*,fmt='(a,1x,es12.5)') 'GRAUP =',micro%rgp(k,i,j)
+      write (unit=*,fmt='(a,1x,es12.5)') 'HAIL  =',micro%rhp(k,i,j)
+      write (unit=*,fmt='(a)') '-------------------------------------------------'
+      call abort_run('Weird thermodynamic state found!','wetthrm3','rthrm.f90')
+   end if
 
    return
 end subroutine copyback
