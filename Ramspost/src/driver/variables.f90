@@ -922,18 +922,33 @@ elseif(cvar(1:lv).eq.'theta_e') then
 
 elseif(cvar(1:lv).eq.'thetae_iv' .or. cvar(1:lv).eq.'theiv') then
    ivar_type=3
-   call RAMS_comp_tempK(n1,n2,n3,f,c)
    ierr= RAMS_getvar('THP',idim_type,ngrd,a,b,flnm)
    ierr_getvar = ierr_getvar + ierr
    ierr= RAMS_getvar('PI',idim_type,ngrd,c,b,flnm)
    ierr_getvar = ierr_getvar + ierr
-   call RAMS_comp_press(n1,n2,n3,c)
    ierr= RAMS_getvar('THETA',idim_type,ngrd,f,b,flnm)
    ierr_getvar = ierr_getvar + ierr
+   call RAMS_comp_tempK(n1,n2,n3,f,c)
+   call RAMS_comp_press(n1,n2,n3,c)
    ierr= RAMS_getvar('RV',idim_type,ngrd,d,b,flnm)
    ierr_getvar = ierr_getvar + ierr
-   ierr= RAMS_getvar('RTP',idim_type,ngrd,e,b,flnm)
+
+   ierr= RAMS_getvar('RV',idim_type,ngrd,e,b,flnm)
    ierr_getvar = ierr_getvar + ierr
+   ierr= RAMS_getvar('RCP',idim_type,ngrd,h,b,flnm)
+   if(ierr.eq.0) call RAMS_comp_accum(n1,n2,n3,e,h)
+   ierr= RAMS_getvar('RRP',idim_type,ngrd,h,b,flnm)
+   if(ierr.eq.0) call RAMS_comp_accum(n1,n2,n3,e,h)
+   ierr= RAMS_getvar('RPP',idim_type,ngrd,h,b,flnm)
+   if(ierr.eq.0) call RAMS_comp_accum(n1,n2,n3,e,h)
+   ierr= RAMS_getvar('RSP',idim_type,ngrd,h,b,flnm)
+   if(ierr.eq.0) call RAMS_comp_accum(n1,n2,n3,e,h)
+   ierr= RAMS_getvar('RAP',idim_type,ngrd,h,b,flnm)
+   if(ierr.eq.0) call RAMS_comp_accum(n1,n2,n3,e,h)
+   ierr= RAMS_getvar('RGP',idim_type,ngrd,h,b,flnm)
+   if(ierr.eq.0) call RAMS_comp_accum(n1,n2,n3,e,h)
+   ierr= RAMS_getvar('RHP',idim_type,ngrd,h,b,flnm)
+   if(ierr.eq.0) call RAMS_comp_accum(n1,n2,n3,e,h)
 
    call RAMS_comp_thetaeiv(n1,n2,n3,a,f,c,d,e)
    cdname='Ice-vapour equivt pot temp'
@@ -1133,7 +1148,7 @@ elseif(cvar(1:lv).eq.'total_cond') then
    cdname='cloud mix ratio'
    cdunits='g/kg'
 
-elseif(cvar(1:lv).eq.'rtotal') then
+elseif(cvar(1:lv).eq.'rall') then
    ivar_type=3
    ierr= RAMS_getvar('RV',idim_type,ngrd,a,b,flnm)
    ierr_getvar = ierr_getvar + ierr
@@ -1154,16 +1169,16 @@ elseif(cvar(1:lv).eq.'rtotal') then
 
    call RAMS_comp_mults(n1,n2,n3,a,1.e3)
    call RAMS_comp_noneg(n1,n2,n3,a)
-   cdname='total mix ratio'
+   cdname='vapour + condensed mix ratio'
    cdunits='g/kg'
 
-elseif(cvar(1:lv).eq.'rtotal_orig') then
+elseif(cvar(1:lv).eq.'rtp') then
    ivar_type=3
    ierr= RAMS_getvar('RTP',idim_type,ngrd,a,b,flnm)
    ierr_getvar = ierr_getvar + ierr
    call RAMS_comp_mults(n1,n2,n3,a,1.e3)
    call RAMS_comp_noneg(n1,n2,n3,a)
-   cdname='orig rtotal'
+   cdname='total water mixing ratio'
    cdunits='g/kg'
 
 elseif(cvar(1:lv).eq.'dewptk') then
@@ -5670,16 +5685,6 @@ entry RAMS_comp_thetv(n1,n2,n3,a,b,c)
    enddo
 return
 
-entry RAMS_comp_thetaeiv(n1,n2,n3,a,b,c,d,e)
-   do k=1,n3
-      do j=1,n2
-         do i=1,n1
-            a(i,j,k)=thetaeiv(a(i,j,k),c(i,j,k),b(i,j,k),d(i,j,k),e(i,j,k),12,.true.)
-         enddo
-      enddo
-   enddo
-return
-
 entry RAMS_comp_bowen(n1,n2,n3,a,b)
    do k=1,n3
       do j=1,n2
@@ -6821,6 +6826,34 @@ subroutine RAMS_comp_sfcwmeantemp(n1,n2,ns,np,a,b,c,d,e)
    end do
    return
 end subroutine RAMS_comp_sfcwmeantemp
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+subroutine RAMS_comp_thetaeiv(n1,n2,n3,xxx,temp,pres,rv,rtp)
+   use therm_lib, only: thetaeiv
+   implicit none
+   integer, intent(in) :: n1, n2, n3
+   real, dimension(n1,n2,n3), intent(inout) :: xxx,temp,pres,rv,rtp
+   integer :: i,j,k
+   !----- xxx comes as thil, gets out as theta_e_iv. --------------------------------------!
+   do k=1,n3
+      do j=1,n2
+         do i=1,n1
+            if (rtp(i,j,k) < rv(i,j,k)) rtp(i,j,k) = rv(i,j,k)
+            xxx(i,j,k)=thetaeiv(xxx(i,j,k),pres(i,j,k),temp(i,j,k),rv(i,j,k),rtp(i,j,k)    &
+                               ,12,.true.)
+         end do
+      end do
+   end do
+   return
+end subroutine RAMS_comp_thetaeiv
 !==========================================================================================!
 !==========================================================================================!
 
