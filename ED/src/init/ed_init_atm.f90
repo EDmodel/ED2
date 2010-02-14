@@ -43,12 +43,13 @@ subroutine ed_init_atm
      cgrid => edgrid_g(igr)
      
      ! First we need to update the meteorological fields.
+
      call update_met_drivers(cgrid)
 
      ! If this is a standard ED2 restart, we will read these fields in from 
      ! a history file and therefore not worry about setting them here.
 
-     if(trim(runtype) == 'HISTORY' )return
+     if(trim(runtype) /= 'HISTORY' ) then
 
      ! Loop over polygons, sites and patches
      
@@ -294,7 +295,10 @@ subroutine ed_init_atm
            ,'Nplants:',poly_nplant,'Avg. LAI:',poly_lai                                    &
            ,'NPatches:',npatches,'NCohorts:',ncohorts
      end do
-  end do
+
+  end if
+
+end do
 
   return
 end subroutine ed_init_atm
