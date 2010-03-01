@@ -62,6 +62,7 @@ grell_cupar_environment.o: grell_coms.mod rconstants.mod therm_lib.mod
 grell_cupar_feedback.o: mem_ensemble.mod mem_scratch_grell.mod rconstants.mod
 grell_cupar_static.o: mem_ensemble.mod mem_scratch_grell.mod rconstants.mod
 grell_cupar_updraft.o: mem_cuparm.mod rconstants.mod therm_lib.mod
+grell_cupar_water.o: rconstants.mod therm_lib.mod
 grell_extras_catt.o: grell_coms.mod mem_basic.mod mem_ensemble.mod mem_grid.mod
 grell_extras_catt.o: mem_scalar.mod mem_scratch.mod mem_scratch_grell.mod
 grell_extras_catt.o: mem_tconv.mod rconstants.mod
@@ -88,11 +89,11 @@ edcp_load_namelist.o: mem_grid.mod mem_leaf.mod mem_radiate.mod mem_sites.mod
 edcp_load_namelist.o: met_driver_coms.mod optimiz_coms.mod pft_coms.mod
 edcp_load_namelist.o: phenology_coms.mod physiology_coms.mod rk4_coms.mod
 edcp_load_namelist.o: soil_coms.mod
-edcp_met.o: ed_misc_coms.mod ed_node_coms.mod ed_state_vars.mod ed_work_vars.mod
-edcp_met.o: leaf_coms.mod mem_basic.mod mem_cuparm.mod mem_edcp.mod mem_grid.mod
-edcp_met.o: mem_leaf.mod mem_micro.mod mem_radiate.mod mem_turb.mod
-edcp_met.o: met_driver_coms.mod micphys.mod node_mod.mod rconstants.mod
-edcp_met.o: soil_coms.mod therm_lib.mod
+edcp_met.o: ed_max_dims.mod ed_misc_coms.mod ed_node_coms.mod ed_state_vars.mod
+edcp_met.o: ed_work_vars.mod leaf_coms.mod mem_basic.mod mem_cuparm.mod
+edcp_met.o: mem_edcp.mod mem_grid.mod mem_leaf.mod mem_micro.mod mem_radiate.mod
+edcp_met.o: mem_turb.mod met_driver_coms.mod micphys.mod node_mod.mod
+edcp_met.o: rconstants.mod soil_coms.mod therm_lib.mod
 edcp_met_init.o: ed_misc_coms.mod ed_node_coms.mod ed_state_vars.mod
 edcp_met_init.o: ed_therm_lib.mod fuse_fiss_utils.mod grid_coms.mod
 edcp_met_init.o: leaf_coms.mod mem_grid.mod mem_leaf.mod mem_radiate.mod

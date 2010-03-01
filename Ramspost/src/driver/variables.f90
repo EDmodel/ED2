@@ -13,16 +13,15 @@ dimension dep_zlev(nzpmax,maxgrds),iep_nx(maxgrds),iep_ny(maxgrds),  &
       iep_nz(maxgrds),iep_stdate(6),iep_step(6)
 !SRF
 
-character*240 fnames(maxfiles),fnamesp(maxfiles)  &
-     ,file_prefix*(*),fpref*256
+character(len=600), dimension(maxfiles) :: fnames,fnamesp
+character(len=600)                      :: file_prefix
+character(len=600)                      :: fpref
 common/rams_data/ ftimes(maxfiles),nfgpnts(4,maxgrds,maxfiles)  &
      ,nfgrids(maxfiles),ifdates(maxfiles),iftimes(maxfiles)  &
      ,flevels(nzpmax,maxgrds,maxfiles),startutc,httop  &
      ,fdelx(maxgrds,maxfiles),fdely(maxgrds,maxfiles)
 common /mem/ memsize4
 
-dimension fdata(*),idata(*)
-character*(*) cdata(*)
 dimension mondays(13)
 data mondays/31,28,31,30,31,30,31,31,30,31,30,31,31/
 
@@ -197,63 +196,6 @@ entry RAMS_get_time_step(iistep,hunit,nfiles)
 
 return
 
-entry RAMS_get_idata(nopt,nfl,ngr,idata,nval)
-
-if(nopt.eq.0)then
-   nval=4
-   do k=1,nval
-      idata(k)=nfgpnts(k,ngr,nfl)
-   enddo
-elseif(nopt.eq.1)then
-   nval=1
-   idata(1)=nfgrids(nfl)
-elseif(nopt.eq.2)then
-   nval=1
-   idata(1)=ifdates(nfl)
-elseif(nopt.eq.3)then
-   nval=1
-   idata(1)=iftimes(nfl)
-endif
-return
-
-entry RAMS_get_fdata(nopt,nfl,ngr,fdata,nval)
-
-if(nopt.eq.0)then
-   nval=nfgpnts(3,ngr,nfl)
-   do k=1,nval
-      fdata(k)=flevels(k,ngr,nfl)
-   enddo
-elseif(nopt.eq.1)then
-   nval=1
-   fdata(1)=ftimes(nfl)
-elseif(nopt.eq.2)then
-   nval=1
-   fdata(1)=startutc
-   print*,'RAMS_get_fdata: startutc',startutc
-elseif(nopt.eq.3)then
-   nval=1
-   fdata(1)=httop
-elseif(nopt.eq.4)then
-   nval=1
-   fdata(1)=fdelx(ngr,nfl)
-elseif(nopt.eq.5)then
-   nval=1
-   fdata(1)=fdely(ngr,nfl)
-endif
-
-return
-
-entry RAMS_get_cdata(nopt,nfl,cdata,nval)
-
-if(nopt.eq.0)then
-   cdata(1)=fnames(nfl)
-   nval=1
-elseif(nopt.eq.1)then
-   cdata(1)=fnamesp(nfl)
-   nval=1
-endif
-
-return
 
 end
 !***************************************************************************
@@ -2412,7 +2354,7 @@ elseif(cvar(1:lv).eq.'hflxca') then
    cdname='sfc sens heat flx canopy to atmosphere'
    cdunits='W/m2'
 
-elseif(cvar(1:lv).eq.'co2flux') then
+elseif(cvar(1:lv).eq.'cfluxca') then
    ivar_type=2
    ierr= RAMS_getvar('SFLUX_C',idim_type,ngrd,a,b,flnm)
    ierr_getvar = ierr_getvar + ierr
@@ -2905,6 +2847,32 @@ elseif(cvar(1:lv).eq.'land') then
    call RAMS_comp_1minus(nnxp(ngrd),nnyp(ngrd),1,a)
    cdname='land frac area'
    cdunits=''
+
+elseif(cvar(1:lv).eq.'agb' .or. cvar(1:lv).eq.'vegagb' .or. cvar(1:lv).eq.'agb_ps') then
+
+   irecind = 1
+   irecsize = nnxp(ngrd) * nnyp(ngrd) * npatch
+   if (cvar(1:lv).eq.'agb_ps') then
+      ierr = RAMS_getvar('PATCH_AREA',idim_type,ngrd   &
+           ,a(irecind),b,flnm)
+
+      irecind = irecind + irecsize
+   end if
+
+   ierr = RAMS_getvar('VEG_AGB',idim_type,ngrd   &
+        ,a(irecind),b,flnm)
+   ierr_getvar = ierr_getvar + ierr
+
+   if(cvar(1:lv).eq.'agb' .or. cvar(1:lv).eq.'vegagb') then
+      ivar_type = 7
+   else
+      ivar_type = 2
+      call RAMS_comp_patchsum_l(nnxp(ngrd),nnyp(ngrd),1,npatch  &
+         ,a(irecind),a(1),b)
+   endif
+
+   cdname='above ground biomass'
+   cdunits='kgC/m2'
 
 elseif(cvar(1:lv).eq.'lai' .or. cvar(1:lv).eq.'veglai' .or. cvar(1:lv).eq.'lai_ps') then
 

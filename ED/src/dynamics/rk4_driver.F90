@@ -57,7 +57,7 @@ module rk4_driver
 
       logical                   , save        :: first_time=.true.
       !----- Local constants. -------------------------------------------------------------!
-      logical                   , parameter   :: print_fields = .false.
+      logical                   , parameter   :: print_dbg_fields = .false.
       !----- Functions --------------------------------------------------------------------!
       real                      , external    :: walltime
       !------------------------------------------------------------------------------------!
@@ -71,7 +71,7 @@ module rk4_driver
             patchloop: do ipa = 1,csite%npatches
                cpatch => csite%patch(ipa)
 
-               if (print_fields) then
+               if (print_dbg_fields) then
                   iun = 30+ipa
                   if (first_time) then
                      write (unit=iun,fmt='(19(a,1x))') 'YEAR','MONTH','  DAY','  TIME'     &

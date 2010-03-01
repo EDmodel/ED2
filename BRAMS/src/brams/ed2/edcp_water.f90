@@ -533,6 +533,9 @@ subroutine simple_lake_model(time,dtlongest)
          !---------------------------------------------------------------------------------! 
          leaf_g(ngrid)%veg_energy(i,j,1) = 0.
          leaf_g(ngrid)%veg_water (i,j,1) = 0.
+         leaf_g(ngrid)%veg_lai   (i,j,1) = 0.
+         leaf_g(ngrid)%veg_tai   (i,j,1) = 0.
+         leaf_g(ngrid)%veg_agb   (i,j,1) = 0.
 
          !---------------------------------------------------------------------------------!
          !    Our simple lake model allows no ice, making sure the values are properly     !

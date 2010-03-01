@@ -46,6 +46,7 @@ Module mem_leaf
       !------------------------------------------------------------------------------------!
       real, dimension(:,:,:), pointer :: veg_fracarea & ! Fractional area       [      ---]
                                        , veg_lai      & ! Leaf area index       [    m²/m²]
+                                       , veg_agb      & ! Above-ground biomass  [   kgC/m²]
                                        , veg_rough    & ! Roughness length      [        m]
                                        , veg_height   & ! Height                [        m]
                                        , veg_albedo   & ! Albedo                [      ---]
@@ -186,6 +187,7 @@ Module mem_leaf
 
       allocate (leaf%veg_fracarea     (    nx,ny,np))
       allocate (leaf%veg_lai          (    nx,ny,np))
+      allocate (leaf%veg_agb          (    nx,ny,np))
       allocate (leaf%veg_rough        (    nx,ny,np))
       allocate (leaf%veg_height       (    nx,ny,np))
       allocate (leaf%veg_albedo       (    nx,ny,np))
@@ -271,6 +273,7 @@ Module mem_leaf
 
       if (associated(leaf%veg_fracarea     ))  nullify(leaf%veg_fracarea     )
       if (associated(leaf%veg_lai          ))  nullify(leaf%veg_lai          )
+      if (associated(leaf%veg_agb          ))  nullify(leaf%veg_agb          )
       if (associated(leaf%veg_rough        ))  nullify(leaf%veg_rough        )
       if (associated(leaf%veg_height       ))  nullify(leaf%veg_height       )
       if (associated(leaf%veg_albedo       ))  nullify(leaf%veg_albedo       )
@@ -353,6 +356,7 @@ Module mem_leaf
 
       if (associated(leaf%veg_fracarea     ))  deallocate(leaf%veg_fracarea     )
       if (associated(leaf%veg_lai          ))  deallocate(leaf%veg_lai          )
+      if (associated(leaf%veg_agb          ))  deallocate(leaf%veg_agb          )
       if (associated(leaf%veg_rough        ))  deallocate(leaf%veg_rough        )
       if (associated(leaf%veg_height       ))  deallocate(leaf%veg_height       )
       if (associated(leaf%veg_albedo       ))  deallocate(leaf%veg_albedo       )
@@ -514,6 +518,10 @@ Module mem_leaf
       if (associated(leaf%veg_lai))                                                        &
          call vtables2(leaf%veg_lai(1,1,1),leafm%veg_lai(1,1,1),ng,npts,imean              &
                       ,'VEG_LAI :6:hist:anal:mpti:mpt3'//trim(str_recycle))
+
+      if (associated(leaf%veg_agb))                                                        &
+         call vtables2(leaf%veg_agb(1,1,1),leafm%veg_agb(1,1,1),ng,npts,imean              &
+                      ,'VEG_AGB :6:hist:anal:mpti:mpt3'//trim(str_recycle))
 
       if (associated(leaf%veg_rough))                                                      &
          call vtables2(leaf%veg_rough(1,1,1),leafm%veg_rough(1,1,1),ng,npts,imean          &
