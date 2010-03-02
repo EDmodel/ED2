@@ -2319,6 +2319,7 @@ module therm_lib8
       real(kind=8)                       :: es00      ! Defined as p00*rt/(epsilon + rt)
       real(kind=8)                       :: delta     ! Aux. variable (For 2nd guess).
       integer                            :: itn,itb   ! Iteration counters
+      integer                            :: ii        ! Another counter
       logical                            :: converged ! Convergence handle
       logical                            :: zside     ! Aux. flag - sides for Regula Falsi
       logical                            :: brrr_cold ! Flag - considering ice thermo.
@@ -2511,6 +2512,29 @@ module therm_lib8
          !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
          !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       else
+         write (unit=*,fmt='(60a1)')        ('-',ii=1,60)
+         write (unit=*,fmt='(a)')           ' THEIV2THIL8 failed!'
+         write (unit=*,fmt='(a)')           ' '
+         write (unit=*,fmt='(a)')           ' -> Input: '
+         write (unit=*,fmt='(a,1x,f12.5)')  '    THEIV    [     K]:',theiv
+         write (unit=*,fmt='(a,1x,f12.5)')  '    PRES     [    Pa]:',pres * 1.d2
+         write (unit=*,fmt='(a,1x,f12.5)')  '    RTOT     [  g/kg]:',1.d3*rtot
+         write (unit=*,fmt='(a)')           ' '
+         write (unit=*,fmt='(a)')           ' -> Output: '
+         write (unit=*,fmt='(a,1x,i12)')    '    ITERATIONS       :',itb
+         write (unit=*,fmt='(a,1x,f12.5)')  '    PVAP     [   hPa]:',pvap
+         write (unit=*,fmt='(a,1x,f12.5)')  '    THETA    [     K]:',theta
+         write (unit=*,fmt='(a,1x,f12.5)')  '    TLCL     [    °C]:',tlcl-t008
+         write (unit=*,fmt='(a,1x,f12.5)')  '    TLCLA    [    °C]:',tlcla-t008
+         write (unit=*,fmt='(a,1x,f12.5)')  '    TLCLZ    [    °C]:',tlclz-t008
+         write (unit=*,fmt='(a,1x,es12.5)') '    FUNA     [     K]:',funa
+         write (unit=*,fmt='(a,1x,es12.5)') '    FUNZ     [     K]:',funz
+         write (unit=*,fmt='(a,1x,es12.5)') '    DERIV    [   ---]:',deriv
+         write (unit=*,fmt='(a,1x,es12.5)') '    ERR_A    [   ---]:',abs(tlcl-tlcla)/tlcl
+         write (unit=*,fmt='(a,1x,es12.5)') '    ERR_Z    [   ---]:',abs(tlcl-tlclz)/tlcl
+         write (unit=*,fmt='(a)')           ' '
+         write (unit=*,fmt='(60a1)')        ('-',ii=1,60)
+
          call fatal_error('TLCL didn''t converge, gave up!','thetaeiv2thil8'               &
                          ,'therm_lib8.f90')
       end if

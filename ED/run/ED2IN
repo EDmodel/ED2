@@ -125,14 +125,17 @@
                                  !     (-1 or -2) unitfast/unitstate will be ignored for
                                  !     them
 
-   NL%OUTFAST    = 0		! Time interval between analysis files
-   NL%OUTSTATE   = 0		! Time interval between history files
-				! Values are in seconds and must be <= 1 month
-				! Values < FRQFAST/FRQSTATE are set to those values
-				! Special values: -1 = daily; -2 = monthly
-				! If OUTFAST/STATE is greater than FRQFAST/STATE then
-				! multiple timepoints can be recorded to a single file
-				! reducing the number of files and i/o time in postprocessing
+   NL%OUTFAST    = 0            ! Time interval between analysis files
+   NL%OUTSTATE   = 0            ! Time interval between history files
+                                ! Values are in seconds and must be <= 1 month
+                                ! Values < FRQFAST/FRQSTATE are set to those values
+                                ! Special values: -1 = daily; -2 = monthly
+                                ! If OUTFAST/STATE is greater than FRQFAST/STATE then
+                                !    multiple timepoints can be recorded to a single file
+                                !    reducing the number of files and i/o time in post-
+                                !    processing.  Multiple timepoints should be avoided
+                                !    in the history files if you intend to use these for
+                                !    HISTORY runs as it hasn't been tested.
 
    NL%ICLOBBER  = 1             ! 0 = stop if files exist, 1 = overwite files
    NL%FRQFAST   = 21600.        ! Time interval that analysis is written to file
@@ -415,10 +418,15 @@
 
 !-------------------------------------------------------------------------!
 ! Control parameters for printing to standard output                      
-!         Any polygon level variable can be printed to standard output.
+!         Any variable can be printed to standard output.
 !         Choose any variables that are defined in the variable table fill
-!         routine in ed_state_vars.f90.  Choose the start and end dimension
-!         in the polygon vector that you wish to view.
+!         routines in ed_state_vars.f90.  Choose the start and end dimension
+!         in the vector that you wish to view.  It can be polygon,site,..whatever
+!         This 'should' work in parallel ...
+!         The output will be printed to the screen at frequency frqanl,
+!         the print call is synchronized with instantaneous file writes,
+!         so those variables will have been accumulated and normalized
+!         from their rk4state and be meaningful to view.
 !-------------------------------------------------------------------------!
 
    NL%IPRINTPOLYS  =  0        ! 0 = do not print information to screen
@@ -430,11 +438,14 @@
    NL%PRINTVARS    = 'AVG_PCPG','AVG_CAN_TEMP','AVG_VAPOR_AC','AVG_CAN_SHV'
 
 !----- Use these format strings ---------------------------------------!
+! The format strings follow standard fortran format notation. ie 'f' is
+! for floating point.  First number is total digits, second number is 
+! the number of digits to the left of right of the decimal point.
 
    NL%PFMTSTR      = 'f10.8','f5.1','f7.2','f9.5'
 
-   NL%IPMIN        = 1       ! The first polygon index to print
-   NL%IPMAX        = 60      ! The last polygon index to print
+   NL%IPMIN        = 1       ! The first index to print
+   NL%IPMAX        = 60      ! The last index to print
 !-------------------------------------------------------------------------!
 
 

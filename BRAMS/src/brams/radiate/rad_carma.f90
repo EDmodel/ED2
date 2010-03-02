@@ -102,7 +102,7 @@ module rad_carma
       real, dimension(nwave)                           :: aotl_cld
       real, dimension(nwave)                           :: aotl
       real                                             :: press
-      real                                             :: tempk
+      real                                             :: tempc
       real                                             :: rvcgs
       !----- Locally saved variables. -----------------------------------------------------!
       logical                          , save          :: first_time = .true.
@@ -223,7 +223,7 @@ module rad_carma
                !---------------------------------------------------------------------------!
                !     Print the output if the radiation heating rate is screwy.             !
                !---------------------------------------------------------------------------!
-               if (any(abs(fthrd_cld) > 200./day_sec)) then
+               if (any(abs(fthrd_cld) > 300./day_sec)) then
                   do k=1,m1
                      fthrd_cld(k) = fthrd_cld(k) * day_sec
                      lwl(k,i,j)   = lwl(k,i,j)   * 1000.
@@ -246,18 +246,18 @@ module rad_carma
                   write (unit=*,fmt='(a,1x,es12.5)') ' - RAIN    = ',rain(i,j)
                   write (unit=*,fmt='(a,1x,es12.5)') ' - AREA    = ',area_cld
                   write (unit=*,fmt='(123a)') ('-',k=1,123)
-                  write (unit=*,fmt='(10(a,1x))') '    K','       TEMPK','       PRESS'    &
-                                                         ,'         DN0','          RV'    &
-                                                         ,'         LWL','         IWL'    &
-                                                         ,'      LWLCLD','      IWLCLD'    &
-                                                         ,'       FTHRD'
+                  write (unit=*,fmt='(10(a,1x))') '    K','  TEMP [degC]','  PRESS [hPa]'  &
+                                                         ,'  DN0 [kg/m3]','    RV [g/kg]'  &
+                                                         ,'   LWL [g/kg]','   IWL [g/kg]'  &
+                                                         ,'LWLCLD [g/kg]','IWLCLD [g/kg]'  &
+                                                         ,'FTHRD [K/day]'
                   write (unit=*,fmt='(123a)') ('-',k=1,123)
                   do k=1,m1
                      press = ((pp(k,i,j) + pi0(k,i,j)) * cpi) ** cpor * p00 * 0.01
-                     tempk = (theta(k,i,j) * (pp(k,i,j) + pi0(k,i,j)) * cpi) - t00
+                     tempc = (theta(k,i,j) * (pp(k,i,j) + pi0(k,i,j)) * cpi) - t00
                      rvcgs = rv(k,i,j) * 1000.
-                     write (unit=*,fmt='(i5,1x,8(f12.5,1x),es12.5,1x)')                    &
-                                                                k, tempk     , press       &
+                     write (unit=*,fmt='(i5,1x,8(f13.6,1x),es13.6,1x)')                    &
+                                                                k, tempc     , press       &
                                                                  , dn0(k,i,j), rvcgs       &
                                                                  , lwl(k,i,j), iwl(k,i,j)  &
                                                                  , lwl_cld(k), iwl_cld(k)  &

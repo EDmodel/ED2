@@ -130,9 +130,6 @@ module grell_coms
   !------ Percentage of mass left when hitting the ground ---------------------------------!
   real                              , parameter ::  pmass_left     = 0.03
   
-  !------ Increment cap_max by this amount for different elements -------------------------!
-  real                              , parameter  :: cap_max_increment=20.
-  
   !------ Maximum "leakage" of mass allowed (normalized) ----------------------------------!
   real, parameter ::   masstol        = 1.e-6
 

@@ -2247,16 +2247,20 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
 
    call hdf_getslab_i(cgrid%ntext_soil(:,ipy)          ,'NTEXT_SOIL '       ,&
         dsetrank,iparallel,.false.)
+
    if(associated(cgrid%dmean_soil_temp)) &
       call hdf_getslab_r(cgrid%dmean_soil_temp(:,ipy)  ,'DMEAN_SOIL_TEMP '  ,&
       dsetrank,iparallel,.false.)
+
    if(associated(cgrid%dmean_soil_water)) &
       call hdf_getslab_r(cgrid%dmean_soil_water(:,ipy) ,'DMEAN_SOIL_WATER ' ,&
       dsetrank,iparallel,.false.)
+
    if(associated(cgrid%mmean_soil_temp)) &
       call hdf_getslab_r(cgrid%mmean_soil_temp(:,ipy)  ,'MMEAN_SOIL_TEMP '  ,&
       dsetrank,iparallel,.false.)
-   if(associated(cgrid%dmean_soil_water)) &
+
+   if(associated(cgrid%mmean_soil_water)) &
       call hdf_getslab_r(cgrid%mmean_soil_water(:,ipy) ,'MMEAN_SOIL_WATER ' ,&
       dsetrank,iparallel,.false.)
 
@@ -3203,20 +3207,28 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
      call hdf_getslab_r(cpatch%dmean_beamext_level,'DMEAN_BEAMEXT_LEVEL ',dsetrank,iparallel,.false.)
      if (associated(cpatch%mmean_beamext_level      )) &
      call hdf_getslab_r(cpatch%mmean_beamext_level,'MMEAN_BEAMEXT_LEVEL ',dsetrank,iparallel,.false.)
+
      if (associated(cpatch%dmean_diffext_level       )) &
      call hdf_getslab_r(cpatch%dmean_diffext_level,'DMEAN_DIFFEXT_LEVEL ',dsetrank,iparallel,.false.)
-     if (associated(cpatch%dmean_diffext_level       )) &
-     call hdf_getslab_r(cpatch%mmean_diffext_level,'MMEAN_DIFFEXT_LEVEL ',dsetrank,iparallel,.false.)
+
      if (associated(cpatch%mmean_diffext_level       )) &
+     call hdf_getslab_r(cpatch%mmean_diffext_level,'MMEAN_DIFFEXT_LEVEL ',dsetrank,iparallel,.false.)
+
+     if (associated(cpatch%dmean_norm_par_beam      )) &
      call hdf_getslab_r(cpatch%dmean_norm_par_beam,'DMEAN_NORM_PAR_BEAM ',dsetrank,iparallel,.false.)
-     if (associated(cpatch%dmean_norm_par_beam       )) &
+
+     if (associated(cpatch%mmean_norm_par_beam       )) &
      call hdf_getslab_r(cpatch%mmean_norm_par_beam,'MMEAN_NORM_PAR_BEAM ',dsetrank,iparallel,.false.)
+
      if (associated(cpatch%dmean_norm_par_diff       )) &
      call hdf_getslab_r(cpatch%dmean_norm_par_diff,'DMEAN_NORM_PAR_DIFF ',dsetrank,iparallel,.false.)
+
      if (associated(cpatch%mmean_norm_par_diff       )) &
      call hdf_getslab_r(cpatch%mmean_norm_par_diff,'MMEAN_NORM_PAR_DIFF ',dsetrank,iparallel,.false.)
+
      if (associated(cpatch%dmean_lambda_light       )) &
           call hdf_getslab_r(cpatch%dmean_lambda_light,'DMEAN_LAMBDA_LIGHT_CO ',dsetrank,iparallel,.false.)
+
      if (associated(cpatch%mmean_lambda_light       )) &
      call hdf_getslab_r(cpatch%mmean_lambda_light,'MMEAN_LAMBDA_LIGHT_CO ',dsetrank,iparallel,.false.)
 

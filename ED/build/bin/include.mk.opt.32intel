@@ -21,7 +21,7 @@ MAKE=/usr/bin/make
 
 # libraries.
 
-BASE=$(ED_ROOT)/build/
+BASE=$(ED_ROOT)/dbgbuild/
 
 # Activate appropriate parts below, comment out others.
 

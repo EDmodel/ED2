@@ -72,7 +72,6 @@ subroutine ed_gridset(ngra)
         endif
      enddo
 
-
      ! just for the coarser grid:
      ! set deltax and deltay (deltaxn and deltayn)
      ! find grid center point coordinates at polar stereographic projection
