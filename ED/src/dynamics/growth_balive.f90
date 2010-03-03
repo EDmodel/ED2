@@ -506,7 +506,7 @@ module growth_balive
 !*****************************************************************************
 !**************************************** MODIFY HERE
       !----- Compute sapwood and fine root biomass. -------------------------!
-      cpatch%broot(ico)    = q(ipft) * cpatch%balive(ico) * salloci
+      cpatch%broot(ico)    = q(ipft) * cpatch%balive(ico) * salloci 
       cpatch%bsapwood(ico) = qsw(ipft) * cpatch%hite(ico)                    &
                            * cpatch%balive(ico) * salloci
       cpatch%bsapwooda(ico) = cpatch%bsapwood(ico)*agf_bs
