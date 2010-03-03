@@ -26,7 +26,9 @@ subroutine ed_mem_alloc(proc_type)
    use ed_node_coms       , only : mmxp, mmyp, mynum
    use soil_coms          , only : alloc_soilgrid,         & ! subroutine 
                                    isoilflg,               & ! intent(in)
-                                   nslcon                  ! ! intent(in)
+                                   nslcon,                  & ! intent(in)
+                                   slxclay,                 & ! intent(in)
+                                   slxsand                 ! ! intent(in)
 
    implicit none
 !----- Arguments: -------------------------------------------------------------------------!

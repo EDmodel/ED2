@@ -1351,8 +1351,8 @@ c2n_leaf(11) = 1000.0 / ((0.11289 + 0.12947 * 6.25) * SLA(11))
 
 
 
-water_conductance(1:4) = 0.001904
-water_conductance(5:11) = 0.00476
+water_conductance(1:4) = 0.00476           !OLD=KW60=0.001904 KW80=0.00253505, KW100=0.00316881, KW125=0.00396101
+water_conductance(5:11) = 0.00476           ! equal to KW150
 water_conductance(12:13) = 0.00476
 water_conductance(14:15) = 0.001904
 
@@ -1715,7 +1715,12 @@ end subroutine init_hydro_coms
 !==========================================================================================!
 subroutine init_soil_coms
    use soil_coms      , only : ed_nstyp              & ! intent(in)
+                             , isoilflg              & ! intent(in)
+                             , nslcon                & ! intent(in)
+                             , slxclay               & ! intent(in)
+                             , slxsand               & ! intent(in)
                              , soil                  & ! intent(in)
+                             , soil_class            & ! type
                              , soil8                 & ! intent(out)
                              , water_stab_thresh     & ! intent(out)
                              , snowmin               & ! intent(out)
@@ -1724,10 +1729,22 @@ subroutine init_soil_coms
                              , snow_rough            & ! intent(out)
                              , min_sfcwater_mass     & ! intent(out)
                              , infiltration_method   ! ! intent(out)
+                             
+   use grid_coms      , only : ngrids                ! ! intent(in)
 
    implicit none
    !----- Local variable ------------------------------------------------------------------!
    integer :: nsoil
+   integer :: ifm
+!   real    :: fieldcp_MPa        ! soil-water potential at field capacity         [ MPa]
+   real    :: fieldcp_K          ! hydraulic conductivity at field capacity       [mm/day]
+   real    :: soilcp_MPa         ! soil-water potential for air dry soil          [ MPa]
+   real    :: soilwp_MPa         ! soil-water potential at wilting point          [ MPa]
+   
+!   fieldcp_MPa         = 0.033 
+   fieldcp_K           = 0.1
+   soilcp_MPa          = 3.1   
+   soilwp_MPa          = 1.5
 
    water_stab_thresh   = 3.0    ! Minimum water mass to be considered stable     [   kg/m2]
    snowmin             = 3.0    ! Minimum snow mass needed to create a new layer [   kg/m2]
@@ -1737,6 +1754,65 @@ subroutine init_soil_coms
    min_sfcwater_mass   = 1.0e-6 ! Minimum allowed mass in temporary layers       [   kg/m2]
    infiltration_method = 0      ! Infiltration method, used in rk4_derivs        [     0|1]
 
+
+!------------------------------------------------------------------------------------------------------------------------------------------------!
+!  slpots  slmsts   slbs    slcpd   soilcp    soilwp    slcons   slcons0  soilcond0  soilcond1  soilcond2    sfldcap   xsand   xclay  xorgan xrobulk slden !
+!------------------------------------------------------------------------------------------------------------------------------------------------!
+!------------------------------------------------------------------------------------------------------------------------------------------------!
+!  UPDATED based on Cosby et al. 1984, soil clay and sand fractions from table 2, slpots, slmsts, slbs, and slcons calculated based on table 4   !
+!  sfldcap calculated based on Clapp and Hornberger equation 2 and a soil hydraulic conductivity of 0.1mm/day, soilcp (air dry soil moisture     !
+! capacity) is calculated based on Cosby et al. 1984 equation 1 and a soil-water potential of -3.1MPa.  soilwp (the wilting point soil moisture) !
+! is calculated based on Cosby et al 1985 equation 1 and a soil-water potential of -1.5MPa (Equation 1 in Cosby is not correct it should be      !
+!saturated moisture potential over moisture potential)  (NML, 2/2010)
+!------------------------------------------------------------------------------------------------------------------------------------------------!
+
+soil= (/ soil_class(-0.049831046,  0.373250,  3.295000,  1465000.,  0.026183447,  0.032636854,  2.446420e-5,  0.000500000,  0.3000,  4.8000,  -2.7000,  0.132130936,  0.9200,  0.0300,  0.0500,  1200.,  1600.)  & ! 1. Sand
+ ,  soil_class(-0.068643592,  0.386340,  3.796000,  1407000.,  0.041873866,  0.050698650,  1.751180e-5,  0.000600000,  0.3000,  4.6600,  -2.6000,  0.155720881,  0.8200,  0.0600,  0.1200,  1250.,  1600.)  & ! 2. Loamy Sand
+ ,  soil_class(-0.155095787,  0.418940,  4.496000,  1344000.,  0.076932647,  0.090413463,  8.228700e-6,  0.000769000,  0.2900,  4.2700,  -2.3100,  0.199963447,  0.5800,  0.1000,  0.3200,  1300.,  1600.)  & ! 3. Sandy loam
+ ,  soil_class(-0.659933234,  0.476050,  5.090000,  1273000.,  0.141599910,  0.163306007,  2.396240e-6,  0.000010600,  0.2700,  3.4700,  -1.7400,  0.266720155,  0.1700,  0.1300,  0.7000,  1400.,  1600.)  & ! 4. Silt loam
+ ,  soil_class(-0.238341682,  0.437280,  5.797000,  1214000.,  0.126501190,  0.143377074,  4.732940e-6,  0.002200000,  0.2800,  3.6300,  -1.8500,  0.247334654,  0.4300,  0.1800,  0.3900,  1350.,  1600.)  & ! 5. Loam
+ ,  soil_class(-0.121199269,  0.412650,  7.165000,  1177000.,  0.137648733,  0.152325872,  6.405180e-6,  0.001500000,  0.2800,  3.7800,  -1.9600,  0.250954745,  0.5800,  0.2700,  0.1500,  1350.,  1600.)  & ! 6. Sandy clay loam
+ ,  soil_class(-0.627769194,  0.478220,  8.408000,  1319000.,  0.228171947,  0.248747504,  1.435260e-6,  0.000107000,  0.2600,  2.7300,  -1.2000,  0.333825332,  0.1000,  0.3400,  0.5600,  1500.,  1600.)  & ! 7. Silty clay loam
+ ,  soil_class(-0.281968114,  0.446980,  8.342000,  1227000.,  0.192624431,  0.210137962,  2.717260e-6,  0.002200000,  0.2700,  3.2300,  -1.5600,  0.301335491,  0.3200,  0.3400,  0.3400,  1450.,  1600.)  & ! 8. Clay loam
+ ,  soil_class(-0.121283019,  0.415620,  9.538000,  1177000.,  0.182198910,  0.196607427,  4.314510e-6,  0.000002167,  0.2700,  3.3200,  -1.6300,  0.286363001,  0.5200,  0.4200,  0.0600,  1450.,  1600.)  & ! 9. Sandy clay
+ ,  soil_class(-0.601312179,  0.479090,  10.46100,  1151000.,  0.263228486,  0.282143846,  1.055190e-6,  0.000001033,  0.2500,  2.5800,  -1.0900,  0.360319788,  0.0600,  0.4700,  0.4700,  1650.,  1600.)  & !10. Silty clay
+ ,  soil_class(-0.286417797,  0.452300,  12.14000,  1088000.,  0.253968998,  0.269618857,  1.427350e-6,  0.000001283,  0.2500,  2.4000,  -0.9600,  0.348432364,  0.2200,  0.5800,  0.2000,  1700.,  1600.)  & !11. Clay
+ ,  soil_class(-0.534564359,  0.469200,  6.180000,  8740000.,  0.167047523,  0.187868805,  2.357930e-6,  0.000008000,  0.0600,  0.4600,   0.0000,  0.285709966,  0.2000,  0.2000,  0.6000,   500.,   300.) /) !12. Peat
+
+!--------------------------------------------------------------------------------------------------!
+!************ Correct soil_class table using sand and clay fractions (if provided) ****************!
+! Based on Cosby et al 1984, using table 4 and equation 1 (which is incorrect it should be saturated!
+! moisture potential over moisture potential).  NML 2/2010
+!--------------------------------------------------------------------------------------------------!
+do ifm=1,ngrids
+     if (isoilflg(ifm)==2 .and. slxclay >0. .and. slxsand > 0. .and. (slxclay + slxsand) <=1. ) then
+        soil(nslcon)%slbs=        3.10 + 15.7*slxclay - 0.3*slxsand                                     ! [ unitless]
+        
+        soil(nslcon)%slpots=      -1 * (10**(2.17 - 0.63*slxclay - 1.58*slxsand)) * 0.01                ! [ m ]
+        
+        soil(nslcon)%slcons=      (10**(-0.60 + 1.26*slxsand - 0.64*slxclay)) * 0.0245/(60*60)          ! [ m/s ]
+        
+        soil(nslcon)%slmsts=      (50.5 - 14.2*slxsand - 3.7*slxclay)/100                               ! [ m^3/m^3 ]
+        
+!        soil(nslcon)%sfldcap=     soil(nslcon)%slmsts * ( soil(nslcon)%slpots / (fieldcp_MPa*1000/9.80665))** & 
+!                                       (1 / soil(nslcon)%slbs)                                          ! [ m^3/m^3 ]
+        soil(nslcon)%sfldcap=     soil(nslcon)%slmsts * ((fieldcp_K/1000/(60*60*24))/soil(nslcon)%slcons)** & 
+                                       (1 / (2*soil(nslcon)%slbs+3))                                          ! [ m^3/m^3 ]
+        
+        soil(nslcon)%soilcp=      soil(nslcon)%slmsts * ( soil(nslcon)%slpots / (soilcp_MPa*1000/9.80665))** & 
+                                       (1 / soil(nslcon)%slbs)                                          ! [ m^3/m^3 ]
+
+        soil(nslcon)%soilwp=      soil(nslcon)%slmsts * ( soil(nslcon)%slpots / (soilwp_MPa*1000/9.80665))** & 
+                                       (1 / soil(nslcon)%slbs)                                          ! [ m^3/m^3 ]        
+     endif
+enddo
+
+
+
+
+
+
+
    !----- Here we fill soil8, which will be used in Runge-Kutta (double precision). -------!
    do nsoil=1,ed_nstyp
       soil8(nsoil)%slpots    = dble(soil(nsoil)%slpots   )
@@ -1744,6 +1820,7 @@ subroutine init_soil_coms
       soil8(nsoil)%slbs      = dble(soil(nsoil)%slbs     )
       soil8(nsoil)%slcpd     = dble(soil(nsoil)%slcpd    )
       soil8(nsoil)%soilcp    = dble(soil(nsoil)%soilcp   )
+      soil8(nsoil)%soilwp    = dble(soil(nsoil)%soilwp   )
       soil8(nsoil)%slcons    = dble(soil(nsoil)%slcons   )
       soil8(nsoil)%slcons0   = dble(soil(nsoil)%slcons0  )
       soil8(nsoil)%soilcond0 = dble(soil(nsoil)%soilcond0)

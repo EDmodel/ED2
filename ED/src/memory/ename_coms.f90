@@ -88,6 +88,8 @@ Module ename_coms
       integer :: nzs      = 1
       integer, dimension(maxgrds) :: isoilflg = (/ (2,i=1,maxgrds) /)
       integer :: nslcon   = 6
+      integer :: slxclay  = 0              ! Use default clay fraction (NML)
+      integer :: slxsand  = 0              ! Use default sand fraction (NML)
       integer :: isoilstateinit = 0
       integer :: isoildepthflg  = 0
       integer :: isoilbc        = 0

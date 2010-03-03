@@ -37,6 +37,8 @@ module soil_coms
    integer                     :: isoilbc        ! Bottom layer boundary condition.
    integer, dimension(maxgrds) :: isoilflg       ! Soil initialization flag.
    integer                     :: nslcon         ! Soil texture if constant everywhere.
+   integer                     :: slxclay        ! Site specific clay soil fraction
+   integer                     :: slxsand        ! Site specific sand soil fraction
    real                        :: zrough         ! Soil roughness if constant everywhere.
    real, dimension(nzgmax)     :: slmstr         ! Initial soil moisture fraction.
    real, dimension(nzgmax)     :: stgoff         ! Initial soil temperature offset.
@@ -127,13 +129,14 @@ module soil_coms
    !                             Tremback & Kessler, 1985).                                !
    !---------------------------------------------------------------------------------------!
    type soil_class
-      real :: slpots     ! Saturation moisture potential                         [       m]
-      real :: slmsts     ! Saturation volumetric moisture content                [   m3/m3]
+      real :: slpots     ! Soil moisture potential at saturation                 [       m]
+      real :: slmsts     ! Soil moisture at saturation                           [   m3/m3]
       real :: slbs       ! B exponent                                            [     n/d]
-      real :: slcpd      ! Saturation soil hydraulic conductivity                [     m/s]
-      real :: soilcp     ! Surface value for slcons                              [     m/s]
-      real :: slcons     ! Dry soil volumetric heat capacity                     [  J/m3/K]
-      real :: slcons0    ! Dry soil density (also total soil porosity)           [   kg/m3]
+      real :: slcpd      ! Specific heat of dry soil                             [  J/m3/K]
+      real :: soilcp     ! Dry soil capacity (at -3.1MPa)                        [   m3/m3]
+      real :: soilwp     ! Wilting point capacity (at -1.5MPa)                   [   m3/m3]
+      real :: slcons     ! hydraulic conductivity at saturation                  [     m/s]
+      real :: slcons0    ! ?Dry soil density (also total soil porosity)          [   kg/m3]
       real :: soilcond0
       real :: soilcond1
       real :: soilcond2
@@ -146,13 +149,14 @@ module soil_coms
    end type soil_class
    !----- Double precision version --------------------------------------------------------!
    type soil_class8
-      real(kind=8) :: slpots     ! Saturation moisture potential                 [       m]
-      real(kind=8) :: slmsts     ! Saturation volumetric moisture content        [   m3/m3]
+      real(kind=8) :: slpots     ! Soil moisture potential at saturation         [       m]
+      real(kind=8) :: slmsts     ! Soil moisture at saturation                   [   m3/m3]
       real(kind=8) :: slbs       ! B exponent                                    [     n/d]
-      real(kind=8) :: slcpd      ! Saturation soil hydraulic conductivity        [     m/s]
-      real(kind=8) :: soilcp     ! Surface value for slcons                      [     m/s]
-      real(kind=8) :: slcons     ! Dry soil volumetric heat capacity             [  J/m3/K]
-      real(kind=8) :: slcons0    ! Dry soil density (also total soil porosity)   [   kg/m3]
+      real(kind=8) :: slcpd      ! Specific heat of dry soil                     [  J/m3/K]
+      real(kind=8) :: soilcp     ! Dry soil capacity (at -3.1MPa)                [   m3/m3]
+      real(kind=8) :: soilwp     ! Wilting point capacity (at -1.5MPa)           [   m3/m3]
+      real(kind=8) :: slcons     ! hydraulic conductivity at saturation          [     m/s]
+      real(kind=8) :: slcons0    ! ?Dry soil density (also total soil porosity)   [   kg/m3]
       real(kind=8) :: soilcond0
       real(kind=8) :: soilcond1
       real(kind=8) :: soilcond2
@@ -166,37 +170,7 @@ module soil_coms
    !---------------------------------------------------------------------------------------!
    !----- To be filled in ed_params.f90. --------------------------------------------------!
    type(soil_class8), dimension(ed_nstyp)            :: soil8 
-   type(soil_class) , dimension(ed_nstyp), parameter :: soil =                             &
-
-!------------------------------------------------------------------------------------------------------------------------------------------------!
-!  slpots  slmsts   slbs    slcpd   soilcp    slcons   slcons0  soilcond0  soilcond1  soilcond2    sfldcap   xsand   xclay  xorgan xrobulk slden !
-!------------------------------------------------------------------------------------------------------------------------------------------------!
- (/ soil_class(-0.121,  0.395,  4.05, 1.465e6,  0.0321, 1.760e-4, 5.000e-4, &                                         
- 0.30, 4.80, -2.70,  0.135,  .97, .03, .00, 1200., 1600.)  & ! 1. Sand                                                
- ,  soil_class(-0.090,  0.410,  4.38, 1.407e6,  0.0356, 1.563e-4, 6.000e-4, &                                         
- 0.30, 4.66, -2.60,  0.150,  .92, .07, .01, 1250., 1600.)  & ! 2. Loamy sand                                          
- ,  soil_class(-0.218,  0.435,  4.90, 1.344e6,  0.0440, 3.467e-5, 7.690e-4, &                                         
- 0.29, 4.27, -2.31,  0.195,  .80, .18, .02, 1300., 1600.)  & ! 3. Sandy loam                                          
- ,  soil_class(-0.786,  0.485,  5.30, 1.273e6,  0.0601, 7.200e-6, 1.060e-5, &                                         
- 0.27, 3.47, -1.74,  0.255,  .57, .40, .03, 1400., 1600.)  & ! 4. Silt loam                                           
- ,  soil_class(-0.478,  0.451,  5.39, 1.214e6,  0.0580, 6.950e-6, 2.200e-3, &                                         
- 0.28, 3.63, -1.85,  0.240,  .60, .35, .05, 1350., 1600.)  & ! 5. Loam                                                
- ,  soil_class(-0.299,  0.420,  7.12, 1.177e6,  0.0545, 6.300e-6, 1.500e-3, &                                         
- 0.28, 3.78, -1.96,  0.255,  .65, .31, .04, 1350., 1600.)  & ! 6. Sandy clay loam                                     
- ,  soil_class(-0.356,  0.477,  7.75, 1.319e6,  0.0755, 1.700e-6, 1.070e-4, &                                         
- 0.26, 2.73, -1.20,  0.322,  .35, .59, .06, 1500., 1600.)  & ! 7. Silty clay loam                                     
- ,  soil_class(-0.630,  0.476,  8.52, 1.227e6,  0.0664, 2.450e-6, 2.200e-3, &                                         
- 0.27, 3.23, -1.56,  0.325,  .48, .45, .07, 1450., 1600.)  & ! 8. Clay loam                                           
- ,  soil_class(-0.153,  0.426, 10.40, 1.177e6,  0.0650, 2.167e-6, 2.167e-6, &                                         
- 0.27, 3.32, -1.63,  0.310,  .50, .42, .08, 1450., 1600.)  & ! 9. Sandy clay                                          
- ,  soil_class(-0.490,  0.492, 10.40, 1.151e6,  0.0790, 1.033e-6, 1.033e-6, &                                         
- 0.25, 2.58, -1.09,  0.370,  .30, .61, .09, 1650., 1600.)  & !10. Silty clay                                          
- ,  soil_class(-0.405,  0.482, 11.40, 1.088e6,  0.0825, 1.283e-6, 1.283e-6, &                                         
- 0.25, 2.40, -0.96,  0.367,  .25, .65, .10, 1700., 1600.)  & !11. Clay                                                
- ,  soil_class(-0.356,  0.863,  7.75, 8.740e5,  0.0860, 8.000e-6, 8.000e-6, &                                         
- 0.06, 0.46,  0.00,  0.535,  .20, .20, .60,  500.,  300.) /) !12. Peat                                                
-! ,  soil_class(-0.000,  0.000,  0.00, 2.130e6,  0.0000, 0.000000, 0.000000, 4.60, 0.00,  0.00, 1.0e-10, .00, .00, .00,    0. ) /) !13. Bedrock
-
+   type(soil_class) , dimension(ed_nstyp)            :: soil
 
 
  ! Look-up tables for vegetation and soil properties:
