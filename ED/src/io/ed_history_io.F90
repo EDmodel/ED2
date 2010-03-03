@@ -558,6 +558,7 @@ subroutine read_ed1_history_file
                        endif
 
                        ! Setting balive to default instead of file value
+                       ! Assume individuals being loaded are on allometry
                        
                        cpatch%bleaf(ic2) = dbh2bl(cpatch%dbh(ic2),ipft(ic))
                        
@@ -569,6 +570,10 @@ subroutine read_ed1_history_file
 
                        cpatch%bsapwood(ic2) = cpatch%balive(ic2) * qsw(ipft(ic)) * cpatch%hite(ic2) &
                                             /(1.0 + q(ipft(ic)) + qsw(ipft(ic2)) * cpatch%hite(ic2))
+                       cpatch%bsapwooda(ic2)= cpatch%bsapwood(ic2)*agf_bs
+                       cpatch%bsapwoodb(ic2)= cpatch%bsapwood(ic2) - cpatch%bsapwooda(ic2)
+                       cpatch%bdeada(ic2)   = cpatch%bdead(ic2)*agf_bs
+                       cpatch%bdeadb(ic2)   = cpatch%bdead(ic2) - cpatch$bdeada(ic2)
 
 
                        ! START COLD-DECIDUOUS TREES WITHOUT LEAVES.  ALL OTHER TREES
@@ -585,7 +590,7 @@ subroutine read_ed1_history_file
                                   
                        !----- Assign LAI, WPA, and WAI ------------------------------------!
                        call area_indices(cpatch%nplant(ic2),cpatch%bleaf(ic2)              &
-                                        ,cpatch%bdead(ic2),cpatch%balive(ic2)              &
+                                        ,cpatch%bdeada(ic2),cpatch%bsapwooda(ic2)              &
                                         ,cpatch%dbh(ic2), cpatch%hite(ic2)                 &
                                         ,cpatch%pft(ic2), SLA(cpatch%pft(ic2))             &
                                         ,cpatch%lai(ic2),cpatch%wpa(ic2), cpatch%wai(ic2))
@@ -595,7 +600,7 @@ subroutine read_ed1_history_file
                        cpatch%cb(13,ic2) = 0.0
                        cpatch%cb_max(13,ic2) = 0.0
                        
-                       cpatch%agb(ic2) = ed_biomass(cpatch%bdead(ic2),cpatch%balive(ic2)   &
+                       cpatch%agb(ic2) = ed_biomass(cpatch%bdeada(ic2),cpatch%bsapwooda(ic2)   &
                                                    ,cpatch%bleaf(ic2),cpatch%pft(ic2)      &
                                                    ,cpatch%hite(ic2),cpatch%bstorage(ic2)) 
                        cpatch%basarea(ic2)  = cpatch%nplant(ic2) * pio4                    &
@@ -1167,9 +1172,16 @@ subroutine read_ed21_history_file
                        call hdf_getslab_r(cpatch%nplant,'NPLANT ',dsetrank,iparallel,.true.)
                        call hdf_getslab_r(cpatch%bdead,'BDEAD ',dsetrank,iparallel,.true.)
                        call hdf_getslab_r(cpatch%balive,'BALIVE ',dsetrank,iparallel,.true.)
-                       call hdf_getslab_i(cpatch%phenology_status,'PHENOLOGY_STATUS ',dsetrank,iparallel,.true.)
+                       call hdf_getslab_r(cpatch%bdeada,'BDEADA ',dsetrank,iparallel,.true.)
+                       call hdf_getslab_r(cpatch%bdeadb,'BDEADB ',dsetrank,iparallel,.true.)
                        call hdf_getslab_r(cpatch%bleaf,'BLEAF ',dsetrank,iparallel,.true.)
+                       call hdf_getslab_r(cpatch%broot,'BROOT ',dsetrank,iparallel,.true.)
+                       call hdf_getslab_r(cpatch%bsapwooda,'BSAPWOODA ',dsetrank,iparallel,.true.)
+                       call hdf_getslab_r(cpatch%bsapwoodb,'BSAPWOODB ',dsetrank,iparallel,.true.)
                        call hdf_getslab_r(cpatch%bstorage,'BSTORAGE ',dsetrank,iparallel,.true.)
+                       call hdf_getslab_i(cpatch%phenology_status,'PHENOLOGY_STATUS ',dsetrank,iparallel,.true.)
+
+
                                             
                        dsetrank    = 2
                        globdims(1) = 13_8
@@ -1233,7 +1245,7 @@ subroutine read_ed21_history_file
                                 cpatch%nplant(ico) = 0.
                              end select
                           end if
-                          cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)   &
+                          cpatch%agb(ico) = ed_biomass(cpatch%bdeada(ico),cpatch%bsapwooda(ico)   &
                                ,cpatch%bleaf(ico),cpatch%pft(ico)      &
                                ,cpatch%hite(ico),cpatch%bstorage(ico))
 
@@ -1248,10 +1260,13 @@ subroutine read_ed21_history_file
                                                * cpatch%hite(ico)                             &
                                                / ( 1.0 + q(cpatch%pft(ico))                   &
                                                  + qsw(cpatch%pft(ico)) * cpatch%hite(ico))
+                          cpatch%bsapwooda(ico)= cpatch%bsapwood(ico)*agf_bs
+                          cpatch%bsapwoodb(ico)= cpatch%bsapwood(ico) - cpatch%bsapwooda(ico)
+
                           
                           !----- Assign LAI, WPA, and WAI ------------------------------------!
                           call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico)              &
-                               ,cpatch%bdead(ico),cpatch%balive(ico)              &
+                               ,cpatch%bdeada(ico),cpatch%bsapwooda(ico)              &
                                ,cpatch%dbh(ico), cpatch%hite(ico)                 &
                                ,cpatch%pft(ico), SLA(cpatch%pft(ico)), cpatch%lai(ico) &
                                ,cpatch%wpa(ico), cpatch%wai(ico))
@@ -3101,11 +3116,15 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
      call hdf_getslab_r(cpatch%ddbh_dt,'DDBH_DT',dsetrank,iparallel,.true.)
 
      call hdf_getslab_r(cpatch%bdead,'BDEAD ',dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%bdeada,'BDEADA ',dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%bdeadb,'BDEADB ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%bleaf,'BLEAF ',dsetrank,iparallel,.true.)
      call hdf_getslab_i(cpatch%phenology_status,'PHENOLOGY_STATUS ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%balive,'BALIVE ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%broot,'BROOT  ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%bsapwood,'BSAPWOOD ',dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%bsapwooda,'BSAPWOODA ',dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%bsapwoodb,'BSAPWOODB ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%lai,'LAI_CO ',dsetrank,iparallel,.true.)
      
      call hdf_getslab_r(cpatch%llspan,'LLSPAN ',dsetrank,iparallel,.true.)

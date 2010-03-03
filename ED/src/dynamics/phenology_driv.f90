@@ -454,13 +454,13 @@ subroutine update_phenology(doy, cpoly, isi, lat)
          !---------------------------------------------------------------------------------!
 
          !----- Update LAI, WPA, and WAI accordingly. -------------------------------------!
-         call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)          &
-                          ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)            &
+         call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdeada(ico)         &
+                          ,cpatch%bsapwooda(ico),cpatch%dbh(ico), cpatch%hite(ico)        &
                           ,cpatch%pft(ico),cpatch%sla(ico), cpatch%lai(ico)                &
                           ,cpatch%wpa(ico),cpatch%wai(ico))
 
          !----- Update above-ground biomass. ----------------------------------------------!
-         cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)                 &
+         cpatch%agb(ico) = ed_biomass(cpatch%bdeada(ico),cpatch%bsapwooda(ico)                 &
                                      ,cpatch%bleaf(ico),cpatch%pft(ico)                    &
                                      ,cpatch%hite(ico) ,cpatch%bstorage(ico) ) 
 
@@ -469,8 +469,8 @@ subroutine update_phenology(doy, cpoly, isi, lat)
          ! using a constant temperature assumption.                                        !
          !---------------------------------------------------------------------------------!
          old_hcapveg         = cpatch%hcapveg(ico)
-         cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico)            &
-                                           ,cpatch%balive(ico),cpatch%nplant(ico)          &
+         cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdeada(ico)           &
+                                           ,cpatch%bsapwooda(ico),cpatch%nplant(ico)       &
                                            ,cpatch%hite(ico),cpatch%pft(ico)               &
                                            ,cpatch%phenology_status(ico))
          csite%hcapveg(ipa)  = csite%hcapveg(ipa) + cpatch%hcapveg(ico) - old_hcapveg

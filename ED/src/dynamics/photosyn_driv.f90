@@ -11,8 +11,6 @@ subroutine canopy_photosynthesis(csite,ipa,vels,atm_tmp,prss,ed_ktrans,ntext_soi
    use ed_max_dims           , only : n_pft              ! ! intent(in)
    use pft_coms              , only : leaf_width         & ! intent(in)
                                     , water_conductance  & ! intent(in)
-                                    , q                  & ! intent(in)
-                                    , qsw                & ! intent(in)
                                     , include_pft        ! ! intent(in)
    use grid_coms             , only : nzg                ! ! intent(in)
    use soil_coms             , only : soil               & ! intent(in)
@@ -242,16 +240,12 @@ subroutine canopy_photosynthesis(csite,ipa,vels,atm_tmp,prss,ed_ktrans,ntext_soi
 
             !----- Supply of water. -------------------------------------------------------!
             water_supply = water_conductance(ipft)                                         &
-                         * available_liquid_water(cpatch%krdepth(ico)) * wdnsi             &
-                         * q(ipft) * cpatch%balive(ico)                                    &
-                         / (1.0 + q(ipft) + cpatch%hite(ico) * qsw(ipft) )                 &
-                         * cpatch%nplant(ico)
+                         * available_liquid_water(cpatch%krdepth(ico)) * wdnsi      &
+                         * cpatch%broot(ico) * cpatch%nplant(ico)
 
             root_depth_indices(cpatch%krdepth(ico)) = .true.
 
-            broot_loc = q(ipft) * cpatch%balive(ico)                                       &
-                      / (1.0 + q(ipft) + cpatch%hite(ico) * qsw(ipft) )                    &
-                      * cpatch%nplant(ico)
+            broot_loc = cpatch%broot(ico) * cpatch%nplant(ico)
             broot_tot = broot_tot + broot_loc
             pss_available_water = pss_available_water                                      &
                                 + available_liquid_water(cpatch%krdepth(ico)) * broot_loc

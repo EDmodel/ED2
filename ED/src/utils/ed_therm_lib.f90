@@ -42,7 +42,7 @@ module ed_therm_lib
    !      energy storages on the land surface fluxes and radiative temperature.            !
    !      J. Geophys. Res., v. 112, doi: 10.1029/2006JD007425.                             !
    !---------------------------------------------------------------------------------------!
-   real function calc_hcapveg(bleaf,bdead,balive,nplant,hite,pft,phen_status)
+   real function calc_hcapveg(bleaf,bdeada,bsapwooda,nplant,hite,pft,phen_status)
       use consts_coms          , only : cliq                ! ! intent(in)
       use pft_coms             , only : c_grn_leaf_dry      & ! intent(in)
                                       , wat_dry_ratio_grn   & ! intent(in)
@@ -51,12 +51,11 @@ module ed_therm_lib
                                       , delta_c             & ! intent(in)
                                       , C2B                 ! ! intent(in)
       use rk4_coms             , only : ibranch_thermo      ! ! intent(in)
-      use allometry            , only : wood_biomass        ! ! function
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real    , intent(in)    :: bleaf         ! Biomass of leaves              [kgC/plant]
-      real    , intent(in)    :: bdead         ! Biomass of structural stem     [kgC/plant]
-      real    , intent(in)    :: balive        ! Biomass of live tissue         [kgC/plant]
+      real    , intent(in)    :: bdeada        ! Biomass of structural stem     [kgC/plant]
+      real    , intent(in)    :: bsapwooda     ! Biomass of agb sapwood         [kgC/plant]
       real    , intent(in)    :: nplant        ! Number of plants               [ plant/m2]
       real    , intent(in)    :: hite          ! Cohort mean height             [        m]
       integer , intent(in)    :: pft           ! Plant functional type          [     ----]
@@ -79,7 +78,7 @@ module ed_therm_lib
          !----- Finding branch/twig specific heat and biomass. ----------------------------!
          spheat_wood = (c_ngrn_biom_dry(pft) + wat_dry_ratio_ngrn(pft) * cliq)             &
                      / (1. + wat_dry_ratio_ngrn(pft)) + delta_c(pft)
-         bwood = wood_biomass(bdead,balive,pft,hite)
+         bwood = bdeada+bsapwooda
       end select
 
       select case (phen_status)

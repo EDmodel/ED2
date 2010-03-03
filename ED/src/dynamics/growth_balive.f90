@@ -167,8 +167,7 @@ module growth_balive
                         * tfact * temp_dep
                   cpatch%vleaf_respiration(ico) =                            &
                           (1.0 - cpoly%green_leaf_factor(ipft,isi))          &
-                        / (1.0 + q(ipft) + qsw(ipft) * cpatch%hite(ico))     &
-                        * cpatch%balive(ico) * storage_turnover_rate(ipft)   &
+                        * cpatch%bleaf(ico) * storage_turnover_rate(ipft)   &
                         * tfact * temp_dep
 
 
@@ -226,15 +225,15 @@ module growth_balive
 
                   !----- Updating LAI, WPA, and WAI. ------------------------!
                   call area_indices( cpatch%nplant(ico), cpatch%bleaf(ico)   &
-                                   , cpatch%bdead(ico) , cpatch%balive(ico)  &
+                                   , cpatch%bdeada(ico) , cpatch%bsapwooda(ico)&
                                    , cpatch%dbh(ico)   , cpatch%hite(ico)    &
                                    , cpatch%pft(ico)   , cpatch%sla(ico)     &
                                    , cpatch%lai(ico)   , cpatch%wpa(ico)     &
                                    , cpatch%wai(ico)   )
 
                   !----- Update above-ground biomass. -----------------------!
-                  cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico)             &
-                                              ,cpatch%balive(ico)            &
+                  cpatch%agb(ico) = ed_biomass(cpatch%bdeada(ico)             &
+                                              ,cpatch%bsapwooda(ico)            &
                                               ,cpatch%bleaf(ico)             &
                                               ,cpatch%pft(ico)               &
                                               ,cpatch%hite(ico)              &
@@ -246,8 +245,8 @@ module growth_balive
                   !----------------------------------------------------------!
                   old_hcapveg = cpatch%hcapveg(ico)
                   cpatch%hcapveg(ico) =                                      &
-                         calc_hcapveg(cpatch%bleaf(ico) ,cpatch%bdead(ico)   &
-                                     ,cpatch%balive(ico),cpatch%nplant(ico)  &
+                         calc_hcapveg(cpatch%bleaf(ico) ,cpatch%bdeada(ico)  &
+                                     ,cpatch%bsapwooda(ico),cpatch%nplant(ico)  &
                                      ,cpatch%hite(ico)  ,cpatch%pft(ico)     &
                                      ,cpatch%phenology_status(ico))
                   call update_veg_energy_cweh(csite,ipa,ico,old_hcapveg)
@@ -400,8 +399,7 @@ module growth_balive
                         * tfact
                   cpatch%vleaf_respiration(ico) =                            &
                           (1.0 - cpoly%green_leaf_factor(ipft,isi))          &
-                        / (1.0 + q(ipft) + qsw(ipft) * cpatch%hite(ico))     &
-                        * cpatch%balive(ico) * storage_turnover_rate(ipft)   &
+                        * cpatch%bleaf(ico) * storage_turnover_rate(ipft)   &
                         * tfact
 
                   !----------------------------------------------------------!
@@ -504,11 +502,15 @@ module growth_balive
                                 ,cpatch%bstorage(ico)))
       cpatch%balive(ico)   = cpatch%balive(ico) + increment
       cpatch%bstorage(ico) = cpatch%bstorage(ico) - increment
-
+!*****************************************************************************
+!*****************************************************************************
+!**************************************** MODIFY HERE
       !----- Compute sapwood and fine root biomass. -------------------------!
       cpatch%broot(ico)    = q(ipft) * cpatch%balive(ico) * salloci
       cpatch%bsapwood(ico) = qsw(ipft) * cpatch%hite(ico)                    &
                            * cpatch%balive(ico) * salloci
+      cpatch%bsapwooda(ico) = cpatch%bsapwood(ico)*agf_bs
+      cpatch%bsapwoodb(ico) = cpatch%bsapwood(ico) - cpatch%bsapwooda(ico)
 
       !----------------------------------------------------------------------!
       !      N uptake is required since c2n_leaf < c2n_storage.  Units are   !
@@ -760,6 +762,9 @@ module growth_balive
          cpatch%broot(ico)    = cpatch%balive(ico) * q(ipft) * salloci
          cpatch%bsapwood(ico) = cpatch%balive(ico) * cpatch%hite(ico)        &
                               * qsw(ipft) * salloci
+         cpatch%bsapwooda(ico) = cpatch%bsapwood(ico)*agf_bs
+         cpatch%bsapwoodb(ico) = cpatch%bsapwood(ico) - cpatch%bsapwooda(ico)
+
 
       elseif (cpatch%phenology_status(ico) < 2) then
          !-------------------------------------------------------------------!
@@ -801,6 +806,9 @@ module growth_balive
             cpatch%broot(ico)    = cpatch%balive(ico) * q(ipft) * salloci
             cpatch%bsapwood(ico) = cpatch%balive(ico) * cpatch%hite(ico)     &
                                  * qsw(ipft) * salloci
+            cpatch%bsapwooda(ico) = cpatch%bsapwood(ico)*agf_bs
+            cpatch%bsapwoodb(ico) = cpatch%bsapwood(ico) - cpatch%bsapwooda(ico)
+
 
             !----------------------------------------------------------------!
             !    That is the maximum leaf biomass that this cohort can have. !
@@ -822,6 +830,9 @@ module growth_balive
             cpatch%broot(ico)    = cpatch%balive(ico) * q(ipft) * salloci
             cpatch%bsapwood(ico) = cpatch%balive(ico) * cpatch%hite(ico)     &
                                  * qsw(ipft) * salloci
+            cpatch%bsapwooda(ico) = cpatch%bsapwood(ico)*agf_bs
+            cpatch%bsapwoodb(ico) = cpatch%bsapwood(ico) - cpatch%bsapwooda(ico)
+
 
             !----------------------------------------------------------------!
             !     Update nitrogen uptake/soil nitrogen to preserve the C/N   !
@@ -852,6 +863,9 @@ module growth_balive
          cpatch%broot(ico)    = cpatch%balive(ico) * q(ipft) * salloci
          cpatch%bsapwood(ico) = cpatch%balive(ico) * cpatch%hite(ico)        &
                               * qsw(ipft) * salloci
+         cpatch%bsapwooda(ico) = cpatch%bsapwood(ico)*agf_bs
+         cpatch%bsapwoodb(ico) = cpatch%bsapwood(ico) - cpatch%bsapwooda(ico)
+
          csite%fsn_in(ipa)  = csite%fsn_in(ipa)                              &
                             - carbon_balance                                 &
                             * ( f_labile(ipft) / c2n_leaf(ipft)              &

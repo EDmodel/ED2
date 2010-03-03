@@ -164,9 +164,7 @@ subroutine avg_ed_daily_output_pool()
    use grid_coms    , only : ngrids       & ! intent(in)
                            , nzg          & ! intent(in)
                            , nzs          ! ! intent(in)
-   use pft_coms     , only : q            & ! intent(in)
-                           , qsw          & ! intent(in)
-                           , c2n_leaf     & ! intent(in)
+   use pft_coms     , only : c2n_leaf     & ! intent(in)
                            , c2n_stem     & ! intent(in)
                            , c2n_storage  ! ! intent(in)
    implicit none
@@ -218,29 +216,25 @@ subroutine avg_ed_daily_output_pool()
                cohortloop: do ico = 1,cpatch%ncohorts
                   ipft = cpatch%pft(ico)
 
-                  cgrid%Cleaf(ipy)   = cgrid%Cleaf(ipy)                                    &
+                  cgrid%Cleaf(ipy)   = cgrid%Cleaf(ipy)                                   &
                                      + cpatch%bleaf(ico) * cpatch%nplant(ico) * area_pa
-                  cgrid%Cstore(ipy)  = cgrid%Cstore(ipy)                                   &
+                  cgrid%Cstore(ipy)  = cgrid%Cstore(ipy)                                  &
                                      + cpatch%bstorage(ico) * cpatch%nplant(ico) * area_pa
-                  cgrid%Croot(ipy)   = cgrid%Croot(ipy)                                    &
-                                     + cpatch%balive(ico) * cpatch%nplant(ico) * q(ipft)   &
-                                     / (1.0 + q(ipft) + qsw(ipft) * cpatch%hite(ico))      &
-                                     * area_pa
-
-                  cgrid%Nleaf(ipy)   = cgrid%Nleaf(ipy)                                    &
-                                     + cpatch%bleaf(ico) * cpatch%nplant(ico)              &
+                  cgrid%Croot(ipy)   = cgrid%Croot(ipy)                                   &
+                                     + cpatch%broot(ico) * cpatch%nplant(ico) * area_pa
+                  cgrid%Nleaf(ipy)   = cgrid%Nleaf(ipy)                                   &
+                                     + cpatch%bleaf(ico) * cpatch%nplant(ico)             &
                                      / c2n_leaf(ipft) * area_pa
-                  cgrid%Nstore(ipy)  = cgrid%Nstore(ipy)                                   &
-                                     * cpatch%bstorage(ico) * cpatch%nplant(ico)           &
+                  cgrid%Nstore(ipy)  = cgrid%Nstore(ipy)                                  &
+                                     * cpatch%bstorage(ico) * cpatch%nplant(ico)          &
                                      / c2n_storage * area_pa ! C:N not pft specific
-                  !----- It appears we assume leaf and root have same C:N. ----------------!
-                  cgrid%Nroot(ipy)   = cgrid%Nroot(ipy)                                    &
-                                     + cpatch%balive(ico) * cpatch%nplant(ico) * q(ipft)   &
-                                     / (1.0 + q(ipft) + qsw(ipft) *cpatch%hite(ico))       &
+                  !----- It appears we assume leaf and root have same C:N. ---------------!
+                  cgrid%Nroot(ipy)   = cgrid%Nroot(ipy)                                   &
+                                     + cpatch%broot(ico) * cpatch%nplant(ico)             &
                                      / c2n_leaf(ipft) * area_pa 
-                  cgrid%Ndead(ipy)   = cgrid%Ndead(ipy)                                    &
-                                     + cpatch%bdead(ico) * cpatch%nplant(ico)              &
-                                     / c2n_stem(ipft) * area_pa
+                  cgrid%Ndead(ipy)   = cgrid%Ndead(ipy)                                   &
+                                     + (cpatch%bdeada(ico)+cpatch%bdeadb(ico))* &
+                                     cpatch%nplant(ico)/ c2n_stem(ipft) * area_pa
                end do cohortloop
             end do patchloop
          end do siteloop
@@ -601,7 +595,7 @@ subroutine spatial_averages
                                             * site_area_i * poly_area_i
 
                   cgrid%avg_bsapwood(ipy)   = cgrid%avg_bsapwood(ipy)                      &
-                                            + sum(cpatch%bsapwood*cpatch%nplant)           &
+                                            + sum((cpatch%bsapwooda+cpatch%bsapwoodb)*cpatch%nplant)           &
                                             * csite%area(ipa)*cpoly%area(isi)              &
                                             * site_area_i * poly_area_i
 

@@ -144,10 +144,10 @@ subroutine ed_init_atm
                  cpatch%veg_temp(ico)   = csite%can_temp(ipa)
                  cpatch%veg_water(ico)  = 0.0
                  cpatch%veg_fliq(ico)   = 0.0
-                 cpatch%hcapveg(ico)    = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico)   &
-                                                      ,cpatch%balive(ico),cpatch%nplant(ico) &
-                                                      ,cpatch%hite(ico),cpatch%pft(ico)      &
-                                                      ,cpatch%phenology_status(ico))
+                 cpatch%hcapveg(ico)    = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdeada(ico) &
+                                                   ,cpatch%bsapwooda(ico),cpatch%nplant(ico)&
+                                                   ,cpatch%hite(ico),cpatch%pft(ico)      &
+                                                   ,cpatch%phenology_status(ico))
                  cpatch%veg_energy(ico) = cpatch%hcapveg(ico)*cpatch%veg_temp(ico)
                  csite%hcapveg(ipa) = csite%hcapveg(ipa) + cpatch%hcapveg(ico)
               end do
