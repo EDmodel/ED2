@@ -9,8 +9,7 @@ subroutine soil_respiration(csite,ipa)
    use soil_coms    , only : soil                     ! ! intent(in)
    use grid_coms    , only : nzg                      ! ! intent(in)
    use pft_coms     , only : root_respiration_factor  & ! intent(in)
-                           , q                        & ! intent(in)
-                           , qsw                      ! ! intent(in)
+
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    type(sitetype) , target     :: csite
@@ -39,9 +38,8 @@ subroutine soil_respiration(csite,ipa)
    cpatch => csite%patch(ipa)
    do ico = 1,cpatch%ncohorts
       ipft = cpatch%pft(ico)
-      r_resp = root_respiration_factor(ipft) * r_resp_temp_fac * cpatch%balive(ico)        &
-             * q(ipft) / (1.0 + q(ipft) + qsw(ipft) * cpatch%hite(ico))                    &
-             * cpatch%nplant(ico)
+      r_resp = root_respiration_factor(ipft) * r_resp_temp_fac * &
+                           cpatch%broot(ico) * cpatch%nplant(ico)
       cpatch%root_respiration(ico) = r_resp
       cpatch%mean_root_resp(ico)   = cpatch%mean_root_resp(ico)  + r_resp
       cpatch%today_root_resp(ico)  = cpatch%today_root_resp(ico) + r_resp

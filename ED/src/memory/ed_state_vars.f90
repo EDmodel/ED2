@@ -100,6 +100,9 @@ module ed_state_vars
 
      ! Biomass of the structural stem (kgC/plant)
      real ,pointer,dimension(:) :: bdead
+     real ,pointer,dimension(:) :: bdeada !aboveground
+     real ,pointer,dimension(:) :: bdeadb !belowground
+
 
      ! Biomass of leaves (kgC/plant)
      real ,pointer,dimension(:) :: bleaf
@@ -119,6 +122,8 @@ module ed_state_vars
      
      ! Biomass of sapwood (kgC/plant)
      real, pointer, dimension(:) :: bsapwood
+     real, pointer, dimension(:) :: bsapwooda !aboveground
+     real, pointer, dimension(:) :: bsapwoodb !belowground
 
      ! Leaf area index (m2 leaf / m2 ground)
      real ,pointer,dimension(:) :: lai
@@ -2657,11 +2662,15 @@ contains
     allocate(cpatch%ddbh_dt(ncohorts))
     allocate(cpatch%dbh(ncohorts))
     allocate(cpatch%bdead(ncohorts))
+    allocate(cpatch%bdeada(ncohorts))
+    allocate(cpatch%bdeadb(ncohorts))
     allocate(cpatch%bleaf(ncohorts))
     allocate(cpatch%phenology_status(ncohorts))
     allocate(cpatch%balive(ncohorts))
     allocate(cpatch%broot(ncohorts))
     allocate(cpatch%bsapwood(ncohorts))
+    allocate(cpatch%bsapwooda(ncohorts))
+    allocate(cpatch%bsapwoodb(ncohorts))
     allocate(cpatch%lai(ncohorts))
     allocate(cpatch%wpa(ncohorts))
     allocate(cpatch%wai(ncohorts))
@@ -3525,11 +3534,15 @@ contains
     nullify(cpatch%ddbh_dt)
     nullify(cpatch%dbh)
     nullify(cpatch%bdead)
+    nullify(cpatch%bdeada)
+    nullify(cpatch%bdeadb)
     nullify(cpatch%bleaf)
     nullify(cpatch%phenology_status)
     nullify(cpatch%balive)
     nullify(cpatch%broot)
     nullify(cpatch%bsapwood)
+    nullify(cpatch%bsapwooda)
+    nullify(cpatch%bsapwoodb)
     nullify(cpatch%lai)
     nullify(cpatch%wpa)
     nullify(cpatch%wai)
@@ -4401,11 +4414,15 @@ contains
     if(associated(cpatch%ddbh_dt))             deallocate(cpatch%ddbh_dt)
     if(associated(cpatch%dbh))                 deallocate(cpatch%dbh)
     if(associated(cpatch%bdead))               deallocate(cpatch%bdead)
+    if(associated(cpatch%bdeada))               deallocate(cpatch%bdeada)
+    if(associated(cpatch%bdeadb))               deallocate(cpatch%bdeadb)
     if(associated(cpatch%bleaf))               deallocate(cpatch%bleaf)
     if(associated(cpatch%phenology_status))    deallocate(cpatch%phenology_status)
     if(associated(cpatch%balive))              deallocate(cpatch%balive)
     if(associated(cpatch%broot))               deallocate(cpatch%broot)
     if(associated(cpatch%bsapwood))            deallocate(cpatch%bsapwood)
+    if(associated(cpatch%bsapwooda))            deallocate(cpatch%bsapwooda)
+    if(associated(cpatch%bsapwoodb))            deallocate(cpatch%bsapwoodb)
     if(associated(cpatch%lai))                 deallocate(cpatch%lai)
     if(associated(cpatch%wpa))                 deallocate(cpatch%wpa)
     if(associated(cpatch%wai))                 deallocate(cpatch%wai)
@@ -5328,11 +5345,15 @@ contains
     if(associated(cpatch%ddbh_dt))              cpatch%ddbh_dt             = large_real
     if(associated(cpatch%dbh))                  cpatch%dbh                 = large_real
     if(associated(cpatch%bdead))                cpatch%bdead               = large_real
+    if(associated(cpatch%bdeada))               cpatch%bdeada              = large_real
+    if(associated(cpatch%bdeadb))               cpatch%bdeadb              = large_real
     if(associated(cpatch%bleaf))                cpatch%bleaf               = large_real
     if(associated(cpatch%phenology_status))     cpatch%phenology_status    = large_integer !Integer
     if(associated(cpatch%balive))               cpatch%balive              = large_real
     if(associated(cpatch%broot))                cpatch%broot               = large_real
     if(associated(cpatch%bsapwood))             cpatch%bsapwood            = large_real
+    if(associated(cpatch%bsapwooda))             cpatch%bsapwooda            = large_real
+    if(associated(cpatch%bsapwoodb))             cpatch%bsapwoodb            = large_real
     if(associated(cpatch%lai))                  cpatch%lai                 = large_real
     if(associated(cpatch%wpa))                  cpatch%wpa                 = large_real
     if(associated(cpatch%wai))                  cpatch%wai                 = large_real
@@ -6004,11 +6025,15 @@ contains
     patchout%ddbh_dt(1:inc)          = pack(patchin%ddbh_dt,mask)
     patchout%dbh(1:inc)              = pack(patchin%dbh,mask)
     patchout%bdead(1:inc)            = pack(patchin%bdead,mask)
+    patchout%bdeada(1:inc)           = pack(patchin%bdeada,mask)
+    patchout%bdeadb(1:inc)           = pack(patchin%bdeadb,mask)
     patchout%bleaf(1:inc)            = pack(patchin%bleaf,mask)
     patchout%phenology_status(1:inc) = pack(patchin%phenology_status,mask)
     patchout%balive(1:inc)           = pack(patchin%balive,mask)
     patchout%broot(1:inc)            = pack(patchin%broot,mask)
     patchout%bsapwood(1:inc)         = pack(patchin%bsapwood,mask)
+    patchout%bsapwooda(1:inc)         = pack(patchin%bsapwooda,mask)
+    patchout%bsapwoodb(1:inc)         = pack(patchin%bsapwoodb,mask)
     patchout%lai(1:inc)              = pack(patchin%lai,mask)
     patchout%wpa(1:inc)              = pack(patchin%wpa,mask)
     patchout%wai(1:inc)              = pack(patchin%wai,mask)
@@ -6217,11 +6242,15 @@ contains
        patchout%ddbh_dt(iout)          = patchin%ddbh_dt(iin)
        patchout%dbh(iout)              = patchin%dbh(iin)
        patchout%bdead(iout)            = patchin%bdead(iin)
+       patchout%bdeada(iout)           = patchin%bdeada(iin)
+       patchout%bdeadb(iout)           = patchin%bdeadb(iin)
        patchout%bleaf(iout)            = patchin%bleaf(iin)
        patchout%phenology_status(iout) = patchin%phenology_status(iin)
        patchout%balive(iout)           = patchin%balive(iin)
        patchout%broot(iout)            = patchin%broot(iin)
        patchout%bsapwood(iout)         = patchin%bsapwood(iin)
+       patchout%bsapwooda(iout)         = patchin%bsapwooda(iin)
+       patchout%bsapwoodb(iout)         = patchin%bsapwoodb(iin)
        patchout%lai(iout)              = patchin%lai(iin)
        patchout%wpa(iout)              = patchin%wpa(iin)
        patchout%wai(iout)              = patchin%wai(iin)
@@ -10397,6 +10426,18 @@ contains
          var_len,var_len_global,max_ptrs,'BDEAD :41:hist:mont:year') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
+    if (associated(cpatch%bdeada)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%bdeada(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'BDEADA :41:hist:mont:year') 
+       call metadata_edio(nvar,igr,'Aboveground structural biomass','[NA]','NA') 
+    endif
+    if (associated(cpatch%bdeadb)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%bdeadb(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'BDEADB :41:hist:mont:year') 
+       call metadata_edio(nvar,igr,'Belowground structural biomass','[NA]','NA') 
+    endif
 
     if (associated(cpatch%bleaf)) then
        nvar=nvar+1
@@ -10431,6 +10472,18 @@ contains
          call vtable_edio_r(cpatch%bsapwood(1),nvar,igr,init,cpatch%coglob_id, &
          var_len,var_len_global,max_ptrs,'BSAPWOOD :41:hist:year:mont') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
+    if (associated(cpatch%bsapwood)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%bsapwood(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'BSAPWOODB :41:hist:year:mont') 
+       call metadata_edio(nvar,igr,'Belowground Sapwood Biomass','[NA]','NA') 
+    endif
+    if (associated(cpatch%bsapwooda)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%bsapwooda(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'BSAPWOODA :41:hist:year:mont') 
+       call metadata_edio(nvar,igr,'Aboveground Sapwood Biomass','[NA]','NA') 
     endif
 
     if (associated(cpatch%lai)) then

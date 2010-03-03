@@ -274,9 +274,14 @@ subroutine reproduction(cgrid, month)
                   !----- Assign initial sapwood and root biomass. -------------------------!
                   ipft    = cpatch%pft(ico)
                   salloci = 1. / (1. + qsw(ipft) * cpatch%hite(ico) + q(ipft))
+                  !!! assume new recruits are on allometry
                   cpatch%broot(ico)    = q(ipft) * cpatch%balive(ico) * salloci
                   cpatch%bsapwood(ico) = qsw(ipft) * cpatch%hite(ico)                      &
                                        * cpatch%balive(ico) * salloci
+                  cpatch%bsapwooda(ico) = cpatch%bsapwood(ico)*agf_bs
+                  cpatch%bsapwoodb(ico) = cpatch%bsapwood(ico) - cpatch%bsapwooda(ico)
+                  cpatch%bdeada(ico) = cpatch%bdead(ico)*agf_bs
+                  cpatch%bdeadb(ico) = cpatch%bdead(ico) - cpatch%bdeada(ico)
 
 
                   !----- Assign temperature after init_ed_cohort_vars... ------------------!
@@ -296,7 +301,7 @@ subroutine reproduction(cgrid, month)
                   !    Computing initial AGB and Basal Area. Their derivatives will be     !
                   ! zero.                                                                  !
                   !------------------------------------------------------------------------!
-                  cpatch%agb(ico)     = ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)    &
+                  cpatch%agb(ico)     = ed_biomass(cpatch%bdeada(ico),cpatch%bsapwooda(ico)    &
                                                   ,cpatch%bleaf(ico),cpatch%pft(ico)       &
                                                   ,cpatch%hite(ico),cpatch%bstorage(ico))
                   cpatch%basarea(ico) = pio4 * cpatch%dbh(ico)  * cpatch%dbh(ico)
@@ -313,13 +318,13 @@ subroutine reproduction(cgrid, month)
                   !    Obtaining derived properties.                                       !
                   !------------------------------------------------------------------------!
                   !----- Finding LAI, WPA, WAI. -------------------------------------------!
-                  call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico) &
-                                   ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)   &
+                  call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdeada(ico)&
+                                   ,cpatch%bsapwooda(ico),cpatch%dbh(ico), cpatch%hite(ico)&
                                    ,cpatch%pft(ico),cpatch%sla(ico), cpatch%lai(ico)       &
                                    ,cpatch%wpa(ico),cpatch%wai(ico)) !here sla is not yet assigned; will be in init_ed_cohort_vars 
                   !----- Finding heat capacity and vegetation internal energy. ------------!
-                  cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico)   &
-                                                    ,cpatch%balive(ico),cpatch%nplant(ico) &
+                  cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdeada(ico)  &
+                                                  ,cpatch%bsapwooda(ico),cpatch%nplant(ico)&
                                                     ,cpatch%hite(ico),cpatch%pft(ico)      &
                                                     ,cpatch%phenology_status(ico))
                   cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * cpatch%veg_temp(ico)

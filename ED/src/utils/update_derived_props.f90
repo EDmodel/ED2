@@ -95,7 +95,7 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
 
       !----- Compute the patch-level above-ground biomass
       csite%plant_ag_biomass(ipa) = csite%plant_ag_biomass(ipa)                            &
-                                  + ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)        &
+                                  + ed_biomass(cpatch%bdeada(ico),cpatch%bsapwooda(ico)        &
                                               ,cpatch%bleaf(ico),cpatch%pft(ico)           &
                                               ,cpatch%hite(ico),cpatch%bstorage(ico))      &
                                   * cpatch%nplant(ico)           
@@ -112,7 +112,7 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
       !------------------------------------------------------------------------------------!
       do ico=1,cpatch%ncohorts
          !----- Compute average vegetation height, weighting using structural biomass. ----!
-         weight                 = cpatch%nplant(ico) * cpatch%bdead(ico)
+         weight                 = cpatch%nplant(ico) * (cpatch%bdeada(ico)+cpatch%bdeadb(ico))
          norm_fac               = norm_fac + weight
          csite%veg_height(ipa)  = csite%veg_height(ipa) + cpatch%hite(ico) * weight
       end do

@@ -111,7 +111,9 @@ module fuse_fiss_utils
 
          !----- Checking whether the cohort size is too small -----------------------------!
          csize = cpatch%nplant(ico)                                                        &
-               * (cpatch%balive(ico) + cpatch%bdead(ico) + cpatch%bstorage(ico))
+               * (cpatch%bleaf(ico) + cpatch%broot(ico) &
+               + cpatch%bsapwooda(ico) + cpatch%bsapwoodb(ico) &
+               + cpatch%bdeada(ico)+ cpatch%bdeadb(ico) + cpatch%bstorage(ico))
 
          if( csize < (0.1 * min_recruit_size(cpatch%pft(ico)))) then
             !----- Cohort is indeed too small, it won't remain ----------------------------!
@@ -119,7 +121,10 @@ module fuse_fiss_utils
             elim_nplant = elim_nplant + cpatch%nplant(ico)
             elim_lai    = elim_lai    + cpatch%lai(ico)
 
-            !----- Update litter pools ----------------------------------------------------!
+            !----- Update litter pools ---------------------------------------------------!
+            cpatch%balive(ico) = cpatch%bleaf(ico) + cpatch%broot(ico) &
+               + cpatch%bsapwooda(ico) + cpatch%bsapwoodb(ico)
+
             csite%fsc_in(ipa) = csite%fsc_in(ipa) + cpatch%nplant(ico)                     &
                               * (f_labile(cpatch%pft(ico)) * cpatch%balive(ico)            &
                                 + cpatch%bstorage(ico))
@@ -131,11 +136,11 @@ module fuse_fiss_utils
             
             csite%ssc_in(ipa) = csite%ssc_in(ipa) + cpatch%nplant(ico)                     &
                               * ((1.0 - f_labile(cpatch%pft(ico))) * cpatch%balive(ico)    &
-                                 + cpatch%bdead(ico))
+                                 + cpatch%bdeada(ico) + cpatch%bdeadb(ico))
             
-            csite%ssl_in(ipa) = csite%ssl_in(ipa) + cpatch%nplant(ico)                     &
-                              * ((1.0 - f_labile(cpatch%pft(ico)))                         &
-                                 *cpatch%balive(ico) + cpatch%bdead(ico))                  &
+            csite%ssl_in(ipa) = csite%ssl_in(ipa) + cpatch%nplant(ico)                    &
+                              * ((1.0 - f_labile(cpatch%pft(ico)))*cpatch%balive(ico)     &
+                              + cpatch%bdeada(ico) + cpatch%bdeadb(ico))                  &
                               * l2n_stem/c2n_stem(cpatch%pft(ico))
 
          end if
@@ -442,11 +447,19 @@ module fuse_fiss_utils
                           * cpatch%sla(recc)
 
                   !----- Checking the total size of this cohort before and after fusion. --!
-                  total_size = cpatch%nplant(donc) * ( cpatch%balive(donc)                 &
-                                                     + cpatch%bdead(donc)                  &
-                                                     + cpatch%bstorage(donc) )             &
-                             + cpatch%nplant(recc) * ( cpatch%balive(recc)                 &
-                                                     + cpatch%bdead(recc)                  &
+                  total_size = cpatch%nplant(donc) * ( cpatch%bleaf(donc)              &
+                                                     + cpatch%broot(donc)              &
+                                                     + cpatch%bsapwooda(donc)          &
+                                                     + cpatch%bsapwoodb(donc)          &
+                                                     + cpatch%bdeada(donc)             &
+                                                     + cpatch%bdeadb(donc)             &
+                                                     + cpatch%bstorage(donc) )         &
+                             + cpatch%nplant(recc) * ( cpatch%bleaf(recc)              &
+                                                     + cpatch%bstem(recc)              &
+                                                     + cpatch%bsapwooda(recc)          &
+                                                     + cpatch%bsapwoodb(recc)          &
+                                                     + cpatch%bdeada(recc)             &
+                                                     + cpatch%bdeadb(recc)             &
                                                      + cpatch%bstorage(recc) )
 
 
@@ -475,8 +488,12 @@ module fuse_fiss_utils
                      fuse_table(donc) = .false.
                      
                      !----- Checking whether total size and LAI are conserved. ------------!
-                     new_size = cpatch%nplant(recc) * ( cpatch%balive(recc)                &
-                                                      + cpatch%bdead(recc)                 &
+                     new_size = cpatch%nplant(recc) * ( cpatch%bleaf(recc)               &
+                                                      + cpatch%broot(recc)               &
+                                                      + cpatch%bsapwooda(recc)           &
+                                                      + cpatch%bsapwoodb(recc)           &
+                                                      + cpatch%bdeada(recc)              &
+                                                      + cpatch%bdeadb(recc)              &
                                                       + cpatch%bstorage(recc) )
                      if (new_size < 0.99* total_size .or. new_size > 1.01* total_size )    &
                      then
@@ -588,8 +605,6 @@ module fuse_fiss_utils
    subroutine split_cohorts(cpatch, green_leaf_factor, lsl)
 
       use ed_state_vars        , only : patchtype              ! ! structure
-      use pft_coms             , only : q                      & ! intent(in), lookup table
-                                      , qsw                    ! ! intent(in), lookup table
       use fusion_fission_coms  , only : lai_tol                ! ! intent(in)
       use ed_max_dims          , only : n_pft                  ! ! intent(in)
       use allometry            , only : dbh2h                  & ! function
@@ -632,17 +647,18 @@ module fuse_fiss_utils
          !     STAI is the potential TAI that this cohort has when its leaves are fully    !
          ! flushed.                                                                        !
          !---------------------------------------------------------------------------------! 
-         stai = cpatch%nplant(ico) * cpatch%balive(ico) * green_leaf_factor(ipft)          &
-              * q(ipft) / ( 1.0 + q(ipft) + qsw(ipft) * cpatch%hite(ico) )                 &
+         stai = cpatch%nplant(ico) * cpatch%broot(ico) * green_leaf_factor(ipft)          &
               * cpatch%sla(ico) + cpatch%wai(ico)
 
          !----- If the resulting TAI is too large, split this cohort. ---------------------!
          split_mask(ico) = stai > lai_tol
          
          old_nplant = old_nplant + cpatch%nplant(ico)
-         old_size   = old_size   + cpatch%nplant(ico) * ( cpatch%balive(ico)               &
-                                                        + cpatch%bdead(ico)                &
-                                                        + cpatch%bstorage(ico) )
+         old_size   = old_size   + cpatch%nplant(ico) * ( & 
+              cpatch%bleaf(ico) + cpatch%broot(ico) &
+              + cpatch%bdeada(ico) +cpatch%bdeadb(ico) &
+              + cpatch%bsapwooda(ico)+ cpatch%bsapwoodb(ico)&
+              + cpatch%bstorage(ico) )
       end do
 
       !----- Compute the new number of cohorts. -------------------------------------------!
@@ -726,15 +742,17 @@ module fuse_fiss_utils
                call clone_cohort(cpatch,ico,inew)
                !---------------------------------------------------------------------------!
 
-               !----- Tweaking bdead, to ensure carbon is conserved. ----------------------!
-               cpatch%bdead(ico)  = cpatch%bdead(ico)*(1.-epsilon)
-               cpatch%dbh(ico)    = bd2dbh(cpatch%pft(ico), cpatch%bdead(ico))
-               cpatch%hite(ico)   = dbh2h(cpatch%pft(ico), cpatch%dbh(ico))
+               !----- Tweaking bdead, to ensure carbon is conserved. --------------------!
+               cpatch%bdeada(ico)  = cpatch%bdeada(ico)*(1.-epsilon)
+               cpatch%bdeadb(ico)  = cpatch%bdeadb(ico)*(1.-epsilon)
+               cpatch%dbh(ico)     = bd2dbh(cpatch%pft(ico), cpatch%bdead(ico))
+               cpatch%hite(ico)    = dbh2h(cpatch%pft(ico), cpatch%dbh(ico))
 
-               cpatch%bdead(inew)  = cpatch%bdead(inew)*(1.+epsilon)
+               cpatch%bdeada(inew) = cpatch%bdeada(inew)*(1.+epsilon)
+               cpatch%bdeadb(inew) = cpatch%bdeadb(inew)*(1.+epsilon)
                cpatch%dbh(inew)    = bd2dbh(cpatch%pft(inew), cpatch%bdead(inew))
                cpatch%hite(inew)   = dbh2h(cpatch%pft(inew), cpatch%dbh(inew))
-               !---------------------------------------------------------------------------!
+               !-------------------------------------------------------------------------!
 
             end if
          end do
@@ -747,8 +765,12 @@ module fuse_fiss_utils
          new_size   = 0.
          do ico=1,cpatch%ncohorts
             new_nplant = new_nplant + cpatch%nplant(ico)
-            new_size   = new_size   + cpatch%nplant(ico) * ( cpatch%balive(ico)            &
-                                                           + cpatch%bdead(ico)             &
+            new_size   = new_size   + cpatch%nplant(ico) * ( cpatch%bleaf(ico)           &
+                                                           + cpatch%broot(ico)           &
+                                                           + cpatch%bsapwooda(ico)       &
+                                                           + cpatch%bsapwoodb(ico)       &
+                                                           + cpatch%bdeada(ico)          &
+                                                           + cpatch%bdeadb(ico)          &
                                                            + cpatch%bstorage(ico) )
          end do
          if (new_nplant < 0.99 * old_nplant .or. new_nplant > 1.01 * old_nplant .or.       &
@@ -798,10 +820,13 @@ module fuse_fiss_utils
       cpatch%nplant(idt)              = cpatch%nplant(isc)
       cpatch%hite(idt)                = cpatch%hite(isc)
       cpatch%dbh(idt)                 = cpatch%dbh(isc)
-      cpatch%bdead(idt)               = cpatch%bdead(isc)
+      cpatch%bdeada(idt)              = cpatch%bdeada(isc)
+      cpatch%bdeadb(idt)              = cpatch%bdeadb(isc)
       cpatch%bleaf(idt)               = cpatch%bleaf(isc)
       cpatch%broot(idt)               = cpatch%broot(isc)
       cpatch%bsapwood(idt)            = cpatch%bsapwood(isc)
+      cpatch%bsapwooda(idt)           = cpatch%bsapwooda(isc)
+      cpatch%bsapwoodb(idt)           = cpatch%bsapwoodb(isc)
       cpatch%phenology_status(idt)    = cpatch%phenology_status(isc)
       cpatch%balive(idt)              = cpatch%balive(isc)
       cpatch%lai(idt)                 = cpatch%lai(isc)
@@ -977,8 +1002,6 @@ module fuse_fiss_utils
    !---------------------------------------------------------------------------------------!
    subroutine fuse_2_cohorts(cpatch,donc,recc, newn,green_leaf_factor, lsl)
       use ed_state_vars , only : patchtype              ! ! Structure
-      use pft_coms      , only : q                      & ! intent(in), lookup table
-                               , qsw                    ! ! intent(in), lookup table
       use therm_lib     , only : qwtk                   ! ! subroutine
       use allometry     , only : calc_root_depth        & ! function
                                , assign_root_depth      & ! function
@@ -1007,11 +1030,14 @@ module fuse_fiss_utils
       newni = 1.0 / newn
      
 
-      !----- Conserve carbon by calculating bdead first. ----------------------------------!
-      cpatch%bdead(recc) = ( cpatch%nplant(recc) * cpatch%bdead(recc)                      &
-                           + cpatch%nplant(donc) * cpatch%bdead(donc) ) * newni
+      !----- Conserve carbon by calculating bdead first. ---------------------------------!
+      cpatch%bdeada(recc) = ( cpatch%nplant(recc) * cpatch%bdeada(recc)                   &
+                           + cpatch%nplant(donc) * cpatch%bdeada(donc) ) * newni
+      cpatch%bdeadb(recc) = ( cpatch%nplant(recc) * cpatch%bdeadb(recc)                   &
+                           + cpatch%nplant(donc) * cpatch%bdeadb(donc) ) * newni
+      cpatch%bdead(recc) = cpatch%bdeada(recc) + cpatch%bdeadb(recc) 
 
-      !----- Then get dbh and hite from bdead. --------------------------------------------!
+      !----- Then get dbh and hite from bdead. -------------------------------------------!
       cpatch%dbh(recc)   = bd2dbh(cpatch%pft(recc), cpatch%bdead(recc))
       cpatch%hite(recc)  = dbh2h(cpatch%pft(recc),  cpatch%dbh(recc))
 
@@ -1023,8 +1049,12 @@ module fuse_fiss_utils
                                + cpatch%nplant(donc) * cpatch%balive(donc) ) *newni
       cpatch%broot(recc)     = ( cpatch%nplant(recc) * cpatch%broot(recc)                  &
                                + cpatch%nplant(donc) * cpatch%broot(donc) ) *newni
-      cpatch%bsapwood(recc)  = ( cpatch%nplant(recc) * cpatch%bsapwood(recc)               &
-                             + cpatch%nplant(donc) * cpatch%bsapwood(donc) ) *newni
+      cpatch%bsapwoodb(recc)  = ( cpatch%nplant(recc) * cpatch%bsapwoodb(recc)               &
+                             + cpatch%nplant(donc) * cpatch%bsapwoodb(donc) ) *newni
+      cpatch%bsapwooda(recc)  = ( cpatch%nplant(recc) * cpatch%bsapwooda(recc)               &
+                             + cpatch%nplant(donc) * cpatch%bsapwooda(donc) ) *newni
+      cpatch%bsapwood(recc)  = cpatch%bsapwooda(recc)+cpatch%bsapwoodb(recc)
+
       cpatch%bstorage(recc)  = ( cpatch%nplant(recc) * cpatch%bstorage(recc)               &
                                + cpatch%nplant(donc) * cpatch%bstorage(donc) ) * newni
       cpatch%bseeds(recc)    = ( cpatch%nplant(recc) * cpatch%bseeds(recc)                 &

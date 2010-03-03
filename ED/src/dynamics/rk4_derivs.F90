@@ -653,9 +653,6 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,dewgnd
                                     , fast_diagnostics     ! ! intent(in)
    use allometry             , only : dbh2ca               ! ! function
    use canopy_struct_dynamics, only : vertical_vel_flux8   ! ! function
-   use pft_coms              , only : water_conductance    & ! intent(in)
-                                    , q                    & ! intent(in)
-                                    , qsw                  ! ! intent(in)
                                        
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
