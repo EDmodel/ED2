@@ -1125,7 +1125,7 @@ do ifm=1,ngrids
    end if
 
 
-   if (isoilflg(ifm)==2 .and. slxclay<0) then
+   if (isoilflg(ifm)==2 .and. slxclay<0.) then
       write (unit=*,fmt='(a)') '==========================================================='
       write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
       write (unit=*,fmt='(a)') '==========================================================='
@@ -1134,7 +1134,7 @@ do ifm=1,ngrids
       write (unit=*,fmt='(a)') '==========================================================='
    end if
    
-   if (isoilflg(ifm)==2 .and. slxclay>1) then
+   if (isoilflg(ifm)==2 .and. slxclay>1.) then
       write (unit=*,fmt='(a)') '==========================================================='
       write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
       write (unit=*,fmt='(a)') '==========================================================='
@@ -1143,7 +1143,7 @@ do ifm=1,ngrids
       write (unit=*,fmt='(a)') '==========================================================='
    end if
 
-   if (isoilflg(ifm)==2 .and. slxsand<0) then
+   if (isoilflg(ifm)==2 .and. slxsand<0.) then
       write (unit=*,fmt='(a)') '==========================================================='
       write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
       write (unit=*,fmt='(a)') '==========================================================='
@@ -1152,7 +1152,7 @@ do ifm=1,ngrids
       write (unit=*,fmt='(a)') '==========================================================='
    end if
    
-   if (isoilflg(ifm)==2 .and. slxsand>1) then
+   if (isoilflg(ifm)==2 .and. slxsand>1.) then
       write (unit=*,fmt='(a)') '==========================================================='
       write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
       write (unit=*,fmt='(a)') '==========================================================='
@@ -1162,7 +1162,7 @@ do ifm=1,ngrids
    end if
    
 
-   if (isoilflg(ifm)==2 .and. (slxsand+slxclay)>1) then
+   if (isoilflg(ifm)==2 .and. (slxsand+slxclay)>1.) then
       write (unit=*,fmt='(a)') '==========================================================='
       write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
       write (unit=*,fmt='(a)') '==========================================================='

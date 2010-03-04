@@ -37,8 +37,8 @@ module soil_coms
    integer                     :: isoilbc        ! Bottom layer boundary condition.
    integer, dimension(maxgrds) :: isoilflg       ! Soil initialization flag.
    integer                     :: nslcon         ! Soil texture if constant everywhere.
-   integer                     :: slxclay        ! Site specific clay soil fraction
-   integer                     :: slxsand        ! Site specific sand soil fraction
+   real                        :: slxclay        ! Site specific clay soil fraction
+   real                        :: slxsand        ! Site specific sand soil fraction
    real                        :: zrough         ! Soil roughness if constant everywhere.
    real, dimension(nzgmax)     :: slmstr         ! Initial soil moisture fraction.
    real, dimension(nzgmax)     :: stgoff         ! Initial soil temperature offset.

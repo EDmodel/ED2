@@ -1731,6 +1731,7 @@ subroutine init_soil_coms
                              , infiltration_method   ! ! intent(out)
                              
    use grid_coms      , only : ngrids                ! ! intent(in)
+   use consts_coms    , only : grav                  
 
    implicit none
    !----- Local variable ------------------------------------------------------------------!
@@ -1790,7 +1791,7 @@ do ifm=1,ngrids
         
         soil(nslcon)%slpots=      -1 * (10**(2.17 - 0.63*slxclay - 1.58*slxsand)) * 0.01                ! [ m ]
         
-        soil(nslcon)%slcons=      (10**(-0.60 + 1.26*slxsand - 0.64*slxclay)) * 0.0245/(60*60)          ! [ m/s ]
+        soil(nslcon)%slcons=      (10**(-0.60 + 1.26*slxsand - 0.64*slxclay)) * 0.0254/(60*60)          ! [ m/s ]
         
         soil(nslcon)%slmsts=      (50.5 - 14.2*slxsand - 3.7*slxclay)/100                               ! [ m^3/m^3 ]
         
@@ -1799,11 +1800,23 @@ do ifm=1,ngrids
         soil(nslcon)%sfldcap=     soil(nslcon)%slmsts * ((fieldcp_K/1000/(60*60*24))/soil(nslcon)%slcons)** & 
                                        (1 / (2*soil(nslcon)%slbs+3))                                          ! [ m^3/m^3 ]
         
-        soil(nslcon)%soilcp=      soil(nslcon)%slmsts * ( soil(nslcon)%slpots / (soilcp_MPa*1000/9.80665))** & 
+        soil(nslcon)%soilcp=      soil(nslcon)%slmsts * ( -1.*soil(nslcon)%slpots / (soilcp_MPa*1000/grav))** & 
                                        (1 / soil(nslcon)%slbs)                                          ! [ m^3/m^3 ]
 
-        soil(nslcon)%soilwp=      soil(nslcon)%slmsts * ( soil(nslcon)%slpots / (soilwp_MPa*1000/9.80665))** & 
-                                       (1 / soil(nslcon)%slbs)                                          ! [ m^3/m^3 ]        
+        soil(nslcon)%soilwp=      soil(nslcon)%slmsts * ( -1.*soil(nslcon)%slpots / (soilwp_MPa*1000/grav))** & 
+                                       (1 / soil(nslcon)%slbs)                                          ! [ m^3/m^3 ]       
+                                       
+        write(unit=*,fmt='(a)') '*********************************************'
+        write(unit=*,fmt='(a)') '**RESET SOIL PARAMS:                         '
+        write(unit=*,fmt='(a,1x,f8.4)') 'new slbs ', soil(nslcon)%slbs
+        write(unit=*,fmt='(a,1x,f8.4)') 'new slpots ', soil(nslcon)%slpots
+        write(unit=*,fmt='(a,1x,es9.2)') 'new slcons ', soil(nslcon)%slcons
+        write(unit=*,fmt='(a,1x,f8.4)') 'new slmsts ', soil(nslcon)%slmsts
+        write(unit=*,fmt='(a,1x,f8.4)') 'new sfldcap ', soil(nslcon)%sfldcap
+        write(unit=*,fmt='(a,1x,f8.4)') 'new soilcp ', soil(nslcon)%soilcp
+        write(unit=*,fmt='(a,1x,f8.4)') 'new soilwp ', soil(nslcon)%soilwp
+        write(unit=*,fmt='(a)') '*********************************************'
+
      endif
 enddo
 
