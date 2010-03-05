@@ -455,7 +455,7 @@ module fuse_fiss_utils
                                                      + cpatch%bdeadb(donc)             &
                                                      + cpatch%bstorage(donc) )         &
                              + cpatch%nplant(recc) * ( cpatch%bleaf(recc)              &
-                                                     + cpatch%bstem(recc)              &
+                                                     + cpatch%broot(recc)              &
                                                      + cpatch%bsapwooda(recc)          &
                                                      + cpatch%bsapwoodb(recc)          &
                                                      + cpatch%bdeada(recc)             &

@@ -3,7 +3,7 @@ subroutine read_ed1_history_file
 
   use ed_max_dims, only: n_pft,huge_patch,huge_cohort,max_water,str_len,maxfiles,maxlist
   use pft_coms, only: SLA, q, qsw, hgt_min, include_pft, include_pft_ag, &
-       phenology,pft_1st_check,include_these_pft
+       phenology,pft_1st_check,include_these_pft, agf_bs
   use ed_misc_coms, only: sfilin, ied_init_mode, &
        init_fsc,init_stsc,init_stsl,init_ssc,init_msn,init_fsn
   use mem_sites, only: grid_res,edres
@@ -573,7 +573,7 @@ subroutine read_ed1_history_file
                        cpatch%bsapwooda(ic2)= cpatch%bsapwood(ic2)*agf_bs
                        cpatch%bsapwoodb(ic2)= cpatch%bsapwood(ic2) - cpatch%bsapwooda(ic2)
                        cpatch%bdeada(ic2)   = cpatch%bdead(ic2)*agf_bs
-                       cpatch%bdeadb(ic2)   = cpatch%bdead(ic2) - cpatch$bdeada(ic2)
+                       cpatch%bdeadb(ic2)   = cpatch%bdead(ic2) - cpatch%bdeada(ic2)
 
 
                        ! START COLD-DECIDUOUS TREES WITHOUT LEAVES.  ALL OTHER TREES
@@ -1251,17 +1251,18 @@ subroutine read_ed21_history_file
 
                           cpatch%basarea(ico)  = cpatch%nplant(ico) * pio4                    &
                                * cpatch%dbh(ico) * cpatch%dbh(ico)
-                          
-                          cpatch%broot(ico) = q(cpatch%pft(ico)) * cpatch%balive(ico)         &
-                                            / ( 1.0 + q(cpatch%pft(ico))                      &
-                                              + qsw(cpatch%pft(ico)) * cpatch%hite(ico))
-                          
-                          cpatch%bsapwood(ico) = qsw(cpatch%pft(ico)) * cpatch%balive(ico)    &
-                                               * cpatch%hite(ico)                             &
-                                               / ( 1.0 + q(cpatch%pft(ico))                   &
-                                                 + qsw(cpatch%pft(ico)) * cpatch%hite(ico))
-                          cpatch%bsapwooda(ico)= cpatch%bsapwood(ico)*agf_bs
-                          cpatch%bsapwoodb(ico)= cpatch%bsapwood(ico) - cpatch%bsapwooda(ico)
+
+!! these should all be read-in state variables now (MCD 03.05.10)                          
+!                          cpatch%broot(ico) = q(cpatch%pft(ico)) * cpatch%balive(ico)         &
+!                                            / ( 1.0 + q(cpatch%pft(ico))                      &
+!                                              + qsw(cpatch%pft(ico)) * cpatch%hite(ico))
+!                          
+!                          cpatch%bsapwood(ico) = qsw(cpatch%pft(ico)) * cpatch%balive(ico)    &
+!                                               * cpatch%hite(ico)                             &
+!                                               / ( 1.0 + q(cpatch%pft(ico))                   &
+!                                                 + qsw(cpatch%pft(ico)) * cpatch%hite(ico))
+!                          cpatch%bsapwooda(ico)= cpatch%bsapwood(ico)*agf_bs
+!                          cpatch%bsapwoodb(ico)= cpatch%bsapwood(ico) - cpatch%bsapwooda(ico)
 
                           
                           !----- Assign LAI, WPA, and WAI ------------------------------------!

@@ -8,7 +8,7 @@ subroutine soil_respiration(csite,ipa)
                            , patchtype                ! ! structure
    use soil_coms    , only : soil                     ! ! intent(in)
    use grid_coms    , only : nzg                      ! ! intent(in)
-   use pft_coms     , only : root_respiration_factor  & ! intent(in)
+   use pft_coms     , only : root_respiration_factor   ! intent(in)
 
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!

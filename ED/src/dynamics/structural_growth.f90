@@ -17,7 +17,8 @@ subroutine structural_growth(cgrid, month)
                             , c2n_storage            & ! intent(in)
                             , c2n_recruit            & ! intent(in)
                             , c2n_stem               & ! intent(in)
-                            , l2n_stem               ! ! intent(in)
+                            , l2n_stem               & ! intent(in)
+                            , agf_bs
    use decomp_coms   , only : f_labile               ! ! intent(in)
    use ed_max_dims   , only : n_pft                  & ! intent(in)
                             , n_dbh                  ! ! intent(in)
@@ -39,8 +40,6 @@ subroutine structural_growth(cgrid, month)
    integer                       :: ipft
    integer                       :: update_month
    integer                       :: imonth
-   real                          :: salloc
-   real                          :: salloci
    real                          :: balive_in
    real                          :: bdead_in
    real                          :: bdeada_in
@@ -85,9 +84,6 @@ subroutine structural_growth(cgrid, month)
             cohortloop: do ico = 1,cpatch%ncohorts
                !----- Assigning an alias for PFT type. ------------------------------------!
                ipft    = cpatch%pft(ico)
-
-               salloc  = 1.0 + q(ipft) + qsw(ipft) * cpatch%hite(ico)
-               salloci = 1.0 / salloc
 
                !----- Remember inputs in order to calculate increments later on. ----------!
                cpatch%balive(ico) = cpatch%bleaf(ico) + cpatch%broot(ico) &
@@ -136,8 +132,8 @@ subroutine structural_growth(cgrid, month)
                !! biomass increment
                bdead_inc = f_bdead * cpatch%bstorage(ico)
                !! above and belowground deficits to be on allometry
-               abovedef  = max(0.0,cpatch%bdeadb(ico)*agf_bs/(1.0-afg_bs))
-               belowdef  = max(0.0,cpatch%bdeada(ico)*(1.0-afg_bs)/afg_bs)
+               abovedef  = max(0.0,cpatch%bdeadb(ico)*agf_bs/(1.0-agf_bs))
+               belowdef  = max(0.0,cpatch%bdeada(ico)*(1.0-agf_bs)/agf_bs)
                if(bdead_inc >= (abovedef+belowdef)) then
                   !! either on allometry or have enough carbon to get on allometry
                   !! get on allometry
@@ -311,8 +307,6 @@ subroutine structural_growth_eq_0(cgrid, month)
    integer                       :: ipft
    integer                       :: update_month
    integer                       :: imonth
-   real                          :: salloc
-   real                          :: salloci
    real                          :: balive_in
    real                          :: bdead_in
    real                          :: bdeada_in
@@ -354,9 +348,6 @@ subroutine structural_growth_eq_0(cgrid, month)
             cohortloop: do ico = 1,cpatch%ncohorts
                !----- Assigning an alias for PFT type. ------------------------------------!
                ipft    = cpatch%pft(ico)
-
-               salloc  = 1.0 + q(ipft) + qsw(ipft) * cpatch%hite(ico)
-               salloci = 1.0 / salloc
 
                !----- Remember inputs in order to calculate increments later on. ----------!
                cpatch%balive(ico) = cpatch%bleaf(ico) + cpatch%broot(ico) &

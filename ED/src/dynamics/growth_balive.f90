@@ -467,7 +467,8 @@ module growth_balive
                                , c2n_storage & ! intent(in)
                                , c2n_stem    & ! intent(in)
                                , q           & ! intent(in)
-                               , qsw         ! ! intent(in)
+                               , qsw         & ! intent(in)
+                               , agf_bs
       use decomp_coms   , only : f_labile    ! ! intent(in)
       use allometry     , only : dbh2bl      ! ! function
       implicit none
@@ -723,7 +724,8 @@ module growth_balive
                               , sla          & ! intent(in)
                               , q            & ! intent(in)
                               , qsw          & ! intent(in)
-                              , c2n_stem     ! ! intent(in)
+                              , c2n_stem     & ! intent(in)
+                              , agf_bs
       use decomp_coms  , only : f_labile     ! ! intent(in)
       use allometry    , only : dbh2bl       ! ! function
       implicit none

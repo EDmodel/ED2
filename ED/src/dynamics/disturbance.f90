@@ -904,7 +904,7 @@ module disturbance_utils
 
     use ed_state_vars,only : sitetype,patchtype
 
-    use pft_coms, only: q, qsw, sla, hgt_min, max_dbh
+    use pft_coms, only: q, qsw, sla, hgt_min, max_dbh, agf_bs
     use ed_misc_coms, only: dtlsm
     use fuse_fiss_utils, only : sort_cohorts
     use ed_therm_lib,only : calc_hcapveg
@@ -978,10 +978,10 @@ module disturbance_utils
     cpatch%broot(nc)    = cpatch%balive(nc) * q(cpatch%pft(nc)) * salloci
     cpatch%bsapwood(nc) = cpatch%balive(nc) * qsw(cpatch%pft(nc))                &
                         * cpatch%hite(nc) * salloci
-    cpatch%bsapwooda(ico) = cpatch%bsapwood(ico)*agf_bs
-    cpatch%bsapwoodb(ico) = cpatch%bsapwood(ico) - cpatch%bsapwoodb(ico)
-    cpatch%bdeada(ico) = cpatch%bdead(ico)*agf_bs
-    cpatch%bdeadb(ico) = cpatch%bdead(ico) - cpatch%bdeadb(ico)
+    cpatch%bsapwooda(nc) = cpatch%bsapwood(nc)*agf_bs
+    cpatch%bsapwoodb(nc) = cpatch%bsapwood(nc) - cpatch%bsapwoodb(nc)
+    cpatch%bdeada(nc) = cpatch%bdead(nc)*agf_bs
+    cpatch%bdeadb(nc) = cpatch%bdead(nc) - cpatch%bdeadb(nc)
 
     cpatch%sla(nc)=sla(cpatch%pft(nc))
     call area_indices(cpatch%nplant(nc),cpatch%bleaf(nc),cpatch%bdeada(nc)        &

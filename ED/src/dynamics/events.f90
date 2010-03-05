@@ -354,7 +354,7 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                  cpatch%bsapwoodb(ico) = max(0.0,cpatch%bsapwoodb(ico)*(1.0-bgb_frac))
                  cpatch%bleaf(ico)     = max(0.0,cpatch%bleaf(ico)*(1.0-fol_frac))
                  cpatch%broot(ico)     = max(0.0,cpatch%broot(ico)*(1.0-bgb_frac))
-                 cpatch%bstoreage(ico) = max(0.0,cpatch%bstorage(ico)*(1.0-stor_frac))
+                 cpatch%bstorage(ico) = max(0.0,cpatch%bstorage(ico)*(1.0-stor_frac))
                  cpatch%balive(ico)    = cpatch%bleaf(ico)+cpatch%broot(ico) + &
                       cpatch%bsapwooda(ico) + cpatch%bsapwoodb(ico)
                  cpatch%bdead(ico)     = cpatch%bdeada(ico) + cpatch%bdeadb(ico)
