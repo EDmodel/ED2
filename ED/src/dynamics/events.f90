@@ -376,7 +376,7 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                  end if
 
                  if(cpatch%bdeada(ico) .gt. tiny(1.0)) then
-                    cpatch%dbh(ico) = bd2dbh(cpatch%pft(ico), cpatch%bdead(ico)) 
+                    cpatch%dbh(ico) = bd2dbh(cpatch%pft(ico), cpatch%bdeada(ico)) 
                     cpatch%hite(ico) = dbh2h(cpatch%pft(ico), cpatch%dbh(ico))
                  else
                     cpatch%dbh(ico)  = 0.0

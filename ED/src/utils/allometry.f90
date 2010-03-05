@@ -328,26 +328,30 @@ module allometry
 
    !=======================================================================================!
    !=======================================================================================!
-   real function bd2dbh(ipft, bdead)
+   real function bd2dbh(ipft, bdeada)
 
       use pft_coms, only:  is_tropical & ! intent(in), lookup table
                          , rho         & ! intent(in), lookup table
                          , b1Bs        & ! intent(in), lookup table
                          , b2Bs        & ! intent(in), lookup table
                          , C2B         & ! intent(in)
-                         , max_dbh     ! ! intent(in), lookup table
+                         , max_dbh     & ! intent(in), lookup table
+                         , agf_bs
 
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       integer, intent(in) :: ipft
-      real   , intent(in) :: bdead
+      real   , intent(in) :: bdeada
       !----- Local variables --------------------------------------------------------------!
       real :: p
       real :: q
       real :: r
       real :: dbh_pot
       real :: h_max
+      real :: bdead  !! **EFFECTIVE** total biomass
       !------------------------------------------------------------------------------------!
+
+      bdead = bdeada/agf_bs
 
       if (is_tropical(ipft)) then
 

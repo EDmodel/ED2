@@ -745,12 +745,12 @@ module fuse_fiss_utils
                !----- Tweaking bdead, to ensure carbon is conserved. --------------------!
                cpatch%bdeada(ico)  = cpatch%bdeada(ico)*(1.-epsilon)
                cpatch%bdeadb(ico)  = cpatch%bdeadb(ico)*(1.-epsilon)
-               cpatch%dbh(ico)     = bd2dbh(cpatch%pft(ico), cpatch%bdead(ico))
+               cpatch%dbh(ico)     = bd2dbh(cpatch%pft(ico), cpatch%bdeada(ico))
                cpatch%hite(ico)    = dbh2h(cpatch%pft(ico), cpatch%dbh(ico))
 
                cpatch%bdeada(inew) = cpatch%bdeada(inew)*(1.+epsilon)
                cpatch%bdeadb(inew) = cpatch%bdeadb(inew)*(1.+epsilon)
-               cpatch%dbh(inew)    = bd2dbh(cpatch%pft(inew), cpatch%bdead(inew))
+               cpatch%dbh(inew)    = bd2dbh(cpatch%pft(inew), cpatch%bdeada(inew))
                cpatch%hite(inew)   = dbh2h(cpatch%pft(inew), cpatch%dbh(inew))
                !-------------------------------------------------------------------------!
 
@@ -1038,7 +1038,7 @@ module fuse_fiss_utils
       cpatch%bdead(recc) = cpatch%bdeada(recc) + cpatch%bdeadb(recc) 
 
       !----- Then get dbh and hite from bdead. -------------------------------------------!
-      cpatch%dbh(recc)   = bd2dbh(cpatch%pft(recc), cpatch%bdead(recc))
+      cpatch%dbh(recc)   = bd2dbh(cpatch%pft(recc), cpatch%bdeada(recc))
       cpatch%hite(recc)  = dbh2h(cpatch%pft(recc),  cpatch%dbh(recc))
 
 

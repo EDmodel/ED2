@@ -63,6 +63,9 @@ subroutine structural_growth(cgrid, month)
    real                          :: cb_act
    real                          :: cb_max
    real                          :: old_hcapveg
+   real                          :: bdead_inc
+   real                          :: abovedef
+   real                          :: belowdef
    !---------------------------------------------------------------------------------------!
 
    polyloop: do ipy = 1,cgrid%npolygons
@@ -87,6 +90,8 @@ subroutine structural_growth(cgrid, month)
                salloci = 1.0 / salloc
 
                !----- Remember inputs in order to calculate increments later on. ----------!
+               cpatch%balive(ico) = cpatch%bleaf(ico) + cpatch%broot(ico) &
+                    + cpatch%bsapwooda(ico) + cpatch%bsapwoodb(ico)
                balive_in   = cpatch%balive(ico)
                bdead_in    = cpatch%bdead(ico)
                bdeada_in   = cpatch%bdeada(ico)
@@ -123,7 +128,35 @@ subroutine structural_growth(cgrid, month)
                                                ,cgrid%lat(ipy),month,f_bseeds,f_bdead)
 
                !----- Grow plants; bdead gets fraction f_bdead of bstorage. ---------------!
-               cpatch%bdead(ico) = cpatch%bdead(ico) + f_bdead * cpatch%bstorage(ico)
+!!               cpatch%bdead(ico) = cpatch%bdead(ico) + f_bdead * cpatch%bstorage(ico)
+
+
+               !---- Balance new bdead between above and below ground components --!
+!*********** HERE ************
+               !! biomass increment
+               bdead_inc = f_bdead * cpatch%bstorage(ico)
+               !! above and belowground deficits to be on allometry
+               abovedef  = max(0.0,cpatch%bdeadb(ico)*agf_bs/(1.0-afg_bs))
+               belowdef  = max(0.0,cpatch%bdeada(ico)*(1.0-afg_bs)/afg_bs)
+               if(bdead_inc > (abovedef+belowdef)) then
+                  !! either on allometry or have enough carbon to get on allometry
+                  !! get on allometry
+                  cpatch%bdeada(ico) = cpatch%bdeada(ico) + abovedef
+                  cpatch%bdeadb(ico) = cpatch%bdeadb(ico) + belowdef
+                  bdead_inc = bdead_inc - abovedef - belowdef
+                  
+                  !! partion remainder allometrically
+                  cpatch%bdeada(ico) = cpatch%bdeada(ico) + bdead_inc*agf_bs
+                  cpatch%bdeadb(ico) = cpatch%bdeadb(ico) + bdead_inc*(1.0-agf_bs)
+               else
+                  !! partition based on relative deficit
+                  cpatch%bdeada(ico) = cpatch%bdeada(ico) + &
+                       bdead_inc*abovedef/(abovedef+belowdef)
+                  cpatch%bdeadb(ico) = cpatch%bdeadb(ico) + &
+                       bdead_inc*belowdef/(abovedef+belowdef)
+               endif
+               cpatch%bdead(ico) = cpatch%bdeada(ico) + cpatch%bdeadb(ico) 
+
 
                !---------------------------------------------------------------------------!
                !      Rebalance the plant nitrogen uptake considering the actual alloc-    !
@@ -326,6 +359,8 @@ subroutine structural_growth_eq_0(cgrid, month)
                salloci = 1.0 / salloc
 
                !----- Remember inputs in order to calculate increments later on. ----------!
+               cpatch%balive(ico) = cpatch%bleaf(ico) + cpatch%broot(ico) &
+                    + cpatch%bsapwooda(ico) + cpatch%bsapwoodb(ico)
                balive_in   = cpatch%balive(ico)
                bdead_in    = cpatch%bdead(ico)
                bdeada_in    = cpatch%bdeada(ico)
@@ -507,7 +542,7 @@ subroutine update_derived_cohort_props(cpatch,ico,green_leaf_factor,lsl)
    !---------------------------------------------------------------------------------------!
 
    !----- Getting DBH and height from structural biomass. ---------------------------------!
-   cpatch%dbh(ico) = bd2dbh(cpatch%pft(ico), cpatch%bdead(ico))
+   cpatch%dbh(ico) = bd2dbh(cpatch%pft(ico), cpatch%bdeada(ico))
    cpatch%hite(ico) = dbh2h(cpatch%pft(ico), cpatch%dbh(ico))
    
    !----- Checking the phenology status and whether it needs to change. -------------------!
