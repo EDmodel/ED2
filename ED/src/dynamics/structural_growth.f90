@@ -132,13 +132,13 @@ subroutine structural_growth(cgrid, month)
 
 
                !---- Balance new bdead between above and below ground components --!
-!*********** HERE ************
+               !----  MCD  03/05/10   ----!
                !! biomass increment
                bdead_inc = f_bdead * cpatch%bstorage(ico)
                !! above and belowground deficits to be on allometry
                abovedef  = max(0.0,cpatch%bdeadb(ico)*agf_bs/(1.0-afg_bs))
                belowdef  = max(0.0,cpatch%bdeada(ico)*(1.0-afg_bs)/afg_bs)
-               if(bdead_inc > (abovedef+belowdef)) then
+               if(bdead_inc >= (abovedef+belowdef)) then
                   !! either on allometry or have enough carbon to get on allometry
                   !! get on allometry
                   cpatch%bdeada(ico) = cpatch%bdeada(ico) + abovedef
