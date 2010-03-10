@@ -132,8 +132,10 @@ subroutine structural_growth(cgrid, month)
                !! biomass increment
                bdead_inc = f_bdead * cpatch%bstorage(ico)
                !! above and belowground deficits to be on allometry
-               abovedef  = max(0.0,cpatch%bdeadb(ico)*agf_bs/(1.0-agf_bs))
-               belowdef  = max(0.0,cpatch%bdeada(ico)*(1.0-agf_bs)/agf_bs)
+               abovedef  = max(0.0,cpatch%bdeadb(ico)*agf_bs/(1.0-agf_bs) &
+                    -cpatch%bdeada(ico))
+               belowdef  = max(0.0,cpatch%bdeada(ico)*(1.0-agf_bs)/agf_bs &
+                    -cpatch%bdeadb(ico))
                if(bdead_inc >= (abovedef+belowdef)) then
                   !! either on allometry or have enough carbon to get on allometry
                   !! get on allometry
@@ -145,11 +147,17 @@ subroutine structural_growth(cgrid, month)
                   cpatch%bdeada(ico) = cpatch%bdeada(ico) + bdead_inc*agf_bs
                   cpatch%bdeadb(ico) = cpatch%bdeadb(ico) + bdead_inc*(1.0-agf_bs)
                else
-                  !! partition based on relative deficit
-                  cpatch%bdeada(ico) = cpatch%bdeada(ico) + &
-                       bdead_inc*abovedef/(abovedef+belowdef)
-                  cpatch%bdeadb(ico) = cpatch%bdeadb(ico) + &
-                       bdead_inc*belowdef/(abovedef+belowdef)
+                  if((abovedef + belowdef) > tiny(1.0)) then
+                     !! partition based on relative deficit
+                     cpatch%bdeada(ico) = cpatch%bdeada(ico) + &
+                          bdead_inc*abovedef/(abovedef+belowdef)
+                     cpatch%bdeadb(ico) = cpatch%bdeadb(ico) + &
+                          bdead_inc*belowdef/(abovedef+belowdef)
+                  else
+                     !! deficit tiny allocate allometrically
+                     cpatch%bdeada(ico) = cpatch%bdeada(ico) + bdead_inc*agf_bs
+                     cpatch%bdeadb(ico) = cpatch%bdeadb(ico) + bdead_inc*(1.0-agf_bs)
+                  end if
                endif
                cpatch%bdead(ico) = cpatch%bdeada(ico) + cpatch%bdeadb(ico) 
 
