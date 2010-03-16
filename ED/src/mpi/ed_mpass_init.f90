@@ -360,7 +360,8 @@ subroutine ed_masterput_poly_dims(par_run,masterworks)
    use ed_work_vars  , only : work_v       & ! intent(in)
                             , npolys_run   ! ! intent(in)
    use ed_para_coms  , only : mainnum      & ! intent(in)
-                            , nmachs       ! ! intent(in)
+                            , nmachs       & ! intent(in)
+                            , loadmeth
    use mem_sites     , only : n_ed_region  & ! intent(in)
                             , n_soi        ! ! intent(in)
    implicit none
@@ -484,7 +485,7 @@ subroutine ed_masterput_poly_dims(par_run,masterworks)
          ! process contains way too many nodes, and this would be a waste of resources.    !
          ! At the run crash, give this information to the user...                          !
          !---------------------------------------------------------------------------------!
-         if (maxnmachs < ntotmachs) then
+         if (maxnmachs < ntotmachs .and. loadmeth .ne. 2) then
             write (unit=*,fmt='(a)') '----------------------------------------------------'
             write (unit=*,fmt='(a)') '       The number of requested nodes exceeds the    '
             write (unit=*,fmt='(a)') ' maximum number of nodes in which you would still   '
@@ -558,13 +559,15 @@ subroutine ed_masterput_poly_dims(par_run,masterworks)
          ! the range, that's why the smallest maximum is the preferred one.                !
          !---------------------------------------------------------------------------------!
          ibest = minloc(maxload,dim=1)
+
+         if(loadmeth>0) ibest = loadmeth
          
-         !----- Count how many polygons go to each node. ----------------------------------!
+         !----- Count how many polygons go to each node. ----------------------!
          do imach=1,ntotmachs
             mpolys(imach) = count(machind(:,ibest) == imach)
          end do
 
-         !----- Now find the offset. ------------------------------------------------------!
+         !----- Now find the offset. ------------------------------------------!
          moffset(1) = 0
          do imach = 2, ntotmachs
             moffset(imach) = moffset(imach-1) + mpolys(imach-1)

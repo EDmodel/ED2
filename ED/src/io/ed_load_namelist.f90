@@ -63,6 +63,8 @@ subroutine copy_nl(copy_type)
   
   use rk4_coms, only : ibranch_thermo
 
+  use ed_para_coms,only: loadmeth
+
 
   implicit none
 
@@ -77,6 +79,7 @@ subroutine copy_nl(copy_type)
         
      expnme   = nl%expnme
      runtype  = nl%runtype
+     loadmeth = nl%loadmeth
 
      itimez   = nl%itimez
      idatez   = nl%idatez

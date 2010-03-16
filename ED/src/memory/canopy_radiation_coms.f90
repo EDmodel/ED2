@@ -91,6 +91,9 @@ module canopy_radiation_coms
    !---------------------------------------------------------------------------------------!
    real :: lai_min       !----- Minimum LAI used in the radiative transfer scheme. --------!
    real :: tai_min       !----- Minimum TAI used in the radiative transfer scheme. --------!
+
+   real :: patch_lai_min !----- Minimum patch LAI for a stable ecosystem
+
    !---------------------------------------------------------------------------------------!
    ! Fraction of bleaf_max below which we skip photosynthesis, radiation and heat balance. !
    !---------------------------------------------------------------------------------------!

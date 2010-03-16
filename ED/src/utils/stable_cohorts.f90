@@ -12,7 +12,8 @@ subroutine flag_stable_cohorts(cgrid)
    use allometry             , only : dbh2bl          ! ! function
    use canopy_radiation_coms , only : blfac_min       & ! intent(in)
                                     , lai_min         & ! intent(in)
-                                    , tai_min         ! ! intent(in)
+                                    , tai_min         & ! intent(in)
+                                    , patch_lai_min
    use rk4_coms              , only : ibranch_thermo  ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
@@ -62,13 +63,22 @@ subroutine flag_stable_cohorts(cgrid)
                ! of magnitude.                                                             !
                !---------------------------------------------------------------------------!
                cpatch => csite%patch(ipa)
-               do ico=1, cpatch%ncohorts
-                  bleaf_pot            = dbh2bl(cpatch%dbh(ico),cpatch%pft(ico))
-                  exposed              = cpatch%hite(ico)  > csite%total_snow_depth(ipa)
-                  green                = cpatch%bleaf(ico) >= blfac_min * bleaf_pot
-                  nottoosparse         = cpatch%lai(ico) > lai_min
-                  cpatch%solvable(ico) = exposed .and. (green .and. nottoosparse)
-               end do
+!!!SOLVE2
+               if (csite%lai(ipa) > patch_lai_min) then
+                  do ico=1, cpatch%ncohorts
+                     bleaf_pot            = dbh2bl(cpatch%dbh(ico),cpatch%pft(ico))
+                     exposed              = cpatch%hite(ico)  > csite%total_snow_depth(ipa)
+                     green                = cpatch%bleaf(ico) >= blfac_min * bleaf_pot
+                     nottoosparse         = cpatch%lai(ico) > lai_min
+                     cpatch%solvable(ico) = exposed .and. (green .and. nottoosparse)
+                  end do
+!!!SOLVE2-
+               else
+                  do ico=1, cpatch%ncohorts
+                     cpatch%solvable(ico) = .false.
+                  end do
+               end if
+!!!-SOLVE2
 
             case (1,2)
                !---------------------------------------------------------------------------!
@@ -79,14 +89,23 @@ subroutine flag_stable_cohorts(cgrid)
                ! populated patches when there is no leaves.                                !
                !---------------------------------------------------------------------------!
                cpatch => csite%patch(ipa)
-               do ico=1, cpatch%ncohorts
-                  bleaf_pot            = dbh2bl(cpatch%dbh(ico),cpatch%pft(ico))
-                  exposed              = cpatch%hite(ico)  > csite%total_snow_depth(ipa)
-                  green                = cpatch%bleaf(ico) >= blfac_min * bleaf_pot
-                  nottoosparse         = cpatch%lai(ico)+cpatch%wai(ico) > tai_min
-                  cpatch%solvable(ico) = exposed .and. (green .or. nottoosparse)
-               end do
-
+!!!-SOLVE2
+               if (csite%lai(ipa) > patch_lai_min) then
+                  do ico=1, cpatch%ncohorts
+                     bleaf_pot            = dbh2bl(cpatch%dbh(ico),cpatch%pft(ico))
+                     exposed              = cpatch%hite(ico)  > csite%total_snow_depth(ipa)
+                     green                = cpatch%bleaf(ico) >= blfac_min * bleaf_pot
+                     nottoosparse         = cpatch%lai(ico)+cpatch%wai(ico) > tai_min
+                     cpatch%solvable(ico) = exposed .and. (green .or. nottoosparse)
+                  end do
+!!!SOLVE2-
+               else
+                  do ico=1, cpatch%ncohorts
+                     cpatch%solvable(ico) = .false.
+                  end do
+               end if
+!!!-SOLVE2
+                  
             end select
 
          end do

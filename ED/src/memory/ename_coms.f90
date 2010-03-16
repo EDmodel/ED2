@@ -18,6 +18,11 @@ Module ename_coms
       character(len=str_len) :: expnme   = 'ED2 test'
       character(len=str_len) :: runtype  = ''
 
+!!   LOAD METHOD (default is to equally split poly's on nodes)
+
+      integer :: loadmeth = 2
+      
+
 !!    START OF SIMULATION
 
       integer           :: itimea = 0

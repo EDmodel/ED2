@@ -388,7 +388,7 @@ subroutine read_met_drivers_init
       !------------------------------------------------------------------------------------!
       !    For years outside the met driver range, we pick up a random year.  Because we   !
       ! use the actual sequence of random years given by the code random generator, this   !
-      ! sequence will be always the same for a given met driver and first year.            !                !
+      ! sequence will be always the same for a given met driver and first year.            !
       !------------------------------------------------------------------------------------!
       case (1)
          do year_use=iyeara,iyearz

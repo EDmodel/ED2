@@ -376,8 +376,12 @@ subroutine met_sanity_check(cgrid,ipy)
          write (unit=*,fmt=fmti) ' - Site           :',isi
          write (unit=*,fmt=fmtf) ' - Longitude      :',cgrid%lon(ipy)
          write (unit=*,fmt=fmtf) ' - Latitude       :',cgrid%lat(ipy)
-         write (unit=*,fmt=fmtf) ' - Site height    :',cpoly%met(isi)%rlong
-         write (unit=*,fmt=fmtf) ' - Polygon height :',cgrid%met(ipy)%rlong
+         write (unit=*,fmt=fmtf) ' - Site Longwave    :',cpoly%met(isi)%rlong
+         write (unit=*,fmt=fmtf) ' - Polygon Longwave :',cgrid%met(ipy)%rlong
+
+         write (unit=*,fmt=fmtf) ' - Site Temp    :',cpoly%met(isi)%atm_tmp
+         write (unit=*,fmt=fmtf) ' - Site SH    :',cpoly%met(isi)%atm_shv
+
          write (unit=*,fmt=fmtf) ' - Minimum OK     :',rlong_min
          write (unit=*,fmt=fmtf) ' - Maximum OK     :',rlong_max
          write (unit=*,fmt=fmtc) '---------------------------------------------------'

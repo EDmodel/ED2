@@ -214,14 +214,14 @@ subroutine init_met_params()
    rshort_min  = 0.
    rshort_max  = 1400.
    !----- Minimum and maximum acceptable longwave radiation [W/m²]. -----------------------!
-   rlong_min   = 100.
+   rlong_min   = 40.
    rlong_max   = 600.
    !----- Minimum and maximum acceptable air temperature    [   K]. -----------------------!
    atm_tmp_min = 184.     ! Lowest temperature ever measured, in Vostok Basin, Antarctica
    atm_tmp_max = 331.     ! Highest temperature ever measured, in El Azizia, Libya
    !----- Minimum and maximum acceptable air specific humidity [kg_H2O/kg_air]. -----------!
    atm_shv_min = 1.e-6    ! That corresponds to a relative humidity of 0.1% at 1000hPa
-   atm_shv_max = 3.e-2    ! That corresponds to a dew point of 32°C at 1000hPa.
+   atm_shv_max = 4.5e-2    ! That corresponds to a dew point of 32°C at 1000hPa.
    !----- Minimum and maximum acceptable CO2 mixing ratio [µmol/mol]. ---------------------!
    atm_co2_min = 100.     ! 
    atm_co2_max = 1100.    ! 
@@ -230,7 +230,7 @@ subroutine init_met_params()
    prss_max = 110000. ! It may crash if you run a simulation under water.
    !----- Minimum and maximum acceptable precipitation rates [kg/m²/s]. -------------------!
    pcpg_min     = 0.0     ! No negative precipitation is allowed
-   pcpg_max     = 0.0833  ! This is a precipitation rate of 300mm/hr.
+   pcpg_max     = 0.10    ! This is a precipitation rate of 300mm/hr.
    !----- Minimum and maximum acceptable wind speed [m/s]. --------------------------------!
    vels_min     =  0.0    ! No negative wind is acceptable.
    vels_max     = 85.0    ! Maximum sustained winds recorded during Typhoon Tip (1970).
@@ -329,6 +329,7 @@ subroutine init_can_rad_params()
                                     , leaf_trans_nir              & ! intent(out)
                                     , lai_min                     & ! intent(out)
                                     , tai_min                     & ! intent(out)
+                                    , patch_lai_min               & ! intent(out)!!!SOLVE2
                                     , blfac_min                   ! ! intent(out)
    use ed_max_dims              , only : n_pft                    ! ! intent(out)
    use pft_coms              , only : phenology                   ! ! intent(out)
@@ -381,7 +382,7 @@ subroutine init_can_rad_params()
    emis_v(9:11)  = 9.50d-1
    emis_v(12:15) = 9.60d-1
 
-
+   patch_lai_min = 1.0e-2
    lai_min       = 1.0e-5
    tai_min       = 1.0e-5
    blfac_min     = 1.0e-2
@@ -1952,7 +1953,7 @@ subroutine init_rk4_params()
    rk4min_can_temp   =  1.8400d2  ! Minimum canopy    temperature               [        K]
    rk4max_can_temp   =  3.4100d2  ! Maximum canopy    temperature               [        K]
    rk4min_can_shv    =  1.0000d-8 ! Minimum canopy    specific humidity         [kg/kg_air]
-   rk4max_can_shv    =  4.5000d-2 ! Maximum canopy    specific humidity         [kg/kg_air]
+   rk4max_can_shv    =  5.0000d-2 ! Maximum canopy    specific humidity         [kg/kg_air]
    rk4max_can_rhv    =  1.1000d0  ! Maximum canopy    relative humidity (**)    [      ---]
    rk4min_can_co2    =  2.0000d2  ! Minimum canopy    CO2 mixing ratio          [ µmol/mol]
    rk4max_can_co2    =  1.2000d3  ! Maximum canopy    CO2 mixing ratio          [ µmol/mol]

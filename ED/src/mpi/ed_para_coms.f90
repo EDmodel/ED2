@@ -14,6 +14,7 @@ module ed_para_coms
   !---------------------------------------------------------------------------
   integer                             :: mainnum,nmachs,iparallel,machsize
   integer, dimension(maxmach)         :: machnum
+  integer                             :: loadmeth
 !  integer, dimension(maxmach,maxgrds) :: nxbeg,nxend,nybeg,nyend,nxbegc      &
 !                                        ,nxendc,nybegc,nyendc,ixoff,iyoff    &
 !                                        ,npxy,ibcflg,ixb,ixe,iyb,iye
