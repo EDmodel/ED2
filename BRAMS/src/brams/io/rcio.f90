@@ -15,7 +15,7 @@ subroutine commio (cfile,io,iun)
    use grell_coms, only : iupmethod,radius,depth_min,cap_maxs,cld2prec        &
                          ,zkbmax,zcutdown,z_detr,max_heat,closure_type        &
                          ,maxens_lsf,maxens_eff,maxens_cap
-
+   use turb_coms, only : nna, nnb, nnc
    implicit none
    integer :: iun
    character(len=*) :: io,cfile
@@ -65,6 +65,9 @@ subroutine commio (cfile,io,iun)
    ie=cio_i(iun,irw,'idiffk',idiffk,ngrids)
    ie=cio_f(iun,irw,'gridu',gridu,ngrids)
    ie=cio_f(iun,irw,'gridv',gridv,ngrids)
+   ie=cio_f(iun,irw,'nna',nna,2)
+   ie=cio_f(iun,irw,'nnb',nnb,2)
+   ie=cio_f(iun,irw,'nnc',nnc,5)
    ie=cio_f(iun,irw,'akmin',akmin,ngrids)
    ie=cio_f(iun,irw,'akmax',akmax,ngrids)
    ie=cio_f(iun,irw,'hgtmin',hgtmin,ngrids)

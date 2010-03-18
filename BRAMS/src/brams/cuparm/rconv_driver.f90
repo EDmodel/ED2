@@ -101,7 +101,7 @@ subroutine rconv_driver(banneron)
       
       !----- If I have TKE available, I may use it to define PBL top ----------------------!
       select case (idiffk(ngrid))
-      case (1,4,5,6,7)
+      case (1,4,5,6,7,8)
          call atob(mzp*mxp*myp,turb_g(ngrid)%tkep,scratch%vt3de)
       case default
          call azero(mzp*mxp*myp,scratch%vt3de)
@@ -131,7 +131,7 @@ subroutine rconv_driver(banneron)
 
        !----- If I have TKE available, I may use it to define PBL top ---------------------!
        select case (idiffk(ngrid))
-       case (1,4,5,6,7)
+       case (1,4,5,6,7,8)
           call atob(mzp*mxp*myp,turb_g(ngrid)%tkep,scratch%vt3de)
        case default
           call azero(mzp*mxp*myp,scratch%vt3de)

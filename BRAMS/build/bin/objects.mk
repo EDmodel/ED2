@@ -237,7 +237,7 @@ OBJ_MODEL =                         \
 	therm_lib8.o                \
 	tkenn.o                     \
 	tmpname.o                   \
-	turb_constants.o            \
+	turb_coms.o                 \
 	turb_derivs.o               \
 	turb_diff.o                 \
 	turb_diff_adap.o            \

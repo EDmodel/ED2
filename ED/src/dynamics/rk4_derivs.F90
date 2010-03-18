@@ -642,7 +642,7 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,dewgnd
                                     , mmdryi8              & ! intent(in)
                                     , wdns8                & ! intent(in)
                                     , wdnsi8               & ! intent(in)
-                                    , idns8                & ! intent(in)
+                                    , fdnsi8               & ! intent(in)
                                     , t3ple8               ! ! intent(in)
    use grid_coms             , only : nzg                  ! ! intent(in)
    use soil_coms             , only : soil8                & ! intent(in)
@@ -867,11 +867,10 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,dewgnd
    dewgndflx  = max(0.d0, -wflx)
    qdewgndflx = dewgndflx * (alvi8 - initp%surface_fliq * alli8)
    !---------------------------------------------------------------------------------------!
-   !    Alternative method of defining the depth gain (MCD, 11/16/2009). 5.d-3 is the      !
-   ! inverse of density of frost.                                                          !
+   !    Alternative method of defining the depth gain (MCD, 11/16/2009).                   !
    !---------------------------------------------------------------------------------------!
    ddewgndflx = dewgndflx                                                                  & 
-              * (initp%surface_fliq * wdnsi8 + (1.d0-initp%surface_fliq) * 5.d-3)
+              * (initp%surface_fliq * wdnsi8 + (1.d0-initp%surface_fliq) * fdnsi8)
 
 
    !----- We now check whether the canopy air space can hold more water. ------------------!

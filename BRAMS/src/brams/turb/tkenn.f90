@@ -75,21 +75,81 @@ subroutine nakanishi(m1,m2,m3,m4,ia,iz,ja,jz,jd,tkep,tket,vt3dd,vt3de,vt3dh,vt3d
    !---------------------------------------------------------------------------------------!
    ! Loading modules                                                                       !
    !---------------------------------------------------------------------------------------!
-   use mem_grid,     only: nstbot,zm,zt
-   use mem_scratch,  only:  vctr1, vctr5, vctr9,vctr19,vctr20,vctr21,vctr22,vctr23,vctr24  &
-                           ,vctr29,vctr30,vctr31,vctr32,vctr33,vctr38,vctr35,vctr36,vctr37
-
-   use rconstants,     only: abslmomin,abswltlmin,cp,grav,ltscalemax,sigwmin,vonk,lturbmin &
-                            ,tkmin,onethird
-
-   use turb_constants, only:  nna1,nna2,nnb1,nnb2,nnc1,nnc2,nnc3,nnc4,nnc5                 &
-                             ,nnq1,nnq2,nnq3,nnq4,nnq5,nnq6                                &
-                             ,nngama1,nngama2,nnf1,nnf2,nnrf1,nnrf2,nnri1,nnri2,nnri3      &
-                             ,nnrfc,nnce1a,nnce1b,nnce2,nnce3,nnce4,nncr1                  &
-                             ,nno1,nno2,nno3,nno4, nno5, nno6, nno7, nno8, nnreq,nnrsl     &
-                             ,nnmacheps
-
-   use therm_lib     , only: virtt
+   use mem_grid,       only : nstbot               & ! intent(in)
+                            , zm                   & ! intent(in)
+                            , zt                   ! ! intent(in)
+   use mem_scratch,    only : zagl     => vctr1    & ! intent(out)
+                            , zeta     => vctr5    & ! intent(out)
+                            , lscal    => vctr9    & ! intent(out)
+                            , gm       => vctr19   & ! intent(out)
+                            , gh       => vctr20   & ! intent(out)
+                            , thetav0  => vctr21   & ! intent(out)
+                            , thetavp  => vctr22   & ! intent(out)
+                            , ssm      => vctr23   & ! intent(out)
+                            , ssh      => vctr24   & ! intent(out)
+                            , uspd     => vctr29   & ! intent(out)
+                            , q        => vctr30   & ! intent(out)
+                            , vspd     => vctr31   & ! intent(out)
+                            , qdz      => vctr32   & ! intent(out)
+                            , qzdz     => vctr33   & ! intent(out)
+                            , qqq      => vctr35   & ! intent(out)
+                            , pspluspb => vctr36   & ! intent(out)
+                            , epsq     => vctr37   & ! intent(out)
+                            , qq       => vctr38   ! ! intent(out)
+   use rconstants,     only : abslmomin            & ! intent(in)
+                            , abswltlmin           & ! intent(in)
+                            , cp                   & ! intent(in)
+                            , grav                 & ! intent(in)
+                            , ltscalemax           & ! intent(in)
+                            , sigwmin              & ! intent(in)
+                            , vonk                 & ! intent(in)
+                            , lturbmin             & ! intent(in)
+                            , tkmin                & ! intent(in)
+                            , onethird             ! ! intent(in)
+   use leaf_coms     , only : ustmin               ! ! intent(in)
+   use turb_coms     , only : a1      => nna1      & ! intent(in)
+                            , a2      => nna2      & ! intent(in)
+                            , b1      => nnb1      & ! intent(in)
+                            , b2      => nnb2      & ! intent(in)
+                            , c1      => nnc1      & ! intent(in)
+                            , c2      => nnc2      & ! intent(in)
+                            , c3      => nnc3      & ! intent(in)
+                            , c4      => nnc4      & ! intent(in)
+                            , c5      => nnc5      & ! intent(in)
+                            , s1      => nns1      & ! intent(in)
+                            , s2      => nns2      & ! intent(in)
+                            , s3      => nns3      & ! intent(in)
+                            , s4      => nns4      & ! intent(in)
+                            , s5      => nns5      & ! intent(in)
+                            , s6      => nns6      & ! intent(in)
+                            , gama1   => nngama1   & ! intent(in)
+                            , gama2   => nngama2   & ! intent(in)
+                            , f1      => nnf1      & ! intent(in)
+                            , f2      => nnf2      & ! intent(in)
+                            , rf1     => nnrf1     & ! intent(in)
+                            , rf2     => nnrf2     & ! intent(in)
+                            , ri1     => nnri1     & ! intent(in)
+                            , ri2     => nnri2     & ! intent(in)
+                            , ri3     => nnri3     & ! intent(in)
+                            , rfc     => nnrfc     & ! intent(in)
+                            , ce1a    => nnce1a    & ! intent(in)
+                            , ce1b    => nnce1b    & ! intent(in)
+                            , ce2     => nnce2     & ! intent(in)
+                            , ce3     => nnce3     & ! intent(in)
+                            , ce4     => nnce4     & ! intent(in)
+                            , cr1     => nncr1     & ! intent(in)
+                            , o1      => nno1      & ! intent(in)
+                            , o2      => nno2      & ! intent(in)
+                            , o3      => nno3      & ! intent(in)
+                            , o4      => nno4      & ! intent(in)
+                            , o5      => nno5      & ! intent(in)
+                            , o6      => nno6      & ! intent(in)
+                            , o7      => nno7      & ! intent(in)
+                            , o8      => nno8      & ! intent(in)
+                            , req     => nnreq     & ! intent(in)
+                            , rsl     => nnrsl     & ! intent(in)
+                            , macheps => nnmacheps ! ! intent(in)
+   use therm_lib,      only : virtt                ! ! function
    implicit none
 
    !---------------------------------------------------------------------------------------!
@@ -114,15 +174,13 @@ subroutine nakanishi(m1,m2,m3,m4,ia,iz,ja,jz,jd,tkep,tket,vt3dd,vt3de,vt3dh,vt3d
    real                                           :: qlevel2,oneminusalpha,oneminusalpha2
    real                                           :: e1,e2,e3,e4,r1,r2,wltl0,lt,ls,lb
    real                                           :: suminv,z0w,ustarw,tstarw,wstarw,qc
-   real                                           :: dzloc1up,dzloc1dn,dzloc2,dq3dz
-   real                                           :: dlsmdz,d2q3dz2,janjc,janjd,janjg
+   real                                           :: janjc,janjd,janjg
    real                                           :: janjh,janji,janjp1,janjt1
    logical                                        :: stable,neutral
-   !----- Constants -----------------------------------------------------------------------!
-   real, parameter                                :: ustarmin=0.1
    !----- Function ------------------------------------------------------------------------!
    real, external                                 :: cbrt
    !---------------------------------------------------------------------------------------!
+
 
    !---------------------------------------------------------------------------------------!
    !   Big loops on horizontal.                                                            !
@@ -138,32 +196,32 @@ subroutine nakanishi(m1,m2,m3,m4,ia,iz,ja,jz,jd,tkep,tket,vt3dd,vt3de,vt3dh,vt3d
          !  k2w is the first useful level                                                  !
          !---------------------------------------------------------------------------------!
          do k=k2w,m1-1
-            vctr30(k) = max(sqrt(2.0 * tkep(k,i,j)),sqrt(2*tkmin))    ! q 
-            vctr38(k) = max(2.0 * tkep(k,i,j),2*tkmin)                ! q²
-            vctr35(k) = vctr38(k)*vctr30(k)                           ! q³
+            q(k)   = max(sqrt(2.0 * tkep(k,i,j)),sqrt(2*tkmin))    ! q 
+            qq(k)  = max(2.0 * tkep(k,i,j),2*tkmin)                ! q²
+            qqq(k) = qq(k)*q(k)                                    ! q³
 
             !------------------------------------------------------------------------------!
             !  Restrictions in M², just to avoid singularities (following Janjic 2001)     !
             !------------------------------------------------------------------------------!
-            if (vt3di(k,i,j) < nnmacheps)  vt3di(k,i,j)=(1.+nnmacheps)*nnmacheps*nnreq
+            if (vt3di(k,i,j) < macheps)  vt3di(k,i,j)=(1.+macheps)*macheps*req
 
             !------------------------------------------------------------------------------!
             !    Determining some integrated variables which will be necessary for length  !
             ! scale derivation.                                                            !
             !------------------------------------------------------------------------------!
-            vctr1(k)=(zt(k)-zm(k2w-1))*rtgt(i,j) 
-            dzloc=(zm(k)-zm(k-1))*rtgt(i,j)
-            vctr33(k)=vctr30(k)*dzloc
-            vctr32(k)=vctr33(k)*vctr1(k)
+            zagl(k) = (zt(k)-zm(k2w-1))*rtgt(i,j)
+            dzloc   = (zm(k)-zm(k-1))*rtgt(i,j)
+            qzdz(k) = q(k)*dzloc
+            qdz(k)  = qzdz(k)*zagl(k)
             !----- Deriving some variables that are needed for PBL depth estimation -------!
-            vctr21(k)=virtt(theta(k,i,j),rv(k,i,j),rtp(k,i,j))
-            vctr29(k)=0.5*(up(k,i,j)+up(k,i-1,j)) 
-            vctr31(k)=0.5*(vp(k,i,j)+vp(k,i,j-jd))
+            thetav0(k) = virtt(theta(k,i,j),rv(k,i,j),rtp(k,i,j))
+            uspd(k)    = 0.5*(up(k,i,j)+up(k,i-1,j)) 
+            vspd(k)    = 0.5*(vp(k,i,j)+vp(k,i,j-jd))
          end do !----- k=k2,m1-1 !
-    
+
          !----- The sum is between k2w and m1-1: k1 and m1 are just boundaries ------------!
-         sumtkz=sum(vctr32(k2w:(m1-1)))
-         sumtk =sum(vctr33(k2w:(m1-1)))
+         sumtkz = sum( qdz(k2w:(m1-1)))
+         sumtk  = sum(qzdz(k2w:(m1-1)))
          !---------------------------------------------------------------------------------!
 
          !----- Finding the average dU/dz and dV/dz at the thermodynamic level k2 ---------!
@@ -186,7 +244,7 @@ subroutine nakanishi(m1,m2,m3,m4,ia,iz,ja,jz,jd,tkep,tket,vt3dd,vt3de,vt3dh,vt3d
             ustarw = ustarw + ustar(i,j,p)                     * patch_area(i,j,p)
             tstarw = tstarw + tstar(i,j,p)                     * patch_area(i,j,p)
          end do
-         ustarw = max(ustarw,ustarmin)
+         ustarw = max(ustarw,ustmin)
          !---------------------------------------------------------------------------------!
          ! Here I'll find the <w'Theta'>g and truncate for small values                    !
          !---------------------------------------------------------------------------------!
@@ -206,7 +264,7 @@ subroutine nakanishi(m1,m2,m3,m4,ia,iz,ja,jz,jd,tkep,tket,vt3dd,vt3de,vt3dh,vt3d
          !   Since LMO can be close to zero, but either positive or negative, it must be   !
          ! truncated to a small value, but keeping the same sign                           !
          !---------------------------------------------------------------------------------!
-         lmo(i,j)= - vctr21(k2w) * ustarw * ustarw * ustarw / (vonk * grav * wltl0)
+         lmo(i,j)= - thetav0(k2w) * ustarw * ustarw * ustarw / (vonk * grav * wltl0)
          if (abs(lmo(i,j)) < abslmomin) lmo(i,j)=sign(abslmomin,lmo(i,j))
 
          do k=k2w,m1-1
@@ -215,48 +273,48 @@ subroutine nakanishi(m1,m2,m3,m4,ia,iz,ja,jz,jd,tkep,tket,vt3dd,vt3de,vt3dh,vt3d
             ! tive of dimensionless square of Brunt Väisälä frequency) and GM (dimension-  !
             ! less square of mean shear)                                                   !
             !------------------------------------------------------------------------------!
-            vctr5(k) = vctr1(k)/lmo(i,j) ! zeta
+            zeta(k) = zagl(k)/lmo(i,j) ! zeta
             !------------------------------------------------------------------------------!
             ! Finding Ls, following equation A2 of Nakanishi and Niino (2004):             !
             !------------------------------------------------------------------------------!
-            if ( vctr5(k) >= 1 ) then
-               ls = vonk * vctr1(k) / nnq1                       
-            elseif (vctr5(k) >= 0 ) then                       
-               ls = vonk * vctr1(k) / (1 + nnq2 * vctr5(k))       
-            else !if (vctr5(k) < 0) then                       
-               ls = vonk * vctr1(k) * (1 - nnq3 * vctr5(k))**nnq4   
-            end if                                            
+            if ( zeta(k) >= 1 ) then
+               ls = vonk * zagl(k) / s1
+            elseif (zeta(k) >= 0 ) then
+               ls = vonk * zagl(k) / (1 + s2 * zeta(k))
+            else !if (zeta(k) < 0) then
+               ls = vonk * zagl(k) * (1 - s3 * zeta(k))**s4
+            end if
             !------------------------------------------------------------------------------!
             ! Finding Lt, following equation A3 of Nakanishi and Niino (2004):             !
             !------------------------------------------------------------------------------!
-            lt = nnq5 * sumtkz / sumtk
+            lt = s5 * sumtkz / sumtk
             !------------------------------------------------------------------------------!
             ! Finding Lb, following equation A4 of Nakanishi and Niino (2004):             !
             !------------------------------------------------------------------------------!
-            if (vt3dj(k,i,j) > 0 .and. vctr5(k) >= 0) then
-               lb = vctr30(k) / max(sqrt(vt3dj(k,i,j)),1.e-10)
-            elseif (vt3dj(k,i,j) > 0 .and. vctr5(k) < 0) then
-               qc= cbrt((grav/vctr21(k2w))*wltl0*lt)
-               lb = (1. + nnq6 *sqrt(qc/max((lt*sqrt(vt3dj(k,i,j))),1.e-20)))*             &
-                          vctr30(k)/max(sqrt(vt3dj(k,i,j)),1.e-10)
+            if (vt3dj(k,i,j) > 0 .and. zeta(k) >= 0) then
+               lb = q(k) / max(sqrt(vt3dj(k,i,j)),1.e-10)
+            elseif (vt3dj(k,i,j) > 0 .and. zeta(k) < 0) then
+               qc= cbrt((grav/thetav0(k2w))*wltl0*lt)
+               lb = (1. + s6 *sqrt(qc/max((lt*sqrt(vt3dj(k,i,j))),1.e-20)))*             &
+                          q(k)/max(sqrt(vt3dj(k,i,j)),1.e-10)
             else
                lb = 1.e20 !----- Making it very large but without risking overflow. -------!
             end if
             suminv=(1./ls)+(1./lt)+(1./lb) !-----Equation A1, Nakanishi and Niino (2004) --!
-            vctr9(k)=1./suminv
+            lscal(k)=1./suminv
             !------------------------------------------------------------------------------!
             !    Restriction on L: from Nakanishi and Niino (2006), based on Janjic(2001). !
             ! This is to guarantee that Cw, defined as <w²>/q² < Rsl (about 0.14)          !
             !------------------------------------------------------------------------------!
             if (vt3dj(k,i,j) > 0) then
-               janjc=(nno1*vt3dj(k,i,j)+nno2*vt3di(k,i,j))*vt3dj(k,i,j)
-               janjd=(nno3*vt3di(k,i,j)+nno4*vt3dj(k,i,j))
-               janjg=(nno5*vt3dj(k,i,j)+nno6*vt3di(k,i,j))*vt3dj(k,i,j)-3.*nnrsl*janjc
-               janjh=nno7*vt3di(k,i,j)+nno8*vt3dj(k,i,j)-3.*nnrsl*janjd
-               janji=1-3.*nnrsl
+               janjc=(o1*vt3dj(k,i,j)+o2*vt3di(k,i,j))*vt3dj(k,i,j)
+               janjd=(o3*vt3di(k,i,j)+o4*vt3dj(k,i,j))
+               janjg=(o5*vt3dj(k,i,j)+o6*vt3di(k,i,j))*vt3dj(k,i,j)-3.*rsl*janjc
+               janjh=o7*vt3di(k,i,j)+o8*vt3dj(k,i,j)-3.*rsl*janjd
+               janji=1-3.*rsl
                janjt1=(-janjh+sqrt(janjh*janjh-4.*janjg*janji))/(2.*janji)
-               if (janjt1 > nnmacheps*nnmacheps) then
-                  vctr9(k)=min(vctr9(k),vctr30(k)/sqrt(janjt1))
+               if (janjt1 > macheps*macheps) then
+                  lscal(k)=min(lscal(k),q(k)/sqrt(janjt1))
                end if
             end if
          end do !----- k=k2,m1-1 !
@@ -266,8 +324,8 @@ subroutine nakanishi(m1,m2,m3,m4,ia,iz,ja,jz,jd,tkep,tket,vt3dd,vt3de,vt3dh,vt3d
          ! PBL is stable, neutral, or convective. This is obtained by verifying whether    !
          ! z/LMO is > 0, =0 or <0                                                          !
          !---------------------------------------------------------------------------------!
-         stable = vctr5(k2w)  >=  1.e-4
-         neutral = abs(vctr5(k2w)) < 1.e-4 
+         stable = zeta(k2w)  >=  1.e-4
+         neutral = abs(zeta(k2w)) < 1.e-4 
          if (stable .or. neutral) then 
             !------------------------------------------------------------------------------!
             !   If the boundary layer is STABLE or NEUTRAL, then we follow Vogelezang and  !
@@ -275,15 +333,15 @@ subroutine nakanishi(m1,m2,m3,m4,ia,iz,ja,jz,jd,tkep,tket,vt3dd,vt3de,vt3dh,vt3d
             ! depth is defined as the first level where average Ri > 0.25.                 !
             !------------------------------------------------------------------------------!
             kpbl(i,j) = k2w
-            pblhgt(i,j)=vctr1(k2w)
+            pblhgt(i,j)=zagl(k2w)
             sboundlay: do k=k2w+1,m1-1
-               ri = grav * (vctr21(k)-vctr21(k2w)) * (vctr1(k)-vctr1(k2w))                 &
-                  / ( vctr21(k2w) * ( (vctr29(k)-vctr29(k2w)) * (vctr29(k)-vctr29(k2w))    &
-                                    + (vctr31(k)-vctr31(k2w)) * (vctr31(k)-vctr31(k2w))    &
+               ri = grav * (thetav0(k)-thetav0(k2w)) * (zagl(k)-zagl(k2w))                 &
+                  / ( thetav0(k2w) * ( (uspd(k)-uspd(k2w)) * (uspd(k)-uspd(k2w))    &
+                                    + (vspd(k)-vspd(k2w)) * (vspd(k)-vspd(k2w))    &
                                     + 100.*ustarw*ustarw ) )
                if (ri >= 0.25) then
                   kpbl(i,j) = k
-                  pblhgt(i,j) = 0.5 * (vctr1(k-1)+vctr1(k))
+                  pblhgt(i,j) = 0.5 * (zagl(k-1)+zagl(k))
                   exit sboundlay
                end if
             end do sboundlay
@@ -293,16 +351,16 @@ subroutine nakanishi(m1,m2,m3,m4,ia,iz,ja,jz,jd,tkep,tket,vt3dd,vt3de,vt3dh,vt3d
             !       where the first minimum of w'theta'                                    !
             !------------------------------------------------------------------------------!
             kpbl(i,j) = k2w
-            pblhgt(i,j)=vctr1(k2w)
-            aux= wltl0 * grav / (cp * vctr21(k2w))
+            pblhgt(i,j)=zagl(k2w)
+            aux= wltl0 * grav / (cp * thetav0(k2w))
             convmixlay: do k=k2w+1,m1-1
                kpbl(i,j) = k
-               pblhgt(i,j)=0.5*(vctr1(k)+vctr1(k-1))
+               pblhgt(i,j)=0.5*(zagl(k)+zagl(k-1))
                wstarw=cbrt(aux * pblhgt(i,j) )
-               vctr22(k)=vctr21(k2w)+8.5*wltl0/(wstarw*cp)
-               ri = grav * (vctr21(k)-vctr22(k)) * (vctr1(k)-vctr1(k2w))                   &
-                  / ( vctr22(k) * ((vctr29(k)-vctr29(k2w)) * (vctr29(k)-vctr29(k2w))       &
-                    + (vctr31(k)-vctr31(k2w)) * (vctr31(k)-vctr31(k2w))                    &
+               thetavp(k)=thetav0(k2w)+8.5*wltl0/(wstarw*cp)
+               ri = grav * (thetav0(k)-thetavp(k)) * (zagl(k)-zagl(k2w))                   &
+                  / ( thetavp(k) * ((uspd(k)-uspd(k2w)) * (uspd(k)-uspd(k2w))       &
+                    + (vspd(k)-vspd(k2w)) * (vspd(k)-vspd(k2w))                    &
                     + 100.*ustarw*ustarw) )
                if (ri >= 0.25) exit convmixlay
             end do convmixlay
@@ -316,43 +374,43 @@ subroutine nakanishi(m1,m2,m3,m4,ia,iz,ja,jz,jd,tkep,tket,vt3dd,vt3de,vt3dh,vt3d
             ! tively):                                                                     !
             !------------------------------------------------------------------------------!
             ri=vt3dj(k,i,j)/vt3di(k,i,j)
-            rf=nnri1*(ri+nnri2-sqrt(ri*ri-nnri3*ri+nnri2*nnri2))
+            rf=ri1*(ri+ri2-sqrt(ri*ri-ri3*ri+ri2*ri2))
             !------------------------------------------------------------------------------!
             ! Finding the SH and SM of the Level 2 model (Nakanish, 2001):                 !
             !------------------------------------------------------------------------------!
-            if (rf < nnrfc) then
-               sh2=3.*nna2*(nngama1+nngama2)*(nnrfc-rf)/(1.-rf)
-               sm2=nna1*nnf1*(nnrf1-rf)*sh2/(nna2*nnf2*(nnrf2-rf))
-               qlevel2=max(vctr9(k)*sqrt(nnb1*vt3di(k,i,j)*sm2*(1.-rf)),sqrt(2.*tkmin))
+            if (rf < rfc) then
+               sh2=3.*a2*(gama1+gama2)*(rfc-rf)/(1.-rf)
+               sm2=a1*f1*(rf1-rf)*sh2/(a2*f2*(rf2-rf))
+               qlevel2=max(lscal(k)*sqrt(b1*vt3di(k,i,j)*sm2*(1.-rf)),sqrt(2.*tkmin))
             else
                qlevel2=sqrt(2.*tkmin)
             end if
             !------------------------------------------------------------------------------!
             ! Finding Gm and Gh                                                            !
             !------------------------------------------------------------------------------!
-            aux=vctr9(k)*vctr9(k)/vctr38(k)
-            vctr19(k)=aux*vt3di(k,i,j)       !----- Gm ------------------------------------!
-            vctr20(k)=-aux*vt3dj(k,i,j)      !----- Gh ------------------------------------!
+            aux=lscal(k)*lscal(k)/qq(k)
+            gm(k)=aux*vt3di(k,i,j)       !----- Gm ------------------------------------!
+            gh(k)=-aux*vt3dj(k,i,j)      !----- Gh ------------------------------------!
 
             !------------------------------------------------------------------------------!
             !     Case of growing turbulence, it must use the modified Level 2½ model      !
             ! (Nakanishi and Niino, 2004), otherwise it just uses the original Level 2½.   !
             !------------------------------------------------------------------------------!
-            if (vctr30(k) < qlevel2) then
-               oneminusalpha=vctr30(k)/max(qlevel2,1.e-10)
+            if (q(k) < qlevel2) then
+               oneminusalpha=q(k)/max(qlevel2,1.e-10)
                oneminusalpha2=oneminusalpha*oneminusalpha
             else
                oneminusalpha=1.
                oneminusalpha2=1.
             end if
-            e1=1.+oneminusalpha2*(nnce1a*vctr19(k)-nnce1b*vctr20(k))
-            e2=-oneminusalpha2*nnce2*vctr20(k)
-            e3=oneminusalpha2*nnce3*vctr19(k)
-            e4=1.-oneminusalpha2*nnce4*vctr20(k)
-            r1=oneminusalpha*nncr1
-            r2=oneminusalpha*nna2
-            vctr23(k)=(r2*e2-r1*e4)/(e2*e3-e1*e4) !----- Sm -------------------------------!
-            vctr24(k)=(r1*e3-r2*e1)/(e2*e3-e1*e4) !----- Sh -------------------------------!
+            e1=1.+oneminusalpha2*(ce1a*gm(k)-ce1b*gh(k))
+            e2=-oneminusalpha2*ce2*gh(k)
+            e3=oneminusalpha2*ce3*gm(k)
+            e4=1.-oneminusalpha2*ce4*gh(k)
+            r1=oneminusalpha*cr1
+            r2=oneminusalpha*a2
+            ssm(k)=(r2*e2-r1*e4)/(e2*e3-e1*e4) !----- Sm -------------------------------!
+            ssh(k)=(r1*e3-r2*e1)/(e2*e3-e1*e4) !----- Sh -------------------------------!
 
             !------------------------------------------------------------------------------!
             !    Deriving the convective velocity standard-deviation.                      !
@@ -360,14 +418,14 @@ subroutine nakanishi(m1,m2,m3,m4,ia,iz,ja,jz,jd,tkep,tket,vt3dd,vt3de,vt3dh,vt3d
             ! tively prevents the variance to be negative (although in preliminary tests   !
             ! the negative values were significantly smaller than the positive ones.       !
             !------------------------------------------------------------------------------!
-            sigw(k,i,j) = sqrt(max(vctr38(k)*(onethird-2*nna1*vctr23(k)*vctr19(k)          &
-                        + 4.*nna1*(1. - nnc2)*vctr24(k)*vctr20(k)),sigwmin*sigwmin))
+            sigw(k,i,j) = sqrt(max(qq(k)*(onethird-2*a1*ssm(k)*gm(k)          &
+                        + 4.*a1*(1. - c2)*ssh(k)*gh(k)),sigwmin*sigwmin))
 
          end do
          !---------------------------------------------------------------------------------!
 
          !----- Finding the surface weight ------------------------------------------------!
-         weightsurf=vctr1(k2w)/vctr1(k2w+1)
+         weightsurf=zagl(k2w)/zagl(k2w+1)
 
          !----- Saving the TKE tendency at the bottom for later ---------------------------!
          tket2=tket(k2w,i,j)
@@ -380,25 +438,25 @@ subroutine nakanishi(m1,m2,m3,m4,ia,iz,ja,jz,jd,tkep,tket,vt3dd,vt3de,vt3dh,vt3d
             !------------------------------------------------------------------------------!
             ! Stable PBL, so we shall use equation 7.24                                    !
             !------------------------------------------------------------------------------!
-               tl(k,i,j)= 0.10 * (pblhgt(i,j)**0.20) * (vctr1(k)**0.80) / sigw(k,i,j)
+               tl(k,i,j)= 0.10 * (pblhgt(i,j)**0.20) * (zagl(k)**0.80) / sigw(k,i,j)
             elseif (neutral) then
             !------------------------------------------------------------------------------!
             !    This is the formula proposed by Hanna (1982), but without the Coriolis    !
             ! term: later papers, such as Wilson (200, JAM), also disconsider this.        !
             !------------------------------------------------------------------------------!
-               tl(k,i,j)=0.5*vctr1(k)/sigw(k,i,j)
+               tl(k,i,j)=0.5*zagl(k)/sigw(k,i,j)
             !------------------------------------------------------------------------------!
             !   For unstable PBLs we should follow equation 7.17, considering all possible !
             ! conditions                                                                   !
             !------------------------------------------------------------------------------!
-            elseif (vctr1(k) >= 0.1* pblhgt(i,j)) then ! if z/h > 0.1
+            elseif (zagl(k) >= 0.1* pblhgt(i,j)) then ! if z/h > 0.1
                ! If PBL is too low, this number can cause underflow in exp. ---------------!
-               aux       = max(40.,5.0*vctr1(k)/pblhgt(i,j))
+               aux       = max(40.,5.0*zagl(k)/pblhgt(i,j))
                tl(k,i,j) = 0.15*pblhgt(i,j)*(1-exp(-aux))/sigw(k,i,j)
-            elseif ((z0w - vctr1(k)) <= lmo(i,j)) then ! -(z-z0)/Lmo > 1 and z/h < 0.1
-               tl(k,i,j)= 0.59*vctr1(k)/sigw(k,i,j)
+            elseif ((z0w - zagl(k)) <= lmo(i,j)) then ! -(z-z0)/Lmo > 1 and z/h < 0.1
+               tl(k,i,j)= 0.59*zagl(k)/sigw(k,i,j)
             else                                       ! -(z-z0)/Lmo < 1 and z/h < 0.1
-               tl(k,i,j)= 0.10*vctr1(k)/(sigw(k,i,j)*(0.55+0.38*(vctr1(k)-z0w)/lmo(i,j)))
+               tl(k,i,j)= 0.10*zagl(k)/(sigw(k,i,j)*(0.55+0.38*(zagl(k)-z0w)/lmo(i,j)))
             end if
             tl(k,i,j)=min(tl(k,i,j),ltscalemax) ! Avoiding exaggerated values...
             !------------------------------------------------------------------------------!
@@ -407,19 +465,19 @@ subroutine nakanishi(m1,m2,m3,m4,ia,iz,ja,jz,jd,tkep,tket,vt3dd,vt3de,vt3dh,vt3d
             ! Finding the TKE tendency.                                                    !
             !------------------------------------------------------------------------------!
             !----- Finding Ps+Pb-epsilon=(q³/L)×(SmGm+ShGh-1/B1) --------------------------!
-            vctr36(k)=vctr35(k)*(vctr23(k)*vctr19(k)+vctr24(k)*vctr20(k))/vctr9(k)
-            vctr37(k)=vctr35(k)/(nnb1*vctr9(k))
+            pspluspb(k)=qqq(k)*(ssm(k)*gm(k)+ssh(k)*gh(k))/lscal(k)
+            epsq(k)=qqq(k)/(b1*lscal(k))
             !------------------------------------------------------------------------------!
             !    Finding the tendency term, based on Nakanishi and Niino equation 5. Note  !
             ! that all the 2 factors vanish because here it's the TKE tendency, and        !
             ! TKE=q²/2.                                                                    !
             !------------------------------------------------------------------------------!
-            tket(k,i,j)=tket(k,i,j)+vctr36(k)-vctr37(k)
+            tket(k,i,j)=tket(k,i,j)+pspluspb(k)-epsq(k)
 
             !----- Km=L×q×Sm (scr1) -------------------------------------------------------!
-            scr1(k,i,j)=vctr9(k)*vctr30(k)*vctr23(k)*dn0(k,i,j)
+            scr1(k,i,j)=lscal(k)*q(k)*ssm(k)*dn0(k,i,j)
             !----- Kh=L×q×Sh (vt3dh) ------------------------------------------------------!
-            vt3dh(k,i,j)=vctr9(k)*vctr30(k)*vctr24(k)*dn0(k,i,j)
+            vt3dh(k,i,j)=lscal(k)*q(k)*ssh(k)*dn0(k,i,j)
             !-----  Kq=L×q×Sq (vt3di). N&N (2004), proposed Sq=2*Sm instead of Sq=0.2 -----!
             vt3di(k,i,j)=2.*scr1(k,i,j) ! Since Km=L×q×Sm... 
          end do
@@ -429,7 +487,7 @@ subroutine nakanishi(m1,m2,m3,m4,ia,iz,ja,jz,jd,tkep,tket,vt3dd,vt3de,vt3dh,vt3d
          ! it'll ignore.                                                                   !
          !---------------------------------------------------------------------------------!
          if (nstbot == 1 .and. weightsurf > 0) then
-            tket(k2w,i,j) = tket2 -vctr37(k2w) + (1.-weightsurf)*vctr36(k2w+1)             &
+            tket(k2w,i,j) = tket2 -epsq(k2w) + (1.-weightsurf)*pspluspb(k2w+1)             &
                           + weightsurf*(-sflux_u(i,j)*du0dz-sflux_v(i,j)*dv0dz             &
                           + grav * sflux_t(i,j) / theta(k2w,i,j)) / dn0(k2w,i,j)
          end if

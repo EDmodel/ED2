@@ -230,7 +230,7 @@ subroutine init_met_params()
    prss_max = 110000. ! It may crash if you run a simulation under water.
    !----- Minimum and maximum acceptable precipitation rates [kg/m²/s]. -------------------!
    pcpg_min     = 0.0     ! No negative precipitation is allowed
-   pcpg_max     = 0.0833  ! This is a precipitation rate of 300mm/hr.
+   pcpg_max     = 0.1111  ! This is a precipitation rate of 400mm/hr.
    !----- Minimum and maximum acceptable wind speed [m/s]. --------------------------------!
    vels_min     =  0.0    ! No negative wind is acceptable.
    vels_max     = 85.0    ! Maximum sustained winds recorded during Typhoon Tip (1970).
@@ -544,7 +544,7 @@ subroutine init_can_air_params()
       ubmin     = 0.65
    case default
       !----- This is the minimum ustar under stable and unstable conditions. --------------!
-      ustmin    = 0.01
+      ustmin    = 0.10
       !----- This is the minimum wind scale under stable and unstable conditions. ---------!
       ubmin     = 0.25
    end select
