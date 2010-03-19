@@ -156,17 +156,17 @@
                                        ! 2 allows you to do a standard history restart from
                                        !   ED2-type restart files.
                                        ! 3 - initialize via ed-2 and site file restarts 
-				       ! 4 - initialize from ED2.1 H5 history/state files.
+                                       ! 4 - initialize from ED2.1 H5 history/state files.
                                        !     that take the form:  'dir/prefix-gxx.h5'
-	                               !     Initialization files MUST end with -gxx.h5
+                                       !     Initialization files MUST end with -gxx.h5
                                        !     where xx is a two digit integer grid number.
                                        !     Each grid has its own initialization file.
-	                               !     As an example, if a user has two files to 
+                                       !     As an example, if a user has two files to 
                                        !     initialize their grids with:
                                        !     example_file_init-g01.h5    and
                                        !     example_file_init-g02.h5
                                        !      
-	                               !     NL%SFILOUT = 'example_file_init'
+                                       !     NL%SFILOUT = 'example_file_init'
                                        !
                                        ! -1 - use a mix of ED-1 and ED-2 files. This should
                                        !      be avoided by all means, unless you are 
