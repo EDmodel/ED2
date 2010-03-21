@@ -544,7 +544,7 @@ subroutine init_can_air_params()
       ubmin     = 0.65
    case default
       !----- This is the minimum ustar under stable and unstable conditions. --------------!
-      ustmin    = 0.05
+      ustmin    = 0.025
       !----- This is the minimum wind scale under stable and unstable conditions. ---------!
       ubmin     = 0.25
    end select
@@ -571,9 +571,9 @@ subroutine init_can_air_params()
    z0hoz0m     = 1. / z0moz0h  ! z0(M)/z0(h)
    ribmaxbh91  = 6.00          ! Maximum bulk Richardson number
    !----- Used by OD95 and BH91. ----------------------------------------------------------!
-   gamm        = 13.0          ! Gamma for momentum.
-   gamh        = 13.0          ! Gamma for heat.
-   tprandtl    = 0.74          ! Turbulent Prandtl number.
+   gamm        = 16.0          ! Gamma for momentum.
+   gamh        = 16.0          ! Gamma for heat.
+   tprandtl    = 1.00          ! Turbulent Prandtl number.
    vkopr       = vonk/tprandtl ! Von Karman / Prandtl number
    !---------------------------------------------------------------------------------------!
 
@@ -1891,6 +1891,7 @@ subroutine init_rk4_params()
                                    , rk4max_sfcw_temp      & ! intent(out)
                                    , rk4min_sfcw_moist     & ! intent(out)
                                    , rk4min_virt_moist     & ! intent(out)
+                                   , check_maxleaf         & ! intent(out)
                                    , supersat_ok           ! ! intent(out)
    implicit none
 
@@ -1987,6 +1988,19 @@ subroutine init_rk4_params()
    rk4min_sfcw_moist = -5.0000d-4 ! Minimum water mass allowed.
    rk4min_virt_moist = -5.0000d-4 ! Minimum water allowed at virtual pool.
    !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     The integrator will check whether the leaves are at their maximum holding         !
+   ! capacity before letting water to be intercepted and dew/frost to remain at the leaf   !
+   ! surfaces.  If FALSE, the amount of water will be adjusted outside the derivative      !
+   ! calculation.  Some tests have shown that not solving this inside the integrator can   !
+   ! speed up the simulation between 20% in the tropics to well above 100% in some         !
+   ! temperate polygons. However, some may think that it is more appropriate to leave the  !
+   ! check in the integrator, so we leave this flag so one can switch between one and the  !
+   ! other and decide based on their own needs.                                            !
+   !---------------------------------------------------------------------------------------!
+   check_maxleaf = .false.
 
 
    !---------------------------------------------------------------------------------------!

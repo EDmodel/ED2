@@ -212,9 +212,9 @@ module leaf_coms
    real, parameter :: z0hoz0m    = 1. / z0moz0h  ! z0(M)/z0(h)
    real, parameter :: ribmaxbh91 = 6.00          ! Maximum bulk Richardson number
    !----- Used by OD95 and BH91. ----------------------------------------------------------!
-   real, parameter :: gamm       = 13.0   ! Gamma used by Businger et al. (1971) - momentum.
-   real, parameter :: gamh       = 13.0   ! Gamma used by Businger et al. (1971) - heat.
-   real, parameter :: tprandtl   = 0.74   ! Turbulent Prandtl number.
+   real, parameter :: gamm       = 16.0   ! Gamma used by Businger et al. (1971) - momentum.
+   real, parameter :: gamh       = 16.0   ! Gamma used by Businger et al. (1971) - heat.
+   real, parameter :: tprandtl   = 1.00   ! Turbulent Prandtl number.
    real, parameter :: vkopr      = vonk/tprandtl ! von Karman / turbulent Prandtl
    !---------------------------------------------------------------------------------------!
 

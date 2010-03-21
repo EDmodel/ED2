@@ -877,13 +877,17 @@ subroutine vegndvi(ifm    &
 
       endif
 
-   !  Time-interpolate ndvi to get current value veg_ndvic(i,j) for this patch
+      !  Time-interpolate ndvi to get current value veg_ndvic(i,j) for this patch
+      !  Limit ndvi to prevent values > .99 to prevent division by zero.
 
-      veg_ndvic = veg_ndvip + (veg_ndvif - veg_ndvip) * timefac_ndvi
+      veg_ndvic = max(0.99,veg_ndvip + (veg_ndvif - veg_ndvip) * timefac_ndvi)
 
-   !  Limit ndvi to prevent values > .99 to prevent division by zero.
+      ! Based on SRF's suggestion - MODIS sometimes has weird values of NDVI for
+      !                             evergreen forests, so we impose a lower threshold
+      !                             for this vegetation type.
+      ! (Maybe we should try using something better than NDVI, perhaps EVI?)
+      if (nveg == 7) veg_ndvic = max(0.7,veg_ndvic)
 
-      if (veg_ndvic > .99) veg_ndvic = .99
 
    ! Compute "simple ratio" and limit between sr_min and sr_max(nveg).
 

@@ -594,8 +594,13 @@ subroutine datp_datq(datp, datq)
   ! Temporario
   if (TEB_SPM==1) catb(50) = 21
 
-  datq = catb(nint(datp))
-  
+  !SRF 2008: OGE-INPE data set has values greater than 95
+  if (nint(datp) >= 0. .and. nint(datp) <= 95. ) then
+     datq = catb(nint(datp))
+  else
+     datq = catb(0)
+  end if
+
   return
 end subroutine datp_datq
 

@@ -622,6 +622,7 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,dewgnd
                                     , rk4dry_veg_lwater    & ! intent(in)
                                     , rk4fullveg_lwater    & ! intent(in)
                                     , checkbudget          & ! intent(in)
+                                    , check_maxleaf        & ! intent(in)
                                     , supersat_ok          ! ! intent(in)
    use ed_state_vars         , only : sitetype             & ! Structure
                                     , patchtype            & ! Structure
@@ -694,6 +695,9 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,dewgnd
    real(kind=8)                     :: sigmaw           !
    real(kind=8)                     :: wflxvc           !
    real(kind=8)                     :: cflxgc           !
+   real(kind=8)                     :: wshed            !
+   real(kind=8)                     :: qwshed           !
+   real(kind=8)                     :: dwshed           !
    real(kind=8)                     :: taii             !
    real(kind=8)                     :: wflx             !
    real(kind=8)                     :: qwflx            !
@@ -1060,12 +1064,59 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,dewgnd
                    * (initp%veg_temp(ico) - initp%can_temp)
 
          !---------------------------------------------------------------------------------!
-         !     Calculate interception by leaves by scaling the intercepted water by the    !
-         ! TAI of each cohort.  If this causes excess of water/ice over the leaf surface,  !
-         ! no problem, the water will shed at adjust_veg_properties.                       !
+         !     Calculate interception by leaves.                                           !
          !---------------------------------------------------------------------------------!
-         intercepted           = intercepted_tot  * initp%tai(ico) * taii
-         qintercepted          = qintercepted_tot * initp%tai(ico) * taii
+         if (check_maxleaf) then
+            !------ We check whether the leaves can take any more water. ------------------!
+            if (initp%veg_water(ico) >= max_leaf_water) then
+
+               !---------------------------------------------------------------------------!
+               ! Case 1: Leaves have no space for rain.  All rain/snow falls with the same !
+               !         density it fell.                                                  !
+               !---------------------------------------------------------------------------!
+               wshed         = intercepted_tot  * initp%tai(ico) * taii
+               qwshed        = qintercepted_tot * initp%tai(ico) * taii
+               dwshed        = dintercepted_tot * initp%tai(ico) * taii
+               intercepted   = 0.d0
+               qintercepted  = 0.d0
+               
+               if (wflxvc < 0.d0) then
+                  !------------------------------------------------------------------------!
+                  ! Case 1a: If dew or frost is forming over the leaves, we won't let them !
+                  !          stay on the leaves either. They will shed with dew or frost   !
+                  !          density.                                                      !
+                  !------------------------------------------------------------------------!
+                  wshed   = wshed  - wflxvc
+                  qwshed  = qwshed - qwflxvc
+                  dwshed  = dwshed - wflxvc  * (       initp%veg_fliq(ico)  * wdnsi8       &
+                                               + (1.d0-initp%veg_fliq(ico)) * fdnsi8 )
+                  wflxvc  = 0.d0
+                  qwflxvc = 0.d0
+               end if
+            else
+               !---------------------------------------------------------------------------!
+               ! Case 2: Leaves have space for rain.  Rainfall and its internal energy     !
+               !         accumulate on the leaves.                                         !
+               !---------------------------------------------------------------------------!
+               wshed        = 0.d0
+               qwshed       = 0.d0
+               dwshed       = 0.d0
+               intercepted  = intercepted_tot  * initp%tai(ico) * taii
+               qintercepted = qintercepted_tot * initp%tai(ico) * taii
+            end if
+
+         else
+            !------------------------------------------------------------------------------!
+            !     Calculate interception by leaves by scaling the intercepted water by the !
+            ! TAI of each cohort.  If this causes excess of water/ice over the leaf        !
+            ! surface, no problem, the water will shed at adjust_veg_properties.           !
+            !------------------------------------------------------------------------------!
+            wshed        = 0.d0
+            qwshed       = 0.d0
+            dwshed       = 0.d0
+            intercepted  = intercepted_tot  * initp%tai(ico) * taii
+            qintercepted = qintercepted_tot * initp%tai(ico) * taii
+         end if
 
 
          dinitp%veg_water(ico) = - wflxvc + intercepted
@@ -1086,6 +1137,14 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,dewgnd
          hflxvc_tot   = hflxvc_tot   + hflxvc
          transp_tot   = transp_tot   + transp
          qtransp_tot  = qtransp_tot  + qtransp
+
+         !---------------------------------------------------------------------------------!
+         ! wshed:  Water passing through vegetated canopy to soil surface                  !
+         !         (enters virtual layer first), [kg/m2/s]                                 !
+         !---------------------------------------------------------------------------------!
+         wshed_tot  = wshed_tot  + wshed 
+         qwshed_tot = qwshed_tot + qwshed
+         dwshed_tot = dwshed_tot + dwshed
 
       else
          !---------------------------------------------------------------------------------! 
