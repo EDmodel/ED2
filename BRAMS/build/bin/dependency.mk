@@ -62,7 +62,6 @@ grell_cupar_environment.o: grell_coms.mod rconstants.mod therm_lib.mod
 grell_cupar_feedback.o: mem_ensemble.mod mem_scratch_grell.mod rconstants.mod
 grell_cupar_static.o: mem_ensemble.mod mem_scratch_grell.mod rconstants.mod
 grell_cupar_updraft.o: mem_cuparm.mod rconstants.mod therm_lib.mod
-grell_cupar_water.o: rconstants.mod therm_lib.mod
 grell_extras_catt.o: grell_coms.mod mem_basic.mod mem_ensemble.mod mem_grid.mod
 grell_extras_catt.o: mem_scalar.mod mem_scratch.mod mem_scratch_grell.mod
 grell_extras_catt.o: mem_tconv.mod rconstants.mod
@@ -524,7 +523,7 @@ optim_ed_params.o: ed_max_dims.mod ed_misc_coms.mod fusion_fission_coms.mod
 optim_ed_params.o: hydrology_coms.mod met_driver_coms.mod pft_coms.mod
 optim_ed_params.o: phenology_coms.mod rk4_coms.mod soil_coms.mod
 phenology_init.o: ed_max_dims.mod ed_misc_coms.mod ed_state_vars.mod
-phenology_init.o: grid_coms.mod phenology_coms.mod
+phenology_init.o: grid_coms.mod mem_sites.mod phenology_coms.mod
 average_utils.o: allometry.mod canopy_radiation_coms.mod consts_coms.mod
 average_utils.o: ed_max_dims.mod ed_misc_coms.mod ed_state_vars.mod
 average_utils.o: grid_coms.mod pft_coms.mod therm_lib.mod
@@ -577,6 +576,7 @@ mem_sites.o: ed_max_dims.mod
 met_driver_coms.o: ed_max_dims.mod
 optimiz_coms.o: ed_max_dims.mod
 pft_coms.o: ed_max_dims.mod
+phenology_coms.o: ed_max_dims.mod
 physiology_coms.o: ed_max_dims.mod
 rk4_coms.o: ed_max_dims.mod grid_coms.mod
 soil_coms.o: ed_max_dims.mod grid_coms.mod leaf_coms.mod

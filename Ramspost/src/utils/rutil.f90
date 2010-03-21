@@ -6,51 +6,6 @@
 !  Regional Atmospheric Modeling System - RAMS
 !  Mission Research Corporation / *ASTeR Division
 !###########################################################################
-
-FUNCTION IBINDEC(STR)
-CHARACTER*(*) STR
-IBINDEC=0
-INC=1
-L=LEN(STR)
-DO IC=L,1,-1
-   IF(STR(IC:IC).EQ.'1') IBINDEC=IBINDEC+INC
-   INC=INC+INC
-ENDDO
-RETURN
-END
-!
-!     ******************************************************************
-!
-FUNCTION IBIAS(Y,L,N)
-DIMENSION Y(1)
-YMIN=1.E10
-YMAX=-1.E10
-DO JD=1,L
-YMIN=MIN(YMIN,ABS(Y(JD)))
-YMAX=MAX(YMAX,ABS(Y(JD)))
-ENDDO
-JPOW=INT(LOG10(YMAX+1.E-20)+.999999)
-JPOW1=INT(LOG10(YMAX-YMIN+1.E-20)+.999999)
-IBIAS=2-JPOW1
-IF(IBIAS+JPOW.GT.4) IBIAS=4-JPOW
-10    CONTINUE
-IF(IBIAS+JPOW.LT.4.AND.IBIAS.LT.0)THEN
-IBIAS=IBIAS+1
-GO TO 10
-ENDIF
-RETURN
-END
-!
-!     ******************************************************************
-!
-FUNCTION HEAV(X)
-IF(X.GT.0.)THEN
-HEAV=1.
-ELSE
-HEAV=0.
-ENDIF
-RETURN
-END
 !
 !     ******************************************************************
 !
@@ -67,56 +22,6 @@ IF(ABS(U).LT.1.E-20)U=1.E-20
 IF(ABS(V).LT.1.E-20)V=1.E-20
 DD=ATAN2(-U,-V)*V180PI
 IF(DD.LT.0.)DD=DD+360.
-RETURN
-END
-!
-!     ******************************************************************
-!
-SUBROUTINE SORT3(A,B,C,N)
-DIMENSION A(1),B(1),C(1)
-NP1=N+1
-DO 10 K=1,N
-I=ISMIN(NP1-K,A(K),1)+K-1
-AT=A(I)
-BT=B(I)
-CT=C(I)
-A(I)=A(K)
-B(I)=B(K)
-C(I)=C(K)
-A(K)=AT
-B(K)=BT
-C(K)=CT
-10 CONTINUE
-RETURN
-END
-!
-!     ******************************************************************
-!
-FUNCTION IPRIM(M)
-N=M
-IF(N.LE.0)THEN
-  PRINT 1,N
-1       FORMAT(' N=',I5,' IN IPRIM')
-  STOP
-ENDIF
-10    CONTINUE
-IF(MOD(N,2).NE.0) GO TO 20
-  N=N/2
-  GO TO 10
-20    CONTINUE
-IF(MOD(N,3).NE.0) GO TO 30
-  N=N/3
-  GO TO 20
-30    CONTINUE
-IF(MOD(N,5).NE.0) GO TO 40
-  N=N/5
-  GO TO 30
-40    CONTINUE
-IF(N.EQ.1.AND.MOD(M,2).EQ.0)THEN
-  IPRIM=1
-ELSE
-  IPRIM =0
-ENDIF
 RETURN
 END
 !

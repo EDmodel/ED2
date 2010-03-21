@@ -1056,7 +1056,7 @@ subroutine opspec3
      print*,' fatal - GEMTM is not available in this version, use LEAF or ED instead...'
      ifaterr=ifaterr+1
   case default
-     print*,' fatal - isfcl must be either 1, 2, or 5. Yours is set to ',ibruvais,'...'
+     print*,' fatal - isfcl must be either 1, 2, or 5. Yours is set to ',isfcl,'...'
      ifaterr=ifaterr+1
   end select
   

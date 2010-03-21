@@ -1349,17 +1349,9 @@ module therm_lib
       !----- Arguments --------------------------------------------------------------------!
       real, intent(in)           :: temp     ! Temperature                          [    K]
       real, intent(in)           :: rvap     ! Vapour mixing ratio                  [kg/kg]
-      real, intent(in), optional :: rtot     ! Total mixing ratio                   [kg/kg]
-      !----- Local variable ---------------------------------------------------------------!
-      real                       :: rtothere ! Internal rtot, to deal with optional [kg/kg]
+      real, intent(in)           :: rtot     ! Total mixing ratio                   [kg/kg]
 
-      if (present(rtot)) then
-        rtothere = rtot
-      else
-        rtothere = rvap
-      end if
-
-      virtt = temp * (1. + epi * rvap) / (1. + rtothere)
+      virtt = temp * (1. + epi * rvap) / (1. + rtot)
 
       return
    end function virtt
@@ -1391,7 +1383,7 @@ module therm_lib
       if (present(rtot)) then
         tvir = virtt(temp,rvap,rtot)
       else
-        tvir = virtt(temp,rvap)
+        tvir = virtt(temp,rvap,rvap)
       end if
 
       idealdens = pres / (rdry * tvir)

@@ -90,10 +90,16 @@ module growth_balive
                   ! Set allocation factors
                   salloc  = 1.0 + qsw(ipft) * cpatch%hite(ico) + q(ipft)
                   salloci = 1.0 / salloc
-                  
+
                   !----- Subtract preceding day's storage respiration. ------!
-                  cpatch%bstorage(ico) = cpatch%bstorage(ico)                &
+                  if(cpatch%bstorage(ico) > cpatch%storage_respiration(ico)) &
+                  then
+                    cpatch%bstorage(ico) = cpatch%bstorage(ico)              &
+                                         - cpatch%storage_respiration(ico)
+                  else
+                    cpatch%balive(ico) = cpatch%balive(ico)                  &
                                        - cpatch%storage_respiration(ico)
+                  endif
 
                   !----------------------------------------------------------!
                   !     When storage carbon is lost, allow the associated    !
@@ -774,7 +780,7 @@ module growth_balive
          bl_pot = green_leaf_factor                                          &
                 * (cpatch%balive(ico) + carbon_balance) * salloci
 
-         if (bl_pot >= bl_max) then
+         if (bl_pot > bl_max) then
             !----------------------------------------------------------------!
             !     The carbon gain is more than what can go to leaves.  Add   !
             ! all that can to go leaves to leaf biomass, and put the remain- !

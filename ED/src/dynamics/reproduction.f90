@@ -91,9 +91,6 @@ subroutine reproduction(cgrid, month)
       siteloop: do isi = 1,cpoly%nsites
          csite => cpoly%site(isi)
 
-         !----- Reset the reproduction array. ---------------------------------------------!
-         csite%repro = 0.0
-
          !---------------------------------------------------------------------------------!
          !      Cohorts may have grown differently, so we need to sort them by size.       !
          !---------------------------------------------------------------------------------!
@@ -208,6 +205,10 @@ subroutine reproduction(cgrid, month)
                           min_recruit_size(ipft)) then
                         inew = inew + 1
                         call copy_recruit(rectest,recruit(inew))
+
+                        !----- Reset the carbon available for reproduction. ---------------!
+                        csite%repro(ipft,ipa) = 0.0
+
                      end if
                   else
                      !---------------------------------------------------------------------!
@@ -221,9 +222,6 @@ subroutine reproduction(cgrid, month)
                      csite%repro(ipft,ipa)  = 0.0
                   end if
                end if
-               
-               !----- Reset the carbon available for reproduction. ------------------------!
-               csite%repro(ipft,ipa) = 0.0
             end do pftloop
 
             !----- Update the number of cohorts with the recently created. ----------------!

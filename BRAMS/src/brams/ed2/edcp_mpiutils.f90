@@ -179,8 +179,8 @@ subroutine masterput_ednl(mainnum)
    call MPI_Bcast(iprintpolys,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(npvars,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    do npv=1,npvars
-      call MPI_Bcast(printvars(npv),str_len_short,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
-      call MPI_Bcast(pfmtstr(npv),str_len_short,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
+      call MPI_Bcast(printvars(npv),str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
+      call MPI_Bcast(pfmtstr(npv),str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
    end do
    call MPI_Bcast(ipmin,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(ipmax,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
@@ -424,8 +424,8 @@ subroutine nodeget_ednl(master_num)
    call MPI_Bcast(iprintpolys,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(npvars,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    do npv=1,npvars
-      call MPI_Bcast(printvars(npv),str_len_short,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
-      call MPI_Bcast(pfmtstr(npv),str_len_short,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
+      call MPI_Bcast(printvars(npv),str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
+      call MPI_Bcast(pfmtstr(npv),str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
    end do
    call MPI_Bcast(ipmin,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(ipmax,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)

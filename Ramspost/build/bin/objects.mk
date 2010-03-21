@@ -17,6 +17,8 @@ OBJECTS =                           \
             eenviron.o              \
             error_mess.o            \
             interp_lib.o            \
+            leaf_coms.o             \
+            numutils.o              \
             parlib.o                \
             polarst.o               \
             rams_read_header.o      \

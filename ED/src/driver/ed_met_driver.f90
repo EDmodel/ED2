@@ -1091,7 +1091,9 @@ subroutine update_met_drivers(cgrid)
       !------ Apply met to sites, and adjust met variables for topography. ----------------!
       call calc_met_lapse(cgrid,ipy)
 
-      
+      !------ Update polygon-level vels for book-keeping. ---------------------------------!
+      cgrid%met(ipy)%vels = sqrt(cgrid%met(ipy)%vels)
+
 
       cpoly => cgrid%polygon(ipy)
       siteloop: do isi = 1,cpoly%nsites

@@ -1,4 +1,5 @@
 Module phenology_coms
+  use ed_max_dims, only: str_len
   implicit none
 
   ! DO NOT INITIALIZE NON-PARAMETERS IN THEIR MODULES - NOT ALL COMPILERS WILL ACTUALLY INITIALIZE THEM
@@ -37,7 +38,7 @@ Module phenology_coms
   !Flag specifying the first and last spring
   integer :: iphenys1,iphenysf,iphenyf1,iphenyff 
 
-  character(len=512) :: phenpath
+  character(len=str_len) :: phenpath
 
   ! Light-controlled
   real :: rad_turnover_int

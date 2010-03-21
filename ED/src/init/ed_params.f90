@@ -214,7 +214,7 @@ subroutine init_met_params()
    rshort_min  = 0.
    rshort_max  = 1400.
    !----- Minimum and maximum acceptable longwave radiation [W/m²]. -----------------------!
-   rlong_min   = 100.
+   rlong_min   =  60.
    rlong_max   = 600.
    !----- Minimum and maximum acceptable air temperature    [   K]. -----------------------!
    atm_tmp_min = 184.     ! Lowest temperature ever measured, in Vostok Basin, Antarctica
@@ -237,7 +237,7 @@ subroutine init_met_params()
    !----- Minimum and maximum reference heights [m]. --------------------------------------!
    geoht_min    =   1.0   ! This should be above-canopy measurement, but 1.0 is okay for
                           !     grasslands...
-   geoht_max    = 120.0   ! This should be not that much above the canopy, but tall towers
+   geoht_max    = 350.0   ! This should be not that much above the canopy, but tall towers
                           !     do exist...
    !---------------------------------------------------------------------------------------!
 
@@ -544,7 +544,7 @@ subroutine init_can_air_params()
       ubmin     = 0.65
    case default
       !----- This is the minimum ustar under stable and unstable conditions. --------------!
-      ustmin    = 0.10
+      ustmin    = 0.05
       !----- This is the minimum wind scale under stable and unstable conditions. ---------!
       ubmin     = 0.25
    end select
@@ -573,7 +573,7 @@ subroutine init_can_air_params()
    !----- Used by OD95 and BH91. ----------------------------------------------------------!
    gamm        = 13.0          ! Gamma for momentum.
    gamh        = 13.0          ! Gamma for heat.
-   tprandtl    = 1.00          ! Turbulent Prandtl number.
+   tprandtl    = 0.74          ! Turbulent Prandtl number.
    vkopr       = vonk/tprandtl ! Von Karman / Prandtl number
    !---------------------------------------------------------------------------------------!
 

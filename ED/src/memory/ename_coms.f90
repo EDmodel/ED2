@@ -156,8 +156,8 @@ Module ename_coms
 !!    OPTIONS FOR PRINTING POLYGON VECTORS/ARRAYS TO STANDARD OUTPUT
       integer :: iprintpolys = 0
       integer :: npvars = 0
-      character(len=32),dimension(maxpvars) :: printvars = (/ ('', i=1,maxpvars) /)
-      character(len=32),dimension(maxpvars) :: pfmtstr = (/ ('', i=1,maxpvars) /)
+      character(len=str_len),dimension(maxpvars) :: printvars = (/ ('', i=1,maxpvars) /)
+      character(len=str_len),dimension(maxpvars) :: pfmtstr = (/ ('', i=1,maxpvars) /)
       integer :: ipmin = 0
       integer :: ipmax = 0
 
