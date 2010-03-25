@@ -583,7 +583,7 @@ program ramspost
 2005 format('zdef ',i4,' levels ',60f10.1)
 2006 format('tdef ',i4,' linear ',2a15)
 2007 format('vars ',i4)
-2008 format(a11,i4,' 99    - RAMS : ',a40,'[',a8,']')
+2008 format(a,1x,i4,1x,' 99    - RAMS : ',1x,a,'[',1x,a8,1x,']')
 2055 format(60f7.0)
 close (iunit+1)
   stop
