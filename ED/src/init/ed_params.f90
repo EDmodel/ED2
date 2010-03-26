@@ -214,7 +214,7 @@ subroutine init_met_params()
    rshort_min  = 0.
    rshort_max  = 1400.
    !----- Minimum and maximum acceptable longwave radiation [W/m²]. -----------------------!
-   rlong_min   = 100.
+   rlong_min   = 50.
    rlong_max   = 600.
    !----- Minimum and maximum acceptable air temperature    [   K]. -----------------------!
    atm_tmp_min = 184.     ! Lowest temperature ever measured, in Vostok Basin, Antarctica
@@ -1174,8 +1174,8 @@ subroutine init_pft_alloc_params()
    !---------------------------------------------------------------------------------------!
    !    Minimum height of an individual.                                                   !
    !---------------------------------------------------------------------------------------!
-   hgt_min(1)     = 0.80
-   hgt_min(2:4)   = 0.80
+   hgt_min(1)     = 0.50
+   hgt_min(2:4)   = 0.50
    hgt_min(5)     = 0.15
    hgt_min(6:7)   = 1.50
    hgt_min(8)     = 1.50

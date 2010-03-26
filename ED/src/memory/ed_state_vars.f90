@@ -1192,7 +1192,7 @@ module ed_state_vars
      real,pointer,dimension(:,:) :: avg_soil_water
      real,pointer,dimension(:,:) :: avg_soil_temp
      real,pointer,dimension(:,:) :: avg_soil_fracliq
-     real,pointer,dimension(:)   :: avg_soil_wetness
+     real,pointer,dimension(:)   :: avg_soil_wetness	!relative to wilting point
      
      real,pointer,dimension(:) :: avg_skin_temp
      real,pointer,dimension(:) :: avg_available_water
@@ -7998,7 +7998,7 @@ contains
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_soil_wetness(1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'AVG_SOIL_WETNESS :11:hist:anal') 
-       call metadata_edio(nvar,igr,'Polygon Average Soil Wetness ','[m3/m3]','ipoly') 
+       call metadata_edio(nvar,igr,'Polygon Average Soil Wetness RELATIVE TO WILTING POINT','[m3/m3]','ipoly') !relative to wilting point
     endif
     
     if (associated(cgrid%avg_skin_temp)) then

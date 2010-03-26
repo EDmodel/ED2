@@ -92,7 +92,7 @@ subroutine reproduction(cgrid, month)
          csite => cpoly%site(isi)
 
          !----- Reset the reproduction array. ---------------------------------------------!
-         csite%repro = 0.0
+         csite%repro = 0.0      !only allows trees to reproduce if enough carbon in 1 month
 
          !---------------------------------------------------------------------------------!
          !      Cohorts may have grown differently, so we need to sort them by size.       !

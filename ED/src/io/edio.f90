@@ -461,8 +461,8 @@ subroutine spatial_averages
                                         * csite%area(ipa) * site_area_i
                   !----- Integrate soil wetness. ------------------------------------------!
                   cpoly%avg_soil_wetness(isi) = cpoly%avg_soil_wetness(isi)                &
-                       + ((csite%soil_water(k,ipa) - soil(nsoil)%soilcp))                  &
-                       / (soil(nsoil)%slmsts - soil(nsoil)%soilcp)                         &
+                       + ((csite%soil_water(k,ipa) - soil(nsoil)%soilwp))                  &
+                       / (soil(nsoil)%slmsts - soil(nsoil)%soilwp)                         &
                        * dslz(k) * dslzsum_i * csite%area(ipa) * site_area_i
                end do
                !----- Also integrate the polygon-level average. ---------------------------!
