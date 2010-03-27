@@ -14,7 +14,9 @@ subroutine read_ednl(iunit)
                                    , soilstate_db              & ! intent(out)
                                    , soildepth_db              & ! intent(out)
                                    , runoff_time               & ! intent(out)
-                                   , veg_database              ! ! intent(out)
+                                   , veg_database              & ! intent(out)
+                                   , slxclay                   & ! intent(out)
+                                   , slxsand                   ! ! intent(out)
    use met_driver_coms      , only : ed_met_driver_db          & ! intent(out)
                                    , imettype                  & ! intent(out)
                                    , metcyc1                   & ! intent(out)
@@ -259,6 +261,8 @@ subroutine read_ednl(iunit)
    unitfast  = 0            ! Since BRAMS uses frqanl and frqhist in seconds, there is no
    unitstate = 0            !     reason to ask the user for units for outfast and 
                             !     outstate, the special flags cover all possibilities.
+   slxclay   = -1.          ! This is not going to be used in coupled runs because the 
+   slxsand   = -1.          !     soil should come from lon/lat maps.
 
    !---------------------------------------------------------------------------------------!
    !      We force LEAF-3's number of patches to be 2.  We fill some LEAF-3 variables that !

@@ -501,15 +501,15 @@ module rk4_driver
          do k = cpatch%krdepth(ico), nzg - 1
             nsoil = csite%ntext_soil(k,ipa)
             available_water = available_water                                              &
-                            + (initp%soil_water(k) - soil8(nsoil)%soilcp)                  &
+                            + (initp%soil_water(k) - soil8(nsoil)%soilwp)                  &
                             * (slz8(k+1)-slz8(k))                                          &
-                            / (soil8(nsoil)%slmsts - soil8(nsoil)%soilcp)
+                            / (soil8(nsoil)%slmsts - soil8(nsoil)%soilwp)
          end do
          nsoil = csite%ntext_soil(nzg,ipa)
          available_water = available_water                                                 &
-                         + (initp%soil_water(nzg) - soil8(nsoil)%soilcp)                   &
+                         + (initp%soil_water(nzg) - soil8(nsoil)%soilwp)                   &
                          * (-1.d0*slz8(nzg))                                               &
-                         / (soil8(nsoil)%slmsts -soil8(nsoil)%soilcp) 
+                         / (soil8(nsoil)%slmsts -soil8(nsoil)%soilwp) 
          available_water = available_water / (-1.d0*slz8(cpatch%krdepth(ico)))
 
 

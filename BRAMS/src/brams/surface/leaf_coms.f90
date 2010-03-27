@@ -134,8 +134,9 @@ module leaf_coms
 
    !----- Soil properties -----------------------------------------------------------------!
    real, dimension(nstyp)           :: slden,slcpd,slbs,slcond,sfldcap,slcons,slmsts,slpots
-   real, dimension(nstyp)           :: ssand,sclay,sorgan,sporo,soilcp,slfc,emisg,slcons00
-   real, dimension(nstyp)           :: slcons0,fhydraul
+   real, dimension(nstyp)           :: ssand,sclay,sorgan,sporo,soilwp,soilcp,slfc,emisg
+   real, dimension(nstyp)           :: slcons00,slcons0,fhydraul
+   real, dimension(nstyp)           :: soilcond0,soilcond1,soilcond2
    real, dimension(nzgmax,nstyp)    :: slcons1
    !---------------------------------------------------------------------------------------!
 
@@ -221,17 +222,6 @@ module leaf_coms
 
 
    !----- Parameters that used to be in LEAF-3 (leaftw) -----------------------------------!
-
-   !---------------------------------------------------------------------------------------!
-   !    Parameters for new soil heat conductivity (8/17/00):  Move to sfcdata later.       !
-   !---------------------------------------------------------------------------------------!
-   real, dimension(nstyp), parameter :: soilcond0 = (/ 0.30, 0.30, 0.29, 0.27, 0.28, 0.28  &
-                                                     , 0.26, 0.27, 0.27, 0.25, 0.25, 0.06 /)
-   real, dimension(nstyp), parameter :: soilcond1 = (/ 4.80, 4.66, 4.27, 3.47, 3.63, 3.78  &
-                                                     , 2.73, 3.23, 3.32, 2.58, 2.40, 0.46 /)
-   real, dimension(nstyp), parameter :: soilcond2 = (/-2.70,-2.60,-2.31,-1.74,-1.85,-1.96  &
-                                                     ,-1.20,-1.56,-1.63,-1.09,-0.96, 0.00 /)
-   !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!

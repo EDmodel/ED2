@@ -960,6 +960,8 @@ subroutine ed_opspec_misc
                                     , isfclyrm                     ! ! intent(in)
    use soil_coms             , only : isoilflg                     & ! intent(in)
                                     , nslcon                       & ! intent(in)
+                                    , slxclay                      & ! intent(in)
+                                    , slxsand                      & ! intent(in)
                                     , isoilstateinit               & ! intent(in)
                                     , isoildepthflg                & ! intent(in)
                                     , isoilbc                      & ! intent(in)
@@ -1104,6 +1106,72 @@ subroutine ed_opspec_misc
       ifaterr = ifaterr +1
    end if
 
+do ifm=1,ngrids
+   if (isoilflg(ifm)==1 .and. slxclay>0. .and. slxclay<1. .and. slxsand>0. .and. slxsand<1.) then
+      write (unit=*,fmt='(a)') '==========================================================='
+      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
+      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
+      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
+      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
+      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
+      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
+      write (unit=*,fmt='(a)') '==========================================================='
+      write (unit=*,fmt='(a)') '    You have set up the run to read in soil types based on '
+      write (unit=*,fmt='(a)') ' Lat/Lon.  This overrides the option to use user defined   '
+      write (unit=*,fmt='(a)') ' sand and clay fractions- the DEFAULT SOIL PARAMETERS WILL '
+      write (unit=*,fmt='(a)') ' BE USED. To use the NL%SLXCLAY and NL%SLXSAND options, set'
+      write (unit=*,fmt='(a)') ' NL%ISOILFLG to 2 and define the soil type through NL%NLSCON'
+      write (unit=*,fmt='(a)') '==========================================================='
+   end if
+
+
+   if (isoilflg(ifm)==2 .and. slxclay<0.) then
+      write (unit=*,fmt='(a)') '==========================================================='
+      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
+      write (unit=*,fmt='(a)') '==========================================================='
+      write (unit=*,fmt='(a)') 'You have defined a soil clay fraction < 0. The DEFAULT SOIL'
+      write (unit=*,fmt='(a)') 'PARAMETERS WILL BE USED based on NL%NLSCON.                '
+      write (unit=*,fmt='(a)') '==========================================================='
+   end if
+   
+   if (isoilflg(ifm)==2 .and. slxclay>1.) then
+      write (unit=*,fmt='(a)') '==========================================================='
+      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
+      write (unit=*,fmt='(a)') '==========================================================='
+      write (unit=*,fmt='(a)') 'You have defined a soil clay fraction > 1. The DEFAULT SOIL'
+      write (unit=*,fmt='(a)') 'PARAMETERS WILL BE USED based on NL%NLSCON.                '
+      write (unit=*,fmt='(a)') '==========================================================='
+   end if
+
+   if (isoilflg(ifm)==2 .and. slxsand<0.) then
+      write (unit=*,fmt='(a)') '==========================================================='
+      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
+      write (unit=*,fmt='(a)') '==========================================================='
+      write (unit=*,fmt='(a)') 'You have defined a soil sand fraction < 0. The DEFAULT SOIL'
+      write (unit=*,fmt='(a)') 'PARAMETERS WILL BE USED based on NL%NLSCON.                '
+      write (unit=*,fmt='(a)') '==========================================================='
+   end if
+   
+   if (isoilflg(ifm)==2 .and. slxsand>1.) then
+      write (unit=*,fmt='(a)') '==========================================================='
+      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
+      write (unit=*,fmt='(a)') '==========================================================='
+      write (unit=*,fmt='(a)') 'You have defined a soil sand fraction > 1. The DEFAULT SOIL'
+      write (unit=*,fmt='(a)') 'PARAMETERS WILL BE USED based on NL%NLSCON.                '
+      write (unit=*,fmt='(a)') '==========================================================='
+   end if
+   
+
+   if (isoilflg(ifm)==2 .and. (slxsand+slxclay)>1.) then
+      write (unit=*,fmt='(a)') '==========================================================='
+      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
+      write (unit=*,fmt='(a)') '==========================================================='
+      write (unit=*,fmt='(a)') 'Your soil and clay fractions add up to more than 1!  The   '
+      write (unit=*,fmt='(a)') 'DEFAULT SOIL PARAMETERS WILL BE USED based on NL%NLSCON.   '
+      write (unit=*,fmt='(a)') '==========================================================='
+   end if
+end do
+   
 #if defined(COUPLED)
    if (isoilstateinit < 0 .or. isoilstateinit > 2) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &

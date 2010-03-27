@@ -987,7 +987,7 @@ subroutine leaftw(mzg,mzs,np,soil_water, soil_energy,soil_text,sfcwater_mass    
    do k = 1,mzg
       nsoil = nint(soil_text(k))
       psiplusz(k) = slzt(k) + slpots(nsoil) * (slmsts(nsoil)/soil_water(k))**slbs(nsoil)
-      soil_liq(k) = dslz(k) * min(soil_water(k) - soilcp(nsoil),soil_water(k)*fracliq(k))
+      soil_liq(k) = dslz(k) * max(0.,(soil_water(k) - soilcp(nsoil))*fracliq(k))
       half_soilair(k) = (slmsts(nsoil) - soil_water(k)) * dslz(k) * .5
    end do
 
@@ -1029,7 +1029,7 @@ subroutine leaftw(mzg,mzs,np,soil_water, soil_energy,soil_text,sfcwater_mass    
 
    !---------------------------------------------------------------------------------------!
    !    Remove water only from moistest level in root zone for transpiration. Bottom       !
-   ! k-index in root zone is kroot(nveg).  Limit soil moisture to values above soilcp.     !
+   ! k-index in root zone is kroot(nveg).  Limit soil moisture to values above soilwp.     !
    ! More sophisticated use of root profile function and water extractibility function,    !
    ! and improved minimum value are being considered. Units of wloss are m3/m3, of transp  !
    ! are kg/m2/s.                                                                          !
@@ -1039,7 +1039,7 @@ subroutine leaftw(mzg,mzs,np,soil_water, soil_energy,soil_text,sfcwater_mass    
    ktrans = mzg
    do k = kroot(nveg),mzg
       nsoil = nint(soil_text(k))
-      availwat = soil_water(k) * fracliq(k)
+      availwat = (soil_water(k)-soilwp(nsoil))* fracliq(k)
       if (wg < availwat) then
          wg = availwat
          ktrans = k
@@ -1047,7 +1047,7 @@ subroutine leaftw(mzg,mzs,np,soil_water, soil_energy,soil_text,sfcwater_mass    
       end if
    end do
 
-   wloss = min(transp_tot * dslzidt(ktrans) * wdnsi, wg, soil_water(ktrans) - soilcp(nsl))
+   wloss = min(transp_tot * dslzidt(ktrans) * wdnsi, wg, soil_water(ktrans) - soilwp(nsl))
    soil_water(ktrans)  = soil_water(ktrans)  - wloss
    soil_energy(ktrans) = soil_energy(ktrans)                                               &
                        - wloss * cliqvlme * (tempk(ktrans) - tsupercool)

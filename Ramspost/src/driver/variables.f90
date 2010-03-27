@@ -532,16 +532,15 @@ elseif(cvar(1:lv) == 'tempc2m' .or. cvar(1:lv) == 'theta2m' .or. cvar(1:lv) == '
    ierr = RAMS_getvar('RSTAR',idim_type,ngrd,r,b,flnm)     ! r is rstar
    ierr_getvar = ierr_getvar + ierr
    call RAMS_flush_to_zero(n1,n2,1,npatch,r,1.e-6)         ! r is tstar
-   istar = 3
    if (cvar(1:lv) == 'theta2m') then
-      call RAMS_reduced_prop(n1,n2,n3,npatch,ngrd,istar,'THET',c,e,f,d,n,o,s,2.0           &
+      call RAMS_reduced_prop(n1,n2,n3,npatch,ngrd,'THET',c,e,f,d,n,o,s,2.0                 &
                             ,h,t,m,p,q,r,a)
 
       cdname  = 'Potential temperature at 2m AGL'
       cdunits = 'K'
 
    elseif (cvar(1:lv) == 'tempc2m') then
-      call RAMS_reduced_prop(n1,n2,n3,npatch,ngrd,istar,'TEMP',c,e,f,d,n,o,s,2.0           &
+      call RAMS_reduced_prop(n1,n2,n3,npatch,ngrd,'TEMP',c,e,f,d,n,o,s,2.0                 &
                             ,h,t,m,p,q,r,a)
       call RAMS_comp_tempC(n1,n2,1,a)
 
@@ -549,7 +548,7 @@ elseif(cvar(1:lv) == 'tempc2m' .or. cvar(1:lv) == 'theta2m' .or. cvar(1:lv) == '
       cdunits = 'C'
 
    elseif (cvar(1:lv) == 'tdewc2m') then
-      call RAMS_reduced_prop(n1,n2,n3,npatch,ngrd,istar,'TDEW',c,e,f,d,n,o,s,2.0           &
+      call RAMS_reduced_prop(n1,n2,n3,npatch,ngrd,'TDEW',c,e,f,d,n,o,s,2.0                 &
                             ,h,t,m,p,q,r,a)
       call RAMS_comp_tempC(n1,n2,1,a)
 
@@ -557,7 +556,7 @@ elseif(cvar(1:lv) == 'tempc2m' .or. cvar(1:lv) == 'theta2m' .or. cvar(1:lv) == '
       cdunits = 'C'
 
    elseif (cvar(1:lv) == 'rv2m') then
-      call RAMS_reduced_prop(n1,n2,n3,npatch,ngrd,istar,'RVAP',c,e,f,d,n,o,s,2.0           &
+      call RAMS_reduced_prop(n1,n2,n3,npatch,ngrd,'RVAP',c,e,f,d,n,o,s,2.0                 &
                             ,h,t,m,p,q,r,a)
       call RAMS_comp_mults(n1,n2,1,a,1000.)
 
@@ -565,9 +564,9 @@ elseif(cvar(1:lv) == 'tempc2m' .or. cvar(1:lv) == 'theta2m' .or. cvar(1:lv) == '
       cdunits = 'g/kg'
 
    elseif (cvar(1:lv) == 'rhum2m') then
-      call RAMS_reduced_prop(n1,n2,n3,npatch,ngrd,istar,'TDEW',c,e,f,d,n,o,s,2.0           &
+      call RAMS_reduced_prop(n1,n2,n3,npatch,ngrd,'TDEW',c,e,f,d,n,o,s,2.0                 &
                             ,h,t,m,p,q,r,a) ! a is the dew/frost point
-      call RAMS_reduced_prop(n1,n2,n3,npatch,ngrd,istar,'TEMP',c,e,f,d,n,o,s,2.0           &
+      call RAMS_reduced_prop(n1,n2,n3,npatch,ngrd,'TEMP',c,e,f,d,n,o,s,2.0                 &
                             ,h,t,m,p,q,r,u) ! u is the temperature
       call RAMS_comp_relhum(n1,n2,1,a,u)
       call RAMS_comp_mults(n1,n2,1,a,100.)
@@ -576,14 +575,14 @@ elseif(cvar(1:lv) == 'tempc2m' .or. cvar(1:lv) == 'theta2m' .or. cvar(1:lv) == '
       cdunits = '%'
 
    elseif (cvar(1:lv) == 'zeta2m') then
-      call RAMS_reduced_prop(n1,n2,n3,npatch,ngrd,istar,'ZETA',c,e,f,d,n,o,s,2.0           &
+      call RAMS_reduced_prop(n1,n2,n3,npatch,ngrd,'ZETA',c,e,f,d,n,o,s,2.0                 &
                             ,h,t,m,p,q,r,a)
 
       cdname  = 'Normalised height'
       cdunits = '---'
 
    elseif (cvar(1:lv) == 'u10m') then
-      call RAMS_reduced_prop(n1,n2,n3,npatch,ngrd,istar,'WIND',c,e,f,d,n,o,s,10.0          &
+      call RAMS_reduced_prop(n1,n2,n3,npatch,ngrd,'WIND',c,e,f,d,n,o,s,10.0                &
                             ,h,t,m,p,q,r,a)
 
       cdname  = 'Wind speed at 10m AGL'
@@ -7185,12 +7184,13 @@ end
 ! OD95. ONCLEY, S.P.; DUDHIA, J.; Evaluation of surface fluxes from MM5 using observa-     !
 !           tions.  Mon. Wea. Rev., 123, 3344-3357, 1995.                                  !
 !------------------------------------------------------------------------------------------!
-subroutine RAMS_reduced_prop(nx,ny,nz,np,ng,istar,which,topt,theta_atm,rvap_atm,uspd_atm   &
+subroutine RAMS_reduced_prop(nx,ny,nz,np,ng,which,topt,theta_atm,rvap_atm,uspd_atm         &
                             ,theta_can,rvap_can,prss_can,zout,rough,veg_height,parea       &
                             ,ustar,tstar,rstar,varred)
    use somevars  , only : myztn      & ! intent(in)
                         , myzmn      & ! intent(in)
-                        , mynnzp     ! ! intent(in)
+                        , mynnzp     & ! intent(in)
+                        , myistar    ! ! intent(in)
    use rconstants, only : grav       & ! intent(in)
                         , p00i       & ! intent(in)
                         , rocp       & ! intent(in)
@@ -7221,7 +7221,6 @@ subroutine RAMS_reduced_prop(nx,ny,nz,np,ng,istar,which,topt,theta_atm,rvap_atm,
    integer                  , intent(in)    :: nz
    integer                  , intent(in)    :: np
    integer                  , intent(in)    :: ng
-   integer                  , intent(in)    :: istar
    character(len=4)         , intent(in)    :: which
    real, dimension(nx,ny,nz), intent(in)    :: theta_atm
    real, dimension(nx,ny,nz), intent(in)    :: rvap_atm
@@ -7320,7 +7319,7 @@ subroutine RAMS_reduced_prop(nx,ny,nz,np,ng,istar,which,topt,theta_atm,rvap_atm,
             !     Here we find the standard functions of heat and momentum to integrate    !
             ! the result.                                                                  !
             !------------------------------------------------------------------------------!
-            select case (istar)
+            select case (myistar)
             case (1)
                !---------------------------------------------------------------------------!
                !     Here we will use L79 model, the BRAMS default.                        !
@@ -7381,10 +7380,10 @@ subroutine RAMS_reduced_prop(nx,ny,nz,np,ng,istar,which,topt,theta_atm,rvap_atm,
                !---------------------------------------------------------------------------!
 
                ured  = ustar(x,y,p)                                                        &
-                     * (lnzoz0m - psim(zeta,stable,istar) + psim(zeta0m,stable,istar))     &
+                     * (lnzoz0m - psim(zeta,stable,myistar) + psim(zeta0m,stable,myistar))     &
                      / vonk
                multh = tprandtl                                                            &
-                     * (lnzoz0m - psih(zeta,stable,istar) + psih(zeta0h,stable,istar))     &
+                     * (lnzoz0m - psih(zeta,stable,myistar) + psih(zeta0h,stable,myistar))     &
                      / vonk
 
             case (3)
@@ -7407,16 +7406,16 @@ subroutine RAMS_reduced_prop(nx,ny,nz,np,ng,istar,which,topt,theta_atm,rvap_atm,
 
                !----- We now compute the stability correction functions. ------------------!
                zeta   = zoobukhov(rib,zout,rough(x,y,p),zoz0m,lnzoz0m,zoz0h,lnzoz0h,stable &
-                                 ,istar)
+                                 ,myistar)
                zeta0m = rough(x,y,p) * zeta / zout
                zeta0h = z0hoz0m * zeta0m
                !---------------------------------------------------------------------------!
 
                ured  = ustar(x,y,p)                                                        &
-                     * (lnzoz0m - psim(zeta,stable,istar) + psim(zeta0m,stable,istar))     &
+                     * (lnzoz0m - psim(zeta,stable,myistar) + psim(zeta0m,stable,myistar))     &
                      / vonk
                multh = tprandtl                                                            &
-                     * (lnzoz0m - psih(zeta,stable,istar) + psih(zeta0h,stable,istar))     &
+                     * (lnzoz0m - psih(zeta,stable,myistar) + psih(zeta0h,stable,myistar))     &
                      / vonk
 
             end select

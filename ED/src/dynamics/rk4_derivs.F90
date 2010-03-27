@@ -223,12 +223,12 @@ subroutine leaftw_derivs(initp,dinitp,csite,ipa)
    initp%available_liquid_water(nzg) = dslz8(nzg)                                          &
                                      * max(0.0d0                                           &
                                           ,initp%soil_fracliq(nzg)*(initp%soil_water(nzg)  &
-                                          -soil8(nsoil)%soilcp))
+                                          -soil8(nsoil)%soilwp))
 
    do k = nzg - 1, rk4site%lsl, -1
       nsoil = csite%ntext_soil(k,ipa)
       initp%available_liquid_water(k) = initp%available_liquid_water(k+1) + dslz8(k)       &
-           *max(0.0d0,(initp%soil_water(k)-soil8(nsoil)%soilcp)*initp%soil_fracliq(k))
+           *max(0.0d0,(initp%soil_water(k)-soil8(nsoil)%soilwp)*initp%soil_fracliq(k))
    end do
 
    !---------------------------------------------------------------------------------------!
@@ -247,7 +247,7 @@ subroutine leaftw_derivs(initp,dinitp,csite,ipa)
       ! multiplied by depth to get a depth of water.                                       !
       !------------------------------------------------------------------------------------!
       initp%soil_liq(k) = max(0.0d0                                                        &
-                             ,( initp%soil_water(k) - soil8(nsoil)%soilcp)                 &
+                             ,( initp%soil_water(k) - soil8(nsoil)%soilwp)                 &
                               * initp%soil_fracliq(k) )
       initp%soilair99(k) = soil8(nsoil)%slmsts * (1.d0-rk4eps) - initp%soil_water(k)
       initp%soilair01(k) = ( initp%soil_water(k) - (1.d0 + rk4eps) * soil8(nsoil)%soilcp)  &

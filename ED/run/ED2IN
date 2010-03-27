@@ -207,13 +207,21 @@
    !  10 -- silty clay      | 11 -- clay          | 12 -- peat             !
    !-----------------------------------------------------------------------!
 
-!----- Depth (m) of bottom of soil model grid levels --------------------------------------!
+   !---------------------------------------------------------------------------------------!
+   !    Prescribed fraction of clay and sand.  This is used only when ISOIFLG is set to 2, !
+   ! and slxclay and slxsand are defined between 0 and 1, with the sum of these variables  !
+   ! not exceeding 1.  Otherwise, the default ED parameters will be used.                  !
+   !---------------------------------------------------------------------------------------!
+   NL%SLXCLAY = -1.0
+   NL%SLXSAND = -1.0
+
+   !----- Depth (m) of bottom of soil model grid levels -----------------------------------!
    NL%SLZ     = -4.50, -3.50, -2.75, -2.00, -1.50, -1.10, -0.80, 
                 -0.60, -0.45, -0.30, -0.20, -0.12, -0.06, -0.02
-!----- Initial soil moisture (fraction of saturation) -------------------------------------!
+   !----- Initial soil moisture (fraction of saturation) ----------------------------------!
    NL%SLMSTR  =  0.60,  0.60,  0.60,  0.60,  0.60,  0.60,  0.60,
                  0.60,  0.60,  0.60,  0.60,  0.60,  0.60,  0.60
-!----- Initial soil temperature offset (with respect to the atmospheric temperature) ------!
+   !----- Initial soil temperature offset (with respect to the atmospheric temperature). --!
    NL%STGOFF  =   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0, 
                   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0
 !------------------------------------------------------------------------------------------!
