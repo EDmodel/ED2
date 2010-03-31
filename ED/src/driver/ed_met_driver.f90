@@ -1091,12 +1091,13 @@ subroutine update_met_drivers(cgrid)
       !------ Apply met to sites, and adjust met variables for topography. ----------------!
       call calc_met_lapse(cgrid,ipy)
 
-      
+      !----- Vels.  At this point vels is 2*Kinetic Energy, take the square root. ------!
+      cgrid%met(ipy)%vels = sqrt(max(0.0,cgrid%met(ipy)%vels))
 
       cpoly => cgrid%polygon(ipy)
       siteloop: do isi = 1,cpoly%nsites
          
-         !----- Vels.  At this point vels is 2*Kinetic Energy, take the square root. ------!
+         !----- Vels. The site level is also still in kinetic energy form
          cpoly%met(isi)%vels = sqrt(max(0.0,cpoly%met(isi)%vels))
          cpoly%met(isi)%vels_stab = max(ubmin,cpoly%met(isi)%vels)
          cpoly%met(isi)%vels_unstab = max(ubmin,cpoly%met(isi)%vels)
