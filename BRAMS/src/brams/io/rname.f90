@@ -56,6 +56,8 @@ subroutine NAMEOUT
   ! TEB_SPM
   use teb_spm_start, only: TEB_SPM ! intent(in)
 
+  use turb_coms, only : nna, nnb, nnc
+
   implicit none
 
   integer :: ng,np,k,m
@@ -165,6 +167,8 @@ subroutine NAMEOUT
   write(6,303)(' ',XKHKM(NG),ZKHKM(NG),AKMIN(NG),NG=1,NGRIDS)
   write(6,304)(' ',AKMAX(NG),HGTMIN(NG),HGTMAX(NG),NG=1,NGRIDS)
   write(6,305)(' ',GRIDU(NG),GRIDV(NG),NG=1,NGRIDS)
+  write(6,306)(' ',NNA(NG),NNB(NG),NG=1,2)
+  write(6,307)(' ',NNC(NG),NG=1,5)
 
 301 format(A1,'TOPTENH=',E12.5,'        TOPTWVL=',E12.5  &
        ,'        CENTLAT=',E12.5,999(A1,/,E21.5,2E28.5))
@@ -176,7 +180,9 @@ subroutine NAMEOUT
        ,'         HGTMAX=',E12.5,999(A1,/,E21.5,2E28.5))
 305 format(A1,'  GRIDU=',E12.5,'          GRIDV=',E12.5  &
        ,999(A1,/,E21.5,E28.5))
-
+306 format(A1,'    NNA=',E12.5,'            NNB=',E12.5    &
+       ,999(A1,/,E21.5,E28.5))
+307 format(A1,'    NNC=',E12.5,999(A1,/,E21.5))
   print*, ' '
 
   write(6,401)TIMMAX,TIMSTR,FRQHIS

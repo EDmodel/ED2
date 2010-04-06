@@ -89,7 +89,7 @@ module mem_mass
          ! zero and all needed variables are listed. This also depends on the configura-   !
          ! tion.                                                                           !
          !---------------------------------------------------------------------------------!
-         if (any(idiffk == 7)) then
+         if (any(idiffk == 7) .or. any(idiffk == 8)) then
             benchmark = 6
          elseif (any(idiffk == 1) .or. any(idiffk == 4) .or. &
                  any(idiffk == 5) .or. any(idiffk == 6)) then
@@ -109,11 +109,11 @@ module mem_mass
             case ('TKEPB')
                if (any(idiffk == 1) .or. any(idiffk == 4) .or.  &
                    any(idiffk == 5) .or. any(idiffk == 6) .or.  &
-                   any(idiffk == 7)) then
+                   any(idiffk == 7) .or. any(idiffk == 8)) then
                    listed=listed+1
                end if
             case ('TLB','SIGWB')
-               if (any(idiffk == 7)) then
+               if (any(idiffk == 7) .or. any(idiffk == 8)) then
                   listed = listed + 1
                end if
             end select
@@ -174,8 +174,10 @@ module mem_mass
          if (idiffkg /= 2 .and. idiffkg /= 3) then
             allocate (mass%tkepb(n1,n2,n3))
          end if
-         if (idiffkg == 7) allocate (mass%ltscaleb(n1,n2,n3))
-         if (idiffkg == 1 .or. idiffkg == 7) allocate (mass%sigwb(n1,n2,n3))
+         if (idiffkg == 7 .or. idiffkg == 8) allocate (mass%ltscaleb(n1,n2,n3))
+         if (idiffkg == 1 .or. idiffkg == 7 .or. idiffkg == 8) then
+            allocate (mass%sigwb(n1,n2,n3))
+         end if
       end if
       return
    end subroutine alloc_mass

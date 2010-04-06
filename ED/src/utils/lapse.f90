@@ -250,8 +250,8 @@ subroutine met_sanity_check(cgrid,ipy)
          write (unit=*,fmt=fmti) ' - Site           :',isi
          write (unit=*,fmt=fmtf) ' - Longitude      :',cgrid%lon(ipy)
          write (unit=*,fmt=fmtf) ' - Latitude       :',cgrid%lat(ipy)
-         write (unit=*,fmt=fmtf) ' - Site height    :',cpoly%met(isi)%atm_tmp
-         write (unit=*,fmt=fmtf) ' - Polygon height :',cgrid%met(ipy)%atm_tmp
+         write (unit=*,fmt=fmtf) ' - Site temp.     :',cpoly%met(isi)%atm_tmp
+         write (unit=*,fmt=fmtf) ' - Polygon temp.  :',cgrid%met(ipy)%atm_tmp
          write (unit=*,fmt=fmtf) ' - Minimum OK     :',atm_tmp_min
          write (unit=*,fmt=fmtf) ' - Maximum OK     :',atm_tmp_max
          write (unit=*,fmt=fmtc) '---------------------------------------------------'
@@ -268,8 +268,8 @@ subroutine met_sanity_check(cgrid,ipy)
          write (unit=*,fmt=fmti) ' - Site           :',isi
          write (unit=*,fmt=fmtf) ' - Longitude      :',cgrid%lon(ipy)
          write (unit=*,fmt=fmtf) ' - Latitude       :',cgrid%lat(ipy)
-         write (unit=*,fmt=fmtf) ' - Site height    :',cpoly%met(isi)%atm_shv
-         write (unit=*,fmt=fmtf) ' - Polygon height :',cgrid%met(ipy)%atm_shv
+         write (unit=*,fmt=fmtf) ' - Site spec. hum.:',cpoly%met(isi)%atm_shv
+         write (unit=*,fmt=fmtf) ' - Polygon sp. h. :',cgrid%met(ipy)%atm_shv
          write (unit=*,fmt=fmtf) ' - Minimum OK     :',atm_shv_min
          write (unit=*,fmt=fmtf) ' - Maximum OK     :',atm_shv_max
          write (unit=*,fmt=fmtc) '---------------------------------------------------'
@@ -286,8 +286,8 @@ subroutine met_sanity_check(cgrid,ipy)
          write (unit=*,fmt=fmti) ' - Site           :',isi
          write (unit=*,fmt=fmtf) ' - Longitude      :',cgrid%lon(ipy)
          write (unit=*,fmt=fmtf) ' - Latitude       :',cgrid%lat(ipy)
-         write (unit=*,fmt=fmtf) ' - Site height    :',cpoly%met(isi)%atm_co2
-         write (unit=*,fmt=fmtf) ' - Polygon height :',cgrid%met(ipy)%atm_co2
+         write (unit=*,fmt=fmtf) ' - Site CO2       :',cpoly%met(isi)%atm_co2
+         write (unit=*,fmt=fmtf) ' - Polygon CO2    :',cgrid%met(ipy)%atm_co2
          write (unit=*,fmt=fmtf) ' - Minimum OK     :',atm_co2_min
          write (unit=*,fmt=fmtf) ' - Maximum OK     :',atm_co2_max
          write (unit=*,fmt=fmtc) '---------------------------------------------------'
@@ -304,8 +304,8 @@ subroutine met_sanity_check(cgrid,ipy)
          write (unit=*,fmt=fmti) ' - Site           :',isi
          write (unit=*,fmt=fmtf) ' - Longitude      :',cgrid%lon(ipy)
          write (unit=*,fmt=fmtf) ' - Latitude       :',cgrid%lat(ipy)
-         write (unit=*,fmt=fmtf) ' - Site height    :',cpoly%met(isi)%prss
-         write (unit=*,fmt=fmtf) ' - Polygon height :',cgrid%met(ipy)%prss
+         write (unit=*,fmt=fmtf) ' - Site press.    :',cpoly%met(isi)%prss
+         write (unit=*,fmt=fmtf) ' - Polygon press. :',cgrid%met(ipy)%prss
          write (unit=*,fmt=fmtf) ' - Minimum OK     :',prss_min
          write (unit=*,fmt=fmtf) ' - Maximum OK     :',prss_max
          write (unit=*,fmt=fmtc) '---------------------------------------------------'
@@ -376,8 +376,8 @@ subroutine met_sanity_check(cgrid,ipy)
          write (unit=*,fmt=fmti) ' - Site           :',isi
          write (unit=*,fmt=fmtf) ' - Longitude      :',cgrid%lon(ipy)
          write (unit=*,fmt=fmtf) ' - Latitude       :',cgrid%lat(ipy)
-         write (unit=*,fmt=fmtf) ' - Site height    :',cpoly%met(isi)%rlong
-         write (unit=*,fmt=fmtf) ' - Polygon height :',cgrid%met(ipy)%rlong
+         write (unit=*,fmt=fmtf) ' - Site rlong     :',cpoly%met(isi)%rlong
+         write (unit=*,fmt=fmtf) ' - Polygon rlong  :',cgrid%met(ipy)%rlong
          write (unit=*,fmt=fmtf) ' - Minimum OK     :',rlong_min
          write (unit=*,fmt=fmtf) ' - Maximum OK     :',rlong_max
          write (unit=*,fmt=fmtc) '---------------------------------------------------'
@@ -394,8 +394,8 @@ subroutine met_sanity_check(cgrid,ipy)
          write (unit=*,fmt=fmti) ' - Site           :',isi
          write (unit=*,fmt=fmtf) ' - Longitude      :',cgrid%lon(ipy)
          write (unit=*,fmt=fmtf) ' - Latitude       :',cgrid%lat(ipy)
-         write (unit=*,fmt=fmtf) ' - Site height    :',cpoly%met(isi)%par_diffuse
-         write (unit=*,fmt=fmtf) ' - Polygon height :',cgrid%met(ipy)%par_diffuse
+         write (unit=*,fmt=fmtf) ' - Site rshort    :',cpoly%met(isi)%par_diffuse
+         write (unit=*,fmt=fmtf) ' - Polygon rshort :',cgrid%met(ipy)%par_diffuse
          write (unit=*,fmt=fmtf) ' - Minimum OK     :',rshort_min
          write (unit=*,fmt=fmtf) ' - Maximum OK     :',rshort_max
          write (unit=*,fmt=fmtc) '---------------------------------------------------'
@@ -414,8 +414,8 @@ subroutine met_sanity_check(cgrid,ipy)
          write (unit=*,fmt=fmti) ' - Site           :',isi
          write (unit=*,fmt=fmtf) ' - Longitude      :',cgrid%lon(ipy)
          write (unit=*,fmt=fmtf) ' - Latitude       :',cgrid%lat(ipy)
-         write (unit=*,fmt=fmtf) ' - Site height    :',cpoly%met(isi)%par_beam
-         write (unit=*,fmt=fmtf) ' - Polygon height :',cgrid%met(ipy)%par_beam
+         write (unit=*,fmt=fmtf) ' - Site PAR       :',cpoly%met(isi)%par_beam
+         write (unit=*,fmt=fmtf) ' - Polygon PAR    :',cgrid%met(ipy)%par_beam
          write (unit=*,fmt=fmtf) ' - Minimum OK     :',rshort_min
          write (unit=*,fmt=fmtf) ' - Maximum OK     :',rshort_max
          write (unit=*,fmt=fmtc) '---------------------------------------------------'
@@ -434,8 +434,8 @@ subroutine met_sanity_check(cgrid,ipy)
          write (unit=*,fmt=fmti) ' - Site           :',isi
          write (unit=*,fmt=fmtf) ' - Longitude      :',cgrid%lon(ipy)
          write (unit=*,fmt=fmtf) ' - Latitude       :',cgrid%lat(ipy)
-         write (unit=*,fmt=fmtf) ' - Site height    :',cpoly%met(isi)%nir_diffuse
-         write (unit=*,fmt=fmtf) ' - Polygon height :',cgrid%met(ipy)%nir_diffuse
+         write (unit=*,fmt=fmtf) ' - Site radNIR    :',cpoly%met(isi)%nir_diffuse
+         write (unit=*,fmt=fmtf) ' - Polygon radNIR :',cgrid%met(ipy)%nir_diffuse
          write (unit=*,fmt=fmtf) ' - Minimum OK     :',rshort_min
          write (unit=*,fmt=fmtf) ' - Maximum OK     :',rshort_max
          write (unit=*,fmt=fmtc) '---------------------------------------------------'
@@ -454,8 +454,8 @@ subroutine met_sanity_check(cgrid,ipy)
          write (unit=*,fmt=fmti) ' - Site           :',isi
          write (unit=*,fmt=fmtf) ' - Longitude      :',cgrid%lon(ipy)
          write (unit=*,fmt=fmtf) ' - Latitude       :',cgrid%lat(ipy)
-         write (unit=*,fmt=fmtf) ' - Site height    :',cpoly%met(isi)%nir_beam
-         write (unit=*,fmt=fmtf) ' - Polygon height :',cgrid%met(ipy)%nir_beam
+         write (unit=*,fmt=fmtf) ' - Site radNIR    :',cpoly%met(isi)%nir_beam
+         write (unit=*,fmt=fmtf) ' - Polygon radNIR :',cgrid%met(ipy)%nir_beam
          write (unit=*,fmt=fmtf) ' - Minimum OK     :',rshort_min
          write (unit=*,fmt=fmtf) ' - Maximum OK     :',rshort_max
          write (unit=*,fmt=fmtc) '---------------------------------------------------'
@@ -486,8 +486,8 @@ subroutine met_sanity_check(cgrid,ipy)
          write (unit=*,fmt=fmti) ' - Site           :',isi
          write (unit=*,fmt=fmtf) ' - Longitude      :',cgrid%lon(ipy)
          write (unit=*,fmt=fmtf) ' - Latitude       :',cgrid%lat(ipy)
-         write (unit=*,fmt=fmtf) ' - Site height    :',cpoly%met(isi)%rshort_diffuse
-         write (unit=*,fmt=fmtf) ' - Polygon height :',cgrid%met(ipy)%rshort_diffuse
+         write (unit=*,fmt=fmtf) ' - Site rshortd   :',cpoly%met(isi)%rshort_diffuse
+         write (unit=*,fmt=fmtf) ' - Polygon rshortd:',cgrid%met(ipy)%rshort_diffuse
          write (unit=*,fmt=fmtf) ' - Minimum OK     :',rshort_min
          write (unit=*,fmt=fmtf) ' - Maximum OK     :',rshort_max
          write (unit=*,fmt=fmtc) '---------------------------------------------------'
@@ -503,8 +503,8 @@ subroutine met_sanity_check(cgrid,ipy)
          write (unit=*,fmt=fmti) ' - Site           :',isi
          write (unit=*,fmt=fmtf) ' - Longitude      :',cgrid%lon(ipy)
          write (unit=*,fmt=fmtf) ' - Latitude       :',cgrid%lat(ipy)
-         write (unit=*,fmt=fmtf) ' - Site height    :',cpoly%met(isi)%rshort
-         write (unit=*,fmt=fmtf) ' - Polygon height :',cgrid%met(ipy)%rshort
+         write (unit=*,fmt=fmtf) ' - Site rshort    :',cpoly%met(isi)%rshort
+         write (unit=*,fmt=fmtf) ' - Polygon rshort :',cgrid%met(ipy)%rshort
          write (unit=*,fmt=fmtf) ' - Minimum OK     :',rshort_min
          write (unit=*,fmt=fmtf) ' - Maximum OK     :',rshort_max
          write (unit=*,fmt=fmtc) '---------------------------------------------------'

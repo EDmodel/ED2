@@ -240,6 +240,8 @@ elseif (vnam == 'cstar'          ) then
         vnam2 = '[cstar (umol/mol)]       '
 elseif (vnam == 'veg_fracarea'   ) then
         vnam2 = '[veg_fracarea]           '
+elseif (vnam == 'veg_agb'        ) then
+        vnam2 = '[veg_agb]                '
 elseif (vnam == 'veg_lai'        ) then
         vnam2 = '[veg_lai]                '
 elseif (vnam == 'veg_tai'        ) then
@@ -384,6 +386,10 @@ do k = k1,k2
             elseif (vnam == 'veg_fracarea'   ) then
                call plin(nc,j,ipat,3,1.               &
                   ,leaf%veg_fracarea(i1:i2,j,ipat)       &
+                  ,leaf%patch_area(i1:i2,j,ipat))
+            elseif (vnam == 'veg_agb'        ) then
+               call plin(nc,j,ipat,3,1.               &
+                  ,leaf%veg_agb(i1:i2,j,ipat)            &
                   ,leaf%patch_area(i1:i2,j,ipat))
             elseif (vnam == 'veg_lai'        ) then
                call plin(nc,j,ipat,3,1.               &

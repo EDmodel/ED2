@@ -720,6 +720,7 @@ module therm_lib
             return
          elseif (fun ==0) then !Converged by luck!
             tslf = tempz
+            return
          end if
       end do newloop
 
@@ -1348,17 +1349,9 @@ module therm_lib
       !----- Arguments --------------------------------------------------------------------!
       real, intent(in)           :: temp     ! Temperature                          [    K]
       real, intent(in)           :: rvap     ! Vapour mixing ratio                  [kg/kg]
-      real, intent(in), optional :: rtot     ! Total mixing ratio                   [kg/kg]
-      !----- Local variable ---------------------------------------------------------------!
-      real                       :: rtothere ! Internal rtot, to deal with optional [kg/kg]
+      real, intent(in)           :: rtot     ! Total mixing ratio                   [kg/kg]
 
-      if (present(rtot)) then
-        rtothere = rtot
-      else
-        rtothere = rvap
-      end if
-
-      virtt = temp * (1. + epi * rvap) / (1. + rtothere)
+      virtt = temp * (1. + epi * rvap) / (1. + rtot)
 
       return
    end function virtt
@@ -1390,7 +1383,7 @@ module therm_lib
       if (present(rtot)) then
         tvir = virtt(temp,rvap,rtot)
       else
-        tvir = virtt(temp,rvap)
+        tvir = virtt(temp,rvap,rvap)
       end if
 
       idealdens = pres / (rdry * tvir)
@@ -1444,12 +1437,61 @@ module therm_lib
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This function computes the enthalpy given the pressure, temperature, and vapour   !
-   ! specific humidity.  Currently it doesn't compute mixed phase air, but adding it       !
-   ! should be straightforward (finding the inverse is another story...).                  !
+   !     This function computes reduces the pressure from the reference height to the      !
+   ! canopy height by assuming hydrostatic equilibrium.                                    !
    !---------------------------------------------------------------------------------------!
-   real function ptq2enthalpy(pres,temp,qvpr)
+   real function reducedpress(pres,thetaref,shvref,zref,thetacan,shvcan,zcan)
+      use rconstants, only : epim1    & ! intent(in)
+                           , p00k     & ! intent(in)
+                           , rocp     & ! intent(in)
+                           , cpor     & ! intent(in)
+                           , cp       & ! intent(in)
+                           , grav     ! ! intent(in)
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      real, intent(in)           :: pres     ! Pressure                        [        Pa]
+      real, intent(in)           :: thetaref ! Potential temperature           [         K]
+      real, intent(in)           :: shvref   ! Vapour specific mass            [     kg/kg]
+      real, intent(in)           :: zref     ! Height at reference level       [         m]
+      real, intent(in)           :: thetacan ! Potential temperature           [         K]
+      real, intent(in)           :: shvcan   ! Vapour specific mass            [     kg/kg]
+      real, intent(in)           :: zcan     ! Height at canopy level          [         m]
+      !------Local variables. -------------------------------------------------------------!
+      real                       :: pinc     ! Pressure increment              [ Pa^(R/cp)]
+      real                       :: thvbar   ! Average virtual pot. temper.    [         K]
+      !------------------------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
+      !      First we compute the average virtual potential temperature between the canopy !
+      ! top and the reference level.                                                       !
+      !------------------------------------------------------------------------------------!
+      thvbar = 0.5 * (thetaref * (1. + epim1 * shvref) + thetacan * (1. + epim1 * shvcan))
+
+      !----- Then, we find the pressure gradient scale. -----------------------------------!
+      pinc = grav * p00k * (zref - zcan) / (cp * thvbar)
+
+      !----- And we can find the reduced pressure. ----------------------------------------!
+      reducedpress = (pres**rocp + pinc ) ** cpor
+
+      return
+   end function reducedpress
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This function computes the enthalpy given the pressure, temperature, vapour       !
+   ! specific humidity, and height.  Currently it doesn't compute mixed phase air, but     !
+   ! adding it should be straight forward (finding the inverse is another story...).       !
+   !---------------------------------------------------------------------------------------!
+   real function ptqz2enthalpy(pres,temp,qvpr,zref)
       use rconstants, only : ep       & ! intent(in)
+                           , grav     & ! intent(in)
                            , t3ple    & ! intent(in)
                            , eta3ple  & ! intent(in)
                            , cimcp    & ! intent(in)
@@ -1461,6 +1503,7 @@ module therm_lib
       real, intent(in)           :: pres  ! Pressure                               [    Pa]
       real, intent(in)           :: temp  ! Temperature                            [     K]
       real, intent(in)           :: qvpr  ! Vapour specific mass                   [ kg/kg]
+      real, intent(in)           :: zref  ! Reference height                       [     m]
       !------Local variables. -------------------------------------------------------------!
       real                       :: tequ  ! Dew-frost temperature                  [     K]
       real                       :: pequ  ! Equlibrium vapour pressure             [    Pa]
@@ -1477,13 +1520,13 @@ module therm_lib
       ! number that makes sense, similar to the internal energy of supercooled water.      !
       !------------------------------------------------------------------------------------!
       if (tequ <= t3ple) then
-         ptq2enthalpy = cp * temp + qvpr * (cimcp * tequ + alvi   )
+         ptqz2enthalpy = cp * temp + qvpr * (cimcp * tequ + alvi   ) + grav * zref
       else
-         ptq2enthalpy = cp * temp + qvpr * (clmcp * tequ + eta3ple)
+         ptqz2enthalpy = cp * temp + qvpr * (clmcp * tequ + eta3ple) + grav * zref
       end if
 
       return
-   end function ptq2enthalpy
+   end function ptqz2enthalpy
    !=======================================================================================!
    !=======================================================================================!
 
@@ -1494,12 +1537,14 @@ module therm_lib
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This function computes the temperature given the enthalpy and vapour specific     !
-   ! humidity.  Currently it doesn't compute mixed phase air, but adding it wouldn't be    !
-   ! horribly hard, but it would require some root finding.                                !
+   !     This function computes the temperature given the enthalpy, pressure, vapour       !
+   ! specific humidity, and reference height.  Currently it doesn't compute mixed phase    !
+   ! air, but adding it wouldn't be horribly hard, though it would require some root       !
+   ! finding.                                                                              !
    !---------------------------------------------------------------------------------------!
-   real function hpq2temp(enthalpy,pres,qvpr)
+   real function hpqz2temp(enthalpy,pres,qvpr,zref)
       use rconstants, only : ep       & ! intent(in)
+                           , grav     & ! intent(in)
                            , t3ple    & ! intent(in)
                            , eta3ple  & ! intent(in)
                            , cimcp    & ! intent(in)
@@ -1511,6 +1556,7 @@ module therm_lib
       real, intent(in)           :: enthalpy ! Enthalpy...                         [  J/kg]
       real, intent(in)           :: pres     ! Pressure                            [    Pa]
       real, intent(in)           :: qvpr     ! Vapour specific mass                [ kg/kg]
+      real, intent(in)           :: zref     ! Reference height                    [     m]
       !------Local variables. -------------------------------------------------------------!
       real                       :: tequ  ! Dew-frost temperature                  [     K]
       real                       :: pequ  ! Equlibrium vapour pressure             [    Pa]
@@ -1528,13 +1574,13 @@ module therm_lib
       ! internal energy of supercooled water.                                              !
       !------------------------------------------------------------------------------------!
       if (tequ <= t3ple) then
-         hpq2temp = cpi * (enthalpy - qvpr * (cimcp * tequ + alvi   ))
+         hpqz2temp = cpi * (enthalpy - qvpr * (cimcp * tequ + alvi   ) - grav * zref)
       else
-         hpq2temp = cpi * (enthalpy - qvpr * (clmcp * tequ + eta3ple))
+         hpqz2temp = cpi * (enthalpy - qvpr * (clmcp * tequ + eta3ple) - grav * zref)
       end if
 
       return
-   end function hpq2temp
+   end function hpqz2temp
    !=======================================================================================!
    !=======================================================================================!
 
@@ -2236,6 +2282,7 @@ module therm_lib
       real                          :: es00      ! Defined as p00*rt/(epsilon + rt)
       real                          :: delta     ! Aux. variable (For 2nd guess).
       integer                       :: itn,itb   ! Iteration counters
+      integer                       :: ii        ! Another counter
       logical                       :: converged ! Convergence handle
       logical                       :: zside     ! Aux. flag - check sides for Regula Falsi
       logical                       :: brrr_cold ! Flag - considering ice thermo.
@@ -2361,7 +2408,7 @@ module therm_lib
                zside = funa*funz < 0
                if (zside) exit zgssloop
             end do zgssloop
-            if (.not. zside)                                                               &
+            if (.not. zside) then
                write (unit=*,fmt='(a)') ' No second guess for you...'
                write (unit=*,fmt='(2(a,1x,i14,1x))')    'itn   =',itn   ,'itb   =',itb
                write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'theiv =',theiv ,'rtot  =',rtot
@@ -2370,7 +2417,8 @@ module therm_lib
                write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'tlcla =',tlcla ,'funa  =',funa
                write (unit=*,fmt='(2(a,1x,es14.7,1x))') 'tlclz =',tlclz ,'funz  =',funz
                call abort_run('Failed finding the second guess for regula falsi'           &
-                             ,'thetaeiv2thil','rthrm.f90')
+                             ,'thetaeiv2thil','therm_lib.f90')
+            end if
          end if
          !---- Continue iterative method --------------------------------------------------!
          fpoloop: do itb=itn+1,maxfpo
@@ -2427,6 +2475,29 @@ module therm_lib
          !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!
          !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       else
+         write (unit=*,fmt='(60a1)')        ('-',ii=1,60)
+         write (unit=*,fmt='(a)')           ' THEIV2THIL failed!'
+         write (unit=*,fmt='(a)')           ' '
+         write (unit=*,fmt='(a)')           ' -> Input: '
+         write (unit=*,fmt='(a,1x,f12.5)')  '    THEIV    [     K]:',theiv
+         write (unit=*,fmt='(a,1x,f12.5)')  '    PRES     [    Pa]:',pres * 100.
+         write (unit=*,fmt='(a,1x,f12.5)')  '    RTOT     [  g/kg]:',1000.*rtot
+         write (unit=*,fmt='(a)')           ' '
+         write (unit=*,fmt='(a)')           ' -> Output: '
+         write (unit=*,fmt='(a,1x,i12)')    '    ITERATIONS       :',itb
+         write (unit=*,fmt='(a,1x,f12.5)')  '    PVAP     [   hPa]:',pvap
+         write (unit=*,fmt='(a,1x,f12.5)')  '    THETA    [     K]:',theta
+         write (unit=*,fmt='(a,1x,f12.5)')  '    TLCL     [    °C]:',tlcl-t00
+         write (unit=*,fmt='(a,1x,f12.5)')  '    TLCLA    [    °C]:',tlcla-t00
+         write (unit=*,fmt='(a,1x,f12.5)')  '    TLCLZ    [    °C]:',tlclz-t00
+         write (unit=*,fmt='(a,1x,es12.5)') '    FUNA     [     K]:',funa
+         write (unit=*,fmt='(a,1x,es12.5)') '    FUNZ     [     K]:',funz
+         write (unit=*,fmt='(a,1x,es12.5)') '    DERIV    [   ---]:',deriv
+         write (unit=*,fmt='(a,1x,es12.5)') '    ERR_A    [   ---]:',abs(tlcl-tlcla)/tlcl
+         write (unit=*,fmt='(a,1x,es12.5)') '    ERR_Z    [   ---]:',abs(tlcl-tlclz)/tlcl
+         write (unit=*,fmt='(a)')           ' '
+         write (unit=*,fmt='(60a1)')        ('-',ii=1,60)
+
          call abort_run('TLCL didn''t converge, gave up!'                                  &
                        ,'thetaeiv2thil','therm_lib.f90')
       end if
@@ -2996,15 +3067,20 @@ module therm_lib
          fracliq = 1.
          tempk   = (qw + w * cliq * tsupercool) / (dryhcap + w*cliq)
       !------------------------------------------------------------------------------------!
+      !    We are at the freezing point.  If water mass is so tiny that the internal       !
+      ! energy of frozen and melted states are the same given the machine precision, then  !
+      ! we assume that water content is negligible and we impose 50% frozen for            !
+      ! simplicity.                                                                        !
+      !------------------------------------------------------------------------------------!
+      elseif (qwfroz == qwmelt) then
+         fracliq = 0.5
+         tempk   = t3ple
+      !------------------------------------------------------------------------------------!
       !    Changing phase, it must be at freezing point.  The max and min are here just to !
       ! avoid tiny deviations beyond 0. and 1. due to floating point arithmetics.          !
       !------------------------------------------------------------------------------------!
-      elseif (w > 0.) then
-         fracliq = min(1.,max(0.,(qw - qwfroz) * allii / w))
-         tempk = t3ple
-      !----- No water, but it must be at freezing point (qw = qwfroz = qwmelt) ------------!
       else
-         fracliq = 0.5
+         fracliq = min(1.,max(0.,(qw - qwfroz) * allii / w))
          tempk   = t3ple
       end if
       !------------------------------------------------------------------------------------!

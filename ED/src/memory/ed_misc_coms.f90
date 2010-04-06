@@ -71,8 +71,8 @@ Module ed_misc_coms
   ! Control parameters for printing. Read in the namelist
   integer :: iprintpolys
   integer :: npvars
-  character(len=str_len_short), dimension(maxpvars) :: printvars
-  character(len=str_len_short), dimension(maxpvars) :: pfmtstr
+  character(len=str_len), dimension(maxpvars) :: printvars
+  character(len=str_len), dimension(maxpvars) :: pfmtstr
   integer :: ipmin
   integer :: ipmax
   

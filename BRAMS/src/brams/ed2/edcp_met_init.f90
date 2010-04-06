@@ -173,21 +173,25 @@ subroutine ed_init_coup_atm
                     if (csite%soil_tempk(k,ipa) > t3ple)then
                        nsoil=csite%ntext_soil(k,ipa)
                        csite%soil_fracliq(k,ipa) = 1.0
-                       csite%soil_water(k,ipa) = max( soil(nsoil)%soilcp                   &
-                                                    , slmstr(k) * soil(nsoil)%slmsts)
-                       csite%soil_energy(k,ipa) = soil(nsoil)%slcpd                        &
-                                                * csite%soil_tempk(k,ipa)                  &
-                                                + csite%soil_water(k,ipa) * cliqvlme       &
-                                                * (csite%soil_tempk(k,ipa) - tsupercool)
+                       csite%soil_water(k,ipa)   = max(soil(nsoil)%soilcp                  &
+                                                      , slmstr(k) * ( soil(nsoil)%slmsts   &
+                                                                    - soil(nsoil)%soilwp)  &
+                                                      + soil(nsoil)%soilwp)
+                       csite%soil_energy(k,ipa)  = soil(nsoil)%slcpd                       &
+                                                 * csite%soil_tempk(k,ipa)                 &
+                                                 + csite%soil_water(k,ipa) * cliqvlme      &
+                                                 * (csite%soil_tempk(k,ipa) - tsupercool)
                     else
                        nsoil=csite%ntext_soil(k,ipa)
                        csite%soil_fracliq(k,ipa) = 0.0
-                       csite%soil_water(k,ipa) = max( soil(nsoil)%soilcp                   &
-                                                    , slmstr(k) * soil(nsoil)%slmsts)
-                       csite%soil_energy(k,ipa) = soil(nsoil)%slcpd                        &
-                                                * csite%soil_tempk(k,ipa)                  &
-                                                + csite%soil_water(k,ipa)                  &
-                                                * cicevlme * csite%soil_tempk(k,ipa)
+                       csite%soil_water(k,ipa)   = max(soil(nsoil)%soilcp                  &
+                                                      , slmstr(k) * ( soil(nsoil)%slmsts   &
+                                                                    - soil(nsoil)%soilwp)  &
+                                                      + soil(nsoil)%soilwp)
+                       csite%soil_energy(k,ipa)  = soil(nsoil)%slcpd                       &
+                                                 * csite%soil_tempk(k,ipa)                 &
+                                                 + csite%soil_water(k,ipa)                 &
+                                                 * cicevlme * csite%soil_tempk(k,ipa)
                     end if
                  end do
 

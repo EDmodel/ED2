@@ -395,7 +395,7 @@ subroutine prepare_timeavg_driver(mzp,mxp,myp,ia,iz,ja,jz,dtlt,ifm,idiffkk)
       call prepare_timeavg_to_mass(mzp,mxp,myp,ia,iz,ja,jz,dtlt                            &
                                   ,turb_g(ifm)%tkep     ,mass_g(ifm)%tkepb                 )
 
-   case (7) !----- Nakanishi-Niino closure, TKE, sig-W and Lagrangian time scale exist. ---!
+   case (7,8) !----- Nakanishi-Niino closures, TKE, sig-W and Lagrangian time scale exist. !
       call prepare_timeavg_to_mass(mzp,mxp,myp,ia,iz,ja,jz,dtlt                            &
                                   ,turb_g(ifm)%tkep     ,mass_g(ifm)%tkepb                 )
 

@@ -623,6 +623,18 @@ use rconstants, only: &
                 grav,  &       ! intent(in)
                 sigwmin        ! intent(in)
 
+use turb_coms, only : a1  => hla1  & ! intent(in)
+                    , a2  => hla2  & ! intent(in)
+                    , b1  => hlb1  & ! intent(in)
+                    , b2  => hlb2  & ! intent(in)
+                    , c1  => hlc1  & ! intent(in)
+                    , ch  => hlch  & ! intent(in)
+                    , cm  => hlcm  & ! intent(in)
+                    , rf1 => hlrf1 & ! intent(in)
+                    , rf2 => hlrf2 & ! intent(in)
+                    , rf3 => hlrf3 & ! intent(in)
+                    , rf4 => hlrf4 ! ! intent(in)
+
 implicit none
 
 integer, intent(in) :: m1,m2,m3,ia,iz,ja,jz,ibcon,jd,i0,j0
@@ -660,14 +672,11 @@ real, intent(in), dimension(m2,m3) :: flpw, &
 integer :: i,j,k,k2
 integer :: lpu,lpu1,lpv,lpv1
 
-real :: a1,a2,b1,b2,c1,aux1,aux2,rf1,rf2,rf3,rf4,wght1,wght3,sumtkz,sumtk  &
+real :: wght1,wght3,sumtkz,sumtk  &
    ,al0,tket2,ri,rf,shr,smr,tker,qq,ssmf,shf,sh0,ssm,aux,gm,gh,sm1,sm2  &
    ,sh1,sh2,dzloc,ssum
 
 
-data a1,a2,b1,b2,c1/0.92,0.74,16.6,10.1,0.08/
-data aux1,aux2/0.758964199,2.58286747/
-data rf1,rf2,rf3,rf4/1.,0.191232309,0.223117196,0.234067819/
 
 !        1 - mellor and yamada (after andre et al, 1978)
 
@@ -708,14 +717,14 @@ do j=ja,jz
          ri=min(vt3dj(k,i,j)/max(vt3di(k,i,j),1.e-11),0.190)
          rf=min(0.6588*(ri+0.1776-sqrt(ri*(ri-0.3221)  &
               +0.03156)),0.16)
-         shr=aux2*(rf-rf2)/(rf-rf1)
-         smr=aux1*(rf-rf4)/(rf-rf3)*shr
+         shr= ch * (rf-rf2)/(rf-rf1)
+         smr= cm * (rf-rf4)/(rf-rf3)*shr
 
          aux=vctr9(k)*vctr9(k)/tkep2(k)
          gm=aux*vt3di(k,i,j)
          gh=-aux*vt3dj(k,i,j)
 
-         tker=max(16.6*vctr9(k)*vctr9(k)*(smr*vt3di(k,i,j)  &
+         tker=max(b1*vctr9(k)*vctr9(k)*(smr*vt3di(k,i,j)  &
             -shr*vt3dj(k,i,j)),2.*tkmin)
 
          if(tker.gt.tkep2(k) )then
@@ -731,7 +740,7 @@ do j=ja,jz
             sm2=1.-(36.7188-187.4408515*gh+88.83949824*gm)*gh  &
                  +5.0784*gm
             ssm=sm1/max(sm2,1e-10)
-            sh1=0.74-4.0848*ssm*gm
+            sh1=a2-4.0848*ssm*gm
             sh2=1.-30.5916*gh
             sh0=sh1/max(sh2,1e-10)
          endif
@@ -747,7 +756,7 @@ do j=ja,jz
          vctr5(k)=scr1(k,i,j)*vt3di(k,i,j)  &
             -vt3dh(k,i,j)*vt3dj(k,i,j)
          tket(k,i,j)=tket(k,i,j) + 0.5 * vctr5(k)  &
-            -tkep2(k) * sqrt(max(1.e-20,tkep2(k)))/(vctr9(k)*16.6)
+            -tkep2(k) * sqrt(max(1.e-20,tkep2(k)))/(vctr9(k)*b1)
      ! if(i+i0==28 .and. j+j0==28 .and. k<20) then
      !  print '(i3,12e13.4)',k,scr1(k,i,j),vctr9(k),vctr30(k),ssm
 
@@ -756,7 +765,7 @@ do j=ja,jz
      !                      ,scr1(k,i,j),vt3di(k,i,j)  &
      !                      ,-.5*vt3dh(k,i,j)*vt3dj(k,i,j) &
      !                      ,vt3dh(k,i,j),vt3dj(k,i,j) &
-     !       ,-tkep2(k) * sqrt(max(1.e-20,tkep2(k)))/(vctr9(k)*16.6)
+     !       ,-tkep2(k) * sqrt(max(1.e-20,tkep2(k)))/(vctr9(k)*b1)
       ! print '(i3,12f12.7)',k,sflux_u(i,j)/dn0(k2,i,j),sflux_v(i,j)/dn0(k2,i,j)  &
       !                       ,sflux_w(i,j)/dn0(k2,i,j),sflux_t(i,j)/dn0(k2,i,j)
       !   enddo
@@ -790,7 +799,7 @@ do j=ja,jz
                +sflux_w(i,j)*wp(k2,i,j))/vctr1(k2)  &
                +sflux_t(i,j)*grav/theta(k2,i,j))/dn0(k2,i,j) &
             
-            - tkep2(k2)*sqrt(max(1.e-20,tkep2(k2)))/(vctr9(k2)*16.6)
+            - tkep2(k2)*sqrt(max(1.e-20,tkep2(k2)))/(vctr9(k2)*b1)
 
       endif
       

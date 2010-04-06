@@ -192,7 +192,7 @@ subroutine init_met_drivers
                select case(met_interp(iformat,iv))
                case(0,3)    !----- Variable. ----------------------------------------------!
                   mem_size = nint(day_sec / met_frq(iformat,iv)) * 31
-               case(1)     !----- Interpolated.   Read two months in. ---------------------!
+               case(1,5)    !----- Interpolated.   Read two months in. ---------------------!
                   mem_size = 2 * nint(day_sec / met_frq(iformat,iv)) * 31
                case (2,4)  !----- Constant in time. ---------------------------------------!
                   mem_size = 1
@@ -500,12 +500,15 @@ subroutine read_met_drivers_init
          
          !----- Loop over variables. ------------------------------------------------------!
          varloop: do iv = 1, met_nv(iformat)
-            if (met_interp(iformat,iv) == 1) then
+
+            select case (met_interp(iformat,iv))
+            case (1,5)
                offset = nint(day_sec / met_frq(iformat,iv)) * 31
 
                !----- Read the file. ------------------------------------------------------!
                call read_ol_file(infile,iformat,iv,year_use_2,mname(m2),y2,offset,cgrid)
-            end if
+            end select
+
          end do varloop
          
          !----- Close the HDF5 file. ------------------------------------------------------!
@@ -615,16 +618,17 @@ subroutine read_met_drivers
          do iv = 1, met_nv(iformat)
             
             !----- Check whether this is an interpolation variable. -----------------------!
-            if (met_interp(iformat,iv) /= 1) then
+            select case (met_interp(iformat,iv))
+            case (0,2,3,4)
                !----- If not, things are simple.  Just read in the month. -----------------!
                offset = 0
                call read_ol_file(infile,iformat,iv,year_use,mname(current_time%month)      &
                                 ,current_time%year,offset,cgrid)
-            else
+            case (1,5)
                !----- Here, just transfer future to current month.  -----------------------!
                call transfer_ol_month(trim(met_vars(iformat,iv)),met_frq(iformat,iv)       &
                                      ,cgrid)
-            end if
+            end select
          end do
 
          !----- Close the HDF5 file. ------------------------------------------------------!
@@ -673,11 +677,12 @@ subroutine read_met_drivers
       
          !----- Loop over variables. ------------------------------------------------------!
          do iv = 1, met_nv(iformat)
-            if(met_interp(iformat,iv) == 1)then
+            select case (met_interp(iformat,iv))
+            case (1,5)
                offset = nint(day_sec / met_frq(iformat,iv)) * 31
                !----- Read the file. ------------------------------------------------------!
                call read_ol_file(infile,iformat,iv,year_use_2,mname(m2),y2,offset,cgrid)
-            end if
+            end select
          end do
          
          !----- Close the HDF5 file. ------------------------------------------------------!
@@ -723,8 +728,10 @@ subroutine update_met_drivers(cgrid)
                              , cliq              & ! intent(in)
                              , alli              & ! intent(in)
                              , rocp              & ! intent(in)
+                             , p00               & ! intent(in)
                              , p00i              & ! intent(in)
                              , cp                & ! intent(in)
+                             , cpi               & ! intent(in)
                              , day_sec           & ! intent(in)
                              , t00               & ! intent(in)
                              , t3ple             & ! intent(in)
@@ -747,22 +754,25 @@ subroutine update_met_drivers(cgrid)
    integer                    :: np
    integer                    :: ndays_elapsed
    integer                    :: nseconds_elapsed
-   integer                    :: mlo
-   integer                    :: mhi
+   integer                    :: mnext
+   integer                    :: mprev
    integer                    :: iformat
    integer                    :: iv
    integer                    :: ipy,isi
-   real                       :: t1
-   real                       :: t2
+   real                       :: tprev
+   real                       :: tnext
+   real                       :: wnext
+   real                       :: wprev
 
    real                       :: rvaux, rvsat, min_shv 
 
    real                       :: temp0
+   real                       :: theta_prev
+   real                       :: theta_next
    real                       :: relhum
    real                       :: snden !! snow density (kg/m3)
    real                       :: fice  !! precipication ice fraction
    real                       :: fliq,tsnow
-
    !----- External functions --------------------------------------------------------------!
    logical         , external :: isleap
    !---------------------------------------------------------------------------------------!
@@ -780,68 +790,74 @@ subroutine update_met_drivers(cgrid)
       !----- Loop over variables ----------------------------------------------------------!
       varloop: do iv = 1, met_nv(iformat)
          
-         !-----  In these cases there is no time dynamic, simply set mlo to 1 -------------!
-         if (met_interp(iformat,iv) /= 1) then
-            
-            if (met_interp(iformat,iv) == 2 .or. met_interp(iformat,iv) == 4 ) then
-               
-               mlo = 1
-               
+         select case (met_interp(iformat,iv))
+         case (0,2,3,4)
             !------------------------------------------------------------------------------!
-            !      In these cases there is no interpolation, but there are time varying    !
-            ! data.                                                                        !
+            !      If we fall in this part of the if block, this means that the variable   !
+            ! doesn't require time interpolation.                                          !
             !------------------------------------------------------------------------------!
-            elseif (met_interp(iformat,iv) == 0 .or. met_interp(iformat,iv) == 3) then
+            select case(met_interp(iformat,iv))
+            case (2,4)
+               !---------------------------------------------------------------------------!
+               !     Time independent variables, set mprev to 1.                           !
+               !---------------------------------------------------------------------------!
+               mprev = 1
+
+            case (0,3)
                
                !---------------------------------------------------------------------------!
-               !     If this is not an interpolation variable, just find the time point.   !
+               !     Time dependent variables, but with no time interpolation.             !
                !---------------------------------------------------------------------------!
                ndays_elapsed    = current_time%date - 1
                nseconds_elapsed = nint(current_time%time) + ndays_elapsed * nint(day_sec)
-               mlo              = int(float(nseconds_elapsed) / met_frq(iformat,iv)) + 1
+               mprev            = int(float(nseconds_elapsed) / met_frq(iformat,iv)) + 1
                
-            end if
+            end select
             
-            !----- Find which variable it is, and then fill the sites. --------------------!
+            !----- Find which variable it is, and then fill the polygons. -----------------!
             select case (trim(met_vars(iformat,iv)))
             case('nbdsf')   !----- Near IR beam downward shortwave flux. ------ [   W/m²] -!
                do ipy = 1,cgrid%npolygons
-                  cgrid%met(ipy)%nir_beam = cgrid%metinput(ipy)%nbdsf(mlo)
+                  cgrid%met(ipy)%nir_beam = cgrid%metinput(ipy)%nbdsf(mprev)
                end do
 
             case('nddsf')   !----- Near IR diffuse downward shortwave flux. --- [   W/m²] -!
                do ipy = 1,cgrid%npolygons
-                  cgrid%met(ipy)%nir_diffuse = cgrid%metinput(ipy)%nddsf(mlo)
+                  cgrid%met(ipy)%nir_diffuse = cgrid%metinput(ipy)%nddsf(mprev)
                end do
 
             case('vbdsf')   !----- Visible beam downward shortwave flux. ------ [   W/m²] -!
                do ipy = 1,cgrid%npolygons
-                  cgrid%met(ipy)%par_beam = cgrid%metinput(ipy)%vbdsf(mlo)
+                  cgrid%met(ipy)%par_beam = cgrid%metinput(ipy)%vbdsf(mprev)
                end do
 
             case('vddsf')   !----- Visible diffuse downward shortwave flux. --- [   W/m²] -!
                do ipy = 1,cgrid%npolygons
-                  cgrid%met(ipy)%par_diffuse = cgrid%metinput(ipy)%vddsf(mlo)
+                  cgrid%met(ipy)%par_diffuse = cgrid%metinput(ipy)%vddsf(mprev)
                end do
 
             case('prate')   !----- Precipitation rate. ------------------------ [kg/m²/s] -!
                do ipy = 1,cgrid%npolygons
-                  cgrid%met(ipy)%pcpg = cgrid%metinput(ipy)%prate(mlo)
+                  cgrid%met(ipy)%pcpg = cgrid%metinput(ipy)%prate(mprev)
                end do
 
             case('dlwrf')   !----- Downwelling longwave radiation. ------------ [   W/m²] -!
                do ipy = 1,cgrid%npolygons
-                  cgrid%met(ipy)%rlong = cgrid%metinput(ipy)%dlwrf(mlo)
+                  cgrid%met(ipy)%rlong = cgrid%metinput(ipy)%dlwrf(mprev)
                end do
 
-            case('pres')    !----- Air pressure. ------------------------------ [   N/m²] -!
+            case('pres')    
+               !---------------------------------------------------------------------------!
+               !     Air pressure [   N/m²] and Exner function [J/kg/K].                   !
+               !---------------------------------------------------------------------------!
                do ipy = 1,cgrid%npolygons
-                  cgrid%met(ipy)%prss = cgrid%metinput(ipy)%pres(mlo)
+                  cgrid%met(ipy)%prss  = cgrid%metinput(ipy)%pres(mprev)
+                  cgrid%met(ipy)%exner = cp * (p00i * cgrid%met(ipy)%prss)**rocp
                end do
 
             case('hgt')     !----- Air pressure. ------------------------------ [      m] -!
                do ipy = 1,cgrid%npolygons
-                  cgrid%met(ipy)%geoht = cgrid%metinput(ipy)%hgt(mlo)
+                  cgrid%met(ipy)%geoht = cgrid%metinput(ipy)%hgt(mprev)
                end do
 
             case('ugrd')    !----- Zonal wind. -------------------------------- [    m/s] -!
@@ -852,7 +868,7 @@ subroutine update_met_drivers(cgrid)
                !---------------------------------------------------------------------------!
                do ipy = 1,cgrid%npolygons
                   cgrid%met(ipy)%vels = cgrid%met(ipy)%vels                                &
-                                      + cgrid%metinput(ipy)%ugrd(mlo)**2
+                                      + cgrid%metinput(ipy)%ugrd(mprev)**2
                end do
 
             case('vgrd')    !----- Meridional wind. --------------------------- [    m/s] -!
@@ -863,7 +879,7 @@ subroutine update_met_drivers(cgrid)
                !---------------------------------------------------------------------------!
                do ipy = 1,cgrid%npolygons
                   cgrid%met(ipy)%vels = cgrid%met(ipy)%vels                                &
-                                      + cgrid%metinput(ipy)%vgrd(mlo)**2
+                                      + cgrid%metinput(ipy)%vgrd(mprev)**2
                end do
 
             case('sh')      !----- Specific humidity. ------------------------- [kg/kg_a] -!
@@ -873,26 +889,33 @@ subroutine update_met_drivers(cgrid)
                ! not be supersaturated).  If not we will impose the maximum.               !
                !---------------------------------------------------------------------------!
                do ipy = 1,cgrid%npolygons
-                  cgrid%met(ipy)%atm_shv = cgrid%metinput(ipy)%sh(mlo)
+                  cgrid%met(ipy)%atm_shv = cgrid%metinput(ipy)%sh(mprev)
                end do
 
-            case('tmp')     !----- Air temperature. --------------------------- [      K] -!
+            case('tmp')    
+               !---------------------------------------------------------------------------!
+               !     The flag is given at the air temperature, but we use the flag for     !
+               ! potential temperature                                           [      K] !
+               !---------------------------------------------------------------------------!
                do ipy = 1,cgrid%npolygons
-                  cgrid%met(ipy)%atm_tmp = cgrid%metinput(ipy)%tmp(mlo)
+                  cgrid%met(ipy)%atm_theta = cgrid%metinput(ipy)%tmp(mprev)                &
+                                           * (p00 / cgrid%metinput(ipy)%pres(mprev))       &
+                                           ** rocp
                end do
 
             case('co2')     !----- CO2 mixing ratio. -------------------------- [    ppm] -!
                do ipy = 1,cgrid%npolygons
-                  cgrid%met(ipy)%atm_co2 = cgrid%metinput(ipy)%co2(mlo)
+                  cgrid%met(ipy)%atm_co2 = cgrid%metinput(ipy)%co2(mprev)
                end do
             end select
             
          !----- In this case, we need to interpolate. -------------------------------------!
-         else !if (met_interp(iformat,iv) /= 1) then
-            
-            ndays_elapsed    = current_time%date - 1
-            nseconds_elapsed = nint(current_time%time) + ndays_elapsed * nint(day_sec)
-            
+         case (1,5)
+            !------------------------------------------------------------------------------!
+            !      If we fall in this part of the if block, this means that the variable   !
+            ! must be interpolated over time.                                              !
+            !---------------------------------------------------------------------------!
+
             !----- First, get the number of points per day and per month. -----------------!
             points_per_day = nint(day_sec/met_frq(iformat,iv))
             select case (current_time%month)
@@ -910,48 +933,66 @@ subroutine update_met_drivers(cgrid)
             np = nday * points_per_day
             
             
-            !----- If this is not an interpolation variable, just find the time point. ----!
+            !----- Find the number of seconds since the beginning of this month. ----------!
             ndays_elapsed    = current_time%date - 1
             nseconds_elapsed = nint(current_time%time) + ndays_elapsed * nint(day_sec)
-            mlo              = int(float(nseconds_elapsed) / met_frq(iformat,iv)) + 1
             
             
-            !----- Get indices ------------------------------------------------------------!
-            mlo = int(float(nseconds_elapsed)/met_frq(iformat,iv)) + 1
-            mhi = mlo + 1
-            
-            if(mhi > np)then
-               mhi = 1 + nint(day_sec / met_frq(iformat,iv)) * 31
+            !------------------------------------------------------------------------------!
+            ! mprev - Index of the element of the previous metinput data.                  !
+            ! mnext - Index of the element of the next metinput data.                      !
+            ! tprev = Time in seconds relative to the previous input time.                 !
+            !------------------------------------------------------------------------------!
+            mprev = int(float(nseconds_elapsed)/met_frq(iformat,iv)) + 1
+            tprev = floor(float(nseconds_elapsed)/met_frq(iformat,iv))                     &
+                  * met_frq(iformat,iv)
+            mnext = mprev + 1
+            tnext = tprev + met_frq(iformat,iv)
+
+            !------------------------------------------------------------------------------!
+            !     For the particular case where we at the last day of the month, after the !
+            ! last met driver data of that month, the next time is the first day of the    !
+            ! next month.  This will always be in the next position after day 31, even     !
+            ! when the current month is shorter.                                           !
+            !------------------------------------------------------------------------------!
+            if(mnext > np)then
+               mnext = 1 + nint(day_sec / met_frq(iformat,iv)) * 31
             endif
             
-            !----- Get interpolation factors ----------------------------------------------!
-            t1 = mod(float(nseconds_elapsed), met_frq(iformat,iv)) / met_frq(iformat,iv)
-            t2 = 1.0 - t1
+            !------------------------------------------------------------------------------!
+            !      Get interpolation factors.                                              !
+            !------------------------------------------------------------------------------!
+            wnext = max(0.0,min(1.0,(real(nseconds_elapsed)-tprev)/met_frq(iformat,iv)))
+            wprev = 1.0 - wnext
 
             !----- Find the variable and fill the sites. ----------------------------------!
             select case (trim(met_vars(iformat,iv)))
             case('prate')   !----- Precipitation rate. ------------------------ [kg/m²/s] -!
                do ipy = 1,cgrid%npolygons
-                  cgrid%met(ipy)%pcpg = cgrid%metinput(ipy)%prate(mhi) * t1                &
-                                      + cgrid%metinput(ipy)%prate(mlo) * t2
+                  cgrid%met(ipy)%pcpg = cgrid%metinput(ipy)%prate(mnext) * wnext           &
+                                      + cgrid%metinput(ipy)%prate(mprev) * wprev
                end do
 
             case('dlwrf')   !----- Downwelling longwave radiation. ------------ [   W/m²] -!
                do ipy = 1,cgrid%npolygons
-                  cgrid%met(ipy)%rlong = cgrid%metinput(ipy)%dlwrf(mhi) * t1               &
-                                       + cgrid%metinput(ipy)%dlwrf(mlo) * t2
+                  cgrid%met(ipy)%rlong = cgrid%metinput(ipy)%dlwrf(mnext) * wnext          &
+                                       + cgrid%metinput(ipy)%dlwrf(mprev) * wprev
                end do
 
-            case('pres')   !----- Air pressure. ------------------------------- [   N/m²] -!
+            case('pres')
+               !---------------------------------------------------------------------------!
+               !     Air pressure [   N/m²] and Exner function [J/kg/K].                   !
+               !---------------------------------------------------------------------------!
                do ipy = 1,cgrid%npolygons
-                  cgrid%met(ipy)%prss = cgrid%metinput(ipy)%pres(mhi) * t1                 &
-                                      + cgrid%metinput(ipy)%pres(mlo) * t2
+                  cgrid%met(ipy)%prss  = cgrid%metinput(ipy)%pres(mnext) * wnext           &
+                                       + cgrid%metinput(ipy)%pres(mprev) * wprev
+                  cgrid%met(ipy)%exner = cp * (p00i * cgrid%met(ipy)%prss)**rocp
                end do
 
             case('hgt')     !----- Air pressure. ------------------------------ [      m] -!
                do ipy = 1,cgrid%npolygons
-                  cgrid%met(ipy)%geoht = cgrid%metinput(ipy)%hgt(mhi) * t1                 &
-                                       + cgrid%metinput(ipy)%hgt(mlo) * t2
+                  cgrid%met(ipy)%geoht = cgrid%metinput(ipy)%hgt(mnext) * wnext            &
+                                       + cgrid%metinput(ipy)%hgt(mprev) * wprev
                end do
 
             case('ugrd')    !----- Zonal wind. -------------------------------- [    m/s] -!
@@ -962,8 +1003,8 @@ subroutine update_met_drivers(cgrid)
                !---------------------------------------------------------------------------!
                do ipy = 1,cgrid%npolygons
                   cgrid%met(ipy)%vels =  cgrid%met(ipy)%vels                               &
-                                      +  ( cgrid%metinput(ipy)%ugrd(mhi) * t1              &
-                                         + cgrid%metinput(ipy)%ugrd(mlo) * t2 )**2
+                                      +  ( cgrid%metinput(ipy)%ugrd(mnext) * wnext         &
+                                         + cgrid%metinput(ipy)%ugrd(mprev) * wprev )**2
                end do
 
             case('vgrd')    !----- Meridional wind. --------------------------- [    m/s] -!
@@ -974,53 +1015,65 @@ subroutine update_met_drivers(cgrid)
                !---------------------------------------------------------------------------!
                do ipy = 1,cgrid%npolygons
                   cgrid%met(ipy)%vels = cgrid%met(ipy)%vels                                &
-                                      + ( cgrid%metinput(ipy)%vgrd(mhi) * t1               &
-                                        + cgrid%metinput(ipy)%vgrd(mlo) * t2 )**2
+                                      + ( cgrid%metinput(ipy)%vgrd(mnext) * wnext          &
+                                        + cgrid%metinput(ipy)%vgrd(mprev) * wprev )**2
                enddo
             case('sh')      !----- Specific humidity. ------------------------- [kg/kg_a] -!
                do ipy = 1,cgrid%npolygons
-                  cgrid%met(ipy)%atm_shv = cgrid%metinput(ipy)%sh(mhi) * t1                &
-                                         + cgrid%metinput(ipy)%sh(mlo) * t2
+                  cgrid%met(ipy)%atm_shv = cgrid%metinput(ipy)%sh(mnext) * wnext           &
+                                         + cgrid%metinput(ipy)%sh(mprev) * wprev
                end do
 
-            case('tmp')     !----- Air temperature. --------------------------- [      K] -!
+            case('tmp')
+               
+
+               !---------------------------------------------------------------------------!
+               !     The flag is given at the air temperature, but we use the flag for     !
+               ! potential temperature                                           [      K] !
+               !---------------------------------------------------------------------------!
                do ipy = 1,cgrid%npolygons
-                  cgrid%met(ipy)%atm_tmp = cgrid%metinput(ipy)%tmp(mhi) * t1               &
-                                         + cgrid%metinput(ipy)%tmp(mlo) * t2
+
+                  theta_next = cgrid%metinput(ipy)%tmp(mnext)                              &
+                             * (p00 / cgrid%metinput(ipy)%pres(mnext))** rocp
+                  theta_prev = cgrid%metinput(ipy)%tmp(mprev)                              &
+                             * (p00 / cgrid%metinput(ipy)%pres(mprev))** rocp
+
+                  !----- Interpolate potential temperature. -------------------------------!
+                  cgrid%met(ipy)%atm_theta = theta_next * wnext + theta_prev * wprev
                end do
 
             case('nbdsf')   !----- Near IR beam downward shortwave flux. ------ [   W/m²] -!
                do ipy = 1,cgrid%npolygons
-                  cgrid%met(ipy)%nir_beam = cgrid%metinput(ipy)%nbdsf(mhi) * t1            &
-                                          + cgrid%metinput(ipy)%nbdsf(mlo) * t2
+                  cgrid%met(ipy)%nir_beam = cgrid%metinput(ipy)%nbdsf(mnext) * wnext       &
+                                          + cgrid%metinput(ipy)%nbdsf(mprev) * wprev
                end do
 
             case('nddsf')   !----- Near IR diffuse downward shortwave flux. --- [   W/m²] -!
                do ipy = 1,cgrid%npolygons
-                  cgrid%met(ipy)%nir_diffuse = cgrid%metinput(ipy)%nddsf(mhi) * t1         &
-                                             + cgrid%metinput(ipy)%nddsf(mlo) * t2
+                  cgrid%met(ipy)%nir_diffuse = cgrid%metinput(ipy)%nddsf(mnext) * wnext    &
+                                             + cgrid%metinput(ipy)%nddsf(mprev) * wprev
                end do
 
             case('vbdsf')   !----- Visible beam downward shortwave flux. ------ [   W/m²] -!
                do ipy = 1,cgrid%npolygons
-                  cgrid%met(ipy)%par_beam = cgrid%metinput(ipy)%vbdsf(mhi) * t1            &
-                                          + cgrid%metinput(ipy)%vbdsf(mlo) * t2
+                  cgrid%met(ipy)%par_beam = cgrid%metinput(ipy)%vbdsf(mnext) * wnext       &
+                                          + cgrid%metinput(ipy)%vbdsf(mprev) * wprev
                end do
 
             case('vddsf')   !----- Visible diffuse downward shortwave flux. --- [   W/m²] -!
                do ipy = 1,cgrid%npolygons
-                  cgrid%met(ipy)%par_diffuse = cgrid%metinput(ipy)%vddsf(mhi) * t1         &
-                                             + cgrid%metinput(ipy)%vddsf(mlo) * t2
+                  cgrid%met(ipy)%par_diffuse = cgrid%metinput(ipy)%vddsf(mnext) * wnext    &
+                                             + cgrid%metinput(ipy)%vddsf(mprev) * wprev
                enddo
 
             case('co2')     !----- CO2 mixing ratio. -------------------------- [    ppm] -!
                do ipy = 1,cgrid%npolygons
-                  cgrid%met(ipy)%atm_co2 = cgrid%metinput(ipy)%co2(mhi) * t1               &
-                                         + cgrid%metinput(ipy)%co2(mlo) * t2
+                  cgrid%met(ipy)%atm_co2 = cgrid%metinput(ipy)%co2(mnext) * wnext          &
+                                         + cgrid%metinput(ipy)%co2(mprev) * wprev
                end do
 
             end select
-         end if
+         end select
       end do varloop
    end do formloop
    
@@ -1034,9 +1087,18 @@ subroutine update_met_drivers(cgrid)
       if (.not.have_co2) cgrid%met(ipy)%atm_co2 = initial_co2
 
       !----- Adjust meteorological variables for simple climate scenarios. ----------------!
-      temp0 = cgrid%met(ipy)%atm_tmp
-      cgrid%met(ipy)%atm_tmp = atm_tmp_intercept + cgrid%met(ipy)%atm_tmp * atm_tmp_slope
+      cgrid%met(ipy)%atm_tmp      = cpi * cgrid%met(ipy)%atm_theta * cgrid%met(ipy)%exner
+      temp0                       = cgrid%met(ipy)%atm_tmp
+      
+      if (atm_tmp_intercept /= 0.0 .or. atm_tmp_slope /= 1.0) then
+         cgrid%met(ipy)%atm_tmp = atm_tmp_intercept                                        &
+                                + cgrid%met(ipy)%atm_tmp * atm_tmp_slope
+         !----- We must update potential temperature too. ---------------------------------!
+         cgrid%met(ipy)%atm_theta = cp * cgrid%met(ipy)%atm_tmp / cgrid%met(ipy)%exner
+      end if
       cgrid%met(ipy)%pcpg = max(0.0,prec_intercept + cgrid%met(ipy)%pcpg * prec_slope)
+      !------------------------------------------------------------------------------------!
+
 
       if (humid_scenario == 1) then 
          !---------------------------------------------------------------------------------!
@@ -1078,11 +1140,8 @@ subroutine update_met_drivers(cgrid)
       end if
 
       !------------------------------------------------------------------------------------!
-      !    We now find the Exner function, potential temperature, and the enthalpy.        !
+      !    We now find the enthalpy.                                                       !
       !------------------------------------------------------------------------------------!
-      cgrid%met(ipy)%exner        = cp * (p00i * cgrid%met(ipy)%prss)**rocp
-      cgrid%met(ipy)%atm_theta    = cp * cgrid%met(ipy)%atm_tmp / cgrid%met(ipy)%exner
-
       cgrid%met(ipy)%atm_enthalpy = ptqz2enthalpy(cgrid%met(ipy)%prss                      &
                                                  ,cgrid%met(ipy)%atm_tmp                   &
                                                  ,cgrid%met(ipy)%atm_shv                   &
@@ -1091,7 +1150,9 @@ subroutine update_met_drivers(cgrid)
       !------ Apply met to sites, and adjust met variables for topography. ----------------!
       call calc_met_lapse(cgrid,ipy)
 
-      
+      !------ Update polygon-level vels for book-keeping. ---------------------------------!
+      cgrid%met(ipy)%vels = sqrt(cgrid%met(ipy)%vels)
+
 
       cpoly => cgrid%polygon(ipy)
       siteloop: do isi = 1,cpoly%nsites
@@ -1282,6 +1343,8 @@ subroutine read_ol_file(infile,iformat, iv, year_use, mname, year, offset, cgrid
    integer, dimension(3)               :: idims
    integer                             :: ilon
    integer                             :: ilat
+   integer                             :: ioa
+   integer                             :: ioz
    integer                             :: d
    !----- External functions. -------------------------------------------------------------!
    logical, external                   :: isleap
@@ -1328,14 +1391,20 @@ subroutine read_ol_file(infile,iformat, iv, year_use, mname, year, offset, cgrid
          else 
             nday = 28
          end if
-         if (isleap(year_use)) then
-            nday_dset=29
-         else
-            nday_dset=28
-         end if
+
+      !!NEVER ASSUME ANYTHING ABOUT THE DATASET
+
+         call shdf5_info_f(met_vars(iformat,iv),ndims,idims)
+         nday_dset=idims(1)/points_per_day
+ !        write (unit=*,fmt='(2(a,1x))') ' Reading Dataset : ', trim(met_vars(iformat,iv))
+ !        write (unit=*,fmt='(2(a,i5))') ' for year        : ', year
+ !        write (unit=*,fmt='(2(a,i5))') ' for dataset year: ', year_use
+ !        write(unit=*,fmt='(a,1x,i5)')  ' NUMBER DAYS in FEB set to  = ', nday_dset
+         
+
       end select 
 
-      np = nday * points_per_day
+      np      = nday      * points_per_day
       np_dset = nday_dset * points_per_day
 
    end select
@@ -1343,10 +1412,10 @@ subroutine read_ol_file(infile,iformat, iv, year_use, mname, year, offset, cgrid
    !----- Allocate the buffer space. ------------------------------------------------------!
   
    select case (met_interp(iformat,iv))
-   case (3) 
+   case (3,5) 
       !------------------------------------------------------------------------------------!
-      !     Case 3, reading in one value representing the entire domain, though it changes !
-      !  over time.                                                                        !
+      !     Cases 3 and 5, reading in one value representing the entire domain, though     !
+      ! they change over time.                                                             !
       !------------------------------------------------------------------------------------!
       ndims = 1
       idims(1) = np_dset
@@ -1478,6 +1547,10 @@ subroutine read_ol_file(infile,iformat, iv, year_use, mname, year, offset, cgrid
       end if
    end select
 
+   !----- Define some aliases for the indices. --------------------------------------------!
+   ioa = offset + 1
+   ioz = offset + np
+
    !---------------------------------------------------------------------------------------!
    !      The dataset for that variable has been read into an array.  Now, the polygons    !
    ! are cycled through, and they are associated with an index in the grid.  If this is a  !
@@ -1504,44 +1577,31 @@ subroutine read_ol_file(infile,iformat, iv, year_use, mname, year, offset, cgrid
       !----- Get the time series. ---------------------------------------------------------!
       select case (trim(met_vars(iformat,iv)))
       case('nbdsf')
-         cgrid%metinput(ipy)%nbdsf((offset+1):(offset+np)) =   &
-              metvar(1:np,ilon,ilat)
+         cgrid%metinput(ipy)%nbdsf(ioa:ioz) = metvar(1:np,ilon,ilat)
       case('nddsf')
-         cgrid%metinput(ipy)%nddsf((offset+1):(offset+np)) =   &
-              metvar(1:np,ilon,ilat)
+         cgrid%metinput(ipy)%nddsf(ioa:ioz) = metvar(1:np,ilon,ilat)
       case('vbdsf')
-         cgrid%metinput(ipy)%vbdsf((offset+1):(offset+np)) =   &
-              metvar(1:np,ilon,ilat)
+         cgrid%metinput(ipy)%vbdsf(ioa:ioz) = metvar(1:np,ilon,ilat)
       case('vddsf')
-         cgrid%metinput(ipy)%vddsf((offset+1):(offset+np)) =   &
-              metvar(1:np,ilon,ilat)
+         cgrid%metinput(ipy)%vddsf(ioa:ioz) = metvar(1:np,ilon,ilat)
       case('prate')
-         cgrid%metinput(ipy)%prate((offset+1):(offset+np)) =   &
-              metvar(1:np,ilon,ilat)
+         cgrid%metinput(ipy)%prate(ioa:ioz) = metvar(1:np,ilon,ilat)
       case('dlwrf')
-         cgrid%metinput(ipy)%dlwrf((offset+1):(offset+np)) =   &
-              metvar(1:np,ilon,ilat)
+         cgrid%metinput(ipy)%dlwrf(ioa:ioz) = metvar(1:np,ilon,ilat)
       case('pres')
-         cgrid%metinput(ipy)%pres((offset+1):(offset+np)) =    &
-              metvar(1:np,ilon,ilat)
+         cgrid%metinput(ipy)%pres(ioa:ioz)  = metvar(1:np,ilon,ilat)
       case('hgt')
-         cgrid%metinput(ipy)%hgt((offset+1):(offset+np))  =    &
-              metvar(1:np,ilon,ilat)
+         cgrid%metinput(ipy)%hgt(ioa:ioz)   = metvar(1:np,ilon,ilat)
       case('ugrd')
-         cgrid%metinput(ipy)%ugrd((offset+1):(offset+np)) =    &
-              metvar(1:np,ilon,ilat)
+         cgrid%metinput(ipy)%ugrd(ioa:ioz)  = metvar(1:np,ilon,ilat)
       case('vgrd')
-         cgrid%metinput(ipy)%vgrd((offset+1):(offset+np)) =    &
-              metvar(1:np,ilon,ilat)
+         cgrid%metinput(ipy)%vgrd(ioa:ioz)  = metvar(1:np,ilon,ilat)
       case('sh')
-         cgrid%metinput(ipy)%sh((offset+1):(offset+np)) =      &
-              metvar(1:np,ilon,ilat)
+         cgrid%metinput(ipy)%sh(ioa:ioz)    = metvar(1:np,ilon,ilat)
       case('tmp')
-         cgrid%metinput(ipy)%tmp((offset+1):(offset+np)) =     &
-              metvar(1:np,ilon,ilat)
+         cgrid%metinput(ipy)%tmp(ioa:ioz)   = metvar(1:np,ilon,ilat)
       case('co2')
-         cgrid%metinput(ipy)%co2((offset+1):(offset+np)) =     &
-              metvar(1:np,ilon,ilat)
+         cgrid%metinput(ipy)%co2(ioa:ioz)   = metvar(1:np,ilon,ilat)
       end select
       
    end do
@@ -1561,70 +1621,114 @@ end subroutine read_ol_file
 
 !==========================================================================================!
 !==========================================================================================!
+!     This subroutine transfers the dataset stored in the following month to the current   !
+! month.                                                                                   !
+!------------------------------------------------------------------------------------------!
 subroutine transfer_ol_month(vname, frq, cgrid)
   
-  use ed_state_vars,only : edtype
-  use consts_coms, only: day_sec
+   use ed_state_vars, only : edtype   ! ! variable type
+   use consts_coms  , only : day_sec  ! ! intent(in)
 
-  implicit none
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   type(edtype)    , target     :: cgrid     ! Current grid
+   character(len=*), intent(in) :: vname     ! Variable name
+   real            , intent(in) :: frq       ! Frequency of update
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                      :: mem_size  ! Memory size
+   integer                      :: ipy       ! Polygon counter
+   integer                      :: ica       ! First element of current   month
+   integer                      :: icz       ! Last  element of current   month
+   integer                      :: ifa       ! First element of following month
+   integer                      :: ifz       ! Last  element of following month
+   !---------------------------------------------------------------------------------------!
 
-  type(edtype),target :: cgrid
-  character*(*) :: vname
-  real, intent(in) :: frq
-  integer :: mem_size
-  integer :: ipy
+   !---------------------------------------------------------------------------------------!
+   !     The memory size is the size of each month.  The number of days is always 31       !
+   ! because we allocate the maximum possible number of days.                              !
+   !---------------------------------------------------------------------------------------!
+   mem_size = nint(day_sec / frq) * 31
 
-  mem_size = nint(day_sec / frq) * 31
+   !---------------------------------------------------------------------------------------!
+   !     Compute the indices.                                                              !
+   !---------------------------------------------------------------------------------------!
+   ica = 1
+   icz = mem_size
+   ifa = icz + 1
+   ifz = 2 * mem_size
 
-  do ipy = 1,cgrid%npolygons
+   !---------------------------------------------------------------------------------------!
+   !      Transfer the time series from following month to current month.                  !
+   !---------------------------------------------------------------------------------------!
+   select case (trim(vname))
+   case ('nbdsf')
+      do ipy=1,cgrid%npolygons
+         cgrid%metinput(ipy)%nbdsf(ica:icz) = cgrid%metinput(ipy)%nbdsf(ifa:ifz)
+      end do
 
-     ! Get the time series.
-     select case(trim(vname))
-     case('nbdsf')
-        cgrid%metinput(ipy)%nbdsf(1:mem_size) =   &
-             cgrid%metinput(ipy)%nbdsf((mem_size+1):(2*mem_size))
-     case('nddsf')
-        cgrid%metinput(ipy)%nddsf(1:mem_size) =   &
-             cgrid%metinput(ipy)%nddsf((mem_size+1):(2*mem_size))
-     case('vbdsf')
-        cgrid%metinput(ipy)%vbdsf(1:mem_size) =   &
-             cgrid%metinput(ipy)%vbdsf((mem_size+1):(2*mem_size))
-     case('vddsf')
-        cgrid%metinput(ipy)%vddsf(1:mem_size) =   &
-             cgrid%metinput(ipy)%vddsf((mem_size+1):(2*mem_size))
-     case('prate')
-        cgrid%metinput(ipy)%prate(1:mem_size) =   &
-             cgrid%metinput(ipy)%prate((mem_size+1):(2*mem_size))
-     case('dlwrf')
-        cgrid%metinput(ipy)%dlwrf(1:mem_size) =   &
-             cgrid%metinput(ipy)%dlwrf((mem_size+1):(2*mem_size))
-     case('pres')
-        cgrid%metinput(ipy)%pres(1:mem_size) =   &
-             cgrid%metinput(ipy)%pres((mem_size+1):(2*mem_size))
-     case('hgt')
-        cgrid%metinput(ipy)%hgt(1:mem_size) =   &
-             cgrid%metinput(ipy)%hgt((mem_size+1):(2*mem_size))
-     case('ugrd')
-        cgrid%metinput(ipy)%ugrd(1:mem_size) =   &
-             cgrid%metinput(ipy)%ugrd((mem_size+1):(2*mem_size))
-     case('vgrd')
-        cgrid%metinput(ipy)%vgrd(1:mem_size) =   &
-             cgrid%metinput(ipy)%vgrd((mem_size+1):(2*mem_size))
-     case('sh')
-        cgrid%metinput(ipy)%sh(1:mem_size) =   &
-             cgrid%metinput(ipy)%sh((mem_size+1):(2*mem_size))
-     case('tmp')
-        cgrid%metinput(ipy)%tmp(1:mem_size) =   &
-             cgrid%metinput(ipy)%tmp((mem_size+1):(2*mem_size))
-     case('co2')
-        cgrid%metinput(ipy)%co2(1:mem_size) =   &
-             cgrid%metinput(ipy)%co2((mem_size+1):(2*mem_size))
-     end select
-     
+   case ('nddsf')
+      do ipy=1,cgrid%npolygons
+         cgrid%metinput(ipy)%nddsf(ica:icz) = cgrid%metinput(ipy)%nddsf(ifa:ifz)
+      end do
 
-  enddo
-  
-  return
+   case ('vbdsf')
+      do ipy=1,cgrid%npolygons
+         cgrid%metinput(ipy)%vbdsf(ica:icz) = cgrid%metinput(ipy)%vbdsf(ifa:ifz)
+      end do
+
+   case ('vddsf')
+      do ipy=1,cgrid%npolygons
+         cgrid%metinput(ipy)%vddsf(ica:icz) = cgrid%metinput(ipy)%vddsf(ifa:ifz)
+      end do
+
+   case ('prate')
+      do ipy=1,cgrid%npolygons
+         cgrid%metinput(ipy)%prate(ica:icz) = cgrid%metinput(ipy)%prate(ifa:ifz)
+      end do
+
+   case ('dlwrf')
+      do ipy=1,cgrid%npolygons
+         cgrid%metinput(ipy)%dlwrf(ica:icz) = cgrid%metinput(ipy)%dlwrf(ifa:ifz)
+      end do
+
+   case ('pres')
+      do ipy=1,cgrid%npolygons
+         cgrid%metinput(ipy)%pres(ica:icz)  = cgrid%metinput(ipy)%pres(ifa:ifz)
+      end do
+
+   case ('hgt')
+      do ipy=1,cgrid%npolygons
+         cgrid%metinput(ipy)%hgt(ica:icz)   = cgrid%metinput(ipy)%hgt(ifa:ifz)
+      end do
+
+   case ('ugrd')
+      do ipy=1,cgrid%npolygons
+         cgrid%metinput(ipy)%ugrd(ica:icz)  = cgrid%metinput(ipy)%ugrd(ifa:ifz)
+      end do
+
+   case ('vgrd')
+      do ipy=1,cgrid%npolygons
+         cgrid%metinput(ipy)%vgrd(ica:icz)  = cgrid%metinput(ipy)%vgrd(ifa:ifz)
+      end do
+
+   case ('sh')
+      do ipy=1,cgrid%npolygons
+         cgrid%metinput(ipy)%sh(ica:icz)    = cgrid%metinput(ipy)%sh(ifa:ifz)
+      end do
+
+   case ('tmp')
+      do ipy=1,cgrid%npolygons
+         cgrid%metinput(ipy)%tmp(ica:icz)   = cgrid%metinput(ipy)%tmp(ifa:ifz)
+      end do
+
+   case ('co2')
+      do ipy=1,cgrid%npolygons
+         cgrid%metinput(ipy)%co2(ica:icz)   = cgrid%metinput(ipy)%co2(ifa:ifz)
+      end do
+
+   end select
+
+   return
 end subroutine transfer_ol_month
 !==========================================================================================!
 !==========================================================================================!
@@ -1655,26 +1759,27 @@ subroutine match_poly_grid(cgrid,nlon,nlat,lon,lat)
    !---------------------------------------------------------------------------------------!
 
 
-   do ipy = 1,cgrid%npolygons
+   polyloop: do ipy = 1,cgrid%npolygons
       min_dist = huge (1.)
 
-      do ilon = 1,nlon
-         do ilat = 1,nlat
+      lonloop: do ilon = 1,nlon
+         latloop: do ilat = 1,nlat
 
-            if (lon(ilon,ilat) > 180.0)                                                    &
-               lon(ilon,ilat) = lon(ilon,ilat) - 360.0
+            if (lon(ilon,ilat) > 180.0) lon(ilon,ilat) = lon(ilon,ilat) - 360.0
 
-            this_dist = dist_gc(cgrid%lon(ipy), lon(ilon,ilat)                      &
+            this_dist = dist_gc(cgrid%lon(ipy), lon(ilon,ilat)                             &
                                ,cgrid%lat(ipy), lat(ilon,ilat) )
-            
-            if(this_dist < min_dist) then               
+
+            if(this_dist < min_dist) then
                cgrid%ilon(ipy) = ilon
                cgrid%ilat(ipy) = ilat
                min_dist        = this_dist
-            endif
-         end do
-      end do
-   end do
+            end if
+
+         end do latloop
+      end do lonloop
+
+   end do polyloop
 
    return
 end subroutine match_poly_grid

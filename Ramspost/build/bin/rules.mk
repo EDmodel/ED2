@@ -38,6 +38,16 @@ interp_lib.o: $(RPOST_LIB)/interp_lib.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
+leaf_coms.o: $(RPOST_LIB)/leaf_coms.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+numutils.o: $(RPOST_UTILS)/numutils.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
 parlib.o: $(RPOST_LIB)/parlib.c 
 	cp -f $< $(<F:.c=.c)
 	$(CXX_COMMAND) $< $(F:.c=.c)

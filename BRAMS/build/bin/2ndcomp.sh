@@ -234,7 +234,7 @@ rm -fv therm_lib.o                therm_lib.mod
 rm -fv therm_lib8.o               therm_lib8.mod
 rm -fv tkenn.o                    tkenn.mod
 rm -fv tmpname.o                  tmpname.mod
-rm -fv turb_constants.o           turb_constants.mod
+rm -fv turb_coms.o                turb_coms.mod
 rm -fv turb_derivs.o              turb_derivs.mod
 rm -fv turb_diff.o                turb_diff.mod
 rm -fv turb_diff_adap.o           turb_diff_adap.mod

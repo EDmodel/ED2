@@ -197,18 +197,32 @@ subroutine diffuse_brams31()
              ,basic_g(ngrid)%dn0                                                           )
 
    case (7) !----- Nananishi and Niino (2004), scheme based on Mellor-Yamada Level 2½. ----!
-     call nakanishi(mzp, mxp, myp, npatch, ia, iz, ja, jz, jdim                            &
-             ,turb_g(ngrid)%tkep       ,tend%tket                ,scratch%vt3dd            &
-             ,scratch%vt3de            ,scratch%vt3dh            ,scratch%vt3di            &
-             ,scratch%vt3dj            ,scratch%scr1             ,grid_g(ngrid)%rtgt       &
-             ,basic_g(ngrid)%theta     ,scratch%vt3dp            ,scratch%vt3dq            &
-             ,basic_g(ngrid)%dn0       ,basic_g(ngrid)%up        ,basic_g(ngrid)%vp        &
-             ,leaf_g(ngrid)%veg_rough  ,leaf_g(ngrid)%patch_rough,leaf_g(ngrid)%tstar      &
-             ,leaf_g(ngrid)%ustar      ,leaf_g(ngrid)%patch_area ,turb_g(ngrid)%sflux_u    &
-             ,turb_g(ngrid)%sflux_v    ,turb_g(ngrid)%sflux_t    ,grid_g(ngrid)%flpu       &
-             ,grid_g(ngrid)%flpv       ,grid_g(ngrid)%flpw       ,turb_g(ngrid)%kpbl       &
-             ,turb_g(ngrid)%pblhgt     ,turb_g(ngrid)%lmo        ,turb_g(ngrid)%ltscale    &
-             ,turb_g(ngrid)%sigw                                                           )
+      call nakanishi(mzp, mxp, myp, npatch, ia, iz, ja, jz, jdim                           &
+              ,turb_g(ngrid)%tkep       ,tend%tket                ,scratch%vt3dd           &
+              ,scratch%vt3de            ,scratch%vt3dh            ,scratch%vt3di           &
+              ,scratch%vt3dj            ,scratch%scr1             ,grid_g(ngrid)%rtgt      &
+              ,basic_g(ngrid)%theta     ,scratch%vt3dp            ,scratch%vt3dq           &
+              ,basic_g(ngrid)%dn0       ,basic_g(ngrid)%up        ,basic_g(ngrid)%vp       &
+              ,leaf_g(ngrid)%veg_rough  ,leaf_g(ngrid)%patch_rough,leaf_g(ngrid)%tstar     &
+              ,leaf_g(ngrid)%ustar      ,leaf_g(ngrid)%patch_area ,turb_g(ngrid)%sflux_u   &
+              ,turb_g(ngrid)%sflux_v    ,turb_g(ngrid)%sflux_t    ,grid_g(ngrid)%flpu      &
+              ,grid_g(ngrid)%flpv       ,grid_g(ngrid)%flpw       ,turb_g(ngrid)%kpbl      &
+              ,turb_g(ngrid)%pblhgt     ,turb_g(ngrid)%lmo        ,turb_g(ngrid)%ltscale   &
+              ,turb_g(ngrid)%sigw                                                          )
+
+   case (8) !----- Nananishi and Niino (2004), scheme based on Mellor-Yamada Level 2½. ----!
+      call nakanishi(mzp, mxp, myp, npatch, ia, iz, ja, jz, jdim                           &
+              ,turb_g(ngrid)%tkep       ,tend%tket                ,scratch%vt3dd           &
+              ,scratch%vt3de            ,scratch%vt3dh            ,scratch%vt3di           &
+              ,scratch%vt3dj            ,scratch%scr1             ,grid_g(ngrid)%rtgt      &
+              ,basic_g(ngrid)%theta     ,scratch%vt3dp            ,scratch%vt3dq           &
+              ,basic_g(ngrid)%dn0       ,basic_g(ngrid)%up        ,basic_g(ngrid)%vp       &
+              ,leaf_g(ngrid)%veg_rough  ,leaf_g(ngrid)%patch_rough,leaf_g(ngrid)%tstar     &
+              ,leaf_g(ngrid)%ustar      ,leaf_g(ngrid)%patch_area ,turb_g(ngrid)%sflux_u   &
+              ,turb_g(ngrid)%sflux_v    ,turb_g(ngrid)%sflux_t    ,grid_g(ngrid)%flpu      &
+              ,grid_g(ngrid)%flpv       ,grid_g(ngrid)%flpw       ,turb_g(ngrid)%kpbl      &
+              ,turb_g(ngrid)%pblhgt     ,turb_g(ngrid)%lmo        ,turb_g(ngrid)%ltscale   &
+              ,turb_g(ngrid)%sigw                                                          )
    end select
    !---------------------------------------------------------------------------------------!
 

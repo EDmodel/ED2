@@ -1139,7 +1139,7 @@ tmpname.o: $(UTILS_LIB)/tmpname.c
 	$(CXX_COMMAND) $< $(F:.c=.c)
 	rm -f $(<F:.c=.c)
 
-turb_constants.o: $(TURB)/turb_constants.f90
+turb_coms.o: $(TURB)/turb_coms.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90) 

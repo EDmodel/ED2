@@ -266,7 +266,7 @@ subroutine grell_cupar_initial(banneron,i,j,confrqd)
    !    schemes.  If that happens, use special flag (sigmaw=0).                            !
    !---------------------------------------------------------------------------------------!
    select case (idiffk(ngrid))
-   case (1,7)
+   case (1,7,8)
       call atob(mzp,turb_g(ngrid)%sigw(:,i,j),vctr9(1:mzp))
    case default
       call azero(mzp,vctr9(1:mzp))

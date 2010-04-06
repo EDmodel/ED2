@@ -43,16 +43,13 @@ subroutine ed_init_atm
      cgrid => edgrid_g(igr)
      
      ! First we need to update the meteorological fields.
+
      call update_met_drivers(cgrid)
 
      ! If this is a standard ED2 restart, we will read these fields in from 
      ! a history file and therefore not worry about setting them here.
 
-     if(trim(runtype) == 'HISTORY' )return
-
-     print*,"=========================================="
-     print*,"ENTERING A NON HISTORY PORTION OF THE CODE"
-     print*,"=========================================="
+     if(trim(runtype) /= 'HISTORY' ) then
 
      ! Loop over polygons, sites and patches
      
@@ -193,19 +190,21 @@ subroutine ed_init_atm
                     if(csite%soil_tempk(k,ipa) > t3ple)then
                        nsoil=csite%ntext_soil(k,ipa)
                        csite%soil_fracliq(k,ipa) = 1.0
-                       csite%soil_water(k,ipa)  = max(soil(nsoil)%soilcp                   &
-                                                    ,slmstr(k) * (soil(nsoil)%slmsts       &
-                                                   - soil(nsoil)%soilwp)+soil(nsoil)%soilwp)
-                       csite%soil_energy(k,ipa) = soil(nsoil)%slcpd                        &
-                                                * csite%soil_tempk(k,ipa)                  &
-                                                + csite%soil_water(k,ipa)  * cliqvlme      &
-                                                * (csite%soil_tempk(k,ipa) - tsupercool)
+                       csite%soil_water(k,ipa)   = max(soil(nsoil)%soilcp                  &
+                                                      , slmstr(k) * ( soil(nsoil)%slmsts   &
+                                                                    - soil(nsoil)%soilwp)  &
+                                                      + soil(nsoil)%soilwp)
+                       csite%soil_energy(k,ipa)  = soil(nsoil)%slcpd                       &
+                                                 * csite%soil_tempk(k,ipa)                 &
+                                                 + csite%soil_water(k,ipa)  * cliqvlme     &
+                                                 * (csite%soil_tempk(k,ipa) - tsupercool)
                     else
                        nsoil=csite%ntext_soil(k,ipa)
                        csite%soil_fracliq(k,ipa) = 0.0
                        csite%soil_water(k,ipa)   = max(soil(nsoil)%soilcp                  &
-                                                    ,slmstr(k) * (soil(nsoil)%slmsts       &
-                                                   - soil(nsoil)%soilwp)+soil(nsoil)%soilwp)
+                                                      , slmstr(k) * ( soil(nsoil)%slmsts   &
+                                                                    - soil(nsoil)%soilwp)  &
+                                                      + soil(nsoil)%soilwp)
                        csite%soil_energy(k,ipa) = soil(nsoil)%slcpd                        &
                                                 * csite%soil_tempk(k,ipa)                  &
                                                 + csite%soil_water(k,ipa)                  &
@@ -300,7 +299,10 @@ subroutine ed_init_atm
            ,'Nplants:',poly_nplant,'Avg. LAI:',poly_lai                                    &
            ,'NPatches:',npatches,'NCohorts:',ncohorts
      end do
-  end do
+
+  end if
+
+end do
 
   return
 end subroutine ed_init_atm

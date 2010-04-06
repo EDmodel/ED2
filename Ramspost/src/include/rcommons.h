@@ -33,13 +33,13 @@ integer                     :: itopo,initial,impl,iadvl,iadvf,lonrad,ngrids  &
                               ,lsflg,ibnd,jbnd,icorflg,iexev,imassflx,ilwrtyp,iswrtyp,iref  &
                               ,jref,ihtran,nfpt,nsndg,ideltat,nacoust,iflag  &
                               ,ntopsmth,izflat,iyear1,imonth1,idate1,ihour1  &
-                              ,itime1,isfcl,ihorgrad
+                              ,itime1,isfcl,istar,ihorgrad
 integer, dimension(maxgrds) :: idiffk
-common /all/ itopo,initial,impl,iadvl,iadvf,lonrad,ngrids  &
-            ,lsflg,ibnd,jbnd,icorflg,ilwrtyp,iswrtyp,iref,jref  &
-            ,ihtran,nfpt,nsndg,ideltat,nacoust,iflag,ntopsmth  &
-            ,izflat,iyear1,imonth1,idate1,ihour1,itime1  &
-            ,idiffk,isfcl,ihorgrad
+common /all1/   itopo,initial,impl,iadvl,iadvf,lonrad,ngrids  &
+               ,lsflg,ibnd,jbnd,icorflg,ilwrtyp,iswrtyp,iref,jref  &
+               ,ihtran,nfpt,nsndg,ideltat,nacoust,iflag,ntopsmth  &
+               ,izflat,iyear1,imonth1,idate1,ihour1,itime1  &
+               ,idiffk,isfcl,istar,ihorgrad
 !-------------------------------------------------------------------------------
 integer                     :: naddsc,nestz1,nestz2,nzg,nzs,n_pft,iversion,npatch  &
                               ,nvegpat,nclouds
@@ -48,11 +48,11 @@ integer, dimension(maxgrds) :: nnqparm,nndtrat,nstratx,nstraty  &
                               ,nnxp,nnyp,nnzp,ninest,njnest,nknest
 integer, dimension(nzpmax)  :: nstratz1,nstratz2
 integer, dimension(nvtyp)   :: kroot
-common /all/ nnqparm,nndtrat,nstratx,nstraty,nstratz1,nstratz2  &
-            ,ngbegun,nnacoust,nxtnest,nnsttop,nnstbot  &
-            ,nnxp,nnyp,nnzp,ninest,njnest,nknest  &
-            ,naddsc,nestz1,nestz2,nzg,nzs,n_pft,iversion,npatch  &
-            ,nvegpat,nclouds,kroot
+common /all2/ nnqparm,nndtrat,nstratx,nstraty,nstratz1,nstratz2  &
+             ,ngbegun,nnacoust,nxtnest,nnsttop,nnstbot  &
+             ,nnxp,nnyp,nnzp,ninest,njnest,nknest  &
+             ,naddsc,nestz1,nestz2,nzg,nzs,n_pft,iversion,npatch  &
+             ,nvegpat,nclouds,kroot
 !-------------------------------------------------------------------------------
 integer, parameter                     :: maxsched=200,maxschent=5
 integer                                :: nsubs
@@ -66,11 +66,11 @@ real, dimension(maxclouds):: confrq
 real, dimension(maxgrds) :: platn,plonn,centlat,centlon  &
                            ,zkhkm,xkhkm,cflxy,cflz,csz,csx,akmin
 integer                  :: nhemgrd2
-common /all/ brunt,wcldbs,drtcon,rmin,radfrq,distim,seatmp  &
-            ,confrq,cflxy,cflz,csz,csx,rmax,akmin  &
-            ,ubmin,eps,albedo,xkhkm,zkhkm,dthcon  &
-            ,centlat,centlon,cphas,dtlong,topref,sspct  &
-            ,polelat,polelon,platn,plonn,nhemgrd2
+common /all3/ brunt,wcldbs,drtcon,rmin,radfrq,distim,seatmp  &
+             ,confrq,cflxy,cflz,csz,csx,rmax,akmin  &
+             ,ubmin,eps,albedo,xkhkm,zkhkm,dthcon  &
+             ,centlat,centlon,cphas,dtlong,topref,sspct  &
+             ,polelat,polelon,platn,plonn,nhemgrd2
 !-------------------------------------------------------------------------------
 integer                     :: nhemt,nhemu,nhemv  
 integer, dimension(4,maxhp) :: ihem1tt,jhem1tt,ihem1uu,jhem1uu  &

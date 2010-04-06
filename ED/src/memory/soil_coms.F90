@@ -10,14 +10,14 @@
 !==========================================================================================!
 module soil_coms
    use ed_max_dims  , only : str_len   & ! intent(in)
-                        , maxgrds   & ! intent(in)
-                        , nzgmax    ! ! intent(in)
-   use grid_coms , only : nzg       & ! intent(in)
-                        , nzs       ! ! intent(in)
+                           , maxgrds   & ! intent(in)
+                           , nzgmax    ! ! intent(in)
+   use grid_coms    , only : nzg       & ! intent(in)
+                           , nzs       ! ! intent(in)
 #if defined(COUPLED)
-   use leaf_coms , only : nstyp     & ! intent(in)
-                        , nvtyp     & ! intent(in)
-                        , nvtyp_teb ! ! intent(in)
+   use leaf_coms    , only : nstyp     & ! intent(in)
+                           , nvtyp     & ! intent(in)
+                           , nvtyp_teb ! ! intent(in)
 #endif
 
    implicit none

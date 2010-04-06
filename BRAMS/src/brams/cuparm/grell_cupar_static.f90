@@ -355,12 +355,22 @@ subroutine grell_cupar_static(comp_noforc_cldwork,checkmass,iupmethod,maxens_cap
       wbuoymin = 1.e20
 
       !------------------------------------------------------------------------------------!
-      ! C. Initialize Entrainment and Detrainment variables.                               !
+      ! C. Initialise entrainment and detrainment variables.                               !
       !------------------------------------------------------------------------------------!
       mentrd_rate = .2/radius             ! Entrain. rate  associated w/ dndrafts
       mentru_rate = mentrd_rate           ! Entrain. rate  associated w/ updrafts
       cdd         = 0.                    ! Detrain. fctn. associated w/ dndrafts
-      cdu         = 0.1*mentru_rate       ! Detrain. fctn. associated w/ updrafts
+      !----- Detrainment fraction associated with updrafts. -------------------------------!
+      if (prec_cld) then
+         cdu         = 0.1*mentru_rate
+      else
+         !---------------------------------------------------------------------------------!
+         !     If convection is shallow, then we follow Grell et al. (1994) assumption on  !
+         ! strong lateral mixing.  This avoids the already large lateral mixing to over-   !
+         ! shoot and create unreasonable values of THETAE_IV and RTOT.                     !
+         !---------------------------------------------------------------------------------!
+         cdu         = mentru_rate
+      end if
 
       !------------------------------------------------------------------------------------!
       ! D. Initialize mass fluxes and buoyancy, since they may never be computed in case   !
@@ -467,11 +477,15 @@ subroutine grell_cupar_static(comp_noforc_cldwork,checkmass,iupmethod,maxens_cap
       !------------------------------------------------------------------------------------!
       ! 5. Increasing the detrainment in stable layers provided that there is such layer.  !
       !    this rate increases linearly until a maximum value, currently set to 10 times   !
-      !    the entrainment rate.                                                           !
+      !    the entrainment rate.  If the cloud is sufficiently small, we further simplify  !
+      !    and assume detrainment to be equal to entrainment (otherwise the detrainment    !
+      !    can become unrealistically large.                                               !
       !------------------------------------------------------------------------------------!
-      do k=kstabi,kstabm-1
-         cdu(k) = min(10.*mentru_rate(k) , cdu(k-1) + 1.5 * mentru_rate(k))
-      end do
+      if (prec_cld) then
+         do k=kstabi,kstabm-1
+            cdu(k) = min(10.*mentru_rate(k) , cdu(k-1) + 1.5 * mentru_rate(k))
+         end do
+      end if
 
       !------------------------------------------------------------------------------------!
       ! 6. Calculate the incloud ice-vapour equivalent potential temperature               !

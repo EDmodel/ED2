@@ -7326,7 +7326,7 @@ contains
     if (associated(cgrid%wpa)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%wpa(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'WPA :11:hist:anal') 
+            var_len,var_len_global,max_ptrs,'WPA :11:hist:anal:dail') 
        call metadata_edio(nvar,igr,'Polygon  WPA','[m2/m2]','ipoly') 
     endif
 
@@ -7340,7 +7340,7 @@ contains
     if (associated(cgrid%wai)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%wai(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'WAI :11:hist:anal') 
+            var_len,var_len_global,max_ptrs,'WAI :11:hist:anal:dail') 
        call metadata_edio(nvar,igr,'Polygon  WAI','[m2/m2]','ipoly') 
     endif
 
@@ -8801,7 +8801,7 @@ contains
     if (associated(cpoly%patch_count)) then
        nvar=nvar+1
        call vtable_edio_i(cpoly%patch_count(1),nvar,igr,init,cpoly%siglob_id, &
-            var_len,var_len_global,max_ptrs,'PATCH_COUNT :21:hist:year') 
+            var_len,var_len_global,max_ptrs,'PATCH_COUNT :21:hist:dail:mont:year') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
     
@@ -9287,7 +9287,7 @@ contains
     if (associated(csite%paco_n)) then
        nvar=nvar+1
          call vtable_edio_i(csite%paco_n(1),nvar,igr,init,csite%paglob_id, &
-         var_len,var_len_global,max_ptrs,'PACO_N :31:hist:year') 
+         var_len,var_len_global,max_ptrs,'PACO_N :31:hist:dail:mont:year') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
     

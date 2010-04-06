@@ -148,7 +148,7 @@ subroutine get_grid
       end do
 
    case (1) !----- Polar-stereographic grid. ----------------------------------------------!
-      call ed_gridset(1)
+      if (n_ed_region > 0) call ed_gridset(1)
       do ifm=1,n_ed_region
          call ed_newgrid(ifm)
          call ed_polarst(nnxp(ifm),nnyp(ifm),work_e(ifm)%glat,work_e(ifm)%glon)
@@ -408,6 +408,8 @@ subroutine ed_parvec_work(ifm,nxp,nyp)
                            , npolys_run          & ! intent(out)
                            , ed_alloc_work_vec   & ! subroutine
                            , ed_nullify_work_vec ! ! subroutine
+   use soil_coms    , only : nslcon              & ! intent(in)
+                           , ed_nstyp            ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer, intent(in) :: ifm
@@ -446,7 +448,11 @@ subroutine ed_parvec_work(ifm,nxp,nyp)
             work_v(ifm)%glat(poly)     = work_e(ifm)%glat(i,j)
             work_v(ifm)%landfrac(poly) = work_e(ifm)%landfrac(i,j)
             work_v(ifm)%work(poly)     = work_e(ifm)%work(i,j)
-            work_v(ifm)%ntext(poly)    = work_e(ifm)%ntext(i,j)
+            if (work_e(ifm)%ntext(i,j) >= 1 .and. work_e(ifm)%ntext(i,j) <= ed_nstyp) then
+               work_v(ifm)%ntext(poly)    = work_e(ifm)%ntext(i,j)
+            else
+               work_v(ifm)%ntext(poly)    = nslcon
+            end if
             work_v(ifm)%xid(poly)      = i
             work_v(ifm)%yid(poly)      = j
          end if

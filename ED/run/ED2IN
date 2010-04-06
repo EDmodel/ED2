@@ -156,17 +156,17 @@
                                        ! 2 allows you to do a standard history restart from
                                        !   ED2-type restart files.
                                        ! 3 - initialize via ed-2 and site file restarts 
-				       ! 4 - initialize from ED2.1 H5 history/state files.
+                                       ! 4 - initialize from ED2.1 H5 history/state files.
                                        !     that take the form:  'dir/prefix-gxx.h5'
-	                               !     Initialization files MUST end with -gxx.h5
+                                       !     Initialization files MUST end with -gxx.h5
                                        !     where xx is a two digit integer grid number.
                                        !     Each grid has its own initialization file.
-	                               !     As an example, if a user has two files to 
+                                       !     As an example, if a user has two files to 
                                        !     initialize their grids with:
                                        !     example_file_init-g01.h5    and
                                        !     example_file_init-g02.h5
                                        !      
-	                               !     NL%SFILOUT = 'example_file_init'
+                                       !     NL%SFILOUT = 'example_file_init'
                                        !
                                        ! -1 - use a mix of ED-1 and ED-2 files. This should
                                        !      be avoided by all means, unless you are 
@@ -207,13 +207,21 @@
    !  10 -- silty clay      | 11 -- clay          | 12 -- peat             !
    !-----------------------------------------------------------------------!
 
-!----- Depth (m) of bottom of soil model grid levels --------------------------------------!
+   !---------------------------------------------------------------------------------------!
+   !    Prescribed fraction of clay and sand.  This is used only when ISOIFLG is set to 2, !
+   ! and slxclay and slxsand are defined between 0 and 1, with the sum of these variables  !
+   ! not exceeding 1.  Otherwise, the default ED parameters will be used.                  !
+   !---------------------------------------------------------------------------------------!
+   NL%SLXCLAY = -1.0
+   NL%SLXSAND = -1.0
+
+   !----- Depth (m) of bottom of soil model grid levels -----------------------------------!
    NL%SLZ     = -4.50, -3.50, -2.75, -2.00, -1.50, -1.10, -0.80, 
                 -0.60, -0.45, -0.30, -0.20, -0.12, -0.06, -0.02
-!----- Initial soil moisture (fraction of saturation) -------------------------------------!
+   !----- Initial soil moisture (fraction of saturation) ----------------------------------!
    NL%SLMSTR  =  0.60,  0.60,  0.60,  0.60,  0.60,  0.60,  0.60,
                  0.60,  0.60,  0.60,  0.60,  0.60,  0.60,  0.60
-!----- Initial soil temperature offset (with respect to the atmospheric temperature) ------!
+   !----- Initial soil temperature offset (with respect to the atmospheric temperature). --!
    NL%STGOFF  =   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0, 
                   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0
 !------------------------------------------------------------------------------------------!
@@ -418,10 +426,15 @@
 
 !-------------------------------------------------------------------------!
 ! Control parameters for printing to standard output                      
-!         Any polygon level variable can be printed to standard output.
+!         Any variable can be printed to standard output.
 !         Choose any variables that are defined in the variable table fill
-!         routine in ed_state_vars.f90.  Choose the start and end dimension
-!         in the polygon vector that you wish to view.
+!         routines in ed_state_vars.f90.  Choose the start and end dimension
+!         in the vector that you wish to view.  It can be polygon,site,..whatever
+!         This 'should' work in parallel ...
+!         The output will be printed to the screen at frequency frqanl,
+!         the print call is synchronized with instantaneous file writes,
+!         so those variables will have been accumulated and normalized
+!         from their rk4state and be meaningful to view.
 !-------------------------------------------------------------------------!
 
    NL%IPRINTPOLYS  =  0        ! 0 = do not print information to screen
@@ -433,11 +446,14 @@
    NL%PRINTVARS    = 'AVG_PCPG','AVG_CAN_TEMP','AVG_VAPOR_AC','AVG_CAN_SHV'
 
 !----- Use these format strings ---------------------------------------!
+! The format strings follow standard fortran format notation. ie 'f' is
+! for floating point.  First number is total digits, second number is 
+! the number of digits to the left of right of the decimal point.
 
    NL%PFMTSTR      = 'f10.8','f5.1','f7.2','f9.5'
 
-   NL%IPMIN        = 1       ! The first polygon index to print
-   NL%IPMAX        = 60      ! The last polygon index to print
+   NL%IPMIN        = 1       ! The first index to print
+   NL%IPMAX        = 60      ! The last index to print
 !-------------------------------------------------------------------------!
 
 
