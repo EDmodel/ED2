@@ -214,6 +214,7 @@ subroutine init_met_params()
    rshort_min  = 0.
    rshort_max  = 1400.
    !----- Minimum and maximum acceptable longwave radiation [W/m²]. -----------------------!
+
    rlong_min   =  60.
    rlong_max   = 600.
    !----- Minimum and maximum acceptable air temperature    [   K]. -----------------------!

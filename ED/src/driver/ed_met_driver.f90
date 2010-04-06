@@ -1391,11 +1391,17 @@ subroutine read_ol_file(infile,iformat, iv, year_use, mname, year, offset, cgrid
          else 
             nday = 28
          end if
-         if (isleap(year_use)) then
-            nday_dset=29
-         else
-            nday_dset=28
-         end if
+
+      !!NEVER ASSUME ANYTHING ABOUT THE DATASET
+
+         call shdf5_info_f(met_vars(iformat,iv),ndims,idims)
+         nday_dset=idims(1)/points_per_day
+ !        write (unit=*,fmt='(2(a,1x))') ' Reading Dataset : ', trim(met_vars(iformat,iv))
+ !        write (unit=*,fmt='(2(a,i5))') ' for year        : ', year
+ !        write (unit=*,fmt='(2(a,i5))') ' for dataset year: ', year_use
+ !        write(unit=*,fmt='(a,1x,i5)')  ' NUMBER DAYS in FEB set to  = ', nday_dset
+         
+
       end select 
 
       np      = nday      * points_per_day
