@@ -22,9 +22,9 @@ subroutine read_ednl(iunit)
                                    , metcyc1                   & ! intent(out)
                                    , metcycf                   & ! intent(out)
                                    , lapse_scheme              ! ! intent(out)
-   use mem_sites            , only : n_soi                     & ! intent(out)
-                                   , soi_lat                   & ! intent(out)
-                                   , soi_lon                   & ! intent(out)
+   use mem_polygons         , only : n_poi                     & ! intent(out)
+                                   , poi_lat                   & ! intent(out)
+                                   , poi_lon                   & ! intent(out)
                                    , n_ed_region               & ! intent(out)
                                    , ed_reg_latmin             & ! intent(out)
                                    , ed_reg_latmax             & ! intent(out)
@@ -241,8 +241,8 @@ subroutine read_ednl(iunit)
    ! runs, but they cannot be changed in the coupled simulation (or they are never used    !
    ! in the coupled run.  We assign some standard values to these variables.               !
    !---------------------------------------------------------------------------------------!
-   n_ed_region   = ngrids   ! No SOI/POI is allowed in coupled runs.
-   n_soi = 0                ! No SOI/POI is allowed in coupled runs.
+   n_ed_region   = ngrids   ! No POI is allowed in coupled runs.
+   n_poi = 0                ! No POI is allowed in coupled runs.
    grid_res      = 0        ! Not used: this is for lat-lon style.
    grid_type     = 1        ! We reinforce polar-stereo for now, it actually grabs the
                             !   BRAMS coordinates.
@@ -250,8 +250,8 @@ subroutine read_ednl(iunit)
    ed_reg_latmax = 0        ! Not used in coupled runs.
    ed_reg_lonmin = 0        ! Not used in coupled runs.
    ed_reg_lonmax = 0        ! Not used in coupled runs.
-   soi_lat = 0              ! SOI/POI is not an option in coupled runs.
-   soi_lon = 0              ! SOI/POI is not an option in coupled runs.
+   poi_lat = 0              ! POI is not an option in coupled runs.
+   poi_lon = 0              ! POI is not an option in coupled runs.
    ed_met_driver_db = ''    ! BRAMS is the meteorology driver... 
    imettype = 1             ! BRAMS is the meteorology driver...
    metcyc1  = 0000          ! BRAMS is the meteorology driver...

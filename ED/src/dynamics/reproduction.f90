@@ -37,7 +37,7 @@ subroutine reproduction(cgrid, month)
                                  , fuse_cohorts          & ! subroutine
                                  , split_cohorts         ! ! subroutine
    use phenology_coms     , only : repro_scheme          ! ! intent(in)
-   use mem_sites          , only : maxcohort             ! ! intent(in)
+   use mem_polygons       , only : maxcohort             ! ! intent(in)
    use consts_coms        , only : pio4                  ! ! intent(in)
    use ed_therm_lib       , only : calc_hcapveg          ! ! function
    use allometry          , only : dbh2bd                & ! function

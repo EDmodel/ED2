@@ -287,26 +287,26 @@ end subroutine init_met_drivers
 !------------------------------------------------------------------------------------------!
 subroutine read_met_drivers_init
 
-   use ed_state_vars  , only : edgrid_g       & ! structure
-                             , edtype         & ! structure
-                             , polygontype    ! ! structure
-   use hdf5_utils     , only : shdf5_open_f   & ! subroutine
-                             , shdf5_close_f  ! ! subroutine
-   use met_driver_coms, only : nformats       & ! intent(in)
-                             , ishuffle       & ! intent(in)
-                             , met_names      & ! intent(in)
-                             , met_nv         & ! intent(in)
-                             , met_interp     & ! intent(in)
-                             , met_frq        & ! intent(in)
-                             , metcyc1        & ! intent(in)
-                             , metcycf        & ! intent(in)
-                             , metyears       ! ! intent(inout)
-   use mem_sites      , only : grid_type      ! ! intent(in)
+   use ed_state_vars     , only : edgrid_g       & ! structure
+                                , edtype         & ! structure
+                                , polygontype    ! ! structure
+   use hdf5_utils        , only : shdf5_open_f   & ! subroutine
+                                , shdf5_close_f  ! ! subroutine
+   use met_driver_coms   , only : nformats       & ! intent(in)
+                                , ishuffle       & ! intent(in)
+                                , met_names      & ! intent(in)
+                                , met_nv         & ! intent(in)
+                                , met_interp     & ! intent(in)
+                                , met_frq        & ! intent(in)
+                                , metcyc1        & ! intent(in)
+                                , metcycf        & ! intent(in)
+                                , metyears       ! ! intent(inout)
+   use mem_polygons      , only : grid_type      ! ! intent(in)
    use ed_misc_coms      , only : current_time   & ! intent(in)
-                             , iyeara         & ! intent(in)
-                             , iyearz         ! ! intent(in)
-   use grid_coms      , only : ngrids         ! ! intent(in)
-   use consts_coms    , only : day_sec        ! ! intent(in)
+                                , iyeara         & ! intent(in)
+                                , iyearz         ! ! intent(in)
+   use grid_coms         , only : ngrids         ! ! intent(in)
+   use consts_coms       , only : day_sec        ! ! intent(in)
    implicit none
    !----- Local variables -----------------------------------------------------------------!
    type(edtype)      , pointer :: cgrid
@@ -535,7 +535,7 @@ subroutine read_met_drivers
    use ed_state_vars  , only : edgrid_g      & ! structure
                              , edtype        & ! structure
                              , polygontype   ! ! structure
-   use mem_sites      , only : grid_type     ! ! structure
+   use mem_polygons   , only : grid_type     ! ! structure
    use met_driver_coms, only : nformats      & ! intent(in)
                              , met_names     & ! intent(in)
                              , met_nv        & ! intent(in)
@@ -1315,7 +1315,7 @@ subroutine read_ol_file(infile,iformat, iv, year_use, mname, year, offset, cgrid
                              , no_ll         ! ! intent(in)
    use hdf5_utils     , only : shdf5_irec_f  & ! subroutine
                              , shdf5_info_f  ! ! subroutine
-   use mem_sites      , only : grid_type     ! ! intent(in)
+   use mem_polygons   , only : grid_type     ! ! intent(in)
    use consts_coms    , only : day_sec       ! ! intent(in)
   
    implicit none

@@ -32,7 +32,7 @@ subroutine copy_nl(copy_type)
        isoilstateinit, isoildepthflg, isoilbc, soilstate_db, soildepth_db,   &
                        runoff_time, slz,veg_database
   use met_driver_coms, only: ed_met_driver_db, ishuffle, metcyc1, metcycf,imettype,initial_co2, lapse_scheme
-  use mem_sites, only: n_soi, soi_lat, soi_lon, n_ed_region, ed_reg_latmin,  &
+  use mem_polygons, only: n_poi, poi_lat, poi_lon, n_ed_region, ed_reg_latmin,  &
        ed_reg_latmax, ed_reg_lonmin, ed_reg_lonmax, grid_res, grid_type, edres, &
        maxpatch, maxcohort
   use physiology_coms, only: istoma_scheme, n_plant_lim
@@ -130,12 +130,12 @@ subroutine copy_nl(copy_type)
      isoildepthflg = nl%isoildepthflg
      isoilbc       = nl%isoilbc
 
-     n_soi         = nl%n_soi
+     n_poi         = nl%n_poi
      n_ed_region   = nl%n_ed_region
      grid_res      = nl%grid_res
      grid_type     = nl%grid_type
-     soi_lat       = nl%soi_lat
-     soi_lon       = nl%soi_lon
+     poi_lat       = nl%poi_lat
+     poi_lon       = nl%poi_lon
      ed_reg_latmin = nl%ed_reg_latmin
      ed_reg_latmax = nl%ed_reg_latmax
      ed_reg_lonmin = nl%ed_reg_lonmin
@@ -213,7 +213,7 @@ subroutine copy_nl(copy_type)
 
      ! If the grid type is lat/lon, then I reset nnxp and nnyp to fit this new grid
      ! This is going to be useful to distribute the polygons across the nodes.
-     ngrids = n_ed_region + n_soi
+     ngrids = n_ed_region + n_poi
      
      do ifm=1,n_ed_region
         if (grid_type == 0) then

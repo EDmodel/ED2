@@ -36,10 +36,11 @@ subroutine fatal_error(reason,subr,file)
       write(unit=*,fmt='(a)') ' '
       write(unit=*,fmt='(a)') '------------------------------------------------------------'
       write(unit=*,fmt='(a)') '     I TOLD YOU NOT TO RUN WITH MIXED ED-1 AND ED-2         '
-      write(unit=*,fmt='(a)') ' RESTARTS. It''s always like that, we warn, we try to       '
-      write(unit=*,fmt='(a)') ' convince it is a stupid idea, and in the end, they keep    '
-      write(unit=*,fmt='(a)') ' insisting in making the same mistakes. Oh well, but what   '
-      write(unit=*,fmt='(a)') '  can I do if nobody listens to me...                       '
+      write(unit=*,fmt='(a)') ' RESTARTS.  It''s always like that, I warn, I try to        '
+      write(unit=*,fmt='(a)') ' convince it is a stupid idea, and in the end, they don''t  '
+      write(unit=*,fmt='(a)') ' listen to me, and instead they keep insisting in making    '
+      write(unit=*,fmt='(a)') ' the same mistakes.  Oh well, but at least I can say that   '
+      write(unit=*,fmt='(a)') ' told you, I warned you, I told you, I warned you...        '
       write(unit=*,fmt='(a)') '------------------------------------------------------------'
    end if
    if (nnodetot > 1) call MPI_Abort(MPI_COMM_WORLD, 1)

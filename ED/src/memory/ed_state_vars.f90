@@ -1748,7 +1748,7 @@ module ed_state_vars
   ! These variables are allocated and assigned before the parallel distribution, so we !
   ! don't want to keep it inside the structure. In case of serial runs, we should have !
   ! offset full of zeroes and the polygons numbered from 1 to the number of polygons.  !
-  ! In a non-SOI parallel run, we want to allocate "mpolygons" in each node, but then  !
+  ! In a non-POI parallel run, we want to allocate "mpolygons" in each node, but then  !
   ! we need to keep track of the actual polygon "ID" to write the output correctly.    !
   !------------------------------------------------------------------------------------!
   
@@ -8861,13 +8861,6 @@ contains
          var_len,var_len_global,max_ptrs,'NUM_LANDUSE_YEARS :21:hist') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
-
-!    if (associated(cpoly%soi)) then
-!       nvar=nvar+1
-!         call vtable_edio_i(cpoly%soi(1),nvar,igr,init,cpoly%siglob_id, &
-!         var_len,var_len_global,max_ptrs,'SOI :21:hist') 
-!       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-!    endif
 
     if (associated(cpoly%TCI)) then
        nvar=nvar+1

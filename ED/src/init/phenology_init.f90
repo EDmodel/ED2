@@ -5,7 +5,7 @@ contains
   subroutine phenology_init
     
     use phenology_coms, only: iphen_scheme
-    use ed_misc_coms, only: ied_init_mode
+    use ed_misc_coms, only: runtype
 
     implicit none
 
@@ -26,7 +26,7 @@ contains
        ! available from the restart file, or if this is a run with bare 
        ! ground initialization.
        
-       if(ied_init_mode /= 4)then
+       if (runtype /= 'HISTORY') then
           
           print'(/,a)','    Reading thermal sums'
           call read_thermal_sums
@@ -432,7 +432,7 @@ contains
     use grid_coms,only:ngrids
     use phenology_coms, only: prescribed_phen,phenpath
     use ed_max_dims, only: str_len
-    use mem_sites, only: grid_res
+    use mem_polygons, only: grid_res
 
     implicit none
 

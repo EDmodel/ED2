@@ -67,11 +67,11 @@ end subroutine ed_masterput_processid
 !   This subroutine is responsible for sending all the namelist-related information to all !
 ! the nodes. This is done by the head node, because the head node has read this            !
 ! information to define the polygon distribution in regional runs (and in the future, the  !
-! patches for the SOI runs).                                                               !
+! patches for the POI runs).                                                               !
 !------------------------------------------------------------------------------------------!
 subroutine ed_masterput_nl(par_run)
    use ed_para_coms,    only: mainnum
-   use ed_max_dims,     only: str_len,max_soi,max_ed_regions,nzgmax,n_pft,maxgrds,maxpvars
+   use ed_max_dims,     only: str_len,max_poi,max_ed_regions,nzgmax,n_pft,maxgrds,maxpvars
    use ed_misc_coms,    only: expnme, runtype,itimea,iyeara,imontha,idatea ,itimez,iyearz  &
                              ,imonthz,idatez,dtlsm,radfrq,ifoutput,idoutput,imoutput       &
                              ,itoutput,iyoutput,iclobber,frqfast,sfilin,ffilout            &
@@ -90,7 +90,7 @@ subroutine ed_masterput_nl(par_run)
                              ,isoilbc,runoff_time,zrough,layer_index,nlon_lyr,nlat_lyr
    use met_driver_coms, only: ed_met_driver_db,imettype,ishuffle,metcyc1,metcycf           &
                              ,initial_co2, lapse_scheme
-   use mem_sites,       only: n_soi,n_ed_region,grid_type,grid_res,soi_lat,soi_lon         &
+   use mem_polygons,    only: n_poi,n_ed_region,grid_type,grid_res,poi_lat,poi_lon         &
                              ,ed_reg_latmin,ed_reg_latmax,ed_reg_lonmin,ed_reg_lonmax      &
                              ,edres,maxpatch,maxcohort
    use physiology_coms, only: istoma_scheme,n_plant_lim
@@ -191,13 +191,13 @@ subroutine ed_masterput_nl(par_run)
    call MPI_Bcast(isoildepthflg,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(isoilbc,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
 
-   call MPI_Bcast(n_soi,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(n_poi,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(n_ed_region,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(grid_type,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    
    call MPI_Bcast(grid_res,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(soi_lat,max_soi,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(soi_lon,max_soi,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(poi_lat,max_poi,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(poi_lon,max_poi,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(ed_reg_latmin,max_ed_regions,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(ed_reg_latmax,max_ed_regions,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(ed_reg_lonmin,max_ed_regions,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
@@ -363,8 +363,8 @@ subroutine ed_masterput_poly_dims(par_run,masterworks)
                             , npolys_run   ! ! intent(in)
    use ed_para_coms  , only : mainnum      & ! intent(in)
                             , nmachs       ! ! intent(in)
-   use mem_sites     , only : n_ed_region  & ! intent(in)
-                            , n_soi        ! ! intent(in)
+   use mem_polygons  , only : n_ed_region  & ! intent(in)
+                            , n_poi        ! ! intent(in)
    implicit none
    include 'mpif.h'
    !----- Local constants. ----------------------------------------------------------------!
@@ -405,9 +405,9 @@ subroutine ed_masterput_poly_dims(par_run,masterworks)
 
 
    !---------------------------------------------------------------------------------------!
-   !     We currently don't allow SOI simulations to be run in parallel.                   !
+   !     We currently don't allow POI simulations to be run in parallel.                   !
    !---------------------------------------------------------------------------------------!
-   if (par_run == 1 .and. n_soi > 0 ) then
+   if (par_run == 1 .and. n_poi > 0 ) then
       write (unit=*,fmt='(a)') '--------------------------------------------------------------------'
       write (unit=*,fmt='(a)') '                                                                    '
       write (unit=*,fmt='(a)') '  Dear ED user,                                                     '
@@ -418,7 +418,7 @@ subroutine ed_masterput_poly_dims(par_run,masterworks)
       write (unit=*,fmt='(a)') 'Therefore, it is our commitment to provide our valuable researchers ' 
       write (unit=*,fmt='(a)') 'with the very best in ecosystem dynamics modelling and we want to   '
       write (unit=*,fmt='(a)') 'reaffirm that your satisfaction is our number-one priority.         '
-      write (unit=*,fmt='(a)') '  Unfortunately, the option of using parallelism under SOI is not   '
+      write (unit=*,fmt='(a)') '  Unfortunately, the option of using parallelism under POI is not   '
       write (unit=*,fmt='(a)') 'available yet, and we would like to offer our most sincere apologies'
       write (unit=*,fmt='(a)') 'for any inconvenience that this may have caused. Our team is        '
       write (unit=*,fmt='(a)') 'currently working on implementing this capability, and we hope to   '
@@ -427,7 +427,7 @@ subroutine ed_masterput_poly_dims(par_run,masterworks)
       write (unit=*,fmt='(a)') 'SOI runs in serial mode instead.                                    '
       write (unit=*,fmt='(a)') '                                                                    '
       write (unit=*,fmt='(a)') '--------------------------------------------------------------------' 
-      call fatal_error('Parallel version of SOI runs not available.'                       &
+      call fatal_error('Parallel version of POI runs not available.'                       &
                       , 'ed_masterput_poly_dims','ed_mpass_init.f90')
    end if
   
@@ -826,7 +826,7 @@ subroutine ed_nodeget_nl
 !   This subroutine is responsible for getting all the namelist-related information in     !
 ! every node.                                                                              !
 !------------------------------------------------------------------------------------------!
-   use ed_max_dims,     only: str_len,max_soi,max_ed_regions,nzgmax,n_pft,maxgrds,maxpvars
+   use ed_max_dims,     only: str_len,max_poi,max_ed_regions,nzgmax,n_pft,maxgrds,maxpvars
    use ed_misc_coms,    only: expnme, runtype,itimea,iyeara,imontha,idatea ,itimez,iyearz  &
                              ,imonthz,idatez,dtlsm,radfrq,ifoutput,idoutput,imoutput, itoutput       &
                              ,iyoutput,iclobber,frqfast,sfilin,ffilout,ied_init_mode       &
@@ -843,7 +843,7 @@ subroutine ed_nodeget_nl
                              ,isoilbc,runoff_time,zrough,layer_index,nlon_lyr,nlat_lyr
    use met_driver_coms, only: ed_met_driver_db,imettype,ishuffle,metcyc1,metcycf           &
                              ,initial_co2,lapse_scheme
-   use mem_sites,       only: n_soi,n_ed_region,grid_type,grid_res,soi_lat,soi_lon         &
+   use mem_polygons,    only: n_poi,n_ed_region,grid_type,grid_res,poi_lat,poi_lon         &
                              ,ed_reg_latmin,ed_reg_latmax,ed_reg_lonmin,ed_reg_lonmax      &
                              ,edres,maxpatch,maxcohort
    use physiology_coms, only: istoma_scheme,n_plant_lim
@@ -943,13 +943,13 @@ subroutine ed_nodeget_nl
    call MPI_Bcast(isoildepthflg,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(isoilbc,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
 
-   call MPI_Bcast(n_soi,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(n_poi,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(n_ed_region,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(grid_type,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    
    call MPI_Bcast(grid_res,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(soi_lat,max_soi,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(soi_lon,max_soi,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(poi_lat,max_poi,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(poi_lon,max_poi,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(ed_reg_latmin,max_ed_regions,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(ed_reg_latmax,max_ed_regions,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(ed_reg_lonmin,max_ed_regions,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)

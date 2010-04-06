@@ -1,6 +1,6 @@
 Module ename_coms
 
-  use ed_max_dims, only: max_soi, max_ed_regions, str_len,n_pft,maxgrds, nzgmax,maxpvars
+  use ed_max_dims, only: max_poi, max_ed_regions, str_len,n_pft,maxgrds, nzgmax,maxpvars
 
   implicit none
 
@@ -113,12 +113,12 @@ Module ename_coms
 
 !!    ED SITE SPECIFICATION
 
-      integer           :: n_soi         = 1
+      integer           :: n_poi         = 1
       integer           :: n_ed_region   = 0
       integer           :: grid_type     = 0
       real              :: grid_res      = 1.0
-      real, dimension(max_soi) :: soi_lat = (/ (0.0, i=1,max_soi) /)
-      real, dimension(max_soi) :: soi_lon = (/ (0.0, i=1,max_soi) /)
+      real, dimension(max_poi) :: poi_lat = (/ (0.0, i=1,max_poi) /)
+      real, dimension(max_poi) :: poi_lon = (/ (0.0, i=1,max_poi) /)
       real, dimension(max_ed_regions) :: ed_reg_latmin =   &
            (/ (0.0, i=1,max_ed_regions) /)
       real, dimension(max_ed_regions) :: ed_reg_latmax = &

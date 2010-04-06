@@ -2,7 +2,7 @@
 !==========================================================================================!
 subroutine ed_init_coup_atm
   
-  use ed_misc_coms,  only: ied_init_mode,runtype
+  use ed_misc_coms,  only: runtype
   use ed_state_vars, only: edtype,polygontype,sitetype,patchtype,edgrid_g
   use soil_coms,     only: soil_rough, isoilstateinit, soil, slmstr, stgoff
   use rconstants,    only: tsupercool, cliqvlme, cicevlme, t3ple, cp, alvl,p00i,rocp

@@ -1322,11 +1322,11 @@ end subroutine calcHydroSurface
 
 !==========================================================================================!
 !==========================================================================================!
-!MLO. Mike, I left the following two subroutines commented for now because the parallel SOI! 
-!     is still not ready. I think for simplicity the SOI will still have a master node and !
+!MLO. Mike, I left the following two subroutines commented for now because the parallel POI! 
+!     is still not ready. I think for simplicity the POI will still have a master node and !
 !     slaves with different roles, which means that the subroutine would be really similar !
 !     to these two, just with the new structure. But it would never reach this point in    !
-!     this version because of the SOI parallel. And for regional runs and SOI serial, all  !
+!     this version because of the SOI parallel. And for regional runs and POI serial, all  !
 !     sites will be in the same polygon so the previous should work fine there             !
 !------------------------------------------------------------------------------------------!
 !!!!!! subroutine calcHydroSurfaceMaster (polygon_list)
