@@ -197,7 +197,7 @@ subroutine init_met_drivers
                case (2,4)  !----- Constant in time. ---------------------------------------!
                   mem_size = 1
                case default
-                  call fatal_error('Invalid met_interp! It should be between 0 and 4.'     &
+                  call fatal_error('Invalid met_interp! It should be between 0 and 5.'     &
                                   ,'init_met_drivers','ed_met_driver.f90')
                end select
 
