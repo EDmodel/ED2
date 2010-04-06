@@ -312,7 +312,7 @@ subroutine ed_masterput_met_header(par_run)
 
 !----- First I send the scalars -----------------------------------------------------------!
    call MPI_Bcast (nformats,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast (no_ll,1,MPI_LOGICAL,mainnum,MPI_COMM_WORLD,ierr)
+
    
 !------------------------------------------------------------------------------------------!
 !   Here I need a MPI Barrier. The master has the variables already allocated, but I need  !
@@ -331,6 +331,7 @@ subroutine ed_masterput_met_header(par_run)
    call MPI_Bcast(met_xmin,nformats,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(met_ymin,nformats,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(met_nv,nformats,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(no_ll,nformats,MPI_LOGICAL,mainnum,MPI_COMM_WORLD,ierr)
   
    do f=1,nformats
       do v=1,max_met_vars
@@ -1063,7 +1064,6 @@ subroutine ed_nodeget_met_header()
 
 !----- First I get the scalars ------------------------------------------------------------!
    call MPI_Bcast (nformats,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast (no_ll,1,MPI_LOGICAL,master_num,MPI_COMM_WORLD,ierr)
 
    nsize=nformats*max_met_vars
 
@@ -1079,6 +1079,7 @@ subroutine ed_nodeget_met_header()
    allocate(met_vars(nformats, max_met_vars))
    allocate(met_frq(nformats, max_met_vars))
    allocate(met_interp(nformats, max_met_vars))
+   allocate(no_ll(nformats))
        
 !------------------------------------------------------------------------------------------!
 !   Here I need a MPI Barrier. I don't want the master sending information before the      !
@@ -1097,7 +1098,8 @@ subroutine ed_nodeget_met_header()
    call MPI_Bcast(met_xmin,nformats,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(met_ymin,nformats,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(met_nv,nformats,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-  
+   call MPI_Bcast(no_ll, nformats, MPI_LOGICAL, master_num, MPI_COMM_WORLD, ierr)
+   
    do f=1,nformats
       do v=1,max_met_vars
          call MPI_Bcast(met_vars(f,v),metvars_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)

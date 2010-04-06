@@ -58,9 +58,10 @@ subroutine read_met_driver_head()
    allocate(met_vars  (nformats, max_met_vars))
    allocate(met_frq   (nformats, max_met_vars))
    allocate(met_interp(nformats, max_met_vars))
+   allocate(no_ll     (nformats)              )
 
    !----- Just to initialize, if lon/lat are both found, it will become .false. -----------!
-   no_ll = .true.    
+   no_ll(:) = .true.    
    !----- Read the information for each format. -------------------------------------------!
    do iformat = 1,nformats
       read(unit=12,fmt='(a)')  met_names(iformat)
@@ -81,7 +82,7 @@ subroutine read_met_driver_head()
 
       !----- Check to see if you have both, none or one of each. --------------------------!
       if (yes_lat .and. yes_lon) then
-         no_ll = .false.
+         no_ll (iformat) = .false.
       elseif (yes_lat .neqv. yes_lon) then
          call fatal_error('You are missing a lat or a lon variable in the met nl'          &
                          ,'read_met_driver_head','ed_met_driver.f90')
@@ -163,7 +164,7 @@ subroutine init_met_drivers
             cpoly => cgrid%polygon(ipy)
 
             !----- Make sure site falls within file domain. -------------------------------!
-            if(no_ll .and. (cgrid%lon(ipy) < westedge .or. cgrid%lat(ipy) < southedge .or. &
+            if(no_ll(iformat) .and. (cgrid%lon(ipy) < westedge .or. cgrid%lat(ipy) < southedge .or. &
                             cgrid%lon(ipy) > eastedge .or. cgrid%lat(ipy) > northedge))    &
             then 
                
@@ -197,7 +198,7 @@ subroutine init_met_drivers
                case (2,4)  !----- Constant in time. ---------------------------------------!
                   mem_size = 1
                case default
-                  call fatal_error('Invalid met_interp! It should be between 0 and 4.'     &
+                  call fatal_error('Invalid met_interp! It should be between 0 and 5.'     &
                                   ,'init_met_drivers','ed_met_driver.f90')
                end select
 
@@ -1147,6 +1148,13 @@ subroutine update_met_drivers(cgrid)
                                                  ,cgrid%met(ipy)%atm_shv                   &
                                                  ,cgrid%met(ipy)%geoht)
 
+         write(unit=80,fmt='(i4.4,2(a,i2.2),1x,f6.0,1x,1x,es12.5)')            &
+            current_time%year,'-',current_time%month,'-',current_time%date                 &
+           ,current_time%time,cgrid%met(ipy)%atm_co2         
+
+ !        write (unit=*,fmt='(2(a,1x))') ' Reading Dataset : ', trim(met_vars(iformat,iv))
+ !        write (unit=*,fmt='(2(a,i5))') ' for year        : ', year
+ 
       !------ Apply met to sites, and adjust met variables for topography. ----------------!
       call calc_met_lapse(cgrid,ipy)
 
@@ -1561,7 +1569,7 @@ subroutine read_ol_file(infile,iformat, iv, year_use, mname, year, offset, cgrid
    do ipy = 1,cgrid%npolygons
       
       !----- Get the indices.  Remember, latitude is flipped. -----------------------------!
-      if (no_ll) then
+      if (no_ll(iformat)) then
          ilon = min(max(1                                                                  &
                        ,1 + nint((cgrid%lon(ipy) - met_xmin(iformat)) / met_dx(iformat)))  &
                    ,met_nlon(iformat))
@@ -1812,7 +1820,7 @@ subroutine getll(cgrid,iformat)
 
    implicit none
    
-   integer :: iformat
+   integer, intent(in) :: iformat   
    integer :: ndims
    integer :: d
    integer, dimension(3) :: idims
@@ -1821,7 +1829,7 @@ subroutine getll(cgrid,iformat)
    ! First check to see if there is lat/lon data in this dataset
    ! if the data exists, load it
    
-   if(.not.no_ll) then
+   if(.not.no_ll(iformat)) then
          
       !  Get the dimensioning information on latitude
       call shdf5_info_f('lat',ndims,idims)
