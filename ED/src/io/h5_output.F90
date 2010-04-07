@@ -100,11 +100,11 @@ subroutine h5_output(vtype)
   info = MPI_INFO_NULL
 
   
-  if (nnodetot /= 1 ) then
-     call MPI_COMM_SIZE(comm,mpi_size,mpierror)
-     call MPI_COMM_RANK(comm,mpi_rank,mpierror)
+!  if (nnodetot /= 1 ) then
+!     call MPI_COMM_SIZE(comm,mpi_size,mpierror)
+!     call MPI_COMM_RANK(comm,mpi_rank,mpierror)
 !     call MPI_Barrier(MPI_COMM_WORLD,ierr)
-  endif
+!  endif
   
 
   timeold=time
@@ -139,6 +139,7 @@ subroutine h5_output(vtype)
 
   do ngr=1,ngrids
 
+
      call h5garbage_collect_f(hdferr) 
      
      ping = 0 
@@ -146,7 +147,7 @@ subroutine h5_output(vtype)
 #if USE_COLLECTIVE_MPIO
 #else
 
-        if (mynum /= 1) call MPI_RECV(ping,1,MPI_INTEGER,recvnum,3510+ngr,MPI_COMM_WORLD,status,ierr)
+        if (mynum /= 1)     call MPI_RECV(ping,1,MPI_INTEGER,recvnum,3510+ngr,MPI_COMM_WORLD,status,ierr)
 
 #endif
      ! If there are no polygons on this node, we do not have any interaction with the file
@@ -388,9 +389,9 @@ subroutine h5_output(vtype)
                  call h5dcreate_f(file_id,varn,H5T_NATIVE_DOUBLE, filespace, &
                       dset_id,hdferr)
               else
-                 print*,"YOU ARE ATTEMPTING TO WRITE AN UNDEFINED DATATYPE"
                  print*,varn,vt_info(nv,ngr)%dtype
-                 stop
+                 call fatal_error('YOU ARE ATTEMPTING TO WRITE AN UNDEFINED DATATYPE'   &
+                                 ,'h5_output','h5_output.F90')
                  
               endif
 
@@ -411,10 +412,9 @@ subroutine h5_output(vtype)
                     call h5dcreate_f(file_id,varn,H5T_NATIVE_DOUBLE, filespace, &
                          dset_id,hdferr)
                  else
-                    print*,"YOU ARE ATTEMPTING TO WRITE AN UNDEFINED DATATYPE"
                     print*,varn,vt_info(nv,ngr)%dtype
-                    stop
-                    
+                    call fatal_error('YOU ARE ATTEMPTING TO WRITE AN UNDEFINED DATATYPE'   &
+                                    ,'h5_output','h5_output.F90')
                  endif
                     
                  ! REMEMBER THESE COMMANDS
@@ -480,12 +480,13 @@ subroutine h5_output(vtype)
 #endif
               
               if (hdferr /= 0) then
-                 write (unit=*,fmt=*) 'File name:        ',trim(anamel)
-                 write (unit=*,fmt=*) 'Variable name:    ',trim(varn)
-                 write (unit=*,fmt=*) 'File ID:          ',file_id
-                 write (unit=*,fmt=*) 'Dataset ID:       ',dset_id
-                 write (unit=*,fmt=*) 'Dataset rank:     ',dsetrank
-                 write (unit=*,fmt=*) 'Global dimension: ',globdims
+                 write (unit=*,fmt=*) 'File name:           ',trim(anamel)
+                 write (unit=*,fmt=*) 'Variable name:       ',trim(varn)
+                 write (unit=*,fmt=*) 'File ID:             ',file_id
+                 write (unit=*,fmt=*) 'Dataset ID:          ',dset_id
+                 write (unit=*,fmt=*) 'Dataset rank:        ',dsetrank
+                 write (unit=*,fmt=*) 'Global dimension:    ',globdims
+                 write (unit=*,fmt=*) 'Vars written so far: ',nv-1
                  call fatal_error('Could not create the dataset','h5_output','h5_output.F90')
               end if
               
@@ -668,7 +669,6 @@ subroutine h5_output(vtype)
 #else     
 
         if (mynum < nnodetot ) call MPI_Send(ping,1,MPI_INTEGER,sendnum,3510+ngr,MPI_COMM_WORLD,ierr)
-!        if (nnodetot /= 1 ) call MPI_Barrier(MPI_COMM_WORLD,ierr)
 
 #endif     
         

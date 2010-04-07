@@ -461,8 +461,8 @@ subroutine spatial_averages
                                         * csite%area(ipa) * site_area_i
                   !----- Integrate soil wetness. ------------------------------------------!
                   cpoly%avg_soil_wetness(isi) = cpoly%avg_soil_wetness(isi)                &
-                       + ((csite%soil_water(k,ipa) - soil(nsoil)%soilcp))                  &
-                       / (soil(nsoil)%slmsts - soil(nsoil)%soilcp)                         &
+                       + ((csite%soil_water(k,ipa) - soil(nsoil)%soilwp))                  &
+                       / (soil(nsoil)%slmsts - soil(nsoil)%soilwp)                         &
                        * dslz(k) * dslzsum_i * csite%area(ipa) * site_area_i
                end do
                !----- Also integrate the polygon-level average. ---------------------------!
@@ -1147,7 +1147,7 @@ subroutine print_fields(ifm,cgrid)
         exit count_pvars
      endif
 
-!     call MPI_Barrier(MPI_COMM_WORLD,ierr)
+     if (nnodetot /= 1) call MPI_Barrier(MPI_COMM_WORLD,ierr)
 
      pvartrue = .false.
      do nv = 1,num_var(ifm)
@@ -1157,9 +1157,9 @@ subroutine print_fields(ifm,cgrid)
            
            ! If this is root, then collect the sends, keep reading to find out what it is
            ! receiving
-           if (nnodetot.gt.1) then
+           if (nnodetot > 1) then
               
-              if (mynum .eq. nnodetot) then
+              if (mynum == nnodetot) then
                  
                  pvar_g = -99.9
                  ! Loop through the variable table to match the print variable
@@ -1261,7 +1261,7 @@ subroutine print_fields(ifm,cgrid)
               
            enddo
            
-           if (nnodetot.gt.1) then
+           if (nnodetot > 1) then
               
               ! The local array for this machine has been created. Send it off to the master
 
@@ -1336,16 +1336,15 @@ subroutine print_fields(ifm,cgrid)
         print*,"Check you namelist entries, and the variable "
         print*,"registry and/or remove this"
         print*,"diagnostic variable."
-        stop
+        call fatal_error('Bad variable name...','print_fields','edio.f90')
      endif
 
-  enddo count_pvars
+  end do count_pvars
 
   ! Dont proceed until everything is written out
   ! if this is not done, then there will be other writing
   ! contaminating the output, and thats icky
-
-!  call MPI_Barrier(MPI_COMM_WORLD,ierr)
+  if (nnodetot /= 1) call MPI_Barrier(MPI_COMM_WORLD,ierr)
 
   
   return

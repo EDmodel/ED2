@@ -57,7 +57,7 @@ module rk4_driver
 
       logical                   , save        :: first_time=.true.
       !----- Local constants. -------------------------------------------------------------!
-      logical                   , parameter   :: print_fields = .false.
+      logical                   , parameter   :: print_dbg_fields = .false.
       !----- Functions --------------------------------------------------------------------!
       real                      , external    :: walltime
       !------------------------------------------------------------------------------------!
@@ -71,7 +71,7 @@ module rk4_driver
             patchloop: do ipa = 1,csite%npatches
                cpatch => csite%patch(ipa)
 
-               if (print_fields) then
+               if (print_dbg_fields) then
                   iun = 30+ipa
                   if (first_time) then
                      write (unit=iun,fmt='(19(a,1x))') 'YEAR','MONTH','  DAY','  TIME'     &
@@ -501,15 +501,15 @@ module rk4_driver
          do k = cpatch%krdepth(ico), nzg - 1
             nsoil = csite%ntext_soil(k,ipa)
             available_water = available_water                                              &
-                            + (initp%soil_water(k) - soil8(nsoil)%soilcp)                  &
+                            + (initp%soil_water(k) - soil8(nsoil)%soilwp)                  &
                             * (slz8(k+1)-slz8(k))                                          &
-                            / (soil8(nsoil)%slmsts - soil8(nsoil)%soilcp)
+                            / (soil8(nsoil)%slmsts - soil8(nsoil)%soilwp)
          end do
          nsoil = csite%ntext_soil(nzg,ipa)
          available_water = available_water                                                 &
-                         + (initp%soil_water(nzg) - soil8(nsoil)%soilcp)                   &
+                         + (initp%soil_water(nzg) - soil8(nsoil)%soilwp)                   &
                          * (-1.d0*slz8(nzg))                                               &
-                         / (soil8(nsoil)%slmsts -soil8(nsoil)%soilcp) 
+                         / (soil8(nsoil)%slmsts -soil8(nsoil)%soilwp) 
          available_water = available_water / (-1.d0*slz8(cpatch%krdepth(ico)))
 
 

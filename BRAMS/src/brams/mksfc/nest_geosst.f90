@@ -274,28 +274,29 @@ subroutine geonest_nofile(ngra,ngrb)
           , leaf_g(ifm)%sfcwater_depth            , leaf_g(ifm)%ustar                      &
           , leaf_g(ifm)%tstar                     , leaf_g(ifm)%rstar                      &
           , leaf_g(ifm)%cstar                     , leaf_g(ifm)%veg_fracarea               &
-          , leaf_g(ifm)%veg_lai                   , leaf_g(ifm)%veg_tai                    &
-          , leaf_g(ifm)%veg_rough                 , leaf_g(ifm)%veg_height                 &
-          , leaf_g(ifm)%veg_albedo                , leaf_g(ifm)%patch_area                 &
-          , leaf_g(ifm)%patch_rough               , leaf_g(ifm)%patch_wetind               &
-          , leaf_g(ifm)%leaf_class                , leaf_g(ifm)%soil_rough                 &
-          , leaf_g(ifm)%sfcwater_nlev             , leaf_g(ifm)%stom_resist                &
-          , leaf_g(ifm)%ground_rsat               , leaf_g(ifm)%ground_rvap                &
-          , leaf_g(ifm)%ground_temp               , leaf_g(ifm)%ground_fliq                &
-          , leaf_g(ifm)%veg_water                 , leaf_g(ifm)%veg_hcap                   &
-          , leaf_g(ifm)%veg_energy                , leaf_g(ifm)%can_prss                   &
-          , leaf_g(ifm)%can_theta                 , leaf_g(ifm)%can_rvap                   &
-          , leaf_g(ifm)%can_co2                   , leaf_g(ifm)%sensible                   &
-          , leaf_g(ifm)%evap                      , leaf_g(ifm)%transp                     &
-          , leaf_g(ifm)%gpp                       , leaf_g(ifm)%plresp                     &
-          , leaf_g(ifm)%resphet                   , leaf_g(ifm)%veg_ndvip                  &
-          , leaf_g(ifm)%veg_ndvic                 , leaf_g(ifm)%veg_ndvif                  &
-          , leaf_g(ifm)%snow_mass                 , leaf_g(ifm)%snow_depth                 &
-          , scratch%vt2da                         , scratch%vt2db                          &
-          , scratch%vt2dc                         , scratch%vt2dd                          &
-          , scratch%vt2de                         , grid_g(ifm)%glat                       &
-          , grid_g(ifm)%glon                      , grid_g(ifm)%topzo                      &
-          , grid_g(ifm)%flpw                      , grid_g(ifm)%rtgt)
+          , leaf_g(ifm)%veg_agb                   , leaf_g(ifm)%veg_lai                    &
+          , leaf_g(ifm)%veg_tai                   , leaf_g(ifm)%veg_rough                  &
+          , leaf_g(ifm)%veg_height                , leaf_g(ifm)%veg_albedo                 &
+          , leaf_g(ifm)%patch_area                , leaf_g(ifm)%patch_rough                &
+          , leaf_g(ifm)%patch_wetind              , leaf_g(ifm)%leaf_class                 &
+          , leaf_g(ifm)%soil_rough                , leaf_g(ifm)%sfcwater_nlev              &
+          , leaf_g(ifm)%stom_resist               , leaf_g(ifm)%ground_rsat                &
+          , leaf_g(ifm)%ground_rvap               , leaf_g(ifm)%ground_temp                &
+          , leaf_g(ifm)%ground_fliq               , leaf_g(ifm)%veg_water                  &
+          , leaf_g(ifm)%veg_hcap                  , leaf_g(ifm)%veg_energy                 &
+          , leaf_g(ifm)%can_prss                  , leaf_g(ifm)%can_theta                  &
+          , leaf_g(ifm)%can_rvap                  , leaf_g(ifm)%can_co2                    &
+          , leaf_g(ifm)%sensible                  , leaf_g(ifm)%evap                       &
+          , leaf_g(ifm)%transp                    , leaf_g(ifm)%gpp                        &
+          , leaf_g(ifm)%plresp                    , leaf_g(ifm)%resphet                    &
+          , leaf_g(ifm)%veg_ndvip                 , leaf_g(ifm)%veg_ndvic                  &
+          , leaf_g(ifm)%veg_ndvif                 , leaf_g(ifm)%snow_mass                  &
+          , leaf_g(ifm)%snow_depth                , scratch%vt2da                          &
+          , scratch%vt2db                         , scratch%vt2dc                          &
+          , scratch%vt2dd                         , scratch%vt2de                          &
+          , grid_g(ifm)%glat                      , grid_g(ifm)%glon                       &
+          , grid_g(ifm)%topzo                     , grid_g(ifm)%flpw                       &
+          , grid_g(ifm)%rtgt                      )
 
      ! Assignment section for NOFILE leaf-2 variables
 
@@ -326,6 +327,8 @@ subroutine geonest_nofile(ngra,ngrb)
 
                     leaf_g(ifm)%veg_fracarea         (i,j,ipat) = &
                          leaf_g(icm)%veg_fracarea    (ic,jc,ipat)
+                    leaf_g(ifm)%veg_agb              (i,j,ipat) = &
+                         leaf_g(icm)%veg_agb         (ic,jc,ipat)
                     leaf_g(ifm)%veg_lai              (i,j,ipat) = &
                          leaf_g(icm)%veg_lai         (ic,jc,ipat)
                     leaf_g(ifm)%veg_tai              (i,j,ipat) = &
@@ -422,29 +425,29 @@ subroutine geonest_nofile(ngra,ngrb)
                , leaf_g(ifm)%sfcwater_depth          , leaf_g(ifm)%ustar                   &
                , leaf_g(ifm)%tstar                   , leaf_g(ifm)%rstar                   &
                , leaf_g(ifm)%cstar                   , leaf_g(ifm)%veg_fracarea            &
-               , leaf_g(ifm)%veg_lai                 , leaf_g(ifm)%veg_tai                 &
-               , leaf_g(ifm)%veg_rough               , leaf_g(ifm)%veg_height              &
-               , leaf_g(ifm)%veg_albedo              , leaf_g(ifm)%patch_area              &
-               , leaf_g(ifm)%patch_rough             , leaf_g(ifm)%patch_wetind            &
-               , leaf_g(ifm)%leaf_class              , leaf_g(ifm)%soil_rough              &
-               , leaf_g(ifm)%sfcwater_nlev           , leaf_g(ifm)%stom_resist             &
-               , leaf_g(ifm)%ground_rsat             , leaf_g(ifm)%ground_rvap             &
-               , leaf_g(ifm)%ground_temp             , leaf_g(ifm)%ground_fliq             &
-               , leaf_g(ifm)%veg_water               , leaf_g(ifm)%veg_hcap                &
-               , leaf_g(ifm)%veg_energy              , leaf_g(ifm)%can_prss                &
-               , leaf_g(ifm)%can_theta               , leaf_g(ifm)%can_rvap                &
-               , leaf_g(ifm)%can_co2                 , leaf_g(ifm)%sensible                &
-               , leaf_g(ifm)%evap                    , leaf_g(ifm)%transp                  &
-               , leaf_g(ifm)%gpp                     , leaf_g(ifm)%plresp                  &
-               , leaf_g(ifm)%resphet                 , leaf_g(ifm)%veg_ndvip               &
-               , leaf_g(ifm)%veg_ndvic               , leaf_g(ifm)%veg_ndvif               &
-               , leaf_g(ifm)%snow_mass               , leaf_g(ifm)%snow_depth              &
-               , scratch%vt2da                       , scratch%vt2db                       &
-               , scratch%vt2dc                       , scratch%vt2dd                       &
-               , scratch%vt2de                       , grid_g(ifm)%glat                    &
-               , grid_g(ifm)%glon                    , grid_g(ifm)%topzo                   &
-               , grid_g(ifm)%flpw                    , grid_g(ifm)%rtgt                    )
-
+               , leaf_g(ifm)%veg_agb                 , leaf_g(ifm)%veg_lai                 &
+               , leaf_g(ifm)%veg_tai                 , leaf_g(ifm)%veg_rough               &
+               , leaf_g(ifm)%veg_height              , leaf_g(ifm)%veg_albedo              &
+               , leaf_g(ifm)%patch_area              , leaf_g(ifm)%patch_rough             &
+               , leaf_g(ifm)%patch_wetind            , leaf_g(ifm)%leaf_class              &
+               , leaf_g(ifm)%soil_rough              , leaf_g(ifm)%sfcwater_nlev           &
+               , leaf_g(ifm)%stom_resist             , leaf_g(ifm)%ground_rsat             &
+               , leaf_g(ifm)%ground_rvap             , leaf_g(ifm)%ground_temp             &
+               , leaf_g(ifm)%ground_fliq             , leaf_g(ifm)%veg_water               &
+               , leaf_g(ifm)%veg_hcap                , leaf_g(ifm)%veg_energy              &
+               , leaf_g(ifm)%can_prss                , leaf_g(ifm)%can_theta               &
+               , leaf_g(ifm)%can_rvap                , leaf_g(ifm)%can_co2                 &
+               , leaf_g(ifm)%sensible                , leaf_g(ifm)%evap                    &
+               , leaf_g(ifm)%transp                  , leaf_g(ifm)%gpp                     &
+               , leaf_g(ifm)%plresp                  , leaf_g(ifm)%resphet                 &
+               , leaf_g(ifm)%veg_ndvip               , leaf_g(ifm)%veg_ndvic               &
+               , leaf_g(ifm)%veg_ndvif               , leaf_g(ifm)%snow_mass               &
+               , leaf_g(ifm)%snow_depth              , scratch%vt2da                       &
+               , scratch%vt2db                       , scratch%vt2dc                       &
+               , scratch%vt2dd                       , scratch%vt2de                       &
+               , grid_g(ifm)%glat                    , grid_g(ifm)%glon                    &
+               , grid_g(ifm)%topzo                   , grid_g(ifm)%flpw                    &
+               , grid_g(ifm)%rtgt                    )
   end do
 
   return
@@ -655,6 +658,10 @@ subroutine patch_interp_driver(icm,ifm)
 
    call patch_interp(icm,ifm,1,nnxp(icm),nnyp(icm),npatch,1,nnxp(ifm),nnyp(ifm),npatch     &
                     ,leaf_g(icm)%veg_fracarea,leaf_g(ifm)%veg_fracarea                     &
+                    ,leaf_g(icm)%patch_area,leaf_g(icm)%patch_area                         &
+                    ,scratch%vt3da,scratch%vt3db,scratch%vt2da,scratch%vt2db )
+   call patch_interp(icm,ifm,1,nnxp(icm),nnyp(icm),npatch,1,nnxp(ifm),nnyp(ifm),npatch     &
+                    ,leaf_g(icm)%veg_agb,leaf_g(ifm)%veg_agb                               &
                     ,leaf_g(icm)%patch_area,leaf_g(icm)%patch_area                         &
                     ,scratch%vt3da,scratch%vt3db,scratch%vt2da,scratch%vt2db )
    call patch_interp(icm,ifm,1,nnxp(icm),nnyp(icm),npatch,1,nnxp(ifm),nnyp(ifm),npatch     &

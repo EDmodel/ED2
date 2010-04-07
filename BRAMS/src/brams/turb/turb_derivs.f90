@@ -58,11 +58,13 @@ subroutine strain(m1,m2,m3,ia,iz,ja,jz,ia_1,ja_1,iz1,jz1,jd                     
 
   call grad(m1, m2, m3, ia_1, iz , ja  , jz , up, vt3dd, 'ZDIR', 'UPNT',ibotflx)
   call grad(m1, m2, m3, ia  , iz , ja_1, jz , vp, vt3de, 'ZDIR', 'VPNT',ibotflx)
-  if(idiffk >= 3 .and. idiffk /= 7)then
+  select case (idiffk)
+  case (3:6)
      call grad(m1,m2,m3,ia,iz,ja,jz,wp,scr2,'ZDIR','WPNT',ibotflx)
-  endif
+  end select
 
-  if (idiffk <= 2 .or. idiffk == 7) then
+  select case (idiffk)
+  case (1,2,7,8)
      do j = ja,jz
         do i = ia,iz
            do k = 2,m1-1
@@ -79,7 +81,7 @@ subroutine strain(m1,m2,m3,ia,iz,ja,jz,ia_1,ja_1,iz1,jz1,jd                     
            enddo
         enddo
      enddo
-  else
+  case default
      do j = ja,jz
         do i = ia,iz
            do k = 2,m1-1
@@ -129,7 +131,7 @@ subroutine strain(m1,m2,m3,ia,iz,ja,jz,ia_1,ja_1,iz1,jz1,jd                     
            enddo
         enddo
      enddo
-  endif
+  end select
 
   return
 end subroutine strain
@@ -452,7 +454,8 @@ subroutine mxdefm(m1,m2,m3,ia,iz,ja,jz,ibcon,jd  &
      enddo
   endif
 
-  if (idiffk(ngrid) == 1 .or. idiffk(ngrid) == 7) then
+  select case (idiffk(ngrid))
+  case (1,7,8)
      do j = ja,jz
         do i = ia,iz
            c2 = 1.0 / (dxt(i,j) * dxt(i,j))
@@ -465,7 +468,7 @@ subroutine mxdefm(m1,m2,m3,ia,iz,ja,jz,ibcon,jd  &
            enddo
         enddo
      enddo
-  elseif (idiffk(ngrid) == 2) then
+  case (2)
      do j = ja,jz
         do i = ia,iz
            c1 = rtgt(i,j) * rtgt(i,j)
@@ -503,7 +506,7 @@ subroutine mxdefm(m1,m2,m3,ia,iz,ja,jz,ibcon,jd  &
      !    +    ,a(iustarw),a(itstarw),a(ipctlnd),a(itheta),a(irtgt))
      !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
-  elseif (idiffk(ngrid) == 3) then
+  case (3)
      do j = ja,jz
         do i = ia,iz
            c1 = rtgt(i,j) * rtgt(i,j)
@@ -523,7 +526,7 @@ subroutine mxdefm(m1,m2,m3,ia,iz,ja,jz,ibcon,jd  &
      !    +    ,a(iustarw),a(itstarw),a(ipctlnd),a(itheta),a(irtgt))
      !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
-  endif
+  end select
 
   return
 end subroutine mxdefm

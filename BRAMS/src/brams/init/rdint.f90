@@ -889,6 +889,9 @@ subroutine ReadNamelist(fileName)
        ihorgrad, &
        xkhkm, &
        zkhkm
+  use turb_coms, only : nna, &
+                        nnb, &
+                        nnc  !
   use mem_varinit, only: cond_hfile, &
        nud_cond, &
        nud_hfile, &
@@ -1104,9 +1107,9 @@ subroutine ReadNamelist(fileName)
        co2con, nvgcon, pctlcon, nslcon, drtcon, zrough, albedo, seatmp,   &
        dthcon, soil_moist, soil_moist_fail, usdata_in, usmodel_in, slz,   &
        slmstr, stgoff, if_urban_canopy, idiffk, ibruvais, ibotflx,        &
-       ihorgrad, csx, csz, xkhkm, zkhkm, akmin, akmax, hgtmin, hgtmax,    &
-       level, icloud, irain, ipris, isnow, iaggr, igraup, ihail, cparm,   &
-       rparm, pparm, sparm, aparm, gparm, hparm, gnu
+       ihorgrad, csx, csz, xkhkm, zkhkm, nna, nnb, nnc, akmin, akmax,     &
+       hgtmin, hgtmax, level, icloud, irain, ipris, isnow, iaggr, igraup, &
+       ihail, cparm, rparm, pparm, sparm, aparm, gparm, hparm, gnu
 
   namelist /MODEL_SOUND/ &
        ipsflg, itsflg, irtsflg, iusflg, hs, ps, ts, rts, us, vs, co2s
@@ -1197,6 +1200,9 @@ subroutine ReadNamelist(fileName)
   csz=0.0
   xkhkm=0.0
   zkhkm=0.0
+  nna = 0.0
+  nnb = 0.0
+  nnc = 0.0
   akmin=0.0
   akmax=0.0
   hgtmin=0.0
@@ -1713,6 +1719,9 @@ subroutine ReadNamelist(fileName)
      write (*, *) "csz=",csz
      write (*, *) "xkhkm=",xkhkm
      write (*, *) "zkhkm=",zkhkm
+     write (*, *) "nna=",nna
+     write (*, *) "nnb=",nnb
+     write (*, *) "nnc=",nnc
      write (*, *) "akmin=",akmin
      write (*, *) "akmax=",akmax
      write (*, *) "hgtmin=",hgtmin

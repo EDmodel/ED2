@@ -762,12 +762,13 @@ subroutine opspec3
    !  imposing iupmethod to be 1 in case the user wants to run idiffk=2 or 3. 
    do ng=1,ngrids
        if (grell_on) then
-          if (idiffk(ng) == 2 .or. idiffk(ng) == 3) then
-            print *, 'FATAL - Grell cumulus requires turbulence with TKE (1,4,5,6,7)'
+          select case (idiffk(ng))
+          case(2,3)
+            print *, 'FATAL - Grell cumulus requires turbulence with TKE (1,4,5,6,7,8)'
             print *, 'Please change your setup for grid ',ng,', currently set to '         &
                      ,idiffk(ng),'...'
             IFATERR=IFATERR+1
-          end if
+          end select
        end if
    end do
   if (any(nnqparm > 0) .and. confrq <= 0.) then
@@ -854,7 +855,7 @@ subroutine opspec3
         ifaterr = ifaterr + 1
      elseif (cap_maxs < 0) then
         do ng=1,ngrids
-           if (idiffk(ng) /= 1 .and. idiffk(ng) /= 7) then
+           if (idiffk(ng) /= 1 .and. idiffk(ng) /= 7 .and. idiffk(ng) /= 8) then
               print *, 'FATAL - cap_maxs(nc) can''t be < 0. if sigma-w is unavailable.'
               print *, 'Yours is currently set to ',cap_maxs
               print *, 'And your turbulence is set to ',idiffk(ng),' for grid ',ng
@@ -964,8 +965,8 @@ subroutine opspec3
   ! check turbulence parameterization.
 
   do ngr=1,ngrids
-     if(idiffk(ngr) < 1.or.idiffk(ngr) > 7)then
-        print*,' fatal - idiffk must be between 1 and 7.'
+     if(idiffk(ngr) < 1.or.idiffk(ngr) > 8)then
+        print*,' fatal - idiffk must be between 1 and 8.'
         ifaterr=ifaterr+1
      endif
   enddo
@@ -982,10 +983,11 @@ subroutine opspec3
 
   ! check that diffusion flags are compatible if using ihorgrad=1
   if(ihorgrad.eq.2)then
-     if(idiffk(ngr) >= 3 .and. idiffk(ngrid) /= 7)then
+     select case (idiffk(ngr))
+     case (3:6)
         print*,' fatal - can''t use ihorgrad=2 if idiffk 3, 4, 5 or 6'
         ifaterr=ifaterr+1
-     endif
+     end select
   endif
 
 ![MLO - Some extra checks for mass and Medvidy's fix on Exner tendency
@@ -1054,7 +1056,7 @@ subroutine opspec3
      print*,' fatal - GEMTM is not available in this version, use LEAF or ED instead...'
      ifaterr=ifaterr+1
   case default
-     print*,' fatal - isfcl must be either 1, 2, or 5. Yours is set to ',ibruvais,'...'
+     print*,' fatal - isfcl must be either 1, 2, or 5. Yours is set to ',isfcl,'...'
      ifaterr=ifaterr+1
   end select
   

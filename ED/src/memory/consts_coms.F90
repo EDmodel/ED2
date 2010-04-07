@@ -34,7 +34,7 @@ Module consts_coms
      , b_rdryi      => rdryi      , b_eta3ple    => eta3ple    , b_cimcp      => cimcp     &
      , b_clmcp      => clmcp      , b_p00k       => p00k       , b_p00ki      => p00ki     &
      , b_halfpi     => halfpi     , b_yr_sec     => yr_sec     , b_sqrttwopi  => sqrttwopi &
-     , b_sqrthalfpi => sqrthalfpi 
+     , b_sqrthalfpi => sqrthalfpi , b_fdns       => fdns       , b_fdnsi      => fdnsi
 
    implicit none
 
@@ -83,7 +83,8 @@ Module consts_coms
    real, parameter :: clmcp      = b_clmcp      , p00k       = b_p00k
    real, parameter :: p00ki      = b_p00ki      , halfpi     = b_halfpi
    real, parameter :: yr_sec     = b_yr_sec     , sqrthalfpi = b_sqrthalfpi
-   real, parameter :: sqrttwopi  = b_sqrttwopi
+   real, parameter :: sqrttwopi  = b_sqrttwopi  , fdns       = b_fdns
+   real, parameter :: fdnsi      = b_fdnsi
 #else
    implicit none
 
@@ -218,6 +219,8 @@ Module consts_coms
    !---------------------------------------------------------------------------------------!
    real, parameter :: idns     = 9.167e2      ! "Hard" ice density              [    kg/m³]
    real, parameter :: idnsi    = 1./idns      ! Inverse of ice density          [    m³/kg]
+   real, parameter :: fdns     = 2.000e2      ! Frost density                   [    kg/m³]
+   real, parameter :: fdnsi    = 1./fdns      ! Inverse of frost density        [    m³/kg]
    real, parameter :: cice     = 2.093e3      ! Ice specific heat (Ci)          [   J/kg/K]
    real, parameter :: cicevlme = wdns * cice  ! Heat capacity × water density   [   J/m³/K]
    real, parameter :: cicei    = 1. / cice    ! Inverse of ice heat capacity    [   kg K/J]
@@ -375,6 +378,8 @@ Module consts_coms
    real(kind=8), parameter :: cliqi8          = dble(cliqi         )
    real(kind=8), parameter :: idns8           = dble(idns          )
    real(kind=8), parameter :: idnsi8          = dble(idnsi         )
+   real(kind=8), parameter :: fdns8           = dble(fdns          )
+   real(kind=8), parameter :: fdnsi8          = dble(fdnsi         )
    real(kind=8), parameter :: cice8           = dble(cice          )
    real(kind=8), parameter :: cicevlme8       = dble(cicevlme      )
    real(kind=8), parameter :: cicei8          = dble(cicei         )

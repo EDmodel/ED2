@@ -20,7 +20,7 @@ subroutine ed_node_decomp(init,standalone,masterworks)
                           , mj0               & ! intent(in)
                           , mibcon            ! ! intent(in)
    use ed_para_coms, only : nmachs            ! ! intent(in)
-   use mem_sites   , only : n_ed_region       ! ! intent(in)
+   use mem_polygons, only : n_ed_region       ! ! intent(in)
    use ed_work_vars, only : work_e            & ! intent(in)
                           , work_v            & ! intent(in)
                           , ed_alloc_work     & ! subroutine
@@ -55,7 +55,7 @@ subroutine ed_node_decomp(init,standalone,masterworks)
    !---------------------------------------------------------------------------------------!
    do ngr = 1,ngrids
       !------------------------------------------------------------------------------------!
-      !     SOI grids always have one point only. Since the structure will be sent.  I am  !
+      !     POI grids always have one point only. Since the structure will be sent.  I am  !
       ! filling the structures.  Only 4 extra numbers will be sent through MPI if we do    !
       ! this.                                                                              !
       !------------------------------------------------------------------------------------!
@@ -82,7 +82,7 @@ subroutine ed_node_decomp(init,standalone,masterworks)
    call ed_load_work_from_history()
 
    !---------------------------------------------------------------------------------------!
-   !     Polygons of interest (SOI/POI) are single polygons, so they get the simplest      !
+   !     Polygons of interest (POI) are single polygons, so they get the simplest          !
    ! configuration: full work, over land.                                                  !
    !---------------------------------------------------------------------------------------!
    do ngr=n_ed_region+1,ngrids
@@ -108,11 +108,11 @@ end subroutine ed_node_decomp
 ! this run.                                                                                !
 !------------------------------------------------------------------------------------------!
 subroutine get_grid
-   use mem_sites   , only : grid_type      & ! intent(in)
+   use mem_polygons, only : grid_type      & ! intent(in)
                           , grid_res       & ! intent(in)
                           , n_ed_region    & ! intent(in)
-                          , soi_lat        & ! intent(in)
-                          , soi_lon        & ! intent(in)
+                          , poi_lat        & ! intent(in)
+                          , poi_lon        & ! intent(in)
                           , ed_reg_lonmin  & ! intent(in)
                           , ed_reg_latmin  ! ! intent(in)
    use grid_coms   , only : ngrids         & ! intent(in)
@@ -160,8 +160,8 @@ subroutine get_grid
    do ifm=n_ed_region+1,ngrids
       do i=1,nnxp(ifm)
          do j=1,nnyp(ifm)
-            work_e(ifm)%glon(i,j)=soi_lon(ifm-n_ed_region)
-            work_e(ifm)%glat(i,j)=soi_lat(ifm-n_ed_region)
+            work_e(ifm)%glon(i,j)=poi_lon(ifm-n_ed_region)
+            work_e(ifm)%glat(i,j)=poi_lat(ifm-n_ed_region)
          end do
       end do
    end do
@@ -185,7 +185,7 @@ subroutine get_work(ifm,nxp,nyp)
                           , soil_database  & ! intent(in)
                           , isoilflg       & ! intent(in)
                           , nslcon         ! ! intent(in)
-   use mem_sites   , only : n_soi          & ! intent(in)
+   use mem_polygons, only : n_poi          & ! intent(in)
                           , grid_res       & ! intent(in)
                           , grid_type      ! ! intent(in)
    implicit none
@@ -213,7 +213,7 @@ subroutine get_work(ifm,nxp,nyp)
                                                                !   that a polygon must have
                                                                !   to be considered in the
                                                                !   regional run.
-   real                   , parameter   :: soi_edge_deg = 0.05 ! 100th of a degree, about 
+   real                   , parameter   :: poi_edge_deg = 0.05 ! 100th of a degree, about 
                                                                !   5.5 km at the Equator.
    !---------------------------------------------------------------------------------------!
 
@@ -229,7 +229,7 @@ subroutine get_work(ifm,nxp,nyp)
    ! used to define the relative coordinate of important points within that polygon:       !
    ! 1 means grid centre, 2 means Northwestern corner, and 3 means Southeastern corner.    !
    !---------------------------------------------------------------------------------------!
-   if (n_soi > 0 .and. ifm <= n_soi) then
+   if (n_poi > 0 .and. ifm <= n_poi) then
       ipy = 0
       do i=1,nxp
          do j = 1,nyp
@@ -239,11 +239,11 @@ subroutine get_work(ifm,nxp,nyp)
             lon_list(1,ipy) = work_e(ifm)%glon(i,j)
             lat_list(1,ipy) = work_e(ifm)%glat(i,j)
             !----- Northwestern corner. ---------------------------------------------------!
-            lon_list(2,ipy) = work_e(ifm)%glon(i,j) - soi_edge_deg
-            lat_list(2,ipy) = work_e(ifm)%glat(i,j) + soi_edge_deg
+            lon_list(2,ipy) = work_e(ifm)%glon(i,j) - poi_edge_deg
+            lat_list(2,ipy) = work_e(ifm)%glat(i,j) + poi_edge_deg
             !----- Southeastern corner. ---------------------------------------------------!
-            lon_list(3,ipy) = work_e(ifm)%glon(i,j) + soi_edge_deg
-            lat_list(3,ipy) = work_e(ifm)%glat(i,j) - soi_edge_deg
+            lon_list(3,ipy) = work_e(ifm)%glon(i,j) + poi_edge_deg
+            lat_list(3,ipy) = work_e(ifm)%glat(i,j) - poi_edge_deg
 
             !----- Adjusting the longitudes to be between -180 and 180. -------------------!
             if (lon_list(1,ipy) >=  180.) lon_list(1,ipy) = lon_list(1,ipy) - 360.
@@ -408,6 +408,8 @@ subroutine ed_parvec_work(ifm,nxp,nyp)
                            , npolys_run          & ! intent(out)
                            , ed_alloc_work_vec   & ! subroutine
                            , ed_nullify_work_vec ! ! subroutine
+   use soil_coms    , only : nslcon              & ! intent(in)
+                           , ed_nstyp            ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer, intent(in) :: ifm
@@ -446,7 +448,11 @@ subroutine ed_parvec_work(ifm,nxp,nyp)
             work_v(ifm)%glat(poly)     = work_e(ifm)%glat(i,j)
             work_v(ifm)%landfrac(poly) = work_e(ifm)%landfrac(i,j)
             work_v(ifm)%work(poly)     = work_e(ifm)%work(i,j)
-            work_v(ifm)%ntext(poly)    = work_e(ifm)%ntext(i,j)
+            if (work_e(ifm)%ntext(i,j) >= 1 .and. work_e(ifm)%ntext(i,j) <= ed_nstyp) then
+               work_v(ifm)%ntext(poly)    = work_e(ifm)%ntext(i,j)
+            else
+               work_v(ifm)%ntext(poly)    = nslcon
+            end if
             work_v(ifm)%xid(poly)      = i
             work_v(ifm)%yid(poly)      = j
          end if
@@ -469,7 +475,10 @@ end subroutine ed_parvec_work
 ! and use this information to fill the local work array.                                   !
 !------------------------------------------------------------------------------------------!
 subroutine ed_load_work_from_history()
-   use ed_max_dims , only : str_len             ! ! intent(in)
+   use ed_max_dims , only : str_len             & ! intent(in)
+                          , maxfiles            & ! intent(in)
+                          , maxlist             & ! intent(in)
+                          , huge_polygon        ! ! intent(in)
    use ed_misc_coms, only : runtype             & ! intent(in)
                           , ied_init_mode       & ! intent(in)
                           , sfilin              & ! intent(in)
@@ -479,7 +488,7 @@ subroutine ed_load_work_from_history()
                           , ed_alloc_work_vec   & ! subroutine
                           , ed_nullify_work_vec & ! subroutine
                           , npolys_run          ! ! intent(out)
-   use mem_sites   , only : n_ed_region         ! ! intent(in)
+   use mem_polygons, only : n_ed_region         ! ! intent(in)
    use hdf5_coms   , only : file_id             & ! intent(inout)
                           , dset_id             & ! intent(inout)
                           , dspace_id           & ! intent(inout)
@@ -499,29 +508,39 @@ subroutine ed_load_work_from_history()
    implicit none
 #if USE_HDF5
    !----- Local variables. ----------------------------------------------------------------!
-   character(len=str_len)              :: hnamel
-   character(len=3)                    :: cgr
-   integer                             :: hdferr
-   integer                             :: npolys_histo
-   integer                             :: ifm
-   integer                             :: ipr
-   integer                             :: iph
-   integer                             :: inn
-   integer                             :: dsetrank
-   logical                             :: exists
-   real(kind=8)                        :: dbletime
-   real                                :: maxwork
-   real, dimension(:,:)  , allocatable :: worklastyear
-   real, dimension(:)    , allocatable :: histowork
-   real, dimension(:)    , allocatable :: histolon
-   real, dimension(:)    , allocatable :: histolat
-   real, dimension(:)    , allocatable :: polydist
+   character(len=str_len), dimension(maxlist)               :: full_list
+   character(len=str_len), dimension(maxfiles)              :: histo_list
+   character(len=str_len)                                   :: hnamel
+   character(len=3)                                         :: cgr
+   integer, dimension(:)                      , allocatable :: pclosest
+   integer, dimension(:)                      , allocatable :: psrcfile
+   integer                                                  :: hdferr
+   integer                                                  :: npolys_histo
+   integer                                                  :: nflist
+   integer                                                  :: nhisto
+   integer                                                  :: nf
+   integer                                                  :: ifm
+   integer                                                  :: ipr
+   integer                                                  :: iph
+   integer                                                  :: inn
+   integer                                                  :: dsetrank
+   integer                                                  :: ipya
+   integer                                                  :: ipyz
+   logical                                                  :: exists
+   logical                                                  :: success
+   real(kind=8)                                             :: dbletime
+   real                                                     :: maxwork
+   real, dimension(13,huge_polygon)                         :: worklastyear
+   real, dimension(huge_polygon)                            :: histowork
+   real, dimension(huge_polygon)                            :: histolon
+   real, dimension(huge_polygon)                            :: histolat
+   real, dimension(huge_polygon)                            :: polydist
    !----- Local constants. ----------------------------------------------------------------!
-   character(len=1)      , parameter   :: vnam        = 'S'
-   real                  , parameter   :: one_twelfth = 1./12.
-   integer               , parameter   :: iparallel   = 0
+   character(len=1), parameter   :: vnam        = 'S'
+   integer         , parameter   :: iparallel   = 0
+   real            , parameter   :: one_twelfth = 1./12.
    !----- External functions. -------------------------------------------------------------!
-   real                  , external    :: dist_gc
+   real            , external    :: dist_gc
    !---------------------------------------------------------------------------------------!
 
 
@@ -529,7 +548,7 @@ subroutine ed_load_work_from_history()
    !     Here we decide whether this is a history or an ED-2.1 restart run.  In case none  !
    ! of them are true, we simply do nothing, and assume homogeneous workload.              !
    !---------------------------------------------------------------------------------------!
-   if (ied_init_mode /= 4 .and. trim(runtype) /= 'HISTORY') then
+   if (ied_init_mode /= 4 .and. ied_init_mode /= 5 .and. trim(runtype) /= 'HISTORY') then
       return
    end if
 
@@ -545,27 +564,68 @@ subroutine ed_load_work_from_history()
 
    !---------------------------------------------------------------------------------------!
    !    Loop over all regions.  This is useful only for regional runs, so we skip the      !
-   ! SOI/POI grids.                                                                        !
+   ! POI grids.                                                                            !
    !---------------------------------------------------------------------------------------!
    gridloop: do ifm = 1, n_ed_region
+
+      !------------------------------------------------------------------------------------!
+      !     Initialise the file list.                                                      !
+      !------------------------------------------------------------------------------------!
+      full_list(:)  = ''
+      histo_list(:) = '' 
       write(cgr,fmt='(a1,i2.2)') 'g',ifm
       
       if (trim(runtype) == 'HISTORY') then
+         !----- Full history restart. -----------------------------------------------------!
          dbletime=dble(current_time%time)     
          call makefnam(hnamel,sfilin,dbletime,current_time%year,current_time%month         &
                       ,current_time%date,0,vnam,cgr,'h5 ')
-         
-      else !if (ied_init_mode == 4) then
+         full_list (1) = hnamel
+         histo_list(1) = hnamel
+         nflist        = 1
+         nhisto        = 1
+
+         !----- Checking whether the only history (restart) file exists. ------------------!
+         inquire(file=trim(hnamel),exist=exists)
+         if (.not.exists) then
+            call fatal_error ('File '//trim(hnamel)//' not found.'                         &
+                             ,'ed_load_work_from_history','ed_para_init.f90')
+         end if
+
+      elseif (ied_init_mode == 4) then
+         !----- Standard restart. ---------------------------------------------------------!
          hnamel = trim(sfilin)//"-"//trim(cgr)//".h5"
+         full_list (1) = hnamel
+         histo_list(1) = hnamel
+         nflist        = 1
+         nhisto        = 1
+
+         !----- Checking whether the only history (restart) file exists. ------------------!
+         inquire(file=trim(hnamel),exist=exists)
+         if (.not.exists) then
+            call fatal_error ('File '//trim(hnamel)//' not found.'                         &
+                             ,'ed_load_work_from_history','ed_para_init.f90')
+         end if
+
+      elseif (ied_init_mode == 5) then
+         !----- Unstructured restart. -----------------------------------------------------!
+
+         !----- Retrieve all files with the specified prefix. -----------------------------!
+         call ed_filelist(full_list,sfilin,nflist)
+         !----- Check every file and save only those that are actually history files. -----!
+         call ed21_fileinfo(nflist,full_list,nhisto,histo_list)
       end if
 
-      !----- Opening the history (restart) file. ------------------------------------------!
-      inquire(file=trim(hnamel),exist=exists)
 
-      if (.not.exists) then
-         call fatal_error ('File '//trim(hnamel)//' not found.'                            &
-                          ,'ed_load_work_from_history','ed_para_init.f90')
-      else
+
+      !------------------------------------------------------------------------------------!
+      !     Loop over all files.  First we initialise some variables.                      !
+      !------------------------------------------------------------------------------------!
+      success = .true.
+      ipyz    = 0
+      h5loop: do nf=1,nhisto
+         hnamel = histo_list(nf)
+
          write (unit=*,fmt='(a,1x,2a)') ' - Reading ',trim(hnamel),'...'
          call h5fopen_f(hnamel, H5F_ACC_RDONLY_F, file_id, hdferr)
          if (hdferr /= 0) then
@@ -573,112 +633,133 @@ subroutine ed_load_work_from_history()
             call fatal_error('Error opening HDF5 file '//trim(hnamel)//'...'               &
                             ,'read_ed21_history_fill','ed_history_io.f90')
          end if
-      end if
 
 
-      !----- Initialise the dimensional control variables for the H5 slabs. ---------------!
-      globdims = 0_8
-      chnkdims = 0_8
-      chnkoffs = 0_8
-      memoffs  = 0_8
-      memdims  = 0_8
-      memsize  = 1_8  
+         !----- Initialise the dimensional control variables for the H5 slabs. ------------!
+         globdims = 0_8
+         chnkdims = 0_8
+         chnkoffs = 0_8
+         memoffs  = 0_8
+         memdims  = 0_8
+         memsize  = 1_8  
 
+         !---------------------------------------------------------------------------------!
+         !     Retrieve the global number of polygons.  Inside the file loop, npolys_histo !
+         ! is the number of polygons in this file.  Its definition will change outside the !
+         ! loop...                                                                         !
+         !---------------------------------------------------------------------------------!
+         globdims(1) = 1_8
+
+         call h5dopen_f(file_id,'NPOLYGONS_GLOBAL', dset_id, hdferr)
+         call h5dget_space_f(dset_id, dspace_id, hdferr)
+         call h5dread_f(dset_id, H5T_NATIVE_INTEGER,npolys_histo,globdims, hdferr)
+         call h5sclose_f(dspace_id, hdferr)
+         call h5dclose_f(dset_id, hdferr)
+ 
+         !----- Determine the first and last polygon "global" position. -------------------!
+         ipya = ipyz + 1
+         ipyz = ipyz + npolys_histo
+
+
+         !----- Load 1D dataset: longitude and latitude. ----------------------------------!
+         dsetrank     = 1
+         globdims (1) = int(npolys_histo,8)
+         chnkdims (1) = int(npolys_histo,8)
+         memdims  (1) = int(npolys_histo,8)
+         memsize  (1) = int(npolys_histo,8)
+         chnkoffs (1) = 0_8
+         memoffs  (1) = 0_8
+
+         call hdf_getslab_r(histolon(ipya:ipyz),'LONGITUDE ',dsetrank,iparallel,.true.)
+         call hdf_getslab_r(histolat(ipya:ipyz),'LATITUDE ' ,dsetrank,iparallel,.true.)
+
+
+         !----- Load the workload into a temporary array. ---------------------------------!
+         dsetrank     = 2
+         globdims (1) = int(13,8)
+         chnkdims (1) = int(13,8)
+         memdims  (1) = int(13,8)
+         memsize  (1) = int(13,8)
+         chnkoffs (1) = 0_8
+         memoffs  (1) = 0_8
+         globdims (2) = int(npolys_histo,8)
+         chnkdims (2) = int(npolys_histo,8)
+         memdims  (2) = int(npolys_histo,8)
+         memsize  (2) = int(npolys_histo,8)
+         chnkoffs (2) = 0_8
+         memoffs  (2) = 0_8
+
+         call hdf_getslab_r(worklastyear(:,ipya:ipyz),'WORKLOAD '                          &
+                           ,dsetrank,iparallel,.false.)
+
+         !----- Here we close the HDF5 file. ----------------------------------------------!
+         call h5fclose_f(file_id, hdferr)
+         if (hdferr /= 0) then
+            write (unit=*,fmt='(a)'      ) 'Could not close the HDF file...'
+            write (unit=*,fmt='(a,1x,i6)') 'HDF error=',hdferr
+            call fatal_error('Could not close the HDF file','ed_load_work_from_history'       &
+                            ,'ed_para_init.f90')
+         end if
+
+         !---------------------------------------------------------------------------------!
+         !    Workload is a recent variable and may not be available in a history file     !
+         ! generated by an earlier version.  Here we check whether anything was read.  In  !
+         ! case not, we assume that all polygons have the same workload.                   !
+         !---------------------------------------------------------------------------------!
+         if (all(worklastyear(:,ipya:ipyz) == 0.)) then
+            write (unit=*,fmt='(a)') ' - Failed reading the workload :( ...'
+            !------------------------------------------------------------------------------! 
+            !     No workload was found, assign ones to all nodes, even if some files      !
+            ! had the information.  Also, we leave the loop and use homogeneous workload   !
+            !------------------------------------------------------------------------------!
+            histowork(:) = 1.
+            success      = .false.
+            exit h5loop
+         else
+            write (unit=*,fmt='(a)') ' - Workload was successfully read :) ...'
+            !----- And here we compute the average workload during the last year. ---------!
+            foundloop: do iph=ipya,ipyz
+               histowork(iph) = one_twelfth * sum(worklastyear(1:12,iph))
+            end do foundloop
+         end if
+      end do h5loop
       !------------------------------------------------------------------------------------!
-      !     Retrieve the global number of polygons.                                        !
+      !     Here we check whether the workload reading was successful or not.  Our action  !
+      ! is going to be different depending on what we provide.                             !
       !------------------------------------------------------------------------------------!
-      globdims(1) = 1_8
+      if (success) then
+         !---------------------------------------------------------------------------------!
+         !     History work was successfully loaded, now we match the workload with the    !
+         ! actual polygons by using the nearest neighbour.  We then divide by the maximum  !
+         ! workload that is actually used in the simulation to find the relative workload. !
+         !---------------------------------------------------------------------------------!
+         !----- Change the definition of npolys_histo to the global number of polygons. ---!
+         npolys_histo = ipyz
+         maxwork = 0.
+         polydist = 1.e20
+         runpolyloopyes: do ipr= 1,npolys_run(ifm)
+            histopolyloop: do iph = 1, npolys_histo
+               polydist(iph) = dist_gc(work_v(ifm)%glon(ipr),histolon(iph)                 &
+                                      ,work_v(ifm)%glat(ipr),histolat(iph))
+            end do histopolyloop
 
-      call h5dopen_f(file_id,'NPOLYGONS_GLOBAL', dset_id, hdferr)
-      call h5dget_space_f(dset_id, dspace_id, hdferr)
-      call h5dread_f(dset_id, H5T_NATIVE_INTEGER,npolys_histo,globdims, hdferr)
-      call h5sclose_f(dspace_id, hdferr)
-      call h5dclose_f(dset_id, hdferr)
-     
-      !------------------------------------------------------------------------------------!
-      !     Now that we know the number of polygons in the history, we allocate the work   !
-      ! array, and the scratch that will receive the temporary workload from last year.    !
-      !------------------------------------------------------------------------------------!
-      allocate(histolon(npolys_histo),histolat(npolys_histo),polydist(npolys_histo))
-      allocate(histowork(npolys_histo),worklastyear(13,npolys_histo))
+            !----- The closest polygon is the one with minimum distance... ----------------!
+            iph                   = minloc(polydist,dim=1)
+            work_v(ifm)%work(ipr) = histowork(iph)
+            maxwork               = max(maxwork,work_v(ifm)%work(ipr))
 
-      !----- Load 1D dataset: longitude and latitude. -------------------------------------!
-      dsetrank     = 1
-      globdims (1) = int(npolys_histo,8)
-      chnkdims (1) = int(npolys_histo,8)
-      memdims  (1) = int(npolys_histo,8)
-      memsize  (1) = int(npolys_histo,8)
-      chnkoffs (1) = 0_8
-      memoffs  (1) = 0_8
-
-      call hdf_getslab_r(histolon,'LONGITUDE ',dsetrank,iparallel,.true.)
-      call hdf_getslab_r(histolat,'LATITUDE ' ,dsetrank,iparallel,.true.)
-
-
-      !----- Load the workload into a temporary array. ------------------------------------!
-      dsetrank     = 2
-      globdims (1) = int(13,8)
-      chnkdims (1) = int(13,8)
-      memdims  (1) = int(13,8)
-      memsize  (1) = int(13,8)
-      chnkoffs (1) = 0_8
-      memoffs  (1) = 0_8
-      globdims (2) = int(npolys_histo,8)
-      chnkdims (2) = int(npolys_histo,8)
-      memdims  (2) = int(npolys_histo,8)
-      memsize  (2) = int(npolys_histo,8)
-      chnkoffs (2) = 0_8
-      memoffs  (2) = 0_8
-
-      call hdf_getslab_r(worklastyear,'WORKLOAD ' ,dsetrank,iparallel,.false.)
-
-      !----- Here we close the HDF5 file. -------------------------------------------------!
-      call h5fclose_f(file_id, hdferr)
-      if (hdferr /= 0) then
-         write (unit=*,fmt='(a)'      ) 'Could not close the HDF file...'
-         write (unit=*,fmt='(a,1x,i6)') 'HDF error=',hdferr
-         call fatal_error('Could not close the HDF file','ed_load_work_from_history'       &
-                         ,'ed_para_init.f90')
-      end if
-
-      !------------------------------------------------------------------------------------!
-      !    Workload is a recent variable and may not be available in a history file        !
-      ! generated by an earlier version.  Here we check whether anything was read.  In     !
-      ! case not, we assume that all polygons have the same workload.                      !
-      !------------------------------------------------------------------------------------!
-      if (all(worklastyear == 0.)) then
-         write (unit=*,fmt='(a,1x,2a)') ' - Failed reading the workload :( ...'
-         !----- No workload was found, assign ones to all nodes... ------------------------!
-         notfoundloop: do iph=1,npolys_histo
-            histowork(iph) = 1.
-         end do notfoundloop
+         end do runpolyloopyes
+         !---------------------------------------------------------------------------------!
       else
-         write (unit=*,fmt='(a,1x,2a)') ' - Workload was successfully read...'
-         !----- And here we compute the average workload during the last year. ------------!
-         foundloop: do iph=1,npolys_histo
-            histowork(iph) = one_twelfth * sum(worklastyear(1:12,iph))
-         end do foundloop
+         !---------------------------------------------------------------------------------!
+         !     Fiasco.  Since we didn't properly read the workload, use homogeneous        !
+         ! instead.                                                                        !
+         !---------------------------------------------------------------------------------!
+         runpolyloopno: do ipr= 1,npolys_run(ifm)
+            work_v(ifm)%work(ipr) = 1.
+         end do runpolyloopno
+         maxwork = 1.
       end if
-
-      !------------------------------------------------------------------------------------!
-      !     Now that the history work is loaded, we match the workload with the actual     !
-      ! polygons by using the nearest neighbour.  We then divide by the maximum workload   !
-      ! that is actually used in the simulation to find the relative workload.             !
-      !------------------------------------------------------------------------------------!
-      maxwork = 0.
-      runpolyloop: do ipr= 1,npolys_run(ifm)
-         histopolyloop: do iph = 1, npolys_histo
-            polydist(iph) = dist_gc(work_v(ifm)%glon(ipr),histolon(iph)                    &
-                                   ,work_v(ifm)%glat(ipr),histolat(iph))
-         end do histopolyloop
-
-         !----- The closest polygon is the one with minimum distance... -------------------!
-         iph                   = minloc(polydist,dim=1)
-         work_v(ifm)%work(ipr) = histowork(iph)
-         maxwork               = max(maxwork,work_v(ifm)%work(ipr))
-      end do runpolyloop
-      !------------------------------------------------------------------------------------!
-
 
 
 
@@ -687,8 +768,8 @@ subroutine ed_load_work_from_history()
       ! switch the relative workload by the cumulative sum.                                !
       !------------------------------------------------------------------------------------!
       if (maxwork <= 0) then
-         write (unit=*,fmt='(a,1x,i6)') ' + Grid:             ',ifm
-         write (unit=*,fmt='(a,1x,i6)') ' + Maximum workload: ',maxwork
+         write (unit=*,fmt='(a,1x,i6)'    ) ' + Grid:             ',ifm
+         write (unit=*,fmt='(a,1x,es12.5)') ' + Maximum workload: ',maxwork
          call fatal_error('The maximum workload can''t be right!!!'                        &
                          ,'ed_load_work_from_history','ed_para_init.f90')
       else
@@ -697,12 +778,6 @@ subroutine ed_load_work_from_history()
          end do normpolyloop
       end if
       !------------------------------------------------------------------------------------!
-
-
-
-      !----- Free the memory associated with the scratch arrays. --------------------------!
-      deallocate(histolon,histolat,polydist,histowork,worklastyear)
-
    end do gridloop
 
    !----- Close the HDF environment. ------------------------------------------------------!

@@ -45,7 +45,7 @@ module disturbance_utils
       use ed_max_dims  , only : n_dist_types            & ! intent(in)
                               , n_pft                   & ! intent(in)
                               , n_dbh                   ! ! intent(in)
-      use mem_sites    , only : maxcohort               ! ! intent(in)
+      use mem_polygons , only : maxcohort               ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(edtype)                   , target      :: cgrid

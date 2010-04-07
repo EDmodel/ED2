@@ -98,8 +98,8 @@ subroutine rams_mem_alloc(proc_type)
                          zero_mass,     & !subroutine
                          filltab_mass     !subroutine
 
-   ! Needed for Nakanishi and Niino turbulence closure
-   use turb_constants, only: assign_const_nakanishi
+   ! Needed for Nakanishi and Niino and Helfand/Labraga turbulence parameters
+   use turb_coms, only: assign_turb_params
    
    
    ! For old Grell 
@@ -369,8 +369,11 @@ subroutine rams_mem_alloc(proc_type)
 
       call filltab_turb(turb_g(ng),turbm_g(ng),imean,nmzp(ng),nmxp(ng),nmyp(ng),ng)
    end do
-   !----- Compute some Nakanishi and Niino constants --------------------------------------!
-   if (any(idiffk(1:ngrids) == 7)) call assign_const_nakanishi()
+   !----- Compute some turbulence constants. ----------------------------------------------!
+   if (any(idiffk(1:ngrids) == 1) .or. any(idiffk(1:ngrids) == 7) .or.                     &
+       any(idiffk(1:ngrids) == 8)) then
+      call assign_turb_params()
+   end if
    !---------------------------------------------------------------------------------------!
 
 

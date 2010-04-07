@@ -86,11 +86,11 @@ subroutine canopy_photosynthesis(csite,ipa,vels,atm_tmp,prss,ed_ktrans,ntext_soi
 
    !----- Calculate liquid water available for transpiration. -----------------------------!
    available_liquid_water(nzg) = wdns * dslz(nzg) * soil_fracliq(nzg)                      &
-                               * max(0.0, soil_water(nzg) - soil(ntext_soil(nzg))%soilcp )
+                               * max(0.0, soil_water(nzg) - soil(ntext_soil(nzg))%soilwp )
    do k1 = nzg-1, lsl, -1
       available_liquid_water(k1) = available_liquid_water(k1+1)                            &
                                  + wdns * dslz(k1) * soil_fracliq(k1)                      &
-                                 * max(0.0, soil_water(k1) - soil(ntext_soil(k1))%soilcp )
+                                 * max(0.0, soil_water(k1) - soil(ntext_soil(k1))%soilwp )
    end do
    !---------------------------------------------------------------------------------------!
 
@@ -363,9 +363,9 @@ subroutine canopy_photosynthesis(csite,ipa,vels,atm_tmp,prss,ed_ktrans,ntext_soi
 
             !------------------------------------------------------------------------------!
             !      Find layer in root zone with highest slpotv AND soil_water above        !
-            ! minimum soilcp.  Set ktrans to this layer.                                   !
+            ! minimum soilwp.  Set ktrans to this layer.                                   !
             !------------------------------------------------------------------------------!
-            if (slpotv > swp .and. soil_water(k2) > soil(nts)%soilcp) then
+            if (slpotv > swp .and. soil_water(k2) > soil(nts)%soilwp) then
                swp = slpotv
                ed_ktrans(k1) = k2
             end if

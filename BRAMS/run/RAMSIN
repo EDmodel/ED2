@@ -683,6 +683,14 @@
    CSZ     = .35,.35,        ! Deformation vert. K's coefficient
    XKHKM   =  3., 3.,        ! Ratio of horiz K_h to K_m for deformation
    ZKHKM   =  3., 3.,        ! Ratio of vert K_h to K_m for deformation
+   
+   !---------------------------------------------------------------------------------------!
+   !      The following variables correspond to the "A", "B", and "C" constants for the    !
+   ! Nakanishi and Niino turbulence closure.                                               !
+   !---------------------------------------------------------------------------------------!
+   NNA = 1.18, 0.665,                     ! A1 and A2.
+   NNB = 24.0, 15.0 ,                     ! B1 and B2.
+   NNC = 0.137, 0.700, 0.323, 0.00, 0.20, ! C1, C2, C3, C4, and C5.
 
    !---------------------------------------------------------------------------!
    !  The following values can be used to scale the horizontal eddy            !

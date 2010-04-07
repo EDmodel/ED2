@@ -16,9 +16,30 @@ implicit none
 
 integer :: k,nnn
 
+type soil_class
+   real :: slpots     ! Soil moisture potential at saturation                 [       m]
+   real :: slmsts     ! Soil moisture at saturation                           [   m3/m3]
+   real :: slbs       ! B exponent                                            [     n/d]
+   real :: slcpd      ! Specific heat of dry soil                             [  J/m3/K]
+   real :: soilcp     ! Dry soil capacity (at -3.1MPa)                        [   m3/m3]
+   real :: soilwp     ! Wilting point capacity (at -1.5MPa)                   [   m3/m3]
+   real :: slcons     ! hydraulic conductivity at saturation                  [     m/s]
+   real :: slcons0    ! ?Dry soil density (also total soil porosity)          [   kg/m3]
+   real :: soilcond0
+   real :: soilcond1
+   real :: soilcond2
+   real :: sfldcap
+   real :: xsand
+   real :: xclay
+   real :: xorgan
+   real :: xrobulk
+   real :: slden
+end type soil_class
+
 real :: romin,roorg,slfcap,refdepth,tmin,ratio,xmin
 real, dimension     (nstyp) :: xsand,xclay,xorgan,xrobulk
-real, dimension   (8,nstyp) :: soilparms
+type(soil_class) , dimension(nstyp)            :: soilparms
+
 real, dimension (12,0:nvtyp+nvtyp_teb) :: bioparms
 
 !  Soil Characteristics (see Clapp & Hornberger, 1978; McCumber & Pielke,
@@ -32,30 +53,9 @@ real, dimension (12,0:nvtyp+nvtyp_teb) :: bioparms
 !  slcpd   - dry soil volumetric heat capacity (J/m3/K)
 !  slden   - dry soil density (kg/m3) (also total soil porosity)
 
-data soilparms/  &
-!-----------------------------------------------------------------------------
-!slpots        slbs          slcons0         slden       USDA SOIL CLASS
-!      slmsts         slcons          slcpd              # AND NAME
-!-----------------------------------------------------------------------------
- -.121, .395,  4.05, .18e-3, .50e-3, 1465.e3, 1600.,.135  & !  1 sand
-,-.090, .410,  4.38, .16e-3, .60e-3, 1407.e3, 1600.,.150  & !  2 loamy sand
-,-.218, .435,  4.9 , .34e-4, .77e-3, 1344.e3, 1600.,.195  & !  3 sandy loam
-,-.786, .485,  5.3 , .72e-5, .11e-4, 1273.e3, 1600.,.255  & !  4 silt loam
-,-.478, .451,  5.39, .69e-5, .22e-2, 1214.e3, 1600.,.240  & !  5 loam
-,-.299, .420,  7.12, .63e-5, .15e-2, 1177.e3, 1600.,.255  & !  6 sandy clay loam
-,-.356, .477,  7.75, .17e-5, .11e-3, 1319.e3, 1600.,.322  & !  7 silty clay loam
-,-.630, .476,  8.52, .24e-5, .22e-2, 1227.e3, 1600.,.325  & !  8 clay loam
-,-.153, .426, 10.4 , .22e-5, .22e-5, 1177.e3, 1600.,.310  & !  9 sandy clay
-,-.490, .492, 10.4 , .10e-5, .10e-5, 1151.e3, 1600.,.370  & ! 10 silty clay
-,-.405, .482, 11.4 , .13e-5, .13e-5, 1088.e3, 1600.,.367  & ! 11 clay
-,-.356, .863,  7.75, .80e-5, .80e-5,  874.e3,  300.,.535/   ! 12 peat
 
-data  xsand  /.97,.92,.80,.57,.60,.65,.35,.48,.50,.30,.25,.20/
-data  xclay  /.03,.07,.18,.40,.35,.31,.59,.45,.42,.61,.65,.20/
-data  xorgan /.00,.01,.02,.03,.05,.04,.06,.07,.08,.09,.10,.60/
 
-data  xrobulk/1200.,1250.,1300.,1400.,1350.,1350.  &
-             ,1500.,1450.,1450.,1650.,1700., 500./
+
 
 !         LEAF-3 BIOPHYSICAL PARAMETERS BY LANDUSE CLASS NUMBER
 
@@ -89,8 +89,26 @@ data bioparms/  &
  .17, .24, .95, 4.1, 7.0, 1.0,  .0, .90, 32.0, 1.5, .0, 500., & ! 20  Wetland evergreen broadleaf tree
  .16, .24, .96, 5.1, 2.0, 1.5, 1.0, .10, 20.0, 1.5, .0, 500./   ! 21  Very urban
 
-! Soil constants
 
+
+! Soil constants
+!-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------!
+!                     slpots     slmsts       slbs     slcpd         soilcp        soilwp        slcons       slcons0 soilcond0 soilcond1 soilcond2       sfldcap    xsand    xclay   xorgan xrobulk    slden !
+!-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------!
+soilparms= (/ &
+     soil_class(-0.049831046,  0.373250,  3.295000,  1465000.,  0.026183447,  0.032636854,  2.446420e-5,  0.000500000,   0.3000,   4.8000,  -2.7000,  0.132130936,  0.9200,  0.0300,  0.0500,   1200.,  1600.)  & ! 1. Sand
+  ,  soil_class(-0.068643592,  0.386340,  3.796000,  1407000.,  0.041873866,  0.050698650,  1.751180e-5,  0.000600000,   0.3000,   4.6600,  -2.6000,  0.155720881,  0.8200,  0.0600,  0.1200,   1250.,  1600.)  & ! 2. Loamy Sand
+  ,  soil_class(-0.155095787,  0.418940,  4.496000,  1344000.,  0.076932647,  0.090413463,  8.228700e-6,  0.000769000,   0.2900,   4.2700,  -2.3100,  0.199963447,  0.5800,  0.1000,  0.3200,   1300.,  1600.)  & ! 3. Sandy loam
+  ,  soil_class(-0.659933234,  0.476050,  5.090000,  1273000.,  0.141599910,  0.163306007,  2.396240e-6,  0.000010600,   0.2700,   3.4700,  -1.7400,  0.266720155,  0.1700,  0.1300,  0.7000,   1400.,  1600.)  & ! 4. Silt loam
+  ,  soil_class(-0.238341682,  0.437280,  5.797000,  1214000.,  0.126501190,  0.143377074,  4.732940e-6,  0.002200000,   0.2800,   3.6300,  -1.8500,  0.247334654,  0.4300,  0.1800,  0.3900,   1350.,  1600.)  & ! 5. Loam
+  ,  soil_class(-0.121199269,  0.412650,  7.165000,  1177000.,  0.137648733,  0.152325872,  6.405180e-6,  0.001500000,   0.2800,   3.7800,  -1.9600,  0.250954745,  0.5800,  0.2700,  0.1500,   1350.,  1600.)  & ! 6. Sandy clay loam
+  ,  soil_class(-0.627769194,  0.478220,  8.408000,  1319000.,  0.228171947,  0.248747504,  1.435260e-6,  0.000107000,   0.2600,   2.7300,  -1.2000,  0.333825332,  0.1000,  0.3400,  0.5600,   1500.,  1600.)  & ! 7. Silty clay loam
+  ,  soil_class(-0.281968114,  0.446980,  8.342000,  1227000.,  0.192624431,  0.210137962,  2.717260e-6,  0.002200000,   0.2700,   3.2300,  -1.5600,  0.301335491,  0.3200,  0.3400,  0.3400,   1450.,  1600.)  & ! 8. Clay loam
+  ,  soil_class(-0.121283019,  0.415620,  9.538000,  1177000.,  0.182198910,  0.196607427,  4.314510e-6,  0.000002167,   0.2700,   3.3200,  -1.6300,  0.286363001,  0.5200,  0.4200,  0.0600,   1450.,  1600.)  & ! 9. Sandy clay
+  ,  soil_class(-0.601312179,  0.479090,  10.46100,  1151000.,  0.263228486,  0.282143846,  1.055190e-6,  0.000001033,   0.2500,   2.5800,  -1.0900,  0.360319788,  0.0600,  0.4700,  0.4700,   1650.,  1600.)  & !10. Silty clay
+  ,  soil_class(-0.286417797,  0.452300,  12.14000,  1088000.,  0.253968998,  0.269618857,  1.427350e-6,  0.000001283,   0.2500,   2.4000,  -0.9600,  0.348432364,  0.2200,  0.5800,  0.2000,   1700.,  1600.)  & !11. Clay
+  ,  soil_class(-0.534564359,  0.469200,  6.180000,  8740000.,  0.167047523,  0.187868805,  2.357930e-6,  0.000008000,   0.0600,   0.4600,   0.0000,  0.285709966,  0.2000,  0.2000,  0.6000,    500.,   300.)  & !12. Peat
+            /)
 ! Thermal conductivity in J/msK
 cka = 0.418684 * 0.0615
 ckw = 0.418684 * 1.45
@@ -103,27 +121,36 @@ slfcap = -10. / 3.
 refdepth = -2.0
 
 do nnn = 1,nstyp
-   slcons0(nnn) = soilparms(5,nnn)
-   fhydraul(nnn) = log (soilparms(4,nnn) / soilparms(5,nnn)) / refdepth
+   slcons0(nnn) = soilparms(nnn)%slcons0
+   fhydraul(nnn) = log (soilparms(nnn)%slcons / soilparms(nnn)%slcons0) / refdepth
 
    do k = 1,nzg
-      slcons1(k,nnn) = soilparms(4,nnn)     ! ORIGINAL form - const with depth
-!     slcons1(k,nnn) = soilparms(5,nnn)  &  ! TOPMODEL form - large at surface
-!        * exp(slz(k) * fhydraul(nnn))      !    and exp decrease with depth
-   enddo
+      slcons1(k,nnn) = soilparms(nnn)%slcons      ! ORIGINAL form - const with depth
+!     slcons1(k,nnn) = soilparms(nnn)%slcons0  &  ! TOPMODEL form - large at surface
+!        * exp(slz(k) * fhydraul(nnn))            !    and exp decrease with depth
+   end do
 
-   slpots(nnn) = soilparms(1,nnn)
-   slmsts(nnn) = soilparms(2,nnn)
-   slbs(nnn)   = soilparms(3,nnn)
-   slcons(nnn) = soilparms(4,nnn)
-   slcons00(nnn) = soilparms(5,nnn)
-   slcpd(nnn)  = soilparms(6,nnn)
-   slden(nnn)  = soilparms(7,nnn)
-   sfldcap(nnn)  = soilparms(8,nnn)
+   slpots   (nnn) = soilparms(nnn)%slpots
+   slmsts   (nnn) = soilparms(nnn)%slmsts
+   slbs     (nnn) = soilparms(nnn)%slbs
+   slcons   (nnn) = soilparms(nnn)%slcons
+   slcons00 (nnn) = soilparms(nnn)%slcons0
+   slcpd    (nnn) = soilparms(nnn)%slcpd
+   slden    (nnn) = soilparms(nnn)%slden
+   sfldcap  (nnn) = soilparms(nnn)%sfldcap
+   soilcp   (nnn) = soilparms(nnn)%soilcp
+   soilwp   (nnn) = soilparms(nnn)%soilwp
+   soilcond0(nnn) = soilparms(nnn)%soilcond0
+   soilcond1(nnn) = soilparms(nnn)%soilcond1
+   soilcond2(nnn) = soilparms(nnn)%soilcond2
+   xsand    (nnn) = soilparms(nnn)%xsand
+   xclay    (nnn) = soilparms(nnn)%xclay
+   xorgan   (nnn) = soilparms(nnn)%xorgan
+   xrobulk  (nnn) = soilparms(nnn)%xrobulk
+
 
    emisg(nnn) = .98
    slfc(nnn) = slmsts(nnn) * (slfcap / slpots(nnn)) ** (-1. / slbs(nnn))
-   soilcp(nnn) = 0.1 - 0.07 * xsand(nnn)
 
 !    tmin = xsand(nnn) + xclay(nnn)
 !    romean = xorgan(nnn) * roorg + tmin * romin
@@ -255,14 +282,14 @@ end subroutine sfcinit_file
 !------------------------------------------------------------------------------------------!
 subroutine sfcinit_nofile(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,seatp,seatf       &
                          ,soil_water,soil_energy,soil_text,sfcwater_mass,sfcwater_energy   &
-                         ,sfcwater_depth,ustar,tstar,rstar,cstar,veg_fracarea,veg_lai      &
-                         ,veg_tai,veg_rough,veg_height,veg_albedo,patch_area,patch_rough   &
-                         ,patch_wetind,leaf_class,soil_rough,sfcwater_nlev,stom_resist     &
-                         ,ground_rsat,ground_rvap,ground_temp,ground_fliq,veg_water        &
-                         ,veg_hcap,veg_energy,can_prss,can_theta,can_rvap,can_co2,sensible &
-                         ,evap,transp,gpp,plresp,resphet,veg_ndvip,veg_ndvic,veg_ndvif     &
-                         ,snow_mass,snow_depth,rvv,prsv,piv,vt2da,vt2db,glat,glon,zot,flpw &
-                         ,rtgt)
+                         ,sfcwater_depth,ustar,tstar,rstar,cstar,veg_fracarea,veg_agb      &
+                         ,veg_lai,veg_tai,veg_rough,veg_height,veg_albedo,patch_area       &
+                         ,patch_rough,patch_wetind,leaf_class,soil_rough,sfcwater_nlev     &
+                         ,stom_resist,ground_rsat,ground_rvap,ground_temp,ground_fliq      &
+                         ,veg_water,veg_hcap,veg_energy,can_prss,can_theta,can_rvap        &
+                         ,can_co2,sensible,evap,transp,gpp,plresp,resphet,veg_ndvip        &
+                         ,veg_ndvic,veg_ndvif,snow_mass,snow_depth,rvv,prsv,piv,vt2da      &
+                         ,vt2db,glat,glon,zot,flpw,rtgt)
    use mem_grid
    use mem_leaf
    use leaf_coms
@@ -280,9 +307,10 @@ subroutine sfcinit_nofile(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,seatp,s
    real, dimension(mzs,n2,n3,npat), intent(inout) :: sfcwater_mass,sfcwater_energy
    real, dimension(mzs,n2,n3,npat), intent(inout) :: sfcwater_depth
    real, dimension(    n2,n3,npat), intent(inout) :: ustar,tstar,rstar,cstar
-   real, dimension(    n2,n3,npat), intent(inout) :: veg_fracarea,veg_lai,veg_tai,veg_rough
-   real, dimension(    n2,n3,npat), intent(inout) :: veg_height,veg_albedo,patch_area
-   real, dimension(    n2,n3,npat), intent(inout) :: patch_rough,patch_wetind,leaf_class
+   real, dimension(    n2,n3,npat), intent(inout) :: veg_fracarea,veg_agb,veg_lai,veg_tai
+   real, dimension(    n2,n3,npat), intent(inout) :: veg_rough,veg_height,veg_albedo
+   real, dimension(    n2,n3,npat), intent(inout) :: patch_area,patch_rough,patch_wetind
+   real, dimension(    n2,n3,npat), intent(inout) :: leaf_class
    real, dimension(    n2,n3,npat), intent(inout) :: soil_rough,sfcwater_nlev,stom_resist
    real, dimension(    n2,n3,npat), intent(inout) :: ground_rsat,ground_rvap
    real, dimension(    n2,n3,npat), intent(inout) :: ground_temp,ground_fliq
@@ -335,6 +363,11 @@ subroutine sfcinit_nofile(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,seatp,s
          veg_energy(i,j,1)  = 0.0
          veg_water (i,j,1)  = 0.0
          veg_hcap  (i,j,1)  = 0.0
+         
+         !----- Unless we are solving water lilies or phytoplankton, these should be 0. ---!
+         veg_lai   (i,j,1)  = 0.0
+         veg_tai   (i,j,1)  = 0.0
+         veg_agb   (i,j,1)  = 0.0
 
          !----- Soil properties. Except for top layer energy, everything is set to zero. --!
          soil_energy(:,i,j,1) = 0.
@@ -349,6 +382,9 @@ subroutine sfcinit_nofile(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,seatp,s
          gpp      (i,j,1) = 0.0
          plresp   (i,j,1) = 0.0
          resphet  (i,j,1) = 0.0
+
+         !----- Above-ground biomass.  This should be always 0 for water patches. ---------!
+         veg_agb  (i,j,1) = 0.0
 
          !---------------------------------------------------------------------------------!
          !     We now loop over the land patches.  Some properties such as canopy          !
@@ -395,10 +431,14 @@ subroutine sfcinit_nofile(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,seatp,s
             veg_water (i,j,ipat) = 0.
             veg_energy(i,j,ipat) = veg_hcap(i,j,ipat) * can_temp
 
-            can_prss (i,j,ipat) = can_prss (i,j,1)
-            can_theta(i,j,ipat) = can_theta(i,j,1)
-            can_rvap (i,j,ipat) = can_rvap (i,j,1)
-            can_co2  (i,j,ipat) = can_co2  (i,j,1)
+            !----- Above-ground biomass.  This is non-0 only when we run ED-2. ------------!
+            veg_agb   (i,j,ipat) = 0.
+
+            !----- Canopy air properties.  Initially we just assume same properties. ------!
+            can_prss  (i,j,ipat) = can_prss (i,j,1)
+            can_theta (i,j,ipat) = can_theta(i,j,1)
+            can_rvap  (i,j,ipat) = can_rvap (i,j,1)
+            can_co2   (i,j,ipat) = can_co2  (i,j,1)
 
             !----- Fluxes.  Initially they should be all zero. ----------------------------!
             sensible (i,j,ipat) = 0.0
@@ -581,8 +621,13 @@ subroutine datp_datq(datp, datq)
   ! Temporario
   if (TEB_SPM==1) catb(50) = 21
 
-  datq = catb(nint(datp))
-  
+  !SRF 2008: OGE-INPE data set has values greater than 95
+  if (nint(datp) >= 0. .and. nint(datp) <= 95. ) then
+     datq = catb(nint(datp))
+  else
+     datq = catb(0)
+  end if
+
   return
 end subroutine datp_datq
 

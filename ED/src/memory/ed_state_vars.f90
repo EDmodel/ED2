@@ -17,7 +17,6 @@ module ed_state_vars
 
 
 
-
 !============================================================================!
 !============================================================================!
   !------------------------------------------------------------------------!
@@ -1192,7 +1191,7 @@ module ed_state_vars
      real,pointer,dimension(:,:) :: avg_soil_water
      real,pointer,dimension(:,:) :: avg_soil_temp
      real,pointer,dimension(:,:) :: avg_soil_fracliq
-     real,pointer,dimension(:)   :: avg_soil_wetness
+     real,pointer,dimension(:)   :: avg_soil_wetness	!relative to wilting point
      
      real,pointer,dimension(:) :: avg_skin_temp
      real,pointer,dimension(:) :: avg_available_water
@@ -1618,6 +1617,8 @@ module ed_state_vars
      real, pointer, dimension(:)   :: dmean_atm_shv       ! (npolygons)
      real, pointer, dimension(:)   :: dmean_atm_prss      ! (npolygons)
      real, pointer, dimension(:)   :: dmean_atm_vels      ! (npolygons)
+     real, pointer, dimension(:)   :: dmean_rshort        ! (npolygons)
+     real, pointer, dimension(:)   :: dmean_rlong         ! (npolygons)
 
      ! Daily average residuals
      real, pointer, dimension(:) :: dmean_co2_residual    ! [umol_CO2/m2]
@@ -1696,6 +1697,8 @@ module ed_state_vars
      real, pointer, dimension(:)   :: mmean_veg_temp      ! (npolygons)
      real, pointer, dimension(:)   :: mmean_veg_hcap      ! (npolygons)
      real, pointer, dimension(:)   :: mmean_atm_temp      ! (npolygons)
+     real, pointer, dimension(:)   :: mmean_rlong     ! (npolygons)
+     real, pointer, dimension(:)   :: mmean_rshort    ! (npolygons)
      real, pointer, dimension(:)   :: mmean_atm_shv       ! (npolygons)
      real, pointer, dimension(:)   :: mmean_atm_prss      ! (npolygons)
      real, pointer, dimension(:)   :: mmean_atm_vels      ! (npolygons)
@@ -1748,7 +1751,7 @@ module ed_state_vars
   ! These variables are allocated and assigned before the parallel distribution, so we !
   ! don't want to keep it inside the structure. In case of serial runs, we should have !
   ! offset full of zeroes and the polygons numbered from 1 to the number of polygons.  !
-  ! In a non-SOI parallel run, we want to allocate "mpolygons" in each node, but then  !
+  ! In a non-POI parallel run, we want to allocate "mpolygons" in each node, but then  !
   ! we need to keep track of the actual polygon "ID" to write the output correctly.    !
   !------------------------------------------------------------------------------------!
   
@@ -2124,6 +2127,8 @@ contains
           allocate(cgrid%dmean_atm_shv        (             npolygons))
           allocate(cgrid%dmean_atm_prss       (             npolygons))
           allocate(cgrid%dmean_atm_vels       (             npolygons))
+          allocate(cgrid%dmean_rshort         (             npolygons))
+          allocate(cgrid%dmean_rlong          (             npolygons))
 
           allocate(cgrid%dmean_co2_residual   (             npolygons))
           allocate(cgrid%dmean_energy_residual(             npolygons))
@@ -2175,6 +2180,8 @@ contains
           allocate(cgrid%mmean_veg_temp       (             npolygons))
           allocate(cgrid%mmean_veg_hcap       (             npolygons))
           allocate(cgrid%mmean_atm_temp       (             npolygons))
+          allocate(cgrid%mmean_rshort         (             npolygons))
+          allocate(cgrid%mmean_rlong          (             npolygons))
           allocate(cgrid%mmean_atm_shv        (             npolygons))
           allocate(cgrid%mmean_atm_prss       (             npolygons))
           allocate(cgrid%mmean_atm_vels       (             npolygons))
@@ -3048,6 +3055,8 @@ contains
        nullify(cgrid%dmean_atm_shv           )
        nullify(cgrid%dmean_atm_prss          )
        nullify(cgrid%dmean_atm_vels          )
+       nullify(cgrid%dmean_rshort            )
+       nullify(cgrid%dmean_rlong             )
        nullify(cgrid%dmean_co2_residual      )
        nullify(cgrid%dmean_energy_residual   )
        nullify(cgrid%dmean_water_residual    )
@@ -3091,6 +3100,8 @@ contains
        nullify(cgrid%mmean_veg_hcap          )
        nullify(cgrid%mmean_veg_temp          )
        nullify(cgrid%mmean_atm_temp          )
+       nullify(cgrid%mmean_rshort            )
+       nullify(cgrid%mmean_rlong             )
        nullify(cgrid%mmean_atm_shv           )
        nullify(cgrid%mmean_atm_prss          )
        nullify(cgrid%mmean_atm_vels          )
@@ -3918,6 +3929,8 @@ contains
        if(associated(cgrid%dmean_atm_shv           )) deallocate(cgrid%dmean_atm_shv           )
        if(associated(cgrid%dmean_atm_prss          )) deallocate(cgrid%dmean_atm_prss          )
        if(associated(cgrid%dmean_atm_vels          )) deallocate(cgrid%dmean_atm_vels          )
+       if(associated(cgrid%dmean_rshort            )) deallocate(cgrid%dmean_rshort            )
+       if(associated(cgrid%dmean_rlong             )) deallocate(cgrid%dmean_rlong             )
        if(associated(cgrid%dmean_co2_residual      )) deallocate(cgrid%dmean_co2_residual      )
        if(associated(cgrid%dmean_energy_residual   )) deallocate(cgrid%dmean_energy_residual   )
        if(associated(cgrid%dmean_water_residual    )) deallocate(cgrid%dmean_water_residual    )
@@ -3962,6 +3975,8 @@ contains
        if(associated(cgrid%mmean_veg_hcap          )) deallocate(cgrid%mmean_veg_hcap          )
        if(associated(cgrid%mmean_veg_temp          )) deallocate(cgrid%mmean_veg_temp          )
        if(associated(cgrid%mmean_atm_temp          )) deallocate(cgrid%mmean_atm_temp          )
+       if(associated(cgrid%mmean_rshort            )) deallocate(cgrid%mmean_rshort            )
+       if(associated(cgrid%mmean_rlong             )) deallocate(cgrid%mmean_rlong             )
        if(associated(cgrid%mmean_atm_shv           )) deallocate(cgrid%mmean_atm_shv           )
        if(associated(cgrid%mmean_atm_prss          )) deallocate(cgrid%mmean_atm_prss          )
        if(associated(cgrid%mmean_atm_vels          )) deallocate(cgrid%mmean_atm_vels          )
@@ -4823,6 +4838,8 @@ contains
     if(associated(cgrid%dmean_atm_shv           )) cgrid%dmean_atm_shv            = large_real
     if(associated(cgrid%dmean_atm_prss          )) cgrid%dmean_atm_prss           = large_real
     if(associated(cgrid%dmean_atm_vels          )) cgrid%dmean_atm_vels           = large_real
+    if(associated(cgrid%dmean_rshort            )) cgrid%dmean_rshort             = large_real
+    if(associated(cgrid%dmean_rlong             )) cgrid%dmean_rlong              = large_real
     if(associated(cgrid%dmean_co2_residual      )) cgrid%dmean_co2_residual       = large_real
     if(associated(cgrid%dmean_energy_residual   )) cgrid%dmean_energy_residual    = large_real
     if(associated(cgrid%dmean_water_residual    )) cgrid%dmean_water_residual     = large_real
@@ -4866,6 +4883,8 @@ contains
     if(associated(cgrid%dmean_atm_shv           )) cgrid%dmean_atm_shv            = large_real
     if(associated(cgrid%dmean_atm_prss          )) cgrid%dmean_atm_prss           = large_real
     if(associated(cgrid%dmean_atm_vels          )) cgrid%dmean_atm_vels           = large_real
+    if(associated(cgrid%dmean_rlong             )) cgrid%dmean_rlong              = large_real
+    if(associated(cgrid%dmean_rshort            )) cgrid%dmean_rshort             = large_real
     if(associated(cgrid%mmean_co2_residual      )) cgrid%mmean_co2_residual       = large_real
     if(associated(cgrid%mmean_energy_residual   )) cgrid%mmean_energy_residual    = large_real
     if(associated(cgrid%mmean_water_residual    )) cgrid%mmean_water_residual     = large_real
@@ -6933,7 +6952,7 @@ contains
     if (associated(cgrid%xatm)) then
        nvar=nvar+1
        call vtable_edio_i(cgrid%xatm(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'XATM :11:hist:anal') 
+            var_len,var_len_global,max_ptrs,'XATM :11:hist:anal:dail:mont:year') 
 
        call metadata_edio(nvar,igr,'Atm. cell x-indices of polygon','NA','ipoly')
 
@@ -6942,7 +6961,7 @@ contains
     if (associated(cgrid%yatm)) then
        nvar=nvar+1
        call vtable_edio_i(cgrid%yatm(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'YATM :11:hist:anal') 
+            var_len,var_len_global,max_ptrs,'YATM :11:hist:anal:dail:mont:year') 
 
        call metadata_edio(nvar,igr,'Atm cell y-indices of polygon','NA','ipoly')
 
@@ -7326,7 +7345,7 @@ contains
     if (associated(cgrid%wpa)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%wpa(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'WPA :11:hist:anal') 
+            var_len,var_len_global,max_ptrs,'WPA :11:hist:anal:dail') 
        call metadata_edio(nvar,igr,'Polygon  WPA','[m2/m2]','ipoly') 
     endif
 
@@ -7340,7 +7359,7 @@ contains
     if (associated(cgrid%wai)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%wai(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'WAI :11:hist:anal') 
+            var_len,var_len_global,max_ptrs,'WAI :11:hist:anal:dail') 
        call metadata_edio(nvar,igr,'Polygon  WAI','[m2/m2]','ipoly') 
     endif
 
@@ -7998,7 +8017,7 @@ contains
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_soil_wetness(1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'AVG_SOIL_WETNESS :11:hist:anal') 
-       call metadata_edio(nvar,igr,'Polygon Average Soil Wetness ','[m3/m3]','ipoly') 
+       call metadata_edio(nvar,igr,'Polygon Average Soil Wetness RELATIVE TO WILTING POINT','[m3/m3]','ipoly') !relative to wilting point
     endif
     
     if (associated(cgrid%avg_skin_temp)) then
@@ -8302,6 +8321,20 @@ contains
        call metadata_edio(nvar,igr,'Daily mean wind speed','[m/s]','ipoly') 
     end if
 
+    if(associated(cgrid%dmean_rshort)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%dmean_rshort(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'DMEAN_RSHORT :11:hist:dail') 
+       call metadata_edio(nvar,igr,'Daily mean shortwave radiation','[w/m2]','ipoly') 
+    end if
+    
+    if(associated(cgrid%dmean_rlong)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%dmean_rlong(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'DMEAN_RLONG :11:hist:dail') 
+       call metadata_edio(nvar,igr,'Daily mean longwave radiation','[w/m2]','ipoly') 
+    end if
+
     if(associated(cgrid%dmean_co2_residual)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%dmean_co2_residual(1),nvar,igr,init,cgrid%pyglob_id, &
@@ -8596,6 +8629,20 @@ contains
        call metadata_edio(nvar,igr,'Monthly mean vegetation heat capacity','[J/m2/K]','ipoly') 
     end if
     
+    if(associated(cgrid%mmean_rshort)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%mmean_rshort(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'MMEAN_RSHORT :11:hist:mont') 
+       call metadata_edio(nvar,igr,'Monthly mean downwelling solar radiation','[w/m2]','ipoly') 
+    end if
+    
+    if(associated(cgrid%mmean_rlong)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%mmean_rlong(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'MMEAN_RLONG :11:hist:mont') 
+       call metadata_edio(nvar,igr,'Monthly mean downwelling longwave radiation','[w/m2]','ipoly') 
+    end if
+    
     if(associated(cgrid%mmean_atm_temp)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%mmean_atm_temp(1),nvar,igr,init,cgrid%pyglob_id, &
@@ -8801,7 +8848,7 @@ contains
     if (associated(cpoly%patch_count)) then
        nvar=nvar+1
        call vtable_edio_i(cpoly%patch_count(1),nvar,igr,init,cpoly%siglob_id, &
-            var_len,var_len_global,max_ptrs,'PATCH_COUNT :21:hist:year') 
+            var_len,var_len_global,max_ptrs,'PATCH_COUNT :21:hist:dail:mont:year') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
     
@@ -8861,13 +8908,6 @@ contains
          var_len,var_len_global,max_ptrs,'NUM_LANDUSE_YEARS :21:hist') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
-
-!    if (associated(cpoly%soi)) then
-!       nvar=nvar+1
-!         call vtable_edio_i(cpoly%soi(1),nvar,igr,init,cpoly%siglob_id, &
-!         var_len,var_len_global,max_ptrs,'SOI :21:hist') 
-!       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-!    endif
 
     if (associated(cpoly%TCI)) then
        nvar=nvar+1
@@ -9287,7 +9327,7 @@ contains
     if (associated(csite%paco_n)) then
        nvar=nvar+1
          call vtable_edio_i(csite%paco_n(1),nvar,igr,init,csite%paglob_id, &
-         var_len,var_len_global,max_ptrs,'PACO_N :31:hist:year') 
+         var_len,var_len_global,max_ptrs,'PACO_N :31:hist:dail:mont:year') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
     

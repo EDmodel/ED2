@@ -63,8 +63,12 @@ do j = 1,jz
    enddo
 enddo
 
-cross = 0.
-if (idiffkk >= 3 .and. idiffkk /= 7) cross = 1.
+select case (idiffkk)
+case (3:6)
+   cross= 1.
+case default
+   cross = 0.
+end select
 
 !------------------------ vertical u-component diffusion ----------------
 

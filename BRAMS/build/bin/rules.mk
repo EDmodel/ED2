@@ -1139,7 +1139,7 @@ tmpname.o: $(UTILS_LIB)/tmpname.c
 	$(CXX_COMMAND) $< $(F:.c=.c)
 	rm -f $(<F:.c=.c)
 
-turb_constants.o: $(TURB)/turb_constants.f90
+turb_coms.o: $(TURB)/turb_coms.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90) 
@@ -1369,15 +1369,15 @@ ed_grid.o : $(ED_UTILS)/ed_grid.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90) 
 
-ed_history_io.o : $(ED_IO)/ed_history_io.F90
-	cp -f $< $(<F:.F90=.F90)
-	$(FPP_COMMAND) $(HDF5_INCS) $(<F:.F90=.F90)
-	rm -f $(<F:.F90=.F90)
-
 ed_init.o : $(ED_INIT)/ed_init.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
+
+ed_init_full_history.o : $(ED_IO)/ed_init_full_history.F90
+	cp -f $< $(<F:.F90=.F90)
+	$(FPP_COMMAND) $(HDF5_INCS) $(<F:.F90=.F90)
+	rm -f $(<F:.F90=.F90)
 
 ed_max_dims.o : $(ED_MEMORY)/ed_max_dims.F90
 	cp -f $< $(<F:.F90=.F90)
@@ -1418,6 +1418,16 @@ ed_params.o : $(ED_INIT)/ed_params.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
+
+ed_read_ed10_20_history.o : $(ED_IO)/ed_read_ed10_20_history.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+ed_read_ed21_history.o : $(ED_IO)/ed_read_ed21_history.F90
+	cp -f $< $(<F:.F90=.F90)
+	$(FPP_COMMAND) $(HDF5_INCS) $(<F:.F90=.F90)
+	rm -f $(<F:.F90=.F90)
 
 ed_state_vars.o : $(ED_MEMORY)/ed_state_vars.f90
 	cp -f $< $(<F:.f90=.f90)
@@ -1574,7 +1584,7 @@ lsm_hyd.o : $(ED_DYNAMICS)/lsm_hyd.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
-mem_sites.o : $(ED_MEMORY)/mem_sites.f90
+mem_polygons.o : $(ED_MEMORY)/mem_polygons.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)

@@ -7,6 +7,8 @@ rm -f dted.o               dted.mod
 rm -f eenviron.o           eenviron.mod
 rm -f error_mess.o         error_mess.mod
 rm -f interp_lib.o         interp_lib.mod
+rm -f leaf_coms.o          leaf_coms.mod
+rm -f numutils.o           numutils.mod
 rm -f parlib.o             parlib.mod
 rm -f polarst.o            polarst.mod
 rm -f rams_read_header.o   rams_read_header.mod

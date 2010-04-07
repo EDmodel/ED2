@@ -16,10 +16,10 @@ program ramspost
   !nplmax should be the same as nzpmax (rconfig.h)
   parameter (maxfiles=2000,nplmax=200,maxpatch=25)	
 
-  character*240 fln(maxfiles)
+  character*600 fln(maxfiles)
   character*80 inp
   character*600 fprefix,gprefix
-  character*240 cfln
+  character*600 cfln
   character*40 vpln(200),cdum1
   character*10 vp(200),vpun(200),cdum2,proj,anl2gra
   character*1 cgrid
@@ -66,7 +66,7 @@ program ramspost
        ,nfgrids(maxfiles),ifdates(maxfiles),iftimes(maxfiles) 	 &
        ,flevels(nzpmax,maxgrds,maxfiles),startutc,httop		 &
        ,fdelx(maxgrds,maxfiles),fdely(maxgrds,maxfiles)
-  character*240 wfln(maxfiles)
+  character*600 wfln(maxfiles)
 
   ! -----------------------------
   ! -   INITIALIZING ROUTINES   -
@@ -583,7 +583,7 @@ program ramspost
 2005 format('zdef ',i4,' levels ',60f10.1)
 2006 format('tdef ',i4,' linear ',2a15)
 2007 format('vars ',i4)
-2008 format(a11,i4,' 99    - RAMS : ',a40,'[',a8,']')
+2008 format(a,1x,i4,1x,' 99    - RAMS : ',1x,a,'[',1x,a8,1x,']')
 2055 format(60f7.0)
 close (iunit+1)
   stop

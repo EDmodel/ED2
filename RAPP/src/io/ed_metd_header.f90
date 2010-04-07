@@ -217,11 +217,14 @@ subroutine ed_metd_header()
    write (unit=59,fmt='(a)') '! 2. Read gridded data that is constant in time.            !'
    write (unit=59,fmt='(a)') '!    If any of this is lon or lat, then deltalon, deltalat  !'
    write (unit=59,fmt='(a)') '!    lon0, and lat0 will be ignored;                        !'
-   write (unit=59,fmt='(a)') '! 3. Read one value representing the whole grid, no time    !'
-   write (unit=59,fmt='(a)') '!   interpolation;                                          !'
+   write (unit=59,fmt='(a)') '! 5. Specify a variable that is constant in space, but      !'
+   write (unit=59,fmt='(a)') '!    varying in time.  Do not interpolate the values        !'
+   write (unit=59,fmt='(a)') '!    over time.    !'
    write (unit=59,fmt='(a)') '! 4. Specify a constant for all polygons, constant in time. !'
    write (unit=59,fmt='(a)') '!    In this case, give the constant value at line "e"      !'
    write (unit=59,fmt='(a)') '!    instead of the frequency.                              !'
+   write (unit=59,fmt='(a)') '! 5. Specify a variable that is constant in space, but      !'
+   write (unit=59,fmt='(a)') '!    varying in time.  Interpolate the values over time.    !'
    write (unit=59,fmt='(a)') '!===========================================================!'
 
    !----- Close the file. -----------------------------------------------------------------!

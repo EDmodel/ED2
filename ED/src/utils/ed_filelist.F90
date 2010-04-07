@@ -184,3 +184,75 @@ subroutine ed1_fileinfo(text,nfiles,full_list,ntype,type_list,tlon_list,tlat_lis
 end subroutine ed1_fileinfo
 !==========================================================================================!
 !==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine will go through a list of file and retain only those that are actual !
+! ED-2.1 history files.                                                                    !
+!------------------------------------------------------------------------------------------!
+subroutine ed21_fileinfo(nfiles,full_list,nhisto,histo_list)
+   use ed_max_dims, only: str_len,maxfiles,maxlist
+   implicit none
+   !----- Arguments -----------------------------------------------------------------------!
+   integer                                    , intent(in)    :: nfiles ! # of input files
+   character(len=str_len), dimension(maxlist) , intent(in)    :: full_list 
+   integer                                    , intent(inout) :: nhisto
+   character(len=str_len), dimension(maxfiles), intent(inout) :: histo_list
+   !----- Local variables -----------------------------------------------------------------!
+   character(len=str_len)                                     :: this_file
+   integer                                                    :: n
+   integer                                                    :: posend
+   integer                                                    :: posdot
+   integer                                                    :: posdsd
+   integer                                                    :: posextradot
+   !----- Local constants. ----------------------------------------------------------------!
+   integer                                    , parameter     :: okdot = 2
+   integer                                    , parameter     :: okdsd = 26
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Counting how many files with the extension are there.  If there is no such file,  !
+   ! return without anything else assigned...                                              !
+   !---------------------------------------------------------------------------------------!
+   nhisto        = 0
+   histo_list(:) = ''
+   listloop: do n=1,nfiles
+      !------------------------------------------------------------------------------------!
+      !     Checking whether this file is the type we are looking for.  To qualify as a    !
+      ! restart/history ED-2.1 file, the file must end with .h5, and must have a -S- right !
+      ! before the date information.                                                       !
+      !------------------------------------------------------------------------------------!
+      this_file = full_list(n)
+      posdot    = index(this_file,'.h5',.true.)
+      posdsd    = index(this_file,'-S-',.true.)
+      posend    = len_trim(this_file)
+
+      !------------------------------------------------------------------------------------!
+      !     If anything is not in place, then this file will not be used for the history   !
+      ! initialisation, since it couldn't be considered an ED-2.1 history file.            !
+      !------------------------------------------------------------------------------------!
+      if (posdot == 0 .or. posend-posdot /= okdot) cycle listloop
+      if (posdsd == 0 .or. posend-posdsd /= okdsd) cycle listloop
+
+
+      !------------------------------------------------------------------------------------!
+      !     If we reach this point, it means that the filename at least looks like a       !
+      ! restart.  Adding one more to our count and assigning the file to this count.       !
+      !------------------------------------------------------------------------------------!
+      nhisto             = nhisto + 1
+      histo_list(nhisto) = this_file
+
+   end do listloop
+   !---------------------------------------------------------------------------------------!
+
+   return
+end subroutine ed21_fileinfo
+!==========================================================================================!
+!==========================================================================================!

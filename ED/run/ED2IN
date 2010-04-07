@@ -51,7 +51,7 @@
 
 !---- ED Region dimensions ----------------------------------------------------------------!
    NL%N_ED_REGION   =  0  ! number of regions for which you want to run ED. 
-                          ! This can be zero provided that N_SOI is not...
+                          ! This can be zero provided that N_POI is not...
                           
    NL%GRID_TYPE     =  1  !  0 corresponds to a lat/lon grid.  
                           !  1 corresponds to the polar-stereographic
@@ -82,11 +82,28 @@
    NL%NSTRATX = 1,4 ! Fraction of the sizes given above that I should use for these
    NL%NSTRATY = 1,4 ! regions. The variables affected are denoted by [\*/]
 
-!----- You can pinpoint individual locations, known as SOI. -------------------------------!
-   NL%N_SOI    =    1   ! number of sites of interest (SOIs).  This could be zero.
+!----- You can pinpoint individual locations, known as POI. -------------------------------!
+   NL%N_POI    =    1   ! number of polygons of interest (POIs).  This could be zero.
                 
-   NL%SOI_LAT  = -2.85  ! list of the latitudes of the SOIs (degrees north)
-   NL%SOI_LON  = -54.94 ! list of the longitudes of the SOIs (degrees east)
+   NL%POI_LAT  = -2.85  ! list of the latitudes of the POIs (degrees north)
+   NL%POI_LON  = -54.94 ! list of the longitudes of the POIs (degrees east)
+!------------------------------------------------------------------------------------------!
+
+
+!------------------------------------------------------------------------------------------!
+!  Load balancing method                                                                   !
+!------------------------------------------------------------------------------------------!
+
+   NL%LOADMETH  = 0    ! Typical either 0 or 2, unecessary to set 1 or 3
+                       ! 0 - Let the loadmaster determine
+                       !        what is best
+                       ! 1 - Load (defined by the polygon vector "workload"
+                       !     will be evenly distributed accross 
+                       !        the nodes. (good for npoly > nmach )
+                       ! 2 - Try to load an equal number of polygons
+                       !        per node (good for npoly = nmach)
+                       ! 3 - Similar to 1, but here we round the index 
+                       !        instead of finding the next integer
 !------------------------------------------------------------------------------------------!
 
 
@@ -150,29 +167,43 @@
    NL%FFILOUT = 'analy/santarem'       ! Analysis output prefix
    NL%SFILOUT = 'histo/santarem'       ! History output prefix
 
-   NL%IED_INIT_MODE   = 0              ! 0 signifies a start from near-bare ground.   
-                                       ! 1 allows you to do a history restart from ED1-type
-                                       !   restart files
-                                       ! 2 allows you to do a standard history restart from
-                                       !   ED2-type restart files.
-                                       ! 3 - initialize via ed-2 and site file restarts 
-				       ! 4 - initialize from ED2.1 H5 history/state files.
-                                       !     that take the form:  'dir/prefix-gxx.h5'
-	                               !     Initialization files MUST end with -gxx.h5
-                                       !     where xx is a two digit integer grid number.
-                                       !     Each grid has its own initialization file.
-	                               !     As an example, if a user has two files to 
-                                       !     initialize their grids with:
-                                       !     example_file_init-g01.h5    and
-                                       !     example_file_init-g02.h5
-                                       !      
-	                               !     NL%SFILOUT = 'example_file_init'
-                                       !
-                                       ! -1 - use a mix of ED-1 and ED-2 files. This should
-                                       !      be avoided by all means, unless you are 
-                                       !      absolute sure of what you're doing;
-                         
+   !---------------------------------------------------------------------------------------!
+   ! IED_INIT_MODE determines how the ecosystem should be initialized.                     !
+   ! 0 - Start from near-bare ground (only a few seedling from every PFT included in this  !
+   !     run).                                                                             !
+   ! 1 - This will use history files from ED-1.0 to initialise the ecosystem state (like   !
+   !     biomass, LAI, plant density, etc.), but starting the thermodynamic state as a     !
+   !     new simulation.                                                                   !
+   ! 2 - Same as 1, but using history files from ED-2.0 without multiple sites.            !
+   ! 3 - Same as 1, but using history files from ED-2.0 with multiple sites.               !
+   ! 4 - Same as 1, but using ED2.1 H5 history/state files that take the form:             !
+   !     'dir/prefix-gxx.h5'                                                               !
+   !     Initialization files MUST end with -gxx.h5 where xx is a two digit integer grid   !
+   !     number.  Each grid has its own initialization file.  As an example, if a user has !
+   !     two files to initialize their grids with:                                         !
+   !     example_file_init-g01.h5 and example_file_init-g02.h5                             !
+   !     NL%SFILIN = 'example_file_init'                                                   !
+   !                                                                                       !
+   ! 5 - This is similar to option 4, except that you may provide several files (including !
+   !     a mix of regional and POI runs, each file ending at a different date).  This will !
+   !     not check date nor grid structure, it will simply read all polygons and match the !
+   !     nearest neighbour to each polygon of your run.  SFILIN must have the directory    !
+   !     common to all history files that are sought to be used, up to the last character  !
+   !     the files have in common.  For example if your files are                          !
+   !     /mypath/P0001-S-2000-01-01-000000-g01.h5,                                         !
+   !     /mypath/P0002-S-1966-01-01-000000-g02.h5,                                         !
+   !     ...                                                                               !
+   !     /mypath/P1000-S-1687-01-01-000000-g01.h5:                                         !
+   !     NL%SFILIN = '/mypath/P'                                                           !
+   !                                                                                       !
+   ! -1 - use a mix of ED-1 and ED-2 files. This should                                    !
+   !      be avoided by all means, unless you are                                          !
+   !      absolute sure of what you're doing;                                              !
+   !---------------------------------------------------------------------------------------!
+   NL%IED_INIT_MODE   = 5 
+
    NL%EDRES  = 1.0                     ! ED2/ED1 restart grid resolution
+                                       !    (Ignored unless ied_init_mode is 3.
 
    NL%SFILIN   = '/n/Moorcroft_Lab/Users/dmm2/ED2/inputs/amazon_restart/lu.sa.05.restart.01.'
 
@@ -207,13 +238,21 @@
    !  10 -- silty clay      | 11 -- clay          | 12 -- peat             !
    !-----------------------------------------------------------------------!
 
-!----- Depth (m) of bottom of soil model grid levels --------------------------------------!
+   !---------------------------------------------------------------------------------------!
+   !    Prescribed fraction of clay and sand.  This is used only when ISOIFLG is set to 2, !
+   ! and slxclay and slxsand are defined between 0 and 1, with the sum of these variables  !
+   ! not exceeding 1.  Otherwise, the default ED parameters will be used.                  !
+   !---------------------------------------------------------------------------------------!
+   NL%SLXCLAY = -1.0
+   NL%SLXSAND = -1.0
+
+   !----- Depth (m) of bottom of soil model grid levels -----------------------------------!
    NL%SLZ     = -4.50, -3.50, -2.75, -2.00, -1.50, -1.10, -0.80, 
                 -0.60, -0.45, -0.30, -0.20, -0.12, -0.06, -0.02
-!----- Initial soil moisture (fraction of saturation) -------------------------------------!
+   !----- Initial soil moisture (fraction of saturation) ----------------------------------!
    NL%SLMSTR  =  0.60,  0.60,  0.60,  0.60,  0.60,  0.60,  0.60,
                  0.60,  0.60,  0.60,  0.60,  0.60,  0.60,  0.60
-!----- Initial soil temperature offset (with respect to the atmospheric temperature) ------!
+   !----- Initial soil temperature offset (with respect to the atmospheric temperature). --!
    NL%STGOFF  =   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0, 
                   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0
 !------------------------------------------------------------------------------------------!

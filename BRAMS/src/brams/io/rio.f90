@@ -377,7 +377,7 @@ subroutine rams_aprep_hkh(n1,hkm,vkh,dn0,scr1,idiffk,xkhkm)
    !---------------------------------------------------------------------------------------!
    
    select case (idiffk)
-   case (1,2,3,7)
+   case (1,2,3,7,8)
       do ind = 1,n1
          scr1(ind) = hkm(ind) * xkhkm / dn0(ind)
       end do

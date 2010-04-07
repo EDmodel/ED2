@@ -20,7 +20,7 @@ subroutine edcp_get_work(ifm,mxp,myp,iwest,ieast,jsouth,jnorth)
   use soil_coms, only: veg_database,soil_database,nslcon
   use io_params, only: b_isoilflg => isoilflg & ! intent(in)
                      , b_ivegtflg => ivegtflg ! ! intent(in)
-  use mem_sites,only:n_soi
+  use mem_polygons,only:n_poi
 
   implicit none
   integer, intent(in) :: ifm,iwest,ieast,jsouth,jnorth
@@ -35,7 +35,7 @@ subroutine edcp_get_work(ifm,mxp,myp,iwest,ieast,jsouth,jnorth)
   integer :: datsoil,ipy,i,j
   integer :: jboff,jtoff,iloff,iroff
   integer,parameter :: min_land_pcent = 25
-  real,   parameter :: soi_edge_deg = 0.05   ! 100th of a degree, about 5.5 km at the equator.
+  real,   parameter :: poi_edge_deg = 0.05   ! 100th of a degree, about 5.5 km at the equator.
 
   npoly = mxp*myp
 
@@ -48,7 +48,7 @@ subroutine edcp_get_work(ifm,mxp,myp,iwest,ieast,jsouth,jnorth)
 
   ! j index is the North-South index, and it is inverted, ie larger index larger latitude
 
-  if (n_soi.gt.0 .and. ifm.le.n_soi) then
+  if (n_poi.gt.0 .and. ifm.le.n_poi) then
 
      ipy = 0
      do i=1,mxp
@@ -59,16 +59,16 @@ subroutine edcp_get_work(ifm,mxp,myp,iwest,ieast,jsouth,jnorth)
            lon_list(1,ipy) = work_e(ifm)%glon(i,j)
            
            ! Top latitude
-           lat_list(2,ipy) = work_e(ifm)%glat(i,j) + soi_edge_deg
+           lat_list(2,ipy) = work_e(ifm)%glat(i,j) + poi_edge_deg
            
            ! Bottom latitude
-           lat_list(3,ipy) = work_e(ifm)%glat(i,j) - soi_edge_deg
+           lat_list(3,ipy) = work_e(ifm)%glat(i,j) - poi_edge_deg
            
            ! Left longitude
-           lon_list(2,ipy) = work_e(ifm)%glon(i,j) - soi_edge_deg
+           lon_list(2,ipy) = work_e(ifm)%glon(i,j) - poi_edge_deg
            
            ! Right longitude
-           lon_list(3,ipy) = work_e(ifm)%glon(i,j) + soi_edge_deg
+           lon_list(3,ipy) = work_e(ifm)%glon(i,j) + poi_edge_deg
            
            if (lon_list(1,ipy) >=  180.) lon_list(1,ipy) = lon_list(1,ipy) - 360.
            if (lon_list(1,ipy) <= -180.) lon_list(1,ipy) = lon_list(1,ipy) + 360.

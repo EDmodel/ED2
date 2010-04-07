@@ -1434,11 +1434,10 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
                                    , alvi8              & ! intent(in)
                                    , alli8              & ! intent(in)
                                    , t3ple8             & ! intent(in)
-                                   , wdns8              & ! intent(in)
-                                   , idns8              & ! intent(in)
                                    , tsupercool8        & ! intent(in)
                                    , qliqt38            & ! intent(in)
-                                   , wdnsi8             ! ! intent(in)
+                                   , wdnsi8             & ! intent(in)
+                                   , fdnsi8             ! ! intent(in)
    use therm_lib8           , only : qwtk8              ! ! subroutine
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
@@ -1487,7 +1486,7 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
                        * (initp%veg_fliq(ico) * cliq8 * (initp%veg_temp(ico)-tsupercool8)    &
                          + (1.d0-initp%veg_fliq(ico)) * cice8 * initp%veg_temp(ico))
             veg_dwshed = veg_wshed                                                         &
-                       / (initp%veg_fliq(ico) * wdns8 + (1.d0-initp%veg_fliq(ico))*idns8)
+                       * (initp%veg_fliq(ico) * wdnsi8 + (1.d0-initp%veg_fliq(ico))*fdnsi8)
 
             !----- Updating water mass and energy. ----------------------------------------!
             initp%veg_water(ico)  = initp%veg_water(ico)  - veg_wshed

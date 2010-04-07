@@ -631,6 +631,13 @@ subroutine integrate_ed_daily_output_state(cgrid)
       !    Variables already at edtype level, simple integration only.                     !
       !------------------------------------------------------------------------------------!
       cgrid%dmean_atm_temp(ipy) = cgrid%dmean_atm_temp(ipy) + cgrid%met(ipy)%atm_tmp
+      cgrid%dmean_rshort(ipy)   = cgrid%dmean_rshort(ipy)   &
+           + cgrid%met(ipy)%nir_beam    &
+           + cgrid%met(ipy)%nir_diffuse &
+           + cgrid%met(ipy)%par_beam    &
+           + cgrid%met(ipy)%par_diffuse
+
+      cgrid%dmean_rlong(ipy)    = cgrid%dmean_rlong(ipy)    + cgrid%met(ipy)%rlong
       cgrid%dmean_atm_shv (ipy) = cgrid%dmean_atm_shv (ipy) + cgrid%met(ipy)%atm_shv
       cgrid%dmean_atm_prss(ipy) = cgrid%dmean_atm_prss(ipy) + cgrid%met(ipy)%prss
       cgrid%dmean_atm_vels(ipy) = cgrid%dmean_atm_vels(ipy) + cgrid%met(ipy)%vels
@@ -1245,6 +1252,8 @@ subroutine normalize_ed_daily_output_vars(cgrid)
       cgrid%dmean_can_co2(ipy)      = cgrid%dmean_can_co2(ipy)      * dtlsm_o_daysec
       cgrid%dmean_can_prss(ipy)     = cgrid%dmean_can_prss(ipy)     * dtlsm_o_daysec
       cgrid%dmean_atm_temp(ipy)     = cgrid%dmean_atm_temp(ipy)     * dtlsm_o_daysec
+      cgrid%dmean_rshort(ipy)       = cgrid%dmean_rshort(ipy)       * dtlsm_o_daysec
+      cgrid%dmean_rlong(ipy)        = cgrid%dmean_rlong(ipy)        * dtlsm_o_daysec
       cgrid%dmean_atm_shv(ipy)      = cgrid%dmean_atm_shv(ipy)      * dtlsm_o_daysec
       cgrid%dmean_atm_prss(ipy)     = cgrid%dmean_atm_prss(ipy)     * dtlsm_o_daysec
       cgrid%dmean_atm_vels(ipy)     = cgrid%dmean_atm_vels(ipy)     * dtlsm_o_daysec
@@ -1659,6 +1668,8 @@ subroutine zero_ed_daily_output_vars(cgrid)
       cgrid%dmean_can_prss       (ipy) = 0.
       cgrid%dmean_can_theta      (ipy) = 0.
       cgrid%dmean_atm_temp       (ipy) = 0.
+      cgrid%dmean_rshort         (ipy) = 0.
+      cgrid%dmean_rlong          (ipy) = 0.
       cgrid%dmean_atm_shv        (ipy) = 0.
       cgrid%dmean_atm_prss       (ipy) = 0.
       cgrid%dmean_atm_vels       (ipy) = 0.
@@ -1825,6 +1836,11 @@ subroutine integrate_ed_monthly_output_vars(cgrid)
                                       + cgrid%dmean_can_prss      (ipy)
       cgrid%mmean_atm_temp      (ipy) = cgrid%mmean_atm_temp      (ipy)                    &
                                       + cgrid%dmean_atm_temp      (ipy)
+      cgrid%mmean_rshort        (ipy) = cgrid%mmean_rshort        (ipy)                    &
+                                      + cgrid%dmean_rshort        (ipy)
+      cgrid%mmean_rlong         (ipy) = cgrid%mmean_rlong         (ipy)                    &
+                                      + cgrid%dmean_rlong        (ipy)
+
       cgrid%mmean_atm_shv       (ipy) = cgrid%mmean_atm_shv       (ipy)                    &
                                       + cgrid%dmean_atm_shv       (ipy)
       cgrid%mmean_atm_prss      (ipy) = cgrid%mmean_atm_prss      (ipy)                    &
@@ -2073,6 +2089,8 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
       cgrid%mmean_can_co2        (ipy) = cgrid%mmean_can_co2        (ipy) * ndaysi
       cgrid%mmean_can_prss       (ipy) = cgrid%mmean_can_prss       (ipy) * ndaysi
       cgrid%mmean_atm_temp       (ipy) = cgrid%mmean_atm_temp       (ipy) * ndaysi
+      cgrid%mmean_rshort         (ipy) = cgrid%mmean_rshort         (ipy) * ndaysi
+      cgrid%mmean_rlong          (ipy) = cgrid%mmean_rlong          (ipy) * ndaysi
       cgrid%mmean_atm_shv        (ipy) = cgrid%mmean_atm_shv        (ipy) * ndaysi
       cgrid%mmean_atm_prss       (ipy) = cgrid%mmean_atm_prss       (ipy) * ndaysi
       cgrid%mmean_atm_vels       (ipy) = cgrid%mmean_atm_vels       (ipy) * ndaysi
@@ -2385,6 +2403,8 @@ subroutine zero_ed_monthly_output_vars(cgrid)
       cgrid%mmean_can_co2            (ipy) = 0.
       cgrid%mmean_can_rhos           (ipy) = 0.
       cgrid%mmean_atm_temp           (ipy) = 0.
+      cgrid%mmean_rshort         (ipy) = 0.
+      cgrid%mmean_rlong          (ipy) = 0.
       cgrid%mmean_atm_shv            (ipy) = 0.
       cgrid%mmean_atm_prss           (ipy) = 0.
       cgrid%mmean_atm_vels           (ipy) = 0.
