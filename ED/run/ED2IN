@@ -90,6 +90,23 @@
 !------------------------------------------------------------------------------------------!
 
 
+!------------------------------------------------------------------------------------------!
+!  Load balancing method                                                                   !
+!------------------------------------------------------------------------------------------!
+
+   NL%LOADMETH  = 0    ! Typical either 0 or 2, unecessary to set 1 or 3
+                       ! 0 - Let the loadmaster determine
+                       !        what is best
+                       ! 1 - Load (defined by the polygon vector "workload"
+                       !     will be evenly distributed accross 
+                       !        the nodes. (good for npoly > nmach )
+                       ! 2 - Try to load an equal number of polygons
+                       !        per node (good for npoly = nmach)
+                       ! 3 - Similar to 1, but here we round the index 
+                       !        instead of finding the next integer
+!------------------------------------------------------------------------------------------!
+
+
 
 !------------------------------------------------------------------------------------------!
 ! Analysis/history file output                                                             !

@@ -168,9 +168,11 @@ module growth_balive
                   ! temp_dep = 1.0 / ( 1.0  + exp(0.4                        &
                   !          * (278.15 - csite%avg_daily_temp(ipa))))
                   temp_dep = 1.0
+
                   cpatch%storage_respiration(ico) =                          &
                           cpatch%bstorage(ico) * storage_turnover_rate(ipft) &
                         * tfact * temp_dep
+
                   cpatch%vleaf_respiration(ico) =                            &
                           (1.0 - cpoly%green_leaf_factor(ipft,isi))          &
                         / (1.0 + q(ipft) + qsw(ipft) * cpatch%hite(ico))     &

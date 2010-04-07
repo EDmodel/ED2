@@ -372,14 +372,16 @@ subroutine met_sanity_check(cgrid,ipy)
          write (unit=*,fmt=fmtc) '---------------------------------------------------'
          write (unit=*,fmt=fmtc) ' Longwave radiation doesn''t make sense... '
          write (unit=*,fmt=fmtc) ' '
-         write (unit=*,fmt=fmti) ' - Polygon        :',ipy
-         write (unit=*,fmt=fmti) ' - Site           :',isi
-         write (unit=*,fmt=fmtf) ' - Longitude      :',cgrid%lon(ipy)
-         write (unit=*,fmt=fmtf) ' - Latitude       :',cgrid%lat(ipy)
-         write (unit=*,fmt=fmtf) ' - Site rlong     :',cpoly%met(isi)%rlong
-         write (unit=*,fmt=fmtf) ' - Polygon rlong  :',cgrid%met(ipy)%rlong
-         write (unit=*,fmt=fmtf) ' - Minimum OK     :',rlong_min
-         write (unit=*,fmt=fmtf) ' - Maximum OK     :',rlong_max
+         write (unit=*,fmt=fmti) ' - Polygon          :',ipy
+         write (unit=*,fmt=fmti) ' - Site             :',isi
+         write (unit=*,fmt=fmtf) ' - Longitude        :',cgrid%lon(ipy)
+         write (unit=*,fmt=fmtf) ' - Latitude         :',cgrid%lat(ipy)
+         write (unit=*,fmt=fmtf) ' - Site Longwave    :',cpoly%met(isi)%rlong
+         write (unit=*,fmt=fmtf) ' - Polygon Longwave :',cgrid%met(ipy)%rlong
+         write (unit=*,fmt=fmtf) ' - Site Temp        :',cpoly%met(isi)%atm_tmp
+         write (unit=*,fmt=fmtf) ' - Site SH          :',cpoly%met(isi)%atm_shv
+         write (unit=*,fmt=fmtf) ' - Minimum OK       :',rlong_min
+         write (unit=*,fmt=fmtf) ' - Maximum OK       :',rlong_max
          write (unit=*,fmt=fmtc) '---------------------------------------------------'
          write (unit=*,fmt=fmtc) ' '
          ifaterr = ifaterr + 1

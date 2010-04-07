@@ -363,7 +363,8 @@ subroutine ed_masterput_poly_dims(par_run,masterworks)
    use ed_work_vars  , only : work_v       & ! intent(in)
                             , npolys_run   ! ! intent(in)
    use ed_para_coms  , only : mainnum      & ! intent(in)
-                            , nmachs       ! ! intent(in)
+                            , nmachs       & ! intent(in)
+                            , loadmeth     ! ! intent(in)
    use mem_polygons  , only : n_ed_region  & ! intent(in)
                             , n_poi        ! ! intent(in)
    implicit none
@@ -487,7 +488,7 @@ subroutine ed_masterput_poly_dims(par_run,masterworks)
          ! process contains way too many nodes, and this would be a waste of resources.    !
          ! At the run crash, give this information to the user...                          !
          !---------------------------------------------------------------------------------!
-         if (maxnmachs < ntotmachs) then
+         if (maxnmachs < ntotmachs .and. loadmeth /= 2) then
             write (unit=*,fmt='(a)') '----------------------------------------------------'
             write (unit=*,fmt='(a)') '       The number of requested nodes exceeds the    '
             write (unit=*,fmt='(a)') ' maximum number of nodes in which you would still   '
@@ -561,6 +562,8 @@ subroutine ed_masterput_poly_dims(par_run,masterworks)
          ! the range, that's why the smallest maximum is the preferred one.                !
          !---------------------------------------------------------------------------------!
          ibest = minloc(maxload,dim=1)
+
+         if(loadmeth>0) ibest = loadmeth
          
          !----- Count how many polygons go to each node. ----------------------------------!
          do imach=1,ntotmachs

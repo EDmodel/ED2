@@ -388,7 +388,7 @@ subroutine read_met_drivers_init
       !------------------------------------------------------------------------------------!
       !    For years outside the met driver range, we pick up a random year.  Because we   !
       ! use the actual sequence of random years given by the code random generator, this   !
-      ! sequence will be always the same for a given met driver and first year.            !                !
+      ! sequence will be always the same for a given met driver and first year.            !
       !------------------------------------------------------------------------------------!
       case (1)
          do year_use=iyeara,iyearz
@@ -1150,14 +1150,13 @@ subroutine update_met_drivers(cgrid)
       !------ Apply met to sites, and adjust met variables for topography. ----------------!
       call calc_met_lapse(cgrid,ipy)
 
-      !------ Update polygon-level vels for book-keeping. ---------------------------------!
-      cgrid%met(ipy)%vels = sqrt(cgrid%met(ipy)%vels)
-
+      !----- Vels.  At this point vels is 2*Kinetic Energy, take the square root. ---------!
+      cgrid%met(ipy)%vels = sqrt(max(0.0,cgrid%met(ipy)%vels))
 
       cpoly => cgrid%polygon(ipy)
       siteloop: do isi = 1,cpoly%nsites
          
-         !----- Vels.  At this point vels is 2*Kinetic Energy, take the square root. ------!
+         !----- Vels. The site level is also still in kinetic energy form. ----------------!
          cpoly%met(isi)%vels = sqrt(max(0.0,cpoly%met(isi)%vels))
          cpoly%met(isi)%vels_stab = max(ubmin,cpoly%met(isi)%vels)
          cpoly%met(isi)%vels_unstab = max(ubmin,cpoly%met(isi)%vels)

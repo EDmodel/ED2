@@ -214,8 +214,7 @@ subroutine init_met_params()
    rshort_min  = 0.
    rshort_max  = 1400.
    !----- Minimum and maximum acceptable longwave radiation [W/m²]. -----------------------!
-
-   rlong_min   =  60.
+   rlong_min   = 40.
    rlong_max   = 600.
    !----- Minimum and maximum acceptable air temperature    [   K]. -----------------------!
    atm_tmp_min = 184.     ! Lowest temperature ever measured, in Vostok Basin, Antarctica
@@ -330,6 +329,7 @@ subroutine init_can_rad_params()
                                     , leaf_trans_nir              & ! intent(out)
                                     , lai_min                     & ! intent(out)
                                     , tai_min                     & ! intent(out)
+                                    , patch_lai_min               & ! intent(out)!!!SOLVE2
                                     , blfac_min                   ! ! intent(out)
    use ed_max_dims              , only : n_pft                    ! ! intent(out)
    use pft_coms              , only : phenology                   ! ! intent(out)
@@ -382,7 +382,7 @@ subroutine init_can_rad_params()
    emis_v(9:11)  = 9.50d-1
    emis_v(12:15) = 9.60d-1
 
-
+   patch_lai_min = 1.0e-4
    lai_min       = 1.0e-5
    tai_min       = 1.0e-5
    blfac_min     = 1.0e-2
@@ -1158,6 +1158,7 @@ subroutine init_pft_alloc_params()
    qsw(1:4)    = SLA(1:4)   / sapwood_ratio(1:4)    !new is SLA(1:4)/(3900.0*2.0/1000.0)
    qsw(5:13)   = SLA(5:13)  / sapwood_ratio(5:13)
    qsw(14:15)  = SLA(14:15) / sapwood_ratio(14:15)  !new is SLA(14:15)(3900.0*2.0/1000.0)
+
 
    !---------------------------------------------------------------------------------------!
 
@@ -2047,7 +2048,7 @@ subroutine init_rk4_params()
    rk4min_can_temp   =  1.8400d2  ! Minimum canopy    temperature               [        K]
    rk4max_can_temp   =  3.4100d2  ! Maximum canopy    temperature               [        K]
    rk4min_can_shv    =  1.0000d-8 ! Minimum canopy    specific humidity         [kg/kg_air]
-   rk4max_can_shv    =  4.5000d-2 ! Maximum canopy    specific humidity         [kg/kg_air]
+   rk4max_can_shv    =  4.6000d-2 ! Maximum canopy    specific humidity         [kg/kg_air]
    rk4max_can_rhv    =  1.1000d0  ! Maximum canopy    relative humidity (**)    [      ---]
    rk4min_can_co2    =  2.0000d2  ! Minimum canopy    CO2 mixing ratio          [ µmol/mol]
    rk4max_can_co2    =  1.2000d3  ! Maximum canopy    CO2 mixing ratio          [ µmol/mol]
