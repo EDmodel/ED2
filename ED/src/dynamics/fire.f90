@@ -13,6 +13,7 @@ subroutine fire_frequency(month, cgrid)
                             , q                      ! ! intent(in)
    use grid_coms     , only : nzg                    ! ! intent(in)
    use soil_coms     , only : slz                    & ! intent(in)
+                            , soil                   & ! intent(in)
                             , dslz                   ! ! intent(in)
    use disturb_coms  , only : include_fire           & ! intent(in)
                             , fire_dryness_threshold & ! intent(in)
@@ -37,6 +38,7 @@ subroutine fire_frequency(month, cgrid)
    integer                        :: ico
    integer                        :: k
    integer                        :: ka
+   integer                        :: nsoil
    real                           :: babove
    real                           :: fire_wmass_threshold
    real                           :: fuel
@@ -137,8 +139,11 @@ subroutine fire_frequency(month, cgrid)
                !---------------------------------------------------------------------------!
                fire_wmass_threshold = 0
                do k = ka, nzg
+                  nsoil                = csite%ntext_soil(k,ipa)
                   fire_wmass_threshold = fire_wmass_threshold                              &
-                                       + fire_smoist_threshold * dslz(k) * wdns
+                                       + ( fire_smoist_threshold                           &
+                                         * (soil(nsoil)%slmsts - soil(nsoil)%soilcp)       &
+                                         + soil(nsoil)%soilcp ) * dslz(k) * wdns
                end do
 
                !---------------------------------------------------------------------------!

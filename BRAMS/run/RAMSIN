@@ -855,6 +855,11 @@
                               !  2  --  Same as 1, but it solves canopy
                               !         enthalpy instead of canopy 
                               !         temperature.
+   RK4_TOLERANCE  = 0.01,     ! This is the relative tolerance for the Runge-Kutta 
+                              !   integration.  Larger numbers will make runs go faster, 
+                              !   at the expense of being less accurate.  Currently the 
+                              !   valid range is between 1.e-7 and 1.e-1, but recommended
+                              !   values are between 1.e-4 and 1.e-2
 
    IBRANCH_THERMO = 0,        ! This determines whether branches should be included in
                               !    the vegetation thermodynamics or not.  This is under

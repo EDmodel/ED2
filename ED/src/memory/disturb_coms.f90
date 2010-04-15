@@ -53,7 +53,7 @@ Module disturb_coms
   real :: fire_dryness_threshold  ! (meters) Fire may occur if total equivalent water depth
                                   !          (ground + underground) falls below this 
                                   !          threshold and include_fire is 1
-  real :: fire_smoist_threshold   ! (m3/m3)  Fire may occur when the total water
+  real :: fire_smoist_threshold   ! (---)    Fire may occur when the total water
                                   !          (ground + underground) converted to 
                                   !          equivalent average soil moisture is below 
                                   !          this threshold and include_fire is 2.

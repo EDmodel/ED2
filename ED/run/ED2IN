@@ -96,10 +96,10 @@
 
    NL%LOADMETH  = 0    ! Typical either 0 or 2, unecessary to set 1 or 3
                        ! 0 - Let the loadmaster determine
-                       !        what is best
+                       !        what is best (good for npoly > nmach )
                        ! 1 - Load (defined by the polygon vector "workload"
                        !     will be evenly distributed accross 
-                       !        the nodes. (good for npoly > nmach )
+                       !        the nodes.
                        ! 2 - Try to load an equal number of polygons
                        !        per node (good for npoly = nmach)
                        ! 3 - Similar to 1, but here we round the index 
@@ -200,7 +200,7 @@
    !      be avoided by all means, unless you are                                          !
    !      absolute sure of what you're doing;                                              !
    !---------------------------------------------------------------------------------------!
-   NL%IED_INIT_MODE   = 5 
+   NL%IED_INIT_MODE   = 0
 
    NL%EDRES  = 1.0                     ! ED2/ED1 restart grid resolution
                                        !    (Ignored unless ied_init_mode is 3.
@@ -210,7 +210,7 @@
 !----- Time of the history start ----------------------------------------------------------!
    NL%ITIMEH   = 0000     ! UTC
    NL%IDATEH   = 02       ! Day
-   NL%IMONTHH  = 01        ! Month
+   NL%IMONTHH  = 01       ! Month
    NL%IYEARH   = 1997     ! Year
 !------------------------------------------------------------------------------------------!
 
@@ -226,7 +226,7 @@
    NL%ISOILFLG = 1,1    ! Options are: 1. Read from LAT/LON
                         !              2. Constant default soil
                         ! This variable must be defined for all grids. The order is
-                        ! all ED regions first followed by ED SOIs. 
+                        ! all ED regions first followed by ED POIs. 
    
    NL%NSLCON   = 8      ! Default soil type if ISOILFLG = 2 (choices below:)
    !-----------------------------------------------------------------------!
@@ -294,8 +294,14 @@
 
    NL%INTEGRATION_SCHEME = 1  ! This determines how the fast time step
                               ! is integrated:
-                              !  0  --  Euler step
+                              !  0  --  Euler step (not supported)
                               !  1  --  Fourth-order Runge Kutta
+
+   NL%RK4_TOLERANCE  = 0.01   ! This is the relative tolerance for the Runge-Kutta 
+                              !   integration.  Larger numbers will make runs go faster, 
+                              !   at the expense of being less accurate.  Currently the 
+                              !   valid range is between 1.e-7 and 1.e-1, but recommended
+                              !   values are between 1.e-4 and 1.e-2
 
    NL%IBRANCH_THERMO = 0      ! This determines whether branches should be included in
                               !    the vegetation thermodynamics or not.  This is under

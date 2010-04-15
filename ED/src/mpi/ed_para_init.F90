@@ -209,7 +209,7 @@ subroutine get_work(ifm,nxp,nyp)
    integer                              :: iloff
    integer                              :: iroff
    !----- Local constants. ----------------------------------------------------------------!
-   integer                , parameter   :: min_land_pcent = 25 ! Mininum percentage of land
+   integer                , parameter   :: min_land_pcent =  5 ! Mininum percentage of land
                                                                !   that a polygon must have
                                                                !   to be considered in the
                                                                !   regional run.

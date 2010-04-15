@@ -61,7 +61,7 @@ subroutine copy_nl(copy_type)
 
   use canopy_radiation_coms, only : crown_mod
   
-  use rk4_coms, only : ibranch_thermo
+  use rk4_coms, only : ibranch_thermo, rk4_tolerance
 
   use ed_para_coms,only: loadmeth
 
@@ -145,6 +145,7 @@ subroutine copy_nl(copy_type)
      ed_reg_lonmax = nl%ed_reg_lonmax
 
      integration_scheme = nl%integration_scheme
+     rk4_tolerance      = nl%rk4_tolerance
      ibranch_thermo     = nl%ibranch_thermo
      istoma_scheme      = nl%istoma_scheme
      iphen_scheme       = nl%iphen_scheme

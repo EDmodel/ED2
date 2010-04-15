@@ -985,7 +985,8 @@ subroutine ed_opspec_misc
                                     , agri_stock                   & ! intent(in)
                                     , plantation_stock             ! ! intent(in)
    use canopy_radiation_coms , only : crown_mod                    ! ! intent(in)
-   use rk4_coms              , only : ibranch_thermo               ! ! intent(in)
+   use rk4_coms              , only : ibranch_thermo               & ! intent(in)
+                                    , rk4_tolerance                ! ! intent(in)
 
 #if defined(COUPLED)
 #else
@@ -1244,10 +1245,24 @@ end do
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    case (1)
+      !------------------------------------------------------------------------------------!
+      !   Check the branch thermodynamics.                                                 !
+      !------------------------------------------------------------------------------------!
       if (ibranch_thermo < 0 .or. ibranch_thermo > 2) then
          write (reason,fmt='(a,1x,i4,a)')                                                  &
                    'Invalid IBRANCH_THERMO, it must be between 0 and 2. Yours is set to'   &
                    ,ibranch_thermo,'...'
+         call opspec_fatal(reason,'opspec_misc')
+         ifaterr = ifaterr +1
+      end if
+      
+      !------------------------------------------------------------------------------------!
+      !   Check the Runge-Kutta tolerance.                                                 !
+      !------------------------------------------------------------------------------------!
+      if (rk4_tolerance < 1.e-7 .or. rk4_tolerance > 1.e-1) then
+         write (reason,fmt='(a,2x,a,1x,es12.5,a)')                                         & 
+              'Invalid RK4_TOLERANCE, it must be between 1.e-7 and 1.e-1.'                 &
+             ,'Yours is set to',rk4_tolerance,'...'
          call opspec_fatal(reason,'opspec_misc')
          ifaterr = ifaterr +1
       end if
