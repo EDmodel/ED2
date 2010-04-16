@@ -1322,12 +1322,33 @@ end do
       ifaterr = ifaterr +1
    end if
 
-   if (icanturb < -1 .or. icanturb > 2) then
+   select case (icanturb)
+   case (-1)
+      write (unit=*,fmt='(a)') '==========================================================='
+      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
+      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
+      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
+      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
+      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
+      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
+      write (unit=*,fmt='(a)') '==========================================================='
+      write (unit=*,fmt='(a)') '    You have set up the canopy turbulence structure to     '
+      write (unit=*,fmt='(a)') ' -1, which is the old-style ED-2.0.  This is known to have '
+      write (unit=*,fmt='(a)') ' serious issues and it''s currently deprecated.  The only  '
+      write (unit=*,fmt='(a)') ' reason why I''m letting you to run with this option is    '
+      write (unit=*,fmt='(a)') ' because I am a very nice model and I don''t really know   '
+      write (unit=*,fmt='(a)') ' how to say NO!  But don''t expect much from this run, and '
+      write (unit=*,fmt='(a)') ' in case this run crashes, it is going to be all your      '
+      write (unit=*,fmt='(a)') ' fault and I will remind you that!!!                       '
+      write (unit=*,fmt='(a)') '==========================================================='
+   case (0,1,2)
+      continue
+   case default
       write (reason,fmt='(a,1x,i4,a)') &
         'Invalid ICANTURB, it must be between -1 and 2. Yours is set to',icanturb,'...'
       call opspec_fatal(reason,'opspec_misc')  
       ifaterr = ifaterr +1
-   end if
+   end select
 
    if (isfclyrm < 1 .or. isfclyrm > 4) then
       write (reason,fmt='(a,1x,i4,a)') &

@@ -352,15 +352,15 @@
 
    NL%INCLUDE_FIRE    = 2     ! Determines how to apply fire in the model:
                               ! 0. No fires;
-                              ! 1. Fire will be triggered with enough biomass and 
-                              !    integrated ground water depth less than a threshold. 
+                              ! 1. (deprecated) Fire will be triggered with enough biomass 
+                              !    and integrated ground water depth less than a threshold.
                               !    Based on ED-1, the threshold assumes that the soil is 
                               !    1 m, so deeper soils will need to be much drier
-                              !    to allow fires to happen. 
-                              ! 2. Fire will be triggered with enough biomass and 
-                              !    the total soil water at the top 75 cm falls below a
-                              !    threshold. This one is recommended if the soil depth is
-                              !    different than 1 m.
+                              !    to allow fires to happen and often will never allow 
+                              !    fires. 
+                              ! 2. Fire will be triggered with enough biomass and the
+                              !    total soil water at the top 75 cm falls below a 
+                              !    threshold. 
                              
 
    NL%IANTH_DISTURB   = 1     ! Flag specifying whether (1) or not (0) to include
@@ -369,7 +369,10 @@
 
 
    NL%ICANTURB        = 2     ! Canopy turbulence scheme
-                              ! -1. is the original ED-2.0 scheme
+                              ! -1. (very deprecated) This is the original ED-2.0 
+                              !     scheme, added here for backward compability.  
+                              !     THIS SHOULD BE AVOIDED, since it gives strange 
+                              !     results. 
                               !  0. is the default scheme
                               !  1. will rescale reference wind-speed if it
                               !     the reference height is (inapropriately)
