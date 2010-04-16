@@ -136,6 +136,7 @@ Module ename_coms
 
 !!    OPTIONS FOR MODEL DYNAMICS
       integer                   :: integration_scheme = 0
+      real                      :: rk4_tolerance      = 0.
       integer                   :: ibranch_thermo     = 0
       integer                   :: istoma_scheme      = 0
       integer                   :: iphen_scheme       = 0
@@ -144,7 +145,7 @@ Module ename_coms
       integer                   :: crown_mod          = 0
       integer                   :: n_plant_lim        = 0
       integer                   :: n_decomp_lim       = 0
-      integer                   :: decomp_scheme = 0
+      integer                   :: decomp_scheme      = 0
       integer                   :: include_fire       = 0
       integer                   :: ianth_disturb      = 0
       integer                   :: icanturb           = 0

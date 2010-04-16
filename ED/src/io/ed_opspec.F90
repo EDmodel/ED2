@@ -985,7 +985,8 @@ subroutine ed_opspec_misc
                                     , agri_stock                   & ! intent(in)
                                     , plantation_stock             ! ! intent(in)
    use canopy_radiation_coms , only : crown_mod                    ! ! intent(in)
-   use rk4_coms              , only : ibranch_thermo               ! ! intent(in)
+   use rk4_coms              , only : ibranch_thermo               & ! intent(in)
+                                    , rk4_tolerance                ! ! intent(in)
 
 #if defined(COUPLED)
 #else
@@ -1244,10 +1245,24 @@ end do
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    case (1)
+      !------------------------------------------------------------------------------------!
+      !   Check the branch thermodynamics.                                                 !
+      !------------------------------------------------------------------------------------!
       if (ibranch_thermo < 0 .or. ibranch_thermo > 2) then
          write (reason,fmt='(a,1x,i4,a)')                                                  &
                    'Invalid IBRANCH_THERMO, it must be between 0 and 2. Yours is set to'   &
                    ,ibranch_thermo,'...'
+         call opspec_fatal(reason,'opspec_misc')
+         ifaterr = ifaterr +1
+      end if
+      
+      !------------------------------------------------------------------------------------!
+      !   Check the Runge-Kutta tolerance.                                                 !
+      !------------------------------------------------------------------------------------!
+      if (rk4_tolerance < 1.e-7 .or. rk4_tolerance > 1.e-1) then
+         write (reason,fmt='(a,2x,a,1x,es12.5,a)')                                         & 
+              'Invalid RK4_TOLERANCE, it must be between 1.e-7 and 1.e-1.'                 &
+             ,'Yours is set to',rk4_tolerance,'...'
          call opspec_fatal(reason,'opspec_misc')
          ifaterr = ifaterr +1
       end if
@@ -1307,12 +1322,33 @@ end do
       ifaterr = ifaterr +1
    end if
 
-   if (icanturb < -1 .or. icanturb > 2) then
+   select case (icanturb)
+   case (-1)
+      write (unit=*,fmt='(a)') '==========================================================='
+      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
+      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
+      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
+      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
+      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
+      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
+      write (unit=*,fmt='(a)') '==========================================================='
+      write (unit=*,fmt='(a)') '    You have set up the canopy turbulence structure to     '
+      write (unit=*,fmt='(a)') ' -1, which is the old-style ED-2.0.  This is known to have '
+      write (unit=*,fmt='(a)') ' serious issues and it''s currently deprecated.  The only  '
+      write (unit=*,fmt='(a)') ' reason why I''m letting you to run with this option is    '
+      write (unit=*,fmt='(a)') ' because I am a very nice model and I don''t really know   '
+      write (unit=*,fmt='(a)') ' how to say NO!  But don''t expect much from this run, and '
+      write (unit=*,fmt='(a)') ' in case this run crashes, it is going to be all your      '
+      write (unit=*,fmt='(a)') ' fault and I will remind you that!!!                       '
+      write (unit=*,fmt='(a)') '==========================================================='
+   case (0,1,2)
+      continue
+   case default
       write (reason,fmt='(a,1x,i4,a)') &
         'Invalid ICANTURB, it must be between -1 and 2. Yours is set to',icanturb,'...'
       call opspec_fatal(reason,'opspec_misc')  
       ifaterr = ifaterr +1
-   end if
+   end select
 
    if (isfclyrm < 1 .or. isfclyrm > 4) then
       write (reason,fmt='(a,1x,i4,a)') &

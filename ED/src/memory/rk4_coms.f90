@@ -223,6 +223,12 @@ module rk4_coms
                                                !    and radiation interception. 
                                                ! 0 - no (default);
                                                ! 1 - yes (under development/test);
+
+   real                      :: rk4_tolerance  ! The RK4 tolerance (or epsilon).  While 
+                                               !    rk4eps is the actual variable used in
+                                               !    Runge-Kutta (a double precision vari-
+                                               !    able), rk4tol is the one given at the 
+                                               !    namelist (a single precision variable).
    !=======================================================================================!
    !=======================================================================================!
 

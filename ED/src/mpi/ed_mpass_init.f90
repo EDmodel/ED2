@@ -101,7 +101,7 @@ subroutine ed_masterput_nl(par_run)
    use disturb_coms,    only: include_fire,ianth_disturb, treefall_disturbance_rate
    use optimiz_coms,    only: ioptinpt
    use canopy_radiation_coms, only : crown_mod
-   use rk4_coms,        only: ibranch_thermo
+   use rk4_coms,        only: rk4_tolerance, ibranch_thermo
 
    implicit none
    include 'mpif.h'
@@ -215,6 +215,7 @@ subroutine ed_masterput_nl(par_run)
    call MPI_Bcast(centlon,maxgrds,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(integration_scheme,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(rk4_tolerance,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(ibranch_thermo,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(istoma_scheme,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(iphen_scheme,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
@@ -859,7 +860,7 @@ subroutine ed_nodeget_nl
    use canopy_air_coms, only: icanturb, isfclyrm
    use pft_coms,        only: include_these_pft,agri_stock,plantation_stock,pft_1st_check
    use canopy_radiation_coms, only: crown_mod
-   use rk4_coms,        only: ibranch_thermo
+   use rk4_coms,        only: rk4_tolerance, ibranch_thermo
 
    implicit none
    include 'mpif.h'
@@ -971,6 +972,7 @@ subroutine ed_nodeget_nl
    call MPI_Bcast(centlon,maxgrds,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(integration_scheme,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(rk4_tolerance,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(ibranch_thermo,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(istoma_scheme,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(iphen_scheme,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)

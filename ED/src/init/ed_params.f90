@@ -28,7 +28,6 @@ subroutine load_ed_ecosystem_params()
    call init_met_params()
    call init_lapse_params()
    call init_can_rad_params()
-   call init_can_air_params()
    call init_hydro_coms()
    call init_soil_coms()
    call init_phen_coms()
@@ -101,6 +100,9 @@ subroutine load_ed_ecosystem_params()
    call init_pft_leaf_params()
    call init_pft_repro_params()
    call init_pft_derived_params()
+
+   !----- This must be done after defining some PFT parameters. ---------------------------!
+   call init_can_air_params()
 
    !---------------------------------------------------------------------------------------!
    !     This should be always the last one, since it depends on variables assigned in     !
@@ -404,6 +406,7 @@ end subroutine init_can_rad_params
 subroutine init_can_air_params()
    use consts_coms    , only : twothirds             & ! intent(in)
                              , vonk                  ! ! intent(in)
+   use pft_coms       , only : hgt_min               ! ! intent(in)
    use canopy_air_coms, only : icanturb              & ! intent(in)
                              , isfclyrm              & ! intent(in)
                              , dry_veg_lwater        & ! intent(out)
@@ -496,32 +499,22 @@ subroutine init_can_air_params()
    rb_slope = 25.0
    rb_inter = 0.0 
 
+   !---------------------------------------------------------------------------------------!
+   ! veg_height_min       - This is the minimum vegetation height allowed [m].  Vegetation !
+   !                        height is used to calculate drag coefficients and patch        !
+   !                        roughness.                                                     !
+   ! minimum_canopy_depth - This is the minimum canopy depth allowed [m].  Canopy depth    !
+   !                        is used to calculate the heat and moisture storage capacity in !
+   !                        the canopy air space.                                          !
+   !---------------------------------------------------------------------------------------!
    select case (icanturb)
    case (-1)
+      veg_height_min        = minval(hgt_min) ! used to be 0.2
+      minimum_canopy_depth  = minval(hgt_min) ! used to be 0.2
 
-      !------------------------------------------------------------------------------------!
-      !     This is the minimum vegetation height, used to calculate drag coefficients and !
-      ! similar things.                                                                    !
-      !------------------------------------------------------------------------------------!
-      veg_height_min = 0.2
-
-      !------------------------------------------------------------------------------------!
-      !      This is the minimum canopy depth that is used to calculate the heat and       !
-      ! moisture storage capacity in the canopy air [m].                                   !
-      !------------------------------------------------------------------------------------!
-      minimum_canopy_depth  = 0.2
    case default
-      !------------------------------------------------------------------------------------!
-      !      This is the minimum canopy depth that is used to calculate the heat and       !
-      ! moisture storage capacity in the canopy air [m].                                   !
-      !------------------------------------------------------------------------------------!
-      minimum_canopy_depth  = 5.0
-
-      !------------------------------------------------------------------------------------!
-      !     This is the minimum vegetation height, used to calculate drag coefficients and !
-      ! similar things.                                                                    !
-      !------------------------------------------------------------------------------------!
-      veg_height_min = 1.0 ! was 0.2
+      veg_height_min        = 1.0             ! alternative: minval(hgt_min) 
+      minimum_canopy_depth  = 5.0             ! alternative: minval(hgt_min) 
    end select
 
    !----- This is the dimensionless exponential wind atenuation factor. -------------------!
@@ -1648,9 +1641,10 @@ subroutine init_disturb_params
    !---------------------------------------------------------------------------------------!
    !     If include_fire is 2, then fire may occur if total (ground + underground) water   !
    ! falls below a threshold defined by the total water of a soil column with average soil !
-   ! moisture equal to fire_smoist_threshold [m3_H2O/m3_gnd] would have.                   !
+   ! moisture equal to soilcp + (slmsts-soilcp) * fire_smoist_threshold [m3_H2O/m3_gnd]    !
+   ! would have.                                                                           !
    !---------------------------------------------------------------------------------------!
-   fire_smoist_threshold = 0.12
+   fire_smoist_threshold = 0.20
 
    !----- Maximum depth that will be considered in the average soil -----------------------!
    fire_smoist_depth     = -0.75
@@ -1866,32 +1860,32 @@ end subroutine init_soil_coms
 !==========================================================================================!
 subroutine init_phen_coms
 
-  use phenology_coms,only: retained_carbon_fraction, &
-       theta_crit,dl_tr,st_tr1,st_tr2,phen_a,phen_b,phen_c, &
-       rad_turnover_int, rad_turnover_slope, &
-       vm_tran, vm_slop, vm_amp, vm_min
+   use phenology_coms,only: retained_carbon_fraction, &
+        theta_crit,dl_tr,st_tr1,st_tr2,phen_a,phen_b,phen_c, &
+        rad_turnover_int, rad_turnover_slope, &
+        vm_tran, vm_slop, vm_amp, vm_min
 
-  implicit none
+   implicit none
 
-  retained_carbon_fraction = 0.5
-  theta_crit = 0.2
-  dl_tr = 655.0
-  st_tr1 = 284.3
-  st_tr2 = 275.15
+   retained_carbon_fraction = 0.5
+   theta_crit = 0.2
+   dl_tr = 655.0
+   st_tr1 = 284.3
+   st_tr2 = 275.15
   
-  phen_a = -68.0   
-  phen_b = 638.0    
-  phen_c = -0.01    
+   phen_a = -68.0   
+   phen_b = 638.0    
+   phen_c = -0.01    
 
-  rad_turnover_int   = -11.3868
-  rad_turnover_slope = 0.0824
+   rad_turnover_int   = -11.3868
+   rad_turnover_slope = 0.0824
 
-  vm_tran = 9.0
-  vm_slop = 10.0
-  vm_amp = 20.0
-  vm_min = 15.0
+   vm_tran = 9.0
+   vm_slop = 10.0
+   vm_amp = 20.0
+   vm_min = 15.0
 
-  return
+   return
 end subroutine init_phen_coms
 !==========================================================================================!
 !==========================================================================================!
@@ -1903,12 +1897,24 @@ end subroutine init_phen_coms
 
 !==========================================================================================!
 !==========================================================================================!
+!     This subroutine assigns the fusion and splitting parameters.                         !
+!------------------------------------------------------------------------------------------!
 subroutine init_ff_coms
-
-   use fusion_fission_coms , only :  min_dbh_class, maxffdbh, dffdbhi                      &
-                                   , min_hgt_class, fusetol, fusetol_h, lai_fuse_tol       &
-                                   , lai_tol, ntol, profile_tol,max_patch_age, ff_ndbh     &
-                                   , coh_tolerance_max, pat_tolerance_max, fuse_relax
+   use fusion_fission_coms, only : min_dbh_class     & ! intent(out)
+                                 , maxffdbh          & ! intent(out)
+                                 , dffdbhi           & ! intent(out)
+                                 , min_hgt_class     & ! intent(out)
+                                 , fusetol           & ! intent(out)
+                                 , fusetol_h         & ! intent(out)
+                                 , lai_fuse_tol      & ! intent(out)
+                                 , lai_tol           & ! intent(out)
+                                 , ntol              & ! intent(out)
+                                 , profile_tol       & ! intent(out)
+                                 , max_patch_age     & ! intent(out)
+                                 , ff_ndbh           & ! intent(out)
+                                 , coh_tolerance_max & ! intent(out)
+                                 , pat_tolerance_max & ! intent(out)
+                                 , fuse_relax        ! ! intent(out)
 
    implicit none
 
@@ -1927,8 +1933,8 @@ subroutine init_ff_coms
    pat_tolerance_max = 100.0
    fuse_relax        = .false.
    dffdbhi           = real(ff_ndbh)/maxffdbh
-   return
 
+   return
 end subroutine init_ff_coms
 !==========================================================================================!
 !==========================================================================================!
@@ -1950,7 +1956,8 @@ subroutine init_rk4_params()
                                    , min_sfcwater_mass     ! ! intent(in)
    use canopy_air_coms      , only : dry_veg_lwater        & ! intent(in)
                                    , fullveg_lwater        ! ! intent(in)
-   use rk4_coms             , only : maxstp                & ! intent(out)
+   use rk4_coms             , only : rk4_tolerance         & ! intent(in)
+                                   , maxstp                & ! intent(out)
                                    , rk4eps                & ! intent(out)
                                    , rk4eps2               & ! intent(out)
                                    , rk4epsi               & ! intent(out)
@@ -2004,15 +2011,15 @@ subroutine init_rk4_params()
    !    The following variables control the Runge-Kutta performance.  Think twice before   !
    ! changing them...                                                                      !
    !---------------------------------------------------------------------------------------!
-   maxstp      = 100000000    ! Maximum number of intermediate steps. 
-   rk4eps      = 1.d-2        ! The desired accuracy.
-   rk4epsi     = 1.d0/rk4eps  ! The inverse of desired accuracy.
-   rk4eps2     = rk4eps**2    ! square of the accuracy
-   hmin        = 1.d-7        ! The minimum step size.
-   print_diags = .false.      ! Flag to print the diagnostic check.
-   checkbudget = .false.      ! Flag to check CO2, water, and energy budgets every time
-                              !     step and stop the run in case any of these budgets 
-                              !     doesn't close.
+   maxstp      = 100000000           ! Maximum number of intermediate steps. 
+   rk4eps      = dble(rk4_tolerance) ! The desired accuracy.
+   rk4epsi     = 1.d0/rk4eps         ! The inverse of desired accuracy.
+   rk4eps2     = rk4eps**2           ! square of the accuracy
+   hmin        = 1.d-7               ! The minimum step size.
+   print_diags = .false.             ! Flag to print the diagnostic check.
+   checkbudget = .false.             ! Flag to check CO2, water, and energy budgets every 
+                                     !     time step and stop the run in case any of these 
+                                     !     budgets don't close.
    !---------------------------------------------------------------------------------------!
 
 
@@ -2035,8 +2042,8 @@ subroutine init_rk4_params()
    ! nominal heat capacity, the laziest way to turn this off is by setting hcapveg_ref to  !
    ! a small number.  Don't set it to zero, otherwise you may have FPE issues.             !
    !---------------------------------------------------------------------------------------!
-   hcapveg_ref         = 3.0d3  ! Reference heat capacity value                   [J/m³/K]
-   min_height          = 1.5d0  ! Minimum vegetation height                       [     m]
+   hcapveg_ref         = 3.0d3  ! 3.0d-1  ! Reference heat capacity value          [J/m³/K]
+   min_height          = 1.5d0            ! Minimum vegetation height              [     m]
    !---------------------------------------------------------------------------------------!
 
 
@@ -2053,7 +2060,7 @@ subroutine init_rk4_params()
    rk4min_can_co2    =  2.0000d2  ! Minimum canopy    CO2 mixing ratio          [ µmol/mol]
    rk4max_can_co2    =  1.2000d3  ! Maximum canopy    CO2 mixing ratio          [ µmol/mol]
    rk4min_soil_temp  =  1.8400d2  ! Minimum soil      temperature               [        K]
-   rk4max_soil_temp  =  3.4600d2  ! Maximum soil      temperature               [        K]
+   rk4max_soil_temp  =  3.5100d2  ! Maximum soil      temperature               [        K]
    rk4min_veg_temp   =  1.8400d2  ! Minimum leaf      temperature               [        K]
    rk4max_veg_temp   =  3.4100d2  ! Maximum leaf      temperature               [        K]
    rk4min_sfcw_temp  =  1.9315d2  ! Minimum snow/pond temperature               [        K]

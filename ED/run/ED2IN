@@ -96,10 +96,10 @@
 
    NL%LOADMETH  = 0    ! Typical either 0 or 2, unecessary to set 1 or 3
                        ! 0 - Let the loadmaster determine
-                       !        what is best
+                       !        what is best (good for npoly > nmach )
                        ! 1 - Load (defined by the polygon vector "workload"
                        !     will be evenly distributed accross 
-                       !        the nodes. (good for npoly > nmach )
+                       !        the nodes.
                        ! 2 - Try to load an equal number of polygons
                        !        per node (good for npoly = nmach)
                        ! 3 - Similar to 1, but here we round the index 
@@ -200,7 +200,7 @@
    !      be avoided by all means, unless you are                                          !
    !      absolute sure of what you're doing;                                              !
    !---------------------------------------------------------------------------------------!
-   NL%IED_INIT_MODE   = 5 
+   NL%IED_INIT_MODE   = 0
 
    NL%EDRES  = 1.0                     ! ED2/ED1 restart grid resolution
                                        !    (Ignored unless ied_init_mode is 3.
@@ -210,7 +210,7 @@
 !----- Time of the history start ----------------------------------------------------------!
    NL%ITIMEH   = 0000     ! UTC
    NL%IDATEH   = 02       ! Day
-   NL%IMONTHH  = 01        ! Month
+   NL%IMONTHH  = 01       ! Month
    NL%IYEARH   = 1997     ! Year
 !------------------------------------------------------------------------------------------!
 
@@ -226,7 +226,7 @@
    NL%ISOILFLG = 1,1    ! Options are: 1. Read from LAT/LON
                         !              2. Constant default soil
                         ! This variable must be defined for all grids. The order is
-                        ! all ED regions first followed by ED SOIs. 
+                        ! all ED regions first followed by ED POIs. 
    
    NL%NSLCON   = 8      ! Default soil type if ISOILFLG = 2 (choices below:)
    !-----------------------------------------------------------------------!
@@ -294,8 +294,14 @@
 
    NL%INTEGRATION_SCHEME = 1  ! This determines how the fast time step
                               ! is integrated:
-                              !  0  --  Euler step
+                              !  0  --  Euler step (not supported)
                               !  1  --  Fourth-order Runge Kutta
+
+   NL%RK4_TOLERANCE  = 0.01   ! This is the relative tolerance for the Runge-Kutta 
+                              !   integration.  Larger numbers will make runs go faster, 
+                              !   at the expense of being less accurate.  Currently the 
+                              !   valid range is between 1.e-7 and 1.e-1, but recommended
+                              !   values are between 1.e-4 and 1.e-2
 
    NL%IBRANCH_THERMO = 0      ! This determines whether branches should be included in
                               !    the vegetation thermodynamics or not.  This is under
@@ -346,15 +352,15 @@
 
    NL%INCLUDE_FIRE    = 2     ! Determines how to apply fire in the model:
                               ! 0. No fires;
-                              ! 1. Fire will be triggered with enough biomass and 
-                              !    integrated ground water depth less than a threshold. 
+                              ! 1. (deprecated) Fire will be triggered with enough biomass 
+                              !    and integrated ground water depth less than a threshold.
                               !    Based on ED-1, the threshold assumes that the soil is 
                               !    1 m, so deeper soils will need to be much drier
-                              !    to allow fires to happen. 
-                              ! 2. Fire will be triggered with enough biomass and 
-                              !    the total soil water at the top 75 cm falls below a
-                              !    threshold. This one is recommended if the soil depth is
-                              !    different than 1 m.
+                              !    to allow fires to happen and often will never allow 
+                              !    fires. 
+                              ! 2. Fire will be triggered with enough biomass and the
+                              !    total soil water at the top 75 cm falls below a 
+                              !    threshold. 
                              
 
    NL%IANTH_DISTURB   = 1     ! Flag specifying whether (1) or not (0) to include
@@ -363,7 +369,10 @@
 
 
    NL%ICANTURB        = 2     ! Canopy turbulence scheme
-                              ! -1. is the original ED-2.0 scheme
+                              ! -1. (very deprecated) This is the original ED-2.0 
+                              !     scheme, added here for backward compability.  
+                              !     THIS SHOULD BE AVOIDED, since it gives strange 
+                              !     results. 
                               !  0. is the default scheme
                               !  1. will rescale reference wind-speed if it
                               !     the reference height is (inapropriately)
