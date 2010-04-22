@@ -2020,9 +2020,10 @@ end subroutine init_rk4_params
 !==========================================================================================!
 subroutine overwrite_with_xml_config(thisnode)
    !!! PARSE XML FILE
-   use ed_max_dims, only: n_pft
-   use ed_misc_coms, only: iedcnfgf
-   
+   use ed_max_dims,   only: n_pft
+   use ed_misc_coms,  only: iedcnfgf
+   use hydrology_coms,only: useTOPMODEL
+   use soil_coms,     only: isoilbc
    implicit none
    integer, intent(in) :: thisnode
    integer             :: max_pft_xml
@@ -2052,6 +2053,11 @@ subroutine overwrite_with_xml_config(thisnode)
          call read_ed_xml_config(trim(iedcnfgf))
 
          !! THIRD, recalculate any derived values based on xml
+         if(useTOPMODEL == 1) then
+            isoilbc = 0
+            print*,"TOPMODEL enabled, setting ISOILBC to 0"
+         end if
+
 
          !! FINALLY, write out copy of settings
          call write_ed_xml_config()
