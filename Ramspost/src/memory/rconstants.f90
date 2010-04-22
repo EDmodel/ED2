@@ -11,17 +11,20 @@ Module rconstants
    !---------------------------------------------------------------------------------------!
    ! Trigonometric constants                                                               !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: pi1       = 3.14159265358979  ! Pi                        [      ---]
-   real, parameter :: pii       = 1./pi1            ! 1/Pi                      [      ---]
-   real, parameter :: halfpi    = pi1/2             ! Pi/2                      [      ---]
-   real, parameter :: sqrtpii   = 0.564189583547756 ! 1/(pi**0.5)               [      ---]
-   real, parameter :: twopi     = pi1* 2.           ! 2 Pi                      [      ---]
-   real, parameter :: pio180    = pi1/ 180.         ! Pi/180 (deg -> rad)       [      ---]
-   real, parameter :: onerad    = 180. / pi1        ! 180/pi (rad -> deg)       [      ---]
-   real, parameter :: pi4       = pi1 * 4.          ! 4 Pi                      [      ---]
-   real, parameter :: pio4      = pi1 /4.           ! Pi/4                      [      ---]
-   real, parameter :: pio6      = pi1 /6.           ! Pi/6                      [      ---]
-   real, parameter :: pio6i     = 6.  /pi1          ! 6/Pi                      [      ---]
+   real, parameter :: pi1        = 3.14159265358979  ! Pi                       [      ---]
+   real, parameter :: pii        = 1./pi1            ! 1/Pi                     [      ---]
+   real, parameter :: halfpi     = pi1/2.            ! Pi/2                     [      ---]
+   real, parameter :: twopi      = pi1* 2.           ! 2 Pi                     [      ---]
+   real, parameter :: pio180     = pi1/ 180.         ! Pi/180 (deg -> rad)      [      ---]
+   real, parameter :: onerad     = 180. / pi1        ! 180/pi (rad -> deg)      [      ---]
+   real, parameter :: pi4        = pi1 * 4.          ! 4 Pi                     [      ---]
+   real, parameter :: pi4o3      = pi1 * 4. / 3.     ! 4 Pi / 3                 [      ---]
+   real, parameter :: pio4       = pi1 /4.           ! Pi/4                     [      ---]
+   real, parameter :: pio6       = pi1 /6.           ! Pi/6                     [      ---]
+   real, parameter :: pio6i      = 6.  /pi1          ! 6/Pi                     [      ---]
+   real, parameter :: sqrtpii    = 0.564189583547756 ! 1/(pi**0.5)              [      ---]
+   real, parameter :: sqrthalfpi = 1.2533141373155   ! (pi/2)**0.5              [      ---]
+   real, parameter :: sqrttwopi  = 2. * sqrthalfpi   ! (2*pi)**0.5              [      ---]
    !---------------------------------------------------------------------------------------!
 
 
@@ -44,12 +47,16 @@ Module rconstants
    !---------------------------------------------------------------------------------------!
    ! Universal constants                                                                   !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: stefan    = 5.6696e-8         ! Stefan-Boltzmann constant [ W/m²/K^4]
-   real, parameter :: boltzmann = 1.3806503e-23     ! Boltzmann constant        [m²kg/s²/K]
-   real, parameter :: t00       = 273.15            ! 0°C                       [       °C]
-   real, parameter :: rmol      = 8.314510          ! Molar gas constant        [  J/mol/K]
-   real, parameter :: volmol    = 0.022710980       ! Molar volume at STP       [       m³]
-   real, parameter :: volmoll   = volmol*1.e3       ! Molar volume at STP       [        L]
+   real, parameter :: stefan      = 5.6696e-8       ! Stefan-Boltzmann constant [ W/m²/K^4]
+   real, parameter :: boltzmann   = 1.3806503e-23   ! Boltzmann constant        [m²kg/s²/K]
+   real, parameter :: avogrado    = 6.02252e+23     ! Avogrado number           [    #/mol]
+   real, parameter :: loschmidt   = 2.68719e+25     ! Loschmidt number          [     #/m3]
+   real, parameter :: loschcgs    = loschmidt*1.e-6 ! Loschmidt number          [    #/cm3]
+   real, parameter :: t00         = 273.15          ! 0°C                       [       °C]
+   real, parameter :: rmol        = 8.314510        ! Molar gas constant        [  J/mol/K]
+   real, parameter :: rmolcgs     = rmol*1.e7       ! Molar gas constant        [erg/mol/K]
+   real, parameter :: volmol      = 0.022710980     ! Molar volume at STP       [       m³]
+   real, parameter :: volmoll     = volmol*1.e3     ! Molar volume at STP       [        L]
    !---------------------------------------------------------------------------------------!
 
 
@@ -57,8 +64,15 @@ Module rconstants
    ! Molar masses and derived variables                                                    !
    !---------------------------------------------------------------------------------------!
    real, parameter :: mmdry       = 0.02897        ! Mean dry air molar mass    [   kg/mol]
+   real, parameter :: mmo2        = 0.0319988      ! Mean O2 molar mass         [   kg/mol]
+   real, parameter :: mmo3        = 0.0479982      ! Mean ozone molar mass      [   kg/mol]
    real, parameter :: mmh2o       = 0.01801505     ! Mean water molar mass      [   kg/mol]
    real, parameter :: mmco2       = 0.0440095      ! Mean CO2 molar mass        [   kg/mol]
+   real, parameter :: mmdrycgs    = mmdry * 1.e3   ! Mean dry air molar mass    [    g/mol]
+   real, parameter :: mmo2cgs     = mmo2  * 1.e3   ! Mean O2 molar mass         [    g/mol]
+   real, parameter :: mmo3cgs     = mmo3  * 1.e3   ! Mean ozone molar mass      [    g/mol]
+   real, parameter :: mmh2ocgs    = mmh2o * 1.e3   ! Mean water molar mass      [    g/mol]
+   real, parameter :: mmco2cgs    = mmco2 * 1.e3   ! Mean CO2 molar mass        [    g/mol]
    real, parameter :: mmdoc       = mmdry/mmco2    ! mmdry/mmco2                [     ----]
    real, parameter :: mmcod       = mmco2/mmdry    ! mmco2/mmdry                [     ----]
    real, parameter :: mmdry1000   = 1000.*mmdry    ! Mean dry air molar mass    [   kg/mol]
@@ -71,11 +85,12 @@ Module rconstants
    !---------------------------------------------------------------------------------------!
    ! Time conversion units                                                                 !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: yr_day  = 365.2425 ! # of days in a year                  [   day/yr]
-   real, parameter :: day_sec = 86400.   ! # of seconds in a day                [    s/day]
-   real, parameter :: day_hr  = 24.      ! # of hours in a day                  [   hr/day]
-   real, parameter :: hr_sec  = 3600.    ! # of seconds in an hour              [     s/hr]
-   real, parameter :: min_sec = 60.      ! # of seconds in a minute             [    s/min]
+   real, parameter :: yr_day  = 365.2425         ! # of days in a year          [   day/yr]
+   real, parameter :: day_sec = 86400.           ! # of seconds in a day        [    s/day]
+   real, parameter :: day_hr  = 24.              ! # of hours in a day          [   hr/day]
+   real, parameter :: hr_sec  = 3600.            ! # of seconds in an hour      [     s/hr]
+   real, parameter :: min_sec = 60.              ! # of seconds in a minute     [    s/min]
+   real, parameter :: yr_sec  = yr_day * day_sec ! # of seconds in a year       [     s/yr]
    !---------------------------------------------------------------------------------------!
 
 
@@ -85,6 +100,7 @@ Module rconstants
    !---------------------------------------------------------------------------------------!
    real, parameter :: vonk      = 0.40        ! Von Kármán constant             [      ---]
    real, parameter :: grav      = 9.80665     ! Gravity acceleration            [     m/s²]
+   real, parameter :: gcgs      = grav * 100. ! Gravity acceleration            [    cm/s²]
    real, parameter :: gg        = .5 * grav   ! ½ g                             [     m/s²]
    real, parameter :: erad      = 6370997.    ! Earth radius                    [        m]
    real, parameter :: spcon     = pio180*erad ! One degree of latitude          [        m]
@@ -133,6 +149,7 @@ Module rconstants
    real, parameter :: epim1   = epi-1.      ! that 0.61 term of virtual temp.   [    kg/kg]
    real, parameter :: rh2oocp = rh2o / cp   ! Rv/cp                             [     ----]
    real, parameter :: toodry  = 1.e-8       ! Minimum acceptable mixing ratio.  [    kg/kg]
+   real, parameter :: toowet  = 3.e-2       ! Maximum acceptable mixing ratio.  [    kg/kg]
    !---------------------------------------------------------------------------------------!
 
 
@@ -154,6 +171,8 @@ Module rconstants
    !---------------------------------------------------------------------------------------!
    real, parameter :: idns     = 9.167e2      ! "Hard" ice density              [    kg/m³]
    real, parameter :: idnsi    = 1./idns      ! Inverse of ice density          [    m³/kg]
+   real, parameter :: fdns     = 2.000e2      ! Frost density                   [    kg/m³]
+   real, parameter :: fdnsi    = 1./fdns      ! Inverse of frost density        [    m³/kg]
    real, parameter :: cice     = 2.093e3      ! Ice specific heat (Ci)          [   J/kg/K]
    real, parameter :: cicevlme = wdns * cice  ! Heat capacity × water density   [   J/m³/K]
    real, parameter :: cicei    = 1. / cice    ! Inverse of ice heat capacity    [   kg K/J]
@@ -256,6 +275,7 @@ Module rconstants
    !    Double precision version of all constants used in Runge-Kutta.                     !
    !---------------------------------------------------------------------------------------!
    real(kind=8), parameter :: pi18            = dble(pi1           )
+   real(kind=8), parameter :: halfpi8         = dble(halfpi        )
    real(kind=8), parameter :: twopi8          = dble(twopi         )
    real(kind=8), parameter :: sqrtpii8        = dble(sqrtpii       )
    real(kind=8), parameter :: pio1808         = dble(pio180        )
@@ -295,6 +315,8 @@ Module rconstants
    real(kind=8), parameter :: erad28          = dble(erad2         )
    real(kind=8), parameter :: p008            = dble(p00           )
    real(kind=8), parameter :: p00i8           = dble(p00i          )
+   real(kind=8), parameter :: p00k8           = dble(p00k          )
+   real(kind=8), parameter :: p00ki8          = dble(p00ki         )
    real(kind=8), parameter :: rdry8           = dble(rdry          )
    real(kind=8), parameter :: rdryi8          = dble(rdryi         )
    real(kind=8), parameter :: cp8             = dble(cp            )
@@ -316,6 +338,8 @@ Module rconstants
    real(kind=8), parameter :: cliqi8          = dble(cliqi         )
    real(kind=8), parameter :: idns8           = dble(idns          )
    real(kind=8), parameter :: idnsi8          = dble(idnsi         )
+   real(kind=8), parameter :: fdns8           = dble(fdns          )
+   real(kind=8), parameter :: fdnsi8          = dble(fdnsi         )
    real(kind=8), parameter :: cice8           = dble(cice          )
    real(kind=8), parameter :: cicevlme8       = dble(cicevlme      )
    real(kind=8), parameter :: cicei8          = dble(cicei         )

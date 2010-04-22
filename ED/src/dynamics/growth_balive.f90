@@ -90,10 +90,16 @@ module growth_balive
                   ! Set allocation factors
                   salloc  = 1.0 + qsw(ipft) * cpatch%hite(ico) + q(ipft)
                   salloci = 1.0 / salloc
-                  
+
                   !----- Subtract preceding day's storage respiration. ------!
-                  cpatch%bstorage(ico) = cpatch%bstorage(ico)                &
+                  if(cpatch%bstorage(ico) > cpatch%storage_respiration(ico)) &
+                  then
+                    cpatch%bstorage(ico) = cpatch%bstorage(ico)              &
+                                         - cpatch%storage_respiration(ico)
+                  else
+                    cpatch%balive(ico) = cpatch%balive(ico)                  &
                                        - cpatch%storage_respiration(ico)
+                  endif
 
                   !----------------------------------------------------------!
                   !     When storage carbon is lost, allow the associated    !
@@ -162,9 +168,11 @@ module growth_balive
                   ! temp_dep = 1.0 / ( 1.0  + exp(0.4                        &
                   !          * (278.15 - csite%avg_daily_temp(ipa))))
                   temp_dep = 1.0
+
                   cpatch%storage_respiration(ico) =                          &
                           cpatch%bstorage(ico) * storage_turnover_rate(ipft) &
                         * tfact * temp_dep
+
                   cpatch%vleaf_respiration(ico) =                            &
                           (1.0 - cpoly%green_leaf_factor(ipft,isi))          &
                         / (1.0 + q(ipft) + qsw(ipft) * cpatch%hite(ico))     &
@@ -774,7 +782,7 @@ module growth_balive
          bl_pot = green_leaf_factor                                          &
                 * (cpatch%balive(ico) + carbon_balance) * salloci
 
-         if (bl_pot >= bl_max) then
+         if (bl_pot > bl_max) then
             !----------------------------------------------------------------!
             !     The carbon gain is more than what can go to leaves.  Add   !
             ! all that can to go leaves to leaf biomass, and put the remain- !

@@ -151,7 +151,12 @@ subroutine diffvel(m1,m2,m3,ia,iz,ja,jz,jd  &
   endif
 
   cross = 0.
-  if (idiffkk >= 3 .and. idiffkk /= 7) cross = 1.
+  select case (idiffkk)
+  case (3:6)
+     cross = 1.
+  case default
+     cross = 0.
+  end select
 
   !------------------------ vertical u-component diffusion ----------------
 
@@ -382,7 +387,8 @@ subroutine diffvel(m1,m2,m3,ia,iz,ja,jz,jd  &
 
   !--------------------- horizontal w-component diffusion ----------------
 
-  if (idiffkk >= 3 .and. idiffkk /= 7) then
+  select case (idiffkk)
+  case (3:6)
      if (ihorgrad .eq. 1) then
         call divcart(m1,m2,m3,ia,iz,ja,jz,vt3dd,vt3dj,'XDIR','OPNT',ibotflx)
         call divcart(m1,m2,m3,ia,iz,ja,jz,vt3de,vt3dk,'YDIR','NPNT',ibotflx)
@@ -402,7 +408,7 @@ subroutine diffvel(m1,m2,m3,ia,iz,ja,jz,jd  &
 
      endif
 
-  else
+  case default
      if(ihorgrad.eq.1)then
         call divcart(m1,m2,m3,ia,iz,ja,jz,vt3df,vt3dj,'XDIR','OPNT',ibotflx)
         call divcart(m1,m2,m3,ia,iz,ja,jz,vt3dg,vt3dk,'YDIR','NPNT',ibotflx)
@@ -421,7 +427,7 @@ subroutine diffvel(m1,m2,m3,ia,iz,ja,jz,jd  &
              ,vctr6,vctr7,jd,scr2,dn0,dtlv,ngrid)
 
      endif
-  endif
+  end select
 
   if (jd .eq. 1) then
      do j = ja,jz

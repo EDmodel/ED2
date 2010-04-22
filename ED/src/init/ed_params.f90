@@ -28,7 +28,6 @@ subroutine load_ed_ecosystem_params()
    call init_met_params()
    call init_lapse_params()
    call init_can_rad_params()
-   call init_can_air_params()
    call init_hydro_coms()
    call init_soil_coms()
    call init_phen_coms()
@@ -101,6 +100,9 @@ subroutine load_ed_ecosystem_params()
    call init_pft_leaf_params()
    call init_pft_repro_params()
    call init_pft_derived_params()
+
+   !----- This must be done after defining some PFT parameters. ---------------------------!
+   call init_can_air_params()
 
    !---------------------------------------------------------------------------------------!
    !     This should be always the last one, since it depends on variables assigned in     !
@@ -214,7 +216,7 @@ subroutine init_met_params()
    rshort_min  = 0.
    rshort_max  = 1400.
    !----- Minimum and maximum acceptable longwave radiation [W/m²]. -----------------------!
-   rlong_min   = 100.
+   rlong_min   = 40.
    rlong_max   = 600.
    !----- Minimum and maximum acceptable air temperature    [   K]. -----------------------!
    atm_tmp_min = 184.     ! Lowest temperature ever measured, in Vostok Basin, Antarctica
@@ -230,14 +232,14 @@ subroutine init_met_params()
    prss_max = 110000. ! It may crash if you run a simulation under water.
    !----- Minimum and maximum acceptable precipitation rates [kg/m²/s]. -------------------!
    pcpg_min     = 0.0     ! No negative precipitation is allowed
-   pcpg_max     = 0.0833  ! This is a precipitation rate of 300mm/hr.
+   pcpg_max     = 0.1111  ! This is a precipitation rate of 400mm/hr.
    !----- Minimum and maximum acceptable wind speed [m/s]. --------------------------------!
    vels_min     =  0.0    ! No negative wind is acceptable.
    vels_max     = 85.0    ! Maximum sustained winds recorded during Typhoon Tip (1970).
    !----- Minimum and maximum reference heights [m]. --------------------------------------!
    geoht_min    =   1.0   ! This should be above-canopy measurement, but 1.0 is okay for
                           !     grasslands...
-   geoht_max    = 120.0   ! This should be not that much above the canopy, but tall towers
+   geoht_max    = 350.0   ! This should be not that much above the canopy, but tall towers
                           !     do exist...
    !---------------------------------------------------------------------------------------!
 
@@ -329,6 +331,7 @@ subroutine init_can_rad_params()
                                     , leaf_trans_nir              & ! intent(out)
                                     , lai_min                     & ! intent(out)
                                     , tai_min                     & ! intent(out)
+                                    , patch_lai_min               & ! intent(out)!!!SOLVE2
                                     , blfac_min                   ! ! intent(out)
    use ed_max_dims              , only : n_pft                    ! ! intent(out)
    use pft_coms              , only : phenology                   ! ! intent(out)
@@ -381,7 +384,7 @@ subroutine init_can_rad_params()
    emis_v(9:11)  = 9.50d-1
    emis_v(12:15) = 9.60d-1
 
-
+   patch_lai_min = 1.0e-4
    lai_min       = 1.0e-5
    tai_min       = 1.0e-5
    blfac_min     = 1.0e-2
@@ -403,6 +406,7 @@ end subroutine init_can_rad_params
 subroutine init_can_air_params()
    use consts_coms    , only : twothirds             & ! intent(in)
                              , vonk                  ! ! intent(in)
+   use pft_coms       , only : hgt_min               ! ! intent(in)
    use canopy_air_coms, only : icanturb              & ! intent(in)
                              , isfclyrm              & ! intent(in)
                              , dry_veg_lwater        & ! intent(out)
@@ -495,32 +499,22 @@ subroutine init_can_air_params()
    rb_slope = 25.0
    rb_inter = 0.0 
 
+   !---------------------------------------------------------------------------------------!
+   ! veg_height_min       - This is the minimum vegetation height allowed [m].  Vegetation !
+   !                        height is used to calculate drag coefficients and patch        !
+   !                        roughness.                                                     !
+   ! minimum_canopy_depth - This is the minimum canopy depth allowed [m].  Canopy depth    !
+   !                        is used to calculate the heat and moisture storage capacity in !
+   !                        the canopy air space.                                          !
+   !---------------------------------------------------------------------------------------!
    select case (icanturb)
    case (-1)
+      veg_height_min        = minval(hgt_min) ! used to be 0.2
+      minimum_canopy_depth  = minval(hgt_min) ! used to be 0.2
 
-      !------------------------------------------------------------------------------------!
-      !     This is the minimum vegetation height, used to calculate drag coefficients and !
-      ! similar things.                                                                    !
-      !------------------------------------------------------------------------------------!
-      veg_height_min = 0.2
-
-      !------------------------------------------------------------------------------------!
-      !      This is the minimum canopy depth that is used to calculate the heat and       !
-      ! moisture storage capacity in the canopy air [m].                                   !
-      !------------------------------------------------------------------------------------!
-      minimum_canopy_depth  = 0.2
    case default
-      !------------------------------------------------------------------------------------!
-      !      This is the minimum canopy depth that is used to calculate the heat and       !
-      ! moisture storage capacity in the canopy air [m].                                   !
-      !------------------------------------------------------------------------------------!
-      minimum_canopy_depth  = 5.0
-
-      !------------------------------------------------------------------------------------!
-      !     This is the minimum vegetation height, used to calculate drag coefficients and !
-      ! similar things.                                                                    !
-      !------------------------------------------------------------------------------------!
-      veg_height_min = 1.0 ! was 0.2
+      veg_height_min        = 1.0             ! alternative: minval(hgt_min) 
+      minimum_canopy_depth  = 5.0             ! alternative: minval(hgt_min) 
    end select
 
    !----- This is the dimensionless exponential wind atenuation factor. -------------------!
@@ -544,7 +538,7 @@ subroutine init_can_air_params()
       ubmin     = 0.65
    case default
       !----- This is the minimum ustar under stable and unstable conditions. --------------!
-      ustmin    = 0.01
+      ustmin    = 0.025
       !----- This is the minimum wind scale under stable and unstable conditions. ---------!
       ubmin     = 0.25
    end select
@@ -571,8 +565,8 @@ subroutine init_can_air_params()
    z0hoz0m     = 1. / z0moz0h  ! z0(M)/z0(h)
    ribmaxbh91  = 6.00          ! Maximum bulk Richardson number
    !----- Used by OD95 and BH91. ----------------------------------------------------------!
-   gamm        = 13.0          ! Gamma for momentum.
-   gamh        = 13.0          ! Gamma for heat.
+   gamm        = 16.0          ! Gamma for momentum.
+   gamh        = 16.0          ! Gamma for heat.
    tprandtl    = 1.00          ! Turbulent Prandtl number.
    vkopr       = vonk/tprandtl ! Von Karman / Prandtl number
    !---------------------------------------------------------------------------------------!
@@ -1158,6 +1152,7 @@ subroutine init_pft_alloc_params()
    qsw(5:13)   = SLA(5:13)  / sapwood_ratio(5:13)
    qsw(14:15)  = SLA(14:15) / sapwood_ratio(14:15)  !new is SLA(14:15)(3900.0*2.0/1000.0)
 
+
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
@@ -1174,8 +1169,8 @@ subroutine init_pft_alloc_params()
    !---------------------------------------------------------------------------------------!
    !    Minimum height of an individual.                                                   !
    !---------------------------------------------------------------------------------------!
-   hgt_min(1)     = 0.80
-   hgt_min(2:4)   = 0.80
+   hgt_min(1)     = 0.50
+   hgt_min(2:4)   = 0.50
    hgt_min(5)     = 0.15
    hgt_min(6:7)   = 1.50
    hgt_min(8)     = 1.50
@@ -1183,7 +1178,7 @@ subroutine init_pft_alloc_params()
    hgt_min(10)    = 1.50
    hgt_min(11)    = 1.50
    hgt_min(12:13) = 0.15
-   hgt_min(14:15) = 0.80
+   hgt_min(14:15) = 0.50
 
    !----- Reference height for diameter/height allometry (temperates only). ---------------!
    hgt_ref(1:5)   = 0.0
@@ -1351,8 +1346,8 @@ c2n_leaf(11) = 1000.0 / ((0.11289 + 0.12947 * 6.25) * SLA(11))
 
 
 
-water_conductance(1:4) = 0.001904
-water_conductance(5:11) = 0.00476
+water_conductance(1:4) = 0.00476           !OLD=KW60=0.001904 KW80=0.00253505, KW100=0.00316881, KW125=0.00396101
+water_conductance(5:11) = 0.00476           ! equal to KW150
 water_conductance(12:13) = 0.00476
 water_conductance(14:15) = 0.001904
 
@@ -1646,9 +1641,10 @@ subroutine init_disturb_params
    !---------------------------------------------------------------------------------------!
    !     If include_fire is 2, then fire may occur if total (ground + underground) water   !
    ! falls below a threshold defined by the total water of a soil column with average soil !
-   ! moisture equal to fire_smoist_threshold [m3_H2O/m3_gnd] would have.                   !
+   ! moisture equal to soilcp + (slmsts-soilcp) * fire_smoist_threshold [m3_H2O/m3_gnd]    !
+   ! would have.                                                                           !
    !---------------------------------------------------------------------------------------!
-   fire_smoist_threshold = 0.12
+   fire_smoist_threshold = 0.20
 
    !----- Maximum depth that will be considered in the average soil -----------------------!
    fire_smoist_depth     = -0.75
@@ -1715,7 +1711,12 @@ end subroutine init_hydro_coms
 !==========================================================================================!
 subroutine init_soil_coms
    use soil_coms      , only : ed_nstyp              & ! intent(in)
+                             , isoilflg              & ! intent(in)
+                             , nslcon                & ! intent(in)
+                             , slxclay               & ! intent(in)
+                             , slxsand               & ! intent(in)
                              , soil                  & ! intent(in)
+                             , soil_class            & ! type
                              , soil8                 & ! intent(out)
                              , water_stab_thresh     & ! intent(out)
                              , snowmin               & ! intent(out)
@@ -1724,10 +1725,23 @@ subroutine init_soil_coms
                              , snow_rough            & ! intent(out)
                              , min_sfcwater_mass     & ! intent(out)
                              , infiltration_method   ! ! intent(out)
+                             
+   use grid_coms      , only : ngrids                ! ! intent(in)
+   use consts_coms    , only : grav                  
 
    implicit none
    !----- Local variable ------------------------------------------------------------------!
    integer :: nsoil
+   integer :: ifm
+!   real    :: fieldcp_MPa        ! soil-water potential at field capacity         [ MPa]
+   real    :: fieldcp_K          ! hydraulic conductivity at field capacity       [mm/day]
+   real    :: soilcp_MPa         ! soil-water potential for air dry soil          [ MPa]
+   real    :: soilwp_MPa         ! soil-water potential at wilting point          [ MPa]
+   
+!   fieldcp_MPa         = 0.033 
+   fieldcp_K           = 0.1
+   soilcp_MPa          = 3.1   
+   soilwp_MPa          = 1.5
 
    water_stab_thresh   = 3.0    ! Minimum water mass to be considered stable     [   kg/m2]
    snowmin             = 3.0    ! Minimum snow mass needed to create a new layer [   kg/m2]
@@ -1737,6 +1751,80 @@ subroutine init_soil_coms
    min_sfcwater_mass   = 1.0e-6 ! Minimum allowed mass in temporary layers       [   kg/m2]
    infiltration_method = 0      ! Infiltration method, used in rk4_derivs        [     0|1]
 
+
+!------------------------------------------------------------------------------------------!
+!      UPDATED based on Cosby et al. 1984, soil clay and sand fractions from table 2,      !
+! slpots, slmsts, slbs, and slcons calculated based on table 4 sfldcap calculated based on !
+! Clapp and Hornberger equation 2 and a soil hydraulic conductivity of 0.1mm/day, soilcp   !
+! (air dry soil moisture capacity) is calculated based on Cosby et al. 1984 equation 1 and !
+! a soil-water potential of -3.1MPa.  soilwp (the wilting point soil moisture) is          !
+! calculated based on Cosby et al 1985 equation 1 and a soil-water potential of -1.5MPa    !
+! (Equation 1 in Cosby is not correct it should be saturated moisture potential over       !
+! moisture potential)  (NML, 2/2010)                                                       !
+!------------------------------------------------------------------------------------------!
+
+!-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------!
+!                         slpots     slmsts       slbs     slcpd         soilcp        soilwp        slcons       slcons0 soilcond0 soilcond1 soilcond2       sfldcap    xsand    xclay   xorgan xrobulk    slden !
+!-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------!
+soil= (/ soil_class(-0.049831046,  0.373250,  3.295000,  1465000.,  0.026183447,  0.032636854,  2.446420e-5,  0.000500000,   0.3000,   4.8000,  -2.7000,  0.132130936,  0.9200,  0.0300,  0.0500,   1200.,  1600.)  & ! 1. Sand
+      ,  soil_class(-0.068643592,  0.386340,  3.796000,  1407000.,  0.041873866,  0.050698650,  1.751180e-5,  0.000600000,   0.3000,   4.6600,  -2.6000,  0.155720881,  0.8200,  0.0600,  0.1200,   1250.,  1600.)  & ! 2. Loamy Sand
+      ,  soil_class(-0.155095787,  0.418940,  4.496000,  1344000.,  0.076932647,  0.090413463,  8.228700e-6,  0.000769000,   0.2900,   4.2700,  -2.3100,  0.199963447,  0.5800,  0.1000,  0.3200,   1300.,  1600.)  & ! 3. Sandy loam
+      ,  soil_class(-0.659933234,  0.476050,  5.090000,  1273000.,  0.141599910,  0.163306007,  2.396240e-6,  0.000010600,   0.2700,   3.4700,  -1.7400,  0.266720155,  0.1700,  0.1300,  0.7000,   1400.,  1600.)  & ! 4. Silt loam
+      ,  soil_class(-0.238341682,  0.437280,  5.797000,  1214000.,  0.126501190,  0.143377074,  4.732940e-6,  0.002200000,   0.2800,   3.6300,  -1.8500,  0.247334654,  0.4300,  0.1800,  0.3900,   1350.,  1600.)  & ! 5. Loam
+      ,  soil_class(-0.121199269,  0.412650,  7.165000,  1177000.,  0.137648733,  0.152325872,  6.405180e-6,  0.001500000,   0.2800,   3.7800,  -1.9600,  0.250954745,  0.5800,  0.2700,  0.1500,   1350.,  1600.)  & ! 6. Sandy clay loam
+      ,  soil_class(-0.627769194,  0.478220,  8.408000,  1319000.,  0.228171947,  0.248747504,  1.435260e-6,  0.000107000,   0.2600,   2.7300,  -1.2000,  0.333825332,  0.1000,  0.3400,  0.5600,   1500.,  1600.)  & ! 7. Silty clay loam
+      ,  soil_class(-0.281968114,  0.446980,  8.342000,  1227000.,  0.192624431,  0.210137962,  2.717260e-6,  0.002200000,   0.2700,   3.2300,  -1.5600,  0.301335491,  0.3200,  0.3400,  0.3400,   1450.,  1600.)  & ! 8. Clay loam
+      ,  soil_class(-0.121283019,  0.415620,  9.538000,  1177000.,  0.182198910,  0.196607427,  4.314510e-6,  0.000002167,   0.2700,   3.3200,  -1.6300,  0.286363001,  0.5200,  0.4200,  0.0600,   1450.,  1600.)  & ! 9. Sandy clay
+      ,  soil_class(-0.601312179,  0.479090,  10.46100,  1151000.,  0.263228486,  0.282143846,  1.055190e-6,  0.000001033,   0.2500,   2.5800,  -1.0900,  0.360319788,  0.0600,  0.4700,  0.4700,   1650.,  1600.)  & !10. Silty clay
+      ,  soil_class(-0.286417797,  0.452300,  12.14000,  1088000.,  0.253968998,  0.269618857,  1.427350e-6,  0.000001283,   0.2500,   2.4000,  -0.9600,  0.348432364,  0.2200,  0.5800,  0.2000,   1700.,  1600.)  & !11. Clay
+      ,  soil_class(-0.534564359,  0.469200,  6.180000,  8740000.,  0.167047523,  0.187868805,  2.357930e-6,  0.000008000,   0.0600,   0.4600,   0.0000,  0.285709966,  0.2000,  0.2000,  0.6000,    500.,   300.) /) !12. Peat
+
+!------------------------------------------------------------------------------------------!
+!********* Correct soil_class table using sand and clay fractions (if provided)  **********!
+! Based on Cosby et al 1984, using table 4 and equation 1 (which is incorrect it should be !
+! saturated moisture potential over moisture potential).  NML 2/2010
+!--------------------------------------------------------------------------------------------------!
+do ifm=1,ngrids
+     if (isoilflg(ifm)==2 .and. slxclay >0. .and. slxsand > 0. .and. (slxclay + slxsand) <=1. ) then
+        soil(nslcon)%slbs=        3.10 + 15.7*slxclay - 0.3*slxsand                                     ! [ unitless]
+        
+        soil(nslcon)%slpots=      -1 * (10**(2.17 - 0.63*slxclay - 1.58*slxsand)) * 0.01                ! [ m ]
+        
+        soil(nslcon)%slcons=      (10**(-0.60 + 1.26*slxsand - 0.64*slxclay)) * 0.0254/(60*60)          ! [ m/s ]
+        
+        soil(nslcon)%slmsts=      (50.5 - 14.2*slxsand - 3.7*slxclay)/100                               ! [ m^3/m^3 ]
+        
+!        soil(nslcon)%sfldcap=     soil(nslcon)%slmsts * ( soil(nslcon)%slpots / (fieldcp_MPa*1000/9.80665))** & 
+!                                       (1 / soil(nslcon)%slbs)                                          ! [ m^3/m^3 ]
+        soil(nslcon)%sfldcap=     soil(nslcon)%slmsts * ((fieldcp_K/1000/(60*60*24))/soil(nslcon)%slcons)** & 
+                                       (1 / (2*soil(nslcon)%slbs+3))                                          ! [ m^3/m^3 ]
+        
+        soil(nslcon)%soilcp=      soil(nslcon)%slmsts * ( -1.*soil(nslcon)%slpots / (soilcp_MPa*1000/grav))** & 
+                                       (1 / soil(nslcon)%slbs)                                          ! [ m^3/m^3 ]
+
+        soil(nslcon)%soilwp=      soil(nslcon)%slmsts * ( -1.*soil(nslcon)%slpots / (soilwp_MPa*1000/grav))** & 
+                                       (1 / soil(nslcon)%slbs)                                          ! [ m^3/m^3 ]       
+                                       
+        write(unit=*,fmt='(a)') '*********************************************'
+        write(unit=*,fmt='(a)') '**RESET SOIL PARAMS:                         '
+        write(unit=*,fmt='(a,1x,f8.4)') 'new slbs ', soil(nslcon)%slbs
+        write(unit=*,fmt='(a,1x,f8.4)') 'new slpots ', soil(nslcon)%slpots
+        write(unit=*,fmt='(a,1x,es9.2)') 'new slcons ', soil(nslcon)%slcons
+        write(unit=*,fmt='(a,1x,f8.4)') 'new slmsts ', soil(nslcon)%slmsts
+        write(unit=*,fmt='(a,1x,f8.4)') 'new sfldcap ', soil(nslcon)%sfldcap
+        write(unit=*,fmt='(a,1x,f8.4)') 'new soilcp ', soil(nslcon)%soilcp
+        write(unit=*,fmt='(a,1x,f8.4)') 'new soilwp ', soil(nslcon)%soilwp
+        write(unit=*,fmt='(a)') '*********************************************'
+
+     endif
+enddo
+
+
+
+
+
+
+
    !----- Here we fill soil8, which will be used in Runge-Kutta (double precision). -------!
    do nsoil=1,ed_nstyp
       soil8(nsoil)%slpots    = dble(soil(nsoil)%slpots   )
@@ -1744,6 +1832,7 @@ subroutine init_soil_coms
       soil8(nsoil)%slbs      = dble(soil(nsoil)%slbs     )
       soil8(nsoil)%slcpd     = dble(soil(nsoil)%slcpd    )
       soil8(nsoil)%soilcp    = dble(soil(nsoil)%soilcp   )
+      soil8(nsoil)%soilwp    = dble(soil(nsoil)%soilwp   )
       soil8(nsoil)%slcons    = dble(soil(nsoil)%slcons   )
       soil8(nsoil)%slcons0   = dble(soil(nsoil)%slcons0  )
       soil8(nsoil)%soilcond0 = dble(soil(nsoil)%soilcond0)
@@ -1771,32 +1860,32 @@ end subroutine init_soil_coms
 !==========================================================================================!
 subroutine init_phen_coms
 
-  use phenology_coms,only: retained_carbon_fraction, &
-       theta_crit,dl_tr,st_tr1,st_tr2,phen_a,phen_b,phen_c, &
-       rad_turnover_int, rad_turnover_slope, &
-       vm_tran, vm_slop, vm_amp, vm_min
+   use phenology_coms,only: retained_carbon_fraction, &
+        theta_crit,dl_tr,st_tr1,st_tr2,phen_a,phen_b,phen_c, &
+        rad_turnover_int, rad_turnover_slope, &
+        vm_tran, vm_slop, vm_amp, vm_min
 
-  implicit none
+   implicit none
 
-  retained_carbon_fraction = 0.5
-  theta_crit = 0.2
-  dl_tr = 655.0
-  st_tr1 = 284.3
-  st_tr2 = 275.15
+   retained_carbon_fraction = 0.5
+   theta_crit = 0.2
+   dl_tr = 655.0
+   st_tr1 = 284.3
+   st_tr2 = 275.15
   
-  phen_a = -68.0   
-  phen_b = 638.0    
-  phen_c = -0.01    
+   phen_a = -68.0   
+   phen_b = 638.0    
+   phen_c = -0.01    
 
-  rad_turnover_int   = -11.3868
-  rad_turnover_slope = 0.0824
+   rad_turnover_int   = -11.3868
+   rad_turnover_slope = 0.0824
 
-  vm_tran = 9.0
-  vm_slop = 10.0
-  vm_amp = 20.0
-  vm_min = 15.0
+   vm_tran = 9.0
+   vm_slop = 10.0
+   vm_amp = 20.0
+   vm_min = 15.0
 
-  return
+   return
 end subroutine init_phen_coms
 !==========================================================================================!
 !==========================================================================================!
@@ -1808,12 +1897,24 @@ end subroutine init_phen_coms
 
 !==========================================================================================!
 !==========================================================================================!
+!     This subroutine assigns the fusion and splitting parameters.                         !
+!------------------------------------------------------------------------------------------!
 subroutine init_ff_coms
-
-   use fusion_fission_coms , only :  min_dbh_class, maxffdbh, dffdbhi                      &
-                                   , min_hgt_class, fusetol, fusetol_h, lai_fuse_tol       &
-                                   , lai_tol, ntol, profile_tol,max_patch_age, ff_ndbh     &
-                                   , coh_tolerance_max, pat_tolerance_max, fuse_relax
+   use fusion_fission_coms, only : min_dbh_class     & ! intent(out)
+                                 , maxffdbh          & ! intent(out)
+                                 , dffdbhi           & ! intent(out)
+                                 , min_hgt_class     & ! intent(out)
+                                 , fusetol           & ! intent(out)
+                                 , fusetol_h         & ! intent(out)
+                                 , lai_fuse_tol      & ! intent(out)
+                                 , lai_tol           & ! intent(out)
+                                 , ntol              & ! intent(out)
+                                 , profile_tol       & ! intent(out)
+                                 , max_patch_age     & ! intent(out)
+                                 , ff_ndbh           & ! intent(out)
+                                 , coh_tolerance_max & ! intent(out)
+                                 , pat_tolerance_max & ! intent(out)
+                                 , fuse_relax        ! ! intent(out)
 
    implicit none
 
@@ -1832,8 +1933,8 @@ subroutine init_ff_coms
    pat_tolerance_max = 100.0
    fuse_relax        = .false.
    dffdbhi           = real(ff_ndbh)/maxffdbh
-   return
 
+   return
 end subroutine init_ff_coms
 !==========================================================================================!
 !==========================================================================================!
@@ -1855,7 +1956,8 @@ subroutine init_rk4_params()
                                    , min_sfcwater_mass     ! ! intent(in)
    use canopy_air_coms      , only : dry_veg_lwater        & ! intent(in)
                                    , fullveg_lwater        ! ! intent(in)
-   use rk4_coms             , only : maxstp                & ! intent(out)
+   use rk4_coms             , only : rk4_tolerance         & ! intent(in)
+                                   , maxstp                & ! intent(out)
                                    , rk4eps                & ! intent(out)
                                    , rk4eps2               & ! intent(out)
                                    , rk4epsi               & ! intent(out)
@@ -1891,6 +1993,7 @@ subroutine init_rk4_params()
                                    , rk4max_sfcw_temp      & ! intent(out)
                                    , rk4min_sfcw_moist     & ! intent(out)
                                    , rk4min_virt_moist     & ! intent(out)
+                                   , check_maxleaf         & ! intent(out)
                                    , supersat_ok           ! ! intent(out)
    implicit none
 
@@ -1908,15 +2011,15 @@ subroutine init_rk4_params()
    !    The following variables control the Runge-Kutta performance.  Think twice before   !
    ! changing them...                                                                      !
    !---------------------------------------------------------------------------------------!
-   maxstp      = 100000000    ! Maximum number of intermediate steps. 
-   rk4eps      = 1.d-2        ! The desired accuracy.
-   rk4epsi     = 1.d0/rk4eps  ! The inverse of desired accuracy.
-   rk4eps2     = rk4eps**2    ! square of the accuracy
-   hmin        = 1.d-7        ! The minimum step size.
-   print_diags = .false.      ! Flag to print the diagnostic check.
-   checkbudget = .false.      ! Flag to check CO2, water, and energy budgets every time
-                              !     step and stop the run in case any of these budgets 
-                              !     doesn't close.
+   maxstp      = 100000000           ! Maximum number of intermediate steps. 
+   rk4eps      = dble(rk4_tolerance) ! The desired accuracy.
+   rk4epsi     = 1.d0/rk4eps         ! The inverse of desired accuracy.
+   rk4eps2     = rk4eps**2           ! square of the accuracy
+   hmin        = 1.d-7               ! The minimum step size.
+   print_diags = .false.             ! Flag to print the diagnostic check.
+   checkbudget = .false.             ! Flag to check CO2, water, and energy budgets every 
+                                     !     time step and stop the run in case any of these 
+                                     !     budgets don't close.
    !---------------------------------------------------------------------------------------!
 
 
@@ -1939,8 +2042,8 @@ subroutine init_rk4_params()
    ! nominal heat capacity, the laziest way to turn this off is by setting hcapveg_ref to  !
    ! a small number.  Don't set it to zero, otherwise you may have FPE issues.             !
    !---------------------------------------------------------------------------------------!
-   hcapveg_ref         = 3.0d3  ! Reference heat capacity value                   [J/m³/K]
-   min_height          = 1.5d0  ! Minimum vegetation height                       [     m]
+   hcapveg_ref         = 3.0d3  ! 3.0d-1  ! Reference heat capacity value          [J/m³/K]
+   min_height          = 1.5d0            ! Minimum vegetation height              [     m]
    !---------------------------------------------------------------------------------------!
 
 
@@ -1952,12 +2055,12 @@ subroutine init_rk4_params()
    rk4min_can_temp   =  1.8400d2  ! Minimum canopy    temperature               [        K]
    rk4max_can_temp   =  3.4100d2  ! Maximum canopy    temperature               [        K]
    rk4min_can_shv    =  1.0000d-8 ! Minimum canopy    specific humidity         [kg/kg_air]
-   rk4max_can_shv    =  4.5000d-2 ! Maximum canopy    specific humidity         [kg/kg_air]
+   rk4max_can_shv    =  4.6000d-2 ! Maximum canopy    specific humidity         [kg/kg_air]
    rk4max_can_rhv    =  1.1000d0  ! Maximum canopy    relative humidity (**)    [      ---]
    rk4min_can_co2    =  2.0000d2  ! Minimum canopy    CO2 mixing ratio          [ µmol/mol]
    rk4max_can_co2    =  1.2000d3  ! Maximum canopy    CO2 mixing ratio          [ µmol/mol]
    rk4min_soil_temp  =  1.8400d2  ! Minimum soil      temperature               [        K]
-   rk4max_soil_temp  =  3.4600d2  ! Maximum soil      temperature               [        K]
+   rk4max_soil_temp  =  3.5100d2  ! Maximum soil      temperature               [        K]
    rk4min_veg_temp   =  1.8400d2  ! Minimum leaf      temperature               [        K]
    rk4max_veg_temp   =  3.4100d2  ! Maximum leaf      temperature               [        K]
    rk4min_sfcw_temp  =  1.9315d2  ! Minimum snow/pond temperature               [        K]
@@ -1987,6 +2090,19 @@ subroutine init_rk4_params()
    rk4min_sfcw_moist = -5.0000d-4 ! Minimum water mass allowed.
    rk4min_virt_moist = -5.0000d-4 ! Minimum water allowed at virtual pool.
    !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     The integrator will check whether the leaves are at their maximum holding         !
+   ! capacity before letting water to be intercepted and dew/frost to remain at the leaf   !
+   ! surfaces.  If FALSE, the amount of water will be adjusted outside the derivative      !
+   ! calculation.  Some tests have shown that not solving this inside the integrator can   !
+   ! speed up the simulation between 20% in the tropics to well above 100% in some         !
+   ! temperate polygons. However, some may think that it is more appropriate to leave the  !
+   ! check in the integrator, so we leave this flag so one can switch between one and the  !
+   ! other and decide based on their own needs.                                            !
+   !---------------------------------------------------------------------------------------!
+   check_maxleaf = .false.
 
 
    !---------------------------------------------------------------------------------------!

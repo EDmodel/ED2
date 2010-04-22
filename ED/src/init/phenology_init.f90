@@ -5,7 +5,7 @@ contains
   subroutine phenology_init
     
     use phenology_coms, only: iphen_scheme
-    use ed_misc_coms, only: ied_init_mode
+    use ed_misc_coms, only: runtype
 
     implicit none
 
@@ -26,7 +26,7 @@ contains
        ! available from the restart file, or if this is a run with bare 
        ! ground initialization.
        
-       if(ied_init_mode /= 4)then
+       if (runtype /= 'HISTORY') then
           
           print'(/,a)','    Reading thermal sums'
           call read_thermal_sums
@@ -432,6 +432,7 @@ contains
     use grid_coms,only:ngrids
     use phenology_coms, only: prescribed_phen,phenpath
     use ed_max_dims, only: str_len
+    use mem_polygons, only: grid_res
 
     implicit none
 
@@ -455,26 +456,52 @@ contains
           cpoly => cgrid%polygon(ipy)
           
           !! build phenology file name
-          !!lat
-          if(cgrid%lat(ipy) <= -10.0)then
-             write(clat,'(f5.1)')cgrid%lat(ipy)
-          elseif(cgrid%lat(ipy) < 0.0 .or. cgrid%lat(ipy) >= 10.0) then
-             write(clat,'(f4.1)')cgrid%lat(ipy)
+          if(grid_res == 0.25)then
+             !!lat
+             if(cgrid%lat(ipy) <= -10.0)then
+                write(clat,'(f7.3)')cgrid%lat(ipy)
+             elseif(cgrid%lat(ipy) < 0.0 .or. cgrid%lat(ipy) >= 10.0) then
+                write(clat,'(f6.3)')cgrid%lat(ipy)
+             else
+                write(clat,'(f5.3)')cgrid%lat(ipy)
+             endif
+             !!lon
+             if(cgrid%lon(ipy) <= -100.0)then
+                write(clon,'(f8.3)')cgrid%lon(ipy)
+             elseif(cgrid%lon(ipy) <= -10.0 .or. cgrid%lon(ipy) >= 100.0) then
+                write(clon,'(f7.3)')cgrid%lon(ipy)
+             elseif(cgrid%lon(ipy) < 0.0) then
+                write(clon,'(f6.3)')cgrid%lon(ipy)
+             elseif(cgrid%lon(ipy) < 10.) then
+                write(clon,'(f5.3)')cgrid%lon(ipy)
+             else
+                write(clon,'(f6.3)')cgrid%lon(ipy)
+             endif
+          elseif(grid_res == 1.)then
+             !!lat
+             if(cgrid%lat(ipy) <= -10.0)then
+                write(clat,'(f5.1)')cgrid%lat(ipy)
+             elseif(cgrid%lat(ipy) < 0.0 .or. cgrid%lat(ipy) >= 10.0) then
+                write(clat,'(f4.1)')cgrid%lat(ipy)
+             else
+                write(clat,'(f3.1)')cgrid%lat(ipy)
+             endif
+             !!lon
+             if(cgrid%lon(ipy) <= -100.0)then
+                write(clon,'(f6.1)')cgrid%lon(ipy)
+             elseif(cgrid%lon(ipy) <= -10.0 .or. cgrid%lon(ipy) >= 100.0) then
+                write(clon,'(f5.1)')cgrid%lon(ipy)
+             elseif(cgrid%lon(ipy) < 0.0) then
+                write(clon,'(f4.1)')cgrid%lon(ipy)
+             elseif(cgrid%lon(ipy) < 10.) then
+                write(clon,'(f3.1)')cgrid%lon(ipy)
+             else
+                write(clon,'(f4.1)')cgrid%lon(ipy)
+             endif
           else
-             write(clat,'(f3.1)')cgrid%lat(ipy)
-          endif
-          !!lon
-          if(cgrid%lon(ipy) <= -100.0)then
-             write(clon,'(f6.1)')cgrid%lon(ipy)
-          elseif(cgrid%lon(ipy) <= -10.0 .or. cgrid%lon(ipy) >= 100.0) then
-             write(clon,'(f5.1)')cgrid%lon(ipy)
-          elseif(cgrid%lon(ipy) < 0.0) then
-             write(clon,'(f4.1)')cgrid%lon(ipy)
-          elseif(cgrid%lon(ipy) < 10.) then
-             write(clon,'(f3.1)')cgrid%lon(ipy)
-          else
-             write(clon,'(f4.1)')cgrid%lon(ipy)
-          endif          
+             call fatal_error('Bad grid_res in phenology_init','read_prescribed_phenology' &
+                              ,'phenology_init.f90')
+          end if
 
           !!open phenology file
           write(phen_name,'(6a)')trim(phenpath),'.lat',trim(clat),'lon',trim(clon),'.txt'

@@ -272,7 +272,9 @@ subroutine sfcrad_ed(cosz, cosaoi, csite, maxcohort, rshort_tot,rshort_diffuse)
          cpatch%diffext_level   (ico)      = 0.0
 
          !------ Transfer information from linked lists to arrays. ------------------------!
+         
          if (cpatch%solvable(ico)) then
+
             cohort_count                         = cohort_count + 1
             pft_array(cohort_count)              = cpatch%pft(ico)
             tai_array(cohort_count)              = dble(cpatch%lai(ico))                   &

@@ -8,7 +8,7 @@ subroutine read_site_file(cgrid)
    use soil_coms, only: soil,slz
    use grid_coms, only: nzg
    use ed_misc_coms, only: ied_init_mode,sfilin, vary_elev, vary_rad, vary_hyd
-   use mem_sites, only: edres
+   use mem_polygons, only: edres
    use ed_state_vars, only: edtype,polygontype,sitetype,allocate_polygontype
    use ed_max_dims, only: max_site,n_pft
 
@@ -55,7 +55,7 @@ subroutine read_site_file(cgrid)
       cpoly => cgrid%polygon(ipy)
 
       if (ied_init_mode == 3) then
-         call create_ed1_fname(cgrid%lat(ipy), edres, cgrid%lon(ipy),trim(sfilin)          &
+         call create_ed10_ed20_fname(cgrid%lat(ipy), edres, cgrid%lon(ipy),trim(sfilin)    &
                               ,pss_name,css_name,site_name)
          !! check if site file exists
          inquire(file=trim(site_name),exist=fexist)

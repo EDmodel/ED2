@@ -318,7 +318,7 @@ module fuse_fiss_utils
                                      , fuse_relax          & ! intent(in)
                                      , coh_tolerance_max   ! ! intent(in)
       use ed_max_dims         , only : n_pft               ! ! intent(in)
-      use mem_sites           , only : maxcohort           ! ! intent(in)
+      use mem_polygons        , only : maxcohort           ! ! intent(in)
       use allometry           , only : dbh2h               & ! function
                                      , dbh2bl              ! ! function
       implicit none
@@ -1474,7 +1474,7 @@ module fuse_fiss_utils
                                       , profile_tol       & ! intent(in)
                                       , pat_tolerance_max ! ! intent(in)
       use ed_max_dims         , only :  n_pft             ! ! intent(in)
-      use mem_sites           , only :  maxpatch          & ! intent(in)
+      use mem_polygons        , only :  maxpatch          & ! intent(in)
                                       , maxcohort         ! ! intent(in)
       use ed_node_coms        , only :  mynum
 
@@ -1813,7 +1813,7 @@ module fuse_fiss_utils
       use fusion_fission_coms, only : ff_ndbh               ! ! intent(in)
       use ed_max_dims        , only : n_pft                 & ! intent(in)
                                     , n_dbh                 ! ! intent(in)
-      use mem_sites          , only : maxcohort             ! ! intent(in)
+      use mem_polygons       , only : maxcohort             ! ! intent(in)
       use consts_coms        , only : cpi                   & ! intent(in)
                                     , cpor                  & ! intent(in)
                                     , p00                   ! ! intent(in)

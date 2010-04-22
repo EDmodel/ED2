@@ -562,3 +562,15 @@ Ramspost/build/bin/include_ramspost.mk
 ED/src/init/notop_ed_params.f90
 ED/src/init/optim_ed_params.f90
 .hdf4_libs
+BRAMS/build/bin/turb_coms.mod
+auxbbarca
+cirsan
+new_abarca
+new_bbarca
+optim
+tropical
+Ramspost/dbgbuild
+Ramspost/build/bin/leaf_coms.mod
+2984
+BRAMS/build/bin/mem_polygons.mod
+ED/build/bin/mem_polygons.mod

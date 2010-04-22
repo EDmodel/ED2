@@ -14,15 +14,17 @@ subroutine read_ednl(iunit)
                                    , soilstate_db              & ! intent(out)
                                    , soildepth_db              & ! intent(out)
                                    , runoff_time               & ! intent(out)
-                                   , veg_database              ! ! intent(out)
+                                   , veg_database              & ! intent(out)
+                                   , slxclay                   & ! intent(out)
+                                   , slxsand                   ! ! intent(out)
    use met_driver_coms      , only : ed_met_driver_db          & ! intent(out)
                                    , imettype                  & ! intent(out)
                                    , metcyc1                   & ! intent(out)
                                    , metcycf                   & ! intent(out)
                                    , lapse_scheme              ! ! intent(out)
-   use mem_sites            , only : n_soi                     & ! intent(out)
-                                   , soi_lat                   & ! intent(out)
-                                   , soi_lon                   & ! intent(out)
+   use mem_polygons         , only : n_poi                     & ! intent(out)
+                                   , poi_lat                   & ! intent(out)
+                                   , poi_lon                   & ! intent(out)
                                    , n_ed_region               & ! intent(out)
                                    , ed_reg_latmin             & ! intent(out)
                                    , ed_reg_latmax             & ! intent(out)
@@ -87,7 +89,8 @@ subroutine read_ednl(iunit)
    use grid_coms            , only : timmax                    & ! intent(out)
                                    , time                      ! ! intent(out)
    use optimiz_coms         , only : ioptinpt                  ! ! intent(out)
-   use rk4_coms             , only : ibranch_thermo            ! ! intent(out)
+   use rk4_coms             , only : rk4_tolerance             & ! intent(out)
+                                   , ibranch_thermo            ! ! intent(out)
    use canopy_radiation_coms, only : crown_mod                 ! ! intent(out)
    !----- BRAMS modules. ------------------------------------------------------------------!
    use mem_grid             , only : expnme                    & ! intent(in)
@@ -145,13 +148,13 @@ subroutine read_ednl(iunit)
                        ,attach_metadata,outfast,outstate,ffilout,sfilout,ied_init_mode     &
                        ,edres,sfilin,veg_database,soil_database,ed_inputs_dir,soilstate_db &
                        ,soildepth_db,isoilstateinit,isoildepthflg,isoilbc                  &
-                       ,integration_scheme,ibranch_thermo,istoma_scheme,iphen_scheme       &
-                       ,repro_scheme,lapse_scheme,crown_mod,decomp_scheme,n_plant_lim      &
-                       ,n_decomp_lim,include_fire,ianth_disturb,icanturb,include_these_pft &
-                       ,agri_stock,plantation_stock,pft_1st_check,maxpatch,maxcohort       &
-                       ,treefall_disturbance_rate,runoff_time,iprintpolys,npvars,printvars &
-                       ,pfmtstr,ipmin,ipmax,iphenys1,iphenysf,iphenyf1,iphenyff,iedcnfgf   &
-                       ,event_file,phenpath
+                       ,integration_scheme,rk4_tolerance,ibranch_thermo,istoma_scheme      &
+                       ,iphen_scheme,repro_scheme,lapse_scheme,crown_mod,decomp_scheme     &
+                       ,n_plant_lim,n_decomp_lim,include_fire,ianth_disturb,icanturb       &
+                       ,include_these_pft,agri_stock,plantation_stock,pft_1st_check        &
+                       ,maxpatch,maxcohort,treefall_disturbance_rate,runoff_time           &
+                       ,iprintpolys,npvars,printvars,pfmtstr,ipmin,ipmax,iphenys1,iphenysf &
+                       ,iphenyf1,iphenyff,iedcnfgf,event_file,phenpath
 
    read (unit=iunit, iostat=err, NML=ED2_INFO)
    if (err /= 0) then
@@ -181,6 +184,7 @@ subroutine read_ednl(iunit)
       write (unit=*,fmt=*) 'isoildepthflg=',isoildepthflg
       write (unit=*,fmt=*) 'isoilbc=',isoilbc
       write (unit=*,fmt=*) 'integration_scheme=',integration_scheme
+      write (unit=*,fmt=*) 'rk4_tolerance=',rk4_tolerance
       write (unit=*,fmt=*) 'ibranch_thermo=',ibranch_thermo
       write (unit=*,fmt=*) 'istoma_scheme=',istoma_scheme
       write (unit=*,fmt=*) 'iphen_scheme=',iphen_scheme
@@ -239,8 +243,8 @@ subroutine read_ednl(iunit)
    ! runs, but they cannot be changed in the coupled simulation (or they are never used    !
    ! in the coupled run.  We assign some standard values to these variables.               !
    !---------------------------------------------------------------------------------------!
-   n_ed_region   = ngrids   ! No SOI/POI is allowed in coupled runs.
-   n_soi = 0                ! No SOI/POI is allowed in coupled runs.
+   n_ed_region   = ngrids   ! No POI is allowed in coupled runs.
+   n_poi = 0                ! No POI is allowed in coupled runs.
    grid_res      = 0        ! Not used: this is for lat-lon style.
    grid_type     = 1        ! We reinforce polar-stereo for now, it actually grabs the
                             !   BRAMS coordinates.
@@ -248,8 +252,8 @@ subroutine read_ednl(iunit)
    ed_reg_latmax = 0        ! Not used in coupled runs.
    ed_reg_lonmin = 0        ! Not used in coupled runs.
    ed_reg_lonmax = 0        ! Not used in coupled runs.
-   soi_lat = 0              ! SOI/POI is not an option in coupled runs.
-   soi_lon = 0              ! SOI/POI is not an option in coupled runs.
+   poi_lat = 0              ! POI is not an option in coupled runs.
+   poi_lon = 0              ! POI is not an option in coupled runs.
    ed_met_driver_db = ''    ! BRAMS is the meteorology driver... 
    imettype = 1             ! BRAMS is the meteorology driver...
    metcyc1  = 0000          ! BRAMS is the meteorology driver...
@@ -259,6 +263,8 @@ subroutine read_ednl(iunit)
    unitfast  = 0            ! Since BRAMS uses frqanl and frqhist in seconds, there is no
    unitstate = 0            !     reason to ask the user for units for outfast and 
                             !     outstate, the special flags cover all possibilities.
+   slxclay   = -1.          ! This is not going to be used in coupled runs because the 
+   slxsand   = -1.          !     soil should come from lon/lat maps.
 
    !---------------------------------------------------------------------------------------!
    !      We force LEAF-3's number of patches to be 2.  We fill some LEAF-3 variables that !

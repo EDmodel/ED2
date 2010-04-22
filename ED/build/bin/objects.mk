@@ -29,9 +29,9 @@ OBJ_MODEL =                        \
 	ed_driver.o                \
 	ed_filelist.o              \
 	ed_grid.o                  \
-	ed_history_io.o            \
 	ed_init.o                  \
 	ed_init_atm.o              \
+	ed_init_full_history.o     \
 	ed_load_namelist.o         \
 	ed_max_dims.o              \
 	ed_mem_alloc.o             \
@@ -46,6 +46,8 @@ OBJ_MODEL =                        \
 	ed_params.o                \
 	ed_para_coms.o             \
 	ed_para_init.o             \
+	ed_read_ed10_20_history.o  \
+	ed_read_ed21_history.o     \
 	ed_state_vars.o            \
 	ed_therm_lib.o             \
 	ed_type_init.o             \
@@ -76,7 +78,7 @@ OBJ_MODEL =                        \
 	leaf_database.o            \
 	libxml2f90.f90_pp.o        \
 	lsm_hyd.o                  \
-	mem_sites.o                \
+	mem_polygons.o             \
 	met_driver_coms.o          \
 	mortality.o                \
 	numutils.o                 \

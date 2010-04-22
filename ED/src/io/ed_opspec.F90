@@ -19,12 +19,13 @@ subroutine ed_opspec_grid
 !   This subroutine checks the grid definition for ED, like grid size, dimensions and if   !
 ! the provided numbers are allowed.                                                        !
 !------------------------------------------------------------------------------------------!
-  use ed_max_dims, only : maxgrds,nxpmax,nypmax,nzpmax,nzgmax,nzsmax,max_soi,max_ed_regions
-  use grid_coms, only : nnxp,nnyp,ngrids,polelat,polelon,centlat,centlon,deltax,deltay    &
-                       ,nstratx,nstraty,nzg,nzs
-  use mem_sites, only : n_ed_region,n_soi,grid_type,grid_res,soi_lat,soi_lon              &
-                       ,ed_reg_latmin,ed_reg_latmax,ed_reg_lonmin,ed_reg_lonmax
-  use soil_coms, only : slz
+  use ed_max_dims , only : maxgrds,nxpmax,nypmax,nzpmax,nzgmax,nzsmax,max_poi              &
+                         , max_ed_regions
+  use grid_coms   , only : nnxp,nnyp,ngrids,polelat,polelon,centlat,centlon,deltax,deltay  &
+                         , nstratx,nstraty,nzg,nzs
+  use mem_polygons, only : n_ed_region,n_poi,grid_type,grid_res,poi_lat,poi_lon            &
+                         , ed_reg_latmin,ed_reg_latmax,ed_reg_lonmin,ed_reg_lonmax
+  use soil_coms   , only : slz
 
   implicit none
 
@@ -46,17 +47,17 @@ subroutine ed_opspec_grid
      ifaterr=ifaterr+1
   endif
 
-  ! Check whether you are trying to run SOI and regional simultaneously. 
+  ! Check whether you are trying to run POI and regional simultaneously. 
   ! This is currently forbidden.
-  if ((.not. (n_soi > 0 .and. n_ed_region == 0)) .and. (.not. (n_soi == 0 .and. n_ed_region > 0))) then
+  if ((.not. (n_poi > 0 .and. n_ed_region == 0)) .and. (.not. (n_poi == 0 .and. n_ed_region > 0))) then
      write(reason,'(a,1x,i4,1x,a,1x,i4,1x,a)')  &
-          'One of n_soi or n_ed_region needs to be zero.( Yours: n_soi='                   &
-          ,n_soi,', n_ed_region=',n_ed_region,').'
+          'One of n_poi or n_ed_region needs to be zero.( Yours: n_poi='                   &
+          ,n_poi,', n_ed_region=',n_ed_region,').'
      call opspec_fatal(reason,'opspec_grid')  
      ifaterr=ifaterr+1
-  elseif (n_soi < 0) then
+  elseif (n_poi < 0) then
      write(reason,'(a,1x,i4,a)') &
-        'N_SOI needs to be non-negative. Yours is currently set to ',n_soi,'.'
+        'N_POI needs to be non-negative. Yours is currently set to ',n_poi,'.'
      call opspec_fatal(reason,'opspec_grid')  
      ifaterr=ifaterr+1
   elseif (n_ed_region < 0) then
@@ -64,9 +65,9 @@ subroutine ed_opspec_grid
         'N_ED_REGION needs to be non-negative. Yours is currently set to ',n_ed_region,'.'
      call opspec_fatal(reason,'opspec_grid')  
      ifaterr=ifaterr+1
-  elseif (n_soi > max_soi) then
+  elseif (n_poi > max_poi) then
      write(reason,'(a,1x,i4,a,1x,i4,a)') &
-        'N_SOI cannot be greater than',max_soi,'. Yours is currently set to ',n_soi,'.'
+        'N_POI cannot be greater than',max_poi,'. Yours is currently set to ',n_poi,'.'
      call opspec_fatal(reason,'opspec_grid')  
      ifaterr=ifaterr+1
   elseif (n_ed_region> max_ed_regions) then
@@ -188,17 +189,17 @@ subroutine ed_opspec_grid
   end if
 
   
-  if (n_soi > 0)then
-     do ifm=1,n_soi
-        if (soi_lat(ifm) < -90. .or. soi_lat(ifm) > 90. ) then
+  if (n_poi > 0)then
+     do ifm=1,n_poi
+        if (poi_lat(ifm) < -90. .or. poi_lat(ifm) > 90. ) then
            write (reason,'(a,1x,i4,a,1x,es14.7,a)') &
-                 'SOI_LAT is outside [-90.;90.] for SOI #',ifm,'. Yours is currently set to',soi_lat(ifm),'...'
+                 'POI_LAT is outside [-90.;90.] for POI #',ifm,'. Yours is currently set to',poi_lat(ifm),'...'
            call opspec_fatal(reason,'opspec_grid')  
            ifaterr=ifaterr+1
         end if
-        if (soi_lon(ifm) < -180. .or. soi_lon(ifm) > 180. ) then
+        if (poi_lon(ifm) < -180. .or. poi_lon(ifm) > 180. ) then
            write (reason,'(a,1x,i4,a,1x,es14.7,a)') &
-                 'SOI_LON is outside [-180.;180.] for SOI #',ifm,'. Yours is currently set to',soi_lon(ifm),'...'
+                 'POI_LON is outside [-180.;180.] for POI #',ifm,'. Yours is currently set to',poi_lon(ifm),'...'
            call opspec_fatal(reason,'opspec_grid')  
            ifaterr=ifaterr+1
         end if
@@ -280,9 +281,9 @@ subroutine ed_opspec_par
 !   This subroutine checks the grid definition for ED, like grid size, dimensions and if   !
 ! the provided numbers are allowed.                                                        !
 !------------------------------------------------------------------------------------------!
-   use ed_max_dims     , only : maxmach
+   use ed_max_dims  , only : maxmach
    use grid_coms    , only : nnxp,nnyp,ngrids
-   use mem_sites    , only : n_ed_region,n_soi
+   use mem_polygons , only : n_ed_region,n_poi
    use ed_para_coms , only : nmachs
    implicit none
    integer :: ifaterr,ifm
@@ -305,11 +306,11 @@ subroutine ed_opspec_par
          ifaterr=ifaterr+1
       end if
    end do
-   ! Checking if the user is trying to run SOI in parallel 
+   ! Checking if the user is trying to run POI in parallel 
    ! (this will be allowed at some point).
-   if (n_soi > 0 .and. nmachs > 0) then
+   if (n_poi > 0 .and. nmachs > 0) then
       write (reason,'(3(a,1x,i5,1x),a)')                                                    &
-        'You are attempting to run SOI runs in parallel, this is not supported currently...'
+        'You are attempting to run POI runs in parallel, this is not supported currently...'
       call opspec_fatal(reason,'opspec_par')  
       ifaterr=ifaterr+1
    end if
@@ -960,12 +961,14 @@ subroutine ed_opspec_misc
                                     , isfclyrm                     ! ! intent(in)
    use soil_coms             , only : isoilflg                     & ! intent(in)
                                     , nslcon                       & ! intent(in)
+                                    , slxclay                      & ! intent(in)
+                                    , slxsand                      & ! intent(in)
                                     , isoilstateinit               & ! intent(in)
                                     , isoildepthflg                & ! intent(in)
                                     , isoilbc                      & ! intent(in)
                                     , zrough                       & ! intent(in)
                                     , runoff_time                  ! ! intent(in)
-   use mem_sites             , only : n_soi                        & ! intent(in)
+   use mem_polygons          , only : n_poi                        & ! intent(in)
                                     , n_ed_region                  & ! intent(in)
                                     , maxpatch                     & ! intent(in)
                                     , maxcohort                    ! ! intent(in)
@@ -982,7 +985,8 @@ subroutine ed_opspec_misc
                                     , agri_stock                   & ! intent(in)
                                     , plantation_stock             ! ! intent(in)
    use canopy_radiation_coms , only : crown_mod                    ! ! intent(in)
-   use rk4_coms              , only : ibranch_thermo               ! ! intent(in)
+   use rk4_coms              , only : ibranch_thermo               & ! intent(in)
+                                    , rk4_tolerance                ! ! intent(in)
 
 #if defined(COUPLED)
 #else
@@ -1068,9 +1072,28 @@ subroutine ed_opspec_misc
       write (unit=*,fmt='(a)') ' run, and in case it crashes, it is going to be all your   '
       write (unit=*,fmt='(a)') ' fault and I will remind you that!!!                       '
       write (unit=*,fmt='(a)') '==========================================================='
-   elseif ((ied_init_mode < 0 .and. ied_init_mode /= -8) .or. ied_init_mode > 4 ) then
-      write (reason,fmt='(a,1x,i4,a)') &
-        'Invalid IED_INIT_MODE, it must be between 0 and 4. Yours is set to',ied_init_mode,'...'
+   elseif (ied_init_mode == -8) then 
+      !------------------------------------------------------------------------------------!
+      !     This is just for idealised test runs and shouldn't be used as a regular        !
+      ! option.                                                                            !
+      !------------------------------------------------------------------------------------!
+      write (unit=*,fmt='(a)') '==========================================================='
+      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
+      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
+      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
+      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
+      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
+      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
+      write (unit=*,fmt='(a)') '==========================================================='
+      write (unit=*,fmt='(a)') '    You have chosen to run a prescribed 8-layer run with   '
+      write (unit=*,fmt='(a)') ' no ecosystem dynamics.  This should be used for TEST      '
+      write (unit=*,fmt='(a)') ' simulations only.  If that''s not what you wanted, change '
+      write (unit=*,fmt='(a)') ' your IED_INIT_MODE variable on your ED2IN.                '
+      write (unit=*,fmt='(a)') '==========================================================='
+   elseif (ied_init_mode < 0 .or. ied_init_mode > 5 ) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                      'Invalid IED_INIT_MODE, it must be between 0 and 5. Yours is set to' &
+                     ,ied_init_mode,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
@@ -1104,6 +1127,72 @@ subroutine ed_opspec_misc
       ifaterr = ifaterr +1
    end if
 
+do ifm=1,ngrids
+   if (isoilflg(ifm)==1 .and. slxclay>0. .and. slxclay<1. .and. slxsand>0. .and. slxsand<1.) then
+      write (unit=*,fmt='(a)') '==========================================================='
+      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
+      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
+      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
+      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
+      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
+      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
+      write (unit=*,fmt='(a)') '==========================================================='
+      write (unit=*,fmt='(a)') '    You have set up the run to read in soil types based on '
+      write (unit=*,fmt='(a)') ' Lat/Lon.  This overrides the option to use user defined   '
+      write (unit=*,fmt='(a)') ' sand and clay fractions- the DEFAULT SOIL PARAMETERS WILL '
+      write (unit=*,fmt='(a)') ' BE USED. To use the NL%SLXCLAY and NL%SLXSAND options, set'
+      write (unit=*,fmt='(a)') ' NL%ISOILFLG to 2 and define the soil type through NL%NLSCON'
+      write (unit=*,fmt='(a)') '==========================================================='
+   end if
+
+
+   if (isoilflg(ifm)==2 .and. slxclay<0.) then
+      write (unit=*,fmt='(a)') '==========================================================='
+      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
+      write (unit=*,fmt='(a)') '==========================================================='
+      write (unit=*,fmt='(a)') 'You have defined a soil clay fraction < 0. The DEFAULT SOIL'
+      write (unit=*,fmt='(a)') 'PARAMETERS WILL BE USED based on NL%NLSCON.                '
+      write (unit=*,fmt='(a)') '==========================================================='
+   end if
+   
+   if (isoilflg(ifm)==2 .and. slxclay>1.) then
+      write (unit=*,fmt='(a)') '==========================================================='
+      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
+      write (unit=*,fmt='(a)') '==========================================================='
+      write (unit=*,fmt='(a)') 'You have defined a soil clay fraction > 1. The DEFAULT SOIL'
+      write (unit=*,fmt='(a)') 'PARAMETERS WILL BE USED based on NL%NLSCON.                '
+      write (unit=*,fmt='(a)') '==========================================================='
+   end if
+
+   if (isoilflg(ifm)==2 .and. slxsand<0.) then
+      write (unit=*,fmt='(a)') '==========================================================='
+      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
+      write (unit=*,fmt='(a)') '==========================================================='
+      write (unit=*,fmt='(a)') 'You have defined a soil sand fraction < 0. The DEFAULT SOIL'
+      write (unit=*,fmt='(a)') 'PARAMETERS WILL BE USED based on NL%NLSCON.                '
+      write (unit=*,fmt='(a)') '==========================================================='
+   end if
+   
+   if (isoilflg(ifm)==2 .and. slxsand>1.) then
+      write (unit=*,fmt='(a)') '==========================================================='
+      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
+      write (unit=*,fmt='(a)') '==========================================================='
+      write (unit=*,fmt='(a)') 'You have defined a soil sand fraction > 1. The DEFAULT SOIL'
+      write (unit=*,fmt='(a)') 'PARAMETERS WILL BE USED based on NL%NLSCON.                '
+      write (unit=*,fmt='(a)') '==========================================================='
+   end if
+   
+
+   if (isoilflg(ifm)==2 .and. (slxsand+slxclay)>1.) then
+      write (unit=*,fmt='(a)') '==========================================================='
+      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
+      write (unit=*,fmt='(a)') '==========================================================='
+      write (unit=*,fmt='(a)') 'Your soil and clay fractions add up to more than 1!  The   '
+      write (unit=*,fmt='(a)') 'DEFAULT SOIL PARAMETERS WILL BE USED based on NL%NLSCON.   '
+      write (unit=*,fmt='(a)') '==========================================================='
+   end if
+end do
+   
 #if defined(COUPLED)
    if (isoilstateinit < 0 .or. isoilstateinit > 2) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
@@ -1156,10 +1245,24 @@ subroutine ed_opspec_misc
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    case (1)
+      !------------------------------------------------------------------------------------!
+      !   Check the branch thermodynamics.                                                 !
+      !------------------------------------------------------------------------------------!
       if (ibranch_thermo < 0 .or. ibranch_thermo > 2) then
          write (reason,fmt='(a,1x,i4,a)')                                                  &
                    'Invalid IBRANCH_THERMO, it must be between 0 and 2. Yours is set to'   &
                    ,ibranch_thermo,'...'
+         call opspec_fatal(reason,'opspec_misc')
+         ifaterr = ifaterr +1
+      end if
+      
+      !------------------------------------------------------------------------------------!
+      !   Check the Runge-Kutta tolerance.                                                 !
+      !------------------------------------------------------------------------------------!
+      if (rk4_tolerance < 1.e-7 .or. rk4_tolerance > 1.e-1) then
+         write (reason,fmt='(a,2x,a,1x,es12.5,a)')                                         & 
+              'Invalid RK4_TOLERANCE, it must be between 1.e-7 and 1.e-1.'                 &
+             ,'Yours is set to',rk4_tolerance,'...'
          call opspec_fatal(reason,'opspec_misc')
          ifaterr = ifaterr +1
       end if
@@ -1219,12 +1322,33 @@ subroutine ed_opspec_misc
       ifaterr = ifaterr +1
    end if
 
-   if (icanturb < -1 .or. icanturb > 2) then
+   select case (icanturb)
+   case (-1)
+      write (unit=*,fmt='(a)') '==========================================================='
+      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
+      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
+      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
+      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
+      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
+      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
+      write (unit=*,fmt='(a)') '==========================================================='
+      write (unit=*,fmt='(a)') '    You have set up the canopy turbulence structure to     '
+      write (unit=*,fmt='(a)') ' -1, which is the old-style ED-2.0.  This is known to have '
+      write (unit=*,fmt='(a)') ' serious issues and it''s currently deprecated.  The only  '
+      write (unit=*,fmt='(a)') ' reason why I''m letting you to run with this option is    '
+      write (unit=*,fmt='(a)') ' because I am a very nice model and I don''t really know   '
+      write (unit=*,fmt='(a)') ' how to say NO!  But don''t expect much from this run, and '
+      write (unit=*,fmt='(a)') ' in case this run crashes, it is going to be all your      '
+      write (unit=*,fmt='(a)') ' fault and I will remind you that!!!                       '
+      write (unit=*,fmt='(a)') '==========================================================='
+   case (0,1,2)
+      continue
+   case default
       write (reason,fmt='(a,1x,i4,a)') &
         'Invalid ICANTURB, it must be between -1 and 2. Yours is set to',icanturb,'...'
       call opspec_fatal(reason,'opspec_misc')  
       ifaterr = ifaterr +1
-   end if
+   end select
 
    if (isfclyrm < 1 .or. isfclyrm > 4) then
       write (reason,fmt='(a,1x,i4,a)') &

@@ -263,17 +263,14 @@ subroutine leaf_database(ofn,nlandsea,iaction,lat,lon,idatp)
            elseif (trim(iaction) == 'soil_text') then
               call shdf5_irec_f(ndims,idims,'fao',ivara=idato)
            else
-              print*, 'incorrect action specified in leaf_database'
-              print*, 'stopping run'
-              stop 'stop landuse_input1'
+              call fatal_error('Incorrect action specified in leaf_database'               &
+                              ,'leaf_database','leaf_database.f90')
            endif
            
            call shdf5_close_f()
         else
-           print*, 'In landuse_input, ',iaction,' file is missing'
-           print*, 'Filename = ',trim(title3)
-           print*, 'Stopping model run'
-           stop 'stop_landuse_input2'
+           call fatal_error( 'In landuse_input, '//trim(iaction)//' file is missing'       &
+                           ,'leaf_database','leaf_database.f90')
         endif
 
 

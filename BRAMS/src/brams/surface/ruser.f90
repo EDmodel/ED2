@@ -354,8 +354,8 @@ end
 !------------------------------------------------------------------------------------------!
 subroutine sfcinit_nofile_user(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,soil_water   &
                               ,soil_energy,soil_text,sfcwater_mass,sfcwater_energy         &
-                              ,sfcwater_depth,ustar,tstar,rstar,cstar,veg_fracarea,veg_lai &
-                              ,veg_tai,veg_rough,veg_height,veg_albedo,patch_area          &
+                              ,sfcwater_depth,ustar,tstar,rstar,cstar,veg_fracarea,veg_agb &
+                              ,veg_lai,veg_tai,veg_rough,veg_height,veg_albedo,patch_area  &
                               ,patch_rough,patch_wetind,leaf_class,soil_rough              &
                               ,sfcwater_nlev,stom_resist,ground_rsat,ground_rvap           &
                               ,ground_temp,ground_fliq,veg_water,veg_hcap,veg_energy       &
@@ -380,9 +380,10 @@ subroutine sfcinit_nofile_user(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,so
    real, dimension(mzs,n2,n3,npat), intent(inout) :: sfcwater_mass,sfcwater_energy
    real, dimension(mzs,n2,n3,npat), intent(inout) :: sfcwater_depth
    real, dimension(    n2,n3,npat), intent(inout) :: ustar,tstar,rstar,cstar
-   real, dimension(    n2,n3,npat), intent(inout) :: veg_fracarea,veg_lai,veg_tai,veg_rough
-   real, dimension(    n2,n3,npat), intent(inout) :: veg_height,veg_albedo,patch_area
-   real, dimension(    n2,n3,npat), intent(inout) :: patch_rough,patch_wetind,leaf_class
+   real, dimension(    n2,n3,npat), intent(inout) :: veg_fracarea,veg_agb,veg_lai,veg_tai
+   real, dimension(    n2,n3,npat), intent(inout) :: veg_rough,veg_height,veg_albedo
+   real, dimension(    n2,n3,npat), intent(inout) :: patch_area,patch_rough,patch_wetind
+   real, dimension(    n2,n3,npat), intent(inout) :: leaf_class
    real, dimension(    n2,n3,npat), intent(inout) :: soil_rough,sfcwater_nlev,stom_resist
    real, dimension(    n2,n3,npat), intent(inout) :: ground_rsat,ground_rvap
    real, dimension(    n2,n3,npat), intent(inout) :: ground_temp,ground_fliq
@@ -446,6 +447,9 @@ subroutine sfcinit_nofile_user(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,so
    !         plresp   (i,j,1) = 0.0
    !         resphet  (i,j,1) = 0.0
 
+   !         !----- Above-ground biomass.  This should be always 0 for water patches. -----!
+   !         veg_agb  (i,j,1) = 
+
    !         !-----------------------------------------------------------------------------!
    !         !     We now loop over the land patches.                                      !
    !         !-----------------------------------------------------------------------------!
@@ -464,6 +468,9 @@ subroutine sfcinit_nofile_user(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,so
    !            veg_hcap  (i,j,ipat) = 
    !            veg_water (i,j,ipat) = 
    !            veg_energy(i,j,ipat) = 
+
+   !            !----- Above-ground biomass.  This is non-0 only when we run ED-2. --------!
+   !            veg_agb   (i,j,ipat) =
 
    !            can_prss (i,j,ipat) = 
    !            can_theta(i,j,ipat) = 

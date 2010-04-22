@@ -43,7 +43,7 @@ module met_driver_coms
    integer                                                 :: metcycf
    character(len=str_len)                                  :: ed_met_driver_db
    integer                                                 :: imettype
-   logical                                                 :: no_ll
+   logical                   , allocatable, dimension(:)   :: no_ll
    real                      , allocatable, dimension(:,:) :: lat2d
    real                      , allocatable, dimension(:,:) :: lon2d
 

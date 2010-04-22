@@ -50,7 +50,7 @@ subroutine ed_model()
    use ed_node_coms  , only : mynum               & ! intent(in)
                             , nnodetot            ! ! intent(in)
    use disturb_coms  , only : include_fire        ! ! intent(in)
-   use mem_sites     , only : n_ed_region         & ! intent(in)
+   use mem_polygons  , only : n_ed_region         & ! intent(in)
                             , maxpatch            & ! intent(in)
                             , maxcohort           ! ! intent(in)
    use consts_coms   , only : day_sec             ! ! intent(in)
@@ -468,7 +468,7 @@ subroutine vegetation_dynamics(new_month,new_year)
   use ed_state_vars,only : edgrid_g,edtype
   use growth_balive,only : dbalive_dt, dbalive_dt_eq_0
   use consts_coms, only : day_sec,yr_day
-  use mem_sites, only: maxpatch
+  use mem_polygons, only: maxpatch
 
   implicit none
   include 'mpif.h'

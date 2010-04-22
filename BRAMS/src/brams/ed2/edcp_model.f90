@@ -160,7 +160,7 @@ subroutine ed_coup_model(ifm)
    use rk4_driver   , only : rk4_timestep       ! ! subroutine
    use ed_node_coms , only : mynum              & ! intent(in)
                            , nnodetot           ! ! intent(in)
-   use mem_sites    , only : maxpatch           & ! intent(in)
+   use mem_polygons , only : maxpatch           & ! intent(in)
                            , maxcohort          ! ! intent(in)
    use consts_coms  , only : day_sec            ! ! intent(in)
    use io_params    , only : ioutput            ! ! intent(in)
@@ -459,7 +459,7 @@ subroutine vegetation_dynamics(new_month,new_year)
    use growth_balive    , only : dbalive_dt             ! ! subroutine
    use consts_coms      , only : day_sec                & ! intent(in)
                                , yr_day                 ! ! intent(in)
-   use mem_sites        , only : maxpatch               ! ! intent(in)
+   use mem_polygons     , only : maxpatch               ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    logical     , intent(in)   :: new_month

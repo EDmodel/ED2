@@ -5,8 +5,10 @@ subroutine fatal_error(reason,subr,file)
 ! parallel. If so, it will use MPI_Abort rather than stop, so it will exit rather than     !
 !being frozen.                                                                             !
 !------------------------------------------------------------------------------------------!
-   use ed_node_coms, only: nnodetot,mynum
-   use ed_misc_coms, only: ied_init_mode
+   use ed_node_coms   , only : nnodetot       & ! intent(in)
+                             , mynum          ! ! intent(in)
+   use ed_misc_coms   , only : ied_init_mode  ! ! intent(in)
+   use canopy_air_coms, only : icanturb       ! ! intent(in)
    implicit none
    character(len=*), intent(in) :: reason
    character(len=*), intent(in) :: subr,file
@@ -31,15 +33,41 @@ subroutine fatal_error(reason,subr,file)
    write(unit=*,fmt='(a)') '------------------------------------------------------------------'
    write(unit=*,fmt='(a)') ' ED execution halts (see previous error message)...'
    write(unit=*,fmt='(a)') '------------------------------------------------------------------'
-   !---- Print a message warning the user that the used a likely to crash set up... -------!
+
+   !---------------------------------------------------------------------------------------!
+   !     Remind the user of deprecated ED2IN choices...                                    !
+   !---------------------------------------------------------------------------------------!
    if (ied_init_mode == -1) then
       write(unit=*,fmt='(a)') ' '
       write(unit=*,fmt='(a)') '------------------------------------------------------------'
       write(unit=*,fmt='(a)') '     I TOLD YOU NOT TO RUN WITH MIXED ED-1 AND ED-2         '
-      write(unit=*,fmt='(a)') ' RESTARTS. It''s always like that, we warn, we try to       '
-      write(unit=*,fmt='(a)') ' convince it is a stupid idea, and in the end, they keep    '
-      write(unit=*,fmt='(a)') ' insisting in making the same mistakes. Oh well, but what   '
-      write(unit=*,fmt='(a)') '  can I do if nobody listens to me...                       '
+      write(unit=*,fmt='(a)') ' RESTARTS.  It''s always like that, I warn, I try to        '
+      write(unit=*,fmt='(a)') ' convince it is a very bad idea to run me with deprecated   '
+      write(unit=*,fmt='(a)') ' options, for what, I ask myself...  In the end, they never '
+      write(unit=*,fmt='(a)') ' listen to me, they ignore my advices and keep insisting on '
+      write(unit=*,fmt='(a)') ' these bad choices.  Oh well, but at least this time        '
+      write(unit=*,fmt='(a)') ' I can say that I told you, I told you, I told you...  But  '
+      write(unit=*,fmt='(a)') ' hey, please, don''t take it personally, I''m still a nice  '
+      write(unit=*,fmt='(a)') ' model and I promise that I will try my best to give you    '
+      write(unit=*,fmt='(a)') ' good results should you try me with another IED_INIT_MODE  '
+      write(unit=*,fmt='(a)') ' (0, 1, 2, 3, 4, or 5).                                     '
+      write(unit=*,fmt='(a)') '------------------------------------------------------------'
+   end if
+   if (icanturb == -1) then
+      write(unit=*,fmt='(a)') ' '
+      write(unit=*,fmt='(a)') '------------------------------------------------------------'
+      write(unit=*,fmt='(a)') '     I TOLD YOU NOT TO RUN WITH THE old ED-2.0 canopy       '
+      write(unit=*,fmt='(a)') ' turbulence structure.  It''s always like that, I warn,     '
+      write(unit=*,fmt='(a)') ' I try to convince it is a very bad idea to run me with     '
+      write(unit=*,fmt='(a)') ' deprecated options, for what?  In the end, they never      '
+      write(unit=*,fmt='(a)') ' listen to me, instead they ignore my advices and keep      '
+      write(unit=*,fmt='(a)') ' insisting on these bad options.  Oh well, but at           '
+      write(unit=*,fmt='(a)') ' least this time I can say that I told you, I told you,     '
+      write(unit=*,fmt='(a)') ' I told you, I told you, I told you...  But hey, look,      '
+      write(unit=*,fmt='(a)') ' don''t take this message personally, I''m still a nice     '
+      write(unit=*,fmt='(a)') ' model and I promise I will try my best to please you with  '
+      write(unit=*,fmt='(a)') ' good and exciting results should you use another ICANTURB  '
+      write(unit=*,fmt='(a)') ' like 0 or 2 (1 is not that good either).                   '
       write(unit=*,fmt='(a)') '------------------------------------------------------------'
    end if
    if (nnodetot > 1) call MPI_Abort(MPI_COMM_WORLD, 1)

@@ -223,12 +223,12 @@ subroutine leaftw_derivs(initp,dinitp,csite,ipa)
    initp%available_liquid_water(nzg) = dslz8(nzg)                                          &
                                      * max(0.0d0                                           &
                                           ,initp%soil_fracliq(nzg)*(initp%soil_water(nzg)  &
-                                          -soil8(nsoil)%soilcp))
+                                          -soil8(nsoil)%soilwp))
 
    do k = nzg - 1, rk4site%lsl, -1
       nsoil = csite%ntext_soil(k,ipa)
       initp%available_liquid_water(k) = initp%available_liquid_water(k+1) + dslz8(k)       &
-           *max(0.0d0,(initp%soil_water(k)-soil8(nsoil)%soilcp)*initp%soil_fracliq(k))
+           *max(0.0d0,(initp%soil_water(k)-soil8(nsoil)%soilwp)*initp%soil_fracliq(k))
    end do
 
    !---------------------------------------------------------------------------------------!
@@ -247,7 +247,7 @@ subroutine leaftw_derivs(initp,dinitp,csite,ipa)
       ! multiplied by depth to get a depth of water.                                       !
       !------------------------------------------------------------------------------------!
       initp%soil_liq(k) = max(0.0d0                                                        &
-                             ,( initp%soil_water(k) - soil8(nsoil)%soilcp)                 &
+                             ,( initp%soil_water(k) - soil8(nsoil)%soilwp)                 &
                               * initp%soil_fracliq(k) )
       initp%soilair99(k) = soil8(nsoil)%slmsts * (1.d0-rk4eps) - initp%soil_water(k)
       initp%soilair01(k) = ( initp%soil_water(k) - (1.d0 + rk4eps) * soil8(nsoil)%soilcp)  &
@@ -622,6 +622,7 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,dewgnd
                                     , rk4dry_veg_lwater    & ! intent(in)
                                     , rk4fullveg_lwater    & ! intent(in)
                                     , checkbudget          & ! intent(in)
+                                    , check_maxleaf        & ! intent(in)
                                     , supersat_ok          ! ! intent(in)
    use ed_state_vars         , only : sitetype             & ! Structure
                                     , patchtype            & ! Structure
@@ -642,7 +643,7 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,dewgnd
                                     , mmdryi8              & ! intent(in)
                                     , wdns8                & ! intent(in)
                                     , wdnsi8               & ! intent(in)
-                                    , idns8                & ! intent(in)
+                                    , fdnsi8               & ! intent(in)
                                     , t3ple8               ! ! intent(in)
    use grid_coms             , only : nzg                  ! ! intent(in)
    use soil_coms             , only : soil8                & ! intent(in)
@@ -693,10 +694,10 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,dewgnd
    real(kind=8)                     :: rd               !
    real(kind=8)                     :: sigmaw           !
    real(kind=8)                     :: wflxvc           !
+   real(kind=8)                     :: cflxgc           !
    real(kind=8)                     :: wshed            !
    real(kind=8)                     :: qwshed           !
    real(kind=8)                     :: dwshed           !
-   real(kind=8)                     :: cflxgc           !
    real(kind=8)                     :: taii             !
    real(kind=8)                     :: wflx             !
    real(kind=8)                     :: qwflx            !
@@ -867,11 +868,10 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,dewgnd
    dewgndflx  = max(0.d0, -wflx)
    qdewgndflx = dewgndflx * (alvi8 - initp%surface_fliq * alli8)
    !---------------------------------------------------------------------------------------!
-   !    Alternative method of defining the depth gain (MCD, 11/16/2009). 5.d-3 is the      !
-   ! inverse of density of frost.                                                          !
+   !    Alternative method of defining the depth gain (MCD, 11/16/2009).                   !
    !---------------------------------------------------------------------------------------!
    ddewgndflx = dewgndflx                                                                  & 
-              * (initp%surface_fliq * wdnsi8 + (1.d0-initp%surface_fliq) * 5.d-3)
+              * (initp%surface_fliq * wdnsi8 + (1.d0-initp%surface_fliq) * fdnsi8)
 
 
    !----- We now check whether the canopy air space can hold more water. ------------------!
@@ -1065,37 +1065,60 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,dewgnd
 
          !---------------------------------------------------------------------------------!
          !     Calculate interception by leaves.                                           !
-         !                                                                                 !
-         !  wflxvc accounts for evaporation and dew formation.  If the leaf has more water !
-         ! than the carrying capacity, then it must flux all precipitation and dew. The    !
-         ! leaf water may evaporate in every condition.                                    !
          !---------------------------------------------------------------------------------!
-         if (initp%veg_water(ico) >= max_leaf_water) then
+         if (check_maxleaf) then
+            !------ We check whether the leaves can take any more water. ------------------!
+            if (initp%veg_water(ico) >= max_leaf_water) then
 
-            !------------------------------------------------------------------------------!
-            ! Case 1: Leaf has no space for rain. All rain/snow falls with the same        !
-            !         density it fell. Dew and frost and old precipitation that were       !
-            !         already there will likewise fall to bring it to the maximum amount   !
-            !         of leaf water.                                                       !
-            !------------------------------------------------------------------------------!
-            wshed                 = intercepted_tot  * initp%tai(ico) * taii
-            qwshed                = qintercepted_tot * initp%tai(ico) * taii
-            dwshed                = dintercepted_tot * initp%tai(ico) * taii
+               !---------------------------------------------------------------------------!
+               ! Case 1: Leaves have no space for rain.  All rain/snow falls with the same !
+               !         density it fell.                                                  !
+               !---------------------------------------------------------------------------!
+               wshed         = intercepted_tot  * initp%tai(ico) * taii
+               qwshed        = qintercepted_tot * initp%tai(ico) * taii
+               dwshed        = dintercepted_tot * initp%tai(ico) * taii
+               intercepted   = 0.d0
+               qintercepted  = 0.d0
+               
+               if (wflxvc < 0.d0) then
+                  !------------------------------------------------------------------------!
+                  ! Case 1a: If dew or frost is forming over the leaves, we won't let them !
+                  !          stay on the leaves either. They will shed with dew or frost   !
+                  !          density.                                                      !
+                  !------------------------------------------------------------------------!
+                  wshed   = wshed  - wflxvc
+                  qwshed  = qwshed - qwflxvc
+                  dwshed  = dwshed - wflxvc  * (       initp%veg_fliq(ico)  * wdnsi8       &
+                                               + (1.d0-initp%veg_fliq(ico)) * fdnsi8 )
+                  wflxvc  = 0.d0
+                  qwflxvc = 0.d0
+               end if
+            else
+               !---------------------------------------------------------------------------!
+               ! Case 2: Leaves have space for rain.  Rainfall and its internal energy     !
+               !         accumulate on the leaves.                                         !
+               !---------------------------------------------------------------------------!
+               wshed        = 0.d0
+               qwshed       = 0.d0
+               dwshed       = 0.d0
+               intercepted  = intercepted_tot  * initp%tai(ico) * taii
+               qintercepted = qintercepted_tot * initp%tai(ico) * taii
+            end if
 
-            intercepted           = 0.d0
-            qintercepted          = 0.d0
          else
             !------------------------------------------------------------------------------!
-            ! Case 2: Leaf has space for rain. Rainfall and its internal energy accumulate !
-            !         on the leaf.                                                         !
+            !     Calculate interception by leaves by scaling the intercepted water by the !
+            ! TAI of each cohort.  If this causes excess of water/ice over the leaf        !
+            ! surface, no problem, the water will shed at adjust_veg_properties.           !
             !------------------------------------------------------------------------------!
-            wshed                 = 0.d0
-            qwshed                = 0.d0
-            dwshed                = 0.d0
-            intercepted           = intercepted_tot  * initp%tai(ico) * taii
-            qintercepted          = qintercepted_tot * initp%tai(ico) * taii
+            wshed        = 0.d0
+            qwshed       = 0.d0
+            dwshed       = 0.d0
+            intercepted  = intercepted_tot  * initp%tai(ico) * taii
+            qintercepted = qintercepted_tot * initp%tai(ico) * taii
          end if
-         
+
+
          dinitp%veg_water(ico) = - wflxvc + intercepted
 
          !---------------------------------------------------------------------------------!

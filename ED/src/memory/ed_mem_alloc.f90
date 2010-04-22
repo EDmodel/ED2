@@ -16,7 +16,7 @@ subroutine ed_mem_alloc(proc_type)
    use grid_coms          , only : nnxp,                   & ! intent(in)
                                    nnyp,                   & ! intent(in)
                                    ngrids                  ! ! intent(in)
-   use mem_sites          , only : grid_type
+   use mem_polygons       , only : grid_type
    use ed_work_vars       , only : work_e,                 & ! intent(out)
                                    ed_alloc_work,          & ! subroutine
                                    ed_nullify_work         ! ! subroutine
@@ -24,9 +24,6 @@ subroutine ed_mem_alloc(proc_type)
    use ed_misc_coms          , only : idoutput,               & ! intent(in)
                                    imoutput                ! ! intent(in)
    use ed_node_coms       , only : mmxp, mmyp, mynum
-   use soil_coms          , only : alloc_soilgrid,         & ! subroutine 
-                                   isoilflg,               & ! intent(in)
-                                   nslcon                  ! ! intent(in)
 
    implicit none
 !----- Arguments: -------------------------------------------------------------------------!
@@ -71,10 +68,10 @@ subroutine ed_mem_alloc(proc_type)
 !------------------------------------------------------------------------------------------!
 !   Allocate the top most hierachical memory structures for the ED2 LSM. We changed the    !
 ! the way the standalone deals with different regions ans sites of interest. Now it        !
-! allocates each region and each soi in a different grid. This is done to ease the way the !
+! allocates each region and each poi in a different grid. This is done to ease the way the !
 ! parallel code is implemented, to take full advantage of MPI. By doing this, we can split !
 ! the polygons among the different nodes for the regional run, and split the patches and   !
-! cohorts in different nodes in the SOI grids --- the latter is yet to be implemented.     !
+! cohorts in different nodes in the POI grids --- the latter is yet to be implemented.     !
 !------------------------------------------------------------------------------------------!
    write (unit=*,fmt='(a,i5,a)') ' + Polygon array allocation, node ',mynum,';'
 

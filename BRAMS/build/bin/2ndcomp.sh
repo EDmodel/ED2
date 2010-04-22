@@ -234,7 +234,7 @@ rm -fv therm_lib.o                therm_lib.mod
 rm -fv therm_lib8.o               therm_lib8.mod
 rm -fv tkenn.o                    tkenn.mod
 rm -fv tmpname.o                  tmpname.mod
-rm -fv turb_constants.o           turb_constants.mod
+rm -fv turb_coms.o                turb_coms.mod
 rm -fv turb_derivs.o              turb_derivs.mod
 rm -fv turb_diff.o                turb_diff.mod
 rm -fv turb_diff_adap.o           turb_diff_adap.mod
@@ -275,8 +275,8 @@ rm -fv disturbance.o              disturbance.mod
 rm -fv ed_bare_restart.o          ed_bare_restart.mod
 rm -fv ed_filelist.o              ed_filelist.mod
 rm -fv ed_grid.o                  ed_grid.mod
-rm -fv ed_history_io.o            ed_history_io.mod
 rm -fv ed_init.o                  ed_init.mod
+rm -fv ed_init_full_history.o     ed_init_full_history.mod
 rm -fv ed_max_dims.o              ed_max_dims.mod
 rm -fv ed_mem_grid_dim_defs.o     ed_mem_grid_dim_defs.mod
 rm -fv ed_misc_coms.o             ed_misc_coms.mod
@@ -284,6 +284,8 @@ rm -fv ed_node_coms.o             ed_node_coms.mod
 rm -fv ed_opspec.o                ed_opspec.mod
 rm -fv ed_para_coms.o             ed_para_coms.mod
 rm -fv ed_params.o                ed_params.mod
+rm -fv ed_read_ed10_20_history.o  ed_read_ed10_20_history.mod
+rm -fv ed_read_ed21_history.o     ed_read_ed21_history.mod
 rm -fv ed_state_vars.o            ed_state_vars.mod
 rm -fv ed_therm_lib.o             ed_therm_lib.mod
 rm -fv ed_type_init.o             ed_type_init.mod
@@ -314,7 +316,7 @@ rm -fv lapse.o                    lapse.mod
 rm -fv leaf_database.o            leaf_database.mod
 rm -fv libxml2f90.f90_pp.o        libxml2f90.f90_pp.mod
 rm -fv lsm_hyd.o                  lsm_hyd.mod
-rm -fv mem_sites.o                mem_sites.mod
+rm -fv mem_polygons.o             mem_polygons.mod 
 rm -fv met_driver_coms.o          met_driver_coms.mod
 rm -fv mortality.o                mortality.mod
 rm -fv optimiz_coms.o             optimiz_coms.mod

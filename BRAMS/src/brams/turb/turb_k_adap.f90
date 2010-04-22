@@ -136,7 +136,8 @@ enddo
 
 ! dw/dz
 
-if (idiffk .ge. 3 .and. idiffk /= 7) then
+select case (idiffk)
+case (3:6)
    do j = ja,jz
       do i = ia,iz
          ka = nint(flpw(i,j))
@@ -148,9 +149,10 @@ if (idiffk .ge. 3 .and. idiffk /= 7) then
          enddo
       enddo
    enddo
-endif
+end select
 
-if (idiffk .le. 2 .or. idiffk == 7) then
+select case (idiffk)
+case (1,2,7,8)
    do j = ja,jz
       do i = ia,iz
          do k = 2,m1-1
@@ -167,7 +169,7 @@ if (idiffk .le. 2 .or. idiffk == 7) then
          enddo
       enddo
    enddo
-else
+case default
    do j = ja,jz
       do i = ia,iz
          do k = 2,m1-1
@@ -217,7 +219,7 @@ else
          enddo
       enddo
    enddo
-endif
+end select
 
 return
 end

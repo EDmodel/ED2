@@ -1429,12 +1429,23 @@ end subroutine transfer_ed2leaf
 !==========================================================================================!
 subroutine copy_avgvars_to_leaf(ifm)
 
-   use ed_state_vars , only: edgrid_g,edtype,polygontype,sitetype,patchtype
-   use mem_leaf      , only: leaf_g
-   use mem_grid      , only: nzg,nzs
-   use rconstants    , only: t3ple,cliqvlme,cicevlme,allivlme,alvl
-   use soil_coms     , only: soil
-   use ed_misc_coms  , only: frqsum
+   use ed_state_vars , only : edgrid_g     & ! structure
+                            , edtype       & ! structure
+                            , polygontype  & ! structure
+                            , sitetype     & ! structure
+                            , patchtype    ! ! structure
+   use mem_leaf      , only : leaf_g       ! ! intent(inout)
+   use mem_grid      , only : nzg          & ! intent(in)
+                            , nzs          ! ! intent(in)
+   use rconstants    , only : t3ple        & ! intent(in)
+                            , cliqvlme     & ! intent(in)
+                            , cicevlme     & ! intent(in)
+                            , allivlme     & ! intent(in)
+                            , alvl         ! ! intent(in)
+   use soil_coms     , only : soil         ! ! intent(in)
+   use ed_misc_coms  , only : frqsum       ! ! intent(in)
+   use ed_max_dims   , only : n_pft        & ! intent(in)
+                            , n_dbh        ! ! intent(in)
    implicit none
    
    !----- Argument ------------------------------------------------------------------------!
@@ -1445,7 +1456,7 @@ subroutine copy_avgvars_to_leaf(ifm)
    type(sitetype)   , pointer :: csite
    type(patchtype)  , pointer :: cpatch
    integer                    :: ipy,isi,ipa,ico
-   integer                    :: ix,iy,k
+   integer                    :: ix,iy,k,idbh,ipft
    real                       :: site_area_i,poly_area_i
    real                       :: sitesum_gpp     , sitesum_plresp, sitesum_resphet
    !---------------------------------------------------------------------------------------!
@@ -1481,7 +1492,16 @@ subroutine copy_avgvars_to_leaf(ifm)
       leaf_g(ifm)%veg_energy(ix,iy,2)   = cgrid%avg_veg_energy(ipy)
       leaf_g(ifm)%veg_lai(ix,iy,2)      = cgrid%lai(ipy)
       leaf_g(ifm)%veg_tai(ix,iy,2)      = cgrid%lai(ipy) + cgrid%wai(ipy)
-      
+
+      !----- Fill above ground biomass by integrating all PFTs and DBH classes. -----------!
+      leaf_g(ifm)%veg_agb(ix,iy,2)      = 0.
+      do idbh=1,n_dbh
+         do ipft=1,n_pft
+            leaf_g(ifm)%veg_agb(ix,iy,2) = leaf_g(ifm)%veg_agb(ix,iy,2)                    &
+                                         + cgrid%agb(ipft,idbh,ipy)
+         end do
+      end do
+
       !------------------------------------------------------------------------------------!
       !      Update canopy air properties.                                                 !
       !------------------------------------------------------------------------------------!

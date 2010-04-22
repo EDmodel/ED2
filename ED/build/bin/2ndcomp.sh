@@ -21,9 +21,9 @@ rm -fv ed_bare_restart.o          ed_bare_restart.mod
 rm -fv ed_driver.o                ed_driver.mod 
 rm -fv ed_filelist.o              ed_filelist.mod 
 rm -fv ed_grid.o                  ed_grid.mod 
-rm -fv ed_history_io.o            ed_history_io.mod 
 rm -fv ed_init.o                  ed_init.mod 
 rm -fv ed_init_atm.o              ed_init_atm.mod 
+rm -fv ed_init_full_history.o     ed_init_full_history.mod 
 rm -fv ed_load_namelist.o         ed_load_namelist.mod 
 rm -fv ed_max_dims.o              ed_max_dims.mod 
 rm -fv ed_mem_alloc.o             ed_mem_alloc.mod 
@@ -37,6 +37,8 @@ rm -fv ed_opspec.o                ed_opspec.mod
 rm -fv ed_params.o                ed_params.mod 
 rm -fv ed_para_coms.o             ed_para_coms.mod 
 rm -fv ed_para_init.o             ed_para_init.mod 
+rm -fv ed_read_ed10_20_history.o  ed_read_ed10_20_history.mod
+rm -fv ed_read_ed21_history.o     ed_read_ed21_history.mod
 rm -fv ed_state_vars.o            ed_state_vars.mod 
 rm -fv ed_therm_lib.o             ed_therm_lib.mod
 rm -fv ed_type_init.o             ed_type_init.mod 
@@ -67,7 +69,7 @@ rm -fv lapse.o                    lapse.mod
 rm -fv leaf_database.o            leaf_database.mod 
 rm -fv libxml2f90.f90_pp.o        libxml2f90.f90_pp.mod 
 rm -fv lsm_hyd.o                  lsm_hyd.mod 
-rm -fv mem_sites.o                mem_sites.mod 
+rm -fv mem_polygons.o             mem_polygons.mod 
 rm -fv met_driver_coms.o          met_driver_coms.mod 
 rm -fv mortality.o                mortality.mod 
 rm -fv numutils.o                 numutils.mod 

@@ -790,8 +790,8 @@ recursive subroutine read_ed_xml_config(filename)
 !!$         if(texist) data%estimator = ival
 !!$         call getConfigREAL  ('Vm_amp','numerics',i,rval,texist)
 !!$         if(texist) data%Vm_amp = real(rval)
-!!$         call getConfigINT  ('n_soi','numerics',i,ival,texist)
-!!$         if(texist) data%n_soi = ival
+!!$         call getConfigINT  ('n_poi','numerics',i,ival,texist)
+!!$         if(texist) data%n_poi = ival
 !!$         call getConfigINT  ('max_cohorts','numerics',i,ival,texist)
 !!$         if(texist) data%max_cohorts = ival
 !!$         call getConfigREAL  ('dbhmax','numerics',i,rval,texist)

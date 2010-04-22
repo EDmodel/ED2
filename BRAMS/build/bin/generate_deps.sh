@@ -7,6 +7,6 @@ bramssrc="${bramsroot}/src/*/*/*.f90 ${bramsroot}/src/*/*/*.F90 ${bramsroot}/src
 edsrc="${edroot}/src/*/*.f90 ${edroot}/src/*/*.F90 ${edroot}/src/*/*.c"
 rm -f dependency.mk
 ./sfmakedepend.pl ${includes} -f dependency.mk ${bramssrc} ${edsrc}
-cat dependency.mk   | sed s@hdf5.mod@@g   > dependency.alt
-cat dependency.alt  | sed s@netcdf.mod@@g > dependency.mk
-/bin/rm -f dependency.alt dependency.mk.old*
+sed -i s@hdf5.mod@@g   dependency.mk
+sed -i s@netcdf.mod@@g dependency.mk
+/bin/rm -f dependency.mk.old*

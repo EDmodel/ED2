@@ -648,14 +648,14 @@ subroutine new_patch_sfc_props(csite,ipa)
       do k = cpatch%krdepth(ico), nzg - 1
          nsoil = csite%ntext_soil(k,ipa)
          cpatch%paw_avg(ico) = cpatch%paw_avg(ico)                                      &
-                             + (csite%soil_water(k,ipa) - soil(nsoil)%soilcp)           &
+                             + (csite%soil_water(k,ipa) - soil(nsoil)%soilwp)           &
                              * (slz(k+1)-slz(k))                                        &
-                             / (soil(nsoil)%slmsts - soil(nsoil)%soilcp) 
+                             / (soil(nsoil)%slmsts - soil(nsoil)%soilwp) 
       end do
       nsoil = csite%ntext_soil(nzg,ipa)
       cpatch%paw_avg(ico) = cpatch%paw_avg(ico)                                         &
-                          + (csite%soil_water(nzg,ipa) - soil(nsoil)%soilcp)            &
-                          * (-1.0*slz(nzg)) / (soil(nsoil)%slmsts - soil(nsoil)%soilcp) 
+                          + (csite%soil_water(nzg,ipa) - soil(nsoil)%soilwp)            &
+                          * (-1.0*slz(nzg)) / (soil(nsoil)%slmsts - soil(nsoil)%soilwp) 
       cpatch%paw_avg(ico) = cpatch%paw_avg(ico)/(-1.0*slz(cpatch%krdepth(ico)))
    end do
    !---------------------------------------------------------------------------------------! 

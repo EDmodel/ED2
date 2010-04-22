@@ -31,8 +31,6 @@ subroutine ed_1st_master (ipara, nnodestotal,nslaves, headnode_num, name_name)
        allocate_edglobals, &    ! implicitly interfaced subroutine
        filltab_alltypes
 
-  use mem_sites, only: n_soi
-
   implicit none
 
   !   Input arguments

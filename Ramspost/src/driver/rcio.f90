@@ -143,6 +143,7 @@ SUBROUTINE COMMIO (CFILE,IO,IUN)
   ie=cio_i_sca(iun,irw,'idate1',idate1,1)
   ie=cio_i_sca(iun,irw,'itime1',itime1,1)
   ie=cio_i_sca(iun,irw,'isfcl',isfcl,1)
+  ie=cio_i_sca(iun,irw,'istar',istar,1)
   ie=cio_i_sca(iun,irw,'npatch',npatch,1)
   ie=cio_i_sca(iun,irw,'nvegpat',nvegpat,1)
   ie=cio_i_sca(iun,irw,'level',level,1)
@@ -150,6 +151,7 @@ SUBROUTINE COMMIO (CFILE,IO,IUN)
   vapour_on = level >= 1
   cloud_on  = level >= 2
   bulk_on   = level >= 3
+  myistar   = istar
 !  ie=cio_i_sca(iun,irw,'inucprg',inucprg,1)
   ie=cio_i_sca(iun,irw,'irain',irain,1)
   ie=cio_i_sca(iun,irw,'ipris',ipris,1)

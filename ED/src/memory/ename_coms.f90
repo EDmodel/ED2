@@ -1,6 +1,6 @@
 Module ename_coms
 
-  use ed_max_dims, only: max_soi, max_ed_regions, str_len,n_pft,maxgrds, nzgmax,maxpvars
+  use ed_max_dims, only: max_poi, max_ed_regions, str_len,n_pft,maxgrds, nzgmax,maxpvars
 
   implicit none
 
@@ -17,6 +17,11 @@ Module ename_coms
 
       character(len=str_len) :: expnme   = 'ED2 test'
       character(len=str_len) :: runtype  = ''
+
+!!   LOAD METHOD (default is to equally split poly's on nodes)
+
+      integer :: loadmeth = 2
+      
 
 !!    START OF SIMULATION
 
@@ -88,6 +93,8 @@ Module ename_coms
       integer :: nzs      = 1
       integer, dimension(maxgrds) :: isoilflg = (/ (2,i=1,maxgrds) /)
       integer :: nslcon   = 6
+      real    :: slxclay  = 0              ! Use default clay fraction (NML)
+      real    :: slxsand  = 0              ! Use default sand fraction (NML)
       integer :: isoilstateinit = 0
       integer :: isoildepthflg  = 0
       integer :: isoilbc        = 0
@@ -111,12 +118,12 @@ Module ename_coms
 
 !!    ED SITE SPECIFICATION
 
-      integer           :: n_soi         = 1
+      integer           :: n_poi         = 1
       integer           :: n_ed_region   = 0
       integer           :: grid_type     = 0
       real              :: grid_res      = 1.0
-      real, dimension(max_soi) :: soi_lat = (/ (0.0, i=1,max_soi) /)
-      real, dimension(max_soi) :: soi_lon = (/ (0.0, i=1,max_soi) /)
+      real, dimension(max_poi) :: poi_lat = (/ (0.0, i=1,max_poi) /)
+      real, dimension(max_poi) :: poi_lon = (/ (0.0, i=1,max_poi) /)
       real, dimension(max_ed_regions) :: ed_reg_latmin =   &
            (/ (0.0, i=1,max_ed_regions) /)
       real, dimension(max_ed_regions) :: ed_reg_latmax = &
@@ -129,6 +136,7 @@ Module ename_coms
 
 !!    OPTIONS FOR MODEL DYNAMICS
       integer                   :: integration_scheme = 0
+      real                      :: rk4_tolerance      = 0.
       integer                   :: ibranch_thermo     = 0
       integer                   :: istoma_scheme      = 0
       integer                   :: iphen_scheme       = 0
@@ -137,7 +145,7 @@ Module ename_coms
       integer                   :: crown_mod          = 0
       integer                   :: n_plant_lim        = 0
       integer                   :: n_decomp_lim       = 0
-      integer                   :: decomp_scheme = 0
+      integer                   :: decomp_scheme      = 0
       integer                   :: include_fire       = 0
       integer                   :: ianth_disturb      = 0
       integer                   :: icanturb           = 0
@@ -156,8 +164,8 @@ Module ename_coms
 !!    OPTIONS FOR PRINTING POLYGON VECTORS/ARRAYS TO STANDARD OUTPUT
       integer :: iprintpolys = 0
       integer :: npvars = 0
-      character(len=32),dimension(maxpvars) :: printvars = (/ ('', i=1,maxpvars) /)
-      character(len=32),dimension(maxpvars) :: pfmtstr = (/ ('', i=1,maxpvars) /)
+      character(len=str_len),dimension(maxpvars) :: printvars = (/ ('', i=1,maxpvars) /)
+      character(len=str_len),dimension(maxpvars) :: pfmtstr = (/ ('', i=1,maxpvars) /)
       integer :: ipmin = 0
       integer :: ipmax = 0
 

@@ -223,6 +223,12 @@ module rk4_coms
                                                !    and radiation interception. 
                                                ! 0 - no (default);
                                                ! 1 - yes (under development/test);
+
+   real                      :: rk4_tolerance  ! The RK4 tolerance (or epsilon).  While 
+                                               !    rk4eps is the actual variable used in
+                                               !    Runge-Kutta (a double precision vari-
+                                               !    able), rk4tol is the one given at the 
+                                               !    namelist (a single precision variable).
    !=======================================================================================!
    !=======================================================================================!
 
@@ -322,6 +328,12 @@ module rk4_coms
                                  !     supersat_ok is .false., but in this case
                                  !     only mixing with free atmosphere can cause
                                  !     the super-saturation).
+   logical      :: check_maxleaf ! The integrator will check whether the leaves are
+                                 !    at their maximum holding capacity before let-
+                                 !    ting water to be intercepted and dew/frost
+                                 !    to remain at the leaf surfaces.  If FALSE, 
+                                 !    the amount of water will be adjusted outside
+                                 !    the derivative calculation.                  [   T|F]
    logical      :: debug         ! Verbose output for debug                        [   T|F]
    real(kind=8) :: toocold       ! Minimum temperature for saturation spec. hum.   [     K]
    real(kind=8) :: toohot        ! Maximum temperature for saturation spec. hum.   [     K]

@@ -380,12 +380,13 @@ subroutine landuse_opqr(n2,n3,mzg,npat,nvegpat  &
                enddo
 
                do ipat = 2,nvegpat+1
-   !               if (patch_area(ir,jr,ipat) .ge. .0001) then   
 
                      datq_pat = nint(leaf_class(ir,jr,ipat))
-                     veg_ndvif(ir,jr,ipat) =  max( .05, &
-                               sumndvi(datq_pat)/ sumpix(datq_pat)  )
-                               
+                     if (sumpix(datq_pat) == 0.) then
+                        veg_ndvif(ir,jr,ipat) =  0.05
+                     else
+                        veg_ndvif(ir,jr,ipat) =  max(.05,sumndvi(datq_pat)/ sumpix(datq_pat))
+                     end if
                enddo
 
             endif
