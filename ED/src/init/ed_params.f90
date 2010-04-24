@@ -1503,7 +1503,7 @@ end subroutine init_pft_repro_params
 !------------------------------------------------------------------------------------------!
 subroutine init_pft_derived_params()
    use decomp_coms , only : f_labile             ! ! intent(in)
-   use ed_max_dims    , only : n_pft                ! ! intent(in)
+   use ed_max_dims , only : n_pft                ! ! intent(in)
    use consts_coms , only : onesixth             ! ! intent(in)
    use pft_coms    , only : init_density         & ! intent(in)
                           , c2n_leaf             & ! intent(in)
@@ -1516,19 +1516,27 @@ subroutine init_pft_derived_params()
                           , qsw                  & ! intent(in)
                           , max_dbh              & ! intent(out)
                           , min_recruit_size     & ! intent(out)
+                          , min_cohort_size      & ! intent(out)
+                          , negligible_nplant    & ! intent(out)
                           , c2n_recruit          ! ! intent(out)
    use allometry   , only : h2dbh                & ! function
+                          , dbh2h                & ! function
                           , dbh2bl               & ! function
                           , dbh2bd               ! ! function
    implicit none
    !----- Local variables. ----------------------------------------------------------------!
    integer            :: ipft
    real               :: dbh
-   real               :: balive
-   real               :: bleaf
-   real               :: bdead
+   real               :: huge_dbh
+   real               :: huge_height
+   real               :: balive_min
+   real               :: bleaf_min
+   real               :: bdead_min
+   real               :: balive_max
+   real               :: bleaf_max
+   real               :: bdead_max
    real               :: min_plant_dens
-   logical, parameter :: print_zero_table = .false.
+   logical, parameter :: print_zero_table = .true.
    !---------------------------------------------------------------------------------------!
 
    !----- Maximum DBH. --------------------------------------------------------------------!
@@ -1545,35 +1553,68 @@ subroutine init_pft_derived_params()
    ! significantly less biomass.                                                           !
    !---------------------------------------------------------------------------------------!
    if (print_zero_table) then
-      write (unit=61,fmt='(8(a,1x))') '  PFT','     HGT_MIN','         DBH'                &
-                                             ,'       BLEAF','       BDEAD'                &
-                                             ,'      BALIVE','   INIT_DENS'                &
-                                             ,'MIN_REC_SIZE'
+      write (unit=61,fmt='(13(a,1x))') '  PFT','     HGT_MIN','         DBH'               &
+                                              ,'   BLEAF_MIN','   BDEAD_MIN'               &
+                                              ,'  BALIVE_MIN','   BLEAF_MAX'               &
+                                              ,'   BDEAD_MAX','  BALIVE_MAX'               &
+                                              ,'   INIT_DENS','MIN_REC_SIZE'               &
+                                              ,'MIN_COH_SIZE',' NEGL_NPLANT'
    end if
    min_plant_dens = onesixth * minval(init_density)
    do ipft = 1,n_pft
-      !----- Finding the DBH and carbon pools associated with a newly formed recruit. -----!
-      dbh    = h2dbh(hgt_min(ipft),ipft)
-      bleaf  = dbh2bl(dbh,ipft)
-      bdead  = dbh2bd(dbh,hgt_min(ipft),ipft)
-      balive = bleaf * (1.0 + q(ipft) + qsw(ipft) * hgt_min(ipft))
-      
+
+      !----- Find the DBH and carbon pools associated with a newly formed recruit. --------!
+      dbh        = h2dbh(hgt_min(ipft),ipft)
+      bleaf_min  = dbh2bl(dbh,ipft)
+      bdead_min  = dbh2bd(dbh,hgt_min(ipft),ipft)
+      balive_min = bleaf_min * (1.0 + q(ipft) + qsw(ipft) * hgt_min(ipft))
+
+      !------------------------------------------------------------------------------------!
+      !   Find the maximum bleaf and bdead supported.  This is to find the negligible      !
+      ! nplant so we ensure that the cohort is always terminated if its mortality rate is  !
+      ! very high.                                                                         !
+      !------------------------------------------------------------------------------------!
+      huge_dbh    = 3. * max_dbh(ipft)
+      huge_height = dbh2h(ipft, max_dbh(ipft))
+      bleaf_max   = dbh2bl(huge_dbh,ipft)
+      bdead_max   = dbh2bd(huge_dbh,huge_height,ipft)
+      balive_max  = bleaf_max * (1.0 + q(ipft) + qsw(ipft) * huge_height)
+
       !------------------------------------------------------------------------------------!
       !    The definition of the minimum recruitment size is the minimum amount of biomass !
       ! in kgC/m² is available for new recruits.  For the time being we use the near-bare  !
       ! ground state value as the minimum recruitment size, but this may change depending  !
       ! on how well it goes.                                                               !
       !------------------------------------------------------------------------------------!
-      min_recruit_size(ipft) = min_plant_dens * (bdead + balive)
-      !----- Finding the recruit carbon to nitrogen ratio. --------------------------------!
-      c2n_recruit(ipft)      = (balive + bdead)                                            &
-                             / (balive * ( f_labile(ipft) / c2n_leaf(ipft)                 &
+      min_recruit_size(ipft) = min_plant_dens * (bdead_min + balive_min)
+      
+      !------------------------------------------------------------------------------------!
+      !    Minimum size (measured as biomass of living and structural tissues) allowed in  !
+      ! a cohort.  Cohorts with less biomass than this are going to be terminated.         !
+      !------------------------------------------------------------------------------------! 
+      min_cohort_size(ipft)  = 0.1 * min_recruit_size(ipft)
+
+      !------------------------------------------------------------------------------------! 
+      !    The following variable is the absolute minimum cohort population that a cohort  !
+      ! can have.  This should be used only to avoid nplant=0, but IMPORTANT: this will    !
+      ! lead to a ridiculously small cohort almost guaranteed to be extinct and SHOULD BE  !
+      ! USED ONLY IF THE AIM IS TO ELIMINATE THE COHORT.                                   !
+      !------------------------------------------------------------------------------------! 
+      negligible_nplant(ipft) = onesixth * min_cohort_size(ipft) / (bdead_max + balive_max)
+
+      !----- Find the recruit carbon to nitrogen ratio. -----------------------------------!
+      c2n_recruit(ipft)      = (balive_min + bdead_min)                                    &
+                             / (balive_min * ( f_labile(ipft) / c2n_leaf(ipft)             &
                              + (1.0 - f_labile(ipft)) / c2n_stem(ipft))                    &
-                             + bdead/c2n_stem(ipft))
+                             + bdead_min/c2n_stem(ipft))
       if (print_zero_table) then
-         write (unit=61,fmt='(i5,1x,7(es12.5,1x))') ipft,hgt_min(ipft),dbh,bleaf,bdead     &
-                                                   ,balive,init_density(ipft)              &
-                                                   ,min_recruit_size(ipft)
+         write (unit=61,fmt='(i5,1x,12(es12.5,1x))') ipft,hgt_min(ipft),dbh,bleaf_min      &
+                                                    ,bdead_min,balive_min,bleaf_max        &
+                                                    ,bdead_max,balive_max                  &
+                                                    ,init_density(ipft)                    &
+                                                    ,min_recruit_size(ipft)                &
+                                                    ,min_cohort_size(ipft)                 &
+                                                    ,negligible_nplant(ipft)
       end if
    end do
 
