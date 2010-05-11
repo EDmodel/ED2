@@ -9,9 +9,10 @@
 
 SUBROUTINE COMMIO (CFILE,IO,IUN)
   use somevars
-  use therm_lib, only: level_tl=>level,vapour_on,cloud_on,bulk_on
+  use therm_lib , only : level_tl=>level,vapour_on,cloud_on,bulk_on
+  use micro_coms 
+  use rpost_coms
   CHARACTER*(*) IO,CFILE
-  include 'rcommons.h'
 
   !  This routine reads or writes the history and analysis file common blocks.
 
@@ -227,7 +228,7 @@ SUBROUTINE COMMIO (CFILE,IO,IUN)
   !----- Copying things to my stuff (somevars.f90) ----------------------------------------!
   ihtran = myihtran
   jdim   = myjdim
-  mynbig = max(myn1,myn2,myn3,npatch,ncloud,nzs,nzg)
+  mynbig = max(myn1,myn2,myn3,npatch,nclouds,nzs,nzg)
 
   do ng = 1,ngrids
      deltaxn (ng) = mydeltaxn (ng)

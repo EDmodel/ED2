@@ -190,10 +190,9 @@ END
 !***************************************************************************
 
 SUBROUTINE VARCHK (VARN,GROUP,NAMELST,INAME,NNAME,INRFLG)
-
+use misc_coms, only : nrflag, nfatal
 DIMENSION INAME(NNAME)
 CHARACTER*(*) VARN,GROUP,NAMELST(NNAME)
-COMMON/NREAD/NRFLAG,NFATAL
 
 ! This routine checks that all member variables of the NAMELIST
 ! specified by GROUP have been assigned values.
@@ -373,10 +372,9 @@ END
 !***************************************************************************
 
 SUBROUTINE FINDGR (IUNIT,GROUP,MAXREC)
-
+use misc_coms, only : nrflag, nfatal
 CHARACTER*(*) GROUP
 CHARACTER*80 LINE
-COMMON/NREAD/NRFLAG,NFATAL
 
 ! This routine checks to see if any of the first MAXREC lines on input
 ! unit IUNIT contains the character string GROUP
@@ -477,7 +475,7 @@ END
 !------------------------------------------------------------------
 
 SUBROUTINE FILLPG (VARNAME,IROW,ICOL,IVALUE,RVALUE,CVALUE,VARTYPE,NVALUE)
-
+use misc_coms, only : page
 ! his routine builds an output page for a listing of NAMELIST
 ! ariable values by inserting NAMELIST variable names and values
 ! nto a CHARACTER array called PAGE.  One call to this routine
@@ -496,7 +494,6 @@ SUBROUTINE FILLPG (VARNAME,IROW,ICOL,IVALUE,RVALUE,CVALUE,VARTYPE,NVALUE)
 ! NVALUE  - number of values in value vector
 
 CHARACTER*(*)  CVALUE(1)
-CHARACTER*132  PAGE(80)
 CHARACTER*64   CDUP, FORM
 CHARACTER*8    VARNAME
 CHARACTER*4    NUMD
@@ -504,8 +501,6 @@ CHARACTER*1    VARTYPE, APSTRPH
 INTEGER        IVALUE(1), IDUP, NVALUE, ROW, COL, COLP7, COLP9
 INTEGER        ICOL, IROW, LEFTCOL, NUMDUP, OLDNUM
 REAL           RVALUE(1), RDUP
-
-COMMON /PAGEOUT/ PAGE
 
 DATA  APSTRPH/''''/
 
@@ -658,19 +653,17 @@ END
 !***************************************************************************
 
 SUBROUTINE WRITEVL (ROW, COL, LEFTCOL, FORM, LENGTH)
-
+use misc_coms, only : page
 ! This routine inserts one NAMELIST variable value into the
 ! character array PAGE.  ROW and COL refer the the location in
 ! PAGE of the first value of the variable being output.  LEFTCOL
 ! gives the first column for any one of the values of the variable
 ! being inserted in PAGE.
 
-CHARACTER*132 PAGE(80)
 CHARACTER*64  FORM
 CHARACTER*1   COMMA
 INTEGER       COL, LEFTCOL, LENGTH, RGHTCOL, ROW
 
-COMMON /PAGEOUT/ PAGE
 
 DATA  COMMA/','/
 
@@ -691,13 +684,11 @@ END
 !***************************************************************************
 
 SUBROUTINE BLANKPG
-
+use misc_coms, only : page
 ! This routine sets the output page character variable to all blanks
 
-CHARACTER*132 PAGE(80)
 CHARACTER*61 BLANKLN
 
-COMMON /PAGEOUT/ PAGE
 
 DATA BLANKLN/' '/
 
@@ -711,16 +702,14 @@ END
 !***************************************************************************
 
 SUBROUTINE WRITEPG (GROUP,NUMROW)
-
+use misc_coms, only : page
 ! This routine writes out the character array containing the list of
 ! variable names and values for a specified NAMELIST given by  GROUP
 
-CHARACTER*132 PAGE(80)
 CHARACTER*(*) GROUP
 CHARACTER*9 FMT
 INTEGER NR,NUMROW
 
-COMMON  /PAGEOUT/ PAGE
 
 WRITE(6,600) GROUP
 DO NR = 1, NUMROW

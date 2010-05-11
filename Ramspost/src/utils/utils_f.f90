@@ -126,15 +126,14 @@ end
 integer function RAMS_getvar (string,itype,ngrd,a,b,flnm)
 
 use an_header
-
+use misc_coms, only : ierr_getvar, ifound
 implicit none
 include 'interface.h'
 real :: a(*),b(*)
 integer :: itype,ngrd
 character*(*) flnm,cgrid*1,flng*80,errmsg*120,string
 logical there
-integer :: ierr_getvar,ifound,ni,npts,iword
-common /getvar/ierr_getvar,ifound
+integer :: ni,npts,iword
 integer :: lastchar
 write(*,*) 'panis et circenses'
 write(*,*) 'nvbtab=',nvbtab

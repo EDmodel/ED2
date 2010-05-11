@@ -1,30 +1,25 @@
-/*############################ Change Log ##################################
-! 1.0.0.4
-!
-! 001012 MJB irsleep ##
-!            Removed unused varaible ret. ##
-! 000921 MJB rams_c_open ##
-!            Not printing filename here - doing it in RAMS_getvar.
-!            routine. ##
-! 000829 MJB unknown ##
-!            Added new routine "rams_c_read_char". ##
-! 000829 BT  many ##
-!            Eliminated compiler warnings. ##
+/*!############################# Change Log ##################################
+! 2.0.0
 !
 !###########################################################################
-!  Copyright (C)  1990, 1995, 1999, 2000 - All Rights Reserved
+!  Copyright (C)  1990, 1995, 1999, 2000, 2003 - All Rights Reserved
 !  Regional Atmospheric Modeling System - RAMS
-!  Mission Research Corporation / *ASTeR Division
-!#########################################################################*/
+!###########################################################################
+*/
 
 #include "utils_sub_names.h"
 
 #include <stdio.h>
-#include <malloc.h>
 #include <math.h>
 #ifdef CRAY
 #include <stdlib.h>
 #endif
+#ifdef IBM
+#include <malloc/malloc.h>
+#else
+#include <malloc.h>
+#endif
+
 /*#include <unistd.h>*/
 
 #ifdef SGI
@@ -41,7 +36,7 @@ void *free(void *);
 
 /*********************************************************/
 
-#define nlocrams 1000
+#define nlocrams 6666
 void *iaddrams[nlocrams];
 
 int iralloc(int *memtot,int *ia,int *ioff)
@@ -126,13 +121,13 @@ int rams_c_open(filename,faccess)
 }
 #else
 
-int rams_c_open(char *filename,char *faccess,int *len1,int *len2)
+int rams_c_open(char *filename,char *faccess)
 
 {
   extern FILE *ramsfile;
 
-  /* printf(" C_open - %s \n",filename); */
   ramsfile=fopen(filename,faccess);
+ /* perror("rams_c_open"); */
   return(0);
 }
 #endif
@@ -227,7 +222,6 @@ void vfirecr(int *unit,float *a,int *n,char *type,char *b,int *irec)
   fread(b,1,*n * nchs,ramsfile);
   if( nn != *n )
     printf("Word count mismatch on vfirec record\n  Words on record - %d\n  Words expected  - %d\n ",nn,*n);
-  
   for(i = 0, char_count = 0; i < *n; i++)
   {
     for(j = 0,vnum=0; j < nchs; j++, char_count++)
@@ -254,7 +248,7 @@ void vforecr(int *unit,float *a,int *n,int *nbits,float *scr
 {
   extern FILE *ramsfile;
   extern char vc[];
-  double amax, amin, bias, fact; 
+  double amax, amin, bias, fact, divisor; 
   int i, j, char_count, nchs;
   float ftemp;
   extern int vfscale(float*, int, double*, double* );
@@ -262,7 +256,16 @@ void vforecr(int *unit,float *a,int *n,int *nbits,float *scr
   vfscale( a, *n, &amin, &amax);
 
   bias = -amin + SMALL_OFFSET;
-  fact = (pow( 2.0, (double)*nbits)-1 ) / ( bias + amax +SMALL_OFFSET);
+//  printf("\t nbits %e bias %e amax %e so %e sum %e \n",(double)*nbits,bias,amax,SMALL_OFFSET,bias + amax + SMALL_OFFSET);
+  /* MLO - Avoiding infinity */
+  if ( bias + amax + SMALL_OFFSET != 0){
+    divisor=bias+amax + SMALL_OFFSET;
+  }else if (bias + amax != 0){
+    divisor=bias+amax;
+  }else{
+    divisor=SMALL_OFFSET;
+  }
+  fact = (pow( 2.0, (double)*nbits)-1 ) / divisor;
   fprintf(ramsfile,"%8d%8d%20.10e%20.10e                        "
           ,*n,*nbits,bias,fact);
 
@@ -301,5 +304,222 @@ int vfscale(float *a,int n,double *min,double *max )
   return(0);
 }
 
+/************************************************************************/
+#include <dirent.h>
+#include <string.h>
 
+void filelist_c_( int *inum, int *indices, char *prefix, char *chario, int dirlen, int charlen ){
+  
+
+  struct dirent **nameout;
+  char filestr[200],filestr_p[200],filestr_a[200];
+  char dir[200],tmpdir[200];
+  char fpref0[80],fpref1[80],fpref2[80];
+  char c1[1];
+  int n,m,i;
+  int good,val,num,lastlen,index,tfound;
+  int nval;
+  char *token,*found;
+
+  char *delim = "/\0";
+  char *delim2 = "*\0";
+  
+  /* First thing is to split the prefix into  a directory and a file prefix.  To do 
+     this scan the string and detect the last  "/"                              */
+
+  
+  index=0;
+  strcpy(tmpdir,"\0");
+
+  /* Then we have an absolute path */
+  if(strncmp(prefix,"/",1)==0){strcpy(tmpdir,"/\0");}
+
+  
+  token = strtok (prefix, delim);
+  tfound=0;
+  while (token !=  '\0') {
+    tfound += 1;
+
+    strcpy(dir,tmpdir);
+    strcat(tmpdir,token);
+    strcat(tmpdir,delim);
+    strcpy(fpref0,token);
+
+    // Fetch next token
+    token = strtok('\0', delim);
+  }
+
+  /* Now we have the string parsed into the file prefix and the directory. 
+     The next step is to break it into components and do a comparison with 
+     the directory contents. */
+
+  /* Find the star and break up file name. */
+  tfound=0;
+
+  strcpy(fpref1,"\0");
+  strcpy(fpref2,"\0");
+
+  if(strncmp(fpref0,"*",1)==0){
+    
+    /* Try the first token */
+    strcpy(fpref1,"");
+    tfound=1;
+    
+    /* Try the next token */
+    token = strtok('\0',delim2);
+    if (token != '\0'){
+      tfound=2;
+      strcpy(fpref2,token);
+    }
+    
+    
+  }
+  else{
+
+
+    /* Try the first token */
+    token = strtok (fpref0, delim2);
+    if (token != '\0'){
+      tfound=1;
+      strcpy(fpref1,token);
+    }
+    
+    /* Try the next token */
+    token = strtok('\0',delim2);
+    if (token != '\0'){
+      tfound=2;
+      strcpy(fpref2,token);
+    }
+    
+  }
+
+  m=0;
+
+  /*    Scan in the directory contents    */
+  /****************************************/
+  num = scandir(dir, &nameout, 0, alphasort);
+  
+  strcpy(filestr,nameout[1]->d_name);
+  
+  /*    Set the string vector to null     */
+  strcpy(chario,"");
+  
+  /* Test if there are any entries, there should be at
+     least two if the command was succesful         */
+  if (num < 0){
+    perror("scandir");
+  }
+  else if(num == 0) {
+    
+    /* Only one entry? I dont think its possible, but 
+       deallocate it anyway...                       */
+    free(nameout[0]);
+  }
+  else if(num == 1) {
+    
+    /* The directory was scanned, but there is nothing in it */
+    /* Just the . and ..                                     */
+    free(nameout[0]);
+    free(nameout[1]);
+  }
+  else {
+    
+    /* So there is something in here besides the two base dirs */
+
+    /* Set the first index of the string to 1 */
+    indices[0]=1;
+
+    /* n = 0,1 are the base dirs, skip them */
+    for(n=2;n<num;n++){
+
+      /* Copy the first file returned by scandir to filestr */
+      strcpy(filestr,nameout[n]->d_name);
+      
+      /* Check for old files by looking for the ~ character */
+      good=0;
+      for(i=0;i<strlen(filestr);i++){
+	val=strcmp("~",&filestr[i]);
+	if(val==0){good=1;}
+      }
+      
+
+      /* if the entry is not obsolete then compare it to the
+	 file prefix strings fpref1 and fpref2 */
+      if(good<1){
+	
+	
+	/* Compare to prefix 1, fpref1 */
+	val=0;
+	if (tfound>0) {
+	  val=-1;
+	  val=strncmp(fpref1,filestr,strlen(fpref1));
+
+	  
+
+	  /* Now compare the end of the string */
+	  
+	  if (tfound>1 & val==0) {
+
+	    val=-1;
+
+	    /* Set a new variable filestr_p, to be the remaining file
+	       string that has not been compared yet.              */
+	    strcpy(filestr_p,"\0");
+	    
+	    strcat(filestr_p,&filestr[  strlen(filestr)-strlen(fpref2)   ]); 
+	    strcat(filestr_p,"\0");
+
+
+	    /* Search the new string for the second search prefix */
+	    
+	    val=strncmp(fpref2,filestr_p,strlen(fpref2));
+
+	  }
+	}
+	
+	
+	if (val==0) {
+	  
+	  /* If val==0, then we matched all necessary
+	     parts of the file prefix with the current
+	     file. Add this strings name to the vector */
+
+	  /* Add the vector and give it back its direcotry path*/
+	  strcpy( filestr_a,"\0");
+	  strcat( filestr_a,dir);
+	  strcat( filestr_a,filestr);
+	  strcat( filestr_a,"\0");
+	  strcat( chario,filestr_a);
+
+	  /* And give it a position index in the vector */
+	  if(m>0){indices[m]=indices[m-1]+lastlen;}
+	  lastlen=strlen(filestr_a);
+	  
+	  m++;
+	}
+	
+      }
+
+      free(nameout[n]);
+	
+    }
+    //    m=m-1;
+    
+  }
+  
+  indices[m]=indices[m-1]+lastlen;
+  
+
+  /* Append a null character to the end of the string */
+  strcat( chario,"\0");
+  
+  /* Return the number of entries */
+  *inum=m;
+
+  /* Release the scratch sting structure from memory */
+  free(nameout);
+    
+
+
+}
 

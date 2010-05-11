@@ -17,7 +17,8 @@ subroutine structural_growth(cgrid, month)
                             , c2n_storage            & ! intent(in)
                             , c2n_recruit            & ! intent(in)
                             , c2n_stem               & ! intent(in)
-                            , l2n_stem               ! ! intent(in)
+                            , l2n_stem               & ! intent(in)
+                            , negligible_nplant      ! ! intent(in)
    use decomp_coms   , only : f_labile               ! ! intent(in)
    use ed_max_dims   , only : n_pft                  & ! intent(in)
                             , n_dbh                  ! ! intent(in)
@@ -95,12 +96,12 @@ subroutine structural_growth(cgrid, month)
                ba_in       = cpatch%basarea(ico)
 
                !---------------------------------------------------------------------------!
-               !    Apply mortality, and do not allow nplant < 3.0e-8 (such a sparse       !
-               ! cohort is about to be terminated, anyway).                                !
+               !    Apply mortality, and do not allow nplant < negligible_nplant (such a   !
+               ! sparse cohort is about to be terminated, anyway).                         !
                ! NB: monthly_dndt may be negative.                                         !
                !---------------------------------------------------------------------------!
                cpatch%monthly_dndt(ico) = max(cpatch%monthly_dndt(ico)                     &
-                                             , 3.0e-8 - cpatch%nplant(ico))
+                                             ,negligible_nplant(ipft) - cpatch%nplant(ico))
                cpatch%nplant(ico)       = cpatch%nplant(ico) + cpatch%monthly_dndt(ico)
 
                !----- Calculate litter owing to mortality. --------------------------------!

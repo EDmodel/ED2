@@ -11,6 +11,7 @@ MAINOBJ = rpost_main.o
 OBJECTS =                           \
             abort_run.o             \
             an_header.o             \
+            brams_data.o            \
             charutils.o             \
             dateutils.o             \
             dted.o                  \
@@ -18,6 +19,8 @@ OBJECTS =                           \
             error_mess.o            \
             interp_lib.o            \
             leaf_coms.o             \
+            micro_coms.o            \
+            misc_coms.o             \
             numutils.o              \
             parlib.o                \
             polarst.o               \
@@ -28,6 +31,8 @@ OBJECTS =                           \
             rgrad.o                 \
             rnamel.o                \
             rnumr.o                 \
+            rpost_coms.o            \
+            rpost_dims.o            \
             rpost_misc.o            \
             rutil.o                 \
             somevars.o              \

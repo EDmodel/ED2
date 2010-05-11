@@ -72,7 +72,7 @@ module fuse_fiss_utils
    ! eliminate cohorts that have little contribution and thus we can speed up the run.     !
    !---------------------------------------------------------------------------------------!
    subroutine terminate_cohorts(csite,ipa,elim_nplant,elim_lai)
-      use pft_coms           , only : min_recruit_size & ! intent(in)
+      use pft_coms           , only : min_cohort_size  & ! intent(in)
                                     , l2n_stem         & ! intent(in)
                                     , c2n_stem         & ! intent(in)
                                     , c2n_storage      & ! intent(in), lookup table
@@ -93,6 +93,7 @@ module fuse_fiss_utils
       type(patchtype)      , pointer     :: temppatch    ! Scratch patch structure
       logical, dimension(:), allocatable :: remain_table ! Flag: this cohort will remain.
       integer                            :: ico, inew    ! Counters
+      integer                            :: ipft         ! PFT size
       real                               :: csize        ! Size of current cohort
       !------------------------------------------------------------------------------------!
       
@@ -109,11 +110,14 @@ module fuse_fiss_utils
       !----- Main loop --------------------------------------------------------------------!
       do ico = 1,cpatch%ncohorts
 
+         !----- Save the PFT type in a convenient alias. ----------------------------------!
+         ipft = cpatch%pft(ico)
+
          !----- Checking whether the cohort size is too small -----------------------------!
          csize = cpatch%nplant(ico)                                                        &
                * (cpatch%balive(ico) + cpatch%bdead(ico) + cpatch%bstorage(ico))
 
-         if( csize < (0.1 * min_recruit_size(cpatch%pft(ico)))) then
+         if ( csize < min_cohort_size(ipft) ) then
             !----- Cohort is indeed too small, it won't remain ----------------------------!
             remain_table(ico) = .false.
             elim_nplant = elim_nplant + cpatch%nplant(ico)
@@ -121,22 +125,19 @@ module fuse_fiss_utils
 
             !----- Update litter pools ----------------------------------------------------!
             csite%fsc_in(ipa) = csite%fsc_in(ipa) + cpatch%nplant(ico)                     &
-                              * (f_labile(cpatch%pft(ico)) * cpatch%balive(ico)            &
-                                + cpatch%bstorage(ico))
+                              * (f_labile(ipft)*cpatch%balive(ico) + cpatch%bstorage(ico))
 
             csite%fsn_in(ipa) = csite%fsn_in(ipa) + cpatch%nplant(ico)                     &
-                              * (f_labile(cpatch%pft(ico)) * cpatch%balive(ico)            &
-                                 / c2n_leaf(cpatch%pft(ico))                               &
-                                 + cpatch%bstorage(ico) / c2n_storage)
+                              * ( f_labile(ipft) * cpatch%balive(ico) / c2n_leaf(ipft)     &
+                                + cpatch%bstorage(ico) / c2n_storage)
             
             csite%ssc_in(ipa) = csite%ssc_in(ipa) + cpatch%nplant(ico)                     &
-                              * ((1.0 - f_labile(cpatch%pft(ico))) * cpatch%balive(ico)    &
-                                 + cpatch%bdead(ico))
+                              * ( (1.0 - f_labile(ipft)) * cpatch%balive(ico)              &
+                                + cpatch%bdead(ico))
             
             csite%ssl_in(ipa) = csite%ssl_in(ipa) + cpatch%nplant(ico)                     &
-                              * ((1.0 - f_labile(cpatch%pft(ico)))                         &
-                                 *cpatch%balive(ico) + cpatch%bdead(ico))                  &
-                              * l2n_stem/c2n_stem(cpatch%pft(ico))
+                              * ( (1.0 - f_labile(ipft)) * cpatch%balive(ico)              &
+                                + cpatch%bdead(ico) ) * l2n_stem/c2n_stem(ipft)
 
          end if
       end do
