@@ -1,6 +1,7 @@
 #!/bin/sh
 rm -f abort_run.o          abort_run.mod
 rm -f an_header.o          an_header.mod
+rm -f brams_data.o         brams_data.mod
 rm -f charutils.o          charutils.mod
 rm -f dateutils.o          dateutils.mod
 rm -f dted.o               dted.mod
@@ -8,6 +9,8 @@ rm -f eenviron.o           eenviron.mod
 rm -f error_mess.o         error_mess.mod
 rm -f interp_lib.o         interp_lib.mod
 rm -f leaf_coms.o          leaf_coms.mod
+rm -f micro_coms.o         micro_coms.mod
+rm -f misc_coms.o          misc_coms.mod
 rm -f numutils.o           numutils.mod
 rm -f parlib.o             parlib.mod
 rm -f polarst.o            polarst.mod
@@ -18,6 +21,8 @@ rm -f rconstants.o         rconstants.mod
 rm -f rgrad.o              rgrad.mod
 rm -f rnamel.o             rnamel.mod
 rm -f rnumr.o              rnumr.mod
+rm -f rpost_coms.o         rpost_coms.mod
+rm -f rpost_dims.o         rpost_dims.mod
 rm -f rpost_misc.o         rpost_misc.mod
 rm -f rutil.o              rutil.mod
 rm -f somevars.o           somevars.mod

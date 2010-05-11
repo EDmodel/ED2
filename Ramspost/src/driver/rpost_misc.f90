@@ -14,9 +14,8 @@
 !---------------------------------------------------------------------
 !-------------------------------------------------------------------
       subroutine Ctransvar(n1,n2,n3,a,topo,nzlev,izlev,zt,ztop)
+      use rpost_dims
       dimension a(n1,n2,n3),topo(n1,n2),zt(n3)
-!!      include 'rconfig_ramspost.h'
-      include 'rconfig.h'
       real b(nzpmax,4)
       integer izlev(nzpmax)
 
@@ -53,11 +52,11 @@
        Subroutine define_lim(ng,nxg,nyg,rlat1,dlat,rlon1,dlon, &
                             lati,latf,loni,lonf,nxa,nxb,nya,nyb,proj,&
 			    nx,ny,rlat,rlon)
-       include 'rconfig.h'
+       use rpost_dims
+       use misc_coms, only : glong, glatg
        Dimension rlat(nx,ny),rlon(nx,ny)
 
        real lati,latf,loni,lonf
-       common/grid2/ glatg(nypmax),glong(nxpmax)
        character*(*) proj
 !       dimension nnxa(nYpmax),nnxb(nYpmax), &
 !                 nnya(nXpmax),nnyb(nXpmax)
@@ -210,7 +209,7 @@ end
 ! ---------------------------------------------------------------
 
       subroutine ptransvar(a,nx,ny,nz,nplev,iplev,pi,zlev,zplev,topo)
-      include 'rconfig.h'
+      use rpost_dims
       real b(nzpmax,4)
       real a(nx,ny,nz),topo(nx,ny),pi(nx,ny,nz), &
            zlev(*),zplev(nx,ny,20)
@@ -356,8 +355,8 @@ end
 
 !--------------------------------------------------
       subroutine select_sigmaz(n1,n2,n3,a,nzlev,izlev)
+      use rpost_dims
       dimension a(n1,n2,n3)
-      include 'rconfig.h'
       real b(nzpmax,4)
       integer izlev(nzpmax)
 
@@ -383,7 +382,6 @@ end
       subroutine cape_cine(nx,ny,nz,press,TEMPK,UR,dummy,name,indef)
 !      subroutine cape_cine(nz,nt,nomeIN,nomeOUT,&
 !                     nSzP,nSzpP,nSzT,nSzpT,nSzUR,nSzpUR,lit,indef)
-!      include 'grade_cape.h'
       real PRESS(nx,ny,nz), TEMPK(nx,ny,nz),UR(nx,ny,nz),indef
       real dummy(nx,ny,nz)
       real cine(nx,ny),cape(nx,ny)

@@ -28,8 +28,8 @@ module grid_dims
   !   MAXDIM  - the largest of NXPMAX,NYPMAX,NZPMAX+10,NZGMAX
 
   integer, parameter :: maxgrds=8
-  integer, parameter :: nxpmax=303
-  integer, parameter :: nypmax=303
+  integer, parameter :: nxpmax=400
+  integer, parameter :: nypmax=400
   integer, parameter :: nzpmax=132
   integer, parameter :: nzgmax=20
   integer, parameter :: maxsclr=150

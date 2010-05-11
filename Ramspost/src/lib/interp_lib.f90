@@ -1,208 +1,208 @@
-!############################# Change Log ##################################
+!############################# change log ##################################
 ! 4.3.0.2
 !
-! 010328 JHC GDTOST2 ##
-!            Added second horizontal interpolation scheme which is
+! 010328 jhc gdtost2 ##
+!            added second horizontal interpolation scheme which is
 !            a simple bilinear one to eliminate ringing errors. ##
-! 001012 MJB HTINT ##
-!            Declared passed args with length * instead of 1 to pass array
-!            bounds compiler option for REVU. ##
+! 001012 mjb htint ##
+!            declared passed args with length * instead of 1 to pass array
+!            bounds compiler option for revu. ##
 !
 !###########################################################################
-!  Copyright (C)  1990, 1995, 1999, 2000 - All Rights Reserved
-!  Regional Atmospheric Modeling System - RAMS
-!  Mission Research Corporation / *ASTeR Division
+!  copyright (c)  1990, 1995, 1999, 2000 - all rights reserved
+!  regional atmospheric modeling system - rams
+!  mission research corporation / *aster division
 !###########################################################################
 
-SUBROUTINE TRNCL1(VCTRA,ZLEV,ZSURF,HTOP,VCTRB,VCTRC,VCTRD,NN)
-DIMENSION VCTRA(1),VCTRB(1),VCTRC(1),VCTRD(1),ZLEV(1)
+subroutine trncl1(vctra,zlev,zsurf,htop,vctrb,vctrc,vctrd,nn)
+dimension vctra(1),vctrb(1),vctrc(1),vctrd(1),zlev(1)
 
-!     TRANSFORM TO Z COORDINATES FORM ZSTAR COORDINATES.
+!     transform to z coordinates form zstar coordinates.
 
-IF(ZSURF.EQ.0) RETURN
-RTG=1.-ZSURF/HTOP
-KABV=2
-DO K=2,NN
-VCTRC(K)=1./(RTG*(ZLEV(K)-ZLEV(K-1)))
-VCTRD(K)=ZLEV(K)*RTG+ZSURF
-ENDDO
-VCTRD(1)=ZSURF
-DO K=1,NN
-KK1=KABV
-DO KK=KK1,NN
-KABV=KK
-IF(VCTRD(KABV).GE.ZLEV(K)-1)GO TO 10
-ENDDO
-WRITE(6,5) ID,JD
-5     FORMAT(' STOP IN TRNCL1',2I5)
-STOP
-10    CONTINUE
-W1=MIN(1.,(VCTRD(KABV)-ZLEV(K))*VCTRC(KABV))
-VCTRB(K)=VCTRA(KABV-1)*W1+VCTRA(KABV)*(1.-W1)
-ENDDO
-DO K=1,NN
-VCTRA(K)=VCTRB(K)
-ENDDO
-RETURN
-END
-
-!     ******************************************************************
-
-SUBROUTINE TRNCL2(VCTRA,ZLEV,ZSURF,HTOP,VCTRB,VCTRC,VCTRD,NN)
-DIMENSION VCTRA(1),VCTRB(1),VCTRC(1),VCTRD(1),ZLEV(1)
-
-!     TRANSFORM TO ZSTAR COORDINATES FROM Z COORDINATES
-
-NNP=NN+1
-IF(ZSURF.EQ.0) RETURN
-RTG=1.-ZSURF/HTOP
-KABV=2
-DO K=2,NNP
-VCTRC(K)=ZLEV(K)*RTG+ZSURF
-VCTRD(K)=1./(ZLEV(K)-ZLEV(K-1))
-ENDDO
-VCTRC(1)=ZSURF
-DO K=1,NN
-KK1=KABV
-DO KK=KK1,NNP
-KABV=KK
-IF(ZLEV(KABV)+.01.GE.VCTRC(K)) GO TO 10
-ENDDO
-WRITE(6,5) ID,JD
-5     FORMAT(' STOP IN TRNCL2',2I5)
-STOP
-10    CONTINUE
-W1=MIN((ZLEV(KABV)-VCTRC(K))*VCTRD(KABV),1.)
-VCTRB(K)=W1*VCTRA(KABV-1)+(1.-W1)*VCTRA(KABV)
-ENDDO
-DO K=1,NN
-VCTRA(K)=VCTRB(K)
-ENDDO
-RETURN
-END
+if(zsurf.eq.0) return
+rtg=1.-zsurf/htop
+kabv=2
+do k=2,nn
+vctrc(k)=1./(rtg*(zlev(k)-zlev(k-1)))
+vctrd(k)=zlev(k)*rtg+zsurf
+enddo
+vctrd(1)=zsurf
+do k=1,nn
+kk1=kabv
+do kk=kk1,nn
+kabv=kk
+if(vctrd(kabv).ge.zlev(k)-1)go to 10
+enddo
+write(6,5) id,jd
+5     format(' stop in trncl1',2i5)
+stop
+10    continue
+w1=min(1.,(vctrd(kabv)-zlev(k))*vctrc(kabv))
+vctrb(k)=vctra(kabv-1)*w1+vctra(kabv)*(1.-w1)
+enddo
+do k=1,nn
+vctra(k)=vctrb(k)
+enddo
+return
+end
 
 !     ******************************************************************
 
-SUBROUTINE INTRP(A,B,ZVAL,Z,NZP)
+subroutine trncl2(vctra,zlev,zsurf,htop,vctrb,vctrc,vctrd,nn)
+dimension vctra(1),vctrb(1),vctrc(1),vctrd(1),zlev(1)
 
-!     LINEAR INTERPOLATION WITH Z
+!     transform to zstar coordinates from z coordinates
 
-DIMENSION A(1),Z(1)
-DO K=1,NZP
-KABV=K
-IF(ZVAL.LT.Z(K)) GO TO 10
-ENDDO
-10    CONTINUE
-IF(KABV.EQ.1) KABV=2
-B=(A(KABV)*(ZVAL-Z(KABV-1))+A(KABV-1)*(Z(KABV)-ZVAL))  &
-/(Z(KABV)-Z(KABV-1))
-RETURN
-END
-
-!     ******************************************************************
-
-SUBROUTINE INTRRAP(A,B,PLNVAL,PLN,NZP)
-
-!     LINEAR INTERPOLATION WITH LOG PRESSURE
-
-DIMENSION PLN(1),A(1)
-NZ=NZP-1
-DO KK=1,NZ
-K=NZP-KK
-KABV=K+1
-IF(PLNVAL.LT.PLN(K)) GO TO 10
-ENDDO
-10    CONTINUE
-B=(A(KABV)*(PLNVAL-PLN(KABV-1))+A(KABV-1)*(PLN(KABV)-PLNVAL))  &
-/(PLN(KABV)-PLN(KABV-1))
-RETURN
-END
+nnp=nn+1
+if(zsurf.eq.0) return
+rtg=1.-zsurf/htop
+kabv=2
+do k=2,nnp
+vctrc(k)=zlev(k)*rtg+zsurf
+vctrd(k)=1./(zlev(k)-zlev(k-1))
+enddo
+vctrc(1)=zsurf
+do k=1,nn
+kk1=kabv
+do kk=kk1,nnp
+kabv=kk
+if(zlev(kabv)+.01.ge.vctrc(k)) go to 10
+enddo
+write(6,5) id,jd
+5     format(' stop in trncl2',2i5)
+stop
+10    continue
+w1=min((zlev(kabv)-vctrc(k))*vctrd(kabv),1.)
+vctrb(k)=w1*vctra(kabv-1)+(1.-w1)*vctra(kabv)
+enddo
+do k=1,nn
+vctra(k)=vctrb(k)
+enddo
+return
+end
 
 !     ******************************************************************
 
-SUBROUTINE BINOM(X1,X2,X3,X4,Y1,Y2,Y3,Y4,XXX,YYY)
-COMMON/BIN/ITYPP,I0X,I1X,I2X,YOO
- YYY=1E30
- IF(X2.GT.1.E19.OR.X3.GT.1.E19.OR.  &
-   Y2.GT.1.E19.OR.Y3.GT.1.E19)RETURN
-WT1=(XXX-X3)/(X2-X3)
-WT2=1.0-WT1
-ISTEND=0
-IF(Y4.LT.1.E19.AND.X4.LT.1.E19) GO TO 410
-YZ22=WT1
-YZ23=WT2
-YZ24=0.0
-ISTEND= 1
-410   IF(Y1.LT.1.E19.AND.X1.LT.1.E19) GO TO 430
-YZ11=0.0
-YZ12=WT1
-YZ13=WT2
-IF(ISTEND.EQ.1)GO TO 480
-GO TO 450
-430   YZ11=(XXX-X2)*(XXX-X3)/((X1-X2)*(X1-X3))
-YZ12=(XXX-X1)*(XXX-X3)/((X2-X1)*(X2-X3))
-YZ13=(XXX-X1)*(XXX-X2)/((X3-X1)*(X3-X2))
-IF(ISTEND.EQ.  1    ) GO TO 470
-450   YZ22=(XXX-X3)*(XXX-X4)/((X2-X3)*(X2-X4))
-YZ23=(XXX-X2)*(XXX-X4)/((X3-X2)*(X3-X4))
-YZ24=(XXX-X2)*(XXX-X3)/((X4-X2)*(X4-X3))
-470   YYY=WT1*(YZ11*Y1+YZ12*Y2+YZ13*Y3)+WT2*(YZ22*Y2+YZ23*Y3+YZ24*Y4)
- GO TO 490
-480      YYY=WT1*Y2+WT2*Y3
-490   YOO=YYY
-RETURN
-END
+subroutine intrp(a,b,zval,z,nzp)
+
+!     linear interpolation with z
+
+dimension a(1),z(1)
+do k=1,nzp
+kabv=k
+if(zval.lt.z(k)) go to 10
+enddo
+10    continue
+if(kabv.eq.1) kabv=2
+b=(a(kabv)*(zval-z(kabv-1))+a(kabv-1)*(z(kabv)-zval))  &
+/(z(kabv)-z(kabv-1))
+return
+end
 
 !     ******************************************************************
 
-SUBROUTINE GDTOST(A,IX,IY,STAX,STAY,STAVAL)
+subroutine intrrap(a,b,plnval,pln,nzp)
 
-!     SUBROUTINE TO RETURN STATIONS BACK-INTERPOLATED VALUES(STAVAL)
-!     FROM UNIFORM GRID POINTS USING OVERLAPPING-QUADRATICS.
-!     GRIDDED VALUES OF INPUT ARRAY A DIMENSIONED A(IX,IY),WHERE
-!     IX=GRID POINTS IN X, IY = GRID POINTS IN Y .  STATION
-!     LOCATION GIVEN IN TERMS OF GRID RELATIVE STATION X (STAX)
-!     AND STATION COLUMN.
-!     VALUES GREATER THAN 1.0E30 INDICATE MISSING DATA.
+!     linear interpolation with log pressure
 
-DIMENSION A(IX,IY),R(4),SCR(4)
-IY1=INT(STAY)-1
-IY2=IY1+3
-IX1=INT(STAX)-1
-IX2=IX1+3
-STAVAL=1E30
-FIYM2=FLOAT(IY1)-1
-FIXM2=FLOAT(IX1)-1
-II=0
-DO 100 I=IX1,IX2
-II=II+1
-IF(I.GE.1.AND.I.LE.IX) GO TO 101
-SCR(II)=1E30
-GO TO 100
-101   JJ=0
-DO 111 J=IY1,IY2
-JJ=JJ+1
-IF(J.GE.1.AND.J.LE.IY) GO TO 112
-R(JJ)=1E30
-GO TO 111
-112   R(JJ)=A(I,J)
-111   CONTINUE
-YY=STAY-FIYM2
-CALL BINOM(1.,2.,3.,4.,R(1),R(2),R(3),R(4),YY,SCR(II))
-100   CONTINUE
-XX=STAX-FIXM2
-CALL BINOM(1.,2.,3.,4.,SCR(1),SCR(2),SCR(3),SCR(4),XX,STAVAL)
-RETURN
-END
+dimension pln(1),a(1)
+nz=nzp-1
+do kk=1,nz
+k=nzp-kk
+kabv=k+1
+if(plnval.lt.pln(k)) go to 10
+enddo
+10    continue
+b=(a(kabv)*(plnval-pln(kabv-1))+a(kabv-1)*(pln(kabv)-plnval))  &
+/(pln(kabv)-pln(kabv-1))
+return
+end
+
+!     ******************************************************************
+
+subroutine binom(x1,x2,x3,x4,y1,y2,y3,y4,xxx,yyy)
+use misc_coms, only : itypp,i0x,i1x,i2x,yoo
+ yyy=1e30
+ if(x2.gt.1.e19.or.x3.gt.1.e19.or.  &
+   y2.gt.1.e19.or.y3.gt.1.e19)return
+wt1=(xxx-x3)/(x2-x3)
+wt2=1.0-wt1
+istend=0
+if(y4.lt.1.e19.and.x4.lt.1.e19) go to 410
+yz22=wt1
+yz23=wt2
+yz24=0.0
+istend= 1
+410   if(y1.lt.1.e19.and.x1.lt.1.e19) go to 430
+yz11=0.0
+yz12=wt1
+yz13=wt2
+if(istend.eq.1)go to 480
+go to 450
+430   yz11=(xxx-x2)*(xxx-x3)/((x1-x2)*(x1-x3))
+yz12=(xxx-x1)*(xxx-x3)/((x2-x1)*(x2-x3))
+yz13=(xxx-x1)*(xxx-x2)/((x3-x1)*(x3-x2))
+if(istend.eq.  1    ) go to 470
+450   yz22=(xxx-x3)*(xxx-x4)/((x2-x3)*(x2-x4))
+yz23=(xxx-x2)*(xxx-x4)/((x3-x2)*(x3-x4))
+yz24=(xxx-x2)*(xxx-x3)/((x4-x2)*(x4-x3))
+470   yyy=wt1*(yz11*y1+yz12*y2+yz13*y3)+wt2*(yz22*y2+yz23*y3+yz24*y4)
+ go to 490
+480      yyy=wt1*y2+wt2*y3
+490   yoo=yyy
+return
+end
+
+!     ******************************************************************
+
+subroutine gdtost(a,ix,iy,stax,stay,staval)
+
+!     subroutine to return stations back-interpolated values(staval)
+!     from uniform grid points using overlapping-quadratics.
+!     gridded values of input array a dimensioned a(ix,iy),where
+!     ix=grid points in x, iy = grid points in y .  station
+!     location given in terms of grid relative station x (stax)
+!     and station column.
+!     values greater than 1.0e30 indicate missing data.
+
+dimension a(ix,iy),r(4),scr(4)
+iy1=int(stay)-1
+iy2=iy1+3
+ix1=int(stax)-1
+ix2=ix1+3
+staval=1e30
+fiym2=float(iy1)-1
+fixm2=float(ix1)-1
+ii=0
+do 100 i=ix1,ix2
+ii=ii+1
+if(i.ge.1.and.i.le.ix) go to 101
+scr(ii)=1e30
+go to 100
+101   jj=0
+do 111 j=iy1,iy2
+jj=jj+1
+if(j.ge.1.and.j.le.iy) go to 112
+r(jj)=1e30
+go to 111
+112   r(jj)=a(i,j)
+111   continue
+yy=stay-fiym2
+call binom(1.,2.,3.,4.,r(1),r(2),r(3),r(4),yy,scr(ii))
+100   continue
+xx=stax-fixm2
+call binom(1.,2.,3.,4.,scr(1),scr(2),scr(3),scr(4),xx,staval)
+return
+end
 
 !     ******************************************************************
 
 subroutine gdtost2(a,ix,iy,stax,stay,staval)
 
-!     Subroutine to return stations back-interpolated values (staval)
+!     subroutine to return stations back-interpolated values (staval)
 !     from uniform grid points using bi-linear interpolation.
-!     Gridded values of input array a dimensioned a(ix,iy), where
-!     ix=grid points in x, iy = grid points in y.  Station
+!     gridded values of input array a dimensioned a(ix,iy), where
+!     ix=grid points in x, iy = grid points in y.  station
 !     location given in terms of grid relative station x,y (stax,stay).
 
 implicit none
@@ -234,398 +234,398 @@ end subroutine gdtost2
 
 !     ******************************************************************
 
-SUBROUTINE HTINTCP(NZZ1,VCTRA,ELEVA,NZZ2,VCTRB,ELEVB,  &
- VT1C,VT2C,VT1D,VT2D,VT1E,VT2E)
-DIMENSION VCTRA(1),VCTRB(1),ELEVA(1),ELEVB(1)
-DIMENSION VT1C(1),VT1D(1),VT1E(1),VT2C(1),VT2D(1),VT2E(1)
+subroutine htintcp(nzz1,vctra,eleva,nzz2,vctrb,elevb,  &
+ vt1c,vt2c,vt1d,vt2d,vt1e,vt2e)
+dimension vctra(1),vctrb(1),eleva(1),elevb(1)
+dimension vt1c(1),vt1d(1),vt1e(1),vt2c(1),vt2d(1),vt2e(1)
 
-L=1
-DO 20 K=1,NZZ2
-30 CONTINUE
-IF(ELEVB(K).LT.ELEVA(1))GO TO 35
-IF(ELEVB(K).GE.ELEVA(L).AND.ELEVB(K).LE.ELEVA(L+1))GO TO 35
-L=L+1
-IF(L.EQ.NZZ1)STOP 'htintcp'
-GO TO 30
-35 CONTINUE
-WT=(ELEVB(K)-ELEVA(L))/(ELEVA(L+1)-ELEVA(L))
-VCTRB(K)=VCTRA(L)+(VCTRA(L+1)-VCTRA(L))*WT
-VT2C(K)=VT1C(L)+(VT1C(L+1)-VT1C(L))*WT
-VT2D(K)=VT1D(L)+(VT1D(L+1)-VT1D(L))*WT
-VT2E(K)=VT1E(L)+(VT1E(L+1)-VT1E(L))*WT
-20 CONTINUE
+l=1
+do 20 k=1,nzz2
+30 continue
+if(elevb(k).lt.eleva(1))go to 35
+if(elevb(k).ge.eleva(l).and.elevb(k).le.eleva(l+1))go to 35
+l=l+1
+if(l.eq.nzz1)stop 'htintcp'
+go to 30
+35 continue
+wt=(elevb(k)-eleva(l))/(eleva(l+1)-eleva(l))
+vctrb(k)=vctra(l)+(vctra(l+1)-vctra(l))*wt
+vt2c(k)=vt1c(l)+(vt1c(l+1)-vt1c(l))*wt
+vt2d(k)=vt1d(l)+(vt1d(l+1)-vt1d(l))*wt
+vt2e(k)=vt1e(l)+(vt1e(l+1)-vt1e(l))*wt
+20 continue
 
-RETURN
-END
+return
+end
 
 !     ******************************************************************
 
-SUBROUTINE HTINT(NZZ1,VCTRA,ELEVA,NZZ2,VCTRB,ELEVB)
-DIMENSION VCTRA(*),VCTRB(*),ELEVA(*),ELEVB(*)
+subroutine htint(nzz1,vctra,eleva,nzz2,vctrb,elevb)
+dimension vctra(*),vctrb(*),eleva(*),elevb(*)
 
-L=1
-DO 20 K=1,NZZ2
-30 CONTINUE
-IF(ELEVB(K).LT.ELEVA(1))GO TO 35
-IF(ELEVB(K).GE.ELEVA(L).AND.ELEVB(K).LE.ELEVA(L+1))GO TO 35
-IF(ELEVB(K).GT.ELEVA(NZZ1))GO TO 36
-L=L+1
-IF(L.EQ.NZZ1) then
+l=1
+do 20 k=1,nzz2
+30 continue
+if(elevb(k).lt.eleva(1))go to 35
+if(elevb(k).ge.eleva(l).and.elevb(k).le.eleva(l+1))go to 35
+if(elevb(k).gt.eleva(nzz1))go to 36
+l=l+1
+if(l.eq.nzz1) then
   print *,'htint:nzz1',nzz1
-  do kk=1,L
+  do kk=1,l
     print*,'kk,eleva(kk),elevb(kk)',eleva(kk),elevb(kk)
   enddo
   stop 'htint'
 endif
-GO TO 30
-35 CONTINUE
-WT=(ELEVB(K)-ELEVA(L))/(ELEVA(L+1)-ELEVA(L))
-VCTRB(K)=VCTRA(L)+(VCTRA(L+1)-VCTRA(L))*WT
-GO TO 20
-36 CONTINUE
-WT=(ELEVB(K)-ELEVA(NZZ1))/(ELEVA(NZZ1-1)-ELEVA(NZZ1))
-VCTRB(K)=VCTRA(NZZ1)+(VCTRA(NZZ1-1)-VCTRA(NZZ1))*WT
-20 CONTINUE
+go to 30
+35 continue
+wt=(elevb(k)-eleva(l))/(eleva(l+1)-eleva(l))
+vctrb(k)=vctra(l)+(vctra(l+1)-vctra(l))*wt
+go to 20
+36 continue
+wt=(elevb(k)-eleva(nzz1))/(eleva(nzz1-1)-eleva(nzz1))
+vctrb(k)=vctra(nzz1)+(vctra(nzz1-1)-vctra(nzz1))*wt
+20 continue
 
-RETURN
-END
+return
+end
 
 !     **************************************************************
 
-SUBROUTINE HTINT2(NZZ1,VCTRA,ELEVA,NZZ2,VCTRB,ELEVB)
-DIMENSION VCTRA(1),VCTRB(1),ELEVA(1),ELEVB(1)
+subroutine htint2(nzz1,vctra,eleva,nzz2,vctrb,elevb)
+dimension vctra(1),vctrb(1),eleva(1),elevb(1)
 
 !      htint for holding values of vctrb constant under eleva(1)
 
-L=1
-DO 20 K=1,NZZ2
-30 CONTINUE
-IF(ELEVB(K).LT.ELEVA(1))GO TO 34
-IF(ELEVB(K).GE.ELEVA(L).AND.ELEVB(K).LE.ELEVA(L+1))GO TO 35
-IF(ELEVB(K).GT.ELEVA(NZZ1))GO TO 36
-L=L+1
-IF(L.EQ.NZZ1)STOP 'htint2'
-GO TO 30
-34   CONTINUE
-VCTRB(K)=VCTRA(1)
-GO TO 20
-35 CONTINUE
-WT=(ELEVB(K)-ELEVA(L))/(ELEVA(L+1)-ELEVA(L))
-VCTRB(K)=VCTRA(L)+(VCTRA(L+1)-VCTRA(L))*WT
-GO TO 20
-36 CONTINUE
-WT=(ELEVB(K)-ELEVA(NZZ1))/(ELEVA(NZZ1-1)-ELEVA(NZZ1))
-VCTRB(K)=VCTRA(NZZ1)+(VCTRA(NZZ1-1)-VCTRA(NZZ1))*WT
-20 CONTINUE
+l=1
+do 20 k=1,nzz2
+30 continue
+if(elevb(k).lt.eleva(1))go to 34
+if(elevb(k).ge.eleva(l).and.elevb(k).le.eleva(l+1))go to 35
+if(elevb(k).gt.eleva(nzz1))go to 36
+l=l+1
+if(l.eq.nzz1)stop 'htint2'
+go to 30
+34   continue
+vctrb(k)=vctra(1)
+go to 20
+35 continue
+wt=(elevb(k)-eleva(l))/(eleva(l+1)-eleva(l))
+vctrb(k)=vctra(l)+(vctra(l+1)-vctra(l))*wt
+go to 20
+36 continue
+wt=(elevb(k)-eleva(nzz1))/(eleva(nzz1-1)-eleva(nzz1))
+vctrb(k)=vctra(nzz1)+(vctra(nzz1-1)-vctra(nzz1))*wt
+20 continue
 
-RETURN
-END
+return
+end
 
 !     **************************************************************
 
-SUBROUTINE AWTCMP(X,II,XX,IJ,ITYP,LLB,LRB,ICON,W,IORD)
-DIMENSION W(6,6),X(1),XX(1),Q(6)
+subroutine awtcmp(x,ii,xx,ij,ityp,llb,lrb,icon,w,iord)
+dimension w(6,6),x(1),xx(1),q(6)
 
-!     ITYP=0, NORMAL, LLB,LRB-LEFT,RIGHT BOUNDARIES
-!          1, ISYM  , LLB-SYMMETRIC POINT,LRB-RIGHT BOUNDARY
+!     ityp=0, normal, llb,lrb-left,right boundaries
+!          1, isym  , llb-symmetric point,lrb-right boundary
 
-DO L=1,6
-   DO LL=1,6
-      W(L,LL)=0.
-   ENDDO
-ENDDO
+do l=1,6
+   do ll=1,6
+      w(l,ll)=0.
+   enddo
+enddo
 
-Q12=XX(IJ)
+q12=xx(ij)
 
-IF(ITYP.EQ.0.OR.(ITYP.EQ.1.AND.II.GE.LLB+2)) THEN
-  IF(II-2.LT.LLB.OR.II+3.GT.LRB.OR.IORD.EQ.2) THEN
-    W(1,3)=(X(II+1)-XX(IJ))/(X(II+1)-X(II))
-    W(2,3)=.5/(X(II+1)-X(II))
-    W(1,4)=-(X(II)-XX(IJ))/(X(II+1)-X(II))
-    W(2,4)=-.5/(X(II+1)-X(II))
-    RETURN
-  ENDIF
-  GOTO 3000
-ENDIF
+if(ityp.eq.0.or.(ityp.eq.1.and.ii.ge.llb+2)) then
+  if(ii-2.lt.llb.or.ii+3.gt.lrb.or.iord.eq.2) then
+    w(1,3)=(x(ii+1)-xx(ij))/(x(ii+1)-x(ii))
+    w(2,3)=.5/(x(ii+1)-x(ii))
+    w(1,4)=-(x(ii)-xx(ij))/(x(ii+1)-x(ii))
+    w(2,4)=-.5/(x(ii+1)-x(ii))
+    return
+  endif
+  goto 3000
+endif
 
-DO L=1,6
-   Q(L)=X(II-3+L)
-ENDDO
+do l=1,6
+   q(l)=x(ii-3+l)
+enddo
 
-IF(ITYP.EQ.1.AND.II.LT.LLB+2) THEN
-   Q(3)=X(II)
-   Q(4)=X(II+1)
-   Q(5)=X(II+2)
-   IF(II.EQ.LLB) THEN
-      Q(2)=2.*X(II)-X(II+1)
-      Q(1)=2.*X(II)-X(II+2)
-   ELSEIF(II.EQ.LLB+1) THEN
-      Q(2)=X(II-1)
-      Q(1)=2.*X(II)-X(II+1)
-   ENDIF
-ENDIF
+if(ityp.eq.1.and.ii.lt.llb+2) then
+   q(3)=x(ii)
+   q(4)=x(ii+1)
+   q(5)=x(ii+2)
+   if(ii.eq.llb) then
+      q(2)=2.*x(ii)-x(ii+1)
+      q(1)=2.*x(ii)-x(ii+2)
+   elseif(ii.eq.llb+1) then
+      q(2)=x(ii-1)
+      q(1)=2.*x(ii)-x(ii+1)
+   endif
+endif
 
-3000 CONTINUE
-GOTO (1000,2000) ICON+1
-1000 CONTINUE
+3000 continue
+goto (1000,2000) icon+1
+1000 continue
 
-W(1,1)=  &
-    ((Q(6)-Q12)*(Q(5)-Q12)*(Q(4)-Q12)*(Q(3)-Q12)*(Q(2)-Q12  &
- ))/((Q(6)-Q(1))*(Q(5)-Q(1))*(Q(4)-Q(1))*(Q(3)-Q(1))*(Q(2)  &
- -Q(1)))
-W(2,1)=  &
-    ((((Q(3)+Q(2)-2.*Q12)*Q(4)+(Q(2)-2.*Q12)*Q(3)-2.*Q(2)*  &
- Q12+3.*Q12**2)*Q(5)+((Q(2)-2.*Q12)*Q(3)-2.*Q(2)*Q12+3.*  &
- Q12**2)*Q(4)-(2.*Q(2)-3.*Q12)*Q(3)*Q12+3.*Q(2)*Q12**2-4.*  &
- Q12**3)*Q(6)+(((Q(2)-2.*Q12)*Q(3)-2.*Q(2)*Q12+3.*Q12**2)*  &
- Q(4)-(2.*Q(2)-3.*Q12)*Q(3)*Q12+3.*Q(2)*Q12**2-4.*Q12**3)*  &
- Q(5)-((2.*Q(2)-3.*Q12)*Q(3)-3.*Q(2)*Q12+4.*Q12**2)*Q(4)*  &
- Q12+(3.*Q(2)-4.*Q12)*Q(3)*Q12**2-4.*Q(2)*Q12**3+5.*Q12**4  &
- )/(2.*(Q(6)-Q(1))*(Q(5)-Q(1))*(Q(4)-Q(1))*(Q(3)-Q(1))*(Q(  &
- 2)-Q(1)))
-W(3,1)=  &
-    (((Q(4)+Q(3)+Q(2)-3.*Q12)*Q(5)+(Q(3)+Q(2)-3.*Q12)*Q(4)  &
- +(Q(2)-3.*Q12)*Q(3)-3.*Q(2)*Q12+6.*Q12**2)*Q(6)+((Q(3)+Q(  &
- 2)-3.*Q12)*Q(4)+(Q(2)-3.*Q12)*Q(3)-3.*Q(2)*Q12+6.*Q12**2)  &
- *Q(5)+((Q(2)-3.*Q12)*Q(3)-3.*Q(2)*Q12+6.*Q12**2)*Q(4)-3.*  &
- (Q(2)-2.*Q12)*Q(3)*Q12+6.*Q(2)*Q12**2-10.*Q12**3)/(3.*(Q(  &
- 6)-Q(1))*(Q(5)-Q(1))*(Q(4)-Q(1))*(Q(3)-Q(1))*(Q(2)-Q(1)))
-W(4,1)=  &
-    ((Q(5)+Q(4)+Q(3)+Q(2)-4.*Q12)*Q(6)+(Q(4)+Q(3)+Q(2)-4.*  &
- Q12)*Q(5)+(Q(3)+Q(2)-4.*Q12)*Q(4)+(Q(2)-4.*Q12)*Q(3)-4.*Q  &
- (2)*Q12+10.*Q12**2)/(4.*(Q(6)-Q(1))*(Q(5)-Q(1))*(Q(4)-Q(1  &
- ))*(Q(3)-Q(1))*(Q(2)-Q(1)))
-W(5,1)=  &
-    (Q(6)+Q(5)+Q(4)+Q(3)+Q(2)-5.*Q12)/(5.*(Q(6)-Q(1))*(Q(5  &
- )-Q(1))*(Q(4)-Q(1))*(Q(3)-Q(1))*(Q(2)-Q(1)))
-W(6,1)=  &
-    1./(6.*(Q(6)-Q(1))*(Q(5)-Q(1))*(Q(4)-Q(1))*(Q(3)-Q(1))  &
- *(Q(2)-Q(1)))
-W(1,2)=  &
-    (-(Q(6)-Q12)*(Q(5)-Q12)*(Q(4)-Q12)*(Q(3)-Q12)*(Q(1)-  &
- Q12))/((Q(6)-Q(2))*(Q(5)-Q(2))*(Q(4)-Q(2))*(Q(3)-Q(2))*(Q  &
- (2)-Q(1)))
-W(2,2)=  &
-    (-((((Q(3)+Q(1)-2.*Q12)*Q(4)+(Q(1)-2.*Q12)*Q(3)-2.*Q(1  &
- )*Q12+3.*Q12**2)*Q(5)+((Q(1)-2.*Q12)*Q(3)-2.*Q(1)*Q12+3.*  &
- Q12**2)*Q(4)-(2.*Q(1)-3.*Q12)*Q(3)*Q12+3.*Q(1)*Q12**2-4.*  &
- Q12**3)*Q(6)+(((Q(1)-2.*Q12)*Q(3)-2.*Q(1)*Q12+3.*Q12**2)*  &
- Q(4)-(2.*Q(1)-3.*Q12)*Q(3)*Q12+3.*Q(1)*Q12**2-4.*Q12**3)*  &
- Q(5)-((2.*Q(1)-3.*Q12)*Q(3)-3.*Q(1)*Q12+4.*Q12**2)*Q(4)*  &
- Q12+(3.*Q(1)-4.*Q12)*Q(3)*Q12**2-4.*Q(1)*Q12**3+5.*Q12**4  &
- ))/(2.*(Q(6)-Q(2))*(Q(5)-Q(2))*(Q(4)-Q(2))*(Q(3)-Q(2))*(Q  &
- (2)-Q(1)))
-W(3,2)=  &
-    (-(((Q(4)+Q(3)+Q(1)-3.*Q12)*Q(5)+(Q(3)+Q(1)-3.*Q12)*Q(  &
- 4)+(Q(1)-3.*Q12)*Q(3)-3.*Q(1)*Q12+6.*Q12**2)*Q(6)+((Q(3)+  &
- Q(1)-3.*Q12)*Q(4)+(Q(1)-3.*Q12)*Q(3)-3.*Q(1)*Q12+6.*Q12**  &
- 2)*Q(5)+((Q(1)-3.*Q12)*Q(3)-3.*Q(1)*Q12+6.*Q12**2)*Q(4)-  &
- 3.*(Q(1)-2.*Q12)*Q(3)*Q12+6.*Q(1)*Q12**2-10.*Q12**3))/(3.*  &
- (Q(6)-Q(2))*(Q(5)-Q(2))*(Q(4)-Q(2))*(Q(3)-Q(2))*(Q(2)-Q(1  &
+w(1,1)=  &
+    ((q(6)-q12)*(q(5)-q12)*(q(4)-q12)*(q(3)-q12)*(q(2)-q12  &
+ ))/((q(6)-q(1))*(q(5)-q(1))*(q(4)-q(1))*(q(3)-q(1))*(q(2)  &
+ -q(1)))
+w(2,1)=  &
+    ((((q(3)+q(2)-2.*q12)*q(4)+(q(2)-2.*q12)*q(3)-2.*q(2)*  &
+ q12+3.*q12**2)*q(5)+((q(2)-2.*q12)*q(3)-2.*q(2)*q12+3.*  &
+ q12**2)*q(4)-(2.*q(2)-3.*q12)*q(3)*q12+3.*q(2)*q12**2-4.*  &
+ q12**3)*q(6)+(((q(2)-2.*q12)*q(3)-2.*q(2)*q12+3.*q12**2)*  &
+ q(4)-(2.*q(2)-3.*q12)*q(3)*q12+3.*q(2)*q12**2-4.*q12**3)*  &
+ q(5)-((2.*q(2)-3.*q12)*q(3)-3.*q(2)*q12+4.*q12**2)*q(4)*  &
+ q12+(3.*q(2)-4.*q12)*q(3)*q12**2-4.*q(2)*q12**3+5.*q12**4  &
+ )/(2.*(q(6)-q(1))*(q(5)-q(1))*(q(4)-q(1))*(q(3)-q(1))*(q(  &
+ 2)-q(1)))
+w(3,1)=  &
+    (((q(4)+q(3)+q(2)-3.*q12)*q(5)+(q(3)+q(2)-3.*q12)*q(4)  &
+ +(q(2)-3.*q12)*q(3)-3.*q(2)*q12+6.*q12**2)*q(6)+((q(3)+q(  &
+ 2)-3.*q12)*q(4)+(q(2)-3.*q12)*q(3)-3.*q(2)*q12+6.*q12**2)  &
+ *q(5)+((q(2)-3.*q12)*q(3)-3.*q(2)*q12+6.*q12**2)*q(4)-3.*  &
+ (q(2)-2.*q12)*q(3)*q12+6.*q(2)*q12**2-10.*q12**3)/(3.*(q(  &
+ 6)-q(1))*(q(5)-q(1))*(q(4)-q(1))*(q(3)-q(1))*(q(2)-q(1)))
+w(4,1)=  &
+    ((q(5)+q(4)+q(3)+q(2)-4.*q12)*q(6)+(q(4)+q(3)+q(2)-4.*  &
+ q12)*q(5)+(q(3)+q(2)-4.*q12)*q(4)+(q(2)-4.*q12)*q(3)-4.*q  &
+ (2)*q12+10.*q12**2)/(4.*(q(6)-q(1))*(q(5)-q(1))*(q(4)-q(1  &
+ ))*(q(3)-q(1))*(q(2)-q(1)))
+w(5,1)=  &
+    (q(6)+q(5)+q(4)+q(3)+q(2)-5.*q12)/(5.*(q(6)-q(1))*(q(5  &
+ )-q(1))*(q(4)-q(1))*(q(3)-q(1))*(q(2)-q(1)))
+w(6,1)=  &
+    1./(6.*(q(6)-q(1))*(q(5)-q(1))*(q(4)-q(1))*(q(3)-q(1))  &
+ *(q(2)-q(1)))
+w(1,2)=  &
+    (-(q(6)-q12)*(q(5)-q12)*(q(4)-q12)*(q(3)-q12)*(q(1)-  &
+ q12))/((q(6)-q(2))*(q(5)-q(2))*(q(4)-q(2))*(q(3)-q(2))*(q  &
+ (2)-q(1)))
+w(2,2)=  &
+    (-((((q(3)+q(1)-2.*q12)*q(4)+(q(1)-2.*q12)*q(3)-2.*q(1  &
+ )*q12+3.*q12**2)*q(5)+((q(1)-2.*q12)*q(3)-2.*q(1)*q12+3.*  &
+ q12**2)*q(4)-(2.*q(1)-3.*q12)*q(3)*q12+3.*q(1)*q12**2-4.*  &
+ q12**3)*q(6)+(((q(1)-2.*q12)*q(3)-2.*q(1)*q12+3.*q12**2)*  &
+ q(4)-(2.*q(1)-3.*q12)*q(3)*q12+3.*q(1)*q12**2-4.*q12**3)*  &
+ q(5)-((2.*q(1)-3.*q12)*q(3)-3.*q(1)*q12+4.*q12**2)*q(4)*  &
+ q12+(3.*q(1)-4.*q12)*q(3)*q12**2-4.*q(1)*q12**3+5.*q12**4  &
+ ))/(2.*(q(6)-q(2))*(q(5)-q(2))*(q(4)-q(2))*(q(3)-q(2))*(q  &
+ (2)-q(1)))
+w(3,2)=  &
+    (-(((q(4)+q(3)+q(1)-3.*q12)*q(5)+(q(3)+q(1)-3.*q12)*q(  &
+ 4)+(q(1)-3.*q12)*q(3)-3.*q(1)*q12+6.*q12**2)*q(6)+((q(3)+  &
+ q(1)-3.*q12)*q(4)+(q(1)-3.*q12)*q(3)-3.*q(1)*q12+6.*q12**  &
+ 2)*q(5)+((q(1)-3.*q12)*q(3)-3.*q(1)*q12+6.*q12**2)*q(4)-  &
+ 3.*(q(1)-2.*q12)*q(3)*q12+6.*q(1)*q12**2-10.*q12**3))/(3.*  &
+ (q(6)-q(2))*(q(5)-q(2))*(q(4)-q(2))*(q(3)-q(2))*(q(2)-q(1  &
  )))
-W(4,2)=  &
-    (-((Q(5)+Q(4)+Q(3)+Q(1)-4.*Q12)*Q(6)+(Q(4)+Q(3)+Q(1)-  &
- 4.*Q12)*Q(5)+(Q(3)+Q(1)-4.*Q12)*Q(4)+(Q(1)-4.*Q12)*Q(3)-4.  &
- *Q(1)*Q12+10.*Q12**2))/(4.*(Q(6)-Q(2))*(Q(5)-Q(2))*(Q(4)-  &
- Q(2))*(Q(3)-Q(2))*(Q(2)-Q(1)))
-W(5,2)=  &
-    (-(Q(6)+Q(5)+Q(4)+Q(3)+Q(1)-5.*Q12))/(5.*(Q(6)-Q(2))*(  &
- Q(5)-Q(2))*(Q(4)-Q(2))*(Q(3)-Q(2))*(Q(2)-Q(1)))
-W(6,2)=  &
-    (-1.)/(6.*(Q(6)-Q(2))*(Q(5)-Q(2))*(Q(4)-Q(2))*(Q(3)-Q(  &
- 2))*(Q(2)-Q(1)))
-W(1,3)=  &
-    ((Q(6)-Q12)*(Q(5)-Q12)*(Q(4)-Q12)*(Q(2)-Q12)*(Q(1)-Q12  &
- ))/((Q(6)-Q(3))*(Q(5)-Q(3))*(Q(4)-Q(3))*(Q(3)-Q(2))*(Q(3)  &
- -Q(1)))
-W(2,3)=  &
-    ((((Q(2)+Q(1)-2.*Q12)*Q(4)+(Q(1)-2.*Q12)*Q(2)-2.*Q(1)*  &
- Q12+3.*Q12**2)*Q(5)+((Q(1)-2.*Q12)*Q(2)-2.*Q(1)*Q12+3.*  &
- Q12**2)*Q(4)-(2.*Q(1)-3.*Q12)*Q(2)*Q12+3.*Q(1)*Q12**2-4.*  &
- Q12**3)*Q(6)+(((Q(1)-2.*Q12)*Q(2)-2.*Q(1)*Q12+3.*Q12**2)*  &
- Q(4)-(2.*Q(1)-3.*Q12)*Q(2)*Q12+3.*Q(1)*Q12**2-4.*Q12**3)*  &
- Q(5)-((2.*Q(1)-3.*Q12)*Q(2)-3.*Q(1)*Q12+4.*Q12**2)*Q(4)*  &
- Q12+(3.*Q(1)-4.*Q12)*Q(2)*Q12**2-4.*Q(1)*Q12**3+5.*Q12**4  &
- )/(2.*(Q(6)-Q(3))*(Q(5)-Q(3))*(Q(4)-Q(3))*(Q(3)-Q(2))*(Q(  &
- 3)-Q(1)))
-W(3,3)=  &
-    (((Q(4)+Q(2)+Q(1)-3.*Q12)*Q(5)+(Q(2)+Q(1)-3.*Q12)*Q(4)  &
- +(Q(1)-3.*Q12)*Q(2)-3.*Q(1)*Q12+6.*Q12**2)*Q(6)+((Q(2)+Q(  &
- 1)-3.*Q12)*Q(4)+(Q(1)-3.*Q12)*Q(2)-3.*Q(1)*Q12+6.*Q12**2)  &
- *Q(5)+((Q(1)-3.*Q12)*Q(2)-3.*Q(1)*Q12+6.*Q12**2)*Q(4)-3.*  &
- (Q(1)-2.*Q12)*Q(2)*Q12+6.*Q(1)*Q12**2-10.*Q12**3)/(3.*(Q(  &
- 6)-Q(3))*(Q(5)-Q(3))*(Q(4)-Q(3))*(Q(3)-Q(2))*(Q(3)-Q(1)))
-W(4,3)=  &
-    ((Q(5)+Q(4)+Q(2)+Q(1)-4.*Q12)*Q(6)+(Q(4)+Q(2)+Q(1)-4.*  &
- Q12)*Q(5)+(Q(2)+Q(1)-4.*Q12)*Q(4)+(Q(1)-4.*Q12)*Q(2)-4.*Q  &
- (1)*Q12+10.*Q12**2)/(4.*(Q(6)-Q(3))*(Q(5)-Q(3))*(Q(4)-Q(3  &
- ))*(Q(3)-Q(2))*(Q(3)-Q(1)))
-W(5,3)=  &
-    (Q(6)+Q(5)+Q(4)+Q(2)+Q(1)-5.*Q12)/(5.*(Q(6)-Q(3))*(Q(5  &
- )-Q(3))*(Q(4)-Q(3))*(Q(3)-Q(2))*(Q(3)-Q(1)))
-W(6,3)=  &
-    1./(6.*(Q(6)-Q(3))*(Q(5)-Q(3))*(Q(4)-Q(3))*(Q(3)-Q(2))  &
- *(Q(3)-Q(1)))
-W(1,4)=  &
-    (-(Q(6)-Q12)*(Q(5)-Q12)*(Q(3)-Q12)*(Q(2)-Q12)*(Q(1)-  &
- Q12))/((Q(6)-Q(4))*(Q(5)-Q(4))*(Q(4)-Q(3))*(Q(4)-Q(2))*(Q  &
- (4)-Q(1)))
-W(2,4)=  &
-    (-((((Q(2)+Q(1)-2.*Q12)*Q(3)+(Q(1)-2.*Q12)*Q(2)-2.*Q(1  &
- )*Q12+3.*Q12**2)*Q(5)+((Q(1)-2.*Q12)*Q(2)-2.*Q(1)*Q12+3.*  &
- Q12**2)*Q(3)-(2.*Q(1)-3.*Q12)*Q(2)*Q12+3.*Q(1)*Q12**2-4.*  &
- Q12**3)*Q(6)+(((Q(1)-2.*Q12)*Q(2)-2.*Q(1)*Q12+3.*Q12**2)*  &
- Q(3)-(2.*Q(1)-3.*Q12)*Q(2)*Q12+3.*Q(1)*Q12**2-4.*Q12**3)*  &
- Q(5)-((2.*Q(1)-3.*Q12)*Q(2)-3.*Q(1)*Q12+4.*Q12**2)*Q(3)*  &
- Q12+(3.*Q(1)-4.*Q12)*Q(2)*Q12**2-4.*Q(1)*Q12**3+5.*Q12**4  &
- ))/(2.*(Q(6)-Q(4))*(Q(5)-Q(4))*(Q(4)-Q(3))*(Q(4)-Q(2))*(Q  &
- (4)-Q(1)))
-W(3,4)=  &
-    (-(((Q(3)+Q(2)+Q(1)-3.*Q12)*Q(5)+(Q(2)+Q(1)-3.*Q12)*Q(  &
- 3)+(Q(1)-3.*Q12)*Q(2)-3.*Q(1)*Q12+6.*Q12**2)*Q(6)+((Q(2)+  &
- Q(1)-3.*Q12)*Q(3)+(Q(1)-3.*Q12)*Q(2)-3.*Q(1)*Q12+6.*Q12**  &
- 2)*Q(5)+((Q(1)-3.*Q12)*Q(2)-3.*Q(1)*Q12+6.*Q12**2)*Q(3)-  &
- 3.*(Q(1)-2.*Q12)*Q(2)*Q12+6.*Q(1)*Q12**2-10.*Q12**3))/(3.*  &
- (Q(6)-Q(4))*(Q(5)-Q(4))*(Q(4)-Q(3))*(Q(4)-Q(2))*(Q(4)-Q(1  &
+w(4,2)=  &
+    (-((q(5)+q(4)+q(3)+q(1)-4.*q12)*q(6)+(q(4)+q(3)+q(1)-  &
+ 4.*q12)*q(5)+(q(3)+q(1)-4.*q12)*q(4)+(q(1)-4.*q12)*q(3)-4.  &
+ *q(1)*q12+10.*q12**2))/(4.*(q(6)-q(2))*(q(5)-q(2))*(q(4)-  &
+ q(2))*(q(3)-q(2))*(q(2)-q(1)))
+w(5,2)=  &
+    (-(q(6)+q(5)+q(4)+q(3)+q(1)-5.*q12))/(5.*(q(6)-q(2))*(  &
+ q(5)-q(2))*(q(4)-q(2))*(q(3)-q(2))*(q(2)-q(1)))
+w(6,2)=  &
+    (-1.)/(6.*(q(6)-q(2))*(q(5)-q(2))*(q(4)-q(2))*(q(3)-q(  &
+ 2))*(q(2)-q(1)))
+w(1,3)=  &
+    ((q(6)-q12)*(q(5)-q12)*(q(4)-q12)*(q(2)-q12)*(q(1)-q12  &
+ ))/((q(6)-q(3))*(q(5)-q(3))*(q(4)-q(3))*(q(3)-q(2))*(q(3)  &
+ -q(1)))
+w(2,3)=  &
+    ((((q(2)+q(1)-2.*q12)*q(4)+(q(1)-2.*q12)*q(2)-2.*q(1)*  &
+ q12+3.*q12**2)*q(5)+((q(1)-2.*q12)*q(2)-2.*q(1)*q12+3.*  &
+ q12**2)*q(4)-(2.*q(1)-3.*q12)*q(2)*q12+3.*q(1)*q12**2-4.*  &
+ q12**3)*q(6)+(((q(1)-2.*q12)*q(2)-2.*q(1)*q12+3.*q12**2)*  &
+ q(4)-(2.*q(1)-3.*q12)*q(2)*q12+3.*q(1)*q12**2-4.*q12**3)*  &
+ q(5)-((2.*q(1)-3.*q12)*q(2)-3.*q(1)*q12+4.*q12**2)*q(4)*  &
+ q12+(3.*q(1)-4.*q12)*q(2)*q12**2-4.*q(1)*q12**3+5.*q12**4  &
+ )/(2.*(q(6)-q(3))*(q(5)-q(3))*(q(4)-q(3))*(q(3)-q(2))*(q(  &
+ 3)-q(1)))
+w(3,3)=  &
+    (((q(4)+q(2)+q(1)-3.*q12)*q(5)+(q(2)+q(1)-3.*q12)*q(4)  &
+ +(q(1)-3.*q12)*q(2)-3.*q(1)*q12+6.*q12**2)*q(6)+((q(2)+q(  &
+ 1)-3.*q12)*q(4)+(q(1)-3.*q12)*q(2)-3.*q(1)*q12+6.*q12**2)  &
+ *q(5)+((q(1)-3.*q12)*q(2)-3.*q(1)*q12+6.*q12**2)*q(4)-3.*  &
+ (q(1)-2.*q12)*q(2)*q12+6.*q(1)*q12**2-10.*q12**3)/(3.*(q(  &
+ 6)-q(3))*(q(5)-q(3))*(q(4)-q(3))*(q(3)-q(2))*(q(3)-q(1)))
+w(4,3)=  &
+    ((q(5)+q(4)+q(2)+q(1)-4.*q12)*q(6)+(q(4)+q(2)+q(1)-4.*  &
+ q12)*q(5)+(q(2)+q(1)-4.*q12)*q(4)+(q(1)-4.*q12)*q(2)-4.*q  &
+ (1)*q12+10.*q12**2)/(4.*(q(6)-q(3))*(q(5)-q(3))*(q(4)-q(3  &
+ ))*(q(3)-q(2))*(q(3)-q(1)))
+w(5,3)=  &
+    (q(6)+q(5)+q(4)+q(2)+q(1)-5.*q12)/(5.*(q(6)-q(3))*(q(5  &
+ )-q(3))*(q(4)-q(3))*(q(3)-q(2))*(q(3)-q(1)))
+w(6,3)=  &
+    1./(6.*(q(6)-q(3))*(q(5)-q(3))*(q(4)-q(3))*(q(3)-q(2))  &
+ *(q(3)-q(1)))
+w(1,4)=  &
+    (-(q(6)-q12)*(q(5)-q12)*(q(3)-q12)*(q(2)-q12)*(q(1)-  &
+ q12))/((q(6)-q(4))*(q(5)-q(4))*(q(4)-q(3))*(q(4)-q(2))*(q  &
+ (4)-q(1)))
+w(2,4)=  &
+    (-((((q(2)+q(1)-2.*q12)*q(3)+(q(1)-2.*q12)*q(2)-2.*q(1  &
+ )*q12+3.*q12**2)*q(5)+((q(1)-2.*q12)*q(2)-2.*q(1)*q12+3.*  &
+ q12**2)*q(3)-(2.*q(1)-3.*q12)*q(2)*q12+3.*q(1)*q12**2-4.*  &
+ q12**3)*q(6)+(((q(1)-2.*q12)*q(2)-2.*q(1)*q12+3.*q12**2)*  &
+ q(3)-(2.*q(1)-3.*q12)*q(2)*q12+3.*q(1)*q12**2-4.*q12**3)*  &
+ q(5)-((2.*q(1)-3.*q12)*q(2)-3.*q(1)*q12+4.*q12**2)*q(3)*  &
+ q12+(3.*q(1)-4.*q12)*q(2)*q12**2-4.*q(1)*q12**3+5.*q12**4  &
+ ))/(2.*(q(6)-q(4))*(q(5)-q(4))*(q(4)-q(3))*(q(4)-q(2))*(q  &
+ (4)-q(1)))
+w(3,4)=  &
+    (-(((q(3)+q(2)+q(1)-3.*q12)*q(5)+(q(2)+q(1)-3.*q12)*q(  &
+ 3)+(q(1)-3.*q12)*q(2)-3.*q(1)*q12+6.*q12**2)*q(6)+((q(2)+  &
+ q(1)-3.*q12)*q(3)+(q(1)-3.*q12)*q(2)-3.*q(1)*q12+6.*q12**  &
+ 2)*q(5)+((q(1)-3.*q12)*q(2)-3.*q(1)*q12+6.*q12**2)*q(3)-  &
+ 3.*(q(1)-2.*q12)*q(2)*q12+6.*q(1)*q12**2-10.*q12**3))/(3.*  &
+ (q(6)-q(4))*(q(5)-q(4))*(q(4)-q(3))*(q(4)-q(2))*(q(4)-q(1  &
  )))
-W(4,4)=  &
-    (-((Q(5)+Q(3)+Q(2)+Q(1)-4.*Q12)*Q(6)+(Q(3)+Q(2)+Q(1)-  &
- 4.*Q12)*Q(5)+(Q(2)+Q(1)-4.*Q12)*Q(3)+(Q(1)-4.*Q12)*Q(2)-4.  &
- *Q(1)*Q12+10.*Q12**2))/(4.*(Q(6)-Q(4))*(Q(5)-Q(4))*(Q(4)-  &
- Q(3))*(Q(4)-Q(2))*(Q(4)-Q(1)))
-W(5,4)=  &
-    (-(Q(6)+Q(5)+Q(3)+Q(2)+Q(1)-5.*Q12))/(5.*(Q(6)-Q(4))*(  &
- Q(5)-Q(4))*(Q(4)-Q(3))*(Q(4)-Q(2))*(Q(4)-Q(1)))
-W(6,4)=  &
-    (-1.)/(6.*(Q(6)-Q(4))*(Q(5)-Q(4))*(Q(4)-Q(3))*(Q(4)-Q(  &
- 2))*(Q(4)-Q(1)))
-W(1,5)=  &
-    ((Q(6)-Q12)*(Q(4)-Q12)*(Q(3)-Q12)*(Q(2)-Q12)*(Q(1)-Q12  &
- ))/((Q(6)-Q(5))*(Q(5)-Q(4))*(Q(5)-Q(3))*(Q(5)-Q(2))*(Q(5)  &
- -Q(1)))
-W(2,5)=  &
-    ((((Q(2)+Q(1)-2.*Q12)*Q(3)+(Q(1)-2.*Q12)*Q(2)-2.*Q(1)*  &
- Q12+3.*Q12**2)*Q(4)+((Q(1)-2.*Q12)*Q(2)-2.*Q(1)*Q12+3.*  &
- Q12**2)*Q(3)-(2.*Q(1)-3.*Q12)*Q(2)*Q12+3.*Q(1)*Q12**2-4.*  &
- Q12**3)*Q(6)+(((Q(1)-2.*Q12)*Q(2)-2.*Q(1)*Q12+3.*Q12**2)*  &
- Q(3)-(2.*Q(1)-3.*Q12)*Q(2)*Q12+3.*Q(1)*Q12**2-4.*Q12**3)*  &
- Q(4)-((2.*Q(1)-3.*Q12)*Q(2)-3.*Q(1)*Q12+4.*Q12**2)*Q(3)*  &
- Q12+(3.*Q(1)-4.*Q12)*Q(2)*Q12**2-4.*Q(1)*Q12**3+5.*Q12**4  &
- )/(2.*(Q(6)-Q(5))*(Q(5)-Q(4))*(Q(5)-Q(3))*(Q(5)-Q(2))*(Q(  &
- 5)-Q(1)))
-W(3,5)=  &
-    (((Q(3)+Q(2)+Q(1)-3.*Q12)*Q(4)+(Q(2)+Q(1)-3.*Q12)*Q(3)  &
- +(Q(1)-3.*Q12)*Q(2)-3.*Q(1)*Q12+6.*Q12**2)*Q(6)+((Q(2)+Q(  &
- 1)-3.*Q12)*Q(3)+(Q(1)-3.*Q12)*Q(2)-3.*Q(1)*Q12+6.*Q12**2)  &
- *Q(4)+((Q(1)-3.*Q12)*Q(2)-3.*Q(1)*Q12+6.*Q12**2)*Q(3)-3.*  &
- (Q(1)-2.*Q12)*Q(2)*Q12+6.*Q(1)*Q12**2-10.*Q12**3)/(3.*(Q(  &
- 6)-Q(5))*(Q(5)-Q(4))*(Q(5)-Q(3))*(Q(5)-Q(2))*(Q(5)-Q(1)))
-W(4,5)=  &
-    ((Q(4)+Q(3)+Q(2)+Q(1)-4.*Q12)*Q(6)+(Q(3)+Q(2)+Q(1)-4.*  &
- Q12)*Q(4)+(Q(2)+Q(1)-4.*Q12)*Q(3)+(Q(1)-4.*Q12)*Q(2)-4.*Q  &
- (1)*Q12+10.*Q12**2)/(4.*(Q(6)-Q(5))*(Q(5)-Q(4))*(Q(5)-Q(3  &
- ))*(Q(5)-Q(2))*(Q(5)-Q(1)))
-W(5,5)=  &
-    (Q(6)+Q(4)+Q(3)+Q(2)+Q(1)-5.*Q12)/(5.*(Q(6)-Q(5))*(Q(5  &
- )-Q(4))*(Q(5)-Q(3))*(Q(5)-Q(2))*(Q(5)-Q(1)))
-W(6,5)=  &
-    1./(6.*(Q(6)-Q(5))*(Q(5)-Q(4))*(Q(5)-Q(3))*(Q(5)-Q(2))  &
- *(Q(5)-Q(1)))
-W(1,6)=  &
-    (-(Q(5)-Q12)*(Q(4)-Q12)*(Q(3)-Q12)*(Q(2)-Q12)*(Q(1)-  &
- Q12))/((Q(6)-Q(5))*(Q(6)-Q(4))*(Q(6)-Q(3))*(Q(6)-Q(2))*(Q  &
- (6)-Q(1)))
-W(2,6)=  &
-    (-((((Q(2)+Q(1)-2.*Q12)*Q(3)+(Q(1)-2.*Q12)*Q(2)-2.*Q(1  &
- )*Q12+3.*Q12**2)*Q(4)+((Q(1)-2.*Q12)*Q(2)-2.*Q(1)*Q12+3.*  &
- Q12**2)*Q(3)-(2.*Q(1)-3.*Q12)*Q(2)*Q12+3.*Q(1)*Q12**2-4.*  &
- Q12**3)*Q(5)+(((Q(1)-2.*Q12)*Q(2)-2.*Q(1)*Q12+3.*Q12**2)*  &
- Q(3)-(2.*Q(1)-3.*Q12)*Q(2)*Q12+3.*Q(1)*Q12**2-4.*Q12**3)*  &
- Q(4)-((2.*Q(1)-3.*Q12)*Q(2)-3.*Q(1)*Q12+4.*Q12**2)*Q(3)*  &
- Q12+(3.*Q(1)-4.*Q12)*Q(2)*Q12**2-4.*Q(1)*Q12**3+5.*Q12**4  &
- ))/(2.*(Q(6)-Q(5))*(Q(6)-Q(4))*(Q(6)-Q(3))*(Q(6)-Q(2))*(Q  &
- (6)-Q(1)))
-W(3,6)=  &
-    (-(((Q(3)+Q(2)+Q(1)-3.*Q12)*Q(4)+(Q(2)+Q(1)-3.*Q12)*Q(  &
- 3)+(Q(1)-3.*Q12)*Q(2)-3.*Q(1)*Q12+6.*Q12**2)*Q(5)+((Q(2)+  &
- Q(1)-3.*Q12)*Q(3)+(Q(1)-3.*Q12)*Q(2)-3.*Q(1)*Q12+6.*Q12**  &
- 2)*Q(4)+((Q(1)-3.*Q12)*Q(2)-3.*Q(1)*Q12+6.*Q12**2)*Q(3)-  &
- 3.*(Q(1)-2.*Q12)*Q(2)*Q12+6.*Q(1)*Q12**2-10.*Q12**3))/(3.*  &
- (Q(6)-Q(5))*(Q(6)-Q(4))*(Q(6)-Q(3))*(Q(6)-Q(2))*(Q(6)-Q(1  &
+w(4,4)=  &
+    (-((q(5)+q(3)+q(2)+q(1)-4.*q12)*q(6)+(q(3)+q(2)+q(1)-  &
+ 4.*q12)*q(5)+(q(2)+q(1)-4.*q12)*q(3)+(q(1)-4.*q12)*q(2)-4.  &
+ *q(1)*q12+10.*q12**2))/(4.*(q(6)-q(4))*(q(5)-q(4))*(q(4)-  &
+ q(3))*(q(4)-q(2))*(q(4)-q(1)))
+w(5,4)=  &
+    (-(q(6)+q(5)+q(3)+q(2)+q(1)-5.*q12))/(5.*(q(6)-q(4))*(  &
+ q(5)-q(4))*(q(4)-q(3))*(q(4)-q(2))*(q(4)-q(1)))
+w(6,4)=  &
+    (-1.)/(6.*(q(6)-q(4))*(q(5)-q(4))*(q(4)-q(3))*(q(4)-q(  &
+ 2))*(q(4)-q(1)))
+w(1,5)=  &
+    ((q(6)-q12)*(q(4)-q12)*(q(3)-q12)*(q(2)-q12)*(q(1)-q12  &
+ ))/((q(6)-q(5))*(q(5)-q(4))*(q(5)-q(3))*(q(5)-q(2))*(q(5)  &
+ -q(1)))
+w(2,5)=  &
+    ((((q(2)+q(1)-2.*q12)*q(3)+(q(1)-2.*q12)*q(2)-2.*q(1)*  &
+ q12+3.*q12**2)*q(4)+((q(1)-2.*q12)*q(2)-2.*q(1)*q12+3.*  &
+ q12**2)*q(3)-(2.*q(1)-3.*q12)*q(2)*q12+3.*q(1)*q12**2-4.*  &
+ q12**3)*q(6)+(((q(1)-2.*q12)*q(2)-2.*q(1)*q12+3.*q12**2)*  &
+ q(3)-(2.*q(1)-3.*q12)*q(2)*q12+3.*q(1)*q12**2-4.*q12**3)*  &
+ q(4)-((2.*q(1)-3.*q12)*q(2)-3.*q(1)*q12+4.*q12**2)*q(3)*  &
+ q12+(3.*q(1)-4.*q12)*q(2)*q12**2-4.*q(1)*q12**3+5.*q12**4  &
+ )/(2.*(q(6)-q(5))*(q(5)-q(4))*(q(5)-q(3))*(q(5)-q(2))*(q(  &
+ 5)-q(1)))
+w(3,5)=  &
+    (((q(3)+q(2)+q(1)-3.*q12)*q(4)+(q(2)+q(1)-3.*q12)*q(3)  &
+ +(q(1)-3.*q12)*q(2)-3.*q(1)*q12+6.*q12**2)*q(6)+((q(2)+q(  &
+ 1)-3.*q12)*q(3)+(q(1)-3.*q12)*q(2)-3.*q(1)*q12+6.*q12**2)  &
+ *q(4)+((q(1)-3.*q12)*q(2)-3.*q(1)*q12+6.*q12**2)*q(3)-3.*  &
+ (q(1)-2.*q12)*q(2)*q12+6.*q(1)*q12**2-10.*q12**3)/(3.*(q(  &
+ 6)-q(5))*(q(5)-q(4))*(q(5)-q(3))*(q(5)-q(2))*(q(5)-q(1)))
+w(4,5)=  &
+    ((q(4)+q(3)+q(2)+q(1)-4.*q12)*q(6)+(q(3)+q(2)+q(1)-4.*  &
+ q12)*q(4)+(q(2)+q(1)-4.*q12)*q(3)+(q(1)-4.*q12)*q(2)-4.*q  &
+ (1)*q12+10.*q12**2)/(4.*(q(6)-q(5))*(q(5)-q(4))*(q(5)-q(3  &
+ ))*(q(5)-q(2))*(q(5)-q(1)))
+w(5,5)=  &
+    (q(6)+q(4)+q(3)+q(2)+q(1)-5.*q12)/(5.*(q(6)-q(5))*(q(5  &
+ )-q(4))*(q(5)-q(3))*(q(5)-q(2))*(q(5)-q(1)))
+w(6,5)=  &
+    1./(6.*(q(6)-q(5))*(q(5)-q(4))*(q(5)-q(3))*(q(5)-q(2))  &
+ *(q(5)-q(1)))
+w(1,6)=  &
+    (-(q(5)-q12)*(q(4)-q12)*(q(3)-q12)*(q(2)-q12)*(q(1)-  &
+ q12))/((q(6)-q(5))*(q(6)-q(4))*(q(6)-q(3))*(q(6)-q(2))*(q  &
+ (6)-q(1)))
+w(2,6)=  &
+    (-((((q(2)+q(1)-2.*q12)*q(3)+(q(1)-2.*q12)*q(2)-2.*q(1  &
+ )*q12+3.*q12**2)*q(4)+((q(1)-2.*q12)*q(2)-2.*q(1)*q12+3.*  &
+ q12**2)*q(3)-(2.*q(1)-3.*q12)*q(2)*q12+3.*q(1)*q12**2-4.*  &
+ q12**3)*q(5)+(((q(1)-2.*q12)*q(2)-2.*q(1)*q12+3.*q12**2)*  &
+ q(3)-(2.*q(1)-3.*q12)*q(2)*q12+3.*q(1)*q12**2-4.*q12**3)*  &
+ q(4)-((2.*q(1)-3.*q12)*q(2)-3.*q(1)*q12+4.*q12**2)*q(3)*  &
+ q12+(3.*q(1)-4.*q12)*q(2)*q12**2-4.*q(1)*q12**3+5.*q12**4  &
+ ))/(2.*(q(6)-q(5))*(q(6)-q(4))*(q(6)-q(3))*(q(6)-q(2))*(q  &
+ (6)-q(1)))
+w(3,6)=  &
+    (-(((q(3)+q(2)+q(1)-3.*q12)*q(4)+(q(2)+q(1)-3.*q12)*q(  &
+ 3)+(q(1)-3.*q12)*q(2)-3.*q(1)*q12+6.*q12**2)*q(5)+((q(2)+  &
+ q(1)-3.*q12)*q(3)+(q(1)-3.*q12)*q(2)-3.*q(1)*q12+6.*q12**  &
+ 2)*q(4)+((q(1)-3.*q12)*q(2)-3.*q(1)*q12+6.*q12**2)*q(3)-  &
+ 3.*(q(1)-2.*q12)*q(2)*q12+6.*q(1)*q12**2-10.*q12**3))/(3.*  &
+ (q(6)-q(5))*(q(6)-q(4))*(q(6)-q(3))*(q(6)-q(2))*(q(6)-q(1  &
  )))
-W(4,6)=  &
-    (-((Q(4)+Q(3)+Q(2)+Q(1)-4.*Q12)*Q(5)+(Q(3)+Q(2)+Q(1)-  &
- 4.*Q12)*Q(4)+(Q(2)+Q(1)-4.*Q12)*Q(3)+(Q(1)-4.*Q12)*Q(2)-4.  &
- *Q(1)*Q12+10.*Q12**2))/(4.*(Q(6)-Q(5))*(Q(6)-Q(4))*(Q(6)-  &
- Q(3))*(Q(6)-Q(2))*(Q(6)-Q(1)))
-W(5,6)=  &
-    (-(Q(5)+Q(4)+Q(3)+Q(2)+Q(1)-5.*Q12))/(5.*(Q(6)-Q(5))*(  &
- Q(6)-Q(4))*(Q(6)-Q(3))*(Q(6)-Q(2))*(Q(6)-Q(1)))
-W(6,6)=  &
-    (-1.)/(6.*(Q(6)-Q(5))*(Q(6)-Q(4))*(Q(6)-Q(3))*(Q(6)-Q(  &
- 2))*(Q(6)-Q(1)))
+w(4,6)=  &
+    (-((q(4)+q(3)+q(2)+q(1)-4.*q12)*q(5)+(q(3)+q(2)+q(1)-  &
+ 4.*q12)*q(4)+(q(2)+q(1)-4.*q12)*q(3)+(q(1)-4.*q12)*q(2)-4.  &
+ *q(1)*q12+10.*q12**2))/(4.*(q(6)-q(5))*(q(6)-q(4))*(q(6)-  &
+ q(3))*(q(6)-q(2))*(q(6)-q(1)))
+w(5,6)=  &
+    (-(q(5)+q(4)+q(3)+q(2)+q(1)-5.*q12))/(5.*(q(6)-q(5))*(  &
+ q(6)-q(4))*(q(6)-q(3))*(q(6)-q(2))*(q(6)-q(1)))
+w(6,6)=  &
+    (-1.)/(6.*(q(6)-q(5))*(q(6)-q(4))*(q(6)-q(3))*(q(6)-q(  &
+ 2))*(q(6)-q(1)))
 
-GOTO 240
+goto 240
 
-2000 CONTINUE
-W( 1, 1)= 1./60.
-W( 2, 1)= 2./360.
-W( 3, 1)=-1./48.
-W( 4, 1)=-1./144.
-W( 5, 1)= 1./240.
-W( 6, 1)= 1./720.
-W( 1, 2)=-8./60.
-W( 2, 2)=-25./360.
-W( 3, 2)= 7./48.
-W( 4, 2)= 11./144.
-W( 5, 2)=-3./240.
-W( 6, 2)=-5./720.
-W( 1, 3)=37./60.
-W( 2, 3)=245./360.
-W( 3, 3)=-6./48.
-W( 4, 3)=-28/144.
-W( 5, 3)= 2./240.
-W( 6, 3)= 10./720.
-W( 1, 4)=37./60.
-W( 2, 4)=-245./360.
-W( 3, 4)=-6./48.
-W( 4, 4)= 28./144.
-W( 5, 4)= 2./240.
-W( 6, 4)=-10./720.
-W( 1, 5)=-8./60.
-W( 2, 5)= 25./360.
-W( 3, 5)= 7./48.
-W( 4, 5)=-11./144.
-W( 5, 5)=-3./240.
-W( 6, 5)= 5./720.
-W( 1, 6)= 1./60.
-W( 2, 6)=-2./360.
-W( 3, 6)=-1./48.
-W( 4, 6)= 1./144.
-W( 5, 6)= 1./240.
-W( 6, 6)=-1./720.
-DO L=1,6
-   DO LL=1,6
-      W(LL,L)=W(LL,L)/(X(II+1)-X(II))**(LL-1)
-   ENDDO
-ENDDO
+2000 continue
+w( 1, 1)= 1./60.
+w( 2, 1)= 2./360.
+w( 3, 1)=-1./48.
+w( 4, 1)=-1./144.
+w( 5, 1)= 1./240.
+w( 6, 1)= 1./720.
+w( 1, 2)=-8./60.
+w( 2, 2)=-25./360.
+w( 3, 2)= 7./48.
+w( 4, 2)= 11./144.
+w( 5, 2)=-3./240.
+w( 6, 2)=-5./720.
+w( 1, 3)=37./60.
+w( 2, 3)=245./360.
+w( 3, 3)=-6./48.
+w( 4, 3)=-28/144.
+w( 5, 3)= 2./240.
+w( 6, 3)= 10./720.
+w( 1, 4)=37./60.
+w( 2, 4)=-245./360.
+w( 3, 4)=-6./48.
+w( 4, 4)= 28./144.
+w( 5, 4)= 2./240.
+w( 6, 4)=-10./720.
+w( 1, 5)=-8./60.
+w( 2, 5)= 25./360.
+w( 3, 5)= 7./48.
+w( 4, 5)=-11./144.
+w( 5, 5)=-3./240.
+w( 6, 5)= 5./720.
+w( 1, 6)= 1./60.
+w( 2, 6)=-2./360.
+w( 3, 6)=-1./48.
+w( 4, 6)= 1./144.
+w( 5, 6)= 1./240.
+w( 6, 6)=-1./720.
+do l=1,6
+   do ll=1,6
+      w(ll,l)=w(ll,l)/(x(ii+1)-x(ii))**(ll-1)
+   enddo
+enddo
 
-240 CONTINUE
-IF(ITYP.EQ.1.AND.II.LT.LLB+2)THEN
-IF(II.EQ.LLB)THEN
-DO L=1,6
-   W(L,4)=W(L,4)+W(L,2)
-   W(L,5)=W(L,5)+W(L,1)
-   W(L,2)=0.
-   W(L,1)=0.
-ENDDO
-ELSEIF(II.EQ.LLB+1)THEN
-DO L=1,6
-   W(L,5)=W(L,5)+W(L,1)
-   W(L,1)=0.
-ENDDO
-ENDIF
-ENDIF
+240 continue
+if(ityp.eq.1.and.ii.lt.llb+2)then
+if(ii.eq.llb)then
+do l=1,6
+   w(l,4)=w(l,4)+w(l,2)
+   w(l,5)=w(l,5)+w(l,1)
+   w(l,2)=0.
+   w(l,1)=0.
+enddo
+elseif(ii.eq.llb+1)then
+do l=1,6
+   w(l,5)=w(l,5)+w(l,1)
+   w(l,1)=0.
+enddo
+endif
+endif
 
-RETURN
-END
+return
+end
