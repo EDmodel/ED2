@@ -136,11 +136,12 @@ subroutine load_ecosystem_state()
    if (mynum /= 1) &
       call MPI_Recv(ping,1,MPI_INTEGER,recvnum,100,MPI_COMM_WORLD,MPI_STATUS_IGNORE,ierr)
   
-   if (ied_init_mode < 4) then
+   select case (ied_init_mode)
+   case (-8,-1,0,1,2,3,6)
       do igr = 1,ngrids
          call read_site_file(edgrid_g(igr))
       end do
-   end if
+   end select
   
    if (mynum < nnodetot) call MPI_Send(ping,1,MPI_INTEGER,sendnum,100,MPI_COMM_WORLD,ierr)
   
@@ -160,7 +161,7 @@ subroutine load_ecosystem_state()
            call near_bare_ground_init(edgrid_g(igr))
       end do
 
-   case(-1,1,2,3)
+   case(-1,1,2,3,6)
       !----- Initialize with ED1-type restart information. --------------------------------!
       write(unit=*,fmt='(a,i3.3)') ' + Initializing from ED restart file. Node: ',mynum
       call read_ed10_ed20_history_file

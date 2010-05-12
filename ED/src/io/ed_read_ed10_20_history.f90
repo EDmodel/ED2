@@ -164,12 +164,15 @@ subroutine read_ed10_ed20_history_file
 
    
    !----- Retrieve LON/LAT information for sites ------------------------------------------!
-   if (ied_init_mode == 3) then
+   select case (ied_init_mode)
+   case (3)
       renumber_pfts = .false.
       call ed1_fileinfo('.site',nflist,full_list,nflsite,site_list,slon_list,slat_list)
-   else
+   case (6)
+      renumber_pfts = .false.
+   case default
       renumber_pfts = .true.
-   end if
+   end select
    
    !----- Retrieve LON/LAT information for patches and cohorts ----------------------------!
    call ed1_fileinfo('.pss',nflist,full_list,nflpss,pss_list,plon_list,plat_list)
@@ -315,7 +318,7 @@ subroutine read_ed10_ed20_history_file
                      water(nw,ip) = sngloff(dwater(nw) ,min_ok  )
                   end do
 
-               case(2)  
+               case(2,6)
                   !----- Standard ED-2.0 file. --------------------------------------------!
                   read(unit=12,fmt=*,iostat=ierr) time(ip),pname(ip),trk(ip),dage,darea    &
                                                  ,dwater(1),dfsc,dstsc,dstsl,dssc,dummy    &
@@ -551,7 +554,7 @@ subroutine read_ed10_ed20_history_file
                !---------------------------------------------------------------------------!
                if(ierr /= 0) exit read_cohorts  
 
-            case (2,3)
+            case (2,3,6)
                !----- ED-2.0 file. --------------------------------------------------------!
                read(unit=12,fmt=*,iostat=ierr) ctime(ic),cpname(ic),cname(ic),dbh(ic)      &
                                               ,hite(ic),ipft(ic),nplant(ic),bdead(ic)      &

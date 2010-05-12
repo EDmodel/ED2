@@ -507,8 +507,8 @@ contains
           write(phen_name,'(6a)')trim(phenpath),'.lat',trim(clat),'lon',trim(clon),'.txt'
           inquire(file=trim(phen_name),exist=phenology_exist)
           if(.not.phenology_exist) then
-             print*,"phenology file not found :: ",phen_name
-             stop
+             call fatal_error('Phenology file not found : '//trim(phen_name)//'!!!'        &
+                             ,'read_prescribed_phenology','phenology_init.f90')
           endif
 
           !! read phenology file
