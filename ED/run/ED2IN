@@ -55,45 +55,66 @@
                           
    NL%GRID_TYPE     =  1  !  0 corresponds to a lat/lon grid.  
                           !  1 corresponds to the polar-stereographic
-                          !    In the future, we will also have polygons.
 
-!----- For ED_regions using Lat/Lon grid only: --------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+   !   The following variables are used only if it is a regional run and using a lat/lon   !
+   ! grid.                                                                                 !
+   !---------------------------------------------------------------------------------------!
    NL%GRID_RES      =  1.0          ! This is the grid resolution scale in degrees. [\*/]
                                     !
    NL%ED_REG_LATMIN  =  -12.0, -7.5, 10.0,  -6.0 ! List of minimum latitudes;
    NL%ED_REG_LATMAX  =    1.0, -3.5, 15.0,  -1.0 ! List of maximum latitudes;
    NL%ED_REG_LONMIN  =  -66.0,-58.5, 70.0, -63.0 ! List of minimum longitudes;
    NL%ED_REG_LONMAX  =  -49.0,-54.5, 35.0, -53.0 ! List of maximum latitudes;
+   !---------------------------------------------------------------------------------------!
 
-!----- For Polar-stereographic, need to define the following variables instead: -----------!
+
+   !---------------------------------------------------------------------------------------!
+   !     The following variables are used only if it is a regional run and using the       !
+   ! polar-stereographic grid.                                                             !
+   !---------------------------------------------------------------------------------------!
    NL%NNXP = 110                  ! Number of points in the X direction
    NL%NNYP = 70                   ! Number of points in the Y direction
                                   !
-   NL%DELTAX   = 60000.           ! X and Y grid spacing scale  [\*/]
-   NL%DELTAY   = 60000.           ! in metres (dimension 1)     [\*/]
+   NL%DELTAX   = 60000.           ! X and Y grid spacing scale
+   NL%DELTAY   = 60000.           ! in metres (dimension 1)
                                   !
    NL%POLELAT  = -2.85            ! Latitude of pole point   (dimension 1)
    NL%POLELON  = -54.94           ! Longitude of pole point  (dimension 1)
                                   !
    NL%CENTLAT  = -2.85            ! Latitude of central point  (n_ed_regions)
    NL%CENTLON  = -54.94           ! Longitude of central point (n_ed_regions)
+   !---------------------------------------------------------------------------------------!
 
-!----- For both kinds of region
+
+   !---------------------------------------------------------------------------------------!
+   !     The following variables are used by both grid types of regional run grid.         !
+   !---------------------------------------------------------------------------------------!
    NL%NSTRATX = 1,4 ! Fraction of the sizes given above that I should use for these
-   NL%NSTRATY = 1,4 ! regions. The variables affected are denoted by [\*/]
+   NL%NSTRATY = 1,4 ! regions. The variables affected are denoted by
+   !---------------------------------------------------------------------------------------!
 
-!----- You can pinpoint individual locations, known as POI. -------------------------------!
-   NL%N_POI    =    1   ! number of polygons of interest (POIs).  This could be zero.
+
+   !---------------------------------------------------------------------------------------!
+   !     Instead of a regular grid, you can also define "polygons of interest"  (POIs),    !
+   ! which are individual locations.                                                       !
+   !---------------------------------------------------------------------------------------!
+   NL%N_POI    =    1   ! Number of POIs.  This can be zero provided that N_ED_REGION
+                        ! is not.
                 
    NL%POI_LAT  = -2.85  ! list of the latitudes of the POIs (degrees north)
    NL%POI_LON  = -54.94 ! list of the longitudes of the POIs (degrees east)
-!------------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
 
 
 !------------------------------------------------------------------------------------------!
-!  Load balancing method                                                                   !
-!------------------------------------------------------------------------------------------!
 
+
+
+!------------------------------------------------------------------------------------------!
+!     Load balancing method.  This is only used by regional runs, when RUNTYPE is set to   !
+! HISTORY, or when IED_INIT_NODE is set to 4 or 5.                                         !
+!------------------------------------------------------------------------------------------!
    NL%LOADMETH  = 0    ! Typical either 0 or 2, unecessary to set 1 or 3
                        ! 0 - Let the loadmaster determine
                        !        what is best (good for npoly > nmach )
@@ -127,20 +148,20 @@
    
    
    NL%ATTACH_METADATA = 0       ! Flag for attaching metadata to HDF datasets
-	                        ! Attaching metadata will aid new users
-	                        ! in quickly identifying dataset descriptions
-	                        ! but will compromise I/O performance significantly
-        	                ! 0 = no metadata, 1 = yes metadata
+                                ! Attaching metadata will aid new users
+                                ! in quickly identifying dataset descriptions
+                                ! but will compromise I/O performance significantly
+                                ! 0 = no metadata, 1 = yes metadata
 
-   NL%UNITFAST   = 0             ! Units for FRQFAST/OUTFAST
-   NL%UNITSTATE  = 3             ! Units for FRQSTATE/OUTSTATE
-                                 ! 0 - Seconds;
-                                 ! 1 - Days;
-                                 ! 2 - Calendar months (variable)
-                                 ! 3 - Calendar years  (variable)
-                                 ! PS: If OUTFAST/OUTSTATE are set to special flags
-                                 !     (-1 or -2) unitfast/unitstate will be ignored for
-                                 !     them
+   NL%UNITFAST   = 0            ! Units for FRQFAST/OUTFAST
+   NL%UNITSTATE  = 3            ! Units for FRQSTATE/OUTSTATE
+                                ! 0 - Seconds;
+                                ! 1 - Days;
+                                ! 2 - Calendar months (variable)
+                                ! 3 - Calendar years  (variable)
+                                ! PS: If OUTFAST/OUTSTATE are set to special flags
+                                !     (-1 or -2) unitfast/unitstate will be ignored for
+                                !     them
 
    NL%OUTFAST    = 0            ! Time interval between analysis files
    NL%OUTSTATE   = 0            ! Time interval between history files
@@ -155,8 +176,8 @@
                                 !    HISTORY runs as it hasn't been tested.
 
    NL%ICLOBBER  = 1             ! 0 = stop if files exist, 1 = overwite files
-   NL%FRQFAST   = 21600.            ! Time interval between analysis/history files
-   NL%FRQSTATE  = 12.            ! Time interval between history files
+   NL%FRQFAST   = 21600.        ! Time interval between analysis/history files
+   NL%FRQSTATE  = 12.           ! Time interval between history files
 !------------------------------------------------------------------------------------------!
 
 
@@ -195,6 +216,9 @@
    !     ...                                                                               !
    !     /mypath/P1000-S-1687-01-01-000000-g01.h5:                                         !
    !     NL%SFILIN = '/mypath/P'                                                           !
+   !                                                                                       !
+   ! 6 - Initialize with ED-2 style files without multiple sites, exactly like option 2,   !
+   !     except that the PFT types are preserved.                                          !
    !                                                                                       !
    ! -1 - use a mix of ED-1 and ED-2 files. This should                                    !
    !      be avoided by all means, unless you are                                          !
@@ -269,10 +293,15 @@
                         ! Directory where chd, dgd and glu data are kept.
 
 !----- File containing information for meteorological drivers -----------------------------!
-   NL%ED_MET_DRIVER_DB = '/n/Moorcroft_Lab/Lab/data/ed2_data/southam_met_driver/SOUTHAM_HEADER'
+   NL%ED_MET_DRIVER_DB = '/n/moorcroft_data/nlevine/southam_shef_driver/SHEF_NCEP_DRIVER_DS340'
 
-   NL%SOILSTATE_DB     = './inputs/STW1996OCT.dat'
-   NL%SOILDEPTH_DB     = './inputs/soil_depths.dat'
+   !---------------------------------------------------------------------------------------!
+   ! SOILSTATE_DB - Soil state (temperature and moisture) database, used only when         !
+   !                ISOILSTATEINIT is set to 1.                                            !
+   ! SOILDEPTH_DB -  Soil depth database, used only when ISOILDEPTHFLG is set to 1.        !
+   !---------------------------------------------------------------------------------------!
+   NL%SOILSTATE_DB     = '/n/Moorcroft_Lab/Lab/data/ed2_data/inputs/STW1996OCT.dat'
+   NL%SOILDEPTH_DB     = '/n/Moorcroft_Lab/Lab/data/ed2_data/inputs/soil_depths.dat'
 
    NL%ISOILSTATEINIT = 0  ! 0 -- use slmstr
                           ! 1 -- read from file
@@ -331,13 +360,11 @@
    NL%LAPSE_SCHEME    = 0     ! This specifies the met lapse rate scheme:
                               !  0 -- lapse rates off
                               !  1 -- phenomenological, global
-                              !  2 -- phenomenological, local (not yet implemented)
-                              !  3 -- mechanistic(not yet implemented)
-  
+
    NL%CROWN_MOD       = 0     ! Specifies how tree crowns are represent in the 
                               ! canopy radiation model
                               !  0  - ED1 default (continuous horizontal)
-                              !  1  - finite radius mixing model (Dietze)
+                              !  1  - finite radius mixing model (Dietze et al 2008)
 
    NL%DECOMP_SCHEME   = 0     ! Specifies soil decomposition temperature dependence
                               ! 0 -- original exponential
@@ -399,20 +426,20 @@
                               !      using z/L estimation as in Oncley and Dudhia. 
 
 
-   !--------------------------------------------------------------------!                             
+   !--------------------------------------------------------------------!
    ! PLANT FUNCTIONAL TYPES (PFTs):                                     !
    !--------------------------------------------------------------------!
-   ! 1 - C4 grass                    |  7 - southern pines              ! 
-   ! 2 - early tropical              |  8 - late conifers               ! 
-   ! 3 - mid tropical                |  9 - early temperate deciduous   ! 
-   ! 4 - late tropical               | 10 - mid temperate deciduous     ! 
-   ! 5 - C3 grass                    | 11 - late temperate deciduous    ! 
+   ! 1 - C4 grass                    |  7 - southern pines              !
+   ! 2 - early tropical              |  8 - late conifers               !
+   ! 3 - mid tropical                |  9 - early temperate deciduous   !
+   ! 4 - late tropical               | 10 - mid temperate deciduous     !
+   ! 5 - C3 grass                    | 11 - late temperate deciduous    !
    ! 6 - northern pines              |                                  !
-   !--------------------------------------------------------------------!                             
-   NL%INCLUDE_THESE_PFT = 1,2,3,4        ! List of PFTs to be included
-   NL%AGRI_STOCK        = 1              ! Agriculture PFT (used only if ianth_disturb=1)
-   NL%PLANTATION_STOCK  = 3              ! Plantation PFT  (used only if ianth_disturb=1)
-    
+   !--------------------------------------------------------------------!
+   NL%INCLUDE_THESE_PFT = 1,2,3,4 ! List of PFTs to be included
+   NL%AGRI_STOCK        = 1       ! Agriculture PFT (used only if ianth_disturb=1)
+   NL%PLANTATION_STOCK  = 3       ! Plantation PFT  (used only if ianth_disturb=1)
+
 
    NL%PFT_1ST_CHECK = 0 ! What should I do when I find a cohort with an unexpected PFT 
                         !    in the history start?
@@ -423,7 +450,7 @@
                         ! This option is ignored in near bare ground runs.
 
 !----- Patch and cohort dimension settings ------------------------------------------------!
-   NL%MAXPATCH  =  80 ! If number of patches in a given site exceeds NL%MAXPATCH, 
+   NL%MAXPATCH  =  20 ! If number of patches in a given site exceeds NL%MAXPATCH, 
                       !    force patch fusion.  If NL%MAXPATCH is 0, then
                       !    fusion will never happen.  If MAXPATCH is negative, then the 
                       !    absolute value is used only during the initialization, and  
@@ -464,48 +491,49 @@
 
 
 
-!-------------------------------------------------------------------------!
-! Control parameters for printing to standard output                      
-!         Any variable can be printed to standard output.
-!         Choose any variables that are defined in the variable table fill
-!         routines in ed_state_vars.f90.  Choose the start and end dimension
-!         in the vector that you wish to view.  It can be polygon,site,..whatever
-!         This 'should' work in parallel ...
-!         The output will be printed to the screen at frequency frqanl,
-!         the print call is synchronized with instantaneous file writes,
-!         so those variables will have been accumulated and normalized
-!         from their rk4state and be meaningful to view.
-!-------------------------------------------------------------------------!
-
+   !---------------------------------------------------------------------------------------!
+   ! Control parameters for printing to standard output                                    !
+   !         Any variable can be printed to standard output.                               !
+   !         Choose any variables that are defined in the variable table fill              !
+   !         routines in ed_state_vars.f90.  Choose the start and end dimension            !
+   !         in the vector that you wish to view.  It can be polygon,site,..whatever       !
+   !         This 'should' work in parallel ...                                            !
+   !         The output will be printed to the screen at frequency frqanl,                 !
+   !         the print call is synchronized with instantaneous file writes,                !
+   !         so those variables will have been accumulated and normalized                  !
+   !         from their rk4state and be meaningful to view.                                !
+   !---------------------------------------------------------------------------------------!
    NL%IPRINTPOLYS  =  0        ! 0 = do not print information to screen
                                ! 1 = print polygon arrays to screen, use variables
                                !     described below
 
-!----- Print these variables ------------------------------------------!
-
+   !----- Print these variables ------------------------------------------!
    NL%PRINTVARS    = 'AVG_PCPG','AVG_CAN_TEMP','AVG_VAPOR_AC','AVG_CAN_SHV'
 
-!----- Use these format strings ---------------------------------------!
-! The format strings follow standard fortran format notation. ie 'f' is
-! for floating point.  First number is total digits, second number is 
-! the number of digits to the left of right of the decimal point.
-
+   !---------------------------------------------------------------------------------------!
+   ! Use these format strings:                                                             !
+   ! The format strings follow standard fortran format notation. i.e. 'f' is for floating  !
+   ! point.  First number is total digits, second number is the number of digits to the    !
+   ! left of right of the decimal point.                                                   !
+   !---------------------------------------------------------------------------------------!
    NL%PFMTSTR      = 'f10.8','f5.1','f7.2','f9.5'
 
    NL%IPMIN        = 1       ! The first index to print
    NL%IPMAX        = 60      ! The last index to print
-!-------------------------------------------------------------------------!
+  !----------------------------------------------------------------------------------------!
 
 
 !------------------------------------------------------------------------------------------!
 ! Met driver control                                                                       !
 !------------------------------------------------------------------------------------------!
-
-   NL%IMETTYPE  = 1          ! 0 = ASCII, 1 = HDF5
+   NL%IMETTYPE  = 1          ! 0 = ASCII
+                             ! 1 = HDF5  (recommended)
 
    NL%ISHUFFLE  = 0          ! How to choose an year outside the met data range:
                              ! 0. Sequentially cycle over years
                              ! 1. Randomly pick the years, using the same sequence
+                             !    (not functional in every OS and compilers.  When it 
+                             !     doesn't function, it will behave as option 2).
                              ! 2. Randomly pick the years, choosing a different 
                              !    sequence each time the model is run.
 
@@ -516,29 +544,31 @@
                              ! meteorological driver dataset
 
 
-!----- For phenology prescribed from observations, we also need to recycle over years. ----!
+   !----- For phenology prescribed from observations, we also need to recycle over years. -!
    NL%IPHENYS1 = 1992        ! initial year for spring
    NL%IPHENYSF = 2003        ! final year for spring
    NL%IPHENYF1 = 1992        ! initial year for fall
    NL%IPHENYFF = 2003        ! final year for fall
-   NL%PHENPATH   = '/n/Moorcroft_Lab/Users/mlongo/EDBRAMS/ed-test/inputs' !! path/prefix for where to find presecribed phenology driver
-!------------------------------------------------------------------------------------------!
+   !----- Path and prefix for phenology for where to find presecribed phenology driver. ---!
+   NL%PHENPATH   = '/n/Moorcroft_Lab/Users/mlongo/EDBRAMS/ed-test/inputs'
+   !---------------------------------------------------------------------------------------!
 
 
 
-!------------------------------------------------------------------------------------------!
-! XML configuration file                                                                   !
-!------------------------------------------------------------------------------------------!
+
+   !---------------------------------------------------------------------------------------!
+   !     XML configuration file.  If these files are not found, the default settings will  !
+   ! be used.                                                                              !
+   !---------------------------------------------------------------------------------------!
    NL%IEDCNFGF   = 'config.xml'
    NL%EVENT_FILE = 'myevents.xml'
-!------------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
 
 
 
-!-------------------------------------------------------------------------!
-! Optimization configuration. (Currently not used)                        !
-!-------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+   ! Optimization configuration. (Currently not used)                                      !
+   !---------------------------------------------------------------------------------------!
    NL%IOPTINPT = ''   ! Directory for optimizer inputs
-!-------------------------------------------------------------------------!
-
+   !---------------------------------------------------------------------------------------!
 / ! end of ED_NL
