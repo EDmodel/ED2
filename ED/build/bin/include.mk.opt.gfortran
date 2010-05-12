@@ -146,7 +146,7 @@ USE_MPIWTIME=1
 CMACH=PC_LINUX1
 F_COMP=mpif90
 #F_OPTS=-O3
-F_OPTS=-g -ffpe-trap=invalid,zero,overflow -fbounds-check
+F_OPTS=-g -ffpe-trap=invalid,zero,overflow -fbounds-check -ffree-line-length-none
 #F_OPTS=-O3
 C_COMP=mpicc
 #C_OPTS=-g
