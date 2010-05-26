@@ -10,11 +10,11 @@ module rpost_dims
    !---------------------------------------------------------------------------------------!
    integer, parameter :: maxgrds=4     ! MAXGRDS - Maximum number of grids
 
-   integer, parameter :: nxpmax=400    ! NXPMAX  - Maximum number of points 
+   integer, parameter :: nxpmax=300    ! NXPMAX  - Maximum number of points 
                                        !             in x-direction
-   integer, parameter :: nypmax=400    ! NYPMAX  - Maximum number of points 
+   integer, parameter :: nypmax=300    ! NYPMAX  - Maximum number of points 
                                        !             in y-direction
-   integer, parameter :: nzpmax= 60    ! NZPMAX  - Maximum number of points 
+   integer, parameter :: nzpmax=200    ! NZPMAX  - Maximum number of points 
                                        !             in z-direction
                                        ! If you change nzpmax, also change nplmax 
                                        ! at ramspost_A.f90
