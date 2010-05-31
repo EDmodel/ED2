@@ -29,8 +29,6 @@ utils_c.o: /n/Moorcroft_Lab/Users/mlongo/EDBRAMS/Ramspost/src/include/utils_sub_
 utils_c.o:
 utils_f.o: /n/Moorcroft_Lab/Users/mlongo/EDBRAMS/Ramspost/src/include/interface.h
 utils_f.o: an_header.mod misc_coms.mod
-~utils_c.o: /n/Moorcroft_Lab/Users/mlongo/EDBRAMS/Ramspost/src/include/utils_sub_names.h
-~utils_c.o:
 an_header.mod: an_header.o
 brams_data.mod: brams_data.o
 leaf_coms.mod: leaf_coms.o

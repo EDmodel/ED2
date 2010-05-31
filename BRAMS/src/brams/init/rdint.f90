@@ -574,9 +574,21 @@ subroutine initlz (name_name)
   rest  ='no'
   if (runtype  ==  'HISTORY') rest = 'yes'
   call hiswrt(rest)
-  call anlwrt(rest,'INST')
-  if(frqlite > 0.) call anlwrt(rest,'LITE')
+  select case (ioutput)
+  case (3)
+     call anlhdf('INST')
+  case default
+     call anlwrt(rest,'INST')
+  end select
 
+  if (frqlite > 0.) then
+     select case(ioutput)
+     case (3)
+        call anlhdf('LITE')
+     case default
+        call anlwrt(rest,'LITE')
+     end select
+  end if
   !                  Save initial fields into the averaged arrays
   !                  -------------------------------------------------
   if(avgtim /= 0.)then

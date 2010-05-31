@@ -552,147 +552,159 @@ subroutine sfcinit_nofile(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,seatp,s
 
    return
 end subroutine sfcinit_nofile
-
-!**********************************************************************
-
-subroutine datp_datq(datp, datq)
-
-  ! This subroutine maps the input datp classes to a smaller set datq
-  ! which represents the full set of LEAF-2 or LEAF-3 classes for which
-  ! LSP values are
-  ! defined.
-
-  ! For TEB_SPM
-  use teb_spm_start, only : TEB_SPM ! INTENT(in)
-
-  implicit none
-  ! Arguments:
-  real, intent(in)     :: datp
-  integer, intent(out) :: datq
-  ! Local variables:
-!!$  integer              :: catb(0:94) 
-  integer              :: catb(0:95) 
-  !integer              :: catb_leaf3(0:94) ! not used
+!==========================================================================================!
+!==========================================================================================!
 
 
-  !  Olson Global Ecosystems dataset (94 classes) mapped to LEAF-3 classes
-  !  (see leaf3_document).
 
-!!$  !-------------------------------------------!
-!!$  data catb/ 0,                             & !
-!!$       19, 8, 4, 5, 6, 7, 9, 3,11,16,  & !  0
-!!$!!!    10, 2,17, 1, 0,12,13,14,18, 4,  & ! 10 (use for future Olson data)
-!!$       !--srf--
-!!$       10, 2,20, 0, 0,12,13,14,18, 4,  & ! 10 (use for current Olson data)
-!!$       04, 4,14,14, 6, 6, 4, 7, 7,15,  & ! 20
-!!$       15, 6, 7, 7,15,16,16,16,16, 8,  & ! 30
-!!$       08, 8,18,17,17,12,12, 7,10, 3,  & ! 40
-!!$       10,10,11,14,18,18,18,18,13, 6,  & ! 50
-!!$       05, 4,11,12, 0, 0, 0, 0, 3, 2,  & ! 60
-!!$       03,20, 0,17,17,17, 4,14, 7, 3,  & ! 70
-!!$       03, 3, 3, 3, 3, 3, 8,12, 7, 6,  & ! 80
-!!$       18,15,15,15                  /    ! 90
-!!$  !-------------------------------------------!
-!!$  !     1  2  3  4  5  6  7  8  9 10
 
-  !-------------------------------------------!
-  data catb/ 0,                             & !
-       19, 8, 4, 5, 6, 7, 9, 3,11,16,  & !  0
-!!!    10, 2,17, 1, 0,12,13,14,18, 4,  & ! 10 (use for future Olson data)
-       !--srf--
-       10, 2,20, 0, 0,12,13,14,18, 4,  & ! 10 (use for current Olson data)
-       04, 4,14,14, 6, 6, 4, 7, 7,15,  & ! 20
-       15, 6, 7, 7,15,16,16,16,16, 8,  & ! 30
-       08, 8,18,17,17,12,12, 7,10, 3,  & ! 40
-       10,10,11,14,18,18,18,18,13, 6,  & ! 50
-       05, 4,11,12, 0, 0, 0, 0, 3, 2,  & ! 60
-       03,20, 0,17,17,17, 4,14, 7, 3,  & ! 70
-       03, 3, 3, 3, 3, 3, 8,12, 7, 6,  & ! 80
-       18,15,15,15,19               /    ! 90
-  !-------------------------------------------!
-  !     1  2  3  4  5  6  7  8  9 10
-  
 
-  ! IF TEB_SPM:
-  ! Using the Global Ecosystem legend 95 maped to RAMS type 21 (Very Urban Type)
-  ! Otherwise the OGE legend 95 is maped to RAMS type 19 (Urban)
-  if (TEB_SPM==1) catb(95) = 21
 
-  ! Temporario
-  if (TEB_SPM==1) catb(50) = 21
+!==========================================================================================!
+!==========================================================================================!
+!      This subroutine maps the input datp classes to a smaller set datq which represents  !
+! the full set of LEAF-2 or LEAF-3 classes for which LSP values are defined.               !
+!------------------------------------------------------------------------------------------!
+subroutine datp_datq(datp,datq)
+   use teb_spm_start, only : teb_spm ! intent(in)
 
-  !SRF 2008: OGE-INPE data set has values greater than 95
-  if (nint(datp) >= 0. .and. nint(datp) <= 95. ) then
-     datq = catb(nint(datp))
-  else
-     datq = catb(0)
-  end if
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   real   , intent(in)       :: datp      ! Input data, the Olson Global Ecosystems dataset
+   integer, intent(out)      :: datq      ! Output data, the LEAF-3 classification. 
+   !----- Local variable. -----------------------------------------------------------------!
+   integer, dimension(0:100) :: oge2leaf3 ! Conversion table
+   !---------------------------------------------------------------------------------------!
 
-  return
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Olson Global Ecosystems dataset OGE_2 (96 classes) mapped to LEAF-3 classes (see  !
+   ! leaf3_document). 97 and 98 are not used, 99 is Goode Homolosine empty data, and 100   !
+   ! is missing data. They are all mapped to ocean.                                        !
+   !---------------------------------------------------------------------------------------!
+   oge2leaf3 = (/                                      0, &  !   0 -   0
+                  19,  8,  4,  5,  6,  7,  9,  3, 11, 16, &  !   1 -  10
+                  10,  2, 20,  0,  0, 12, 13, 14, 18,  4, &  !  11 -  20
+                   4,  4, 14, 14,  6,  6,  4,  7,  7, 15, &  !  21 -  30
+                  15,  6,  7,  7, 15, 16, 16, 16, 16,  8, &  !  31 -  40
+                   8,  8, 18, 17, 17, 12, 12,  7, 10,  3, &  !  41 -  50
+                  10, 10, 11, 14, 18, 18, 18, 18, 13,  6, &  !  51 -  60
+                   5,  4, 11, 12,  0,  0,  0,  0,  3,  2, &  !  61 -  70
+                   3, 20,  0, 17, 17, 17,  4, 14,  7,  3, &  !  71 -  80
+                   3,  3,  3,  3,  3,  3,  8, 12,  7,  6, &  !  81 -  90
+                  18, 15, 15, 15, 19,  0,  0,  0,  0,  0  /) !  91 - 100
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     If TEB_SPM, we switch OGE classes 95 and 50 to 21 (very urban).  Otherwise, leave !
+   ! the standard.                                                                         !
+   !---------------------------------------------------------------------------------------!
+   if (teb_spm == 1) then
+      oge2leaf3(95) = 21
+      oge2leaf3(50) = 21
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Convert the data.  In the unlikely case that the dataset lies outside the range,  !
+   ! re-assign it to ocean.                                                                !
+   !---------------------------------------------------------------------------------------!
+   if (nint(datp) >= 0. .and. nint(datp) <= 95. ) then
+      datq = oge2leaf3(nint(datp))
+   else
+      datq = 0
+   end if
+
+   return
 end subroutine datp_datq
+!==========================================================================================!
+!==========================================================================================!
 
-!**********************************************************************
 
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!      This subroutine maps the input datp soil classes to a smaller set datsoil which     !
+! represents the full set of LEAF-2 classes for which soil parameter values are defined.   !
+!------------------------------------------------------------------------------------------!
 subroutine datp_datsoil(datp,datsoil)
 
-! This subroutine maps the input datp soil classes to a smaller set datsoil
-! which represents the full set of LEAF-2 classes for which soil parameter
-! values are defined.
 
-implicit none
-integer datsoil,catb(0:133)
-real datp
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   real   , intent(in)       :: datp      ! Input data, the FAO dataset
+   integer, intent(out)      :: datsoil   ! Output data, the LEAF-3 classification. 
+   !----- Local variable. -----------------------------------------------------------------!
+   integer, dimension(0:133) :: fao2leaf3 ! Conversion table
+   !---------------------------------------------------------------------------------------!
 
-! (Bob 9/14/2000) This table maps FAO soil units numbered 0 to 132, plus our
-! own missing value designated 133, to the USDA soil textural classes.  FAO
-! classes [0] (ocean), [1, 7, 27, 42, 66, 69, 77, 78, 84, 98, 113] (soils not
-! used in original FAO dataset), [132] (water), and [133] (our missing value)
-! are all mapped to a default class of sandy clay loam in case they happen to
-! correspond to a land surface area in the landuse dataset that RAMS uses to
-! define land area.  We wrote missing value class 133 to the RAMS FAO files
-! whenever a negative value (which is out of range of defined values) was
-! found in the original FAO dataset, which occurred in about 2.6% of the
-! pixels.  For the remaining FAO classes, a cross reference table to Zobler
-! soil texture classes that was provided, plus our own cross referencing table
-! from Zobler to USDA classes listed below, provides the mapping from FAO to
-! USDA.  In this mapping, we use only organic USDA classes and omit nonorganic
-! classes since most soils do contain organic matter, and organic content
-! information is not provided in the Zobler classes.
 
-!  Zobler Class              USDA Class
 
-!  1  Coarse                 2  Loamy sand
-!  2  Medium                 4  Silt loam
-!  3  Fine                   8  Clay loam
-!  4  Coarse-medium          3  Sandy loam
-!  5  Coarse-fine            6  Sandy clay loam
-!  6  Medium-fine            7  Silty clay loam
-!  7  Coarse-medium-fine     6  Sandy clay loam
-!  8  Organic matter         5  Loam
+   !---------------------------------------------------------------------------------------!
+   !      (Bob 9/14/2000) This table maps FAO soil units numbered 0 to 132, plus our own   !
+   ! missing value designated 133, to the USDA soil textural classes.  FAO classes [0]     !
+   ! (ocean), [1, 7, 27, 42, 66, 69, 77, 78, 84, 98, 113] (soils not used in original FAO  !
+   ! dataset), [132] (water), and [133] (our missing value) are all mapped to a default    !
+   ! class of sandy clay loam in case they happen to correspond to a land surface area in  !
+   ! the landuse dataset that RAMS uses to define land area.  We wrote missing value class !
+   ! 133 to the RAMS FAO files  whenever a negative value (which is out of range of        !
+   ! defined values) was found in the original FAO dataset, which occurred in about 2.6%   !
+   ! of the pixels.  For the remaining FAO classes, a cross reference table to Zobler soil !
+   ! texture classes that was provided, plus our own cross referencing table from Zobler   !
+   ! to USDA classes listed below, provides the mapping from FAO to USDA.  In this         !
+   ! mapping, we use only organic USDA classes and omit nonorganic classes since most      !
+   ! soils do contain organic matter, and organic content information is not provided in   !
+   ! the Zobler classes.                                                                   !
+   !                                                                                       !
+   !          |--------------------------------+--------------------------------|          !
+   !          |          Zobler Class          |           USDA Class           |          !
+   !          |--------------------------------+--------------------------------|          !
+   !          | 1  Coarse                      |  2  Loamy sand                 |          !
+   !          | 2  Medium                      |  4  Silt loam                  |          !
+   !          | 3  Fine                        |  8  Clay loam                  |          !
+   !          | 4  Coarse-medium               |  3  Sandy loam                 |          !
+   !          | 5  Coarse-fine                 |  6  Sandy clay loam            |          !
+   !          | 6  Medium-fine                 |  7  Silty clay loam            |          !
+   !          | 7  Coarse-medium-fine          |  6  Sandy clay loam            |          !
+   !          | 8  Organic matter              |  5  Loam                       |          !
+   !          |--------------------------------+--------------------------------|          !
+   !          |                                | ... not used:                  |          !
+   !          |                                |  1  Sand                       |          !
+   !          |                                |  9  Sandy clay                 |          !
+   !          |                                | 10  Silty clay                 |          !
+   !          |                                | 11  Clay                       |          !
+   !          |                                | 12  Peat                       |          !
+   !          |--------------------------------+--------------------------------|          !
+   !                                                                                       !
+   !---------------------------------------------------------------------------------------!
 
-!                            1  Sand (not used)
-!                            9  Sandy clay (not used)
-!                           10  Silty clay (not used)
-!                           11  Clay (not used)
-!                           12  Peat (not used)
+   fao2leaf3 = (/                                      6  &  !   0 -   0
+                ,  6,  4,  4,  7,  7,  8,  6,  4,  4,  4  &  !   1 -  10
+                ,  7,  4,  4,  4,  8,  4,  8,  4,  4,  8  &  !  11 -  20
+                ,  4,  2,  4,  4,  4,  4,  6,  8,  8,  8  &  !  21 -  30
+                ,  4,  8,  8,  2,  6,  4,  7,  4,  4,  3  &  !  31 -  40
+                ,  4,  6,  7,  4,  4,  4,  4,  4,  4,  4  &  !  41 -  50
+                ,  4,  4,  4,  4,  4,  4,  2,  4,  4,  2  &  !  51 -  60
+                ,  4,  3,  4,  2,  7,  6,  4,  4,  6,  8  &  !  61 -  70
+                ,  8,  7,  2,  5,  4,  5,  6,  6,  4,  2  &  !  71 -  80
+                ,  2,  2,  4,  6,  2,  2,  2,  2,  2,  4  &  !  81 -  90
+                ,  2,  2,  2,  4,  2,  4,  3,  6,  2,  7  &  !  91 - 100
+                ,  4,  4,  4,  8,  8,  8,  3,  7,  4,  4  &  ! 101 - 110
+                ,  4,  3,  6,  4,  2,  4,  4,  4,  2,  2  &  ! 111 - 120
+                ,  2,  4,  6,  4,  4,  7,  7,  6,  3,  2  &  ! 121 - 130
+                ,  2,  6,  6                              /) ! 131 - 133
 
-data catb/ 6  &
-         , 6, 4, 4, 7, 7, 8, 6, 4, 4, 4  &
-         , 7, 4, 4, 4, 8, 4, 8, 4, 4, 8  &
-         , 4, 2, 4, 4, 4, 4, 6, 8, 8, 8  &
-         , 4, 8, 8, 2, 6, 4, 7, 4, 4, 3  &
-         , 4, 6, 7, 4, 4, 4, 4, 4, 4, 4  &
-         , 4, 4, 4, 4, 4, 4, 2, 4, 4, 2  &
-         , 4, 3, 4, 2, 7, 6, 4, 4, 6, 8  &
-         , 8, 7, 2, 5, 4, 5, 6, 6, 4, 2  &
-         , 2, 2, 4, 6, 2, 2, 2, 2, 2, 4  &
-         , 2, 2, 2, 4, 2, 4, 3, 6, 2, 7  &
-         , 4, 4, 4, 8, 8, 8, 3, 7, 4, 4  &
-         , 4, 3, 6, 4, 2, 4, 4, 4, 2, 2  &
-         , 2, 4, 6, 4, 4, 7, 7, 6, 3, 2  &
-         , 2, 6, 6 /
+   datsoil = fao2leaf3(nint(datp))
 
-datsoil = catb(nint(datp))
-
-return
-end
+   return
+end subroutine datp_datsoil
+!==========================================================================================!
+!==========================================================================================!
