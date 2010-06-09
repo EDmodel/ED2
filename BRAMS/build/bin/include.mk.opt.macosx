@@ -107,9 +107,10 @@ MOD_EXT=mod
 #                  face problems. If it successfully compiles, then you can switch to B.   #
 #------------------------------------------------------------------------------------------#
 #USE_INTERF=0
-#F_OPTS=-O0 -Wall -ffpe-trap=invalid,zero,overflow,underflow,precision,denormal
+#F_OPTS=-O0 -Wall -ffpe-trap=invalid,zero,overflow,underflow,precision,denormal            \
+#       -ffree-line-length-none
 #C_OPTS=-O0 -DUNDERSCORE -DLITTLE
-#LOADER_OPTS=-O0
+#LOADER_OPTS=-O0  -ffree-line-length-none
 
 
 #------------------------------------------------------------------------------------------#
@@ -119,9 +120,9 @@ MOD_EXT=mod
 #           velopers.                                                                      #
 #------------------------------------------------------------------------------------------#
 USE_INTERF=1
-F_OPTS= -O3 
+F_OPTS= -O3  -ffree-line-length-none
 C_OPTS= -O3 -DLITTLE
-LOADER_OPTS= -O3 
+LOADER_OPTS= -O3  -ffree-line-length-none
 #------------------------------------------------------------------------------------------#
 
 ############################################################################################

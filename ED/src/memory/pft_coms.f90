@@ -316,10 +316,9 @@ module pft_coms
    ! Phenology indicates the leaf habit regarding phenology:                               !
    ! 0. Evergreen coniferous;                                                              !
    ! 1. Drought deciduous;                                                                 !
-   ! 2. Cold deciduous;
-   ! 3. Light controlled;
-   ! 4. Drought deciduous - based on 10day average.
-                                                                   !
+   ! 2. Cold deciduous;                                                                    !
+   ! 3. Light controlled;                                                                  !
+   ! 4. Drought deciduous - based on 10day average.                                        !
    !---------------------------------------------------------------------------------------!
    integer, dimension(n_pft) :: phenology 
 
@@ -422,6 +421,30 @@ module pft_coms
    real, dimension(n_pft) :: nonlocal_dispersal !  
    !----- Minimum height plants need to attain before allocating to reproduction. ---------!
    real, dimension(n_pft) :: repro_min_h 
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     The following variables control the cohort existence/termination.                 !
+   !---------------------------------------------------------------------------------------! 
+   !---------------------------------------------------------------------------------------! 
+   !    Minimum size (measured as biomass of living and structural tissues) allowed in a   !
+   ! cohort.  Cohorts with less biomass than this are going to be terminated.              !
+   !---------------------------------------------------------------------------------------! 
+   real, dimension(n_pft) :: min_cohort_size
+   !---------------------------------------------------------------------------------------! 
+   !    The following variable is the absolute minimum cohort population that a cohort can !
+   ! have.  This should be used only to avoid nplant=0, but IMPORTANT: this will lead to a !
+   ! ridiculously small cohort almost guaranteed to be extinct and SHOULD BE USED ONLY IF  !
+   ! THE AIM IS TO ELIMINATE THE COHORT.                                                   !
+   !---------------------------------------------------------------------------------------! 
+   real, dimension(n_pft) :: negligible_nplant
    !=======================================================================================!
    !=======================================================================================!
 

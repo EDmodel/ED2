@@ -27,29 +27,29 @@ module grid_dims
   !             level interpolated from opposite hemispheric grid
   !   MAXDIM  - the largest of NXPMAX,NYPMAX,NZPMAX+10,NZGMAX
 
-  integer, parameter :: maxgrds=8
-  integer, parameter :: nxpmax=303
-  integer, parameter :: nypmax=303
-  integer, parameter :: nzpmax=132
-  integer, parameter :: nzgmax=20
-  integer, parameter :: maxsclr=150
-  integer, parameter :: maxhp=1000
-  integer, parameter :: maxdim=303
+  integer, parameter :: maxgrds =    8
+  integer, parameter :: nxpmax  =  600
+  integer, parameter :: nypmax  =  600
+  integer, parameter :: nzpmax  =  132
+  integer, parameter :: nzgmax  =   20
+  integer, parameter :: maxsclr =  150
+  integer, parameter :: maxhp   = 1000
+  integer, parameter :: maxdim  = max(nxpmax,nypmax,nzpmax+10,nzgmax)
 
   ! Computed parameters (function of previous parameters)
 
-  integer, parameter :: maxdimp=maxdim+2
-  integer, parameter :: nxyzpm=nzpmax*nxpmax*nypmax
+  integer, parameter :: maxdimp = maxdim+2
+  integer, parameter :: nxyzpm  = nzpmax*nxpmax*nypmax
 
   !   MAXMACH - the maximum number of processors on a parallel run
 
-  integer, parameter :: maxmach=128
+  integer, parameter :: maxmach   = 128
 
   ! TEB
   !  MAXSTEB - Maximum number of layers used in TEB
   !  MAXUBTP - Maximum number of urban types used in TEB
-  integer, parameter :: maxsteb=5
-  integer, parameter :: maxubtp=3
+  integer, parameter :: maxsteb   = 5
+  integer, parameter :: maxubtp   = 3
   
   ! Parameter defining the maximum number of cloud spectral sizes allowed.
   integer, parameter :: maxclouds = 6

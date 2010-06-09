@@ -4,9 +4,10 @@ subroutine RAMS_anal_init(nfile,fnames,file_prefix,          &
       iep_stdate,iep_step,iep_ngrids)
 
 use an_header
-include 'rcommons.h'
-
-parameter (maxfiles=2000)
+use rpost_dims
+use rpost_coms
+use brams_data
+use misc_coms, only : memsize4
 
 !SRF
 dimension dep_zlev(nzpmax,maxgrds),iep_nx(maxgrds),iep_ny(maxgrds),  &
@@ -16,11 +17,6 @@ dimension dep_zlev(nzpmax,maxgrds),iep_nx(maxgrds),iep_ny(maxgrds),  &
 character(len=600), dimension(maxfiles) :: fnames,fnamesp
 character(len=600)                      :: file_prefix
 character(len=600)                      :: fpref
-common/rams_data/ ftimes(maxfiles),nfgpnts(4,maxgrds,maxfiles)  &
-     ,nfgrids(maxfiles),ifdates(maxfiles),iftimes(maxfiles)  &
-     ,flevels(nzpmax,maxgrds,maxfiles),startutc,httop  &
-     ,fdelx(maxgrds,maxfiles),fdely(maxgrds,maxfiles)
-common /mem/ memsize4
 
 dimension mondays(13)
 data mondays/31,28,31,30,31,30,31,31,30,31,30,31,31/
@@ -203,16 +199,15 @@ end
 integer function RAMS_getvar(stringg,itype,ngrd,a,b,flnm)
 
 use an_header
+use misc_coms, only : ierr_getvar, ifound
 
 implicit none
-!include 'interface.h'
 
 real :: a(*),b(*)
 integer :: itype,ngrd,il,lastchar,ill
 character*(*) flnm,cgrid*1,flng*240,errmsg*120,stringg,string*20
 logical there
-integer :: ierr_getvar,ifound,ni,npts,iword
-common /getvar/ierr_getvar,ifound
+integer :: ni,npts,iword
 
 !print*,'----------------------------'
 !print*,stringg,string
@@ -304,14 +299,14 @@ end
 subroutine RAMS_varlib(cvar,n1,n2,n3,n4,n5,n6,ngrd,flnm  &
                  ,cdname,cdunits,ivar_type,a,b,a2,a6)
 use rconstants
+use rpost_coms
 use leaf_coms, only : ustmin
+use misc_coms, only : memsize4, ierr_getvar, ifound
+use micro_coms
 implicit none
-include 'rcommons.h'
+
 integer :: n1,n2,n3,ngrd,n4,n5,n6
 
-integer :: memsiz4
-
-common /mem/memsiz4
 
 character*(*) cvar,flnm,cdname,cdunits
 
@@ -325,15 +320,15 @@ integer :: lv,lv2,idim_type,irecind,irecsize,irecsizep,ind,ispec
 integer :: memsave4,ierr,kp
 
 integer, external :: RAMS_getvar, lastchar, irfree, iralloc
-integer :: ierr_getvar,ifound,ivar_type
+integer :: ivar_type
 real  f1(n1,n2,n3),f2(n1,n2,n3)
-common /getvar/ierr_getvar,ifound
 data memsave4/0/
 
 integer, parameter :: nwave=50
-write(unit=*,fmt=*) memsiz4,memsave4
+write(unit=*,fmt='(2(a,1x,i9,1x))') 'MEMSIZE4 = ',memsize4,'MEMSAVE4=',memsave4
 
-if (memsiz4 > memsave4) then
+if (memsize4 > memsave4) then
+   write (unit=*,fmt=*) ' - Allocating variables... '
    if (allocated(c)) deallocate (c)
    if (allocated(d)) deallocate (d)
    if (allocated(e)) deallocate (e)
@@ -348,21 +343,37 @@ if (memsiz4 > memsave4) then
    if (allocated(s)) deallocate (s)
    if (allocated(t)) deallocate (t)
    if (allocated(u)) deallocate (u)
-   allocate(c(memsiz4))
-   allocate(d(memsiz4))
-   allocate(e(memsiz4))
-   allocate(f(memsiz4))
-   allocate(h(memsiz4))
-   allocate(m(memsiz4))
-   allocate(n(memsiz4))
-   allocate(o(memsiz4))
-   allocate(p(memsiz4))
-   allocate(q(memsiz4))
-   allocate(r(memsiz4))
-   allocate(s(memsiz4))
-   allocate(t(memsiz4))
-   allocate(u(memsiz4))
-   memsave4 = memsiz4
+   allocate(c(memsize4))
+   allocate(d(memsize4))
+   allocate(e(memsize4))
+   allocate(f(memsize4))
+   allocate(h(memsize4))
+   allocate(m(memsize4))
+   allocate(n(memsize4))
+   allocate(o(memsize4))
+   allocate(p(memsize4))
+   allocate(q(memsize4))
+   allocate(r(memsize4))
+   allocate(s(memsize4))
+   allocate(t(memsize4))
+   allocate(u(memsize4))
+   memsave4 = memsize4
+elseif (memsave4 /= 0) then
+   if(.not. allocated(c)) allocate(c(memsave4))
+   if(.not. allocated(d)) allocate(d(memsave4))
+   if(.not. allocated(e)) allocate(e(memsave4))
+   if(.not. allocated(f)) allocate(f(memsave4))
+   if(.not. allocated(h)) allocate(h(memsave4))
+   if(.not. allocated(m)) allocate(m(memsave4))
+   if(.not. allocated(n)) allocate(n(memsave4))
+   if(.not. allocated(o)) allocate(o(memsave4))
+   if(.not. allocated(p)) allocate(p(memsave4))
+   if(.not. allocated(q)) allocate(q(memsave4))
+   if(.not. allocated(r)) allocate(r(memsave4))
+   if(.not. allocated(s)) allocate(s(memsave4))
+   if(.not. allocated(t)) allocate(t(memsave4))
+   if(.not. allocated(u)) allocate(u(memsave4))
+
 endif
 
 lv=lastchar(cvar)
@@ -5102,13 +5113,13 @@ subroutine RAMS_comp(n1,n2,n3,n4,n5,n6)
 
 use somevars
 use rconstants
+use rpost_coms
 use therm_lib, only : qtk, qwtk, dewfrostpoint, rslif, virtt, thetaeiv
 
 dimension a(n1,n2,n3),b(n1,n2,n3),c(n1,n2,n3),d(n1,n2,n3),e(n1,n2,n3),o(n1,n2,n3),topt(n1,n2)
 dimension a2(n1,n2,n4,n5),a6(n1,n2,n3,n6)
 real f1(n1,n2,n3),f2(n1,n2,n3)
 dimension theta(n1,n2,n3),pp(n1,n2,n3),slp(n1,n2),z(n1,n2,n3)
-include 'rcommons.h'
 dimension slmsts0(12)
 data slmsts0/0.395, 0.410, 0.435, 0.485, 0.451, 0.420  &
             ,0.477, 0.476, 0.426, 0.492, 0.482, 0.863/
@@ -5116,20 +5127,14 @@ real, parameter, dimension(12) :: myslcpd=(/1.465e6, 1.407e6, 1.344e6, 1.273e6, 
                                             1.319e6, 1.227e6, 1.177e6, 1.151e6, 1.088e6,  .874e6 /)
 real :: temptemp,fracliq
 integer :: nsoil
-!SRF
-!  PMAR, PMCO, PMC02 = pesos moleculares do ar, CO, CO2
-data PMAR/28.96/
-data PMCO/28./
-data PMCO2/44./
 
 entry RAMS_transf_ppb_day(n1,n2,n3,a)
-!  PMAR e PMCO = pesos moleculares do ar e do CO
 !  TRANSFORMACAO DE kg[CO]/kg[AR] para ppb (PARTE POR BILHAO)
      do k=1,n3
  	do j=1,n2
  	   do i=1,n1
 
-     a(i,j,k)=a(i,j,k)*(PMAR/PMCO)*1.E+9*1.e-6*86400.
+     a(i,j,k)=a(i,j,k)*(mmdry/mmco2)*1.E+9*1.e-6*day_sec
 
  	   enddo
  	enddo
@@ -5142,7 +5147,7 @@ entry RAMS_transf_ppb(n1,n2,n3,a)
  	do j=1,n2
  	   do i=1,n1
 
-     a(i,j,k)=a(i,j,k)*(PMAR/PMCO)*1.E+9
+     a(i,j,k)=a(i,j,k)*(mmdry/mmco)*1.E+9
 
  	   enddo
  	enddo
@@ -5154,7 +5159,7 @@ entry RAMS_transf_ppm(n1,n2,n3,a)
      do k=1,n3
  	do j=1,n2
  	   do i=1,n1
- 	      a(i,j,k)=a(i,j,k)*(PMAR/PMCO2)*1.E+6
+ 	      a(i,j,k)=a(i,j,k)*(mmdry/mmco2)*1.E+6
  	   enddo
  	enddo
      enddo
@@ -7543,178 +7548,232 @@ end subroutine RAMS_flush_to_zero
 
 !==========================================================================================!
 !==========================================================================================!
-!*rmc Will Cheng's code for calculating slp with mm5's GRAPH method
-! ------- added for calculating SLP from MM5 algorithm ------
+!       Will Cheng's code for calculating slp with mm5's GRAPH method.  Added for          !
+!  calculating SLP from MM5 algorithm.                                                     !
+!    The subroutine calculates SLP from an algorithm taken from  GRAPH, a post-processing  !
+! package of MM5 V3.3                                                                      !
+!                                                                                          !
+!    Input: theta - potential temperature (K)         3D                                   !
+!           pp    - Exner function        (J/kg K)    3D                                   !
+!           z     - terrain               (m)         2D                                   !
+!                                                                                          !
+!    Ouput: SLP   - sea-level pressure    (hPa)       2D                                   !
+!------------------------------------------------------------------------------------------!
+subroutine RAMS_comp_slpmm5(n1,n2,n3,theta,pp,z,slp)
+   use rconstants, only : cp   & ! intent(in)
+                        , cpi  & ! intent(in)
+                        , rdry & ! intent(in)
+                        , cpor & ! intent(in)
+                        , p00  ! ! intent(in)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                    , intent(in)    :: n1
+   integer                    , intent(in)    :: n2
+   integer                    , intent(in)    :: n3
+   real, dimension(n1,n2,n3)  , intent(in)    :: theta
+   real, dimension(n1,n2,n3)  , intent(in)    :: pp
+   real, dimension(n1,n2)     , intent(in)    :: z
+   real, dimension(n1,n2)     , intent(inout) :: slp
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                    :: i
+   integer                                    :: j
+   integer                                    :: k
+   integer                                    :: kk
+   real, dimension(n1,n2)                     :: sfp
+   real, dimension(n1,n2)                     :: ts
+   real, dimension(n1,n2,n3-1)                :: t_mm5
+   real, dimension(n1,n2,n3-1)                :: p_mm5
+   !---------------------------------------------------------------------------------------!
+   
+   do j = 1,n2
+      do i = 1,n1
+         !----- Calculate surface pressure. -----------------------------------------------!
+         sfp(i,j) = (0.5*(pp(i,j,1)+pp(i,j,2))/cp)**cpor*p00*.01
+         !----- Calculate surface temp. ---------------------------------------------------!
+         ts(i,j)  = 0.5 * cpi * (theta(i,j,1)*pp(i,j,1) + theta(i,j,2)*pp(j,j,2))
+      end do
+   end do
 
-      subroutine RAMS_comp_slpmm5(n1,n2,n3,theta,pp,z,slp)
-
-!    The subroutine calculates SLP from an algorithm taken from
-!    GRAPH, a post-processing packing of MM5 V3.3
-!
-!    Input: theta - potential temperature (K)         3D
-!           pp    - Exner function        (J/kg K)    3D
-!           z     - terrain               (m)         2D
-!
-!    Ouput: SLP   - sea-level pressure    (hPa)       2D
-
-! ------ define dimension of arrays ----------
-
-      dimension theta(n1,n2,n3), pp(n1,n2,n3), z(n1,n2),slp(n1,n2)
-
-! ------ input variables to GRAPH subroutine ----------
-
-      dimension sfp(n1,n2), ts(n1,n2), t_mm5(n1,n2,n3-1), p_mm5(n1,n2,n3-1)
-
-! -----------------------------------------------------
-
-      cp = 1004
-      rgas = 287
-      cpor = cp / rgas
-      p00 = 1.e5
-
+   do k = 2,n3
+      kk = n3-k+1
       do j = 1,n2
-        do i = 1,n1
-!! calculate surface pressure
-        sfp(i,j) = (0.5*(pp(i,j,1)+pp(i,j,2))/cp)**cpor*p00*.01
-!! calculate surface temp
-        ts(i,j) = (0.5/cp)*(theta(i,j,1)*pp(i,j,1)+&
-                            theta(i,j,2)*pp(j,j,2))
-        enddo
-      enddo
+         do i = 1,n1
+            !----- Flip arrays upside down for input to GRAPH subroutine. -----------------!
+            t_mm5(i,j,kk) = theta(i,j,k) * pp(i,j,k) * cpi
+            p_mm5(i,j,kk) = (pp(i,j,k) * cpi)**cpor * p00 * .01
+         end do
+      end do
+   end do
 
-      do k = 2,n3
-        kk = n3-k+1
-        do j = 1,n2
-!! flip array upside down for input to GRAPH subroutine
-          do i = 1,n1
-            t_mm5(i,j,kk) = theta(i,j,k)*pp(i,j,k)/cp
-            p_mm5(i,j,kk) = (pp(i,j,k)/cp)**cpor*p00*.01
-          enddo
-        enddo
-      enddo
+   call seaprs_0(t_mm5,p_mm5,z,sfp,ts,n1,n2,n3-1,slp)
 
-      call SEAPRS_0(t_mm5,p_mm5,z,sfp,ts,n1,n2,n3-1,slp)
-
-      return
-      end
+   return
+end subroutine RAMS_comp_slpmm5
+!==========================================================================================!
+!==========================================================================================!
 
 
-!------------------------------------------------------------------------
-      SUBROUTINE SEAPRS_0(T,PP,TER,SFP,TS,IMX,JMX,KX,SLP)
-!
-!     SECTION  DIAGNOSTIC
-!     PURPOSE  COMPUTES SEA LEVEL PRESSURE FROM THE RULE
-!              T1/T2=(P1/P2)**(GAMMA*R/G).
-!
-!     *** LEVELS GO FROM TOP-DOWN ***
-!
-!     INPUT       T        TEMPERATURE (Kelvin)                3D
-!                 TER      TERRAIN     (m)                     2D
-!                 SFP      SURFACE PRESSURE (hPa)              2D
-!                 IMX      DOT POINT DIMENSION N-S
-!                 JMX      DOT POINT DIMENSION E-W
-!                 KX       NUMBER OF VERTICAL LEVELS
-!
-!     OUTPUT      SLP      SEA LEVEL PRESSURE (hPa)            2D
-!
-      DIMENSION T(IMX,JMX,KX), PP(IMX,JMX,KX),&
-                PS(IMX,JMX)  ,SFP(IMX,JMX) , &
-                TER(IMX,JMX)
-      DIMENSION PL(IMX,JMX),T0(IMX,JMX),TS(IMX,JMX),&
-                XKLEV(IMX,JMX)
-      DIMENSION SLP(IMX,JMX)
-      PARAMETER (R=287.04,G=9.8,GAMMA=6.5E-3)
-      PARAMETER (TC=273.16+17.5) ! T CRITICAL IN PSFC/PSLV
-      PARAMETER (PCONST=100.)
-!
-      LOGICAL L1,L2,L3,L4
-!
-!
-!
-!
-!     ... SEA LEVEL PRESSURE
-!
-      XTERM=GAMMA*R/G
-!
-!     ... COMPUTE PRESSURE AT PCONST MB ABOVE SURFACE (PL)
-!
-      KUPTO=KX/2
-99    CONTINUE
-      DO 100 J=1,JMX
-      DO 100 I=1,IMX
-         PL(I,J)=SFP(I,J)-PCONST
-         XKLEV(I,J)=0.
-100   CONTINUE
-!
-!     ... FIND 2 LEVELS ON SIGMA SURFACES SURROUNDING PL AT EACH I,J
-!
-      DO 150 J=1,JMX
-      DO 150 I=1,IMX
-         DO 125 K=KX-1,KUPTO,-1
-            XK=FLOAT(K)
-            XKHOLD=XKLEV(I,J)
-!srf            XKLEV(I,J)=CVMGT(XK,XKHOLD,   &
-            XKLEV(I,J)=merge(XK,XKHOLD,   &
-              (((PP(I,J,K)).LT.PL(I,J)) .AND.  &
-               ((PP(I,J,K+1)).GE.PL(I,J))))
-125      CONTINUE
-         IF(XKLEV(I,J).LT.1.) THEN
-            PRINT *,'ERROR FINDING PRESSURE LEVEL ',PCONST,' MB ',&
-                   'ABOVE THE SURFACE'
-            PRINT *,'LAST K LEVEL =',KUPTO
-            IF(KUPTO.NE.1) THEN
-               PRINT *,'TRYING AGAIN WITH KUPTO=1'
-               KUPTO=1
-               GOTO 99
-            ELSE
-               PRINT *,'I,J=',I,J
-               PRINT *,'PL=',PL(I,J)
-               PRINT *,'PSFC=',SFP(I,J)
-               STOP
-            END IF
-         END IF
-150   CONTINUE
-!
-!     ... GET TEMPERATURE AT PL (TL), EXTRAPOLATE T AT SURFACE (TS)
-!         AND T AT SEA LEVEL (T0) WITH 6.5 K/KM LAPSE RATE
-!
-      DO 200 J=1,JMX
-      DO 200 I=1,IMX
-         KLO=NINT(XKLEV(I,J))+1
-         KHI=NINT(XKLEV(I,J))
-         PLO=PP(I,J,KLO)
-         PHI=PP(I,J,KHI)
-         TLO=T(I,J,KLO)
-         THI=T(I,J,KHI)
-         TL=THI-(THI-TLO)*ALOG(PL(I,J)/PHI)/ALOG(PLO/PHI)
-         TS(I,J)=TL*(SFP(I,J)/PL(I,J))**XTERM
-         TBAR=(TS(I,J)+TL)*0.5
-         HL=TER(I,J)-R/G*ALOG(PL(I,J)/SFP(I,J))*TBAR
-         T0(I,J)=TL+GAMMA*HL
-200   CONTINUE
-!
-!     ... CORRECT SEA LEVEL TEMPERATURE IF TOO HOT
-!
-      DO 400 J=1,JMX
-      DO 400 I=1,IMX
-         L1=T0(I,J).LT.TC
-         L2=TS(I,J).LE.TC
-         L3=.NOT.L1
-         T0HOLD=T0(I,J)
-!srf         T0(I,J)=CVMGT(T0HOLD,&
-!srf           CVMGT(TC,TC-0.005*(TS(I,J)-TC)**2,L2.AND.L3),L1.AND.L2)
-         T0(I,J)=merge(T0HOLD,&
-           merge(TC,TC-0.005*(TS(I,J)-TC)**2,L2.AND.L3),L1.AND.L2)
-400   CONTINUE
-!
-!     ... COMPUTE SEA LEVEL PRESSURE
-!
-      DO 600 J=1,JMX
-      DO 600 I=1,IMX
-         SLP(I,J)=SFP(I,J)*EXP(2.*G*TER(I,J)/(R*(TS(I,J)+T0(I,J))))
-600   CONTINUE
-      RETURN
-      END
 
-!-------------------------------------------------------------------------
 
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine computes sea level pressure from the rule                            !
+!              t1/t2=(p1/p2)**(gamma*r/g).                                                 !
+!                                                                                          !
+!     *** Levels go from top-down ***                                                      !
+!                                                                                          !
+!     Input       t        temperature (Kelvin)                3D                          !
+!                 ter      terrain     (m)                     2D                          !
+!                 sfp      surface pressure (hPa)              2D                          !
+!                 imx      dot point dimension n-s                                         !
+!                 jmx      dot point dimension e-w                                         !
+!                 kx       number of vertical levels                                       !
+!                                                                                          !
+!     Output      slp      sea level pressure (hPa)            2D                          !
+!                                                                                          !
+!------------------------------------------------------------------------------------------!
+subroutine seaprs_0(t,pp,ter,sfp,ts,imx,jmx,kx,slp)
+   use rconstants, only : rdry & ! intent(in)
+                        , grav & ! intent(in)
+                        , t00  ! ! intent(in)
+   implicit none
+   !----- Local constants. ----------------------------------------------------------------!
+   real                          , parameter     :: gamma  = 6.5e-3
+   real                          , parameter     :: tcrit  = t00+17.5
+   real                          , parameter     :: pconst = 100.
+   real                          , parameter     :: xterm  = gamma * rdry / grav
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                       , intent(in)    :: imx
+   integer                       , intent(in)    :: jmx
+   integer                       , intent(in)    :: kx
+   real   , dimension(imx,jmx,kx), intent(in)    :: t
+   real   , dimension(imx,jmx,kx), intent(in)    :: pp
+   real   , dimension(imx,jmx)   , intent(in)    :: ter
+   real   , dimension(imx,jmx)   , intent(in)    :: sfp
+   real   , dimension(imx,jmx)   , intent(inout) :: ts
+   real   , dimension(imx,jmx)   , intent(inout) :: slp
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                       :: i
+   integer                                       :: j
+   integer                                       :: k
+   integer                                       :: kupto
+   integer                                       :: klo
+   integer                                       :: khi
+   logical                                       :: l1
+   logical                                       :: l2
+   logical                                       :: l3
+   real   , dimension(imx,jmx)                   :: ps
+   real   , dimension(imx,jmx)                   :: pl
+   real   , dimension(imx,jmx)                   :: t0
+   real   , dimension(imx,jmx)                   :: xklev
+   real                                          :: xk
+   real                                          :: xkhold
+   real                                          :: plo
+   real                                          :: phi
+   real                                          :: tlo
+   real                                          :: thi
+   real                                          :: tl
+   real                                          :: tbar
+   real                                          :: t0hold
+   real                                          :: hl
+   !---------------------------------------------------------------------------------------!
+
+   !------ Compute pressure at pconst mb above surface (pl). ------------------------------!
+   kupto=kx/2
+
+
+   mainloop: do
+      do j=1, jmx
+         do i=1,imx
+            pl(i,j)=sfp(i,j)-pconst
+            xklev(i,j)=0.
+         end do
+      end do
+
+      !----- Find 2 levels on sigma surfaces surrounding pl at each i,j. ------------------!
+      jloop: do j=1,jmx
+         iloop: do i=1,imx
+            kloop: do k=kx-1,kupto,-1
+               xk     = real(k)
+               xkhold = xklev(i,j)
+               xklev(i,j) = merge(xk,xkhold                                                &
+                                 ,((pp(i,j,k)   <  pl(i,j)) .and.                          &
+                                   (pp(i,j,k+1) >= pl(i,j))       ))
+            end do kloop
+
+            if (xklev(i,j) < 1.) then
+               write (unit=*,fmt='(a,1x,es12.5,1x,a)')                                     &
+                  ' Error finding pressure level ',pconst,' mb above the surface!'
+               write (unit=*,fmt='(a,1x,i5,a)') ' Last k level =',kupto,'...'
+
+               if (kupto /= 1) then
+                 write (unit=*,fmt='(a)') ' Trying again with kupto=1...'
+                 kupto = 1
+                 cycle mainloop
+               else
+                  write(unit=*,fmt='(a,1x,i5,1x)')     ' - I    =',i
+                  write(unit=*,fmt='(a,1x,i5,1x)')     ' - J    =',i
+                  write(unit=*,fmt='(a,1x,es12.5,1x)') ' - PL   =',pl(i,j)
+                  write(unit=*,fmt='(a,1x,es12.5,1x)') ' - PSFC =',sfp(i,j)
+                  stop
+               end if
+            end if
+         end do iloop
+      end do jloop
+      !---- The default is to leave the loop... -------------------------------------------!
+      exit mainloop
+   end do mainloop
+
+   !---------------------------------------------------------------------------------------!
+   !      Get temperature at pl (tl), extrapolate t at surface (ts) and T at sea level     !
+   ! (t0) with 6.5 k/km lapse rate.                                                        !
+   !---------------------------------------------------------------------------------------!
+   jloop2: do j=1,jmx
+      iloop2: do i=1,imx
+         klo     = nint(xklev(i,j))+1
+         khi     = nint(xklev(i,j))
+         plo     = pp(i,j,klo)
+         phi     = pp(i,j,khi)
+         tlo     = t(i,j,klo)
+         thi     = t(i,j,khi)
+         tl      = thi-(thi-tlo)*alog(pl(i,j)/phi)/alog(plo/phi)
+         ts(i,j) = tl*(sfp(i,j)/pl(i,j))**xterm
+         tbar    = (ts(i,j)+tl)*0.5
+         hl      = ter(i,j)-rdry/grav*alog(pl(i,j)/sfp(i,j))*tbar
+         t0(i,j) = tl+gamma*hl
+      end do iloop2
+   end do jloop2
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Correct sea level temperature if too hot. ---------------------------------------!
+   jloop3: do j=1,jmx
+      iloop3: do i=1,imx
+         l1      = t0(i,j) <  tcrit
+         l2      = ts(i,j) >= tcrit
+         l3      = .not. l1
+         t0hold  = t0(i,j)
+
+         t0(i,j) = merge(t0hold,merge(tcrit,tcrit-0.005*(ts(i,j)-tcrit)**2,l2.and.l3)      &
+                        ,l1.and.l2)
+      end do iloop3
+   end do jloop3
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Compute sea level pressure. -----------------------------------------------------!
+   jloop4: do j=1,jmx
+      iloop4: do i=1,imx
+         slp(i,j)=sfp(i,j)*exp(2.*grav*ter(i,j)/(rdry*(ts(i,j)+t0(i,j))))
+      end do iloop4
+   end do jloop4
+   !---------------------------------------------------------------------------------------!
+
+   return
+end subroutine seaprs_0
+!==========================================================================================!
+!==========================================================================================!

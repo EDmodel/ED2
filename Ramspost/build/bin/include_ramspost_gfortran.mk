@@ -58,16 +58,16 @@ KIND_COMP=E
 #------------------------------------------------------------------------------------------#
 ifeq ($(KIND_COMP),A)
    USE_INTERF=0
-   F_OPTS=-g -ffpe-trap=invalid,zero,overflow -fbounds-check
+   F_OPTS=-g -ffpe-trap=invalid,zero,overflow -fbounds-check -ffree-line-length-none
    C_OPTS=-g -ffpe-trap=invalid,zero,overflow -fbounds-check
-   LOADER_OPTS=-g -ffpe-trap=invalid,zero,overflow -fbounds-check
+   LOADER_OPTS=-g -ffpe-trap=invalid,zero,overflow -fbounds-check -ffree-line-length-none
    #---------------------------------------------------------------------------------------#
 endif
 ifeq ($(KIND_COMP),E)
    USE_INTERF=1
-   F_OPTS=-O3
+   F_OPTS=-O3 -ffree-line-length-none
    C_OPTS=-O3
-   LOADER_OPTS= -O3
+   LOADER_OPTS= -O3 -ffree-line-length-none
    C_LOADER_OPTS=-O3
    #---------------------------------------------------------------------------------------#
 endif

@@ -154,7 +154,7 @@ subroutine read_ed21_history_file
          !----- File is there, read it. ---------------------------------------------------!
          call h5fopen_f(hnamel, H5F_ACC_RDONLY_F, file_id, hdferr)
          if (hdferr < 0) then
-            write(unit=*,fmt='(a,1x,i)') ' - Error opening HDF5 file - error - ',hdferr
+            write(unit=*,fmt='(a,1x,i4)') ' - Error opening HDF5 file - error - ',hdferr
             write(unit=*,fmt='(a,1x,a)') ' - File name: ',trim(hnamel)
             call fatal_error('Error opening HDF5 file - error - '//trim(hnamel)            &
                             ,'read_ed21_history_file','ed_read_ed21_history.F90')
@@ -626,7 +626,7 @@ subroutine read_ed21_history_file
       if (hdferr /= 0) then
          write (unit=*,fmt='(a,1x,a)') 'File: ',trim(hnamel)
          write (unit=*,fmt='(a)'     ) 'Problem: Failed closing the HDF5 dataset.'
-         write (unit=*,fmt='(a,1x,i)') 'HDFerr: ',hdferr
+         write (unit=*,fmt='(a,1x,i4)') 'HDFerr: ',hdferr
          call fatal_error('Could not close the HDF file'                                   &
                          ,'read_ed21_history_file','ed_read_ed21_history.F90')
       end if
@@ -810,7 +810,7 @@ subroutine read_ed21_history_unstruct
       !----- Open the HDF5 file. ----------------------------------------------------------!
       call h5fopen_f(hnamel, H5F_ACC_RDONLY_F, file_id, hdferr)
       if (hdferr < 0) then
-         write(unit=*,fmt='(a,1x,i)') ' - Error opening HDF5 file - error - ',hdferr
+         write(unit=*,fmt='(a,1x,i4)') ' - Error opening HDF5 file - error - ',hdferr
          write(unit=*,fmt='(a,1x,a)') ' - File name: ',trim(hnamel)
          call fatal_error('Error opening HDF5 file - error - '//trim(hnamel)               &
                          ,'read_ed21_history_file','ed_read_ed21_history.F90')
@@ -854,7 +854,7 @@ subroutine read_ed21_history_unstruct
       if (hdferr /= 0) then
          write (unit=*,fmt='(a,1x,a)') 'File: ',trim(hnamel)
          write (unit=*,fmt='(a)'     ) 'Problem: Failed closing the HDF5 dataset.'
-         write (unit=*,fmt='(a,1x,i)') 'HDFerr: ',hdferr
+         write (unit=*,fmt='(a,1x,i4)') 'HDFerr: ',hdferr
          call fatal_error('Could not close the HDF file'                                   &
                          ,'read_ed21_history_unstruct','ed_read_ed21_history.F90')
       end if
@@ -910,7 +910,7 @@ subroutine read_ed21_history_unstruct
          !----- Open file. ----------------------------------------------------------------!
          call h5fopen_f(hnamel, H5F_ACC_RDONLY_F, file_id, hdferr)
          if (hdferr < 0) then
-            write(unit=*,fmt='(a,1x,i)') ' - Error opening HDF5 file - error - ',hdferr
+            write(unit=*,fmt='(a,1x,i4)') ' - Error opening HDF5 file - error - ',hdferr
             write(unit=*,fmt='(a,1x,a)') ' - File name: ',trim(hnamel)
             call fatal_error('Error opening HDF5 file - error - '//trim(hnamel)            &
                             ,'read_ed21_history_file','ed_read_ed21_history.F90')
@@ -1368,7 +1368,7 @@ subroutine read_ed21_history_unstruct
          if (hdferr /= 0) then
             write (unit=*,fmt='(a,1x,a)') 'File: ',trim(hnamel)
             write (unit=*,fmt='(a)'     ) 'Problem: Failed closing the HDF5 dataset.'
-            write (unit=*,fmt='(a,1x,i)') 'HDFerr: ',hdferr
+            write (unit=*,fmt='(a,1x,i4)') 'HDFerr: ',hdferr
             call fatal_error('Could not close the HDF file'                                &
                             ,'read_ed21_history_file','ed_read_ed21_history.F90')
          end if

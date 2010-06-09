@@ -12,10 +12,8 @@ program ramspost
   ! -   BASIC PARAMETERS  -
   ! -----------------------
 
-  include 'rcommons.h'
-  !nplmax should be the same as nzpmax (rconfig.h)
-  parameter (maxfiles=2000,nplmax=200,maxpatch=25)	
-
+  use rpost_coms
+  use brams_data
   character*600 fln(maxfiles)
   character*80 inp
   character*600 fprefix,gprefix
@@ -41,10 +39,6 @@ program ramspost
        a6(nxpmax,nypmax,nzpmax,maxclouds),                     &
        rout6(nxpmax,nypmax,nzpmax,maxclouds)
 
-  !  ---  Grid of GRADS
-  ! Define maxima dimensao da grade do GRADS =  120% da grade do RAMS
-  !      parameter(maxgx=int(1.2*float(nxpmax)),maxgy=int(1.2*float(nypmax)))
-  parameter(maxgx=440,maxgy=440)
   integer nxgrads(maxgrds),nygrads(maxgrds),            &
        iinf (maxgx,maxgy), jinf (maxgx,maxgy),       &
        nxa(maxgrds),nxb(maxgrds),nya(maxgrds),nyb(maxgrds) 
@@ -62,10 +56,6 @@ program ramspost
        iep_stdate(6),iep_step(6),                      &
        dep_glat(2,maxgrds), dep_glon(2,maxgrds)
 
-  common/rams_data/ ftimes(maxfiles),nfgpnts(4,maxgrds,maxfiles)  &
-       ,nfgrids(maxfiles),ifdates(maxfiles),iftimes(maxfiles) 	 &
-       ,flevels(nzpmax,maxgrds,maxfiles),startutc,httop		 &
-       ,fdelx(maxgrds,maxfiles),fdely(maxgrds,maxfiles)
   character*600 wfln(maxfiles)
 
   ! -----------------------------
@@ -767,11 +757,12 @@ end subroutine ep_putvar
 !
 Subroutine Matriz_interp(ng,nxg,nyg,nxr,nyr,rlat1,dlat, &
      rlon1,dlon,iinf,jinf,rmi,proj)
-  include 'rcommons.h'
-  character*(*) proj
+  use rpost_coms
+  use brams_data
+  use misc_coms, only : glong, glatg
 
-  common/grid2/ glatg(nypmax),glong(nxpmax)
   Dimension rmi(nxg,nyg,4),iinf(nxg,nyg),jinf(nxg,nyg)
+  character(len=*) :: proj
   !
   if(proj.ne.'YES'.AND.proj.ne.'yes') RETURN
 
@@ -846,7 +837,6 @@ Subroutine proj_rams_to_grads(vp,n,nxr,nyr,nzz,nxg,nyg,     &
 
   character*(*) proj
   character*10 vp
-  !        common/grid2/ glatg(nypmax),glong(nxpmax)
   Dimension rlat(nxr,nyr),rlon(nxr,nyr)
   Dimension rout(nxr,nyr,nzz),routgrads(nxg,nyg,nzz)
   Dimension rmi(nxg,nyg,4),iinf(nxg,nyg),jinf(nxg,nyg)
@@ -952,10 +942,10 @@ Subroutine geo_grid(nx,ny,rlat,rlon,dep_glon1,dep_glon2,  &
      dep_glat1,dep_glat2,		         &
      rlatmin,rlatmax,rlonmin,rlonmax,  	 &
      nxg,nyg,proj)
-  include 'rconfig.h'
+  use rpost_dims
+  use misc_coms, only : glong, glatg
   Dimension rlat(nx,ny),rlon(nx,ny)
   character*(*) proj
-  common/grid2/ glatg(nypmax),glong(nxpmax)
 
   dep_glon1=rlon(1,1)
   dep_glon2=rlon(nx,1)

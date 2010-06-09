@@ -8,6 +8,11 @@ an_header.o: $(RPOST_MEMORY)/an_header.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
+brams_data.o: $(RPOST_MEMORY)/brams_data.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
 charutils.o: $(RPOST_UTILS)/charutils.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
@@ -39,6 +44,16 @@ interp_lib.o: $(RPOST_LIB)/interp_lib.f90
 	rm -f $(<F:.f90=.f90)
 
 leaf_coms.o: $(RPOST_LIB)/leaf_coms.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+micro_coms.o: $(RPOST_MEMORY)/micro_coms.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+misc_coms.o: $(RPOST_MEMORY)/misc_coms.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
@@ -89,6 +104,16 @@ rnamel.o: $(RPOST_LIB)/rnamel.f90
 	rm -f $(<F:.f90=.f90)
 
 rnumr.o: $(RPOST_LIB)/rnumr.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+rpost_coms.o: $(RPOST_MEMORY)/rpost_coms.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+rpost_dims.o: $(RPOST_MEMORY)/rpost_dims.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)

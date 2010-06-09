@@ -7,10 +7,9 @@
 !###########################################################################
 
 subroutine vfinit
-
+use misc_coms, only : vc
 implicit none
-character(len=1) :: vc, vcscr(0:63)
-common/vform/vc(0:63)
+character(len=1), dimension(0:63) :: vcscr
 integer :: n
 
 data vcscr/'0','1','2','3','4','5','6','7','8','9'  &
@@ -30,19 +29,19 @@ end
 
 !---------------------------------------------------------
 
-subroutine vctran(iun1,iun2,type)
+subroutine vctran(iun1,iun2,vvtype)
 implicit none
 integer :: iun1,iun2
-character(len=78) :: line,type*(*)
+character(len=78) :: line,vvtype*(*)
 integer :: n,nlines,nbits,nl
 
 read(iun1,'(a78)') line
 write(iun2,'(a78)') line
 
-if(type.eq.'C') then
+if(vvtype.eq.'C') then
    read(line,'(i8)') n
    nlines=n/78+1
-elseif(type.eq.'I'.or.type.eq.'F') then
+elseif(vvtype.eq.'I'.or.vvtype.eq.'F') then
    read(line,'(2i8)')n,nbits
    nlines=(n*nbits/6-1)/78+1
 endif
@@ -103,14 +102,13 @@ end
 
 !--------------------------------------------------------
 
-subroutine vforec(iunit,a,n,nbits,scr,type)
+subroutine vforec(iunit,a,n,nbits,scr,vvtype)
+use misc_coms, only : vc
 implicit none
 integer :: iunit,n,nbits
 real :: a(*),scr(*)
-character(len=*) :: type
+character(len=*) :: vvtype
 
-character(len=1) :: vc
-common/vform/vc(0:63)
 real(kind=8) ::  bias, fact
 real ::  sbias, sfact, amin,amax
 
@@ -126,31 +124,30 @@ sfact=sngl(fact)
 
 write(iunit,10)n,nbits,bias,fact
 10   format(2i8,2e20.10)
- call vwrt(iunit,a,n,bias,fact,nbits,scr,type)
+ call vwrt(iunit,a,n,bias,fact,nbits,scr,vvtype)
 
 return
 end
 
 !--------------------------------------------------------
 
-subroutine vwrt(iunit,a,n,bias,fact,nbits,scr,type)
+subroutine vwrt(iunit,a,n,bias,fact,nbits,scr,vvtype)
+use misc_coms, only : vc
 implicit none
 integer :: iunit,n,nbits
 real :: a(n),scr(n)
-character(len=*) :: type
+character(len=*) :: vvtype
 real(kind=8) ::  bias, fact
 
-character(len=1) :: vc
-common/vform/vc(0:63)
 character :: line*80,form*5
 integer :: i,nvalline,nchs,ic,ii,isval,iii,iscr
 real :: scfct
 
-if(type.eq.'LIN') then
+if(vvtype.eq.'LIN') then
    do 10 i=1,n
       scr(i)=sngl( ( dble(a(i))+bias ) *fact )
 10      continue
-elseif(type.eq.'LOG') then
+elseif(vvtype.eq.'LOG') then
    scfct=2.**(nbits-1)
    do 11 i=1,n
       scr(i)=(sign(1.,a(i))*(log10(max(1.e-10,abs(a(i))))+10.)  &
@@ -183,14 +180,13 @@ end
 
 !--------------------------------------------------------
 
-subroutine vfirec(iunit,a,n,type)
+subroutine vfirec(iunit,a,n,vvtype)
+use misc_coms, only : vc
 implicit none
 integer :: iunit,n
 real :: a(n)
-character(len=*) :: type
+character(len=*) :: vvtype
 
-character(len=1) :: vc
-common/vform/vc(0:63)
 character :: line*80, cs*1
 integer :: ich0,ich9,ichcz,ichca,ichla,ichlz
 integer :: i,nvalline,nchs,ic,ii,isval,iii,ics,nn,nbits,nc
@@ -240,11 +236,11 @@ do 20 i=1,n,nvalline
 20   continue
 
 facti=1./fact
-if(type.eq.'LIN') then
+if(vvtype.eq.'LIN') then
    do 48 i=1,n
       a(i)=a(i)*facti-bias
 48      continue
-elseif(type.eq.'LOG') then
+elseif(vvtype.eq.'LOG') then
    scfct=2.**(nbits-1)
    do 55 i=1,n
       a(i)=sign(1.,a(i)-scfct)  &
@@ -290,14 +286,13 @@ end
 !--------------------------------------------------------
 
 subroutine viorec(iunit,ia,n,nbits,scr)
+use misc_coms, only : vc
 implicit none
 integer :: iunit,n,nbits
 integer :: ia(*),scr(*)
 integer :: iamin,iamax
 real :: bias,fact
 
-character(len=1) :: vc
-common/vform/vc(0:63)
 
 if(vc(0).ne.'0') call vfinit
 
@@ -319,14 +314,13 @@ end
 !--------------------------------------------------------
 
 subroutine vwrti(iunit,ia,n,bias,fact,nbits,iscr)
+use misc_coms, only : vc
 implicit none
 integer :: iunit,n,nbits
 integer :: ia(n),iscr(n)
 real :: bias,fact
 integer :: i,nvalline,nchs,ic,ii,isval,iii,iiscr
 
-character(len=1) :: vc
-common/vform/vc(0:63)
 character line*80,form*5
 
 do 10 i=1,n
@@ -359,12 +353,11 @@ end
 !--------------------------------------------------------
 
 subroutine viirec(iunit,ia,n)
+use misc_coms, only : vc
 implicit none
 integer :: n,iunit
 integer :: ia(n)
 
-character(len=1) :: vc
-common/vform/vc(0:63)
 character line*80, cs*1
 integer :: ich0,ich9,ichcz,ichca,ichla,ichlz
 

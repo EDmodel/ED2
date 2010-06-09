@@ -233,9 +233,9 @@ MOD_EXT=mod
 ##C_OPTS=-tpp6 -xN -O3 -DLITTLE
 ##LOADER_OPTS=-tpp6 -xN -O3 -static -Vaxlib
 #
-F_OPTS=-FR -O3 -static
+F_OPTS=-FR -O3 -static  -ffree-line-length-none
 C_OPTS=-O3 -DLITTLE
-LOADER_OPTS=-O3 -static
+LOADER_OPTS=-O3 -static -ffree-line-length-none
 #
 #-----------------------------------------------------------------
 

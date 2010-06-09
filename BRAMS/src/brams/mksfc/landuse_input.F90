@@ -646,9 +646,11 @@ do jfile = 1,jfile_max
 
             glatp1 = max(-89.9999,min(89.9999,glatp(ip,jp,ir,jr) - offlat))
             glonp1 = glonp(ip,jp,ir,jr) - offlon
-            if (glonp1 .ge.  180.) glonp1 = glonp1 - 360.
-            if (glonp1 .le. -180.) glonp1 = glonp1 + 360.
-
+            if (glonp1 >=  180.) then
+               glonp1 = glonp1 - 360.
+            elseif (glonp1 <= -180.) then
+               glonp1 = glonp1 + 360.
+            end if
             rio = (glonp1 - float(iwoc)) / deltallo + 1.
             !if( abs(glonp1 - float(iwoc)) < 1.e-5 ) rio = 1.
             rjo = (glatp1 - float(isoc)) / deltallo + 1.

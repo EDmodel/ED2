@@ -1,188 +1,219 @@
-!############################# Change Log ##################################
-! 2.0.0
-!
-!###########################################################################
-!  Copyright (C)  1990, 1995, 1999, 2000, 2003 - All Rights Reserved
-!  Regional Atmospheric Modeling System - RAMS
-!###########################################################################
+!===================================== Change Log =========================================!
+! 2.0.0                                                                                    !
+!                                                                                          !
+!==========================================================================================!
+!  Copyright (C)  1990, 1995, 1999, 2000, 2003 - All Rights Reserved                       !
+!  Regional Atmospheric Modeling System - RAMS                                             !
+!==========================================================================================!
+!==========================================================================================!
 
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine projects Earth's surface point (given by latitude,longitude in       !
+! degrees) into a plane tangent to Earth's surface at a pole point (given by latitude,     !
+! longitude in degrees) using a polar stereographic projection; returns point position in  !
+! the projected cartesian system (in meters).                                              !
+!------------------------------------------------------------------------------------------!
 subroutine ll_xy (qlat,qlon,polelat,polelon,x,y)
-  use rconstants, only : erad,erad2,pio180
-  ! ll_xy: projects earth surface point (given by latitude,longitude in degrees)
-  !        into a plane tangent to earths surface at a pole point (given by
-  !        latitude, longitude in degrees) using a polar stereographic projection;
-  !        returns point position in the projected cartesian system (in meters).
+   use rconstants, only : erad   & ! intent(in)
+                        , erad2  & ! intent(in)
+                        , pio180 ! ! intent(in)
 
-  implicit none
-  real, intent(in ) :: qlat
-  real, intent(in ) :: qlon
-  real, intent(in ) :: polelat
-  real, intent(in ) :: polelon
-  real, intent(out) :: x
-  real, intent(out) :: y
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   real, intent(in)  :: qlat
+   real, intent(in)  :: qlon
+   real, intent(in)  :: polelat
+   real, intent(in)  :: polelon
+   real, intent(out) :: x
+   real, intent(out) :: y
+   !----- Local variables. ----------------------------------------------------------------!
+   real              :: sinplat
+   real              :: cosplat
+   real              :: sinplon
+   real              :: cosplon
+   real              :: sinqlat
+   real              :: cosqlat
+   real              :: sinqlon
+   real              :: cosqlon
+   real              :: x3p
+   real              :: y3p
+   real              :: z3p
+   real              :: z3q
+   real              :: x3q
+   real              :: y3q
+   real              :: xq
+   real              :: yq
+   real              :: zq
+   real              :: t
+   !---------------------------------------------------------------------------------------!
 
-  real :: sinplat
-  real :: cosplat
-  real :: sinplon
-  real :: cosplon
-  real :: sinqlat
-  real :: cosqlat
-  real :: sinqlon
-  real :: cosqlon
-  real :: x3p
-  real :: y3p
-  real :: z3p
-  real :: z3q
-  real :: x3q
-  real :: y3q
-  real :: xq
-  real :: yq
-  real :: zq
-  real :: t
 
 
-  ! Evaluate sine and cosine of latitude and longitude of pole point p and
-  ! input point q.
+   !---------------------------------------------------------------------------------------!
+   !     Evaluate sine and cosine of latitude and longitude of pole point p and input      !
+   ! point q.                                                                              !
+   !---------------------------------------------------------------------------------------!
+   sinplat = sin(polelat * pio180)
+   cosplat = cos(polelat * pio180)
+   sinplon = sin(polelon * pio180)
+   cosplon = cos(polelon * pio180)
 
-  sinplat = sin(polelat * pio180)
-  cosplat = cos(polelat * pio180)
-  sinplon = sin(polelon * pio180)
-  cosplon = cos(polelon * pio180)
+   sinqlat = sin(qlat * pio180)
+   cosqlat = cos(qlat * pio180)
+   sinqlon = sin(qlon * pio180)
+   cosqlon = cos(qlon * pio180)
 
-  sinqlat = sin(qlat * pio180)
-  cosqlat = cos(qlat * pio180)
-  sinqlon = sin(qlon * pio180)
-  cosqlon = cos(qlon * pio180)
+   !---------------------------------------------------------------------------------------!
+   !     Compute (x3,y3,z3) coordinates where the origin is the center of the Earth, the z !
+   ! axis is the north pole, the x axis is the equator and prime meridian, and the y axis  !
+   ! is the Equator and 90 E.                                                              !
+   !                                                                                       !
+   ! For the pole point, these are:                                                        !
+   !---------------------------------------------------------------------------------------!
+   x3p = erad * cosplat * cosplon
+   y3p = erad * cosplat * sinplon
+   z3p = erad * sinplat
 
-  ! Compute (x3,y3,z3) coordinates where the origin is the center of the earth,
-  ! the z axis is the north pole, the x axis is the equator and prime
-  ! meridian, and the y axis is the equator and 90 E.
+   !----- For the given lat,lon point, these are: -----------------------------------------!
+   z3q = erad * sinqlat
+   x3q = erad * cosqlat * cosqlon
+   y3q = erad * cosqlat * sinqlon
 
-  ! For the pole point, these are:
+   !---------------------------------------------------------------------------------------!
+   !     Transform q point from (x3,y3,z3) coordinates in the above system to polar        !
+   ! stereographic coordinates (x,y,z):                                                    !
+   !---------------------------------------------------------------------------------------!
+   xq = - sinplon * (x3q-x3p) + cosplon * (y3q-y3p)
+   yq =   cosplat * (z3q-z3p)                                                              &
+        - sinplat * ( cosplon * (x3q-x3p) + sinplon * (y3q-y3p) )
+   zq =   sinplat * (z3q-z3p)                                                              &
+        + cosplat * ( cosplon * (x3q-x3p) + sinplon * (y3q-y3p) )
+   !---------------------------------------------------------------------------------------!
 
-  x3p = erad * cosplat * cosplon
-  y3p = erad * cosplat * sinplon
-  z3p = erad * sinplat
+   !---------------------------------------------------------------------------------------!
+   !      Parametric equation for line from antipodal point at (0,0,-2 erad) to point q    !
+   ! has the following parameter (t) value on the polar stereographic plane:               !
+   !---------------------------------------------------------------------------------------!
+   t = erad2 / (erad2 + zq)
 
-  ! For the given lat,lon point, these are:
+   !---------------------------------------------------------------------------------------!
+   !     This gives the following x and y coordinates for the projection of point q onto   !
+   ! the polar stereographic plane:                                                        !
+   !---------------------------------------------------------------------------------------!
+   x = xq * t
+   y = yq * t
 
-  z3q = erad * sinqlat
-  x3q = erad * cosqlat * cosqlon
-  y3q = erad * cosqlat * sinqlon
-
-  ! Transform q point from (x3,y3,z3) coordinates in the above system to
-  ! polar stereographic coordinates (x,y,z):
-
-  xq = - sinplon * (x3q-x3p) + cosplon * (y3q-y3p)
-  yq =   cosplat * (z3q-z3p)  &
-       - sinplat * ( cosplon * (x3q-x3p) + sinplon * (y3q-y3p) )
-  zq =   sinplat * (z3q-z3p)  &
-       + cosplat * ( cosplon * (x3q-x3p) + sinplon * (y3q-y3p) )
-
-  ! Parametric equation for line from antipodal point at (0,0,-2 erad) to
-  ! point q has the following parameter (t) value on the polar stereographic
-  ! plane:
-
-  t = erad2 / (erad2 + zq)
-
-  ! This gives the following x and y coordinates for the projection of point q
-  ! onto the polar stereographic plane:
-
-  x = xq * t
-  y = yq * t
+   return
 end subroutine ll_xy
+!==========================================================================================!
+!==========================================================================================!
 
 
 
 
 
 
+!==========================================================================================!
+!==========================================================================================!
 subroutine xy_ll (qlat,qlon,polelat,polelon,x,y)
-  use rconstants, only : erad, erad2,pio180,onerad
-  implicit none
-  real, intent(out) :: qlat
-  real, intent(out) :: qlon
-  real, intent(in ) :: polelat
-  real, intent(in ) :: polelon
-  real, intent(in ) :: x
-  real, intent(in ) :: y
+   use rconstants, only : erad   & ! intent(in)
+                        , erad2  & ! intent(in)
+                        , pio180 & ! intent(in)
+                        , onerad ! ! intent(in)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   real, intent(out) :: qlat
+   real, intent(out) :: qlon
+   real, intent(in)  :: polelat
+   real, intent(in)  :: polelon
+   real, intent(in)  :: x
+   real, intent(in)  :: y
+   !----- Local variables. ----------------------------------------------------------------!
+   real              :: sinplat
+   real              :: cosplat
+   real              :: sinplon
+   real              :: cosplon
+   real              :: x3p
+   real              :: y3p
+   real              :: z3p
+   real              :: z3q
+   real              :: x3q
+   real              :: y3q
+   real              :: xq
+   real              :: yq
+   real              :: zq
+   real              :: t
+   real              :: d
+   real              :: alpha
+   real              :: r3q
+   !---------------------------------------------------------------------------------------!
 
-  real :: sinplat
-  real :: cosplat
-  real :: sinplon
-  real :: cosplon
-  real :: x3p
-  real :: y3p
-  real :: z3p
-  real :: z3q
-  real :: x3q
-  real :: y3q
-  real :: xq
-  real :: yq
-  real :: zq
-  real :: t
-  real :: d
-  real :: alpha
-  real :: r3q
 
+   !----- Evaluate sine and cosine of latitude and longitude of pole point p. -------------!
+   sinplat = sin(polelat * pio180)
+   cosplat = cos(polelat * pio180)
+   sinplon = sin(polelon * pio180)
+   cosplon = cos(polelon * pio180)
 
-  ! Evaluate sine and cosine of latitude and longitude of pole point p.
+   !---------------------------------------------------------------------------------------!
+   !      Compute (x3,y3,z3) coordinates of the pole point where the origin is the center  !
+   ! of the Earth, the z axis is the north pole, the x axis is the Equator and prime       !
+   ! meridian, and the y axis is the equator and 90 E.                                     !
+   !---------------------------------------------------------------------------------------!
+   x3p = erad * cosplat * cosplon
+   y3p = erad * cosplat * sinplon
+   z3p = erad * sinplat
 
-  sinplat = sin(polelat * pio180)
-  cosplat = cos(polelat * pio180)
-  sinplon = sin(polelon * pio180)
-  cosplon = cos(polelon * pio180)
+   !---------------------------------------------------------------------------------------!
+   !     Compute distance d from given point R on the polar stereographic plane to the     !
+   ! pole point P:                                                                         !
+   !---------------------------------------------------------------------------------------!
+   d = sqrt (x*x + y*y)
 
-  ! Compute (x3,y3,z3) coordinates of the pole point where the origin is the
-  ! center of the earth, the z axis is the north pole, the x axis is the
-  ! equator and prime meridian, and the y axis is the equator and 90 E.
+   !---------------------------------------------------------------------------------------!
+   !     Compute angle QCP where C is the center of the Earth.  This is twice angle QAP    !
+   ! where A is the antipodal point.  Angle QAP is the same as angle RAP:                  !
+   !---------------------------------------------------------------------------------------!
+   alpha = 2. * atan2(d,erad2)
 
-  x3p = erad * cosplat * cosplon
-  y3p = erad * cosplat * sinplon
-  z3p = erad * sinplat
+   !----- Compute zq, the height of Q relative to the polar stereographic plane. ----------!
+   zq = erad * (cos(alpha) - 1.)
 
-  ! Compute distance d from given point R on the polar stereographic plane
-  ! to the pole point P:
+   !----- Compute the parameter t which is the the distance ratio AQ:AR. ------------------!
+   t = (erad2 + zq) / erad2
 
-  d = sqrt (x ** 2 + y ** 2)
+   !----- Compute xq and yq, the x and y coordinates of Q in polar stereographic space. ---!
+   xq = t * x
+   yq = t * y
 
-  ! Compute angle QCP where C is the center of the Earth.  This is twice
-  ! angle QAP where A is the antipodal point.  Angle QAP is the same as
-  ! angle RAP:
+   !----- Transform location of Q from (x,y,z) coordinates to (x3,y3,z3). -----------------!
+   x3q = x3p - xq * sinplon - yq * cosplon * sinplat + zq * cosplat * cosplon
+   y3q = y3p + xq * cosplon - yq * sinplon * sinplat + zq * cosplat * sinplon
+   z3q = z3p + yq * cosplat + zq * sinplat
 
-  alpha = 2. * atan2(d,erad2)
+   !----- Compute the latitude and longitude of Q. ----------------------------------------!
+   qlon = atan2(y3q,x3q) * onerad
+   r3q  = sqrt(x3q*x3q + y3q*y3q)
+   qlat = atan2(z3q,r3q) * onerad
 
-  ! Compute zq, the height of Q relative to the polar stereographic plane:
-
-  zq = erad * (cos(alpha) - 1.)
-
-  ! Compute the parameter t which is the the distance ratio AQ:AR
-
-  t = (erad2 + zq) / erad2
-
-  ! Compute xq and yq, the x and y coordinates of Q in polar stereographic space:
-
-  xq = t * x
-  yq = t * y
-
-  ! Transform location of Q from (x,y,z) coordinates to (x3,y3,z3):
-
-  x3q = x3p - xq * sinplon - yq * cosplon * sinplat  &
-       + zq * cosplat * cosplon
-  y3q = y3p + xq * cosplon - yq * sinplon * sinplat  &
-       + zq * cosplat * sinplon
-  z3q = z3p + yq * cosplat + zq * sinplat
-
-  ! Compute the latitude and longitude of Q:
-
-  qlon = atan2(y3q,x3q) * onerad
-  r3q = sqrt(x3q ** 2 + y3q ** 2)
-  qlat = atan2(z3q,r3q) * onerad
-
+   return
 end subroutine xy_ll
+!==========================================================================================!
+!==========================================================================================!
 
-!***************************************************************************
 
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
 subroutine uevetouv (u,v,ue,ve,qlat,qlon,polelat,polelon)
   implicit none
   real :: u,v,ue,ve,qlat,qlon,polelat,polelon

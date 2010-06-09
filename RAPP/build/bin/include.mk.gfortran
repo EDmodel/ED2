@@ -7,8 +7,8 @@
 #------ Define make (gnu makes works best) ------------------------------------------------#
 MAKE = /usr/bin/make
 
-# MEVI root directory
-MEVI_ROOT=/n/circelfs/moorcroft_lab/mlongo/MEVI
+# RAPP root directory
+RAPP_ROOT=/mypath/RAPP
 
 #------------------------------------------------------------------------------------------#
 #    HDF5 libraries. You don't have to include them if you don't want to use anything in   #
@@ -18,9 +18,6 @@ MEVI_ROOT=/n/circelfs/moorcroft_lab/mlongo/MEVI
 USE_HDF5=1
 HDF5_INCS=
 HDF5_LIBS=-lhdf5 -lm
-#HDF5_INCS=/group/wofsy/software/hdf5/hdf5/lib/ -I/group/wofsy/software/hdf5/hdf5/include
-#HDF5_LIBS=-L/group/wofsy/software/hdf5/hdf5/lib/ -lhdf5 -lm \
-           -L/group/wofsy/software/hdf5/zlib/lib -lz
 
 #------------------------------------------------------------------------------------------#
 #    NetCDF libraries. You don't have to include them if you don't want to use anything in #
@@ -30,32 +27,16 @@ HDF5_LIBS=-lhdf5 -lm
 USE_NCDF=1
 NCDF_INCS=/odyssey/apps/netcdf/3.6.3/netcdf-3.6.3/include
 NCDF_LIBS=-L/odyssey/apps/netcdf/3.6.3/netcdf-3.6.3/lib -lnetcdf
-#NCDF_INCS=/group/wofsy/software/netcdf-3.6.2/include
-#NCDF_LIBS=-L/group/wofsy/software/netcdf-3.6.2/lib -lnetcdf
-
-#------------------------------------------------------------------------------------------#
-#    Vis5D libraries. You don't have to include them if you don't want to use anything in  #
-# Vis5D, in which case you can set up USE_V5DP to 0, and leave V5DP_INCS and V5DP_LIBS in #
-# blank.                                                                                   #
-#------------------------------------------------------------------------------------------#
-USE_V5DP=1
-V5DP_INCS=/odyssey/apps/vis5d+-1.3.0-beta/include/vis5d+
-V5DP_LIBS=-L/odyssey/apps/vis5d+-1.3.0-beta/lib -lv5d
 
 #------ Defining the compiler and library paths in case they are not in LD_LIBRARY_PATH ---#
 CMACH=PC_LINUX1
-F_COMP=ifort
-C_COMP=icc
+F_COMP=gfortran
+C_COMP=gcc
 LIBS=
 
 #------ Defining compiler options ---------------------------------------------------------#
-#F_OPTS= -FR -O0 -recursive -Vaxlib -static -check all -g -fpe0 -ftz -gen-interfaces     \
-	-warn interfaces -debug extended -debug inline_debug_info -debug-parameters all \
-	-traceback -ftrapuv
-
-#C_OPTS= -O0 -DLITTLE -static -g -traceback -debug extended
-F_OPTS = -FR -O3 -recursive -Vaxlib -traceback -static
-C_OPTS = -DLITTLE -static -traceback
+F_OPTS = -O3 -static -ffree-line-length-none
+C_OPTS = -DLITTLE -static -O3 -ffree-line-length-none
 
 #------ Archive command -------------------------------------------------------------------#
 ARCHIVE=ar rs

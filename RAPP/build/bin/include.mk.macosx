@@ -48,8 +48,9 @@ LIBS=
 #                  face problems. If it successfully compiles, then you can switch to B.   #
 #------------------------------------------------------------------------------------------#
 USE_INTERF=0
-F_OPTS=-O0 -Wall -ffpe-trap=invalid,zero,overflow,underflow,precision,denormal
-LOADER_OPTS=-O0 
+F_OPTS=-O0 -Wall -ffpe-trap=invalid,zero,overflow,underflow,precision,denormal             \
+       -ffree-line-length-none
+LOADER_OPTS=-O0  -ffree-line-length-none
 
 
 #------------------------------------------------------------------------------------------#
@@ -59,8 +60,8 @@ LOADER_OPTS=-O0
 #           velopers.                                                                      #
 #------------------------------------------------------------------------------------------#
 #USE_INTERF=1
-#F_OPTS= -O3 
-#LOADER_OPTS= -O3 
+#F_OPTS= -O3  -ffree-line-length-none
+#LOADER_OPTS= -O3  -ffree-line-length-none
 #------------------------------------------------------------------------------------------#
 
 

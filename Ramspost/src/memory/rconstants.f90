@@ -67,6 +67,7 @@ Module rconstants
    real, parameter :: mmo2        = 0.0319988      ! Mean O2 molar mass         [   kg/mol]
    real, parameter :: mmo3        = 0.0479982      ! Mean ozone molar mass      [   kg/mol]
    real, parameter :: mmh2o       = 0.01801505     ! Mean water molar mass      [   kg/mol]
+   real, parameter :: mmco        = 0.0280101      ! Mean CO molar mass         [   kg/mol]
    real, parameter :: mmco2       = 0.0440095      ! Mean CO2 molar mass        [   kg/mol]
    real, parameter :: mmdrycgs    = mmdry * 1.e3   ! Mean dry air molar mass    [    g/mol]
    real, parameter :: mmo2cgs     = mmo2  * 1.e3   ! Mean O2 molar mass         [    g/mol]
