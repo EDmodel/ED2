@@ -1090,7 +1090,7 @@ subroutine ed_opspec_misc
       write (unit=*,fmt='(a)') ' simulations only.  If that''s not what you wanted, change '
       write (unit=*,fmt='(a)') ' your IED_INIT_MODE variable on your ED2IN.                '
       write (unit=*,fmt='(a)') '==========================================================='
-   elseif (ied_init_mode < 0 .or. ied_init_mode > 6 ) then
+   elseif ((ied_init_mode < 0 .or. ied_init_mode > 6) .and. ied_init_mode.ne.99 ) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
                       'Invalid IED_INIT_MODE, it must be between 0 and 6. Yours is set to' &
                      ,ied_init_mode,'...'

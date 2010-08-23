@@ -682,6 +682,7 @@ subroutine ReadNamelist(fileName)
        itoptfn,                 &
        iupdndvi,                &
        iupdsst,                 &
+       iuselai,                 &
        ivegtflg,                &
        ivegtfn,                 &
        ixsctn,                  &
@@ -1103,9 +1104,9 @@ subroutine ReadNamelist(fileName)
        xlite, ylite, zlite, nlite_vars, lite_vars, avgtim, frqmean,    &
        frqboth, kwrite, frqprt, initfld, topfiles, sfcfiles, sstfpfx,  &
        ndvifpfx, itoptflg, isstflg, ivegtflg, isoilflg, ndviflg,       &
-       nofilflg, iupdndvi, iupdsst, itoptfn, isstfn, ivegtfn, isoilfn, &
-       ndvifn, itopsflg, toptenh, toptwvl, iz0flg, z0max, z0fact,      &
-       mkcoltab, coltabfn
+       nofilflg, iupdndvi, iupdsst,iuselai, itoptfn, isstfn, ivegtfn,  &
+       isoilfn,ndvifn, itopsflg, toptenh, toptwvl, iz0flg, z0max,      &
+       z0fact,mkcoltab, coltabfn
 
   namelist /CUPARM_OPTIONS/ &
        nnqparm,nclouds,ndeepest,nshallowest,wcldbs,confrq,cptime,        &

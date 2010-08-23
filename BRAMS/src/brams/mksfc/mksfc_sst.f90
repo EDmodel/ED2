@@ -37,6 +37,7 @@ flnm=trim(isstfn(ifm))//'HEADER'
 inquire(file=flnm,exist=there)
 if (.not.there) then
    print*,'SSTDATA header file for grid ',ifm,' not there.'
+   print*,flnm
    stop 'sst_read_fileheader-1'
 endif
 

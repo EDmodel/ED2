@@ -63,6 +63,7 @@ else
    DELTALLO=FLOAT(IBLKSIZO)/FLOAT(NO-1)
 endif
 
+
 iodim=max(100000,4*no*no)
 MOF=IODIM/(NO*NO)
 

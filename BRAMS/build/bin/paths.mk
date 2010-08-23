@@ -2,7 +2,7 @@
 
 # RAMS root directory.
 #
-EDBRAMS_ROOT=/n/Moorcroft_Lab/Users/mlongo/EDBRAMS
+EDBRAMS_ROOT=/home/rknox/Models/Mainline/EDBRAMS
 
 # MCD: EDBRAMS_ROOT=/n/Moorcroft_Lab/Users/mcd/EDBRAMS
 # KIM: EDBRAMS_ROOT=/n/Moorcroft_Lab/Users/kim/ed-code/EDBRAMS

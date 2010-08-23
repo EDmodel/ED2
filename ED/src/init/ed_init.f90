@@ -170,7 +170,7 @@ subroutine load_ecosystem_state()
       write(unit=*,fmt='(a,i3.3)') ' + Initializing from ED2.1 state file. Node: ',mynum
       call read_ed21_history_file
 
-   case(5)
+   case(5,99)
       write(unit=*,fmt='(a,i3.3)')                                                         &
           ' + Initializing from a collection of ED2.1 state files. Node: ',mynum
       call read_ed21_history_unstruct

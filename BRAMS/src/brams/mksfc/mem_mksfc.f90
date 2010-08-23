@@ -46,7 +46,10 @@ Module mem_mksfc
   
   !(iblksizo,iblksizo)
   real, allocatable, dimension(:,:) :: dato
-  
+
+  !(iblksizo,iblksizo)
+  integer, allocatable, dimension(:,:) :: idato
+
   !(iblksizo,iblksizo)
   character(len=1), allocatable, dimension(:,:) :: cdato
   

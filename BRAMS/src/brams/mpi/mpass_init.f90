@@ -246,6 +246,8 @@ subroutine masterput_nl(master_num)
    call MPI_Bcast(IUPDNDVI,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(NDVIFLG,maxgrds,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    
+   call MPI_Bcast(IUSELAI,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   
    call MPI_Bcast(RUNTYPE(1:16),16,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(DTLONG,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
@@ -1118,6 +1120,8 @@ subroutine nodeget_nl
    call MPI_Bcast(IUPDNDVI,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(NDVIFLG,maxgrds,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
   
+   call MPI_Bcast(IUSELAI,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+
    call MPI_Bcast(RUNTYPE(1:16),16,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(DTLONG,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
@@ -1288,6 +1292,7 @@ subroutine nodeget_nl
    call MPI_Bcast(vapour_on,1,MPI_LOGICAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(cloud_on,1,MPI_LOGICAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(bulk_on,1,MPI_LOGICAL,master_num,MPI_COMM_WORLD,ierr)
+
 
    return
 end subroutine nodeget_nl

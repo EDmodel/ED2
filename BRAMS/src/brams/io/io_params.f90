@@ -63,6 +63,7 @@ module io_params
   character(len=14),dimension(maxgrds) :: lastdate_sst
   !----------------------------------------------------------------------------
   integer                             :: iupdsst,isstcyclic,isstcycdata
+  integer                             :: iuselai
   integer,dimension(maxgrds)          :: nsstfiles,isstflp,isstflf
   real(kind=8),dimension(maxgrds)             :: ssttime1,ssttime2
   !----------------------------------------------------------------------------

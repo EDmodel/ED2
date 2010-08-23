@@ -10,8 +10,10 @@ subroutine nc_pressure_stage(n1,n2,nhem,glat,glon,glat2,glon2)
 
   use isan_coms
   use rconstants
+#if defined(USENC)
 #if USENC
   use netcdf
+#endif
 #endif
   implicit none
 

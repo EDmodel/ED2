@@ -292,7 +292,6 @@ subroutine read_ed21_history_file
             end if
          end do
 
-
          !---------------------------------------------------------------------------------!
          !      A suitably close polygon has been located in the datasets.  Use these      !
          ! values, and its children values in sites, patchs and cohorts.                   !
@@ -692,7 +691,8 @@ subroutine read_ed21_history_unstruct
                              , imonthh                 & ! intent(in)
                              , iyearh                  & ! intent(in)
                              , idateh                  & ! intent(in)
-                             , itimeh                  ! ! intent(in)
+                             , itimeh                  & ! intent(in)
+                             , ied_init_mode              
    use ed_state_vars  , only : polygontype             & ! variable type
                              , sitetype                & ! variable type
                              , patchtype               & ! variable type
@@ -772,6 +772,16 @@ subroutine read_ed21_history_unstruct
    real                  , dimension(huge_polygon)              :: plat_list
    real                                                         :: elim_nplant
    real                                                         :: elim_lai
+   real                                                         :: poi_res
+   integer                                                      :: poi_minloc
+   integer               , dimension(maxfiles)                 :: ngridpoly
+   integer                                                      :: ngp1
+   integer                                                      :: total_grid_py
+   integer                                                      :: ipf
+   real                                                         :: plon,plat
+   real, dimension(4) :: test_array
+   integer :: ipfa, ipfz
+
    !----- External functions. -------------------------------------------------------------!
    real                  , external                :: dist_gc ! Great circle distance.
    !---------------------------------------------------------------------------------------!
@@ -803,11 +813,12 @@ subroutine read_ed21_history_unstruct
    !---------------------------------------------------------------------------------------!
    pyfile_list(:) = 0
    pyindx_list(:) = 0
-   ipyz           = 0
+   ipfz           = 0
    lonlatloop: do nf=1,nhisto
       hnamel = histo_list(nf)
 
       !----- Open the HDF5 file. ----------------------------------------------------------!
+
       call h5fopen_f(hnamel, H5F_ACC_RDONLY_F, file_id, hdferr)
       if (hdferr < 0) then
          write(unit=*,fmt='(a,1x,i4)') ' - Error opening HDF5 file - error - ',hdferr
@@ -824,13 +835,16 @@ subroutine read_ed21_history_unstruct
       call h5dclose_f(dset_id, hdferr)
       
       !----- Determine the global position of these polygons. -----------------------------!
-      ipya = ipyz + 1
-      ipyz = ipyz + dset_npolygons_global
+      ipfa = ipfz + 1
+      ipfz = ipfz + dset_npolygons_global
+
+      !----- In case we are meshing grids -------------------------------------------------!
+      ngridpoly(nf) = dset_npolygons_global
       
       !------ Here we save the file where we can find these polygons. ---------------------!
-      do ipy=ipya,ipyz
-         pyfile_list(ipy) = nf
-         pyindx_list(ipy) = ipy-ipya+1
+      do ipf=ipfa,ipfz
+         pyfile_list(ipf) = nf
+         pyindx_list(ipf) = ipf-ipfa+1
       end do
 
       !------------------------------------------------------------------------------------!
@@ -840,13 +854,13 @@ subroutine read_ed21_history_unstruct
 
       call h5dopen_f(file_id,'LONGITUDE', dset_id, hdferr)
       call h5dget_space_f(dset_id, dspace_id, hdferr)
-      call h5dread_f(dset_id, H5T_NATIVE_REAL,plon_list(ipya:ipyz),globdims, hdferr)
+      call h5dread_f(dset_id, H5T_IEEE_F32LE,plon_list(ipfa:ipfz),globdims, hdferr)
       call h5sclose_f(dspace_id, hdferr)
       call h5dclose_f(dset_id, hdferr)
-      
+
       call h5dopen_f(file_id,'LATITUDE', dset_id, hdferr)
       call h5dget_space_f(dset_id, dspace_id, hdferr)
-      call h5dread_f(dset_id, H5T_NATIVE_REAL,plat_list(ipya:ipyz),globdims, hdferr)
+      call h5dread_f(dset_id, H5T_IEEE_F32LE,plat_list(ipfa:ipfz),globdims, hdferr)
       call h5sclose_f(dspace_id, hdferr)
       call h5dclose_f(dset_id, hdferr)
       
@@ -861,14 +875,23 @@ subroutine read_ed21_history_unstruct
    end do lonlatloop
    !---------------------------------------------------------------------------------------!
 
+   total_grid_py = ipfz
 
+   !------------------------------------------------------------------------------------!
+   ! 
+   ! Method for mixing 1 grid and POI's.  Only use the grid if their is NOT an POI
+   ! within a user specified resolution
+   ! Remember, this assumes there is only 1 grid, and it is the first file
+   ! ied_init_mode=99  (Developer use only)
+   !------------------------------------------------------------------------------------!
+   
+   poi_res = 5.0*115.0*1000;
 
    !---------------------------------------------------------------------------------------!
    !     Big loop over all grids.                                                          !
    !---------------------------------------------------------------------------------------!
    gridloop: do igr = 1,ngrids
       cgrid => edgrid_g(igr)
-
 
       !------------------------------------------------------------------------------------!
       !     Now, we will go through all polygons, and we will determine which input        !
@@ -879,19 +902,42 @@ subroutine read_ed21_history_unstruct
       nneighloop: do ipy=1,cgrid%npolygons
          !----- Reset pdist to a very large number. ---------------------------------------!
          pdist(:)   = 1.e20
-         do nf=1,nhisto
-            pdist(nf) = dist_gc(plon_list(nf),cgrid%lon(ipy)                               &
-                               ,plat_list(nf),cgrid%lat(ipy))
+
+         do ipf=1,total_grid_py
+            pdist(ipf) = dist_gc(plon_list(ipf),cgrid%lon(ipy)           &
+                 ,plat_list(ipf),cgrid%lat(ipy))
          end do
-         pclosest(ipy) = minloc(pdist,dim=1)
-         psrcfile(ipy) = pyfile_list(pclosest(ipy))
+
+         if(ied_init_mode==5) then
+            pclosest(ipy) = pyindx_list(minloc(pdist,dim=1))
+            psrcfile(ipy) = pyfile_list(minloc(pdist,dim=1))
+         else
+            ngp1 = ngridpoly(1)
+            pclosest(ipy) = pyindx_list(minloc(pdist(1:ngp1),dim=1))
+            psrcfile(ipy) = pyfile_list(1)
+            
+            poi_minloc = minloc(pdist(ngp1+1:total_grid_py),dim=1)+ngp1
+            
+            if( pdist(poi_minloc) < poi_res ) then
+
+               pclosest(ipy)  = pyindx_list(poi_minloc)
+               psrcfile(ipy)  = pyfile_list(poi_minloc)
+            end if
+
+         end if
+
+
       end do nneighloop
+      
 
       !------------------------------------------------------------------------------------!
       !     Now that we have all polygons matched with their nearest neighbours, we will   !
       ! loop over all files instead of all polygons.  This is to avoid opening and closing !
       ! the files too many times.                                                          !
       !------------------------------------------------------------------------------------!
+
+ 
+
       rstfileloop: do nf=1, nhisto
 
          !---------------------------------------------------------------------------------!
@@ -915,7 +961,6 @@ subroutine read_ed21_history_unstruct
             call fatal_error('Error opening HDF5 file - error - '//trim(hnamel)            &
                             ,'read_ed21_history_file','ed_read_ed21_history.F90')
          end if
-
 
          !---------------------------------------------------------------------------------!
          !      Retrieve global vector sizes and mapping tree.                             !
@@ -1017,7 +1062,13 @@ subroutine read_ed21_history_unstruct
             ! in the source file to which the polygon belongs.  Use these values, and its  !
             ! children values in sites, patchs and cohorts.                                !
             !------------------------------------------------------------------------------!
-            py_index = pyindx_list(pclosest(ipy))
+!            py_index = pyindx_list(pclosest(ipy))
+
+            py_index = pclosest(ipy)
+
+            !------------------------------------------------------------------------------!
+            !      Retrieve the polygon coordinates data.                                        !
+            !------------------------------------------------------------------------------!
 
             iparallel = 0
             
@@ -1032,6 +1083,8 @@ subroutine read_ed21_history_unstruct
             memdims(1)  = 1_8
             memoffs(1)  = 0_8
             memsize(1)  = 1_8
+
+
             !---- The ipy:ipy notation is needed for ifort when checking interfaces. ------!
             call hdf_getslab_i(cgrid%load_adjacency(ipy:ipy),'LOAD_ADJACENCY '             &
                               ,dsetrank,iparallel,.true.)
@@ -1395,6 +1448,8 @@ subroutine read_ed21_history_unstruct
    call fatal_error ('You cannot restart with ED-2.1 without using HDF5...'                &
                     ,'read_ed21_history_unstruct','ed_read_ed21_history.F90')
 #endif   
+
+
    return
 end subroutine read_ed21_history_unstruct
 !==========================================================================================!
