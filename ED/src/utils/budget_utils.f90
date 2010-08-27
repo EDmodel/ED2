@@ -44,7 +44,7 @@ end subroutine update_budget
 !==========================================================================================!
 subroutine compute_budget(csite,lsl,pcpg,qpcpg,ipa,wcurr_loss2atm,ecurr_loss2atm           &
                          ,co2curr_loss2atm,wcurr_loss2drainage,ecurr_loss2drainage         &
-                         ,wcurr_loss2runoff,ecurr_loss2runoff,ecurr_latent,site_area       &
+                         ,wcurr_loss2runoff,ecurr_loss2runoff,site_area                    &
                          ,cbudget_nep,old_can_enthalpy,old_can_shv,old_can_co2,old_can_rhos)
    use ed_state_vars, only : sitetype           ! ! structure
    use ed_misc_coms , only : dtlsm              & ! intent(in)
@@ -67,7 +67,6 @@ subroutine compute_budget(csite,lsl,pcpg,qpcpg,ipa,wcurr_loss2atm,ecurr_loss2atm
    real                  , intent(in)    :: ecurr_loss2atm
    real                  , intent(in)    :: ecurr_loss2drainage
    real                  , intent(in)    :: ecurr_loss2runoff
-   real                  , intent(in)    :: ecurr_latent
    real                  , intent(in)    :: wcurr_loss2atm
    real                  , intent(in)    :: wcurr_loss2drainage
    real                  , intent(in)    :: wcurr_loss2runoff

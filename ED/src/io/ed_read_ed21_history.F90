@@ -97,6 +97,8 @@ subroutine read_ed21_history_file
    real                                :: currad
    real                                :: elim_nplant
    real                                :: elim_lai
+   !----- Local constants. ----------------------------------------------------------------!
+   real                  , parameter   :: tiny_biomass = 1.e-20
    !----- External function. --------------------------------------------------------------!
    real                  , external    :: dist_gc
    !---------------------------------------------------------------------------------------!
@@ -556,6 +558,34 @@ subroutine read_ed21_history_file
                            end select
                         end if
 
+                        !------------------------------------------------------------------!
+                        !     Make sure that the biomass won't lead to FPE.  This          !
+                        ! should never happen when using a stable ED-2.1 version, but      !
+                        ! older versions had "zombie" cohorts.  Here we ensure that        !
+                        ! the model initialises with stable numbers whilst ensuring        !
+                        ! that the cohorts will be eliminated.                             !
+                        !------------------------------------------------------------------!
+                        if (cpatch%balive(ico) > 0.            .and.                       &
+                            cpatch%balive(ico) < tiny_biomass) then
+                           cpatch%balive(ico) = tiny_biomass
+                        end if
+                        if (cpatch%bleaf(ico) > 0.            .and.                        &
+                            cpatch%bleaf(ico) < tiny_biomass) then
+                           cpatch%bleaf(ico) = tiny_biomass
+                        end if
+                        if (cpatch%bdead(ico) > 0.            .and.                        &
+                            cpatch%bdead(ico) < tiny_biomass) then
+                           cpatch%bdead(ico) = tiny_biomass
+                        end if
+                        if (cpatch%bstorage(ico) > 0.            .and.                     &
+                            cpatch%bstorage(ico) < tiny_biomass) then
+                           cpatch%bstorage(ico) = tiny_biomass
+                        end if
+                        !------------------------------------------------------------------!
+
+
+
+
                         !----- Compute the above-ground biomass. --------------------------!
                         cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)  &
                                                     ,cpatch%bleaf(ico),cpatch%pft(ico)     &
@@ -676,6 +706,7 @@ subroutine read_ed21_history_unstruct
    use ed_max_dims    , only : n_pft                   & ! intent(in)
                              , huge_polygon            & ! intent(in)
                              , str_len                 & ! intent(in)
+                             , n_dist_types            & ! intent(in)
                              , maxfiles                & ! intent(in)
                              , maxlist                 ! ! intent(in)
    use pft_coms       , only : SLA                     & ! intent(in)
@@ -686,7 +717,8 @@ subroutine read_ed21_history_unstruct
                              , include_pft_ag          & ! intent(in)
                              , phenology               & ! intent(in)
                              , pft_1st_check           & ! intent(in)
-                             , include_these_pft       ! ! intent(in)
+                             , include_these_pft       & ! intent(in)
+                             , min_cohort_size         ! ! intent(in)
    use ed_misc_coms   , only : sfilin                  & ! intent(in)
                              , current_time            & ! intent(in)
                              , imonthh                 & ! intent(in)
@@ -717,6 +749,9 @@ subroutine read_ed21_history_unstruct
    use allometry      , only : area_indices            & ! function
                              , ed_biomass              ! ! function
    use fuse_fiss_utils, only : terminate_cohorts       ! ! subroutine
+   use disturb_coms   , only : ianth_disturb           & ! intent(in)
+                             , lu_rescale_file         & ! intent(in)
+                             , min_new_patch_area      ! ! intent(in)
 
    implicit none
 
@@ -747,8 +782,10 @@ subroutine read_ed21_history_unstruct
    integer                                                      :: isi
    integer                                                      :: ipa
    integer                                                      :: ico
+   integer                                                      :: xclosest
    integer                                                      :: nflist
    integer                                                      :: nhisto
+   integer                                                      :: nrescale
    integer                                                      :: k
    integer                                                      :: nf
    integer                                                      :: dset_npolygons_global
@@ -761,19 +798,36 @@ subroutine read_ed21_history_unstruct
    integer                                                      :: ipft
    integer                                                      :: ipya
    integer                                                      :: ipyz
+   integer                                                      :: ierr
+   integer                                                      :: ilu
    integer                                                      :: py_index
    integer                                                      :: si_index
    integer                                                      :: pa_index
    integer                                                      :: dsetrank,iparallel
    integer                                                      :: hdferr
    logical                                                      :: exists
+   logical                                                      :: rescale_glob
+   logical                                                      :: rescale_loc
    real                  , dimension(huge_polygon)              :: pdist
    real                  , dimension(huge_polygon)              :: plon_list
    real                  , dimension(huge_polygon)              :: plat_list
+   real                  , dimension(huge_polygon)              :: dist_rscl
+   real                  , dimension(huge_polygon)              :: wlon_rscl
+   real                  , dimension(huge_polygon)              :: clon_rscl
+   real                  , dimension(huge_polygon)              :: elon_rscl
+   real                  , dimension(huge_polygon)              :: slat_rscl
+   real                  , dimension(huge_polygon)              :: clat_rscl
+   real                  , dimension(huge_polygon)              :: nlat_rscl
+   real                  , dimension(n_dist_types,huge_polygon) :: newarea
+   real                  , dimension(n_dist_types)              :: oldarea
+   real                                                         :: dummy
    real                                                         :: elim_nplant
    real                                                         :: elim_lai
+   real                                                         :: csize
+   !----- Local constants. ----------------------------------------------------------------!
+   real                                           , parameter   :: tiny_biomass = 1.e-20
    !----- External functions. -------------------------------------------------------------!
-   real                  , external                :: dist_gc ! Great circle distance.
+   real                                           , external    :: dist_gc 
    !---------------------------------------------------------------------------------------!
 
    !----- Retrieve all files with the specified prefix. -----------------------------------!
@@ -781,6 +835,49 @@ subroutine read_ed21_history_unstruct
 
    !----- Check every file and save only those that are actually history files. -----------!
    call ed21_fileinfo(nflist,full_list,nhisto,histo_list)
+
+   !---------------------------------------------------------------------------------------!
+   !     If this is a simulation with anthropogenic disturbance, check and read the re-    !
+   ! scale file if it exists.                                                              !
+   !---------------------------------------------------------------------------------------!
+   wlon_rscl(:) =  190.
+   elon_rscl(:) = -190.
+   slat_rscl(:) =  100.
+   nlat_rscl(:) = -100.
+   inquire(file=trim(lu_rescale_file),exist=exists)
+   rescale_glob = ianth_disturb == 1 .and. exists
+   nrescale = 0
+   if (rescale_glob) then
+      open (unit=13,file=trim(lu_rescale_file),status='old',action='read')
+      read (unit=13,fmt=*)
+      readrescale: do
+         nrescale = nrescale + 1
+         read (unit=13,fmt=*,iostat=ierr)  wlon_rscl(nrescale),elon_rscl(nrescale)         &
+                                          ,slat_rscl(nrescale),nlat_rscl(nrescale)         &
+                                          ,clon_rscl(nrescale),clat_rscl(nrescale)         &
+                                          ,dummy,(newarea(ilu,nrescale),ilu=1,n_dist_types)
+
+         if (ierr /= 0) then
+            nrescale = nrescale - 1
+            exit readrescale
+         end if
+      end do readrescale
+      rescale_glob = nrescale > 0
+      close (unit=13,status='keep')
+   elseif (ianth_disturb == 1 .and. len_trim(lu_rescale_file) > 0) then
+      write (unit=*,fmt='(a)') '----------------------------------------------------------'
+      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!  '
+      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!  '
+      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!  '
+      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!  '
+      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!  '
+      write (unit=*,fmt='(a)') '----------------------------------------------------------'
+      write (unit=*,fmt='(a)') '  In subroutine read_ed21_history_unstruct:'
+      write (unit=*,fmt='(a)') '  - File '//trim(lu_rescale_file)//' wasn''t found...'
+      write (unit=*,fmt='(a)') '  - Assuming no rescaling...'
+      write (unit=*,fmt='(a)') '----------------------------------------------------------'
+   end if
+   !---------------------------------------------------------------------------------------!
 
    !----- Open the HDF environment. -------------------------------------------------------!
    call h5open_f(hdferr)
@@ -1019,6 +1116,28 @@ subroutine read_ed21_history_unstruct
             !------------------------------------------------------------------------------!
             py_index = pyindx_list(pclosest(ipy))
 
+
+            !------------------------------------------------------------------------------!
+            !     In case we seek to rescale, we must first check whether a scale for the  !
+            ! current polygon.                                                             !
+            !------------------------------------------------------------------------------!
+            !----- Initialise distance and co-ordinates to non-sense numbers. -------------!
+            dist_rscl(:) = 1.e+20 ! Initialise to a large distance and non-sense 
+            if (rescale_glob) then
+               neighbour: do k=1,nrescale
+                  dist_rscl(k) = dist_gc(clon_rscl(k),cgrid%lon(ipy)                       &
+                                        ,clat_rscl(k),cgrid%lat(ipy))
+               end do neighbour
+               xclosest = minloc(dist_rscl,dim=1)
+               
+               rescale_loc = cgrid%lon(ipy) > wlon_rscl(xclosest) .and.                    &
+                             cgrid%lon(ipy) < elon_rscl(xclosest) .and.                    &
+                             cgrid%lat(ipy) > slat_rscl(xclosest) .and.                    &
+                             cgrid%lat(ipy) < nlat_rscl(xclosest)
+            else
+               rescale_loc = .false.
+            end if
+
             iparallel = 0
             
             !------------------------------------------------------------------------------!
@@ -1171,6 +1290,43 @@ subroutine read_ed21_history_unstruct
                   call hdf_getslab_r(csite%mineralized_soil_N,'MINERALIZED_SOIL_N '        &
                                     ,dsetrank,iparallel,.true.)
 
+                  !------------------------------------------------------------------------!
+                  !     Check whether area should be re-scaled.                            !
+                  !------------------------------------------------------------------------!
+                  if (rescale_loc) then
+                     !---------------------------------------------------------------------!
+                     !     Now we loop over all land use types.                             !
+                     !---------------------------------------------------------------------!
+                     do ilu=1,n_dist_types
+                        !---- The original (old) area. ------------------------------------!
+                        oldarea(ilu) = sum(csite%area,mask=csite%dist_type == ilu)
+
+                        !------------------------------------------------------------------!
+                        !     Make sure that no area is going to be zero for a given land  !
+                        ! use type when the counter part is not.                           !
+                        !------------------------------------------------------------------!
+                        oldarea(ilu)          = max(0.5 * min_new_patch_area,oldarea(ilu))
+                        newarea(ilu,xclosest) = max(0.5 * min_new_patch_area               &
+                                                   ,newarea(ilu,xclosest))
+                        !------------------------------------------------------------------!
+                     end do
+
+                     !---- Re-scale the total areas so they are both equal to one. --------!
+                     oldarea(:)          = oldarea(:)          / sum(oldarea)
+                     newarea(:,xclosest) = newarea(:,xclosest)                             &
+                                         / sum(newarea(:,xclosest:xclosest))
+                     
+                     !----- Re-scale the areas of every patch. ----------------------------!
+                     do ipa=1,csite%npatches
+                        ilu = csite%dist_type(ipa)
+                        csite%area(ipa) = csite%area(ipa) * newarea(ilu,xclosest)          &
+                                                          / oldarea(ilu)
+                     end do
+
+                     !----- Just to make sure we preserve unity. --------------------------!
+                     csite%area(:) = csite%area(:) / sum(csite%area)
+
+                  end if
 
                   !------------------------------------------------------------------------!
                   !     Loop over all sites and fill the patch-level variables.            !
@@ -1297,6 +1453,32 @@ subroutine read_ed21_history_unstruct
                                  cpatch%nplant(ico) = 0.
                               end select
                            end if
+
+                           !---------------------------------------------------------------!
+                           !     Make sure that the biomass won't lead to FPE.  This       !
+                           ! should never happen when using a stable ED-2.1 version, but   !
+                           ! older versions had "zombie" cohorts.  Here we ensure that     !
+                           ! the model initialises with stable numbers whilst ensuring     !
+                           ! that the cohorts will be eliminated.                          !
+                           !---------------------------------------------------------------!
+                           if (cpatch%balive(ico) > 0.            .and.                    &
+                               cpatch%balive(ico) < tiny_biomass) then
+                              cpatch%balive(ico) = tiny_biomass
+                           end if
+                           if (cpatch%bleaf(ico) > 0.            .and.                     &
+                               cpatch%bleaf(ico) < tiny_biomass) then
+                              cpatch%bleaf(ico) = tiny_biomass
+                           end if
+                           if (cpatch%bdead(ico) > 0.            .and.                     &
+                               cpatch%bdead(ico) < tiny_biomass) then
+                              cpatch%bdead(ico) = tiny_biomass
+                           end if
+                           if (cpatch%bstorage(ico) > 0.            .and.                  &
+                               cpatch%bstorage(ico) < tiny_biomass) then
+                              cpatch%bstorage(ico) = tiny_biomass
+                           end if
+                           !---------------------------------------------------------------!
+
 
                            !----- Compute the above-ground biomass. -----------------------!
                            cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico)                  &

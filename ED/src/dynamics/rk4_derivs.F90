@@ -1,6 +1,6 @@
 !==========================================================================================!
 !==========================================================================================!
-! Subroutine leaf_derivs                                                                !
+! Subroutine leaf_derivs                                                                   !
 !                                                                                          !
 !     This subroutine finds the fast-scale derivatives at canopy, soil, and leaf surface.  !
 ! This subroutine is based on LEAF-3, except that here only the derivative is computed,    !
@@ -50,7 +50,6 @@ subroutine leaf_derivs(initp,dinitp,csite,ipa)
    dinitp%ebudget_storage   = 0.d0
    dinitp%wbudget_storage   = 0.d0
    dinitp%co2budget_storage = 0.d0
-   dinitp%ebudget_latent    = 0.d0
 
    !----- Compute canopy turbulence properties. -------------------------------------------!
    call canopy_turbulence8(csite,initp,ipa,.false.)
@@ -211,7 +210,7 @@ subroutine leaftw_derivs(initp,dinitp,csite,ipa)
    end if
    
    call ed_grndvap8(ksn,nsoil,initp%soil_water(nzg),initp%soil_energy(nzg),int_sfcw_u      &
-                   ,initp%can_rhos,initp%can_shv,initp%ground_shv,initp%surface_ssh        &
+                   ,initp%can_prss,initp%can_shv,initp%ground_shv,initp%surface_ssh        &
                    ,initp%surface_temp,initp%surface_fliq)
 
    !---------------------------------------------------------------------------------------!
@@ -580,9 +579,6 @@ subroutine leaftw_derivs(initp,dinitp,csite,ipa)
                   qwloss = wloss * cliqvlme8 * (initp%soil_tempk(k2) - tsupercool8)
                   dinitp%soil_energy(k2)   = dinitp%soil_energy(k2)   - qwloss
                   dinitp%avg_smoist_gc(k2) = dinitp%avg_smoist_gc(k2) - wdns8*wloss
-                  if (checkbudget) then
-                     dinitp%ebudget_latent    = dinitp%ebudget_latent    + qwloss*dslz8(k2)
-                  end if
                end if
             end if
          end do
@@ -723,7 +719,6 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,dewgnd
    real(kind=8)                     :: qtransp          !
    real(kind=8)                     :: water_demand     !
    real(kind=8)                     :: water_supply     !
-   real(kind=8)                     :: gzotheta         !
    real(kind=8)                     :: flux_area        ! Area between canopy and plant
    real(kind=8)                     :: can_ssh          ! Canopy air saturation sp. hum.
    real(kind=8)                     :: veg_ssh          ! Veg. surface sat. sp. humidity
@@ -1205,8 +1200,6 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,dewgnd
       end do
    end if
    if (checkbudget) then
-      dinitp%ebudget_latent     = dinitp%ebudget_latent - qdewgndflx  + qwflxgc            &
-                                                        + qtransp_tot + qwflxvc_tot
       dinitp%co2budget_loss2atm = - cflxac
       dinitp%ebudget_loss2atm   = - eflxac
       dinitp%wbudget_loss2atm   = - wflxac
@@ -1225,8 +1218,7 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,dewgnd
    dinitp%qpwp = -(initp%ustar*initp%qstar)
    dinitp%cpwp = -(initp%ustar*initp%cstar)
    dinitp%tpwp = -(initp%ustar*initp%tstar)
-   gzotheta = grav8 * rk4site%geoht * cpi8 * rk4site%atm_exner / rk4site%atm_tmp
-   dinitp%wpwp = vertical_vel_flux8(gzotheta,initp%tstar,initp%ustar)
+   dinitp%wpwp = vertical_vel_flux8(initp%zeta,initp%tstar,initp%ustar)
 
 
    !---------------------------------------------------------------------------------------!

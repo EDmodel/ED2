@@ -15,6 +15,8 @@ module mem_edcp
      real, pointer, dimension (:,:) :: tstar
      real, pointer, dimension (:,:) :: rstar
      real, pointer, dimension (:,:) :: cstar
+     real, pointer, dimension (:,:) :: zeta
+     real, pointer, dimension (:,:) :: ribulk
      real, pointer, dimension (:,:) :: sflux_u
      real, pointer, dimension (:,:) :: sflux_v
      real, pointer, dimension (:,:) :: sflux_t
@@ -32,6 +34,8 @@ module mem_edcp
      real, pointer, dimension(:,:) :: tstar
      real, pointer, dimension(:,:) :: rstar
      real, pointer, dimension(:,:) :: cstar
+     real, pointer, dimension(:,:) :: zeta
+     real, pointer, dimension(:,:) :: ribulk
      real, pointer, dimension(:,:) :: sflux_u
      real, pointer, dimension(:,:) :: sflux_v
      real, pointer, dimension(:,:) :: sflux_t
@@ -67,10 +71,12 @@ contains
     
     call nullify_edflux(ed)
     
-    allocate(ed%ustar   (n2,n3)   )
-    allocate(ed%tstar   (n2,n3)   )
-    allocate(ed%rstar   (n2,n3)   )
-    allocate(ed%cstar   (n2,n3)   )
+    allocate(ed%ustar     (n2,n3)   )
+    allocate(ed%tstar     (n2,n3)   )
+    allocate(ed%rstar     (n2,n3)   )
+    allocate(ed%cstar     (n2,n3)   )
+    allocate(ed%zeta      (n2,n3)   )
+    allocate(ed%ribulk    (n2,n3)   )
     allocate(ed%sflux_u   (n2,n3)   )
     allocate(ed%sflux_v   (n2,n3)   )
     allocate(ed%sflux_r   (n2,n3)   )
@@ -89,10 +95,12 @@ contains
     implicit none
     type(ed_flux) :: ed
     
-    if (associated(ed%ustar     ))  nullify(ed%ustar   )
-    if (associated(ed%tstar     ))  nullify(ed%tstar   )
-    if (associated(ed%rstar     ))  nullify(ed%rstar   )
-    if (associated(ed%cstar     ))  nullify(ed%cstar   )
+    if (associated(ed%ustar     ))  nullify(ed%ustar     )
+    if (associated(ed%tstar     ))  nullify(ed%tstar     )
+    if (associated(ed%rstar     ))  nullify(ed%rstar     )
+    if (associated(ed%cstar     ))  nullify(ed%cstar     )
+    if (associated(ed%zeta      ))  nullify(ed%zeta      )
+    if (associated(ed%ribulk    ))  nullify(ed%ribulk    )
     if (associated(ed%sflux_u   ))  nullify(ed%sflux_u   )
     if (associated(ed%sflux_v   ))  nullify(ed%sflux_v   )
     if (associated(ed%sflux_r   ))  nullify(ed%sflux_r   )
@@ -114,6 +122,8 @@ contains
     if (associated(ed%tstar     ))  ed%tstar   = 0.0
     if (associated(ed%rstar     ))  ed%rstar   = 0.0
     if (associated(ed%cstar     ))  ed%cstar   = 0.0
+    if (associated(ed%zeta      ))  ed%zeta    = 0.0
+    if (associated(ed%ribulk    ))  ed%ribulk  = 0.0
     if (associated(ed%sflux_u   ))  ed%sflux_u = 0.0
     if (associated(ed%sflux_v   ))  ed%sflux_v = 0.0
     if (associated(ed%sflux_r   ))  ed%sflux_r = 0.0
@@ -131,12 +141,14 @@ contains
     implicit none
     type(ed_flux) :: ed
     
-    if (associated(ed%ustar  ))deallocate(ed%ustar  )
-    if (associated(ed%tstar  ))deallocate(ed%tstar  )
-    if (associated(ed%rstar  ))deallocate(ed%rstar  )
-    if (associated(ed%cstar  ))deallocate(ed%cstar  )
-    if (associated(ed%rlongup  ))deallocate(ed%rlongup  )
-    if (associated(ed%albedt   ))deallocate(ed%albedt   )
+    if (associated(ed%ustar     ))  deallocate(ed%ustar     )
+    if (associated(ed%tstar     ))  deallocate(ed%tstar     )
+    if (associated(ed%rstar     ))  deallocate(ed%rstar     )
+    if (associated(ed%cstar     ))  deallocate(ed%cstar     )
+    if (associated(ed%zeta      ))  deallocate(ed%zeta      )
+    if (associated(ed%ribulk    ))  deallocate(ed%ribulk    )
+    if (associated(ed%rlongup   ))  deallocate(ed%rlongup   )
+    if (associated(ed%albedt    ))  deallocate(ed%albedt    )
     if (associated(ed%sflux_u   ))  deallocate(ed%sflux_u   )
     if (associated(ed%sflux_v   ))  deallocate(ed%sflux_v   )
     if (associated(ed%sflux_r   ))  deallocate(ed%sflux_r   )
@@ -159,6 +171,8 @@ contains
     allocate(wg%tstar     (n2,n3)   )
     allocate(wg%rstar     (n2,n3)   )
     allocate(wg%cstar     (n2,n3)   )
+    allocate(wg%zeta      (n2,n3)   )
+    allocate(wg%ribulk    (n2,n3)   )
     allocate(wg%rlongup   (n2,n3)   )
     allocate(wg%albedt    (n2,n3)   )
     allocate(wg%sflux_u   (n2,n3)   )
@@ -177,12 +191,14 @@ contains
     implicit none
     type(water_grid) :: wg
     
-    if (associated(wg%ustar     ))  nullify(wg%ustar   )
-    if (associated(wg%tstar     ))  nullify(wg%tstar   )
-    if (associated(wg%rstar     ))  nullify(wg%rstar   )
-    if (associated(wg%cstar     ))  nullify(wg%cstar   )
-    if (associated(wg%albedt    ))  nullify(wg%albedt   )
-    if (associated(wg%rlongup   ))  nullify(wg%rlongup ) 
+    if (associated(wg%ustar     ))  nullify(wg%ustar     )
+    if (associated(wg%tstar     ))  nullify(wg%tstar     )
+    if (associated(wg%rstar     ))  nullify(wg%rstar     )
+    if (associated(wg%cstar     ))  nullify(wg%cstar     )
+    if (associated(wg%zeta      ))  nullify(wg%zeta      )
+    if (associated(wg%ribulk    ))  nullify(wg%ribulk    )
+    if (associated(wg%albedt    ))  nullify(wg%albedt    )
+    if (associated(wg%rlongup   ))  nullify(wg%rlongup   )
     if (associated(wg%sflux_u   ))  nullify(wg%sflux_u   )
     if (associated(wg%sflux_v   ))  nullify(wg%sflux_v   )
     if (associated(wg%sflux_r   ))  nullify(wg%sflux_r   )
@@ -202,6 +218,8 @@ contains
     if (associated(wg%tstar     ))  wg%tstar   = 0.0
     if (associated(wg%rstar     ))  wg%rstar   = 0.0
     if (associated(wg%cstar     ))  wg%cstar   = 0.0
+    if (associated(wg%zeta      ))  wg%zeta    = 0.0
+    if (associated(wg%ribulk    ))  wg%ribulk  = 0.0
     if (associated(wg%albedt    ))  wg%albedt  = 0.0
     if (associated(wg%rlongup   ))  wg%rlongup = 0.0 
     if (associated(wg%sflux_u   ))  wg%sflux_u = 0.0
@@ -220,12 +238,14 @@ contains
     
     type(water_grid) :: wg
     
-    if (associated(wg%ustar  ))deallocate(wg%ustar  )
-    if (associated(wg%tstar  ))deallocate(wg%tstar  )
-    if (associated(wg%rstar  ))deallocate(wg%rstar  )
-    if (associated(wg%cstar  ))deallocate(wg%cstar  )
-    if (associated(wg%rlongup  ))deallocate(wg%rlongup  )
-    if (associated(wg%albedt   ))deallocate(wg%albedt   )
+    if (associated(wg%ustar     ))  deallocate(wg%ustar     )
+    if (associated(wg%tstar     ))  deallocate(wg%tstar     )
+    if (associated(wg%rstar     ))  deallocate(wg%rstar     )
+    if (associated(wg%cstar     ))  deallocate(wg%cstar     )
+    if (associated(wg%zeta      ))  deallocate(wg%zeta      )
+    if (associated(wg%ribulk    ))  deallocate(wg%ribulk    )
+    if (associated(wg%rlongup   ))  deallocate(wg%rlongup   )
+    if (associated(wg%albedt    ))  deallocate(wg%albedt    )
     if (associated(wg%sflux_u   ))  deallocate(wg%sflux_u   )
     if (associated(wg%sflux_v   ))  deallocate(wg%sflux_v   )
     if (associated(wg%sflux_r   ))  deallocate(wg%sflux_r   )

@@ -81,6 +81,12 @@ Module mem_leaf
                                        , cstar ! ! CO2 mixing ratio scale       [ µmol/mol]
 
       !------------------------------------------------------------------------------------!
+      !    Auxilliary variables for diagnostics.                                           !
+      !------------------------------------------------------------------------------------!
+      real, dimension(:,:,:), pointer :: zeta   & ! Dimensionless turbulent height scale
+                                       , ribulk ! ! Bulk Richardson number
+
+      !------------------------------------------------------------------------------------!
       !     Patch structural properties, dimensioned by (nxp,nyp,npatch).                  !
       !------------------------------------------------------------------------------------!
       real, dimension(:,:,:), pointer :: patch_area   & ! Patch relative area   [      ---]
@@ -212,6 +218,9 @@ Module mem_leaf
       allocate (leaf%rstar            (    nx,ny,np))
       allocate (leaf%cstar            (    nx,ny,np))
 
+      allocate (leaf%zeta             (    nx,ny,np))
+      allocate (leaf%ribulk           (    nx,ny,np))
+
       allocate (leaf%patch_area       (    nx,ny,np))
       allocate (leaf%patch_rough      (    nx,ny,np))
       allocate (leaf%patch_wetind     (    nx,ny,np))
@@ -298,6 +307,9 @@ Module mem_leaf
       if (associated(leaf%rstar            ))  nullify(leaf%rstar            )
       if (associated(leaf%cstar            ))  nullify(leaf%cstar            )
 
+      if (associated(leaf%zeta             ))  nullify(leaf%zeta             )
+      if (associated(leaf%ribulk           ))  nullify(leaf%ribulk           )
+
       if (associated(leaf%patch_area       ))  nullify(leaf%patch_area       )
       if (associated(leaf%patch_rough      ))  nullify(leaf%patch_rough      )
       if (associated(leaf%patch_wetind     ))  nullify(leaf%patch_wetind     )
@@ -380,6 +392,9 @@ Module mem_leaf
       if (associated(leaf%estar            ))  deallocate(leaf%estar            )
       if (associated(leaf%rstar            ))  deallocate(leaf%rstar            )
       if (associated(leaf%cstar            ))  deallocate(leaf%cstar            )
+
+      if (associated(leaf%zeta             ))  deallocate(leaf%zeta             )
+      if (associated(leaf%ribulk           ))  deallocate(leaf%ribulk           )
 
       if (associated(leaf%patch_area       ))  deallocate(leaf%patch_area       )
       if (associated(leaf%patch_rough      ))  deallocate(leaf%patch_rough      )
@@ -606,6 +621,14 @@ Module mem_leaf
       if (associated(leaf%cstar))                                                          &
          call vtables2(leaf%cstar(1,1,1),leafm%cstar(1,1,1),ng,npts,imean                  &
                       ,'CSTAR :6:hist:anal:mpti:mpt3'//trim(str_recycle))
+
+      if (associated(leaf%zeta))                                                           &
+         call vtables2(leaf%zeta(1,1,1),leafm%zeta(1,1,1),ng,npts,imean                    &
+                      ,'ZETA :6:hist:anal:mpti:mpt3'//trim(str_recycle))
+
+      if (associated(leaf%ribulk))                                                         &
+         call vtables2(leaf%ribulk(1,1,1),leafm%ribulk(1,1,1),ng,npts,imean                &
+                      ,'RIBULK :6:hist:anal:mpti:mpt3'//trim(str_recycle))
     
       if (associated(leaf%patch_area))                                                     &
          call vtables2(leaf%patch_area(1,1,1),leafm%patch_area(1,1,1),ng,npts,imean        &

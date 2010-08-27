@@ -75,13 +75,13 @@ subroutine ed_masterput_nl(par_run)
    use ed_misc_coms,    only: expnme, runtype,itimea,iyeara,imontha,idatea ,itimez,iyearz  &
                              ,imonthz,idatez,dtlsm,radfrq,ifoutput,idoutput,imoutput       &
                              ,itoutput,iyoutput,iclobber,frqfast,sfilin,ffilout            &
-                             ,ied_init_mode,ed_inputs_dir,integration_scheme,end_time      &
+                             ,ied_init_mode,thsums_database,integration_scheme,end_time    &
                              ,current_time,sfilout,frqstate,isoutput,iprintpolys,printvars &
                              ,pfmtstr,ipmin,ipmax,iedcnfgf,outfast,outstate,out_time_fast  &
                              ,out_time_state,nrec_fast,nrec_state,irec_fast,irec_state     &
                              ,unitfast,unitstate,event_file,itimeh,iyearh,imonthh,idateh
 
-   use ed_misc_coms,only: attach_metadata
+   use ed_misc_coms   , only: attach_metadata
    use canopy_air_coms, only: icanturb, isfclyrm
    use grid_coms,       only: nzg,nzs,ngrids,nnxp,nnyp,deltax,deltay,polelat,polelon       &
                              ,centlat,centlon,time,timmax,nstratx,nstraty
@@ -98,7 +98,8 @@ subroutine ed_masterput_nl(par_run)
                              ,repro_scheme
    use decomp_coms,     only: n_decomp_lim
    use pft_coms,        only: include_these_pft,agri_stock,plantation_stock,pft_1st_check
-   use disturb_coms,    only: include_fire,ianth_disturb, treefall_disturbance_rate
+   use disturb_coms,    only: include_fire,ianth_disturb, treefall_disturbance_rate        &
+                             ,lu_database,plantation_file,lu_rescale_file
    use optimiz_coms,    only: ioptinpt
    use canopy_radiation_coms, only : crown_mod
    use rk4_coms,        only: rk4_tolerance, ibranch_thermo
@@ -184,7 +185,10 @@ subroutine ed_masterput_nl(par_run)
  
    call MPI_Bcast(veg_database,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(soil_database,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(ed_inputs_dir,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(lu_database,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(plantation_file,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(lu_rescale_file,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(thsums_database,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(ed_met_driver_db,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(isoilstateinit,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
@@ -835,7 +839,7 @@ subroutine ed_nodeget_nl
    use ed_misc_coms,    only: expnme, runtype,itimea,iyeara,imontha,idatea ,itimez,iyearz  &
                              ,imonthz,idatez,dtlsm,radfrq,ifoutput,idoutput,imoutput, itoutput       &
                              ,iyoutput,iclobber,frqfast,sfilin,ffilout,ied_init_mode       &
-                             ,ed_inputs_dir,integration_scheme,end_time,current_time       &
+                             ,thsums_database,integration_scheme,end_time,current_time     &
                              ,isoutput,sfilout,frqstate,iprintpolys,printvars,pfmtstr      &
                              ,ipmin,ipmax,iedcnfgf,outfast,outstate,out_time_fast          &
                              ,out_time_state,nrec_fast,nrec_state,irec_fast,irec_state     &
@@ -852,9 +856,11 @@ subroutine ed_nodeget_nl
                              ,ed_reg_latmin,ed_reg_latmax,ed_reg_lonmin,ed_reg_lonmax      &
                              ,edres,maxpatch,maxcohort
    use physiology_coms, only: istoma_scheme,n_plant_lim
-   use phenology_coms , only: iphen_scheme,iphenys1,iphenysf,iphenyf1,iphenyff,phenpath,repro_scheme
+   use phenology_coms , only: iphen_scheme,iphenys1,iphenysf,iphenyf1,iphenyff,phenpath    &
+                             ,repro_scheme
    use decomp_coms,     only: n_decomp_lim
-   use disturb_coms,    only: include_fire,ianth_disturb, treefall_disturbance_rate
+   use disturb_coms,    only: include_fire,ianth_disturb, treefall_disturbance_rate        &
+                             ,lu_database,plantation_file,lu_rescale_file
    use optimiz_coms,    only: ioptinpt
    use ed_misc_coms,    only: attach_metadata
    use canopy_air_coms, only: icanturb, isfclyrm
@@ -941,7 +947,10 @@ subroutine ed_nodeget_nl
  
    call MPI_Bcast(veg_database,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(soil_database,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(ed_inputs_dir,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(lu_database,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(plantation_file,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(lu_rescale_file,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(thsums_database,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(ed_met_driver_db,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(isoilstateinit,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)

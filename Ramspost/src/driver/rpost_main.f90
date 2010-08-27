@@ -578,72 +578,73 @@ program ramspost
 close (iunit+1)
   stop
 end program ramspost
-
-! ---------------------------------------------------------------
-! -   SUBROUTINE EP_GETVAR : LOAD RAMS VARIABLE FROM ANALYSIS   -
-! ---------------------------------------------------------------
-
-subroutine ep_getvar(cvar,rout,a,b,                      &
-     nx,ny,nz,ng,fn,cdname,cdunits,itype,   &
-     npatch,nzg,nclouds,a2,rout2,a6,rout6)
-  dimension a(nx,ny,nz),b(nx,ny,nz),rout(nx,ny,nz),            &
-       a2(nx,ny,nzg,npatch),rout2(nx,ny,nzg,npatch), &
-       a6(nx,ny,nz,nclouds),rout6(nx,ny,nz,nclouds)
-  character*(*) cvar,fn,cdname,cdunits
-
-  call RAMS_varlib(cvar,nx,ny,nz,nzg,npatch,nclouds,ng,fn,      &
-       cdname,cdunits,itype,a,b,a2,a6)   
+!==========================================================================================!
+!==========================================================================================!
 
 
 
-  IF(itype.eq.8) THEN
-     do i=1,nx
-        do j=1,ny
-           do izg=1,nzg
-              do ip=1,npatch
-                 rout2(i,j,izg,ip)=a2(i,j,izg,ip)
-                 !             print*,i,j,izg,ip,a2(i,j,izg,ip)
-              enddo
-           enddo
-        enddo
-     enddo
-  ELSEIF(itype.eq.6) THEN
-     do i=1,nx
-        do j=1,ny
-           do k=1,nz
-              do ic=1,nclouds
-                 rout6(i,j,k,ic)=a6(i,j,k,ic)
-                 !             print*,i,j,izg,ip,a2(i,j,izg,ip)
-              enddo
-           enddo
-        enddo
-     enddo
-  ELSE
-     do k=1,nz
-	do i=1,nx
-           do j=1,ny
-              rout(i,j,k)=a(i,j,k)
-              !cc
-              !         if(a(i,j,k).gt.1.) &
-              !print*,'Var= ',cvar,i,j,k,a(i,j,k)
-              !cc
-           enddo
-        enddo
-     enddo
-  ENDIF
-  !xxxxxxxxxxxxxxxxxxxxxxxxx
-  !      k=1
-  !        write(17,'(52f10.3)')((rout(ii,jj,k),ii=1,nx),jj=1,ny)
-  !        
-  !xxxxxxxxxxxxxxxxxxxxxxxxx
-  return
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+subroutine ep_getvar(cvar,rout,a,b,nx,ny,nz,ng,fn,cdname,cdunits,itype,npatch,nclouds,nzg  &
+                    ,a2,rout2,a6,rout6)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   character(len=*)            , intent(in)    :: cvar
+   character(len=*)            , intent(in)    :: fn
+   character(len=*)            , intent(out)   :: cdname
+   character(len=*)            , intent(out)   :: cdunits
+   integer                     , intent(in)    :: nx
+   integer                     , intent(in)    :: ny
+   integer                     , intent(in)    :: nz
+   integer                     , intent(in)    :: ng
+   integer                     , intent(out)   :: itype
+   integer                     , intent(in)    :: npatch
+   integer                     , intent(in)    :: nzg
+   integer                     , intent(in)    :: nclouds
+   real   , dimension(*)       , intent(inout) :: a
+   real   , dimension(*)       , intent(inout) :: b
+   real   , dimension(*)       , intent(inout) :: a2
+   real   , dimension(*)       , intent(inout) :: a6
+   real   , dimension(*)       , intent(inout) :: rout
+   real   , dimension(*)       , intent(inout) :: rout2
+   real   , dimension(*)       , intent(inout) :: rout6
+   !---------------------------------------------------------------------------------------!
+
+   !----- Load the variable. --------------------------------------------------------------!
+   call RAMS_varlib(cvar,nx,ny,nz,nzg,npatch,nclouds,ng,fn,cdname,cdunits,itype,a,b,a2,a6)   
+
+   !----- Copy to the appropriate scratch. ------------------------------------------------!
+   select case (itype)
+   case (2)
+      call atob(nx*ny,a,rout)
+   case (3)
+      call atob(nx*ny*nz,a,rout)
+   case (6)
+      call atob(nx*ny*nzg*nclouds,a6,rout6)
+   case (7)
+      call atob(nx*ny*npatch,a,rout)
+   case (8)
+      call atob(nx*ny*nzg*npatch,a2,rout2)
+   case (9)
+      call atob(nx*ny*nclouds,a,rout)
+   case (10)
+      call atob(nx*ny*nzg,a,rout)
+   end select
+   return
 end subroutine ep_getvar
+!==========================================================================================!
+!==========================================================================================!
 
 
-! -------------------------------------------------
-! -   SUBROUTINE EP_SETDATE : PARSE DATE RECORD   -
-! -------------------------------------------------
 
+
+
+
+!==========================================================================================!
+!==========================================================================================!
 subroutine ep_setdate(iyear1,imonth1,idate1,strtim,itrec)
   real time
 

@@ -57,7 +57,8 @@ subroutine sfclyr(mzp,mxp,myp,ia,iz,ja,jz,ibcon)
                   , leaf_g(ng)%sfcwater_energy     , leaf_g(ng)%soil_text                  &
                   , leaf_g(ng)%sfcwater_depth      , leaf_g(ng)%ustar                      &
                   , leaf_g(ng)%tstar               , leaf_g(ng)%rstar                      &
-                  , leaf_g(ng)%cstar               , leaf_g(ng)%veg_albedo                 &
+                  , leaf_g(ng)%cstar               , leaf_g(ng)%zeta                       &
+                  , leaf_g(ng)%ribulk              , leaf_g(ng)%veg_albedo                 &
                   , leaf_g(ng)%veg_fracarea        , leaf_g(ng)%veg_lai                    &
                   , leaf_g(ng)%veg_tai             , leaf_g(ng)%veg_rough                  &
                   , leaf_g(ng)%veg_height          , leaf_g(ng)%patch_area                 &
@@ -196,7 +197,6 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz,leaf,basic,turb,radiate,grid,cu
          atm_co2      = co2s2(i,j)
          atm_prss     = atm_exner ** cpor * p00
          vels         = sqrt(atm_up ** 2 + atm_vp ** 2)
-         gzotheta     = grav * geoht / atm_theta
          atm_temp     = atm_theta * atm_exner
          atm_enthalpy = ptqz2enthalpy(atm_prss,atm_temp,atm_shv,geoht)
 
@@ -402,19 +402,20 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz,leaf,basic,turb,radiate,grid,cu
                               ,geoht,vels_pat,dtll                                         &
                               ,leaf%patch_rough(i,j,ip),leaf%ustar(i,j,ip)                 &
                               ,leaf%tstar(i,j,ip),estar,qstar,leaf%rstar(i,j,ip)           &
-                              ,leaf%cstar(i,j,ip),leaf%R_aer(i,j,ip))
+                              ,leaf%cstar(i,j,ip),leaf%zeta(i,j,ip),leaf%ribulk(i,j,ip)    &
+                              ,leaf%R_aer(i,j,ip))
 
 
                if (teb_spm==1) g_urban = leaf%g_urban(i,j,ip)
 
                call sfclmcv( leaf%ustar        (i,j,ip) , leaf%tstar              (i,j,ip) &
                            , leaf%rstar        (i,j,ip) , leaf%cstar              (i,j,ip) &
-                           , vels                       , vels_pat                         &
-                           , atm_up                     , atm_vp                           &
-                           , gzotheta                   , leaf%patch_area   (i,j,ip)       &
-                           , turb%sflux_u      (i,j   ) , turb%sflux_v      (i,j   )       &
-                           , turb%sflux_w      (i,j   ) , turb%sflux_t      (i,j   )       &
-                           , turb%sflux_r      (i,j   ) , turb%sflux_c      (i,j   )       &
+                           , leaf%zeta         (i,j,ip) , vels                             &
+                           , vels_pat                   , atm_up                           &
+                           , atm_vp                     , leaf%patch_area         (i,j,ip) &
+                           , turb%sflux_u      (i,j   ) , turb%sflux_v            (i,j   ) &
+                           , turb%sflux_w      (i,j   ) , turb%sflux_t            (i,j   ) &
+                           , turb%sflux_r      (i,j   ) , turb%sflux_c            (i,j   ) &
                            , g_urban                    )
 
                select case (ip)

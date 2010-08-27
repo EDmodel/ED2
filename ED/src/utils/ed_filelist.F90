@@ -137,8 +137,10 @@ subroutine ed1_fileinfo(text,nfiles,full_list,ntype,type_list,tlon_list,tlat_lis
    select case(text)
    case ('.site')
       okdot = 4
-   case ('.pss','.css')
+   case ('.pss','.css','.txt')
       okdot = 3
+   case ('.lu')
+      okdot = 2
    end select
 
 

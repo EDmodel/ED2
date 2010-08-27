@@ -1,8 +1,8 @@
 !==========================================================================================!
 !==========================================================================================!
-!     This subroutine is the main driver for the Euler integration scheme.                 !
+!     This subroutine is the main driver for the Heun's (RK2) integration scheme.          !
 !------------------------------------------------------------------------------------------!
-subroutine euler_timestep(cgrid)
+subroutine heun_timestep(cgrid)
    use rk4_coms              , only : integration_vars   & ! structure
                                     , rk4patchtype       & ! structure
                                     , zero_rk4_patch     & ! subroutine
@@ -75,13 +75,11 @@ subroutine euler_timestep(cgrid)
 
             !----- Reset all buffers to zero, as a safety measure. ------------------------!
             call zero_rk4_patch(integration_buff%initp)
-            call zero_rk4_patch(integration_buff%dinitp)
             call zero_rk4_patch(integration_buff%ytemp)
             call zero_rk4_patch(integration_buff%yerr)
             call zero_rk4_patch(integration_buff%yscal)
             call zero_rk4_patch(integration_buff%dydx)
             call zero_rk4_cohort(integration_buff%initp)
-            call zero_rk4_cohort(integration_buff%dinitp)
             call zero_rk4_cohort(integration_buff%ytemp)
             call zero_rk4_cohort(integration_buff%yerr)
             call zero_rk4_cohort(integration_buff%yscal)
@@ -147,13 +145,13 @@ subroutine euler_timestep(cgrid)
             !     This is the step in which the derivatives are computed, we a structure   !
             ! that is very similar to the Runge-Kutta, though a simpler one.               !
             !------------------------------------------------------------------------------!
-            call integrate_patch_euler(csite,integration_buff%initp                        &
-                                      ,integration_buff%dinitp,integration_buff%ytemp      &
-                                      ,integration_buff%yscal,integration_buff%yerr        &
-                                      ,integration_buff%dydx,ipa,wcurr_loss2atm            &
-                                      ,ecurr_loss2atm,co2curr_loss2atm,wcurr_loss2drainage &
-                                      ,ecurr_loss2drainage,wcurr_loss2runoff               &
-                                      ,ecurr_loss2runoff,nsteps)
+            call integrate_patch_heun(csite,integration_buff%initp,integration_buff%y      &
+                                     ,integration_buff%ytemp,integration_buff%yscal        &
+                                     ,integration_buff%yerr,integration_buff%dydx          &
+                                     ,integration_buff%ak2,integration_buff%ak3,ipa        &
+                                     ,wcurr_loss2atm,ecurr_loss2atm,co2curr_loss2atm       &
+                                     ,wcurr_loss2drainage,ecurr_loss2drainage              &
+                                     ,wcurr_loss2runoff,ecurr_loss2runoff,nsteps)
 
             !----- Add the number of steps into the step counter. -------------------------!
             cgrid%workload(13,ipy) = cgrid%workload(13,ipy) + real(nsteps)
@@ -178,7 +176,7 @@ subroutine euler_timestep(cgrid)
    end do polyloop
 
    return
-end subroutine euler_timestep
+end subroutine heun_timestep
 !==========================================================================================!
 !==========================================================================================!
 
@@ -189,10 +187,10 @@ end subroutine euler_timestep
 
 !==========================================================================================!
 !==========================================================================================!
-!     This subroutine will drive the integration process using the Euler method.  Notice   !
-! that most of the Euler method utilises the subroutines from Runge-Kutta.                 !
+!     This subroutine will drive the integration process using the Heun method.  Notice    !
+! that most of the Heun method utilises the subroutines from Runge-Kutta.                  !
 !------------------------------------------------------------------------------------------!
-subroutine integrate_patch_euler(csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa              &
+subroutine integrate_patch_heun(csite,initp,y0,ytry,yscal,yerr,ak1,ak2,yeuler,ipa          &
                                 ,wcurr_loss2atm,ecurr_loss2atm,co2curr_loss2atm            &
                                 ,wcurr_loss2drainage,ecurr_loss2drainage,wcurr_loss2runoff &
                                 ,ecurr_loss2runoff,nsteps)
@@ -223,11 +221,13 @@ subroutine integrate_patch_euler(csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa   
    !----- Arguments -----------------------------------------------------------------------!
    type(sitetype)        , target      :: csite
    type(rk4patchtype)    , target      :: initp
-   type(rk4patchtype)    , target      :: dinitp
-   type(rk4patchtype)    , target      :: ytemp
+   type(rk4patchtype)    , target      :: y0
+   type(rk4patchtype)    , target      :: ytry
    type(rk4patchtype)    , target      :: yscal
    type(rk4patchtype)    , target      :: yerr
-   type(rk4patchtype)    , target      :: dydx
+   type(rk4patchtype)    , target      :: ak1
+   type(rk4patchtype)    , target      :: ak2
+   type(rk4patchtype)    , target      :: yeuler
    integer               , intent(in)  :: ipa
    real                  , intent(out) :: wcurr_loss2atm
    real                  , intent(out) :: ecurr_loss2atm
@@ -285,7 +285,7 @@ subroutine integrate_patch_euler(csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa   
    initp%wpwp = 0.d0
 
    !----- Go into the ODE integrator using Euler. -----------------------------------------!
-   call euler_integ(hbeg,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nsteps)
+   call heun_integ(hbeg,csite,initp,y0,ytry,yscal,yerr,ak1,ak2,yeuler,ipa,nsteps)
 
    !---------------------------------------------------------------------------------------!
    !      Normalize canopy-atmosphere flux values.  These values are updated every         !
@@ -305,7 +305,7 @@ subroutine integrate_patch_euler(csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa   
                     ,wcurr_loss2runoff,ecurr_loss2runoff)
 
    return
-end subroutine integrate_patch_euler
+end subroutine integrate_patch_heun
 !==========================================================================================!
 !==========================================================================================!
 
@@ -316,12 +316,12 @@ end subroutine integrate_patch_euler
 
 !==========================================================================================!
 !==========================================================================================!
-! Subroutine odeint                                                                        !
+! Subroutine heun_integ                                                                    !
 !                                                                                          !
 !     This subroutine will drive the integration of several ODEs that drive the fast-scale !
-! state variables.                                                                         !
+! state variables using the Heun's method (a 2nd order Runge-Kutta).                       !
 !------------------------------------------------------------------------------------------!
-subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nsteps)
+subroutine heun_integ(h1,csite,initp,y0,ytry,yscal,yerr,ak1,ak2,yeuler,ipa,nsteps)
    use ed_state_vars  , only : sitetype               & ! structure
                              , patchtype              & ! structure
                              , polygontype            ! ! structure
@@ -362,17 +362,20 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nsteps)
    !----- Arguments -----------------------------------------------------------------------!
    type(sitetype)            , target      :: csite            ! Current site
    type(rk4patchtype)        , target      :: initp            ! Current integ. patch
-   type(rk4patchtype)        , target      :: dinitp           ! Integration derivative
-   type(rk4patchtype)        , target      :: ytemp            ! Temporary integ. patch
+   type(rk4patchtype)        , target      :: y0               ! Temporary integ. patch
+   type(rk4patchtype)        , target      :: ytry             ! Temporary integ. patch
    type(rk4patchtype)        , target      :: yscal            ! Scale for error analysis
    type(rk4patchtype)        , target      :: yerr             ! Patch integration error
-   type(rk4patchtype)        , target      :: dydx             ! Patch integration error
+   type(rk4patchtype)        , target      :: ak1              ! Euler derivative
+   type(rk4patchtype)        , target      :: ak2              ! Correction derivative
+   type(rk4patchtype)        , target      :: yeuler           ! Euler integration
    integer                   , intent(in)  :: ipa              ! Current patch ID
    real(kind=8)              , intent(in)  :: h1               ! First guess of delta-t
    integer                   , intent(out) :: nsteps           ! Number of steps taken.
    !----- Local variables -----------------------------------------------------------------!
    type(patchtype)           , pointer     :: cpatch           ! Current patch
    logical                                 :: reject_step      ! Should I reject the step?
+   logical                                 :: reject_result    ! Should I reject the result?
    logical                                 :: minstep          ! Minimum time step reached
    logical                                 :: stuck            ! Tiny step, it won't advance
    logical                                 :: test_reject      ! Reject the test
@@ -433,6 +436,11 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nsteps)
    call update_diagnostic_vars(initp,csite,ipa)
 
    !---------------------------------------------------------------------------------------!
+   !     Create temporary patches.                                                         !
+   !---------------------------------------------------------------------------------------!
+   call copy_rk4_patch(initp,y0,cpatch)
+
+   !---------------------------------------------------------------------------------------!
    ! Set initial time and stepsize.                                                        !
    !---------------------------------------------------------------------------------------!
    x = tbeg
@@ -449,38 +457,27 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nsteps)
 
 
       !----- Get initial derivatives ------------------------------------------------------!
-      call leaf_derivs(initp,dinitp,csite,ipa)
+      call leaf_derivs(y0,ak1,csite,ipa)
 
       !----- Get scalings used to determine stability -------------------------------------!
-      call get_yscal(initp,dinitp,h,yscal,cpatch)
+      call get_yscal(y0,ak1,h,yscal,cpatch)
 
       !----- Be sure not to overstep ------------------------------------------------------!
       if((x+h-tend)*(x+h-tbeg) > 0.d0) h=tend-x
 
       !------------------------------------------------------------------------------------!
-      !     Here we will perform the Euler integration using the time step.  As in Runge-  !
+      !     Here we will perform the Heun's integration using the time step.  As in Runge- !
       ! Kutta, we also check whether the integration is going well and if needed we shrink !
-      ! the intermediate time steps.  However, we cannot estimate the errors as in Runge-  !
-      ! Kutta or Euler, so steps are shrunk only when it fails the sanity check.           !
+      ! the intermediate time steps.                                                       !
       !------------------------------------------------------------------------------------!
       reject_step =  .false.
       hstep:   do
 
-         !----- Copy patch to the temporary structure. ------------------------------------!
-         call copy_rk4_patch(initp, ytemp, cpatch)
-
          !---------------------------------------------------------------------------------!
-         !    Integrate, then update and correct diagnostic variables to avoid overshoot-  !
-         ! ing, provided that the overshooting is small.                                   !
+         ! 1. Try a step of varying size.                                                  !
          !---------------------------------------------------------------------------------!
-         call inc_rk4_patch(ytemp,dinitp,h,cpatch)
-         call adjust_veg_properties(ytemp,h,csite,ipa)
-         call adjust_topsoil_properties(ytemp,h,csite,ipa)
-         call redistribute_snow(ytemp,csite,ipa)
-         call update_diagnostic_vars(ytemp,csite,ipa)
-
-         !----- Perform a sanity check. ---------------------------------------------------!
-         call rk4_sanity_check(ytemp,reject_step,csite,ipa,dinitp,h,print_diags)
+         call heun_stepper(y0,ytry,yerr,ak1,ak2,yeuler,x,h,csite,ipa,reject_step           &
+                          ,reject_result)
 
          !---------------------------------------------------------------------------------!
          !     Here we check the error of this step.  Three outcomes are possible:         !
@@ -498,18 +495,22 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nsteps)
             !------------------------------------------------------------------------------!
             errmax = 1.d1
          else
-
-            errmax = 1.d-1
-
-            !----- Take the derivative of the upcoming step. ------------------------------!
-            call leaf_derivs(ytemp,dydx,csite,ipa)
+            call get_errmax(errmax,yerr,yscal,csite%patch(ipa),initp,ytry)
+            !----- Scale the error based on the prescribed tolerance. ---------------------!
+            errmax = errmax * rk4epsi
          end if
 
 
          !---------------------------------------------------------------------------------!
-         ! 3. If the step failed, then calculate a new shorter step size to try.           !
+         ! 3. If that error was large, then calculate a new step size to try.  There are   !
+         !    two types of new tries.  If step failed to be minimally reasonable (reject-  !
+         !    ed) we have assigned a standard large error (10.0).  Otherwise a new step is !
+         !    calculated based on the size of that error.  Hopefully, those new steps      !
+         !    should be less than the previous h.  If the error was small, i.e. less then  !
+         !    rk4eps, then we are done with this step, and we can move forward             !
+         !    time: x = x + h                                                              !
          !---------------------------------------------------------------------------------!
-         if (reject_step) then
+         if (errmax > 1.d0) then
             !----- Defining new step and checking if it can be. ---------------------------!
             oldh    = h
             newh    = safety * h * errmax**pshrnk
@@ -528,13 +529,15 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nsteps)
             if (minstep .or. stuck) then
 
                write (unit=*,fmt='(80a)')         ('=',k=1,80)
-               write (unit=*,fmt='(a)')           '   STEPSIZE UNDERFLOW IN EULER_INT'
+               write (unit=*,fmt='(a)')           '   STEPSIZE UNDERFLOW IN HEUN_INTEG'
                write (unit=*,fmt='(80a)')         ('-',k=1,80)
                write (unit=*,fmt='(a,1x,f9.4)')   ' + LONGITUDE:     ',rk4site%lon
                write (unit=*,fmt='(a,1x,f9.4)')   ' + LATITUDE:      ',rk4site%lat
                write (unit=*,fmt='(a)')           ' + PATCH INFO:    '
                write (unit=*,fmt='(a,1x,es12.4)') '   - AGE:         ',csite%age(ipa)
                write (unit=*,fmt='(a,1x,i6)')     '   - DIST_TYPE:   ',csite%dist_type(ipa)
+               write (unit=*,fmt='(a,1x,l1)')     ' + REJECT_STEP:   ',reject_step
+               write (unit=*,fmt='(a,1x,l1)')     ' + REJECT_RESULT: ',reject_result
                write (unit=*,fmt='(a,1x,l1)')     ' + MINSTEP:       ',minstep
                write (unit=*,fmt='(a,1x,l1)')     ' + STUCK:         ',stuck
                write (unit=*,fmt='(a,1x,es12.4)') ' + ERRMAX:        ',errmax
@@ -544,12 +547,30 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nsteps)
                write (unit=*,fmt='(a,1x,es12.4)') ' + NEWH:          ',newh
                write (unit=*,fmt='(a,1x,es12.4)') ' + SAFETY:        ',safety
                write (unit=*,fmt='(80a)') ('-',k=1,80)
-               write (unit=*,fmt='(a)') '   Likely to be a rejected step problem.'
-               write (unit=*,fmt='(80a)') ('=',k=1,80)
+               if (reject_step) then
+                  write (unit=*,fmt='(a)') '   Likely to be a rejected step problem.'
+                  write (unit=*,fmt='(80a)') ('=',k=1,80)
+               else
+                  write (unit=*,fmt='(a)') '   Likely to be an errmax problem.'
+                  write (unit=*,fmt='(80a)') ('=',k=1,80)
+               end if
 
-               call rk4_sanity_check(ytemp,test_reject,csite,ipa,dinitp,h,.true.)
-               call print_sanity_check(ytemp,csite,ipa)
-               call print_rk4patch(ytemp, csite,ipa)
+               if (reject_result) then
+                  !----- Run the LSM sanity check but this time we force the print. -------!
+                  call rk4_sanity_check(ytry,test_reject,csite,ipa,ak1,h,.true.)
+                  call print_sanity_check(y0,csite,ipa)
+               elseif (reject_step) then
+                  call rk4_sanity_check(yeuler,test_reject,csite,ipa,ak1,h,.true.)
+                  call print_sanity_check(y0,csite,ipa)
+               else
+                  call print_errmax(errmax,yerr,yscal,csite%patch(ipa),y0,ytry)
+                  write (unit=*,fmt='(80a)') ('=',k=1,80)
+                  write (unit=*,fmt='(a,1x,es12.4)') ' - Rel. errmax:',errmax
+                  write (unit=*,fmt='(a,1x,es12.4)') ' - Raw errmax: ',errmax*rk4eps
+                  write (unit=*,fmt='(a,1x,es12.4)') ' - Epsilon:',rk4eps
+                  write (unit=*,fmt='(80a)') ('=',k=1,80)
+               end if
+               call print_rk4patch(y0, csite,ipa)
             end if
 
          else
@@ -558,13 +579,13 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nsteps)
             !      to do some minor adjustments before...                                  !
             !------------------------------------------------------------------------------!
             !----- i.   Final update of leaf properties to avoid negative water. ----------!
-            call adjust_veg_properties(ytemp,h,csite,ipa)
+            call adjust_veg_properties(ytry,h,csite,ipa)
             !----- ii.  Final update of top soil properties to avoid off-bounds moisture. -!
-            call adjust_topsoil_properties(ytemp,h,csite,ipa)
+            call adjust_topsoil_properties(ytry,h,csite,ipa)
             !----- iii. Make snow layers stable and positively defined. -------------------!
-            call redistribute_snow(ytemp, csite,ipa)
+            call redistribute_snow(ytry, csite,ipa)
             !----- iv.  Update the diagnostic variables. ----------------------------------!
-            call update_diagnostic_vars(ytemp, csite,ipa)
+            call update_diagnostic_vars(ytry, csite,ipa)
             !------------------------------------------------------------------------------!
 
             !------------------------------------------------------------------------------!
@@ -579,19 +600,17 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nsteps)
             hnext = max(2.d0*hmin,hnext)
 
             !----- 3d. Copying the temporary structure to the intermediate state. ---------!
-            call copy_rk4_patch(ytemp, initp,csite%patch(ipa))
-            call copy_rk4_patch(dydx ,dinitp,csite%patch(ipa))
+            call copy_rk4_patch(ytry, y0,csite%patch(ipa))
 
             !----- 3e. Print the output if the user wants it. -----------------------------!
             if (print_intstep) then
                write (unit=66,fmt='(27(es14.7,1x))')                                       &
-                     elaptime,h,rk4site%atm_shv,initp%can_shv,initp%ground_shv             &
-                    ,rk4site%atm_theta,initp%can_theta,rk4site%atm_tmp,initp%can_temp      &
-                    ,rk4site%atm_enthalpy,initp%can_enthalpy,rk4site%atm_prss              &
-                    ,initp%can_prss,rk4site%rhos,initp%can_rhos,rk4site%vels               &
-                    ,initp%can_depth,rk4site%pcpg,initp%ustar,initp%tstar,initp%estar      &
-                    ,initp%qstar,initp%zeta,initp%ribulk,initp%sfcwater_mass(1)            &
-                    ,initp%sfcwater_depth(1),initp%soil_water(nzg)
+                     elaptime,h,rk4site%atm_shv,y0%can_shv,y0%ground_shv,rk4site%atm_theta &
+                    ,y0%can_theta,rk4site%atm_tmp,y0%can_temp,rk4site%atm_enthalpy         &
+                    ,y0%can_enthalpy,rk4site%atm_prss,y0%can_prss,rk4site%rhos,y0%can_rhos &
+                    ,rk4site%vels,y0%can_depth,rk4site%pcpg,y0%ustar,y0%tstar,y0%estar     &
+                    ,y0%qstar,y0%zeta,y0%ribulk,y0%sfcwater_mass(1),y0%sfcwater_depth(1)   &
+                    ,y0%soil_water(nzg)
             end if
 
             !----- 3f. Updating time. -----------------------------------------------------!
@@ -606,7 +625,7 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nsteps)
       !----- If the integration reached the next step, make some final adjustments --------!
       if((x-tend)*dtrk4 >= 0.d0)then
 
-         ksn = initp%nlev_sfcwater
+         ksn = y0%nlev_sfcwater
 
          !---------------------------------------------------------------------------------!
          !   Make temporary surface liquid water disappear.  This will not happen          !
@@ -616,20 +635,19 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nsteps)
          !---------------------------------------------------------------------------------!
          if (simplerunoff .and. ksn >= 1) then
          
-            if (initp%sfcwater_mass(ksn)    > 0.d0   .and.                                 &
-                initp%sfcwater_fracliq(ksn) > 1.d-1        ) then
+            if (y0%sfcwater_mass(ksn) > 0.d0 .and. y0%sfcwater_fracliq(ksn) > 1.d-1 ) then
 
-               wfreeb = min(1.d0,dtrk4*runoff_time_i) * initp%sfcwater_mass(ksn)           &
-                      * (initp%sfcwater_fracliq(ksn) - 1.d-1) / 9.d-1
-               qwfree = wfreeb * cliq8 * (initp%sfcwater_tempk(ksn) - tsupercool8 )
+               wfreeb = min(1.d0,dtrk4*runoff_time_i) * y0%sfcwater_mass(ksn)              &
+                      * (y0%sfcwater_fracliq(ksn) - 1.d-1) / 9.d-1
+               qwfree = wfreeb * cliq8 * (y0%sfcwater_tempk(ksn) - tsupercool8 )
 
-               initp%sfcwater_mass(ksn) = initp%sfcwater_mass(ksn)   - wfreeb
-               initp%sfcwater_depth(ksn) = initp%sfcwater_depth(ksn) - wfreeb * wdnsi8
+               y0%sfcwater_mass(ksn)  = y0%sfcwater_mass(ksn)   - wfreeb
+               y0%sfcwater_depth(ksn) = y0%sfcwater_depth(ksn) - wfreeb * wdnsi8
                !----- Recompute the energy removing runoff --------------------------------!
-               initp%sfcwater_energy(ksn) = initp%sfcwater_energy(ksn) - qwfree
+               y0%sfcwater_energy(ksn) = y0%sfcwater_energy(ksn) - qwfree
 
-               call redistribute_snow(initp,csite,ipa)
-               call update_diagnostic_vars(initp,csite,ipa)
+               call redistribute_snow(y0,csite,ipa)
+               call update_diagnostic_vars(y0,csite,ipa)
 
                !----- Compute runoff for output -------------------------------------------!
                if (fast_diagnostics) then
@@ -641,26 +659,30 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nsteps)
                                              + sngloff(qwfree * dtrk4i,tiny_offset)
                end if
                if (checkbudget) then
-                  initp%wbudget_loss2runoff = wfreeb
-                  initp%ebudget_loss2runoff = qwfree
-                  initp%wbudget_storage     = initp%wbudget_storage - wfreeb
-                  initp%ebudget_storage     = initp%ebudget_storage - qwfree
+                  y0%wbudget_loss2runoff = wfreeb
+                  y0%ebudget_loss2runoff = qwfree
+                  y0%wbudget_storage     = y0%wbudget_storage - wfreeb
+                  y0%ebudget_storage     = y0%ebudget_storage - qwfree
                end if
 
             else
                csite%runoff(ipa)          = 0.0
                csite%avg_runoff(ipa)      = 0.0
                csite%avg_runoff_heat(ipa) = 0.0
-               initp%wbudget_loss2runoff  = 0.d0
-               initp%ebudget_loss2runoff  = 0.d0
+               y0%wbudget_loss2runoff  = 0.d0
+               y0%ebudget_loss2runoff  = 0.d0
             end if
          else
             csite%runoff(ipa)          = 0.0
             csite%avg_runoff(ipa)      = 0.0
             csite%avg_runoff_heat(ipa) = 0.0
-            initp%wbudget_loss2runoff  = 0.d0
-            initp%ebudget_loss2runoff  = 0.d0
+            y0%wbudget_loss2runoff  = 0.d0
+            y0%ebudget_loss2runoff  = 0.d0
          end if
+
+         !------ Copy the temporary patch to the next intermediate step -------------------!
+         call copy_rk4_patch(y0,initp,cpatch)
+
          !------ Update the substep for next time and leave -------------------------------!
          csite%htry(ipa) = sngl(hnext)
 
@@ -679,13 +701,135 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nsteps)
    end do timesteploop
 
    !----- If it reached this point, that is really bad news... ----------------------------!
-   write (unit=*,fmt='(a)') ' ==> Too many steps in routine euler_integ'
-   call print_rk4patch(ytemp, csite,ipa)
+   write (unit=*,fmt='(a)') ' ==> Too many steps in routine heun_integ'
+   call print_rk4patch(ytry, csite,ipa)
 
    return
-end subroutine euler_integ
+end subroutine heun_integ
 !==========================================================================================!
 !==========================================================================================!
 
 
 
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+subroutine heun_stepper(y0,ytry,yerr,ak1,ak2,yeuler,x,h,csite,ipa,reject_step,reject_result)
+
+   use rk4_coms      , only : rk4patchtype        & ! structure
+                            , integration_vars    & ! structure
+                            , zero_rk4_patch      & ! subroutine
+                            , zero_rk4_cohort     & ! subroutine
+                            , rk4site             & ! intent(in)
+                            , print_diags         & ! intent(in)
+                            , heun_a2             & ! intent(in)
+                            , heun_b21            & ! intent(in)
+                            , heun_c1             & ! intent(in)
+                            , heun_c2             & ! intent(in)
+                            , heun_dc1            & ! intent(in)
+                            , heun_dc2            ! ! intent(in)
+   use rk4_stepper   , only : rk4_sanity_check    ! ! subroutine
+   use ed_state_vars , only : sitetype            & ! structure
+                            , patchtype           ! ! structure
+   implicit none
+
+   !----- Arguments -----------------------------------------------------------------------!
+   type(rk4patchtype), target      :: y0
+   type(rk4patchtype), target      :: ytry
+   type(rk4patchtype), target      :: yerr
+   type(rk4patchtype), target      :: ak1
+   type(rk4patchtype), target      :: ak2
+   type(rk4patchtype), target      :: yeuler
+   type(sitetype)    , target      :: csite
+   integer           , intent(in)  :: ipa
+   logical           , intent(out) :: reject_step
+   logical           , intent(out) :: reject_result
+   real(kind=8)      , intent(in)  :: x
+   real(kind=8)      , intent(in)  :: h
+   !----- Local variables -----------------------------------------------------------------!
+   type(patchtype)   , pointer     :: cpatch
+   real(kind=8)                    :: combh
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Start and assume that nothing went wrong up to this point... If we find any       !
+   ! seriously bad step, quit and reduce the time step without even bothering to try       !
+   ! further.                                                                              !
+   !---------------------------------------------------------------------------------------!
+   reject_step   = .false.
+   reject_result = .false.
+   cpatch => csite%patch(ipa)
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- yeuler is the temporary array with the Euler step with no correction. -----------!
+   call copy_rk4_patch(y0,yeuler,cpatch)
+   call inc_rk4_patch (yeuler,ak1, heun_b21*h, cpatch)
+   combh = heun_b21*h
+   call adjust_veg_properties    (yeuler,combh,csite,ipa)
+   call adjust_topsoil_properties(yeuler,combh,csite,ipa)
+   call redistribute_snow        (yeuler      ,csite,ipa)
+   call update_diagnostic_vars   (yeuler      ,csite,ipa)
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Check to see if the Euler result makes sense.  Since we will compute the           !
+   ! derivative correction using it, the Euler step must be bounded.  If not, reject the   !
+   ! step and try a smaller step size.                                                     !
+   !---------------------------------------------------------------------------------------!
+   call rk4_sanity_check(yeuler, reject_step, csite, ipa,ak1,h,print_diags)
+   if (reject_step) return
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Compute the second term (correction) of the derivative, using the Euler's         !
+   ! predicted state.                                                                      !
+   !---------------------------------------------------------------------------------------!
+   call leaf_derivs(yeuler, ak2, csite,ipa)
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- We now combine both derivatives and update y0. ----------------------------------!
+   call copy_rk4_patch(y0, ytry, cpatch)
+   call inc_rk4_patch(ytry,  ak1, heun_c1*h, cpatch)
+   call inc_rk4_patch(ytry,  ak2, heun_c2*h, cpatch)
+   combh = (heun_c1+heun_c2) * h ! Which should be h
+   call adjust_veg_properties(ytry,combh,csite,ipa)
+   call adjust_topsoil_properties(ytry,combh,csite,ipa)
+   call redistribute_snow(ytry, csite,ipa)
+   call update_diagnostic_vars(ytry, csite,ipa)
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Check to see if this attempt of advancing one time step makes sense.  If not,      !
+   ! reject the result and try a smaller step size.                                        !
+   !---------------------------------------------------------------------------------------!
+   call rk4_sanity_check(ytry, reject_result, csite,ipa,ak2,h,print_diags)
+   if(reject_result)return
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Compute the estimate of the error associated with the step.                       !
+   !---------------------------------------------------------------------------------------!
+   call zero_rk4_patch (yerr)
+   call zero_rk4_cohort(yerr)
+   call inc_rk4_patch(yerr, ak1,  heun_dc1*h, cpatch)
+   call inc_rk4_patch(yerr, ak2,  heun_dc2*h, cpatch)
+   !---------------------------------------------------------------------------------------!
+
+   return
+end subroutine heun_stepper
+!==========================================================================================!
+!==========================================================================================!

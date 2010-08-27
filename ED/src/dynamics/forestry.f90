@@ -7,15 +7,18 @@
 !          report problems to David Medvigy, medvigy@post.harvard.edu.                     !
 !==========================================================================================!
 subroutine apply_forestry(cpoly, isi, year)
-   use ed_state_vars        , only : polygontype                & ! Structure
-                                   , sitetype                   & ! Structure
-                                   , allocate_sitetype          & ! Subroutine
-                                   , deallocate_sitetype        & ! Subroutine
-                                   , copy_sitetype_mask         ! ! Subroutine
+   use ed_state_vars        , only : polygontype                & ! structure
+                                   , sitetype                   & ! structure
+                                   , patchtype                  & ! structure
+                                   , allocate_sitetype          & ! subroutine
+                                   , deallocate_sitetype        & ! subroutine
+                                   , copy_sitetype_mask         ! ! subroutine
    use disturb_coms         , only : ianth_disturb              & ! intent(in)
                                    , lutime                     & ! intent(in)
                                    , min_new_patch_area         & ! intent(in)
-                                   , plantation_year            ! ! intent(in)
+                                   , plantation_year            & ! intent(in)
+                                   , plantation_rotation        & ! intent(in)
+                                   , mature_harvest_age         ! ! intent(in)
    use disturbance_utils    , only : initialize_disturbed_patch & ! subroutine
                                    , plant_patch                ! ! subroutine
    use fuse_fiss_utils      , only : terminate_patches          ! ! subroutine
@@ -23,30 +26,40 @@ subroutine apply_forestry(cpoly, isi, year)
                                    , n_dbh                      ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
-   type(polygontype)    , target      :: cpoly
-   integer              , intent(in)  :: year
-   integer              , intent(in)  :: isi
+   type(polygontype)             , target      :: cpoly
+   integer                       , intent(in)  :: year
+   integer                       , intent(in)  :: isi
    !----- Local variables -----------------------------------------------------------------!
-   type(sitetype)       , pointer     :: csite
-   type(sitetype)       , pointer     :: tempsite
-   type(lutime)         , pointer     :: clutime
-   logical, dimension(:), allocatable :: mask
-   integer                            :: ipft,idbh,newp,iyear,useyear
-   real                               :: primary_harvest_target
-   real                               :: secondary_harvest_target
-   real                               :: total_harvest_target
-   real                               :: total_site_biomass
-   real                               :: area_mature_primary
-   real                               :: agb_mature_primary
-   real                               :: area_mature_secondary
-   real                               :: agb_mature_secondary
-   real                               :: area_mature_plantation
-   real                               :: agb_mature_plantation
-   real                               :: total_harvested_area
-   real                               :: lambda_mature_primary
-   real                               :: lambda_mature_secondary
-   real                               :: lambda_mature_plantation
-   real                               :: harvest_deficit
+   type(sitetype)                , pointer     :: csite
+   type(patchtype)               , pointer     :: cpatch
+   type(sitetype)                , pointer     :: tempsite
+   type(lutime)                  , pointer     :: clutime
+   logical        ,  dimension(:), allocatable :: mask
+   logical                                     :: mature_plantation
+   logical                                     :: mature_primary
+   logical                                     :: mature_secondary
+   integer                                     :: ipft
+   integer                                     :: idbh
+   integer                                     :: newp
+   integer                                     :: iyear
+   integer                                     :: useyear
+   integer                                     :: ipa
+   integer                                     :: ico
+   real                                        :: primary_harvest_target
+   real                                        :: secondary_harvest_target
+   real                                        :: total_harvest_target
+   real                                        :: total_site_biomass
+   real                                        :: area_mature_primary
+   real                                        :: agb_mature_primary
+   real                                        :: area_mature_secondary
+   real                                        :: agb_mature_secondary
+   real                                        :: area_mature_plantation
+   real                                        :: agb_mature_plantation
+   real                                        :: total_harvested_area
+   real                                        :: lambda_mature_primary
+   real                                        :: lambda_mature_secondary
+   real                                        :: lambda_mature_plantation
+   real                                        :: harvest_deficit
    !---------------------------------------------------------------------------------------!
 
    !----- This subroutine will be skipped if anthropogenic disturbance is turned off. -----!
@@ -82,17 +95,45 @@ subroutine apply_forestry(cpoly, isi, year)
    clutime => cpoly%clutimes(useyear,isi)
    
    !---------------------------------------------------------------------------------------!
+   !      Set primary target based on current rates and unapplied harvest from previous    !
+   ! years (memory).  These are in kgC/m2.  At this point we must check whether a PFT-     !
+   ! blind or a selective logging must be applied, and if it is selective logging, we do   !
+   ! not log anything here.                                                                !
+   !---------------------------------------------------------------------------------------!
+   if (clutime%landuse(14) > 0.) then
+      primary_harvest_target   = clutime%landuse(14) + clutime%landuse(18)                 &
+                               + cpoly%primary_harvest_memory(isi)
+   else
+      primary_harvest_target   = 0.
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
    !      Set primary and secondary targets based on current rates and unapplied harvest   !
-   ! from previous years (memory).  These are in kgC.                                                       !
+   ! from previous years (memory).  These are in kgC/m2.  At this point we must check      !
+   ! whether a PFT-blind or a selective logging must be applied, and if it is selective    !
+   ! logging, we do not log anything here.                                                 !
    !---------------------------------------------------------------------------------------!
-   primary_harvest_target   = clutime%landuse(14) + clutime%landuse(18)                    &
-                            + cpoly%primary_harvest_memory(isi)
-   secondary_harvest_target = clutime%landuse(12) + clutime%landuse(16)                    &
-                            + cpoly%secondary_harvest_memory(isi)
+   if (clutime%landuse(12) > 0.) then
+      secondary_harvest_target   = clutime%landuse(12) + clutime%landuse(16)               &
+                                 + cpoly%primary_harvest_memory(isi)
+   else
+      secondary_harvest_target   = 0.
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- The total target is the sum of both targets. ------------------------------------!
    total_harvest_target     = primary_harvest_target + secondary_harvest_target
-
-
    !---------------------------------------------------------------------------------------!
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
    !     Decide whether or not to create a harvest patch. A new patch must meet the        !
    ! following criteria:                                                                   !
    ! a. It must have site agb > 0;                                                         !
@@ -101,20 +142,23 @@ subroutine apply_forestry(cpoly, isi, year)
    !---------------------------------------------------------------------------------------!
    
 
-   !----- Finding total biomass density in kgC/m2  -----------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+   !    Finding total biomass density in kgC/m2.                                           !
+   !---------------------------------------------------------------------------------------!
    total_site_biomass = 0.
-   do ipft=1,n_pft
-      do idbh=1,n_dbh
+   pftagbloop: do ipft=1,n_pft
+      pftdbhloop: do idbh=1,n_dbh
          total_site_biomass = total_site_biomass + cpoly%agb(ipft, idbh, isi)
-      end do
-   end do
+      end do pftdbhloop
+   end do pftagbloop
    !---------------------------------------------------------------------------------------!
 
 
 
-   !----- In case the conditions weren't met, update memory and return. -------------------!
-!  If site has no biomass, do not harvest.
-!  Similarly, if the area to be harvested is less than the minimum area for a new patch, do not harvest.
+   !---------------------------------------------------------------------------------------!
+   !     If site has no biomass, or if the area to be harvested is less than the minimum   !
+   ! area for a new patch, do not harvest, and update the memory for the next year.        !
+   !---------------------------------------------------------------------------------------!
    if (total_site_biomass == 0.0 .or.                                                      &
        total_harvest_target <= total_site_biomass * min_new_patch_area) then
       cpoly%primary_harvest_memory(isi)   = primary_harvest_target
@@ -235,7 +279,7 @@ end subroutine apply_forestry
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine inventory_mat_forests(cpoly,isi,area_mature_primary,agb_mature_primary       &
+subroutine inventory_mat_forests(cpoly,isi,area_mature_primary,agb_mature_primary          &
                                    ,area_mature_secondary, agb_mature_secondary            &
                                    ,area_mature_plantation, agb_mature_plantation)
    use ed_state_vars , only : polygontype         & ! structure
@@ -257,7 +301,12 @@ subroutine inventory_mat_forests(cpoly,isi,area_mature_primary,agb_mature_primar
    !----- Local variables -----------------------------------------------------------------!
    type(sitetype)    , pointer     :: csite
    type(patchtype)   , pointer     :: cpatch
-   integer                         :: ipa,ico
+   logical                         :: mature_plantation
+   logical                         :: mature_primary
+   logical                         :: mature_secondary
+   integer                         :: ipa
+   integer                         :: ico
+   integer                         :: ipft
    !---------------------------------------------------------------------------------------!
 
 
@@ -271,10 +320,10 @@ subroutine inventory_mat_forests(cpoly,isi,area_mature_primary,agb_mature_primar
    agb_mature_plantation  = 0.0
 
    csite => cpoly%site(isi)
-   do ipa=1,csite%npatches
-      
+   patchloop: do ipa=1,csite%npatches
+
       cpatch => csite%patch(ipa)
-      
+
       !----- Compute the patch AGB --------------------------------------------------------!
       csite%plant_ag_biomass(ipa) = 0.0
       do ico=1,cpatch%ncohorts
@@ -282,33 +331,41 @@ subroutine inventory_mat_forests(cpoly,isi,area_mature_primary,agb_mature_primar
                                      + cpatch%agb(ico) * cpatch%nplant(ico)
       end do
 
-      if (csite%plant_ag_biomass(ipa) < 0.01) cycle
+      !----- Skip the patch if the biomass is low. ----------------------------------------!
+      if (csite%plant_ag_biomass(ipa) < 0.01) cycle patchloop
 
-      !----- Increment appropriate counter. -----------------------------------------------!
-      if(csite%plantation(ipa) == 1 .and. csite%age(ipa) > plantation_rotation) then
-         
-         !----- Mature plantation. --------------------------------------------------------!
-         area_mature_plantation = area_mature_plantation + csite%area(ipa)
+
+      !----- Run some checks to determine if this patch could be possibly harvested. ------!
+      mature_primary    = csite%dist_type(ipa)  == 3                   .and.               &
+                          csite%age(ipa)         > mature_harvest_age
+      mature_plantation = csite%plantation(ipa) == 1                   .and.               &
+                          csite%age(ipa)         > plantation_rotation
+      mature_secondary  = csite%dist_type(ipa)  == 2                   .and.               &
+                          csite%plantation(ipa) /= 1                   .and.               &
+                          csite%age(ipa)         > mature_harvest_age
+
+
+      !------------------------------------------------------------------------------------!
+      !    Add the biomass and area to the appropriate type of vegetation.                 !
+      !------------------------------------------------------------------------------------!
+      if (mature_plantation) then
+         area_mature_plantation = area_mature_plantation      + csite%area(ipa)
          agb_mature_plantation  = agb_mature_plantation                                    &
                                 + csite%plant_ag_biomass(ipa) * csite%area(ipa)
 
-      elseif (csite%dist_type(ipa) == 2 .and. csite%plantation(ipa) /= 1 .and.             &
-              csite%age(ipa) > mature_harvest_age)then
-
-         !----- Mature secondary. ---------------------------------------------------------!
+      elseif (mature_secondary) then
          area_mature_secondary = area_mature_secondary + csite%area(ipa)
          agb_mature_secondary  = agb_mature_secondary                                      &
                                + csite%plant_ag_biomass(ipa) * csite%area(ipa)
 
-      elseif (csite%dist_type(ipa) == 3 .and. csite%age(ipa) > mature_harvest_age) then
-
-         !----- Mature primary. -----------------------------------------------------------!
+      elseif (mature_primary) then
          area_mature_primary = area_mature_primary + csite%area(ipa)
          agb_mature_primary  = agb_mature_primary                                          &
                              + csite%plant_ag_biomass(ipa) * csite%area(ipa)
+
       end if
 
-   end do
+   end do patchloop
    return
 end subroutine inventory_mat_forests
 !==========================================================================================!
@@ -322,10 +379,10 @@ end subroutine inventory_mat_forests
 !==========================================================================================!
 !==========================================================================================!
 subroutine mat_forest_harv_rates(agb_mature_primary,agb_mature_secondary                   &
-                                   ,agb_mature_plantation, primary_harvest_target          &
-                                   ,secondary_harvest_target,lambda_mature_primary         &
-                                   ,lambda_mature_secondary,lambda_mature_plantation       &
-                                   ,harvest_deficit)
+                                ,agb_mature_plantation, primary_harvest_target             &
+                                ,secondary_harvest_target,lambda_mature_primary            &
+                                ,lambda_mature_secondary,lambda_mature_plantation          &
+                                ,harvest_deficit)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    real, intent(in)    :: agb_mature_primary
@@ -357,7 +414,7 @@ subroutine mat_forest_harv_rates(agb_mature_primary,agb_mature_secondary        
    !      Compute harvesting rate in mature plantations and mature secondary forests.      !
    ! First try to remove all biomass from plantations.  If this is not possible, remove    !
    ! what you could and try to remove the remainder from mature secondary forests.  If     !
-   ! this is again not possible, store what is leaf in harvest_deficit.                    !
+   ! this is again not possible, store what is left in harvest_deficit.                    !
    !---------------------------------------------------------------------------------------!
    if (agb_mature_plantation > secondary_harvest_target) then
       lambda_mature_plantation = secondary_harvest_target / agb_mature_plantation
@@ -390,25 +447,36 @@ end subroutine mat_forest_harv_rates
 !==========================================================================================!
 subroutine harv_mat_patches(cpoly,isi,newp,lambda_mature_primary                           &
                            ,lambda_mature_secondary,lambda_mature_plantation)
-   use ed_state_vars        , only : polygontype             & ! structure
-                                   , sitetype                & ! structure
-                                   , patchtype               ! ! structure
-   use disturb_coms         , only : mature_harvest_age      & ! intent(in)
-                                   , plantation_rotation     ! ! intent(in)
-   use disturbance_utils , only : accum_dist_litt      & ! subroutine
-                                   , increment_patch_vars ! ! subroutine
+   use ed_state_vars    , only : polygontype          & ! structure
+                               , sitetype             & ! structure
+                               , patchtype            ! ! structure
+   use disturb_coms     , only : mature_harvest_age   & ! intent(in)
+                               , plantation_rotation  ! ! intent(in)
+   use disturbance_utils, only : accum_dist_litt      & ! subroutine
+                               , insert_survivors     & ! subroutine
+                               , increment_patch_vars ! ! subroutine
+   use ed_max_dims      , only : n_pft                ! ! intent(in)
+
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
-   type(polygontype) , target     :: cpoly
-   integer           , intent(in) :: isi, newp
-   real              , intent(in) :: lambda_mature_plantation
-   real              , intent(in) :: lambda_mature_secondary
-   real              , intent(in) :: lambda_mature_primary
+   type(polygontype)                  , target     :: cpoly
+   integer                            , intent(in) :: isi
+   integer                            , intent(in) :: newp
+   real                               , intent(in) :: lambda_mature_plantation
+   real                               , intent(in) :: lambda_mature_secondary
+   real                               , intent(in) :: lambda_mature_primary
    !----- Local variables -----------------------------------------------------------------!
-   type(sitetype)    , pointer    :: csite
-   type(patchtype)   , pointer    :: cpatch
-   integer                        :: ipa
-   real                           :: dA
+   type(sitetype)                     , pointer    :: csite
+   type(patchtype)                    , pointer    :: cpatch
+   real             , dimension(n_pft)             :: mindbh_harvest
+   integer                                         :: ipa
+   logical                                         :: mature_plantation
+   logical                                         :: mature_primary
+   logical                                         :: mature_secondary
+   real                                            :: dA
+   !----- Local constants. ----------------------------------------------------------------!
+   integer                            , parameter  :: new_lu         = 2
+   integer                            , parameter  :: poly_dist_type = 1
    !---------------------------------------------------------------------------------------!
 
 
@@ -420,30 +488,49 @@ subroutine harv_mat_patches(cpoly,isi,newp,lambda_mature_primary                
 
       cpatch => csite%patch(ipa)
 
-      if (csite%plantation(ipa) == 1 .and. csite%age(ipa) > plantation_rotation) then
+      !----- Run some checks to determine if this patch could be possibly harvested. ------!
+      mature_primary    = csite%dist_type(ipa)  == 3                   .and.               &
+                          csite%age(ipa)         > mature_harvest_age
+      mature_plantation = csite%plantation(ipa) == 1                   .and.               &
+                          csite%age(ipa)         > plantation_rotation
+      mature_secondary  = csite%dist_type(ipa)  == 2                   .and.               &
+                          csite%plantation(ipa) /= 1                   .and.               &
+                          csite%age(ipa)         > mature_harvest_age
+
+      if (mature_plantation) then
          !----- Harvest mature plantations. -----------------------------------------------!
-         dA = csite%area(ipa) * lambda_mature_plantation
-      elseif(csite%dist_type(ipa) == 2 .and. csite%plantation(ipa) /= 1 .and.              &
-             csite%age(ipa) > mature_harvest_age)then
+         dA                      = csite%area(ipa) * lambda_mature_plantation
+         mindbh_harvest(1:n_pft) = cpoly%mindbh_secondary(1:n_pft,isi)
+      elseif(mature_secondary)then
          !----- Harvest mature secondary. -------------------------------------------------!
-         dA = csite%area(ipa) * lambda_mature_secondary
-      elseif (csite%dist_type(ipa) == 3 .and. csite%age(ipa) > mature_harvest_age) then
+         dA                      = csite%area(ipa) * lambda_mature_secondary
+         mindbh_harvest(1:n_pft) = cpoly%mindbh_secondary(1:n_pft,isi)
+      elseif (mature_primary) then
          !----- Harvest mature primary. ---------------------------------------------------!
-         dA = csite%area(ipa) * lambda_mature_primary
+         dA                      = csite%area(ipa) * lambda_mature_primary
+         mindbh_harvest(1:n_pft) = cpoly%mindbh_primary(1:n_pft,isi)
       else
          !----- Immature patches not harvested here. --------------------------------------!
-         dA = 0.0  
+         dA                      = 0.0  
+         mindbh_harvest(1:n_pft) = huge(1.)
       end if
-      
+
+
+     
       !------ Found a patch that is contributing to the new patch. ------------------------!
       if (dA > 0.0 .and. csite%plant_ag_biomass(ipa) >= 0.01) then
          csite%area(ipa) = csite%area(ipa) - dA
          call increment_patch_vars(csite,newp,ipa,dA)
-         call accum_dist_litt(csite,newp,ipa,1,dA,cpoly%loss_fraction(1,isi)               &
-                             ,cpoly%nat_dist_type(isi))
-      endif
+         !---------------------------------------------------------------------------------!
+         !     The destination patch disturbance type was previously set to 1 (agri-       !
+         ! culture), but I think it should be 2 (secondary forest) - MLO.  Added the       !
+         ! insert survivors subroutine here just to generalise, with the target biomass    !
+         ! the survivorship should be 0.                                                   !
+         !---------------------------------------------------------------------------------!
+         call accum_dist_litt(csite,newp,ipa,new_lu,dA,cpoly%loss_fraction(new_lu,isi)     &
+                             ,poly_dist_type,mindbh_harvest)
+      end if
    end do
-
 
    return
 end subroutine harv_mat_patches
@@ -458,25 +545,32 @@ end subroutine harv_mat_patches
 !==========================================================================================!
 !==========================================================================================!
 subroutine harv_immat_patches(cpoly,isi, newp, harvest_deficit,total_harvest_area)
-   use ed_state_vars        , only : polygontype             & ! structure
-                                   , sitetype                & ! structure
-                                   , patchtype               ! ! structure
-   use disturb_coms         , only : plantation_rotation     & ! intent(in)
-                                   , mature_harvest_age      ! ! intent(in)
+   use ed_state_vars     , only : polygontype          & ! structure
+                                , sitetype             & ! structure
+                                , patchtype            ! ! structure
+   use disturb_coms      , only : plantation_rotation  & ! intent(in)
+                                , mature_harvest_age   ! ! intent(in)
    use disturbance_utils , only : accum_dist_litt      & ! subroutine
-                                   , increment_patch_vars ! ! subroutine
+                                , insert_survivors     & ! subroutine
+                                , increment_patch_vars ! ! subroutine
+   use ed_max_dims       , only : n_pft                ! ! intent(in)
    implicit none
 
    !----- Arguments -----------------------------------------------------------------------!
-   type(polygontype) , target        :: cpoly
-   integer           , intent(in)    :: isi, newp
-   real              , intent(inout) :: harvest_deficit
-   real              , intent(inout) :: total_harvest_area
+   type(polygontype)                  , target        :: cpoly
+   integer                            , intent(in)    :: isi
+   integer                            , intent(in)    :: newp
+   real                               , intent(inout) :: harvest_deficit
+   real                               , intent(inout) :: total_harvest_area
    !----- Local variables -----------------------------------------------------------------!
-   type(sitetype)    , pointer       :: csite
-   integer                           :: ipa
-   real                              :: lambda
-   real                              :: dA
+   type(sitetype)                     , pointer       :: csite
+   real             , dimension(n_pft)                :: mindbh_harvest
+   integer                                            :: ipa
+   real                                               :: lambda
+   real                                               :: dA
+   !----- Local constants. ----------------------------------------------------------------!
+   integer                            , parameter     :: new_lu         = 2
+   integer                            , parameter     :: poly_dist_type = 1
    !---------------------------------------------------------------------------------------!
 
 
@@ -507,6 +601,9 @@ subroutine harv_immat_patches(cpoly,isi, newp, harvest_deficit,total_harvest_are
           ((csite%plantation(ipa) == 1 .and. csite%age(ipa) < plantation_rotation) .or.    &
            (csite%plantation(ipa) /= 1 .and. csite%age(ipa) < mature_harvest_age) )) then
 
+         !----- Dump the minimum DBH here.  It is an argument, but not really used here. --!
+         mindbh_harvest(1:n_pft) = cpoly%mindbh_secondary(1:n_pft,isi)
+
          if( (csite%area(ipa) * csite%plant_ag_biomass(ipa)) > harvest_deficit)then
             !----- Patch is not totally harvested. ----------------------------------------!
             lambda = harvest_deficit / (csite%area(ipa) * csite%plant_ag_biomass(ipa))
@@ -521,8 +618,8 @@ subroutine harv_immat_patches(cpoly,isi, newp, harvest_deficit,total_harvest_are
          total_harvest_area = total_harvest_area + dA
          csite%area(ipa)    = csite%area(ipa) - dA
          call increment_patch_vars(csite,newp,ipa, dA)
-         call accum_dist_litt(csite,newp,ipa, 2, dA,cpoly%loss_fraction(2,isi)             &
-                             ,cpoly%nat_dist_type(isi))
+         call accum_dist_litt(csite,newp,ipa,new_lu,dA,cpoly%loss_fraction(new_lu,isi)     &
+                             ,poly_dist_type,mindbh_harvest)
       end if
    end do patchloop1
 
@@ -547,6 +644,10 @@ subroutine harv_immat_patches(cpoly,isi, newp, harvest_deficit,total_harvest_are
       !------------------------------------------------------------------------------------!
       if (harvest_deficit > 0.0 .and. csite%dist_type(ipa) == 3 .and.                      &
           csite%age(ipa) < mature_harvest_age) then
+
+         !----- Dump the minimum DBH here.  It is an argument, but not really used here. --!
+         mindbh_harvest(1:n_pft) = cpoly%mindbh_primary(1:n_pft,isi)
+
          if ((csite%area(ipa) * csite%plant_ag_biomass(ipa)) > harvest_deficit) then
             
             !----- Patch is not totally harvested. ----------------------------------------!
@@ -564,8 +665,8 @@ subroutine harv_immat_patches(cpoly,isi, newp, harvest_deficit,total_harvest_are
          csite%area(ipa)    = csite%area(ipa) - dA
 
          call increment_patch_vars(csite,newp,ipa,dA)
-         call accum_dist_litt(csite,newp,ipa,2,dA,cpoly%loss_fraction(2,isi)               &
-                             ,cpoly%nat_dist_type(isi))
+         call accum_dist_litt(csite,newp,ipa,new_lu,dA,cpoly%loss_fraction(new_lu,isi)     &
+                             ,poly_dist_type,mindbh_harvest)
       end if
    end do patchloop2
 
@@ -586,7 +687,7 @@ subroutine norm_harv_patch(csite,newp)
    use ed_state_vars , only : sitetype            & ! structure
                             , patchtype           ! ! structure
    use disturb_coms  , only : min_new_patch_area  ! ! intent(in)
-   use ed_max_dims      , only : n_pft               ! ! intent(in)
+   use ed_max_dims   , only : n_pft               ! ! intent(in)
    use grid_coms     , only : nzg                 & ! intent(in)
                             , nzs                 ! ! intent(in)
    implicit none

@@ -505,7 +505,7 @@ subroutine read_soil_moist_temp(cgrid)
                                        ,csite%soil_water(nzg,ipa)                          &
                                        ,csite%soil_energy(nzg,ipa)                         &
                                        ,csite%sfcwater_energy(nlsw1,ipa)                   &
-                                       ,csite%can_rhos(ipa),csite%can_shv(ipa)             &
+                                       ,csite%can_prss(ipa),csite%can_shv(ipa)             &
                                        ,csite%ground_shv(ipa),csite%surface_ssh(ipa)       &
                                        ,surface_temp,surface_fliq)
 

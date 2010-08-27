@@ -308,7 +308,7 @@ subroutine copy_atm2lsm(ifm,init)
    end do polyloop1st
 
    !----- Filling the precipitation arrays. -----------------------------------------------!
-   call fill_site_precip(ifm,cgrid,m2,m3,ia,iz,ja,jz,pi0_mean,theta_mean)
+   call fill_site_precip(ifm,cgrid,m2,m3,ia,iz,ja,jz,pi0_mean,theta_mean,init)
 
   
    polyloop2nd: do ipy = 1,cgrid%npolygons
@@ -465,7 +465,7 @@ end subroutine copy_atm2lsm
 ! microphysics) to retrieve precipitation for ED. It is currently a simplified method,     !
 ! because it doesn't fully take advantage of the bulk microphysics details.                !
 !------------------------------------------------------------------------------------------!
-subroutine fill_site_precip(ifm,cgrid,m2,m3,ia,iz,ja,jz,pi0_mean,theta_mean)
+subroutine fill_site_precip(ifm,cgrid,m2,m3,ia,iz,ja,jz,pi0_mean,theta_mean,init)
    use mem_cuparm   , only : cuparm_g     & ! structure
                            , nnqparm      ! ! intent(in)
    use mem_micro    , only : micro_g      ! ! structure
@@ -482,6 +482,7 @@ subroutine fill_site_precip(ifm,cgrid,m2,m3,ia,iz,ja,jz,pi0_mean,theta_mean)
    type(edtype)          , target     :: cgrid
    integer               , intent(in) :: ifm,m2,m3,ia,iz,ja,jz
    real, dimension(m2,m3), intent(in) :: pi0_mean,theta_mean
+   logical               , intent(in) :: init
    !----- Local variables -----------------------------------------------------------------!
    integer                            :: i,j,n,ix,iy,ipy
    real, dimension(m2,m3)             :: conprr_mean,bulkprr_mean
@@ -522,7 +523,6 @@ subroutine fill_site_precip(ifm,cgrid,m2,m3,ia,iz,ja,jz,pi0_mean,theta_mean)
       !------------------------------------------------------------------------------------!
       do i=ia,iz
          do j=ja,jz
-
             conprr_mean(i,j) = dtlsmi * ( cuparm_g(ifm)%aconpr(i,j)                        &
                                         - ed_precip_g(ifm)%prev_aconpr(i,j) )
             ed_precip_g(ifm)%prev_aconpr(i,j) = cuparm_g(ifm)%aconpr(i,j)
@@ -565,12 +565,13 @@ subroutine fill_site_precip(ifm,cgrid,m2,m3,ia,iz,ja,jz,pi0_mean,theta_mean)
    end if
 
    !----- Now we combine both kinds of precipitation. -------------------------------------!
-   do ipy=1,cgrid%npolygons
-      ix =  cgrid%ilon(ipy)
-      iy =  cgrid%ilat(ipy)
-      cgrid%met(ipy)%pcpg = conprr_mean(ix,iy) + bulkprr_mean(ix,iy)
-   end do
-
+   if (.not. init) then
+      do ipy=1,cgrid%npolygons
+         ix =  cgrid%ilon(ipy)
+         iy =  cgrid%ilat(ipy)
+         cgrid%met(ipy)%pcpg = conprr_mean(ix,iy) + bulkprr_mean(ix,iy)
+      end do
+   end if
    return
 end subroutine fill_site_precip
 !==========================================================================================!
@@ -599,6 +600,8 @@ subroutine copy_fluxes_future_2_past(ifm)
    ed_fluxp_g(ifm)%tstar   = ed_fluxf_g(ifm)%tstar
    ed_fluxp_g(ifm)%rstar   = ed_fluxf_g(ifm)%rstar
    ed_fluxp_g(ifm)%cstar   = ed_fluxf_g(ifm)%cstar
+   ed_fluxp_g(ifm)%zeta    = ed_fluxf_g(ifm)%zeta
+   ed_fluxp_g(ifm)%ribulk  = ed_fluxf_g(ifm)%ribulk
    ed_fluxp_g(ifm)%albedt  = ed_fluxf_g(ifm)%albedt
    ed_fluxp_g(ifm)%rlongup = ed_fluxf_g(ifm)%rlongup
    ed_fluxp_g(ifm)%sflux_u = ed_fluxf_g(ifm)%sflux_u
@@ -670,10 +673,12 @@ subroutine copy_fluxes_lsm2atm(ifm)
       poly_area_i = 1./ sum(cpoly%area)
 
       !----- Initialising all fluxes. -----------------------------------------------------!
-      fluxp%ustar(ix,iy)   = 0.0
-      fluxp%tstar(ix,iy)   = 0.0
-      fluxp%rstar(ix,iy)   = 0.0
-      fluxp%cstar(ix,iy)   = 0.0
+      fluxp%ustar(ix,iy)     = 0.0
+      fluxp%tstar(ix,iy)     = 0.0
+      fluxp%rstar(ix,iy)     = 0.0
+      fluxp%cstar(ix,iy)     = 0.0
+      fluxp%zeta(ix,iy)      = 0.0
+      fluxp%ribulk(ix,iy)    = 0.0
       fluxp%sflux_u(ix,iy)   = 0.0
       fluxp%sflux_v(ix,iy)   = 0.0
       fluxp%sflux_w(ix,iy)   = 0.0
@@ -759,6 +764,18 @@ subroutine copy_fluxes_lsm2atm(ifm)
                             * sum(csite%area * csite%qstar / (1.-csite%can_shv))           &
                             / (1. - cpoly%met(isi)%atm_shv)
          !---------------------------------------------------------------------------------!
+
+         !---------------------------------------------------------------------------------!
+         !     Linear interpolation is not the best method here but the following vari-    !
+         ! ables are diagnostic only.                                                      !
+         !---------------------------------------------------------------------------------!
+         fluxp%zeta(ix,iy)   = fluxp%zeta(ix,iy)                                           &
+                             + cpoly%area(isi)*sum(csite%area * csite%zeta)                &
+                             * site_area_i * poly_area_i
+
+         fluxp%ribulk(ix,iy) = fluxp%ribulk(ix,iy)                                         &
+                             + cpoly%area(isi)*sum(csite%area * csite%ribulk)              &
+                             * site_area_i * poly_area_i
 
          !---------------------------------------------------------------------------------!
          !     The flux of momentum for the horizontal wind needs to be split with the     !
@@ -865,18 +882,30 @@ subroutine initialize_ed2leaf(ifm,mxp,myp)
                            , p00            & ! intent(in)
                            , cpor           ! ! intent(in)
    use leaf_coms    , only : can_depth      ! ! intent(in)
-   use therm_lib    , only : reducedpress   ! ! function
+   use mem_cuparm   , only : cuparm_g       & ! structure
+                           , nnqparm        ! ! intent(in)
+   use micphys      , only : availcat       ! ! intent(in)
+   use mem_micro    , only : micro_g        ! ! structure
+   use therm_lib    , only : reducedpress   & ! function
+                           , bulk_on        ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
-   integer               , intent(in) :: ifm, mxp, myp
+   integer                            , intent(in) :: ifm, mxp, myp
    !----- Local variables -----------------------------------------------------------------!
-   integer                             :: ix,iy,i,j
-   integer                             :: k2w,k3w,k1w
-   real                                :: topma_t,wtw
-   real                                :: atm_prss,atm_shv
-   real,dimension(mmxp(ifm),mmyp(ifm)) :: theta_mean,pi0_mean,rv_mean,geoht
+   integer                                         :: ix,iy,i,j
+   integer                                         :: k2w,k3w,k1w
+   real                                            :: topma_t,wtw
+   real                                            :: atm_prss,atm_shv
+   real,dimension(mmxp(ifm),mmyp(ifm))             :: theta_mean
+   real,dimension(mmxp(ifm),mmyp(ifm))             :: pi0_mean
+   real,dimension(mmxp(ifm),mmyp(ifm))             :: rv_mean
+   real,dimension(mmxp(ifm),mmyp(ifm))             :: geoht
+   real                                            :: totpcp
+   logical                                         :: cumulus_on
    !---------------------------------------------------------------------------------------!
 
+   !----- Some aliases.  ------------------------------------------------------------------!
+   cumulus_on   = nnqparm(ifm) > 0
 
    !---------------------------------------------------------------------------------------!
    ! Step 1 - Set the patch are fraction in the leaf array to the land fraction in the     !
@@ -907,8 +936,11 @@ subroutine initialize_ed2leaf(ifm,mxp,myp)
    call zero_edflux(ed_fluxf_g(ifm))
    call zero_edflux(ed_fluxp_g(ifm))
    call zero_wgrid(wgrid_g(ifm))
-   call zero_edprecip (ed_precip_g(ifm))
+   call zero_edprecip(ed_precip_g(ifm))
    !---------------------------------------------------------------------------------------!
+
+
+
 
 
    !---------------------------------------------------------------------------------------!
@@ -1085,6 +1117,16 @@ subroutine transfer_ed2leaf(ifm,timel)
                                   +       tfact  * ed_fluxf_g(ifm)%cstar(i,j)
 
          !---------------------------------------------------------------------------------!
+         !      The following variables are for diagnostics only, linear interpolation is  !
+         ! fine.                                                                           !
+         !---------------------------------------------------------------------------------!
+         leaf_g(ifm)%zeta(i,j,2)   = (1. - tfact) * ed_fluxp_g(ifm)%zeta(i,j)              &
+                                   +       tfact  * ed_fluxf_g(ifm)%zeta(i,j)
+
+         leaf_g(ifm)%ribulk(i,j,2) = (1. - tfact) * ed_fluxp_g(ifm)%ribulk(i,j)            &
+                                   +       tfact  * ed_fluxf_g(ifm)%ribulk(i,j)
+
+         !---------------------------------------------------------------------------------!
          !      For the albedo and surface fluxes, we must blend land and water.  The land !
          ! (ED polygon) is done similarly to the stars, while the water uses the instant-  !
          ! aneous value.                                                                   !
@@ -1138,10 +1180,12 @@ subroutine transfer_ed2leaf(ifm,timel)
                                      * wgrid_g(ifm)%sflux_c(i,j)
 
          !----- Copy the water-body fluxes, they are synchronised with BRAMS --------------!
-         leaf_g(ifm)%ustar(i,j,1) = wgrid_g(ifm)%ustar(i,j)
-         leaf_g(ifm)%tstar(i,j,1) = wgrid_g(ifm)%tstar(i,j)
-         leaf_g(ifm)%rstar(i,j,1) = wgrid_g(ifm)%rstar(i,j)
-         leaf_g(ifm)%cstar(i,j,1) = wgrid_g(ifm)%cstar(i,j)
+         leaf_g(ifm)%ustar(i,j,1)  = wgrid_g(ifm)%ustar (i,j)
+         leaf_g(ifm)%tstar(i,j,1)  = wgrid_g(ifm)%tstar (i,j)
+         leaf_g(ifm)%rstar(i,j,1)  = wgrid_g(ifm)%rstar (i,j)
+         leaf_g(ifm)%cstar(i,j,1)  = wgrid_g(ifm)%cstar (i,j)
+         leaf_g(ifm)%zeta (i,j,1)  = wgrid_g(ifm)%zeta  (i,j)
+         leaf_g(ifm)%ribulk(i,j,1) = wgrid_g(ifm)%ribulk(i,j)
 
          !----- Find roughness scales for water bodies ------------------------------------!
          leaf_g(ifm)%patch_rough(i,j,1) = max(z0fac_water * leaf_g(ifm)%ustar(i,j,1) ** 2  &
@@ -1213,15 +1257,19 @@ subroutine transfer_ed2leaf(ifm,timel)
          turb_g(ifm)%sflux_r(1,j)   = turb_g(ifm)%sflux_r(2,j)
          turb_g(ifm)%sflux_c(1,j)   = turb_g(ifm)%sflux_c(2,j)
  
-         leaf_g(ifm)%ustar(1,j,1)   = leaf_g(ifm)%ustar(2,j,1)
-         leaf_g(ifm)%rstar(1,j,1)   = leaf_g(ifm)%rstar(2,j,1)
-         leaf_g(ifm)%tstar(1,j,1)   = leaf_g(ifm)%tstar(2,j,1)
-         leaf_g(ifm)%cstar(1,j,1)   = leaf_g(ifm)%cstar(2,j,1)
- 
-         leaf_g(ifm)%ustar(1,j,2)   = leaf_g(ifm)%ustar(2,j,2)
-         leaf_g(ifm)%rstar(1,j,2)   = leaf_g(ifm)%rstar(2,j,2)
-         leaf_g(ifm)%tstar(1,j,2)   = leaf_g(ifm)%tstar(2,j,2)
-         leaf_g(ifm)%cstar(1,j,2)   = leaf_g(ifm)%cstar(2,j,2)
+         leaf_g(ifm)%ustar (1,j,1)  = leaf_g(ifm)%ustar (2,j,1)
+         leaf_g(ifm)%rstar (1,j,1)  = leaf_g(ifm)%rstar (2,j,1)
+         leaf_g(ifm)%tstar (1,j,1)  = leaf_g(ifm)%tstar (2,j,1)
+         leaf_g(ifm)%cstar (1,j,1)  = leaf_g(ifm)%cstar (2,j,1)
+         leaf_g(ifm)%zeta  (1,j,1)  = leaf_g(ifm)%zeta  (2,j,1)
+         leaf_g(ifm)%ribulk(1,j,1)  = leaf_g(ifm)%ribulk(2,j,1)
+
+         leaf_g(ifm)%ustar (1,j,2)  = leaf_g(ifm)%ustar (2,j,2)
+         leaf_g(ifm)%rstar (1,j,2)  = leaf_g(ifm)%rstar (2,j,2)
+         leaf_g(ifm)%tstar (1,j,2)  = leaf_g(ifm)%tstar (2,j,2)
+         leaf_g(ifm)%cstar (1,j,2)  = leaf_g(ifm)%cstar (2,j,2)
+         leaf_g(ifm)%zeta  (1,j,2)  = leaf_g(ifm)%zeta  (2,j,2)
+         leaf_g(ifm)%ribulk(1,j,2)  = leaf_g(ifm)%ribulk(2,j,2)
       end do
    end if
 
@@ -1231,22 +1279,26 @@ subroutine transfer_ed2leaf(ifm,timel)
          radiate_g(ifm)%albedt(m2,j) = radiate_g(ifm)%albedt(m2-1,j)
          radiate_g(ifm)%rlongup(m2,j)= radiate_g(ifm)%rlongup(m2-1,j)
 
-         turb_g(ifm)%sflux_u(m2,j)= turb_g(ifm)%sflux_u(m2-1,j)
-         turb_g(ifm)%sflux_v(m2,j)= turb_g(ifm)%sflux_v(m2-1,j)
-         turb_g(ifm)%sflux_w(m2,j)= turb_g(ifm)%sflux_w(m2-1,j)
-         turb_g(ifm)%sflux_t(m2,j)= turb_g(ifm)%sflux_t(m2-1,j)
-         turb_g(ifm)%sflux_r(m2,j)= turb_g(ifm)%sflux_r(m2-1,j)
-         turb_g(ifm)%sflux_c(m2,j)= turb_g(ifm)%sflux_c(m2-1,j)
+         turb_g(ifm)%sflux_u(m2,j)   = turb_g(ifm)%sflux_u(m2-1,j)
+         turb_g(ifm)%sflux_v(m2,j)   = turb_g(ifm)%sflux_v(m2-1,j)
+         turb_g(ifm)%sflux_w(m2,j)   = turb_g(ifm)%sflux_w(m2-1,j)
+         turb_g(ifm)%sflux_t(m2,j)   = turb_g(ifm)%sflux_t(m2-1,j)
+         turb_g(ifm)%sflux_r(m2,j)   = turb_g(ifm)%sflux_r(m2-1,j)
+         turb_g(ifm)%sflux_c(m2,j)   = turb_g(ifm)%sflux_c(m2-1,j)
       
-         leaf_g(ifm)%ustar(m2,j,1)=leaf_g(ifm)%ustar(m2-1,j,1)
-         leaf_g(ifm)%rstar(m2,j,1)=leaf_g(ifm)%rstar(m2-1,j,1)
-         leaf_g(ifm)%tstar(m2,j,1)=leaf_g(ifm)%tstar(m2-1,j,1)
-         leaf_g(ifm)%cstar(m2,j,1)=leaf_g(ifm)%cstar(m2-1,j,1)
+         leaf_g(ifm)%ustar  (m2,j,1) = leaf_g(ifm)%ustar  (m2-1,j,1)
+         leaf_g(ifm)%rstar  (m2,j,1) = leaf_g(ifm)%rstar  (m2-1,j,1)
+         leaf_g(ifm)%tstar  (m2,j,1) = leaf_g(ifm)%tstar  (m2-1,j,1)
+         leaf_g(ifm)%cstar  (m2,j,1) = leaf_g(ifm)%cstar  (m2-1,j,1)
+         leaf_g(ifm)%zeta   (m2,j,1) = leaf_g(ifm)%zeta   (m2-1,j,1)
+         leaf_g(ifm)%ribulk (m2,j,1) = leaf_g(ifm)%ribulk (m2-1,j,1)
 
-         leaf_g(ifm)%ustar(m2,j,2)=leaf_g(ifm)%ustar(m2-1,j,2)
-         leaf_g(ifm)%rstar(m2,j,2)=leaf_g(ifm)%rstar(m2-1,j,2)
-         leaf_g(ifm)%tstar(m2,j,2)=leaf_g(ifm)%tstar(m2-1,j,2)
-         leaf_g(ifm)%cstar(m2,j,2)=leaf_g(ifm)%cstar(m2-1,j,2)
+         leaf_g(ifm)%ustar  (m2,j,2) = leaf_g(ifm)%ustar  (m2-1,j,2)
+         leaf_g(ifm)%rstar  (m2,j,2) = leaf_g(ifm)%rstar  (m2-1,j,2)
+         leaf_g(ifm)%tstar  (m2,j,2) = leaf_g(ifm)%tstar  (m2-1,j,2)
+         leaf_g(ifm)%cstar  (m2,j,2) = leaf_g(ifm)%cstar  (m2-1,j,2)
+         leaf_g(ifm)%zeta   (m2,j,2) = leaf_g(ifm)%zeta   (m2-1,j,2)
+         leaf_g(ifm)%ribulk (m2,j,2) = leaf_g(ifm)%ribulk (m2-1,j,2)
       end do
    end if
   
@@ -1256,22 +1308,26 @@ subroutine transfer_ed2leaf(ifm,timel)
          radiate_g(ifm)%albedt(i,1) = radiate_g(ifm)%albedt(i,2)
          radiate_g(ifm)%rlongup(i,1)= radiate_g(ifm)%rlongup(i,2)
 
-         turb_g(ifm)%sflux_u(i,1)= turb_g(ifm)%sflux_u(i,2)
-         turb_g(ifm)%sflux_v(i,1)= turb_g(ifm)%sflux_v(i,2)
-         turb_g(ifm)%sflux_w(i,1)= turb_g(ifm)%sflux_w(i,2)
-         turb_g(ifm)%sflux_t(i,1)= turb_g(ifm)%sflux_t(i,2)
-         turb_g(ifm)%sflux_r(i,1)= turb_g(ifm)%sflux_r(i,2)
-         turb_g(ifm)%sflux_c(i,1)= turb_g(ifm)%sflux_c(i,2)
-         
-         leaf_g(ifm)%ustar(i,1,1)=leaf_g(ifm)%ustar(i,2,1)
-         leaf_g(ifm)%rstar(i,1,1)=leaf_g(ifm)%rstar(i,2,1)
-         leaf_g(ifm)%tstar(i,1,1)=leaf_g(ifm)%tstar(i,2,1)
-         leaf_g(ifm)%cstar(i,1,1)=leaf_g(ifm)%cstar(i,2,1)
+         turb_g(ifm)%sflux_u(i,1)   = turb_g(ifm)%sflux_u(i,2)
+         turb_g(ifm)%sflux_v(i,1)   = turb_g(ifm)%sflux_v(i,2)
+         turb_g(ifm)%sflux_w(i,1)   = turb_g(ifm)%sflux_w(i,2)
+         turb_g(ifm)%sflux_t(i,1)   = turb_g(ifm)%sflux_t(i,2)
+         turb_g(ifm)%sflux_r(i,1)   = turb_g(ifm)%sflux_r(i,2)
+         turb_g(ifm)%sflux_c(i,1)   = turb_g(ifm)%sflux_c(i,2)
 
-         leaf_g(ifm)%ustar(i,1,2)=leaf_g(ifm)%ustar(i,2,2)
-         leaf_g(ifm)%rstar(i,1,2)=leaf_g(ifm)%rstar(i,2,2)
-         leaf_g(ifm)%tstar(i,1,2)=leaf_g(ifm)%tstar(i,2,2)
-         leaf_g(ifm)%cstar(i,1,2)=leaf_g(ifm)%cstar(i,2,2)
+         leaf_g(ifm)%ustar  (i,1,1) = leaf_g(ifm)%ustar  (i,2,1)
+         leaf_g(ifm)%rstar  (i,1,1) = leaf_g(ifm)%rstar  (i,2,1)
+         leaf_g(ifm)%tstar  (i,1,1) = leaf_g(ifm)%tstar  (i,2,1)
+         leaf_g(ifm)%cstar  (i,1,1) = leaf_g(ifm)%cstar  (i,2,1)
+         leaf_g(ifm)%zeta   (i,1,1) = leaf_g(ifm)%zeta   (i,2,1)
+         leaf_g(ifm)%ribulk (i,1,1) = leaf_g(ifm)%ribulk (i,2,1)
+
+         leaf_g(ifm)%ustar  (i,1,2) = leaf_g(ifm)%ustar  (i,2,2)
+         leaf_g(ifm)%rstar  (i,1,2) = leaf_g(ifm)%rstar  (i,2,2)
+         leaf_g(ifm)%tstar  (i,1,2) = leaf_g(ifm)%tstar  (i,2,2)
+         leaf_g(ifm)%cstar  (i,1,2) = leaf_g(ifm)%cstar  (i,2,2)
+         leaf_g(ifm)%zeta   (i,1,2) = leaf_g(ifm)%zeta   (i,2,2)
+         leaf_g(ifm)%ribulk (i,1,2) = leaf_g(ifm)%ribulk (i,2,2)
       end do
    end if
 
@@ -1282,22 +1338,26 @@ subroutine transfer_ed2leaf(ifm,timel)
          radiate_g(ifm)%albedt(i,m3) = radiate_g(ifm)%albedt(i,m3-1)
          radiate_g(ifm)%rlongup(i,m3)= radiate_g(ifm)%rlongup(i,m3-1)
 
-         turb_g(ifm)%sflux_u(i,m3)= turb_g(ifm)%sflux_u(i,m3-1)
-         turb_g(ifm)%sflux_v(i,m3)= turb_g(ifm)%sflux_v(i,m3-1)
-         turb_g(ifm)%sflux_w(i,m3)= turb_g(ifm)%sflux_w(i,m3-1)
-         turb_g(ifm)%sflux_t(i,m3)= turb_g(ifm)%sflux_t(i,m3-1)
-         turb_g(ifm)%sflux_r(i,m3)= turb_g(ifm)%sflux_r(i,m3-1)
-         turb_g(ifm)%sflux_c(i,m3)= turb_g(ifm)%sflux_c(i,m3-1)
-         
-         leaf_g(ifm)%ustar(i,m3,1)=leaf_g(ifm)%ustar(i,m3-1,1)
-         leaf_g(ifm)%rstar(i,m3,1)=leaf_g(ifm)%rstar(i,m3-1,1)
-         leaf_g(ifm)%tstar(i,m3,1)=leaf_g(ifm)%tstar(i,m3-1,1)
-         leaf_g(ifm)%cstar(i,m3,1)=leaf_g(ifm)%cstar(i,m3-1,1)
+         turb_g(ifm)%sflux_u(i,m3)   = turb_g(ifm)%sflux_u(i,m3-1)
+         turb_g(ifm)%sflux_v(i,m3)   = turb_g(ifm)%sflux_v(i,m3-1)
+         turb_g(ifm)%sflux_w(i,m3)   = turb_g(ifm)%sflux_w(i,m3-1)
+         turb_g(ifm)%sflux_t(i,m3)   = turb_g(ifm)%sflux_t(i,m3-1)
+         turb_g(ifm)%sflux_r(i,m3)   = turb_g(ifm)%sflux_r(i,m3-1)
+         turb_g(ifm)%sflux_c(i,m3)   = turb_g(ifm)%sflux_c(i,m3-1)
 
-         leaf_g(ifm)%ustar(i,m3,2)=leaf_g(ifm)%ustar(i,m3-1,2)
-         leaf_g(ifm)%rstar(i,m3,2)=leaf_g(ifm)%rstar(i,m3-1,2)
-         leaf_g(ifm)%tstar(i,m3,2)=leaf_g(ifm)%tstar(i,m3-1,2)
-         leaf_g(ifm)%cstar(i,m3,2)=leaf_g(ifm)%cstar(i,m3-1,2)
+         leaf_g(ifm)%ustar  (i,m3,1) = leaf_g(ifm)%ustar  (i,m3-1,1)
+         leaf_g(ifm)%rstar  (i,m3,1) = leaf_g(ifm)%rstar  (i,m3-1,1)
+         leaf_g(ifm)%tstar  (i,m3,1) = leaf_g(ifm)%tstar  (i,m3-1,1)
+         leaf_g(ifm)%cstar  (i,m3,1) = leaf_g(ifm)%cstar  (i,m3-1,1)
+         leaf_g(ifm)%zeta   (i,m3,1) = leaf_g(ifm)%zeta   (i,m3-1,1)
+         leaf_g(ifm)%ribulk (i,m3,1) = leaf_g(ifm)%ribulk (i,m3-1,1)
+
+         leaf_g(ifm)%ustar  (i,m3,2) = leaf_g(ifm)%ustar  (i,m3-1,2)
+         leaf_g(ifm)%rstar  (i,m3,2) = leaf_g(ifm)%rstar  (i,m3-1,2)
+         leaf_g(ifm)%tstar  (i,m3,2) = leaf_g(ifm)%tstar  (i,m3-1,2)
+         leaf_g(ifm)%cstar  (i,m3,2) = leaf_g(ifm)%cstar  (i,m3-1,2)
+         leaf_g(ifm)%zeta   (i,m3,2) = leaf_g(ifm)%zeta   (i,m3-1,2)
+         leaf_g(ifm)%ribulk (i,m3,2) = leaf_g(ifm)%ribulk (i,m3-1,2)
 
       end do
    end if
@@ -1312,22 +1372,27 @@ subroutine transfer_ed2leaf(ifm,timel)
       radiate_g(ifm)%albedt(ic,jc) = radiate_g(ifm)%albedt(ici,jci)
       radiate_g(ifm)%rlongup(ic,jc)= radiate_g(ifm)%rlongup(ici,jci)
 
-      turb_g(ifm)%sflux_u(ic,jc)= turb_g(ifm)%sflux_u(ici,jci)
-      turb_g(ifm)%sflux_v(ic,jc)= turb_g(ifm)%sflux_v(ici,jci)
-      turb_g(ifm)%sflux_w(ic,jc)= turb_g(ifm)%sflux_w(ici,jci)
-      turb_g(ifm)%sflux_t(ic,jc)= turb_g(ifm)%sflux_t(ici,jci)
-      turb_g(ifm)%sflux_r(ic,jc)= turb_g(ifm)%sflux_r(ici,jci)
-      turb_g(ifm)%sflux_c(ic,jc)= turb_g(ifm)%sflux_c(ici,jci)
+      turb_g(ifm)%sflux_u(ic,jc)   = turb_g(ifm)%sflux_u(ici,jci)
+      turb_g(ifm)%sflux_v(ic,jc)   = turb_g(ifm)%sflux_v(ici,jci)
+      turb_g(ifm)%sflux_w(ic,jc)   = turb_g(ifm)%sflux_w(ici,jci)
+      turb_g(ifm)%sflux_t(ic,jc)   = turb_g(ifm)%sflux_t(ici,jci)
+      turb_g(ifm)%sflux_r(ic,jc)   = turb_g(ifm)%sflux_r(ici,jci)
+      turb_g(ifm)%sflux_c(ic,jc)   = turb_g(ifm)%sflux_c(ici,jci)
 
-      leaf_g(ifm)%ustar(ic,jc,1)=leaf_g(ifm)%ustar(ici,jci,1)
-      leaf_g(ifm)%rstar(ic,jc,1)=leaf_g(ifm)%rstar(ici,jci,1)
-      leaf_g(ifm)%tstar(ic,jc,1)=leaf_g(ifm)%tstar(ici,jci,1)
-      leaf_g(ifm)%cstar(ic,jc,1)=leaf_g(ifm)%cstar(ici,jci,1)
+      leaf_g(ifm)%ustar  (ic,jc,1) = leaf_g(ifm)%ustar  (ici,jci,1)
+      leaf_g(ifm)%rstar  (ic,jc,1) = leaf_g(ifm)%rstar  (ici,jci,1)
+      leaf_g(ifm)%tstar  (ic,jc,1) = leaf_g(ifm)%tstar  (ici,jci,1)
+      leaf_g(ifm)%cstar  (ic,jc,1) = leaf_g(ifm)%cstar  (ici,jci,1)
+      leaf_g(ifm)%zeta   (ic,jc,1) = leaf_g(ifm)%zeta   (ici,jci,1)
+      leaf_g(ifm)%ribulk (ic,jc,1) = leaf_g(ifm)%ribulk (ici,jci,1)
 
-      leaf_g(ifm)%ustar(ic,jc,2)=leaf_g(ifm)%ustar(ici,jci,2)
-      leaf_g(ifm)%rstar(ic,jc,2)=leaf_g(ifm)%rstar(ici,jci,2)
-      leaf_g(ifm)%tstar(ic,jc,2)=leaf_g(ifm)%tstar(ici,jci,2)
-      leaf_g(ifm)%cstar(ic,jc,2)=leaf_g(ifm)%cstar(ici,jci,2)
+      leaf_g(ifm)%ustar  (ic,jc,2) = leaf_g(ifm)%ustar  (ici,jci,2)
+      leaf_g(ifm)%rstar  (ic,jc,2) = leaf_g(ifm)%rstar  (ici,jci,2)
+      leaf_g(ifm)%tstar  (ic,jc,2) = leaf_g(ifm)%tstar  (ici,jci,2)
+      leaf_g(ifm)%cstar  (ic,jc,2) = leaf_g(ifm)%cstar  (ici,jci,2)
+      leaf_g(ifm)%zeta   (ic,jc,2) = leaf_g(ifm)%zeta   (ici,jci,2)
+      leaf_g(ifm)%ribulk (ic,jc,2) = leaf_g(ifm)%ribulk (ici,jci,2)
+
    end if
 
    !----- Southeastern corner -------------------------------------------------------------!
@@ -1340,22 +1405,26 @@ subroutine transfer_ed2leaf(ifm,timel)
       radiate_g(ifm)%albedt(ic,jc) = radiate_g(ifm)%albedt(ici,jci)
       radiate_g(ifm)%rlongup(ic,jc)= radiate_g(ifm)%rlongup(ici,jci)
 
-      turb_g(ifm)%sflux_u(ic,jc)= turb_g(ifm)%sflux_u(ici,jci)
-      turb_g(ifm)%sflux_v(ic,jc)= turb_g(ifm)%sflux_v(ici,jci)
-      turb_g(ifm)%sflux_w(ic,jc)= turb_g(ifm)%sflux_w(ici,jci)
-      turb_g(ifm)%sflux_t(ic,jc)= turb_g(ifm)%sflux_t(ici,jci)
-      turb_g(ifm)%sflux_r(ic,jc)= turb_g(ifm)%sflux_r(ici,jci)
-      turb_g(ifm)%sflux_c(ic,jc)= turb_g(ifm)%sflux_c(ici,jci)
+      turb_g(ifm)%sflux_u(ic,jc)   = turb_g(ifm)%sflux_u(ici,jci)
+      turb_g(ifm)%sflux_v(ic,jc)   = turb_g(ifm)%sflux_v(ici,jci)
+      turb_g(ifm)%sflux_w(ic,jc)   = turb_g(ifm)%sflux_w(ici,jci)
+      turb_g(ifm)%sflux_t(ic,jc)   = turb_g(ifm)%sflux_t(ici,jci)
+      turb_g(ifm)%sflux_r(ic,jc)   = turb_g(ifm)%sflux_r(ici,jci)
+      turb_g(ifm)%sflux_c(ic,jc)   = turb_g(ifm)%sflux_c(ici,jci)
 
-      leaf_g(ifm)%ustar(ic,jc,1)=leaf_g(ifm)%ustar(ici,jci,1)
-      leaf_g(ifm)%rstar(ic,jc,1)=leaf_g(ifm)%rstar(ici,jci,1)
-      leaf_g(ifm)%tstar(ic,jc,1)=leaf_g(ifm)%tstar(ici,jci,1)
-      leaf_g(ifm)%cstar(ic,jc,1)=leaf_g(ifm)%cstar(ici,jci,1)
+      leaf_g(ifm)%ustar  (ic,jc,1) = leaf_g(ifm)%ustar  (ici,jci,1)
+      leaf_g(ifm)%rstar  (ic,jc,1) = leaf_g(ifm)%rstar  (ici,jci,1)
+      leaf_g(ifm)%tstar  (ic,jc,1) = leaf_g(ifm)%tstar  (ici,jci,1)
+      leaf_g(ifm)%cstar  (ic,jc,1) = leaf_g(ifm)%cstar  (ici,jci,1)
+      leaf_g(ifm)%zeta   (ic,jc,1) = leaf_g(ifm)%zeta   (ici,jci,1)
+      leaf_g(ifm)%ribulk (ic,jc,1) = leaf_g(ifm)%ribulk (ici,jci,1)
 
-      leaf_g(ifm)%ustar(ic,jc,2)=leaf_g(ifm)%ustar(ici,jci,2)
-      leaf_g(ifm)%rstar(ic,jc,2)=leaf_g(ifm)%rstar(ici,jci,2)
-      leaf_g(ifm)%tstar(ic,jc,2)=leaf_g(ifm)%tstar(ici,jci,2)
-      leaf_g(ifm)%cstar(ic,jc,2)=leaf_g(ifm)%cstar(ici,jci,2)
+      leaf_g(ifm)%ustar  (ic,jc,2) = leaf_g(ifm)%ustar  (ici,jci,2)
+      leaf_g(ifm)%rstar  (ic,jc,2) = leaf_g(ifm)%rstar  (ici,jci,2)
+      leaf_g(ifm)%tstar  (ic,jc,2) = leaf_g(ifm)%tstar  (ici,jci,2)
+      leaf_g(ifm)%cstar  (ic,jc,2) = leaf_g(ifm)%cstar  (ici,jci,2)
+      leaf_g(ifm)%zeta   (ic,jc,2) = leaf_g(ifm)%zeta   (ici,jci,2)
+      leaf_g(ifm)%ribulk (ic,jc,2) = leaf_g(ifm)%ribulk (ici,jci,2)
    end if
   
    !----- Northeastern corner -------------------------------------------------------------!
@@ -1368,22 +1437,26 @@ subroutine transfer_ed2leaf(ifm,timel)
       radiate_g(ifm)%albedt(ic,jc) = radiate_g(ifm)%albedt(ici,jci)
       radiate_g(ifm)%rlongup(ic,jc)= radiate_g(ifm)%rlongup(ici,jci)
 
-      turb_g(ifm)%sflux_u(ic,jc)= turb_g(ifm)%sflux_u(ici,jci)
-      turb_g(ifm)%sflux_v(ic,jc)= turb_g(ifm)%sflux_v(ici,jci)
-      turb_g(ifm)%sflux_w(ic,jc)= turb_g(ifm)%sflux_w(ici,jci)
-      turb_g(ifm)%sflux_t(ic,jc)= turb_g(ifm)%sflux_t(ici,jci)
-      turb_g(ifm)%sflux_r(ic,jc)= turb_g(ifm)%sflux_r(ici,jci)
-      turb_g(ifm)%sflux_c(ic,jc)= turb_g(ifm)%sflux_c(ici,jci)
+      turb_g(ifm)%sflux_u(ic,jc)   = turb_g(ifm)%sflux_u(ici,jci)
+      turb_g(ifm)%sflux_v(ic,jc)   = turb_g(ifm)%sflux_v(ici,jci)
+      turb_g(ifm)%sflux_w(ic,jc)   = turb_g(ifm)%sflux_w(ici,jci)
+      turb_g(ifm)%sflux_t(ic,jc)   = turb_g(ifm)%sflux_t(ici,jci)
+      turb_g(ifm)%sflux_r(ic,jc)   = turb_g(ifm)%sflux_r(ici,jci)
+      turb_g(ifm)%sflux_c(ic,jc)   = turb_g(ifm)%sflux_c(ici,jci)
 
-      leaf_g(ifm)%ustar(ic,jc,1)=leaf_g(ifm)%ustar(ici,jci,1)
-      leaf_g(ifm)%rstar(ic,jc,1)=leaf_g(ifm)%rstar(ici,jci,1)
-      leaf_g(ifm)%tstar(ic,jc,1)=leaf_g(ifm)%tstar(ici,jci,1)
-      leaf_g(ifm)%cstar(ic,jc,1)=leaf_g(ifm)%cstar(ici,jci,1)
+      leaf_g(ifm)%ustar  (ic,jc,1) = leaf_g(ifm)%ustar  (ici,jci,1)
+      leaf_g(ifm)%rstar  (ic,jc,1) = leaf_g(ifm)%rstar  (ici,jci,1)
+      leaf_g(ifm)%tstar  (ic,jc,1) = leaf_g(ifm)%tstar  (ici,jci,1)
+      leaf_g(ifm)%cstar  (ic,jc,1) = leaf_g(ifm)%cstar  (ici,jci,1)
+      leaf_g(ifm)%zeta   (ic,jc,1) = leaf_g(ifm)%zeta   (ici,jci,1)
+      leaf_g(ifm)%ribulk (ic,jc,1) = leaf_g(ifm)%ribulk (ici,jci,1)
 
-      leaf_g(ifm)%ustar(ic,jc,2)=leaf_g(ifm)%ustar(ici,jci,2)
-      leaf_g(ifm)%rstar(ic,jc,2)=leaf_g(ifm)%rstar(ici,jci,2)
-      leaf_g(ifm)%tstar(ic,jc,2)=leaf_g(ifm)%tstar(ici,jci,2)
-      leaf_g(ifm)%cstar(ic,jc,2)=leaf_g(ifm)%cstar(ici,jci,2)
+      leaf_g(ifm)%ustar  (ic,jc,2) = leaf_g(ifm)%ustar  (ici,jci,2)
+      leaf_g(ifm)%rstar  (ic,jc,2) = leaf_g(ifm)%rstar  (ici,jci,2)
+      leaf_g(ifm)%tstar  (ic,jc,2) = leaf_g(ifm)%tstar  (ici,jci,2)
+      leaf_g(ifm)%cstar  (ic,jc,2) = leaf_g(ifm)%cstar  (ici,jci,2)
+      leaf_g(ifm)%zeta   (ic,jc,2) = leaf_g(ifm)%zeta   (ici,jci,2)
+      leaf_g(ifm)%ribulk (ic,jc,2) = leaf_g(ifm)%ribulk (ici,jci,2)
    end if
   
    !----- Northwestern corner -------------------------------------------------------------!
@@ -1396,22 +1469,26 @@ subroutine transfer_ed2leaf(ifm,timel)
       radiate_g(ifm)%albedt(ic,jc) = radiate_g(ifm)%albedt(ici,jci)
       radiate_g(ifm)%rlongup(ic,jc)= radiate_g(ifm)%rlongup(ici,jci)
 
-      turb_g(ifm)%sflux_u(ic,jc)= turb_g(ifm)%sflux_u(ici,jci)
-      turb_g(ifm)%sflux_v(ic,jc)= turb_g(ifm)%sflux_v(ici,jci)
-      turb_g(ifm)%sflux_w(ic,jc)= turb_g(ifm)%sflux_w(ici,jci)
-      turb_g(ifm)%sflux_t(ic,jc)= turb_g(ifm)%sflux_t(ici,jci)
-      turb_g(ifm)%sflux_r(ic,jc)= turb_g(ifm)%sflux_r(ici,jci)
-      turb_g(ifm)%sflux_c(ic,jc)= turb_g(ifm)%sflux_c(ici,jci)
+      turb_g(ifm)%sflux_u(ic,jc)   = turb_g(ifm)%sflux_u(ici,jci)
+      turb_g(ifm)%sflux_v(ic,jc)   = turb_g(ifm)%sflux_v(ici,jci)
+      turb_g(ifm)%sflux_w(ic,jc)   = turb_g(ifm)%sflux_w(ici,jci)
+      turb_g(ifm)%sflux_t(ic,jc)   = turb_g(ifm)%sflux_t(ici,jci)
+      turb_g(ifm)%sflux_r(ic,jc)   = turb_g(ifm)%sflux_r(ici,jci)
+      turb_g(ifm)%sflux_c(ic,jc)   = turb_g(ifm)%sflux_c(ici,jci)
 
-      leaf_g(ifm)%ustar(ic,jc,1)=leaf_g(ifm)%ustar(ici,jci,1)
-      leaf_g(ifm)%rstar(ic,jc,1)=leaf_g(ifm)%rstar(ici,jci,1)
-      leaf_g(ifm)%tstar(ic,jc,1)=leaf_g(ifm)%tstar(ici,jci,1)
-      leaf_g(ifm)%cstar(ic,jc,1)=leaf_g(ifm)%cstar(ici,jci,1)
+      leaf_g(ifm)%ustar  (ic,jc,1) = leaf_g(ifm)%ustar  (ici,jci,1)
+      leaf_g(ifm)%rstar  (ic,jc,1) = leaf_g(ifm)%rstar  (ici,jci,1)
+      leaf_g(ifm)%tstar  (ic,jc,1) = leaf_g(ifm)%tstar  (ici,jci,1)
+      leaf_g(ifm)%cstar  (ic,jc,1) = leaf_g(ifm)%cstar  (ici,jci,1)
+      leaf_g(ifm)%zeta   (ic,jc,1) = leaf_g(ifm)%zeta   (ici,jci,1)
+      leaf_g(ifm)%ribulk (ic,jc,1) = leaf_g(ifm)%ribulk (ici,jci,1)
 
-      leaf_g(ifm)%ustar(ic,jc,2)=leaf_g(ifm)%ustar(ici,jci,2)
-      leaf_g(ifm)%rstar(ic,jc,2)=leaf_g(ifm)%rstar(ici,jci,2)
-      leaf_g(ifm)%tstar(ic,jc,2)=leaf_g(ifm)%tstar(ici,jci,2)
-      leaf_g(ifm)%cstar(ic,jc,2)=leaf_g(ifm)%cstar(ici,jci,2)
+      leaf_g(ifm)%ustar  (ic,jc,2) = leaf_g(ifm)%ustar  (ici,jci,2)
+      leaf_g(ifm)%rstar  (ic,jc,2) = leaf_g(ifm)%rstar  (ici,jci,2)
+      leaf_g(ifm)%tstar  (ic,jc,2) = leaf_g(ifm)%tstar  (ici,jci,2)
+      leaf_g(ifm)%cstar  (ic,jc,2) = leaf_g(ifm)%cstar  (ici,jci,2)
+      leaf_g(ifm)%zeta   (ic,jc,2) = leaf_g(ifm)%zeta   (ici,jci,2)
+      leaf_g(ifm)%ribulk (ic,jc,2) = leaf_g(ifm)%ribulk (ici,jci,2)
    end if
 
 

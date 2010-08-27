@@ -275,7 +275,6 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
   csite%ebudget_loss2runoff(ip1:ip2)      = 0.0
   csite%ebudget_loss2drainage(ip1:ip2)    = 0.0
   csite%ebudget_denseffect(ip1:ip2)       = 0.0
-  csite%ebudget_latent(ip1:ip2)           = 0.0
   csite%ebudget_initialstorage(ip1:ip2)   = 0.0
   csite%ebudget_residual(ip1:ip2)         = 0.0
 
@@ -363,15 +362,17 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
   csite%mineralized_N_input         (ip1:ip2) = 0.0
   
   csite%watertable(ip1:ip2)                  = slz(lsl)
-  csite%ustar(ip1:ip2) = 0.0
-  csite%tstar(ip1:ip2) = 0.0
-  csite%qstar(ip1:ip2) = 0.0
-  csite%cstar(ip1:ip2) = 0.0
-  csite%upwp(ip1:ip2)  = 0.0
-  csite%tpwp(ip1:ip2)  = 0.0
-  csite%qpwp(ip1:ip2)  = 0.0
-  csite%cpwp(ip1:ip2)  = 0.0
-  csite%wpwp(ip1:ip2)  = 0.0
+  csite%ustar (ip1:ip2) = 0.0
+  csite%tstar (ip1:ip2) = 0.0
+  csite%qstar (ip1:ip2) = 0.0
+  csite%cstar (ip1:ip2) = 0.0
+  csite%zeta  (ip1:ip2) = 0.0
+  csite%ribulk(ip1:ip2) = 0.0
+  csite%upwp  (ip1:ip2) = 0.0
+  csite%tpwp  (ip1:ip2) = 0.0
+  csite%qpwp  (ip1:ip2) = 0.0
+  csite%cpwp  (ip1:ip2) = 0.0
+  csite%wpwp  (ip1:ip2) = 0.0
 
   csite%can_enthalpy(ip1:ip2) = 0.0
   csite%can_temp    (ip1:ip2) = 0.0
@@ -628,7 +629,7 @@ subroutine new_patch_sfc_props(csite,ipa)
    k=max(1,csite%nlev_sfcwater(ipa))
    call ed_grndvap(csite%nlev_sfcwater(ipa),csite%ntext_soil(nzg,ipa)                      &
                   ,csite%soil_water(nzg,ipa),csite%soil_energy(nzg,ipa)                    &
-                  ,csite%sfcwater_energy(k,ipa), csite%can_rhos(ipa),csite%can_shv(ipa)    &
+                  ,csite%sfcwater_energy(k,ipa), csite%can_prss(ipa),csite%can_shv(ipa)    &
                   ,csite%ground_shv(ipa),csite%surface_ssh(ipa),surface_temp,surface_fliq)
    !---------------------------------------------------------------------------------------! 
 

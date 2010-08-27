@@ -133,6 +133,11 @@ somevars.o: $(RPOST_MEMORY)/somevars.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
+soil_coms.o: $(RPOST_MEMORY)/soil_coms.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
 therm_lib.o: $(RPOST_LIB)/therm_lib.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)

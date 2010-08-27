@@ -199,7 +199,7 @@ subroutine odeint(h1,csite,ipa,nsteps)
    end do timesteploop
 
    !----- If it reached this point, that is really bad news... ----------------------------!
-   print*,'Too many steps in routine odeint'
+   write (unit=*,fmt='(a)') ' ==> Too many steps in routine odeint'
    call print_rk4patch(integration_buff%y, csite,ipa)
 
    return
@@ -350,7 +350,6 @@ subroutine inc_rk4_patch(rkp, inc, fac, cpatch)
       rkp%ebudget_loss2atm      = rkp%ebudget_loss2atm      + fac * inc%ebudget_loss2atm
       rkp%ebudget_loss2drainage = rkp%ebudget_loss2drainage                                &
                                 + fac * inc%ebudget_loss2drainage
-      rkp%ebudget_latent        = rkp%ebudget_latent        + fac * inc%ebudget_latent
    end if
    if (fast_diagnostics) then
       rkp%avg_carbon_ac      = rkp%avg_carbon_ac      + fac * inc%avg_carbon_ac
@@ -408,7 +407,8 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
    use grid_coms            , only : nzg                  & ! intent(in)
                                    , nzs                  ! ! intent(in)
    use consts_coms          , only : cliq8                & ! intent(in)
-                                   , qliqt38              ! ! intent(in)
+                                   , qliqt38              & ! intent(in)
+                                   , wdnsi8               ! ! intent(in)
    use soil_coms            , only : isoilbc              ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
@@ -426,20 +426,20 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
    integer                        :: ico                   ! Current cohort ID
    !---------------------------------------------------------------------------------------!
 
-   yscal%can_enthalpy = abs(y%can_enthalpy) + abs(dy%can_enthalpy * htry) + tiny_offset
-   yscal%can_shv      = abs(y%can_shv     ) + abs(dy%can_shv      * htry) + tiny_offset
-   yscal%can_co2      = abs(y%can_co2     ) + abs(dy%can_co2      * htry) + tiny_offset
-
-   yscal%upwp = max(abs(y%upwp) + abs(dy%upwp*htry),1.d0)
-   yscal%wpwp = max(abs(y%wpwp) + abs(dy%wpwp*htry),1.d0)
+   yscal%can_enthalpy = abs(y%can_enthalpy) ! + abs(dy%can_enthalpy * htry) + tiny_offset
+   yscal%can_shv      = abs(y%can_shv     ) ! + abs(dy%can_shv      * htry) + tiny_offset
+   yscal%can_co2      = abs(y%can_co2     ) ! + abs(dy%can_co2      * htry) + tiny_offset
 
 
-  
+   do k=1,rk4site%lsl-1
+      yscal%soil_water(k)  = huge_offset
+      yscal%soil_energy(k) = huge_offset
+   end do
    do k=rk4site%lsl,nzg
-      yscal%soil_water(k)  = abs(y%soil_water(k))  + abs(dy%soil_water(k)*htry)            &
-                           + tiny_offset
-      yscal%soil_energy(k) = abs(y%soil_energy(k)) + abs(dy%soil_energy(k)*htry)           &
-                           + tiny_offset
+      yscal%soil_water(k)  = abs(y%soil_water(k))  ! + abs(dy%soil_water(k)*htry)            &
+                           ! + tiny_offset
+      yscal%soil_energy(k) = abs(y%soil_energy(k)) ! + abs(dy%soil_energy(k)*htry)           &
+                           ! + tiny_offset
    end do
 
    tot_sfcw_mass = 0.d0
@@ -455,7 +455,7 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
    ! have a scale.  Also, if the total mass is small, we must be more tolerant to avoid    !
    ! overestimating the error because of the small size.                                   !
    !---------------------------------------------------------------------------------------!
-   if (tot_sfcw_mass > 1.d-2*rk4water_stab_thresh) then
+   if (tot_sfcw_mass + rk4site%pcpg * htry > 1.d-2*rk4water_stab_thresh) then
       !----- Computationally stable layer. ------------------------------------------------!
       meanscale_sfcw_mass   = 0.d0
       meanscale_sfcw_energy = 0.d0
@@ -472,46 +472,56 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
          meanscale_sfcw_energy = meanscale_sfcw_energy + yscal%sfcwater_energy(k)
          meanscale_sfcw_depth  = meanscale_sfcw_depth  + yscal%sfcwater_depth(k)
       end do
+      !----- Add precipitation because this will become part of the layer if it exists. ---!
+      meanscale_sfcw_mass   = meanscale_sfcw_mass   + rk4site%pcpg  * htry
+      meanscale_sfcw_energy = meanscale_sfcw_energy + rk4site%qpcpg * htry
+      meanscale_sfcw_depth  = meanscale_sfcw_depth  + rk4site%dpcpg * htry
+
       !----- Update average (this is safe because here there is at least one layer. -------!
-      meanscale_sfcw_mass   = meanscale_sfcw_mass   / real(y%nlev_sfcwater)
-      meanscale_sfcw_energy = meanscale_sfcw_energy / real(y%nlev_sfcwater)
-      meanscale_sfcw_depth  = meanscale_sfcw_depth  / real(y%nlev_sfcwater)
+!      meanscale_sfcw_mass   = meanscale_sfcw_mass   / real(y%nlev_sfcwater)
+!      meanscale_sfcw_energy = meanscale_sfcw_energy / real(y%nlev_sfcwater)
+!      meanscale_sfcw_depth  = meanscale_sfcw_depth  / real(y%nlev_sfcwater)
 
       do k=y%nlev_sfcwater+1,nzs
          yscal%sfcwater_mass(k)   = meanscale_sfcw_mass
          yscal%sfcwater_energy(k) = meanscale_sfcw_energy
          yscal%sfcwater_depth(k)  = meanscale_sfcw_depth
       end do
+
    else
       !----- Low stability threshold ------------------------------------------------------!
       do k=1,nzs
-         if(abs(y%sfcwater_mass(k)) > rk4min_sfcwater_mass)then
-            yscal%sfcwater_mass(k) = 1.d-2*rk4water_stab_thresh
-            yscal%sfcwater_energy(k) = ( yscal%sfcwater_mass(k) / abs(y%sfcwater_mass(k))) &
-                                     * ( abs( y%sfcwater_energy(k))                        &
-                                       + abs(dy%sfcwater_energy(k)*htry))
-            yscal%sfcwater_depth(k)  = ( yscal%sfcwater_mass(k) / abs(y%sfcwater_mass(k))) &
-                                     * abs(y%sfcwater_depth(k))                            &
-                                     + abs(dy%sfcwater_depth(k)*htry)
-         else
-            yscal%sfcwater_mass(k)   = huge_offset
-            yscal%sfcwater_energy(k) = huge_offset
-            yscal%sfcwater_depth(k)  = huge_offset
-         end if
+         yscal%sfcwater_mass(k)   = 1.d-2                  * rk4water_stab_thresh
+         yscal%sfcwater_energy(k) = yscal%sfcwater_mass(k) * qliqt38
+         yscal%sfcwater_depth(k)  = yscal%sfcwater_mass(k) * wdnsi8
       end do
+!         if(abs(y%sfcwater_mass(k)) > rk4min_sfcwater_mass)then
+!            yscal%sfcwater_mass(k) = 1.d-2*rk4water_stab_thresh
+!            yscal%sfcwater_energy(k) = ( yscal%sfcwater_mass(k) / abs(y%sfcwater_mass(k))) &
+!                                     * ( abs( y%sfcwater_energy(k))                        &
+!                                       + abs(dy%sfcwater_energy(k)*htry))
+!            yscal%sfcwater_depth(k)  = ( yscal%sfcwater_mass(k) / abs(y%sfcwater_mass(k))) &
+!                                     * abs(y%sfcwater_depth(k))                            &
+!                                     + abs(dy%sfcwater_depth(k)*htry)
+!         else
+!            yscal%sfcwater_mass(k)   = huge_offset
+!            yscal%sfcwater_energy(k) = huge_offset
+!            yscal%sfcwater_depth(k)  = huge_offset
+!         end if
    end if
 
    !----- Scale for the virtual water pools -----------------------------------------------!
-   if (abs(y%virtual_water) > 1.d-2*rk4water_stab_thresh) then
-      yscal%virtual_water = abs(y%virtual_water) + abs(dy%virtual_water*htry)
-      yscal%virtual_heat  = abs(y%virtual_heat) + abs(dy%virtual_heat*htry)
-   elseif (abs(y%virtual_water) > rk4min_sfcwater_mass) then
-      yscal%virtual_water = 1.d-2*rk4water_stab_thresh
-      yscal%virtual_heat  = (yscal%virtual_water / abs(y%virtual_water))                   &
-                          * (abs(y%virtual_heat) + abs(dy%virtual_heat*htry))
+   if (rk4site%pcpg*htry > 1.d-2*rk4water_stab_thresh) then
+      yscal%virtual_water = abs(rk4site%pcpg  * htry)
+      yscal%virtual_heat  = abs(rk4site%qpcpg * htry)
+!      yscal%virtual_water = abs(y%virtual_water) + abs(dy%virtual_water*htry)
+!      yscal%virtual_heat  = abs(y%virtual_heat) + abs(dy%virtual_heat*htry)
    else
-      yscal%virtual_water = huge_offset
-      yscal%virtual_heat  = huge_offset
+      yscal%virtual_water = 1.d-2*rk4water_stab_thresh
+      yscal%virtual_heat  = yscal%virtual_water * qliqt38
+!      yscal%virtual_water = 1.d-2*rk4water_stab_thresh
+!      yscal%virtual_heat  = (yscal%virtual_water / abs(y%virtual_water))                   &
+!                          * (abs(y%virtual_heat) + abs(dy%virtual_heat*htry))
    end if
 
    !---------------------------------------------------------------------------------------!
@@ -527,109 +537,96 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
          yscal%veg_energy(ico) = huge_offset
       elseif (y%veg_water(ico) > rk4dry_veg_lwater*y%tai(ico)) then
          yscal%solvable(ico)   = .true.
-         yscal%veg_water(ico)  = abs(y%veg_water(ico))  + abs(dy%veg_water(ico)  * htry)
-         yscal%veg_energy(ico) = abs(y%veg_energy(ico)) + abs(dy%veg_energy(ico) * htry)
+         yscal%veg_water(ico)  = abs(y%veg_water(ico))  ! + abs(dy%veg_water(ico)  * htry)
+         yscal%veg_energy(ico) = abs(y%veg_energy(ico)) ! + abs(dy%veg_energy(ico) * htry)
       else
          yscal%solvable(ico)   = .true.
          yscal%veg_water(ico)  = rk4dry_veg_lwater*y%tai(ico)
          yscal%veg_energy(ico) = max(yscal%veg_water(ico)*qliqt38                          &
-                                    ,abs(y%veg_energy(ico)) + abs(dy%veg_energy(ico)*htry))
+                                    ,abs(y%veg_energy(ico)))! + abs(dy%veg_energy(ico)*htry))
       end if
    end do
 
-   !-------------------------------------------------------------------------!
-   !     Here we just need to make sure the user is checking mass, otherwise !
-   ! these variables will not be computed at all.  If this turns out to be   !
-   ! essential, we will make this permanent and not dependent on             !
-   ! checkbudget.  The only one that is not checked is the runoff, because   !
-   ! it is computed after a step was accepted.                               !
-   !-------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+   !     Here we just need to make sure the user is checking mass, otherwise  these vari-  !
+   ! ables will not be computed at all.  If this turns out to be essential, we will make   !
+   ! this permanent and not dependent on checkbudget.  The only one that is not checked is !
+   ! the runoff, because it is computed after a step was accepted.                         !
+   !---------------------------------------------------------------------------------------!
    if (checkbudget) then
-      !----------------------------------------------------------------------!
-      !    If this is the very first time step, or if we are misfortuned, we !
-      ! may have a situation in which the derivative is numerically zero,    !
-      ! and making the check will become impossible because the scale would  !
-      ! be ridiculously tiny, so we skip the check this time and hope that   !
-      ! everything will be alright next step.                                !
-      !----------------------------------------------------------------------!
-      if (abs(y%co2budget_loss2atm)  < tiny_offset .and.                     &
+      !------------------------------------------------------------------------------------!
+      !    If this is the very first time step, or if we are misfortuned, we may have a    !
+      ! situation in which the derivative is numerically zero, and making the check will   !
+      ! become impossible because the scale would be ridiculously tiny, so we skip the     !
+      ! check this time and hope that everything will be alright next step.                !
+      !------------------------------------------------------------------------------------!
+      if (abs(y%co2budget_loss2atm)  < tiny_offset .and.                                   &
           abs(dy%co2budget_loss2atm) < tiny_offset) then
          yscal%co2budget_loss2atm = 1.d-1
       else 
-         yscal%co2budget_loss2atm = abs(y%co2budget_loss2atm)                &
+         yscal%co2budget_loss2atm = abs(y%co2budget_loss2atm)                              &
                                   + abs(dy%co2budget_loss2atm*htry)
          yscal%co2budget_loss2atm = max(yscal%co2budget_loss2atm,1.d-1)
       end if
 
-      if (abs(y%ebudget_loss2atm)  < tiny_offset .and.                       &
+      if (abs(y%ebudget_loss2atm)  < tiny_offset .and.                                     &
           abs(dy%ebudget_loss2atm) < tiny_offset) then
          yscal%ebudget_loss2atm = 1.d0
       else 
-         yscal%ebudget_loss2atm = abs(y%ebudget_loss2atm)                    &
+         yscal%ebudget_loss2atm = abs(y%ebudget_loss2atm)                                  &
                                 + abs(dy%ebudget_loss2atm*htry)
          yscal%ebudget_loss2atm = max(yscal%ebudget_loss2atm,1.d0)
       end if
 
-      if (abs(y%wbudget_loss2atm)  < tiny_offset .and.                       &
+      if (abs(y%wbudget_loss2atm)  < tiny_offset .and.                                     &
           abs(dy%wbudget_loss2atm) < tiny_offset) then
          yscal%wbudget_loss2atm      = 1.d-6
       else 
-         yscal%wbudget_loss2atm = abs(y%wbudget_loss2atm)                    &
+         yscal%wbudget_loss2atm = abs(y%wbudget_loss2atm)                                  &
                                 + abs(dy%wbudget_loss2atm*htry)
          yscal%wbudget_loss2atm = max(yscal%wbudget_loss2atm,1.d-6)
       end if
 
-      if (abs(y%ebudget_latent)  < tiny_offset .and.                         &
-          abs(dy%ebudget_latent) < tiny_offset) then
-         yscal%ebudget_latent      = 1.d0
-      else 
-         yscal%ebudget_latent = abs(y%ebudget_latent)                        &
-                              + abs(dy%ebudget_latent*htry)
-         yscal%ebudget_latent = max(yscal%ebudget_latent,1.d0)
-      end if
-
-      if (abs(y%ebudget_storage)  < tiny_offset .and.                        &
+      if (abs(y%ebudget_storage)  < tiny_offset .and.                                      &
           abs(dy%ebudget_storage) < tiny_offset) then
          yscal%ebudget_storage = huge_offset
       else 
-         yscal%ebudget_storage = abs(y%ebudget_storage)                      &
-                                + abs(dy%ebudget_storage*htry)
+         yscal%ebudget_storage = abs(y%ebudget_storage)                                    &
+                               + abs(dy%ebudget_storage*htry)
       end if
 
-      if (abs(y%co2budget_storage)  < tiny_offset .and.                      &
+      if (abs(y%co2budget_storage)  < tiny_offset .and.                                    &
           abs(dy%co2budget_storage) < tiny_offset) then
          yscal%co2budget_storage = huge_offset
       else 
-         yscal%co2budget_storage = abs(y%co2budget_storage)                  &
-                                + abs(dy%co2budget_storage*htry)
+         yscal%co2budget_storage = abs(y%co2budget_storage)                                &
+                                 + abs(dy%co2budget_storage*htry)
       end if
 
-      if (abs(y%wbudget_storage)  < tiny_offset .and.                        &
+      if (abs(y%wbudget_storage)  < tiny_offset .and.                                      &
           abs(dy%wbudget_storage) < tiny_offset) then
          yscal%wbudget_storage      = huge_offset
       else 
-         yscal%wbudget_storage = abs(y%wbudget_storage)                      &
+         yscal%wbudget_storage = abs(y%wbudget_storage)                                    &
                                + abs(dy%wbudget_storage*htry)
       end if
 
-      !----------------------------------------------------------------------!
-      !     Drainage terms will be checked only if the boundary condition is !
-      ! free drainage.                                                       !
-      !----------------------------------------------------------------------!
-      if (isoilbc == 0                                .or.                   &
-          (abs(y%ebudget_loss2drainage)  < tiny_offset .and.                 &
-           abs(dy%ebudget_loss2drainage) < tiny_offset)      ) then
+      !------------------------------------------------------------------------------------!
+      !     Drainage terms will be checked only if the boundary condition is free drain-   !
+      ! age.                                                                               !
+      !------------------------------------------------------------------------------------!
+      if (isoilbc == 0 .or. (abs(y%ebudget_loss2drainage)  < tiny_offset .and.             &
+                             abs(dy%ebudget_loss2drainage) < tiny_offset)      ) then
          yscal%ebudget_loss2drainage = huge_offset
       else 
-         yscal%ebudget_loss2drainage = abs(y%ebudget_loss2drainage)          &
+         yscal%ebudget_loss2drainage = abs(y%ebudget_loss2drainage)                        &
                                      + abs(dy%ebudget_loss2drainage*htry)
       end if
-      if (isoilbc == 0                                .or.                   &
-          (abs(y%wbudget_loss2drainage)  < tiny_offset .and.                 &
-           abs(dy%wbudget_loss2drainage) < tiny_offset)      ) then
+      if (isoilbc == 0 .or. (abs(y%wbudget_loss2drainage)  < tiny_offset .and.             &
+                             abs(dy%wbudget_loss2drainage) < tiny_offset)      ) then
          yscal%wbudget_loss2drainage = huge_offset
       else 
-         yscal%wbudget_loss2drainage = abs(y%wbudget_loss2drainage)          &
+         yscal%wbudget_loss2drainage = abs(y%wbudget_loss2drainage)                        &
                                      + abs(dy%wbudget_loss2drainage*htry)
       end if
 
@@ -640,7 +637,6 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
       yscal%wbudget_loss2atm        = huge_offset
       yscal%ebudget_storage         = huge_offset
       yscal%wbudget_storage         = huge_offset
-      yscal%ebudget_latent          = huge_offset
       yscal%ebudget_loss2drainage   = huge_offset
       yscal%wbudget_loss2drainage   = huge_offset
    end if
@@ -776,8 +772,6 @@ subroutine get_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
       errmax = max(errmax,err)
       err    = abs(yerr%wbudget_loss2atm/yscal%wbudget_loss2atm)
       errmax = max(errmax,err)
-      err    = abs(yerr%ebudget_latent/yscal%ebudget_latent)
-      errmax = max(errmax,err)
       err    = abs(yerr%ebudget_loss2drainage/yscal%ebudget_loss2drainage)
       errmax = max(errmax,err)
       err    = abs(yerr%wbudget_loss2drainage/yscal%wbudget_loss2drainage)
@@ -856,6 +850,8 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
    targetp%tstar         = sourcep%tstar
    targetp%estar         = sourcep%estar
    targetp%qstar         = sourcep%qstar
+   targetp%zeta          = sourcep%zeta
+   targetp%ribulk        = sourcep%ribulk
    targetp%virtual_flag  = sourcep%virtual_flag
    targetp%rasveg        = sourcep%rasveg
 
@@ -911,7 +907,6 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
       targetp%ebudget_loss2atm       = sourcep%ebudget_loss2atm
       targetp%ebudget_loss2drainage  = sourcep%ebudget_loss2drainage
       targetp%ebudget_loss2runoff    = sourcep%ebudget_loss2runoff
-      targetp%ebudget_latent         = sourcep%ebudget_latent
       targetp%wbudget_loss2atm       = sourcep%wbudget_loss2atm
       targetp%wbudget_loss2drainage  = sourcep%wbudget_loss2drainage
       targetp%wbudget_loss2runoff    = sourcep%wbudget_loss2runoff
@@ -969,13 +964,14 @@ subroutine initialize_rk4patches(init)
                             , sitetype              & ! structure
                             , patchtype             ! ! structure
    use rk4_coms      , only : integration_buff      & ! structure
-                            , deallocate_rk4_coh & ! structure
+                            , deallocate_rk4_coh    & ! structure
                             , allocate_rk4_patch    & ! structure
-                            , allocate_rk4_coh   ! ! structure
+                            , allocate_rk4_coh      ! ! structure
+   use ed_misc_coms  , only : integration_scheme    ! ! intent(in)
    use grid_coms     , only : ngrids                ! ! intent(in)
    implicit none
    !----- Argument ------------------------------------------------------------------------!
-   integer           , intent(in) :: init
+   logical           , intent(in) :: init
    !----- Local variables -----------------------------------------------------------------!
    type(edtype)      , pointer    :: cgrid
    type(polygontype) , pointer    :: cpoly
@@ -988,39 +984,67 @@ subroutine initialize_rk4patches(init)
    integer                        :: ipa
    !---------------------------------------------------------------------------------------!
 
-   if (init == 0) then
+   if (init) then
+      !------------------------------------------------------------------------------------!
+      !     If this is initialization, make sure soil and sfcwater arrays are allocated.   !
+      !------------------------------------------------------------------------------------!
+      call allocate_rk4_patch(integration_buff%initp )
+      call allocate_rk4_patch(integration_buff%yscal )
+      call allocate_rk4_patch(integration_buff%y     )
+      call allocate_rk4_patch(integration_buff%dydx  )
+      call allocate_rk4_patch(integration_buff%yerr  )
+      call allocate_rk4_patch(integration_buff%ytemp )
+
+      !------------------------------------------------------------------------------------!
+      !     The following structures are allocated/deallocated depending on the            !
+      ! integration method.                                                                !
+      !------------------------------------------------------------------------------------!
+      select case(integration_scheme) 
+      case (0) !----- Euler. --------------------------------------------------------------!
+         call allocate_rk4_patch(integration_buff%dinitp)
+      case (1) !----- Runge-Kutta. --------------------------------------------------------!
+         call allocate_rk4_patch(integration_buff%ak2)
+         call allocate_rk4_patch(integration_buff%ak3)
+         call allocate_rk4_patch(integration_buff%ak4)
+         call allocate_rk4_patch(integration_buff%ak5)
+         call allocate_rk4_patch(integration_buff%ak6)
+         call allocate_rk4_patch(integration_buff%ak7)
+      case (2) !----- Heun's. -------------------------------------------------------------!
+         call allocate_rk4_patch(integration_buff%ak2)
+         call allocate_rk4_patch(integration_buff%ak3)
+      end select
+      !------------------------------------------------------------------------------------!
+   else
       !------------------------------------------------------------------------------------!
       !    If this is not initialization, deallocate cohort memory from integration        !
       ! patches.                                                                           !
       !------------------------------------------------------------------------------------!
-      call deallocate_rk4_coh(integration_buff%initp)
-      call deallocate_rk4_coh(integration_buff%yscal)
-      call deallocate_rk4_coh(integration_buff%y)
-      call deallocate_rk4_coh(integration_buff%dydx)
-      call deallocate_rk4_coh(integration_buff%yerr)
-      call deallocate_rk4_coh(integration_buff%ytemp)
-      call deallocate_rk4_coh(integration_buff%ak2)
-      call deallocate_rk4_coh(integration_buff%ak3)
-      call deallocate_rk4_coh(integration_buff%ak4)
-      call deallocate_rk4_coh(integration_buff%ak5)
-      call deallocate_rk4_coh(integration_buff%ak6)
-      call deallocate_rk4_coh(integration_buff%ak7)
-   else
+      call deallocate_rk4_coh(integration_buff%initp )
+      call deallocate_rk4_coh(integration_buff%yscal )
+      call deallocate_rk4_coh(integration_buff%y     )
+      call deallocate_rk4_coh(integration_buff%dydx  )
+      call deallocate_rk4_coh(integration_buff%yerr  )
+      call deallocate_rk4_coh(integration_buff%ytemp )
+
       !------------------------------------------------------------------------------------!
-      !     If this is initialization, make sure soil and sfcwater arrays are allocated.   !
+      !     The following structures are allocated/deallocated depending on the            !
+      ! integration method.                                                                !
       !------------------------------------------------------------------------------------!
-      call allocate_rk4_patch(integration_buff%initp)
-      call allocate_rk4_patch(integration_buff%yscal)
-      call allocate_rk4_patch(integration_buff%y)
-      call allocate_rk4_patch(integration_buff%dydx)
-      call allocate_rk4_patch(integration_buff%yerr)
-      call allocate_rk4_patch(integration_buff%ytemp)
-      call allocate_rk4_patch(integration_buff%ak2)
-      call allocate_rk4_patch(integration_buff%ak3)
-      call allocate_rk4_patch(integration_buff%ak4)
-      call allocate_rk4_patch(integration_buff%ak5)
-      call allocate_rk4_patch(integration_buff%ak6)
-      call allocate_rk4_patch(integration_buff%ak7)
+      select case(integration_scheme) 
+      case (0) !----- Euler. --------------------------------------------------------------!
+         call deallocate_rk4_coh(integration_buff%dinitp)
+      case (1) !----- Runge-Kutta. --------------------------------------------------------!
+         call deallocate_rk4_coh(integration_buff%ak2)
+         call deallocate_rk4_coh(integration_buff%ak3)
+         call deallocate_rk4_coh(integration_buff%ak4)
+         call deallocate_rk4_coh(integration_buff%ak5)
+         call deallocate_rk4_coh(integration_buff%ak6)
+         call deallocate_rk4_coh(integration_buff%ak7)
+      case (2) !----- Heun's. -------------------------------------------------------------!
+         call deallocate_rk4_coh(integration_buff%ak2)
+         call deallocate_rk4_coh(integration_buff%ak3)
+      end select
+      !------------------------------------------------------------------------------------!
    end if
 
    !----- Find maximum number of cohorts amongst all patches ------------------------------!
@@ -1041,19 +1065,32 @@ subroutine initialize_rk4patches(init)
    ! write (unit=*,fmt='(a,1x,i5)') 'Maxcohort = ',maxcohort
 
    !----- Create new memory in each of the integration patches. ---------------------------!
-   call allocate_rk4_coh(maxcohort,integration_buff%initp)
-   call allocate_rk4_coh(maxcohort,integration_buff%yscal)
-   call allocate_rk4_coh(maxcohort,integration_buff%y)
-   call allocate_rk4_coh(maxcohort,integration_buff%dydx)
-   call allocate_rk4_coh(maxcohort,integration_buff%yerr)
-   call allocate_rk4_coh(maxcohort,integration_buff%ytemp)
-   call allocate_rk4_coh(maxcohort,integration_buff%ak2)
-   call allocate_rk4_coh(maxcohort,integration_buff%ak3)
-   call allocate_rk4_coh(maxcohort,integration_buff%ak4)
-   call allocate_rk4_coh(maxcohort,integration_buff%ak5)
-   call allocate_rk4_coh(maxcohort,integration_buff%ak6)
-   call allocate_rk4_coh(maxcohort,integration_buff%ak7)
-  
+   call allocate_rk4_coh(maxcohort,integration_buff%initp )
+   call allocate_rk4_coh(maxcohort,integration_buff%yscal )
+   call allocate_rk4_coh(maxcohort,integration_buff%y     )
+   call allocate_rk4_coh(maxcohort,integration_buff%dydx  )
+   call allocate_rk4_coh(maxcohort,integration_buff%yerr  )
+   call allocate_rk4_coh(maxcohort,integration_buff%ytemp )
+
+   !---------------------------------------------------------------------------------------!
+   !     The following structures are allocated/deallocated depending on the integration   !
+   ! method.                                                                               !
+   !---------------------------------------------------------------------------------------!
+   select case(integration_scheme) 
+   case (0) !----- Euler. -----------------------------------------------------------------!
+      call allocate_rk4_coh(maxcohort,integration_buff%dinitp)
+   case (1) !----- Runge-Kutta. -----------------------------------------------------------!
+      call allocate_rk4_coh(maxcohort,integration_buff%ak2   )
+      call allocate_rk4_coh(maxcohort,integration_buff%ak3   )
+      call allocate_rk4_coh(maxcohort,integration_buff%ak4   )
+      call allocate_rk4_coh(maxcohort,integration_buff%ak5   )
+      call allocate_rk4_coh(maxcohort,integration_buff%ak6   )
+      call allocate_rk4_coh(maxcohort,integration_buff%ak7   )
+   case (2) !----- Heun's. ----------------------------------------------------------------!
+      call allocate_rk4_coh(maxcohort,integration_buff%ak2   )
+      call allocate_rk4_coh(maxcohort,integration_buff%ak3   )
+   end select
+
    return
 end subroutine initialize_rk4patches
 !==========================================================================================!

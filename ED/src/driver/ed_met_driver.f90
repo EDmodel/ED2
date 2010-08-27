@@ -1157,8 +1157,8 @@ subroutine update_met_drivers(cgrid)
       siteloop: do isi = 1,cpoly%nsites
          
          !----- Vels. The site level is also still in kinetic energy form. ----------------!
-         cpoly%met(isi)%vels = sqrt(max(0.0,cpoly%met(isi)%vels))
-         cpoly%met(isi)%vels_stab = max(ubmin,cpoly%met(isi)%vels)
+         cpoly%met(isi)%vels        = sqrt(max(0.0,cpoly%met(isi)%vels))
+         cpoly%met(isi)%vels_stab   = max(ubmin,cpoly%met(isi)%vels)
          cpoly%met(isi)%vels_unstab = max(ubmin,cpoly%met(isi)%vels)
          
          !----- CO2.  In case we used the namelist, use that value. -----------------------!
@@ -1268,7 +1268,7 @@ subroutine update_met_drivers(cgrid)
          cpoly%met(isi)%qpcpg = max(0.0, cpoly%met(isi)%pcpg)                              &
                               * ( (1.0-fice) * cliq * ( max(t3ple,cpoly%met(isi)%atm_tmp)  &
                                                       - tsupercool)                        &
-                                + fice *cice * min(cpoly%met(isi)%atm_tmp,t3ple))
+                                + fice * cice * min(cpoly%met(isi)%atm_tmp,t3ple))
          !---------------------------------------------------------------------------------!
 
 

@@ -553,7 +553,7 @@ elseif(cvar(1:lv) == 'tempc2m' .or. cvar(1:lv) == 'theta2m' .or. cvar(1:lv) == '
    elseif (cvar(1:lv) == 'tempc2m') then
       call RAMS_reduced_prop(n1,n2,n3,npatch,ngrd,'TEMP',c,e,f,d,n,o,s,2.0                 &
                             ,h,t,m,p,q,r,a)
-      call RAMS_comp_tempC(n1,n2,1,a)
+      call RAMS_comp_tempC(n1,n2,1,1,a)
 
       cdname  = 'Temperature at 2m AGL'
       cdunits = 'C'
@@ -561,7 +561,7 @@ elseif(cvar(1:lv) == 'tempc2m' .or. cvar(1:lv) == 'theta2m' .or. cvar(1:lv) == '
    elseif (cvar(1:lv) == 'tdewc2m') then
       call RAMS_reduced_prop(n1,n2,n3,npatch,ngrd,'TDEW',c,e,f,d,n,o,s,2.0                 &
                             ,h,t,m,p,q,r,a)
-      call RAMS_comp_tempC(n1,n2,1,a)
+      call RAMS_comp_tempC(n1,n2,1,1,a)
 
       cdname  = 'Dew/frost point at 2m AGL'
       cdunits = 'C'
@@ -845,20 +845,9 @@ elseif(cvar(1:lv).eq.'tempc') then
    ierr= RAMS_getvar('PI',idim_type,ngrd,c,b,flnm)
    ierr_getvar = ierr_getvar + ierr
    call RAMS_comp_tempK(n1,n2,n3,a,c)
-   call RAMS_comp_tempC(n1,n2,n3,a)
+   call RAMS_comp_tempC(n1,n2,n3,1,a)
    cdname='temperature'
    cdunits='C'
-
-elseif(cvar(1:lv).eq.'tempf') then
-   ivar_type=3
-   ierr= RAMS_getvar('THETA',idim_type,ngrd,a,b,flnm)
-   ierr_getvar = ierr_getvar + ierr
-   ierr= RAMS_getvar('PI',idim_type,ngrd,c,b,flnm)
-   ierr_getvar = ierr_getvar + ierr
-   call RAMS_comp_tempK(n1,n2,n3,a,c)
-   call RAMS_comp_tempF(n1,n2,n3,a)
-   cdname='temperature'
-   cdunits='F'
 
 !<Demerval
 
@@ -1174,20 +1163,6 @@ elseif(cvar(1:lv).eq.'dewptk') then
    cdname='dewpoint temp'
    cdunits='K'
 
-elseif(cvar(1:lv).eq.'dewptf') then
-   ivar_type=3
-   ierr= RAMS_getvar('RV',idim_type,ngrd,a,b,flnm)
-   ierr_getvar = ierr_getvar + ierr
-   ierr= RAMS_getvar('PI',idim_type,ngrd,c,b,flnm)
-   ierr_getvar = ierr_getvar + ierr
-   ierr= RAMS_getvar('THETA',idim_type,ngrd,d,b,flnm)
-   ierr_getvar = ierr_getvar + ierr
-
-   call RAMS_comp_dewK(n1,n2,n3,a,c,d)
-   call RAMS_comp_tempF(n1,n2,n3,a)
-   cdname='dewpoint temp'
-   cdunits='F'
-
 elseif(cvar(1:lv).eq.'dewptc') then
    ivar_type=3
    ierr= RAMS_getvar('RV',idim_type,ngrd,a,b,flnm)
@@ -1198,7 +1173,7 @@ elseif(cvar(1:lv).eq.'dewptc') then
    ierr_getvar = ierr_getvar + ierr
 
    call RAMS_comp_dewK(n1,n2,n3,a,c,d)
-   call RAMS_comp_tempC(n1,n2,n3,a)
+   call RAMS_comp_tempC(n1,n2,n3,1,a)
    cdname='dewpoint temp'
    cdunits='C'
 
@@ -1540,7 +1515,7 @@ elseif(cvar(1:lv).eq.'rain_air_tempdif') then
    ierr= RAMS_getvar('PI',idim_type,ngrd,c,b,flnm)
    ierr_getvar = ierr_getvar + ierr
    call RAMS_comp_tempK(n1,n2,n3,d,c)
-   call RAMS_comp_tempC(n1,n2,n3,d)
+   call RAMS_comp_tempC(n1,n2,n3,1,d)
    call RAMS_comp_subt(n1,n2,n3,a,d)
    cdname='rain-air temp'
    cdunits='K'
@@ -1555,7 +1530,7 @@ elseif(cvar(1:lv).eq.'graup_air_tempdf') then
    ierr= RAMS_getvar('PI',idim_type,ngrd,c,b,flnm)
    ierr_getvar = ierr_getvar + ierr
    call RAMS_comp_tempK(n1,n2,n3,d,c)
-   call RAMS_comp_tempC(n1,n2,n3,d)
+   call RAMS_comp_tempC(n1,n2,n3,1,d)
    call RAMS_comp_subt(n1,n2,n3,a,d)
    cdname='graupel-air temp'
    cdunits='K'
@@ -1570,7 +1545,7 @@ elseif(cvar(1:lv).eq.'hail_air_tempdif') then
    ierr= RAMS_getvar('PI',idim_type,ngrd,c,b,flnm)
    ierr_getvar = ierr_getvar + ierr
    call RAMS_comp_tempK(n1,n2,n3,d,c)
-   call RAMS_comp_tempC(n1,n2,n3,d)
+   call RAMS_comp_tempC(n1,n2,n3,1,d)
    call RAMS_comp_subt(n1,n2,n3,a,d)
    cdname='hail-air temp'
    cdunits='K'
@@ -2402,85 +2377,6 @@ elseif(cvar(1:lv).eq.'cfluxca') then
    cdname='CO2 flux'
    cdunits='umol/m2/s'
 
-elseif(cvar(1:lv).eq.'lfsensi' .or. cvar(1:lv).eq.'lfsensi_ps') then
-
-   irecind = 1
-   irecsize = nnxp(ngrd) * nnyp(ngrd) * npatch
-!!
-   ierr = RAMS_getvar('PATCH_AREA',idim_type,ngrd   &
-        ,a(irecind),b,flnm)
-
-   irecind = irecind + irecsize
-!!
-   ierr = RAMS_getvar('LF_SENSI',idim_type,ngrd   &
-        ,a(irecind),b,flnm)
-   ierr_getvar = ierr_getvar + ierr
-   call RAMS_comp_mults(n1,n2,1,a(irecind),1004.)
-
-   if(cvar(1:lv).eq.'lfsensi') then
-      ivar_type = 7
-   else
-      ivar_type = 2
-      call RAMS_comp_patchsum(nnxp(ngrd),nnyp(ngrd),1,npatch  &
-         ,a(irecind),a(1),b)
-   endif
-
-   cdname=' Sensible heat'
-   cdunits='W/m²'
-
-
-elseif(cvar(1:lv).eq.'lfevap' .or. cvar(1:lv).eq.'lfevap_ps') then
-
-   irecind = 1
-   irecsize = nnxp(ngrd) * nnyp(ngrd) * npatch
-   if (cvar(1:lv).eq.'lfevap_ps') then
-      ierr = RAMS_getvar('PATCH_AREA',idim_type,ngrd   &
-           ,a(irecind),b,flnm)
-
-      irecind = irecind + irecsize
-   end if
-   ierr = RAMS_getvar('LF_EVAP',idim_type,ngrd   &
-        ,a(irecind),b,flnm)
-   ierr_getvar = ierr_getvar + ierr
-   call RAMS_comp_mults(n1,n2,1,a(irecind),2.5e6)
-
-   if(cvar(1:lv).eq.'lfevap') then
-      ivar_type = 7
-   else
-      ivar_type = 2
-      call RAMS_comp_patchsum(nnxp(ngrd),nnyp(ngrd),1,npatch  &
-         ,a(irecind),a(1),b)
-   endif
-
-   cdname=' Evaporation'
-   cdunits='W/m²'
-
-elseif(cvar(1:lv).eq.'lftransp' .or. cvar(1:lv).eq.'lftransp_ps') then
-
-   irecind = 1
-   irecsize = nnxp(ngrd) * nnyp(ngrd) * npatch
-   if(cvar(1:lv).eq.'lftransp_ps') then
-      ierr = RAMS_getvar('PATCH_AREA',idim_type,ngrd   &
-           ,a(irecind),b,flnm)
-
-      irecind = irecind + irecsize
-   end if
-   ierr = RAMS_getvar('LF_TRANSP',idim_type,ngrd   &
-        ,a(irecind),b,flnm)
-   ierr_getvar = ierr_getvar + ierr
-   call RAMS_comp_mults(n1,n2,1,a(irecind),2.5e6)
-
-   if(cvar(1:lv).eq.'lftransp') then
-      ivar_type = 7
-   else
-      ivar_type = 2
-      call RAMS_comp_patchsum(nnxp(ngrd),nnyp(ngrd),1,npatch  &
-         ,a(irecind),a(1),b)
-   endif
-
-   cdname=' Transpiration'
-   cdunits='W/m²'
-
 elseif(cvar(1:lv).eq.'qwflxca') then
    ivar_type=2
    ierr= RAMS_getvar('SFLUX_R',idim_type,ngrd,a,b,flnm)
@@ -2703,7 +2599,7 @@ elseif(cvar(1:lv).eq.'sst') then
    kp = nzg
    call rams_fill_sst(n1,n2,nzg*npatch,kp,a,c)
 
-!   call RAMS_comp_tempC(n1,n2,1,a)
+!   call RAMS_comp_tempC(n1,n2,1,1,a)
    cdname='water temperature'
    cdunits='C'
 
@@ -2760,8 +2656,7 @@ elseif(cvar(1:lv).eq.'soil_z0_p' .or. cvar(1:lv).eq.'soil_z0_ps') then
       ivar_type = 7
    else
       ivar_type = 2
-      call RAMS_comp_patchsum_l(nnxp(ngrd),nnyp(ngrd),1,npatch  &
-         ,a(irecind),a(1),b)
+      call RAMS_comp_patchsum_l(nnxp(ngrd),nnyp(ngrd),1,npatch,a)
    endif
 
    cdname='soil roughness'
@@ -2868,8 +2763,7 @@ elseif(cvar(1:lv).eq.'vegfrac' .or. cvar(1:lv).eq.'veg_fracarea_ps')then
       ivar_type = 7
    else
       ivar_type = 2
-      call RAMS_comp_patchsum_l(nnxp(ngrd),nnyp(ngrd),1,npatch  &
-         ,a(irecind),a(1),b)
+      call RAMS_comp_patchsum_l(nnxp(ngrd),nnyp(ngrd),1,npatch,a)
    endif
 
    cdname='vegetation frac area'
@@ -2903,8 +2797,7 @@ elseif(cvar(1:lv).eq.'agb' .or. cvar(1:lv).eq.'vegagb' .or. cvar(1:lv).eq.'agb_p
       ivar_type = 7
    else
       ivar_type = 2
-      call RAMS_comp_patchsum_l(nnxp(ngrd),nnyp(ngrd),1,npatch  &
-         ,a(irecind),a(1),b)
+      call RAMS_comp_patchsum_l(nnxp(ngrd),nnyp(ngrd),1,npatch,a)
    endif
 
    cdname='above ground biomass'
@@ -2929,8 +2822,7 @@ elseif(cvar(1:lv).eq.'lai' .or. cvar(1:lv).eq.'veglai' .or. cvar(1:lv).eq.'lai_p
       ivar_type = 7
    else
       ivar_type = 2
-      call RAMS_comp_patchsum_l(nnxp(ngrd),nnyp(ngrd),1,npatch  &
-         ,a(irecind),a(1),b)
+      call RAMS_comp_patchsum_l(nnxp(ngrd),nnyp(ngrd),1,npatch,a)
    endif
 
    cdname='green leaf area index'
@@ -2957,8 +2849,7 @@ elseif(cvar(1:lv).eq.'tai' .or. cvar(1:lv).eq.'tai_ps') then
       ivar_type = 7
    else
       ivar_type = 2
-      call RAMS_comp_patchsum_l(nnxp(ngrd),nnyp(ngrd),1,npatch  &
-         ,a(irecind),a(1),b)
+      call RAMS_comp_patchsum_l(nnxp(ngrd),nnyp(ngrd),1,npatch,a)
    endif
 
    cdname=' total leaf area index'
@@ -2984,8 +2875,7 @@ elseif(cvar(1:lv).eq.'z0' .or. cvar(1:lv).eq.'z0_ps') then
       ivar_type = 7
    else
       ivar_type = 2
-      call RAMS_comp_patchsum(nnxp(ngrd),nnyp(ngrd),1,npatch  &
-         ,a(irecind),a(1),b)
+      call RAMS_comp_patchsum(nnxp(ngrd),nnyp(ngrd),1,npatch,a)
    endif
 
    cdname='roughness'
@@ -3011,8 +2901,7 @@ elseif(cvar(1:lv).eq.'net_z0_p' .or. cvar(1:lv).eq.'net_z0_ps') then
       ivar_type = 7
    else
       ivar_type = 2
-      call RAMS_comp_patchsum(nnxp(ngrd),nnyp(ngrd),1,npatch  &
-         ,a(irecind),a(1),b)
+      call RAMS_comp_patchsum(nnxp(ngrd),nnyp(ngrd),1,npatch,a)
    endif
 
    cdname='net roughness'
@@ -3039,8 +2928,7 @@ elseif(cvar(1:lv).eq.'vegz0' .or. cvar(1:lv).eq.'vegz0_ps') then
       ivar_type = 7
    else
       ivar_type = 2
-      call RAMS_comp_patchsum_l(nnxp(ngrd),nnyp(ngrd),1,npatch  &
-         ,a(irecind),a(1),b)
+      call RAMS_comp_patchsum_l(nnxp(ngrd),nnyp(ngrd),1,npatch,a)
    endif
 
    cdname='vegetation roughness'
@@ -3066,8 +2954,7 @@ elseif(cvar(1:lv).eq.'vegdisp' .or. cvar(1:lv).eq.'veg_disp_ps') then
       ivar_type = 7
    else
       ivar_type = 2
-      call RAMS_comp_patchsum_l(nnxp(ngrd),nnyp(ngrd),1,npatch  &
-         ,a(irecind),a(1),b)
+      call RAMS_comp_patchsum_l(nnxp(ngrd),nnyp(ngrd),1,npatch,a)
    endif
 
    cdname='vegetation displacement height'
@@ -3125,8 +3012,7 @@ elseif(cvar(1:lv).eq.'grnd_mixrat_p' .or. cvar(1:lv).eq.'grnd_mixrat_ps') then
       ivar_type = 7
    else
       ivar_type = 2
-      call RAMS_comp_patchsum_l(nnxp(ngrd),nnyp(ngrd),1,npatch  &
-         ,a(irecind),a(1),b)
+      call RAMS_comp_patchsum_l(nnxp(ngrd),nnyp(ngrd),1,npatch,a)
    endif
 
    cdname='ground mixing ratio'
@@ -3152,8 +3038,7 @@ elseif(cvar(1:lv).eq.'soil_mixrat_p' .or. cvar(1:lv).eq.'soil_mixrat_ps') then
       ivar_type = 7
    else
       ivar_type = 2
-      call RAMS_comp_patchsum_l(nnxp(ngrd),nnyp(ngrd),1,npatch  &
-         ,a(irecind),a(1),b)
+      call RAMS_comp_patchsum_l(nnxp(ngrd),nnyp(ngrd),1,npatch,a)
    endif
 
    cdname='soil mixing ratio'
@@ -3178,8 +3063,7 @@ elseif(cvar(1:lv).eq.'lwater_p' .or. cvar(1:lv).eq.'lwater_ps') then
       ivar_type = 7
    else
       ivar_type = 2
-      call RAMS_comp_patchsum_l(nnxp(ngrd),nnyp(ngrd),1,npatch  &
-         ,a(irecind),a(1),b)
+      call RAMS_comp_patchsum_l(nnxp(ngrd),nnyp(ngrd),1,npatch,a)
    endif
 
     cdname='leaf water'
@@ -3228,8 +3112,7 @@ elseif(cvar(1:lv).eq.'rib' .or. cvar(1:lv) .eq. 'rib_ps') then
       ivar_type = 7
    else
       ivar_type = 2
-      call RAMS_comp_patchsum(nnxp(ngrd),nnyp(ngrd),1,npatch  &
-         ,a(irecind),a(1),b)
+      call RAMS_comp_patchsum(nnxp(ngrd),nnyp(ngrd),1,npatch,a)
    endif
 
    cdname='bulk richardson number'
@@ -3257,8 +3140,7 @@ elseif(cvar(1:lv).eq.'rvcan' .or. cvar(1:lv).eq.'rvcan_ps') then
       ivar_type = 7
    else
       ivar_type = 2
-      call RAMS_comp_patchsum(nnxp(ngrd),nnyp(ngrd),1,npatch  &
-         ,a(irecind),a(1),b)
+      call RAMS_comp_patchsum(nnxp(ngrd),nnyp(ngrd),1,npatch,a)
    endif
 
    cdname='canopy mixing ratio'
@@ -3283,8 +3165,7 @@ elseif(cvar(1:lv).eq.'co2can' .or. cvar(1:lv).eq.'co2can_ps') then
       ivar_type = 7
    else
       ivar_type = 2
-      call RAMS_comp_patchsum(nnxp(ngrd),nnyp(ngrd),1,npatch  &
-         ,a(irecind),a(1),b)
+      call RAMS_comp_patchsum(nnxp(ngrd),nnyp(ngrd),1,npatch,a)
    endif
 
    cdname='CO2 mixing ratio'
@@ -3308,8 +3189,7 @@ elseif(cvar(1:lv).eq.'gpp_p' .or. cvar(1:lv).eq.'gpp') then
       ivar_type = 7
    else
       ivar_type = 2
-      call RAMS_comp_patchsum(nnxp(ngrd),nnyp(ngrd),1,npatch  &
-         ,a(irecind),a(1),b)
+      call RAMS_comp_patchsum(nnxp(ngrd),nnyp(ngrd),1,npatch,a)
    endif
 
    cdname='Gross Primary Production'
@@ -3332,8 +3212,7 @@ elseif(cvar(1:lv).eq.'plresp_p' .or. cvar(1:lv).eq.'plresp') then
       ivar_type = 7
    else
       ivar_type = 2
-      call RAMS_comp_patchsum(nnxp(ngrd),nnyp(ngrd),1,npatch  &
-         ,a(irecind),a(1),b)
+      call RAMS_comp_patchsum(nnxp(ngrd),nnyp(ngrd),1,npatch,a)
    endif
 
    cdname='Plant respiration'
@@ -3356,8 +3235,7 @@ elseif(cvar(1:lv).eq.'resphet_p' .or. cvar(1:lv).eq.'resphet') then
       ivar_type = 7
    else
       ivar_type = 2
-      call RAMS_comp_patchsum(nnxp(ngrd),nnyp(ngrd),1,npatch  &
-         ,a(irecind),a(1),b)
+      call RAMS_comp_patchsum(nnxp(ngrd),nnyp(ngrd),1,npatch,a)
    endif
 
    cdname='Heterotrophic respiration'
@@ -3380,8 +3258,7 @@ elseif(cvar(1:lv).eq.'h_p' .or. cvar(1:lv).eq.'h') then
       ivar_type = 7
    else
       ivar_type = 2
-      call RAMS_comp_patchsum(nnxp(ngrd),nnyp(ngrd),1,npatch  &
-         ,a(irecind),a(1),b)
+      call RAMS_comp_patchsum(nnxp(ngrd),nnyp(ngrd),1,npatch,a)
    endif
 
    cdname='Sensible heat flux'
@@ -3404,8 +3281,7 @@ elseif(cvar(1:lv).eq.'evap_p' .or. cvar(1:lv).eq.'evap') then
       ivar_type = 7
    else
       ivar_type = 2
-      call RAMS_comp_patchsum(nnxp(ngrd),nnyp(ngrd),1,npatch  &
-         ,a(irecind),a(1),b)
+      call RAMS_comp_patchsum(nnxp(ngrd),nnyp(ngrd),1,npatch,a)
    endif
 
    cdname='Latent heat flux due to evaporation'
@@ -3428,8 +3304,7 @@ elseif(cvar(1:lv).eq.'transp_p' .or. cvar(1:lv).eq.'transp') then
       ivar_type = 7
    else
       ivar_type = 2
-      call RAMS_comp_patchsum(nnxp(ngrd),nnyp(ngrd),1,npatch  &
-         ,a(irecind),a(1),b)
+      call RAMS_comp_patchsum(nnxp(ngrd),nnyp(ngrd),1,npatch,a)
    endif
 
    cdname='Latent heat flux due to transpiration'
@@ -3455,8 +3330,7 @@ elseif(cvar(1:lv).eq.'le_p' .or. cvar(1:lv).eq.'le') then
       ivar_type = 7
    else
       ivar_type = 2
-      call RAMS_comp_patchsum(nnxp(ngrd),nnyp(ngrd),1,npatch  &
-         ,a(irecind),a(1),b)
+      call RAMS_comp_patchsum(nnxp(ngrd),nnyp(ngrd),1,npatch,a)
    endif
 
    cdname='Latent heat flux'
@@ -3478,7 +3352,7 @@ elseif(cvar(1:lv).eq.'tveg' .or. cvar(1:lv).eq.'tveg_ps') then
    ierr = RAMS_getvar('CAN_PRSS',idim_type,ngrd,d,b,flnm)
    ierr_getvar = ierr_getvar + ierr
    call RAMS_comp_theta2temp(n1,n2,npatch,e,d)
-   call RAMS_comp_tempC(n1,n2,npatch,e)
+   call RAMS_comp_tempC(n1,n2,1,npatch,e)
    
    ierr = RAMS_getvar('VEG_ENERGY',idim_type,ngrd,a(irecind),b,flnm)
    ierr_getvar = ierr_getvar + ierr
@@ -3499,8 +3373,7 @@ elseif(cvar(1:lv).eq.'tveg' .or. cvar(1:lv).eq.'tveg_ps') then
       ivar_type = 7
    else
       ivar_type = 2
-      call RAMS_comp_patchsum(nnxp(ngrd),nnyp(ngrd),1,npatch  &
-         ,a(irecind),a(1),b)
+      call RAMS_comp_patchsum(nnxp(ngrd),nnyp(ngrd),1,npatch,a)
    endif
 
    cdname='vegetation temperature'
@@ -3519,14 +3392,13 @@ elseif(cvar(1:lv).eq.'tcan' .or. cvar(1:lv).eq.'tcan_ps') then
    ierr_getvar = ierr_getvar + ierr
    ierr = RAMS_getvar('CAN_PRSS',idim_type,ngrd,c,b,flnm)
    call RAMS_comp_theta2temp(n1,n2,npatch,a(irecind),c)
-   call RAMS_comp_tempC(n1,n2,npatch,a(irecind))
+   call RAMS_comp_tempC(n1,n2,1,npatch,a(irecind))
 
    if(cvar(1:lv).eq.'tcan') then
       ivar_type = 7
    else
       ivar_type = 2
-      call RAMS_comp_patchsum(nnxp(ngrd),nnyp(ngrd),1,npatch  &
-         ,a(irecind),a(1),b)
+      call RAMS_comp_patchsum(nnxp(ngrd),nnyp(ngrd),1,npatch,a)
    endif
 
    cdname='canopy temperature'
@@ -3551,8 +3423,7 @@ elseif(cvar(1:lv).eq.'pcan' .or. cvar(1:lv).eq.'pcan_ps') then
       ivar_type = 7
    else
       ivar_type = 2
-      call RAMS_comp_patchsum(nnxp(ngrd),nnyp(ngrd),1,npatch  &
-         ,a(irecind),a(1),b)
+      call RAMS_comp_patchsum(nnxp(ngrd),nnyp(ngrd),1,npatch,a)
    endif
 
    cdname='canopy press'
@@ -3575,8 +3446,7 @@ elseif(cvar(1:lv).eq.'thcan' .or. cvar(1:lv).eq.'thcan_ps') then
       ivar_type = 7
    else
       ivar_type = 2
-      call RAMS_comp_patchsum(nnxp(ngrd),nnyp(ngrd),1,npatch  &
-         ,a(irecind),a(1),b)
+      call RAMS_comp_patchsum(nnxp(ngrd),nnyp(ngrd),1,npatch,a)
    endif
 
    cdname='canopy potential temperature'
@@ -3755,8 +3625,7 @@ elseif(cvar(1:lv).eq.'capac2'.or. cvar(1:lv).eq.'capac2_ps' ) then
       ivar_type = 7
    else
       ivar_type = 2
-      call RAMS_comp_patchsum_l(nnxp(ngrd),nnyp(ngrd),1,npatch  &
-         ,a(irecind),a(1),b)
+      call RAMS_comp_patchsum_l(nnxp(ngrd),nnyp(ngrd),1,npatch,a)
    endif
 
    call RAMS_comp_noneg(n1,n2,n3,a)
@@ -3786,8 +3655,7 @@ elseif(cvar(1:lv).eq.'ustar' .or. cvar(1:lv).eq.'ustar_ps') then
       ivar_type = 7
    else
       ivar_type = 2
-      call RAMS_comp_patchsum(nnxp(ngrd),nnyp(ngrd),1,npatch  &
-         ,a(irecind),a(1),b)
+      call RAMS_comp_patchsum(nnxp(ngrd),nnyp(ngrd),1,npatch,a)
    endif
 
    cdname='ustar'
@@ -3813,8 +3681,7 @@ elseif(cvar(1:lv).eq.'tstar' .or. cvar(1:lv).eq.'tstar_ps') then
       ivar_type = 7
    else
       ivar_type = 2
-      call RAMS_comp_patchsum(nnxp(ngrd),nnyp(ngrd),1,npatch  &
-         ,a(irecind),a(1),b)
+      call RAMS_comp_patchsum(nnxp(ngrd),nnyp(ngrd),1,npatch,a)
    endif
 
    cdname='tstar'
@@ -3841,8 +3708,7 @@ elseif(cvar(1:lv).eq.'rstar' .or. cvar(1:lv).eq.'rstar_ps') then
       ivar_type = 7
    else
       ivar_type = 2
-      call RAMS_comp_patchsum(nnxp(ngrd),nnyp(ngrd),1,npatch  &
-         ,a(irecind),a(1),b)
+      call RAMS_comp_patchsum(nnxp(ngrd),nnyp(ngrd),1,npatch,a)
    endif
 
    cdname='rstar'
@@ -3869,8 +3735,7 @@ elseif(cvar(1:lv).eq.'cstar' .or. cvar(1:lv).eq.'cstar_ps') then
       ivar_type = 7
    else
       ivar_type = 2
-      call RAMS_comp_patchsum(nnxp(ngrd),nnyp(ngrd),1,npatch  &
-         ,a(irecind),a(1),b)
+      call RAMS_comp_patchsum(nnxp(ngrd),nnyp(ngrd),1,npatch,a)
    endif
 
    cdname='cstar'
@@ -3897,8 +3762,7 @@ elseif(cvar(1:lv).eq.'snow_depth_p' .or. cvar(1:lv).eq.'snow_depth_ps') then
       ivar_type = 7
    else
       ivar_type = 2
-      call RAMS_comp_patchsum_l(nnxp(ngrd),nnyp(ngrd),1,npatch  &
-         ,a(irecind),a(1),b)
+      call RAMS_comp_patchsum_l(nnxp(ngrd),nnyp(ngrd),1,npatch,a)
    endif
 
    cdname='snow depth'
@@ -3924,8 +3788,7 @@ elseif(cvar(1:lv).eq.'snowcover_p' .or. cvar(1:lv).eq.'snowcover_ps') then
       ivar_type = 7
    else
       ivar_type = 2
-      call RAMS_comp_patchsum_l(nnxp(ngrd),nnyp(ngrd),1,npatch  &
-         ,a(irecind),a(1),b)
+      call RAMS_comp_patchsum_l(nnxp(ngrd),nnyp(ngrd),1,npatch,a)
    endif
 
    cdname='snowcover'
@@ -3970,14 +3833,13 @@ elseif(cvar(1:lv).eq.'soilq' .or. cvar(1:lv).eq.'soilq_ps') then
         ,a(irecind),b,flnm)
    ierr_getvar = ierr_getvar + ierr
 
-   call get_leaf_soil(n1,n2,n3,n4,n5,a(irecind),a2)
+   call get_leaf_soil(n1,n2,n4,n5,a(irecind),a2)
 
    if (cvar(1:lv).eq.'soilq') then
       ivar_type = 8
    else
       ivar_type = 10
-      call RAMS_comp_patchsum_l(nnxp(ngrd),nnyp(ngrd),nzg,npatch  &
-         ,a(irecind),a(1),b)
+      call RAMS_comp_patchsum_l(nnxp(ngrd),nnyp(ngrd),nzg,npatch,a)
    endif
 
    cdname='soil q'
@@ -3992,18 +3854,16 @@ elseif(cvar(1:lv).eq.'smoist' .or. cvar(1:lv).eq.'smoist_ps') then
            ,a(irecind),b,flnm)
       irecind = irecind + irecsize
    end if
-   ierr = RAMS_getvar('SOIL_WATER',idim_type,ngrd   &
-        ,a(irecind),b,flnm)
+   ierr = RAMS_getvar('SOIL_WATER',idim_type,ngrd,a(irecind),b,flnm)
    ierr_getvar = ierr_getvar + ierr
 
-   call get_leaf_soil(n1,n2,n3,n4,n5,a(irecind),a2)
 
    if (cvar(1:lv).eq.'smoist') then
       ivar_type = 8
+      call get_leaf_soil(n1,n2,n4,n5,a,a2)
    else
       ivar_type = 10
-      call RAMS_comp_patchsum_l(nnxp(ngrd),nnyp(ngrd),nzg,npatch  &
-         ,a(irecind),a(1),b)
+      call RAMS_comp_patchsum_l(nnxp(ngrd),nnyp(ngrd),nzg,npatch,a)
    endif
 
    cdname='soil moisture'
@@ -4012,40 +3872,38 @@ elseif(cvar(1:lv).eq.'smoist' .or. cvar(1:lv).eq.'smoist_ps') then
 
 elseif(cvar(1:lv).eq.'tsoil' .or. cvar(1:lv).eq.'tsoil_ps') then
 
-   irecind = 1
-   irecsize = nnxp(ngrd) * nnyp(ngrd) * npatch
+   irecind   = 1
+   irecsize  = nnxp(ngrd) * nnyp(ngrd) * npatch
+   irecsizep = nnxp(ngrd) * nnyp(ngrd) * nzg
 
-   if(cvar(1:lv).eq.'tsoil' .or. cvar(1:lv).eq.'tsoil_ps') then
-      ierr = RAMS_getvar('PATCH_AREA',idim_type,ngrd   &
-           ,a(irecind),b,flnm)
+   if(cvar(1:lv).eq.'tsoil_ps') then
+      ierr = RAMS_getvar('PATCH_AREA',idim_type,ngrd,a(irecind),b,flnm)
       irecind = irecind + irecsize
    end if
 
-   ierr = RAMS_getvar('SOIL_ENERGY',idim_type,ngrd   &
-        ,a(irecind),b,flnm)
+   ierr = RAMS_getvar('SOIL_ENERGY',idim_type,ngrd,a(irecind),b,flnm)
    ierr_getvar = ierr_getvar + ierr
 
-   ierr = RAMS_getvar('SOIL_WATER',idim_type,ngrd   &
-        ,c,b,flnm)
+   ierr = RAMS_getvar('SOIL_WATER',idim_type,ngrd,c,b,flnm)
    ierr_getvar = ierr_getvar + ierr
-   ierr = RAMS_getvar('SOIL_TEXT',idim_type,ngrd   &
-        ,d,b,flnm)
+
+   ierr = RAMS_getvar('SOIL_TEXT',idim_type,ngrd,d,b,flnm)
    ierr_getvar = ierr_getvar + ierr
+
    call RAMS_comp_copysst(n1,n2,nzg,a(irecind))
 
-   irecsizep = nnxp(ngrd) * nnyp(ngrd) * nzg
-   call RAMS_comp_qwtc(n1,n2,nzg*(npatch-1),a(irecind+irecsizep)  &
-      ,c(1+irecsizep),d(1+irecsizep))
+   call RAMS_comp_qwtk(n1,n2,nzg,npatch,a(irecind),c,d)
 
-   call get_leaf_soil(n1,n2,n3,n4,n5,a(irecind),a2)
 
    if (cvar(1:lv).eq.'tsoil') then
+      call RAMS_comp_tempC(n1,n2,nzg,npatch,a)
+      call get_leaf_soil(n1,n2,n4,n5,a,a2)
       ivar_type = 8
    else
       ivar_type = 10
-      call RAMS_comp_patchsum(nnxp(ngrd),nnyp(ngrd),nzg,npatch  &
-         ,a(irecind),a(1),b)
-   endif
+      call RAMS_comp_patchsum(nnxp(ngrd),nnyp(ngrd),nzg,npatch,a)
+      call RAMS_comp_tempC(n1,n2,nzg,1,a)
+   end if
 
    cdname='soil/sea temp'
    cdunits='C'
@@ -4060,24 +3918,21 @@ elseif(cvar(1:lv).eq.'smfrac' .or. cvar(1:lv).eq.'smfrac_ps') then
       ierr_getvar = ierr_getvar + ierr
    end if
    irecind = irecind + irecsize
-   ierr = RAMS_getvar('SOIL_WATER',idim_type,ngrd   &
-        ,a(irecind),b,flnm)
+   ierr = RAMS_getvar('SOIL_WATER',idim_type,ngrd,a(irecind),b,flnm)
    ierr_getvar = ierr_getvar + ierr
-   ierr = RAMS_getvar('SOIL_TEXT',idim_type,ngrd   &
-        ,c,b,flnm)
+   ierr = RAMS_getvar('SOIL_TEXT',idim_type,ngrd,c,b,flnm)
    ierr_getvar = ierr_getvar + ierr
    
    
-   call rams_comp_slmstf(n1,n2,nzg*npatch,a(irecind),c)
+   call rams_comp_slmstf(n1,n2,nzg,npatch,a(irecind),c)
 
-   call get_leaf_soil(n1,n2,n3,n4,n5,a(irecind),a2)
 
    if (cvar(1:lv).eq.'smfrac') then
       ivar_type = 8
+      call get_leaf_soil(n1,n2,n4,n5,a,a2)
    else
       ivar_type = 10
-      call RAMS_comp_patchsum_l(nnxp(ngrd),nnyp(ngrd),nzg,npatch  &
-         ,a(irecind),a(1),b)
+      call RAMS_comp_patchsum_l(nnxp(ngrd),nnyp(ngrd),nzg,npatch,a)
    endif
 
    cdname='soil moisture frac'
@@ -5114,17 +4969,12 @@ subroutine RAMS_comp(n1,n2,n3,n4,n5,n6)
 use somevars
 use rconstants
 use rpost_coms
-use therm_lib, only : qtk, qwtk, dewfrostpoint, rslif, virtt, thetaeiv
+use therm_lib, only : qtk, dewfrostpoint, rslif, virtt, thetaeiv
 
 dimension a(n1,n2,n3),b(n1,n2,n3),c(n1,n2,n3),d(n1,n2,n3),e(n1,n2,n3),o(n1,n2,n3),topt(n1,n2)
 dimension a2(n1,n2,n4,n5),a6(n1,n2,n3,n6)
 real f1(n1,n2,n3),f2(n1,n2,n3)
 dimension theta(n1,n2,n3),pp(n1,n2,n3),slp(n1,n2),z(n1,n2,n3)
-dimension slmsts0(12)
-data slmsts0/0.395, 0.410, 0.435, 0.485, 0.451, 0.420  &
-            ,0.477, 0.476, 0.426, 0.492, 0.482, 0.863/
-real, parameter, dimension(12) :: myslcpd=(/1.465e6, 1.407e6, 1.344e6, 1.273e6, 1.214e6, 1.177e6, &
-                                            1.319e6, 1.227e6, 1.177e6, 1.151e6, 1.088e6,  .874e6 /)
 real :: temptemp,fracliq
 integer :: nsoil
 
@@ -5515,31 +5365,11 @@ entry RAMS_comp_press(n1,n2,n3,a)
    enddo
 return
 
-entry RAMS_comp_tempC(n1,n2,n3,a)
-   do k=1,n3
-      do j=1,n2
-         do i=1,n1
-            a(i,j,k)=a(i,j,k)-t00
-         enddo
-      enddo
-   enddo
-return
-
 entry RAMS_comp_theta2temp(n1,n2,n3,a,b)
    do k=1,n3
       do j=1,n2
          do i=1,n1
             a(i,j,k)=a(i,j,k) * (p00i * b(i,j,k)) ** rocp
-         enddo
-      enddo
-   enddo
-return
-
-entry RAMS_comp_tempF(n1,n2,n3,a)
-   do k=1,n3
-      do j=1,n2
-         do i=1,n1
-            a(i,j,k)=(a(i,j,k)-273.16)*1.8+32.
          enddo
       enddo
    enddo
@@ -5726,31 +5556,6 @@ entry RAMS_comp_watsat(n1,n2,n3,a,b,c)
    enddo
 return
 
-entry RAMS_comp_pvap(n1,n2,n3,a,b) 
-   ! a is pressure in Pa or hPa
-   ! b is mixing ratio in kg/kg
-   do k=1,n3
-      do j=1,n2
-         do i=1,n1
-            b(i,j,k)=b(i,j,k)*a(i,j,k)/(ep+b(i,j,k))
-         enddo
-      enddo
-   enddo
-return
-   
-entry RAMS_comp_spvol(n1,n2,n3,a,b,c)
-!a is temperature [K]
-!b is vapour pressure in [Pa]
-!c is pressure [Pa]
-   do k=1,n3
-      do j=1,n2
-         do i=1,n1
-            a(i,j,k)=rgas*a(i,j,k)/(c(i,j,k)-(1-ep)*b(i,j,k))
-         enddo
-      enddo
-   enddo
-return
-
 
 entry RAMS_comp_vegclass(n1,n2,n3,a)
    do i=1,n1
@@ -5807,45 +5612,6 @@ entry RAMS_comp_raintemp(n1,n2,n3,a)
    enddo
 return
 
-entry RAMS_comp_qwtc(n1,n2,n3,a,b,c)
-
-!MLO: Input: a = Energy  in J/m3 so we don't need to multiply...
-!            b = Water      m3/m3
-!            c = Soil class 
-!     Output: a = Temperature in Celsius
-!             b = Fraction in liquid phase
-
-   do k=1,n3
-      do j=1,n2
-         do i=1,n1
-
-            nsoil = nint(c(i,j,k))
-            dryhcap = myslcpd(nsoil)
-            b(i,j,k) = b(i,j,k) * 1.e3
-            temptemp = 6.0
-            fracliq = 4.0
-            call qwtk(a(i,j,k),b(i,j,k),dryhcap,temptemp,fracliq)
-            !write (unit=*,fmt='(5(a,1x,es12.5,1x))') &
-            !  'QW=',a(i,j,k),'W=',b(i,j,k),'SCP=',dryhcap,'TEMPK=',temptemp,'FLIQ=',fracliq
-            a(i,j,k) = temptemp-t00
-            b(i,j,k) = fracliq
-
-         end do
-      end do
-   end do
-return
-
-entry RAMS_comp_copysst(n1,n2,n3,a)
-   do k=1,n3
-      do j=1,n2
-         do i=1,n1
-            call qtk(a(i,j,n3),temptemp,fracliq)
-            a(i,j,k) = temptemp - t00
-         enddo
-      enddo
-   enddo
-return
-
 entry RAMS_comp_qtcpcp(n1,n2,n3,a)
    do k=1,n3
       do j=1,n2
@@ -5895,21 +5661,6 @@ entry RAMS_comp_hydrodiam(n1,n2,n3,a,c,ccfmas,ppwmas)
             endif
          enddo
       enddo
-   enddo
-return
-
-entry RAMS_comp_slmstf(n1,n2,n3,a,c)
-   do i=1,n1
-     do j=1,n2
-        do k=1,n3
-           nsoil = nint(c(i,j,k))
-           if (nsoil /= 0) then
-              a(i,j,k) = a(i,j,k) / max(1.e-6,slmsts0(nsoil))
-           else
-              a(i,j,k) = 1.
-           end if
-        end do
-     end do
    enddo
 return
 
@@ -6146,18 +5897,18 @@ end
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine get_leaf_soil(n1,n2,n3,n4,n5,a,a2)
+subroutine get_leaf_soil(n1,n2,n4,n5,a,a2)
    implicit none
-   integer, intent(in) :: n1,n2,n3,n4,n5
+   integer, intent(in) :: n1,n2,n4,n5
    real, dimension(n1,n2,n4,n5), intent(out) :: a2
-   real, dimension(n1,n2,n4*n5), intent(in) :: a
+   real, dimension(n1,n2,n4*n5), intent(in)  :: a
    integer :: kip, k,i,j,ip
    kip=0
    do ip=1,n5
       do k=1,n4
          kip=kip+1
-         do i=1,n1
-            do j=1,n2
+         do j=1,n2
+            do i=1,n1
                a2(i,j,k,ip)=a(i,j,kip)
             end do
          end do
@@ -6186,8 +5937,8 @@ subroutine get_cumulus(n1,n2,n3,n6,a,a6)
    do ip=1,n6
       do k=1,n3
          kip=kip+1
-         do i=1,n1
-            do j=1,n2
+         do j=1,n2
+            do i=1,n1
                a6(i,j,k,ip)=a(i,j,kip)
             end do
          end do
@@ -6618,74 +6369,73 @@ end subroutine RAMS_comp_potvortz
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine RAMS_comp_solenoidx(n1,n2,n3,a,b,e,topt,ngrd)
+subroutine RAMS_comp_solenoidx(nx,ny,nz,alpha,press,solex,topt,ngrd)
    use somevars
-   use rconstants
-   use therm_lib, only : qtk, qwtk, dewfrostpoint, rslif, virtt, thetaeiv
    implicit none
-   integer                     , intent(in)    :: n1,n2,n3
-   real   , dimension(n1,n2,n3), intent(inout) :: a,b,e
-   real   , dimension(n1,n2)   , intent(in)    :: topt
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                     , intent(in)    :: nx
+   integer                     , intent(in)    :: ny
+   integer                     , intent(in)    :: nz
+   real   , dimension(nx,ny,nz), intent(inout) :: alpha ! Specific Volume
+   real   , dimension(nx,ny,nz), intent(inout) :: press
+   real   , dimension(nx,ny,nz), intent(inout) :: solex
+   real   , dimension(nx,ny)   , intent(in)    :: topt
    integer                     , intent(in)    :: ngrd
-   real   , dimension(n1,n2,n3)                :: d,o
-   integer                                     :: i,j,k
-   real   , dimension(n1+n2+n3)                :: dum1,dum2
-   do k=1,n3
-      do j=1,n2
-         do i=1,n1
-            e(i,j,k) =0.
-         enddo
-      enddo
-   enddo
-   ! a - specific volume
-   ! b - pressure
-   ! o - derivative
-   ! d - derivative
-   ! e - sum - solenoid term
-   call gradr(n1,n2,n3,2,n1-1,2,n2-1,a,o,'zdir','tpnt',topt  &
-      ,myxmn(:,ngrd),myxtn(:,ngrd),myymn(:,ngrd),myytn(:,ngrd)  &
-      ,myzmn(:,ngrd),myztn(:,ngrd),mydeltayn(ngrd)  &
-      ,mydzmn(:,ngrd),mydztn(:,ngrd),dum1,dum2,myzmn(mynnzp(1)-1,1)  &
-      ,myjdim,myihtran)
-   ! o is da/dz
-   call gradr(n1,n2,n3,2,n1-1,2,n2-1,b,d,'ydir','tpnt',topt  &
-      ,myxmn(:,ngrd),myxtn(:,ngrd),myymn(:,ngrd),myytn(:,ngrd)  &
-      ,myzmn(:,ngrd),myztn(:,ngrd),mydeltayn(ngrd)  &
-      ,mydzmn(:,ngrd),mydztn(:,ngrd),dum1,dum2,myzmn(mynnzp(1)-1,1)  &
-      ,myjdim,myihtran)
-   !d is dp/dy
+   !----- Local variables. ----------------------------------------------------------------!
+   real   , dimension(nx,ny,nz)                :: dady
+   real   , dimension(nx,ny,nz)                :: dadz
+   real   , dimension(nx,ny,nz)                :: dpdy
+   real   , dimension(nx,ny,nz)                :: dpdz
+   integer                                     :: x
+   integer                                     :: y
+   integer                                     :: z
+   real   , dimension(nx+ny+nz)                :: dum1
+   real   , dimension(nx+ny+nz)                :: dum2
+   !---------------------------------------------------------------------------------------!
+   do z=1,nz
+      do y=1,ny
+         do x=1,nx
+            solex(x,y,z) = 0.
+         end do
+      end do
+   end do
 
-   do k=1,n3
-      do j=2,n2-1
-         do i=2,n1-1
-            e(i,j,k) =o(i,j,k)*d(i,j,k)
-         enddo
-      enddo
-   enddo
+   call gradr(nx,ny,nz,2,nx-1,2,ny-1,alpha,dadz,'zdir','tpnt',topt,myxmn(:,ngrd)           &
+             ,myxtn(:,ngrd),myymn(:,ngrd),myytn(:,ngrd),myzmn(:,ngrd),myztn(:,ngrd)        &
+             ,mydeltayn(ngrd),mydzmn(:,ngrd),mydztn(:,ngrd),dum1,dum2,myzmn(mynnzp(1)-1,1) &
+             ,myjdim,myihtran)
+   call gradr(nx,ny,nz,2,nx-1,2,ny-1,press,dpdy,'ydir','tpnt',topt,myxmn(:,ngrd)           &
+             ,myxtn(:,ngrd),myymn(:,ngrd),myytn(:,ngrd),myzmn(:,ngrd),myztn(:,ngrd)        &
+             ,mydeltayn(ngrd),mydzmn(:,ngrd),mydztn(:,ngrd),dum1,dum2,myzmn(mynnzp(1)-1,1) &
+             ,myjdim,myihtran)
 
-
-   call gradr(n1,n2,n3,2,n1-1,2,n2-1,b,o,'zdir','tpnt',topt  &
-      ,myxmn(:,ngrd),myxtn(:,ngrd),myymn(:,ngrd),myytn(:,ngrd)  &
-      ,myzmn(:,ngrd),myztn(:,ngrd),mydeltayn(ngrd)  &
-      ,mydzmn(:,ngrd),mydztn(:,ngrd),dum1,dum2,myzmn(mynnzp(1)-1,1)  &
-      ,myjdim,myihtran)
-   ! d is dp/dz
-
-   call gradr(n1,n2,n3,2,n1-1,2,n2-1,a,d,'ydir','tpnt',topt  &
-      ,myxmn(:,ngrd),myxtn(:,ngrd),myymn(:,ngrd),myytn(:,ngrd)  &
-      ,myzmn(:,ngrd),myztn(:,ngrd),mydeltayn(ngrd)  &
-      ,mydzmn(:,ngrd),mydztn(:,ngrd),dum1,dum2,myzmn(mynnzp(1)-1,1)  &
-      ,myjdim,myihtran)
-   !c is da/dy
+   do z=1,nz
+      do y=2,ny-1
+         do x=2,nx-1
+            solex(x,y,z) = dadz(x,y,z) * dpdy(x,y,z)
+         end do
+      end do
+   end do
 
 
-   do k=1,n3
-      do j=2,n2-1
-         do i=2,n1-1
-            e(i,j,k) = e(i,j,k)-o(i,j,k)*d(i,j,k)
-         enddo
-      enddo
-   enddo
+   call gradr(nx,ny,nz,2,nx-1,2,ny-1,press,dpdz,'zdir','tpnt',topt,myxmn(:,ngrd)           &
+             ,myxtn(:,ngrd),myymn(:,ngrd),myytn(:,ngrd),myzmn(:,ngrd),myztn(:,ngrd)        &
+             ,mydeltayn(ngrd),mydzmn(:,ngrd),mydztn(:,ngrd),dum1,dum2,myzmn(mynnzp(1)-1,1) &
+             ,myjdim,myihtran)
+   call gradr(nx,ny,nz,2,nx-1,2,ny-1,alpha,dady,'ydir','tpnt',topt,myxmn(:,ngrd)           &
+             ,myxtn(:,ngrd),myymn(:,ngrd),myytn(:,ngrd),myzmn(:,ngrd),myztn(:,ngrd)        &
+             ,mydeltayn(ngrd),mydzmn(:,ngrd),mydztn(:,ngrd),dum1,dum2,myzmn(mynnzp(1)-1,1) &
+             ,myjdim,myihtran)
+
+
+   do z=1,nz
+      do y=2,ny-1
+         do x=2,nx-1
+            solex(x,y,z) = solex(x,y,z) - dpdz(x,y,z) * dady(x,y,z)
+         end do
+      end do
+   end do
+
   return
 end subroutine RAMS_comp_solenoidx
 !==========================================================================================!
@@ -6698,74 +6448,87 @@ end subroutine RAMS_comp_solenoidx
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine RAMS_comp_solenoidy(n1,n2,n3,a,b,e,topt,ngrd)
+subroutine RAMS_comp_solenoidy(nx,ny,nz,alpha,press,soley,topt,ngrd)
    use somevars
-   use rconstants
-   use therm_lib, only : qtk, qwtk, dewfrostpoint, rslif, virtt, thetaeiv
    implicit none
-   integer                     , intent(in)    :: n1,n2,n3
-   real   , dimension(n1,n2,n3), intent(inout) :: a,b,e
-   real   , dimension(n1,n2)   , intent(in)    :: topt
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                     , intent(in)    :: nx
+   integer                     , intent(in)    :: ny
+   integer                     , intent(in)    :: nz
+   real   , dimension(nx,ny,nz), intent(inout) :: alpha ! Specific Volume
+   real   , dimension(nx,ny,nz), intent(inout) :: press
+   real   , dimension(nx,ny,nz), intent(inout) :: soley
+   real   , dimension(nx,ny)   , intent(in)    :: topt
    integer                     , intent(in)    :: ngrd
-   real   , dimension(n1,n2,n3)                :: d,o
-   integer                                     :: i,j,k
-   real   , dimension(n1+n2+n3)                :: dum1,dum2
-   do k=1,n3
-      do j=1,n2
-         do i=1,n1
-            e(i,j,k) =0.
-         enddo
-      enddo
-   enddo
-   ! a - specific volume
-   ! b - pressure
-   ! o - derivative
-   ! d - derivative
-   ! e - sum - solenoid term
-   call gradr(n1,n2,n3,2,n1-1,2,n2-1,a,o,'xdir','tpnt',topt  &
-      ,myxmn(:,ngrd),myxtn(:,ngrd),myymn(:,ngrd),myytn(:,ngrd)  &
-      ,myzmn(:,ngrd),myztn(:,ngrd),mydeltayn(ngrd)  &
-      ,mydzmn(:,ngrd),mydztn(:,ngrd),dum1,dum2,myzmn(mynnzp(1)-1,1)  &
-      ,myjdim,myihtran)
-   !c is da/dx
-   call gradr(n1,n2,n3,2,n1-1,2,n2-1,b,d,'zdir','tpnt',topt  &
-      ,myxmn(:,ngrd),myxtn(:,ngrd),myymn(:,ngrd),myytn(:,ngrd)  &
-      ,myzmn(:,ngrd),myztn(:,ngrd),mydeltayn(ngrd)  &
-      ,mydzmn(:,ngrd),mydztn(:,ngrd),dum1,dum2,myzmn(mynnzp(1)-1,1)  &
-      ,myjdim,myihtran)
-   !p is dp/dz
+   !----- Local variables. ----------------------------------------------------------------!
+   real   , dimension(nx,ny,nz)                :: dadx
+   real   , dimension(nx,ny,nz)                :: dadz
+   real   , dimension(nx,ny,nz)                :: dpdx
+   real   , dimension(nx,ny,nz)                :: dpdz
+   integer                                     :: x
+   integer                                     :: y
+   integer                                     :: z
+   real   , dimension(nx+ny+nz)                :: dum1
+   real   , dimension(nx+ny+nz)                :: dum2
+   !---------------------------------------------------------------------------------------!
+   do z=1,nz
+      do y=1,ny
+         do x=1,nx
+            soley(x,y,z) = 0.
+         end do
+      end do
+   end do
 
-   do k=1,n3
-      do j=2,n2-1
-         do i=2,n1-1
-            e(i,j,k) =o(i,j,k)*d(i,j,k)
-         enddo
-      enddo
-   enddo
+   call gradr(nx,ny,nz,2,nx-1,2,ny-1,alpha,dadx,'xdir','tpnt',topt,myxmn(:,ngrd)           &
+             ,myxtn(:,ngrd),myymn(:,ngrd),myytn(:,ngrd),myzmn(:,ngrd),myztn(:,ngrd)        &
+             ,mydeltayn(ngrd),mydzmn(:,ngrd),mydztn(:,ngrd),dum1,dum2,myzmn(mynnzp(1)-1,1) &
+             ,myjdim,myihtran)
+   call gradr(nx,ny,nz,2,nx-1,2,ny-1,press,dpdz,'zdir','tpnt',topt,myxmn(:,ngrd)           &
+             ,myxtn(:,ngrd),myymn(:,ngrd),myytn(:,ngrd),myzmn(:,ngrd),myztn(:,ngrd)        &
+             ,mydeltayn(ngrd),mydzmn(:,ngrd),mydztn(:,ngrd),dum1,dum2,myzmn(mynnzp(1)-1,1)  &
+              ,myjdim,myihtran)
 
-   call gradr(n1,n2,n3,2,n1-1,2,n2-1,b,o,'xdir','tpnt',topt  &
-      ,myxmn(:,ngrd),myxtn(:,ngrd),myymn(:,ngrd),myytn(:,ngrd)  &
-      ,myzmn(:,ngrd),myztn(:,ngrd),mydeltayn(ngrd)  &
-      ,mydzmn(:,ngrd),mydztn(:,ngrd),dum1,dum2,myzmn(mynnzp(1)-1,1)  &
-      ,myjdim,myihtran)
-   !c is dp/dx
+   do z=1,nz
+      do y=2,ny-1
+         do x=2,nx-1
+            soley(x,y,z) = dadx(x,y,z) * dpdz(x,y,z)
+         end do
+      end do
+   end do
 
-   call gradr(n1,n2,n3,2,n1-1,2,n2-1,a,d,'zdir','tpnt',topt  &
-      ,myxmn(:,ngrd),myxtn(:,ngrd),myymn(:,ngrd),myytn(:,ngrd)  &
-      ,myzmn(:,ngrd),myztn(:,ngrd),mydeltayn(ngrd)  &
-      ,mydzmn(:,ngrd),mydztn(:,ngrd),dum1,dum2,myzmn(mynnzp(1)-1,1)  &
-      ,myjdim,myihtran)
-   ! d is da/dz
+   call gradr(nx,ny,nz,2,nx-1,2,ny-1,press,dpdx,'xdir','tpnt',topt,myxmn(:,ngrd)           &
+             ,myxtn(:,ngrd),myymn(:,ngrd),myytn(:,ngrd),myzmn(:,ngrd),myztn(:,ngrd)        &
+             ,mydeltayn(ngrd),mydzmn(:,ngrd),mydztn(:,ngrd),dum1,dum2,myzmn(mynnzp(1)-1,1) &
+             ,myjdim,myihtran)
+   call gradr(nx,ny,nz,2,nx-1,2,ny-1,alpha,dadz,'zdir','tpnt',topt,myxmn(:,ngrd)           &
+             ,myxtn(:,ngrd),myymn(:,ngrd),myytn(:,ngrd),myzmn(:,ngrd),myztn(:,ngrd)        &
+             ,mydeltayn(ngrd),mydzmn(:,ngrd),mydztn(:,ngrd),dum1,dum2,myzmn(mynnzp(1)-1,1) &
+             ,myjdim,myihtran)
 
+   do z=1,nz
+      do y=2,ny-1
+         do x=2,nx-1
+            soley(x,y,z) = soley(x,y,z) - dadz(x,y,z) * dpdx(x,y,z)
+         end do
+      end do
+   end do
+   
+   write (unit=61,fmt='(3(a5,1x),7(a12,1x))') '    X','    Y','    Z','       ALPHA'       &
+                                             ,'       PRESS','        DADX','        DADZ' &
+                                             ,'        DPDX','        DPDZ','       SOLEY'
 
-   do k=1,n3
-      do j=2,n2-1
-         do i=2,n1-1
-            e(i,j,k) = e(i,j,k)-o(i,j,k)*d(i,j,k)
-         enddo
-      enddo
-   enddo
-  return
+   do z=1,nz
+      do y=2,ny-1
+         do x=2,nx-1
+            write(unit=61,fmt='(3(i5,1x),7(es12.5,1x))') x,y,z,alpha(x,y,z),press(x,y,z)   &
+                                                              , dadx(x,y,z), dadz(x,y,z)   &
+                                                              , dpdx(x,y,z), dpdz(x,y,z)   &
+                                                              ,soley(x,y,z)
+         end do
+      end do
+   end do
+
+   return
 end subroutine RAMS_comp_solenoidy
 !==========================================================================================!
 !==========================================================================================!
@@ -6912,36 +6675,65 @@ end subroutine RAMS_comp_sfcwinteg
 !==========================================================================================!
 !    This routine is for quantities defined for all patches.                               !
 !------------------------------------------------------------------------------------------!
-subroutine RAMS_comp_patchsum(n1,n2,n3,n4,a,f,psum)
-   use somevars, only : mynbig
+subroutine RAMS_comp_patchsum(nx,ny,nz,np,iovar)
    implicit none
-   integer                         , intent(in)    :: n1,n2,n3,n4
-   real   , dimension(n1,n2,n3,n4) , intent(in)    :: a
-   real   , dimension(n1,n2,mynbig), intent(inout) :: f
-   real   , dimension(n1,n2,n3)    , intent(out)   :: psum
-   integer                                         :: i,j,k,ip
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                         , intent(in)    :: nx
+   integer                         , intent(in)    :: ny
+   integer                         , intent(in)    :: nz
+   integer                         , intent(in)    :: np
+   real   , dimension(*)           , intent(inout) :: iovar
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                         :: x
+   integer                                         :: y
+   integer                                         :: z
+   integer                                         :: p
+   integer                                         :: iareaa
+   integer                                         :: iareaz
+   integer                                         :: ivala
+   integer                                         :: ivalz
+   integer                                         :: iouta
+   integer                                         :: ioutz
+   integer                                         :: narea
+   integer                                         :: nvals
+   integer                                         :: nout
+   real   , dimension(nx,ny,nz,np)                 :: patval
+   real   , dimension(nx,ny,nz)                    :: psum
+   real   , dimension(nx,ny,np)                    :: pfarea
+   !---------------------------------------------------------------------------------------!
 
-   do k = 1,n3
-      do j = 1,n2
-         do i = 1,n1
-            psum(i,j,k) = 0.
-            do ip = 1,n4
-               psum(i,j,k) = psum(i,j,k) + f(i,j,ip) * a(i,j,k,ip)
+   !----- Define the indices for copying in and out. --------------------------------------!
+   narea  = nx * ny * np
+   nvals  = nx * ny * nz * np
+   nout   = nx * ny * nz
+   iareaa = 1
+   iareaz = narea
+   ivala  = iareaz + 1
+   ivalz  = iareaz + nvals
+   iouta  = 1
+   ioutz  = nout
+
+   !----- Copy the patch fraction area to a scratch array. --------------------------------!
+   call atob(narea,iovar(iareaa:iareaz),pfarea)
+   
+   !----- Copy the patch-structured data to a scratch array. ------------------------------!
+   call atob(nvals,iovar(ivala:ivalz),patval)
+
+   !----- Compute the patch weigthed average, including water. ----------------------------!
+   do z = 1,nz
+      do y = 1,ny
+         do x = 1,nx
+            psum(x,y,z) = 0.
+            do p = 1,np
+               psum(x,y,z) = psum(x,y,z) + pfarea(x,y,p) * patval(x,y,z,p)
             end do
          end do
       end do
    end do
 
-   !---------------------------------------------------------------------------------------!
-   !      Copy psum into f, which was passed in as a(1).                                   !
-   !---------------------------------------------------------------------------------------!
-   do k = 1,n3
-      do j = 1,n2
-         do i = 1,n1
-            f(i,j,k) = psum(i,j,k)
-         end do
-      end do
-   end do
+   !----- Copy psum into iovar, which will be used for output. ----------------------------!
+   call atob(nout,psum,iovar(iouta:ioutz))
+
    return
 end subroutine RAMS_comp_patchsum
 !==========================================================================================!
@@ -6954,43 +6746,73 @@ end subroutine RAMS_comp_patchsum
 
 !==========================================================================================!
 !==========================================================================================!
-!      This routine is for quantities that are not defined for water  patches.             !
+!      This routine is for quantities that are not defined for water patches.              !
 !------------------------------------------------------------------------------------------!
-subroutine RAMS_comp_patchsum_l(n1,n2,n3,n4,a,f,psum)
-   use somevars, only : mynbig
+subroutine RAMS_comp_patchsum_l(nx,ny,nz,np,iovar)
    implicit none
-   integer, intent(in) :: n1,n2,n3,n4
-   real   , dimension(n1,n2,n3,n4) , intent(in)    :: a
-   real   , dimension(n1,n2,mynbig), intent(inout) :: f
-   real   , dimension(n1,n2,n3)    , intent(out)   :: psum
-   integer                                         :: i,j,k,ip
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                         , intent(in)    :: nx
+   integer                         , intent(in)    :: ny
+   integer                         , intent(in)    :: nz
+   integer                         , intent(in)    :: np
+   real   , dimension(*)           , intent(inout) :: iovar
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                         :: x
+   integer                                         :: y
+   integer                                         :: z
+   integer                                         :: p
+   integer                                         :: iareaa
+   integer                                         :: iareaz
+   integer                                         :: ivala
+   integer                                         :: ivalz
+   integer                                         :: iouta
+   integer                                         :: ioutz
+   integer                                         :: narea
+   integer                                         :: nvals
+   integer                                         :: nout
+   real   , dimension(nx,ny,nz,np)                 :: patval
+   real   , dimension(nx,ny,nz)                    :: psum
+   real   , dimension(nx,ny,np)                    :: pfarea
+   !---------------------------------------------------------------------------------------!
 
 
-   do k = 1,n3
-      do j = 1,n2
-         do i = 1,n1
-            if (f(i,j,1) < .991) then
-               psum(i,j,k) = 0.
-               do ip = 2,n4
-                  psum(i,j,k) = psum(i,j,k) + f(i,j,ip) * a(i,j,k,ip) / (1. - f(i,j,1))
+   !----- Define the indices for copying in and out. --------------------------------------!
+   narea  = nx * ny * np
+   nvals  = nx * ny * nz * np
+   nout   = nx * ny * nz
+   iareaa = 1
+   iareaz = narea
+   ivala  = iareaz + 1
+   ivalz  = iareaz + nvals
+   iouta  = 1
+   ioutz  = nout
+
+   !----- Copy the patch fraction area to a scratch array. --------------------------------!
+   call atob(narea,iovar(iareaa:iareaz),pfarea)
+   
+   !----- Copy the patch-structured data to a scratch array. ------------------------------!
+   call atob(nvals,iovar(ivala:ivalz),patval)
+
+   !----- Compute the patch weigthed average, excluding water. ----------------------------!
+   do z = 1,nz
+      do y = 1,ny
+         do x = 1,nx
+            if (pfarea(x,y,1) < .991) then
+               psum(x,y,z) = 0.
+               do p = 2,np
+                  psum(x,y,z) = psum(x,y,z) + pfarea(x,y,p) * patval(x,y,z,p)              &
+                                            / (1. - pfarea(x,y,1))
                end do
             else
-               psum(i,j,k) = a(i,j,k,2)
+               psum(x,y,z) = patval(x,y,z,2)
             end if
          end do
       end do
    end do
 
-   !---------------------------------------------------------------------------------------!
-   !      Copy psum into f, which was passed in as a(1).                                   !
-   !---------------------------------------------------------------------------------------!
-   do k = 1,n3
-      do j = 1,n2
-         do i = 1,n1
-            f(i,j,k) = psum(i,j,k)
-         end do
-      end do
-   end do
+   !----- Copy psum into iovar, which will be used for output. ----------------------------!
+   call atob(nout,psum,iovar(iouta:ioutz))
+
    return
 end subroutine RAMS_comp_patchsum_l
 !==========================================================================================!
@@ -7775,5 +7597,286 @@ subroutine seaprs_0(t,pp,ter,sfp,ts,imx,jmx,kx,slp)
 
    return
 end subroutine seaprs_0
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine computes the relative soil moisture.                                 !
+!------------------------------------------------------------------------------------------!
+subroutine RAMS_comp_slmstf(nx,ny,nz,np,inwoutf,soil_text)
+   use soil_coms, only : soil ! ! intent(in)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                     , intent(in)    :: nx
+   integer                     , intent(in)    :: ny
+   integer                     , intent(in)    :: nz
+   integer                     , intent(in)    :: np
+   real, dimension(nx,ny,nz,np), intent(inout) :: inwoutf
+   real, dimension(nx,ny,nz,np), intent(in)    :: soil_text
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                     :: x
+   integer                                     :: y
+   integer                                     :: z
+   integer                                     :: p
+   integer                                     :: nsoil
+   real                                        :: soil_water
+   real                                        :: soil_rmois
+   !---------------------------------------------------------------------------------------!
+   
+   do p=2,np
+      do z=1,nz
+         do y=1,ny
+            do x=1,nx
+               !----- Copy point to temporary variable. -----------------------------------!
+               soil_water = inwoutf(x,y,z,p)
+
+               !----- Find the soil class. ------------------------------------------------!
+               nsoil = nint(soil_text(x,y,z,p))
+
+               select case (nsoil)
+               case (0) ! Water
+                  soil_rmois = 1.
+               case default ! Soil
+                  soil_rmois = (soil_water         - soil(nsoil)%soilcp)                   &
+                             / (soil(nsoil)%slmsts - soil(nsoil)%soilcp)
+               end select
+
+               !----- Copy the result back to the array. ----------------------------------!
+               inwoutf(x,y,z,p) = soil_rmois
+            end do
+         end do
+      end do
+   end do
+
+   return
+end subroutine RAMS_comp_slmstf
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine computes the temperature and liquid fraction given the internal      !
+! energy and water content.                                                                !
+!------------------------------------------------------------------------------------------!
+subroutine RAMS_comp_qwtk(nx,ny,nz,np,inqoutt,inwoutl,soil_text)
+   use rconstants, only : wdns ! ! intent(in)
+   use soil_coms , only : soil ! ! intent(in)
+   use therm_lib , only : qwtk ! ! subroutine
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                     , intent(in)    :: nx
+   integer                     , intent(in)    :: ny
+   integer                     , intent(in)    :: nz
+   integer                     , intent(in)    :: np
+   real, dimension(nx,ny,nz,np), intent(inout) :: inqoutt
+   real, dimension(nx,ny,nz,np), intent(inout) :: inwoutl
+   real, dimension(nx,ny,nz,np), intent(in)    :: soil_text
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                     :: x
+   integer                                     :: y
+   integer                                     :: z
+   integer                                     :: p
+   integer                                     :: nsoil
+   real                                        :: energy
+   real                                        :: water
+   real                                        :: dryhcap
+   real                                        :: temperature
+   real                                        :: fracliq
+   !---------------------------------------------------------------------------------------!
+
+   !----- Loop through all grid points, skipping the water patch. -------------------------!
+   do p=2,np
+      do z=1,nz
+         do y=1,ny
+            do x=1,nx
+               !----- Save variables into temporary places. -------------------------------!
+               energy  = inqoutt(x,y,z,p)
+               water   = inwoutl(x,y,z,p) * wdns
+               nsoil   = nint(soil_text(x,y,z,p))
+               dryhcap = soil(nsoil)%slcpd
+               !----- Compute temperature and liquid water fraction. ----------------------!
+               call qwtk(energy,water,dryhcap,temperature,fracliq)
+               !----- Save in the variables that will be returned. ------------------------!
+               inqoutt(x,y,z,p) = temperature
+               inwoutl(x,y,z,p) = fracliq
+            end do
+         end do
+      end do
+   end do
+
+   return
+end subroutine RAMS_comp_qwtk
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+subroutine RAMS_comp_copysst(nx,ny,nz,inqoutt)
+   use therm_lib , only : qtk  ! ! subroutine
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                    , intent(in)    :: nx
+   integer                    , intent(in)    :: ny
+   integer                    , intent(in)    :: nz
+   real, dimension(nx,ny,nz)  , intent(inout) :: inqoutt
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                    :: x
+   integer                                    :: y
+   integer                                    :: z
+   real                                       :: energy
+   real, dimension(nx,ny)                     :: temperature
+   real                                       :: fracliq
+   !---------------------------------------------------------------------------------------!
+
+   !----- Copy energy and compute the temperature, saving it into a 2-D array. ------------!
+   do y=1,ny
+      do x=1,nx
+         energy = inqoutt(x,y,nz)
+         call qtk(energy,temperature(x,y),fracliq)
+      end do
+   end do
+
+   !----- Copy temperature to the output array. -------------------------------------------!
+   do z=1,nz
+      do y=1,ny
+         do x=1,nx
+            inqoutt(x,y,z) = temperature(x,y)
+         end do
+      end do
+   end do
+
+   return
+end subroutine RAMS_comp_copysst
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+subroutine RAMS_comp_tempC(nx,ny,nz,np,temp)
+   use rconstants, only : t00 ! ! intent(in)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                     , intent(in)    :: nx
+   integer                     , intent(in)    :: ny
+   integer                     , intent(in)    :: nz
+   integer                     , intent(in)    :: np
+   real, dimension(nx,ny,nz,np), intent(inout) :: temp
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                    :: x
+   integer                                    :: y
+   integer                                    :: z
+   integer                                    :: p
+   !---------------------------------------------------------------------------------------!
+
+   do p=1,np
+      do z=1,nz
+         do y=1,ny
+            do x=1,nx
+               temp(x,y,z,p) = temp(x,y,z,p) - t00
+            end do
+         end do
+      end do
+   end do
+   return
+end subroutine RAMS_comp_tempC
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+subroutine RAMS_comp_pvap(nx,ny,nz,pres,inroute)
+   use rconstants, only : ep ! ! intent(in) 
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                     , intent(in)    :: nx
+   integer                     , intent(in)    :: ny
+   integer                     , intent(in)    :: nz
+   real   , dimension(nx,ny,nz), intent(in)    :: pres
+   real   , dimension(nx,ny,nz), intent(inout) :: inroute
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                     :: x
+   integer                                     :: y
+   integer                                     :: z
+   real                                        :: rvap
+   real                                        :: pvap
+   !---------------------------------------------------------------------------------------!
+
+   do x=1,nx
+      do y=1,ny
+         do z=1,nz
+            rvap           = inroute(x,y,z)
+            pvap           = pres(x,y,z) * rvap / (ep + rvap)
+            inroute(x,y,z) = pvap
+         end do
+      end do
+   end do
+
+   return
+end subroutine RAMS_comp_pvap
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+subroutine RAMS_comp_spvol(nx,ny,nz,intouta,pvap,pres)
+   use rconstants, only : ep   & ! intent(in) 
+                        , rdry ! ! intent(in)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                     , intent(in)    :: nx
+   integer                     , intent(in)    :: ny
+   integer                     , intent(in)    :: nz
+   real   , dimension(nx,ny,nz), intent(inout) :: intouta
+   real   , dimension(nx,ny,nz), intent(in)    :: pvap
+   real   , dimension(nx,ny,nz), intent(in)    :: pres
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                     :: x
+   integer                                     :: y
+   integer                                     :: z
+   real                                        :: temp
+   real                                        :: alpha
+   !---------------------------------------------------------------------------------------!
+
+   do z=1,nz
+      do y=1,ny
+         do x=1,nx
+            temp           = intouta(x,y,z)
+            alpha          = rdry * temp /(pres(x,y,z) - (1.-ep) * pvap(x,y,z))
+            intouta(x,y,z) = alpha
+         end do
+      end do
+   end do
+
+   return
+end subroutine RAMS_comp_spvol
 !==========================================================================================!
 !==========================================================================================!

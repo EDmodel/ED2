@@ -252,9 +252,8 @@ subroutine ed_coup_driver()
   !-----------------------------------------------------------------------!
   ! STEP 18: Allocate memory to the integration patch
   !-----------------------------------------------------------------------!
-  if (integration_scheme == 1 .or. integration_scheme == 2) then
-     call initialize_rk4patches(1)
-  end if
+  call initialize_rk4patches(.true.)
+
   do ifm=1,ngrids
      call reset_averaged_vars(edgrid_g(ifm))
   end do

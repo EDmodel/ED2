@@ -117,10 +117,13 @@ subroutine ed_init_atm
                                                    ,csite%can_temp(ipa),csite%can_shv(ipa))
 
               ! Initialize stars
-              csite%tstar(ipa)  = 0.
-              csite%ustar(ipa)  = 0.
-              csite%qstar(ipa)  = 0.
-              csite%cstar(ipa)  = 0.
+              csite%tstar (ipa) = 0.
+              csite%ustar (ipa) = 0.
+              csite%qstar (ipa) = 0.
+              csite%cstar (ipa) = 0.
+              
+              csite%zeta  (ipa) = 0.
+              csite%ribulk(ipa) = 0.
               
               csite%rshort_g(ipa) = 0.0
               csite%rlong_g(ipa) = 0.0
@@ -234,7 +237,7 @@ subroutine ed_init_atm
                       csite%soil_water       (nzg,ipa),  &
                       csite%soil_energy      (nzg,ipa),  &
                       csite%sfcwater_energy(nlsw1,ipa),  &
-                      csite%can_rhos(ipa),  &
+                      csite%can_prss(ipa),  &
                       csite%can_shv(ipa),  &
                       csite%ground_shv(ipa),  &
                       csite%surface_ssh(ipa), surface_temp, surface_fliq)

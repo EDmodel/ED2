@@ -238,6 +238,10 @@ elseif (vnam == 'rstar'          ) then
         vnam2 = '[rstar (g/kg)]           '
 elseif (vnam == 'cstar'          ) then
         vnam2 = '[cstar (umol/mol)]       '
+elseif (vnam == 'zeta'           ) then
+        vnam2 = '[zeta]                   '
+elseif (vnam == 'ribulk'         ) then
+        vnam2 = '[ribulk]                 '
 elseif (vnam == 'veg_fracarea'   ) then
         vnam2 = '[veg_fracarea]           '
 elseif (vnam == 'veg_agb'        ) then
@@ -382,6 +386,14 @@ do k = k1,k2
             elseif (vnam == 'cstar'          ) then
                call plin(nc,j,ipat,3,1.                  &
                   ,leaf%cstar(i1:i2,j,ipat)              &
+                  ,leaf%patch_area(i1:i2,j,ipat))
+            elseif (vnam == 'zeta'           ) then
+               call plin(nc,j,ipat,3,1.                  &
+                  ,leaf%zeta(i1:i2,j,ipat)               &
+                  ,leaf%patch_area(i1:i2,j,ipat))
+            elseif (vnam == 'ribulk'         ) then
+               call plin(nc,j,ipat,3,1.                  &
+                  ,leaf%ribulk(i1:i2,j,ipat)             &
                   ,leaf%patch_area(i1:i2,j,ipat))
             elseif (vnam == 'veg_fracarea'   ) then
                call plin(nc,j,ipat,3,1.               &

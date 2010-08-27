@@ -39,13 +39,13 @@ subroutine copy_nl(copy_type)
   use phenology_coms, only: iphen_scheme,iphenys1,iphenysf,iphenyf1,iphenyff,phenpath,repro_scheme
   use decomp_coms, only: n_decomp_lim, LloydTaylor
   use disturb_coms, only: include_fire, ianth_disturb,   &
-       treefall_disturbance_rate
+       treefall_disturbance_rate, lu_database,plantation_file,lu_rescale_file
   use pft_coms, only: include_these_pft,agri_stock,plantation_stock,pft_1st_check
 
   use ed_misc_coms, only: expnme, runtype, itimez, idatez, imonthz, iyearz,  &
        itimea, idatea, imontha, iyeara, itimeh, idateh, imonthh, iyearh, &
        ifoutput, iclobber, frqfast, &
-       sfilin, ied_init_mode, current_time, ed_inputs_dir,   &
+       sfilin, ied_init_mode, current_time, thsums_database,   &
        end_time, radfrq, integration_scheme, ffilout, idoutput,imoutput,&
        iyoutput, itoutput, dtlsm, &
        frqstate,sfilout,isoutput,iprintpolys,printvars,npvars,pfmtstr,ipmax,ipmin, &
@@ -122,9 +122,12 @@ subroutine copy_nl(copy_type)
      slmstr(1:nzgmax) = nl%slmstr(1:nzgmax)
      stgoff(1:nzgmax) = nl%stgoff(1:nzgmax)
 
-     soil_database = nl%soil_database
-     veg_database = nl%veg_database
-     ed_inputs_dir = trim(nl%ed_inputs_dir)
+     soil_database   = trim(nl%soil_database)
+     veg_database    = trim(nl%veg_database)
+     lu_database     = trim(nl%lu_database)
+     plantation_file = trim(nl%plantation_file)
+     lu_rescale_file = trim(nl%lu_rescale_file)
+     thsums_database = trim(nl%thsums_database)
 
      ed_met_driver_db = trim(nl%ed_met_driver_db)
      soilstate_db = nl%soilstate_db

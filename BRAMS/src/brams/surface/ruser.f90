@@ -354,14 +354,15 @@ end
 !------------------------------------------------------------------------------------------!
 subroutine sfcinit_nofile_user(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,soil_water   &
                               ,soil_energy,soil_text,sfcwater_mass,sfcwater_energy         &
-                              ,sfcwater_depth,ustar,tstar,rstar,cstar,veg_fracarea,veg_agb &
-                              ,veg_lai,veg_tai,veg_rough,veg_height,veg_albedo,patch_area  &
-                              ,patch_rough,patch_wetind,leaf_class,soil_rough              &
-                              ,sfcwater_nlev,stom_resist,ground_rsat,ground_rvap           &
-                              ,ground_temp,ground_fliq,veg_water,veg_hcap,veg_energy       &
-                              ,can_prss,can_theta,can_rvap,can_co2,sensible,evap,transp    &
-                              ,gpp,plresp,resphet,veg_ndvip,veg_ndvic,veg_ndvif,snow_mass  &
-                              ,snow_depth,rvv,prsv,piv,vt2da,vt2db,glat,glon,zot,flpw,rtgt)
+                              ,sfcwater_depth,ustar,tstar,rstar,cstar,zeta,ribulk          &
+                              ,veg_fracarea,veg_agb,veg_lai,veg_tai,veg_rough,veg_height   &
+                              ,veg_albedo,patch_area,patch_rough,patch_wetind,leaf_class   &
+                              ,soil_rough,sfcwater_nlev,stom_resist,ground_rsat            &
+                              ,ground_rvap,ground_temp,ground_fliq,veg_water,veg_hcap      &
+                              ,veg_energy,can_prss,can_theta,can_rvap,can_co2,sensible     &
+                              ,evap,transp,gpp,plresp,resphet,veg_ndvip,veg_ndvic          &
+                              ,veg_ndvif,snow_mass,snow_depth,rvv,prsv,piv,vt2da,vt2db     &
+                              ,glat,glon,zot,flpw,rtgt)
 
    use mem_grid
    use mem_leaf
@@ -380,6 +381,7 @@ subroutine sfcinit_nofile_user(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,so
    real, dimension(mzs,n2,n3,npat), intent(inout) :: sfcwater_mass,sfcwater_energy
    real, dimension(mzs,n2,n3,npat), intent(inout) :: sfcwater_depth
    real, dimension(    n2,n3,npat), intent(inout) :: ustar,tstar,rstar,cstar
+   real, dimension(    n2,n3,npat), intent(inout) :: zeta,ribulk
    real, dimension(    n2,n3,npat), intent(inout) :: veg_fracarea,veg_agb,veg_lai,veg_tai
    real, dimension(    n2,n3,npat), intent(inout) :: veg_rough,veg_height,veg_albedo
    real, dimension(    n2,n3,npat), intent(inout) :: patch_area,patch_rough,patch_wetind

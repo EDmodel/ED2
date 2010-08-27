@@ -267,7 +267,6 @@ rm -fv c34constants.o             c34constants.mod
 rm -fv canopy_air_coms.o          canopy_air_coms.mod
 rm -fv canopy_radiation_coms.o    canopy_radiation_coms.mod
 rm -fv canopy_struct_dynamics.o   canopy_struct_dynamics.mod
-rm -fv canopy_update_euler.o      canopy_update_euler.mod
 rm -fv consts_coms.o              consts_coms.mod
 rm -fv decomp_coms.o              decomp_coms.mod
 rm -fv disturb_coms.o             disturb_coms.mod
@@ -307,6 +306,7 @@ rm -fv growth_balive.o            growth_balive.mod
 rm -fv h5_output.o                h5_output.mod
 rm -fv hdf5_coms.o                hdf5_coms.mod
 rm -fv hdf5_utils.o               hdf5_utils.mod
+rm -fv heun_driver.o              heun_driver.mod 
 rm -fv hydrology_coms.o           hydrology_coms.mod
 rm -fv hydrology_constants.o      hydrology_constants.mod
 rm -fv init_hydro_sites.o         init_hydro_sites.mod
@@ -323,7 +323,7 @@ rm -fv optimiz_coms.o             optimiz_coms.mod
 rm -fv phenology_aux.o            phenology_aux.mod
 rm -fv phenology_coms.o           phenology_coms.mod
 rm -fv phenology_driv.o           phenology_driv.mod
-rm -fv phenology_init.o           phenology_init.mod
+rm -fv phenology_startup.o        phenology_startup.mod
 rm -fv photosyn_driv.o            photosyn_driv.mod
 rm -fv physiology_coms.o          physiology_coms.mod
 rm -fv pft_coms.o                 pft_coms.mod

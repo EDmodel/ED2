@@ -273,7 +273,8 @@ subroutine geonest_nofile(ngra,ngrb)
           , leaf_g(ifm)%sfcwater_mass             , leaf_g(ifm)%sfcwater_energy            &
           , leaf_g(ifm)%sfcwater_depth            , leaf_g(ifm)%ustar                      &
           , leaf_g(ifm)%tstar                     , leaf_g(ifm)%rstar                      &
-          , leaf_g(ifm)%cstar                     , leaf_g(ifm)%veg_fracarea               &
+          , leaf_g(ifm)%cstar                     , leaf_g(ifm)%zeta                       &
+          , leaf_g(ifm)%ribulk                    , leaf_g(ifm)%veg_fracarea               &
           , leaf_g(ifm)%veg_agb                   , leaf_g(ifm)%veg_lai                    &
           , leaf_g(ifm)%veg_tai                   , leaf_g(ifm)%veg_rough                  &
           , leaf_g(ifm)%veg_height                , leaf_g(ifm)%veg_albedo                 &
@@ -424,7 +425,8 @@ subroutine geonest_nofile(ngra,ngrb)
                , leaf_g(ifm)%sfcwater_mass           , leaf_g(ifm)%sfcwater_energy         &
                , leaf_g(ifm)%sfcwater_depth          , leaf_g(ifm)%ustar                   &
                , leaf_g(ifm)%tstar                   , leaf_g(ifm)%rstar                   &
-               , leaf_g(ifm)%cstar                   , leaf_g(ifm)%veg_fracarea            &
+               , leaf_g(ifm)%cstar                   , leaf_g(ifm)%zeta                    &
+               , leaf_g(ifm)%ribulk                  , leaf_g(ifm)%veg_fracarea            &
                , leaf_g(ifm)%veg_agb                 , leaf_g(ifm)%veg_lai                 &
                , leaf_g(ifm)%veg_tai                 , leaf_g(ifm)%veg_rough               &
                , leaf_g(ifm)%veg_height              , leaf_g(ifm)%veg_albedo              &

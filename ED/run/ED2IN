@@ -283,16 +283,37 @@
 
 
 
-!------------------------------------------------------------------------------------------!
-!  Input databases                                                                         !
-!------------------------------------------------------------------------------------------!
 
-   NL%VEG_DATABASE    = '/n/Moorcroft_Lab/Lab/data/ed2_data/oge2OLD/OGE2_'
-   NL%SOIL_DATABASE   = '/n/Moorcroft_Lab/Lab/data/ed2_data/faoOLD/FAO_'
-   NL%ED_INPUTS_DIR   = '/n/Moorcroft_Lab/Lab/data/ed2_data/ed_inputs/'
-                        ! Directory where chd, dgd and glu data are kept.
+   !---------------------------------------------------------------------------------------!
+   !  Input databases                                                                      !
+   !  VEG_DATABASE    - vegetation database, used only to determine the land/water mask.   !
+   !                    Fill with the path and the prefix.                                 !
+   !  SOIL_DATABASE   - soil database, used to determine the soil type.  Fill with the     !
+   !                    path and the prefix.                                               !
+   !  LU_DATABASE     - land-use change disturbance rates database, used only when         !
+   !                    IANTH_DISTURB is set to 1.  Fill with the path and the prefix.     !
+   !  PLANTATION_FILE - plantation fraction file.  In case you don't have such a file or   !
+   !                    you do not want to use it, you must leave this variable empty:     !
+   !                    (NL%PLANTATION_FILE = ''  )                                        !
+   !  LU_RESCALE_FILE - file containing the sought land use fraction for each type.  This  !
+   !                    will change the area of the patches to make sure that the total    !
+   !                    starts matching this file.  This file will be used only when       !
+   !                    RUNTYPE is set to INITIAL, IED_INIT_MODE is 5, and                 !
+   !                    LU_RESCALE_FILE is a valid file.  If you don't want to use this,   !
+   !                    leave it empty (NL%LU_RESCALE_FILE = ''  ).  In the future this    !
+   !                    option will be extended to all IED_INIT_MODE options except 0.     !
+   !  THSUMS_DATABASE - input directory for chd and dgd (not sure for what this is used).  !
+   !---------------------------------------------------------------------------------------!
+   NL%VEG_DATABASE      = '/n/Moorcroft_Lab/Lab/data/ed2_data/oge2OLD/OGE2_'
+   NL%SOIL_DATABASE     = '/n/Moorcroft_Lab/Lab/data/ed2_data/faoOLD/FAO_'
+   NL%LU_DATABASE       = '/n/Moorcroft_Lab/Lab/data/ed2_data/land_use/glu/glu-'
+   NL%PLANTATION_FILE   = ''
+   ! NL%PLANTATION_FILE = '/n/Moorcroft_Lab/Lab/data/ed2_data/land_use/fraction.plantation'
+   NL%LU_RESCALE_FILE   = ''
+   NL%THSUMS_DATABASE   = '/n/Moorcroft_Lab/Lab/data/ed2_data/ed_inputs/'
+   !---------------------------------------------------------------------------------------!
 
-!----- File containing information for meteorological drivers -----------------------------!
+   !----- File containing information for meteorological drivers --------------------------!
    NL%ED_MET_DRIVER_DB = '/n/moorcroft_data/nlevine/southam_shef_driver/SHEF_NCEP_DRIVER_DS340'
 
    !---------------------------------------------------------------------------------------!
@@ -323,10 +344,11 @@
 
    NL%INTEGRATION_SCHEME = 1  ! This determines how the fast time step
                               ! is integrated:
-                              !  0  --  Euler step (not supported)
+                              !  0  --  Euler step
                               !  1  --  Fourth-order Runge Kutta
+                              !  2  --  Heun's method (second-order Runge-Kutta)
 
-   NL%RK4_TOLERANCE  = 0.01   ! This is the relative tolerance for the Runge-Kutta 
+   NL%RK4_TOLERANCE  = 0.01   ! This is the relative tolerance for Runge-Kutta or Heun's
                               !   integration.  Larger numbers will make runs go faster, 
                               !   at the expense of being less accurate.  Currently the 
                               !   valid range is between 1.e-7 and 1.e-1, but recommended

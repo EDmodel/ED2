@@ -64,11 +64,13 @@ module rk4_coms
       real(kind=8)                        :: rough        ! Roughness             [      m]
 
       !----- Characteristic scale. --------------------------------------------------------!
-      real(kind=8)                        :: ustar ! Momentum                     [    m/s]
-      real(kind=8)                        :: cstar ! Carbon mixing ratio          [µmol/m³]
-      real(kind=8)                        :: tstar ! Temperature                  [      K]
-      real(kind=8)                        :: qstar ! Water vapour spec. humidity  [  kg/kg]
-      real(kind=8)                        :: estar ! Enthalpy                     [   J/kg]
+      real(kind=8)                        :: ustar  ! Momentum                    [    m/s]
+      real(kind=8)                        :: cstar  ! Carbon mixing ratio         [µmol/m³]
+      real(kind=8)                        :: tstar  ! Temperature                 [      K]
+      real(kind=8)                        :: qstar  ! Water vapour spec. humidity [  kg/kg]
+      real(kind=8)                        :: estar  ! Enthalpy                    [   J/kg]
+      real(kind=8)                        :: zeta   ! z / Obukhov length          [    ---]
+      real(kind=8)                        :: ribulk ! Bulk Richardson number      [    ---]
 
       !----- Vertical fluxes. -------------------------------------------------------------!
       real(kind=8)                        :: upwp 
@@ -145,7 +147,6 @@ module rk4_coms
       real(kind=8) :: ebudget_loss2atm
       real(kind=8) :: ebudget_loss2drainage
       real(kind=8) :: ebudget_loss2runoff
-      real(kind=8) :: ebudget_latent
       real(kind=8) :: wbudget_storage
       real(kind=8) :: wbudget_loss2atm
       real(kind=8) :: wbudget_loss2drainage
@@ -252,37 +253,48 @@ module rk4_coms
    !     These are all RK4 integrator factors.  These should never be changed, so they are !
    ! declared as parameters and will not be initialised at init_rk4_coms (ed_params.f90)   !
    !---------------------------------------------------------------------------------------!
-   real(kind=8), parameter :: a2  = 2.d-1
-   real(kind=8), parameter :: a3  = 3.d-1
-   real(kind=8), parameter :: a4  = 6.d-1
-   real(kind=8), parameter :: a5  = 1.d0
-   real(kind=8), parameter :: a6  = 8.75d-1
-   real(kind=8), parameter :: b21 = 2.d-1
-   real(kind=8), parameter :: b31 = 3.d0/4.d1
-   real(kind=8), parameter :: b32 = 9.d0/4.d1
-   real(kind=8), parameter :: b41 = 3.d-1
-   real(kind=8), parameter :: b42 = -9.d-1
-   real(kind=8), parameter :: b43 = 1.2d0  
-   real(kind=8), parameter :: b51 = -1.1d1/5.4d1
-   real(kind=8), parameter :: b52 = 2.5d0
-   real(kind=8), parameter :: b53 = -7.d1/2.7d1
-   real(kind=8), parameter :: b54 = 3.5d1/2.7d1
-   real(kind=8), parameter :: b61 = 1.631d3/5.52960d4
-   real(kind=8), parameter :: b62 = 1.750d2/5.120d2
-   real(kind=8), parameter :: b63 = 5.750d2/1.38240d4
-   real(kind=8), parameter :: b64 = 4.42750d4/1.105920d5
-   real(kind=8), parameter :: b65 = 2.530d2/4.0960d3
-   real(kind=8), parameter :: c1  = 3.70d1/3.780d2
-   real(kind=8), parameter :: c3  = 2.500d2/6.210d2
-   real(kind=8), parameter :: c4  = 1.250d2/5.940d2
-   real(kind=8), parameter :: c6  = 5.120d2/1.7710d3
-   real(kind=8), parameter :: dc5 = -2.770d2/1.43360d4
-   real(kind=8), parameter :: dc1 = c1-2.8250d3/2.76480d4
-   real(kind=8), parameter :: dc3 = c3-1.85750d4/4.83840d4
-   real(kind=8), parameter :: dc4 = c4-1.35250d4/5.52960d4
-   real(kind=8), parameter :: dc6 = c6-2.5d-1
+   real(kind=8), parameter :: rk4_a2  = 2.d-1
+   real(kind=8), parameter :: rk4_a3  = 3.d-1
+   real(kind=8), parameter :: rk4_a4  = 6.d-1
+   real(kind=8), parameter :: rk4_a5  = 1.d0
+   real(kind=8), parameter :: rk4_a6  = 8.75d-1
+   real(kind=8), parameter :: rk4_b21 = 2.d-1
+   real(kind=8), parameter :: rk4_b31 = 3.d0/4.d1
+   real(kind=8), parameter :: rk4_b32 = 9.d0/4.d1
+   real(kind=8), parameter :: rk4_b41 = 3.d-1
+   real(kind=8), parameter :: rk4_b42 = -9.d-1
+   real(kind=8), parameter :: rk4_b43 = 1.2d0  
+   real(kind=8), parameter :: rk4_b51 = -1.1d1/5.4d1
+   real(kind=8), parameter :: rk4_b52 = 2.5d0
+   real(kind=8), parameter :: rk4_b53 = -7.d1/2.7d1
+   real(kind=8), parameter :: rk4_b54 = 3.5d1/2.7d1
+   real(kind=8), parameter :: rk4_b61 = 1.631d3/5.52960d4
+   real(kind=8), parameter :: rk4_b62 = 1.750d2/5.120d2
+   real(kind=8), parameter :: rk4_b63 = 5.750d2/1.38240d4
+   real(kind=8), parameter :: rk4_b64 = 4.42750d4/1.105920d5
+   real(kind=8), parameter :: rk4_b65 = 2.530d2/4.0960d3
+   real(kind=8), parameter :: rk4_c1  = 3.70d1/3.780d2
+   real(kind=8), parameter :: rk4_c3  = 2.500d2/6.210d2
+   real(kind=8), parameter :: rk4_c4  = 1.250d2/5.940d2
+   real(kind=8), parameter :: rk4_c6  = 5.120d2/1.7710d3
+   real(kind=8), parameter :: rk4_dc5 = -2.770d2/1.43360d4
+   real(kind=8), parameter :: rk4_dc1 = rk4_c1-2.8250d3/2.76480d4
+   real(kind=8), parameter :: rk4_dc3 = rk4_c3-1.85750d4/4.83840d4
+   real(kind=8), parameter :: rk4_dc4 = rk4_c4-1.35250d4/5.52960d4
+   real(kind=8), parameter :: rk4_dc6 = rk4_c6-2.5d-1
    !---------------------------------------------------------------------------------------!
 
+   !---------------------------------------------------------------------------------------!
+   !     These are all Heun integrator factors.  These should never be changed, so they    !
+   ! are declared as parameters and will not be initialised at init_rk4_coms               !
+   ! (ed_params.f90)                                                                       !
+   !---------------------------------------------------------------------------------------!
+   real(kind=8), parameter :: heun_a2  = 1.d0
+   real(kind=8), parameter :: heun_b21 = 1.d0
+   real(kind=8), parameter :: heun_c1  = 5.d-1
+   real(kind=8), parameter :: heun_c2  = 5.d-1
+   real(kind=8), parameter :: heun_dc1 = heun_c1 - 1.d0
+   real(kind=8), parameter :: heun_dc2 = heun_c2 - 0.d0
    !---------------------------------------------------------------------------------------!
    !     Maybe these could go to ed_params.f90 initialization.  Leaving them here for the  !
    ! time being.                                                                           !
@@ -598,6 +610,9 @@ module rk4_coms
       y%tstar                          = 0.d0
       y%qstar                          = 0.d0
       y%estar                          = 0.d0
+
+      y%zeta                           = 0.d0
+      y%ribulk                         = 0.d0
 
       y%rasveg                         = 0.d0
       y%root_res_fac                   = 0.d0

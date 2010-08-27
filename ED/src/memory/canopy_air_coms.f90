@@ -107,16 +107,17 @@ module canopy_air_coms
    real   :: bbeta       ! Beta 
    real   :: ribmaxod95  ! Maximum bulk Richardson number
    !----- Beljaars and Holtslag (1991) model. ---------------------------------------------!
-   real   :: abh91       ! -a from equation  (28) 
-   real   :: bbh91       ! -b from equation  (28)
+   real   :: abh91       ! -a from equation  (28) and (32)
+   real   :: bbh91       ! -b from equation  (28) and (32)
    real   :: cbh91       !  c from equations (28) and (32)
    real   :: dbh91       !  d from equations (28) and (32)
-   real   :: ebh91       ! -a from equation  (32)
-   real   :: fbh91       ! -b from equation  (32)
+   real   :: ebh91       ! - factor multiplying a*zeta in equation (32)
+   real   :: fbh91       ! exponent in equation (32)
    real   :: cod         ! c/d
    real   :: bcod        ! b*c/d
-   real   :: fcod        ! f*c/d
-   real   :: etf         ! e * f
+   real   :: fm1         ! f-1
+   real   :: ate         ! a * e
+   real   :: atetf       ! a * e * f
    real   :: z0moz0h     ! z0(M)/z0(h)
    real   :: z0hoz0m     ! z0(M)/z0(h)
    real   :: ribmaxbh91  ! Maximum bulk Richardson number
@@ -147,8 +148,9 @@ module canopy_air_coms
    real(kind=8)   :: fbh918
    real(kind=8)   :: cod8
    real(kind=8)   :: bcod8
-   real(kind=8)   :: fcod8
-   real(kind=8)   :: etf8
+   real(kind=8)   :: fm18
+   real(kind=8)   :: ate8
+   real(kind=8)   :: atetf8
    real(kind=8)   :: z0moz0h8
    real(kind=8)   :: z0hoz0m8
    !=======================================================================================!
@@ -264,8 +266,8 @@ module canopy_air_coms
          case (2) !----- Oncley and Dudhia (1995). ----------------------------------------!
             psih = - bbeta * zeta 
          case (3,4) !----- Beljaars and Holtslag (1991). ----------------------------------!
-            psih = 1.0 - (1.0 + etf * zeta)*sqrt(1.0 + etf * zeta)                         &
-                 + fbh91 * (zeta - cod) * exp(max(-38.,-dbh91 * zeta)) + fcod
+            psih = 1.0 - (1.0 + ate * zeta)**fbh91                                         &
+                 + bbh91 * (zeta - cod) * exp(max(-38.,-dbh91 * zeta)) + bcod
          end select
       else
          !----- Unstable case, both papers use the same expression. -----------------------!
@@ -338,8 +340,8 @@ module canopy_air_coms
          case (2) !----- Oncley and Dudhia (1995). ----------------------------------------!
             psih8 = - bbeta8 * zeta 
          case (3,4) !----- Beljaars and Holtslag (1991). ----------------------------------!
-            psih8 = 1.d0 - (1.d0 + etf8 * zeta)*sqrt(1.d0 + etf8 * zeta)                   &
-                  + fbh918 * (zeta - cod8) * exp(max(-3.8d1,-dbh918 * zeta)) + fcod8
+            psih8 = 1.d0 - (1.d0 + ate8 * zeta)**fbh918                                    &
+                  + bbh918 * (zeta - cod8) * exp(max(-3.8d1,-dbh918 * zeta)) + bcod8
          end select
       else
          !----- Unstable case, both papers use the same expression. -----------------------!
@@ -410,9 +412,9 @@ module canopy_air_coms
          case (2) !----- Oncley and Dudhia (1995). ----------------------------------------!
             dpsihdzeta = - bbeta
          case (3,4) !----- Beljaars and Holtslag (1991). ----------------------------------!
-            dpsihdzeta = -ebh91 * sqrt(1.0 + etf * zeta)                                   &
-                       + fbh91 * (zeta - dbh91 * zeta + cbh91)                             &
-                       * exp(max(-38.,-dbh91 * zeta))
+            dpsihdzeta = - atetf * (1.0 + ate * zeta)**fm1                                 &
+                         + bbh91 * (1.0 - dbh91 * zeta + cbh91)                            &
+                         * exp(max(-38.,-dbh91 * zeta))
          end select
       else
          !----- Unstable case, both papers use the same expression. -----------------------!
@@ -449,12 +451,12 @@ module canopy_air_coms
             dpsimdzeta8 = - bbeta8
          case (3,4) !----- Beljaars and Holtslag (1991). ----------------------------------!
             dpsimdzeta8 = abh918                                                           &
-                           + bbh918 * (1.d0 - dbh918 * zeta + cbh918)                      &
-                           * exp(max(-3.8d1,-dbh918 * zeta))
+                        + bbh918 * (1.d0 - dbh918 * zeta + cbh918)                         &
+                        * exp(max(-3.8d1,-dbh918 * zeta))
          end select
       else
          !----- Unstable case, both papers use the same expression. -----------------------!
-         xx         = sqrt(sqrt(1.d0 - gamm8 * zeta))
+         xx          = sqrt(sqrt(1.d0 - gamm8 * zeta))
          dpsimdzeta8 = - gamm8 / (xx * (1.d0+xx) * (1.d0 + xx*xx)) 
       end if
       return
@@ -485,9 +487,9 @@ module canopy_air_coms
          case (2) !----- Oncley and Dudhia (1995). ----------------------------------------!
             dpsihdzeta8 = - bbeta8
          case (3,4) !----- Beljaars and Holtslag (1991). ----------------------------------!
-            dpsihdzeta8 = -ebh918 * sqrt(1.d0 + etf8 * zeta)                               &
-                        + fbh918 * (zeta - dbh918 * zeta + cbh918)                         &
-                        * exp(max(-3.8d1,-dbh918 * zeta))
+            dpsihdzeta8 = - atetf8 * (1.d0 + ate8 * zeta)**fm18                            &
+                          + bbh918 * (1.d0 - dbh918 * zeta + cbh918)                       &
+                          * exp(max(-3.8d1,-dbh918 * zeta))
          end select
       else
          !----- Unstable case, both papers use the same expression. -----------------------!

@@ -222,8 +222,10 @@ subroutine ed_coup_model(ifm)
    select case (integration_scheme)
    case (0)
       call euler_timestep(edgrid_g(ifm))
-   case (1,2)
+   case (1)
       call rk4_timestep(edgrid_g(ifm),ifm)
+   case (2)
+      call heun_timestep(edgrid_g(ifm))
    end select
 
    !---------------------------------------------------------------------------------------!
@@ -346,10 +348,8 @@ subroutine ed_coup_model(ifm)
          if (new_month .and. (maxpatch >= 0 .or. maxcohort >= 0)) then
             call filltab_alltypes
 
-            !---- Also, we must re-allocate integration buffer if RK4 is being used. ------!
-            if (integration_scheme == 1 .or. integration_scheme == 2) then
-               call initialize_rk4patches(0)
-            end if
+            !---- Also, we must re-allocate the cohort-level integration buffer. ----------!
+            call initialize_rk4patches(.false.)
          end if
       end if
 

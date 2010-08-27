@@ -64,7 +64,15 @@ Module ed_misc_coms
   character(len=str_len) ::sfilout
   integer :: ied_init_mode
   
-  character(len=str_len) :: ed_inputs_dir
+  character(len=str_len) :: thsums_database
+
+  !----------------------------------------------------------------------------------------!
+  !    Maximum distance to the current polygon that we still consider the file grid point  !
+  ! to be representative of the polygon for thermal sums.                                  !
+  !----------------------------------------------------------------------------------------!
+  real    :: max_thsums_dist
+
+
   integer :: integration_scheme
 
 

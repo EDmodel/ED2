@@ -131,7 +131,7 @@ recursive subroutine read_ed_xml_config(filename)
          call getConfigSTRING  ('output_filepath','misc',i,cval,texist)
          if(texist) ffilout = trim(cval)
          call getConfigSTRING  ('input_filepath','misc',i,cval,texist)
-         if(texist) ed_inputs_dir = trim(cval)
+         if(texist) thsums_database = trim(cval)
          call getConfigSTRING  ('history_out_filepath','misc',i,cval,texist)
          if(texist) sfilout = trim(cval)
          call getConfigINT  ('integration_scheme','misc',i,ival,texist)
@@ -637,8 +637,6 @@ recursive subroutine read_ed_xml_config(filename)
         call libxml2f90__ll_selecttag('DOWN','disturbance',i)
         
         !! GENERAL
-        call getConfigINT  ('patch_dynamics','disturbance',i,ival,texist)
-        if(texist) patch_dynamics = ival
         call getConfigREAL  ('min_new_patch_area','disturbance',i,rval,texist)
         if(texist) min_new_patch_area = real(rval)
         call getConfigINT  ('include_fire','disturbance',i,ival,texist)

@@ -136,11 +136,8 @@ subroutine ed_model()
 
    endif
    
-   !    Allocate memory to the integration patch
-
-   if (integration_scheme == 1 .or. integration_scheme == 2) then
-      call initialize_rk4patches(1)
-   end if
+   !    Allocate memory to the integration patch, Euler now utilises the RK4 buffers too.
+   call initialize_rk4patches(.true.)
 
    do ifm=1,ngrids
       call reset_averaged_vars(edgrid_g(ifm))
@@ -186,9 +183,13 @@ subroutine ed_model()
          do ifm=1,ngrids
             call euler_timestep(edgrid_g(ifm))
          end do
-      case (1,2)
+      case (1)
          do ifm=1,ngrids
             call rk4_timestep(edgrid_g(ifm),ifm)
+         end do
+      case (2)
+         do ifm=1,ngrids
+            call heun_timestep(edgrid_g(ifm))
          end do
       end select
       
@@ -301,10 +302,8 @@ subroutine ed_model()
             ! Read new met driver files only if this is the first timestep 
             call read_met_drivers()
             
-            ! Re-allocate integration buffer
-            if (integration_scheme == 1 .or. integration_scheme == 2) then
-               call initialize_rk4patches(0)
-            end if
+            ! Re-allocate integration buffer, even when Euler is called.
+            call initialize_rk4patches(.false.)
          endif
          
       endif

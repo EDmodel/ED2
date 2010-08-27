@@ -48,6 +48,9 @@ subroutine read_ednl(iunit)
                                    , LloydTaylor               ! ! intent(out)
    use disturb_coms         , only : include_fire              & ! intent(out)
                                    , ianth_disturb             & ! intent(out)
+                                   , lu_database               & ! intent(out)
+                                   , plantation_file           & ! intent(out)
+                                   , lu_rescale_file           & ! intent(out)
                                    , treefall_disturbance_rate ! ! intent(out)
    use pft_coms             , only : include_these_pft         & ! intent(out)
                                    , agri_stock                & ! intent(out)
@@ -67,7 +70,7 @@ subroutine read_ednl(iunit)
                                    , unitstate                 & ! intent(out)
                                    , ied_init_mode             & ! intent(out)
                                    , current_time              & ! intent(out)
-                                   , ed_inputs_dir             & ! intent(out)
+                                   , thsums_database           & ! intent(out)
                                    , end_time                  & ! intent(out)
                                    , integration_scheme        & ! intent(out)
                                    , ffilout                   & ! intent(out)
@@ -146,7 +149,8 @@ subroutine read_ednl(iunit)
    !----- Namelist. -----------------------------------------------------------------------!
    namelist /ED2_INFO/  dtlsm,ifoutput,idoutput,imoutput,iyoutput,itoutput,isoutput        &
                        ,attach_metadata,outfast,outstate,ffilout,sfilout,ied_init_mode     &
-                       ,edres,sfilin,veg_database,soil_database,ed_inputs_dir,soilstate_db &
+                       ,edres,sfilin,veg_database,soil_database,lu_database                &
+                       ,plantation_file,lu_rescale_file,thsums_database,soilstate_db       &
                        ,soildepth_db,isoilstateinit,isoildepthflg,isoilbc                  &
                        ,integration_scheme,rk4_tolerance,ibranch_thermo,istoma_scheme      &
                        ,iphen_scheme,repro_scheme,lapse_scheme,crown_mod,decomp_scheme     &
@@ -177,7 +181,10 @@ subroutine read_ednl(iunit)
       write (unit=*,fmt=*) 'sfilin=',sfilin
       write (unit=*,fmt=*) 'veg_database=',veg_database
       write (unit=*,fmt=*) 'soil_database=',soil_database
-      write (unit=*,fmt=*) 'ed_inputs_dir=',ed_inputs_dir
+      write (unit=*,fmt=*) 'lu_database=',lu_database
+      write (unit=*,fmt=*) 'plantation_file=',plantation_file
+      write (unit=*,fmt=*) 'lu_rescale_file=',lu_rescale_file
+      write (unit=*,fmt=*) 'thsums_database=',thsums_database
       write (unit=*,fmt=*) 'soilstate_db=',soilstate_db
       write (unit=*,fmt=*) 'soildepth_db=',soildepth_db
       write (unit=*,fmt=*) 'isoilstateinit=',isoilstateinit

@@ -106,7 +106,10 @@ Module ename_coms
 
       character(len=str_len) :: soil_database    = '/nowhere/X'
       character(len=str_len) :: veg_database     = '/nowhere/X'
-      character(len=str_len) :: ed_inputs_dir    = '/nowhere/X'
+      character(len=str_len) :: lu_database      = '/nowhere/X'
+      character(len=str_len) :: plantation_file  = '/nowhere/X'
+      character(len=str_len) :: lu_rescale_file  = '/nowhere/X'
+      character(len=str_len) :: thsums_database  = '/nowhere/X'
       character(len=str_len) :: ed_met_driver_db = '/nowhere/X'
       character(len=str_len) :: soilstate_db     = '/nowhere/X'
       character(len=str_len) :: soildepth_db     = '/nowhere/'

@@ -89,6 +89,7 @@ subroutine simple_lake_model(time,dtlongest)
    real                     :: can_exner,atm_rhos,can_rhos
    real                     :: water_temp,water_ssh,water_rough
    real                     :: ustar,tstar,estar,qstar,cstar
+   real                     :: zeta,ribulk
    real(kind=8)             :: angle
    real                     :: water_lc,water_ac
    real                     :: sensible_lc,enthalpy_ac
@@ -100,7 +101,7 @@ subroutine simple_lake_model(time,dtlongest)
    real                     :: prev_can_rhos
    real                     :: hcapcan, wcapcan, ccapcan, rdi
    real                     :: sflux_u,sflux_v,sflux_w,sflux_t,sflux_r,sflux_c
-   real                     :: gzotheta, timefac_sst
+   real                     :: timefac_sst
    real                     :: fm
    !----- Local constants -----------------------------------------------------------------!
    real, parameter          :: d0=0.
@@ -369,11 +370,10 @@ subroutine simple_lake_model(time,dtlongest)
             call ed_stars(atm_theta,atm_enthalpy,atm_shv,atm_co2                           &
                          ,can_theta,can_enthalpy,can_shv,can_co2                           &
                          ,geoht,d0,vels,water_rough                                        &
-                         ,ustar,tstar,estar,qstar,cstar,fm)
+                         ,ustar,tstar,estar,qstar,cstar,zeta,ribulk,fm)
 
             
-            gzotheta = grav * geoht / atm_theta
-            sflux_w  = sflux_w + vertical_vel_flux(gzotheta,tstar,ustar)
+            sflux_w  = sflux_w + vertical_vel_flux(zeta,tstar,ustar)
 
             !------------------------------------------------------------------------------!
             !      Finding the resistance, and updating the canopy temperature and         !
@@ -456,6 +456,8 @@ subroutine simple_lake_model(time,dtlongest)
                write(unit=*,fmt='(a,1x,es12.5)') 'QSTAR              : ',qstar
                write(unit=*,fmt='(a,1x,es12.5)') 'CSTAR              : ',cstar
                write(unit=*,fmt='(a,1x,es12.5)') 'ESTAR              : ',estar
+               write(unit=*,fmt='(a,1x,es12.5)') 'ZETA               : ',zeta
+               write(unit=*,fmt='(a,1x,es12.5)') 'RI_BULK            : ',ribulk
                write(unit=*,fmt='(a,1x,es12.5)') 'WATER_LAKE2CAN     : ',water_lc
                write(unit=*,fmt='(a,1x,es12.5)') 'WATER_ATM2CAN      : ',water_ac
                write(unit=*,fmt='(a,1x,es12.5)') 'HEAT_LAKE2CAN      : ',sensible_lc
@@ -492,11 +494,13 @@ subroutine simple_lake_model(time,dtlongest)
          !     Transfer model scalars back to global arrays.                               !
          !---------------------------------------------------------------------------------!
          !----- Stars, converting qstar to rstar ------------------------------------------!
-         wgrid_g(ngrid)%ustar(i,j) = ustar
-         wgrid_g(ngrid)%rstar(i,j) = qstar                                                 &
-                                   / ((1.-atm_shv)*(1. - 0.5*(can_shv+prev_can_shv)))
-         wgrid_g(ngrid)%tstar(i,j) = tstar
-         wgrid_g(ngrid)%cstar(i,j) = cstar
+         wgrid_g(ngrid)%ustar (i,j) = ustar
+         wgrid_g(ngrid)%rstar (i,j) = qstar                                                &
+                                    / ((1.-atm_shv)*(1. - 0.5*(can_shv+prev_can_shv)))
+         wgrid_g(ngrid)%tstar (i,j) = tstar
+         wgrid_g(ngrid)%cstar (i,j) = cstar
+         wgrid_g(ngrid)%zeta  (i,j) = zeta
+         wgrid_g(ngrid)%ribulk(i,j) = ribulk
 
 
 

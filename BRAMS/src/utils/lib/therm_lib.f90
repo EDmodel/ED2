@@ -1582,9 +1582,9 @@ module therm_lib
       ! internal energy of supercooled water.                                              !
       !------------------------------------------------------------------------------------!
       if (tequ <= t3ple) then
-         hpqz2temp = cpi * (enthalpy - qvpr * (cimcp * tequ + alvi   ) - grav * zref)
+         hpqz2temp = cpi * (enthalpy - qvpr * (cimcp * tequ + alvi   )  - grav * zref)
       else
-         hpqz2temp = cpi * (enthalpy - qvpr * (clmcp * tequ + eta3ple) - grav * zref)
+         hpqz2temp = cpi * (enthalpy - qvpr * (clmcp * tequ + eta3ple)  - grav * zref)
       end if
 
       return

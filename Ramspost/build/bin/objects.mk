@@ -35,6 +35,7 @@ OBJECTS =                           \
             rpost_dims.o            \
             rpost_misc.o            \
             rutil.o                 \
+            soil_coms.o             \
             somevars.o              \
             therm_lib.o             \
             tmpname.o               \

@@ -130,6 +130,8 @@ subroutine init_ed_misc_coms
    use ed_max_dims  , only : n_pft               & ! intent(in)
                            , n_dbh               & ! intent(in)
                            , n_age               ! ! intent(in)
+   use consts_coms  , only : erad                & ! intent(in)
+                           , pio180              ! ! intent(in)
    use ed_misc_coms , only : burnin              & ! intent(out)
                            , outputMonth         & ! intent(out)
                            , restart_target_year & ! intent(out)
@@ -138,9 +140,10 @@ subroutine init_ed_misc_coms
                            , dagei               & ! intent(out)
                            , maxdbh              & ! intent(out)
                            , ddbhi               & ! intent(out)
-                           , vary_elev           &
-                           , vary_hyd            &
-                           , vary_rad
+                           , vary_elev           & ! intent(out)
+                           , vary_hyd            & ! intent(out)
+                           , vary_rad            & ! intent(out)
+                           , max_thsums_dist     ! ! intent(out)
    implicit none
 
 
@@ -173,6 +176,13 @@ subroutine init_ed_misc_coms
    !---------------------------------------------------------------------------------------!
    dagei = real(n_age-1) / maxage
    ddbhi = real(n_dbh-1) / maxdbh
+
+   !---------------------------------------------------------------------------------------!
+   !    Maximum distance to the current polygon that we still consider the file grid point !
+   ! to be representative of the polygon.  The value below is 1.25 degree at the Equator.  !
+   !---------------------------------------------------------------------------------------!
+   max_thsums_dist     = 1.25 * erad * pio180
+   !---------------------------------------------------------------------------------------!
 
    return
 end subroutine init_ed_misc_coms
@@ -442,8 +452,9 @@ subroutine init_can_air_params()
                              , fbh91                 & ! intent(out)
                              , cod                   & ! intent(out)
                              , bcod                  & ! intent(out)
-                             , fcod                  & ! intent(out)
-                             , etf                   & ! intent(out)
+                             , fm1                   & ! intent(out)
+                             , ate                   & ! intent(out)
+                             , atetf                 & ! intent(out)
                              , z0moz0h               & ! intent(out)
                              , z0hoz0m               & ! intent(out)
                              , ribmaxbh91            & ! intent(out)
@@ -470,8 +481,9 @@ subroutine init_can_air_params()
                              , fbh918                & ! intent(out)
                              , cod8                  & ! intent(out)
                              , bcod8                 & ! intent(out)
-                             , fcod8                 & ! intent(out)
-                             , etf8                  & ! intent(out)
+                             , fm18                  & ! intent(out)
+                             , ate8                  & ! intent(out)
+                             , atetf8                & ! intent(out)
                              , z0moz0h8              & ! intent(out)
                              , z0hoz0m8              ! ! intent(out)
    implicit none
@@ -533,9 +545,9 @@ subroutine init_can_air_params()
    select case (isfclyrm)
    case (1)
       !----- This is the minimum ustar under stable and unstable conditions. --------------!
-      ustmin    = 0.10
+      ustmin    = 0.025 ! 0.10
       !----- This is the minimum wind scale under stable and unstable conditions. ---------!
-      ubmin     = 0.65
+      ubmin     = 0.25  ! 0.65
    case default
       !----- This is the minimum ustar under stable and unstable conditions. --------------!
       ustmin    = 0.025
@@ -551,23 +563,24 @@ subroutine init_can_air_params()
    bbeta       = 5.0           ! Beta 
    ribmaxod95  = 0.20          ! Maximum bulk Richardson number
    !----- Beljaars and Holtslag (1991) model. ---------------------------------------------!
-   abh91       = -0.70         ! -a from equation  (28) 
-   bbh91       = -0.75         ! -b from equation  (28)
+   abh91       = -1.00         ! -a from equation  (28) and (32)
+   bbh91       = -twothirds    ! -b from equation  (28) and (32)
    cbh91       =  5.0          !  c from equations (28) and (32)
    dbh91       =  0.35         !  d from equations (28) and (32)
-   ebh91       = -1.00         ! -a from equation  (32)
-   fbh91       = -twothirds    ! -b from equation  (32)
+   ebh91       = -twothirds    ! - factor multiplying a*zeta in equation (32)
+   fbh91       =  1.50         ! exponent in equation (32)
    cod         = cbh91/dbh91   ! c/d
    bcod        = bbh91 * cod   ! b*c/d
-   fcod        = fbh91 * cod   ! f*c/d
-   etf         = ebh91 * fbh91 ! e * f
+   fm1         = fbh91 - 1.0   ! f-1
+   ate         = abh91 * ebh91 ! a * e
+   atetf       = ate   * fbh91 ! a * e * f
    z0moz0h     = 1.0           ! z0(M)/z0(h)
    z0hoz0m     = 1. / z0moz0h  ! z0(M)/z0(h)
    ribmaxbh91  = 6.00          ! Maximum bulk Richardson number
    !----- Used by OD95 and BH91. ----------------------------------------------------------!
-   gamm        = 16.0          ! Gamma for momentum.
-   gamh        = 16.0          ! Gamma for heat.
-   tprandtl    = 1.00          ! Turbulent Prandtl number.
+   gamm        = 13.0          ! Gamma for momentum.
+   gamh        = 13.0          ! Gamma for heat.
+   tprandtl    = 0.74          ! Turbulent Prandtl number.
    vkopr       = vonk/tprandtl ! Von Karman / Prandtl number
    !---------------------------------------------------------------------------------------!
 
@@ -609,8 +622,9 @@ subroutine init_can_air_params()
    fbh918                = dble(fbh91               )
    cod8                  = dble(cod                 )
    bcod8                 = dble(bcod                )
-   fcod8                 = dble(fcod                )
-   etf8                  = dble(etf                 )
+   fm18                  = dble(fm1                 )
+   ate8                  = dble(ate                 )
+   atetf8                = dble(atetf               )
    z0moz0h8              = dble(z0moz0h             )
    z0hoz0m8              = dble(z0hoz0m             )
 
@@ -1631,8 +1645,7 @@ end subroutine init_pft_derived_params
 !==========================================================================================!
 subroutine init_disturb_params
 
-   use disturb_coms , only : patch_dynamics           & ! intent(out)
-                           , min_new_patch_area       & ! intent(out)
+   use disturb_coms , only : min_new_patch_area       & ! intent(out)
                            , treefall_hite_threshold  & ! intent(out)
                            , treefall_age_threshold   & ! intent(out)
                            , forestry_on              & ! intent(out)
@@ -1644,12 +1657,14 @@ subroutine init_disturb_params
                            , fire_smoist_threshold    & ! intent(out)
                            , fire_smoist_depth        & ! intent(out)
                            , k_fire_first             & ! intent(out)
-                           , fire_parameter           ! ! intent(out)
-
+                           , fire_parameter           & ! intent(out)
+                           , min_plantation_frac      & ! intent(out)
+                           , max_plantation_dist      ! ! intent(out)
+   use consts_coms  , only : erad                     & ! intent(in)
+                           , pio180                   ! ! intent(in)
    implicit none
    
-   patch_dynamics = 1
-   
+   !----- Minimum area that a patch must have to be created. ------------------------------!
    min_new_patch_area = 0.005
 
    !----- Only trees above this height create a gap when they fall. -----------------------!
@@ -1692,7 +1707,17 @@ subroutine init_disturb_params
 
    !----- Dimensionless parameter controlling speed of fire spread. -----------------------!
    fire_parameter = 1.0
-   
+
+   !----- Minimum plantation fraction to consider the site a plantation. ------------------!
+   min_plantation_frac = 0.125
+
+   !---------------------------------------------------------------------------------------!
+   !    Maximum distance to the current polygon that we still consider the file grid point !
+   ! to be representative of the polygon.  The value below is 1.25 degree at the Equator.  !
+   !---------------------------------------------------------------------------------------!
+   max_plantation_dist = 1.25 * erad * pio180
+   !---------------------------------------------------------------------------------------!
+
    return
 
 end subroutine init_disturb_params
@@ -1930,31 +1955,53 @@ end subroutine init_soil_coms
 !==========================================================================================!
 !==========================================================================================!
 subroutine init_phen_coms
-
-   use phenology_coms,only: retained_carbon_fraction, &
-        theta_crit,dl_tr,st_tr1,st_tr2,phen_a,phen_b,phen_c, &
-        rad_turnover_int, rad_turnover_slope, &
-        vm_tran, vm_slop, vm_amp, vm_min
+   use consts_coms   , only : erad                     & ! intent(in)
+                            , pio180                   ! ! intent(in)
+   use phenology_coms, only : retained_carbon_fraction & ! intent(out)
+                            , theta_crit               & ! intent(out)
+                            , dl_tr                    & ! intent(out)
+                            , st_tr1                   & ! intent(out)
+                            , st_tr2                   & ! intent(out)
+                            , phen_a                   & ! intent(out)
+                            , phen_b                   & ! intent(out)
+                            , phen_c                   & ! intent(out)
+                            , rad_turnover_int         & ! intent(out)
+                            , rad_turnover_slope       & ! intent(out)
+                            , vm_tran                  & ! intent(out)
+                            , vm_slop                  & ! intent(out)
+                            , vm_amp                   & ! intent(out)
+                            , vm_min                   & ! intent(out)
+                            , max_phenology_dist       ! ! intent(out)
 
    implicit none
 
    retained_carbon_fraction = 0.5
-   theta_crit = 0.2
-   dl_tr = 655.0
-   st_tr1 = 284.3
-   st_tr2 = 275.15
+   theta_crit               = 0.2
+   dl_tr                    = 655.0
+   st_tr1                   = 284.3
+   st_tr2                   = 275.15
   
-   phen_a = -68.0   
-   phen_b = 638.0    
-   phen_c = -0.01    
+   phen_a                   = -68.0
+   phen_b                   = 638.0
+   phen_c                   = -0.01
 
-   rad_turnover_int   = -11.3868
-   rad_turnover_slope = 0.0824
+   rad_turnover_int         = -11.3868
+   rad_turnover_slope       = 0.0824
 
-   vm_tran = 9.0
-   vm_slop = 10.0
-   vm_amp = 20.0
-   vm_min = 15.0
+   vm_tran                  = 9.0
+   vm_slop                  = 10.0
+   vm_amp                   = 20.0
+   vm_min                   = 15.0
+
+   !---------------------------------------------------------------------------------------!
+   !     This variable is the maximum distance between the coordinates of a prescribed     !
+   ! phenology file and the actual polygon that we will still consider close enough to be  !
+   ! representative.  If the user wants to run with prescribed phenology and the closest   !
+   ! file is farther away from the polygon than the number below, the simulation will      !
+   ! stop.                                                                                 !
+   !---------------------------------------------------------------------------------------!
+   max_phenology_dist       = 1.25 * erad * pio180
+   !---------------------------------------------------------------------------------------!
 
    return
 end subroutine init_phen_coms
@@ -2079,8 +2126,8 @@ subroutine init_rk4_params()
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
-   !    The following variables control the Runge-Kutta performance.  Think twice before   !
-   ! changing them...                                                                      !
+   !    The following variables control the performance of the Runge-Kutta and Euler       !
+   ! integration schemes. Think twice before changing them...                              !
    !---------------------------------------------------------------------------------------!
    maxstp      = 100000000           ! Maximum number of intermediate steps. 
    rk4eps      = dble(rk4_tolerance) ! The desired accuracy.
@@ -2088,7 +2135,7 @@ subroutine init_rk4_params()
    rk4eps2     = rk4eps**2           ! square of the accuracy
    hmin        = 1.d-7               ! The minimum step size.
    print_diags = .false.             ! Flag to print the diagnostic check.
-   checkbudget = .false.             ! Flag to check CO2, water, and energy budgets every 
+   checkbudget = .true.              ! Flag to check CO2, water, and energy budgets every 
                                      !     time step and stop the run in case any of these 
                                      !     budgets don't close.
    !---------------------------------------------------------------------------------------!

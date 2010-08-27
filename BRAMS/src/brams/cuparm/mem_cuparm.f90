@@ -377,8 +377,9 @@ module mem_cuparm
    subroutine initialize_cuparm(cuparm)
 
       implicit none
-
-      type (cuparm_vars) :: cuparm
+      !----- Arguments. -------------------------------------------------------------------!
+      type (cuparm_vars), intent(inout) :: cuparm
+      !------------------------------------------------------------------------------------!
       if(associated(cuparm%thsrc      ))  cuparm%thsrc      = 0.
       if(associated(cuparm%rtsrc      ))  cuparm%rtsrc      = 0.
       if(associated(cuparm%co2src     ))  cuparm%co2src     = 0.

@@ -70,6 +70,16 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    targetp%can_prss     = reducedpress8(rk4site%atm_prss,rk4site%atm_theta,rk4site%atm_shv &
                                        ,rk4site%geoht,targetp%can_theta,targetp%can_shv    &
                                        ,targetp%can_depth)
+
+   !---------------------------------------------------------------------------------------!
+   !     2½. Recompute the atmospheric enthalpy and temperature right above the canopy     !
+   ! height.  This must be done here to make sure that the enthalpy flux is consistent,    !
+   ! since enthalpy is not conserved with height as the pressure changes.                  !
+   !---------------------------------------------------------------------------------------!
+   rk4site%atm_tmp      = rk4site%atm_theta * (p00i8 * targetp%can_prss) ** rocp8
+   rk4site%atm_enthalpy = ptqz2enthalpy8(targetp%can_prss,rk4site%atm_tmp                  &
+                                        ,rk4site%atm_shv,targetp%can_depth)
+
    !----- 3. Update temperature, enthalpy, and density. -----------------------------------!
    targetp%can_temp     = targetp%can_theta * (p00i8 * targetp%can_prss) ** rocp8
    targetp%can_enthalpy = ptqz2enthalpy8(targetp%can_prss,targetp%can_temp                 &
@@ -94,17 +104,20 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
       targetp%sfcwater_fracliq(k) = dble(sourcesite%sfcwater_fracliq(k,ipa))
    end do
 
-   targetp%ustar = dble(sourcesite%ustar(ipa))
-   targetp%cstar = dble(sourcesite%cstar(ipa))
-   targetp%tstar = dble(sourcesite%tstar(ipa))
-   targetp%qstar = dble(sourcesite%qstar(ipa))
-   targetp%estar = 0.d0
+   targetp%ustar         = dble(sourcesite%ustar (ipa))
+   targetp%cstar         = dble(sourcesite%cstar (ipa))
+   targetp%tstar         = dble(sourcesite%tstar (ipa))
+   targetp%qstar         = dble(sourcesite%qstar (ipa))
+   targetp%estar         = 0.d0
 
-   targetp%upwp = dble(sourcesite%upwp(ipa))
-   targetp%wpwp = dble(sourcesite%wpwp(ipa))
-   targetp%tpwp = dble(sourcesite%tpwp(ipa))
-   targetp%qpwp = dble(sourcesite%qpwp(ipa))
-   targetp%cpwp = dble(sourcesite%cpwp(ipa))
+   targetp%zeta          = dble(sourcesite%zeta  (ipa))
+   targetp%ribulk        = dble(sourcesite%ribulk(ipa))
+
+   targetp%upwp          = dble(sourcesite%upwp  (ipa))
+   targetp%wpwp          = dble(sourcesite%wpwp  (ipa))
+   targetp%tpwp          = dble(sourcesite%tpwp  (ipa))
+   targetp%qpwp          = dble(sourcesite%qpwp  (ipa))
+   targetp%cpwp          = dble(sourcesite%cpwp  (ipa))
 
   
    targetp%nlev_sfcwater = sourcesite%nlev_sfcwater(ipa)
@@ -234,7 +247,6 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
       targetp%ebudget_loss2atm      = 0.d0
       targetp%ebudget_loss2drainage = 0.d0
       targetp%ebudget_loss2runoff   = 0.d0
-      targetp%ebudget_latent        = 0.d0
       targetp%wbudget_loss2atm      = 0.d0
       targetp%wbudget_loss2drainage = 0.d0
       targetp%wbudget_loss2runoff   = 0.d0
@@ -1527,7 +1539,6 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
 
             !----- Updating output flux ---------------------------------------------------!
             initp%avg_vapor_vc    = initp%avg_vapor_vc   - veg_dew * hdidi
-            initp%ebudget_latent  = initp%ebudget_latent - veg_qdew
          end if
 
          !----- Lastly we update leaf temperature and liquid fraction. --------------------!
@@ -1709,14 +1720,6 @@ subroutine print_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
       write(unit=*,fmt=onefmt) 'H2OLOSS2ATM:',errmax,yerr%wbudget_loss2atm                 &
                               ,yscal%wbudget_loss2atm,troublemaker
 
-      errmax = max(errmax                                                                  &
-                  ,abs(yerr%ebudget_latent/yscal%ebudget_latent))
-      troublemaker = large_error(yerr%ebudget_latent                                       &
-                                ,yscal%ebudget_latent)
-      write(unit=*,fmt=onefmt) 'EN_LATENT:',errmax,yerr%ebudget_latent                     &
-                              ,yscal%ebudget_latent,troublemaker
-
-
       errmax = max(errmax,abs( yerr%ebudget_loss2drainage                                  &
                              / yscal%ebudget_loss2drainage))
       troublemaker = large_error(yerr%ebudget_loss2drainage                                &
@@ -1825,8 +1828,8 @@ subroutine print_csiteipa(csite, ipa)
    write (unit=*,fmt='(80a)') ('-',k=1,80)
 
    write (unit=*,fmt='(7(a12,1x))')  '   DIST_TYPE','         AGE','        AREA'          &
-                                   &,'          RH','AVGDAILY_TMP','     SUM_CHD'          &
-                                   &,'     SUM_DGD'
+                                    ,'          RH','AVGDAILY_TMP','     SUM_CHD'          &
+                                    ,'     SUM_DGD'
    write (unit=*,fmt='(i12,1x,6(es12.4,1x))')  csite%dist_type(ipa),csite%age(ipa)         &
          ,csite%area(ipa),csite%rh(ipa),csite%avg_daily_temp(ipa),csite%sum_chd(ipa)       &
          ,csite%sum_dgd(ipa)
@@ -1844,11 +1847,13 @@ subroutine print_csiteipa(csite, ipa)
 
    write (unit=*,fmt='(80a)') ('-',k=1,80)
 
-   write (unit=*,fmt='(7(a12,1x))')  '       USTAR','       QSTAR','       CSTAR'          &
-                                   &,'       TSTAR','     RLONG_G','    RSHORT_G'          &
-                                   &,'     RLONG_S'
-   write (unit=*,fmt='(7(es12.4,1x))') csite%ustar(ipa),csite%qstar(ipa),csite%cstar(ipa)  &
-         ,csite%tstar(ipa),csite%rlong_g(ipa),csite%rshort_g(ipa),csite%rlong_s(ipa)
+   write (unit=*,fmt='(9(a12,1x))')  '       USTAR','       QSTAR','       CSTAR'          &
+                                    ,'       TSTAR','        ZETA','     RI_BULK'          &
+                                    ,'     RLONG_G','    RSHORT_G','     RLONG_S'
+   write (unit=*,fmt='(9(es12.4,1x))') csite%ustar(ipa),csite%qstar(ipa),csite%cstar(ipa)  &
+                                      ,csite%tstar(ipa),csite%zeta(ipa),csite%ribulk(ipa)  &
+                                      ,csite%rlong_g(ipa),csite%rshort_g(ipa)              &
+                                      ,csite%rlong_s(ipa)
 
    write (unit=*,fmt='(80a)') ('-',k=1,80)
 
@@ -1991,9 +1996,11 @@ subroutine print_rk4patch(y,csite,ipa)
 
    write (unit=*,fmt='(80a)') ('-',k=1,80)
 
-   write (unit=*,fmt='(5(a12,1x))')  '       USTAR','       QSTAR','       CSTAR'          &
-                                    ,'       TSTAR','       ESTAR'
-   write (unit=*,fmt='(5(es12.4,1x))') y%ustar,y%qstar,y%cstar,y%tstar,y%estar
+   write (unit=*,fmt='(7(a12,1x))')  '       USTAR','       QSTAR','       CSTAR'          &
+                                    ,'       TSTAR','       ESTAR','        ZETA'          &
+                                    ,'     RI_BULK'
+   write (unit=*,fmt='(7(es12.4,1x))') y%ustar,y%qstar,y%cstar,y%tstar,y%estar,y%zeta      &
+                                      ,y%ribulk
 
    write (unit=*,fmt='(80a)') ('-',k=1,80)
    if (y%virtual_water /= 0.) then

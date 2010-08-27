@@ -22,7 +22,7 @@
 !------------------------------------------------------------------------------------------!
 subroutine leaf_stars(theta_atm,enthalpy_atm,shv_atm,rvap_atm,co2_atm,theta_can            &
                      ,enthalpy_can,shv_can,rvap_can,co2_can,zref,uref,dtll,rough           &
-                     ,ustar,tstar,estar,qstar,rstar,cstar,r_aer)
+                     ,ustar,tstar,estar,qstar,rstar,cstar,zeta,rib,r_aer)
    use mem_leaf  , only : istar      ! ! intent(in)
    use rconstants, only : grav       & ! intent(in)
                         , vonk       & ! intent(in)
@@ -63,6 +63,8 @@ subroutine leaf_stars(theta_atm,enthalpy_atm,shv_atm,rvap_atm,co2_atm,theta_can 
    real, intent(out) :: qstar        ! Specific humidity friction scale         [kg/kg_air]
    real, intent(out) :: rstar        ! Vapour mixing ratio friction scale       [kg/kg_air]
    real, intent(out) :: cstar        ! CO2 mixing ratio                         [ µmol/mol]
+   real, intent(out) :: zeta         ! z/(Obukhov length).                      [      ---]
+   real, intent(out) :: rib          ! Bulk richardson number.                  [      ---]
    real, intent(out) :: r_aer        ! Aerodynamic resistance                   [      s/m]
    !----- Local variables, common to both models. -----------------------------------------!
    logical           :: stable       ! Stable state
@@ -85,7 +87,6 @@ subroutine leaf_stars(theta_atm,enthalpy_atm,shv_atm,rvap_atm,co2_atm,theta_can 
    real              :: ch           ! c coefficient times |Rib|^1/2 for heat.
    real              :: ee           ! (z/z0)^1/3 -1. for eqn. 20 w/o assuming z/z0 >> 1.
    !----- Local variables, used by OD95 and/or BH91. --------------------------------------!
-   real              :: zeta         ! stability parameter, roughly z/(Obukhov length).
    real              :: zeta0m       ! roughness(momentum)/(Obukhov length).
    real              :: zeta0h       ! roughness(heat)/(Obukhov length).
    real              :: ribold       ! Bulk richardson number.
@@ -146,8 +147,11 @@ subroutine leaf_stars(theta_atm,enthalpy_atm,shv_atm,rvap_atm,co2_atm,theta_can 
       ustar = max(ustmin,sqrt(c1 * uref * fm))
       !----- Finding the coefficient to scale the other stars. ----------------------------!
       c3 = c1 * fh / ustar
-
       !------------------------------------------------------------------------------------!
+
+
+      !----- Compute zeta from u* and T* --------------------------------------------------!
+      zeta = grav * vonk * c3 * (theta_atm - theta_can) / (theta_atm * ustar * ustar)
 
 
    case (2,4)
@@ -265,18 +269,17 @@ end subroutine leaf_stars
 !    This routine computes the turbulent fluxes of momentum, heat and moisture from the    !
 ! surface layer using the  Manton-Cotton algebraic surface layer equations.                !
 !------------------------------------------------------------------------------------------!
-subroutine sfclmcv(ustar,tstar,rstar,cstar,vels,vels_pat,ups,vps,gzotheta,patch_area       &
+subroutine sfclmcv(ustar,tstar,rstar,cstar,zeta,vels,vels_pat,ups,vps,patch_area           &
                   ,sflux_u,sflux_v,sflux_w,sflux_t,sflux_r,sflux_c,g_urban)
    use rconstants
    use teb_spm_start , only : teb_spm ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
-   real , intent(in)    :: ustar,tstar,rstar,cstar
-   real , intent(in)    :: vels,vels_pat,ups,vps,gzotheta,patch_area
+   real , intent(in)    :: ustar,tstar,rstar,cstar,zeta
+   real , intent(in)    :: vels,vels_pat,ups,vps,patch_area
    real , intent(inout) :: sflux_u,sflux_v,sflux_w,sflux_t,sflux_r,sflux_c
    real , intent(inout) :: g_urban
    !----- Local variables. ----------------------------------------------------------------!
-   real                 :: zoverl
    real                 :: cosine1,sine1,vtscr,cx,psin
    !----- Local constants. ----------------------------------------------------------------!
    real , parameter     :: wtol = 1.e-20
@@ -298,14 +301,11 @@ subroutine sfclmcv(ustar,tstar,rstar,cstar,vels,vels_pat,ups,vps,gzotheta,patch_
    !----- TEB currently doesn't save CO2, so compute sflux_c outside the if statement. ----!
    sflux_c = sflux_c - cstar * vtscr
 
-
-   !----- Compute the vertical flux. ------------------------------------------------------!
-   zoverl = gzotheta * vonk * tstar / (ustar * ustar)
-
-   if (zoverl < 0.)then
-      cx = zoverl * sqrt(sqrt(1. - 15. * zoverl))
+   !----- Define cx based on the layer stability. -----------------------------------------!
+   if (zeta < 0.)then
+      cx = zeta * sqrt(sqrt(1. - 15. * zeta))
    else
-      cx = zoverl / (1.0 + 4.7 * zoverl)
+      cx = zeta / (1.0 + 4.7 * zeta)
    end if
 
    psin    = sqrt((1.-2.86 * cx) / (1. + cx * (-5.39 + cx * 6.998 )))

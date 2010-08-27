@@ -43,7 +43,6 @@ module leaf_coms
             , atm_prss     & ! pressure at surface                               [      Pa]
             , vels         & ! wind speed at top of surface layer                [       m]
             , vels_pat     & ! vels with patch-dep. ubmin imposed as minimum     [     m/s]
-            , gzotheta     & ! (g*z/theta) at top of surface layer (for Ri#)     [  J/kg/K]
             , pcpgl        & ! precip mass in leaf timestep                      [   kg/m²]
             , qpcpgl       & ! precip energy in leaf timestep                    [    J/m²]
             , dpcpgl       & ! precip depth in leaf timestep                     [       m]
@@ -199,22 +198,23 @@ module leaf_coms
    real, parameter :: bbeta      = 5.0    ! Beta used by Businger et al. (1971)
    real, parameter :: ribmaxod95 = 0.20   ! Maximum bulk Richardson number
    !----- Beljaars and Holtslag (1991) model. ---------------------------------------------!
-   real, parameter :: abh91      = -0.70         ! -a from equation  (28) 
-   real, parameter :: bbh91      = -0.75         ! -b from equation  (28)
-   real, parameter :: cbh91      =  5.0          !  c from equations (28) and (32)
-   real, parameter :: dbh91      =  0.35         !  d from equations (28) and (32)
-   real, parameter :: ebh91      = -1.00         ! -a from equation  (32)
-   real, parameter :: fbh91      = -twothirds    ! -b from equation  (32)
-   real, parameter :: cod        = cbh91/dbh91   ! c/d
-   real, parameter :: bcod       = bbh91 * cod   ! b*c/d
-   real, parameter :: fcod       = fbh91 * cod   ! f*c/d
-   real, parameter :: etf        = ebh91 * fbh91 ! e * f
-   real, parameter :: z0moz0h    = 1.0           ! z0(M)/z0(h)
-   real, parameter :: z0hoz0m    = 1. / z0moz0h  ! z0(M)/z0(h)
-   real, parameter :: ribmaxbh91 = 6.00          ! Maximum bulk Richardson number
+   real, parameter :: abh91       = -1.00         ! -a from equation  (28) and (32)
+   real, parameter :: bbh91       = -twothirds    ! -b from equation  (28) and (32)
+   real, parameter :: cbh91       =  5.0          !  c from equations (28) and (32)
+   real, parameter :: dbh91       =  0.35         !  d from equations (28) and (32)
+   real, parameter :: ebh91       = -twothirds    ! the 2/3 factor in equation (32)
+   real, parameter :: fbh91       =  1.50         ! exponent in equation (32)
+   real, parameter :: cod         = cbh91/dbh91   ! c/d
+   real, parameter :: bcod        = bbh91 * cod   ! b*c/d
+   real, parameter :: fm1         = fbh91 - 1.0   ! f-1
+   real, parameter :: ate         = abh91 * ebh91 ! a * e
+   real, parameter :: atetf       = ate   * fbh91 ! a * e * f
+   real, parameter :: z0moz0h     = 1.0           ! z0(M)/z0(h)
+   real, parameter :: z0hoz0m     = 1. / z0moz0h  ! z0(M)/z0(h)
+   real, parameter :: ribmaxbh91  = 6.00          ! Maximum bulk Richardson number
    !----- Used by OD95 and BH91. ----------------------------------------------------------!
-   real, parameter :: gamm       = 16.0   ! Gamma used by Businger et al. (1971) - momentum.
-   real, parameter :: gamh       = 16.0   ! Gamma used by Businger et al. (1971) - heat.
+   real, parameter :: gamm       = 14.0   ! Gamma used by Businger et al. (1971) - momentum.
+   real, parameter :: gamh       = 14.0   ! Gamma used by Businger et al. (1971) - heat.
    real, parameter :: tprandtl   = 1.00   ! Turbulent Prandtl number.
    real, parameter :: vkopr      = vonk/tprandtl ! von Karman / turbulent Prandtl
    !---------------------------------------------------------------------------------------!
@@ -316,7 +316,8 @@ module leaf_coms
          case (2) !----- Oncley and Dudhia (1995). ----------------------------------------!
             psim = - bbeta * zeta 
          case (3,4) !----- Beljaars and Holtslag (1991). ----------------------------------!
-            psim = abh91 * zeta + bbh91 * (zeta - cod) * exp(max(-38.,-dbh91 * zeta))      &
+            psim = abh91 * zeta                                                            &
+                 + bbh91 * (zeta - cod) * exp(max(-38.,-dbh91 * zeta))                     &
                  + bcod
          end select
       else
@@ -354,8 +355,8 @@ module leaf_coms
          case (2) !----- Oncley and Dudhia (1995). ----------------------------------------!
             psih = - bbeta * zeta 
          case (3,4) !----- Beljaars and Holtslag (1991). ----------------------------------!
-            psih = 1.0 - (1.0 + etf * zeta)*sqrt(1.0 + etf * zeta)                         &
-                 + fbh91 * (zeta - cod) * exp(max(-38.,-dbh91 * zeta)) + fcod
+            psih = 1.0 - (1.0 + ate * zeta)**fbh91                                         &
+                 + bbh91 * (zeta - cod) * exp(max(-38.,-dbh91 * zeta)) + bcod
          end select
       else
          !----- Unstable case, both papers use the same expression. -----------------------!
@@ -430,9 +431,9 @@ module leaf_coms
          case (2) !----- Oncley and Dudhia (1995). ----------------------------------------!
             dpsihdzeta = - bbeta
          case (3,4) !----- Beljaars and Holtslag (1991). ----------------------------------!
-            dpsihdzeta = -ebh91 * sqrt(1.0 + etf * zeta)                                   &
-                       + fbh91 * (zeta - dbh91 * zeta + cbh91)                             &
-                       * exp(max(-38.,-dbh91 * zeta))
+            dpsihdzeta = - atetf * (1.0 + ate * zeta)**fm1                                 &
+                         + bbh91 * (1.0 - dbh91 * zeta + cbh91)                            &
+                         * exp(max(-38.,-dbh91 * zeta))
          end select
       else
          !----- Unstable case, both papers use the same expression. -----------------------!
