@@ -716,6 +716,7 @@ subroutine norm_harv_patch(csite,newp)
    csite%sum_dgd(newp)                     = csite%sum_dgd(newp)             * area_fac
    csite%sum_chd(newp)                     = csite%sum_chd(newp)             * area_fac
    csite%can_theta(newp)                   = csite%can_theta(newp)           * area_fac
+   csite%can_theiv(newp)                   = csite%can_theiv(newp)           * area_fac
    csite%can_prss(newp)                    = csite%can_prss(newp)            * area_fac
    csite%can_co2(newp)                     = csite%can_co2(newp)             * area_fac
    csite%can_shv(newp)                     = csite%can_shv(newp)             * area_fac

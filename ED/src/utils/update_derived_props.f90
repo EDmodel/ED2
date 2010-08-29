@@ -177,13 +177,12 @@ end subroutine update_patch_derived_props
 !==========================================================================================!
 !==========================================================================================!
 !      This subroutine will take care of some diagnostic thermodynamic properties, namely  !
-! the canopy air density, enthalpy, and temperature.                                       !
+! the canopy air density and temperature.                                                  !
 !------------------------------------------------------------------------------------------!
 subroutine update_patch_thermo_props(csite,ipaa,ipaz)
   
    use ed_state_vars, only : sitetype      ! ! structure
-   use therm_lib    , only : idealdenssh   & ! function
-                           , ptqz2enthalpy ! ! function
+   use therm_lib    , only : idealdenssh   ! ! function
    use consts_coms  , only : p00i          & ! intent(in)
                            , rocp          & ! intent(in)
                            , t00           ! ! intent(in)
@@ -212,8 +211,6 @@ subroutine update_patch_thermo_props(csite,ipaa,ipaz)
       end if
 
       csite%can_temp(ipa)     = csite%can_theta(ipa) * (p00i * csite%can_prss(ipa)) ** rocp
-      csite%can_enthalpy(ipa) = ptqz2enthalpy(csite%can_prss(ipa),csite%can_temp(ipa)      &
-                                             ,csite%can_shv(ipa),csite%can_depth(ipa))
       csite%can_rhos(ipa)     = idealdenssh(csite%can_prss(ipa),csite%can_temp(ipa)        &
                                            ,csite%can_shv(ipa))
    end do

@@ -28,16 +28,19 @@ module leaf_coms
    real    :: dtll         & ! leaf timestep
             , dtll_factor  & ! leaf timestep factor (leaf timestep / model timestep)
             , dtllowcc     & ! leaf timestep   / (can_depth * can_rhos)
+            , dtllohcc     & ! leaf timestep   / (can_depth * can_rhos * cp * can_temp)
             , dtlloccc     & ! mmdry * leaf timestep   / (can_depth * can_rhos)
 
             , atm_up       & ! U velocity at top of surface layer                [     m/s]
             , atm_vp       & ! V velocity at top of surface layer                [     m/s]
+            , atm_thil     & ! ice-liquid pot. temp. at top of surface layer     [       K]
             , atm_theta    & ! potential temperature at top of surface layer     [       K]
             , atm_temp     & ! temperature at top of surface layer               [       K]
             , atm_rvap     & ! vapor mixing ratio at top of surface layer        [   kg/kg]
+            , atm_rtot     & ! total mixing ratio at top of surface layer        [   kg/kg]
             , atm_shv      & ! specific humidity at top of surface layer         [   kg/kg]
             , atm_co2      & ! CO2 mixing ratio at top of surface layer          [µmol/mol]
-            , atm_enthalpy & ! atmospheric enthalpy                              [    J/kg]
+            , atm_theiv    & ! atmospheric ice-vapour equivalent potential temp. [       K]
             , geoht        & ! height at top of surface layer                    [       m]
             , atm_exner    & ! "Exner" function at surface (Exner/cp)            [     ---]
             , atm_prss     & ! pressure at surface                               [      Pa]
@@ -51,14 +54,15 @@ module leaf_coms
             
             , snowfac      & ! fraction of vegetation height covered by sfcwater [     ---]
             , vf           & ! product of veg_fracarea and (1-snowfac)           [     ---]
+            , can_exner    & ! canopy air Exner function                         [  J/kg/K]
             , can_temp     & ! canopy air temperature                            [       K]
+            , can_lntheiv  & ! canopy air equivalent potential temperature       [     ---]
             , can_rhos     & ! canopy air density                                [   kg/m³]
             , can_shv      & ! canopy air specific humidity                      [   kg/kg]
-            , can_enthalpy & ! canopy air enthalpy                               [    J/kg]
             , can_depth    & ! canopy depth                                      [       m]
             , veg_temp     & ! vegetation temperature                            [       K]
             , veg_fliq     & ! liquid fraction of vegetation surface water       [      --]
-            , estar        & ! enthalpy characteristic friction scale            [    J/kg]
+            , estar        & ! theta_Eiv characteristic friction scale           [       K]
             , qstar        & ! specific humidity characteristic friction scale   [   kg/kg]
             , timefac_sst  & ! time interpolation factor for SST                 [     ---]
             
@@ -154,6 +158,9 @@ module leaf_coms
    real                             :: cmin,corg,cwat,cair,cka,ckw
    !---------------------------------------------------------------------------------------!
 
+   !----- Minimum patch area to consider. -------------------------------------------------!
+   real, parameter :: tiny_parea     = 0.001   
+   !---------------------------------------------------------------------------------------!
 
    !----- Roughness -----------------------------------------------------------------------!
    real, parameter :: z0fac_water    = .016 / grav ! Coefficient before ustar²
@@ -213,9 +220,9 @@ module leaf_coms
    real, parameter :: z0hoz0m     = 1. / z0moz0h  ! z0(M)/z0(h)
    real, parameter :: ribmaxbh91  = 6.00          ! Maximum bulk Richardson number
    !----- Used by OD95 and BH91. ----------------------------------------------------------!
-   real, parameter :: gamm       = 14.0   ! Gamma used by Businger et al. (1971) - momentum.
-   real, parameter :: gamh       = 14.0   ! Gamma used by Businger et al. (1971) - heat.
-   real, parameter :: tprandtl   = 1.00   ! Turbulent Prandtl number.
+   real, parameter :: gamm       = 13.0   ! Gamma used by Businger et al. (1971) - momentum.
+   real, parameter :: gamh       = 13.0   ! Gamma used by Businger et al. (1971) - heat.
+   real, parameter :: tprandtl   = 0.74   ! Turbulent Prandtl number.
    real, parameter :: vkopr      = vonk/tprandtl ! von Karman / turbulent Prandtl
    !---------------------------------------------------------------------------------------!
 

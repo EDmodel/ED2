@@ -213,6 +213,7 @@ subroutine sfcinit_file(n2,n3,mzg,npat,ifm,patch_area,leaf_class,soil_text)
 
 use mem_leaf
 use rconstants
+use leaf_coms, only : tiny_parea
 
 implicit none
 
@@ -228,6 +229,8 @@ real, dimension(n2,n3,npat) :: patch_area,leaf_class
 ! values assigned here may be overridden by (1) interpolation from coarser
 ! grids, (2) specifying new values in subroutine sfcinit_user in the file
 ! ruser.f, or (3) reading data from the standard RAMS datasets.
+
+pctlcon = max(0.,min(pctlcon, 1. - tiny_parea))
 
 do j = 1,n3
    do i = 1,n2
@@ -286,16 +289,17 @@ subroutine sfcinit_nofile(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,seatp,s
                          ,veg_agb,veg_lai,veg_tai,veg_rough,veg_height,veg_albedo          &
                          ,patch_area,patch_rough,patch_wetind,leaf_class,soil_rough        &
                          ,sfcwater_nlev,stom_resist,ground_rsat,ground_rvap,ground_temp    &
-                         ,ground_fliq,veg_water,veg_hcap,veg_energy,can_prss,can_theta     &
-                         ,can_rvap,can_co2,sensible,evap,transp,gpp,plresp,resphet         &
-                         ,veg_ndvip,veg_ndvic,veg_ndvif,snow_mass,snow_depth,rvv,prsv,piv  &
-                         ,vt2da,vt2db,glat,glon,zot,flpw,rtgt)
+                         ,ground_fliq,veg_water,veg_hcap,veg_energy,can_prss,can_theiv     &
+                         ,can_theta,can_rvap,can_co2,sensible,evap,transp,gpp,plresp       &
+                         ,resphet,veg_ndvip,veg_ndvic,veg_ndvif,snow_mass,snow_depth,rvv   &
+                         ,prsv,piv,vt2da,vt2db,glat,glon,zot,flpw,rtgt)
    use mem_grid
    use mem_leaf
    use leaf_coms
    use io_params
    use rconstants
-   use therm_lib , only : reducedpress
+   use therm_lib , only : reducedpress & ! function
+                        , thetaeiv     ! ! function
 
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
@@ -316,7 +320,8 @@ subroutine sfcinit_nofile(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,seatp,s
    real, dimension(    n2,n3,npat), intent(inout) :: ground_rsat,ground_rvap
    real, dimension(    n2,n3,npat), intent(inout) :: ground_temp,ground_fliq
    real, dimension(    n2,n3,npat), intent(inout) :: veg_water,veg_energy,veg_hcap
-   real, dimension(    n2,n3,npat), intent(inout) :: can_prss,can_theta,can_rvap,can_co2
+   real, dimension(    n2,n3,npat), intent(inout) :: can_prss,can_theiv,can_theta
+   real, dimension(    n2,n3,npat), intent(inout) :: can_rvap,can_co2
    real, dimension(    n2,n3,npat), intent(inout) :: sensible,evap,transp
    real, dimension(    n2,n3,npat), intent(inout) :: gpp,plresp,resphet
    real, dimension(    n2,n3,npat), intent(inout) :: veg_ndvip,veg_ndvic,veg_ndvif
@@ -353,12 +358,14 @@ subroutine sfcinit_nofile(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,seatp,s
          !     Canopy properties.  Copy conserved variables from lowest atmospheric grid,  !
          ! and compute pressure and temperature.                                           !
          !---------------------------------------------------------------------------------!
-         can_prss(i,j,1) = reducedpress(prsv(i,j),theta(k2,i,j),atm_shv,geoht              &
-                                       ,theta(k2,i,j),atm_shv,can_depth)
+         can_prss(i,j,1)    = reducedpress(prsv(i,j),theta(k2,i,j),atm_shv,geoht           &
+                                          ,theta(k2,i,j),atm_shv,can_depth)
          can_theta(i,j,1)   = theta(k2,i,j)
          can_rvap(i,j,1)    = rv(k2,i,j)
          can_co2(i,j,1)     = co2p(k2,i,j)
          can_temp           = theta(k2,i,j) * (p00i * can_prss(i,j,1)) ** rocp
+         can_theiv(i,j,1)   = thetaeiv(can_theta(i,j,1),can_prss(i,j,1),can_temp           &
+                                      ,can_rvap(i,j,1),can_rvap(i,j,1),-91)
 
          !----- Water patch, so we set vegetation properties to zero. ---------------------!
          veg_energy(i,j,1)  = 0.0
@@ -438,6 +445,7 @@ subroutine sfcinit_nofile(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,seatp,s
             !----- Canopy air properties.  Initially we just assume same properties. ------!
             can_prss  (i,j,ipat) = can_prss (i,j,1)
             can_theta (i,j,ipat) = can_theta(i,j,1)
+            can_theiv (i,j,ipat) = can_theiv(i,j,1)
             can_rvap  (i,j,ipat) = can_rvap (i,j,1)
             can_co2   (i,j,ipat) = can_co2  (i,j,1)
 

@@ -131,14 +131,15 @@ subroutine radiate(mzp,mxp,myp,ia,iz,ja,jz,mynum)
                   , leaf_g(ngrid)%patch_area           , leaf_g(ngrid)%sfcwater_nlev       &
                   , leaf_g(ngrid)%veg_energy           , leaf_g(ngrid)%veg_water           &
                   , leaf_g(ngrid)%veg_hcap             , leaf_g(ngrid)%can_prss            &
-                  , leaf_g(ngrid)%can_theta            , leaf_g(ngrid)%can_rvap            &
-                  , scratch%vt2da                      , scratch%vt2db                     &
-                  , scratch%vt2dc                      , scratch%vt3dp                     &
-                  , grid_g(ngrid)%glat                 , grid_g(ngrid)%glon                &
-                  , radiate_g(ngrid)%rlongup           , radiate_g(ngrid)%rlong_albedo     &
-                  , radiate_g(ngrid)%albedt            , radiate_g(ngrid)%rshort           &
-                  , radiate_g(ngrid)%rlong             , radiate_g(ngrid)%rshort_top       &
-                  , radiate_g(ngrid)%rshortup_top      , radiate_g(ngrid)%cosz             )
+                  , leaf_g(ngrid)%can_theiv            , leaf_g(ngrid)%can_theta           &
+                  , leaf_g(ngrid)%can_rvap             , scratch%vt2da                     &
+                  , scratch%vt2db                      , scratch%vt2dc                     &
+                  , scratch%vt3dp                      , grid_g(ngrid)%glat                &
+                  , grid_g(ngrid)%glon                 , radiate_g(ngrid)%rlongup          &
+                  , radiate_g(ngrid)%rlong_albedo      , radiate_g(ngrid)%albedt           &
+                  , radiate_g(ngrid)%rshort            , radiate_g(ngrid)%rlong            &
+                  , radiate_g(ngrid)%rshort_top        , radiate_g(ngrid)%rshortup_top     &
+                  , radiate_g(ngrid)%cosz              )
 
       !----- CARMA radiation --------------------------------------------------------------!
       if (ilwrtyp == 4 .or. iswrtyp == 4) then
@@ -485,9 +486,9 @@ end subroutine tend_accum
 subroutine radprep(m2,m3,mzg,mzs,np,ia,iz,ja,jz,iswrtyp,ilwrtyp,soil_water,soil_energy     &
                   ,soil_text,sfcwater_energy,sfcwater_mass,sfcwater_depth,leaf_class       &
                   ,veg_fracarea,veg_height,veg_albedo,patch_area,sfcwater_nlev,veg_energy  &
-                  ,veg_water,veg_hcap,can_prss,can_theta,can_rvap,emis_town,alb_town       &
-                  ,ts_town,g_urban,glat,glon,rlongup,rlong_albedo,albedt,rshort,rlong      &
-                  ,rshort_top,rshortup_top,cosz)
+                  ,veg_water,veg_hcap,can_prss,can_theiv,can_theta,can_rvap,emis_town      &
+                  ,alb_town,ts_town,g_urban,glat,glon,rlongup,rlong_albedo,albedt,rshort   &
+                  ,rlong,rshort_top,rshortup_top,cosz)
   
    use teb_spm_start, only : TEB_SPM
    use mem_leaf     , only : isfcl
@@ -503,7 +504,7 @@ subroutine radprep(m2,m3,mzg,mzs,np,ia,iz,ja,jz,iswrtyp,ilwrtyp,soil_water,soil_
    real, dimension    (m2,m3,np), intent(in)    :: leaf_class,veg_fracarea,veg_height
    real, dimension    (m2,m3,np), intent(in)    :: veg_albedo,patch_area,sfcwater_nlev
    real, dimension    (m2,m3,np), intent(in)    :: veg_energy,veg_water,veg_hcap
-   real, dimension    (m2,m3,np), intent(in)    :: can_prss,can_theta,can_rvap
+   real, dimension    (m2,m3,np), intent(in)    :: can_prss,can_theiv,can_theta,can_rvap
    real, dimension    (m2,m3)   , intent(in)    :: emis_town,alb_town,ts_town
    real, dimension    (m2,m3,np), intent(in)    :: g_urban
    real, dimension    (m2,m3)   , intent(in)    :: glat,glon,rlong_albedo,rshort
@@ -544,12 +545,12 @@ subroutine radprep(m2,m3,mzg,mzs,np,ia,iz,ja,jz,iswrtyp,ilwrtyp,soil_water,soil_
                            , veg_albedo        (i,j,ip)    , sfcwater_nlev     (i,j,ip)    &
                            , veg_energy        (i,j,ip)    , veg_water         (i,j,ip)    &
                            , veg_hcap          (i,j,ip)    , can_prss          (i,j,ip)    &
-                           , can_theta         (i,j,ip)    , can_rvap          (i,j,ip)    &
-                           , rshort            (i,j)       , rlong             (i,j)       &
-                           , albedt            (i,j)       , rlongup           (i,j)       &
-                           , cosz              (i,j)       , g_urban           (i,j,ip)    &
-                           , emis_town         (i,j)       , alb_town          (i,j)       &
-                           , ts_town           (i,j)       )
+                           , can_theiv         (i,j,ip)    , can_theta         (i,j,ip)    &
+                           , can_rvap          (i,j,ip)    , rshort            (i,j)       &
+                           , rlong             (i,j)       , albedt            (i,j)       &
+                           , rlongup           (i,j)       , cosz              (i,j)       &
+                           , g_urban           (i,j,ip)    , emis_town         (i,j)       &
+                           , alb_town          (i,j)       , ts_town           (i,j)       )
             end do
          end do
       end do

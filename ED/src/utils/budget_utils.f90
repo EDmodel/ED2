@@ -45,7 +45,8 @@ end subroutine update_budget
 subroutine compute_budget(csite,lsl,pcpg,qpcpg,ipa,wcurr_loss2atm,ecurr_loss2atm           &
                          ,co2curr_loss2atm,wcurr_loss2drainage,ecurr_loss2drainage         &
                          ,wcurr_loss2runoff,ecurr_loss2runoff,site_area                    &
-                         ,cbudget_nep,old_can_enthalpy,old_can_shv,old_can_co2,old_can_rhos)
+                         ,cbudget_nep,old_can_theiv,old_can_shv,old_can_co2,old_can_rhos   &
+                         ,old_can_temp)
    use ed_state_vars, only : sitetype           ! ! structure
    use ed_misc_coms , only : dtlsm              & ! intent(in)
                            , fast_diagnostics   & ! intent(in)
@@ -54,6 +55,7 @@ subroutine compute_budget(csite,lsl,pcpg,qpcpg,ipa,wcurr_loss2atm,ecurr_loss2atm
    use consts_coms  , only : umol_2_kgC         & ! intent(in)
                            , day_sec            & ! intent(in)
                            , rdry               & ! intent(in)
+                           , cp                 & ! intent(in)
                            , mmdryi             & ! intent(in)
                            , epim1              ! ! intent(in)
    use rk4_coms     , only : rk4eps             & ! intent(in)
@@ -74,10 +76,11 @@ subroutine compute_budget(csite,lsl,pcpg,qpcpg,ipa,wcurr_loss2atm,ecurr_loss2atm
    integer               , intent(in)    :: ipa
    real                  , intent(in)    :: site_area
    real                  , intent(inout) :: cbudget_nep
-   real                  , intent(in)    :: old_can_enthalpy
+   real                  , intent(in)    :: old_can_theiv
    real                  , intent(in)    :: old_can_shv
    real                  , intent(in)    :: old_can_co2
    real                  , intent(in)    :: old_can_rhos
+   real                  , intent(in)    :: old_can_temp
    !----- Local variables -----------------------------------------------------------------!
    real, dimension(n_dbh)                :: gpp_dbh
    real                                  :: co2budget_finalstorage
@@ -109,6 +112,10 @@ subroutine compute_budget(csite,lsl,pcpg,qpcpg,ipa,wcurr_loss2atm,ecurr_loss2atm
    real                                  :: growth_resp
    real                                  :: storage_resp
    real                                  :: vleaf_resp
+   real                                  :: old_can_rhotemp
+   real                                  :: curr_can_rhotemp
+   real                                  :: old_can_lntheiv
+   real                                  :: curr_can_lntheiv
    logical                               :: co2_ok
    logical                               :: energy_ok
    logical                               :: water_ok
@@ -140,12 +147,20 @@ subroutine compute_budget(csite,lsl,pcpg,qpcpg,ipa,wcurr_loss2atm,ecurr_loss2atm
    co2curr_denseffect  = ddens_dt_effect(old_can_rhos,csite%can_rhos(ipa)                  &
                                         ,old_can_co2,csite%can_co2(ipa)                    &
                                         ,csite%can_depth(ipa),mmdryi)
-   ecurr_denseffect    = ddens_dt_effect(old_can_rhos,csite%can_rhos(ipa)                  &
-                                        ,old_can_enthalpy,csite%can_enthalpy(ipa)          &
-                                        ,csite%can_depth(ipa),1.)
    wcurr_denseffect    = ddens_dt_effect(old_can_rhos,csite%can_rhos(ipa)                  &
                                         ,old_can_shv,csite%can_shv(ipa)                    &
                                         ,csite%can_depth(ipa),1.)
+
+   !---------------------------------------------------------------------------------------!
+   !     For enthalpy, we must consider both density and temperature effects.              !
+   !---------------------------------------------------------------------------------------!
+   old_can_rhotemp  = old_can_rhos        * old_can_temp
+   curr_can_rhotemp = csite%can_rhos(ipa) * csite%can_temp(ipa)
+   old_can_lntheiv  = log(old_can_theiv)
+   curr_can_lntheiv = log(csite%can_theiv(ipa))
+   ecurr_denseffect    = ddens_dt_effect(old_can_rhotemp,curr_can_rhotemp                  &
+                                        ,old_can_lntheiv,curr_can_lntheiv                  &
+                                        ,csite%can_depth(ipa),cp)
    !---------------------------------------------------------------------------------------!
    !     Compute the carbon flux components.                                               !
    !---------------------------------------------------------------------------------------!
@@ -529,7 +544,7 @@ real function compute_energy_storage(csite, lsl, ipa)
    !---------------------------------------------------------------------------------------!
    ! 3. Finding and value for canopy air total enthalpy .                                  !
    !---------------------------------------------------------------------------------------!
-   cas_storage = csite%can_rhos(ipa) * csite%can_depth(ipa) * csite%can_enthalpy(ipa)
+   cas_storage = cp * csite%can_rhos(ipa) * csite%can_depth(ipa) * csite%can_theiv(ipa)
 
    !---------------------------------------------------------------------------------------!
    ! 4. Compute the internal energy stored in the plants.                                  !

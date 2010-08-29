@@ -21,14 +21,17 @@ module rk4_coms
    type rk4patchtype
 
       !----- Canopy air variables. --------------------------------------------------------!
-      real(kind=8)                        :: can_enthalpy ! Canopy enthalpy      [    J/kg]
+      real(kind=8)                        :: can_theiv    ! Eq. pot. temperature [       K]
+      real(kind=8)                        :: can_lntheiv  ! Log (theta_eiv)      [     ---]
       real(kind=8)                        :: can_theta    ! Pot. Temperature     [       K]
       real(kind=8)                        :: can_temp     ! Temperature          [       K]
       real(kind=8)                        :: can_shv      ! Specific humidity    [   kg/kg]
+      real(kind=8)                        :: can_rvap     ! Vapour mixing ratio  [   kg/kg]
       real(kind=8)                        :: can_co2      ! CO_2                 [µmol/mol]
       real(kind=8)                        :: can_depth    ! Canopy depth         [       m]
       real(kind=8)                        :: can_rhos     ! Canopy air density   [   kg/m³]
       real(kind=8)                        :: can_prss     ! Pressure             [      Pa]
+      real(kind=8)                        :: can_exner    ! Exner function       [  J/kg/K]
 
       !----- Soil variables. --------------------------------------------------------------!
       real(kind=8), dimension(:), pointer :: soil_energy  ! Internal energy       [   J/m³]
@@ -68,7 +71,7 @@ module rk4_coms
       real(kind=8)                        :: cstar  ! Carbon mixing ratio         [µmol/m³]
       real(kind=8)                        :: tstar  ! Temperature                 [      K]
       real(kind=8)                        :: qstar  ! Water vapour spec. humidity [  kg/kg]
-      real(kind=8)                        :: estar  ! Enthalpy                    [   J/kg]
+      real(kind=8)                        :: estar  ! Eq. potential temperature   [      K]
       real(kind=8)                        :: zeta   ! z / Obukhov length          [    ---]
       real(kind=8)                        :: ribulk ! Bulk Richardson number      [    ---]
 
@@ -166,7 +169,8 @@ module rk4_coms
       real(kind=8)                   :: vels
       real(kind=8)                   :: atm_tmp
       real(kind=8)                   :: atm_theta
-      real(kind=8)                   :: atm_enthalpy
+      real(kind=8)                   :: atm_theiv
+      real(kind=8)                   :: atm_lntheiv
       real(kind=8)                   :: atm_shv
       real(kind=8)                   :: atm_co2
       real(kind=8)                   :: zoff
@@ -187,19 +191,19 @@ module rk4_coms
    ! Structure with all the necessary buffers.                                             !
    !---------------------------------------------------------------------------------------!
    type integration_vars
-      type(rk4patchtype) :: initp   ! The current state
-      type(rk4patchtype) :: dinitp  ! The derivatives
-      type(rk4patchtype) :: yscal   ! The scale for prognostic variables
-      type(rk4patchtype) :: y       ! 
-      type(rk4patchtype) :: dydx    ! 
-      type(rk4patchtype) :: yerr    ! The error for the current guess
-      type(rk4patchtype) :: ytemp   ! Temporary
-      type(rk4patchtype) :: ak2     ! 
-      type(rk4patchtype) :: ak3     !
-      type(rk4patchtype) :: ak4     ! 
-      type(rk4patchtype) :: ak5     ! 
-      type(rk4patchtype) :: ak6     ! 
-      type(rk4patchtype) :: ak7     ! 
+      type(rk4patchtype), pointer :: initp   ! The current state
+      type(rk4patchtype), pointer :: dinitp  ! The derivatives
+      type(rk4patchtype), pointer :: yscal   ! The scale for prognostic variables
+      type(rk4patchtype), pointer :: y       ! 
+      type(rk4patchtype), pointer :: dydx    ! 
+      type(rk4patchtype), pointer :: yerr    ! The error for the current guess
+      type(rk4patchtype), pointer :: ytemp   ! Temporary
+      type(rk4patchtype), pointer :: ak2     ! 
+      type(rk4patchtype), pointer :: ak3     !
+      type(rk4patchtype), pointer :: ak4     ! 
+      type(rk4patchtype), pointer :: ak5     ! 
+      type(rk4patchtype), pointer :: ak6     ! 
+      type(rk4patchtype), pointer :: ak7     ! 
    end type integration_vars
    !---------------------------------------------------------------------------------------!
 
@@ -376,6 +380,8 @@ module rk4_coms
    !---------------------------------------------------------------------------------------!
    real(kind=8) :: rk4min_can_temp      ! Minimum canopy    temperature         [        K]
    real(kind=8) :: rk4max_can_temp      ! Maximum canopy    temperature         [        K]
+   real(kind=8) :: rk4min_can_theiv     ! Minimum canopy    eq. pot. temp.      [        K]
+   real(kind=8) :: rk4max_can_theiv     ! Maximum canopy    eq. pot. temp.      [        K]
    real(kind=8) :: rk4min_can_shv       ! Minimum canopy    specific humidity   [kg/kg_air]
    real(kind=8) :: rk4max_can_shv       ! Maximum canopy    specific humidity   [kg/kg_air]
    real(kind=8) :: rk4max_can_rhv       ! Maximum canopy    relative humidity   [      ---]
@@ -586,13 +592,16 @@ module rk4_coms
       y%wbudget_loss2runoff            = 0.d0
      
       y%can_temp                       = 0.d0
+      y%can_rvap                       = 0.d0
       y%can_shv                        = 0.d0
       y%can_co2                        = 0.d0
       y%can_theta                      = 0.d0
-      y%can_enthalpy                   = 0.d0
+      y%can_theiv                      = 0.d0
+      y%can_lntheiv                    = 0.d0
       y%can_depth                      = 0.d0
       y%can_rhos                       = 0.d0
       y%can_prss                       = 0.d0
+      y%can_exner                      = 0.d0
       y%virtual_water                  = 0.d0
       y%virtual_heat                   = 0.d0
       y%virtual_depth                  = 0.d0

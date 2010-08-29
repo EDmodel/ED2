@@ -483,8 +483,8 @@ module ed_state_vars
      ! Flag specifying whether (1) or not (0) this patch is a plantation
      integer , pointer,dimension(:) :: plantation
 
-     ! Enthalpy (J/kg) of canopy air
-     real , pointer,dimension(:) :: can_enthalpy
+     ! Ice-vapour equivalent potential temperature of canopy air space [K]
+     real , pointer,dimension(:) :: can_theiv
 
      ! Temperature (K) of canopy air
      real , pointer,dimension(:) :: can_temp
@@ -1200,7 +1200,7 @@ module ed_state_vars
      real,pointer,dimension(:) :: avg_can_rhos
      real,pointer,dimension(:) :: avg_can_prss
      real,pointer,dimension(:) :: avg_can_theta
-     real,pointer,dimension(:) :: avg_can_enthalpy
+     real,pointer,dimension(:) :: avg_can_theiv
      real,pointer,dimension(:) :: avg_can_depth
 
      real,pointer,dimension(:,:) :: avg_soil_energy
@@ -1479,7 +1479,7 @@ module ed_state_vars
      real,pointer,dimension(:) :: avg_can_rhos
      real,pointer,dimension(:) :: avg_can_prss
      real,pointer,dimension(:) :: avg_can_theta
-     real,pointer,dimension(:) :: avg_can_enthalpy
+     real,pointer,dimension(:) :: avg_can_theiv
      real,pointer,dimension(:) :: avg_can_depth
 
      real,pointer,dimension(:,:) :: avg_soil_energy
@@ -1625,6 +1625,7 @@ module ed_state_vars
      real, pointer, dimension(:)   :: dmean_can_rhos      ! (npolygons)
      real, pointer, dimension(:)   :: dmean_can_prss      ! (npolygons)
      real, pointer, dimension(:)   :: dmean_can_theta     ! (npolygons)
+     real, pointer, dimension(:)   :: dmean_can_theiv     ! (npolygons)
      real, pointer, dimension(:)   :: dmean_veg_energy    ! (npolygons)
      real, pointer, dimension(:)   :: dmean_veg_water     ! (npolygons)
      real, pointer, dimension(:)   :: dmean_veg_hcap      ! (npolygons)
@@ -1708,6 +1709,7 @@ module ed_state_vars
      real, pointer, dimension(:)   :: mmean_can_rhos      ! (npolygons)
      real, pointer, dimension(:)   :: mmean_can_prss      ! (npolygons)
      real, pointer, dimension(:)   :: mmean_can_theta     ! (npolygons)
+     real, pointer, dimension(:)   :: mmean_can_theiv     ! (npolygons)
      real, pointer, dimension(:)   :: mmean_veg_energy    ! (npolygons)
      real, pointer, dimension(:)   :: mmean_veg_water     ! (npolygons)
      real, pointer, dimension(:)   :: mmean_veg_temp      ! (npolygons)
@@ -1994,7 +1996,7 @@ contains
        allocate(cgrid%avg_can_rhos    (npolygons))
        allocate(cgrid%avg_can_prss    (npolygons))
        allocate(cgrid%avg_can_theta   (npolygons))
-       allocate(cgrid%avg_can_enthalpy(npolygons))
+       allocate(cgrid%avg_can_theiv(npolygons))
        allocate(cgrid%avg_can_depth   (npolygons))
        allocate(cgrid%avg_soil_energy(nzg,npolygons))
        allocate(cgrid%avg_soil_water(nzg,npolygons))
@@ -2135,6 +2137,7 @@ contains
           allocate(cgrid%dmean_can_rhos       (             npolygons))
           allocate(cgrid%dmean_can_prss       (             npolygons))
           allocate(cgrid%dmean_can_theta      (             npolygons))
+          allocate(cgrid%dmean_can_theiv      (             npolygons))
           allocate(cgrid%dmean_veg_energy     (             npolygons))
           allocate(cgrid%dmean_veg_water      (             npolygons))
           allocate(cgrid%dmean_veg_hcap       (             npolygons))
@@ -2191,6 +2194,7 @@ contains
           allocate(cgrid%mmean_can_rhos       (             npolygons))
           allocate(cgrid%mmean_can_prss       (             npolygons))
           allocate(cgrid%mmean_can_theta      (             npolygons))
+          allocate(cgrid%mmean_can_theiv      (             npolygons))
           allocate(cgrid%mmean_veg_energy     (             npolygons))
           allocate(cgrid%mmean_veg_water      (             npolygons))
           allocate(cgrid%mmean_veg_temp       (             npolygons))
@@ -2366,7 +2370,7 @@ contains
     allocate(cpoly%avg_can_rhos            (nsites))
     allocate(cpoly%avg_can_prss            (nsites))
     allocate(cpoly%avg_can_theta           (nsites))
-    allocate(cpoly%avg_can_enthalpy        (nsites))
+    allocate(cpoly%avg_can_theiv           (nsites))
     allocate(cpoly%avg_can_depth           (nsites))
     allocate(cpoly%avg_soil_energy     (nzg,nsites))
     allocate(cpoly%avg_soil_water      (nzg,nsites))
@@ -2462,7 +2466,7 @@ contains
     allocate(csite%sum_dgd(npatches))
     allocate(csite%sum_chd(npatches))
     allocate(csite%plantation(npatches))
-    allocate(csite%can_enthalpy(npatches))
+    allocate(csite%can_theiv(npatches))
     allocate(csite%can_temp(npatches))
     allocate(csite%can_shv(npatches))
     allocate(csite%can_co2(npatches))
@@ -2937,7 +2941,7 @@ contains
        nullify(cgrid%avg_can_rhos            )
        nullify(cgrid%avg_can_prss            )
        nullify(cgrid%avg_can_theta           )
-       nullify(cgrid%avg_can_enthalpy        )
+       nullify(cgrid%avg_can_theiv           )
        nullify(cgrid%avg_can_depth           )
        nullify(cgrid%avg_soil_energy         )
        nullify(cgrid%avg_soil_water          )
@@ -3069,6 +3073,7 @@ contains
        nullify(cgrid%dmean_can_rhos          )
        nullify(cgrid%dmean_can_prss          )
        nullify(cgrid%dmean_can_theta         )
+       nullify(cgrid%dmean_can_theiv         )
        nullify(cgrid%dmean_veg_energy        )
        nullify(cgrid%dmean_veg_water         )
        nullify(cgrid%dmean_veg_hcap          )
@@ -3117,6 +3122,7 @@ contains
        nullify(cgrid%mmean_can_rhos          )
        nullify(cgrid%mmean_can_prss          )
        nullify(cgrid%mmean_can_theta         )
+       nullify(cgrid%mmean_can_theiv         )
        nullify(cgrid%mmean_veg_energy        )
        nullify(cgrid%mmean_veg_water         )
        nullify(cgrid%mmean_veg_hcap          )
@@ -3279,8 +3285,8 @@ contains
     nullify(cpoly%avg_can_rhos  )
     nullify(cpoly%avg_can_prss  )
     nullify(cpoly%avg_can_theta )
-    nullify(cpoly%avg_can_enthalpy)
-    nullify(cpoly%avg_can_depth)
+    nullify(cpoly%avg_can_theiv )
+    nullify(cpoly%avg_can_depth )
     nullify(cpoly%avg_soil_energy)
     nullify(cpoly%avg_soil_water)
     nullify(cpoly%avg_soil_temp )
@@ -3357,7 +3363,7 @@ contains
     nullify(csite%sum_chd)
     nullify(csite%plantation) 
     nullify(csite%cohort_count)
-    nullify(csite%can_enthalpy)
+    nullify(csite%can_theiv)
     nullify(csite%can_temp)
     nullify(csite%can_shv)
     nullify(csite%can_co2)
@@ -3811,7 +3817,7 @@ contains
        if(associated(cgrid%avg_can_rhos            )) deallocate(cgrid%avg_can_rhos            )
        if(associated(cgrid%avg_can_prss            )) deallocate(cgrid%avg_can_prss            )
        if(associated(cgrid%avg_can_theta           )) deallocate(cgrid%avg_can_theta           )
-       if(associated(cgrid%avg_can_enthalpy        )) deallocate(cgrid%avg_can_enthalpy        )
+       if(associated(cgrid%avg_can_theiv           )) deallocate(cgrid%avg_can_theiv           )
        if(associated(cgrid%avg_can_depth           )) deallocate(cgrid%avg_can_depth           )
        if(associated(cgrid%avg_soil_energy         )) deallocate(cgrid%avg_soil_energy         )
        if(associated(cgrid%avg_soil_water          )) deallocate(cgrid%avg_soil_water          )
@@ -3951,6 +3957,7 @@ contains
        if(associated(cgrid%dmean_can_rhos          )) deallocate(cgrid%dmean_can_rhos          )
        if(associated(cgrid%dmean_can_prss          )) deallocate(cgrid%dmean_can_prss          )
        if(associated(cgrid%dmean_can_theta         )) deallocate(cgrid%dmean_can_theta         )
+       if(associated(cgrid%dmean_can_theiv         )) deallocate(cgrid%dmean_can_theiv         )
        if(associated(cgrid%dmean_veg_energy        )) deallocate(cgrid%dmean_veg_energy        )
        if(associated(cgrid%dmean_veg_water         )) deallocate(cgrid%dmean_veg_water         )
        if(associated(cgrid%dmean_veg_hcap          )) deallocate(cgrid%dmean_veg_hcap          )
@@ -4000,6 +4007,7 @@ contains
        if(associated(cgrid%mmean_can_rhos          )) deallocate(cgrid%mmean_can_rhos          )
        if(associated(cgrid%mmean_can_prss          )) deallocate(cgrid%mmean_can_prss          )
        if(associated(cgrid%mmean_can_theta         )) deallocate(cgrid%mmean_can_theta         )
+       if(associated(cgrid%mmean_can_theiv         )) deallocate(cgrid%mmean_can_theiv         )
        if(associated(cgrid%mmean_veg_energy        )) deallocate(cgrid%mmean_veg_energy        )
        if(associated(cgrid%mmean_veg_water         )) deallocate(cgrid%mmean_veg_water         )
        if(associated(cgrid%mmean_veg_hcap          )) deallocate(cgrid%mmean_veg_hcap          )
@@ -4163,7 +4171,7 @@ contains
     if(associated(cpoly%avg_can_rhos                )) deallocate(cpoly%avg_can_rhos                )
     if(associated(cpoly%avg_can_prss                )) deallocate(cpoly%avg_can_prss                )
     if(associated(cpoly%avg_can_theta               )) deallocate(cpoly%avg_can_theta               )
-    if(associated(cpoly%avg_can_enthalpy            )) deallocate(cpoly%avg_can_enthalpy            )
+    if(associated(cpoly%avg_can_theiv               )) deallocate(cpoly%avg_can_theiv               )
     if(associated(cpoly%avg_can_depth               )) deallocate(cpoly%avg_can_depth               )
     if(associated(cpoly%avg_soil_energy             )) deallocate(cpoly%avg_soil_energy             )
     if(associated(cpoly%avg_soil_water              )) deallocate(cpoly%avg_soil_water              )
@@ -4242,7 +4250,7 @@ contains
     if(associated(csite%sum_chd                      )) deallocate(csite%sum_chd                      )
     if(associated(csite%plantation                   )) deallocate(csite%plantation                   )
     if(associated(csite%cohort_count                 )) deallocate(csite%cohort_count                 )
-    if(associated(csite%can_enthalpy                 )) deallocate(csite%can_enthalpy                 )
+    if(associated(csite%can_theiv                    )) deallocate(csite%can_theiv                    )
     if(associated(csite%can_temp                     )) deallocate(csite%can_temp                     )
     if(associated(csite%can_shv                      )) deallocate(csite%can_shv                      )
     if(associated(csite%can_co2                      )) deallocate(csite%can_co2                      )
@@ -4659,7 +4667,7 @@ contains
        cgrid%met(:)%par_diffuse    = large_real
        cgrid%met(:)%atm_tmp        = large_real
        cgrid%met(:)%atm_theta      = large_real
-       cgrid%met(:)%atm_enthalpy   = large_real
+       cgrid%met(:)%atm_theiv      = large_real
        cgrid%met(:)%atm_shv        = large_real
        cgrid%met(:)%theta          = large_real
        cgrid%met(:)%rshort         = large_real
@@ -4684,7 +4692,7 @@ contains
        cgrid%lapse(:)%par_diffuse    = large_real
        cgrid%lapse(:)%atm_tmp        = large_real
        cgrid%lapse(:)%atm_theta      = large_real
-       cgrid%lapse(:)%atm_enthalpy   = large_real
+       cgrid%lapse(:)%atm_theiv      = large_real
        cgrid%lapse(:)%atm_shv        = large_real
        cgrid%lapse(:)%theta          = large_real
        cgrid%lapse(:)%rshort         = large_real
@@ -4748,7 +4756,7 @@ contains
     if(associated(cgrid%avg_can_rhos            )) cgrid%avg_can_rhos             = large_real
     if(associated(cgrid%avg_can_prss            )) cgrid%avg_can_prss             = large_real
     if(associated(cgrid%avg_can_theta           )) cgrid%avg_can_theta            = large_real
-    if(associated(cgrid%avg_can_enthalpy        )) cgrid%avg_can_enthalpy         = large_real
+    if(associated(cgrid%avg_can_theiv           )) cgrid%avg_can_theiv            = large_real
     if(associated(cgrid%avg_can_depth           )) cgrid%avg_can_depth            = large_real
     if(associated(cgrid%avg_soil_energy         )) cgrid%avg_soil_energy          = large_real
     if(associated(cgrid%avg_soil_water          )) cgrid%avg_soil_water           = large_real
@@ -4868,6 +4876,7 @@ contains
     if(associated(cgrid%dmean_can_rhos          )) cgrid%dmean_can_rhos           = large_real
     if(associated(cgrid%dmean_can_prss          )) cgrid%dmean_can_prss           = large_real
     if(associated(cgrid%dmean_can_theta         )) cgrid%dmean_can_theta          = large_real
+    if(associated(cgrid%dmean_can_theiv         )) cgrid%dmean_can_theiv          = large_real
     if(associated(cgrid%dmean_veg_energy        )) cgrid%dmean_veg_energy         = large_real
     if(associated(cgrid%dmean_veg_water         )) cgrid%dmean_veg_water          = large_real
     if(associated(cgrid%dmean_veg_temp          )) cgrid%dmean_veg_temp           = large_real
@@ -4913,6 +4922,7 @@ contains
     if(associated(cgrid%dmean_can_rhos          )) cgrid%dmean_can_rhos           = large_real
     if(associated(cgrid%dmean_can_prss          )) cgrid%dmean_can_prss           = large_real
     if(associated(cgrid%dmean_can_theta         )) cgrid%dmean_can_theta          = large_real
+    if(associated(cgrid%dmean_can_theiv         )) cgrid%dmean_can_theiv          = large_real
     if(associated(cgrid%dmean_veg_energy        )) cgrid%dmean_veg_energy         = large_real
     if(associated(cgrid%dmean_veg_water         )) cgrid%dmean_veg_water          = large_real
     if(associated(cgrid%dmean_veg_hcap          )) cgrid%dmean_veg_hcap           = large_real
@@ -5018,7 +5028,7 @@ contains
        cpoly%met(:)%par_diffuse       = large_real
        cpoly%met(:)%atm_tmp           = large_real
        cpoly%met(:)%atm_theta         = large_real
-       cpoly%met(:)%atm_enthalpy      = large_real
+       cpoly%met(:)%atm_theiv         = large_real
        cpoly%met(:)%atm_shv           = large_real
        cpoly%met(:)%theta             = large_real
        cpoly%met(:)%rshort            = large_real
@@ -5096,7 +5106,7 @@ contains
     if(associated(cpoly%avg_can_rhos                )) cpoly%avg_can_rhos                = large_real
     if(associated(cpoly%avg_can_prss                )) cpoly%avg_can_prss                = large_real
     if(associated(cpoly%avg_can_theta               )) cpoly%avg_can_theta               = large_real
-    if(associated(cpoly%avg_can_enthalpy            )) cpoly%avg_can_enthalpy            = large_real
+    if(associated(cpoly%avg_can_theiv               )) cpoly%avg_can_theiv               = large_real
     if(associated(cpoly%avg_can_depth               )) cpoly%avg_can_depth               = large_real
     if(associated(cpoly%avg_soil_energy             )) cpoly%avg_soil_energy             = large_real
     if(associated(cpoly%avg_soil_water              )) cpoly%avg_soil_water              = large_real
@@ -5171,7 +5181,7 @@ contains
     if(associated(csite%sum_chd                      )) csite%sum_chd                      = large_real
     if(associated(csite%plantation                   )) csite%plantation                   = large_integer ! Integer
     if(associated(csite%cohort_count                 )) csite%cohort_count                 = large_integer ! Integer
-    if(associated(csite%can_enthalpy                 )) csite%can_enthalpy                 = large_real
+    if(associated(csite%can_theiv                    )) csite%can_theiv                    = large_real
     if(associated(csite%can_temp                     )) csite%can_temp                     = large_real
     if(associated(csite%can_shv                      )) csite%can_shv                      = large_real
     if(associated(csite%can_co2                      )) csite%can_co2                      = large_real
@@ -5701,7 +5711,7 @@ contains
     siteout%sum_chd(ipout)            = sitein%sum_chd(ipin)
     siteout%plantation(ipout)         = sitein%plantation(ipin)
     siteout%cohort_count(ipout)       = sitein%cohort_count(ipin)
-    siteout%can_enthalpy(ipout)       = sitein%can_enthalpy(ipin)
+    siteout%can_theiv(ipout)          = sitein%can_theiv(ipin)
     siteout%can_temp(ipout)           = sitein%can_temp(ipin)
     siteout%can_shv(ipout)            = sitein%can_shv(ipin)
     siteout%can_co2(ipout)            = sitein%can_co2(ipin)
@@ -5787,7 +5797,7 @@ contains
     siteout%sum_chd(1:inc)              = pack(sitein%sum_chd,logmask)
     siteout%plantation(1:inc)           = pack(sitein%plantation,logmask)
     siteout%cohort_count(1:inc)         = pack(sitein%cohort_count,logmask)
-    siteout%can_enthalpy(1:inc)         = pack(sitein%can_enthalpy,logmask)
+    siteout%can_theiv(1:inc)            = pack(sitein%can_theiv,logmask)
     siteout%can_temp(1:inc)             = pack(sitein%can_temp,logmask)
     siteout%can_shv(1:inc)              = pack(sitein%can_shv,logmask)
     siteout%can_co2(1:inc)              = pack(sitein%can_co2,logmask)
@@ -8017,11 +8027,11 @@ contains
        call metadata_edio(nvar,igr,'Polygon Average Canopy Air Potential temperature','[K]','NA') 
     endif
     
-    if (associated(cgrid%avg_can_enthalpy)) then
+    if (associated(cgrid%avg_can_theiv)) then
        nvar=nvar+1
-       call vtable_edio_r(cgrid%avg_can_enthalpy(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_CAN_ENTHALPY :11:hist:anal') 
-       call metadata_edio(nvar,igr,'Polygon Average Canopy Air Enthalpy','[J/kg]','NA') 
+       call vtable_edio_r(cgrid%avg_can_theiv(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'AVG_CAN_THEIV :11:hist:anal') 
+       call metadata_edio(nvar,igr,'Polygon Average Canopy Air ice-vapour equiv. pot. temp.','[K]','NA') 
     endif
     
     if (associated(cgrid%avg_can_depth)) then
@@ -8309,6 +8319,13 @@ contains
        call vtable_edio_r(cgrid%dmean_can_theta(1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'DMEAN_CAN_THETA :11:hist:dail') 
        call metadata_edio(nvar,igr,'Daily mean canopy air potential temperature','[K]','ipoly') 
+    end if
+    
+    if(associated(cgrid%dmean_can_theiv)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%dmean_can_theiv(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'DMEAN_CAN_THEIV :11:hist:dail') 
+       call metadata_edio(nvar,igr,'Daily mean canopy air theta_Eiv','[K]','ipoly') 
     end if
     
     if(associated(cgrid%dmean_veg_energy)) then
@@ -8645,6 +8662,13 @@ contains
        call vtable_edio_r(cgrid%mmean_can_theta(1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'MMEAN_CAN_THETA :11:hist:mont') 
        call metadata_edio(nvar,igr,'Monthly mean canopy air potential temperature','[K]','ipoly') 
+    end if
+    
+    if(associated(cgrid%mmean_can_theiv)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%mmean_can_theiv(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'MMEAN_CAN_THEIV :11:hist:mont') 
+       call metadata_edio(nvar,igr,'Monthly mean canopy air theta_Eiv','[K]','ipoly') 
     end if
     
     if(associated(cgrid%mmean_veg_water)) then
@@ -9468,11 +9492,11 @@ contains
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
-    if (associated(csite%can_enthalpy)) then
+    if (associated(csite%can_theiv)) then
        nvar=nvar+1
-         call vtable_edio_r(csite%can_enthalpy(1),nvar,igr,init,csite%paglob_id, &
-         var_len,var_len_global,max_ptrs,'CAN_ENTHALPY :31:hist') 
-       call metadata_edio(nvar,igr,'Canopy air enthalpy','[J/kg]','NA') 
+         call vtable_edio_r(csite%can_theiv(1),nvar,igr,init,csite%paglob_id, &
+         var_len,var_len_global,max_ptrs,'CAN_THEIV :31:hist') 
+       call metadata_edio(nvar,igr,'Canopy air ice-vapour equivalent potential temperature','[K]','NA') 
     endif
 
     if (associated(csite%can_temp)) then

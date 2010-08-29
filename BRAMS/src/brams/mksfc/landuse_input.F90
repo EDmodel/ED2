@@ -108,6 +108,7 @@ subroutine landuse_opqr(n2,n3,mzg,npat,nvegpat  &
 
    use mem_mksfc
    use rconstants
+   use leaf_coms, only : tiny_parea
 
    implicit none
    integer :: n2,n3,mzg,npat,nvegpat
@@ -121,6 +122,7 @@ subroutine landuse_opqr(n2,n3,mzg,npat,nvegpat  &
     
    integer :: i,j
    real :: checksum
+   real :: parea_tot
 
    integer, parameter :: maxdatq=32,nsoil=12
 
@@ -248,25 +250,28 @@ subroutine landuse_opqr(n2,n3,mzg,npat,nvegpat  &
 
             fracwat = float(nwat) / float(npq * npq)
             plpp = (1. - fracwat) / float(npatpixs)
-            patch_area(ir,jr,1) = fracwat
+            patch_area(ir,jr,1) = max(tiny_parea,fracwat)
 
             if (ngrdpix(0,1) .ge. ngrdpix(1,1)) then
                leaf_class(ir,jr,1) = 0.
             else
                leaf_class(ir,jr,1) = 1.
-            endif
+            end if
 
             do ipat = 2,nvegpat+1
                patch_area(ir,jr,ipat) = plpp * float(ngrdpix(ipat,1))
-               
-               !write(6,207) ir,jr,ipat,patch_area(ir,jr,ipat),plpp  &
-               !    ,ngrdpix(ipat,1),npatpixs,fracwat
-               !207 format('pp4',3i5,2f7.3,2i5,f7.3)
-               
+               if (patch_area(ir,jr,ipat) < tiny_parea) patch_area(ir,jr,ipat) = 0.
+            end do
 
-            enddo
-
-         enddo
+            !----- Rescale the patch areas, eliminating those tiny patches. ---------------!
+            parea_tot = 0.
+            do ipat = 1,nvegpat+1
+               parea_tot = parea_tot + patch_area(ir,jr,ipat)
+            end do
+            do ipat = 1,nvegpat+1
+               patch_area(ir,jr,ipat) = patch_area(ir,jr,ipat) / parea_tot
+            end do
+         end do
       enddo
 
    elseif (iaction .eq. 'soil') then
@@ -281,7 +286,7 @@ subroutine landuse_opqr(n2,n3,mzg,npat,nvegpat  &
 
       do jr = 1,n3
          do ir = 1,n2
-            if (patch_area(ir,jr,1) .le. .9999) then
+            if (patch_area(ir,jr,1) < 1.0) then
 
                do idatq = 0,maxdatq
                   do isoil = 1,nsoil
@@ -314,7 +319,7 @@ subroutine landuse_opqr(n2,n3,mzg,npat,nvegpat  &
 
                do ipat = 2,nvegpat+1
 
-                  if (patch_area(ir,jr,ipat) .ge. .0001) then   
+                  if (patch_area(ir,jr,ipat) >= tiny_parea) then   
 
                      datq_pat = nint(leaf_class(ir,jr,ipat))
 
@@ -340,7 +345,6 @@ subroutine landuse_opqr(n2,n3,mzg,npat,nvegpat  &
 
                   endif
                enddo
-
             endif
          enddo
       enddo
@@ -358,7 +362,7 @@ subroutine landuse_opqr(n2,n3,mzg,npat,nvegpat  &
 
       do jr = 1,n3
          do ir = 1,n2
-            if (patch_area(ir,jr,1) .le. .9999) then
+            if (patch_area(ir,jr,1) < 1.0) then
 
                do idatq = 0,maxdatq
                   sumndvi(idatq) = 0.  ! initialize ndvi sum

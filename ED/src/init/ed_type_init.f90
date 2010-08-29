@@ -374,7 +374,7 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
   csite%cpwp  (ip1:ip2) = 0.0
   csite%wpwp  (ip1:ip2) = 0.0
 
-  csite%can_enthalpy(ip1:ip2) = 0.0
+  csite%can_theiv   (ip1:ip2) = 0.0
   csite%can_temp    (ip1:ip2) = 0.0
   csite%can_rhos    (ip1:ip2) = 0.0
   csite%ground_shv  (ip1:ip2) = 0.0

@@ -1904,6 +1904,10 @@ module fuse_fiss_utils
                                      ( csite%can_theta(donp)          * csite%area(donp)   &
                                      + csite%can_theta(recp)          * csite%area(recp) )
 
+      csite%can_theiv(recp)          = newareai *                                          &
+                                     ( csite%can_theiv(donp)          * csite%area(donp)   &
+                                     + csite%can_theiv(recp)          * csite%area(recp) )
+
       csite%can_prss(recp)           = newareai *                                          &
                                      ( csite%can_prss(donp)           * csite%area(donp)   &
                                      + csite%can_prss(recp)           * csite%area(recp) )
@@ -2318,7 +2322,6 @@ module fuse_fiss_utils
       !    We now update the canopy thermodynamic propeties:                               !
       ! + csite%can_temp(recp)                                                             !
       ! + csite%can_rhos(recp)                                                             !
-      ! + csite%can_enthalpy(recp)                                                         !
       !------------------------------------------------------------------------------------!
       call update_patch_thermo_props(csite,recp,recp)
 

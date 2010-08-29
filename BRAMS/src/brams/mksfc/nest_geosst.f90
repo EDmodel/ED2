@@ -285,19 +285,19 @@ subroutine geonest_nofile(ngra,ngrb)
           , leaf_g(ifm)%ground_rvap               , leaf_g(ifm)%ground_temp                &
           , leaf_g(ifm)%ground_fliq               , leaf_g(ifm)%veg_water                  &
           , leaf_g(ifm)%veg_hcap                  , leaf_g(ifm)%veg_energy                 &
-          , leaf_g(ifm)%can_prss                  , leaf_g(ifm)%can_theta                  &
-          , leaf_g(ifm)%can_rvap                  , leaf_g(ifm)%can_co2                    &
-          , leaf_g(ifm)%sensible                  , leaf_g(ifm)%evap                       &
-          , leaf_g(ifm)%transp                    , leaf_g(ifm)%gpp                        &
-          , leaf_g(ifm)%plresp                    , leaf_g(ifm)%resphet                    &
-          , leaf_g(ifm)%veg_ndvip                 , leaf_g(ifm)%veg_ndvic                  &
-          , leaf_g(ifm)%veg_ndvif                 , leaf_g(ifm)%snow_mass                  &
-          , leaf_g(ifm)%snow_depth                , scratch%vt2da                          &
-          , scratch%vt2db                         , scratch%vt2dc                          &
-          , scratch%vt2dd                         , scratch%vt2de                          &
-          , grid_g(ifm)%glat                      , grid_g(ifm)%glon                       &
-          , grid_g(ifm)%topzo                     , grid_g(ifm)%flpw                       &
-          , grid_g(ifm)%rtgt                      )
+          , leaf_g(ifm)%can_prss                  , leaf_g(ifm)%can_theiv                  &
+          , leaf_g(ifm)%can_theta                 , leaf_g(ifm)%can_rvap                   &
+          , leaf_g(ifm)%can_co2                   , leaf_g(ifm)%sensible                   &
+          , leaf_g(ifm)%evap                      , leaf_g(ifm)%transp                     &
+          , leaf_g(ifm)%gpp                       , leaf_g(ifm)%plresp                     &
+          , leaf_g(ifm)%resphet                   , leaf_g(ifm)%veg_ndvip                  &
+          , leaf_g(ifm)%veg_ndvic                 , leaf_g(ifm)%veg_ndvif                  &
+          , leaf_g(ifm)%snow_mass                 , leaf_g(ifm)%snow_depth                 &
+          , scratch%vt2da                         , scratch%vt2db                          &
+          , scratch%vt2dc                         , scratch%vt2dd                          &
+          , scratch%vt2de                         , grid_g(ifm)%glat                       &
+          , grid_g(ifm)%glon                      , grid_g(ifm)%topzo                      &
+          , grid_g(ifm)%flpw                      , grid_g(ifm)%rtgt                       )
 
      ! Assignment section for NOFILE leaf-2 variables
 
@@ -368,6 +368,8 @@ subroutine geonest_nofile(ngra,ngrb)
                          leaf_g(icm)%can_rvap        (ic,jc,ipat)
                     leaf_g(ifm)%can_co2              (i,j,ipat) = &
                          leaf_g(icm)%can_co2         (ic,jc,ipat)
+                    leaf_g(ifm)%can_theiv            (i,j,ipat) = &
+                         leaf_g(icm)%can_theiv       (ic,jc,ipat) 
                     leaf_g(ifm)%can_theta            (i,j,ipat) = &
                          leaf_g(icm)%can_theta       (ic,jc,ipat) 
                     leaf_g(ifm)%can_prss             (i,j,ipat) = &
@@ -437,19 +439,20 @@ subroutine geonest_nofile(ngra,ngrb)
                , leaf_g(ifm)%ground_rvap             , leaf_g(ifm)%ground_temp             &
                , leaf_g(ifm)%ground_fliq             , leaf_g(ifm)%veg_water               &
                , leaf_g(ifm)%veg_hcap                , leaf_g(ifm)%veg_energy              &
-               , leaf_g(ifm)%can_prss                , leaf_g(ifm)%can_theta               &
-               , leaf_g(ifm)%can_rvap                , leaf_g(ifm)%can_co2                 &
-               , leaf_g(ifm)%sensible                , leaf_g(ifm)%evap                    &
-               , leaf_g(ifm)%transp                  , leaf_g(ifm)%gpp                     &
-               , leaf_g(ifm)%plresp                  , leaf_g(ifm)%resphet                 &
-               , leaf_g(ifm)%veg_ndvip               , leaf_g(ifm)%veg_ndvic               &
-               , leaf_g(ifm)%veg_ndvif               , leaf_g(ifm)%snow_mass               &
-               , leaf_g(ifm)%snow_depth              , scratch%vt2da                       &
-               , scratch%vt2db                       , scratch%vt2dc                       &
-               , scratch%vt2dd                       , scratch%vt2de                       &
-               , grid_g(ifm)%glat                    , grid_g(ifm)%glon                    &
-               , grid_g(ifm)%topzo                   , grid_g(ifm)%flpw                    &
-               , grid_g(ifm)%rtgt                    )
+               , leaf_g(ifm)%can_prss                , leaf_g(ifm)%can_theiv               &
+               , leaf_g(ifm)%can_theta               , leaf_g(ifm)%can_rvap                &
+               , leaf_g(ifm)%can_co2                 , leaf_g(ifm)%sensible                &
+               , leaf_g(ifm)%evap                    , leaf_g(ifm)%transp                  &
+               , leaf_g(ifm)%gpp                     , leaf_g(ifm)%plresp                  &
+               , leaf_g(ifm)%resphet                 , leaf_g(ifm)%veg_ndvip               &
+               , leaf_g(ifm)%veg_ndvic               , leaf_g(ifm)%veg_ndvif               &
+               , leaf_g(ifm)%snow_mass               , leaf_g(ifm)%snow_depth              &
+               , scratch%vt2da                       , scratch%vt2db                       &
+               , scratch%vt2dc                       , scratch%vt2dd                       &
+               , scratch%vt2de                       , grid_g(ifm)%glat                    &
+               , grid_g(ifm)%glon                    , grid_g(ifm)%topzo                   &
+               , grid_g(ifm)%flpw                    , grid_g(ifm)%rtgt                    )
+               
   end do
 
   return
@@ -545,37 +548,69 @@ subroutine fmint5(var1,var2,dn0xc,dn0xf,vt2da,ifm,icm,vpnt,idwt)
 
   return
 end subroutine fmint5
+!==========================================================================================!
+!==========================================================================================!
 
 
-!******************************************************************************
 
-subroutine patch_minsize(n2,n3,npat,patch_area)
 
-  implicit none
-  integer :: n2,n3,npat,i,j,ipat,jpat
 
-  real :: orig_size
-  real, dimension(n2,n3,npat) :: patch_area
 
-  do j = 1,n3
-     do i = 1,n2
-        do ipat = 2,npat
-           if (patch_area(i,j,ipat) > 0. .and. patch_area(i,j,ipat) < .01) then
-              orig_size = patch_area(i,j,ipat)
-              patch_area(i,j,ipat) = 0.
-              do jpat = 1,npat
-                 if (jpat /= ipat) then
-                    patch_area(i,j,jpat) = patch_area(i,j,jpat) / (1. - orig_size)
-                 endif
-              end do
-           end if
-        end do
-     end do
-  end do
+!==========================================================================================!
+!==========================================================================================!
+subroutine patch_minsize(nx,ny,np,patch_area)
+   use leaf_coms, only : tiny_parea ! ! intent(in)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                  , intent(in)    :: nx
+   integer                  , intent(in)    :: ny
+   integer                  , intent(in)    :: np
+   real, dimension(nx,ny,np), intent(inout) :: patch_area
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                  :: x,y,p
+   real                                     :: parea_tot
+   !---------------------------------------------------------------------------------------!
 
-  return
+   yloop: do y=1,ny
+      xloop: do x=1,nx
+         !----- First ensure that the water patch has at least 0.1% of the area. ----------!
+         if (patch_area(x,y,1) < tiny_parea) patch_area(x,y,1) = tiny_parea
+
+         !---------------------------------------------------------------------------------!
+         !     Then we loop over the other patches, eliminating those that are tiny or     !
+         ! make no sense.                                                                  !
+         !---------------------------------------------------------------------------------!
+         parea_tot = patch_area(x,y,1)
+         elimploop: do p=2,np
+            if (patch_area(x,y,p) > 0. .and. patch_area(x,y,p) < tiny_parea) then
+               patch_area(x,y,p) = 0.
+            elseif (patch_area(x,y,p) < 0. .or. patch_area(x,y,p) > 1. + tiny_parea) then
+               patch_area(x,y,p) = 0.
+            end if
+            parea_tot = parea_tot + patch_area(x,y,p)
+         end do elimploop
+
+         !----- Loop over the patches and re-scale them. ----------------------------------!
+         rsclploop: do p=1,np
+            patch_area(x,y,p) = patch_area(x,y,p) / parea_tot
+         end do rsclploop
+         !---------------------------------------------------------------------------------!
+
+      end do xloop
+   end do yloop
+
+   return
 end subroutine patch_minsize
+!==========================================================================================!
+!==========================================================================================!
 
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
 ! TEB
 !#############################################################################
 subroutine fusonest(ngra,ngrb)
@@ -751,11 +786,23 @@ subroutine patch_interp_driver(icm,ifm)
                     ,leaf_g(icm)%patch_area,scratch%vt3da,scratch%vt3db,scratch%vt2da      &
                     ,scratch%vt2db ) 
    call patch_interp(icm,ifm,1,nnxp(icm),nnyp(icm),npatch,1,nnxp(ifm),nnyp(ifm),npatch     &
+                    ,leaf_g(icm)%can_theiv,leaf_g(ifm)%can_theiv,leaf_g(icm)%patch_area    &
+                    ,leaf_g(icm)%patch_area,scratch%vt3da,scratch%vt3db,scratch%vt2da      &
+                    ,scratch%vt2db )
+   call patch_interp(icm,ifm,1,nnxp(icm),nnyp(icm),npatch,1,nnxp(ifm),nnyp(ifm),npatch     &
                     ,leaf_g(icm)%can_theta,leaf_g(ifm)%can_theta,leaf_g(icm)%patch_area    &
                     ,leaf_g(icm)%patch_area,scratch%vt3da,scratch%vt3db,scratch%vt2da      &
                     ,scratch%vt2db )
    call patch_interp(icm,ifm,1,nnxp(icm),nnyp(icm),npatch,1,nnxp(ifm),nnyp(ifm),npatch     &
                     ,leaf_g(icm)%veg_ndvic,leaf_g(ifm)%veg_ndvic,leaf_g(icm)%patch_area    &
+                    ,leaf_g(icm)%patch_area,scratch%vt3da,scratch%vt3db,scratch%vt2da      &
+                    ,scratch%vt2db )
+   call patch_interp(icm,ifm,1,nnxp(icm),nnyp(icm),npatch,1,nnxp(ifm),nnyp(ifm),npatch     &
+                    ,leaf_g(icm)%zeta,leaf_g(ifm)%zeta,leaf_g(icm)%patch_area              &
+                    ,leaf_g(icm)%patch_area,scratch%vt3da,scratch%vt3db,scratch%vt2da      &
+                    ,scratch%vt2db )
+   call patch_interp(icm,ifm,1,nnxp(icm),nnyp(icm),npatch,1,nnxp(ifm),nnyp(ifm),npatch     &
+                    ,leaf_g(icm)%ribulk,leaf_g(ifm)%ribulk,leaf_g(icm)%patch_area          &
                     ,leaf_g(icm)%patch_area,scratch%vt3da,scratch%vt3db,scratch%vt2da      &
                     ,scratch%vt2db )
 

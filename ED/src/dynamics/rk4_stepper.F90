@@ -375,6 +375,8 @@ module rk4_stepper
                                        , toocold              & ! intent(in)
                                        , rk4min_can_temp      & ! intent(in)
                                        , rk4max_can_temp      & ! intent(in)
+                                       , rk4min_can_theiv     & ! intent(in)
+                                       , rk4max_can_theiv     & ! intent(in)
                                        , rk4max_can_rhv       & ! intent(in)
                                        , rk4max_can_shv       & ! intent(in)
                                        , rk4min_can_shv       & ! intent(in)
@@ -447,7 +449,8 @@ module rk4_stepper
       !------------------------------------------------------------------------------------!
       !   Checking whether the canopy temperature is too hot or too cold.                  !
       !------------------------------------------------------------------------------------! 
-      if (y%can_temp  > rk4max_can_temp  .or. y%can_temp  < rk4min_can_temp ) then
+      if (y%can_temp  > rk4max_can_temp  .or. y%can_temp  < rk4min_can_temp .or.           &
+          y%can_theiv > rk4max_can_theiv .or. y%can_theiv < rk4min_can_theiv     ) then
          reject_step = .true.
          if(record_err) integ_err(1,2) = integ_err(1,2) + 1_8
          if (print_problems) then
@@ -457,11 +460,11 @@ module rk4_stepper
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:        ',y%can_shv
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_TEMP:       ',y%can_temp
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_CO2:        ',y%can_co2
-            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_ENTHALPY:   ',y%can_enthalpy
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THEIV:      ',y%can_theiv
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_DEPTH:      ',y%can_depth
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHOS:       ',y%can_rhos
             write(unit=*,fmt='(a,1x,es12.4)') ' PRESSURE:       ',y%can_prss
-            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_ENTH)/Dt: ',dydx%can_enthalpy
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_THEIV)/Dt:',dydx%can_theiv
             write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_SHV)/Dt:  ',dydx%can_shv
             write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_CO2)/Dt:  ',dydx%can_co2
             write(unit=*,fmt='(a,1x,es12.4)') ' H:              ',h
@@ -493,11 +496,11 @@ module rk4_stepper
                write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:        ',y%can_shv
                write(unit=*,fmt='(a,1x,es12.4)') ' CAN_TEMP:       ',y%can_temp
                write(unit=*,fmt='(a,1x,es12.4)') ' CAN_CO2:        ',y%can_co2
-               write(unit=*,fmt='(a,1x,es12.4)') ' CAN_ENTHALPY:   ',y%can_enthalpy
+               write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THEIV:      ',y%can_theiv
                write(unit=*,fmt='(a,1x,es12.4)') ' CAN_DEPTH:      ',y%can_depth
                write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHOS:       ',y%can_rhos
                write(unit=*,fmt='(a,1x,es12.4)') ' PRESSURE:       ',y%can_prss
-               write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_ENTH)/Dt: ',dydx%can_enthalpy
+               write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_THEIV)/Dt:',dydx%can_theiv
                write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_H2O)/Dt:  ',dydx%can_shv
                write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_CO2)/Dt:  ',dydx%can_co2
                write(unit=*,fmt='(a,1x,es12.4)') ' H:              ',h
@@ -513,29 +516,29 @@ module rk4_stepper
       !------------------------------------------------------------------------------------!
       !   Checking whether the canopy CO2 is reasonable.                                   !
       !------------------------------------------------------------------------------------! 
-      !if (y%can_co2 > rk4max_can_co2 .or. y%can_co2 < rk4min_can_co2) then
-      !   reject_step = .true.
-      !   if(record_err) integ_err(3,2) = integ_err(3,2) + 1_8
-      !   if (print_problems) then
-      !      write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-      !      write(unit=*,fmt='(a)')           ' + Canopy air CO2  is off-track...       '
-      !      write(unit=*,fmt='(a)')           '-----------------------------------------'
-      !      write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:        ',y%can_shv
-      !      write(unit=*,fmt='(a,1x,es12.4)') ' CAN_TEMP:       ',y%can_temp
-      !      write(unit=*,fmt='(a,1x,es12.4)') ' CAN_CO2:        ',y%can_co2
-      !      write(unit=*,fmt='(a,1x,es12.4)') ' CAN_ENTHALPY:   ',y%can_enthalpy
-      !      write(unit=*,fmt='(a,1x,es12.4)') ' CAN_DEPTH:      ',y%can_depth
-      !      write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHOS:       ',y%can_rhos
-      !      write(unit=*,fmt='(a,1x,es12.4)') ' PRESSURE:       ',y%can_prss
-      !      write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_ENTH)/Dt: ',dydx%can_enthalpy
-      !      write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_SHV)/Dt:  ',dydx%can_shv
-      !      write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_CO2)/Dt:  ',dydx%can_co2
-      !      write(unit=*,fmt='(a,1x,es12.4)') ' H:              ',h
-      !      write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-      !   elseif (.not. record_err) then
-      !      return
-      !   end if
-      !end if
+      ! if (y%can_co2 > rk4max_can_co2 .or. y%can_co2 < rk4min_can_co2) then
+      !    reject_step = .true.
+      !    if(record_err) integ_err(3,2) = integ_err(3,2) + 1_8
+      !    if (print_problems) then
+      !       write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+      !       write(unit=*,fmt='(a)')           ' + Canopy air CO2  is off-track...       '
+      !       write(unit=*,fmt='(a)')           '-----------------------------------------'
+      !       write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:        ',y%can_shv
+      !       write(unit=*,fmt='(a,1x,es12.4)') ' CAN_TEMP:       ',y%can_temp
+      !       write(unit=*,fmt='(a,1x,es12.4)') ' CAN_CO2:        ',y%can_co2
+      !       write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THEIV:      ',y%can_theiv
+      !       write(unit=*,fmt='(a,1x,es12.4)') ' CAN_DEPTH:      ',y%can_depth
+      !       write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHOS:       ',y%can_rhos
+      !       write(unit=*,fmt='(a,1x,es12.4)') ' PRESSURE:       ',y%can_prss
+      !       write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_THEIV)/Dt:',dydx%can_theiv
+      !       write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_SHV)/Dt:  ',dydx%can_shv
+      !       write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_CO2)/Dt:  ',dydx%can_co2
+      !       write(unit=*,fmt='(a,1x,es12.4)') ' H:              ',h
+      !       write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+      !    elseif (.not. record_err) then
+      !       return
+      !    end if
+      ! end if
       !------------------------------------------------------------------------------------!
 
 

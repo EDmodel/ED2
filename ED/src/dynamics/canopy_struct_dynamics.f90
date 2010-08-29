@@ -141,14 +141,9 @@ module canopy_struct_dynamics
       real           :: factv        ! Wind-dependent term for old rasveg
       real           :: aux          ! Aux. variable
       real           :: laicum       ! Cumulative LAI (from top to bottom.)     [    m2/m2]
-      real           :: estar        ! Enthalpy friction scale (*)              [     J/kg]
+      real           :: estar        ! Equivalent potential temperature         [        K]
       real           :: rb_max       ! Maximum aerodynamic resistance.          [      s/m]
       real           :: hite         ! height.                                  [        m]
-      !------------------------------------------------------------------------------------!
-      ! (*) ESTAR is not used in the offline model because Euler still prognoses canopy    !
-      !     temperature.  But please, don't remove from ed_stars, it is currently used in  !
-      !     the ocean model for coupled models.                                            !
-      !------------------------------------------------------------------------------------!
       !----- Saved variables --------------------------------------------------------------!
       real        , dimension(200), save :: zeta     ! Attenuation factor for sub-canopy K 
                                                      !    and u.  A vector size of 200, 
@@ -198,8 +193,8 @@ module canopy_struct_dynamics
                           + snow_rough * csite%snowfac(ipa)
          
          !----- Finding the characteristic scales (a.k.a. stars). -------------------------!
-         call ed_stars(cmet%atm_theta,cmet%atm_enthalpy,cmet%atm_shv,cmet%atm_co2          &
-                      ,csite%can_theta(ipa),csite%can_enthalpy(ipa),csite%can_shv(ipa)     &
+         call ed_stars(cmet%atm_theta,cmet%atm_theiv,cmet%atm_shv,cmet%atm_co2             &
+                      ,csite%can_theta(ipa),csite%can_theiv(ipa),csite%can_shv(ipa)        &
                       ,csite%can_co2(ipa),zref,d0,cmet%vels,csite%rough(ipa)               &
                       ,csite%ustar(ipa),csite%tstar(ipa),estar,csite%qstar(ipa)            &
                       ,csite%cstar(ipa),csite%zeta(ipa),csite%ribulk(ipa),fm)
@@ -261,8 +256,8 @@ module canopy_struct_dynamics
          !                 is at the ground surface when computing the log wind profile,   !
          !                 hence the 0.0 as the argument to ed_stars.                      !
          !---------------------------------------------------------------------------------!
-         call ed_stars(cmet%atm_theta,cmet%atm_enthalpy,cmet%atm_shv,cmet%atm_co2          &
-                      ,csite%can_theta(ipa),csite%can_enthalpy(ipa),csite%can_shv(ipa)     &
+         call ed_stars(cmet%atm_theta,cmet%atm_theiv,cmet%atm_shv,cmet%atm_co2             &
+                      ,csite%can_theta(ipa),csite%can_theiv(ipa),csite%can_shv(ipa)        &
                       ,csite%can_co2(ipa),zref,0.0,cmet%vels,csite%rough(ipa)              &
                       ,csite%ustar(ipa),csite%tstar(ipa),estar,csite%qstar(ipa)            &
                       ,csite%cstar(ipa),csite%zeta(ipa),csite%ribulk(ipa),fm)
@@ -363,8 +358,8 @@ module canopy_struct_dynamics
          !                 is at the ground surface when computing the log wind profile,   !
          !                 hence the 0.0 as the argument to ed_stars.                      !
          !---------------------------------------------------------------------------------!
-         call ed_stars(cmet%atm_theta,cmet%atm_enthalpy,cmet%atm_shv,cmet%atm_co2          &
-                      ,csite%can_theta(ipa),csite%can_enthalpy(ipa),csite%can_shv(ipa)     &
+         call ed_stars(cmet%atm_theta,cmet%atm_theiv,cmet%atm_shv,cmet%atm_co2             &
+                      ,csite%can_theta(ipa),csite%can_theiv(ipa),csite%can_shv(ipa)        &
                       ,csite%can_co2(ipa),zref,0.0,cmet%vels,csite%rough(ipa)              &
                       ,csite%ustar(ipa),csite%tstar(ipa),estar,csite%qstar(ipa)            &
                       ,csite%cstar(ipa),csite%zeta(ipa),csite%ribulk(ipa),fm)
@@ -481,8 +476,8 @@ module canopy_struct_dynamics
          !      Get ustar for the ABL, assume it is a dynamic shear layer that generates a !
          ! logarithmic profile of velocity.                                                !
          !---------------------------------------------------------------------------------!
-         call ed_stars(cmet%atm_theta,cmet%atm_enthalpy,cmet%atm_shv,cmet%atm_co2          &
-                      ,csite%can_theta(ipa),csite%can_enthalpy(ipa),csite%can_shv(ipa)     &
+         call ed_stars(cmet%atm_theta,cmet%atm_theiv,cmet%atm_shv,cmet%atm_co2             &
+                      ,csite%can_theta(ipa),csite%can_theiv(ipa),csite%can_shv(ipa)        &
                       ,csite%can_co2(ipa),zref,d0,cmet%vels,csite%rough(ipa)               &
                       ,csite%ustar(ipa),csite%tstar(ipa),estar,csite%qstar(ipa)            &
                       ,csite%cstar(ipa),csite%zeta(ipa),csite%ribulk(ipa),fm)
@@ -664,8 +659,8 @@ module canopy_struct_dynamics
          end if
          
          !----- Finding the characteristic scales (a.k.a. stars). -------------------------!
-         call ed_stars(cmet%atm_theta,cmet%atm_enthalpy,cmet%atm_shv,cmet%atm_co2          &
-                      ,csite%can_theta(ipa),csite%can_enthalpy(ipa),csite%can_shv(ipa)     &
+         call ed_stars(cmet%atm_theta,cmet%atm_theiv,cmet%atm_shv,cmet%atm_co2             &
+                      ,csite%can_theta(ipa),csite%can_theiv(ipa),csite%can_shv(ipa)        &
                       ,csite%can_co2(ipa),zref,d0,cmet%vels,csite%rough(ipa)               &
                       ,csite%ustar(ipa),csite%tstar(ipa),estar,csite%qstar(ipa)            &
                       ,csite%cstar(ipa),csite%zeta(ipa),csite%ribulk(ipa),fm)
@@ -901,8 +896,8 @@ module canopy_struct_dynamics
                      + dble(snow_rough)*dble(csite%snowfac(ipa))
          
          !----- Finding the characteristic scales (a.k.a. stars). -------------------------!
-         call ed_stars8(rk4site%atm_theta,rk4site%atm_enthalpy,rk4site%atm_shv             &
-                       ,rk4site%atm_co2,initp%can_theta ,initp%can_enthalpy ,initp%can_shv &
+         call ed_stars8(rk4site%atm_theta,rk4site%atm_theiv,rk4site%atm_shv                &
+                       ,rk4site%atm_co2,initp%can_theta ,initp%can_theiv ,initp%can_shv    &
                        ,initp%can_co2,zref,d0,vels_ref,initp%rough                         &
                        ,initp%ustar,initp%tstar,initp%estar,initp%qstar,initp%cstar        &
                        ,initp%zeta,initp%ribulk,fm)
@@ -917,7 +912,7 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          !     Calculate the heat and mass storage capacity of the canopy.                 !
          !---------------------------------------------------------------------------------!
-         call can_whcap8(csite,ipa,initp%can_rhos,initp%can_depth)
+         call can_whcap8(csite,ipa,initp%can_rhos,initp%can_temp,initp%can_depth)
          
          return
       end if
@@ -964,8 +959,8 @@ module canopy_struct_dynamics
          !                 is at the ground surface when computing the log wind profile,   !
          !                 hence the 0.0 as the argument to ed_stars.                      !
          !---------------------------------------------------------------------------------!
-         call ed_stars8(rk4site%atm_theta,rk4site%atm_enthalpy,rk4site%atm_shv             &
-                       ,rk4site%atm_co2,initp%can_theta ,initp%can_enthalpy ,initp%can_shv &
+         call ed_stars8(rk4site%atm_theta,rk4site%atm_theiv,rk4site%atm_shv                &
+                       ,rk4site%atm_co2,initp%can_theta ,initp%can_theiv,initp%can_shv     &
                        ,initp%can_co2,zref,0.d0,vels_ref,initp%rough                       &
                        ,initp%ustar,initp%tstar,initp%estar,initp%qstar,initp%cstar        &
                        ,initp%zeta,initp%ribulk,fm)
@@ -1018,7 +1013,7 @@ module canopy_struct_dynamics
             ! interfacial layer as the "reference elevation plus the top of the canopy".   !
             ! An alternative could be to make a conditional like in case(1).               !
             !------------------------------------------------------------------------------!
-            call can_whcap8(csite,ipa,initp%can_rhos,initp%can_depth)
+            call can_whcap8(csite,ipa,initp%can_rhos,initp%can_temp,initp%can_depth)
          end if
       !------------------------------------------------------------------------------------!
 
@@ -1056,8 +1051,8 @@ module canopy_struct_dynamics
          !                 is at the ground surface when computing the log wind profile,   !
          !                 hence the 0.0 as the argument to ed_stars8.                     !
          !---------------------------------------------------------------------------------!
-         call ed_stars8(rk4site%atm_theta,rk4site%atm_enthalpy,rk4site%atm_shv             &
-                       ,rk4site%atm_co2,initp%can_theta ,initp%can_enthalpy ,initp%can_shv &
+         call ed_stars8(rk4site%atm_theta,rk4site%atm_theiv,rk4site%atm_shv                &
+                       ,rk4site%atm_co2,initp%can_theta,initp%can_theiv,initp%can_shv      &
                        ,initp%can_co2,zref,0.d0,vels_ref,initp%rough                       &
                        ,initp%ustar,initp%tstar,initp%estar,initp%qstar,initp%cstar        &
                        ,initp%zeta,initp%ribulk,fm)
@@ -1113,7 +1108,7 @@ module canopy_struct_dynamics
             ! interfacial layer as the "reference elevation plus the top of the canopy".   !
             ! An alternative could be to make a conditional like in case(1).               !
             !------------------------------------------------------------------------------!
-            call can_whcap8(csite,ipa,initp%can_rhos,initp%can_depth)
+            call can_whcap8(csite,ipa,initp%can_rhos,initp%can_temp,initp%can_depth)
          end if
       !------------------------------------------------------------------------------------!
 
@@ -1147,14 +1142,14 @@ module canopy_struct_dynamics
             !----- Assume a new reference elevation at the canopy top. --------------------!
             zref = h
             if (get_flow_geom) then
-               call can_whcap8(csite,ipa,initp%can_rhos,initp%can_depth)
+               call can_whcap8(csite,ipa,initp%can_rhos,initp%can_temp,initp%can_depth)
             end if 
 
          else
             vels_ref = rk4site%vels
             zref     = rk4site%geoht
             if (get_flow_geom) then
-               call can_whcap8(csite,ipa,initp%can_rhos,initp%can_depth)
+               call can_whcap8(csite,ipa,initp%can_rhos,initp%can_temp,initp%can_depth)
             end if
          end if
          
@@ -1162,8 +1157,8 @@ module canopy_struct_dynamics
          !      Get ustar for the ABL, assume it is a dynamic shear layer that generates a !
          ! logarithmic profile of velocity.                                                !
          !---------------------------------------------------------------------------------!
-         call ed_stars8(rk4site%atm_theta,rk4site%atm_enthalpy,rk4site%atm_shv             &
-                       ,rk4site%atm_co2,initp%can_theta ,initp%can_enthalpy ,initp%can_shv &
+         call ed_stars8(rk4site%atm_theta,rk4site%atm_theiv,rk4site%atm_shv                &
+                       ,rk4site%atm_co2,initp%can_theta,initp%can_theiv,initp%can_shv      &
                        ,initp%can_co2,zref,d0,vels_ref,initp%rough                         &
                        ,initp%ustar,initp%tstar,initp%estar,initp%qstar,initp%cstar        &
                        ,initp%zeta,initp%ribulk,fm)
@@ -1344,8 +1339,8 @@ module canopy_struct_dynamics
          
 
          !----- Calculate ustar, tstar, qstar, and cstar. ---------------------------------!
-         call ed_stars8(rk4site%atm_theta,rk4site%atm_enthalpy,rk4site%atm_shv             &
-                       ,rk4site%atm_co2,initp%can_theta ,initp%can_enthalpy ,initp%can_shv &
+         call ed_stars8(rk4site%atm_theta,rk4site%atm_theiv,rk4site%atm_shv                &
+                       ,rk4site%atm_co2,initp%can_theta ,initp%can_theiv,initp%can_shv     &
                        ,initp%can_co2,zref,d0,vels_ref,initp%rough                         &
                        ,initp%ustar,initp%tstar,initp%estar,initp%qstar,initp%cstar        &
                        ,initp%zeta,initp%ribulk,fm)
@@ -1398,7 +1393,7 @@ module canopy_struct_dynamics
             ! Calculate the heat and mass storage capacity of the canopy and interfacial   !
             ! air spaces.                                                                  !
             !------------------------------------------------------------------------------!
-            call can_whcap8(csite,ipa,initp%can_rhos,initp%can_depth)
+            call can_whcap8(csite,ipa,initp%can_rhos,initp%can_temp,initp%can_depth)
          end if
 
       end select
@@ -1441,7 +1436,7 @@ module canopy_struct_dynamics
    ! OD95. ONCLEY, S.P.; DUDHIA, J.; Evaluation of surface fluxes from MM5 using observa-  !
    !           tions.  Mon. Wea. Rev., 123, 3344-3357, 1995.                               !
    !---------------------------------------------------------------------------------------!
-   subroutine ed_stars(theta_atm,enthalpy_atm,shv_atm,co2_atm,theta_can,enthalpy_can       &
+   subroutine ed_stars(theta_atm,theiv_atm,shv_atm,co2_atm,theta_can,theiv_can             &
                       ,shv_can,co2_can,zref,d0,uref,rough,ustar,tstar,estar,qstar,cstar    &
                       ,zeta,rib,fm)
       use consts_coms     , only : grav          & ! intent(in)
@@ -1465,11 +1460,11 @@ module canopy_struct_dynamics
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real, intent(in)  :: theta_atm    ! Above canopy air pot. temperature     [        K]
-      real, intent(in)  :: enthalpy_atm ! Above canopy air enthalpy             [     J/kg]
+      real, intent(in)  :: theiv_atm    ! Above canopy air eq. pot. temperature [        K]
       real, intent(in)  :: shv_atm      ! Above canopy vapour spec. hum.        [kg/kg_air]
       real, intent(in)  :: co2_atm      ! CO2 specific volume                   [  痠ol/m設
       real, intent(in)  :: theta_can    ! Canopy air potential temperature      [        K]
-      real, intent(in)  :: enthalpy_can ! Canopy air enthalpy                   [     J/kg]
+      real, intent(in)  :: theiv_can    ! Canopy air eq. pot. temperature       [        K]
       real, intent(in)  :: shv_can      ! Canopy air vapour spec. humidity      [kg/kg_air]
       real, intent(in)  :: co2_can      ! Canopy air CO2 specific volume        [  痠ol/m設
       real, intent(in)  :: zref         ! Height at reference point             [        m]
@@ -1479,7 +1474,7 @@ module canopy_struct_dynamics
       real, intent(out) :: ustar        ! U*, friction velocity                 [      m/s]
       real, intent(out) :: qstar        ! Specific humidity friction scale      [kg/kg_air]
       real, intent(out) :: tstar        ! Temperature friction scale            [        K]
-      real, intent(out) :: estar        ! Enthalpy friction scale               [     J/kg]
+      real, intent(out) :: estar        ! Equivalent pot. temp. scale           [        K]
       real, intent(out) :: cstar        ! CO2 spec. volume friction scale       [  痠ol/m設
       real, intent(out) :: zeta         ! z/(Obukhov length).                   [    -----]
       real, intent(out) :: rib          ! Bulk richardson number.               [    -----]
@@ -1636,7 +1631,7 @@ module canopy_struct_dynamics
       !----- Computing the other scales. --------------------------------------------------!
       qstar = c3 * (shv_atm      - shv_can     )
       tstar = c3 * (theta_atm    - theta_can   )
-      estar = c3 * (enthalpy_atm - enthalpy_can)
+      estar = c3 * (theiv_atm    - theiv_can   )
       cstar = c3 * (co2_atm      - co2_can     )
 
       return
@@ -1677,8 +1672,8 @@ module canopy_struct_dynamics
    ! OD95. ONCLEY, S.P.; DUDHIA, J.; Evaluation of surface fluxes from MM5 using observa-  !
    !           tions.  Mon. Wea. Rev., 123, 3344-3357, 1995.                               !
    !---------------------------------------------------------------------------------------!
-   subroutine ed_stars8(theta_atm,enthalpy_atm,shv_atm,co2_atm                             &
-                       ,theta_can,enthalpy_can,shv_can,co2_can                             &
+   subroutine ed_stars8(theta_atm,theiv_atm,shv_atm,co2_atm                                &
+                       ,theta_can,theiv_can,shv_can,co2_can                                &
                        ,zref,d0,uref,rough,ustar,tstar,estar,qstar,cstar,zeta,rib,fm)
       use consts_coms     , only : grav8         & ! intent(in)
                                  , vonk8         & ! intent(in)
@@ -1701,11 +1696,11 @@ module canopy_struct_dynamics
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real(kind=8), intent(in)  :: theta_atm    ! Above canopy air pot. temp.    [        K]
-      real(kind=8), intent(in)  :: enthalpy_atm ! Above canopy air temperature   [        K]
+      real(kind=8), intent(in)  :: theiv_atm    ! Above canopy air eq. pot. T    [        K]
       real(kind=8), intent(in)  :: shv_atm      ! Above canopy vapour spec. hum. [kg/kg_air]
       real(kind=8), intent(in)  :: co2_atm      ! CO2 specific volume            [  痠ol/m設
       real(kind=8), intent(in)  :: theta_can    ! Canopy air potential temp.     [        K]
-      real(kind=8), intent(in)  :: enthalpy_can ! Canopy air temperature         [        K]
+      real(kind=8), intent(in)  :: theiv_can    ! Canopy air eq. pot. temp.      [        K]
       real(kind=8), intent(in)  :: shv_can      ! Canopy air vapour spec. hum.    [kg/kg_air]
       real(kind=8), intent(in)  :: co2_can      ! Canopy air CO2 specific volume [  痠ol/m設
       real(kind=8), intent(in)  :: zref         ! Height at reference point      [        m]
@@ -1715,7 +1710,7 @@ module canopy_struct_dynamics
       real(kind=8), intent(out) :: ustar        ! U*, friction velocity          [      m/s]
       real(kind=8), intent(out) :: qstar        ! Specific hum. friction scale   [kg/kg_air]
       real(kind=8), intent(out) :: tstar        ! Temperature friction scale     [        K]
-      real(kind=8), intent(out) :: estar        ! Enthalpy friction scale        [     J/kg]
+      real(kind=8), intent(out) :: estar        ! Theta_E friction scale         [        K]
       real(kind=8), intent(out) :: cstar        ! CO2 spec. volume friction scale[  痠ol/m設
       real(kind=8), intent(out) :: zeta         ! z/(Obukhov length)             [      ---]
       real(kind=8), intent(out) :: rib          ! Bulk richardson number.        [      ---]
@@ -1875,7 +1870,7 @@ module canopy_struct_dynamics
       qstar = c3 * (shv_atm      - shv_can     )
       tstar = c3 * (theta_atm    - theta_can   )
       cstar = c3 * (co2_atm      - co2_can     )
-      estar = c3 * (enthalpy_atm - enthalpy_can)
+      estar = c3 * (theiv_atm    - theiv_can   )
 
       return
    end subroutine ed_stars8
@@ -1988,7 +1983,7 @@ module canopy_struct_dynamics
 
       canwcap = csite%can_rhos(ipa) * csite%can_depth(ipa)
       canccap = mmdryi * canwcap
-      canhcap = cp     * canwcap
+      canhcap = cp     * csite%can_temp(ipa) * canwcap
 
       return
    end subroutine can_whcap
@@ -2010,7 +2005,7 @@ module canopy_struct_dynamics
    ! (or the canopy depth) must be allowed to change over time, so work can be done by the !
    ! canopy or into the canopy.                                                            !
    !---------------------------------------------------------------------------------------!
-   subroutine can_whcap8(csite,ipa,can_rhos,can_depth)
+   subroutine can_whcap8(csite,ipa,can_rhos,can_temp,can_depth)
 
       use rk4_coms             , only : rk4site               & ! intent(in)
                                       , wcapcan               & ! intent(out)
@@ -2029,12 +2024,13 @@ module canopy_struct_dynamics
       type(sitetype) , target        :: csite
       integer        , intent(in)    :: ipa
       real(kind=8)   , intent(in)    :: can_rhos
+      real(kind=8)   , intent(in)    :: can_temp
       real(kind=8)   , intent(in)    :: can_depth
       !------------------------------------------------------------------------------------!
 
       wcapcan  = can_rhos * can_depth
       wcapcani = 1.d0 / wcapcan
-      hcapcani = cpi8 * wcapcani
+      hcapcani = cpi8 * wcapcani / can_temp
       ccapcani = mmdry8 * wcapcani
       return
    end subroutine can_whcap8

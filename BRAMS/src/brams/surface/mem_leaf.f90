@@ -66,6 +66,7 @@ Module mem_leaf
       !------------------------------------------------------------------------------------!
       real, dimension(:,:,:), pointer :: can_rvap     & ! Vapour Mixing ratio   [    kg/kg]
                                        , can_theta    & ! Potential temperature [        K]
+                                       , can_theiv    & ! Theta_Eiv             [        K]
                                        , can_prss     & ! Pressure              [       Pa]
                                        , can_co2      ! ! CO2 mixing ratio      [ µmol/mol]
 
@@ -209,6 +210,7 @@ Module mem_leaf
 
       allocate (leaf%can_rvap         (    nx,ny,np))
       allocate (leaf%can_theta        (    nx,ny,np))
+      allocate (leaf%can_theiv        (    nx,ny,np))
       allocate (leaf%can_prss         (    nx,ny,np))
       allocate (leaf%can_co2          (    nx,ny,np))
 
@@ -298,6 +300,7 @@ Module mem_leaf
 
       if (associated(leaf%can_rvap         ))  nullify(leaf%can_rvap         )
       if (associated(leaf%can_theta        ))  nullify(leaf%can_theta        )
+      if (associated(leaf%can_theiv        ))  nullify(leaf%can_theiv        )
       if (associated(leaf%can_prss         ))  nullify(leaf%can_prss         )
       if (associated(leaf%can_co2          ))  nullify(leaf%can_co2          )
 
@@ -384,6 +387,7 @@ Module mem_leaf
 
       if (associated(leaf%can_rvap         ))  deallocate(leaf%can_rvap         )
       if (associated(leaf%can_theta        ))  deallocate(leaf%can_theta        )
+      if (associated(leaf%can_theiv        ))  deallocate(leaf%can_theiv        )
       if (associated(leaf%can_prss         ))  deallocate(leaf%can_prss         )
       if (associated(leaf%can_co2          ))  deallocate(leaf%can_co2          )
 
@@ -593,6 +597,10 @@ Module mem_leaf
       if (associated(leaf%can_theta))                                                      &
          call vtables2(leaf%can_theta(1,1,1),leafm%can_theta(1,1,1),ng,npts,imean          &
                       ,'CAN_THETA :6:hist:anal:mpti:mpt3'//trim(str_recycle))
+
+      if (associated(leaf%can_theiv))                                                      &
+         call vtables2(leaf%can_theiv(1,1,1),leafm%can_theta(1,1,1),ng,npts,imean          &
+                      ,'CAN_THEIV :6:hist:anal:mpti:mpt3'//trim(str_recycle))
 
       if (associated(leaf%can_prss))                                                       &
          call vtables2(leaf%can_prss(1,1,1),leafm%can_prss(1,1,1),ng,npts,imean            &

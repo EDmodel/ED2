@@ -106,7 +106,8 @@ subroutine nakanishi(m1,m2,m3,m4,ia,iz,ja,jz,jd,tkep,tket,vt3dd,vt3de,vt3dh,vt3d
                             , lturbmin             & ! intent(in)
                             , tkmin                & ! intent(in)
                             , onethird             ! ! intent(in)
-   use leaf_coms     , only : ustmin               ! ! intent(in)
+   use leaf_coms     , only : ustmin               & ! intent(in)
+                            , tiny_parea           ! ! intent(in)
    use turb_coms     , only : a1      => nna1      & ! intent(in)
                             , a2      => nna2      & ! intent(in)
                             , b1      => nnb1      & ! intent(in)
@@ -239,11 +240,12 @@ subroutine nakanishi(m1,m2,m3,m4,ia,iz,ja,jz,jd,tkep,tket,vt3dd,vt3de,vt3dh,vt3d
          z0w=0.                                                      
          ustarw=0.
          tstarw=0.
-         do p=1,m4
+         patchloop: do p=1,m4
+            if (patch_area(i,j,p) < tiny_parea) cycle patchloop
             z0w    =    z0w + max(vegz0(i,j,p),patchz0(i,j,p)) * patch_area(i,j,p)
             ustarw = ustarw + ustar(i,j,p)                     * patch_area(i,j,p)
             tstarw = tstarw + tstar(i,j,p)                     * patch_area(i,j,p)
-         end do
+         end do patchloop
          ustarw = max(ustarw,ustmin)
          !---------------------------------------------------------------------------------!
          ! Here I'll find the <w'Theta'>g and truncate for small values                    !

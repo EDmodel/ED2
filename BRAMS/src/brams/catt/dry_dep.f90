@@ -190,7 +190,7 @@ subroutine dry_dep_particles(iscl,m1,m2,m3,naddsc,npatch,ia,iz,ja,jz &
      ,temps,dens,vels,rvs,Zi                                         &
      ,ustar,tstar                                                    &
      ,patch_area,veg,Z0m                                             )
-  
+  use leaf_coms, only : tiny_parea
   implicit none
   integer :: m1,m2,m3,naddsc,npatch,ia,iz,ja,jz,i,j,ipatch,iscl
   real    :: vdtmp
@@ -216,7 +216,7 @@ subroutine dry_dep_particles(iscl,m1,m2,m3,naddsc,npatch,ia,iz,ja,jz &
      do i = ia,iz
         do ipatch = 1,npatch
 
-           if (patch_area(i,j,ipatch) .ge. .009) then
+           if (patch_area(i,j,ipatch) >= tiny_parea) then
 
               vdtmp = v_sed(i,j) + 1./(r_aer(i,j,ipatch) + r_lsl(i,j,ipatch) +&
                    r_aer(i,j,ipatch) * r_lsl(i,j,ipatch) * v_sed(i,j))
@@ -322,9 +322,9 @@ end subroutine sedim_particles
 subroutine lsl_particles(m2,m3,npatch,ia,iz,ja,jz           &
      ,temps,dens,vels,rvs,Zi,ustar,tstar,patch_area,veg,Z0m &
      ,v_sed,r_lsl)
-  use rconstants, only: t00, vonk,cp,pi1,grav
+  use rconstants, only: t00, vonk,cp,pi1,grav,boltzmann
+  use leaf_coms, only : tiny_parea
   implicit none
-  REAL,PARAMETER :: kB = 1.3807e-23      ! const Boltzmann - kg m^2 s^-2 K^-1 molecule^-1
   REAL,PARAMETER :: ASP = 1.257          ! 1.249
   REAL,PARAMETER :: BSP = 0.4            ! 0.42
   REAL,PARAMETER :: CSP = 1.1            ! 0.87 
@@ -358,7 +358,7 @@ subroutine lsl_particles(m2,m3,npatch,ia,iz,ja,jz           &
         !- several particle/environment properties
         
         !- mean speed of air molecules (m/s)
-        !  v_air = sqrt( 8. * kB   * temps(i,j) / (pi1 * M_AVEG) )
+        !  v_air = sqrt( 8. * boltzmann   * temps(i,j) / (pi1 * M_AVEG) )
         v_air = sqrt( 7.3102e+2 * temps(i,j)                        )
         
         !-dynamic viscosity of air (kg m^-1 s^-1)
@@ -379,9 +379,9 @@ subroutine lsl_particles(m2,m3,npatch,ia,iz,ja,jz           &
         !- Schmidt number determination (Jacobson)
         !-- molecular diffusivity (Brownian diffusivity coeficient)   
         !XXXXXXXXXXXXXXXXXXXXXXXXXXXX
-        D =  kB * temps(i,j) * Gi / (6.*pi1*part_radius*n_air)
+        D =  boltzmann * temps(i,j) * Gi / (6.*pi1*part_radius*n_air)
         
-        !x    D =  (kB/M_AVEG) * temps(i,j) * Gi / (6.*pi1*part_radius*n_air)
+        !x    D =  (boltzmann/M_AVEG) * temps(i,j) * Gi / (6.*pi1*part_radius*n_air)
         
         !-  kinematic viscosity of air ()
         nu = n_air/dens(i,j)
@@ -409,7 +409,7 @@ subroutine lsl_particles(m2,m3,npatch,ia,iz,ja,jz           &
 
            else
 
-              if(patch_area(i,j,ipatch) > 0.009) then
+              if(patch_area(i,j,ipatch) > tiny_parea) then
                  
                  !-- for smooth land surfaces !- bare ground (3), desert(3) or ice (2)
                  !-- Seinfeld & Pandis (1998)
@@ -484,7 +484,7 @@ end subroutine lsl_particles
 
 subroutine dry_dep_gaseous(m1,m2,m3,naddsc,npatch,ia,iz,ja,jz &
      ,V_dep,patch_area)
-
+  use leaf_coms, only : tiny_parea
   implicit none
   integer :: m1,m2,m3,naddsc,npatch,ia,iz,ja,jz,i,j,ipatch
   real    :: vdtmp
@@ -506,7 +506,7 @@ subroutine dry_dep_gaseous(m1,m2,m3,naddsc,npatch,ia,iz,ja,jz &
         
         do ipatch = 2,npatch
 
-           if (patch_area(i,j,ipatch) .ge. .009) &
+           if (patch_area(i,j,ipatch) >= tiny_parea) &
                 V_dep(i,j) = V_dep(i,j) + patch_area(i,j,ipatch)*V_dep_CO(2)
 
         enddo

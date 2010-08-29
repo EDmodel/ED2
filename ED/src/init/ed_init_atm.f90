@@ -11,7 +11,7 @@ subroutine ed_init_atm
   use ed_node_coms, only: nnodetot,mynum,sendnum,recvnum
   use pft_coms,only : sla
   use ed_therm_lib,only : calc_hcapveg,ed_grndvap
-  use therm_lib, only : ptqz2enthalpy,idealdenssh,reducedpress
+  use therm_lib, only : thetaeiv,idealdenssh,reducedpress
   
   implicit none
 
@@ -25,6 +25,7 @@ subroutine ed_init_atm
   integer :: nls
   integer :: nlsw1
   integer :: ncohorts
+  real    :: rvaux
   real    :: site_area_i, poly_area_i
   real    :: poly_lai, poly_nplant
   real    :: surface_temp, surface_fliq
@@ -107,14 +108,15 @@ subroutine ed_init_atm
 
 
 
-              csite%can_temp(ipa)     = csite%can_theta(ipa)                               &
-                                      * (p00i *csite%can_prss(ipa)) ** rocp
-              csite%can_enthalpy(ipa) = ptqz2enthalpy(csite%can_prss(ipa)                  &
-                                                     ,csite%can_temp(ipa)                  &
-                                                     ,csite%can_shv(ipa)                   &
-                                                     ,csite%can_depth(ipa))
-              csite%can_rhos(ipa)     = idealdenssh(csite%can_prss(ipa)                    &
-                                                   ,csite%can_temp(ipa),csite%can_shv(ipa))
+              csite%can_temp(ipa)  = csite%can_theta(ipa)                                  &
+                                   * (p00i *csite%can_prss(ipa)) ** rocp
+
+              rvaux                = csite%can_shv(ipa) / (1. - csite%can_shv(ipa))
+              csite%can_theiv(ipa) = thetaeiv(csite%can_theta(ipa),csite%can_prss(ipa)     &
+                                             ,csite%can_temp(ipa),rvaux,rvaux,0)
+
+              csite%can_rhos(ipa)  = idealdenssh(csite%can_prss(ipa)                       &
+                                                ,csite%can_temp(ipa),csite%can_shv(ipa))
 
               ! Initialize stars
               csite%tstar (ipa) = 0.

@@ -315,7 +315,7 @@ real, dimension(*) :: b
 real, dimension(*) :: a2
 real, dimension(*) :: a6
 
-real, dimension(:), allocatable :: c,d,e,f,h,m,n,o,p,q,r,s,t,u
+real, dimension(:), allocatable :: c,d,e,f,h,m,n,o,p,q,r,s,t,u,v
 integer :: lv,lv2,idim_type,irecind,irecsize,irecsizep,ind,ispec
 integer :: memsave4,ierr,kp
 
@@ -343,6 +343,7 @@ if (memsize4 > memsave4) then
    if (allocated(s)) deallocate (s)
    if (allocated(t)) deallocate (t)
    if (allocated(u)) deallocate (u)
+   if (allocated(v)) deallocate (v)
    allocate(c(memsize4))
    allocate(d(memsize4))
    allocate(e(memsize4))
@@ -357,6 +358,7 @@ if (memsize4 > memsave4) then
    allocate(s(memsize4))
    allocate(t(memsize4))
    allocate(u(memsize4))
+   allocate(v(memsize4))
    memsave4 = memsize4
 elseif (memsave4 /= 0) then
    if(.not. allocated(c)) allocate(c(memsave4))
@@ -373,6 +375,7 @@ elseif (memsave4 /= 0) then
    if(.not. allocated(s)) allocate(s(memsave4))
    if(.not. allocated(t)) allocate(t(memsave4))
    if(.not. allocated(u)) allocate(u(memsave4))
+   if(.not. allocated(v)) allocate(v(memsave4))
 
 endif
 
@@ -497,8 +500,8 @@ elseif(cvar(1:lv).eq.'speed_mph') then
    cdunits='mph'
 
 elseif(cvar(1:lv) == 'tempc2m' .or. cvar(1:lv) == 'theta2m' .or. cvar(1:lv) == 'rv2m' .or. &
-       cvar(1:lv) == 'tdewc2m' .or. cvar(1:lv) == 'rhum2m'  .or.                           &
-       cvar(1:lv) == 'zeta2m'  .or. cvar(1:lv) == 'u10m'        ) then
+       cvar(1:lv) == 'tdewc2m' .or. cvar(1:lv) == 'rhum2m'  .or. cvar(1:lv) == 'u10m' .or. &
+       cvar(1:lv) == 'rib_ps'  .or. cvar(1:lv) == 'zeta_ps'         ) then
    ivar_type = 2
 
    !----- Topography. ---------------------------------------------------------------------!
@@ -520,7 +523,9 @@ elseif(cvar(1:lv) == 'tempc2m' .or. cvar(1:lv) == 'theta2m' .or. cvar(1:lv) == '
    !----- Roughness. ----------------------------------------------------------------------!
    ierr = RAMS_getvar('PATCH_ROUGH', idim_type,ngrd,h,b,flnm) ! h is the patch roughness.
    ierr_getvar = ierr_getvar + ierr
-   ierr = RAMS_getvar('VEG_HEIGHT',idim_type,ngrd,t,b,flnm)   ! s is the vegetation height
+   ierr = RAMS_getvar('RIBULK',idim_type,ngrd,t,b,flnm)       ! t is the bulk Ri
+   ierr_getvar = ierr_getvar + ierr
+   ierr = RAMS_getvar('ZETA',idim_type,ngrd,u,b,flnm)         ! u is the z/L
    ierr_getvar = ierr_getvar + ierr
    ierr = RAMS_getvar('PATCH_AREA',idim_type,ngrd,m,b,flnm)   ! m is the patch area.
    ierr_getvar = ierr_getvar + ierr
@@ -543,63 +548,71 @@ elseif(cvar(1:lv) == 'tempc2m' .or. cvar(1:lv) == 'theta2m' .or. cvar(1:lv) == '
    ierr = RAMS_getvar('RSTAR',idim_type,ngrd,r,b,flnm)     ! r is rstar
    ierr_getvar = ierr_getvar + ierr
    call RAMS_flush_to_zero(n1,n2,1,npatch,r,1.e-6)         ! r is tstar
-   if (cvar(1:lv) == 'theta2m') then
+   select case (cvar(1:lv))
+   case ('theta2m')
       call RAMS_reduced_prop(n1,n2,n3,npatch,ngrd,'THET',c,e,f,d,n,o,s,2.0                 &
-                            ,h,t,m,p,q,r,a)
+                            ,h,t,u,m,p,q,r,a)
 
       cdname  = 'Potential temperature at 2m AGL'
       cdunits = 'K'
 
-   elseif (cvar(1:lv) == 'tempc2m') then
+   case ('tempc2m')
       call RAMS_reduced_prop(n1,n2,n3,npatch,ngrd,'TEMP',c,e,f,d,n,o,s,2.0                 &
-                            ,h,t,m,p,q,r,a)
+                            ,h,t,u,m,p,q,r,a)
       call RAMS_comp_tempC(n1,n2,1,1,a)
 
       cdname  = 'Temperature at 2m AGL'
       cdunits = 'C'
 
-   elseif (cvar(1:lv) == 'tdewc2m') then
+   case ('tdewc2m')
       call RAMS_reduced_prop(n1,n2,n3,npatch,ngrd,'TDEW',c,e,f,d,n,o,s,2.0                 &
-                            ,h,t,m,p,q,r,a)
+                            ,h,t,u,m,p,q,r,a)
       call RAMS_comp_tempC(n1,n2,1,1,a)
 
       cdname  = 'Dew/frost point at 2m AGL'
       cdunits = 'C'
 
-   elseif (cvar(1:lv) == 'rv2m') then
+   case ('rv2m')
       call RAMS_reduced_prop(n1,n2,n3,npatch,ngrd,'RVAP',c,e,f,d,n,o,s,2.0                 &
-                            ,h,t,m,p,q,r,a)
+                            ,h,t,u,m,p,q,r,a)
       call RAMS_comp_mults(n1,n2,1,a,1000.)
 
       cdname  = 'Vapour mixing ratio at 2m AGL'
       cdunits = 'g/kg'
 
-   elseif (cvar(1:lv) == 'rhum2m') then
+   case ('rhum2m')
       call RAMS_reduced_prop(n1,n2,n3,npatch,ngrd,'TDEW',c,e,f,d,n,o,s,2.0                 &
-                            ,h,t,m,p,q,r,a) ! a is the dew/frost point
+                            ,h,t,u,m,p,q,r,a) ! a is the dew/frost point
       call RAMS_reduced_prop(n1,n2,n3,npatch,ngrd,'TEMP',c,e,f,d,n,o,s,2.0                 &
-                            ,h,t,m,p,q,r,u) ! u is the temperature
-      call RAMS_comp_relhum(n1,n2,1,a,u)
+                            ,h,t,u,m,p,q,r,v) ! u is the temperature
+      call RAMS_comp_relhum(n1,n2,1,a,v)
       call RAMS_comp_mults(n1,n2,1,a,100.)
 
       cdname  = 'Relative humidity at 2m AGL'
       cdunits = '%'
 
-   elseif (cvar(1:lv) == 'zeta2m') then
+   case ('zeta_ps')
       call RAMS_reduced_prop(n1,n2,n3,npatch,ngrd,'ZETA',c,e,f,d,n,o,s,2.0                 &
-                            ,h,t,m,p,q,r,a)
+                            ,h,t,u,m,p,q,r,a) ! a is the dimensionless height (z/L)
 
-      cdname  = 'Normalised height'
+      cdname  = 'Dimensionless height'
       cdunits = '---'
 
-   elseif (cvar(1:lv) == 'u10m') then
+   case ('rib_ps')
+      call RAMS_reduced_prop(n1,n2,n3,npatch,ngrd,'RICH',c,e,f,d,n,o,s,2.0                 &
+                            ,h,t,u,m,p,q,r,a) ! a is the bulk Richardson number
+
+      cdname  = 'Bulk Richardson number'
+      cdunits = '---'
+
+   case ('u10m')
       call RAMS_reduced_prop(n1,n2,n3,npatch,ngrd,'WIND',c,e,f,d,n,o,s,10.0                &
-                            ,h,t,m,p,q,r,a)
+                            ,h,t,u,m,p,q,r,a)
 
       cdname  = 'Wind speed at 10m AGL'
       cdunits = 'm/s'
 
-   end if
+   end select
 
 
 elseif(cvar(1:lv).eq.'direction') then
@@ -2797,7 +2810,7 @@ elseif(cvar(1:lv).eq.'agb' .or. cvar(1:lv).eq.'vegagb' .or. cvar(1:lv).eq.'agb_p
       ivar_type = 7
    else
       ivar_type = 2
-      call RAMS_comp_patchsum_l(nnxp(ngrd),nnyp(ngrd),1,npatch,a)
+      call RAMS_comp_patchsum(nnxp(ngrd),nnyp(ngrd),1,npatch,a)
    endif
 
    cdname='above ground biomass'
@@ -2822,7 +2835,7 @@ elseif(cvar(1:lv).eq.'lai' .or. cvar(1:lv).eq.'veglai' .or. cvar(1:lv).eq.'lai_p
       ivar_type = 7
    else
       ivar_type = 2
-      call RAMS_comp_patchsum_l(nnxp(ngrd),nnyp(ngrd),1,npatch,a)
+      call RAMS_comp_patchsum(nnxp(ngrd),nnyp(ngrd),1,npatch,a)
    endif
 
    cdname='green leaf area index'
@@ -2849,7 +2862,7 @@ elseif(cvar(1:lv).eq.'tai' .or. cvar(1:lv).eq.'tai_ps') then
       ivar_type = 7
    else
       ivar_type = 2
-      call RAMS_comp_patchsum_l(nnxp(ngrd),nnyp(ngrd),1,npatch,a)
+      call RAMS_comp_patchsum(nnxp(ngrd),nnyp(ngrd),1,npatch,a)
    endif
 
    cdname=' total leaf area index'
@@ -3068,55 +3081,6 @@ elseif(cvar(1:lv).eq.'lwater_p' .or. cvar(1:lv).eq.'lwater_ps') then
 
     cdname='leaf water'
    cdunits='kg/m2'
-
-elseif(cvar(1:lv).eq.'rib' .or. cvar(1:lv) .eq. 'rib_ps') then
-
-   irecind = 1
-   irecsize = nnxp(ngrd) * nnyp(ngrd) * npatch
-   if (cvar(1:lv).eq.'rib_ps') then
-      ierr = RAMS_getvar('PATCH_AREA',idim_type,ngrd   &
-           ,a(irecind),b,flnm)
-      ierr_getvar = ierr_getvar + ierr
-      irecind = irecind + irecsize
-   end if
-
-   ierr = RAMS_getvar('VEG_ROUGH',idim_type,ngrd,c,b,flnm)
-   ierr_getvar = ierr_getvar + ierr
-
-   ierr= RAMS_getvar('UP',idim_type,ngrd,d,b,flnm)
-   ierr_getvar = ierr_getvar + ierr
-   ierr= RAMS_getvar('VP',idim_type,ngrd,e,b,flnm)
-   ierr_getvar = ierr_getvar + ierr
-   call RAMS_comp_speed(n1,n2,n3,d,e)
-   
-   ierr = RAMS_getvar('THETA',idim_type,ngrd,e,b,flnm)
-   ierr_getvar = ierr_getvar + ierr
-   ierr = RAMS_getvar('RTP',idim_type,ngrd,f,b,flnm)
-   ierr_getvar = ierr_getvar + ierr
-   ierr = RAMS_getvar('RV',idim_type,ngrd,h,b,flnm)
-   ierr_getvar = ierr_getvar + ierr
-   call RAMS_comp_thetv(n1,n2,n3,e,f,h)
-   
-   ierr = RAMS_getvar('CAN_THETA',idim_type,ngrd,f,b,flnm)
-   ierr_getvar = ierr_getvar + ierr
-   ierr = RAMS_getvar('CAN_RVAP',idim_type,ngrd,h,b,flnm)
-   ierr_getvar = ierr_getvar + ierr
-   call RAMS_comp_thetv(n1,n2,npatch,f,h,h)
-
-   ierr = RAMS_getvar('TOPT',idim_type,ngrd,h,b,flnm)
-   ierr_getvar = ierr_getvar + ierr
-
-   call RAMS_comp_richardson(n1,n2,n3,npatch,a(irecind),c,d,e,f,h,ngrd)
-
-   if(cvar(1:lv).eq.'rib') then
-      ivar_type = 7
-   else
-      ivar_type = 2
-      call RAMS_comp_patchsum(nnxp(ngrd),nnyp(ngrd),1,npatch,a)
-   endif
-
-   cdname='bulk richardson number'
-   cdunits='n/d'
 
 
 
@@ -3452,6 +3416,29 @@ elseif(cvar(1:lv).eq.'thcan' .or. cvar(1:lv).eq.'thcan_ps') then
    cdname='canopy potential temperature'
    cdunits='K'
 
+elseif(cvar(1:lv).eq.'thecan' .or. cvar(1:lv).eq.'thecan_ps') then
+
+   irecind = 1
+   if(cvar(1:lv).eq.'thcan_ps') then
+      irecsize = nnxp(ngrd) * nnyp(ngrd) * npatch
+      ierr = RAMS_getvar('PATCH_AREA',idim_type,ngrd   &
+           ,a(irecind),b,flnm)
+   end if
+   irecind = irecind + irecsize
+   ierr = RAMS_getvar('CAN_THETA',idim_type,ngrd   &
+        ,a(irecind),b,flnm)
+   ierr_getvar = ierr_getvar + ierr
+
+   if(cvar(1:lv).eq.'thcan') then
+      ivar_type = 7
+   else
+      ivar_type = 2
+      call RAMS_comp_patchsum(nnxp(ngrd),nnyp(ngrd),1,npatch,a)
+   endif
+
+   cdname='canopy potential temperature'
+   cdunits='K'
+
 ! sib - stuffs
 !itb...src_co2
 elseif(cvar(1:lv).eq.'src_co2') then
@@ -3675,7 +3662,7 @@ elseif(cvar(1:lv).eq.'tstar' .or. cvar(1:lv).eq.'tstar_ps') then
    ierr = RAMS_getvar('TSTAR',idim_type,ngrd,a(irecind),b,flnm)
    ierr_getvar = ierr_getvar + ierr
    !----- Flush to zero if the value is small. ----------------!
-   call RAMS_flush_to_zero(n1,n2,1,npatch,a(irecind),ustmin)
+   call RAMS_flush_to_zero(n1,n2,1,npatch,a(irecind),1.e-7)
 
    if(cvar(1:lv).eq.'tstar') then
       ivar_type = 7
@@ -3702,7 +3689,7 @@ elseif(cvar(1:lv).eq.'rstar' .or. cvar(1:lv).eq.'rstar_ps') then
         ,a(irecind),b,flnm)
    ierr_getvar = ierr_getvar + ierr
    !----- Flush to zero if the value is small. ----------------!
-   call RAMS_flush_to_zero(n1,n2,1,npatch,a(irecind),ustmin)
+   call RAMS_flush_to_zero(n1,n2,1,npatch,a(irecind),1.e-7)
 
    if(cvar(1:lv).eq.'rstar') then
       ivar_type = 7
@@ -3729,7 +3716,7 @@ elseif(cvar(1:lv).eq.'cstar' .or. cvar(1:lv).eq.'cstar_ps') then
         ,a(irecind),b,flnm)
    ierr_getvar = ierr_getvar + ierr
    !----- Flush to zero if the value is small. ----------------!
-   call RAMS_flush_to_zero(n1,n2,1,npatch,a(irecind),ustmin)
+   call RAMS_flush_to_zero(n1,n2,1,npatch,a(irecind),1.e-7)
 
    if(cvar(1:lv).eq.'cstar') then
       ivar_type = 7
@@ -6749,6 +6736,7 @@ end subroutine RAMS_comp_patchsum
 !      This routine is for quantities that are not defined for water patches.              !
 !------------------------------------------------------------------------------------------!
 subroutine RAMS_comp_patchsum_l(nx,ny,nz,np,iovar)
+   use leaf_coms, only : tiny_parea
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer                         , intent(in)    :: nx
@@ -6797,7 +6785,7 @@ subroutine RAMS_comp_patchsum_l(nx,ny,nz,np,iovar)
    do z = 1,nz
       do y = 1,ny
          do x = 1,nx
-            if (pfarea(x,y,1) < .991) then
+            if (pfarea(x,y,1) < 1.-tiny_parea) then
                psum(x,y,z) = 0.
                do p = 2,np
                   psum(x,y,z) = psum(x,y,z) + pfarea(x,y,p) * patval(x,y,z,p)              &
@@ -7012,7 +7000,7 @@ end
 !           tions.  Mon. Wea. Rev., 123, 3344-3357, 1995.                                  !
 !------------------------------------------------------------------------------------------!
 subroutine RAMS_reduced_prop(nx,ny,nz,np,ng,which,topt,theta_atm,rvap_atm,uspd_atm         &
-                            ,theta_can,rvap_can,prss_can,zout,rough,veg_height,parea       &
+                            ,theta_can,rvap_can,prss_can,zout,rough,rib,zeta,parea         &
                             ,ustar,tstar,rstar,varred)
    use somevars  , only : myztn      & ! intent(in)
                         , myzmn      & ! intent(in)
@@ -7038,6 +7026,7 @@ subroutine RAMS_reduced_prop(nx,ny,nz,np,ng,which,topt,theta_atm,rvap_atm,uspd_a
                         , tprandtl   & ! intent(in)
                         , z0moz0h    & ! intent(in)
                         , z0hoz0m    & ! intent(in)
+                        , tiny_parea & ! intent(in)
                         , psim       & ! function
                         , psih       & ! function
                         , zoobukhov  ! ! function
@@ -7058,7 +7047,8 @@ subroutine RAMS_reduced_prop(nx,ny,nz,np,ng,which,topt,theta_atm,rvap_atm,uspd_a
    real, dimension(nx,ny)   , intent(in)    :: topt
    real                     , intent(in)    :: zout
    real, dimension(nx,ny,np), intent(in)    :: rough
-   real, dimension(nx,ny,np), intent(in)    :: veg_height
+   real, dimension(nx,ny,np), intent(in)    :: rib
+   real, dimension(nx,ny,np), intent(in)    :: zeta
    real, dimension(nx,ny,np), intent(in)    :: parea
    real, dimension(nx,ny,np), intent(in)    :: ustar
    real, dimension(nx,ny,np), intent(in)    :: tstar
@@ -7079,10 +7069,10 @@ subroutine RAMS_reduced_prop(nx,ny,nz,np,ng,which,topt,theta_atm,rvap_atm,uspd_a
    real              :: lnzoz0m      ! ln[zref/rough(momentum)]
    real              :: zoz0h        ! zref/rough(heat)
    real              :: lnzoz0h      ! ln[zref/rough(heat)]
-   real              :: rib          ! Bulk richardson number.
    real              :: uref         ! Reference wind speed.
    real              :: ured         ! Wind reduced to the level of interest.
    real              :: redp         ! Output variable for this patch.
+   real              :: validarea    ! Total area where we have results.
    !----- Local variables, used by L79. ---------------------------------------------------!
    real              :: a2           ! Drag coefficient in neutral conditions
    real              :: fh           ! Stability parameter for heat
@@ -7093,7 +7083,6 @@ subroutine RAMS_reduced_prop(nx,ny,nz,np,ng,which,topt,theta_atm,rvap_atm,uspd_a
    real              :: ch           ! c coefficient times |Rib|^1/2 for heat.
    real              :: ee           ! (z/z0)^1/3 -1. for eqn. 20 w/o assuming z/z0 >> 1.
    !----- Local variables, used by OD95 and/or BH91. --------------------------------------!
-   real              :: zeta         ! stability parameter, roughly z/(Obukhov length).
    real              :: zeta0m       ! roughness(momentum)/(Obukhov length).
    real              :: zeta0h       ! roughness(heat)/(Obukhov length).
    real              :: ribold       ! Bulk richardson number.
@@ -7117,8 +7106,12 @@ subroutine RAMS_reduced_prop(nx,ny,nz,np,ng,which,topt,theta_atm,rvap_atm,uspd_a
 
          !----- Initialise the output variable. -------------------------------------------!
          varred(x,y) = 0.
+         validarea   = 0.
 
          ploop: do p = 1,np
+            !----- Skip patch if the area is tiny. ----------------------------------------!
+            if (parea(x,y,p) < tiny_parea) cycle ploop
+
             !----- Compute the virtual pot. temperature at the canopy air space (CAS). ----!
             thetav_can = virtt(theta_can(x,y,p),rvap_can(x,y,p),rvap_can(x,y,p))
 
@@ -7129,9 +7122,7 @@ subroutine RAMS_reduced_prop(nx,ny,nz,np,ng,which,topt,theta_atm,rvap_atm,uspd_a
             !     Find the bulk Richardson number and determine whether the layer is       !
             ! stable or not.                                                               !
             !------------------------------------------------------------------------------!
-            rib        = 2.0 * grav * zref * (thetav_atm-thetav_can)                       &
-                       / ( (thetav_atm+thetav_can) * uref * uref)
-            stable     = thetav_atm >= thetav_can
+            stable     = rib(x,y,p) > 0.0
 
             !------------------------------------------------------------------------------!
             !     Find some variables common to all methods.  Notice that, unlike          !
@@ -7159,8 +7150,8 @@ subroutine RAMS_reduced_prop(nx,ny,nz,np,ng,which,topt,theta_atm,rvap_atm,uspd_a
                   !------------------------------------------------------------------------!
                   !     Stable case.                                                       !
                   !------------------------------------------------------------------------!
-                  fm = 1.0 / (1.0 + (2.0 * bl79 * rib / sqrt(1.0 + dl79 * rib)))
-                  fh = 1.0 / (1.0 + (3.0 * bl79 * rib * sqrt(1.0 + dl79 * rib)))
+                  fm = 1.0 / (1.0 + (2.0*bl79 * rib(x,y,p) / sqrt(1.0 + dl79*rib(x,y,p))))
+                  fh = 1.0 / (1.0 + (3.0*bl79 * rib(x,y,p) * sqrt(1.0 + dl79*rib(x,y,p))))
 
                else
                   !------------------------------------------------------------------------!
@@ -7169,17 +7160,17 @@ subroutine RAMS_reduced_prop(nx,ny,nz,np,ng,which,topt,theta_atm,rvap_atm,uspd_a
                   ! z/z0 term.                                                             !
                   !------------------------------------------------------------------------!
                   ee = cbrt(zoz0m) - 1.
-                  c2 = bl79 * a2 * ee * sqrt(ee * abs(rib))
+                  c2 = bl79 * a2 * ee * sqrt(ee * abs(rib(x,y,p)))
                   cm = csm * c2
                   ch = csh * c2
-                  fm = (1.0 - 2.0 * bl79 * rib / (1.0 + 2.0 * cm))
-                  fh = (1.0 - 3.0 * bl79 * rib / (1.0 + 3.0 * ch))
+                  fm = (1.0 - 2.0 * bl79 * rib(x,y,p) / (1.0 + 2.0 * cm))
+                  fh = (1.0 - 3.0 * bl79 * rib(x,y,p) / (1.0 + 3.0 * ch))
                end if
                
                ured  = max(0., ustar(x,y,p) * lnzoz0m / (vonk * sqrt(fm)))
                multh = tprandtl * ustar(x,y,p) * lnzoz0m / (vonk * ured * fh)
 
-            case (2,4)
+            case (2,3,4)
                !---------------------------------------------------------------------------!
                ! 2. Here we use the model proposed by OD95, the standard for MM5, but with !
                !    some terms that were computed in B71 (namely, the "0" terms). which    !
@@ -7187,64 +7178,27 @@ subroutine RAMS_reduced_prop(nx,ny,nz,np,ng,which,topt,theta_atm,rvap_atm,uspd_a
                !    avoids the computation of the Obukhov length L , we can't compute      !
                !    zeta0 by its definition(z0/L). However we know zeta, so zeta0 can be   !
                !    written as z0/z * zeta.                                                !
+               !                                                                           !
+               ! 3. Here we use the model proposed by BH91, which is almost the same as    !
+               !    the OD95 method, with the two following (important) differences.       !
+               !    a. Zeta (z/L) is actually found using the iterative method.            !
+               !    b. Stable functions are computed in a more generic way.  BH91 claim    !
+               !       that the oft-used approximation (-beta*zeta) can cause poor         !
+               !       ventilation of the stable layer, leading to decoupling between the  !
+               !       atmosphere and the canopy air space and excessive cooling.          !
+               !    c. Here we distinguish the fluxes between roughness for momentum and   !
+               !       for heat, as BH91 did.                                              !
                ! 4. We use the model proposed by BH91, but we find zeta using the          !
                !    approximation given by OD95.                                           !
                !---------------------------------------------------------------------------!
-
-               !----- Make sure that the bulk Richardson number is not above ribmax. ------!
-               rib = min(rib,ribmaxod95)
-               
-               !----- We now compute the stability correction functions. ------------------!
-               if (stable) then
-                  !----- Stable case. -----------------------------------------------------!
-                  zeta  = rib * lnzoz0m / (1.1 - 5.0 * rib)
-               else
-                  !----- Unstable case. ---------------------------------------------------!
-                  zeta = rib * lnzoz0m
-               end if
-               zeta0m = rough(x,y,p) * zeta / zout
+               zeta0m = rough(x,y,p) * zeta(x,y,p) / zout
                zeta0h = zeta0m
                !---------------------------------------------------------------------------!
 
-               ured  = ustar(x,y,p)                                                        &
-                     * (lnzoz0m - psim(zeta,stable,myistar) + psim(zeta0m,stable,myistar))     &
-                     / vonk
-               multh = tprandtl                                                            &
-                     * (lnzoz0m - psih(zeta,stable,myistar) + psih(zeta0h,stable,myistar))     &
-                     / vonk
-
-            case (3)
-               !---------------------------------------------------------------------------!
-               !      Here we use the model proposed by BH91, which is almost the same as  !
-               ! the OD95 method, with the two following (important) differences.          !
-               ! 1. Zeta (z/L) is actually found using the iterative method.               !
-               ! 2. Stable functions are computed in a more generic way.  BH91 claim that  !
-               !    the oft-used approximation (-beta*zeta) can cause poor ventilation of  !
-               !    the stable layer, leading to decoupling between the atmosphere and the !
-               !    canopy air space and excessive cooling.                                !
-               ! 3. Here we distinguish the fluxes between roughness for momentum and for  !
-               !    heat, as BH91 did.                                                     !
-               !---------------------------------------------------------------------------!
-
-               !----- Make sure that the bulk Richardson number is not above ribmax. ------!
-               ribold = rib
-               rib    = min(rib,ribmaxbh91)
-
-
-               !----- We now compute the stability correction functions. ------------------!
-               zeta   = zoobukhov(rib,zout,rough(x,y,p),zoz0m,lnzoz0m,zoz0h,lnzoz0h,stable &
-                                 ,myistar)
-               zeta0m = rough(x,y,p) * zeta / zout
-               zeta0h = z0hoz0m * zeta0m
-               !---------------------------------------------------------------------------!
-
-               ured  = ustar(x,y,p)                                                        &
-                     * (lnzoz0m - psim(zeta,stable,myistar) + psim(zeta0m,stable,myistar))     &
-                     / vonk
-               multh = tprandtl                                                            &
-                     * (lnzoz0m - psih(zeta,stable,myistar) + psih(zeta0h,stable,myistar))     &
-                     / vonk
-
+               ured  = ustar(x,y,p) * ( lnzoz0m - psim(zeta(x,y,p),stable,myistar)         &
+                                      + psim(zeta0m,stable,myistar) ) / vonk
+               multh = tprandtl     * ( lnzoz0m - psih(zeta(x,y,p),stable,myistar)         &
+                                      + psih(zeta0h,stable,myistar) ) / vonk
             end select
             !------------------------------------------------------------------------------!
 
@@ -7271,12 +7225,15 @@ subroutine RAMS_reduced_prop(nx,ny,nz,np,ng,which,topt,theta_atm,rvap_atm,uspd_a
                !----- Find the dew/frost point. -------------------------------------------!
                redp = tslif(redp)
             case('ZETA')
-               redp = zeta
+               redp = zeta(x,y,p)
+            case('RICH')
+               redp = rib(x,y,p)
             end select
-
-            varred(x,y) = varred(x,y) + redp * parea(x,y,p)
+            validarea   = validarea   + parea(x,y,p)
+            varred(x,y) = varred(x,y) + parea(x,y,p) * redp
          end do ploop
 
+         varred(x,y) = varred(x,y) / validarea
       end do xloop
    end do yloop
 

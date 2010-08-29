@@ -48,10 +48,11 @@ module rk4_driver
       real                                    :: ecurr_loss2drainage
       real                                    :: wcurr_loss2runoff
       real                                    :: ecurr_loss2runoff
-      real                                    :: old_can_enthalpy
+      real                                    :: old_can_theiv
       real                                    :: old_can_shv
       real                                    :: old_can_co2
       real                                    :: old_can_rhos
+      real                                    :: old_can_temp
 
 
       logical                   , save        :: first_time=.true.
@@ -118,10 +119,11 @@ module rk4_driver
                call zero_rk4_cohort(integration_buff%ak7)
 
                !----- Save the previous thermodynamic state. ------------------------------!
-               old_can_enthalpy = csite%can_enthalpy(ipa)
+               old_can_theiv    = csite%can_theiv(ipa)
                old_can_shv      = csite%can_shv(ipa)
                old_can_co2      = csite%can_co2(ipa)
                old_can_rhos     = csite%can_rhos(ipa)
+               old_can_temp     = csite%can_temp(ipa)
 
                !----- Get velocity for aerodynamic resistance. ----------------------------!
                if (csite%can_theta(ipa) < cpoly%met(isi)%atm_theta) then
@@ -133,7 +135,7 @@ module rk4_driver
                !---------------------------------------------------------------------------!
                !    Copy the meteorological variables to the rk4site structure.            !
                !---------------------------------------------------------------------------!
-               call copy_met_2_rk4site(cpoly%met(isi)%vels,cpoly%met(isi)%atm_enthalpy     &
+               call copy_met_2_rk4site(cpoly%met(isi)%vels,cpoly%met(isi)%atm_theiv        &
                                       ,cpoly%met(isi)%atm_theta,cpoly%met(isi)%atm_tmp     &
                                       ,cpoly%met(isi)%atm_shv,cpoly%met(isi)%atm_co2       &
                                       ,cpoly%met(isi)%geoht,cpoly%met(isi)%exner           &
@@ -198,8 +200,8 @@ module rk4_driver
                                   ,cpoly%met(isi)%qpcpg,ipa,wcurr_loss2atm,ecurr_loss2atm  &
                                   ,co2curr_loss2atm,wcurr_loss2drainage                    &
                                   ,ecurr_loss2drainage,wcurr_loss2runoff,ecurr_loss2runoff &
-                                  ,cpoly%area(isi),cgrid%cbudget_nep(ipy),old_can_enthalpy &
-                                  ,old_can_shv,old_can_co2,old_can_rhos)
+                                  ,cpoly%area(isi),cgrid%cbudget_nep(ipy),old_can_theiv    &
+                                  ,old_can_shv,old_can_co2,old_can_rhos,old_can_temp)
                
 
             end do patchloop
@@ -403,7 +405,7 @@ module rk4_driver
       ! those in which this is not true.  All floating point variables are converted back  !
       ! to single precision.                                                               !
       !------------------------------------------------------------------------------------!
-      csite%can_enthalpy(ipa) = sngloff(initp%can_enthalpy  ,tiny_offset)
+      csite%can_theiv(ipa)    = sngloff(initp%can_theiv     ,tiny_offset)
       csite%can_theta(ipa)    = sngloff(initp%can_theta     ,tiny_offset)
       csite%can_prss(ipa)     = sngloff(initp%can_prss      ,tiny_offset)
       csite%can_temp(ipa)     = sngloff(initp%can_temp      ,tiny_offset)

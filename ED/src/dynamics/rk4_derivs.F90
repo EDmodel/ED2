@@ -46,7 +46,7 @@ subroutine leaf_derivs(initp,dinitp,csite,ipa)
 #endif
    !---------------------------------------------------------------------------------------!
 
-   !----- Ensure that enthalpy and water storage derivatives are both zero. ---------------!
+   !----- Ensure that theta_Eiv and water storage derivatives are both zero. --------------!
    dinitp%ebudget_storage   = 0.d0
    dinitp%wbudget_storage   = 0.d0
    dinitp%co2budget_storage = 0.d0
@@ -680,7 +680,7 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,dewgnd
    real(kind=8)                     :: cflxac           ! Atm->canopy carbon flux
    real(kind=8)                     :: wflxac           ! Atm->canopy water flux
    real(kind=8)                     :: hflxac           ! Atm->canopy sensible heat flux
-   real(kind=8)                     :: eflxac           ! Atm->canopy enthalpy flux
+   real(kind=8)                     :: eflxac           ! Atm->canopy Eq. Pot. temp flux
    real(kind=8)                     :: c2               ! Coefficient (????)
    real                             :: c3lai            ! Coefficient (????)
    real(kind=8)                     :: c3tai            ! Coefficient (????)
@@ -735,8 +735,8 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,dewgnd
    !    Computing the fluxes from atmosphere to canopy.                                    !
    !---------------------------------------------------------------------------------------!
    rho_ustar = initp%can_rhos * initp%ustar                     ! Aux. variable
-   hflxac    = rho_ustar      * initp%tstar * rk4site%atm_exner ! Sensible Heat flux
-   eflxac    = rho_ustar      * initp%estar                     ! Enthalpy flux
+   hflxac    = rho_ustar      * initp%tstar * initp%can_exner   ! Sensible Heat flux
+   eflxac    = rho_ustar      * initp%estar * initp%can_exner   ! Enthalpy flux
    wflxac    = rho_ustar      * initp%qstar                     ! Water flux
    cflxac    = rho_ustar      * initp%cstar * mmdryi8           ! CO2 flux [umol/m2/s]
    !---------------------------------------------------------------------------------------!
@@ -1164,9 +1164,9 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,dewgnd
    !     Update temperature and moisture of canopy.  hcapcan [J/m2/K] and wcapcan          !
    ! [kg_air/m2] are the heat and moisture capacities of the canopy.                       !
    !---------------------------------------------------------------------------------------!
-   dinitp%can_enthalpy = (hflxgc + hflxvc_tot + eflxac                                     &
+   dinitp%can_lntheiv  = (hflxgc + hflxvc_tot + eflxac                                     &
                          + qwflxgc - qdewgndflx + qwflxvc_tot + qtransp_tot)               &
-                       * wcapcani
+                       * hcapcani
    dinitp%can_shv      = (wflxgc - dewgndflx + wflxvc_tot + transp_tot +  wflxac)          &
                        * wcapcani
 

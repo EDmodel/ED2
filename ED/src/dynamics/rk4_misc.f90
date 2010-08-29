@@ -34,7 +34,7 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    use ed_max_dims          , only : n_pft                 ! ! intent(in)
    use canopy_radiation_coms, only : tai_min               ! ! intent(in)
    use therm_lib8           , only : qwtk8                 & ! subroutine
-                                   , ptqz2enthalpy8        & ! function
+                                   , thetaeiv8             & ! function
                                    , idealdenssh8          & ! function
                                    , reducedpress8         ! ! function
    use allometry            , only : dbh2bl                ! ! function
@@ -56,34 +56,28 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
 
    !---------------------------------------------------------------------------------------!
    !     Between time steps the pressure may change because of change in atmospheric       !
-   ! pressure, which means that enthalpy is not conserved.  Potential temperature, on the  !
-   ! other hand, is conserved because there is no heat flux between time steps.  So we use !
-   ! this instead to start all other variables.                                            !
+   ! pressure, which means that temperature is not conserved.  Potential temperature and   !
+   ! equivalent potential temperature, on the other hand, are conserved because there is   !
+   ! no heat flux between time steps.  So we use these instead to start all other vari-    !
+   ! ables.                                                                                !
    !---------------------------------------------------------------------------------------!
    !----- 1. Update thermo variables that are conserved between steps. --------------------!
    targetp%can_theta    = dble(sourcesite%can_theta(ipa))
+   targetp%can_theiv    = dble(sourcesite%can_theiv(ipa))
    targetp%can_shv      = dble(sourcesite%can_shv(ipa))
    targetp%can_co2      = dble(sourcesite%can_co2(ipa))
    targetp%can_depth    = dble(sourcesite%can_depth(ipa))
-   !----- 2. Update the canopy pressure based on the new atmospheric pressure. ------------!
+   targetp%can_rvap     = targetp%can_shv / (1.d0 - targetp%can_shv)
 
+   !----- 2. Update the canopy pressure and Exner function. -------------------------------!
    targetp%can_prss     = reducedpress8(rk4site%atm_prss,rk4site%atm_theta,rk4site%atm_shv &
                                        ,rk4site%geoht,targetp%can_theta,targetp%can_shv    &
                                        ,targetp%can_depth)
+   targetp%can_exner    = cp8 * (targetp%can_prss * p00i8) ** rocp8
 
-   !---------------------------------------------------------------------------------------!
-   !     2½. Recompute the atmospheric enthalpy and temperature right above the canopy     !
-   ! height.  This must be done here to make sure that the enthalpy flux is consistent,    !
-   ! since enthalpy is not conserved with height as the pressure changes.                  !
-   !---------------------------------------------------------------------------------------!
-   rk4site%atm_tmp      = rk4site%atm_theta * (p00i8 * targetp%can_prss) ** rocp8
-   rk4site%atm_enthalpy = ptqz2enthalpy8(targetp%can_prss,rk4site%atm_tmp                  &
-                                        ,rk4site%atm_shv,targetp%can_depth)
-
-   !----- 3. Update temperature, enthalpy, and density. -----------------------------------!
-   targetp%can_temp     = targetp%can_theta * (p00i8 * targetp%can_prss) ** rocp8
-   targetp%can_enthalpy = ptqz2enthalpy8(targetp%can_prss,targetp%can_temp                 &
-                                        ,targetp%can_shv,targetp%can_depth)
+   !----- 3. Update temperature, and density and the natural logarithm of theta_eiv. ------!
+   targetp%can_lntheiv  = log(targetp%can_theiv)
+   targetp%can_temp     = cpi8 * targetp%can_theta * targetp%can_exner
    targetp%can_rhos     = idealdenssh8(targetp%can_prss,targetp%can_temp,targetp%can_shv)
    !---------------------------------------------------------------------------------------!
 
@@ -359,6 +353,8 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
    use rk4_coms              , only : rk4site              & ! intent(in)
                                     , rk4min_sfcwater_mass & ! intent(in)
                                     , rk4min_can_shv       & ! intent(in)
+                                    , rk4min_can_theiv     & ! intent(in)
+                                    , rk4max_can_theiv     & ! intent(in)
                                     , rk4min_can_temp      & ! intent(in)
                                     , rk4max_can_shv       & ! intent(in)
                                     , rk4patchtype         ! ! structure
@@ -369,8 +365,7 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
                                     , nzs                  ! ! intent(in)
    use therm_lib8            , only : qwtk8                & ! subroutine
                                     , qtk8                 & ! subroutine
-                                    , hpqz2temp8           & ! function
-                                    , ptqz2enthalpy8       & ! function
+                                    , thetaeiv2thil8       & ! function
                                     , idealdenssh8         ! ! function
    use consts_coms           , only : alvl8                & ! intent(in)
                                     , wdns8                & ! intent(in)
@@ -380,7 +375,7 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
                                     , toodry8              & ! intent(in)
                                     , cp8                  & ! intent(in)
                                     , cpi8                 & ! intent(in)
-                                    , p008                 & ! intent(in)
+                                    , p00i8                & ! intent(in)
                                     , rocp8                ! ! intent(in)
    use canopy_struct_dynamics, only : can_whcap8           ! ! subroutine
    implicit none
@@ -392,29 +387,39 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
    type(patchtype)        , pointer :: cpatch
    integer                          :: ico
    integer                          :: k
+   logical                          :: ok_shv
+   logical                          :: ok_theiv
    real(kind=8)                     :: soilhcap
    !---------------------------------------------------------------------------------------!
 
+   !----- First, we update the canopy air equivalent potential temperature. ---------------!
+   initp%can_theiv = exp(initp%can_lntheiv)
+
+   !----- Then we define some logicals to make the code cleaner. --------------------------!
+   ok_shv   = initp%can_shv   >= rk4min_can_shv   .and. initp%can_shv   <= rk4max_can_shv
+   ok_theiv = initp%can_theiv >= rk4min_can_theiv .and. initp%can_theiv <= rk4max_can_theiv
+
    !---------------------------------------------------------------------------------------!
-   !     Here we convert enthalpy into temperature, potential temperature, and density.    !
+   !     Here we convert theta_Eiv into temperature, potential temperature, and density.   !
    !---------------------------------------------------------------------------------------!
-!   if (initp%can_shv >= rk4min_can_shv .and. initp%can_shv <= rk4max_can_shv) then 
-!      initp%can_temp  = hpqz2temp8(initp%can_enthalpy,initp%can_prss,initp%can_shv         &
-!                                  ,initp%can_depth)
-!   else
-!      initp%can_temp  = rk4min_can_temp
-!   end if 
-   
-   if (initp%can_shv >= rk4min_can_shv .and. initp%can_shv <= rk4max_can_shv) then 
-      initp%can_temp  = hpqz2temp8(initp%can_enthalpy,initp%can_prss,initp%can_shv         &
-           ,initp%can_depth)
+   if (ok_shv .and. ok_theiv) then
+      initp%can_rvap  = initp%can_shv / (1.d0 - initp%can_shv)
+      initp%can_theta = thetaeiv2thil8(initp%can_theiv,initp%can_prss,initp%can_rvap)
+      initp%can_temp  = cpi8 * initp%can_theta * initp%can_exner
+   elseif (ok_shv) then
+      initp%can_rvap  = initp%can_shv / (1.d0 - initp%can_shv)
+      initp%can_theta = thetaeiv2thil8(rk4min_can_theiv,initp%can_prss,initp%can_rvap)
+      initp%can_temp  = cpi8 * initp%can_theta * initp%can_exner
+   elseif (ok_theiv) then
+      initp%can_rvap  = rk4min_can_shv / (1.d0 - rk4min_can_shv)
+      initp%can_theta = thetaeiv2thil8(initp%can_theiv,initp%can_prss,initp%can_rvap)
+      initp%can_temp  = cpi8 * initp%can_theta * initp%can_exner
    else
-      initp%can_temp  = hpqz2temp8(initp%can_enthalpy,initp%can_prss,rk4min_can_shv        &
-           ,initp%can_depth)
+      initp%can_rvap  = rk4min_can_shv / (1.d0 - rk4min_can_shv)
+      initp%can_theta = thetaeiv2thil8(rk4min_can_theiv,initp%can_prss,initp%can_rvap)
+      initp%can_temp  = cpi8 * initp%can_theta * initp%can_exner
    end if
 
-   initp%can_theta = initp%can_temp * (p008 / initp%can_prss) ** rocp8
-   initp%can_rhos  = idealdenssh8(initp%can_prss,initp%can_temp,initp%can_shv)
    !---------------------------------------------------------------------------------------!
 
    !----- Updating soil temperature and liquid water fraction. ----------------------------!
@@ -425,7 +430,7 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
    end do
    !---------------------------------------------------------------------------------------!
 
-   call can_whcap8(csite,ipa,initp%can_rhos,initp%can_depth)
+   call can_whcap8(csite,ipa,initp%can_rhos,initp%can_temp,initp%can_depth)
 
    !---------------------------------------------------------------------------------------!
    !    Updating surface water temperature and liquid water fraction, remembering that in- !
@@ -931,7 +936,8 @@ subroutine adjust_topsoil_properties(initp,hdid,csite,ipa)
                                    , rk4min_sfcw_mass     & ! intent(in)
                                    , rk4min_can_shv       & ! intent(in)
                                    , wcapcan              & ! intent(in)
-                                   , wcapcani             ! ! intent(in)
+                                   , wcapcani             & ! intent(in)
+                                   , hcapcani             ! ! intent(in)
    use ed_state_vars        , only : sitetype             & ! structure
                                    , patchtype            ! ! structure
    use consts_coms          , only : cice8                & ! intent(in)
@@ -1226,7 +1232,7 @@ subroutine adjust_topsoil_properties(initp,hdid,csite,ipa)
          initp%soil_energy(kt) = initp%soil_energy(kt) + energy_needed * dslzi8(kt)
 
          initp%can_shv         = initp%can_shv        - water_needed  * wcapcani
-         initp%can_enthalpy    = initp%can_enthalpy   - energy_needed * wcapcani
+         initp%can_lntheiv     = initp%can_lntheiv    - energy_needed * hcapcani
          
          initp%avg_vapor_gc    = initp%avg_vapor_gc  - water_needed * hdidi
          return
@@ -1250,7 +1256,7 @@ subroutine adjust_topsoil_properties(initp,hdid,csite,ipa)
          initp%soil_energy(kt) = initp%soil_energy(kt) + energy_available * dslzi8(kt)
 
          initp%can_shv         = initp%can_shv        - water_available  * wcapcani
-         initp%can_enthalpy    = initp%can_enthalpy   - energy_available * wcapcani
+         initp%can_lntheiv     = initp%can_lntheiv    - energy_available * hcapcani
          initp%avg_vapor_gc    = initp%avg_vapor_gc   - water_available  * hdidi
 
          return
@@ -1319,9 +1325,9 @@ subroutine adjust_topsoil_properties(initp,hdid,csite,ipa)
          call qtk8(initp%virtual_heat/initp%virtual_water,virtual_temp,virtual_fliq)
          initp%can_shv      = initp%can_shv      + initp%virtual_water  * wcapcani 
 
-         initp%can_enthalpy = initp%can_enthalpy                                           &
+         initp%can_lntheiv  = initp%can_lntheiv                                            &
                             + initp%virtual_water * (alvi8 - virtual_fliq * alli8)         &
-                            * wcapcani
+                            * hcapcani
 
          initp%avg_vapor_gc = initp%avg_vapor_gc + initp%virtual_water  * hdidi
          
@@ -1405,7 +1411,7 @@ subroutine adjust_topsoil_properties(initp,hdid,csite,ipa)
          !----- Sending the water and energy to the canopy. -------------------------------!
          initp%soil_water(kt)  = initp%soil_water(kt)  - water_excess  * dslzi8(kt)*wdnsi8
          initp%soil_energy(kt) = initp%soil_energy(kt) - energy_excess * dslzi8(kt)
-         initp%can_enthalpy    = initp%can_enthalpy    + energy_excess * wcapcani
+         initp%can_lntheiv     = initp%can_lntheiv     + energy_excess * hcapcani
          initp%can_shv         = initp%can_shv         + water_excess  * wcapcani
          initp%avg_vapor_gc    = initp%avg_vapor_gc    + water_excess  * hdidi
       end if
@@ -1435,6 +1441,7 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
                                    , rk4site            & ! intent(in)
                                    , rk4eps             & ! intent(in)
                                    , rk4min_veg_lwater  & ! intent(in)
+                                   , hcapcani           & ! intent(in)
                                    , wcapcani           & ! intent(in)
                                    , rk4dry_veg_lwater  & ! intent(in)
                                    , rk4fullveg_lwater  ! ! intent(in)
@@ -1535,7 +1542,7 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
             initp%veg_water(ico)  = 0.d0
             initp%veg_energy(ico) = initp%veg_energy(ico)  + veg_qdew
             initp%can_shv         = initp%can_shv          - veg_dew  * wcapcani
-            initp%can_enthalpy    = initp%can_enthalpy     - veg_qdew * wcapcani
+            initp%can_lntheiv     = initp%can_lntheiv      - veg_qdew * hcapcani
 
             !----- Updating output flux ---------------------------------------------------!
             initp%avg_vapor_vc    = initp%avg_vapor_vc   - veg_dew * hdidi
@@ -1596,10 +1603,10 @@ subroutine print_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
    write(unit=*,fmt='(5(a,1x))')  'Name            ','   Max.Error','   Abs.Error'&
                                 &,'       Scale','Problem(T|F)'
 
-   errmax       = max(0.0,abs(yerr%can_enthalpy/yscal%can_enthalpy))
-   troublemaker = large_error(yerr%can_enthalpy,yscal%can_enthalpy)
-   write(unit=*,fmt=onefmt) 'CAN_ENTHALPY:',errmax,yerr%can_enthalpy,yscal%can_enthalpy    &
-                                           ,troublemaker
+   errmax       = max(0.0,abs(yerr%can_lntheiv/yscal%can_lntheiv))
+   troublemaker = large_error(yerr%can_theiv,yscal%can_theiv)
+   write(unit=*,fmt=onefmt) 'CAN_LNTHEIV:',errmax,yerr%can_lntheiv,yscal%can_lntheiv       &
+                                          ,troublemaker
 
    errmax       = max(errmax,abs(yerr%can_shv/yscal%can_shv))
    troublemaker = large_error(yerr%can_shv,yscal%can_shv)
@@ -1839,11 +1846,11 @@ subroutine print_csiteipa(csite, ipa)
    write (unit=*,fmt='(11(a12,1x))') '  VEG_HEIGHT','   VEG_ROUGH','         LAI'          &
                                     ,'        HTRY','     CAN_CO2','    CAN_TEMP'          &
                                     ,'     CAN_SHV','    CAN_RHOS','    CAN_PRSS'          &
-                                    ,'CAN_ENTHALPY','   CAN_DEPTH'
+                                    ,'   CAN_THEIV','   CAN_DEPTH'
    write (unit=*,fmt='(11(es12.4,1x))') csite%veg_height(ipa),csite%veg_rough(ipa)         &
          ,csite%lai(ipa),csite%htry(ipa),csite%can_co2(ipa),csite%can_temp(ipa)            &
          ,csite%can_shv(ipa),csite%can_rhos(ipa),csite%can_prss(ipa)                       &
-         ,csite%can_enthalpy(ipa),csite%can_depth(ipa) 
+         ,csite%can_theiv(ipa),csite%can_depth(ipa) 
 
    write (unit=*,fmt='(80a)') ('-',k=1,80)
 
@@ -1945,7 +1952,7 @@ subroutine print_rk4patch(y,csite,ipa)
    write (unit=*,fmt='(80a)')         ('-',k=1,80)
    write (unit=*,fmt='(a)')           ' ATMOSPHERIC CONDITIONS: '
    write (unit=*,fmt='(a,1x,es12.4)') ' Air temperature    : ',rk4site%atm_tmp
-   write (unit=*,fmt='(a,1x,es12.4)') ' Air enthalpy       : ',rk4site%atm_enthalpy
+   write (unit=*,fmt='(a,1x,es12.4)') ' Air theta_Eiv      : ',rk4site%atm_theiv
    write (unit=*,fmt='(a,1x,es12.4)') ' H2Ov mixing ratio  : ',rk4site%atm_shv
    write (unit=*,fmt='(a,1x,es12.4)') ' CO2  mixing ratio  : ',rk4site%atm_co2
    write (unit=*,fmt='(a,1x,es12.4)') ' Pressure           : ',rk4site%atm_prss
@@ -1985,12 +1992,12 @@ subroutine print_rk4patch(y,csite,ipa)
    write (unit=*,fmt='(80a)') ('-',k=1,80)
 
    write (unit=*,fmt='(11(a12,1x))')  '  VEG_HEIGHT','   VEG_ROUGH','   PATCH_LAI'         &
-                                     ,'     CAN_CO2','CAN_ENTHALPY','   CAN_THETA'         &
+                                     ,'     CAN_CO2','   CAN_THEIV','   CAN_THETA'         &
                                      ,'    CAN_TEMP','     CAN_SHV','    CAN_RHOS'         &
                                      ,'    CAN_PRSS','   CAN_DEPTH'
                                      
    write (unit=*,fmt='(11(es12.4,1x))') csite%veg_height(ipa),csite%veg_rough(ipa)         &
-                                       ,csite%lai(ipa),y%can_co2,y%can_enthalpy            &
+                                       ,csite%lai(ipa),y%can_co2,y%can_theiv               &
                                        ,y%can_theta,y%can_temp,y%can_shv,y%can_rhos        &
                                        ,y%can_prss,y%can_depth
 

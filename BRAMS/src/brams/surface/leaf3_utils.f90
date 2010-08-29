@@ -20,9 +20,10 @@
 ! OD95. ONCLEY, S.P.; DUDHIA, J.; Evaluation of surface fluxes from MM5 using observa-     !
 !           tions.  Mon. Wea. Rev., 123, 3344-3357, 1995.                                  !
 !------------------------------------------------------------------------------------------!
-subroutine leaf_stars(theta_atm,enthalpy_atm,shv_atm,rvap_atm,co2_atm,theta_can            &
-                     ,enthalpy_can,shv_can,rvap_can,co2_can,zref,uref,dtll,rough           &
-                     ,ustar,tstar,estar,qstar,rstar,cstar,zeta,rib,r_aer)
+subroutine leaf_stars(theta_atm,theiv_atm,shv_atm,rvap_atm,co2_atm                         &
+                     ,theta_can,theiv_can,shv_can,rvap_can,co2_can                         &
+                     ,zref,uref,dtll,rough,ustar,tstar,estar,qstar,rstar,cstar             &
+                     ,zeta,rib,r_aer)
    use mem_leaf  , only : istar      ! ! intent(in)
    use rconstants, only : grav       & ! intent(in)
                         , vonk       & ! intent(in)
@@ -44,12 +45,12 @@ subroutine leaf_stars(theta_atm,enthalpy_atm,shv_atm,rvap_atm,co2_atm,theta_can 
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    real, intent(in)  :: theta_atm    ! Above canopy air pot. temperature        [        K]
-   real, intent(in)  :: enthalpy_atm ! Above canopy air enthalpy                [     J/kg]
+   real, intent(in)  :: theiv_atm    ! Above canopy air eq. pot. temp           [        K]
    real, intent(in)  :: shv_atm      ! Above canopy vapour spec. hum.           [kg/kg_air]
    real, intent(in)  :: rvap_atm     ! Above canopy vapour mixing ratio         [kg/kg_air]
    real, intent(in)  :: co2_atm      ! Above canopy CO2 mixing ratio            [ µmol/mol]
    real, intent(in)  :: theta_can    ! Canopy air potential temperature         [        K]
-   real, intent(in)  :: enthalpy_can ! Canopy air enthalpy                      [     J/kg]
+   real, intent(in)  :: theiv_can    ! Canopy air equiv. potential temperature  [        K]
    real, intent(in)  :: shv_can      ! Canopy air vapour spec. humidity         [kg/kg_air]
    real, intent(in)  :: rvap_can     ! Canopy air vapour mixing ratio           [kg/kg_air]
    real, intent(in)  :: co2_can      ! Canopy air CO2 mixing ratio              [ µmol/mol]
@@ -59,7 +60,7 @@ subroutine leaf_stars(theta_atm,enthalpy_atm,shv_atm,rvap_atm,co2_atm,theta_can 
    real, intent(in)  :: rough        ! z0, the roughness                        [        m]
    real, intent(out) :: ustar        ! U*, friction velocity                    [      m/s]
    real, intent(out) :: tstar        ! Temperature friction scale               [        K]
-   real, intent(out) :: estar        ! Enthalpy friction scale                  [     J/kg]
+   real, intent(out) :: estar        ! Theta_Eiv friction scale                 [        K]
    real, intent(out) :: qstar        ! Specific humidity friction scale         [kg/kg_air]
    real, intent(out) :: rstar        ! Vapour mixing ratio friction scale       [kg/kg_air]
    real, intent(out) :: cstar        ! CO2 mixing ratio                         [ µmol/mol]
@@ -72,7 +73,6 @@ subroutine leaf_stars(theta_atm,enthalpy_atm,shv_atm,rvap_atm,co2_atm,theta_can 
    real              :: lnzoz0m      ! ln[zref/rough(momentum)]
    real              :: zoz0h        ! zref/rough(heat)
    real              :: lnzoz0h      ! ln[zref/rough(heat)]
-   real              :: rib          ! Bulk richardson number.
    real              :: c3           ! coefficient to find the other stars
    real              :: delz         !
    real              :: d_vel        !
@@ -145,6 +145,7 @@ subroutine leaf_stars(theta_atm,enthalpy_atm,shv_atm,rvap_atm,co2_atm,theta_can 
 
       !----- Finding ustar, making sure it is not too small. ------------------------------!
       ustar = max(ustmin,sqrt(c1 * uref * fm))
+
       !----- Finding the coefficient to scale the other stars. ----------------------------!
       c3 = c1 * fh / ustar
       !------------------------------------------------------------------------------------!
@@ -211,7 +212,7 @@ subroutine leaf_stars(theta_atm,enthalpy_atm,shv_atm,rvap_atm,co2_atm,theta_can 
 
 
       !----- We now compute the stability correction functions. ---------------------------!
-      zeta  = zoobukhov(rib,zref,rough,zoz0m,lnzoz0m,zoz0h,lnzoz0h,stable)
+      zeta   = zoobukhov(rib,zref,rough,zoz0m,lnzoz0m,zoz0h,lnzoz0h,stable)
       zeta0m = rough * zeta / zref
       zeta0h = z0hoz0m * zeta0m
 
@@ -224,28 +225,31 @@ subroutine leaf_stars(theta_atm,enthalpy_atm,shv_atm,rvap_atm,co2_atm,theta_can 
       ustar = max (ustmin, vonk * uref                                                     &
                          / (lnzoz0m - psim(zeta,stable) + psim(zeta0m,stable)))
 
+
       !----- Finding the coefficient to scale the other stars. ----------------------------!
       c3    = vonk / (tprandtl * (lnzoz0h - psih(zeta,stable) + psih(zeta0h,stable)))
-
       !------------------------------------------------------------------------------------!
 
    end select
 
    !----- Finding all stars. --------------------------------------------------------------!
    tstar = c3 * (theta_atm    - theta_can   )
-   estar = c3 * (enthalpy_atm - enthalpy_can)
+   estar = c3 * (theiv_atm    - theiv_can   )
    qstar = c3 * (shv_atm      - shv_can     )
    rstar = c3 * (rvap_atm     - rvap_can    )
    cstar = c3 * (co2_atm      - co2_can     )
-   
+
+   return
+
    if (abs(tstar) < 1.e-7) tstar = 0.
    if (abs(estar) < 1.e-7) estar = 0.
    if (abs(qstar) < 1.e-7) qstar = 0.
    if (abs(rstar) < 1.e-7) rstar = 0.
    if (abs(cstar) < 1.e-7) cstar = 0.
 
-
-   !----- Limit ustar so that the flux cannot take more than 1/2 velocity in a timestep ---!
+   !---------------------------------------------------------------------------------------!
+   !     Limit ustar so that the flux cannot take more than 1/2 velocity in a timestep.    !
+   !---------------------------------------------------------------------------------------!
    delz  = 2. * zref
    d_vel = - ustar * ustar * dtll / delz
    vel_new = uref + d_vel
@@ -253,7 +257,7 @@ subroutine leaf_stars(theta_atm,enthalpy_atm,shv_atm,rvap_atm,co2_atm,theta_can 
       d_vel = .5 * uref
       ustar = sqrt(d_vel * delz / dtll)
    end if
-
+   !---------------------------------------------------------------------------------------!
    return
 end subroutine leaf_stars
 !==========================================================================================!
@@ -418,12 +422,12 @@ end subroutine leaf_grndvap
 !------------------------------------------------------------------------------------------!
 subroutine leaf_bcond(m2,m3,mzg,mzs,npat,jdim,soil_water,sfcwater_mass,soil_energy         &
                      ,sfcwater_energy,soil_text,sfcwater_depth,ustar,tstar,rstar,cstar     &
-                     ,veg_albedo,veg_fracarea,veg_lai,veg_tai,veg_rough,veg_height         &
-                     ,patch_area,patch_rough,patch_wetind,leaf_class,soil_rough            &
+                     ,zeta,ribulk,veg_albedo,veg_fracarea,veg_lai,veg_tai,veg_rough        &
+                     ,veg_height,patch_area,patch_rough,patch_wetind,leaf_class,soil_rough &
                      ,sfcwater_nlev,stom_resist,ground_rsat,ground_rvap,ground_temp        &
-                     ,ground_fliq,veg_water,veg_hcap,veg_energy,can_prss,can_theta         &
-                     ,can_rvap,can_co2,sensible,evap,transp,gpp,plresp,resphet,veg_ndvip   &
-                     ,veg_ndvic,veg_ndvif)
+                     ,ground_fliq,veg_water,veg_hcap,veg_energy,can_prss,can_theiv         &
+                     ,can_theta,can_rvap,can_co2,sensible,evap,transp,gpp,plresp,resphet   &
+                     ,veg_ndvip,veg_ndvic,veg_ndvif)
 
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
@@ -431,7 +435,7 @@ subroutine leaf_bcond(m2,m3,mzg,mzs,npat,jdim,soil_water,sfcwater_mass,soil_ener
    real, dimension(mzg,m2,m3,npat), intent(inout) :: soil_water,soil_energy,soil_text
    real, dimension(mzs,m2,m3,npat), intent(inout) :: sfcwater_mass,sfcwater_energy
    real, dimension(mzs,m2,m3,npat), intent(inout) :: sfcwater_depth
-   real, dimension(m2,m3,npat)    , intent(inout) :: ustar,tstar,rstar,cstar
+   real, dimension(m2,m3,npat)    , intent(inout) :: ustar,tstar,rstar,cstar,zeta,ribulk
    real, dimension(m2,m3,npat)    , intent(inout) :: veg_albedo,veg_fracarea
    real, dimension(m2,m3,npat)    , intent(inout) :: veg_lai,veg_tai,veg_rough,veg_height
    real, dimension(m2,m3,npat)    , intent(inout) :: patch_area,patch_rough,patch_wetind
@@ -439,7 +443,8 @@ subroutine leaf_bcond(m2,m3,mzg,mzs,npat,jdim,soil_water,sfcwater_mass,soil_ener
    real, dimension(m2,m3,npat)    , intent(inout) :: stom_resist,ground_rsat,ground_rvap
    real, dimension(m2,m3,npat)    , intent(inout) :: ground_temp,ground_fliq
    real, dimension(m2,m3,npat)    , intent(inout) :: veg_water,veg_energy,veg_hcap
-   real, dimension(m2,m3,npat)    , intent(inout) :: can_prss,can_theta,can_rvap,can_co2
+   real, dimension(m2,m3,npat)    , intent(inout) :: can_prss,can_theiv,can_theta
+   real, dimension(m2,m3,npat)    , intent(inout) :: can_rvap,can_co2
    real, dimension(m2,m3,npat)    , intent(inout) :: sensible,evap,transp
    real, dimension(m2,m3,npat)    , intent(inout) :: gpp,plresp,resphet
    real, dimension(m2,m3,npat)    , intent(inout) :: veg_ndvip,veg_ndvic,veg_ndvif
@@ -453,6 +458,8 @@ subroutine leaf_bcond(m2,m3,mzg,mzs,npat,jdim,soil_water,sfcwater_mass,soil_ener
          tstar          (1,j,ipat) = tstar            (2,j,ipat)
          rstar          (1,j,ipat) = rstar            (2,j,ipat)
          cstar          (1,j,ipat) = cstar            (2,j,ipat)
+         zeta           (1,j,ipat) = zeta             (2,j,ipat)
+         ribulk         (1,j,ipat) = ribulk           (2,j,ipat)
          veg_fracarea   (1,j,ipat) = veg_fracarea     (2,j,ipat)
          veg_lai        (1,j,ipat) = veg_lai          (2,j,ipat)
          veg_tai        (1,j,ipat) = veg_tai          (2,j,ipat)
@@ -473,6 +480,7 @@ subroutine leaf_bcond(m2,m3,mzg,mzs,npat,jdim,soil_water,sfcwater_mass,soil_ener
          veg_hcap       (1,j,ipat) = veg_hcap         (2,j,ipat)
          veg_energy     (1,j,ipat) = veg_energy       (2,j,ipat)
          can_prss       (1,j,ipat) = can_prss         (2,j,ipat)
+         can_theiv      (1,j,ipat) = can_theiv        (2,j,ipat)
          can_theta      (1,j,ipat) = can_theta        (2,j,ipat)
          can_rvap       (1,j,ipat) = can_rvap         (2,j,ipat)
          can_co2        (1,j,ipat) = can_co2          (2,j,ipat)
@@ -490,6 +498,8 @@ subroutine leaf_bcond(m2,m3,mzg,mzs,npat,jdim,soil_water,sfcwater_mass,soil_ener
          tstar         (m2,j,ipat) = tstar         (m2-1,j,ipat)
          rstar         (m2,j,ipat) = rstar         (m2-1,j,ipat)
          cstar         (m2,j,ipat) = cstar         (m2-1,j,ipat)
+         zeta          (m2,j,ipat) = zeta          (m2-1,j,ipat)
+         ribulk        (m2,j,ipat) = ribulk        (m2-1,j,ipat)
          veg_albedo    (m2,j,ipat) = veg_albedo    (m2-1,j,ipat)
          veg_fracarea  (m2,j,ipat) = veg_fracarea  (m2-1,j,ipat)
          veg_lai       (m2,j,ipat) = veg_lai       (m2-1,j,ipat)
@@ -511,6 +521,7 @@ subroutine leaf_bcond(m2,m3,mzg,mzs,npat,jdim,soil_water,sfcwater_mass,soil_ener
          veg_hcap      (m2,j,ipat) = veg_hcap      (m2-1,j,ipat)
          veg_energy    (m2,j,ipat) = veg_energy    (m2-1,j,ipat)
          can_prss      (m2,j,ipat) = can_prss      (m2-1,j,ipat)
+         can_theiv     (m2,j,ipat) = can_theiv     (m2-1,j,ipat)
          can_theta     (m2,j,ipat) = can_theta     (m2-1,j,ipat)
          can_rvap      (m2,j,ipat) = can_rvap      (m2-1,j,ipat)
          can_co2       (m2,j,ipat) = can_co2       (m2-1,j,ipat)
@@ -552,6 +563,8 @@ subroutine leaf_bcond(m2,m3,mzg,mzs,npat,jdim,soil_water,sfcwater_mass,soil_ener
             tstar          (i,1,ipat) = tstar            (i,2,ipat)
             rstar          (i,1,ipat) = rstar            (i,2,ipat)
             cstar          (i,1,ipat) = cstar            (i,2,ipat)
+            zeta           (i,1,ipat) = zeta             (i,2,ipat)
+            ribulk         (i,1,ipat) = ribulk           (i,2,ipat)
             veg_albedo     (i,1,ipat) = veg_albedo       (i,2,ipat)
             veg_fracarea   (i,1,ipat) = veg_fracarea     (i,2,ipat)
             veg_lai        (i,1,ipat) = veg_lai          (i,2,ipat)
@@ -573,6 +586,7 @@ subroutine leaf_bcond(m2,m3,mzg,mzs,npat,jdim,soil_water,sfcwater_mass,soil_ener
             veg_hcap       (i,1,ipat) = veg_hcap         (i,2,ipat)
             veg_energy     (i,1,ipat) = veg_energy       (i,2,ipat)
             can_prss       (i,1,ipat) = can_prss         (i,2,ipat)
+            can_theiv      (i,1,ipat) = can_theiv        (i,2,ipat)
             can_theta      (i,1,ipat) = can_theta        (i,2,ipat)
             can_rvap       (i,1,ipat) = can_rvap         (i,2,ipat)
             can_co2        (i,1,ipat) = can_co2          (i,2,ipat)
@@ -590,6 +604,8 @@ subroutine leaf_bcond(m2,m3,mzg,mzs,npat,jdim,soil_water,sfcwater_mass,soil_ener
             tstar         (i,m3,ipat) = tstar         (i,m3-1,ipat)
             rstar         (i,m3,ipat) = rstar         (i,m3-1,ipat)
             cstar         (i,m3,ipat) = cstar         (i,m3-1,ipat)
+            zeta          (i,m3,ipat) = zeta          (i,m3-1,ipat)
+            ribulk        (i,m3,ipat) = ribulk        (i,m3-1,ipat)
             veg_albedo    (i,m3,ipat) = veg_albedo    (i,m3-1,ipat)
             veg_fracarea  (i,m3,ipat) = veg_fracarea  (i,m3-1,ipat)
             veg_lai       (i,m3,ipat) = veg_lai       (i,m3-1,ipat)
@@ -611,6 +627,7 @@ subroutine leaf_bcond(m2,m3,mzg,mzs,npat,jdim,soil_water,sfcwater_mass,soil_ener
             veg_hcap      (i,m3,ipat) = veg_hcap      (i,m3-1,ipat)
             veg_energy    (i,m3,ipat) = veg_energy    (i,m3-1,ipat)
             can_prss      (i,m3,ipat) = can_prss      (i,m3-1,ipat)
+            can_theiv     (i,m3,ipat) = can_theiv     (i,m3-1,ipat)
             can_theta     (i,m3,ipat) = can_theta     (i,m3-1,ipat)
             can_rvap      (i,m3,ipat) = can_rvap      (i,m3-1,ipat)
             can_co2       (i,m3,ipat) = can_co2       (i,m3-1,ipat)
@@ -659,63 +676,142 @@ end subroutine leaf_bcond
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine sfc_fields(m1,m2,m3,ia,iz,ja,jz,jd  &
-   ,theta,rv,co2p,up,vp,dn0,pp,pi0,rtgt,zt,zm,ths2,rvs2,co2s2,ups2,vps2,pis2,dens2,zts2)
+subroutine sfc_fields(m1,m2,m3,ia,iz,ja,jz,jd,thp,theta,rv,rtp,co2p,up,vp,dn0,pp,pi0,rtgt  &
+                     ,zt,zm,thils2,ths2,rvs2,rtps2,co2s2,ups2,vps2,pis2,dens2,zts2)
 
    use leaf_coms
    use rconstants
 
    implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                  , intent(in)    :: m1
+   integer                  , intent(in)    :: m2
+   integer                  , intent(in)    :: m3
+   integer                  , intent(in)    :: ia
+   integer                  , intent(in)    :: iz
+   integer                  , intent(in)    :: ja
+   integer                  , intent(in)    :: jz
+   integer                  , intent(in)    :: jd
+   real, dimension(m1,m2,m3), intent(in)    :: thp
+   real, dimension(m1,m2,m3), intent(in)    :: theta
+   real, dimension(m1,m2,m3), intent(in)    :: rv
+   real, dimension(m1,m2,m3), intent(in)    :: rtp
+   real, dimension(m1,m2,m3), intent(in)    :: co2p
+   real, dimension(m1,m2,m3), intent(in)    :: up
+   real, dimension(m1,m2,m3), intent(in)    :: vp
+   real, dimension(m1,m2,m3), intent(in)    :: dn0
+   real, dimension(m1,m2,m3), intent(in)    :: pp
+   real, dimension(m1,m2,m3), intent(in)    :: pi0
+   real, dimension(m1)      , intent(in)    :: zt
+   real, dimension(m1)      , intent(in)    :: zm
+   real, dimension(m2,m3)   , intent(in)    :: rtgt
+   real, dimension(m2,m3)   , intent(inout) :: thils2
+   real, dimension(m2,m3)   , intent(inout) :: ths2
+   real, dimension(m2,m3)   , intent(inout) :: rvs2
+   real, dimension(m2,m3)   , intent(inout) :: rtps2
+   real, dimension(m2,m3)   , intent(inout) :: co2s2
+   real, dimension(m2,m3)   , intent(inout) :: ups2
+   real, dimension(m2,m3)   , intent(inout) :: vps2
+   real, dimension(m2,m3)   , intent(inout) :: pis2
+   real, dimension(m2,m3)   , intent(inout) :: dens2
+   real, dimension(m2,m3)   , intent(inout) :: zts2
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                  :: i
+   integer                                  :: j
+   !---------------------------------------------------------------------------------------!
 
-   integer :: m1,m2,m3,ia,iz,ja,jz,jd
-   real, dimension(m1,m2,m3) :: theta,rv,co2p,up,vp,dn0,pp,pi0
-   real, dimension(m2,m3) :: rtgt,ths2,rvs2,co2s2,ups2,vps2,pis2,dens2,zts2
-   real, dimension(m1) :: zt,zm
 
-   integer :: i,j
-   real :: hcpi
 
-   ! Compute surface atmospheric conditions
-
-   hcpi = .5 * cpi
-
+   !----- Compute surface atmospheric conditions. -----------------------------------------!
    do j = ja,jz
       do i = ia,iz
-         ths2(i,j) = theta(2,i,j)
-         rvs2(i,j) = rv(2,i,j)
-         co2s2(i,j) = co2p(2,i,j)
-         ups2(i,j) = (up(2,i-1,j) + up(2,i,j)) * .5
-         vps2(i,j) = (vp(2,i,j-jd) + vp(2,i,j)) * .5
-         zts2(i,j) = (zt(2)-zm(1)) * rtgt(i,j)
-         pis2(i,j) = (pp(1,i,j) + pi0(1,i,j) + pp(2,i,j) + pi0(2,i,j)) * hcpi
-         dens2(i,j) = (dn0(1,i,j) + dn0(2,i,j)) * .5
-      enddo
-   enddo
+         thils2(i,j) = thp  (2,i,j)
+         ths2  (i,j) = theta(2,i,j)
+         rvs2  (i,j) = rv   (2,i,j)
+         rtps2 (i,j) = rtp  (2,i,j)
+         co2s2 (i,j) = co2p (2,i,j)
+         ups2  (i,j) = (up(2,i-1,j) + up(2,i,j))  * .5
+         vps2  (i,j) = (vp(2,i,j-jd) + vp(2,i,j)) * .5
+         zts2  (i,j) = (zt(2)-zm(1)) * rtgt(i,j)
+         pis2  (i,j) = 0.5 * (pp(1,i,j) + pi0(1,i,j) + pp(2,i,j) + pi0(2,i,j))
+         dens2 (i,j) = (dn0(1,i,j) + dn0(2,i,j))  * .5
+      end do
+   end do
 
    return
 end subroutine sfc_fields
+!==========================================================================================!
+!==========================================================================================!
 
-!****************************************************************************
 
-subroutine sfc_fields_adap(m1,m2,m3,ia,iz,ja,jz,jd,flpu,flpv,flpw  &
-   ,topma,aru,arv,theta,rv,co2p,up,vp,dn0,pp,pi0,zt,zm,dzt       &
-   ,ths2,rvs2,co2s2,ups2,vps2,pis2,dens2,zts2)
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+subroutine sfc_fields_adap(m1,m2,m3,ia,iz,ja,jz,jd,flpu,flpv,flpw,topma,aru,arv,thp,theta  &
+                          ,rv,rtp,co2p,up,vp,dn0,pp,pi0,zt,zm,dzt,thils2,ths2,rvs2,rtps2   &
+                          ,co2s2,ups2,vps2,pis2,dens2,zts2)
 
    use leaf_coms
    use rconstants
 
    implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                  , intent(in)    :: m1
+   integer                  , intent(in)    :: m2
+   integer                  , intent(in)    :: m3
+   integer                  , intent(in)    :: ia
+   integer                  , intent(in)    :: iz
+   integer                  , intent(in)    :: ja
+   integer                  , intent(in)    :: jz
+   integer                  , intent(in)    :: jd
+   real, dimension(m1,m2,m3), intent(in)    :: aru
+   real, dimension(m1,m2,m3), intent(in)    :: arv
+   real, dimension(m1,m2,m3), intent(in)    :: thp
+   real, dimension(m1,m2,m3), intent(in)    :: theta
+   real, dimension(m1,m2,m3), intent(in)    :: rv
+   real, dimension(m1,m2,m3), intent(in)    :: rtp
+   real, dimension(m1,m2,m3), intent(in)    :: co2p
+   real, dimension(m1,m2,m3), intent(in)    :: up
+   real, dimension(m1,m2,m3), intent(in)    :: vp
+   real, dimension(m1,m2,m3), intent(in)    :: dn0
+   real, dimension(m1,m2,m3), intent(in)    :: pp
+   real, dimension(m1,m2,m3), intent(in)    :: pi0
+   real, dimension(m1)      , intent(in)    :: zt
+   real, dimension(m1)      , intent(in)    :: zm
+   real, dimension(m1)      , intent(in)    :: dzt
+   real, dimension(m2,m3)   , intent(in)    :: flpu
+   real, dimension(m2,m3)   , intent(in)    :: flpv
+   real, dimension(m2,m3)   , intent(in)    :: flpw
+   real, dimension(m2,m3)   , intent(in)    :: topma
+   real, dimension(m2,m3)   , intent(inout) :: thils2
+   real, dimension(m2,m3)   , intent(inout) :: ths2
+   real, dimension(m2,m3)   , intent(inout) :: rvs2
+   real, dimension(m2,m3)   , intent(inout) :: rtps2
+   real, dimension(m2,m3)   , intent(inout) :: co2s2
+   real, dimension(m2,m3)   , intent(inout) :: ups2
+   real, dimension(m2,m3)   , intent(inout) :: vps2
+   real, dimension(m2,m3)   , intent(inout) :: pis2
+   real, dimension(m2,m3)   , intent(inout) :: dens2
+   real, dimension(m2,m3)   , intent(inout) :: zts2
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                  :: i
+   integer                                  :: j
+   integer                                  :: k1
+   integer                                  :: k2
+   integer                                  :: k3
+   real                                     :: topma_t
+   real                                     :: wtw
+   real                                     :: wtu1
+   real                                     :: wtu2
+   real                                     :: wtv1
+   real                                     :: wtv2
+   !---------------------------------------------------------------------------------------!
 
-   integer :: m1,m2,m3,ia,iz,ja,jz,jd
-   real, dimension(m2,m3) :: flpu,flpv,flpw
-   real, dimension(m1,m2,m3) :: aru,arv,theta,rv,co2p,up,vp,dn0,pp,pi0
-   real, dimension(m2,m3) :: topma,ths2,rvs2,co2s2,ups2,vps2,pis2,dens2,zts2
-   real, dimension(m1) :: zt,zm,dzt
 
-   integer :: i,j,k1,k2,k3
-   real :: topma_t,wtw,wtu1,wtu2,wtv1,wtv2
-
-   ! Compute surface atmospheric conditions
+   !----- Compute surface atmospheric conditions. -----------------------------------------!
 
    do j = ja,jz
       do i = ia,iz
@@ -723,205 +819,297 @@ subroutine sfc_fields_adap(m1,m2,m3,ia,iz,ja,jz,jd,flpu,flpv,flpw  &
          k1 = k2 - 1
          k3 = k2 + 1
 
-         topma_t = .25 * (topma(i,j) + topma(i-1,j)  &
-                 + topma(i,j-jd) + topma(i-1,j-jd))
+         topma_t = .25 * (topma(i,j) + topma(i-1,j) + topma(i,j-jd) + topma(i-1,j-jd))
 
-   ! weights for lowest predicted points, relative to points above them
-
-         wtw = (zm(k2) - topma_t) * dzt(k2)
+         !----- Weights for lowest predicted points, relative to points above them. -------!
+         wtw  = (zm(k2) - topma_t) * dzt(k2)
          wtu1 = aru(nint(flpu(i-1,j)),i-1,j)   / aru(nint(flpu(i-1,j))+1,i-1,j)
          wtu2 = aru(nint(flpu(i,j)),i,j)       / aru(nint(flpu(i,j))+1,i,j)
          wtv1 = arv(nint(flpv(i,j-jd)),i,j-jd) / arv(nint(flpv(i,j-jd))+1,i,j-jd)
          wtv2 = arv(nint(flpv(i,j)),i,j)       / arv(nint(flpv(i,j))+1,i,j)
 
-         ths2(i,j)  =  wtw * theta(k2,i,j) + (1. - wtw)  * theta(k3,i,j)
+         !----- Interpolate the values to with height. ------------------------------------!
+         thils2(i,j) =  wtw * thp  (k2,i,j) + (1. - wtw)  * thp  (k3,i,j)
+         ths2  (i,j) =  wtw * theta(k2,i,j) + (1. - wtw)  * theta(k3,i,j)
+         rvs2  (i,j) =  wtw * rv   (k2,i,j) + (1. - wtw)  * rv   (k3,i,j)
+         rtps2 (i,j) =  wtw * rtp  (k2,i,j) + (1. - wtw)  * rtp  (k3,i,j)
 
-         rvs2(i,j)  =  wtw * rv(k2,i,j)    + (1. - wtw)  * rv(k3,i,j)
          co2s2(i,j) =  wtw * co2p(k2,i,j)  + (1. - wtw)  * co2p(k3,i,j)
 
-         ups2(i,j) = (wtu1        * up(nint(flpu(i-1,j)),i-1,j)    &
-                   +  (1. - wtu1) * up(nint(flpu(i-1,j))+1,i-1,j)  &
-                   +  wtu2        * up(nint(flpu(i,j)),i,j)        &
+         ups2(i,j) = (wtu1        * up(nint(flpu(i-1,j)),i-1,j)                            &
+                   +  (1. - wtu1) * up(nint(flpu(i-1,j))+1,i-1,j)                          &
+                   +  wtu2        * up(nint(flpu(i,j)),i,j)                                &
                    +  (1. - wtu2) * up(nint(flpu(i,j))+1,i,j)) * .5
 
-         vps2(i,j) = (wtv1        * vp(nint(flpv(i,j-jd)),i,j-jd)    &
-                   +  (1. - wtv1) * vp(nint(flpv(i,j-jd))+1,i,j-jd)  &
-                   +  wtv2        * vp(nint(flpv(i,j)),i,j)          &
+         vps2(i,j) = (wtv1        * vp(nint(flpv(i,j-jd)),i,j-jd)                          &
+                   +  (1. - wtv1) * vp(nint(flpv(i,j-jd))+1,i,j-jd)                        &
+                   +  wtv2        * vp(nint(flpv(i,j)),i,j)                                &
                    +  (1. - wtv2) * vp(nint(flpv(i,j))+1,i,j)) * .5
 
-         zts2(i,j) = (wtw * (zt(k2) - zm(k1))  &
-                   + (1. - wtw) * (zt(k3) - zm(k2)))
+         zts2(i,j) = (wtw * (zt(k2) - zm(k1)) + (1. - wtw) * (zt(k3) - zm(k2)))
 
          if (wtw >= .5) then
-            pis2(i,j)  = ((wtw - .5) * (pp(k1,i,j) + pi0(k1,i,j))  &
-                       + (1.5 - wtw) * (pp(k2,i,j) + pi0(k2,i,j))) * cpi
-            dens2(i,j) = (wtw - .5)  * dn0(k1,i,j)  &
-                       + (1.5 - wtw) * dn0(k2,i,j)
+            pis2(i,j)  = ( (wtw - .5) * (pp(k1,i,j) + pi0(k1,i,j))                         &
+                         + (1.5 - wtw) * (pp(k2,i,j) + pi0(k2,i,j)))
+            dens2(i,j) = (wtw - .5)  * dn0(k1,i,j) + (1.5 - wtw) * dn0(k2,i,j)
          else
-            pis2(i,j)  = ((wtw + .5) * (pp(k2,i,j) + pi0(k2,i,j))  &
-                       + (.5 - wtw) * (pp(k3,i,j) + pi0(k3,i,j))) * cpi
-            dens2(i,j) = (wtw + .5) * dn0(k2,i,j)  &
-                       + (.5 - wtw) * dn0(k3,i,j)
-         endif
+            pis2(i,j)  = ( (wtw + .5) * (pp(k2,i,j) + pi0(k2,i,j))                         &
+                         + (.5 - wtw) * (pp(k3,i,j) + pi0(k3,i,j)))
+            dens2(i,j) = (wtw + .5) * dn0(k2,i,j) + (.5 - wtw) * dn0(k3,i,j)
+         end if
 
-      enddo
-   enddo
+      end do
+   end do
 
    return
 end subroutine sfc_fields_adap
+!==========================================================================================!
+!==========================================================================================!
 
-!****************************************************************************
 
-subroutine sfc_pcp(nqparm,level,i,j,cuparm,micro)
 
-   use mem_basic
-   use mem_grid
-   use mem_micro
-   use mem_cuparm
-   use leaf_coms
-   use rconstants, only : cliq,tsupercool,wdnsi
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+subroutine sfc_pcp(nqparm,i,j,cuparm,micro)
+   use mem_micro , only : micro_vars  ! ! structure
+   use mem_cuparm, only : cuparm_vars & ! structure
+                        , nclouds     ! ! intent(in)
+   use leaf_coms , only : pcpgl       & ! intent(in)
+                        , qpcpgl      & ! intent(in)
+                        , dpcpgl      & ! intent(in)
+                        , dtll        & ! intent(in)
+                        , dtll_factor & ! intent(in)
+                        , atm_temp    ! ! intent(in)
+   use therm_lib , only : bulk_on     ! ! intent(in)
+   use rconstants, only : cice        & ! intent(in)
+                        , cliq        & ! intent(in)
+                        , tsupercool  & ! intent(in)
+                        , t3ple       & ! intent(in)
+                        , wdnsi       ! ! intent(in)
 
    implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer           , intent(in) :: nqparm
+   integer           , intent(in) :: i
+   integer           , intent(in) :: j
+   type (cuparm_vars), intent(in) :: cuparm
+   type (micro_vars) , intent(in) :: micro
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                        :: icld
+   real                           :: pcpgcum
+   real                           :: fice
+   real                           :: sndeni
+   !---------------------------------------------------------------------------------------!
 
-   integer :: nqparm,level,i,j,icld
-   type (cuparm_vars)  cuparm
-   type (micro_vars)   micro
+   !----- Initialise the precipitation variables. -----------------------------------------!
+   pcpgl  = 0.
+   qpcpgl = 0.
+   dpcpgl = 0.
 
+   !----- Add cumulus parametrisation precipitation if it is being used. ------------------!
    if (nqparm > 0) then
-      pcpgl = 0.
+
+      !----- First find the total precipitation. ------------------------------------------!
+      pcpgcum = 0.
       do icld=1,nclouds
-         pcpgl  = pcpgl + cuparm%conprr(i,j,icld)
+         pcpgcum = pcpgcum + cuparm%conprr(i,j,icld) * dtll
       end do
-      pcpgl  = pcpgl  * dtll
-      qpcpgl = pcpgl  * cliq * (atm_temp - tsupercool)
-      dpcpgl = pcpgl  * wdnsi
+      pcpgl = pcpgl + pcpgcum
+      !------------------------------------------------------------------------------------!
 
-   else
 
-      pcpgl  = 0.
-      qpcpgl = 0.
-      dpcpgl = 0.
 
-   endif
+      !------------------------------------------------------------------------------------!
+      !  Precipitation "depth". Snow fraction and density derived from                     !
+      !  Jin et al 1999 Hydrol Process. 13:2467-2482 Table 2                               !
+      !  [[modified 11/16/09 by MCD]]                                                      !
+      !------------------------------------------------------------------------------------!
+      if (atm_temp > (t3ple + 2.5)) then
+         !----- Rain only. ----------------------------------------------------------------!
+         fice    = 0.0
+         sndeni  = 1. / 189.0
 
-   if (level >= 3) then
+      elseif (atm_temp <= (t3ple + 2.5) .and. atm_temp  > (t3ple + 2.0) ) then
+         !---------------------------------------------------------------------------------!
+         !     60% snow, 40% rain. (N.B. May not be appropriate for sub-tropical           !
+         ! regions where the level of the melting layer is higher...).                     !
+         !---------------------------------------------------------------------------------!
+         fice    = 0.6
+         sndeni  = 1. / 189.0
 
+      elseif (atm_temp <= (t3ple + 2.0) .and. atm_temp > t3ple ) then
+         !---------------------------------------------------------------------------------!
+         !     Increasing the fraction of snow. (N.B. May not be appropriate for           !
+         ! sub-tropical regions where the level of the melting layer is higher...).        !
+         !---------------------------------------------------------------------------------!
+         fice   = min(1.0, 1. + (54.62 - 0.2*atm_temp))
+         sndeni = 1. / (50.0+1.7*(atm_temp-258.15)**1.5 )
+
+      elseif (atm_temp <= t3ple .and. atm_temp > (t3ple - 15.0)) then
+         !----- Below freezing point, snow only. ------------------------------------------!
+         fice   = 1.0
+         sndeni = 1. / (50.0+1.7*(atm_temp-258.15)**1.5 )
+
+      else ! if (atm_temp < (t3ple - 15.0)) then
+         !----- Below freezing point, snow only. ------------------------------------------!
+         fice   = 1.0
+         sndeni = 1. / 50.
+      end if
+      dpcpgl  = dpcpgl + pcpgcum * ((1.0-fice) * wdnsi + fice * sndeni)
+      !------------------------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
+      !     Set internal energy.  This will be the precipitation times the specific        !
+      ! internal energy of water (above or at triple point) multiplied by the liquid       !
+      ! fraction plus the specific internal energy of ice (below or at the triple point)   !
+      ! multiplied by the ice fraction.                                                    !
+      !------------------------------------------------------------------------------------!
+      qpcpgl = qpcpgl                                                                      &
+             + pcpgcum  * ( (1.0-fice) * cliq * ( max(t3ple,atm_temp) - tsupercool)        &
+                          +      fice  * cice *   min(atm_temp,t3ple)               )
+      !------------------------------------------------------------------------------------!
+   end if
+
+   !----- Add microphysics precipitation if the bulk microphysics is being used. ----------!
+   if (bulk_on) then
       pcpgl  = pcpgl  + dtll_factor * micro%pcpg(i,j)
       qpcpgl = qpcpgl + dtll_factor * micro%qpcpg(i,j)
       dpcpgl = dpcpgl + dtll_factor * micro%dpcpg(i,j)
 
-   endif
+   end if
 
    return
 end subroutine sfc_pcp
+!==========================================================================================!
+!==========================================================================================!
 
-!****************************************************************************
 
-subroutine vegndvi(ifm    &
-   ,patch_area,leaf_class,veg_fracarea,veg_lai,veg_tai,veg_rough  &
-   ,veg_height,veg_albedo,veg_ndvip,veg_ndvic,veg_ndvif)
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine computes the NDVI-related variables such as LAI, TAI, roughness,     !
+! and albedo.                                                                              !
+!------------------------------------------------------------------------------------------!
+subroutine vegndvi(ifm,patch_area,leaf_class,veg_fracarea,veg_lai,veg_tai,veg_rough        &
+                  ,veg_height,veg_albedo,veg_ndvip,veg_ndvic,veg_ndvif)
 
    use leaf_coms
    use rconstants
    use io_params
    use mem_grid
-
-   !CATT
-   use catt_start, only: CATT  ! INTENT(IN)
+   use catt_start, only: catt  ! INTENT(IN)
 
    implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                         , intent(in)    :: ifm
+   real                            , intent(in)    :: patch_area
+   real                            , intent(in)    :: leaf_class
+   real                            , intent(in)    :: veg_height
+   real                            , intent(in)    :: veg_ndvip
+   real                            , intent(in)    :: veg_ndvif
+   real                            , intent(out)   :: veg_lai
+   real                            , intent(out)   :: veg_tai
+   real                            , intent(out)   :: veg_fracarea
+   real                            , intent(out)   :: veg_rough
+   real                            , intent(out)   :: veg_albedo
+   real                            , intent(inout) :: veg_ndvic
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                       :: nveg
+   real                                          :: timefac_ndvi
+   real                                          :: sr
+   real                                          :: fpar
+   real                                          :: dead_lai
+   real                                          :: green_frac
+   !----- Local constants. ----------------------------------------------------------------!
+   real                            , parameter   :: sr_min=1.081
+   real                            , parameter   :: fpar_min=.001
+   real                            , parameter   :: fpar_max=.950
+   real                            , parameter   :: fpcon=-.3338082
+   real                            , parameter   :: ccc=-2.9657
+   real                            , parameter   :: bz=.91
+   real                            , parameter   :: hz=.0075
+   real                            , parameter   :: extinc_veg=.5
+   !----- Locally saved variables. --------------------------------------------------------!
+   logical                         , save        :: nvcall = .true.
+   real, dimension(nvtyp+nvtyp_teb), save        :: dfpardsr
+   !---------------------------------------------------------------------------------------!
 
-   integer :: ifm
-   real :: patch_area,leaf_class,veg_fracarea,veg_lai,veg_tai,veg_rough  &
-      ,veg_height,veg_albedo,veg_ndvip,veg_ndvic,veg_ndvif
 
-   integer :: nveg
-   integer, save :: nvcall = 0
-
-   real :: timefac_ndvi,sr,fpar,dead_lai,green_frac
-   real, save :: sr_min=1.081,fpar_min=.001,fpar_max=.950,fpcon=-.3338082
-   real, save :: ccc=-2.9657
-   real, save :: bz=.91,hz=.0075,extinc_veg=.5
-
-   real, dimension(nvtyp+nvtyp_teb), save :: dfpardsr
-
-   !  Initialize dfpardsr array
-
-   if (nvcall == 0) then
-      nvcall = 1
+   !----- Initialise the dfpardsr array, which will be used to compute LAI. ---------------!
+   if (nvcall) then
+      nvcall = .false.
       do nveg = 1,(nvtyp+nvtyp_teb)
          dfpardsr(nveg) = (fpar_max - fpar_min) / (sr_max(nveg) - sr_min)
-      enddo
-   endif
+      end do
+   end if
 
-   !  Compute LAI, vegetation roughness, albedo, vegfrac from time-dependent NDVI
-
+   !----- Alias for vegetation class. -----------------------------------------------------!
    nveg = nint(leaf_class)
 
+   !---------------------------------------------------------------------------------------!
+   !    We only compute LAI and related variables for those vegetation types that can hold !
+   ! some actual vegetation.                                                               !
+   !---------------------------------------------------------------------------------------!
    if (tai_max(nveg) < .1) then
-
-      veg_lai = 0.
-      veg_tai = 0.
-      veg_rough = 0.
-      veg_albedo = 0.
+      veg_lai      = 0.
+      veg_tai      = 0.
+      veg_rough    = 0.
+      veg_albedo   = 0.
       veg_fracarea = 0.
 
    else
-
+      !----- Compute the interpolation factor. --------------------------------------------!
       if (iupdndvi == 0) then
          timefac_ndvi = 0.
       else
-         
-         ! HOW LARGE COULD THIS GET? SHOULD I MAKE IT A 64bit?  RGK
          timefac_ndvi = sngl((time - ndvitime1(ifm)) / (ndvitime2(ifm) - ndvitime1(ifm)))
+      end if
 
-      endif
-
-      !  Time-interpolate ndvi to get current value veg_ndvic(i,j) for this patch
-      !  Limit ndvi to prevent values > .99 to prevent division by zero.
-
+      !------------------------------------------------------------------------------------!
+      !     Time-interpolate ndvi to get current value veg_ndvic(i,j) for this patch.      !
+      ! Limit NDVI to prevent values > .99 to prevent division by zero.                    !
+      !------------------------------------------------------------------------------------!
       veg_ndvic = max(0.99,veg_ndvip + (veg_ndvif - veg_ndvip) * timefac_ndvi)
 
-      ! Based on SRF's suggestion - MODIS sometimes has weird values of NDVI for
-      !                             evergreen forests, so we impose a lower threshold
-      !                             for this vegetation type.
-      ! (Maybe we should try using something better than NDVI, perhaps EVI?)
+      !------------------------------------------------------------------------------------!
+      ! Based on SRF's suggestion - MODIS sometimes has weird values of NDVI for           !
+      !                             evergreen forests, so we impose a lower threshold      !
+      !                             for this vegetation type.                              !
+      ! (Maybe we should try using something better than NDVI, perhaps EVI?)               !
+      !------------------------------------------------------------------------------------!
       if (nveg == 7) veg_ndvic = max(0.7,veg_ndvic)
 
 
-   ! Compute "simple ratio" and limit between sr_min and sr_max(nveg).
+      !----- Compute "simple ratio" and limit between sr_min and sr_max(nveg). ------------!
+      sr = min(sr_max(nveg), max(sr_min, (1. + veg_ndvic) / (1. - veg_ndvic) ) )
 
-      sr = (1. + veg_ndvic) / (1. - veg_ndvic)
-
-      if (sr < sr_min) then
-         sr = sr_min
-      elseif (sr > sr_max(nveg)) then
-         sr = sr_max(nveg)
-      endif
-
-   ! Compute fpar
-
+      !----- Compute fpar. ----------------------------------------------------------------!
       fpar = fpar_min + (sr - sr_min) * dfpardsr(nveg)
 
-   ! Compute green leaf area index (veg_lai), dead leaf area index (dead_lai),
-   ! total area index (tai), and green fraction
+      !------------------------------------------------------------------------------------!
+      !      Compute green leaf area index (veg_lai), dead leaf area index (dead_lai),     !
+      ! total area index (tai), and green fraction.                                        !
+      !------------------------------------------------------------------------------------!
+      veg_lai    = glai_max(nveg) * (       veg_clump(nveg)  * fpar / fpar_max             &
+                                    + (1. - veg_clump(nveg)) * alog(1. - fpar) * fpcon )
 
-      veg_lai = glai_max(nveg) * (veg_clump(nveg) * fpar / fpar_max  &
-              + (1. - veg_clump(nveg)) * alog(1. - fpar) * fpcon)
-
-      dead_lai = (glai_max(nveg) - veg_lai) * dead_frac(nveg)
-      veg_tai = veg_lai + sai(nveg) + dead_lai
+      dead_lai   = (glai_max(nveg) - veg_lai) * dead_frac(nveg)
+      veg_tai    = veg_lai + sai(nveg) + dead_lai
       green_frac = veg_lai / veg_tai
 
-   ! Compute vegetation roughness height, albedo, and fractional area
-
-      veg_rough = veg_height * (1. - bz * exp(-hz * veg_tai))
-      veg_albedo = albv_green(nveg) * green_frac  &
-                 + albv_brown(nveg) * (1. - green_frac)
+      !----- Compute vegetation roughness height, albedo, and fractional area. ------------!
+      veg_rough    = veg_height * (1. - bz * exp(-hz * veg_tai))
+      veg_albedo   = albv_green(nveg) * green_frac + albv_brown(nveg) * (1. - green_frac)
       veg_fracarea = veg_frac(nveg) * (1. - exp(-extinc_veg * veg_tai))
+   end if
 
-   endif
-return
+   return
 end subroutine vegndvi
 !==========================================================================================!
 !==========================================================================================!
@@ -950,7 +1138,7 @@ end subroutine vegndvi
 subroutine sfcrad(mzg,mzs,ip,soil_energy,soil_water,soil_text,sfcwater_energy              &
                  ,sfcwater_mass,sfcwater_depth,patch_area,leaf_class,veg_height            &
                  ,veg_fracarea,veg_albedo,sfcwater_nlev,veg_energy,veg_water,veg_hcap      &
-                 ,can_prss,can_theta,can_rvap,rshort,rlong,albedt,rlongup,cosz             &
+                 ,can_prss,can_theiv,can_theta,can_rvap,rshort,rlong,albedt,rlongup,cosz   &
                  ,g_urban, etown, albtown, tstown)
    use mem_leaf
    use leaf_coms
@@ -959,7 +1147,6 @@ subroutine sfcrad(mzg,mzs,ip,soil_energy,soil_water,soil_text,sfcwater_energy   
    use node_mod     , only : mynum         ! ! intent(in)
    use therm_lib    , only : qwtk          & ! subroutine
                            , qtk           & ! subroutine
-                           , ptqz2enthalpy & ! function
                            , idealdenssh   ! ! function
    use catt_start   , only : CATT          ! ! intent(in)
    use teb_spm_start, only : TEB_SPM       ! ! intent(in)
@@ -971,7 +1158,7 @@ subroutine sfcrad(mzg,mzs,ip,soil_energy,soil_water,soil_text,sfcwater_energy   
    real                   , intent(in)    :: patch_area,leaf_class,veg_height,veg_fracarea
    real                   , intent(in)    :: veg_albedo,sfcwater_nlev
    real                   , intent(in)    :: veg_energy,veg_water,veg_hcap
-   real                   , intent(in)    :: can_prss,can_theta,can_rvap
+   real                   , intent(in)    :: can_prss,can_theiv,can_theta,can_rvap
    real                   , intent(in)    :: rshort,rlong,cosz
    real                   , intent(in)    :: g_urban, etown, albtown, tstown
    real                   , intent(inout) :: albedt,rlongup
@@ -993,9 +1180,10 @@ subroutine sfcrad(mzg,mzs,ip,soil_energy,soil_water,soil_text,sfcwater_energy   
    !---------------------------------------------------------------------------------------!
    !     First we update the canopy air properties.                                        !
    !---------------------------------------------------------------------------------------!
-   can_temp     = can_theta * (p00i * can_prss) ** rocp
+   can_exner    = cp  * (p00i * can_prss) ** rocp
+   can_lntheiv  = log(can_theiv)
+   can_temp     = cpi * can_theta * can_exner
    can_shv      = can_rvap / (can_rvap + 1.)
-   can_enthalpy = ptqz2enthalpy(can_prss,can_temp,can_shv,can_depth)
    can_rhos     = idealdenssh(can_prss,can_temp,can_shv)
 
    if (ip == 1) then
@@ -1119,7 +1307,7 @@ subroutine sfcrad(mzg,mzs,ip,soil_energy,soil_water,soil_text,sfcwater_energy   
          write (unit=*,fmt=fmtf) ' - CAN_THETA    = ',can_theta
          write (unit=*,fmt=fmtf) ' - CAN_RVAP     = ',can_rvap
          write (unit=*,fmt=fmtf) ' - CAN_PRSS     = ',can_prss
-         write (unit=*,fmt=fmtf) ' - CAN_ENTHALPY = ',can_enthalpy
+         write (unit=*,fmt=fmtf) ' - CAN_THEIV    = ',can_theiv
          write (unit=*,fmt=fmtf) ' - CAN_TEMP     = ',can_temp
          write (unit=*,fmt=fmtf) ' - CAN_RHOS     = ',can_rhos
          write (unit=*,fmt=fmtc) ' '

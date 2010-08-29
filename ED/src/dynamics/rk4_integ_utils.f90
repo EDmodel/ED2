@@ -218,7 +218,7 @@ end subroutine odeint
 ! is to ensure all variables are in double precision, so consistent with the buffer vari-  !
 ! ables.                                                                                   !
 !------------------------------------------------------------------------------------------!
-subroutine copy_met_2_rk4site(vels,atm_enthalpy,atm_theta,atm_tmp,atm_shv,atm_co2,zoff     &
+subroutine copy_met_2_rk4site(vels,atm_theiv,atm_theta,atm_tmp,atm_shv,atm_co2,zoff        &
                             ,exner,pcpg,qpcpg,dpcpg,prss,geoht,lsl,green_leaf_factor       &
                             ,lon,lat)
    use ed_max_dims    , only : n_pft         ! ! intent(in)
@@ -228,7 +228,7 @@ subroutine copy_met_2_rk4site(vels,atm_enthalpy,atm_theta,atm_tmp,atm_shv,atm_co
    !----- Arguments -----------------------------------------------------------------------!
    integer                  , intent(in) :: lsl
    real                     , intent(in) :: vels
-   real                     , intent(in) :: atm_enthalpy
+   real                     , intent(in) :: atm_theiv
    real                     , intent(in) :: atm_theta
    real                     , intent(in) :: atm_tmp
    real                     , intent(in) :: atm_shv
@@ -251,20 +251,21 @@ subroutine copy_met_2_rk4site(vels,atm_enthalpy,atm_theta,atm_tmp,atm_shv,atm_co
    rk4site%lsl     = lsl
    !----- Converting to double precision. -------------------------------------------------!
    rk4site%vels                  = max(ubmin8,dble(vels))
-   rk4site%atm_enthalpy          = dble(atm_enthalpy)
-   rk4site%atm_theta             = dble(atm_theta   )
-   rk4site%atm_tmp               = dble(atm_tmp     )
-   rk4site%atm_shv               = dble(atm_shv     )
-   rk4site%atm_co2               = dble(atm_co2     )
-   rk4site%zoff                  = dble(zoff        )
-   rk4site%atm_exner             = dble(exner       )
-   rk4site%pcpg                  = dble(pcpg        )
-   rk4site%qpcpg                 = dble(qpcpg       )
-   rk4site%dpcpg                 = dble(dpcpg       )
-   rk4site%atm_prss              = dble(prss        )
-   rk4site%geoht                 = dble(geoht       )
-   rk4site%lon                   = dble(lon         )
-   rk4site%lat                   = dble(lat         )
+   rk4site%atm_theiv             = dble(atm_theiv        )
+   rk4site%atm_lntheiv           = log (rk4site%atm_theiv)
+   rk4site%atm_theta             = dble(atm_theta        )
+   rk4site%atm_tmp               = dble(atm_tmp          )
+   rk4site%atm_shv               = dble(atm_shv          )
+   rk4site%atm_co2               = dble(atm_co2          )
+   rk4site%zoff                  = dble(zoff             )
+   rk4site%atm_exner             = dble(exner            )
+   rk4site%pcpg                  = dble(pcpg             )
+   rk4site%qpcpg                 = dble(qpcpg            )
+   rk4site%dpcpg                 = dble(dpcpg            )
+   rk4site%atm_prss              = dble(prss             )
+   rk4site%geoht                 = dble(geoht            )
+   rk4site%lon                   = dble(lon              )
+   rk4site%lat                   = dble(lat              )
    rk4site%green_leaf_factor(:)  = dble(green_leaf_factor(:))
 
    return
@@ -304,7 +305,7 @@ subroutine inc_rk4_patch(rkp, inc, fac, cpatch)
    integer                         :: k      ! Counter
    !---------------------------------------------------------------------------------------!
 
-   rkp%can_enthalpy = rkp%can_enthalpy + fac * inc%can_enthalpy
+   rkp%can_lntheiv  = rkp%can_lntheiv  + fac * inc%can_lntheiv
    rkp%can_shv      = rkp%can_shv      + fac * inc%can_shv
    rkp%can_co2      = rkp%can_co2      + fac * inc%can_co2
 
@@ -426,9 +427,9 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
    integer                        :: ico                   ! Current cohort ID
    !---------------------------------------------------------------------------------------!
 
-   yscal%can_enthalpy = abs(y%can_enthalpy) ! + abs(dy%can_enthalpy * htry) + tiny_offset
-   yscal%can_shv      = abs(y%can_shv     ) ! + abs(dy%can_shv      * htry) + tiny_offset
-   yscal%can_co2      = abs(y%can_co2     ) ! + abs(dy%can_co2      * htry) + tiny_offset
+   yscal%can_lntheiv  = abs(y%can_lntheiv ) + abs(dy%can_lntheiv  * htry)
+   yscal%can_shv      = abs(y%can_shv     ) + abs(dy%can_shv      * htry)
+   yscal%can_co2      = abs(y%can_co2     ) + abs(dy%can_co2      * htry)
 
 
    do k=1,rk4site%lsl-1
@@ -436,15 +437,14 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
       yscal%soil_energy(k) = huge_offset
    end do
    do k=rk4site%lsl,nzg
-      yscal%soil_water(k)  = abs(y%soil_water(k))  ! + abs(dy%soil_water(k)*htry)            &
-                           ! + tiny_offset
-      yscal%soil_energy(k) = abs(y%soil_energy(k)) ! + abs(dy%soil_energy(k)*htry)           &
-                           ! + tiny_offset
+      yscal%soil_water(k)  = abs(y%soil_water(k))  + abs(dy%soil_water(k)*htry)
+      yscal%soil_energy(k) = abs(y%soil_energy(k)) + abs(dy%soil_energy(k)*htry)
    end do
 
    tot_sfcw_mass = 0.d0
    do k=1,y%nlev_sfcwater
-      tot_sfcw_mass = tot_sfcw_mass + y%sfcwater_mass(k)
+      tot_sfcw_mass = tot_sfcw_mass + abs(y%sfcwater_mass   (k)       )                    &
+                                    + abs(dy%sfcwater_mass  (k) * htry)
    end do
    tot_sfcw_mass = abs(tot_sfcw_mass)
    
@@ -455,34 +455,23 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
    ! have a scale.  Also, if the total mass is small, we must be more tolerant to avoid    !
    ! overestimating the error because of the small size.                                   !
    !---------------------------------------------------------------------------------------!
-   if (tot_sfcw_mass + rk4site%pcpg * htry > 1.d-2*rk4water_stab_thresh) then
+   if (tot_sfcw_mass > 1.d-2*rk4water_stab_thresh) then
       !----- Computationally stable layer. ------------------------------------------------!
-      meanscale_sfcw_mass   = 0.d0
       meanscale_sfcw_energy = 0.d0
       meanscale_sfcw_depth  = 0.d0
       do k=1,y%nlev_sfcwater
-         yscal%sfcwater_mass(k)   = abs(y%sfcwater_mass(k))                                &
-                                  + abs(dy%sfcwater_mass(k)*htry)
-         yscal%sfcwater_energy(k) = abs(y%sfcwater_energy(k))                              &
-                                  + abs(dy%sfcwater_energy(k)*htry)
-         yscal%sfcwater_depth(k)  = abs(y%sfcwater_depth(k))                               &
-                                  + abs(dy%sfcwater_depth(k)*htry)
-
-         meanscale_sfcw_mass   = meanscale_sfcw_mass   + yscal%sfcwater_mass(k)
-         meanscale_sfcw_energy = meanscale_sfcw_energy + yscal%sfcwater_energy(k)
-         meanscale_sfcw_depth  = meanscale_sfcw_depth  + yscal%sfcwater_depth(k)
+         meanscale_sfcw_energy = meanscale_sfcw_energy + abs(y%sfcwater_energy (k)       ) &
+                                                       + abs(dy%sfcwater_energy(k) * htry)
+         meanscale_sfcw_depth  = meanscale_sfcw_depth  + abs(y%sfcwater_depth  (k)       ) &
+                                                       + abs(dy%sfcwater_energy(k) * htry)
       end do
+
       !----- Add precipitation because this will become part of the layer if it exists. ---!
-      meanscale_sfcw_mass   = meanscale_sfcw_mass   + rk4site%pcpg  * htry
-      meanscale_sfcw_energy = meanscale_sfcw_energy + rk4site%qpcpg * htry
-      meanscale_sfcw_depth  = meanscale_sfcw_depth  + rk4site%dpcpg * htry
+      meanscale_sfcw_mass   = tot_sfcw_mass         / real(y%nlev_sfcwater)
+      meanscale_sfcw_energy = meanscale_sfcw_energy / real(y%nlev_sfcwater)
+      meanscale_sfcw_depth  = meanscale_sfcw_depth  / real(y%nlev_sfcwater)
 
-      !----- Update average (this is safe because here there is at least one layer. -------!
-!      meanscale_sfcw_mass   = meanscale_sfcw_mass   / real(y%nlev_sfcwater)
-!      meanscale_sfcw_energy = meanscale_sfcw_energy / real(y%nlev_sfcwater)
-!      meanscale_sfcw_depth  = meanscale_sfcw_depth  / real(y%nlev_sfcwater)
-
-      do k=y%nlev_sfcwater+1,nzs
+      do k=1,nzs
          yscal%sfcwater_mass(k)   = meanscale_sfcw_mass
          yscal%sfcwater_energy(k) = meanscale_sfcw_energy
          yscal%sfcwater_depth(k)  = meanscale_sfcw_depth
@@ -495,33 +484,19 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
          yscal%sfcwater_energy(k) = yscal%sfcwater_mass(k) * qliqt38
          yscal%sfcwater_depth(k)  = yscal%sfcwater_mass(k) * wdnsi8
       end do
-!         if(abs(y%sfcwater_mass(k)) > rk4min_sfcwater_mass)then
-!            yscal%sfcwater_mass(k) = 1.d-2*rk4water_stab_thresh
-!            yscal%sfcwater_energy(k) = ( yscal%sfcwater_mass(k) / abs(y%sfcwater_mass(k))) &
-!                                     * ( abs( y%sfcwater_energy(k))                        &
-!                                       + abs(dy%sfcwater_energy(k)*htry))
-!            yscal%sfcwater_depth(k)  = ( yscal%sfcwater_mass(k) / abs(y%sfcwater_mass(k))) &
-!                                     * abs(y%sfcwater_depth(k))                            &
-!                                     + abs(dy%sfcwater_depth(k)*htry)
-!         else
-!            yscal%sfcwater_mass(k)   = huge_offset
-!            yscal%sfcwater_energy(k) = huge_offset
-!            yscal%sfcwater_depth(k)  = huge_offset
-!         end if
    end if
 
    !----- Scale for the virtual water pools -----------------------------------------------!
-   if (rk4site%pcpg*htry > 1.d-2*rk4water_stab_thresh) then
-      yscal%virtual_water = abs(rk4site%pcpg  * htry)
-      yscal%virtual_heat  = abs(rk4site%qpcpg * htry)
-!      yscal%virtual_water = abs(y%virtual_water) + abs(dy%virtual_water*htry)
-!      yscal%virtual_heat  = abs(y%virtual_heat) + abs(dy%virtual_heat*htry)
-   else
+   if (abs(y%virtual_water) > 1.d-2*rk4water_stab_thresh) then
+      yscal%virtual_water = abs(y%virtual_water) + abs(dy%virtual_water*htry)
+      yscal%virtual_heat  = abs(y%virtual_heat) + abs(dy%virtual_heat*htry)
+   elseif (abs(y%virtual_water) > rk4min_sfcwater_mass) then
       yscal%virtual_water = 1.d-2*rk4water_stab_thresh
-      yscal%virtual_heat  = yscal%virtual_water * qliqt38
-!      yscal%virtual_water = 1.d-2*rk4water_stab_thresh
-!      yscal%virtual_heat  = (yscal%virtual_water / abs(y%virtual_water))                   &
-!                          * (abs(y%virtual_heat) + abs(dy%virtual_heat*htry))
+      yscal%virtual_heat  = (yscal%virtual_water / abs(y%virtual_water))                   &
+                          * (abs(y%virtual_heat) + abs(dy%virtual_heat*htry))
+   else
+      yscal%virtual_water = huge_offset
+      yscal%virtual_heat  = huge_offset
    end if
 
    !---------------------------------------------------------------------------------------!
@@ -537,13 +512,13 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
          yscal%veg_energy(ico) = huge_offset
       elseif (y%veg_water(ico) > rk4dry_veg_lwater*y%tai(ico)) then
          yscal%solvable(ico)   = .true.
-         yscal%veg_water(ico)  = abs(y%veg_water(ico))  ! + abs(dy%veg_water(ico)  * htry)
-         yscal%veg_energy(ico) = abs(y%veg_energy(ico)) ! + abs(dy%veg_energy(ico) * htry)
+         yscal%veg_water(ico)  = abs(y%veg_water(ico))  + abs(dy%veg_water(ico)  * htry)
+         yscal%veg_energy(ico) = abs(y%veg_energy(ico)) + abs(dy%veg_energy(ico) * htry)
       else
          yscal%solvable(ico)   = .true.
          yscal%veg_water(ico)  = rk4dry_veg_lwater*y%tai(ico)
          yscal%veg_energy(ico) = max(yscal%veg_water(ico)*qliqt38                          &
-                                    ,abs(y%veg_energy(ico)))! + abs(dy%veg_energy(ico)*htry))
+                                    ,abs(y%veg_energy(ico)) + abs(dy%veg_energy(ico)*htry))
       end if
    end do
 
@@ -692,7 +667,7 @@ subroutine get_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
    ! be our worst guess in the end.                                                        !
    !---------------------------------------------------------------------------------------!
 
-   err    = abs(yerr%can_enthalpy/yscal%can_enthalpy)
+   err    = abs(yerr%can_lntheiv/yscal%can_lntheiv)
    errmax = max(errmax,err)
    if(record_err .and. err > rk4eps) integ_err(1,1) = integ_err(1,1) + 1_8 
 
@@ -806,7 +781,7 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
                             , patchtype         ! ! structure
    use grid_coms     , only : nzg               & ! intent(in)
                             , nzs               ! ! intent(in)
-   use ed_max_dims      , only : n_pft             ! ! intent(in)
+   use ed_max_dims   , only : n_pft             ! ! intent(in)
    use ed_misc_coms  , only : fast_diagnostics  ! ! intent(in)
 
    implicit none
@@ -818,13 +793,15 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
    integer                         :: k
    !---------------------------------------------------------------------------------------!
 
-   targetp%can_enthalpy  = sourcep%can_enthalpy
+   targetp%can_theiv     = sourcep%can_theiv
+   targetp%can_lntheiv   = sourcep%can_lntheiv
    targetp%can_theta     = sourcep%can_theta
    targetp%can_temp      = sourcep%can_temp
    targetp%can_shv       = sourcep%can_shv
    targetp%can_co2       = sourcep%can_co2
    targetp%can_rhos      = sourcep%can_rhos
    targetp%can_prss      = sourcep%can_prss
+   targetp%can_exner     = sourcep%can_exner
    targetp%can_depth     = sourcep%can_depth
 
    targetp%virtual_water = sourcep%virtual_water
@@ -988,6 +965,13 @@ subroutine initialize_rk4patches(init)
       !------------------------------------------------------------------------------------!
       !     If this is initialization, make sure soil and sfcwater arrays are allocated.   !
       !------------------------------------------------------------------------------------!
+      allocate(integration_buff%initp )
+      allocate(integration_buff%yscal )
+      allocate(integration_buff%y     )
+      allocate(integration_buff%dydx  )
+      allocate(integration_buff%yerr  )
+      allocate(integration_buff%ytemp )
+
       call allocate_rk4_patch(integration_buff%initp )
       call allocate_rk4_patch(integration_buff%yscal )
       call allocate_rk4_patch(integration_buff%y     )
@@ -1001,15 +985,29 @@ subroutine initialize_rk4patches(init)
       !------------------------------------------------------------------------------------!
       select case(integration_scheme) 
       case (0) !----- Euler. --------------------------------------------------------------!
+         allocate(integration_buff%dinitp)
+
          call allocate_rk4_patch(integration_buff%dinitp)
+
       case (1) !----- Runge-Kutta. --------------------------------------------------------!
+         allocate(integration_buff%ak2)
+         allocate(integration_buff%ak3)
+         allocate(integration_buff%ak4)
+         allocate(integration_buff%ak5)
+         allocate(integration_buff%ak6)
+         allocate(integration_buff%ak7)
+
          call allocate_rk4_patch(integration_buff%ak2)
          call allocate_rk4_patch(integration_buff%ak3)
          call allocate_rk4_patch(integration_buff%ak4)
          call allocate_rk4_patch(integration_buff%ak5)
          call allocate_rk4_patch(integration_buff%ak6)
          call allocate_rk4_patch(integration_buff%ak7)
+
       case (2) !----- Heun's. -------------------------------------------------------------!
+         allocate(integration_buff%ak2)
+         allocate(integration_buff%ak3)
+
          call allocate_rk4_patch(integration_buff%ak2)
          call allocate_rk4_patch(integration_buff%ak3)
       end select

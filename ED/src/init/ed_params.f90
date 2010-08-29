@@ -288,7 +288,7 @@ subroutine init_lapse_params()
    lapse%vels         = 0.0
    lapse%atm_tmp      = 0.0
    lapse%atm_theta    = 0.0
-   lapse%atm_enthalpy = 0.0
+   lapse%atm_theiv    = 0.0
    lapse%atm_shv      = 0.0
    lapse%prss         = 0.0
    lapse%pcpg         = 0.0
@@ -2074,6 +2074,8 @@ subroutine init_rk4_params()
                                    , min_sfcwater_mass     ! ! intent(in)
    use canopy_air_coms      , only : dry_veg_lwater        & ! intent(in)
                                    , fullveg_lwater        ! ! intent(in)
+   use met_driver_coms      , only : prss_min              & ! intent(in)
+                                   , prss_max              ! ! intent(in)
    use rk4_coms             , only : rk4_tolerance         & ! intent(in)
                                    , maxstp                & ! intent(out)
                                    , rk4eps                & ! intent(out)
@@ -2097,6 +2099,8 @@ subroutine init_rk4_params()
                                    , rk4snowmin            & ! intent(out)
                                    , rk4min_can_temp       & ! intent(out)
                                    , rk4max_can_temp       & ! intent(out)
+                                   , rk4min_can_theiv      & ! intent(out)
+                                   , rk4max_can_theiv      & ! intent(out)
                                    , rk4min_can_shv        & ! intent(out)
                                    , rk4max_can_shv        & ! intent(out)
                                    , rk4max_can_rhv        & ! intent(out)
@@ -2135,7 +2139,7 @@ subroutine init_rk4_params()
    rk4eps2     = rk4eps**2           ! square of the accuracy
    hmin        = 1.d-7               ! The minimum step size.
    print_diags = .false.             ! Flag to print the diagnostic check.
-   checkbudget = .true.              ! Flag to check CO2, water, and energy budgets every 
+   checkbudget = .false.             ! Flag to check CO2, water, and energy budgets every 
                                      !     time step and stop the run in case any of these 
                                      !     budgets don't close.
    !---------------------------------------------------------------------------------------!
@@ -2172,11 +2176,13 @@ subroutine init_rk4_params()
    !---------------------------------------------------------------------------------------!
    rk4min_can_temp   =  1.8400d2  ! Minimum canopy    temperature               [        K]
    rk4max_can_temp   =  3.4100d2  ! Maximum canopy    temperature               [        K]
+   rk4min_can_theiv  =  1.8400d2  ! Minimum canopy    equiv. pot. temperature   [        K]
+   rk4max_can_theiv  =  4.6000d2  ! Maximum canopy    equiv. pot. temperature   [        K]
    rk4min_can_shv    =  1.0000d-8 ! Minimum canopy    specific humidity         [kg/kg_air]
    rk4max_can_shv    =  4.6000d-2 ! Maximum canopy    specific humidity         [kg/kg_air]
    rk4max_can_rhv    =  1.1000d0  ! Maximum canopy    relative humidity (**)    [      ---]
-   rk4min_can_co2    =  2.0000d2  ! Minimum canopy    CO2 mixing ratio          [ µmol/mol]
-   rk4max_can_co2    =  1.2000d3  ! Maximum canopy    CO2 mixing ratio          [ µmol/mol]
+   rk4min_can_co2    =  1.0000d2  ! Minimum canopy    CO2 mixing ratio          [ µmol/mol]
+   rk4max_can_co2    =  1.5000d3  ! Maximum canopy    CO2 mixing ratio          [ µmol/mol]
    rk4min_soil_temp  =  1.8400d2  ! Minimum soil      temperature               [        K]
    rk4max_soil_temp  =  3.5100d2  ! Maximum soil      temperature               [        K]
    rk4min_veg_temp   =  1.8400d2  ! Minimum leaf      temperature               [        K]

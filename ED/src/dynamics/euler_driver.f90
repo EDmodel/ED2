@@ -53,10 +53,11 @@ subroutine euler_timestep(cgrid)
    real                                 :: ecurr_loss2drainage
    real                                 :: wcurr_loss2runoff
    real                                 :: ecurr_loss2runoff
-   real                                 :: old_can_enthalpy
+   real                                 :: old_can_theiv
    real                                 :: old_can_shv
    real                                 :: old_can_co2
    real                                 :: old_can_rhos
+   real                                 :: old_can_temp
    real                                 :: fm
    !----- External functions. -------------------------------------------------------------!
    real, external                       :: compute_netrad
@@ -88,10 +89,11 @@ subroutine euler_timestep(cgrid)
             call zero_rk4_cohort(integration_buff%dydx)
 
             !----- Save the previous thermodynamic state. ---------------------------------!
-            old_can_enthalpy = csite%can_enthalpy(ipa)
+            old_can_theiv    = csite%can_theiv(ipa)
             old_can_shv      = csite%can_shv(ipa)
             old_can_co2      = csite%can_co2(ipa)
             old_can_rhos     = csite%can_rhos(ipa)
+            old_can_temp     = csite%can_temp(ipa)
 
             !----- Get velocity for aerodynamic resistance. -------------------------------!
             if (csite%can_theta(ipa) < cmet%atm_theta) then
@@ -103,7 +105,7 @@ subroutine euler_timestep(cgrid)
             !------------------------------------------------------------------------------!
             !    Copy the meteorological variables to the rk4site structure.               !
             !------------------------------------------------------------------------------!
-            call copy_met_2_rk4site(cmet%vels,cmet%atm_enthalpy,cmet%atm_theta             &
+            call copy_met_2_rk4site(cmet%vels,cmet%atm_theiv,cmet%atm_theta                &
                                    ,cmet%atm_tmp,cmet%atm_shv,cmet%atm_co2,cmet%geoht      &
                                    ,cmet%exner,cmet%pcpg,cmet%qpcpg,cmet%dpcpg,cmet%prss   &
                                    ,cmet%geoht,cpoly%lsl(isi)                              &
@@ -172,7 +174,8 @@ subroutine euler_timestep(cgrid)
                                ,wcurr_loss2atm,ecurr_loss2atm,co2curr_loss2atm             &
                                ,wcurr_loss2drainage,ecurr_loss2drainage,wcurr_loss2runoff  &
                                ,ecurr_loss2runoff,cpoly%area(isi),cgrid%cbudget_nep(ipy)   &
-                               ,old_can_enthalpy,old_can_shv,old_can_co2,old_can_rhos)
+                               ,old_can_theiv,old_can_shv,old_can_co2,old_can_rhos         &
+                               ,old_can_temp)
          end do patchloop
       end do siteloop
    end do polyloop
@@ -414,7 +417,7 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nsteps)
          write (unit=66,fmt='(27(a,1x))')                                                  &
                        '  ELAPSED_TIME','     TIME_STEP','       ATM_SHV','       CAN_SHV' &
                       ,'    GROUND_SHV','     ATM_THETA','     CAN_THETA','      ATM_TEMP' &
-                      ,'      CAN_TEMP','  ATM_ENTHALPY','  CAN_ENTHALPY','      ATM_PRSS' &
+                      ,'      CAN_TEMP','     ATM_THEIV','     CAN_THEIV','      ATM_PRSS' &
                       ,'      CAN_PRSS','      ATM_RHOS','      CAN_RHOS','      ATM_VELS' &
                       ,'     CAN_DEPTH','          RAIN','         USTAR','         TSTAR' &
                       ,'         ESTAR','         QSTAR','          ZETA','        RIBULK' &
@@ -587,7 +590,7 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nsteps)
                write (unit=66,fmt='(27(es14.7,1x))')                                       &
                      elaptime,h,rk4site%atm_shv,initp%can_shv,initp%ground_shv             &
                     ,rk4site%atm_theta,initp%can_theta,rk4site%atm_tmp,initp%can_temp      &
-                    ,rk4site%atm_enthalpy,initp%can_enthalpy,rk4site%atm_prss              &
+                    ,rk4site%atm_theiv,initp%can_theiv,rk4site%atm_prss                    &
                     ,initp%can_prss,rk4site%rhos,initp%can_rhos,rk4site%vels               &
                     ,initp%can_depth,rk4site%pcpg,initp%ustar,initp%tstar,initp%estar      &
                     ,initp%qstar,initp%zeta,initp%ribulk,initp%sfcwater_mass(1)            &

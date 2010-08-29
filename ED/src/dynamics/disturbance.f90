@@ -689,6 +689,7 @@ module disturbance_utils
       csite%sum_chd                    (np) = 0.0
       csite%can_depth                  (np) = 0.0
       csite%can_theta                  (np) = 0.0
+      csite%can_theiv                  (np) = 0.0
       csite%can_prss                   (np) = 0.0
       csite%can_shv                    (np) = 0.0
       csite%can_co2                    (np) = 0.0
@@ -774,6 +775,9 @@ module disturbance_utils
                                             * area_fac
       csite%can_theta                  (np) = csite%can_theta                  (np)        &
                                             + csite%can_theta                  (cp)        &
+                                            * area_fac
+      csite%can_theiv                  (np) = csite%can_theiv                  (np)        &
+                                            + csite%can_theiv                  (cp)        &
                                             * area_fac
       csite%can_prss                   (np) = csite%can_prss                   (np)        &
                                             + csite%can_prss                   (cp)        &

@@ -44,7 +44,7 @@ subroutine copy_atm2lsm(ifm,init)
                                    , wdnsi         & ! intent(in)
                                    , tsupercool    ! ! intent(in)
    use ed_node_coms         , only : mynum         ! ! intent(in)
-   use therm_lib            , only : ptqz2enthalpy & ! intent(in)
+   use therm_lib            , only : thetaeiv      & ! intent(in)
                                    , rehuil        & ! intent(in)
                                    , ptrh2rvapil   ! ! intent(in)
    use met_driver_coms      , only : rlong_min     & ! intent(in)
@@ -301,10 +301,8 @@ subroutine copy_atm2lsm(ifm,init)
       !------------------------------------------------------------------------------------!
 
 
-      cgrid%met(ipy)%atm_enthalpy = ptqz2enthalpy(cgrid%met(ipy)%prss                      &
-                                                 ,cgrid%met(ipy)%atm_tmp                   &
-                                                 ,cgrid%met(ipy)%atm_shv                   &
-                                                 ,cgrid%met(ipy)%geoht)
+      cgrid%met(ipy)%atm_theiv = thetaeiv(cgrid%met(ipy)%atm_theta,cgrid%met(ipy)%prss     &
+                                         ,cgrid%met(ipy)%atm_tmp,rvaux,rvaux,-9)
    end do polyloop1st
 
    !----- Filling the precipitation arrays. -----------------------------------------------!
@@ -338,10 +336,11 @@ subroutine copy_atm2lsm(ifm,init)
 
 
          !---------------------------------------------------------------------------------!
-         !     Exner function, potential temperature, and enthalpy must be calculated for  !
-         ! site level instead of being directly copied from the polygon level.  This will  !
-         ! account for modifications due to lapse rate without breaking ideal gas law or   !
-         ! first law of thermodynamics.                                                    !
+         !     We now find some derived properties.  In case several sites exist, the      !
+         ! lapse rate was applied to pressure, temperature, and mixing ratio.  Then we     !
+         ! calculate the Exner function, potential temperature and equivalent potential    !
+         ! temperature, so it will respect the ideal gas law and first law of thermo-      !
+         ! dynamics.                                                                       !
          !---------------------------------------------------------------------------------!
          cpoly%met(isi)%exner        = cp * (p00i * cpoly%met(isi)%prss) **rocp
          cpoly%met(isi)%atm_theta    = cp * cpoly%met(isi)%atm_tmp / cpoly%met(isi)%exner
@@ -369,10 +368,9 @@ subroutine copy_atm2lsm(ifm,init)
          end if
          !---------------------------------------------------------------------------------!
 
-         cpoly%met(isi)%atm_enthalpy = ptqz2enthalpy(cpoly%met(isi)%prss                   &
-                                                    ,cpoly%met(isi)%atm_tmp                &
-                                                    ,cpoly%met(isi)%atm_shv                &
-                                                    ,cpoly%met(isi)%geoht)
+         !----- Find the atmospheric equivalent potential temperature. --------------------!
+         cpoly%met(isi)%atm_theiv = thetaeiv(cpoly%met(isi)%atm_theta,cpoly%met(isi)%prss  &
+                                            ,cpoly%met(isi)%atm_tmp,rvaux,rvaux,2)
 
          !----- Solar radiation -----------------------------------------------------------!
          cpoly%met(isi)%rshort_diffuse = cpoly%met(isi)%par_diffuse                        &
@@ -887,6 +885,7 @@ subroutine initialize_ed2leaf(ifm,mxp,myp)
    use micphys      , only : availcat       ! ! intent(in)
    use mem_micro    , only : micro_g        ! ! structure
    use therm_lib    , only : reducedpress   & ! function
+                           , thetaeiv       & ! function
                            , bulk_on        ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
@@ -895,10 +894,12 @@ subroutine initialize_ed2leaf(ifm,mxp,myp)
    integer                                         :: ix,iy,i,j
    integer                                         :: k2w,k3w,k1w
    real                                            :: topma_t,wtw
-   real                                            :: atm_prss,atm_shv
+   real                                            :: atm_prss,atm_shv,atm_temp
    real,dimension(mmxp(ifm),mmyp(ifm))             :: theta_mean
+   real,dimension(mmxp(ifm),mmyp(ifm))             :: thil_mean
    real,dimension(mmxp(ifm),mmyp(ifm))             :: pi0_mean
    real,dimension(mmxp(ifm),mmyp(ifm))             :: rv_mean
+   real,dimension(mmxp(ifm),mmyp(ifm))             :: rtp_mean
    real,dimension(mmxp(ifm),mmyp(ifm))             :: geoht
    real                                            :: totpcp
    logical                                         :: cumulus_on
@@ -952,7 +953,9 @@ subroutine initialize_ed2leaf(ifm,mxp,myp)
       do j=ja,jz
          do i=ia,iz
             theta_mean(i,j) = basic_g(ifm)%theta(2,i,j)
+            thil_mean(i,j)  = basic_g(ifm)%thp(2,i,j)
             rv_mean(i,j)    = basic_g(ifm)%rv(2,i,j)
+            rtp_mean(i,j)   = basic_g(ifm)%rtp(2,i,j)
             pi0_mean(i,j)   = ( basic_g(ifm)%pp(1,i,j)  + basic_g(ifm)%pp(2,i,j)           &
                               + basic_g(ifm)%pi0(1,i,j) + basic_g(ifm)%pi0(2,i,j) ) * 0.5
             geoht(i,j)      = (zt(2)-zm(1)) * grid_g(ifm)%rtgt(ix,iy)
@@ -971,8 +974,12 @@ subroutine initialize_ed2leaf(ifm,mxp,myp)
 
             theta_mean(i,j) =       wtw  * basic_g(ifm)%theta(k2w,i,j)                     &
                             + (1. - wtw) * basic_g(ifm)%theta(k3w,i,j)
+            thil_mean(i,j)  =       wtw  * basic_g(ifm)%thp(k2w,i,j)                       &
+                            + (1. - wtw) * basic_g(ifm)%thp(k3w,i,j)
             rv_mean(i,j)    =       wtw  * basic_g(ifm)%rv(k2w,i,j)                        &
                             + (1. - wtw) * basic_g(ifm)%rv(k3w,i,j)
+            rtp_mean(i,j)   =       wtw  * basic_g(ifm)%rtp(k2w,i,j)                       &
+                            + (1. - wtw) * basic_g(ifm)%rtp(k3w,i,j)
 
             if (wtw >= .5) then
                pi0_mean(i,j)  = (wtw - .5)                                                 &
@@ -995,8 +1002,8 @@ subroutine initialize_ed2leaf(ifm,mxp,myp)
       do i=ia,iz
          !----- Finding the atmospheric pressure and specific humidity. -------------------!
          atm_prss                     =  p00 * (cpi * pi0_mean(i,j)) ** cpor
-         atm_shv                      = leaf_g(ifm)%can_rvap(i,j,1)                        &
-                                      / (leaf_g(ifm)%can_rvap(i,j,1) + 1.)
+         atm_shv                      = rv_mean(i,j) / (1. + rtp_mean(i,j))
+         atm_temp                     = cpi * pi0_mean(i,j) * theta_mean(i,j)
 
          !----- Computing the state variables. --------------------------------------------!
          leaf_g(ifm)%can_theta(i,j,1) =  theta_mean(i,j)
@@ -1004,6 +1011,8 @@ subroutine initialize_ed2leaf(ifm,mxp,myp)
          leaf_g(ifm)%can_prss (i,j,1) =  reducedpress(atm_prss,theta_mean(i,j),atm_shv     &
                                                      ,geoht(i,j),theta_mean(i,j)           &
                                                      ,atm_shv,can_depth)
+         leaf_g(ifm)%can_theiv(i,j,1) =  thetaeiv(thil_mean(i,j),atm_prss,atm_temp         &
+                                                 ,rv_mean(i,j),rtp_mean(i,j),-7)
          leaf_g(ifm)%gpp      (i,j,1) = 0.0
          leaf_g(ifm)%resphet  (i,j,1) = 0.0
          leaf_g(ifm)%plresp   (i,j,1) = 0.0
@@ -1012,6 +1021,7 @@ subroutine initialize_ed2leaf(ifm,mxp,myp)
          leaf_g(ifm)%transp   (i,j,1) = 0.0
 
          leaf_g(ifm)%can_theta(i,j,2) = leaf_g(ifm)%can_theta(i,j,1)
+         leaf_g(ifm)%can_theiv(i,j,2) = leaf_g(ifm)%can_theiv(i,j,1)
          leaf_g(ifm)%can_rvap (i,j,2) = leaf_g(ifm)%can_rvap (i,j,1)
          leaf_g(ifm)%can_prss (i,j,2) = leaf_g(ifm)%can_prss(i,j,1)
          leaf_g(ifm)%gpp      (i,j,2) = 0.0
@@ -1583,6 +1593,7 @@ subroutine copy_avgvars_to_leaf(ifm)
       !      Update canopy air properties.                                                 !
       !------------------------------------------------------------------------------------!
       leaf_g(ifm)%can_theta(ix,iy,2)    = cgrid%avg_can_theta(ipy)
+      leaf_g(ifm)%can_theiv(ix,iy,2)    = cgrid%avg_can_theiv(ipy)
       leaf_g(ifm)%can_co2(ix,iy,2)      = cgrid%avg_can_co2(ipy)
       leaf_g(ifm)%can_prss(ix,iy,2)     = cgrid%avg_can_prss(ipy)
       !----- ED uses specific humidity, converting it to mixing ratio. --------------------!
