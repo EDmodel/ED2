@@ -23,28 +23,28 @@ ED_VERSION=2.1
 # Source directories.
 
 # New paths like rams 6.x
-BC=$(BRAMS_ROOT)/src/brams/bc
-CATT=$(BRAMS_ROOT)/src/brams/catt
-CORE=$(BRAMS_ROOT)/src/brams/core
-CUPARM=$(BRAMS_ROOT)/src/brams/cuparm
-ED_MIXED=$(BRAMS_ROOT)/src/brams/ed2
-FDDA=$(BRAMS_ROOT)/src/brams/fdda
-INIT=$(BRAMS_ROOT)/src/brams/init
-IO=$(BRAMS_ROOT)/src/brams/io
-ISAN=$(BRAMS_ROOT)/src/brams/isan
-MASS=$(BRAMS_ROOT)/src/brams/mass
-MEMORY=$(BRAMS_ROOT)/src/brams/memory
-MICRO=$(BRAMS_ROOT)/src/brams/micro
-MKSFC=$(BRAMS_ROOT)/src/brams/mksfc
-MPI=$(BRAMS_ROOT)/src/brams/mpi
-NESTING=$(BRAMS_ROOT)/src/brams/nesting
-OLDGRELL=$(BRAMS_ROOT)/src/brams/oldgrell
-RADIATE=$(BRAMS_ROOT)/src/brams/radiate
-SIB=$(BRAMS_ROOT)/src/brams/sib
-SOIL_MOISTURE=$(BRAMS_ROOT)/src/brams/soil_moisture
-SURFACE=$(BRAMS_ROOT)/src/brams/surface
-TEB_SPM=$(BRAMS_ROOT)/src/brams/teb_spm
-TURB=$(BRAMS_ROOT)/src/brams/turb
+BC=$(BRAMS_ROOT)/src/bc
+CATT=$(BRAMS_ROOT)/src/catt
+CORE=$(BRAMS_ROOT)/src/core
+CUPARM=$(BRAMS_ROOT)/src/cuparm
+ED_MIXED=$(BRAMS_ROOT)/src/ed2
+FDDA=$(BRAMS_ROOT)/src/fdda
+INIT=$(BRAMS_ROOT)/src/init
+IO=$(BRAMS_ROOT)/src/io
+ISAN=$(BRAMS_ROOT)/src/isan
+MASS=$(BRAMS_ROOT)/src/mass
+MEMORY=$(BRAMS_ROOT)/src/memory
+MICRO=$(BRAMS_ROOT)/src/micro
+MKSFC=$(BRAMS_ROOT)/src/mksfc
+MPI=$(BRAMS_ROOT)/src/mpi
+NESTING=$(BRAMS_ROOT)/src/nesting
+OLDGRELL=$(BRAMS_ROOT)/src/oldgrell
+RADIATE=$(BRAMS_ROOT)/src/radiate
+SIB=$(BRAMS_ROOT)/src/sib
+SOIL_MOISTURE=$(BRAMS_ROOT)/src/soil_moisture
+SURFACE=$(BRAMS_ROOT)/src/surface
+TEB_SPM=$(BRAMS_ROOT)/src/teb_spm
+TURB=$(BRAMS_ROOT)/src/turb
 
 
 # ED directories that will be accessed by BRAMS
@@ -56,13 +56,13 @@ ED_MPI=$(ED_ROOT)/src/mpi
 ED_UTILS=$(ED_ROOT)/src/utils
 
 
-UTILS_LIB=$(BRAMS_ROOT)/src/utils/lib
-EFF=$(BRAMS_ROOT)/src/utils/eff
-NCARGD=$(BRAMS_ROOT)/src/utils/ncargd
-UTILS_INCS=$(BRAMS_ROOT)/src/utils/include
-UTILS_MODS=$(BRAMS_ROOT)/src/utils/modules
+UTILS_LIB=$(BRAMS_ROOT)/src/lib
+EFF=$(BRAMS_ROOT)/src/eff
+NCARGD=$(BRAMS_ROOT)/src/ncargd
+UTILS_INCS=$(BRAMS_ROOT)/src/include
+UTILS_MODS=$(BRAMS_ROOT)/src/modules
 
-ISAN=$(BRAMS_ROOT)/src/brams/isan
-ISAN_MODS=$(BRAMS_ROOT)/src/brams/isan
+ISAN=$(BRAMS_ROOT)/src/isan
+ISAN_MODS=$(BRAMS_ROOT)/src/isan
 
 # Including 

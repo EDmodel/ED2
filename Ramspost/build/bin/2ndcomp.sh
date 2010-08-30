@@ -25,8 +25,8 @@ rm -f rpost_coms.o         rpost_coms.mod
 rm -f rpost_dims.o         rpost_dims.mod
 rm -f rpost_misc.o         rpost_misc.mod
 rm -f rutil.o              rutil.mod
-rm -f somevars.o           somevars.mod
 rm -f soil_coms.o          soil_coms.mod
+rm -f somevars.o           somevars.mod
 rm -f therm_lib.o          therm_lib.mod
 rm -f tmpname.o            tmpname.mod
 rm -f utils_c.o            utils_c.mod

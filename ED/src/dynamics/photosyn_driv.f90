@@ -61,7 +61,6 @@ subroutine canopy_photosynthesis(csite,ipa,vels,atm_tmp,prss,ed_ktrans,ntext_soi
    real                                    :: broot_tot
    real                                    :: broot_loc
    real                                    :: pss_available_water
-   real                                    :: can_co2_loc
    !----- Local constants -----------------------------------------------------------------!
    real   , parameter                      :: vels_min    = 1.0
    logical, parameter                      :: print_debug = .false.
@@ -83,9 +82,6 @@ subroutine canopy_photosynthesis(csite,ipa,vels,atm_tmp,prss,ed_ktrans,ntext_soi
       csite%wai(ipa)  = csite%wai(ipa)  + cpatch%wai(ico)
    end do
 
-
-   !----- Compute local co2 mixing ratio (KLUGE!!!) ---------------------------------------!
-   can_co2_loc = max(100.,csite%can_co2(ipa)-380.+278.)
 
    !----- Calculate liquid water available for transpiration. -----------------------------!
    available_liquid_water(nzg) = wdns * dslz(nzg) * soil_fracliq(nzg)                      &
@@ -143,7 +139,7 @@ subroutine canopy_photosynthesis(csite,ipa,vels,atm_tmp,prss,ed_ktrans,ntext_soi
             call lphysiol_full(            & !
                  cpatch%veg_temp(tuco)-t00 & ! Vegetation temperature       [           °C]
                , mixrat*epi                & ! Vapour mixing ratio          [      mol/mol]
-               , can_co2_loc*1e-6   & ! CO2 mixing ratio             [      mol/mol]
+               , csite%can_co2(ipa)*1e-6   & ! CO2 mixing ratio             [      mol/mol]
                , parv_o_lai                & ! Absorbed PAR                 [ Ein/m²leaf/s]
                , cpatch%rb(tuco)           & ! Aerodynamic resistance       [          s/m]
                , csite%can_rhos(ipa)       & ! Air density                  [        kg/m³]
@@ -214,7 +210,7 @@ subroutine canopy_photosynthesis(csite,ipa,vels,atm_tmp,prss,ed_ktrans,ntext_soi
             call lphysiol_full(            & !
                  cpatch%veg_temp(ico)-t00  & ! Vegetation temperature       [           °C]
                , mixrat*epi                & ! Vapour mixing ratio          [      mol/mol]
-               , can_co2_loc*1e-6   & ! CO2 mixing ratio             [      mol/mol]
+               , csite%can_co2(ipa)*1e-6   & ! CO2 mixing ratio             [      mol/mol]
                , parv_o_lai                & ! Absorbed PAR                 [ Ein/m²leaf/s]
                , cpatch%rb(ico)            & ! Aerodynamic resistance       [          s/m]
                , csite%can_rhos(ipa)       & ! Air density                  [        kg/m³]

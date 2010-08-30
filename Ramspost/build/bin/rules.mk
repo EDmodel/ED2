@@ -128,12 +128,12 @@ rutil.o: $(RPOST_UTILS)/rutil.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
-somevars.o: $(RPOST_MEMORY)/somevars.f90
+soil_coms.o: $(RPOST_MEMORY)/soil_coms.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
-soil_coms.o: $(RPOST_MEMORY)/soil_coms.f90
+somevars.o: $(RPOST_MEMORY)/somevars.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
