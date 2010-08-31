@@ -555,6 +555,9 @@ edio.o: pft_coms.mod soil_coms.mod therm_lib.mod
 h5_output.o: an_header.mod c34constants.mod ed_max_dims.mod ed_misc_coms.mod
 h5_output.o: ed_node_coms.mod ed_state_vars.mod ed_var_tables.mod
 h5_output.o: fusion_fission_coms.mod grid_coms.mod  hdf5_coms.mod
+h5_output_old.o: an_header.mod c34constants.mod ed_max_dims.mod ed_misc_coms.mod
+h5_output_old.o: ed_node_coms.mod ed_state_vars.mod ed_var_tables.mod
+h5_output_old.o: fusion_fission_coms.mod grid_coms.mod  hdf5_coms.mod
 leaf_database.o: grid_coms.mod hdf5_utils.mod soil_coms.mod
 canopy_air_coms.o: consts_coms.mod therm_lib.mod therm_lib8.mod
 canopy_radiation_coms.o: ed_max_dims.mod

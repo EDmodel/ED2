@@ -86,15 +86,18 @@ subroutine h5_output(vtype)
   integer :: mpierror
   integer :: comm,info
   integer :: mpi_size,mpi_rank
-  integer :: ping,ierr
+  integer :: ierr
   integer,       dimension(MPI_STATUS_SIZE) :: status
   real(kind=8)    :: dsec
-  logical :: new_file
 
   logical,parameter :: collective_mpi = .false.
 
   logical, external :: isleap
-  new_file=.true.
+
+  logical           :: new_file
+
+  
+
 
   comm = MPI_COMM_WORLD
   info = MPI_INFO_NULL
@@ -141,20 +144,11 @@ subroutine h5_output(vtype)
 
 
      call h5garbage_collect_f(hdferr) 
+
+     new_file=.true.
+
+     if (mynum /= 1)     call MPI_RECV(new_file,1,MPI_LOGICAL,recvnum,3510+ngr,MPI_COMM_WORLD,status,ierr)
      
-     ping = 0 
-
-!!#if USE_COLLECTIVE_MPIO
-
-!!#else
-
-        if (mynum /= 1)     call MPI_RECV(ping,1,MPI_INTEGER,recvnum,3510+ngr,MPI_COMM_WORLD,status,ierr)
-
-        print*,"HISTORY: NODE",mynum," of ",nnodetot
-
-
-!!#endif
-
      ! If there are no polygons on this node, we do not have any interaction with the file
 
 
@@ -220,9 +214,6 @@ subroutine h5_output(vtype)
 
         case('HIST')
 
-
-           
-
            call makefnam(anamel,sfilout,time,iyeara,imontha,idatea,  &
                 itimea*100,vnam,cgrid,'h5 ')
            outyear = iyeara
@@ -248,7 +239,6 @@ subroutine h5_output(vtype)
                  out_time_fast%date  = outdate
                  out_time_fast%time  = real(outhour)
 
-                 !!(3600.*int(outhour/10000)+60.*int(mod(outhour,10000)/100)+mod(outhour,100)*1.)   !! DOUBLE CHECK
                  dsec = time
                  new_file = .true.
               endif
@@ -285,41 +275,8 @@ subroutine h5_output(vtype)
            call fatal_error('Could not initialize the hdf environment' &
                 ,'h5_output','h5_output.F90')
         endif
-        
-
-!!#if USE_COLLECTIVE_MPIO
-        
-!!        call h5pcreate_f(H5P_FILE_ACCESS_F,plist_id,hdferr)
-!!        if (hdferr /= 0) &
-!!             call fatal_error('Could not create the p-list' &
-!!             ,'h5_output','h5_output.F90')
-        
-!!        call h5pset_fapl_mpio_f(plist_id,comm,info,hdferr)
-!!        if (hdferr /= 0) &
-!!             call fatal_error('Failed using h5pset_fapl_mpi_f' &
-!!             ,'h5_output','h5_output.F90')
-        
-        !   Open a new HDF file using IO mode H5F_ACC_TRUNC_F
-        !   In this case, if a file with the same name already exists
-        !   It will overwrite the data in that file, destroying all data
-        !   ------------------------------------------------------------
-        
-!!        call h5fcreate_f(trim(anamel)//char(0), H5F_ACC_TRUNC_F, file_id, &
-!!             hdferr,access_prp = plist_id)
-!!        if (hdferr /= 0) then
-!!           print*,"COULD NOT OPEN THE new HDF FILE"
-!!           print*,trim(anamel),file_id,hdferr
-!!           call fatal_error('Failed opening the HDF file' &
-!!                ,'h5_output','h5_output.F90')
-!!        endif
-        
-!!        call h5pclose_f(plist_id,hdferr)
-!!        if (hdferr /= 0) &
-!!             call fatal_error('Could not close the p-list' &
-!!             ,'h5_output','h5_output.F90')
-!!#else
            
-        if (ping == 0 .and. new_file) then
+        if (new_file) then
            
            call h5fcreate_f(trim(anamel)//char(0), H5F_ACC_TRUNC_F, file_id, hdferr)
            if (hdferr /= 0) then
@@ -338,21 +295,6 @@ subroutine h5_output(vtype)
                    ,'h5_output','h5_output.F90')
            endif
         endif
-           
-
-!!#endif
-        
-!!#if USE_COLLECTIVE_MPIO
-        
-!!        call h5pcreate_f(H5P_DATASET_XFER_F,plist_id,hdferr)
-!!        if (hdferr /= 0) call fatal_error('Errror at pcreate' &
-!!             ,'h5_output','h5_output.f90')
-        
-!!        call h5pset_dxpl_mpio_f(plist_id,H5FD_MPIO_COLLECTIVE_F,hdferr)
-!!        if (hdferr /= 0) call fatal_error('Errror at h5pset_dxpl_mpio_f' &
-!!             ,'h5_output','h5_output.f90')
-!!#endif           
-        
         
         !   Now we need to create HDF datasets and then put them
         !   in the file, cycle all of our variables
@@ -378,36 +320,22 @@ subroutine h5_output(vtype)
               
              
               call h5screate_simple_f(dsetrank, globdims, filespace, hdferr)
-              if (hdferr /= 0) then
+              if (hdferr /= 0 .or. globdims(1)<1 ) then
                  call fatal_error('Could not create the first filespace' &
                       ,'h5_output','h5_output.f90')
               end if
 
-!!#if USE_COLLECTIVE_MPIO             
               
-!!              if (vt_info(nv,ngr)%dtype == 'r') then   ! real data type
-!!                 call h5dcreate_f(file_id,varn,H5T_NATIVE_REAL, filespace, &
-!!                      dset_id,hdferr)
-!!              else if (vt_info(nv,ngr)%dtype == 'i') then   ! integer data type
-!!                 call h5dcreate_f(file_id,varn,H5T_NATIVE_INTEGER, filespace, &
-!!                      dset_id,hdferr)
-!!              else if (vt_info(nv,ngr)%dtype == 'c') then   ! character data type
-!!                 call h5dcreate_f(file_id,varn,H5T_NATIVE_CHARACTER, filespace, &
-!!                      dset_id,hdferr)
-!!              else if (vt_info(nv,ngr)%dtype == 'd') then   ! character data type
-!!                 call h5dcreate_f(file_id,varn,H5T_NATIVE_DOUBLE, filespace, &
-!!                      dset_id,hdferr)
-!!              else
-!!                 print*,varn,vt_info(nv,ngr)%dtype
-!!                 call fatal_error('YOU ARE ATTEMPTING TO WRITE AN UNDEFINED DATATYPE'   &
-!!                                 ,'h5_output','h5_output.F90')
-                 
-!!              endif
+              ! Determine if the dataset exists
+  
+              call h5eset_auto_f(0,hdferr)
 
-!!#else
-              
-              if (ping == 0 .and. new_file) then
-                 
+              call h5dopen_f(file_id,varn,dset_id,hdferr)
+
+              if (hdferr < 0) then
+
+                 call h5eset_auto_f(1,hdferr)
+
                  if (vt_info(nv,ngr)%dtype == 'r') then   ! real data type
                     call h5dcreate_f(file_id,varn,H5T_NATIVE_REAL, filespace, &
                          dset_id,hdferr)
@@ -426,18 +354,6 @@ subroutine h5_output(vtype)
                                     ,'h5_output','h5_output.F90')
                  endif
                     
-                 ! REMEMBER THESE COMMANDS
-                 !              h5pset_meta_block_size
-                 !              h5pget_meta_block_size
-                 !              h5pset_cache
-                 
-                 ! If the user has decided to attach metadata
-                 ! to the datasets, assign that metadata as an 
-                 ! attribute here.  That attribute is a rank 1 vector
-                 ! of strings.  It is only necessary to do this
-                 ! on the master.
-                 ! Note that descriptors max out at 64 characters
-                 
                  if (attach_metadata == 1) then
                     
                     arank = 1
@@ -482,23 +398,27 @@ subroutine h5_output(vtype)
                     
                  end if
                  
-              else
                  call h5dopen_f(file_id,varn,dset_id,hdferr)
+
+                 if (hdferr /= 0) then
+                    write (unit=*,fmt=*) 'File name:           ',trim(anamel)
+                    write (unit=*,fmt=*) 'Variable name:       ',trim(varn)
+                    write (unit=*,fmt=*) 'File ID:             ',file_id
+                    write (unit=*,fmt=*) 'Dataset ID:          ',dset_id
+                    write (unit=*,fmt=*) 'Dataset rank:        ',dsetrank
+                    write (unit=*,fmt=*) 'Global dimension:    ',globdims
+                    write (unit=*,fmt=*) 'Chunk size           ',chnkdims
+                    write (unit=*,fmt=*) 'Chunk offset         ',chnkoffs
+                    write (unit=*,fmt=*) 'Vars written so far: ',nv-1
+                    call fatal_error('Could not create the dataset','h5_output','h5_output.F90')
+                 end if
+                 
+              else
+
+                 call h5eset_auto_f(1,hdferr)
+
               end if
-              
-!!#endif
-              
-              if (hdferr /= 0) then
-                 write (unit=*,fmt=*) 'File name:           ',trim(anamel)
-                 write (unit=*,fmt=*) 'Variable name:       ',trim(varn)
-                 write (unit=*,fmt=*) 'File ID:             ',file_id
-                 write (unit=*,fmt=*) 'Dataset ID:          ',dset_id
-                 write (unit=*,fmt=*) 'Dataset rank:        ',dsetrank
-                 write (unit=*,fmt=*) 'Global dimension:    ',globdims
-                 write (unit=*,fmt=*) 'Vars written so far: ',nv-1
-                 call fatal_error('Could not create the dataset','h5_output','h5_output.F90')
-              end if
-              
+
               call h5sclose_f(filespace,hdferr)
               if (hdferr /= 0) then
                  call fatal_error('Could not close the first filespace' &
@@ -556,41 +476,6 @@ subroutine h5_output(vtype)
                             ,'h5_output','h5_output.F90')
                     end if
 
-!!#if USE_COLLECTIVE_MPIO
-!!                       
-!!                    if (vt_info(nv,ngr)%dtype .eq. 'r') then   ! real data type
-!!                       call h5dwrite_f(dset_id,H5T_NATIVE_REAL,vtvec%var_rp,globdims, &
-!!                            hdferr,file_space_id = filespace, mem_space_id = memspace, &
-!!                            xfer_prp = plist_id)
-!!                    elseif(vt_info(nv,ngr)%dtype .eq. 'i') then ! integer data type
-                       
-!!                       call h5dwrite_f(dset_id,H5T_NATIVE_INTEGER,vtvec%var_ip,globdims, &
-!!                            hdferr,file_space_id = filespace, mem_space_id = memspace, &
-!!                            xfer_prp = plist_id)
-!!                    elseif(vt_info(nv,ngr)%dtype .eq. 'c') then ! character data type
-                       
-!!                       call h5dwrite_f(dset_id,H5T_NATIVE_CHARACTER,vtvec%var_cp,globdims, &
-!!                            hdferr,file_space_id = filespace, mem_space_id = memspace, &
-!!                            xfer_prp = plist_id)
-                       
-!!                    elseif(vt_info(nv,ngr)%dtype .eq. 'd') then ! character data type
-                       
-!!                       call h5dwrite_f(dset_id,H5T_NATIVE_DOUBLE,vtvec%var_dp,globdims, &
-!!                            hdferr,file_space_id = filespace, mem_space_id = memspace, &
-!!                            xfer_prp = plist_id) 
-
-!!                    end if
-!!                    if (hdferr /= 0) then
-!!                       write (unit=*,fmt=*) 'Variable name:    ',varn
-!!                       write (unit=*,fmt=*) 'Global dimension: ',globdims
-!!                       write (unit=*,fmt=*) 'Chunk dimension:  ',chnkdims
-!!                       write (unit=*,fmt=*) 'Chunk offset:     ',chnkoffs
-!!                       write (unit=*,fmt=*) 'Count:            ',cnt
-!!                       write (unit=*,fmt=*) 'Stride:           ',stride
-!!                       call fatal_error('Could not write the real hyperslab into the dataset' &
-!!                            ,'h5_output','h5_output.F90')
-!!                    end if
-!!#else                       
                     
                     
                     if (vt_info(nv,ngr)%dtype .eq. 'r') then   ! real data type
@@ -622,7 +507,6 @@ subroutine h5_output(vtype)
                             ,'h5_output','h5_output.F90')
                     end if
 
-!!#endif                    
                     
                     call h5sclose_f(filespace,hdferr)
                     if (hdferr /= 0) then
@@ -649,16 +533,6 @@ subroutine h5_output(vtype)
            
         end do varloop
         
-        
-!#if USE_COLLECTIVE_MPIO
-!        
-!        call h5pclose_f(plist_id,hdferr)
-!        if (hdferr /= 0) then
-!           call fatal_error('could not close the plist,post write','h5_output','h5_output.F90')
-!        end if
-        
-!#endif
-        
         call h5fclose_f(file_id,hdferr)
         if (hdferr /= 0) then
            call fatal_error('Could not close the file','h5_output','h5_output.F90')
@@ -669,21 +543,15 @@ subroutine h5_output(vtype)
            call fatal_error('Could not close the hdf environment','h5_output','h5_output.F90')
         end if
         
-        ping = 1
+        new_file = .false.
         
-     end if   ! END THE POLYGON CHECK LOOP - PING SHOULD STILL BE ZERO UNLESS THIS LOOP WAS ENTERED
+     end if
 
-!#if USE_COLLECTIVE_MPIO
-!     
-!#else     
+    
 
-        if (mynum < nnodetot ) call MPI_Send(ping,1,MPI_INTEGER,sendnum,3510+ngr,MPI_COMM_WORLD,ierr)
-
-!#endif     
+     if (mynum < nnodetot ) call MPI_Send(new_file,1,MPI_LOGICAL,sendnum,3510+ngr,MPI_COMM_WORLD,ierr)
         
      enddo
-     
-     
      
      select case (vtype)
      case ('LITE')
@@ -712,18 +580,20 @@ subroutine h5_output(vtype)
         ! REMEMBER, THE BARRIER WILL SCREW UP COUPLED RUNS.
         ! -------------------------------------------------------------------
 
-        !  if (nnodetot /= 1  ) then
-        !   call MPI_Barrier(MPI_COMM_WORLD,ierr)
-        !   if (mynum .eq. 1) then
-        !  ! Write a dummy file that signals we are done
-        !    call makefnam(anamel,sfilout,time,iyeara,imontha,idatea,  &
-        !      itimea*100,vnam,cgrid,'cmp')
-        !    open(unit=79,file=trim(anamel),form="formatted",status="new")
-        !    write(unit=79,fmt='(a)') "history write completed"
-        !    close(unit=79)
-        !   endif
-        !  endif
-
+        if (nnodetot /= 1  ) then
+           !   call MPI_Barrier(MPI_COMM_WORLD,ierr)
+           if (mynum .eq. nnodetot) then
+              
+              !  ! Write a dummy file that signals we are done
+              call makefnam(anamel,sfilout,time,iyeara,imontha,idatea,  &
+                   itimea*100,vnam,0,'cmp')
+              open(unit=79,file=trim(anamel),form="formatted",status="new")
+              write(unit=79,fmt='(a)') "history write completed"
+              write (unit=*,fmt=*) 'Completed History Write: ',trim(anamel)
+              close(unit=79)
+           endif
+        endif
+        
         subaname='  History HDF write   '
      case default
         subaname='  Analysis HDF write         '

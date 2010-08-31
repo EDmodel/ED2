@@ -240,6 +240,17 @@ subroutine init_node_work
      enddo
 
 
+!     if(mynum.eq.2)then
+!        print*,"NODE:",mynum
+!        do i=1,mmxp(ifm)
+!           do j=1,mmyp(ifm)
+!              print*,"  ",work_e(ifm)%xatm(i,j)
+!           end do
+!        end do
+!     end if
+!     stop
+
+
      ! Fill the work vectors - these will be used in the ed2 initialization procedures
      ! to populate the first polygons
      ! -------------------------------------------------------------------------------
