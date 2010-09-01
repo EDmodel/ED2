@@ -384,7 +384,7 @@ subroutine simple_lake_model(time,dtlongest)
 
             !----- Finding the scales for fluxes. -----------------------------------------!
             dtllowcc = dtll / (can_depth_min * can_rhos)
-            dtllohcc = dtllowcc / can_temp
+            dtllohcc = dtllowcc / (cp * can_temp)
             dtlloccc = mmdry * dtllowcc
 
             !------------------------------------------------------------------------------!
@@ -514,6 +514,7 @@ subroutine simple_lake_model(time,dtlongest)
          wgrid_g(ngrid)%rlongup(i,j) = emiss_w * stefan * water_temp**4
 
          !----- Finding some canopy air properties. ---------------------------------------!
+         leaf_g(ngrid)%can_theiv(i,j,1)    = can_theiv
          leaf_g(ngrid)%can_theta(i,j,1)    = can_theta
          leaf_g(ngrid)%can_rvap(i,j,1)     = can_shv / (1. - can_shv)
          leaf_g(ngrid)%can_co2(i,j,1)      = can_co2

@@ -300,9 +300,10 @@ subroutine copy_atm2lsm(ifm,init)
       cgrid%met(ipy)%atm_shv = rv_mean(ix,iy) / (1. + rtp_mean(ix,iy))
       !------------------------------------------------------------------------------------!
 
-
+      !----- Find the ice-vapour equivalent potential temperature. ------------------------!
       cgrid%met(ipy)%atm_theiv = thetaeiv(cgrid%met(ipy)%atm_theta,cgrid%met(ipy)%prss     &
-                                         ,cgrid%met(ipy)%atm_tmp,rvaux,rvaux,-9)
+                                         ,cgrid%met(ipy)%atm_tmp,rv_mean(ix,iy)            &
+                                         ,rtp_mean(ix,iy),-9)
    end do polyloop1st
 
    !----- Filling the precipitation arrays. -----------------------------------------------!
@@ -370,7 +371,7 @@ subroutine copy_atm2lsm(ifm,init)
 
          !----- Find the atmospheric equivalent potential temperature. --------------------!
          cpoly%met(isi)%atm_theiv = thetaeiv(cpoly%met(isi)%atm_theta,cpoly%met(isi)%prss  &
-                                            ,cpoly%met(isi)%atm_tmp,rvaux,rvaux,2)
+                                            ,cpoly%met(isi)%atm_tmp,rvaux,rvaux,-59)
 
          !----- Solar radiation -----------------------------------------------------------!
          cpoly%met(isi)%rshort_diffuse = cpoly%met(isi)%par_diffuse                        &

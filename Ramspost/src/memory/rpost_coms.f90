@@ -97,7 +97,6 @@ module rpost_coms
    real                                   :: radfrq
    real                                   :: distim
    real                                   :: seatmp
-   real                                   :: ubmin
    real                                   :: eps
    real                                   :: albedo
    real                                   :: dthcon
@@ -269,7 +268,7 @@ module rpost_coms
 
 
    !---------------------------------------------------------------------------------------!
-   integer :: nxp,nx,nx1,nx2,nyp,ny,ny1,ny2,nzp,nzpp,nz,nz1  &
+   integer :: nxp,nx1,nx2,nyp,ny1,ny2,nzp,nzpp,nz1  &
              ,nxyzp,nxyp,nxysp,nscl,nsttop,nstbot,ndtrat,jdim
    !---------------------------------------------------------------------------------------!
 

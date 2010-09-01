@@ -13,11 +13,14 @@ program ramspost
   ! -----------------------
 
   use rpost_coms
+  use rpost_dims, only : fnm_len & ! intent(in)
+                       , str_len ! ! intent(in)
   use brams_data
-  character*600 fln(maxfiles)
-  character*80 inp
-  character*600 fprefix,gprefix
-  character*600 cfln
+  character(len=fnm_len), dimension(maxfiles) :: fln
+  character(len=str_len)                      :: inp
+  character(len=fnm_len)                      :: fprefix
+  character(len=fnm_len)                      :: gprefix
+  character(len=fnm_len)                      :: cfln
   character*40 vpln(200),cdum1
   character*10 vp(200),vpun(200),cdum2,proj,anl2gra
   character*1 cgrid
@@ -27,6 +30,7 @@ program ramspost
   integer nvp,nfiles,nzvp(200),nrec,ipresslev,iplevs(nplmax)
   integer inplevs,zlevmax(maxgrds),ndim(200),iproj,ianl2gra,icld
   integer fim_inp
+  integer hunit
 
   real a(nxpmax,nypmax,nzpmax),b(nxpmax,nypmax,nzpmax),        &
        rout(nxpmax,nypmax,nzpmax),                             &
@@ -52,9 +56,7 @@ program ramspost
        'oct','nov','dec'/	
 
   dimension dep_zlev(nzpmax,maxgrds),iep_nx(maxgrds),       &
-       iep_ny(maxgrds),iep_nz(maxgrds),        &
-       iep_stdate(6),iep_step(6),                      &
-       dep_glat(2,maxgrds), dep_glon(2,maxgrds)
+       iep_ny(maxgrds),iep_nz(maxgrds),dep_glat(2,maxgrds), dep_glon(2,maxgrds)
 
   character*600 wfln(maxfiles)
 
@@ -85,7 +87,7 @@ program ramspost
   ic=lastchar(gprefix)
   call RAMS_anal_init(nfiles,fln,fprefix,        &
        dep_zlev,iep_nx,iep_ny,iep_nz,iep_ng,iep_np,iep_nc,   &
-       iep_stdate,iep_step,iep_ngrids)
+       iep_ngrids)
   chdate='00:00z00mmm1900'
   call RAMS_get_time_init(1,iyear,imonth,idate,ihour,imin)
   call RAMS_get_time_step(iistep,hunit,nfiles)
@@ -108,8 +110,9 @@ program ramspost
 
 
   do ng=1,iep_ngrids
-     print*,'=========================================='
-     print *,'           Writing Grid ',ng
+     write (unit=*,fmt='(a)')       ' '
+     write (unit=*,fmt='(a)')       '========================================================='
+     write (unit=*,fmt='(a,1x,i5)'),' + Writing Grid ',ng
      !.................
      nnvp=nvp
      iv=1
@@ -169,8 +172,8 @@ program ramspost
      endif
 
      do nfn=1,nfiles,nstep
-        print *, ' --- > doing timestep ',nfn
-        print *, ' --- >'
+        write(unit=*,fmt='(a)')        ' '
+        write(unit=*,fmt='(a,1x,i5)')  '   - Timestep: ',nfn
 
         cfln=fln(nfn)
         ip=lastchar(cfln)-9
@@ -214,7 +217,8 @@ program ramspost
                 vpun(iv),n,iep_np,iep_nc,iep_ng,a2,rout2,a6,rout6)
 
            ndim(iv)=n
-           print*,'Get variable:  ',vp(iv),' dimension=',ndim(iv)
+           write(unit=*,fmt='(a)') ' '
+           write(unit=*,fmt='(3(a,1x),i5)') '     * Variable:  ',vp(iv),' Dimension=',ndim(iv)
            !................
            !.....            
            IF(ndim(iv).eq.8) then
@@ -399,10 +403,6 @@ program ramspost
            !
 
         ENDDO
-        print*,'------------------------------------------------'
-        print*,'Grid=',ng,' Bytes=',4*nrec*  &
-             (nxb(ng)-nxa(ng)+1)*(nyb(ng)-nya(ng)+1)
-        print*,'------------------------------------------------'
         !.................
 
         if(anl2gra(1:ianl2gra).eq.'ONE'.or.anl2gra(1:ianl2gra).eq.'one') close(19)
@@ -563,6 +563,7 @@ program ramspost
      if(anl2gra(1:ianl2gra).ne.'ONE'.and.anl2gra(1:ianl2gra).ne.'one' .and. &
         nfn == 1 ) exit
    enddo ! enddo do NFILES
+   write (unit=*,fmt='(a)')       '========================================================='
 
   enddo  !enddo do NGRIDS
 
@@ -576,6 +577,8 @@ program ramspost
 2008 format(a,1x,i4,1x,' 99    - RAMS : ',1x,a,'[',1x,a8,1x,']')
 2055 format(60f7.0)
 close (iunit+1)
+
+  write(*,'(a)') ' ------ Ramspost execution ends ------'
   stop
 end program ramspost
 !==========================================================================================!
@@ -769,7 +772,7 @@ Subroutine Matriz_interp(ng,nxg,nyg,nxr,nyr,rlat1,dlat, &
 
   !       Construcao da matriz de interpolacao.
   !       Flag para pontos do grads fora do dominio do modelo
-  undef=-9.99e+15
+  undef=-9.99e33
   do i=1,nxg
      do j=1,nyg
         iinf(i,j)=1

@@ -122,6 +122,7 @@ subroutine ed_init_coup_atm()
                                                   ,csite%can_depth(ipa))
                csite%can_temp (ipa) = csite%can_theta(ipa)                                 &
                                     * (p00i *csite%can_prss(ipa)) ** rocp
+               rvaux                = csite%can_shv(ipa) / (1. - csite%can_shv(ipa))
                csite%can_theiv(ipa) = thetaeiv(csite%can_theta(ipa),csite%can_prss(ipa)    &
                                               ,csite%can_temp(ipa),rvaux,rvaux,-10)
                csite%can_rhos (ipa) = idealdenssh(csite%can_prss(ipa)                      &
