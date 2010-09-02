@@ -583,11 +583,11 @@ subroutine h5_output(vtype)
         if (nnodetot /= 1  ) then
            !   call MPI_Barrier(MPI_COMM_WORLD,ierr)
            if (mynum .eq. nnodetot) then
-              
+!!              write(cgrid,'(a1,i2.2)') 'g',0
               !  ! Write a dummy file that signals we are done
               call makefnam(anamel,sfilout,time,iyeara,imontha,idatea,  &
-                   itimea*100,vnam,0,'cmp')
-              open(unit=79,file=trim(anamel),form="formatted",status="new")
+                   itimea*100,vnam,'g00','cmp')
+              open(unit=79,file=trim(anamel),form="formatted",status="unknown")
               write(unit=79,fmt='(a)') "history write completed"
               write (unit=*,fmt=*) 'Completed History Write: ',trim(anamel)
               close(unit=79)
