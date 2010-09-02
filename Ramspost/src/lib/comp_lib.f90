@@ -391,16 +391,6 @@ entry RAMS_comp_press(n1,n2,n3,a)
    enddo
 return
 
-entry RAMS_comp_theta2temp(n1,n2,n3,a,b)
-   do k=1,n3
-      do j=1,n2
-         do i=1,n1
-            a(i,j,k)=a(i,j,k) * (p00i * b(i,j,k)) ** rocp
-         enddo
-      enddo
-   enddo
-return
-
 entry RAMS_comp_wcms(n1,n2,n3,a)
    do k=1,n3
       do j=1,n2
@@ -3035,3 +3025,42 @@ subroutine RAMS_comp_spvol(nx,ny,nz,intouta,pvap,pres)
 end subroutine RAMS_comp_spvol
 !==========================================================================================!
 !==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+subroutine RAMS_comp_theta2temp(nx,ny,nz,inthoutt,press)
+   use rconstants, only : p00i & ! intent(in)
+                        , rocp ! ! intent(in)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                     , intent(in)    :: nx
+   integer                     , intent(in)    :: ny
+   integer                     , intent(in)    :: nz
+   real   , dimension(nx,ny,nz), intent(inout) :: inthoutt
+   real   , dimension(nx,ny,nz), intent(in)    :: press
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                     :: x
+   integer                                     :: y
+   integer                                     :: z
+   real                                        :: theta
+   real                                        :: temp
+   !---------------------------------------------------------------------------------------!
+   do z=1,nz
+      do y=1,ny
+         do x=1,nx
+            theta           = inthoutt(x,y,z)
+            temp            = theta * (p00i * press(x,y,z)) ** rocp
+            inthoutt(x,y,z) = temp
+         end do
+      end do
+   end do
+   return
+end subroutine RAMS_comp_theta2temp
+!==========================================================================================!
+!==========================================================================================!
+

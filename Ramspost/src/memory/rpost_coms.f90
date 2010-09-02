@@ -43,6 +43,8 @@ module rpost_coms
    integer                                :: itime1
    integer                                :: isfcl
    integer                                :: istar
+   integer                                :: ico2
+   real   , dimension(nzpmax)             :: co2con
    integer                                :: ihorgrad
    integer, dimension(maxgrds)            :: idiffk
    integer                                :: naddsc

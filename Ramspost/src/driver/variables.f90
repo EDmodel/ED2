@@ -415,7 +415,6 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
    integer                                       :: idim_type
    integer                                       :: irecind
    integer                                       :: irecsize
-   integer                                       :: irecsizep
    integer                                       :: ind
    integer                                       :: ispec
    integer                                       :: ierr
@@ -673,8 +672,13 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
 
    case ('co2')
       ivar_type=3
-      ierr= RAMS_getvar('CO2P',idim_type,ngrd,a,b,flnm)
-      ierr_getvar = ierr_getvar + ierr
+      if (ico2 > 0) then
+         ierr= RAMS_getvar('CO2P',idim_type,ngrd,a,b,flnm)
+         ierr_getvar = ierr_getvar + ierr
+      else
+         write (unit=*,fmt='(a,1x,es12.5)') '       # Assigning constant CO2P =',co2con(1)
+         call ae0(nx*ny*nz,a,co2con(1))
+      end if
       cdname='carbon dioxide mixing ratio'
       cdunits='umol/mol'
 
@@ -3067,8 +3071,8 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
          irecsize = nnxp(ngrd) * nnyp(ngrd) * npat
          ierr = RAMS_getvar('PATCH_AREA',idim_type,ngrd   &
               ,a(irecind),b,flnm)
+         irecind = irecind + irecsize
       end select
-      irecind = irecind + irecsize
       ierr = RAMS_getvar('CAN_THETA',idim_type,ngrd,a(irecind),b,flnm)
       ierr_getvar = ierr_getvar + ierr
       ierr = RAMS_getvar('CAN_PRSS',idim_type,ngrd,scr%c,b,flnm)
@@ -3095,8 +3099,8 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
          irecsize = nnxp(ngrd) * nnyp(ngrd) * npat
          ierr = RAMS_getvar('PATCH_AREA',idim_type,ngrd   &
               ,a(irecind),b,flnm)
+         irecind = irecind + irecsize
       end select
-      irecind = irecind + irecsize
       ierr = RAMS_getvar('CAN_PRSS',idim_type,ngrd   &
            ,a(irecind),b,flnm)
       ierr_getvar = ierr_getvar + ierr
@@ -3121,8 +3125,8 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
          irecsize = nnxp(ngrd) * nnyp(ngrd) * npat
          ierr = RAMS_getvar('PATCH_AREA',idim_type,ngrd   &
               ,a(irecind),b,flnm)
+         irecind = irecind + irecsize
       end select
-      irecind = irecind + irecsize
       ierr = RAMS_getvar('CAN_THETA',idim_type,ngrd   &
            ,a(irecind),b,flnm)
       ierr_getvar = ierr_getvar + ierr
@@ -3146,8 +3150,8 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
          irecsize = nnxp(ngrd) * nnyp(ngrd) * npat
          ierr = RAMS_getvar('PATCH_AREA',idim_type,ngrd   &
               ,a(irecind),b,flnm)
+         irecind = irecind + irecsize
       end select
-      irecind = irecind + irecsize
       ierr = RAMS_getvar('CAN_THEIV',idim_type,ngrd   &
            ,a(irecind),b,flnm)
       ierr_getvar = ierr_getvar + ierr
@@ -3166,16 +3170,16 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
    case ('snow_depth_p','snow_depth_ps')
 
       irecind = 1
-      irecsize = nnxp(ngrd) * nnyp(ngrd) * npat
 
       select case (trim(cvar))
       case ('snow_depth_ps')
+         irecsize = nnxp(ngrd) * nnyp(ngrd) * npat
          ierr = RAMS_getvar('PATCH_AREA',idim_type,ngrd   &
               ,a(irecind),b,flnm)
          ierr_getvar = ierr_getvar + ierr
+         irecind = irecind + irecsize
       end select
 
-      irecind = irecind + irecsize
       ierr = RAMS_getvar('SNOW_DEPTH',idim_type,ngrd   &
            ,a(irecind),b,flnm)
       ierr_getvar = ierr_getvar + ierr
@@ -3195,15 +3199,15 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
    case ('snowcover_p','snowcover_ps')
 
       irecind = 1
-      irecsize = nnxp(ngrd) * nnyp(ngrd) * npat
       select case (trim(cvar))
       case ('snowcover_ps')
+         irecsize = nnxp(ngrd) * nnyp(ngrd) * npat
          ierr = RAMS_getvar('PATCH_AREA',idim_type,ngrd   &
               ,a(irecind),b,flnm)
          ierr_getvar = ierr_getvar + ierr
+         irecind = irecind + irecsize
       end select
 
-      irecind = irecind + irecsize
       ierr = RAMS_getvar('SNOW_MOIST',idim_type,ngrd   &
            ,a(irecind),b,flnm)
       ierr_getvar = ierr_getvar + ierr
@@ -3223,14 +3227,14 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
    case ('sltex','sltex_bp')
 
       irecind = 1
-      irecsize = nnxp(ngrd) * nnyp(ngrd) * npat
       select case (trim(cvar))
       case ('sltex_bp')
+         irecsize = nnxp(ngrd) * nnyp(ngrd) * npat
          ierr = RAMS_getvar('PATCH_AREA',idim_type,ngrd   &
               ,a(irecind),b,flnm)
          ierr_getvar = ierr_getvar + ierr
+         irecind = irecind + irecsize
       end select
-      irecind = irecind + irecsize
       ierr = RAMS_getvar('SOIL_TEXT',idim_type,ngrd   &
            ,a(irecind),b,flnm)
       ierr_getvar = ierr_getvar + ierr
@@ -3250,10 +3254,10 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
    case ('soilq','soilq_ps')
 
       irecind = 1
-      irecsize = nnxp(ngrd) * nnyp(ngrd) * npat
       
       select case (trim(cvar))
       case ('soilq_ps')
+         irecsize = nnxp(ngrd) * nnyp(ngrd) * npat
          ierr = RAMS_getvar('PATCH_AREA',idim_type,ngrd   &
               ,a(irecind),b,flnm)
          irecind = irecind + irecsize
@@ -3278,9 +3282,9 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
    case ('smoist','smoist_ps')
 
       irecind = 1
-      irecsize = nnxp(ngrd) * nnyp(ngrd) * npat
       select case (trim(cvar))
       case ('smoist_ps')
+         irecsize = nnxp(ngrd) * nnyp(ngrd) * npat
          ierr = RAMS_getvar('PATCH_AREA',idim_type,ngrd   &
               ,a(irecind),b,flnm)
          irecind = irecind + irecsize
@@ -3305,11 +3309,10 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
    case ('tsoil','tsoil_ps')
 
       irecind   = 1
-      irecsize  = nnxp(ngrd) * nnyp(ngrd) * npat
-      irecsizep = nnxp(ngrd) * nnyp(ngrd) * nsl
 
       select case (trim(cvar))
       case ('tsoil_ps')
+         irecsize  = nnxp(ngrd) * nnyp(ngrd) * npat
          ierr = RAMS_getvar('PATCH_AREA',idim_type,ngrd,a(irecind),b,flnm)
          irecind = irecind + irecsize
       end select
@@ -3345,9 +3348,9 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
    case ('smfrac','smfrac_ps')
 
       irecind = 1
-      irecsize = nnxp(ngrd) * nnyp(ngrd) * npat
       select case (trim(cvar))
       case ('smfrac_ps')
+         irecsize = nnxp(ngrd) * nnyp(ngrd) * npat
          ierr = RAMS_getvar('PATCH_AREA',idim_type,ngrd   &
               ,a(irecind),b,flnm)
          ierr_getvar = ierr_getvar + ierr
@@ -3733,7 +3736,7 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
       cdname='Massa de CO emitida -ANTROPO'
       cdunits='kg/(m2 day)'
 
-   case ('pwv')
+   case ('pw','pwv')
       ivar_type=2
       ierr= RAMS_getvar('RV',idim_type,ngrd,a,b,flnm)
       ierr_getvar = ierr_getvar + ierr
@@ -4022,8 +4025,13 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
       ierr_getvar = ierr_getvar + ierr
       ierr = RAMS_getvar('RV',idim_type,ngrd,scr%f,b,flnm)    ! f = H2O mixing ratio
       ierr_getvar = ierr_getvar + ierr
-      ierr = RAMS_getvar('CO2P',idim_type,ngrd,scr%g,b,flnm)  ! g = CO2 mixing ratio
-      ierr_getvar = ierr_getvar + ierr
+      if (ico2 > 0) then
+         ierr= RAMS_getvar('CO2P',idim_type,ngrd,scr%g,b,flnm)
+         ierr_getvar = ierr_getvar + ierr
+      else
+         write (unit=*,fmt='(a,1x,es12.5)') '       # Assigning constant CO2P =',co2con(1)
+         call ae0(nx*ny*nz,a,co2con(1))
+      end if
 
       !----- Roughness. -------------------------------------------------------------------!
       ierr = RAMS_getvar('PATCH_ROUGH', idim_type,ngrd,scr%h,b,flnm) ! h = patch roughness.

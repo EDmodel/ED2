@@ -1,4 +1,5 @@
-! -------------------------------------------------------------
+!==========================================================================================!
+!==========================================================================================!
 ! -                                                           -
 ! - RAMSPOST - RAMS Post Processor for GrADS.                 -
 ! -                                                           -
@@ -122,14 +123,25 @@ program ramspost
      !.................
      !   rlat and rlon = lat and lon of "thermodynamic points" of RAMS model.
      !
+     write(unit=*,fmt='(a)') ' '
+     write(unit=*,fmt='(2(a,1x))') '     * Variable:  ','lat'
+
      call ep_getvar('lat',                    &
           rlat,a,b,iep_nx(ng),iep_ny(ng),         &
           1,ng,cfln(1:ip),vpln(iv),		     &
           vpun(iv),n,iep_np,iep_nc,iep_ng,a2,rout2,a6,rout6)
+     write(unit=*,fmt='(a,1x,i5)') '       # Output variable type:  ',n
+
+     write(unit=*,fmt='(a)') ' '
+     write(unit=*,fmt='(2(a,1x))') '     * Variable:  ','lon'
+
      call ep_getvar('lon',                    &
           rlon,a,b,iep_nx(ng),iep_ny(ng),         &
           1,ng,cfln(1:ip),vpln(iv),  	     &
           vpun(iv),n,iep_np,iep_nc,iep_ng,a2,rout2,a6,rout6)
+     write(unit=*,fmt='(a,1x,i5)') '       # Output variable type:  ',n
+
+
      !.................
      call geo_grid(iep_nx(ng),iep_ny(ng),rlat,rlon,  &
           dep_glon(1,ng),dep_glon(2,ng),     &
@@ -198,27 +210,35 @@ program ramspost
 !.................
 
         if(ipresslev.gt.0) then
+           write(unit=*,fmt='(a)') ' '
+           write(unit=*,fmt='(2(a,1x))') '     * Variable:  ','topo'
 
            call ep_getvar('topo',mytopo,a,b,iep_nx(ng),iep_ny(ng), &
                 1,ng,cfln(1:ip),vpln(iv),		    &
                 vpun(iv),n,iep_np,iep_nc,iep_ng,a2,rout2,a6,rout6)
+           write(unit=*,fmt='(a,1x,i5)') '       # Output variable type:  ',n
+
+           write(unit=*,fmt='(a)') ' '
+           write(unit=*,fmt='(2(a,1x))') '     * Variable:  ','pi'
 
            call ep_getvar('pi',mypi,a,b,iep_nx(ng),iep_ny(ng),     &
                 iep_nz(ng),ng,cfln(1:ip),vpln(iv),       &
                 vpun(iv),n,iep_np,iep_nc,iep_ng,a2,rout2,a6,rout6)
+           write(unit=*,fmt='(a,1x,i5)') '       # Output variable type:  ',n
 
         endif
 
       DO iv=1,nvp
+           write(unit=*,fmt='(a)') ' '
+           write(unit=*,fmt='(2(a,1x))') '     * Variable:  ',vp(iv)
            !.................
            call ep_getvar(vp(iv),                               &
                 rout,a,b,iep_nx(ng),iep_ny(ng),        &
                 iep_nz(ng),ng,cfln(1:ip),vpln(iv),	 &
                 vpun(iv),n,iep_np,iep_nc,iep_ng,a2,rout2,a6,rout6)
+           write(unit=*,fmt='(a,1x,i5)') '       # Output variable type:  ',n
 
            ndim(iv)=n
-           write(unit=*,fmt='(a)') ' '
-           write(unit=*,fmt='(3(a,1x),i5)') '     * Variable:  ',vp(iv),' Dimension=',ndim(iv)
            !................
            !.....            
            IF(ndim(iv).eq.8) then
