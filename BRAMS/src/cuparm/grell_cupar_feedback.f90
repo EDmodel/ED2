@@ -224,7 +224,7 @@ subroutine grell_cupar_feedback(mgmzp,maxens_cap,maxens_eff,maxens_lsf,maxens_dy
          end do
       end if
    end do
-   !----- Converting outt to K/s ----------------------------------------------------------!
+   !----- Converting outthil to K/s -------------------------------------------------------!
    do k=1,mkx
       outthil(k) = outthil(k) / day_sec
    end do

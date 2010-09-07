@@ -166,7 +166,7 @@ module mem_basic
       if (associated(basic%pc      ))  deallocate (basic%pc      )
       if (associated(basic%thp     ))  deallocate (basic%thp     )
       if (associated(basic%rtp     ))  deallocate (basic%rtp     )
-      if (associated(basic%co2p    ))  deallocate (basic%theta   )
+      if (associated(basic%co2p    ))  deallocate (basic%co2p    )
       if (associated(basic%rv      ))  deallocate (basic%rv      )
       if (associated(basic%theta   ))  deallocate (basic%theta   )
       if (associated(basic%pi0     ))  deallocate (basic%pi0     )

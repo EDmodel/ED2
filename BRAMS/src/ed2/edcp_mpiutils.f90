@@ -119,6 +119,7 @@ subroutine masterput_ednl(mainnum)
    !----- Local variables. ----------------------------------------------------------------!
    integer             :: ierr
    integer             :: npv
+   integer             :: ng
    !---------------------------------------------------------------------------------------!
 
    call MPI_Bcast(time,1,MPI_DOUBLE_PRECISION,mainnum,MPI_COMM_WORLD,ierr)
@@ -152,15 +153,20 @@ subroutine masterput_ednl(mainnum)
    call MPI_Bcast(sfilout,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(ied_init_mode,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(edres,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(sfilin,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(veg_database,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(soil_database,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(lu_database,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(plantation_file,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(lu_rescale_file,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
+
+   do ng=1,maxgrds
+      call MPI_Bcast(sfilin         (ng),str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
+      call MPI_Bcast(veg_database   (ng),str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
+      call MPI_Bcast(soil_database  (ng),str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
+      call MPI_Bcast(lu_database    (ng),str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
+      call MPI_Bcast(plantation_file(ng),str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
+      call MPI_Bcast(lu_rescale_file(ng),str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
+   end do
+
    call MPI_Bcast(thsums_database,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(soilstate_db,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(soildepth_db,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(soilstate_db   ,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(soildepth_db   ,str_len,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)
+
    call MPI_Bcast(isoilstateinit,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(isoildepthflg,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(isoilbc,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
@@ -378,6 +384,7 @@ subroutine nodeget_ednl(master_num)
    include 'mpif.h'
    integer :: ierr,master_num
    integer :: npv
+   integer :: ng
 
    call MPI_Bcast(time,1,MPI_DOUBLE_PRECISION,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(timmax,1,MPI_DOUBLE_PRECISION,master_num,MPI_COMM_WORLD,ierr)  
@@ -410,15 +417,27 @@ subroutine nodeget_ednl(master_num)
    call MPI_Bcast(sfilout,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(ied_init_mode,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(edres,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(sfilin,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(veg_database,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(soil_database,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(lu_database,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(plantation_file,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(lu_rescale_file,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
+
+
+   do ng=1,maxgrds
+      call MPI_Bcast(sfilin         (ng),str_len,MPI_CHARACTER,master_num                  &
+                    ,MPI_COMM_WORLD,ierr)
+      call MPI_Bcast(veg_database   (ng),str_len,MPI_CHARACTER,master_num                  &
+                    ,MPI_COMM_WORLD,ierr)
+      call MPI_Bcast(soil_database  (ng),str_len,MPI_CHARACTER,master_num                  &
+                    ,MPI_COMM_WORLD,ierr)
+      call MPI_Bcast(lu_database    (ng),str_len,MPI_CHARACTER,master_num                  &
+                    ,MPI_COMM_WORLD,ierr)
+      call MPI_Bcast(plantation_file(ng),str_len,MPI_CHARACTER,master_num                  &
+                    ,MPI_COMM_WORLD,ierr)
+      call MPI_Bcast(lu_rescale_file(ng),str_len,MPI_CHARACTER,master_num                  &
+                    ,MPI_COMM_WORLD,ierr)
+   end do
+
    call MPI_Bcast(thsums_database,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(soilstate_db,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(soildepth_db,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(soilstate_db   ,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(soildepth_db   ,str_len,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
+
    call MPI_Bcast(isoilstateinit,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(isoildepthflg,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(isoilbc,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)

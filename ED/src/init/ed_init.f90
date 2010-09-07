@@ -139,7 +139,7 @@ subroutine load_ecosystem_state()
    select case (ied_init_mode)
    case (-8,-1,0,1,2,3,6)
       do igr = 1,ngrids
-         call read_site_file(edgrid_g(igr))
+         call read_site_file(edgrid_g(igr),igr)
       end do
    end select
   

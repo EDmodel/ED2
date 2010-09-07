@@ -166,7 +166,7 @@ subroutine ed_init_atm
         if (nnodetot /= 1) call MPI_Barrier(MPI_COMM_WORLD,ierr)
         if (mynum    /= 1) call MPI_Recv(ping,1,MPI_INTEGER,recvnum,110,MPI_COMM_WORLD,MPI_STATUS_IGNORE,ierr)
 
-        call read_soil_moist_temp(cgrid)
+        call read_soil_moist_temp(cgrid,igr)
 
         if (mynum     < nnodetot) call MPI_Send(ping,1,MPI_INTEGER,sendnum,110,MPI_COMM_WORLD,ierr)
         if (nnodetot /=        1) call MPI_Barrier(MPI_COMM_WORLD,ierr)

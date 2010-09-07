@@ -154,6 +154,7 @@ SUBROUTINE COMMIO (CFILE,IO,IUN)
   cloud_on  = level >= 2
   bulk_on   = level >= 3
   myistar   = istar
+  co2_on    = ico2   > 0
 !  ie=cio_i_sca(iun,irw,'inucprg',inucprg,1)
   ie=cio_i_sca(iun,irw,'irain',irain,1)
   ie=cio_i_sca(iun,irw,'ipris',ipris,1)

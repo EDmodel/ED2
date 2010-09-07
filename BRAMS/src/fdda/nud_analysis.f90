@@ -59,15 +59,16 @@ subroutine datassim()
    !      We now must copy CO2 to scratch variables so it won't fail in case CO2 is not    !
    ! solved in this run.                                                                   !
    !---------------------------------------------------------------------------------------!
-   call azero(mzp*mxp*myp,scratch%vt3de)
-   call ae0(mzp*mxp*myp,scratch%vt3do,co2con(1))
-   call ae0(mzp*mxp*myp,scratch%vt3dp,co2con(1))
-   call ae0(mzp*mxp*myp,scratch%vt3df,co2con(1))
    if (co2_on) then
       call atob(mzp*mxp*myp,basic_g(ngrid)%co2p   ,scratch%vt3do)
       call atob(mzp*mxp*myp,varinit_g(ngrid)%varop,scratch%vt3dp)
       call atob(mzp*mxp*myp,varinit_g(ngrid)%varof,scratch%vt3df)
       call atob(mzp*mxp*myp,tend%co2t             ,scratch%vt3de)
+   else
+      call azero(mzp*mxp*myp,scratch%vt3de)
+      call ae0(mzp*mxp*myp,scratch%vt3do,co2con(1))
+      call ae0(mzp*mxp*myp,scratch%vt3dp,co2con(1))
+      call ae0(mzp*mxp*myp,scratch%vt3df,co2con(1))
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -94,10 +95,10 @@ subroutine datassim()
    !     Now we check whether we want to use the condensate nudging scheme.                !
    !---------------------------------------------------------------------------------------!
    if (nud_cond == 1 .and. time >= tcond_beg .and. time <= tcond_end) then
-   call nudge_cond(mzp,mxp,myp,iwest,ieast,jsouth,jnorth                                   &
-                  ,varinit_g(ngrid)%varwts,varinit_g(ngrid)%varrph,varinit_g(ngrid)%varcph &
-                  ,varinit_g(ngrid)%varrfh,varinit_g(ngrid)%varcfh,basic_g(ngrid)%rtp      &
-                  ,tend%rtt               )
+      call nudge_cond(mzp,mxp,myp,iwest,ieast,jsouth,jnorth                                &
+                     ,varinit_g(ngrid)%varwts,varinit_g(ngrid)%varrph                      &
+                     ,varinit_g(ngrid)%varcph,varinit_g(ngrid)%varrfh                      &
+                     ,varinit_g(ngrid)%varcfh,basic_g(ngrid)%rtp,tend%rtt)
    end if
    return
 end subroutine datassim

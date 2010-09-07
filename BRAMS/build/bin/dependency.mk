@@ -497,11 +497,12 @@ ed_init_full_history.o: fusion_fission_coms.mod grid_coms.mod
 ed_init_full_history.o: hdf5_coms.mod mem_polygons.mod pft_coms.mod
 ed_init_full_history.o: soil_coms.mod therm_lib.mod
 ed_load_namelist.o: canopy_air_coms.mod canopy_radiation_coms.mod
-ed_load_namelist.o: decomp_coms.mod disturb_coms.mod ed_max_dims.mod
-ed_load_namelist.o: ed_misc_coms.mod ed_para_coms.mod ename_coms.mod
-ed_load_namelist.o: grid_coms.mod mem_polygons.mod met_driver_coms.mod
-ed_load_namelist.o: optimiz_coms.mod pft_coms.mod phenology_coms.mod
-ed_load_namelist.o: physiology_coms.mod rk4_coms.mod soil_coms.mod
+ed_load_namelist.o: consts_coms.mod decomp_coms.mod disturb_coms.mod
+ed_load_namelist.o: ed_max_dims.mod ed_misc_coms.mod ed_para_coms.mod
+ed_load_namelist.o: ename_coms.mod grid_coms.mod mem_polygons.mod
+ed_load_namelist.o: met_driver_coms.mod optimiz_coms.mod pft_coms.mod
+ed_load_namelist.o: phenology_coms.mod physiology_coms.mod rk4_coms.mod
+ed_load_namelist.o: soil_coms.mod
 ed_opspec.o: canopy_air_coms.mod canopy_radiation_coms.mod consts_coms.mod
 ed_opspec.o: decomp_coms.mod disturb_coms.mod ed_max_dims.mod ed_misc_coms.mod
 ed_opspec.o: ed_para_coms.mod grid_coms.mod mem_polygons.mod met_driver_coms.mod
@@ -517,9 +518,9 @@ ed_read_ed21_history.o: fuse_fiss_utils.mod grid_coms.mod  hdf5_coms.mod
 ed_read_ed21_history.o: pft_coms.mod
 ed_xml_config.o: canopy_radiation_coms.mod decomp_coms.mod disturb_coms.mod
 ed_xml_config.o: ed_max_dims.mod ed_misc_coms.mod fusion_fission_coms.mod
-ed_xml_config.o: hydrology_coms.mod met_driver_coms.mod pft_coms.mod
-ed_xml_config.o: phenology_coms.mod physiology_coms.mod rk4_coms.mod
-ed_xml_config.o: soil_coms.mod
+ed_xml_config.o: grid_coms.mod hydrology_coms.mod met_driver_coms.mod
+ed_xml_config.o: pft_coms.mod phenology_coms.mod physiology_coms.mod
+ed_xml_config.o: rk4_coms.mod soil_coms.mod
 edio.o: c34constants.mod consts_coms.mod ed_max_dims.mod ed_misc_coms.mod
 edio.o: ed_node_coms.mod ed_state_vars.mod ed_var_tables.mod grid_coms.mod
 edio.o: pft_coms.mod soil_coms.mod therm_lib.mod

@@ -393,6 +393,7 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
    use scratch_coms, only : scr           & ! intent(inout)
                           , alloc_scratch ! ! subroutine
    use micro_coms
+   use somevars    , only : co2_on
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer                       , intent(in)    :: nx
@@ -459,11 +460,11 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
 
    case ('v','ve_avg')
       ivar_type   = 3
-      ierr        = RAMS_getvar('UP',idim_type,ngrd,a,b,flnm)
+      ierr        = RAMS_getvar('VP',idim_type,ngrd,a,b,flnm)
       ierr_getvar = ierr_getvar + ierr
-      ierr        = RAMS_getvar('VP',idim_type,ngrd,scr%c,b,flnm)
+      ierr        = RAMS_getvar('UP',idim_type,ngrd,scr%c,b,flnm)
       ierr_getvar = ierr_getvar + ierr
-      call RAMS_comp_rotate(nx,ny,nz,a,scr%c,ngrd)
+      call RAMS_comp_rotate(nx,ny,nz,scr%c,a,ngrd)
       call RAMS_comp_avgv(nx,ny,nz,a)
       cdname      = 'True meridional wind'
       cdunits     = 'm/s'
@@ -672,7 +673,7 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
 
    case ('co2')
       ivar_type=3
-      if (ico2 > 0) then
+      if (co2_on) then
          ierr= RAMS_getvar('CO2P',idim_type,ngrd,a,b,flnm)
          ierr_getvar = ierr_getvar + ierr
       else
@@ -4025,12 +4026,12 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
       ierr_getvar = ierr_getvar + ierr
       ierr = RAMS_getvar('RV',idim_type,ngrd,scr%f,b,flnm)    ! f = H2O mixing ratio
       ierr_getvar = ierr_getvar + ierr
-      if (ico2 > 0) then
+      if (co2_on) then
          ierr= RAMS_getvar('CO2P',idim_type,ngrd,scr%g,b,flnm)
          ierr_getvar = ierr_getvar + ierr
       else
          write (unit=*,fmt='(a,1x,es12.5)') '       # Assigning constant CO2P =',co2con(1)
-         call ae0(nx*ny*nz,a,co2con(1))
+         call ae0(nx*ny*nz,scr%g,co2con(1))
       end if
 
       !----- Roughness. -------------------------------------------------------------------!

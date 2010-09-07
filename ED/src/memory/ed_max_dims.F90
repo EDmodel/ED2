@@ -190,6 +190,17 @@ module ed_max_dims
    !----- Maximum number of files (site+patch+cohort). ------------------------------------!
    integer, parameter :: maxlist = 3 * maxfiles
 
+   !---------------------------------------------------------------------------------------!
+   !     Although these aren't maximum dimensions, these are used to initialise the name-  !
+   ! list variables.                                                                       !
+   !---------------------------------------------------------------------------------------!
+   real                  , parameter :: undef_real      = -999.9
+   real(kind=8)          , parameter :: undef_dble      = -9.999d2
+   integer               , parameter :: undef_integer   = -999
+   character(len=str_len), parameter :: undef_character = 'nothing'
+   character(len=str_len), parameter :: undef_path      = '/nowhere'
+   logical               , parameter :: undef_logical   = .false.
+
 end module ed_max_dims
 !==========================================================================================!
 !==========================================================================================!

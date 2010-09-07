@@ -423,14 +423,14 @@ end subroutine sst_read_new
 
 
 
-subroutine sst_file_inv (sfilin,ierr)
+subroutine sst_file_inv (sstfilin,ierr)
 
 use mem_grid
 use io_params
 
 implicit none
 
-character(len=*) :: sfilin
+character(len=*) :: sstfilin
 integer :: ierr
 
 integer :: nc,nf,lnf,nftot,ng
@@ -459,7 +459,7 @@ do ng = 1, ngrids
 
    nftot = -1
    write(cgrid,'(i1)') ng
-   call RAMS_filelist(fnames,trim(sfilin)//'-W-*-g'//cgrid//'.vfm',nftot)
+   call RAMS_filelist(fnames,trim(sstfilin)//'-W-*-g'//cgrid//'.vfm',nftot)
 
    if(nftot <= 0) then
       print*,'No sst files for grid '//cgrid

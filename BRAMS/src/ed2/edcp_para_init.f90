@@ -133,8 +133,8 @@ subroutine edcp_get_work(ifm,mxp,myp,iwest,ieast,jsouth,jnorth)
   case (0,1,2)
      call leaf3init_overwrite(iwest,ieast,jsouth,jnorth,npoly,ifm,'leaf',ipcent_land)
   case (3)
-     call leaf_database(trim(veg_database), npoly, 'leaf_class', lat_list,  &
-                        lon_list, ipcent_land)
+     call leaf_database(trim(veg_database(ifm)),npoly,'leaf_class',lat_list,lon_list       &
+                       ,ipcent_land)
   end select
 
   select case (b_isoilflg(ifm))
@@ -147,8 +147,8 @@ subroutine edcp_get_work(ifm,mxp,myp,iwest,ieast,jsouth,jnorth)
      call leaf3init_overwrite(iwest,ieast,jsouth,jnorth,npoly,ifm,'soil',ntext_soil_list)
   case (3)
      allocate(ntext_soil_list(npoly))
-     call leaf_database(trim(soil_database), npoly, 'soil_text', lat_list,  &
-          lon_list, ntext_soil_list)
+     call leaf_database(trim(soil_database(ifm)),npoly,'soil_text',lat_list,lon_list       &
+                       ,ntext_soil_list)
   end select
  
   ! Re-map the land cover classes

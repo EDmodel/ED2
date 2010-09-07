@@ -1,7 +1,7 @@
 Module ed_misc_coms
 
 
-  use ed_max_dims, only: str_len,maxpvars,str_len_short
+  use ed_max_dims, only: str_len,maxpvars,str_len_short,maxgrds
 
   implicit none
 
@@ -59,7 +59,7 @@ Module ed_misc_coms
   type(simtime) :: out_time_fast
   type(simtime) :: out_time_state
 
-  character(len=str_len) :: sfilin
+  character(len=str_len), dimension(maxgrds) :: sfilin
   character(len=str_len) ::ffilout 
   character(len=str_len) ::sfilout
   integer :: ied_init_mode

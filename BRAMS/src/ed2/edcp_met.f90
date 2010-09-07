@@ -264,9 +264,9 @@ subroutine copy_atm2lsm(ifm,init)
       cgrid%met(ipy)%vels     = up_mean(ix,iy)**2 + vp_mean(ix,iy)**2
 
       !------------------------------------------------------------------------------------!
-      !    ED needs specific humidity, and temperature, but BRAMS has mixing ratio and     !
-      ! potential temperature, so we must convert before sending to ED.  CO2 is already in !
-      ! µmol_CO2 / mol_air, no conversion needed...                                        !
+      !    ED needs specific humidity, but BRAMS has mixing ratio, so we must convert      !
+      ! before sending to ED.  Temperature is found from the exner function and potential  !
+      ! temperature, and CO2 is already in µmol_CO2 / mol_air, no conversion needed...     !
       !------------------------------------------------------------------------------------!
       
       cgrid%met(ipy)%atm_theta    = theta_mean(ix,iy)

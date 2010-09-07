@@ -340,11 +340,12 @@ subroutine get_work(ifm,nxp,nyp)
    !----- Generate the land/sea mask. -----------------------------------------------------!
    write(unit=*,fmt=*) ' => Generating the land/sea mask.'
 
-   call leaf_database(trim(veg_database),npoly,'leaf_class',lat_list,lon_list,ipcent_land)
+   call leaf_database(trim(veg_database(ifm)),npoly,'leaf_class',lat_list,lon_list         &
+                     ,ipcent_land)
 
    if (isoilflg(ifm) == 1) then
       allocate(ntext_soil_list(npoly))
-      call leaf_database(trim(soil_database),npoly,'soil_text',lat_list,lon_list           &
+      call leaf_database(trim(soil_database(ifm)),npoly,'soil_text',lat_list,lon_list      &
                         ,ntext_soil_list)
    end if
  

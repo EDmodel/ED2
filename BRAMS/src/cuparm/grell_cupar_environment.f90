@@ -77,9 +77,9 @@ subroutine grell_thermo_cldlev(mkx,mgmzp,z_cup,exner,thil,t,qtot,qliq,qice,co2,e
    !---------------------------------------------------------------------------------------!
    do k = 2,mkx
       exner_cup(k) = sqrt(exner(k-1) * exner(k)) !----- Log-interpolation -----------------!
-      qtot_cup(k)  = sqrt(qtot(k-1)  * qtot(k) ) !----- Log-interpolation -----------------!
-      co2_cup(k)   = sqrt(co2(k-1)   * co2(k)  ) !----- Log-interpolation -----------------!
-      t_cup   (k)  = 0.5 * (t(k-1)   + t(k)    )
+      qtot_cup (k) = sqrt(qtot(k-1)  * qtot(k) ) !----- Log-interpolation -----------------!
+      co2_cup  (k) = sqrt(co2(k-1)   * co2(k)  ) !----- Log-interpolation -----------------!
+      t_cup    (k) = 0.5 * (t(k-1)   + t(k)    )
    end do
    !----- 1st. level, boundary condition only, just copying the surface variables. --------!
    exner_cup(1) = exnersur

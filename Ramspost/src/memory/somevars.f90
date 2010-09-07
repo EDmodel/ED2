@@ -1,5 +1,5 @@
 module somevars
-  integer :: myngrids,myn1,myn2,myn3,myjdim,myihtran,mynbig,myistar
+  integer :: myngrids,myn1,myn2,myn3,myjdim,myihtran,mynbig,myistar,co2_on
   integer, allocatable, dimension(:) :: mynnxp,mynnyp,mynnzp
   real   , allocatable, dimension (:)   :: myplatn,myplonn,mydeltaxn,mydeltayn,mydeltazn
   real   , allocatable, dimension(:,:)  :: mydzmn,mydztn

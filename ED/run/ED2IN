@@ -229,6 +229,20 @@
    NL%EDRES  = 1.0                     ! ED2/ED1 restart grid resolution
                                        !    (Ignored unless ied_init_mode is 3.
 
+   !---------------------------------------------------------------------------------------!
+   !   SFILIN.  The meaning and the size of this variable depends on the type of run, set  !
+   !            at variable NL%RUNTYPE.                                                    !
+   !                                                                                       !
+   ! 1. INITIAL.  Then this is the path+prefix of the previous ecosystem state.  This has  !
+   !              dimension of the number of grids so you can initialize each grid with a  !
+   !              different dataset.  In case only one path+prefix is given, the same will !
+   !              be used for every grid.  Only some ecosystem variables will be set up    !
+   !              here, and the initial condition will be in thermodynamic equilibrium.    !
+   !                                                                                       !
+   ! 2. HISTORY.  This is the path+prefix of the history file that will be used.  Only the !
+   !              path+prefix will be used, as the history for every grid must have come   !
+   !              from the same simulation.                                                !
+   !---------------------------------------------------------------------------------------!
    NL%SFILIN   = '/n/Moorcroft_Lab/Users/dmm2/ED2/inputs/amazon_restart/lu.sa.05.restart.01.'
 
 !----- Time of the history start ----------------------------------------------------------!
@@ -285,7 +299,11 @@
 
 
    !---------------------------------------------------------------------------------------!
-   !  Input databases                                                                      !
+   !  Input databases - These variables may be grid dependent if you want.  In case you    !
+   !                    want all the grids to use the same dataset, you can either provide !
+   !                    the path once, or repeat as many times as the number of regions +  !
+   !                    POIs.                                                              !
+   !                                                                                       !
    !  VEG_DATABASE    - vegetation database, used only to determine the land/water mask.   !
    !                    Fill with the path and the prefix.                                 !
    !  SOIL_DATABASE   - soil database, used to determine the soil type.  Fill with the     !

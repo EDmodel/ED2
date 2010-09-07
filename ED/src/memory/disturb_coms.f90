@@ -8,6 +8,7 @@
 !------------------------------------------------------------------------------------------!
 module disturb_coms
    use ed_max_dims, only : str_len & ! intent(in)
+                         , maxgrds & ! intent(in)
                          , n_pft   ! ! intent(in)
    implicit none
 
@@ -70,11 +71,11 @@ module disturb_coms
    real :: treefall_disturbance_rate  
 
    !----- The prefix for land use disturbance rates. The path and prefix must be included. !
-   character(len=str_len) :: lu_database 
+   character(len=str_len), dimension(maxgrds) :: lu_database 
    !----- File with plantation fraction.  If no file is available, leave it blank. --------!
-   character(len=str_len) :: plantation_file
+   character(len=str_len), dimension(maxgrds) :: plantation_file
    !----- File with initial land use area scale.  If no file is available, leave it blank. !
-   character(len=str_len) :: lu_rescale_file
+   character(len=str_len), dimension(maxgrds) :: lu_rescale_file
    !=======================================================================================!
    !=======================================================================================!
 

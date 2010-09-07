@@ -1,7 +1,7 @@
 !!! translate from C to fortran
 ! ===============================================================
 
-subroutine read_site_file(cgrid)
+subroutine read_site_file(cgrid,igr)
    ! function for loading sites within polygons and initializing polygon parms
    ! call prior to loading pss/css files but after basic polygon established
   
@@ -13,7 +13,7 @@ subroutine read_site_file(cgrid)
    use ed_max_dims, only: max_site,n_pft
 
    implicit none
-
+   integer :: igr
    logical :: no_rad   = .false.  !! true turns effect OFF
    logical :: no_lapse = .false.
    logical :: no_hyd   = .false.
@@ -55,8 +55,8 @@ subroutine read_site_file(cgrid)
       cpoly => cgrid%polygon(ipy)
 
       if (ied_init_mode == 3) then
-         call create_ed10_ed20_fname(cgrid%lat(ipy), edres, cgrid%lon(ipy),trim(sfilin)    &
-                              ,pss_name,css_name,site_name)
+         call create_ed10_ed20_fname(cgrid%lat(ipy), edres, cgrid%lon(ipy) &
+                                    ,trim(sfilin(igr)),pss_name,css_name,site_name)
          !! check if site file exists
          inquire(file=trim(site_name),exist=fexist)
          if(.not.fexist) then

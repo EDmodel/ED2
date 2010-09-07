@@ -89,7 +89,7 @@ subroutine grell_cupar_driver(banneron,cldd,clds)
    !    scratch%vt3dj => large-scale CO2 mixing ratio forcing.                             !
    !---------------------------------------------------------------------------------------!
    if (co2_on) then
-      call atob(mxp*myp*mzp,tend%co2t,scratch%vt3dj)
+      call atob(mzp*mxp*myp,tend%co2t,scratch%vt3dj)
    else
       call azero(mzp*mxp*myp,scratch%vt3dj)
    end if

@@ -134,9 +134,11 @@ subroutine read_ed21_history_file
 
       !------------------------------------------------------------------------------------!
       !     The file name should be the exact file that will be read in, except the part   !
-      ! that lists the grid number and extension.                                          !
+      ! that lists the grid number and extension.  Because this is a history restart, only !
+      ! the first SFILIN will be used so we ensure that we will continue from the same     !
+      ! simulation.                                                                        !
       !------------------------------------------------------------------------------------!
-      hnamel = trim(sfilin)//"-"//trim(cgr)//".h5"
+      hnamel = trim(sfilin(1))//"-"//trim(cgr)//".h5"
 
 
       !------------------------------------------------------------------------------------!
@@ -145,11 +147,11 @@ subroutine read_ed21_history_file
       inquire(file=trim(hnamel),exist=exists)
       if (.not.exists) then
          !----- It doesn't, stop the run. -------------------------------------------------!
-         write (unit=*,fmt='(a,1x,a)')    'SFILIN  = ',trim(sfilin)
-         write (unit=*,fmt='(a,1x,i4.4)') 'IYEARH  = ',iyearh
-         write (unit=*,fmt='(a,1x,i2.2)') 'IMONTHH = ',imonthh
-         write (unit=*,fmt='(a,1x,i2.2)') 'IDATEH  = ',idateh
-         write (unit=*,fmt='(a,1x,i4.4)') 'ITIMEH  = ',itimeh
+         write (unit=*,fmt='(a,1x,a)')    'SFILIN(1) = ',trim(sfilin(1))
+         write (unit=*,fmt='(a,1x,i4.4)') 'IYEARH    = ',iyearh
+         write (unit=*,fmt='(a,1x,i2.2)') 'IMONTHH   = ',imonthh
+         write (unit=*,fmt='(a,1x,i2.2)') 'IDATEH    = ',idateh
+         write (unit=*,fmt='(a,1x,i4.4)') 'ITIMEH    = ',itimeh
          call fatal_error ('File '//trim(hnamel)//' not found.'                            &
                           ,'read_ed21_history_file','ed_read_ed21_history.F90')
       else
@@ -830,54 +832,7 @@ subroutine read_ed21_history_unstruct
    real                                           , external    :: dist_gc 
    !---------------------------------------------------------------------------------------!
 
-   !----- Retrieve all files with the specified prefix. -----------------------------------!
-   call ed_filelist(full_list,sfilin,nflist)
 
-   !----- Check every file and save only those that are actually history files. -----------!
-   call ed21_fileinfo(nflist,full_list,nhisto,histo_list)
-
-   !---------------------------------------------------------------------------------------!
-   !     If this is a simulation with anthropogenic disturbance, check and read the re-    !
-   ! scale file if it exists.                                                              !
-   !---------------------------------------------------------------------------------------!
-   wlon_rscl(:) =  190.
-   elon_rscl(:) = -190.
-   slat_rscl(:) =  100.
-   nlat_rscl(:) = -100.
-   inquire(file=trim(lu_rescale_file),exist=exists)
-   rescale_glob = ianth_disturb == 1 .and. exists
-   nrescale = 0
-   if (rescale_glob) then
-      open (unit=13,file=trim(lu_rescale_file),status='old',action='read')
-      read (unit=13,fmt=*)
-      readrescale: do
-         nrescale = nrescale + 1
-         read (unit=13,fmt=*,iostat=ierr)  wlon_rscl(nrescale),elon_rscl(nrescale)         &
-                                          ,slat_rscl(nrescale),nlat_rscl(nrescale)         &
-                                          ,clon_rscl(nrescale),clat_rscl(nrescale)         &
-                                          ,dummy,(newarea(ilu,nrescale),ilu=1,n_dist_types)
-
-         if (ierr /= 0) then
-            nrescale = nrescale - 1
-            exit readrescale
-         end if
-      end do readrescale
-      rescale_glob = nrescale > 0
-      close (unit=13,status='keep')
-   elseif (ianth_disturb == 1 .and. len_trim(lu_rescale_file) > 0) then
-      write (unit=*,fmt='(a)') '----------------------------------------------------------'
-      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!  '
-      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!  '
-      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!  '
-      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!  '
-      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!  '
-      write (unit=*,fmt='(a)') '----------------------------------------------------------'
-      write (unit=*,fmt='(a)') '  In subroutine read_ed21_history_unstruct:'
-      write (unit=*,fmt='(a)') '  - File '//trim(lu_rescale_file)//' wasn''t found...'
-      write (unit=*,fmt='(a)') '  - Assuming no rescaling...'
-      write (unit=*,fmt='(a)') '----------------------------------------------------------'
-   end if
-   !---------------------------------------------------------------------------------------!
 
    !----- Open the HDF environment. -------------------------------------------------------!
    call h5open_f(hdferr)
@@ -886,84 +841,143 @@ subroutine read_ed21_history_unstruct
    call h5eset_auto_f(0,hdferr)
 
 
-   !----- Initialize the dimensional control variables for the H5 slabs. ------------------!
-   globdims = 0_8
-   chnkdims = 0_8
-   chnkoffs = 0_8
-   memoffs  = 0_8
-   memdims  = 0_8
-   memsize  = 1_8  
-
-   !---------------------------------------------------------------------------------------!
-   !     First thing, we go through every file, open, and retrieve only some polygon-level !
-   ! information.  This will be used for mapping the files later.                          !
-   !---------------------------------------------------------------------------------------!
-   pyfile_list(:) = 0
-   pyindx_list(:) = 0
-   ipyz           = 0
-   lonlatloop: do nf=1,nhisto
-      hnamel = histo_list(nf)
-
-      !----- Open the HDF5 file. ----------------------------------------------------------!
-      call h5fopen_f(hnamel, H5F_ACC_RDONLY_F, file_id, hdferr)
-      if (hdferr < 0) then
-         write(unit=*,fmt='(a,1x,i4)') ' - Error opening HDF5 file - error - ',hdferr
-         write(unit=*,fmt='(a,1x,a)') ' - File name: ',trim(hnamel)
-         call fatal_error('Error opening HDF5 file - error - '//trim(hnamel)               &
-                         ,'read_ed21_history_file','ed_read_ed21_history.F90')
-      end if
-
-      !----- Retrieve the number of polygons in this file. --------------------------------!
-      call h5dopen_f(file_id,'NPOLYGONS_GLOBAL', dset_id, hdferr)
-      call h5dget_space_f(dset_id, dspace_id, hdferr)
-      call h5dread_f(dset_id, H5T_NATIVE_INTEGER,dset_npolygons_global,globdims, hdferr)
-      call h5sclose_f(dspace_id, hdferr)
-      call h5dclose_f(dset_id, hdferr)
-      
-      !----- Determine the global position of these polygons. -----------------------------!
-      ipya = ipyz + 1
-      ipyz = ipyz + dset_npolygons_global
-      
-      !------ Here we save the file where we can find these polygons. ---------------------!
-      do ipy=ipya,ipyz
-         pyfile_list(ipy) = nf
-         pyindx_list(ipy) = ipy-ipya+1
-      end do
-
-      !------------------------------------------------------------------------------------!
-      !      Retrieve the polygon coordinates data.                                        !
-      !------------------------------------------------------------------------------------!
-      globdims(1) = int(dset_npolygons_global,8)
-
-      call h5dopen_f(file_id,'LONGITUDE', dset_id, hdferr)
-      call h5dget_space_f(dset_id, dspace_id, hdferr)
-      call h5dread_f(dset_id, H5T_NATIVE_REAL,plon_list(ipya:ipyz),globdims, hdferr)
-      call h5sclose_f(dspace_id, hdferr)
-      call h5dclose_f(dset_id, hdferr)
-      
-      call h5dopen_f(file_id,'LATITUDE', dset_id, hdferr)
-      call h5dget_space_f(dset_id, dspace_id, hdferr)
-      call h5dread_f(dset_id, H5T_NATIVE_REAL,plat_list(ipya:ipyz),globdims, hdferr)
-      call h5sclose_f(dspace_id, hdferr)
-      call h5dclose_f(dset_id, hdferr)
-      
-      call h5fclose_f(file_id, hdferr)
-      if (hdferr /= 0) then
-         write (unit=*,fmt='(a,1x,a)') 'File: ',trim(hnamel)
-         write (unit=*,fmt='(a)'     ) 'Problem: Failed closing the HDF5 dataset.'
-         write (unit=*,fmt='(a,1x,i4)') 'HDFerr: ',hdferr
-         call fatal_error('Could not close the HDF file'                                   &
-                         ,'read_ed21_history_unstruct','ed_read_ed21_history.F90')
-      end if
-   end do lonlatloop
-   !---------------------------------------------------------------------------------------!
-
 
 
    !---------------------------------------------------------------------------------------!
    !     Big loop over all grids.                                                          !
    !---------------------------------------------------------------------------------------!
    gridloop: do igr = 1,ngrids
+
+
+      !----- Retrieve all files with the specified prefix. --------------------------------!
+      call ed_filelist(full_list,sfilin(igr),nflist)
+      !----- Check every file and save only those that are actually history files. --------!
+      call ed21_fileinfo(nflist,full_list,nhisto,histo_list)
+
+      !----- Initialize the dimensional control variables for the H5 slabs. ---------------!
+      globdims = 0_8
+      chnkdims = 0_8
+      chnkoffs = 0_8
+      memoffs  = 0_8
+      memdims  = 0_8
+      memsize  = 1_8  
+
+      !------------------------------------------------------------------------------------!
+      !     First thing, we go through every file, open, and retrieve only some polygon-   !
+      ! level information.  This will be used for mapping the files later.                 !
+      !------------------------------------------------------------------------------------!
+      pyfile_list(:) = 0
+      pyindx_list(:) = 0
+      ipyz           = 0
+      lonlatloop: do nf=1,nhisto
+         hnamel = histo_list(nf)
+
+         !----- Open the HDF5 file. -------------------------------------------------------!
+         call h5fopen_f(hnamel, H5F_ACC_RDONLY_F, file_id, hdferr)
+         if (hdferr < 0) then
+            write(unit=*,fmt='(a,1x,i4)') ' - Error opening HDF5 file - error - ',hdferr
+            write(unit=*,fmt='(a,1x,a)') ' - File name: ',trim(hnamel)
+            call fatal_error('Error opening HDF5 file - error - '//trim(hnamel)            &
+                            ,'read_ed21_history_file','ed_read_ed21_history.F90')
+         end if
+
+         !----- Retrieve the number of polygons in this file. -----------------------------!
+         call h5dopen_f(file_id,'NPOLYGONS_GLOBAL', dset_id, hdferr)
+         call h5dget_space_f(dset_id, dspace_id, hdferr)
+         call h5dread_f(dset_id, H5T_NATIVE_INTEGER,dset_npolygons_global,globdims, hdferr)
+         call h5sclose_f(dspace_id, hdferr)
+         call h5dclose_f(dset_id, hdferr)
+         
+         !----- Determine the global position of these polygons. --------------------------!
+         ipya = ipyz + 1
+         ipyz = ipyz + dset_npolygons_global
+         
+         !------ Here we save the file where we can find these polygons. ------------------!
+         do ipy=ipya,ipyz
+            pyfile_list(ipy) = nf
+            pyindx_list(ipy) = ipy-ipya+1
+         end do
+
+         !---------------------------------------------------------------------------------!
+         !      Retrieve the polygon coordinates data.                                     !
+         !---------------------------------------------------------------------------------!
+         globdims(1) = int(dset_npolygons_global,8)
+
+         call h5dopen_f(file_id,'LONGITUDE', dset_id, hdferr)
+         call h5dget_space_f(dset_id, dspace_id, hdferr)
+         call h5dread_f(dset_id, H5T_NATIVE_REAL,plon_list(ipya:ipyz),globdims, hdferr)
+         call h5sclose_f(dspace_id, hdferr)
+         call h5dclose_f(dset_id, hdferr)
+         
+         call h5dopen_f(file_id,'LATITUDE', dset_id, hdferr)
+         call h5dget_space_f(dset_id, dspace_id, hdferr)
+         call h5dread_f(dset_id, H5T_NATIVE_REAL,plat_list(ipya:ipyz),globdims, hdferr)
+         call h5sclose_f(dspace_id, hdferr)
+         call h5dclose_f(dset_id, hdferr)
+         
+         call h5fclose_f(file_id, hdferr)
+         if (hdferr /= 0) then
+            write (unit=*,fmt='(a,1x,a)') 'File: ',trim(hnamel)
+            write (unit=*,fmt='(a)'     ) 'Problem: Failed closing the HDF5 dataset.'
+            write (unit=*,fmt='(a,1x,i4)') 'HDFerr: ',hdferr
+            call fatal_error('Could not close the HDF file'                                &
+                            ,'read_ed21_history_unstruct','ed_read_ed21_history.F90')
+         end if
+      end do lonlatloop
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     If this is a simulation with anthropogenic disturbance, check and read the re- !
+      ! scale file if it exists.                                                           !
+      !------------------------------------------------------------------------------------!
+      wlon_rscl(:) =  190.
+      elon_rscl(:) = -190.
+      slat_rscl(:) =  100.
+      nlat_rscl(:) = -100.
+      inquire(file=trim(lu_rescale_file(igr)),exist=exists)
+      rescale_glob = ianth_disturb == 1 .and. exists
+      nrescale = 0
+      if (rescale_glob) then
+         open (unit=13,file=trim(lu_rescale_file(igr)),status='old',action='read')
+         read (unit=13,fmt=*)
+         readrescale: do
+            nrescale = nrescale + 1
+            read (unit=13,fmt=*,iostat=ierr)  wlon_rscl(nrescale),elon_rscl(nrescale)      &
+                                             ,slat_rscl(nrescale),nlat_rscl(nrescale)      &
+                                             ,clon_rscl(nrescale),clat_rscl(nrescale)      &
+                                             ,dummy,(newarea(ilu,nrescale),ilu=1           &
+                                             ,n_dist_types)
+
+            if (ierr /= 0) then
+               nrescale = nrescale - 1
+               exit readrescale
+            end if
+         end do readrescale
+         rescale_glob = nrescale > 0
+         close (unit=13,status='keep')
+      elseif (ianth_disturb == 1 .and. len_trim(lu_rescale_file(igr)) > 0) then
+         write (unit=*,fmt='(a)') '-------------------------------------------------------'
+         write (unit=*,fmt='(a)') ' WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! '
+         write (unit=*,fmt='(a)') ' WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! '
+         write (unit=*,fmt='(a)') ' WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! '
+         write (unit=*,fmt='(a)') ' WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! '
+         write (unit=*,fmt='(a)') ' WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! '
+         write (unit=*,fmt='(a)') '-------------------------------------------------------'
+         write (unit=*,fmt='(a)') '  In subroutine read_ed21_history_unstruct:'
+         write (unit=*,fmt='(a,1x,i5)') '  - Grid: ',igr
+         write (unit=*,fmt='(a)') '  In subroutine read_ed21_history_unstruct:'
+         write (unit=*,fmt='(a)') '  - File '//trim(lu_rescale_file(igr))//                &
+                                     ' wasn''t found...'
+         write (unit=*,fmt='(a)') '  - Assuming no rescaling...'
+         write (unit=*,fmt='(a)') '-------------------------------------------------------'
+      end if
+      !---------------------------------------------------------------------------------------!
+
+
+
+
+
       cgrid => edgrid_g(igr)
 
 

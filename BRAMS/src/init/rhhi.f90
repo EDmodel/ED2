@@ -19,6 +19,7 @@ subroutine inithh()
                          , nxp      & ! intent(in)
                          , nyp      & ! intent(in)
                          , if_adap  ! ! intent(in)
+   use mem_scratch, only : scratch  ! ! intent(inout)
    implicit none
    !----- Local variables. ----------------------------------------------------------------!
    integer :: ifm
@@ -26,7 +27,7 @@ subroutine inithh()
    !---------------------------------------------------------------------------------------!
 
    !----- Arrange the input sounding. -----------------------------------------------------!
-   call arrsnd(co2_on)
+   call arrsnd(co2_on,co2con(1))
 
 
    !---------------------------------------------------------------------------------------!
@@ -51,7 +52,7 @@ subroutine inithh()
             call flds3d( nzp,nxp,nyp          , basic_g(ifm)%uc      , basic_g(ifm)%vc     &
                        , basic_g(ifm)%pi0     , basic_g(ifm)%theta   , basic_g(ifm)%thp    &
                        , basic_g(ifm)%rtp     , basic_g(ifm)%pc      , basic_g(ifm)%rv     &
-                       , basic_g(ifm)%co2p    , grid_g(ifm)%topt     , grid_g(ifm)%topu    &
+                       , scratch%vt3do        , grid_g(ifm)%topt     , grid_g(ifm)%topu    &
                        , grid_g(ifm)%topv     , grid_g(ifm)%rtgt     , grid_g(ifm)%rtgu    &
                        , grid_g(ifm)%rtgv     )
 
@@ -60,8 +61,11 @@ subroutine inithh()
                             , grid_g(ifm)%flpw   , basic_g(ifm)%uc    , basic_g(ifm)%vc    &
                             , basic_g(ifm)%pi0   , basic_g(ifm)%theta , basic_g(ifm)%thp   &
                             , basic_g(ifm)%rtp   , basic_g(ifm)%pc    , basic_g(ifm)%rv    &
-                            , basic_g(ifm)%co2p  )
+                            , scratch%vt3do      )
          end select
+
+         !----- Copy the results for CO2 only if there is a CO2 array allocated. ----------!
+         if (co2_on) call atob(nzp*nxp*nyp,scratch%vt3do,basic_g(ifm)%co2p)
 
       end if
    end do
@@ -80,7 +84,7 @@ end subroutine inithh
 !     This subroutine will arrange the input sounding so everything will be in standard    !
 ! units.                                                                                   !
 !------------------------------------------------------------------------------------------!
-subroutine arrsnd(co2_on)
+subroutine arrsnd(co2_on,co2con)
    use mem_grid
    use mem_scratch
    use ref_sounding
@@ -91,6 +95,7 @@ subroutine arrsnd(co2_on)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    logical           , intent(in)   :: co2_on
+   real              , intent(in)   :: co2con
    !----- Local variables. ----------------------------------------------------------------!
    integer                          :: nnns
    integer                          :: k
@@ -144,6 +149,7 @@ subroutine arrsnd(co2_on)
             read(unit=19,fmt=*,iostat=ierr) ps(nsndg),ts(nsndg),rts(nsndg)                 &
                                            ,us(nsndg),vs(nsndg)
             if(ps(nsndg) <= 0. .or. ierr /= 0 ) exit readloop2
+            co2s(nsndg) = co2con
          end do readloop2
       end if
       !----- Close the SOUND_IN file. -----------------------------------------------------!

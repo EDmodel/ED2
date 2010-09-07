@@ -4,7 +4,7 @@ rpost_main.o: brams_data.mod misc_coms.mod rpost_coms.mod rpost_dims.mod
 rpost_misc.o: misc_coms.mod rpost_dims.mod
 variables.o: an_header.mod brams_data.mod leaf_coms.mod micro_coms.mod
 variables.o: misc_coms.mod rconstants.mod rpost_coms.mod rpost_dims.mod
-variables.o: scratch_coms.mod
+variables.o: scratch_coms.mod somevars.mod
 comp_lib.o: leaf_coms.mod rconstants.mod rpost_coms.mod soil_coms.mod
 comp_lib.o: somevars.mod therm_lib.mod
 dted.o: /n/Moorcroft_Lab/Users/mlongo/EDBRAMS/Ramspost/src/include/utils_sub_names.h

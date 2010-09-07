@@ -192,7 +192,7 @@ subroutine ed_init_coup_atm()
                          ,ierr)
          end if
 
-         call read_soil_moist_temp(cgrid)
+         call read_soil_moist_temp(cgrid,igr)
 
          if (mynum < nnodetot) then
             call MPI_Send(ping,1,MPI_INTEGER,sendnum,92,MPI_COMM_WORLD,ierr)

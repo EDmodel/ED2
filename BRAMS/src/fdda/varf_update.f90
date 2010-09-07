@@ -324,7 +324,8 @@ subroutine varref(n1,n2,n3,thp,pc,pi0,th0,rtp,co2p,dn0,dn0u,dn0v,uc,vc,topt,topu
    use rconstants
    use therm_lib   , only : virtt     & ! intent(in)
                           , vapour_on ! ! intent(in)
-   use mem_basic   , only : co2_on    ! ! intent(in)
+   use mem_basic   , only : co2_on    & ! intent(in)
+                          , co2con    ! ! intent(in)
 
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
@@ -385,7 +386,7 @@ subroutine varref(n1,n2,n3,thp,pc,pi0,th0,rtp,co2p,dn0,dn0u,dn0v,uc,vc,topt,topu
       if (co2_on) then
          call htint2(nzp,co2p(:,iref,jref),vctr2,nzp,co201dn(:,ngrid),zt)
       else
-         co201dn(1:nzp,ngrid) = 0.
+         co201dn(1:nzp,ngrid) = co2con(1)
       end if
    case (1)
       vctr2(1:nzp)       = ztn(1:nzp,ngrid)
@@ -400,7 +401,7 @@ subroutine varref(n1,n2,n3,thp,pc,pi0,th0,rtp,co2p,dn0,dn0u,dn0v,uc,vc,topt,topu
       if (co2_on) then
          co201dn(1:nzp,ngrid) = co2p(1:nzp,iref,jref)
       else
-         co201dn(1:nzp,ngrid) = 0.
+         co201dn(1:nzp,ngrid) = co2con(1)
       end if
    end select
 

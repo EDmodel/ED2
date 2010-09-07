@@ -154,36 +154,38 @@ subroutine read_ed10_ed20_history_file
    real                 , external                        :: sngloff
    real                 , external                        :: dist_gc
    !---------------------------------------------------------------------------------------!
-   
 
-   !----- Copy the namelist variable to the local one, so we can change it here. ----------!
-   ied_init_mode_local = ied_init_mode 
 
-   !----- Retrieve all files with the specified prefix. -----------------------------------!
-   call ed_filelist(full_list,sfilin,nflist)
 
-   
-   !----- Retrieve LON/LAT information for sites ------------------------------------------!
-   select case (ied_init_mode)
-   case (3)
-      renumber_pfts = .false.
-      call ed1_fileinfo('.site',nflist,full_list,nflsite,site_list,slon_list,slat_list)
-   case (6)
-      renumber_pfts = .false.
-   case default
-      renumber_pfts = .true.
-   end select
-   
-   !----- Retrieve LON/LAT information for patches and cohorts ----------------------------!
-   call ed1_fileinfo('.pss',nflist,full_list,nflpss,pss_list,plon_list,plat_list)
-   call ed1_fileinfo('.css',nflist,full_list,nflcss,css_list,clon_list,clat_list)
-   
+
+
 
    !---------------------------------------------------------------------------------------!
    !      Now we loop over all all grids and polygons, and fill them with patches and      !
    ! cohorts from the closest polygon.                                                     !
    !---------------------------------------------------------------------------------------!
    gridloop: do igr = 1,ngrids
+
+      !----- Copy the namelist variable to the local one, so we can change it here. -------!
+      ied_init_mode_local = ied_init_mode 
+
+      !----- Retrieve all files with the specified prefix. --------------------------------!
+      call ed_filelist(full_list,sfilin(igr),nflist)
+
+      !----- Retrieve LON/LAT information for sites ---------------------------------------!
+      select case (ied_init_mode)
+      case (3)
+         renumber_pfts = .false.
+         call ed1_fileinfo('.site',nflist,full_list,nflsite,site_list,slon_list,slat_list)
+      case (6)
+         renumber_pfts = .false.
+      case default
+         renumber_pfts = .true.
+      end select
+
+      !----- Retrieve LON/LAT information for patches and cohorts -------------------------!
+      call ed1_fileinfo('.pss',nflist,full_list,nflpss,pss_list,plon_list,plat_list)
+      call ed1_fileinfo('.css',nflist,full_list,nflcss,css_list,clon_list,clat_list)
 
       cgrid => edgrid_g(igr)
 

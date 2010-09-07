@@ -395,7 +395,7 @@ subroutine nud_update(iswap,nnud)
                      if (igrid_match(ngr) == ng) then
                         write (unit=*,fmt='(a30,2i5,3x,a8,i8)')                            &
                               'NUD_UPDATE: Filling:       ',ngr,ng,vtab_r(nv,ngr)%name,npts
-                        call atob(nptsh,scr,varinit_g(ng)%varrf)
+                        call atob(nptsh,scr,varinit_g(ng)%varof)
 
                      else
                         write (unit=*,fmt='(a30,2i5,3x,a8,i8)')                            &

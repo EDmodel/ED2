@@ -320,9 +320,9 @@ subroutine initial_thermo_grell(m1,dtime,thp,theta,rtp,co2p,pi0,pp,pc,wp,dn0,tke
       ![[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[!
       !------------------------------------------------------------------------------------!
       !     Finding what the state variables will be in the next time, assuming no convec- !
-      ! tion at this point (we will call these forced variables). Note that dthildt and    !
-      ! drtdt already contains the effect of shallower clouds in case they had happened,   !
-      ! so we use the original RAMS data to add the tendency.                              !
+      ! tion at this point (we will call these forced variables).  Most variables will be  !
+      ! updated using the tendency, except for the Exner function and diagnostic vari-     !
+      !ables.                                                                              !
       !------------------------------------------------------------------------------------!
       !------ 1. Exner function pc is the future Exner perturbation. ----------------------!
       exner(k) = pi0(kr)   + pc(kr)

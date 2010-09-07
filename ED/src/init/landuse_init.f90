@@ -91,13 +91,15 @@ subroutine landuse_init
    end if
 
 
-   !---------------------------------------------------------------------------------------!
-   !     Find the list of disturbance rate files.                                          !
-   !---------------------------------------------------------------------------------------!
-   call ed_filelist(full_list,lu_database,nflist)
-   call ed1_fileinfo('.lu',nflist,full_list,nfllu,lu_list,llon_list,llat_list)
-
    gridloop: do igr = 1,ngrids
+
+      !------------------------------------------------------------------------------------!
+      !     Find the list of disturbance rate files.                                       !
+      !------------------------------------------------------------------------------------!
+      call ed_filelist(full_list,lu_database(igr),nflist)
+      call ed1_fileinfo('.lu',nflist,full_list,nfllu,lu_list,llon_list,llat_list)
+      !------------------------------------------------------------------------------------!
+
       cgrid=>edgrid_g(igr)
 
       polyloop: do ipy = 1,cgrid%npolygons
@@ -317,7 +319,7 @@ subroutine landuse_init
          !---------------------------------------------------------------------------------!
 
          cpoly%plantation(:) = 0
-         call read_plantation_fractions(cpoly,cgrid%lon(ipy),cgrid%lat(ipy))
+         call read_plantation_fractions(cpoly,cgrid%lon(ipy),cgrid%lat(ipy),igr)
          
       end do polyloop
    end do gridloop
@@ -336,7 +338,7 @@ end subroutine landuse_init
 !==========================================================================================!
 !     This subroutine reads the plantation fraction.                                       !
 !------------------------------------------------------------------------------------------!
-subroutine read_plantation_fractions(cpoly,polylon,polylat)
+subroutine read_plantation_fractions(cpoly,polylon,polylat,igr)
    use ed_state_vars , only : polygontype         ! ! structure
    use ed_max_dims   , only : str_len             ! ! intent(in)
    use disturb_coms  , only : plantation_file     & ! intent(in)
@@ -348,6 +350,7 @@ subroutine read_plantation_fractions(cpoly,polylon,polylat)
    type(polygontype)     , target      :: cpoly
    real                  , intent(in)  :: polylon
    real                  , intent(in)  :: polylat
+   integer               , intent(in)  :: igr
    !----- Local variables -----------------------------------------------------------------!
    character(len=str_len)              :: fname
    logical                             :: exans
@@ -361,8 +364,8 @@ subroutine read_plantation_fractions(cpoly,polylon,polylat)
    integer                             :: ndat
    integer                             :: n
    !----- Local constants. ----------------------------------------------------------------!
-   character(len=12)    , parameter           :: fffmt='(a,1x,f12.5)'
-   character(len=13)    , parameter           :: esfmt='(a,1x,es12.5)'
+   character(len=12)    , parameter    :: fffmt='(a,1x,f12.5)'
+   character(len=13)    , parameter    :: esfmt='(a,1x,es12.5)'
    !----- External functions. -------------------------------------------------------------!
    real                  , external    :: dist_gc
    !---------------------------------------------------------------------------------------!
@@ -372,14 +375,14 @@ subroutine read_plantation_fractions(cpoly,polylon,polylat)
    !     If the user left the plantation file empty, it means that they don't want to      !
    ! use plantation files, skip the subroutine and don't print any warnings.               !
    !---------------------------------------------------------------------------------------!
-   if (len_trim(plantation_file) == 0) then
+   if (len_trim(plantation_file(igr)) == 0) then
       return
    else
       !----- Check whether plantation file exists. ----------------------------------------!
-      inquire(file=trim(plantation_file),exist=exans)
+      inquire(file=trim(plantation_file(igr)),exist=exans)
       if (.not.exans)then
          write (unit=*,fmt='(a)') '-------------------------------------------------------'
-         write (unit=*,fmt='(a)') 'File :'//trim(plantation_file)//' not found...'
+         write (unit=*,fmt='(a)') 'File :'//trim(plantation_file(igr))//' not found...'
          write (unit=*,fmt='(a)') 'Assuming that there are no plantations'
          write (unit=*,fmt='(a)') '-------------------------------------------------------'
          return
@@ -392,7 +395,7 @@ subroutine read_plantation_fractions(cpoly,polylon,polylat)
    !---------------------------------------------------------------------------------------!
    !     If we reach this point, then there is a plantation file. Open it.                 !
    !---------------------------------------------------------------------------------------!
-   open (unit=12, file=trim(plantation_file), form='formatted', status='old')
+   open (unit=12, file=trim(plantation_file(igr)), form='formatted', status='old')
    !----- The first loop will determine how many points are available. --------------------!
    ndat = 0
    countloop: do

@@ -5,7 +5,10 @@
 !------------------------------------------------------------------------------------------!
 subroutine read_ednl(iunit)
    !----- ED2 modules. --------------------------------------------------------------------!
-   use ed_max_dims          , only : n_pft                     ! ! intent(in)
+   use ed_max_dims          , only : n_pft                     & ! intent(in)
+                                   , undef_integer             & ! intent(in)
+                                   , undef_path                & ! intent(in)
+                                   , maxgrds                   ! ! intent(in)
    use soil_coms            , only : ed_zrough => zrough       & ! intent(out)
                                    , soil_database             & ! intent(out)
                                    , isoilstateinit            & ! intent(out)
@@ -159,6 +162,17 @@ subroutine read_ednl(iunit)
                        ,maxpatch,maxcohort,treefall_disturbance_rate,runoff_time           &
                        ,iprintpolys,npvars,printvars,pfmtstr,ipmin,ipmax,iphenys1,iphenysf &
                        ,iphenyf1,iphenyff,iedcnfgf,event_file,phenpath
+
+   !----- Initialise some database variables with a non-sense path. -----------------------!
+   soil_database   (:) = undef_path
+   veg_database    (:) = undef_path
+   lu_database     (:) = undef_path
+   plantation_file (:) = undef_path
+   lu_rescale_file (:) = undef_path
+
+   sfilin          (:) = undef_path
+   
+
 
    read (unit=iunit, iostat=err, NML=ED2_INFO)
    if (err /= 0) then
@@ -330,12 +344,27 @@ subroutine read_ednl(iunit)
    end select
       
    !----- Sort up the chosen PFTs. --------------------------------------------------------!
-   where (include_these_pft < 1) include_these_pft=huge(1)
+   where (include_these_pft < 1 .or. include_these_pft == undef_integer) 
+      include_these_pft = huge(1)
+   end where
    call sort_up(include_these_pft,n_pft)
 
    !----- Determine the length of simuation. ----------------------------------------------!
    call date_2_seconds(iyearz,imonthz,idatez,itimez*100,iyeara,imontha,idatea,itimea*100   &
                       ,timmax)
+
+   !---------------------------------------------------------------------------------------!
+   !     For the following databases, we must check whether only the first grid was given. !
+   ! In this case, we copy the values of the first grid to the other grids.                !
+   !---------------------------------------------------------------------------------------!
+   call copy_path_from_grid_1(ngrids,'soil_database'  ,soil_database  )
+   call copy_path_from_grid_1(ngrids,'veg_database'   ,veg_database   )
+   call copy_path_from_grid_1(ngrids,'lu_database'    ,lu_database    )
+   call copy_path_from_grid_1(ngrids,'plantation_file',plantation_file)
+   call copy_path_from_grid_1(ngrids,'lu_rescale_file',lu_rescale_file)
+
+   call copy_path_from_grid_1(ngrids,'sfilin'         ,sfilin         )
+   !---------------------------------------------------------------------------------------!
 
    return
 end subroutine read_ednl

@@ -231,14 +231,14 @@ end
 
 
 
-subroutine ndvi_file_inv (sfilin,ierr)
+subroutine ndvi_file_inv (ndvifilin,ierr)
 
 use mem_grid
 use io_params
 
 implicit none
 
-character(len=*) :: sfilin
+character(len=*) :: ndvifilin
 integer :: ierr
 
 integer :: nc,nf,lnf,nftot,ng
@@ -266,7 +266,7 @@ do ng = 1, ngrids
    
    nftot = -1
    write(cgrid,'(i1)') ng
-   call RAMS_filelist(fnames,trim(sfilin)//'-N-*-g'//cgrid//'.vfm',nftot)
+   call RAMS_filelist(fnames,trim(ndvifilin)//'-N-*-g'//cgrid//'.vfm',nftot)
    
    if(nftot <= 0) then
       print*,'No ndvi files for grid '//cgrid

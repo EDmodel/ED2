@@ -337,7 +337,7 @@ end subroutine update_polygon_derived_props
 !==========================================================================================!
 !    This subroutine will read the regular soil moisture and temperature dataset.          !
 !------------------------------------------------------------------------------------------!
-subroutine read_soil_moist_temp(cgrid)
+subroutine read_soil_moist_temp(cgrid,igr)
 
    use ed_state_vars , only : edtype       & ! structure
                             , polygontype  & ! structure
@@ -356,38 +356,39 @@ subroutine read_soil_moist_temp(cgrid)
    use ed_therm_lib  , only : ed_grndvap   ! ! subroutine
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
-   type(edtype)      , target    :: cgrid          ! Alias for current ED grid
+   type(edtype)      , target     :: cgrid         ! Alias for current ED grid
+   integer           , intent(in) :: igr           ! The grid number
    !----- Local variables -----------------------------------------------------------------!
-   type(polygontype) , pointer   :: cpoly          ! Alias for current polygon
-   type(sitetype)    , pointer   :: csite          ! Alias for current site
-   type(patchtype)   , pointer   :: cpatch         ! Alias for current patch
-   integer                       :: ntext          !
-   integer                       :: ilat           !
-   integer                       :: ilon           !
-   integer                       :: ilatf          !
-   integer                       :: ilonf          !
-   integer                       :: nls            !
-   integer                       :: nlsw1          !
-   integer                       :: k              !
-   integer                       :: ipy            !
-   integer                       :: isi            !
-   integer                       :: ipa            !
-   logical                       :: l1             !
-   real                          :: glat           !
-   real                          :: surface_temp   !
-   real                          :: surface_fliq   !
-   real                          :: glon           !
-   real                          :: soil_tempaux   !
-   real                          :: tmp1           !
-   real                          :: tmp2           !
-   real                          :: soilw1         !
-   real                          :: soilw2         !
+   type(polygontype) , pointer    :: cpoly          ! Alias for current polygon
+   type(sitetype)    , pointer    :: csite          ! Alias for current site
+   type(patchtype)   , pointer    :: cpatch         ! Alias for current patch
+   integer                        :: ntext          !
+   integer                        :: ilat           !
+   integer                        :: ilon           !
+   integer                        :: ilatf          !
+   integer                        :: ilonf          !
+   integer                        :: nls            !
+   integer                        :: nlsw1          !
+   integer                        :: k              !
+   integer                        :: ipy            !
+   integer                        :: isi            !
+   integer                        :: ipa            !
+   logical                        :: l1             !
+   real                           :: glat           !
+   real                           :: surface_temp   !
+   real                           :: surface_fliq   !
+   real                           :: glon           !
+   real                           :: soil_tempaux   !
+   real                           :: tmp1           !
+   real                           :: tmp2           !
+   real                           :: soilw1         !
+   real                           :: soilw2         !
    !----- Local constants.  ---------------------------------------------------------------!
-   logical           , parameter :: harvard_override = .false.
-   integer           , parameter :: nlon = 144
-   integer           , parameter :: nlat = 73
-   real              , parameter :: dlon = 2.5
-   real              , parameter :: dlat = 2.5
+   logical           , parameter  :: harvard_override = .false.
+   integer           , parameter  :: nlon = 144
+   integer           , parameter  :: nlat = 73
+   real              , parameter  :: dlon = 2.5
+   real              , parameter  :: dlat = 2.5
    !---------------------------------------------------------------------------------------!
 
    !----- First thing, check whether the dataset exists and crash the run if it doesn´t. --!
