@@ -244,7 +244,8 @@ micphys.o: grid_dims.mod
 micro_coms.o: micphys.mod rconstants.mod
 geodat.o: io_params.mod mem_grid.mod mem_leaf.mod rconstants.mod
 geodat.o: teb_spm_start.mod
-landuse_input.o: leaf_coms.mod mem_mksfc.mod rconstants.mod
+landuse_input.o: hdf5_utils.mod io_params.mod leaf_coms.mod mem_mksfc.mod
+landuse_input.o: rconstants.mod
 mem_mksfc.o: teb_spm_start.mod
 mksfc_driver.o: io_params.mod mem_grid.mod mem_mksfc.mod teb_spm_start.mod
 mksfc_fuso.o: io_params.mod mem_emiss.mod mem_gaspart.mod mem_grid.mod

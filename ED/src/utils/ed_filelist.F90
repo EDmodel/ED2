@@ -88,11 +88,19 @@ subroutine ed_filelist(fnames,file_prefix,nfile)
    !---------------------------------------------------------------------------------------!
    call filelist_c(n,indices,prefix,filelist)
 
+   write (unit=*,fmt='(a)') ' +  Showing first 10 files:'
+
    do nf=1,n
 
       fnames(nf) = trim(filelist(indices(nf):indices(nf+1)-1))
-      write (unit=*,fmt='(a,1x,i5,1x,a)') '   [-] File #: ',nf,trim(fnames(nf))
+      
+
+      if (nf <= 10) then
+         write (unit=*,fmt='(a,1x,i5,1x,a)') '   [-] File #: ',nf,trim(fnames(nf))
+      end if
    end do
+
+
 
 #endif
    

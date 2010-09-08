@@ -314,7 +314,9 @@
    IUPDNDVI  = 0,             ! 0 - No update of NDVI values during run
    IUPDSST  = 1,              ! 0 - No update of SST values during run
                               ! 1 - Update values during run
- 
+
+   IUSELAI = 1                ! 0 - Don't substitute LAI data for the NDVI data
+                              ! 1 - The NDVI data files are actually LAI data
    !---------------------------------------------------------------------------------------!
    !    The following only apply for IxxxxFLG=1. If IVEGTFLG and/or ISOILFLG are set to 3  !
    ! and it is a coupled run, then you must set up VEG_DATABASE and/or SOIL_DATABASE,      !

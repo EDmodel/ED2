@@ -1071,34 +1071,55 @@ subroutine vegndvi(ifm,patch_area,leaf_class,veg_fracarea,veg_lai,veg_tai,veg_ro
          timefac_ndvi = sngl((time - ndvitime1(ifm)) / (ndvitime2(ifm) - ndvitime1(ifm)))
       end if
 
-      !------------------------------------------------------------------------------------!
-      !     Time-interpolate ndvi to get current value veg_ndvic(i,j) for this patch.      !
-      ! Limit NDVI to prevent values > .99 to prevent division by zero.                    !
-      !------------------------------------------------------------------------------------!
-      veg_ndvic = max(0.99,veg_ndvip + (veg_ndvif - veg_ndvip) * timefac_ndvi)
+      !  Time-interpolate ndvi to get current value veg_ndvic(i,j) for this patch
+      !  Limit ndvi to prevent values > .99 to prevent division by zero.
 
-      !------------------------------------------------------------------------------------!
-      ! Based on SRF's suggestion - MODIS sometimes has weird values of NDVI for           !
-      !                             evergreen forests, so we impose a lower threshold      !
-      !                             for this vegetation type.                              !
-      ! (Maybe we should try using something better than NDVI, perhaps EVI?)               !
-      !------------------------------------------------------------------------------------!
-      if (nveg == 7) veg_ndvic = max(0.7,veg_ndvic)
+      
+
+      if (iuselai == 1) then
+         veg_ndvic = max(0.0,veg_ndvip + (veg_ndvif - veg_ndvip) * timefac_ndvi)
+      else
+         !---------------------------------------------------------------------------------!
+         !     Time-interpolate ndvi to get current value veg_ndvic(i,j) for this patch.   !
+         ! Limit NDVI to prevent values > .99 to prevent division by zero.                 !
+         !---------------------------------------------------------------------------------!
+         veg_ndvic = max(0.99,veg_ndvip + (veg_ndvif - veg_ndvip) * timefac_ndvi)
 
 
-      !----- Compute "simple ratio" and limit between sr_min and sr_max(nveg). ------------!
-      sr = min(sr_max(nveg), max(sr_min, (1. + veg_ndvic) / (1. - veg_ndvic) ) )
+         !---------------------------------------------------------------------------------!
+         ! Based on SRF's suggestion - MODIS sometimes has weird values of NDVI for        !
+         !                             evergreen forests, so we impose a lower threshold   !
+         !                             for this vegetation type.                           !
+         ! (Maybe we should try using something better than NDVI, perhaps EVI?)            !
+         !---------------------------------------------------------------------------------!
+         if (nveg == 7) veg_ndvic = max(0.7,veg_ndvic)
+         
+      end if
 
-      !----- Compute fpar. ----------------------------------------------------------------!
-      fpar = fpar_min + (sr - sr_min) * dfpardsr(nveg)
 
-      !------------------------------------------------------------------------------------!
-      !      Compute green leaf area index (veg_lai), dead leaf area index (dead_lai),     !
-      ! total area index (tai), and green fraction.                                        !
-      !------------------------------------------------------------------------------------!
-      veg_lai    = glai_max(nveg) * (       veg_clump(nveg)  * fpar / fpar_max             &
-                                    + (1. - veg_clump(nveg)) * alog(1. - fpar) * fpcon )
+      if (iuselai == 1) then
 
+         veg_lai = veg_ndvic
+
+      else
+
+         !----- Compute "simple ratio" and limit between sr_min and sr_max(nveg). ---------!
+         sr = min(sr_max(nveg), max(sr_min, (1. + veg_ndvic) / (1. - veg_ndvic) ) )
+
+
+         !----- Compute fpar. -------------------------------------------------------------!
+         fpar = fpar_min + (sr - sr_min) * dfpardsr(nveg)
+
+         !---------------------------------------------------------------------------------!
+         !      Compute green leaf area index (veg_lai), dead leaf area index (dead_lai),  !
+         ! total area index (tai), and green fraction.                                     !
+         !---------------------------------------------------------------------------------!
+         veg_lai    = glai_max(nveg) * (       veg_clump(nveg)  * fpar / fpar_max          &
+                                       + (1. - veg_clump(nveg)) * alog(1. - fpar) * fpcon )
+
+      end if
+         
+         
       dead_lai   = (glai_max(nveg) - veg_lai) * dead_frac(nveg)
       veg_tai    = veg_lai + sai(nveg) + dead_lai
       green_frac = veg_lai / veg_tai

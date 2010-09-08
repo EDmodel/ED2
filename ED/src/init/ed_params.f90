@@ -143,7 +143,8 @@ subroutine init_ed_misc_coms
                            , vary_elev           & ! intent(out)
                            , vary_hyd            & ! intent(out)
                            , vary_rad            & ! intent(out)
-                           , max_thsums_dist     ! ! intent(out)
+                           , max_thsums_dist     & ! intent(out)
+                           , max_poi99_dist      ! ! intent(out)
    implicit none
 
 
@@ -182,6 +183,15 @@ subroutine init_ed_misc_coms
    ! to be representative of the polygon.  The value below is 1.25 degree at the Equator.  !
    !---------------------------------------------------------------------------------------!
    max_thsums_dist     = 1.25 * erad * pio180
+   !---------------------------------------------------------------------------------------!
+
+   !---------------------------------------------------------------------------------------!
+   !      Alternative method for mixing 1 grid and POI's.  Only use the grid if their is   !
+   ! NOT an POI  within a user specified resolution.  Remember, this assumes there is only !
+   ! 1 gridded file, and it is the first file when ied_init_mode is set to 99  (Developer  !
+   ! use only).                                                                            !
+   !---------------------------------------------------------------------------------------!
+   max_poi99_dist     = 5.0 * erad * pio180
    !---------------------------------------------------------------------------------------!
 
    return

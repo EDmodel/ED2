@@ -73,6 +73,15 @@ Module ed_misc_coms
   real    :: max_thsums_dist
 
 
+  !----------------------------------------------------------------------------------------!
+  !      Alternative method for mixing 1 grid and POI's.  Only use the grid if their is    !
+  ! NOT an POI  within a user specified resolution.  Remember, this assumes there is only  !
+  ! 1 gridded file, and it is the first file when ied_init_mode is set to 99  (Developer   !
+  ! use only).                                                                             !
+  !----------------------------------------------------------------------------------------!
+  real    :: max_poi99_dist
+  !----------------------------------------------------------------------------------------!
+
   integer :: integration_scheme
 
 

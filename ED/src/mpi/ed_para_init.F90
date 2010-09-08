@@ -579,7 +579,7 @@ subroutine ed_load_work_from_history()
       if (trim(runtype) == 'HISTORY') then
          !----- Full history restart. -----------------------------------------------------!
          dbletime=dble(current_time%time)     
-         call makefnam(hnamel,sfilin,dbletime,current_time%year,current_time%month         &
+         call makefnam(hnamel,sfilin(1),dbletime,current_time%year,current_time%month      &
                       ,current_time%date,0,vnam,cgr,'h5 ')
          full_list (1) = hnamel
          histo_list(1) = hnamel
@@ -595,7 +595,7 @@ subroutine ed_load_work_from_history()
 
       elseif (ied_init_mode == 4) then
          !----- Standard restart. ---------------------------------------------------------!
-         hnamel = trim(sfilin)//"-"//trim(cgr)//".h5"
+         hnamel = trim(sfilin(ifm))//"-"//trim(cgr)//".h5"
          full_list (1) = hnamel
          histo_list(1) = hnamel
          nflist        = 1
@@ -612,7 +612,7 @@ subroutine ed_load_work_from_history()
          !----- Unstructured restart. -----------------------------------------------------!
 
          !----- Retrieve all files with the specified prefix. -----------------------------!
-         call ed_filelist(full_list,sfilin,nflist)
+         call ed_filelist(full_list,sfilin(ifm),nflist)
          !----- Check every file and save only those that are actually history files. -----!
          call ed21_fileinfo(nflist,full_list,nhisto,histo_list)
       end if

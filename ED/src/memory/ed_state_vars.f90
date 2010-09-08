@@ -6708,11 +6708,6 @@ contains
          cgrid%npatches_global  = sum(gdpa(1:nnodetot,igr))
          cgrid%ncohorts_global  = sum(gdco(1:nnodetot,igr))
 
-         print*,"NPOLY GLOB: ",cgrid%npolygons_global
-         
-
-         
-
          ! Calculate the local offsets
          
          cgrid%mach_polygon_offset_index = py_off(mynum,igr)
@@ -10507,21 +10502,21 @@ contains
     if (associated(cpatch%dagb_dt)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%dagb_dt(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'DAGB_DT :41:hist:anal:mont:year') 
+         var_len,var_len_global,max_ptrs,'DAGB_DT :41:hist:mont:year') 
        call metadata_edio(nvar,igr,'Above-ground biomass growth','[kgC/plant/yr]','icohort') 
     endif
 
     if (associated(cpatch%dba_dt)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%dba_dt(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'DBA_DT :41:hist:anal:mont:year') 
+         var_len,var_len_global,max_ptrs,'DBA_DT :41:hist:mont:year') 
        call metadata_edio(nvar,igr,'Basal-area growth','[cm2/plant/yr]','icohort') 
     endif
 
     if (associated(cpatch%ddbh_dt)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%ddbh_dt(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'DDBH_DT :41:hist:anal:mont:year') 
+         var_len,var_len_global,max_ptrs,'DDBH_DT :41:hist:mont:year') 
        call metadata_edio(nvar,igr,'DBH growth','[cm/plant/yr]','icohort') 
     endif
 
@@ -10661,21 +10656,21 @@ contains
     if (associated(cpatch%mean_gpp)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%mean_gpp(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'MEAN_GPP :41:hist:anal') 
+         var_len,var_len_global,max_ptrs,'MEAN_GPP :41:hist') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%mean_leaf_resp)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%mean_leaf_resp(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'MEAN_LEAF_RESP :41:hist:anal') 
+         var_len,var_len_global,max_ptrs,'MEAN_LEAF_RESP :41:hist') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%mean_root_resp)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%mean_root_resp(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'MEAN_ROOT_RESP :41:hist:anal') 
+         var_len,var_len_global,max_ptrs,'MEAN_ROOT_RESP :41:hist') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
@@ -10822,7 +10817,7 @@ contains
     if (associated(cpatch%mort_rate)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%mort_rate(1,1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'MORT_RATE_CO :48:hist:anal:dail') 
+         var_len,var_len_global,max_ptrs,'MORT_RATE_CO :48:hist:dail') 
        call metadata_edio(nvar,igr,'Mortality rates','[1/yr]','icohort') 
     endif
 

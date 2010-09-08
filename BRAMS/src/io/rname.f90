@@ -130,7 +130,7 @@ subroutine NAMEOUT
 !MLO]
 
   write(6,206)NVGCON,NPLT,IPSFLG,ITSFLG,IRTSFLG
-  write(6,207)IUSFLG,MKCOLTAB,NZG,NZS,IUPDNDVI
+  write(6,207)IUSFLG,MKCOLTAB,NZG,NZS,IUPDNDVI,IUSELAI
   write(6,208)NPATCH,NVEGPAT,LEVEL,ICLOUD
   write(6,209)IRAIN,IPRIS,ISNOW,IAGGR,IGRAUP
   write(6,210)IHAIL,NADDSC,IADVL,IADVF
@@ -153,7 +153,7 @@ subroutine NAMEOUT
 206 format('  NVGCON=',I4,'       NPLT=',I4,'     IPSFLG=',I4  &
        ,'     ITSFLG=',I4,'    IRTSFLG=',I4)
 207 format('  IUSFLG=',I4,'   MKCOLTAB=',I4,'        NZG=',I4  &
-       ,'        NZS=',I4,'   IUPDNDVI=',I4)
+       ,'        NZS=',I4,'   IUPDNDVI=',I4,'    IUSELAI=',I4)
 208 format('  NPATCH=',I4,'    NVEGPAT=',I4,'      LEVEL=',I4  &
        ,'     ICLOUD=',I4)
 209 format('   IRAIN=',I4,'      IPRIS=',I4,'      ISNOW=',I4  &

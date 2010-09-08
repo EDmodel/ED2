@@ -13,6 +13,7 @@ subroutine patch_array_size(npq,deltax  &
 
    integer :: npq,ivegtflg,isoilflg,ndviflg
    character(len=*) :: ivegtfn,isoilfn,ndvifn
+   character(len=256) :: h5name
    real :: deltax
 
    integer :: iblksiz,no,isbeg,iwbeg
@@ -23,21 +24,28 @@ subroutine patch_array_size(npq,deltax  &
    deltallo_min = 1.e20
    if (ivegtflg == 1) then
       call read_header(ivegtfn,iblksiz,no,isbeg  &
-         ,iwbeg,offlat,offlon,deltall,'veg')
+         ,iwbeg,offlat,offlon,deltall,'veg',h5name)
       deltallo_min = min(deltallo_min,deltall)
    endif
 
    if (isoilflg == 1) then
+
       call read_header(isoilfn,iblksiz,no,isbeg  &
-         ,iwbeg,offlat,offlon,deltall,'soil')
+         ,iwbeg,offlat,offlon,deltall,'soil',h5name)
       deltallo_min = min(deltallo_min,deltall)
    endif
 
    if (ndviflg == 1) then
       call read_header(ndvifn,iblksiz,no,isbeg  &
-         ,iwbeg,offlat,offlon,deltall,'ndvi')
+           ,iwbeg,offlat,offlon,deltall,'ndvi',h5name)
       deltallo_min = min(deltallo_min,deltall)
    endif
+
+!!   if (ndviflg == 1) then
+!!      call read_header(ndvifn,iblksiz,no,isbeg  &
+!!         ,iwbeg,offlat,offlon,deltall,'ndvi')
+!!      deltallo_min = min(deltallo_min,deltall)
+!!   endif
 
    npq = min(10,max(1,nint(deltax / (deltallo_min * spcon))))
 
@@ -109,6 +117,7 @@ subroutine landuse_opqr(n2,n3,mzg,npat,nvegpat  &
    use mem_mksfc
    use rconstants
    use leaf_coms, only : tiny_parea
+   use io_params, only : iuselai
 
    implicit none
    integer :: n2,n3,mzg,npat,nvegpat
@@ -119,7 +128,7 @@ subroutine landuse_opqr(n2,n3,mzg,npat,nvegpat  &
    real, dimension(n2,n3,npat) :: patch_area,leaf_class,veg_ndvif
    integer, parameter :: maxmiss=1000
    character(len=80) :: fnmiss(maxmiss)
-    
+   character(len=256) :: h5name
    integer :: i,j
    real :: checksum
    real :: parea_tot
@@ -153,14 +162,12 @@ subroutine landuse_opqr(n2,n3,mzg,npat,nvegpat  &
 
    if (iaction .eq. 'veg') then
 
-      
-
       call read_header(ivegtfn,iblksizo_veg,no_veg,isbego_veg  &
-         ,iwbego_veg,offlat_veg,offlon_veg,deltallo_veg,'veg')
+         ,iwbego_veg,offlat_veg,offlon_veg,deltallo_veg,'veg',h5name)
          
       call fill_datp(n2,n3,no_veg,iblksizo_veg,isbego_veg,iwbego_veg  &
          ,platn,plonn,offlat_veg,offlon_veg,deltallo_veg,ivegtfn,iaction  &
-         ,nmiss,fnmiss)
+         ,nmiss,fnmiss,h5name)
 
    ! 9/30/97:  Carry out the first translation of the input DATP values into a
    ! condensed set called DATQ_patch.  The range of DATQ_patch values represents
@@ -277,12 +284,11 @@ subroutine landuse_opqr(n2,n3,mzg,npat,nvegpat  &
    elseif (iaction .eq. 'soil') then
 
       call read_header(isoilfn,iblksizo_soil,no_soil,isbego_soil  &
-         ,iwbego_soil,offlat_soil,offlon_soil,deltallo_soil,'soil')
-         
+         ,iwbego_soil,offlat_soil,offlon_soil,deltallo_soil,'soil',h5name)
          
       call fill_datp(n2,n3,no_soil,iblksizo_soil,isbego_soil,iwbego_soil  &
          ,platn,plonn,offlat_soil,offlon_soil,deltallo_soil,isoilfn,iaction  &
-         ,nmiss,fnmiss)
+         ,nmiss,fnmiss,h5name)
 
       do jr = 1,n3
          do ir = 1,n2
@@ -296,16 +302,14 @@ subroutine landuse_opqr(n2,n3,mzg,npat,nvegpat  &
 
                do jp = 1,npq
                   do ip = 1,npq
-
-   ! Fill datq_soil values as secondary criterion.  This is for finding dominant
-   ! soil class for each datq class.
-
                      
-
+                     ! Fill datq_soil values as secondary criterion.  This is for finding dominant
+                     ! soil class for each datq class.
 
                      call datp_datsoil(datp(ip,jp,ir,jr),datsoil)
-                     
+
                      datq_pat = datq_patch(ip,jp,ir,jr)
+
                      datq_soil(datq_pat,datsoil)  &
                         = datq_soil(datq_pat,datsoil) + 1
     
@@ -354,11 +358,11 @@ subroutine landuse_opqr(n2,n3,mzg,npat,nvegpat  &
    elseif (iaction .eq. 'ndvi') then
 
       call read_header(ndvifn,iblksizo_ndvi,no_ndvi,isbego_ndvi  &
-         ,iwbego_ndvi,offlat_ndvi,offlon_ndvi,deltallo_ndvi,'ndvi')
-         
+           ,iwbego_ndvi,offlat_ndvi,offlon_ndvi,deltallo_ndvi,'ndvi',h5name)
+
       call fill_datp(n2,n3,no_ndvi,iblksizo_ndvi,isbego_ndvi,iwbego_ndvi  &
-         ,platn,plonn,offlat_ndvi,offlon_ndvi,deltallo_ndvi,cndvifil,iaction  &
-         ,nmiss,fnmiss)
+           ,platn,plonn,offlat_ndvi,offlon_ndvi,deltallo_ndvi,cndvifil,iaction  &
+           ,nmiss,fnmiss,h5name)
 
       do jr = 1,n3
          do ir = 1,n2
@@ -386,10 +390,19 @@ subroutine landuse_opqr(n2,n3,mzg,npat,nvegpat  &
                do ipat = 2,nvegpat+1
 
                      datq_pat = nint(leaf_class(ir,jr,ipat))
-                     if (sumpix(datq_pat) == 0.) then
-                        veg_ndvif(ir,jr,ipat) =  0.05
+
+                     if(iuselai.eq.1) then
+                        if (sumpix(datq_pat) == 0.) then
+                           veg_ndvif(ir,jr,ipat) =  0.0
+                        else
+                           veg_ndvif(ir,jr,ipat) =  sumndvi(datq_pat)/ sumpix(datq_pat)
+                        end if
                      else
-                        veg_ndvif(ir,jr,ipat) =  max(.05,sumndvi(datq_pat)/ sumpix(datq_pat))
+                        if (sumpix(datq_pat) == 0.) then
+                           veg_ndvif(ir,jr,ipat) =  0.05
+                        else
+                           veg_ndvif(ir,jr,ipat) =  max(.05,sumndvi(datq_pat)/ sumpix(datq_pat))
+                        end if
                      end if
                enddo
 
@@ -418,12 +431,14 @@ end subroutine landuse_opqr
 !********************************************************************
 
 subroutine read_header(ofn,iblksizo,no,isbego,iwbego,offlat,offlon,deltallo  &
-   ,ifield)
+   ,ifield,h5name)
 
 implicit none
 integer :: iblksizo,no,isbego,iwbego,lb
 real :: offlat,offlon,deltallo
 character :: ofn*(*),title*256,ifield*(*)
+character :: h5name*(*)
+
 
 lb = len_trim(ofn)
 if (lb .le. 0) then
@@ -434,25 +449,40 @@ if (lb .le. 0) then
 endif
 
 title = ofn(1:lb)//'HEADER'
+
 lb = len_trim(title)
 
-call rams_f_open(29,title(1:lb),'FORMATTED','OLD','READ',0)
-read(29,*) iblksizo,no,isbego,iwbego,offlat,offlon
-close(29)
-deltallo = float(iblksizo) / float(no-1)
+if (trim(ifield).eq.'ndvi') then
+   call rams_f_open(29,title(1:lb),'FORMATTED','OLD','READ',0)
+   read(29,*,end=1) iblksizo,no,isbego,iwbego,offlat,offlon,h5name
+1  continue
+   close(29)
+   deltallo = float(iblksizo) / float(no-1)
+
+   print*, 'read_header1 ',ifield
+   print*, 'read_header2 ',iblksizo,no,isbego,iwbego,offlat,offlon,deltallo
+else
+   
+   call rams_f_open(29,title(1:lb),'FORMATTED','OLD','READ',0)
+   read(29,*) iblksizo,no,isbego,iwbego,offlat,offlon
+   close(29)
+   deltallo = float(iblksizo) / float(no-1)
+end if
 
 return
-end
+end subroutine read_header
 
 !*************************************************************************
 
 subroutine fill_datp(n2,n3,no,iblksizo,isbego,iwbego  &
-   ,platn,plonn,offlat,offlon,deltallo,ofn,iaction,nmiss,fnmiss)
+   ,platn,plonn,offlat,offlon,deltallo,ofn,iaction,nmiss,fnmiss,h5name)
 
 use mem_mksfc
+use hdf5_utils
 
 implicit none
 character(len=*) :: ofn,iaction,fnmiss(*)
+character(len=*) :: h5name
 integer :: nmiss
 
 integer :: n2,n3,no,iblksizo,isbego,iwbego,isoc,iwoc,iofr  &
@@ -465,7 +495,8 @@ real :: rio,rjo,rno,platn,plonn,offlat,offlon  &
 
 character :: title1*3,title2*4,title3*80
 
-logical l1,l2
+logical l1,l2,h5
+integer :: ndims,idims(4),ii,jj
 
 include 'interface.h'
 
@@ -481,7 +512,7 @@ jfile_max = 180 / iblksizo
 if (iaction == 'ndvi') then
    allocate (dato(no,no))
 else
-   allocate (cdato(no,no))
+   allocate (cdato(no,no),idato(no,no))
 endif
 
 allocate (nump    (ifile_max,jfile_max)  &
@@ -612,17 +643,74 @@ do jfile = 1,jfile_max
          
          inquire(file=title3(1:lb),exist=l1,opened=l2)
 
+! If file not found, then check for an hdf5 file.
+
+         h5=.false.
+         if (.not. l1) then
+            if (iaction == 'ndvi') then
+               title3=title3(1:lb-3)//'h5'
+            else
+               title3=trim(title3)//'.h5'
+            endif
+            inquire(file=trim(title3),exist=l1,opened=l2)
+            h5=.true.
+         endif
+
 ! Read file or set missing flag to 1
+
+!!         if (l1) then
+!!            missing = 0
+!!           print*, 'getting file ',title3(1:lb)
+           
+!!            if (iaction == 'ndvi') then
+!!               call read_hdf(no,no,dato,title3(1:lb))
+!!            else
+!!               call rams_c_open(title3(1:lb)//char(0),'rb'//char(0))
+!!               call rams_c_read_char(4,no*no,cdato(1,1))
+!!               call rams_c_close()
+!!            endif
+!!         else
+!!            do nn=1,nmiss
+!!               if(trim(title3(1:lb)) == trim(fnmiss(nn)) ) goto 302
+!!            enddo
+!!            nmiss=nmiss+1
+!!            fnmiss(nmiss)=title3(1:lb)
+!!302         continue
+!!            missing = 1
+!!         endif
+
+         
          if (l1) then
             missing = 0
-           print*, 'getting file ',title3(1:lb)
+           !print*, 'getting file ',title3(1:lb),ir,jr,ip,jp
+           print*, 'getting file ',trim(title3)
            
             if (iaction == 'ndvi') then
-               call read_hdf(no,no,dato,title3(1:lb))
+               if (h5) then
+                  call shdf5_open_f(title3,'R')
+                  ndims=2 ; idims(1)=no ; idims(2)=no
+                  call shdf5_irec_f(ndims,idims,trim(h5name),rvara=dato)
+                  call shdf5_close_f()
+               else
+                  print*,'NDVI file not in HDF5 format!'
+                  stop 'landuse_input: bad NDVI format'
+               endif
             else
-               call rams_c_open(title3(1:lb)//char(0),'rb'//char(0))
-               call rams_c_read_char(4,no*no,cdato(1,1))
-               call rams_c_close()
+               if (h5) then
+                  call shdf5_open_f(title3,'R')
+                  ndims=2 ; idims(1)=no ; idims(2)=no
+                  call shdf5_irec_f(ndims,idims,trim(h5name),ivara=idato)
+                  call shdf5_close_f()
+               else
+                  call rams_c_open(title3(1:lb)//char(0),'rb'//char(0))
+                  call rams_c_read_char(4,no*no,cdato(1,1))
+                  call rams_c_close()
+                  do jj = 1,no
+                     do ii = 1,no
+                        idato(ii,jj)=ichar(cdato(ii,jj))
+                     enddo
+                  enddo
+               endif
             endif
          else
             do nn=1,nmiss
@@ -742,7 +830,7 @@ enddo
 if (iaction == 'ndvi') then
    deallocate (dato)
 else
-   deallocate (cdato)
+   deallocate (cdato,idato)
 endif
 
 deallocate(nump,numpind,numpind1,numpind2,ptable)

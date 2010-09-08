@@ -134,7 +134,7 @@ subroutine init_full_history_restart()
 
      dbletime=dble(current_time%time)
      
-     call makefnam(hnamel,sfilin,dbletime,current_time%year, &
+     call makefnam(hnamel,sfilin(1),dbletime,current_time%year, &
           current_time%month,current_time%date,0,vnam,cgr,'h5 ')
 
      inquire(file=trim(hnamel),exist=exists)
