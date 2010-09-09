@@ -41,7 +41,9 @@ module disturbance_utils
                               , patchtype               ! ! structure
       use ed_misc_coms , only : current_time            ! ! intent(in)
       use disturb_coms , only : treefall_age_threshold  & ! intent(in)
-                              , min_new_patch_area      ! ! intent(in)
+                              , min_new_patch_area      & ! intent(in)
+                              , mature_harvest_age      & ! intent(in)
+                              , plantation_rotation     ! ! intent(in)
       use ed_max_dims  , only : n_dist_types            & ! intent(in)
                               , n_pft                   & ! intent(in)
                               , n_dbh                   ! ! intent(in)
@@ -54,17 +56,25 @@ module disturbance_utils
       type(sitetype)                 , pointer     :: csite
       type(sitetype)                 , pointer     :: tsite
       type(patchtype)                , pointer     :: qpatch
-      real   , dimension(n_pft,n_dbh)              :: initial_agb
-      real   , dimension(n_pft,n_dbh)              :: initial_basal_area
-      logical, dimension(:)          , allocatable :: disturb_mask
       integer                                      :: ipy
       integer                                      :: isi
       integer                                      :: ipa
       integer                                      :: onsp
-      integer                                      :: q
+      integer                                      :: old_lu
+      integer                                      :: new_lu
+      integer                                      :: poly_dest_type
+      logical, dimension(:)          , allocatable :: disturb_mask
       logical                                      :: ploughed
       logical                                      :: abandoned
       logical                                      :: natural
+      logical                                      :: logged
+      logical                                      :: is_plantation
+      logical                                      :: mature_plantation
+      logical                                      :: mature_primary
+      logical                                      :: mature_secondary
+      real   , dimension(n_pft,n_dbh)              :: initial_agb
+      real   , dimension(n_pft,n_dbh)              :: initial_basal_area
+      real   , dimension(n_pft)                    :: mindbh_harvest
       real                                         :: area
       real                                         :: area_fac
       real                                         :: dA
@@ -84,15 +94,15 @@ module disturbance_utils
 
             !----- Store AGB, basal area profiles in memory. ------------------------------!
             call update_site_derived_props(cpoly, 1,isi)
-            initial_agb(1:n_pft,1:n_dbh) = cpoly%agb(1:n_pft,1:n_dbh,isi)
+            initial_agb(1:n_pft,1:n_dbh)        = cpoly%agb(1:n_pft,1:n_dbh,isi)
             initial_basal_area(1:n_pft,1:n_dbh) = cpoly%basal_area(1:n_pft,1:n_dbh,isi)
-          
+
             !------------------------------------------------------------------------------!
             !      First take care of harvesting, i.e., secondary -> secondary and         !
             ! primary -> secondary.                                                        !
             !------------------------------------------------------------------------------!
             call apply_forestry(cpoly,isi, current_time%year)
-          
+
             !----- Update the cut output variables. ---------------------------------------!
             call update_site_derived_props(cpoly, 1,isi)
             cpoly%agb_cut(1:n_pft,1:n_dbh,isi) = cpoly%agb_cut(1:n_pft, 1:n_dbh,isi)       &
@@ -141,73 +151,136 @@ module disturbance_utils
             ! different patch type.  In case no conversion to that kind of patch has       !
             ! happened, or if the newly created patch is tiny, it will be removed soon.    !                                                                   !
             !------------------------------------------------------------------------------!
-            do q = onsp+1, onsp+n_dist_types
-                call initialize_disturbed_patch(csite,cpoly%met(isi)%atm_tmp,q,1           &
-                                               ,cpoly%lsl(isi))
+            do new_lu = onsp+1, onsp+n_dist_types
+               call initialize_disturbed_patch(csite,cpoly%met(isi)%atm_tmp,new_lu,1       &
+                                              ,cpoly%lsl(isi))
             end do
 
             !----- Loop over q, the *destination* landuse type. ---------------------------!
-            do q = 1, n_dist_types
+            new_lu_loop: do new_lu = 1, n_dist_types
                !----- Set up area to zero, in case no conversion happens. -----------------!
                area = 0.0
 
                do ipa=1,onsp
+                  !----- Save the old land use in a shorter variable for convenience. -----!
+                  old_lu        = csite%dist_type(ipa)
+                  is_plantation = csite%plantation(ipa) == 1
+
                   !------------------------------------------------------------------------!
                   !    Now we add the area associated with each kind of possible disturb-  !
-                  ! ance that can happen.                                                  !
+                  ! ance that can happen.  Types of conversion that are solved here are:   !
+                  ! * ploughed  - conversion from primary/secondary land to agriculture.   !
+                  ! * abandoned - conversion from agriculture to secondary land.           !
+                  ! * natural   - natural disturbance from primary/secondary land to       !
+                  !               primary land (fires or tree fall)                        !
+                  ! * logged    - conversion from primary/secondary land to secondary      !
+                  !               land due to logging.                                     !
                   !------------------------------------------------------------------------!
-                  ploughed  = q == 1 .and. csite%dist_type(ipa) /= 1  ! Conv. to agriculture
-                  abandoned = q == 2 .and. csite%dist_type(ipa) == 1  ! Abandonment
+                  ploughed  = new_lu == 1 .and. old_lu /= 1
+                  abandoned = new_lu == 2 .and. old_lu == 1
                   !----- Natural disturbance, either trees are old or there is a fire. ----!
-                  natural   = q == 3 .and. csite%dist_type(ipa) /= 1 .and.                 &
+                  natural   = new_lu == 3 .and. old_lu /= 1 .and.                          &
                               ( csite%age(ipa) > treefall_age_threshold .or.               &
                                 cpoly%nat_dist_type(isi) == 1)
-                  
-                  if (ploughed .or. abandoned .or. natural) then
-                     area = area                                                           &
-                          + csite%area(ipa) * (1.0 - exp(                                  &
-                          - (cpoly%disturbance_rates(q,csite%dist_type(ipa),isi)           &
-                          + cpoly%disturbance_memory(q,csite%dist_type(ipa),isi))))
+                  !----- Check whether the patch is ready  be harvested. ------------------!
+                  mature_primary    = old_lu == 3                                  .and.   &
+                                      csite%age(ipa)         > mature_harvest_age
+                  mature_plantation = is_plantation                                .and.   &
+                                      csite%age(ipa)         > plantation_rotation
+                  mature_secondary  = old_lu == 2 .and. (.not. is_plantation)      .and.   &
+                                      csite%age(ipa)         > mature_harvest_age
+                  !------------------------------------------------------------------------!
+                  logged    = new_lu == 2 .and.                                            &
+                              ( mature_primary .or. mature_plantation .or.                 &
+                                mature_secondary)
+ 
+                  if (ploughed .or. abandoned .or. natural .or. logged) then
+
+                     dA   = csite%area(ipa)                                                &
+                          * (1. - exp(- ( cpoly%disturbance_rates(new_lu,old_lu,isi)       &
+                                        + cpoly%disturbance_memory(new_lu,old_lu,isi) ) ) )
+                     area = area + dA
                   end if
                end do
-
                if (area > min_new_patch_area) then
                   write(unit=*,fmt='(a,1x,es12.5,1x,a,1x,i5)')                             &
-                      ' ---> Making new patch, with area=',area,' for dist_type=',q
+                      ' ---> Making new patch, with area=',area,' for dist_type=',new_lu
 
                   !------------------------------------------------------------------------!
                   !     Set the flag that this patch should be kept as a newly created     !
                   ! transition patch.                                                      !
                   !------------------------------------------------------------------------!
-                  disturb_mask(onsp+q)     = .true.
+                  disturb_mask(onsp+new_lu)     = .true.
   
-                  csite%dist_type(onsp+q)  = q
-                  csite%plantation(onsp+q) = 0
-                  csite%area(onsp+q)       = area
+                  csite%dist_type(onsp+new_lu)  = new_lu
+                  csite%plantation(onsp+new_lu) = 0
+                  csite%area(onsp+new_lu)       = area
                   
                   !----- Initialize to zero the new trasitioned patches. ------------------!
-                  call initialize_disturbed_patch(csite,cpoly%met(isi)%atm_tmp,onsp+q,1    &
-                                                 ,cpoly%lsl(isi))
+                  call initialize_disturbed_patch(csite,cpoly%met(isi)%atm_tmp,onsp+new_lu &
+                                                 ,1,cpoly%lsl(isi))
 
                   !----- Now go through patches, adding its contribution to the new patch. !
                   do ipa=1,onsp
-                     ploughed  = q == 1 .and. csite%dist_type(ipa) /= 1
-                     abandoned = q == 2 .and. csite%dist_type(ipa) == 1
-                     natural   = q == 3 .and. csite%dist_type(ipa) /= 1 .and.              &
+                     !----- Save the old land use in a shorter variable for convenience. --!
+                     old_lu        = csite%dist_type(ipa)
+                     is_plantation = csite%plantation(ipa) == 1
+
+                     !----- Check whether this patch can be disturbed. --------------------!
+                     ploughed  = new_lu == 1 .and. old_lu /= 1
+                     abandoned = new_lu == 2 .and. old_lu == 1
+                     natural   = new_lu == 3 .and. old_lu /= 1 .and.                       &
                                  ( csite%age(ipa) > treefall_age_threshold .or.            &
                                    cpoly%nat_dist_type(isi) == 1)
-                                     
-                     if (ploughed .or. abandoned .or. natural) then
-                        dA = csite%area(ipa) * (1.0 - exp(                                 &
-                           - (cpoly%disturbance_rates(q,csite%dist_type(ipa),isi)          &
-                           + cpoly%disturbance_memory(q,csite%dist_type(ipa),isi))))
-                        area_fac = dA / csite%area(onsp+q)
+                     !----- Check whether the patch is ready  be harvested. ---------------!
+                     mature_primary    = old_lu == 3                                 .and. &
+                                         csite%age(ipa)         > mature_harvest_age
+                     mature_plantation = is_plantation                               .and. &
+                                         csite%age(ipa)         > plantation_rotation
+                     mature_secondary  = old_lu == 2 .and. (.not. is_plantation)     .and. &
+                                         csite%age(ipa)         > mature_harvest_age
+                     !---------------------------------------------------------------------!
+                     logged    = new_lu == 2 .and.                                         &
+                                 ( mature_primary .or. mature_plantation .or.              &
+                                   mature_secondary)
 
-                        call increment_patch_vars(csite,q+onsp,ipa,area_fac)
-                        call insert_survivors(csite,q+onsp,ipa,q,area_fac                  &
-                                             ,cpoly%nat_dist_type(isi))
-                        call accum_dist_litt(csite,q+onsp,ipa,q,area_fac, &
-                             cpoly%loss_fraction(q,isi),cpoly%nat_dist_type(isi))
+                     !---------------------------------------------------------------------!
+                     !     Adjust some information to be sent to the disturbance routine.  !
+                     !---------------------------------------------------------------------!
+                     if (natural) then
+                        poly_dest_type          = cpoly%nat_dist_type(isi)
+                        mindbh_harvest(1:n_pft) = huge(1.)
+                     elseif (logged .and. mature_primary) then
+                        poly_dest_type          = 2
+                        mindbh_harvest(1:n_pft) = cpoly%mindbh_primary(1:n_pft,isi)
+                     elseif (logged) then
+                        poly_dest_type          = 2
+                        mindbh_harvest(1:n_pft) = cpoly%mindbh_secondary(1:n_pft,isi)
+                     else
+                        poly_dest_type          = 0
+                        mindbh_harvest(1:n_pft) = huge(1.)
+                     end if
+                     !---------------------------------------------------------------------!
+
+
+
+                     !---------------------------------------------------------------------!
+                     !    If the patch is going to be disturbed, compute the area of the   !
+                     ! disturbed patch to be added to the new destination patch and update !
+                     ! the litter layer.                                                   !
+                     !---------------------------------------------------------------------!
+                     if (ploughed .or. abandoned .or. natural .or. logged) then
+                        dA = csite%area(ipa) * (1.0 - exp(                                 &
+                           - (cpoly%disturbance_rates(new_lu,old_lu,isi)                   &
+                           + cpoly%disturbance_memory(new_lu,old_lu,isi))))
+                        area_fac = dA / csite%area(onsp+new_lu)
+
+                        call increment_patch_vars(csite,new_lu+onsp,ipa,area_fac)
+                        call insert_survivors(csite,new_lu+onsp,ipa,new_lu,area_fac        &
+                                             ,poly_dest_type,mindbh_harvest)
+                        call accum_dist_litt(csite,new_lu+onsp,ipa,new_lu,area_fac         &
+                                            ,cpoly%loss_fraction(new_lu,isi)               &
+                                            ,poly_dest_type,mindbh_harvest)
 
                         !----- Update patch area. -----------------------------------------!
                         csite%area(ipa) = csite%area(ipa) - dA
@@ -219,22 +292,22 @@ module disturbance_utils
                   ! ing, since the leaf temperature is initially assigned as the canopy    !
                   ! air temperature.                                                       !
                   !------------------------------------------------------------------------!
-                  call update_patch_thermo_props(csite,q+onsp,q+onsp)
+                  call update_patch_thermo_props(csite,new_lu+onsp,new_lu+onsp)
 
                   !----- If the new patch is agriculture, plant it with grasses. ----------!
-                  if (q == 1) then 
-                     call plant_patch(csite,q+onsp,cpoly%agri_stocking_pft(isi)            &
+                  if (new_lu == 1) then 
+                     call plant_patch(csite,new_lu+onsp,cpoly%agri_stocking_pft(isi)       &
                                      ,cpoly%agri_stocking_density(isi)                     &
                                      ,cpoly%green_leaf_factor(:,isi), 1.0, cpoly%lsl(isi))
                   end if
 
-                  qpatch => csite%patch(q+onsp)
+                  qpatch => csite%patch(new_lu+onsp)
 
                   !----- Fuse then terminate cohorts. -------------------------------------!
-                  if (csite%patch(q+onsp)%ncohorts > 0 .and. maxcohort >= 0) then
-                     call fuse_cohorts(csite,q+onsp,cpoly%green_leaf_factor(:,isi)         &
+                  if (csite%patch(new_lu+onsp)%ncohorts > 0 .and. maxcohort >= 0) then
+                     call fuse_cohorts(csite,new_lu+onsp,cpoly%green_leaf_factor(:,isi)    &
                                       ,cpoly%lsl(isi))
-                     call terminate_cohorts(csite,q+onsp,elim_nplant,elim_lai)
+                     call terminate_cohorts(csite,new_lu+onsp,elim_nplant,elim_lai)
                      call split_cohorts(qpatch,cpoly%green_leaf_factor(:,isi)              &
                                        ,cpoly%lsl(isi))
                   end if
@@ -249,17 +322,17 @@ module disturbance_utils
                   ! patch-level LAI, WAI, WPA.                                             !
                   !------------------------------------------------------------------------!
                   call update_patch_derived_props(csite,cpoly%lsl(isi),cpoly%met(isi)%prss &
-                                                 ,q+onsp)
+                                                 ,new_lu+onsp)
                   !----- Update soil temperature, liquid fraction, etc. -------------------!
-                  call new_patch_sfc_props(csite, q+onsp)
+                  call new_patch_sfc_props(csite,new_lu+onsp)
                   !----- Update budget properties. ----------------------------------------!
-                  call update_budget(csite,cpoly%lsl(isi),q+onsp,q+onsp)
+                  call update_budget(csite,cpoly%lsl(isi),new_lu+onsp,new_lu+onsp)
 
                   !----- Update AGB, basal area. ------------------------------------------!
                   call update_site_derived_props(cpoly,1,isi)
 
                   !----- Update either cut or mortality. ----------------------------------!
-                  if (q /= 3) then
+                  if (new_lu /= 3) then
                      cpoly%agb_cut(1:n_pft,1:n_dbh,isi) =                                  &
                             cpoly%agb_cut(1:n_pft, 1:n_dbh,isi)                            &
                           + initial_agb(1:n_pft, 1:n_dbh)                                  &
@@ -280,7 +353,7 @@ module disturbance_utils
                   endif
                   
                   !----- Clear the disturbance memory for this disturbance type. ----------!
-                  cpoly%disturbance_memory(q,1:n_dist_types,isi) = 0.0
+                  cpoly%disturbance_memory(new_lu,1:n_dist_types,isi) = 0.0
 
                elseif(area > 0.0)then
                   !------------------------------------------------------------------------!
@@ -288,11 +361,11 @@ module disturbance_utils
                   ! small.  Put the current disturbance rates in memory to be added at the !
                   ! next timestep.                                                         !
                   !------------------------------------------------------------------------!
-                  cpoly%disturbance_memory(q,1:n_dist_types,isi) =                         &
-                         cpoly%disturbance_memory(q,1:n_dist_types,isi)                    &
-                       + cpoly%disturbance_rates(q,1:n_dist_types,isi)
+                  cpoly%disturbance_memory(new_lu,1:n_dist_types,isi) =                    &
+                         cpoly%disturbance_memory(new_lu,1:n_dist_types,isi)               &
+                       + cpoly%disturbance_rates(new_lu,1:n_dist_types,isi)
                end if
-            end do
+            end do new_lu_loop
 
             !------------------------------------------------------------------------------!
             !      Reallocate the current site to fit the original patches and whatever    !
@@ -335,682 +408,919 @@ module disturbance_utils
 
    !=======================================================================================!
    !=======================================================================================!
-  subroutine site_disturbance_rates(month, year, cgrid)
+   subroutine site_disturbance_rates(month, year, cgrid)
 
-    use ed_state_vars,only:edtype,polygontype,sitetype
-    use disturb_coms, only: treefall_disturbance_rate, lutime, include_fire
-    use pft_coms, only: agf_bs
+      use ed_state_vars, only : edtype                    & ! structure
+                              , polygontype               & ! structure
+                              , sitetype                  & ! structure
+                              , patchtype                 ! ! structure
+      use disturb_coms , only : treefall_disturbance_rate & ! intent(in)
+                              , lutime                    & ! structure
+                              , ianth_disturb             & ! intent(in)
+                              , include_fire              & ! intent(in)
+                              , plantation_rotation       & ! intent(in)
+                              , mature_harvest_age        ! ! intent(in)
+      use pft_coms     , only : agf_bs                    ! ! intent(in)
+      use ed_max_dims  , only : n_pft                     ! ! intent(in)
 
-    implicit none
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(edtype)     , target           :: cgrid
+      integer          , intent(in)       :: month
+      integer          , intent(in)       :: year
+      !----- Local variables. -------------------------------------------------------------!
+      type(polygontype), pointer          :: cpoly
+      type(sitetype)   , pointer          :: csite
+      type(patchtype)  , pointer          :: cpatch
+      type(lutime)     , pointer          :: clutime
+      integer                             :: ipy
+      integer                             :: isi
+      integer                             :: ipa
+      integer                             :: ico
+      integer                             :: ipft
+      integer                             :: iyear
+      integer                             :: useyear
+      logical                             :: mature_plantation
+      logical                             :: mature_secondary
+      real                                :: weight
+      real                                :: sumweight
+      real                                :: pharvest
+      real                                :: fire_dist_rate
+      !----- Local constants. -------------------------------------------------------------!
+      real             , parameter        :: max_pharvest = 1.-2.*epsilon(1.)
+      !------------------------------------------------------------------------------------!
 
-    type(edtype),target       :: cgrid
-    type(polygontype),pointer :: cpoly
-    type(sitetype),pointer    :: csite
-    integer :: ipy,isi
 
-    integer, intent(in) :: month
-    integer, intent(in) :: year
+      !------------------------------------------------------------------------------------!
+      !      Loop over sites and polygons.                                                 !
+      !------------------------------------------------------------------------------------!
+      polyloop: do ipy = 1,cgrid%npolygons
+         cpoly => cgrid%polygon(ipy)
 
-    integer :: iyear,useyear
-    type(lutime), pointer :: clutime
-    real :: fire_dist_rate
+         siteloop: do isi = 1,cpoly%nsites
+            csite => cpoly%site(isi)
 
-    ! Loop over sites and polygons.
+            !------ Calculate fire disturbance rates only when fire is on. ----------------!
+            select case (include_fire)
+            case (0) 
+               fire_dist_rate = 0.0
+            case (1,2)
+               fire_dist_rate = sum(cpoly%lambda_fire(1:12,isi)) / 12.0
+            end select
+            cpoly%fire_disturbance_rate(isi) = fire_dist_rate
+            !------------------------------------------------------------------------------!
+
+
+            !------------------------------------------------------------------------------!
+            !      For natural disturbance, use largest disturbance mode.                  !
+            !------------------------------------------------------------------------------!
+            if (fire_dist_rate > treefall_disturbance_rate) then
+               cpoly%nat_disturbance_rate(isi) = fire_dist_rate
+               cpoly%nat_dist_type(isi)        = 1
+            else
+               cpoly%nat_disturbance_rate(isi) = treefall_disturbance_rate
+               cpoly%nat_dist_type(isi)        = 0
+            end if
+
+            !----- Set disturbance rates assuming only natural disturbance. ---------------!
+            cpoly%disturbance_rates(1:2,1:3,isi) = 0.0
+            cpoly%disturbance_rates(3,1,isi)     = 0.0
+            cpoly%disturbance_rates(3,2:3,isi)   = cpoly%nat_disturbance_rate(isi)
+
+            !------------------------------------------------------------------------------!
+            !      Now it is time for anthropogenic disturbance rates.  We no longer need  !
+            ! to check the year because all years in this simulation are assigned          !
+            ! prescribed disturbance rates (even if that means zero disturbance).          !
+            !------------------------------------------------------------------------------!
+            useyear = cpoly%num_landuse_years(isi)
+            !----- Loop over years. -------------------------------------------------------!
+            find_lu_year: do iyear = 1,cpoly%num_landuse_years(isi)
+               
+               if (year == cpoly%clutimes(iyear,isi)%landuse_year) then
+                  useyear = iyear
+                  exit find_lu_year
+               end if
+            end do find_lu_year
+
+            !------------------------------------------------------------------------------!
+            !    Update land-use transition matrix.  The matrix (and array for each        !
+            ! site) has two indices.  The leftmost one is the destination, and the         !
+            ! middle one is the source.  Land use types are:                               !
+            !    - 1. Agriculture                                                          !
+            !    - 2. Secondary forest                                                     !
+            !    - 3. Primary forest                                                       !
+            !------------------------------------------------------------------------------!
+            clutime => cpoly%clutimes(useyear,isi)
+
+            !----- Agriculture to agriculture (1 => 1). -----------------------------------!
+            cpoly%disturbance_rates(1,1,isi) = 0.0
+            !----- Secondary forest to agriculture (2 => 1). ------------------------------!
+            cpoly%disturbance_rates(1,2,isi) = clutime%landuse(7) + clutime%landuse(9)
+            !----- Primary forest to agriculture (3 => 1). --------------------------------!
+            cpoly%disturbance_rates(1,3,isi) = clutime%landuse(4) + clutime%landuse(5)
+
+            !------------------------------------------------------------------------------!
+            !     Agriculture to secondary land (1 => 2).   Here we also account for       !
+            ! transitions to primary land due to abandonment.  In ED definition, a land    !
+            ! can is considered primary only when the last disturbance.                    ! 
+            !------------------------------------------------------------------------------!
+            cpoly%disturbance_rates(2,1,isi) = clutime%landuse(8) + clutime%landuse(10)    &
+                                             + clutime%landuse(3) + clutime%landuse(6)
+
+            !------------------------------------------------------------------------------!
+            !     Secondary forest to secondary forest (2 => 2).  Here we must convert the !
+            ! harvest probability of being cut given that the DBH exceeds the minimum DBH. !
+            ! This is done only when anthropogenic disturbance is on and we are not seek-  !
+            ! ing the biomass target, otherwise we set it to zero.                         !
+            !------------------------------------------------------------------------------!
+            sumweight = 0.
+            pharvest  = 0.
+            if (ianth_disturb == 1 .and. clutime%landuse(12) < 0) then
+               patchloop: do ipa=1,csite%npatches
+                  cpatch => csite%patch(ipa)
+
+                  !------------------------------------------------------------------------!
+                  !    Check whether anything is going to be harvested from this patch.    !
+                  !------------------------------------------------------------------------!
+                  mature_plantation = csite%plantation(ipa) == 1                   .and.   &
+                                      csite%age(ipa)         > plantation_rotation
+                  mature_secondary  = csite%dist_type(ipa)  == 2                   .and.   &
+                                      csite%plantation(ipa) /= 1                   .and.   &
+                                      csite%age(ipa)         > mature_harvest_age
+                  !------------------------------------------------------------------------!
+
+
+
+                  !------------------------------------------------------------------------!
+                  !     If this patch is secondary and mature, compute the weighted aver-  !
+                  ! age of the probability of harvest, using the number of plants as the   !
+                  ! weight.                                                                !
+                  !------------------------------------------------------------------------!
+                  if (mature_plantation .or. mature_secondary) then
+                     cohortloop: do ico=1,cpatch%ncohorts
+                        ipft = cpatch%pft(ico)
+                        if (cpatch%dbh(ico) >= cpoly%mindbh_secondary(ipft,isi)) then
+                           weight    = cpatch%nplant(ico) * csite%area(ipa)
+                           pharvest  = pharvest                                            &
+                                     + cpoly%probharv_secondary(ipft,isi) * weight
+                           sumweight = sumweight + weight
+                        end if  
+                     end do cohortloop
+                  end if
+                  !----- Normalise the probability, unless it's zero. ---------------------!
+                  if (sumweight > 0.) then
+                     pharvest = min(max_pharvest,pharvest/sumweight)
+                  else
+                     pharvest = 0.
+                  end if
+               end do patchloop
+            end if
+            cpoly%disturbance_rates(2,2,isi) = -0.5 * log(1.0 - pharvest)
+            !------------------------------------------------------------------------------!
+
+
+
+            !------------------------------------------------------------------------------!
+            !     Primary forest to secondary forest (3 => 2).  Here we must decide        !
+            ! whether we want a biomass target harvesting, or a selective logging.  When   !
+            ! harvesting is biomass-based, then we set the disturbance rate to zero,       !
+            ! otherwise we read the disturbance rate.                                      !
+            !------------------------------------------------------------------------------!
+            if (clutime%landuse(12) > 0.) then
+               cpoly%disturbance_rates(2,3,isi) = 0.0
+            else
+               cpoly%disturbance_rates(2,3,isi) = clutime%landuse(11)
+            end if
+            !------------------------------------------------------------------------------!
+
+
+            !------------------------------------------------------------------------------!
+            !    Agriculture to primary forest (1 => 3).  This must be zero, even though   !
+            ! the landuse(3) and landuse(6) may not be (these will be added to the         !
+            ! secondary instead).  This is because abandoned land is always considered     !
+            ! secondary forest since the "disturbance" that creates this patch is not      !
+            ! natural.                                                                     !
+            !------------------------------------------------------------------------------!
+            cpoly%disturbance_rates(3,1,isi) = 0.0
+
+
+            !------------------------------------------------------------------------------!
+            !    Secondary forest to primary forest (2 => 3).  This is the natural         !
+            ! disturbance rate, because the definition of primary or secondary forest is   !
+            ! defined based on the last disturbance.                                       !
+            !------------------------------------------------------------------------------!
+            cpoly%disturbance_rates(3,2,isi)= cpoly%nat_disturbance_rate(isi)
+            !----- Primary forest to primary forest (3 => 3).  Natural disturbance. -------!
+            cpoly%disturbance_rates(3,3,isi)= cpoly%nat_disturbance_rate(isi)
+            !------------------------------------------------------------------------------!
+
+            !------------------------------------------------------------------------------!
+            !      Fraction of above ground litter from disturbance that is removed from   !
+            ! patch.                                                                       !
+            !------------------------------------------------------------------------------!
+            cpoly%loss_fraction(1,isi) = agf_bs
+            cpoly%loss_fraction(2,isi) = agf_bs
+            cpoly%loss_fraction(3,isi) = 0.0
+            !------------------------------------------------------------------------------!
+
+         end do siteloop
+      end do polyloop
+
+      return
+   end subroutine site_disturbance_rates
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This subroutine assigns initial conditions to a patch that has been disturbed     !
+   !---------------------------------------------------------------------------------------!
+   subroutine initialize_disturbed_patch(csite,atm_tmp,np,dp,lsl)
+
+      use ed_state_vars, only : sitetype  & ! structure
+                              , patchtype ! ! structure
+      use consts_coms  , only : t3ple     ! ! intent(in)
+      use grid_coms    , only : nzs       & ! intent(in)
+                              , nzg       ! ! intent(in)
+
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(sitetype), target      :: csite
+      real          , intent(in)  :: atm_tmp
+      integer       , intent(in)  :: np
+      integer       , intent(in)  :: dp
+      integer       , intent(in)  :: lsl
+      !----- Local variables. -------------------------------------------------------------!
+      integer                     :: k
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Start with an empty patch.  Surviving cohorts will be added later. -----------!
+      csite%patch(np)%ncohorts = 0
+
+      !----- Initialise the surface water diagnostic variables with some defaults. --------!
+      do k=1,nzs
+         csite%sfcwater_tempk(k,np) = atm_tmp
+         if (atm_tmp >= t3ple) then
+            csite%sfcwater_fracliq(k,np) = 1.0
+         else
+            csite%sfcwater_fracliq(k,np) = 1.0
+         end if
+      end do
+
+      !------------------------------------------------------------------------------------!
+      !     Initialise most variables, except dist_type, plantation, and area, which will  !
+      ! be defined outside this subroutine.  Most of the following variables will receive  !
+      ! properties from the donor patches.                                                 !
+      !------------------------------------------------------------------------------------!
+      csite%age                        (np) = 0.0
+      csite%fast_soil_C                (np) = 0.0
+      csite%slow_soil_C                (np) = 0.0
+      csite%structural_soil_C          (np) = 0.0
+      csite%structural_soil_L          (np) = 0.0
+      csite%mineralized_soil_N         (np) = 0.0
+      csite%fast_soil_N                (np) = 0.0
+      csite%sum_dgd                    (np) = 0.0
+      csite%sum_chd                    (np) = 0.0
+      csite%can_depth                  (np) = 0.0
+      csite%can_theta                  (np) = 0.0
+      csite%can_theiv                  (np) = 0.0
+      csite%can_prss                   (np) = 0.0
+      csite%can_shv                    (np) = 0.0
+      csite%can_co2                    (np) = 0.0
+      csite%soil_energy          (1:nzg,np) = 0.0
+      csite%soil_water           (1:nzg,np) = 0.0
+      csite%sfcwater_mass        (1:nzs,np) = 0.0
+      csite%sfcwater_energy      (1:nzs,np) = 0.0
+      csite%sfcwater_depth       (1:nzs,np) = 0.0
+      csite%hcapveg                    (np) = 0.0
+      csite%rough                      (np) = 0.0
+      csite%fsc_in                     (np) = 0.0
+      csite%ssc_in                     (np) = 0.0
+      csite%ssl_in                     (np) = 0.0
+      csite%fsn_in                     (np) = 0.0
+      csite%total_plant_nitrogen_uptake(np) = 0.0
+      !------------------------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
+      !     Soil texture is the only one that doesn't receive zeroes, but the soil type    !
+      ! from the donor patch.  In reality, this should be revised when multiple soil       !
+      ! types are allowed in the same polygon.                                             !
+      !------------------------------------------------------------------------------------!
+      csite%ntext_soil(1:nzg,np) = csite%ntext_soil(1:nzg,dp)
+
+      !----- Initialise all fast variables. -----------------------------------------------!
+      call init_ed_patch_vars(csite,np,np,lsl)
+
+
+      return
+   end subroutine initialize_disturbed_patch
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This subroutine will include the contribution of each contributing patch (cp) to  !
+   ! the new, disturbed patch (np).                                                        !
+   !---------------------------------------------------------------------------------------!
+   subroutine increment_patch_vars(csite,np, cp, area_fac)
+      use ed_state_vars, only : sitetype  & ! structure
+                              , patchtype ! ! structure
+      use ed_max_dims  , only : n_pft     ! ! intent(in)
+      use grid_coms    , only : nzg       ! ! intent(in)
+
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(sitetype), target      :: csite
+      integer       , intent(in)  :: np
+      integer       , intent(in)  :: cp
+      real          , intent(in)  :: area_fac
+      !----- Local variables. -------------------------------------------------------------!
+      integer                     :: k
+      !------------------------------------------------------------------------------------!
+
+      csite%fast_soil_C                (np) = csite%fast_soil_C                (np)        &
+                                            + csite%fast_soil_C                (cp)        &
+                                            * area_fac
+      csite%slow_soil_C                (np) = csite%slow_soil_C                (np)        &
+                                            + csite%slow_soil_C                (cp)        &
+                                            * area_fac
+      csite%structural_soil_C          (np) = csite%structural_soil_C          (np)        &
+                                            + csite%structural_soil_C          (cp)        &
+                                            * area_fac
+      csite%structural_soil_L          (np) = csite%structural_soil_L          (np)        &
+                                            + csite%structural_soil_L          (cp)        &
+                                            * area_fac
+      csite%mineralized_soil_N         (np) = csite%mineralized_soil_N         (np)        &
+                                            + csite%mineralized_soil_N         (cp)        &
+                                            * area_fac
+      csite%fast_soil_N                (np) = csite%fast_soil_N                (np)        &
+                                            + csite%fast_soil_N                (cp)        &
+                                            * area_fac
+      csite%sum_dgd                    (np) = csite%sum_dgd                    (np)        &
+                                            + csite%sum_dgd                    (cp)        &
+                                            * area_fac
+      csite%sum_chd                    (np) = csite%sum_chd                    (np)        &
+                                            + csite%sum_chd                    (cp)        &
+                                            * area_fac
+      csite%can_theta                  (np) = csite%can_theta                  (np)        &
+                                            + csite%can_theta                  (cp)        &
+                                            * area_fac
+      csite%can_theiv                  (np) = csite%can_theiv                  (np)        &
+                                            + csite%can_theiv                  (cp)        &
+                                            * area_fac
+      csite%can_prss                   (np) = csite%can_prss                   (np)        &
+                                            + csite%can_prss                   (cp)        &
+                                            * area_fac
+      csite%can_shv                    (np) = csite%can_shv                    (np)        &
+                                            + csite%can_shv                    (cp)        &
+                                            * area_fac
+      csite%can_co2                    (np) = csite%can_co2                    (np)        &
+                                            + csite%can_co2                    (cp)        &
+                                            * area_fac
+      csite%can_depth                  (np) = csite%can_depth                  (np)        &
+                                            + csite%can_depth                  (cp)        &
+                                            * area_fac
+      csite%rough                      (np) = csite%rough                      (np)        &
+                                            + csite%rough                      (cp)        &
+                                            * area_fac
+      csite%mean_rh                    (np) = csite%mean_rh                    (np)        &
+                                            + csite%mean_rh                    (cp)        &
+                                            * area_fac
+      csite%today_A_decomp             (np) = csite%today_A_decomp             (np)        &
+                                            + csite%today_A_decomp             (cp)        &
+                                            * area_fac
+      csite%today_Af_decomp            (np) = csite%today_Af_decomp            (np)        &
+                                            + csite%today_Af_decomp            (cp)        &
+                                            * area_fac
+      csite%fsc_in                     (np) = csite%fsc_in                     (np)        &
+                                            + csite%fsc_in                     (cp)        &
+                                            * area_fac
+      csite%ssc_in                     (np) = csite%ssc_in                     (np)        &
+                                            + csite%ssc_in                     (cp)        &
+                                            * area_fac
+      csite%ssl_in                     (np) = csite%ssl_in                     (np)        &
+                                            + csite%ssl_in                     (cp)        &
+                                            * area_fac
+      csite%fsn_in                     (np) = csite%fsn_in                     (np)        &
+                                            + csite%fsn_in                     (cp)        &
+                                            * area_fac
+      csite%total_plant_nitrogen_uptake(np) = csite%total_plant_nitrogen_uptake(np)        &
+                                            + csite%total_plant_nitrogen_uptake(cp)        &
+                                            * area_fac
+
+      !----- Do the same thing for the multiple-level variables. --------------------------!
+      do k=1,n_pft
+         csite%repro                 (k,np) = csite%repro                    (k,np)        &
+                                            + csite%repro                    (k,cp)        &
+                                            * area_fac
+      end do
+      do k = 1, csite%nlev_sfcwater(cp)
+         csite%sfcwater_mass         (k,np) = csite%sfcwater_mass            (k,np)        &
+                                            + csite%sfcwater_mass            (k,cp)        &
+                                            * area_fac
+         csite%sfcwater_energy       (k,np) = csite%sfcwater_energy          (k,np)        &
+                                            + csite%sfcwater_energy          (k,cp)        &
+                                            * csite%sfcwater_mass            (k,cp)        &
+                                            * area_fac
+         csite%sfcwater_depth        (k,np) = csite%sfcwater_depth           (k,np)        &
+                                            + csite%sfcwater_depth           (k,cp)        &
+                                            * area_fac
+      end do
+      do k = 1, nzg
+         csite%soil_energy           (k,np) = csite%soil_energy              (k,np)        &
+                                            + csite%soil_energy              (k,cp)        &
+                                            * area_fac
+         csite%soil_water(k,np)             = csite%soil_water               (k,np)        &
+                                            + csite%soil_water               (k,cp)        &
+                                            * area_fac
+      end do
+      return
+   end subroutine increment_patch_vars
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This subroutine will populate the disturbed patch with the cohorts that were      !
+   ! disturbed but did not go extinct.                                                     !
+   !---------------------------------------------------------------------------------------!
+   subroutine insert_survivors(csite, np, cp, q, area_fac,poly_dest_type,mindbh_harvest)
+
+      use ed_state_vars, only : sitetype   & ! structure
+                              , patchtype  ! ! structure
+      use ed_misc_coms , only : idoutput   & ! intent(in)
+                              , imoutput   ! ! intent(in)
+      use ed_max_dims  , only : n_pft      ! ! intent(in)
     
-    do ipy = 1,cgrid%npolygons
-       
-       cpoly => cgrid%polygon(ipy)
-       
-       do isi = 1,cpoly%nsites
-          
-          csite => cpoly%site(isi)
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(sitetype)                  , target      :: csite
+      integer                         , intent(in)  :: q
+      integer                         , intent(in)  :: poly_dest_type
+      integer                         , intent(in)  :: np
+      integer                         , intent(in)  :: cp
+      real          , dimension(n_pft), intent(in)  :: mindbh_harvest
+      real                            , intent(in)  :: area_fac
+      !----- Local variables. -------------------------------------------------------------!
+      type(patchtype)                 , pointer     :: cpatch
+      type(patchtype)                 , pointer     :: npatch
+      type(patchtype)                 , pointer     :: tpatch
+      logical        , dimension(:)   , allocatable :: mask
+      integer                                       :: ico
+      integer                                       :: nco
+      real                                          :: n_survivors
+      real                                          :: survival_fac
+      !------------------------------------------------------------------------------------!
 
-          !  Calculate fire disturbance rates only if fire is on.
-          select case (include_fire)
-          case (0) 
-             fire_dist_rate = 0.0
-          case (1,2)
-             fire_dist_rate = sum(cpoly%lambda_fire(1:12,isi)) / 12.0
-          end select
-
-          cpoly%fire_disturbance_rate(isi) = fire_dist_rate
+      !------------------------------------------------------------------------------------!
+      ! cpatch => Old patches we are looping                                               !
+      ! npatch => New transition patch                                                     !
+      ! tpatch => temporary patch                                                          !
+      !------------------------------------------------------------------------------------!
+      cpatch => csite%patch(cp)
+      npatch => csite%patch(np)
     
-          !  treefall disturbance is currently spatiotemporally constant, 
-          !  from ED2IN
+      allocate(tpatch)
 
-          ! For natural disturbance, use largest disturbance mode.
-          if(fire_dist_rate > treefall_disturbance_rate)then
-             cpoly%nat_disturbance_rate(isi) = fire_dist_rate
-             cpoly%nat_dist_type(isi) = 1
-          else
-             cpoly%nat_disturbance_rate(isi) = treefall_disturbance_rate
-             cpoly%nat_dist_type(isi) = 0
-          endif
+      !----- Mask: flag to decide whether the cohort survived or not. ---------------------!
+      allocate(mask(cpatch%ncohorts))
+      mask(:) = .false.
     
-          ! Set disturbance rates assuming only natural disturbance
-          cpoly%disturbance_rates(1:2,1:3,isi)= 0.0
-          cpoly%disturbance_rates(3,1,isi)= 0.0
-          cpoly%disturbance_rates(3,2:3,isi)= cpoly%nat_disturbance_rate(isi)
-          
-          ! Now it is time for anthropogenic disturbance rates.
-             
-          ! Only consider years after the start of the dataset.
-          ! For years after the end of the dataset, repeat the last year.
-
-          if (cpoly%num_landuse_years(isi)>0) then
-
-             if(year >= cpoly%clutimes(1,isi)%landuse_year)then
-
-                useyear = cpoly%num_landuse_years(isi)
-                ! Loop over years
-                find_lu_year: do iyear = 1,cpoly%num_landuse_years(isi)
-                   
-                   if (year.eq.cpoly%clutimes(iyear,isi)%landuse_year) then
-                      useyear = iyear
-                      exit find_lu_year
-                   endif
-                   
-                enddo find_lu_year
-
-                !    update land-use transition matrix
-                
-                clutime => cpoly%clutimes(useyear,isi)
-
-                ! AA2AA, agriculture to agriculture
-                cpoly%disturbance_rates(1,1,isi)= 0.0
-                
-                ! NA2AA, secondary forest to agriculture
-                cpoly%disturbance_rates(1,2,isi)= clutime%landuse(7) +   &
-                     clutime%landuse(9)
-                
-                ! NN2AA, primary forest to agriculture
-                cpoly%disturbance_rates(1,3,isi)= clutime%landuse(4) +   &
-                     clutime%landuse(5)
-                
-                ! AA2NA, agriculture to secondary forest
-                cpoly%disturbance_rates(2,1,isi)= clutime%landuse(8) +   &
-                     clutime%landuse(10)
-                
-                ! NA2NA, secondary forest to secondary forest (this is taken 
-                ! care of in the harvesting.)
-                cpoly%disturbance_rates(2,2,isi)= 0.0
-                
-                ! NN2NA, primary forest to secondary forest (zero here 
-                ! because we meet a biomass target instead.)
-                cpoly%disturbance_rates(2,3,isi)= 0.0 ! clutime%landuse(11)
-                
-                ! AA2NN, agriculture to primary forest (should be zero)
-                cpoly%disturbance_rates(3,1,isi)= 0.0 
-                !cpoly%disturbance_rates(3,1,isi) = clutime%landuse(3) + clutime%landuse(6)
-                
-                ! NA2NN, secondary forest to primary forest
-                cpoly%disturbance_rates(3,2,isi)= cpoly%nat_disturbance_rate(isi)
-                
-                ! NN2NN, primary forest to primary forest
-                cpoly%disturbance_rates(3,3,isi)= cpoly%nat_disturbance_rate(isi)
-
-             endif ! after first year
-          endif ! landuse exists
-
-          ! fraction of above ground litter from disturbance that is 
-          ! removed from patch
-          cpoly%loss_fraction(1,isi) = agf_bs
-          cpoly%loss_fraction(2,isi) = agf_bs
-          cpoly%loss_fraction(3,isi) = 0.0
-
-       enddo
-       
-    enddo
-
-    return
-  end subroutine site_disturbance_rates
-
-  !=====================================================================
-
-  subroutine initialize_disturbed_patch(csite,atm_tmp,np,dp,lsl)
-    
-    use ed_state_vars, only: sitetype,patchtype
-    use consts_coms, only : t00
-    use grid_coms, only: nzs, nzg
-
-    implicit none
-    type(sitetype),target    :: csite
-    real   , intent(in)      :: atm_tmp
-    integer, intent(in)      :: np,dp,lsl
-    integer                  :: k
-
-
-    ! SHOULD WE CONSIDER USING A DONOR PATCH
-    ! TO INITIALIZE MORE OF THE TRANSIENT STATE VARIABLES
-    ! PRIOR TO THIS MESSAGE, NTEXT_SOIL WAS NOT BEING SET PROPERLY
-
-
-    csite%patch(np)%ncohorts = 0
-
-    ! For now, choose heat/vapor capacities for stability
-    do k=1,nzs
-       csite%sfcwater_tempk(k,np) = atm_tmp   ! Set canopy temp to 0 C
-       csite%sfcwater_fracliq(k,np) = 1.0     ! Set to 100% liquid
-    end do
-
-
-    ! Included the initialization for all fast variables.
-    call init_ed_patch_vars(csite,np,np,lsl)
-
-    ! dist_type is not set here.
-
-    csite%age(np) = 0.0
-
-    ! area is not set here.
-
-    csite%fast_soil_C(np) = 0.0
-
-    csite%slow_soil_C(np) = 0.0
-
-    csite%structural_soil_C(np) = 0.0
-
-    csite%structural_soil_L(np) = 0.0
-
-    csite%mineralized_soil_N(np) = 0.0
-
-    csite%fast_soil_N(np) = 0.0
-
-    csite%sum_dgd(np) = 0.0
-
-    csite%sum_chd(np) = 0.0
-
-    ! plantation is not set here.
-
-    csite%can_depth(np) = 0.0
-
-
-    !--------------------------------------------------------------------------------------!
-    !     I think the following variables need to receive the donor patch value, otherwise !
-    ! it will try to use ed_grndvap with non-sense values.                                 !
-    !--------------------------------------------------------------------------------------!
-    csite%ntext_soil(1:nzg,np) = csite%ntext_soil(1:nzg,dp)
-
-    csite%can_theta(np) = 0.0
-
-    csite%can_prss(np) = 0.0
-
-    csite%can_shv(np) = 0.0
-
-    csite%can_co2(np) = 0.0
-
-    csite%soil_energy(1:nzg,np) = 0.0
-
-    csite%soil_water(1:nzg,np) = 0.0
-
-    csite%sfcwater_mass(1:nzs,np) =  0.0
-
-    csite%sfcwater_energy(1:nzs,np) = 0.0
-
-    csite%sfcwater_depth(1:nzs,np) = 0.0
-    
-    csite%hcapveg(np) = 0.0
-
-    !--------------------------------------------------------------------------------------!
-    csite%rough(np) = 0.0
-
-    ! this 
-    call init_ed_patch_vars(csite,np,np,lsl)
-
-    csite%fsc_in(np) = 0.0
-
-    csite%ssc_in(np) = 0.0
-
-    csite%ssl_in(np) = 0.0
-
-    csite%fsn_in(np) = 0.0
-
-    csite%total_plant_nitrogen_uptake(np) = 0.0
-
-    return
-  end subroutine initialize_disturbed_patch
-
-  !======================================================================
-
-  subroutine increment_patch_vars(csite,np, cp, area_fac)
-
-    use ed_state_vars, only: sitetype,patchtype
-    use ed_max_dims, only: n_pft
-    use grid_coms, only: nzg
-
-    implicit none
-    type(sitetype),target    :: csite
-    integer :: np,cp
-
-    real :: area_fac
-    integer :: k
-
-    csite%fast_soil_C(np) = csite%fast_soil_C(np) + csite%fast_soil_C(cp) * area_fac
-
-    csite%slow_soil_C(np) = csite%slow_soil_C(np) + csite%slow_soil_C(cp) * area_fac
-
-    csite%structural_soil_C(np) = csite%structural_soil_C(np) + csite%structural_soil_C(cp) *   &
-         area_fac
-
-    csite%structural_soil_L(np) = csite%structural_soil_L(np) + csite%structural_soil_L(cp) *   &
-         area_fac
-
-    csite%mineralized_soil_N(np) = csite%mineralized_soil_N(np) + csite%mineralized_soil_N(cp) *   &
-         area_fac
-
-    csite%fast_soil_N(np) = csite%fast_soil_N(np) + csite%fast_soil_N(cp) * area_fac
-
-    csite%sum_dgd(np) = csite%sum_dgd(np) + csite%sum_dgd(cp) * area_fac
-
-    csite%sum_chd(np) = csite%sum_chd(np) + csite%sum_chd(cp) * area_fac
-
-    csite%can_theta(np) = csite%can_theta(np) + csite%can_theta(cp) * area_fac
-
-    csite%can_prss(np) = csite%can_prss(np) + csite%can_prss(cp) * area_fac
-
-    csite%can_shv(np) = csite%can_shv(np) + csite%can_shv(cp) * area_fac
-
-    csite%can_co2(np) = csite%can_co2(np) + csite%can_co2(cp) * area_fac
-
-    csite%can_depth(np) = csite%can_depth(np) + csite%can_depth(cp) * area_fac
-
-    do k = 1, csite%nlev_sfcwater(cp)
-       csite%sfcwater_mass(k,np) = csite%sfcwater_mass(k,np) + csite%sfcwater_mass(k,cp) *   &
-            area_fac
-
-       csite%sfcwater_energy(k,np) = csite%sfcwater_energy(k,np) +   &
-            csite%sfcwater_energy(k,cp) * csite%sfcwater_mass(k,cp) * area_fac
-       csite%sfcwater_depth(k,np) = csite%sfcwater_depth(k,np) + csite%sfcwater_depth(k,cp) *   &
-            area_fac
-    enddo
-
-    do k = 1, nzg
-       csite%ntext_soil(k,np)  = csite%ntext_soil(k,np)
-       csite%soil_energy(k,np) = csite%soil_energy(k,np) + csite%soil_energy(k,cp) * area_fac
-       csite%soil_water(k,np)  = csite%soil_water(k,np)  + csite%soil_water(k,cp)  * area_fac
-    enddo
-
-    csite%rough(np) = csite%rough(np) + csite%rough(cp) * area_fac
-
-    csite%mean_rh(np) = csite%mean_rh(np) + csite%mean_rh(cp) * area_fac
-
-    csite%today_A_decomp(np) = csite%today_A_decomp(np) + csite%today_A_decomp(cp) * area_fac
-
-    csite%today_Af_decomp(np) = csite%today_Af_decomp(np) + csite%today_Af_decomp(cp) * area_fac
-
-    csite%repro(1:n_pft,np) = csite%repro(1:n_pft,np) + csite%repro(1:n_pft,cp) * area_fac
-
-    csite%fsc_in(np) = csite%fsc_in(np) + csite%fsc_in(cp) * area_fac
-
-    csite%ssc_in(np) = csite%ssc_in(np) + csite%ssc_in(cp) * area_fac
-
-    csite%ssl_in(np) = csite%ssl_in(np) + csite%ssl_in(cp) * area_fac
-
-    csite%fsn_in(np) = csite%fsn_in(np) + csite%fsn_in(cp) * area_fac
-
-    csite%total_plant_nitrogen_uptake(np) = csite%total_plant_nitrogen_uptake(np) +   &
-         csite%total_plant_nitrogen_uptake(cp) * area_fac
-
-    return
-  end subroutine increment_patch_vars
-
-  !=======================================================================
-
-  subroutine insert_survivors(csite, np, cp, q, area_fac,nat_dist_type)
-
-    use ed_state_vars, only: sitetype,patchtype
-    use ed_misc_coms , only: idoutput,imoutput
-    
-    implicit none
-    type(sitetype),target    :: csite
-    type(patchtype),pointer  :: cpatch !The old patches we are looping
-    type(patchtype),pointer  :: npatch !New transition patch
-    type(patchtype),pointer  :: tpatch !Temp patch
-    integer :: np,cp,ico,nco
-    
-    integer, intent(in) :: q
-    integer, intent(in) :: nat_dist_type
-    real, intent(in) :: area_fac
-    real :: n_survivors
-
-    real :: cohort_area_fac
-
-    logical, dimension(:), allocatable :: mask
-
-    cpatch => csite%patch(cp)
-    npatch => csite%patch(np)
-    
-    allocate(tpatch)
-
-    allocate(mask(cpatch%ncohorts))
-    mask(:) = .false.
-    
-    do ico = 1,cpatch%ncohorts
-       
-       cohort_area_fac = survivorship(q,nat_dist_type, csite, cp, ico) * area_fac
-       n_survivors = cpatch%nplant(ico) * cohort_area_fac
-       
-       ! If something survived, make a new cohort
-       mask(ico) = n_survivors > 0.0
-       
-    enddo
-
-    if (npatch%ncohorts > 0) then
-       
-       ! If the new patch has received survivors from a donor
-       ! already, then it should have cohorts. So the temp patch
-       ! vector will be the sum of the new cohorts found here, plus
-       ! those already applied previously in the loop calling this
-       
-       nco = npatch%ncohorts
-       call allocate_patchtype(tpatch,count(mask) + npatch%ncohorts)
-       call copy_patchtype(npatch,tpatch,1,npatch%ncohorts,1,npatch%ncohorts)
-       call deallocate_patchtype(npatch)
-       
-    else
-       
-       nco = 0
-       call allocate_patchtype(tpatch,count(mask))
-
-    endif
-
-
-    do ico = 1,cpatch%ncohorts
-       
-       cohort_area_fac = survivorship(q,nat_dist_type, csite, cp, ico) * area_fac
-       n_survivors = cpatch%nplant(ico) * cohort_area_fac
-       
-       if(mask(ico)) then
-
-          nco = nco + 1
-          
-          call copy_patchtype(cpatch,tpatch,ico,ico,nco,nco)
-
-          ! Adjust area-based variables
-          !------------------------------------------------------------------------------------!
-          !    Renormalize the total area.  We must also rescale all extensive properties from !
-          ! cohorts, since they are per unit area and we are effectively changing the area.    !
-          ! IMPORTANT: Only cohort-level variables that have units per area (m2) should be     !
-          !            rescaled.  Variables whose units are per plant should _NOT_ be included !
-          !            here.                                                                   !
-          !------------------------------------------------------------------------------------!
-          tpatch%lai(nco)                 = tpatch%lai(nco)                  * cohort_area_fac
-          tpatch%wai(nco)                 = tpatch%wai(nco)                  * cohort_area_fac
-          tpatch%wpa(nco)                 = tpatch%wpa(nco)                  * cohort_area_fac
-          tpatch%nplant(nco)              = tpatch%nplant(nco)               * cohort_area_fac
-          tpatch%mean_gpp(nco)            = tpatch%mean_gpp(nco)             * cohort_area_fac
-          tpatch%mean_leaf_resp(nco)      = tpatch%mean_leaf_resp(nco)       * cohort_area_fac
-          tpatch%mean_root_resp(nco)      = tpatch%mean_root_resp(nco)       * cohort_area_fac
-          tpatch%mean_growth_resp(nco)    = tpatch%mean_growth_resp(nco)     * cohort_area_fac
-          tpatch%mean_storage_resp(nco)   = tpatch%mean_storage_resp(nco)    * cohort_area_fac
-          tpatch%mean_vleaf_resp(nco)     = tpatch%mean_vleaf_resp(nco)      * cohort_area_fac
-          tpatch%today_gpp(nco)           = tpatch%today_gpp(nco)            * cohort_area_fac
-          tpatch%today_gpp_pot(nco)       = tpatch%today_gpp_pot(nco)        * cohort_area_fac
-          tpatch%today_gpp_max(nco)       = tpatch%today_gpp_max(nco)        * cohort_area_fac
-          tpatch%today_leaf_resp(nco)     = tpatch%today_leaf_resp(nco)      * cohort_area_fac
-          tpatch%today_root_resp(nco)     = tpatch%today_root_resp(nco)      * cohort_area_fac
-          tpatch%Psi_open(nco)            = tpatch%Psi_open(nco)             * cohort_area_fac
-          tpatch%gpp(nco)                 = tpatch%gpp(nco)                  * cohort_area_fac
-          tpatch%leaf_respiration(nco)    = tpatch%leaf_respiration(nco)     * cohort_area_fac
-          tpatch%root_respiration(nco)    = tpatch%root_respiration(nco)     * cohort_area_fac
-          tpatch%monthly_dndt(nco)        = tpatch%monthly_dndt(nco)         * cohort_area_fac
-          tpatch%veg_water(nco)           = tpatch%veg_water(nco)            * cohort_area_fac
-          tpatch%hcapveg(nco)             = tpatch%hcapveg(nco)              * cohort_area_fac
-          tpatch%veg_energy(nco)          = tpatch%veg_energy(nco)           * cohort_area_fac
-          !----- Carbon flux monthly means are extensive, we must convert them. ------------!
-          if (idoutput > 0 .or. imoutput > 0) then
-             tpatch%dmean_par_v     (nco) = tpatch%dmean_par_v     (nco)     * cohort_area_fac
-             tpatch%dmean_par_v_beam(nco) = tpatch%dmean_par_v_beam(nco)     * cohort_area_fac
-             tpatch%dmean_par_v_diff(nco) = tpatch%dmean_par_v_diff(nco)     * cohort_area_fac
-          end if
-          if (imoutput > 0) then
-             tpatch%mmean_par_v     (nco) = tpatch%mmean_par_v     (nco)     * cohort_area_fac
-             tpatch%mmean_par_v_beam(nco) = tpatch%mmean_par_v_beam(nco)     * cohort_area_fac
-             tpatch%mmean_par_v_diff(nco) = tpatch%mmean_par_v_diff(nco)     * cohort_area_fac
-          end if
-       end if
-          
-    enddo  ! end loop over cohorts
-
-    ! Copy the temporary patch into the newpatch
-    
-    call allocate_patchtype(npatch,tpatch%ncohorts)
-    call copy_patchtype(tpatch,npatch,1,tpatch%ncohorts,1,tpatch%ncohorts)
-    call deallocate_patchtype(tpatch)
-    deallocate(tpatch)
-    
-    deallocate(mask)
-
-
-    return
-  end subroutine insert_survivors
-
-  !======================================================================
-  subroutine accum_dist_litt(csite,np,cp, q, area_fac,loss_fraction,nat_dist_type)
-    
-    use ed_state_vars, only: sitetype,patchtype,polygontype
-    use decomp_coms, only: f_labile
-    use ed_max_dims, only: n_pft
-    use pft_coms, only: c2n_storage, c2n_leaf, c2n_recruit, c2n_stem, l2n_stem
-    use grid_coms, only: nzg
-
-    implicit none
-
-    type(sitetype),target    :: csite
-    type(patchtype),pointer  :: cpatch
-    type(patchtype),pointer  :: npatch
-    integer :: np,cp,ico
-    real,intent(in) :: loss_fraction
-
-    integer, intent(in) :: q
-    real, intent(in) :: area_fac
-    integer,intent(in) :: nat_dist_type
-    real :: fast_litter
-    real :: struct_litter, struct_lignin
-    real :: fast_litter_n
-    real :: struct_cohort
-
-    fast_litter = 0.0
-    struct_litter = 0.0
-    struct_lignin = 0.0
-    fast_litter_n = 0.0
-
-    cpatch => csite%patch(cp)
-    npatch => csite%patch(np)
-
-    do ico = 1,cpatch%ncohorts
-
-       fast_litter = fast_litter + (1.0 - &
-            survivorship(q,nat_dist_type,csite, cp, ico)) * &
-            (f_labile(cpatch%pft(ico)) * cpatch%balive(ico) &
-            + cpatch%bstorage(ico)) * cpatch%nplant(ico)
-
-       fast_litter_n = fast_litter_n + (1.0 - &
-            survivorship(q,nat_dist_type, csite, cp, ico)) * &
-            (f_labile(cpatch%pft(ico)) * cpatch%balive(ico) &
-            / c2n_leaf(cpatch%pft(ico)) + cpatch%bstorage(ico) /  &
-            c2n_storage ) * cpatch%nplant(ico)
-
-       struct_cohort = cpatch%nplant(ico) *   &
-            (1.0 - survivorship(q,nat_dist_type, csite, cp, ico)) * ( (1.0 -   &
-            loss_fraction ) * cpatch%bdead(ico) +   & ! DOUBLE CHECK THIS, IS THIS RIGHT??
-            (1.0 - f_labile(cpatch%pft(ico))) * cpatch%balive(ico))
-
-       struct_litter = struct_litter + struct_cohort
-       struct_lignin = struct_lignin + struct_cohort * l2n_stem / c2n_stem(cpatch%pft(ico))
-       
-    enddo
-
-    !  Load disturbance litter directly into carbon and N pools
-    csite%fast_soil_C(np) = csite%fast_soil_C(np) + fast_litter * area_fac
-
-    csite%structural_soil_C(np) = csite%structural_soil_C(np) + struct_litter * area_fac
-
-    csite%structural_soil_L(np) = csite%structural_soil_L(np) +  &
-         struct_lignin * area_fac
-
-    csite%fast_soil_N(np) = csite%fast_soil_N(np) + fast_litter_n * area_fac
-
-    return
-  end subroutine accum_dist_litt
-
-  !============================================================================
-
-  real function survivorship(dest_type,poly_dest_type,csite, ipa, ico)
-
-    use ed_state_vars, only: patchtype,sitetype
-    use disturb_coms, only: treefall_hite_threshold
-    use pft_coms, only: treefall_s_ltht, treefall_s_gtht
-    
-    implicit none
-
-    type(patchtype),pointer  :: cpatch
-    type(sitetype),target   :: csite
-    integer :: ico,ipa
-    integer, intent(in) :: dest_type
-    integer, intent(in) :: poly_dest_type
-
-    cpatch => csite%patch(ipa)
-
-    if(dest_type == 1)then
-       survivorship = 0.0  !  agric
-    else
-       if(dest_type == 2)then
-          survivorship = 0.0   ! secondary land
-       else  !   natural land 
-          if(dest_type == 3)then
-             if(poly_dest_type == 1)then
-                survivorship = 0.0 ! fire
-             elseif(poly_dest_type == 0)then
-                if(cpatch%hite(ico) < treefall_hite_threshold)then
-                   survivorship =  treefall_s_ltht(cpatch%pft(ico)) 
-                else 
-                   survivorship = treefall_s_gtht(cpatch%pft(ico))
-                endif
-             endif
-          endif
-       endif
-    endif
-    
-    return
-  end function survivorship
-
-  !=============================================================
-
-  subroutine plant_patch(csite, np, pft, density, green_leaf_factor, height_factor, lsl)
-
-    use ed_state_vars,only : sitetype,patchtype
-
-    use pft_coms, only: q, qsw, sla, hgt_min, max_dbh
-    use ed_misc_coms, only: dtlsm
-    use fuse_fiss_utils, only : sort_cohorts
-    use ed_therm_lib,only : calc_hcapveg
-    use consts_coms, only: t3ple, pio4
-    use allometry, only : h2dbh, dbh2bd, dbh2bl, dbh2h, area_indices, ed_biomass
-    use ed_max_dims, only : n_pft
-
-    implicit none
-
-    type(patchtype),pointer  :: cpatch
-    type(patchtype),pointer  :: tpatch
-    type(sitetype),target   :: csite
-
-    integer, intent(in) :: lsl
-    integer :: np,nc
-    integer, intent(in) :: pft
-    real, intent(in) :: density
-    real, intent(in) :: height_factor
-    real, dimension(n_pft), intent(in) :: green_leaf_factor
-    real :: salloc, salloci
-    cpatch => csite%patch(np)
-
-    ! Reallocate the current cohort with an extra space for the
-    ! planted plantation cohort.  It is unlikely but perhaps possible
-    ! For this patch to have no cohorts yet.
-    ! ------------------------------------------------------------
-    nc = cpatch%ncohorts + 1
-    if ( cpatch%ncohorts>0) then
-       
-       allocate(tpatch)
-       call allocate_patchtype(tpatch,cpatch%ncohorts)
-       call copy_patchtype(cpatch,tpatch,1,cpatch%ncohorts,1,cpatch%ncohorts)
-       call deallocate_patchtype(cpatch)
-       call allocate_patchtype(cpatch,tpatch%ncohorts + 1)
-       call copy_patchtype(tpatch,cpatch,1,tpatch%ncohorts,1,tpatch%ncohorts)
-       call deallocate_patchtype(tpatch)
-       deallocate(tpatch)
-    else
-       call allocate_patchtype(cpatch,1)
-    endif
-       
-    cpatch%ncohorts = nc
-    csite%paco_n(np)= nc
-
-    ! Just make one cohort.  It will soon be split at the splitting call of
-    ! apply_disturbances().  Place this cohort in the insertion point.
-
-    cpatch%pft(nc) = pft
-    cpatch%nplant(nc) = density
-    cpatch%hite(nc) = hgt_min(cpatch%pft(nc)) * min(1.0,height_factor)
-    if(.false.) then !! it's a tree
-       cpatch%dbh(nc) = h2dbh(cpatch%hite(nc),cpatch%pft(nc))
-       cpatch%bdead(nc) = dbh2bd(cpatch%dbh(nc),cpatch%hite(nc),cpatch%pft(nc))
-       cpatch%bleaf(nc) = dbh2bl(cpatch%dbh(nc),cpatch%pft(nc))
-    else
-       !! set actual bleaf
-       cpatch%dbh(nc)   = h2dbh(cpatch%hite(nc),cpatch%pft(nc))
-       cpatch%bleaf(nc) = dbh2bl(cpatch%dbh(nc),cpatch%pft(nc))
-
-       !! reset allometry to make it grow
-       cpatch%dbh(nc)   = max_dbh(pft)
-       cpatch%bdead(nc) = dbh2bd(cpatch%dbh(nc),cpatch%hite(nc),cpatch%pft(nc))
-       cpatch%hite(nc)  = dbh2h(pft,max_dbh(pft))
-    end if
-
-    cpatch%phenology_status(nc) = 0
-    salloc = 1.0 + q(cpatch%pft(nc)) + qsw(cpatch%pft(nc)) * cpatch%hite(nc)
-    salloci = 1.0 / salloc
-    cpatch%balive(nc)   = cpatch%bleaf(nc) * salloc
-    cpatch%broot(nc)    = cpatch%balive(nc) * q(cpatch%pft(nc)) * salloci
-    cpatch%bsapwood(nc) = cpatch%balive(nc) * qsw(cpatch%pft(nc))                &
-                        * cpatch%hite(nc) * salloci
-    cpatch%sla(nc)=sla(cpatch%pft(nc))
-    call area_indices(cpatch%nplant(nc),cpatch%bleaf(nc),cpatch%bdead(nc)        &
-                     ,cpatch%balive(nc),cpatch%dbh(nc), cpatch%hite(nc)          &
-                     ,cpatch%pft(nc),cpatch%sla(nc), cpatch%lai(nc)              &
-                     ,cpatch%wpa(nc),cpatch%wai(nc))
-
-    cpatch%bstorage(nc) = 1.0*(cpatch%balive(nc)) !! changed by MCD, was 0.0
-
-
-    !----- Finding the new basal area and above-ground biomass. ---------------------------!
-    cpatch%basarea(nc) = pio4 * cpatch%dbh(nc) * cpatch%dbh(nc)                
-    cpatch%agb(nc)     = ed_biomass(cpatch%bdead(nc),cpatch%balive(nc),cpatch%bleaf(nc)    &
-                                   ,cpatch%pft(nc),cpatch%hite(nc) ,cpatch%bstorage(nc))     
-
-
-    call init_ed_cohort_vars(cpatch, nc, lsl)
-
-    cpatch%veg_temp(nc)  = csite%can_temp(np)
-    cpatch%veg_water(nc) = 0.0
-    cpatch%veg_fliq(nc)  = 0.0
-
-    !----- Because we assigned no water, the internal energy is simply hcapveg*T
-
-    cpatch%hcapveg(nc) = calc_hcapveg(cpatch%bleaf(nc),cpatch%bdead(nc)   &
-                                     ,cpatch%balive(nc),cpatch%nplant(nc) &
-                                     ,cpatch%hite(nc),cpatch%pft(nc)      &
-                                     ,cpatch%phenology_status(nc))
-    
-    cpatch%veg_energy(nc) = cpatch%hcapveg(nc) * cpatch%veg_temp(nc)
-    
-    
-    cpatch%new_recruit_flag(nc) = 1 ! should plantations be considered recruits?
-
-    ! Sort the cohorts so that the new cohort is at the correct height bin
-
-    call sort_cohorts(cpatch)
-    
-    return
-  end subroutine plant_patch
-  
+      survivalloop: do ico = 1,cpatch%ncohorts
+         survival_fac = survivorship(q,poly_dest_type, mindbh_harvest, csite, cp, ico)     &
+                      * area_fac
+         n_survivors     = cpatch%nplant(ico) * survival_fac
+
+         !----- If something survived, make a new cohort. ---------------------------------!
+         mask(ico) = n_survivors > 0.0
+      end do survivalloop
+
+      !------------------------------------------------------------------------------------!
+      !     If the new patch has received survivors from a donor already, then it should   !
+      ! have cohorts.  So the temporary patch vector will be the sum of the new cohorts    !
+      ! found here, plus those already applied previously in the loop calling this sub-    !
+      ! routine.                                                                           !
+      !------------------------------------------------------------------------------------!
+      if (npatch%ncohorts > 0) then
+         nco = npatch%ncohorts
+         call allocate_patchtype(tpatch,count(mask) + npatch%ncohorts)
+         call copy_patchtype(npatch,tpatch,1,npatch%ncohorts,1,npatch%ncohorts)
+         call deallocate_patchtype(npatch)
+      else
+         nco = 0
+         call allocate_patchtype(tpatch,count(mask))
+      end if
+
+
+      cohortloop: do ico = 1,cpatch%ncohorts
+         
+         survival_fac = survivorship(q,poly_dest_type, mindbh_harvest, csite, cp, ico)     &
+                      * area_fac
+         n_survivors  = cpatch%nplant(ico) * survival_fac
+
+         !----- If mask is true, at least some of this cohort survived. -------------------!
+         if (mask(ico)) then
+            nco = nco + 1
+            call copy_patchtype(cpatch,tpatch,ico,ico,nco,nco)
+
+            !------------------------------------------------------------------------------!
+            !    Scale the total area based on the new population density and new area.    !
+            ! We must also rescale all extensive properties from cohorts, since they are   !
+            ! per unit area and we are effectively changing the area.                      !
+            ! IMPORTANT: Only cohort-level variables that have units per area (m2) should  !
+            !            be rescaled.  Variables whose units are per plant should _NOT_ be !
+            !            included here.                                                    !
+            !------------------------------------------------------------------------------!
+            tpatch%lai                (nco) = tpatch%lai              (nco) * survival_fac
+            tpatch%wai                (nco) = tpatch%wai              (nco) * survival_fac
+            tpatch%wpa                (nco) = tpatch%wpa              (nco) * survival_fac
+            tpatch%nplant             (nco) = tpatch%nplant           (nco) * survival_fac
+            tpatch%mean_gpp           (nco) = tpatch%mean_gpp         (nco) * survival_fac
+            tpatch%mean_leaf_resp     (nco) = tpatch%mean_leaf_resp   (nco) * survival_fac
+            tpatch%mean_root_resp     (nco) = tpatch%mean_root_resp   (nco) * survival_fac
+            tpatch%mean_growth_resp   (nco) = tpatch%mean_growth_resp (nco) * survival_fac
+            tpatch%mean_storage_resp  (nco) = tpatch%mean_storage_resp(nco) * survival_fac
+            tpatch%mean_vleaf_resp    (nco) = tpatch%mean_vleaf_resp  (nco) * survival_fac
+            tpatch%today_gpp          (nco) = tpatch%today_gpp        (nco) * survival_fac
+            tpatch%today_gpp_pot      (nco) = tpatch%today_gpp_pot    (nco) * survival_fac
+            tpatch%today_gpp_max      (nco) = tpatch%today_gpp_max    (nco) * survival_fac
+            tpatch%today_leaf_resp    (nco) = tpatch%today_leaf_resp  (nco) * survival_fac
+            tpatch%today_root_resp    (nco) = tpatch%today_root_resp  (nco) * survival_fac
+            tpatch%Psi_open           (nco) = tpatch%Psi_open         (nco) * survival_fac
+            tpatch%gpp                (nco) = tpatch%gpp              (nco) * survival_fac
+            tpatch%leaf_respiration   (nco) = tpatch%leaf_respiration (nco) * survival_fac
+            tpatch%root_respiration   (nco) = tpatch%root_respiration (nco) * survival_fac
+            tpatch%monthly_dndt       (nco) = tpatch%monthly_dndt     (nco) * survival_fac
+            tpatch%veg_water          (nco) = tpatch%veg_water        (nco) * survival_fac
+            tpatch%hcapveg            (nco) = tpatch%hcapveg          (nco) * survival_fac
+            tpatch%veg_energy         (nco) = tpatch%veg_energy       (nco) * survival_fac
+            !----- Carbon flux monthly means are extensive, we must convert them. ---------!
+            if (idoutput > 0 .or. imoutput > 0) then
+               tpatch%dmean_par_v     (nco) = tpatch%dmean_par_v      (nco) * survival_fac
+               tpatch%dmean_par_v_beam(nco) = tpatch%dmean_par_v_beam (nco) * survival_fac
+               tpatch%dmean_par_v_diff(nco) = tpatch%dmean_par_v_diff (nco) * survival_fac
+            end if
+            if (imoutput > 0) then
+               tpatch%mmean_par_v     (nco) = tpatch%mmean_par_v      (nco) * survival_fac
+               tpatch%mmean_par_v_beam(nco) = tpatch%mmean_par_v_beam (nco) * survival_fac
+               tpatch%mmean_par_v_diff(nco) = tpatch%mmean_par_v_diff (nco) * survival_fac
+            end if
+         end if
+      end do cohortloop
+
+      !----- Copy the temporary patch into the newpatch. ----------------------------------!
+      call allocate_patchtype(npatch,tpatch%ncohorts)
+      call copy_patchtype(tpatch,npatch,1,tpatch%ncohorts,1,tpatch%ncohorts)
+      call deallocate_patchtype(tpatch)
+
+      deallocate(tpatch)
+      deallocate(mask)
+
+
+      return
+   end subroutine insert_survivors
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This subroutine updates the litter pools after a disturbance takes place.         !
+   !---------------------------------------------------------------------------------------!
+   subroutine accum_dist_litt(csite,np,cp,q,area_fac,loss_fraction,poly_dest_type          &
+                             ,mindbh_harvest)
+      use ed_state_vars, only : sitetype     & ! structure
+                              , patchtype    & ! structure
+                              , polygontype  ! ! structure
+      use decomp_coms  , only : f_labile     ! ! intent(in)
+      use ed_max_dims  , only : n_pft        ! ! intent(in)
+      use pft_coms     , only : c2n_storage  & ! intent(in)
+                              , c2n_leaf     & ! intent(in)
+                              , c2n_recruit  & ! intent(in)
+                              , c2n_stem     & ! intent(in)
+                              , l2n_stem     ! ! intent(in)
+      use grid_coms    , only : nzg          ! ! intent(in)
+
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(sitetype)                   , target     :: csite
+      integer                          , intent(in) :: np
+      integer                          , intent(in) :: cp
+      real           , dimension(n_pft), intent(in) :: mindbh_harvest
+      real                             , intent(in) :: loss_fraction
+      integer                          , intent(in) :: q
+      real                             , intent(in) :: area_fac
+      integer                          , intent(in) :: poly_dest_type
+      !----- Local variables. -------------------------------------------------------------!
+      type(patchtype)                  , pointer    :: cpatch
+      type(patchtype)                  , pointer    :: npatch
+      integer                                       :: ico
+      integer                                       :: ipft
+      real                                          :: fast_litter
+      real                                          :: struct_litter
+      real                                          :: struct_lignin
+      real                                          :: fast_litter_n
+      real                                          :: struct_cohort
+      !------------------------------------------------------------------------------------!
+
+      !---- Initialise the non-scaled litter pools. ---------------------------------------!
+      fast_litter   = 0.0
+      struct_litter = 0.0
+      struct_lignin = 0.0
+      fast_litter_n = 0.0
+
+      !------------------------------------------------------------------------------------!
+      ! cpatch => contributing patch                                                       !
+      ! npatch => new patch.                                                               !
+      !------------------------------------------------------------------------------------!
+      cpatch => csite%patch(cp)
+      npatch => csite%patch(np)
+
+      do ico = 1,cpatch%ncohorts
+         ipft = cpatch%pft(ico)
+
+         fast_litter   = fast_litter                                                       &
+                       + (1. - survivorship(q,poly_dest_type,mindbh_harvest,csite,cp,ico)) &
+                       * ( f_labile(ipft) * cpatch%balive(ico) + cpatch%bstorage(ico))     &
+                       * cpatch%nplant(ico)
+         fast_litter_n = fast_litter_n                                                     &
+                       + (1. - survivorship(q,poly_dest_type,mindbh_harvest,csite,cp,ico)) &
+                       * ( f_labile(ipft) * cpatch%balive(ico) / c2n_leaf(ipft)            &
+                         + cpatch%bstorage(ico) / c2n_storage )                            &
+                       * cpatch%nplant(ico)
+
+         struct_cohort = cpatch%nplant(ico)                                                &
+                       * (1. - survivorship(q,poly_dest_type,mindbh_harvest,csite,cp,ico)) &
+                       * ( (1. - loss_fraction ) * cpatch%bdead(ico)                       &
+                         + (1. - f_labile(ipft)) * cpatch%balive(ico) )
+
+         struct_litter = struct_litter + struct_cohort
+         struct_lignin = struct_lignin + struct_cohort * l2n_stem / c2n_stem(ipft)
+      end do
+
+      !----- Load disturbance litter directly into carbon and N pools. --------------------!
+      csite%fast_soil_C(np)       = csite%fast_soil_C(np)       + fast_litter   * area_fac
+      csite%structural_soil_C(np) = csite%structural_soil_C(np) + struct_litter * area_fac
+      csite%structural_soil_L(np) = csite%structural_soil_L(np) + struct_lignin * area_fac
+      csite%fast_soil_N(np)       = csite%fast_soil_N(np)       + fast_litter_n * area_fac
+
+      return
+   end subroutine accum_dist_litt
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This function computes the survivorship rate after some disturbance happens.      !
+   !---------------------------------------------------------------------------------------!
+   real function survivorship(dest_type,poly_dest_type,mindbh_harvest,csite,ipa,ico)
+      use ed_state_vars, only : patchtype                & ! structure
+                              , sitetype                 ! ! structure
+      use disturb_coms , only : treefall_hite_threshold  ! ! intent(in)
+      use pft_coms     , only : treefall_s_ltht          & ! intent(in)
+                              , treefall_s_gtht          ! ! intent(in)
+      use ed_max_dims  , only : n_pft                    ! ! intent(in)
+      
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(sitetype)                  , target     :: csite
+      real          , dimension(n_pft), intent(in) :: mindbh_harvest
+      integer                         , intent(in) :: ico
+      integer                         , intent(in) :: ipa
+      integer                         , intent(in) :: dest_type
+      integer                         , intent(in) :: poly_dest_type
+      !----- Local variables. -------------------------------------------------------------!
+      type(patchtype)                 , pointer    :: cpatch
+      integer                                      :: ipft
+      !------------------------------------------------------------------------------------!
+
+
+      cpatch => csite%patch(ipa)
+      ipft = cpatch%pft(ico)
+
+      !----- Base the survivorship rates on the destination type. -------------------------!
+      select case(dest_type)
+      case (1) !----- Agriculture/cropland. -----------------------------------------------!
+         survivorship = 0.0
+
+      case (2) !----- Secondary land or forest plantation. --------------------------------!
+
+         !----- Decide the fate based on the type of secondary disturbance. ---------------!
+         select case (poly_dest_type)
+         case (0) !----- Land abandonment, assume this is the last harvest. ---------------!
+            survivorship = 0.0
+         case (1) !----- Biomass logging, assume that nothing stays. ----------------------!
+            survivorship = 0.0
+         case (2) !----- Selective logging. -----------------------------------------------!
+            !------------------------------------------------------------------------------!
+            !     If the PFT DBH exceeds the minimum PFT for harvesting, the survivorship  !
+            ! should be zero, otherwise, we assume survivorship similar to the treefall    !
+            ! disturbance rate for short trees.                                            ! 
+            !------------------------------------------------------------------------------!
+            if (cpatch%dbh(ico) >= mindbh_harvest(ipft)) then
+               survivorship = 0.0
+            else
+               survivorship = treefall_s_ltht(ipft)
+            end if
+         end select
+
+      case (3) !----- Primary land. -------------------------------------------------------!
+
+         !----- Decide the fate based on the type of natural disturbance. -----------------!
+         select case (poly_dest_type)
+         case (0) !----- Treefall, we must check the cohort height. -----------------------!
+            if (cpatch%hite(ico) < treefall_hite_threshold) then
+               survivorship =  treefall_s_ltht(ipft)
+            else
+               survivorship = treefall_s_gtht(ipft)
+            end if
+
+         case (1) !----- Fire, no survival. -----------------------------------------------!
+            survivorship = 0.0
+         end select
+      end select
+
+      return
+   end function survivorship
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !    Add a cohort of the appropriate PFT type to populate a plantation/cropland/pasture !
+   ! patch.                                                                                !
+   !---------------------------------------------------------------------------------------!
+   subroutine plant_patch(csite,np,pft,density,green_leaf_factor,height_factor,lsl)
+      use ed_state_vars , only  : sitetype      & ! structure
+                                , patchtype     ! ! structure
+      use pft_coms       , only : q             & ! intent(in)
+                                , qsw           & ! intent(in)
+                                , sla           & ! intent(in)
+                                , hgt_min       & ! intent(in)
+                                , max_dbh       & ! intent(in)
+                                , is_grass      ! ! intent(in)
+      use ed_misc_coms   , only : dtlsm         ! ! intent(in)
+      use fuse_fiss_utils, only : sort_cohorts  ! ! sub-routine
+      use ed_therm_lib   , only : calc_hcapveg  ! ! function
+      use consts_coms    , only : t3ple         & ! intent(in)
+                                , pio4          ! ! intent(in)
+      use allometry      , only : h2dbh         & ! function
+                                , dbh2bd        & ! function
+                                , dbh2bl        & ! function
+                                , dbh2h         & ! function
+                                , area_indices  & ! function
+                                , ed_biomass    ! ! function
+      use ed_max_dims    , only : n_pft         ! ! intent(in)
+
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(sitetype)                  , target     :: csite
+      integer                         , intent(in) :: np
+      integer                         , intent(in) :: pft
+      integer                         , intent(in) :: lsl
+      real          , dimension(n_pft), intent(in) :: green_leaf_factor
+      real                            , intent(in) :: density
+      real                            , intent(in) :: height_factor
+      !----- Local variables. -------------------------------------------------------------!
+      type(patchtype)                 , pointer    :: cpatch
+      type(patchtype)                 , pointer    :: tpatch
+      integer                                      :: nc
+      real                                         :: salloc
+      real                                         :: salloci
+      !------------------------------------------------------------------------------------!
+
+
+
+      cpatch => csite%patch(np)
+
+
+      !------------------------------------------------------------------------------------!
+      !      Reallocate the current cohort with an extra space for the planted plantation  !
+      ! cohort.  If the patch was previously empty, we simply create the first cohort.     !
+      !------------------------------------------------------------------------------------!
+      nc = cpatch%ncohorts + 1
+      if (cpatch%ncohorts > 0) then
+         allocate(tpatch)
+         call allocate_patchtype(tpatch,cpatch%ncohorts)
+         call copy_patchtype(cpatch,tpatch,1,cpatch%ncohorts,1,cpatch%ncohorts)
+         call deallocate_patchtype(cpatch)
+         call allocate_patchtype(cpatch,tpatch%ncohorts + 1)
+         call copy_patchtype(tpatch,cpatch,1,tpatch%ncohorts,1,tpatch%ncohorts)
+         call deallocate_patchtype(tpatch)
+         deallocate(tpatch)
+      else
+         call allocate_patchtype(cpatch,1)
+      end if
+         
+      cpatch%ncohorts = nc
+      csite%paco_n(np)= nc
+
+      !------------------------------------------------------------------------------------!
+      !      We can add all the biomass needed in a single cohort, even if it exceeds the  !
+      ! safe range (i.e., with maximum LAI exceeding the unity).  In case it is a large    !
+      ! cohort, it will soon be split at the splitting call of apply_disturbances().  This !
+      ! new cohort will always be the last here, they will be sorted afterwards too.       !
+      !------------------------------------------------------------------------------------!
+      cpatch%pft(nc)    = pft
+      cpatch%nplant(nc) = density
+      cpatch%hite(nc)   = hgt_min(cpatch%pft(nc)) * min(1.0,height_factor)
+      
+      !----- This part needs a better explanation, it is quite confusing... ---------------!
+      if (is_grass(nc)) then
+         cpatch%dbh(nc)   = h2dbh(cpatch%hite(nc),cpatch%pft(nc))
+         cpatch%bleaf(nc) = dbh2bl(cpatch%dbh(nc),cpatch%pft(nc))
+
+         !----- Reset allometry to make it grow. ------------------------------------------!
+         cpatch%dbh(nc)   = max_dbh(pft)
+         cpatch%bdead(nc) = dbh2bd(cpatch%dbh(nc),cpatch%hite(nc),cpatch%pft(nc))
+         cpatch%hite(nc)  = dbh2h(pft,max_dbh(pft))
+      else
+         cpatch%dbh(nc)   = h2dbh(cpatch%hite(nc),cpatch%pft(nc))
+         cpatch%bdead(nc) = dbh2bd(cpatch%dbh(nc),cpatch%hite(nc),cpatch%pft(nc))
+         cpatch%bleaf(nc) = dbh2bl(cpatch%dbh(nc),cpatch%pft(nc))
+      end if
+
+      !----- Compute the biomass of living tissues. ---------------------------------------!
+      cpatch%phenology_status(nc) = 0
+      salloc                      = 1.0 + q(pft) + qsw(pft) * cpatch%hite(nc)
+      salloci                     = 1.0 / salloc
+      cpatch%balive(nc)           = cpatch%bleaf(nc) * salloc
+      cpatch%broot(nc)            = cpatch%balive(nc) * q(pft) * salloci
+      cpatch%bsapwood(nc)         = cpatch%balive(nc) * qsw(pft)*cpatch%hite(nc) * salloci
+      cpatch%sla(nc)              = sla(pft)
+
+      !----- Compute all area indices needed. ---------------------------------------------!
+      call area_indices(cpatch%nplant(nc),cpatch%bleaf(nc),cpatch%bdead(nc)                &
+                       ,cpatch%balive(nc),cpatch%dbh(nc),cpatch%hite(nc),cpatch%pft(nc)    &
+                       ,cpatch%sla(nc),cpatch%lai(nc),cpatch%wpa(nc),cpatch%wai(nc))
+
+
+      !------------------------------------------------------------------------------------!
+      !     Initialise storage with the same amount as the living biomass (why?)           !
+      !------------------------------------------------------------------------------------!
+      cpatch%bstorage(nc) = 1.0*(cpatch%balive(nc)) !! changed by MCD, was 0.0
+
+
+      !----- Finding the new basal area and above-ground biomass. -------------------------!
+      cpatch%basarea(nc) = pio4 * cpatch%dbh(nc) * cpatch%dbh(nc)
+      cpatch%agb(nc)     = ed_biomass(cpatch%bdead(nc),cpatch%balive(nc),cpatch%bleaf(nc)  &
+                                     ,cpatch%pft(nc),cpatch%hite(nc) ,cpatch%bstorage(nc))
+
+      !----- Initialise other cohort-level variables. -------------------------------------!
+      call init_ed_cohort_vars(cpatch, nc, lsl)
+
+      cpatch%veg_temp(nc)  = csite%can_temp(np)
+      cpatch%veg_water(nc) = 0.0
+      cpatch%veg_fliq(nc)  = 0.0
+
+      !----- Because we assigned no water, the internal energy is simply hcapveg*T. -------!
+      cpatch%hcapveg(nc)    = calc_hcapveg(cpatch%bleaf(nc),cpatch%bdead(nc)               &
+                                          ,cpatch%balive(nc),cpatch%nplant(nc)             &
+                                          ,cpatch%hite(nc),cpatch%pft(nc)                  &
+                                          ,cpatch%phenology_status(nc))
+
+      cpatch%veg_energy(nc) = cpatch%hcapveg(nc) * cpatch%veg_temp(nc)
+
+      !----- Should plantations be considered recruits? -----------------------------------!
+      cpatch%new_recruit_flag(nc) = 1
+
+      !----- Sort the cohorts so that the new cohort is at the correct height bin. --------!
+      call sort_cohorts(cpatch)
+
+      return
+   end subroutine plant_patch
+   !=======================================================================================!
+   !=======================================================================================!
 end module disturbance_utils
+!==========================================================================================!
+!==========================================================================================!

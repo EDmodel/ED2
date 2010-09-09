@@ -97,6 +97,8 @@ subroutine read_ed21_history_file
    real                                :: currad
    real                                :: elim_nplant
    real                                :: elim_lai
+   !----- Local constants. ----------------------------------------------------------------!
+   real                  , parameter   :: tiny_biomass = 1.e-20
    !----- External function. --------------------------------------------------------------!
    real                  , external    :: dist_gc
    !---------------------------------------------------------------------------------------!
@@ -132,9 +134,11 @@ subroutine read_ed21_history_file
 
       !------------------------------------------------------------------------------------!
       !     The file name should be the exact file that will be read in, except the part   !
-      ! that lists the grid number and extension.                                          !
+      ! that lists the grid number and extension.  Because this is a history restart, only !
+      ! the first SFILIN will be used so we ensure that we will continue from the same     !
+      ! simulation.                                                                        !
       !------------------------------------------------------------------------------------!
-      hnamel = trim(sfilin)//"-"//trim(cgr)//".h5"
+      hnamel = trim(sfilin(1))//"-"//trim(cgr)//".h5"
 
 
       !------------------------------------------------------------------------------------!
@@ -143,11 +147,11 @@ subroutine read_ed21_history_file
       inquire(file=trim(hnamel),exist=exists)
       if (.not.exists) then
          !----- It doesn't, stop the run. -------------------------------------------------!
-         write (unit=*,fmt='(a,1x,a)')    'SFILIN  = ',trim(sfilin)
-         write (unit=*,fmt='(a,1x,i4.4)') 'IYEARH  = ',iyearh
-         write (unit=*,fmt='(a,1x,i2.2)') 'IMONTHH = ',imonthh
-         write (unit=*,fmt='(a,1x,i2.2)') 'IDATEH  = ',idateh
-         write (unit=*,fmt='(a,1x,i4.4)') 'ITIMEH  = ',itimeh
+         write (unit=*,fmt='(a,1x,a)')    'SFILIN(1) = ',trim(sfilin(1))
+         write (unit=*,fmt='(a,1x,i4.4)') 'IYEARH    = ',iyearh
+         write (unit=*,fmt='(a,1x,i2.2)') 'IMONTHH   = ',imonthh
+         write (unit=*,fmt='(a,1x,i2.2)') 'IDATEH    = ',idateh
+         write (unit=*,fmt='(a,1x,i4.4)') 'ITIMEH    = ',itimeh
          call fatal_error ('File '//trim(hnamel)//' not found.'                            &
                           ,'read_ed21_history_file','ed_read_ed21_history.F90')
       else
@@ -291,7 +295,6 @@ subroutine read_ed21_history_file
                minrad   = currad
             end if
          end do
-
 
          !---------------------------------------------------------------------------------!
          !      A suitably close polygon has been located in the datasets.  Use these      !
@@ -556,6 +559,34 @@ subroutine read_ed21_history_file
                            end select
                         end if
 
+                        !------------------------------------------------------------------!
+                        !     Make sure that the biomass won't lead to FPE.  This          !
+                        ! should never happen when using a stable ED-2.1 version, but      !
+                        ! older versions had "zombie" cohorts.  Here we ensure that        !
+                        ! the model initialises with stable numbers whilst ensuring        !
+                        ! that the cohorts will be eliminated.                             !
+                        !------------------------------------------------------------------!
+                        if (cpatch%balive(ico) > 0.            .and.                       &
+                            cpatch%balive(ico) < tiny_biomass) then
+                           cpatch%balive(ico) = tiny_biomass
+                        end if
+                        if (cpatch%bleaf(ico) > 0.            .and.                        &
+                            cpatch%bleaf(ico) < tiny_biomass) then
+                           cpatch%bleaf(ico) = tiny_biomass
+                        end if
+                        if (cpatch%bdead(ico) > 0.            .and.                        &
+                            cpatch%bdead(ico) < tiny_biomass) then
+                           cpatch%bdead(ico) = tiny_biomass
+                        end if
+                        if (cpatch%bstorage(ico) > 0.            .and.                     &
+                            cpatch%bstorage(ico) < tiny_biomass) then
+                           cpatch%bstorage(ico) = tiny_biomass
+                        end if
+                        !------------------------------------------------------------------!
+
+
+
+
                         !----- Compute the above-ground biomass. --------------------------!
                         cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)  &
                                                     ,cpatch%bleaf(ico),cpatch%pft(ico)     &
@@ -676,6 +707,7 @@ subroutine read_ed21_history_unstruct
    use ed_max_dims    , only : n_pft                   & ! intent(in)
                              , huge_polygon            & ! intent(in)
                              , str_len                 & ! intent(in)
+                             , n_dist_types            & ! intent(in)
                              , maxfiles                & ! intent(in)
                              , maxlist                 ! ! intent(in)
    use pft_coms       , only : SLA                     & ! intent(in)
@@ -686,13 +718,16 @@ subroutine read_ed21_history_unstruct
                              , include_pft_ag          & ! intent(in)
                              , phenology               & ! intent(in)
                              , pft_1st_check           & ! intent(in)
-                             , include_these_pft       ! ! intent(in)
+                             , include_these_pft       & ! intent(in)
+                             , min_cohort_size         ! ! intent(in)
    use ed_misc_coms   , only : sfilin                  & ! intent(in)
                              , current_time            & ! intent(in)
                              , imonthh                 & ! intent(in)
                              , iyearh                  & ! intent(in)
                              , idateh                  & ! intent(in)
-                             , itimeh                  ! ! intent(in)
+                             , itimeh                  & ! intent(in)
+                             , ied_init_mode           & ! intent(in)
+                             , max_poi99_dist          ! ! intent(in)
    use ed_state_vars  , only : polygontype             & ! variable type
                              , sitetype                & ! variable type
                              , patchtype               & ! variable type
@@ -717,6 +752,9 @@ subroutine read_ed21_history_unstruct
    use allometry      , only : area_indices            & ! function
                              , ed_biomass              ! ! function
    use fuse_fiss_utils, only : terminate_cohorts       ! ! subroutine
+   use disturb_coms   , only : ianth_disturb           & ! intent(in)
+                             , lu_rescale_file         & ! intent(in)
+                             , min_new_patch_area      ! ! intent(in)
 
    implicit none
 
@@ -731,6 +769,7 @@ subroutine read_ed21_history_unstruct
    character(len=1)                                             :: vnam
    character(len=3)                                             :: cgr
    character(len=str_len)                                       :: hnamel
+   integer               , dimension(maxfiles)                  :: ngridpoly
    integer               , dimension(huge_polygon)              :: pyfile_list
    integer               , dimension(huge_polygon)              :: pyindx_list
    integer               , dimension(:)           , allocatable :: pclosest
@@ -747,8 +786,10 @@ subroutine read_ed21_history_unstruct
    integer                                                      :: isi
    integer                                                      :: ipa
    integer                                                      :: ico
+   integer                                                      :: xclosest
    integer                                                      :: nflist
    integer                                                      :: nhisto
+   integer                                                      :: nrescale
    integer                                                      :: k
    integer                                                      :: nf
    integer                                                      :: dset_npolygons_global
@@ -761,26 +802,41 @@ subroutine read_ed21_history_unstruct
    integer                                                      :: ipft
    integer                                                      :: ipya
    integer                                                      :: ipyz
+   integer                                                      :: ierr
+   integer                                                      :: ilu
    integer                                                      :: py_index
    integer                                                      :: si_index
    integer                                                      :: pa_index
    integer                                                      :: dsetrank,iparallel
    integer                                                      :: hdferr
+   integer                                                      :: total_grid_py
+   integer                                                      :: poi_minloc
+   integer                                                      :: ngp1
    logical                                                      :: exists
+   logical                                                      :: rescale_glob
+   logical                                                      :: rescale_loc
    real                  , dimension(huge_polygon)              :: pdist
    real                  , dimension(huge_polygon)              :: plon_list
    real                  , dimension(huge_polygon)              :: plat_list
+   real                  , dimension(huge_polygon)              :: dist_rscl
+   real                  , dimension(huge_polygon)              :: wlon_rscl
+   real                  , dimension(huge_polygon)              :: clon_rscl
+   real                  , dimension(huge_polygon)              :: elon_rscl
+   real                  , dimension(huge_polygon)              :: slat_rscl
+   real                  , dimension(huge_polygon)              :: clat_rscl
+   real                  , dimension(huge_polygon)              :: nlat_rscl
+   real                  , dimension(n_dist_types,huge_polygon) :: newarea
+   real                  , dimension(n_dist_types)              :: oldarea
+   real                                                         :: dummy
    real                                                         :: elim_nplant
    real                                                         :: elim_lai
+   !----- Local constants. ----------------------------------------------------------------!
+   real                                           , parameter   :: tiny_biomass = 1.e-20
    !----- External functions. -------------------------------------------------------------!
-   real                  , external                :: dist_gc ! Great circle distance.
+   real                                           , external    :: dist_gc 
    !---------------------------------------------------------------------------------------!
 
-   !----- Retrieve all files with the specified prefix. -----------------------------------!
-   call ed_filelist(full_list,sfilin,nflist)
 
-   !----- Check every file and save only those that are actually history files. -----------!
-   call ed21_fileinfo(nflist,full_list,nhisto,histo_list)
 
    !----- Open the HDF environment. -------------------------------------------------------!
    call h5open_f(hdferr)
@@ -789,86 +845,148 @@ subroutine read_ed21_history_unstruct
    call h5eset_auto_f(0,hdferr)
 
 
-   !----- Initialize the dimensional control variables for the H5 slabs. ------------------!
-   globdims = 0_8
-   chnkdims = 0_8
-   chnkoffs = 0_8
-   memoffs  = 0_8
-   memdims  = 0_8
-   memsize  = 1_8  
-
-   !---------------------------------------------------------------------------------------!
-   !     First thing, we go through every file, open, and retrieve only some polygon-level !
-   ! information.  This will be used for mapping the files later.                          !
-   !---------------------------------------------------------------------------------------!
-   pyfile_list(:) = 0
-   pyindx_list(:) = 0
-   ipyz           = 0
-   lonlatloop: do nf=1,nhisto
-      hnamel = histo_list(nf)
-
-      !----- Open the HDF5 file. ----------------------------------------------------------!
-      call h5fopen_f(hnamel, H5F_ACC_RDONLY_F, file_id, hdferr)
-      if (hdferr < 0) then
-         write(unit=*,fmt='(a,1x,i4)') ' - Error opening HDF5 file - error - ',hdferr
-         write(unit=*,fmt='(a,1x,a)') ' - File name: ',trim(hnamel)
-         call fatal_error('Error opening HDF5 file - error - '//trim(hnamel)               &
-                         ,'read_ed21_history_file','ed_read_ed21_history.F90')
-      end if
-
-      !----- Retrieve the number of polygons in this file. --------------------------------!
-      call h5dopen_f(file_id,'NPOLYGONS_GLOBAL', dset_id, hdferr)
-      call h5dget_space_f(dset_id, dspace_id, hdferr)
-      call h5dread_f(dset_id, H5T_NATIVE_INTEGER,dset_npolygons_global,globdims, hdferr)
-      call h5sclose_f(dspace_id, hdferr)
-      call h5dclose_f(dset_id, hdferr)
-      
-      !----- Determine the global position of these polygons. -----------------------------!
-      ipya = ipyz + 1
-      ipyz = ipyz + dset_npolygons_global
-      
-      !------ Here we save the file where we can find these polygons. ---------------------!
-      do ipy=ipya,ipyz
-         pyfile_list(ipy) = nf
-         pyindx_list(ipy) = ipy-ipya+1
-      end do
-
-      !------------------------------------------------------------------------------------!
-      !      Retrieve the polygon coordinates data.                                        !
-      !------------------------------------------------------------------------------------!
-      globdims(1) = int(dset_npolygons_global,8)
-
-      call h5dopen_f(file_id,'LONGITUDE', dset_id, hdferr)
-      call h5dget_space_f(dset_id, dspace_id, hdferr)
-      call h5dread_f(dset_id, H5T_NATIVE_REAL,plon_list(ipya:ipyz),globdims, hdferr)
-      call h5sclose_f(dspace_id, hdferr)
-      call h5dclose_f(dset_id, hdferr)
-      
-      call h5dopen_f(file_id,'LATITUDE', dset_id, hdferr)
-      call h5dget_space_f(dset_id, dspace_id, hdferr)
-      call h5dread_f(dset_id, H5T_NATIVE_REAL,plat_list(ipya:ipyz),globdims, hdferr)
-      call h5sclose_f(dspace_id, hdferr)
-      call h5dclose_f(dset_id, hdferr)
-      
-      call h5fclose_f(file_id, hdferr)
-      if (hdferr /= 0) then
-         write (unit=*,fmt='(a,1x,a)') 'File: ',trim(hnamel)
-         write (unit=*,fmt='(a)'     ) 'Problem: Failed closing the HDF5 dataset.'
-         write (unit=*,fmt='(a,1x,i4)') 'HDFerr: ',hdferr
-         call fatal_error('Could not close the HDF file'                                   &
-                         ,'read_ed21_history_unstruct','ed_read_ed21_history.F90')
-      end if
-   end do lonlatloop
-   !---------------------------------------------------------------------------------------!
-
-
-
    !---------------------------------------------------------------------------------------!
    !     Big loop over all grids.                                                          !
    !---------------------------------------------------------------------------------------!
    gridloop: do igr = 1,ngrids
-      cgrid => edgrid_g(igr)
 
+
+      !----- Retrieve all files with the specified prefix. --------------------------------!
+      call ed_filelist(full_list,sfilin(igr),nflist)
+      !----- Check every file and save only those that are actually history files. --------!
+      call ed21_fileinfo(nflist,full_list,nhisto,histo_list)
+
+      !----- Initialize the dimensional control variables for the H5 slabs. ---------------!
+      globdims = 0_8
+      chnkdims = 0_8
+      chnkoffs = 0_8
+      memoffs  = 0_8
+      memdims  = 0_8
+      memsize  = 1_8  
+
+      !------------------------------------------------------------------------------------!
+      !     First thing, we go through every file, open, and retrieve only some polygon-   !
+      ! level information.  This will be used for mapping the files later.                 !
+      !------------------------------------------------------------------------------------!
+      ngridpoly  (:) = 0
+      pyfile_list(:) = 0
+      pyindx_list(:) = 0
+      ipyz           = 0
+      lonlatloop: do nf=1,nhisto
+         hnamel = histo_list(nf)
+
+         !----- Open the HDF5 file. -------------------------------------------------------!
+         call h5fopen_f(hnamel, H5F_ACC_RDONLY_F, file_id, hdferr)
+         if (hdferr < 0) then
+            write(unit=*,fmt='(a,1x,i4)') ' - Error opening HDF5 file - error - ',hdferr
+            write(unit=*,fmt='(a,1x,a)') ' - File name: ',trim(hnamel)
+            call fatal_error('Error opening HDF5 file - error - '//trim(hnamel)            &
+                            ,'read_ed21_history_file','ed_read_ed21_history.F90')
+         end if
+
+         !----- Retrieve the number of polygons in this file. -----------------------------!
+         call h5dopen_f(file_id,'NPOLYGONS_GLOBAL', dset_id, hdferr)
+         call h5dget_space_f(dset_id, dspace_id, hdferr)
+         call h5dread_f(dset_id, H5T_NATIVE_INTEGER,dset_npolygons_global,globdims, hdferr)
+         call h5sclose_f(dspace_id, hdferr)
+         call h5dclose_f(dset_id, hdferr)
+         
+         !----- Determine the global position of these polygons. --------------------------!
+         ipya = ipyz + 1
+         ipyz = ipyz + dset_npolygons_global
+
+         !----- In case we are meshing grids ----------------------------------------------!
+         ngridpoly(nf) = dset_npolygons_global
+
+         !------ Here we save the file where we can find these polygons. ------------------!
+         do ipy=ipya,ipyz
+            pyfile_list(ipy) = nf
+            pyindx_list(ipy) = ipy-ipya+1
+         end do
+
+         !---------------------------------------------------------------------------------!
+         !      Retrieve the polygon coordinates data.                                     !
+         !---------------------------------------------------------------------------------!
+         globdims(1) = int(dset_npolygons_global,8)
+
+         call h5dopen_f(file_id,'LONGITUDE', dset_id, hdferr)
+         call h5dget_space_f(dset_id, dspace_id, hdferr)
+         call h5dread_f(dset_id, H5T_NATIVE_REAL,plon_list(ipya:ipyz),globdims, hdferr)
+         call h5sclose_f(dspace_id, hdferr)
+         call h5dclose_f(dset_id, hdferr)
+         
+         call h5dopen_f(file_id,'LATITUDE', dset_id, hdferr)
+         call h5dget_space_f(dset_id, dspace_id, hdferr)
+         call h5dread_f(dset_id, H5T_NATIVE_REAL,plat_list(ipya:ipyz),globdims, hdferr)
+         call h5sclose_f(dspace_id, hdferr)
+         call h5dclose_f(dset_id, hdferr)
+         
+         call h5fclose_f(file_id, hdferr)
+         if (hdferr /= 0) then
+            write (unit=*,fmt='(a,1x,a)') 'File: ',trim(hnamel)
+            write (unit=*,fmt='(a)'     ) 'Problem: Failed closing the HDF5 dataset.'
+            write (unit=*,fmt='(a,1x,i4)') 'HDFerr: ',hdferr
+            call fatal_error('Could not close the HDF file'                                &
+                            ,'read_ed21_history_unstruct','ed_read_ed21_history.F90')
+         end if
+      end do lonlatloop
+
+      total_grid_py = ipyz
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     If this is a simulation with anthropogenic disturbance, check and read the re- !
+      ! scale file if it exists.                                                           !
+      !------------------------------------------------------------------------------------!
+      wlon_rscl(:) =  190.
+      elon_rscl(:) = -190.
+      slat_rscl(:) =  100.
+      nlat_rscl(:) = -100.
+      inquire(file=trim(lu_rescale_file(igr)),exist=exists)
+      rescale_glob = ianth_disturb == 1 .and. exists
+      nrescale = 0
+      if (rescale_glob) then
+         open (unit=13,file=trim(lu_rescale_file(igr)),status='old',action='read')
+         read (unit=13,fmt=*)
+         readrescale: do
+            nrescale = nrescale + 1
+            read (unit=13,fmt=*,iostat=ierr)  wlon_rscl(nrescale),elon_rscl(nrescale)      &
+                                             ,slat_rscl(nrescale),nlat_rscl(nrescale)      &
+                                             ,clon_rscl(nrescale),clat_rscl(nrescale)      &
+                                             ,dummy,(newarea(ilu,nrescale),ilu=1           &
+                                             ,n_dist_types)
+
+            if (ierr /= 0) then
+               nrescale = nrescale - 1
+               exit readrescale
+            end if
+         end do readrescale
+         rescale_glob = nrescale > 0
+         close (unit=13,status='keep')
+      elseif (ianth_disturb == 1 .and. len_trim(lu_rescale_file(igr)) > 0) then
+         write (unit=*,fmt='(a)') '-------------------------------------------------------'
+         write (unit=*,fmt='(a)') ' WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! '
+         write (unit=*,fmt='(a)') ' WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! '
+         write (unit=*,fmt='(a)') ' WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! '
+         write (unit=*,fmt='(a)') ' WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! '
+         write (unit=*,fmt='(a)') ' WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! '
+         write (unit=*,fmt='(a)') '-------------------------------------------------------'
+         write (unit=*,fmt='(a)') '  In subroutine read_ed21_history_unstruct:'
+         write (unit=*,fmt='(a,1x,i5)') '  - Grid: ',igr
+         write (unit=*,fmt='(a)') '  In subroutine read_ed21_history_unstruct:'
+         write (unit=*,fmt='(a)') '  - File '//trim(lu_rescale_file(igr))//                &
+                                     ' wasn''t found...'
+         write (unit=*,fmt='(a)') '  - Assuming no rescaling...'
+         write (unit=*,fmt='(a)') '-------------------------------------------------------'
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
+
+
+      cgrid => edgrid_g(igr)
 
       !------------------------------------------------------------------------------------!
       !     Now, we will go through all polygons, and we will determine which input        !
@@ -879,13 +997,35 @@ subroutine read_ed21_history_unstruct
       nneighloop: do ipy=1,cgrid%npolygons
          !----- Reset pdist to a very large number. ---------------------------------------!
          pdist(:)   = 1.e20
-         do nf=1,nhisto
-            pdist(nf) = dist_gc(plon_list(nf),cgrid%lon(ipy)                               &
-                               ,plat_list(nf),cgrid%lat(ipy))
+
+         do ifpy=1,total_grid_py
+            pdist(ifpy) = dist_gc(plon_list(ifpy),cgrid%lon(ipy)                           &
+                                 ,plat_list(ifpy),cgrid%lat(ipy))
          end do
-         pclosest(ipy) = minloc(pdist,dim=1)
-         psrcfile(ipy) = pyfile_list(pclosest(ipy))
+
+         select case (ied_init_mode)
+         case (5)
+            pclosest(ipy) = pyindx_list(minloc(pdist,dim=1))
+            psrcfile(ipy) = pyfile_list(minloc(pdist,dim=1))
+         case (99)
+            !------------------------------------------------------------------------------!
+            !      Alternative method for mixing 1 grid and POI's.  Only use the grid if   !
+            ! there is NOT a POI  within a user specified resolution.  Remember, this      !
+            ! assumes there is only one gridded file, and it is the first file.            !
+            !------------------------------------------------------------------------------!
+            ngp1          = ngridpoly(1)
+            pclosest(ipy) = pyindx_list(minloc(pdist(1:ngp1),dim=1))
+            psrcfile(ipy) = pyfile_list(1)
+            
+            poi_minloc    = minloc(pdist(ngp1+1:total_grid_py),dim=1) + ngp1
+            
+            if( pdist(poi_minloc) < max_poi99_dist ) then
+               pclosest(ipy)  = pyindx_list(poi_minloc)
+               psrcfile(ipy)  = pyfile_list(poi_minloc)
+            end if
+         end select
       end do nneighloop
+      
 
       !------------------------------------------------------------------------------------!
       !     Now that we have all polygons matched with their nearest neighbours, we will   !
@@ -915,7 +1055,6 @@ subroutine read_ed21_history_unstruct
             call fatal_error('Error opening HDF5 file - error - '//trim(hnamel)            &
                             ,'read_ed21_history_file','ed_read_ed21_history.F90')
          end if
-
 
          !---------------------------------------------------------------------------------!
          !      Retrieve global vector sizes and mapping tree.                             !
@@ -1017,7 +1156,33 @@ subroutine read_ed21_history_unstruct
             ! in the source file to which the polygon belongs.  Use these values, and its  !
             ! children values in sites, patchs and cohorts.                                !
             !------------------------------------------------------------------------------!
-            py_index = pyindx_list(pclosest(ipy))
+            py_index = pclosest(ipy)
+
+            !------------------------------------------------------------------------------!
+            !      Retrieve the polygon coordinates data.                                        !
+            !------------------------------------------------------------------------------!
+
+
+            !------------------------------------------------------------------------------!
+            !     In case we seek to rescale, we must first check whether a scale for the  !
+            ! current polygon.                                                             !
+            !------------------------------------------------------------------------------!
+            !----- Initialise distance and co-ordinates to non-sense numbers. -------------!
+            dist_rscl(:) = 1.e+20 ! Initialise to a large distance and non-sense 
+            if (rescale_glob) then
+               neighbour: do k=1,nrescale
+                  dist_rscl(k) = dist_gc(clon_rscl(k),cgrid%lon(ipy)                       &
+                                        ,clat_rscl(k),cgrid%lat(ipy))
+               end do neighbour
+               xclosest = minloc(dist_rscl,dim=1)
+               
+               rescale_loc = cgrid%lon(ipy) > wlon_rscl(xclosest) .and.                    &
+                             cgrid%lon(ipy) < elon_rscl(xclosest) .and.                    &
+                             cgrid%lat(ipy) > slat_rscl(xclosest) .and.                    &
+                             cgrid%lat(ipy) < nlat_rscl(xclosest)
+            else
+               rescale_loc = .false.
+            end if
 
             iparallel = 0
             
@@ -1032,6 +1197,8 @@ subroutine read_ed21_history_unstruct
             memdims(1)  = 1_8
             memoffs(1)  = 0_8
             memsize(1)  = 1_8
+
+
             !---- The ipy:ipy notation is needed for ifort when checking interfaces. ------!
             call hdf_getslab_i(cgrid%load_adjacency(ipy:ipy),'LOAD_ADJACENCY '             &
                               ,dsetrank,iparallel,.true.)
@@ -1171,6 +1338,43 @@ subroutine read_ed21_history_unstruct
                   call hdf_getslab_r(csite%mineralized_soil_N,'MINERALIZED_SOIL_N '        &
                                     ,dsetrank,iparallel,.true.)
 
+                  !------------------------------------------------------------------------!
+                  !     Check whether area should be re-scaled.                            !
+                  !------------------------------------------------------------------------!
+                  if (rescale_loc) then
+                     !---------------------------------------------------------------------!
+                     !     Now we loop over all land use types.                             !
+                     !---------------------------------------------------------------------!
+                     do ilu=1,n_dist_types
+                        !---- The original (old) area. ------------------------------------!
+                        oldarea(ilu) = sum(csite%area,mask=csite%dist_type == ilu)
+
+                        !------------------------------------------------------------------!
+                        !     Make sure that no area is going to be zero for a given land  !
+                        ! use type when the counter part is not.                           !
+                        !------------------------------------------------------------------!
+                        oldarea(ilu)          = max(0.5 * min_new_patch_area,oldarea(ilu))
+                        newarea(ilu,xclosest) = max(0.5 * min_new_patch_area               &
+                                                   ,newarea(ilu,xclosest))
+                        !------------------------------------------------------------------!
+                     end do
+
+                     !---- Re-scale the total areas so they are both equal to one. --------!
+                     oldarea(:)          = oldarea(:)          / sum(oldarea)
+                     newarea(:,xclosest) = newarea(:,xclosest)                             &
+                                         / sum(newarea(:,xclosest:xclosest))
+                     
+                     !----- Re-scale the areas of every patch. ----------------------------!
+                     do ipa=1,csite%npatches
+                        ilu = csite%dist_type(ipa)
+                        csite%area(ipa) = csite%area(ipa) * newarea(ilu,xclosest)          &
+                                                          / oldarea(ilu)
+                     end do
+
+                     !----- Just to make sure we preserve unity. --------------------------!
+                     csite%area(:) = csite%area(:) / sum(csite%area)
+
+                  end if
 
                   !------------------------------------------------------------------------!
                   !     Loop over all sites and fill the patch-level variables.            !
@@ -1298,6 +1502,32 @@ subroutine read_ed21_history_unstruct
                               end select
                            end if
 
+                           !---------------------------------------------------------------!
+                           !     Make sure that the biomass won't lead to FPE.  This       !
+                           ! should never happen when using a stable ED-2.1 version, but   !
+                           ! older versions had "zombie" cohorts.  Here we ensure that     !
+                           ! the model initialises with stable numbers whilst ensuring     !
+                           ! that the cohorts will be eliminated.                          !
+                           !---------------------------------------------------------------!
+                           if (cpatch%balive(ico) > 0.            .and.                    &
+                               cpatch%balive(ico) < tiny_biomass) then
+                              cpatch%balive(ico) = tiny_biomass
+                           end if
+                           if (cpatch%bleaf(ico) > 0.            .and.                     &
+                               cpatch%bleaf(ico) < tiny_biomass) then
+                              cpatch%bleaf(ico) = tiny_biomass
+                           end if
+                           if (cpatch%bdead(ico) > 0.            .and.                     &
+                               cpatch%bdead(ico) < tiny_biomass) then
+                              cpatch%bdead(ico) = tiny_biomass
+                           end if
+                           if (cpatch%bstorage(ico) > 0.            .and.                  &
+                               cpatch%bstorage(ico) < tiny_biomass) then
+                              cpatch%bstorage(ico) = tiny_biomass
+                           end if
+                           !---------------------------------------------------------------!
+
+
                            !----- Compute the above-ground biomass. -----------------------!
                            cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico)                  &
                                                        ,cpatch%balive(ico)                 &
@@ -1395,6 +1625,8 @@ subroutine read_ed21_history_unstruct
    call fatal_error ('You cannot restart with ED-2.1 without using HDF5...'                &
                     ,'read_ed21_history_unstruct','ed_read_ed21_history.F90')
 #endif   
+
+
    return
 end subroutine read_ed21_history_unstruct
 !==========================================================================================!

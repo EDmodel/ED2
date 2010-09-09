@@ -91,94 +91,6 @@ END
 
 !***************************************************************************
 
-subroutine rearrange(nzp,nxp,nyp,a,b)
-
-dimension a(nzp,nxp,nyp),b(nxp,nyp,nzp)
-
-do i=1,nxp
-   do j=1,nyp
-      do k=1,nzp
-         b(i,j,k)=a(k,i,j)
-      enddo
-   enddo
-enddo
-return
-end
-
-!***************************************************************************
-
-subroutine unarrange(nzp,nxp,nyp,a,b)
-
-dimension a(nxp,nyp,nzp),b(nzp,nxp,nyp)
-
-do i=1,nxp
-   do j=1,nyp
-      do k=1,nzp
-         b(k,i,j)=a(i,j,k)
-      enddo
-   enddo
-enddo
-return
-end
-
-!***************************************************************************
-
-integer function RAMS_getvar (string,itype,ngrd,a,b,flnm)
-
-use an_header
-use misc_coms, only : ierr_getvar, ifound
-implicit none
-include 'interface.h'
-real :: a(*),b(*)
-integer :: itype,ngrd
-character*(*) flnm,cgrid*1,flng*80,errmsg*120,string
-logical there
-integer :: ni,npts,iword
-integer :: lastchar
-write(*,*) 'panis et circenses'
-write(*,*) 'nvbtab=',nvbtab
-do ni=1,nvbtab
-
-   if((string.eq.anal_table(ni)%string.or.  &
-      string//'M'.eq.anal_table(ni)%string).and.  &
-      ngrd.eq.anal_table(ni)%ngrid) then
-      
-      if(string//'M'.eq.anal_table(ni)%string) string=string//'M'
-   
-      write(cgrid,'(i1)') ngrd
-      flng=flnm//'-g'//cgrid//'.vfm'
-      print*,' C_open - ',flng(1:len_trim(flng)),'   ',string
-      flng=flng(1:len_trim(flng))//char(0)
-
-      inquire(file=flng,exist=there)
-      if(.not.there) then
-         errmsg='File not found - '//flng
-         call error_mess(errmsg)
-         return
-      endif
-
-      npts=anal_table(ni)%nvalues
-      itype=anal_table(ni)%idim_type
-      iword=anal_table(ni)%npointer
-
-      call RAMS_c_open(flng,'r'//char(0))
-      call vfirecr(10,a,npts,'LIN',b,iword)
-      call RAMS_c_close()
-
-      RAMS_getvar=0
-      ifound=ifound+1
-      return
-
-   endif
-enddo
-
-errmsg='Variable not available in this run - '//string
-call error_mess(errmsg)
-RAMS_getvar=1
-ierr_getvar=1
-
-return
-end
 
 !***************************************************************************
 
@@ -192,11 +104,13 @@ integer iyr, imn, idy, itm
 integer oyr, omn, ody, otm
 integer ib1,ib2
 real tinc
+real(kind=8) :: tinc8
 character*(*) fname,prefix,post
 character dstring*40,fmt*3,type*1
 
+tinc8 = dble(tinc)
 !print*,iyr,imn,idy,itm,tinc
-call date_add_to(iyr,imn,idy,itm,tinc,'s',oyr,omn,ody,otm)
+call date_add_to(iyr,imn,idy,itm,tinc8,'s',oyr,omn,ody,otm)
 !print*,oyr,omn,ody,otm
 
 write(dstring,100) '-',type,'-',oyr,'-',omn,'-',ody,'-',otm

@@ -88,11 +88,19 @@ subroutine ed_filelist(fnames,file_prefix,nfile)
    !---------------------------------------------------------------------------------------!
    call filelist_c(n,indices,prefix,filelist)
 
+   write (unit=*,fmt='(a)') ' +  Showing first 10 files:'
+
    do nf=1,n
 
       fnames(nf) = trim(filelist(indices(nf):indices(nf+1)-1))
-      write (unit=*,fmt='(a,1x,i5,1x,a)') '   [-] File #: ',nf,trim(fnames(nf))
+      
+
+      if (nf <= 10) then
+         write (unit=*,fmt='(a,1x,i5,1x,a)') '   [-] File #: ',nf,trim(fnames(nf))
+      end if
    end do
+
+
 
 #endif
    
@@ -137,8 +145,10 @@ subroutine ed1_fileinfo(text,nfiles,full_list,ntype,type_list,tlon_list,tlat_lis
    select case(text)
    case ('.site')
       okdot = 4
-   case ('.pss','.css')
+   case ('.pss','.css','.txt')
       okdot = 3
+   case ('.lu')
+      okdot = 2
    end select
 
 
@@ -254,5 +264,58 @@ subroutine ed21_fileinfo(nfiles,full_list,nhisto,histo_list)
 
    return
 end subroutine ed21_fileinfo
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This sub-routine copies the values defined for grid 1 when multiple grids are used   !
+! but the user has defined only the first grid.                                            !
+!------------------------------------------------------------------------------------------!
+subroutine copy_path_from_grid_1(ngrids,varname,pathval)
+   use ed_max_dims, only : undef_path & ! intent(in)
+                         , str_len    & ! intent(in)
+                         , maxgrds    ! ! intent(in)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                                   , intent(in)    :: ngrids
+   character(len=*)      , intent(in)                        :: varname
+   character(len=str_len), dimension(maxgrds), intent(inout) :: pathval
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                                   :: ifm
+   integer                                                   :: nundef
+   !---------------------------------------------------------------------------------------!
+
+   !----- No need to bother if this has a single grid or if values were defined. ----------!
+   do ifm=2,ngrids
+      if (trim(pathval(ifm)) == trim(undef_path)) then
+         write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+         write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+         write (unit=*,fmt='(a)') ' '
+         write (unit=*,fmt='(a)') ' WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! '
+         write (unit=*,fmt='(a)') ' WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! '
+         write (unit=*,fmt='(a)') ' WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! '
+         write (unit=*,fmt='(a)') ' WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! '
+         write (unit=*,fmt='(a)') ' '
+         write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+         write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+         write (unit=*,fmt='(a,1x,a)')  ' - Variable:',trim(varname)
+         write (unit=*,fmt='(a,1x,i5)') ' - Undefined value for grid:',ifm
+         write (unit=*,fmt='(a,1x,i5)') ' - Copying value from grid:',1
+         write (unit=*,fmt='(a,1x,a)')  ' - Value assigned:',trim(pathval(1))
+         write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+         write (unit=*,fmt='(a)') '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+
+         pathval(ifm) = pathval(1)
+      end if
+   end do
+
+   return
+end subroutine copy_path_from_grid_1
 !==========================================================================================!
 !==========================================================================================!

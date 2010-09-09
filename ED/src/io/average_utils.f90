@@ -240,7 +240,6 @@ subroutine normalize_averaged_vars(cgrid,frqsum,dtlsm)
             csite%ebudget_precipgain(ipa)    = csite%ebudget_precipgain(ipa)    * frqsumi
             csite%ebudget_netrad(ipa)        = csite%ebudget_netrad(ipa)        * frqsumi
             csite%ebudget_denseffect(ipa)    = csite%ebudget_denseffect(ipa)    * frqsumi
-            csite%ebudget_latent(ipa)        = csite%ebudget_latent(ipa)        * frqsumi
             csite%ebudget_loss2atm(ipa)      = csite%ebudget_loss2atm(ipa)      * frqsumi
             csite%ebudget_loss2drainage(ipa) = csite%ebudget_loss2drainage(ipa) * frqsumi
             csite%ebudget_loss2runoff(ipa)   = csite%ebudget_loss2runoff(ipa)   * frqsumi
@@ -357,7 +356,6 @@ subroutine reset_averaged_vars(cgrid)
             !----------------------------------------------------------------!
             csite%ebudget_precipgain(ipa)       = 0.0
             csite%ebudget_netrad(ipa)           = 0.0
-            csite%ebudget_latent(ipa)           = 0.0
             csite%ebudget_loss2atm(ipa)         = 0.0
             csite%ebudget_loss2runoff(ipa)      = 0.0
             csite%ebudget_loss2drainage(ipa)    = 0.0
@@ -462,7 +460,8 @@ subroutine integrate_ed_daily_output_state(cgrid)
    real                        :: poly_lai,site_lai,patch_lai,patch_lai_i
    real                        :: poly_lma,site_lma,patch_lma
    real                        :: sss_fsn, sss_fsw, pss_fsn, pss_fsw
-   real                        :: sss_can_theta, sss_can_shv, sss_can_co2, sss_can_prss
+   real                        :: sss_can_theta, sss_can_theiv, sss_can_shv
+   real                        :: sss_can_co2, sss_can_prss
    real                        :: pss_veg_water, pss_veg_energy, pss_veg_hcap
    real                        :: sss_veg_water, sss_veg_energy, sss_veg_hcap
    !---------------------------------------------------------------------------------------!
@@ -481,6 +480,7 @@ subroutine integrate_ed_daily_output_state(cgrid)
       sss_veg_water    = 0.
       sss_veg_hcap     = 0.
       sss_can_theta    = 0.
+      sss_can_theiv    = 0.
       sss_can_shv      = 0.
       sss_can_co2      = 0.
       sss_can_prss     = 0.
@@ -600,6 +600,8 @@ subroutine integrate_ed_daily_output_state(cgrid)
 
          sss_can_theta  = sss_can_theta                                                    &
                         + cpoly%area(isi) * (sum(csite%can_theta*csite%area) * site_area_i)
+         sss_can_theiv  = sss_can_theiv                                                    &
+                        + cpoly%area(isi) * (sum(csite%can_theiv*csite%area) * site_area_i)
          sss_can_shv    = sss_can_shv                                                      &
                         + cpoly%area(isi) * (sum(csite%can_shv  *csite%area) * site_area_i)
          sss_can_co2    = sss_can_co2                                                      &
@@ -620,6 +622,8 @@ subroutine integrate_ed_daily_output_state(cgrid)
                                     + sss_veg_hcap  * poly_area_i
       cgrid%dmean_can_theta(ipy)    = cgrid%dmean_can_theta(ipy)                           &
                                     + sss_can_theta * poly_area_i
+      cgrid%dmean_can_theiv(ipy)    = cgrid%dmean_can_theiv(ipy)                           &
+                                    + sss_can_theiv * poly_area_i
       cgrid%dmean_can_shv(ipy)      = cgrid%dmean_can_shv(ipy)                             &
                                     + sss_can_shv   * poly_area_i
       cgrid%dmean_can_co2(ipy)      = cgrid%dmean_can_co2(ipy)                             &
@@ -1248,6 +1252,7 @@ subroutine normalize_ed_daily_output_vars(cgrid)
       cgrid%dmean_veg_hcap(ipy)     = cgrid%dmean_veg_hcap(ipy)     * dtlsm_o_daysec
       cgrid%dmean_veg_water(ipy)    = cgrid%dmean_veg_water(ipy)    * dtlsm_o_daysec
       cgrid%dmean_can_theta(ipy)    = cgrid%dmean_can_theta(ipy)    * dtlsm_o_daysec
+      cgrid%dmean_can_theiv(ipy)    = cgrid%dmean_can_theiv(ipy)    * dtlsm_o_daysec
       cgrid%dmean_can_shv(ipy)      = cgrid%dmean_can_shv(ipy)      * dtlsm_o_daysec
       cgrid%dmean_can_co2(ipy)      = cgrid%dmean_can_co2(ipy)      * dtlsm_o_daysec
       cgrid%dmean_can_prss(ipy)     = cgrid%dmean_can_prss(ipy)     * dtlsm_o_daysec
@@ -1667,6 +1672,7 @@ subroutine zero_ed_daily_output_vars(cgrid)
       cgrid%dmean_can_rhos       (ipy) = 0.
       cgrid%dmean_can_prss       (ipy) = 0.
       cgrid%dmean_can_theta      (ipy) = 0.
+      cgrid%dmean_can_theiv      (ipy) = 0.
       cgrid%dmean_atm_temp       (ipy) = 0.
       cgrid%dmean_rshort         (ipy) = 0.
       cgrid%dmean_rlong          (ipy) = 0.
@@ -1828,6 +1834,8 @@ subroutine integrate_ed_monthly_output_vars(cgrid)
                                       + cgrid%dmean_veg_water     (ipy)
       cgrid%mmean_can_theta     (ipy) = cgrid%mmean_can_theta     (ipy)                    &
                                       + cgrid%dmean_can_theta     (ipy)
+      cgrid%mmean_can_theiv     (ipy) = cgrid%mmean_can_theiv     (ipy)                    &
+                                      + cgrid%dmean_can_theiv     (ipy)
       cgrid%mmean_can_shv       (ipy) = cgrid%mmean_can_shv       (ipy)                    &
                                       + cgrid%dmean_can_shv       (ipy)
       cgrid%mmean_can_co2       (ipy) = cgrid%mmean_can_co2       (ipy)                    &
@@ -2085,6 +2093,7 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
       cgrid%mmean_veg_hcap       (ipy) = cgrid%mmean_veg_hcap       (ipy) * ndaysi
       cgrid%mmean_veg_water      (ipy) = cgrid%mmean_veg_water      (ipy) * ndaysi
       cgrid%mmean_can_theta      (ipy) = cgrid%mmean_can_theta      (ipy) * ndaysi
+      cgrid%mmean_can_theiv      (ipy) = cgrid%mmean_can_theiv      (ipy) * ndaysi
       cgrid%mmean_can_shv        (ipy) = cgrid%mmean_can_shv        (ipy) * ndaysi
       cgrid%mmean_can_co2        (ipy) = cgrid%mmean_can_co2        (ipy) * ndaysi
       cgrid%mmean_can_prss       (ipy) = cgrid%mmean_can_prss       (ipy) * ndaysi
@@ -2397,6 +2406,7 @@ subroutine zero_ed_monthly_output_vars(cgrid)
       cgrid%mmean_veg_water          (ipy) = 0.
       cgrid%mmean_veg_temp           (ipy) = 0.
       cgrid%mmean_can_theta          (ipy) = 0.
+      cgrid%mmean_can_theiv          (ipy) = 0.
       cgrid%mmean_can_prss           (ipy) = 0.
       cgrid%mmean_can_temp           (ipy) = 0.
       cgrid%mmean_can_shv            (ipy) = 0.

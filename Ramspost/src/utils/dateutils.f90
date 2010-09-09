@@ -1,354 +1,484 @@
-!############################# Change Log ##################################
-! 1.0.0.4
-!
-! 010228 MJB date_abs_secs2 ##
-!            Added version of date_abs_secs that accepts yyyy mm dd hhmmss
-!            as arguments. ##
-! 010111 MJB julday1970 ##
-!            Added routine to calculate Julian day since 1970. ##
-! 001019 CJT date_add_to ##
-!            Fix for leap years and negative time increments. ##
-! 000828 MJB date_add_to ##
-!            Fix to incorrect minute calculation for output filenames. ##
-!
-!###########################################################################
-!  Copyright (C)  1990, 1995, 1999, 2000 - All Rights Reserved
-!  Regional Atmospheric Modeling System - RAMS
-!  Mission Research Corporation / *ASTeR Division
-!###########################################################################
-
+!############################# Change Log #################################################!
+! 2.0.0                                                                                    !
+!                                                                                          !
+!##########################################################################################!
+!  Copyright (C)  1990, 1995, 1999, 2000, 2003 - All Rights Reserved                       !
+!  Regional Atmospheric Modeling System - RAMS                                             !
+!                                                                                          !
+!  MLO - 08/08/08 : Adjusting dates on BRAMS so it will also use Gregorian calendar (97    !
+!                   leap years every 400 years), so it will be in line with ED2.           !
+!                   Also, BRAMS, like ED2, now uses January 1, 1000, 00GMT as the time     !
+!                   origin.                                                                !
+!##########################################################################################!
 subroutine date_abs_secs (indate1,seconds)
+   use rconstants, only : day_sec,hr_sec,min_sec
+   implicit none
+   character(len=14) :: indate1
+   real(kind=8) :: seconds
 
-! compute number of seconds past 1 January 1900 12:00 am
+   ! compute number of seconds past 1 January 1900 12:00 am
 
-real*8 seconds,s1,s2,s3,s4
-character*14 indate1
-integer :: year1,month1,date1,hour1
+   real(kind=8) :: s1,s2,s3,s4
+   integer :: year1,month1,date1,hour1,iy,ndays
+   integer, external  :: julday
+   logical, external  :: isleap
+   integer, parameter :: firstyear = 1000
+   integer            :: elapdays
+   call date_unmake_big(year1,month1,date1,hour1,indate1)
 
-call date_unmake_big(year1,month1,date1,hour1,indate1)
+   !---------------------------------------------------------------------------------------!
+   ! Counting the # of leap days between the reference and current year.                   !
+   !---------------------------------------------------------------------------------------!
+   elapdays = 0
+   if (firstyear < year1) then
+      do iy=firstyear,year1-1
+         if (isleap(iy)) then
+           elapdays=elapdays + 366
+         else
+           elapdays=elapdays + 365
+         end if
+      end do
+   elseif (firstyear > year1) then
+      do iy=firstyear-1,year1
+         if (isleap(iy)) then
+           elapdays=elapdays - 366
+         else
+           elapdays=elapdays - 365
+         end if
+      end do
+   end if
+   
+   ndays = elapdays + julday(month1,date1,year1)
 
-iy = year1 - 1900
-ndays = iy * 365 + (iy-1)/4 + julday(month1,date1,iy)
-s1= dble(ndays) *86400.
-s2= dble(hour1/10000)*3600.
-s3= dble(mod(hour1,10000)/100)*60.
-s4= dble(mod(hour1,100))
-seconds= s1+s2+s3+s4
+   s1= dble(ndays) *dble(day_sec)
+   s2= dble(hour1/10000)*dble(hr_sec)
+   s3= dble(mod(hour1,10000)/100)*dble(min_sec)
+   s4= dble(mod(hour1,100))
+   seconds= s1+s2+s3+s4
 
-return
-end
+   return
+end subroutine date_abs_secs
+!==========================================================================================!
+!==========================================================================================!
 
-!***************************************************************************
 
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
 subroutine date_abs_secs2 (year1,month1,date1,hour1,seconds)
+   use rconstants, only : day_sec,hr_sec,min_sec
+   implicit none
+   real(kind=8) :: seconds
 
-! compute number of seconds past 1 January 1900 12:00 am
+   ! compute number of seconds past 1 January 1000 12:00 am
 
-real*8 seconds,s1,s2,s3,s4
-integer :: year1,month1,date1,hour1
+   real(kind=8) :: s1,s2,s3,s4
+   integer :: year1,month1,date1,hour1,iy,ndays
+   integer :: elapdays
+   integer, external  :: julday
+   logical, external  :: isleap
+   integer, parameter :: firstyear=1000
 
-iy = year1 - 1900
-ndays = iy * 365 + (iy-1)/4 + julday(month1,date1,iy)
-s1= dble(ndays) *86400.
-s2= dble(hour1/10000)*3600.
-s3= dble(mod(hour1,10000)/100)*60.
-s4= dble(mod(hour1,100))
-seconds= s1+s2+s3+s4
+   !---------------------------------------------------------------------------------------!
+   ! Counting the # of leap days between the reference and current year.                   !
+   !---------------------------------------------------------------------------------------!
+   elapdays = 0
+   if (firstyear < year1) then
+      do iy=firstyear,year1-1
+         if (isleap(iy)) then
+           elapdays=elapdays + 366
+         else
+           elapdays=elapdays + 365
+         end if
+      end do
+   elseif (firstyear > year1) then
+      do iy=firstyear-1,year1
+         if (isleap(iy)) then
+           elapdays=elapdays - 366
+         else
+           elapdays=elapdays - 365
+         end if
+      end do
+   end if
+   
+   ndays = elapdays + julday(month1,date1,year1)
+   s1= dble(ndays) * dble(day_sec)
+   s2= dble(hour1/10000) * dble(hr_sec)
+   s3= dble(mod(hour1,10000)/100)*dble(min_sec)
+   s4= dble(mod(hour1,100))
+   seconds= s1+s2+s3+s4
+
+   return
+end subroutine date_abs_secs2
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+subroutine date_2_seconds (iyearc,imonthc,idatec,itimec, &
+    iyeara,imontha,idatea,itimea,total_seconds)
+   implicit none
+
+   ! Output model time = total_seconds
+   real(kind=8) :: total_seconds,secs_a,secs_c
+
+   ! Input the model initialization time
+   ! NOT ITIMEA IS A SIX DIGIT INTEGER HHMMSS
+   integer :: iyeara,imontha,idatea,itimea
+
+   ! Input also the current integer times, and day-seconds
+   integer :: iyearc,imonthc,idatec,itimec
+   !real :: secondsc
+   !integer :: itimec
+
+   !itimec =  10000*int(secondsc/3600) + &     !hours
+   !     100*int(secondsc/60) + &              !minutes
+   !     mod(int(secondsc),60)                 !seconds
+
+   call date_abs_secs2(iyearc,imonthc,idatec,itimec,secs_c)
+   call date_abs_secs2(iyeara,imontha,idatea,itimea,secs_a)
+   total_seconds = secs_c - secs_a
 
 return
-end
+end subroutine date_2_seconds
+!==========================================================================================!
+!==========================================================================================!
 
-!***************************************************************************
 
-subroutine date_subtract (indate1,indate2,tinc,tunits)
 
-! add (or subracts) a time increment to a date and output new date
-! -> uses hhmmss for hours, 4 digit year
 
-real tinc
-character*1 tunits
-character*14 indate1, indate2
-dimension mondays(12)
-data mondays/31,28,31,30,31,30,31,31,30,31,30,31/
-integer year1,month1,date1,hour1,year2,month2,date2,hour2
-real*8 secs1,secs2
 
-call date_abs_secs(indate1,secs1)
-call date_abs_secs(indate2,secs2)
-!print*,'sub:',indate1,indate2,secs1,secs2
 
-! convert time to requested unit
+!==========================================================================================!
+!==========================================================================================!
+subroutine date_secs_ymdt (seconds,iyear1,imonth1,idate1,ihour1)
+   use rconstants, only : day_sec,hr_sec,min_sec
+   implicit none
+   real(kind=8) :: seconds,s1
+   integer :: iyear1,imonth1,idate1,ihour1
 
-ttinc=secs2-secs1
-if(tunits.eq.'s') tinc=ttinc
-if(tunits.eq.'m') tinc=ttinc/60.
-if(tunits.eq.'h') tinc=ttinc/3600.
-if(tunits.eq.'d') tinc=ttinc/86400.
-!print*,'sub:',secs1,secs2,tinc,tinc
+   integer,parameter :: firstyear=1000
+   logical, external :: isleap
 
-return
-end
+   ! compute real time given number of seconds past 1 January 1000 12:00 am  
 
-!***************************************************************************
+   integer :: ny,nyr,ileap,nm,ihr,imn,isc
 
+   integer :: mondays(12)
+   data mondays/31,28,31,30,31,30,31,31,30,31,30,31/
+
+   ! Get what year it is
+   s1=seconds
+   do ny=0,10000
+      ileap=0
+      if(isleap(firstyear+ny)) ileap=1
+      s1=s1-(365.d0+dble(ileap))* dble(day_sec)
+      if(s1 < 0.d0) then
+         nyr=ny
+         s1=s1+(365.d0+dble(ileap))* dble(day_sec)
+         exit
+      endif
+   enddo
+   iyear1=firstyear+nyr
+
+   ! s1 is now number of secs into the year
+   !   Get month
+   do nm=1,12
+      ileap=0
+      if(isleap(firstyear+ny) .and. nm == 2) ileap=1
+      s1=s1-dble(mondays(nm)+ileap)* dble(day_sec)
+      if(s1 < 0.d0) then
+         s1=s1+dble(mondays(nm)+ileap)* dble(day_sec)
+         exit
+      endif
+   enddo
+   imonth1=nm
+
+   ! s1 is now number of secs into the month
+   !   Get date and time
+
+   idate1=int(s1/dble(day_sec))
+   s1=s1-dble(idate1)*dble(day_sec)
+   !---- Don't know if this is right. idate1 should not be +1. Although days start
+   ! at idate1, idate =0 means that it is still running the last day of previous month,
+   ! just that it is past midnight so the previous test gave a negative. 
+   ! idate1=idate1+1 ! Since date starts at 1
+   if (idate1 == 0) then
+     imonth1=imonth1-1
+     if (imonth1 == 0) then
+       imonth1 = 12
+       iyear1  = iyear1 - 1
+     end if
+     ileap =0
+     if (isleap(iyear1) .and. imonth1 == 2) ileap=1
+     idate1=mondays(imonth1)+ileap
+   end if
+
+   ihr=int(s1/dble(hr_sec))
+   s1=s1-dble(ihr)*dble(hr_sec)
+   imn=int(s1/dble(min_sec))
+   s1=s1-dble(imn)*dble(min_sec)
+   isc=int(s1)
+   ihour1=ihr*10000+imn*100+isc
+
+   return
+end subroutine date_secs_ymdt
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+subroutine date_add_to_big(cindate,tinc,tunits,coutdate)
+   use rconstants, only : day_sec,hr_sec,min_sec
+   implicit none
+
+   character(len=14) cindate,coutdate
+   character(len=1) :: tunits
+
+   ! adds/subtracts a time increment to a date and output new date
+   ! -> uses hhmmss for hours, 4 digit year
+
+   real(kind=8) :: ttinc,secs,tinc           !RGK
+   integer :: inyear,inmonth,indate,inhour  &
+             ,outyear,outmonth,outdate,outhour
+
+   ! convert input time to seconds
+
+   ttinc=tinc
+   if(tunits.eq.'m') ttinc=tinc*min_sec
+   if(tunits.eq.'h') ttinc=tinc*hr_sec
+   if(tunits.eq.'d') ttinc=tinc*day_sec
+
+   call date_unmake_big(inyear,inmonth,indate,inhour,cindate)
+   call date_abs_secs2(inyear,inmonth,indate,inhour,secs)
+
+   secs=secs+ttinc
+
+   call date_secs_ymdt(secs,outyear,outmonth,outdate,outhour)
+   call date_make_big(outyear,outmonth,outdate,outhour,coutdate)
+
+   return
+end subroutine date_add_to_big
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
 subroutine date_add_to (inyear,inmonth,indate,inhour  &
                         ,tinc,tunits,outyear,outmonth,outdate,outhour)
+   use rconstants, only : day_sec,hr_sec,min_sec
+   implicit none
 
-! add a time increment to a date and output new date
-! -> uses hhmmss for hours, 4 digit year
+   integer inyear,inmonth,indate,inhour  &
+          ,outyear,outmonth,outdate,outhour
 
-integer inyear,inmonth,indate,inhour  &
-       ,outyear,outmonth,outdate,outhour
-real tinc
-character*1 tunits
-dimension mondays(12)
-data mondays/31,28,31,30,31,30,31,31,30,31,30,31/
+   character(len=1) :: tunits
 
-! convert input time to seconds
+   ! adds/subtracts a time increment to a date and output new date
+   ! -> uses hhmmss for hours, 4 digit year
 
-ttinc=tinc
-if(tunits.eq.'m') ttinc=tinc*60.
-if(tunits.eq.'h') ttinc=tinc*3600.
-if(tunits.eq.'d') ttinc=tinc*86400.
-!print*,'inc:',tinc,tunits,ttinc
 
-xhourin=inhour/10000
-xminin=mod(inhour,10000)/100
-xsecin=mod(inhour,100)
-strtim=xhourin+xminin/60.+xsecin/3600.
-!print*,'strtim=',strtim
+   real(kind=8) :: tinc,ttinc,secs
 
-izhours=int(mod(strtim+ttinc/3600.,24.)+.001)
-izmin  =int(mod(strtim+ttinc/3600.,1.)*60+.001)
-izsec  =int(mod(strtim*3600.+ttinc,60.)+.001)
-!print*,'izs=',izhours,izmin,izsec
+   ! convert input time to seconds
 
-outhour= izhours*10000+izmin*100+izsec
+   ttinc=tinc
+   if(tunits.eq.'m') ttinc=tinc*dble(min_sec)
+   if(tunits.eq.'h') ttinc=tinc*dble(hr_sec)
+   if(tunits.eq.'d') ttinc=tinc*dble(day_sec)
+   !print*,'inc:',tinc,tunits,ttinc
 
-iround=.001
-if(ttinc<0.) iround=-.001
-iadddays=int((strtim+ttinc/3600.)/24.+iround)
 
-outyear=inyear
-outdate=indate+iadddays
-outmonth=inmonth
+   call date_abs_secs2(inyear,inmonth,indate,inhour,secs)
 
-20 continue
-   idays=mondays(outmonth)
-   if(outmonth==2.and.mod(outyear,4)==0)  idays=29
+   secs=secs+ttinc
 
-   if(outdate.gt.idays) then
-      outdate=outdate-idays
-      outmonth=outmonth+1
-      if(outmonth.gt.12) then
-         outyear=outyear+1
-         outmonth=1
-      endif
-   elseif(outdate.lt.1) then
-      if(outmonth.eq.1)outmonth=13
-      idays=mondays(outmonth-1)
-      if(outmonth-1.eq.2.and.mod(outyear,4).eq.0)  idays=29
-      outdate=idays+outdate
-      outmonth=outmonth-1
-      if(outmonth.eq.12)outyear=outyear-1
-   else
-      goto 21
-   endif
+   call date_secs_ymdt(secs,outyear,outmonth,outdate,outhour)
 
-   goto 20
+   !print*,'out stuff:',outyear,outmonth,outdate,outhour
 
-21 continue
+   return
+end subroutine date_add_to
+!==========================================================================================!
+!==========================================================================================!
 
-!print*,'out stuff:',outyear,outmonth,outdate,outhour
 
-return
-end
 
-!***************************************************************************
 
+
+
+!==========================================================================================!
+!==========================================================================================!
 subroutine date_make_big (inyear,inmonth,indate,inhour,outdate)
+   implicit none
+   integer :: inyear,inmonth,indate,inhour
+   character(len=14) ::  outdate
 
-integer inyear,inmonth,indate,inhour
-character*14 outdate
+   write(outdate(1:4),fmt='(i4.4)') inyear
+   write(outdate(5:6),fmt='(i2.2)') inmonth
+   write(outdate(7:8),fmt='(i2.2)') indate
+   write(outdate(9:14),fmt='(i6.6)') inhour
 
-write(outdate(1:4),10) inyear
-write(outdate(5:6),11) inmonth
-write(outdate(7:8),11) indate
-write(outdate(9:14),12) inhour
-10 format (i4.4)
-11 format (i2.2)
-12 format (i6.6)
+   return
+end subroutine date_make_big
+!==========================================================================================!
+!==========================================================================================!
 
-return
-end
 
-!***************************************************************************
 
+
+
+
+!==========================================================================================!
+!==========================================================================================!
 subroutine date_unmake_big (inyear,inmonth,indate,inhour,outdate)
+   implicit none
+   integer :: inyear,inmonth,indate,inhour
+   character(len=14) :: outdate
 
-integer inyear,inmonth,indate,inhour
-character*14 outdate
+   read(outdate(1:4),fmt='(i4)') inyear
+   read(outdate(5:6),fmt='(i2)') inmonth
+   read(outdate(7:8),fmt='(i2)') indate
+   read(outdate(9:14),fmt='(i6)') inhour
 
-read(outdate(1:4),10) inyear
-read(outdate(5:6),11) inmonth
-read(outdate(7:8),11) indate
-read(outdate(9:14),12) inhour
-10 format (i4)
-11 format (i2)
-12 format (i6)
+   return
+end subroutine date_unmake_big
+!==========================================================================================!
+!==========================================================================================!
 
-return
-end
 
-!***************************************************************************
 
-subroutine RAMS_dintsort(ni,chnums,cstr)
 
-! sort an array of character strings by an associated character field
 
-character*14 chnums(*)
-character cstr(*)*(*),cscr*200
-character*14 mini,nscr
 
-do n=1,ni
-   mini='99999999999999'
-   do nm=n,ni
-      if(chnums(nm).lt.mini) then
-         nmm=nm
-         mini=chnums(nm)
+!==========================================================================================!
+!==========================================================================================!
+integer function julday (imonth,iday,iyear)
+   implicit none
+   integer :: imonth,iday,iyear
+
+   integer           :: febdays
+   logical, external :: isleap
+
+   ! compute the julian day from a normal date
+
+   if (isleap(iyear)) then
+      febdays=29
+   else
+      febdays=28
+   end if
+   
+   julday= iday  &
+         + min(1,max(0,imonth-1))*31  &
+         + min(1,max(0,imonth-2))*febdays  &
+         + min(1,max(0,imonth-3))*31  &
+         + min(1,max(0,imonth-4))*30  &
+         + min(1,max(0,imonth-5))*31  &
+         + min(1,max(0,imonth-6))*30  &
+         + min(1,max(0,imonth-7))*31  &
+         + min(1,max(0,imonth-8))*31  &
+         + min(1,max(0,imonth-9))*30  &
+         + min(1,max(0,imonth-10))*31  &
+         + min(1,max(0,imonth-11))*30  &
+         + min(1,max(0,imonth-12))*31
+
+   return
+end function julday
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+integer function julday1000 (imonth,iday,iyear)
+   implicit none
+   integer :: imonth,iday,iyear
+
+   integer :: i,imm,idd,jd
+   
+   integer           :: febdays
+   logical, external :: isleap
+
+   ! compute the julian day (from 1000) from a normal date w/4 digit yr
+   ! 1583 is the first full year with Gregorian calendar, but for compability with ED 
+   ! we use 1000 instead.
+
+   julday1000=0
+   do i=1000,iyear
+
+      imm=12
+      idd=31
+      if(i==iyear)then
+         imm=imonth
+         idd=iday
       endif
-   enddo
-   nscr=chnums(n)
-   chnums(n)=chnums(nmm)
-   chnums(nmm)=nscr
-   cscr=cstr(n)
-   cstr(n)=cstr(nmm)
-   cstr(nmm)=cscr
-enddo
+      
+      if (isleap(i)) then
+         febdays=29
+      else
+         febdays=28
+      end if
 
-return
-end
+      jd= idd  &
+         + min(1,max(0,imm-1))*31  &
+         + min(1,max(0,imm-2))*febdays  &
+         + min(1,max(0,imm-3))*31  &
+         + min(1,max(0,imm-4))*30  &
+         + min(1,max(0,imm-5))*31  &
+         + min(1,max(0,imm-6))*30  &
+         + min(1,max(0,imm-7))*31  &
+         + min(1,max(0,imm-8))*31  &
+         + min(1,max(0,imm-9))*30  &
+         + min(1,max(0,imm-10))*31  &
+         + min(1,max(0,imm-11))*30  &
+         + min(1,max(0,imm-12))*31
 
-!***************************************************************************
+      julday1000=julday1000+jd
 
-subroutine RAMS_sort_dint3 (n1,ia1,n2,ia2,n3,ia3,nt,iall)
+   enddo    
 
-!     sort 3 arrays of char's, put back in 1 array
-!     copy all to output array
+   return
+end function julday1000
+!==========================================================================================!
+!==========================================================================================!
 
-character*14 ia1(*),ia2(*),ia3(*),iall(*)
-character*14 mini,nscr
 
-nt=0
-do n=1,n1
-   nt=nt+1
-   iall(nt)=ia1(n)
-enddo
-do n=1,n2
-   nt=nt+1
-   iall(nt)=ia2(n)
-enddo
-do n=1,n3
-   nt=nt+1
-   iall(nt)=ia3(n)
-enddo
 
-do n=1,nt
-   mini='99999999999999'
-   do nm=n,nt
-      if(iall(nm).lt.mini) then
-         nmm=nm
-         mini=iall(nm)
-      endif
-   enddo
-   nscr=iall(n)
-   iall(n)=iall(nmm)
-   iall(nmm)=nscr
-enddo
 
-return
-end
 
-!***************************************************************************
 
-subroutine RAMS_unique_dint (n1,ia1)
+!==========================================================================================!
+!==========================================================================================!
+logical function isleap(year)
+   !This function runs a check on whether the year is leap or not, based 
+   ! on Gregorian calendar
+   integer, intent(in) :: year
+   isleap = (mod(year,400) == 0) .or.  &
+            (mod(year,4) == 0 .and. mod(year,100) /= 0)
 
-! reduce an array to get rid of duplicate entries
-
-character*14 ia1(*)
-
-nt=n1
-10 continue
-do n=2,nt
-   if(ia1(n).eq.ia1(n-1)) then
-      do nn=n,nt
-         ia1(nn-1)=ia1(nn)
-      enddo
-      nt=nt-1
-      goto 10
-   endif
-enddo
-n1=nt
-
-return
-end
-
-!***************************************************************************
-
-function julday (imonth,iday,iyear)
-
-! compute the julian day from a normal date
-
-julday= iday  &
-      + min(1,max(0,imonth-1))*31  &
-      + min(1,max(0,imonth-2))*(28+(1-min(1,mod(iyear,4))))  &
-      + min(1,max(0,imonth-3))*31  &
-      + min(1,max(0,imonth-4))*30  &
-      + min(1,max(0,imonth-5))*31  &
-      + min(1,max(0,imonth-6))*30  &
-      + min(1,max(0,imonth-7))*31  &
-      + min(1,max(0,imonth-8))*31  &
-      + min(1,max(0,imonth-9))*30  &
-      + min(1,max(0,imonth-10))*31  &
-      + min(1,max(0,imonth-11))*30  &
-      + min(1,max(0,imonth-12))*31
-
-return
-end
-
-!************************************************************************
-
-function julday1970 (imonth,iday,iyear)
-
-! compute the julian day (from 1970) from a normal date w/4 digit yr
-
-julday1970=0
-do i=1970,iyear
-
-   imm=12
-   idd=31
-   if(i==iyear)then
-      imm=imonth
-      idd=iday
-   endif
-
-   jd= idd  &
-      + min(1,max(0,imm-1))*31  &
-      + min(1,max(0,imm-2))*(28+(1-min(1,mod(i,4))))  &
-      + min(1,max(0,imm-3))*31  &
-      + min(1,max(0,imm-4))*30  &
-      + min(1,max(0,imm-5))*31  &
-      + min(1,max(0,imm-6))*30  &
-      + min(1,max(0,imm-7))*31  &
-      + min(1,max(0,imm-8))*31  &
-      + min(1,max(0,imm-9))*30  &
-      + min(1,max(0,imm-10))*31  &
-      + min(1,max(0,imm-11))*30  &
-      + min(1,max(0,imm-12))*31
-
-   julday1970=julday1970+jd
-
-enddo    
-
-return
-end
+   return
+end function isleap
+!==========================================================================================!
+!==========================================================================================!

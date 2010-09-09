@@ -36,6 +36,8 @@ LIBUTILS=$(BASE)/libutils-$(UTILS_VERSION)-opt.a
 #---------------------------------------------------------------
 # If you are using the NCAR dummy libraries...
 
+USENC=0
+USE_INTERF=0
 NCARG_DIR=$(BASE)
 #LIBNCARG=-L$(NCARG_DIR) -lncarg-$(UTILS_VERSION) -lncarg_c-$(UTILS_VERSION) \
 #                        -lncarg_gks-$(UTILS_VERSION)
@@ -46,6 +48,13 @@ LIBNCARG=$(BASE)/libncarg-$(UTILS_VERSION).a
 #NCARG_DIR=/usr/local/ncarg-4.3.0/lib
 #LIBNCARG=-L$(NCARG_DIR) -lncarg -lncarg_gks -lncarg_c -L/usr/X11R6/lib -lX11 -ldl
 #---------------------------------------------------------------
+USE_HDF5=1
+HDF5_INCS=-I/opt/hdf5/1.8.1/ompi-tcp-gnu41/include
+HDF5C_INCS=-I/opt/hdf5/1.8.1/ompi-tcp-gnu41/include
+HDF5_LIBS=-lz -L/opt/hdf5/1.8.1/ompi-tcp-gnu41/lib \
+	-lhdf5_fortran -lhdf5 -lhdf5_hl
+
+
 
 # HDF libraries-------------------------------------------------
 # HDF4 library: Instructions to install: www.cptec.inpe.br/brams
@@ -221,21 +230,39 @@ USE_MPIWTIME=1
 
 #----------------- LINUX GNU GFORTRAN compiler / gcc -------------
 CMACH=PC_LINUX1
-F_COMP=gfortran
-C_COMP=gcc
-LOADER= gfortran
-C_LOADER=gcc
+#F_COMP=/usr/bin/gfortran -I/opt/open-mpi/tcp-gnu41/include \
+#-pthread -mtune=core2 -fPIC -L/opt/open-mpi/tcp-gnu41/lib \
+#-I/opt/open-mpi/tcp-gnu41/include -I/opt/open-mpi/tcp-gnu41/lib \
+#-L/opt/torque/lib -L/opt/open-mpi/tcp-gnu41/lib -Wl,-rpath \
+#-Wl,/opt/open-mpi/tcp-gnu41/lib -L/opt/open-mpi/tcp-gnu41/lib \
+#-lmpi_f90 -lmpi_f77 -lmpi -lopen-rte -lopen-pal -lrt -lpbs \
+#-ldl -Wl,--export-dynamic -lnsl -lutil -lm -ldl -lm
+
+#C_COMP=/usr/bin/gcc -I/opt/open-mpi/tcp-gnu41/include \
+#-pthread -mtune=core2 -fPIC -L/opt/open-mpi/tcp-gnu41/lib \
+#-I/opt/open-mpi/tcp-gnu41/include -L/opt/torque/lib \
+#-L/opt/open-mpi/tcp-gnu41/lib -Wl,-rpath -Wl,/opt/open-mpi/tcp-gnu41/lib \
+#-L/opt/open-mpi/tcp-gnu41/lib -lmpi -lopen-rte -lopen-pal -lrt -lpbs \
+# -ldl -Wl,--export-dynamic -lnsl -lutil -lm -ldl -lm
+
+F_COMP = mpif90
+C_COMP = mpicc
+
+LOADER= $(F_COMP)
+C_LOADER=$(C_COMP)
 C_LOADER_OPTS=-v
 LIBS=
 MOD_EXT=mod
 
-#F_OPTS=-tpp6 -xN -FR -O3 -Vaxlib -static
-##C_OPTS=-tpp6 -xN -O3 -DLITTLE
-##LOADER_OPTS=-tpp6 -xN -O3 -static -Vaxlib
-#
-F_OPTS=-FR -O3 -static  -ffree-line-length-none
-C_OPTS=-O3 -DLITTLE
-LOADER_OPTS=-O3 -static -ffree-line-length-none
+F_OPTS=-O3 -ffree-line-length-none
+C_OPTS=-O3 -ffree-line-length-none
+LOADER_OPTS=-O3 -ffree-line-length-none
+
+#F_OPTS=-g -ffree-line-length-none
+#C_OPTS=-g  -ffree-line-length-none
+#LOADER_OPTS=-g -ffree-line-length-none
+
+
 #
 #-----------------------------------------------------------------
 

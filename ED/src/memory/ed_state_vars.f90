@@ -483,8 +483,8 @@ module ed_state_vars
      ! Flag specifying whether (1) or not (0) this patch is a plantation
      integer , pointer,dimension(:) :: plantation
 
-     ! Enthalpy (J/kg) of canopy air
-     real , pointer,dimension(:) :: can_enthalpy
+     ! Ice-vapour equivalent potential temperature of canopy air space [K]
+     real , pointer,dimension(:) :: can_theiv
 
      ! Temperature (K) of canopy air
      real , pointer,dimension(:) :: can_temp
@@ -643,9 +643,6 @@ module ed_state_vars
 
      ! Net absorbed radiation by soil, sfcwater, vegetation [J/m2/s]
      real , pointer,dimension(:) :: ebudget_netrad
-
-     ! Mean latent heat flux (J/m2/s)
-     real , pointer,dimension(:) :: ebudget_latent
 
      ! Energy associated with precipitation (J/m2/s)
      real , pointer,dimension(:) :: ebudget_precipgain
@@ -845,6 +842,10 @@ module ed_state_vars
 
      real, pointer,dimension(:)  :: cstar ! Characteristic CO2 mix. ratio fluct. scale [ppm]
 
+     real, pointer,dimension(:)  :: zeta  ! Height / Obukhov length
+
+     real, pointer,dimension(:)  :: ribulk ! Bulk Richardson number
+
      real, pointer,dimension(:)  :: upwp !eddy mom. flux u-prime w-prime
 
      real, pointer,dimension(:)  :: tpwp !eddy heat flux t-prime w-prime
@@ -974,9 +975,24 @@ module ed_state_vars
      ! The vectorized landuse matrix is allocated in landuse_init
      type(lutime), pointer,dimension(:,:) :: clutimes !(luyears,nsites)
 
-     integer,pointer,dimension(:) :: num_landuse_years  !The number of years of landuse data
-                                                        ! calculated at read-in of data during 
-                                                        ! landuse_init
+     !-------------------------------------------------------------------------------------!
+     !-------------------------------------------------------------------------------------!
+     !     Additional land use-related variables.                                          !
+     !-------------------------------------------------------------------------------------!
+
+     !-------------------------------------------------------------------------------------!
+     !     The number of years of landuse data calculated at read-in of data during        !
+     ! landuse_init.                                                                       !
+     !-------------------------------------------------------------------------------------!
+     integer,pointer,dimension(:) :: num_landuse_years
+     
+     !----- Minimum DBH and probability of being harvest when selective logging happens. --!
+     real   , pointer, dimension(:,:) :: mindbh_primary
+     real   , pointer, dimension(:,:) :: probharv_primary
+     real   , pointer, dimension(:,:) :: mindbh_secondary
+     real   , pointer, dimension(:,:) :: probharv_secondary
+     !-------------------------------------------------------------------------------------!
+     !-------------------------------------------------------------------------------------!
 
      real,   pointer,dimension(:,:) :: lai_pft    ! Site level mean LAI, grouped by cohort PFT
                                                   ! [m2/m2] (n_pft,nsites)
@@ -1184,7 +1200,7 @@ module ed_state_vars
      real,pointer,dimension(:) :: avg_can_rhos
      real,pointer,dimension(:) :: avg_can_prss
      real,pointer,dimension(:) :: avg_can_theta
-     real,pointer,dimension(:) :: avg_can_enthalpy
+     real,pointer,dimension(:) :: avg_can_theiv
      real,pointer,dimension(:) :: avg_can_depth
 
      real,pointer,dimension(:,:) :: avg_soil_energy
@@ -1463,7 +1479,7 @@ module ed_state_vars
      real,pointer,dimension(:) :: avg_can_rhos
      real,pointer,dimension(:) :: avg_can_prss
      real,pointer,dimension(:) :: avg_can_theta
-     real,pointer,dimension(:) :: avg_can_enthalpy
+     real,pointer,dimension(:) :: avg_can_theiv
      real,pointer,dimension(:) :: avg_can_depth
 
      real,pointer,dimension(:,:) :: avg_soil_energy
@@ -1609,6 +1625,7 @@ module ed_state_vars
      real, pointer, dimension(:)   :: dmean_can_rhos      ! (npolygons)
      real, pointer, dimension(:)   :: dmean_can_prss      ! (npolygons)
      real, pointer, dimension(:)   :: dmean_can_theta     ! (npolygons)
+     real, pointer, dimension(:)   :: dmean_can_theiv     ! (npolygons)
      real, pointer, dimension(:)   :: dmean_veg_energy    ! (npolygons)
      real, pointer, dimension(:)   :: dmean_veg_water     ! (npolygons)
      real, pointer, dimension(:)   :: dmean_veg_hcap      ! (npolygons)
@@ -1692,6 +1709,7 @@ module ed_state_vars
      real, pointer, dimension(:)   :: mmean_can_rhos      ! (npolygons)
      real, pointer, dimension(:)   :: mmean_can_prss      ! (npolygons)
      real, pointer, dimension(:)   :: mmean_can_theta     ! (npolygons)
+     real, pointer, dimension(:)   :: mmean_can_theiv     ! (npolygons)
      real, pointer, dimension(:)   :: mmean_veg_energy    ! (npolygons)
      real, pointer, dimension(:)   :: mmean_veg_water     ! (npolygons)
      real, pointer, dimension(:)   :: mmean_veg_temp      ! (npolygons)
@@ -1978,7 +1996,7 @@ contains
        allocate(cgrid%avg_can_rhos    (npolygons))
        allocate(cgrid%avg_can_prss    (npolygons))
        allocate(cgrid%avg_can_theta   (npolygons))
-       allocate(cgrid%avg_can_enthalpy(npolygons))
+       allocate(cgrid%avg_can_theiv(npolygons))
        allocate(cgrid%avg_can_depth   (npolygons))
        allocate(cgrid%avg_soil_energy(nzg,npolygons))
        allocate(cgrid%avg_soil_water(nzg,npolygons))
@@ -2119,6 +2137,7 @@ contains
           allocate(cgrid%dmean_can_rhos       (             npolygons))
           allocate(cgrid%dmean_can_prss       (             npolygons))
           allocate(cgrid%dmean_can_theta      (             npolygons))
+          allocate(cgrid%dmean_can_theiv      (             npolygons))
           allocate(cgrid%dmean_veg_energy     (             npolygons))
           allocate(cgrid%dmean_veg_water      (             npolygons))
           allocate(cgrid%dmean_veg_hcap       (             npolygons))
@@ -2175,6 +2194,7 @@ contains
           allocate(cgrid%mmean_can_rhos       (             npolygons))
           allocate(cgrid%mmean_can_prss       (             npolygons))
           allocate(cgrid%mmean_can_theta      (             npolygons))
+          allocate(cgrid%mmean_can_theiv      (             npolygons))
           allocate(cgrid%mmean_veg_energy     (             npolygons))
           allocate(cgrid%mmean_veg_water      (             npolygons))
           allocate(cgrid%mmean_veg_temp       (             npolygons))
@@ -2244,6 +2264,10 @@ contains
     allocate(cpoly%aspect(nsites))
     
     allocate(cpoly%num_landuse_years(nsites))
+    allocate(cpoly%mindbh_primary(n_pft,nsites))
+    allocate(cpoly%probharv_primary(n_pft,nsites))
+    allocate(cpoly%mindbh_secondary(n_pft,nsites))
+    allocate(cpoly%probharv_secondary(n_pft,nsites))
 
     allocate(cpoly%lai_pft(n_pft,nsites))
     allocate(cpoly%wpa_pft(n_pft,nsites))
@@ -2346,7 +2370,7 @@ contains
     allocate(cpoly%avg_can_rhos            (nsites))
     allocate(cpoly%avg_can_prss            (nsites))
     allocate(cpoly%avg_can_theta           (nsites))
-    allocate(cpoly%avg_can_enthalpy        (nsites))
+    allocate(cpoly%avg_can_theiv           (nsites))
     allocate(cpoly%avg_can_depth           (nsites))
     allocate(cpoly%avg_soil_energy     (nzg,nsites))
     allocate(cpoly%avg_soil_water      (nzg,nsites))
@@ -2442,7 +2466,7 @@ contains
     allocate(csite%sum_dgd(npatches))
     allocate(csite%sum_chd(npatches))
     allocate(csite%plantation(npatches))
-    allocate(csite%can_enthalpy(npatches))
+    allocate(csite%can_theiv(npatches))
     allocate(csite%can_temp(npatches))
     allocate(csite%can_shv(npatches))
     allocate(csite%can_co2(npatches))
@@ -2487,7 +2511,6 @@ contains
     allocate(csite%wbudget_loss2drainage(npatches))
     allocate(csite%wbudget_initialstorage(npatches))
     allocate(csite%wbudget_residual(npatches))
-    allocate(csite%ebudget_latent(npatches))
     allocate(csite%ebudget_loss2atm(npatches))
     allocate(csite%ebudget_denseffect(npatches))
     allocate(csite%ebudget_loss2runoff(npatches))
@@ -2556,6 +2579,9 @@ contains
     allocate(csite%qstar(npatches))
     allocate(csite%cstar(npatches))
     
+    allocate(csite%zeta  (npatches))
+    allocate(csite%ribulk(npatches))
+
     allocate(csite%upwp(npatches))
     allocate(csite%qpwp(npatches))
     allocate(csite%cpwp(npatches))
@@ -2915,7 +2941,7 @@ contains
        nullify(cgrid%avg_can_rhos            )
        nullify(cgrid%avg_can_prss            )
        nullify(cgrid%avg_can_theta           )
-       nullify(cgrid%avg_can_enthalpy        )
+       nullify(cgrid%avg_can_theiv           )
        nullify(cgrid%avg_can_depth           )
        nullify(cgrid%avg_soil_energy         )
        nullify(cgrid%avg_soil_water          )
@@ -3047,6 +3073,7 @@ contains
        nullify(cgrid%dmean_can_rhos          )
        nullify(cgrid%dmean_can_prss          )
        nullify(cgrid%dmean_can_theta         )
+       nullify(cgrid%dmean_can_theiv         )
        nullify(cgrid%dmean_veg_energy        )
        nullify(cgrid%dmean_veg_water         )
        nullify(cgrid%dmean_veg_hcap          )
@@ -3095,6 +3122,7 @@ contains
        nullify(cgrid%mmean_can_rhos          )
        nullify(cgrid%mmean_can_prss          )
        nullify(cgrid%mmean_can_theta         )
+       nullify(cgrid%mmean_can_theiv         )
        nullify(cgrid%mmean_veg_energy        )
        nullify(cgrid%mmean_veg_water         )
        nullify(cgrid%mmean_veg_hcap          )
@@ -3153,6 +3181,12 @@ contains
     nullify(cpoly%aspect)
 
     nullify(cpoly%num_landuse_years)
+    nullify(cpoly%mindbh_primary)
+    nullify(cpoly%probharv_primary)
+    nullify(cpoly%mindbh_secondary)
+    nullify(cpoly%probharv_secondary)
+
+
     nullify(cpoly%lai_pft)
     nullify(cpoly%wpa_pft)
     nullify(cpoly%wai_pft)
@@ -3251,8 +3285,8 @@ contains
     nullify(cpoly%avg_can_rhos  )
     nullify(cpoly%avg_can_prss  )
     nullify(cpoly%avg_can_theta )
-    nullify(cpoly%avg_can_enthalpy)
-    nullify(cpoly%avg_can_depth)
+    nullify(cpoly%avg_can_theiv )
+    nullify(cpoly%avg_can_depth )
     nullify(cpoly%avg_soil_energy)
     nullify(cpoly%avg_soil_water)
     nullify(cpoly%avg_soil_temp )
@@ -3329,7 +3363,7 @@ contains
     nullify(csite%sum_chd)
     nullify(csite%plantation) 
     nullify(csite%cohort_count)
-    nullify(csite%can_enthalpy)
+    nullify(csite%can_theiv)
     nullify(csite%can_temp)
     nullify(csite%can_shv)
     nullify(csite%can_co2)
@@ -3377,7 +3411,6 @@ contains
     nullify(csite%wbudget_loss2drainage)
     nullify(csite%wbudget_initialstorage)
     nullify(csite%wbudget_residual)
-    nullify(csite%ebudget_latent)
     nullify(csite%ebudget_loss2atm)
     nullify(csite%ebudget_denseffect)
     nullify(csite%ebudget_loss2runoff)
@@ -3451,6 +3484,9 @@ contains
     nullify(csite%tstar)
     nullify(csite%qstar)
     nullify(csite%cstar)
+
+    nullify(csite%zeta)
+    nullify(csite%ribulk)
 
     nullify(csite%upwp)
     nullify(csite%qpwp)
@@ -3781,7 +3817,7 @@ contains
        if(associated(cgrid%avg_can_rhos            )) deallocate(cgrid%avg_can_rhos            )
        if(associated(cgrid%avg_can_prss            )) deallocate(cgrid%avg_can_prss            )
        if(associated(cgrid%avg_can_theta           )) deallocate(cgrid%avg_can_theta           )
-       if(associated(cgrid%avg_can_enthalpy        )) deallocate(cgrid%avg_can_enthalpy        )
+       if(associated(cgrid%avg_can_theiv           )) deallocate(cgrid%avg_can_theiv           )
        if(associated(cgrid%avg_can_depth           )) deallocate(cgrid%avg_can_depth           )
        if(associated(cgrid%avg_soil_energy         )) deallocate(cgrid%avg_soil_energy         )
        if(associated(cgrid%avg_soil_water          )) deallocate(cgrid%avg_soil_water          )
@@ -3921,6 +3957,7 @@ contains
        if(associated(cgrid%dmean_can_rhos          )) deallocate(cgrid%dmean_can_rhos          )
        if(associated(cgrid%dmean_can_prss          )) deallocate(cgrid%dmean_can_prss          )
        if(associated(cgrid%dmean_can_theta         )) deallocate(cgrid%dmean_can_theta         )
+       if(associated(cgrid%dmean_can_theiv         )) deallocate(cgrid%dmean_can_theiv         )
        if(associated(cgrid%dmean_veg_energy        )) deallocate(cgrid%dmean_veg_energy        )
        if(associated(cgrid%dmean_veg_water         )) deallocate(cgrid%dmean_veg_water         )
        if(associated(cgrid%dmean_veg_hcap          )) deallocate(cgrid%dmean_veg_hcap          )
@@ -3970,6 +4007,7 @@ contains
        if(associated(cgrid%mmean_can_rhos          )) deallocate(cgrid%mmean_can_rhos          )
        if(associated(cgrid%mmean_can_prss          )) deallocate(cgrid%mmean_can_prss          )
        if(associated(cgrid%mmean_can_theta         )) deallocate(cgrid%mmean_can_theta         )
+       if(associated(cgrid%mmean_can_theiv         )) deallocate(cgrid%mmean_can_theiv         )
        if(associated(cgrid%mmean_veg_energy        )) deallocate(cgrid%mmean_veg_energy        )
        if(associated(cgrid%mmean_veg_water         )) deallocate(cgrid%mmean_veg_water         )
        if(associated(cgrid%mmean_veg_hcap          )) deallocate(cgrid%mmean_veg_hcap          )
@@ -4030,6 +4068,12 @@ contains
     if(associated(cpoly%aspect                      )) deallocate(cpoly%aspect                      )
 
     if(associated(cpoly%num_landuse_years           )) deallocate(cpoly%num_landuse_years           )
+    if(associated(cpoly%mindbh_primary              )) deallocate(cpoly%mindbh_primary              )
+    if(associated(cpoly%probharv_primary            )) deallocate(cpoly%probharv_primary            )
+    if(associated(cpoly%mindbh_secondary            )) deallocate(cpoly%mindbh_secondary            )
+    if(associated(cpoly%probharv_secondary          )) deallocate(cpoly%probharv_secondary          )
+
+
     if(associated(cpoly%lai_pft                     )) deallocate(cpoly%lai_pft                     )
     if(associated(cpoly%wpa_pft                     )) deallocate(cpoly%wpa_pft                     )
     if(associated(cpoly%wai_pft                     )) deallocate(cpoly%wai_pft                     )
@@ -4127,7 +4171,7 @@ contains
     if(associated(cpoly%avg_can_rhos                )) deallocate(cpoly%avg_can_rhos                )
     if(associated(cpoly%avg_can_prss                )) deallocate(cpoly%avg_can_prss                )
     if(associated(cpoly%avg_can_theta               )) deallocate(cpoly%avg_can_theta               )
-    if(associated(cpoly%avg_can_enthalpy            )) deallocate(cpoly%avg_can_enthalpy            )
+    if(associated(cpoly%avg_can_theiv               )) deallocate(cpoly%avg_can_theiv               )
     if(associated(cpoly%avg_can_depth               )) deallocate(cpoly%avg_can_depth               )
     if(associated(cpoly%avg_soil_energy             )) deallocate(cpoly%avg_soil_energy             )
     if(associated(cpoly%avg_soil_water              )) deallocate(cpoly%avg_soil_water              )
@@ -4206,7 +4250,7 @@ contains
     if(associated(csite%sum_chd                      )) deallocate(csite%sum_chd                      )
     if(associated(csite%plantation                   )) deallocate(csite%plantation                   )
     if(associated(csite%cohort_count                 )) deallocate(csite%cohort_count                 )
-    if(associated(csite%can_enthalpy                 )) deallocate(csite%can_enthalpy                 )
+    if(associated(csite%can_theiv                    )) deallocate(csite%can_theiv                    )
     if(associated(csite%can_temp                     )) deallocate(csite%can_temp                     )
     if(associated(csite%can_shv                      )) deallocate(csite%can_shv                      )
     if(associated(csite%can_co2                      )) deallocate(csite%can_co2                      )
@@ -4256,7 +4300,6 @@ contains
     if(associated(csite%wbudget_loss2drainage        )) deallocate(csite%wbudget_loss2drainage        )
     if(associated(csite%wbudget_initialstorage       )) deallocate(csite%wbudget_initialstorage       )
     if(associated(csite%wbudget_residual             )) deallocate(csite%wbudget_residual             )
-    if(associated(csite%ebudget_latent               )) deallocate(csite%ebudget_latent               )
     if(associated(csite%ebudget_loss2atm             )) deallocate(csite%ebudget_loss2atm             )
     if(associated(csite%ebudget_denseffect           )) deallocate(csite%ebudget_denseffect           )
     if(associated(csite%ebudget_loss2runoff          )) deallocate(csite%ebudget_loss2runoff          )
@@ -4330,6 +4373,9 @@ contains
     if(associated(csite%tstar                        )) deallocate(csite%tstar                        )
     if(associated(csite%qstar                        )) deallocate(csite%qstar                        )
     if(associated(csite%cstar                        )) deallocate(csite%cstar                        )
+
+    if(associated(csite%zeta                         )) deallocate(csite%zeta                         )
+    if(associated(csite%ribulk                       )) deallocate(csite%ribulk                       )
 
     if(associated(csite%upwp                         )) deallocate(csite%upwp                         )
     if(associated(csite%qpwp                         )) deallocate(csite%qpwp                         )
@@ -4621,7 +4667,7 @@ contains
        cgrid%met(:)%par_diffuse    = large_real
        cgrid%met(:)%atm_tmp        = large_real
        cgrid%met(:)%atm_theta      = large_real
-       cgrid%met(:)%atm_enthalpy   = large_real
+       cgrid%met(:)%atm_theiv      = large_real
        cgrid%met(:)%atm_shv        = large_real
        cgrid%met(:)%theta          = large_real
        cgrid%met(:)%rshort         = large_real
@@ -4646,7 +4692,7 @@ contains
        cgrid%lapse(:)%par_diffuse    = large_real
        cgrid%lapse(:)%atm_tmp        = large_real
        cgrid%lapse(:)%atm_theta      = large_real
-       cgrid%lapse(:)%atm_enthalpy   = large_real
+       cgrid%lapse(:)%atm_theiv      = large_real
        cgrid%lapse(:)%atm_shv        = large_real
        cgrid%lapse(:)%theta          = large_real
        cgrid%lapse(:)%rshort         = large_real
@@ -4710,7 +4756,7 @@ contains
     if(associated(cgrid%avg_can_rhos            )) cgrid%avg_can_rhos             = large_real
     if(associated(cgrid%avg_can_prss            )) cgrid%avg_can_prss             = large_real
     if(associated(cgrid%avg_can_theta           )) cgrid%avg_can_theta            = large_real
-    if(associated(cgrid%avg_can_enthalpy        )) cgrid%avg_can_enthalpy         = large_real
+    if(associated(cgrid%avg_can_theiv           )) cgrid%avg_can_theiv            = large_real
     if(associated(cgrid%avg_can_depth           )) cgrid%avg_can_depth            = large_real
     if(associated(cgrid%avg_soil_energy         )) cgrid%avg_soil_energy          = large_real
     if(associated(cgrid%avg_soil_water          )) cgrid%avg_soil_water           = large_real
@@ -4830,6 +4876,7 @@ contains
     if(associated(cgrid%dmean_can_rhos          )) cgrid%dmean_can_rhos           = large_real
     if(associated(cgrid%dmean_can_prss          )) cgrid%dmean_can_prss           = large_real
     if(associated(cgrid%dmean_can_theta         )) cgrid%dmean_can_theta          = large_real
+    if(associated(cgrid%dmean_can_theiv         )) cgrid%dmean_can_theiv          = large_real
     if(associated(cgrid%dmean_veg_energy        )) cgrid%dmean_veg_energy         = large_real
     if(associated(cgrid%dmean_veg_water         )) cgrid%dmean_veg_water          = large_real
     if(associated(cgrid%dmean_veg_temp          )) cgrid%dmean_veg_temp           = large_real
@@ -4875,6 +4922,7 @@ contains
     if(associated(cgrid%dmean_can_rhos          )) cgrid%dmean_can_rhos           = large_real
     if(associated(cgrid%dmean_can_prss          )) cgrid%dmean_can_prss           = large_real
     if(associated(cgrid%dmean_can_theta         )) cgrid%dmean_can_theta          = large_real
+    if(associated(cgrid%dmean_can_theiv         )) cgrid%dmean_can_theiv          = large_real
     if(associated(cgrid%dmean_veg_energy        )) cgrid%dmean_veg_energy         = large_real
     if(associated(cgrid%dmean_veg_water         )) cgrid%dmean_veg_water          = large_real
     if(associated(cgrid%dmean_veg_hcap          )) cgrid%dmean_veg_hcap           = large_real
@@ -4929,6 +4977,10 @@ contains
     if(associated(cpoly%aspect                      )) cpoly%aspect                      = large_real
 
     if(associated(cpoly%num_landuse_years           )) cpoly%num_landuse_years           = large_integer  ! Integer
+    if(associated(cpoly%mindbh_primary              )) cpoly%mindbh_primary              = large_real
+    if(associated(cpoly%probharv_primary            )) cpoly%probharv_primary            = large_real
+    if(associated(cpoly%mindbh_secondary            )) cpoly%mindbh_secondary            = large_real
+    if(associated(cpoly%probharv_secondary          )) cpoly%probharv_secondary          = large_real
     if(associated(cpoly%lai_pft                     )) cpoly%lai_pft                     = large_real
     if(associated(cpoly%wpa_pft                     )) cpoly%wpa_pft                     = large_real
     if(associated(cpoly%wai_pft                     )) cpoly%wai_pft                     = large_real
@@ -4976,7 +5028,7 @@ contains
        cpoly%met(:)%par_diffuse       = large_real
        cpoly%met(:)%atm_tmp           = large_real
        cpoly%met(:)%atm_theta         = large_real
-       cpoly%met(:)%atm_enthalpy      = large_real
+       cpoly%met(:)%atm_theiv         = large_real
        cpoly%met(:)%atm_shv           = large_real
        cpoly%met(:)%theta             = large_real
        cpoly%met(:)%rshort            = large_real
@@ -5054,7 +5106,7 @@ contains
     if(associated(cpoly%avg_can_rhos                )) cpoly%avg_can_rhos                = large_real
     if(associated(cpoly%avg_can_prss                )) cpoly%avg_can_prss                = large_real
     if(associated(cpoly%avg_can_theta               )) cpoly%avg_can_theta               = large_real
-    if(associated(cpoly%avg_can_enthalpy            )) cpoly%avg_can_enthalpy            = large_real
+    if(associated(cpoly%avg_can_theiv               )) cpoly%avg_can_theiv               = large_real
     if(associated(cpoly%avg_can_depth               )) cpoly%avg_can_depth               = large_real
     if(associated(cpoly%avg_soil_energy             )) cpoly%avg_soil_energy             = large_real
     if(associated(cpoly%avg_soil_water              )) cpoly%avg_soil_water              = large_real
@@ -5129,7 +5181,7 @@ contains
     if(associated(csite%sum_chd                      )) csite%sum_chd                      = large_real
     if(associated(csite%plantation                   )) csite%plantation                   = large_integer ! Integer
     if(associated(csite%cohort_count                 )) csite%cohort_count                 = large_integer ! Integer
-    if(associated(csite%can_enthalpy                 )) csite%can_enthalpy                 = large_real
+    if(associated(csite%can_theiv                    )) csite%can_theiv                    = large_real
     if(associated(csite%can_temp                     )) csite%can_temp                     = large_real
     if(associated(csite%can_shv                      )) csite%can_shv                      = large_real
     if(associated(csite%can_co2                      )) csite%can_co2                      = large_real
@@ -5196,7 +5248,6 @@ contains
     if(associated(csite%wbudget_loss2drainage        )) csite%wbudget_loss2drainage        = large_real
     if(associated(csite%wbudget_initialstorage       )) csite%wbudget_initialstorage       = large_real
     if(associated(csite%wbudget_residual             )) csite%wbudget_residual             = large_real
-    if(associated(csite%ebudget_latent               )) csite%ebudget_latent               = large_real
     if(associated(csite%ebudget_loss2atm             )) csite%ebudget_loss2atm             = large_real
     if(associated(csite%ebudget_denseffect           )) csite%ebudget_denseffect           = large_real
     if(associated(csite%ebudget_loss2runoff          )) csite%ebudget_loss2runoff          = large_real
@@ -5270,6 +5321,9 @@ contains
     if(associated(csite%tstar                        )) csite%tstar                        = large_real
     if(associated(csite%qstar                        )) csite%qstar                        = large_real
     if(associated(csite%cstar                        )) csite%cstar                        = large_real
+
+    if(associated(csite%zeta                         )) csite%zeta                         = large_real
+    if(associated(csite%ribulk                       )) csite%ribulk                       = large_real
 
     if(associated(csite%upwp                         )) csite%upwp                         = large_real
     if(associated(csite%tpwp                         )) csite%tpwp                         = large_real
@@ -5657,7 +5711,7 @@ contains
     siteout%sum_chd(ipout)            = sitein%sum_chd(ipin)
     siteout%plantation(ipout)         = sitein%plantation(ipin)
     siteout%cohort_count(ipout)       = sitein%cohort_count(ipin)
-    siteout%can_enthalpy(ipout)       = sitein%can_enthalpy(ipin)
+    siteout%can_theiv(ipout)          = sitein%can_theiv(ipin)
     siteout%can_temp(ipout)           = sitein%can_temp(ipin)
     siteout%can_shv(ipout)            = sitein%can_shv(ipin)
     siteout%can_co2(ipout)            = sitein%can_co2(ipin)
@@ -5743,7 +5797,7 @@ contains
     siteout%sum_chd(1:inc)              = pack(sitein%sum_chd,logmask)
     siteout%plantation(1:inc)           = pack(sitein%plantation,logmask)
     siteout%cohort_count(1:inc)         = pack(sitein%cohort_count,logmask)
-    siteout%can_enthalpy(1:inc)         = pack(sitein%can_enthalpy,logmask)
+    siteout%can_theiv(1:inc)            = pack(sitein%can_theiv,logmask)
     siteout%can_temp(1:inc)             = pack(sitein%can_temp,logmask)
     siteout%can_shv(1:inc)              = pack(sitein%can_shv,logmask)
     siteout%can_co2(1:inc)              = pack(sitein%can_co2,logmask)
@@ -5765,7 +5819,6 @@ contains
     siteout%wbudget_loss2drainage(1:inc)     = pack(sitein%wbudget_loss2drainage,logmask)
     siteout%wbudget_initialstorage(1:inc)    = pack(sitein%wbudget_initialstorage,logmask)
     siteout%wbudget_residual(1:inc)          = pack(sitein%wbudget_residual,logmask)
-    siteout%ebudget_latent(1:inc)            = pack(sitein%ebudget_latent,logmask)
     siteout%ebudget_loss2atm(1:inc)          = pack(sitein%ebudget_loss2atm,logmask)
     siteout%ebudget_denseffect(1:inc)        = pack(sitein%ebudget_denseffect,logmask)
     siteout%ebudget_loss2runoff(1:inc)       = pack(sitein%ebudget_loss2runoff,logmask)
@@ -5827,6 +5880,9 @@ contains
     siteout%qstar(1:inc)                = pack(sitein%qstar,logmask)
     siteout%cstar(1:inc)                = pack(sitein%cstar,logmask)
     
+    siteout%zeta(1:inc)                 = pack(sitein%zeta,logmask)
+    siteout%ribulk(1:inc)               = pack(sitein%ribulk,logmask)
+
     siteout%upwp(1:inc)                 = pack(sitein%upwp,logmask)
     siteout%tpwp(1:inc)                 = pack(sitein%tpwp,logmask)
     siteout%qpwp(1:inc)                 = pack(sitein%qpwp,logmask)
@@ -6651,11 +6707,6 @@ contains
          cgrid%nsites_global    = sum(gdsi(1:nnodetot,igr))
          cgrid%npatches_global  = sum(gdpa(1:nnodetot,igr))
          cgrid%ncohorts_global  = sum(gdco(1:nnodetot,igr))
-
-         print*,"NPOLY GLOB: ",cgrid%npolygons_global
-         
-
-         
 
          ! Calculate the local offsets
          
@@ -7971,11 +8022,11 @@ contains
        call metadata_edio(nvar,igr,'Polygon Average Canopy Air Potential temperature','[K]','NA') 
     endif
     
-    if (associated(cgrid%avg_can_enthalpy)) then
+    if (associated(cgrid%avg_can_theiv)) then
        nvar=nvar+1
-       call vtable_edio_r(cgrid%avg_can_enthalpy(1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AVG_CAN_ENTHALPY :11:hist:anal') 
-       call metadata_edio(nvar,igr,'Polygon Average Canopy Air Enthalpy','[J/kg]','NA') 
+       call vtable_edio_r(cgrid%avg_can_theiv(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'AVG_CAN_THEIV :11:hist:anal') 
+       call metadata_edio(nvar,igr,'Polygon Average Canopy Air ice-vapour equiv. pot. temp.','[K]','NA') 
     endif
     
     if (associated(cgrid%avg_can_depth)) then
@@ -8263,6 +8314,13 @@ contains
        call vtable_edio_r(cgrid%dmean_can_theta(1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'DMEAN_CAN_THETA :11:hist:dail') 
        call metadata_edio(nvar,igr,'Daily mean canopy air potential temperature','[K]','ipoly') 
+    end if
+    
+    if(associated(cgrid%dmean_can_theiv)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%dmean_can_theiv(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'DMEAN_CAN_THEIV :11:hist:dail') 
+       call metadata_edio(nvar,igr,'Daily mean canopy air theta_Eiv','[K]','ipoly') 
     end if
     
     if(associated(cgrid%dmean_veg_energy)) then
@@ -8601,6 +8659,13 @@ contains
        call metadata_edio(nvar,igr,'Monthly mean canopy air potential temperature','[K]','ipoly') 
     end if
     
+    if(associated(cgrid%mmean_can_theiv)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%mmean_can_theiv(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'MMEAN_CAN_THEIV :11:hist:mont') 
+       call metadata_edio(nvar,igr,'Monthly mean canopy air theta_Eiv','[K]','ipoly') 
+    end if
+    
     if(associated(cgrid%mmean_veg_water)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%mmean_veg_water(1),nvar,igr,init,cgrid%pyglob_id, &
@@ -8716,21 +8781,21 @@ contains
     if(associated(cgrid%bseeds_pft)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%bseeds_pft(1,1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'BSEEDS_PFT :14:hist:mont') 
+            var_len,var_len_global,max_ptrs,'BSEEDS_PFT :14:hist:dail:mont') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
     
     if(associated(cgrid%agb_pft)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%agb_pft(1,1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'AGB_PFT :14:hist:mont') 
+            var_len,var_len_global,max_ptrs,'AGB_PFT :14:hist:dail:mont') 
        call metadata_edio(nvar,igr,'Above-ground biomass by PFT','[kgC/m2]','NA') 
     endif
     
     if(associated(cgrid%ba_pft)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%ba_pft(1,1),nvar,igr,init,cgrid%pyglob_id, &
-            var_len,var_len_global,max_ptrs,'BA_PFT :14:hist:mont') 
+            var_len,var_len_global,max_ptrs,'BA_PFT :14:hist:dail:mont') 
        call metadata_edio(nvar,igr,'Basal area by PFT','[cm2/m2]','NA') 
     endif
 
@@ -9422,11 +9487,11 @@ contains
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
-    if (associated(csite%can_enthalpy)) then
+    if (associated(csite%can_theiv)) then
        nvar=nvar+1
-         call vtable_edio_r(csite%can_enthalpy(1),nvar,igr,init,csite%paglob_id, &
-         var_len,var_len_global,max_ptrs,'CAN_ENTHALPY :31:hist') 
-       call metadata_edio(nvar,igr,'Canopy air enthalpy','[J/kg]','NA') 
+         call vtable_edio_r(csite%can_theiv(1),nvar,igr,init,csite%paglob_id, &
+         var_len,var_len_global,max_ptrs,'CAN_THEIV :31:hist') 
+       call metadata_edio(nvar,igr,'Canopy air ice-vapour equivalent potential temperature','[K]','NA') 
     endif
 
     if (associated(csite%can_temp)) then
@@ -9734,13 +9799,6 @@ contains
        nvar=nvar+1
          call vtable_edio_r(csite%wbudget_residual(1),nvar,igr,init,csite%paglob_id, &
          var_len,var_len_global,max_ptrs,'WBUDGET_RESIDUAL :31:hist') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-    endif
-
-    if (associated(csite%ebudget_latent)) then
-       nvar=nvar+1
-         call vtable_edio_r(csite%ebudget_latent(1),nvar,igr,init,csite%paglob_id, &
-         var_len,var_len_global,max_ptrs,'EBUDGET_LATENT :31:hist') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
@@ -10227,6 +10285,20 @@ contains
          var_len,var_len_global,max_ptrs,'CSTAR :31:hist') 
        call metadata_edio(nvar,igr,'patch level co2 transfer atm->canopy','[ppm?]','ipatch') 
     endif
+
+    if (associated(csite%zeta)) then
+       nvar=nvar+1
+         call vtable_edio_r(csite%zeta(1),nvar,igr,init,csite%paglob_id, &
+         var_len,var_len_global,max_ptrs,'ZETA :31:hist') 
+       call metadata_edio(nvar,igr,'patch level height over Obukhov length','[---]','ipatch') 
+    endif
+
+    if (associated(csite%ribulk)) then
+       nvar=nvar+1
+         call vtable_edio_r(csite%ribulk(1),nvar,igr,init,csite%paglob_id, &
+         var_len,var_len_global,max_ptrs,'RIBULK :31:hist') 
+       call metadata_edio(nvar,igr,'patch level bulk Richardson number','[---]','ipatch') 
+    endif
     
     if (associated(csite%upwp)) then
        nvar=nvar+1
@@ -10395,77 +10467,77 @@ contains
     if (associated(cpatch%pft)) then
        nvar=nvar+1
          call vtable_edio_i(cpatch%pft(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'PFT :41:hist:anal:mont:year') 
+         var_len,var_len_global,max_ptrs,'PFT :41:hist:anal:dail:mont:year') 
        call metadata_edio(nvar,igr,'Plant Functional Type','[-]','NA') 
     endif
 
     if (associated(cpatch%nplant)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%nplant(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'NPLANT :41:hist:anal:mont:year') 
+         var_len,var_len_global,max_ptrs,'NPLANT :41:hist:anal:dail:mont:year') 
        call metadata_edio(nvar,igr,'Plant density','[plant/m2]','NA') 
     endif
 
     if (associated(cpatch%hite)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%hite(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'HITE :41:hist:anal:mont:year') 
+         var_len,var_len_global,max_ptrs,'HITE :41:hist:anal:dail:mont:year') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%agb)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%agb(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'AGB_CO :41:hist:anal:mont:year') 
+         var_len,var_len_global,max_ptrs,'AGB_CO :41:hist:anal:dail:mont:year') 
        call metadata_edio(nvar,igr,'Above-ground biomass','[kgC/plant]','icohort') 
     endif
 
     if (associated(cpatch%basarea)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%basarea(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'BA_CO :41:hist:anal:mont:year') 
+         var_len,var_len_global,max_ptrs,'BA_CO :41:hist:anal:dail:mont:year') 
        call metadata_edio(nvar,igr,'Basal-area','[cm2]','icohort') 
     endif
 
     if (associated(cpatch%dagb_dt)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%dagb_dt(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'DAGB_DT :41:hist:anal:mont:year') 
+         var_len,var_len_global,max_ptrs,'DAGB_DT :41:hist:mont:year') 
        call metadata_edio(nvar,igr,'Above-ground biomass growth','[kgC/plant/yr]','icohort') 
     endif
 
     if (associated(cpatch%dba_dt)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%dba_dt(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'DBA_DT :41:hist:anal:mont:year') 
+         var_len,var_len_global,max_ptrs,'DBA_DT :41:hist:mont:year') 
        call metadata_edio(nvar,igr,'Basal-area growth','[cm2/plant/yr]','icohort') 
     endif
 
     if (associated(cpatch%ddbh_dt)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%ddbh_dt(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'DDBH_DT :41:hist:anal:mont:year') 
+         var_len,var_len_global,max_ptrs,'DDBH_DT :41:hist:mont:year') 
        call metadata_edio(nvar,igr,'DBH growth','[cm/plant/yr]','icohort') 
     endif
 
     if (associated(cpatch%dbh)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%dbh(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'DBH :41:hist:anal:year:mont') 
+         var_len,var_len_global,max_ptrs,'DBH :41:hist:anal:year:dail:mont') 
        call metadata_edio(nvar,igr,'Diameter at breast height','[cm]','icohort') 
     endif
 
     if (associated(cpatch%bdead)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%bdead(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'BDEAD :41:hist:mont:year') 
+         var_len,var_len_global,max_ptrs,'BDEAD :41:hist:mont:dail:year') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%bleaf)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%bleaf(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'BLEAF :41:hist:year:mont') 
+         var_len,var_len_global,max_ptrs,'BLEAF :41:hist:year:dail:mont') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
@@ -10479,49 +10551,49 @@ contains
     if (associated(cpatch%balive)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%balive(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'BALIVE :41:hist:year:mont') 
+         var_len,var_len_global,max_ptrs,'BALIVE :41:hist:year:dail:mont') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%broot)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%broot(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'BROOT :41:hist:year:mont') 
+         var_len,var_len_global,max_ptrs,'BROOT :41:hist:year:dail:mont') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%bsapwood)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%bsapwood(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'BSAPWOOD :41:hist:year:mont') 
+         var_len,var_len_global,max_ptrs,'BSAPWOOD :41:hist:year:dail:mont') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%lai)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%lai(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'LAI_CO :41:hist:dail:mont:year') 
+         var_len,var_len_global,max_ptrs,'LAI_CO :41:hist:dail:dail:mont:year') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%wpa)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%wpa(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'WPA_CO :41:hist:dail:mont:year') 
+         var_len,var_len_global,max_ptrs,'WPA_CO :41:hist:dail:dail:mont:year') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%wai)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%wai(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'WAI_CO :41:hist:dail:mont:year') 
+         var_len,var_len_global,max_ptrs,'WAI_CO :41:hist:dail:dail:mont:year') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%bstorage)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%bstorage(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'BSTORAGE :41:hist:year:mont') 
+         var_len,var_len_global,max_ptrs,'BSTORAGE :41:hist:year:dail:mont') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
@@ -10584,21 +10656,21 @@ contains
     if (associated(cpatch%mean_gpp)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%mean_gpp(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'MEAN_GPP :41:hist:anal') 
+         var_len,var_len_global,max_ptrs,'MEAN_GPP :41:hist') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%mean_leaf_resp)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%mean_leaf_resp(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'MEAN_LEAF_RESP :41:hist:anal') 
+         var_len,var_len_global,max_ptrs,'MEAN_LEAF_RESP :41:hist') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%mean_root_resp)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%mean_root_resp(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'MEAN_ROOT_RESP :41:hist:anal') 
+         var_len,var_len_global,max_ptrs,'MEAN_ROOT_RESP :41:hist') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
@@ -10745,7 +10817,7 @@ contains
     if (associated(cpatch%mort_rate)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%mort_rate(1,1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'MORT_RATE_CO :48:hist:anal:dail') 
+         var_len,var_len_global,max_ptrs,'MORT_RATE_CO :48:hist:dail') 
        call metadata_edio(nvar,igr,'Mortality rates','[1/yr]','icohort') 
     endif
 
@@ -11207,7 +11279,7 @@ contains
     if (associated(cpatch%bseeds)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%bseeds(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'BSEEDS_CO :41:hist:mont') 
+         var_len,var_len_global,max_ptrs,'BSEEDS_CO :41:hist:dail:mont') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 

@@ -585,3 +585,16 @@ Ramspost/build/bin/rpost_coms.mod
 Ramspost/build/bin/rpost_dims.mod
 Ramspost/build/bin/somevars.mod
 Ramspost/build/bin/therm_lib.mod
+Ramspost/build/bin/soil_coms.mod
+2038
+BAU4326
+barca
+couptest
+dry-16km
+old_barca
+wet-16km
+wet-42km
+BRAMS/tmpbuild
+ED/tmpbuild
+Ramspost/build/bin/scratch_coms.mod
+BRAMS/build/bin/leaf3.f90

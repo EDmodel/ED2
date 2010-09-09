@@ -49,6 +49,10 @@ Module phenology_coms
   real :: vm_amp
   real :: vm_min
 
+  !  Maximum distance to consider the phenology file representative when initialising with
+  ! prescribed phenology.
+  real :: max_phenology_dist
+
   ! Derived type describing prescribed phenology.
   type prescribed_phen
      

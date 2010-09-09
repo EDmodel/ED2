@@ -279,8 +279,7 @@ subroutine spatial_averages
    use ed_misc_coms          , only : frqsum            ! ! intent(in)
    use therm_lib             , only : qwtk              & ! subroutine
                                     , qtk               & ! subroutine
-                                    , idealdenssh       & ! function
-                                    , ptqz2enthalpy     ! ! function
+                                    , idealdenssh       ! ! function
    use soil_coms             , only : min_sfcwater_mass & ! intent(in)
                                     , soil              & ! intent(in)
                                     , dslz              ! ! intent(in)
@@ -775,6 +774,7 @@ subroutine spatial_averages
             !------------------------------------------------------------------------------!
             cpoly%avg_can_depth   (isi) = sum(csite%can_depth  * csite%area) * site_area_i
             cpoly%avg_can_theta   (isi) = sum(csite%can_theta  * csite%area) * site_area_i
+            cpoly%avg_can_theiv   (isi) = sum(csite%can_theiv  * csite%area) * site_area_i
             cpoly%avg_can_shv     (isi) = sum(csite%can_shv    * csite%area) * site_area_i
             cpoly%avg_can_co2     (isi) = sum(csite%can_co2    * csite%area) * site_area_i
             cpoly%avg_can_prss    (isi) = sum(csite%can_prss   * csite%area) * site_area_i
@@ -783,10 +783,6 @@ subroutine spatial_averages
             cpoly%avg_can_rhos    (isi) = idealdenssh(cpoly%avg_can_prss(isi)              &
                                                      ,cpoly%avg_can_temp(isi)              &
                                                      ,cpoly%avg_can_shv (isi) )
-            cpoly%avg_can_enthalpy(isi) = ptqz2enthalpy(cpoly%avg_can_prss(isi)            &
-                                                       ,cpoly%avg_can_temp(isi)            &
-                                                       ,cpoly%avg_can_shv(isi)             &
-                                                       ,cpoly%avg_can_depth(isi))
             !------------------------------------------------------------------------------!
             !   Site average of leaf properties.  Again, we average "extensive" properties !
             ! and find the average temperature based on the average leaf internal energy.  !
@@ -894,6 +890,7 @@ subroutine spatial_averages
          ! other variables are found using the prescribed diagnostic equations.            !
          !---------------------------------------------------------------------------------!
          cgrid%avg_can_depth   (ipy) = sum(cpoly%avg_can_depth * cpoly%area) * poly_area_i
+         cgrid%avg_can_theiv   (ipy) = sum(cpoly%avg_can_theiv * cpoly%area) * poly_area_i
          cgrid%avg_can_theta   (ipy) = sum(cpoly%avg_can_theta * cpoly%area) * poly_area_i
          cgrid%avg_can_shv     (ipy) = sum(cpoly%avg_can_shv   * cpoly%area) * poly_area_i
          cgrid%avg_can_co2     (ipy) = sum(cpoly%avg_can_co2   * cpoly%area) * poly_area_i
@@ -903,10 +900,6 @@ subroutine spatial_averages
          cgrid%avg_can_rhos    (ipy) = idealdenssh(cgrid%avg_can_prss(ipy)                 &
                                                   ,cgrid%avg_can_temp(ipy)                 &
                                                   ,cgrid%avg_can_shv (ipy) )
-         cgrid%avg_can_enthalpy(ipy) = ptqz2enthalpy(cgrid%avg_can_prss(ipy)               &
-                                                    ,cgrid%avg_can_temp(ipy)               &
-                                                    ,cgrid%avg_can_shv(ipy)                &
-                                                    ,cgrid%avg_can_depth(ipy))
          !---------------------------------------------------------------------------------!
          !    Similar to the site level, average mass, heat capacity and energy then find  !
          ! the average temperature and liquid water fraction.                              !

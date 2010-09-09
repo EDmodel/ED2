@@ -34,22 +34,22 @@ module soil_coms
    !---------------------------------------------------------------------------------------!
    !    The following variables are assigned through the namelist.                         !
    !---------------------------------------------------------------------------------------!
-   integer                     :: isoilbc        ! Bottom layer boundary condition.
-   integer, dimension(maxgrds) :: isoilflg       ! Soil initialization flag.
-   integer                     :: nslcon         ! Soil texture if constant everywhere.
-   real                        :: slxclay        ! Site specific clay soil fraction
-   real                        :: slxsand        ! Site specific sand soil fraction
-   real                        :: zrough         ! Soil roughness if constant everywhere.
-   real, dimension(nzgmax)     :: slmstr         ! Initial soil moisture fraction.
-   real, dimension(nzgmax)     :: stgoff         ! Initial soil temperature offset.
-   real, dimension(nzgmax)     :: slz            ! Soil levels.
-   character(len=str_len)      :: veg_database   ! Land/sea mask database
-   character(len=str_len)      :: soil_database  ! Soil texture database
-   integer                     :: isoilstateinit ! Soil state initial condition flag
-   integer                     :: isoildepthflg  ! Soil depth initial condition flag
-   character(len=str_len)      :: soilstate_db   ! Soil state database.
-   character(len=str_len)      :: soildepth_db   ! Soil depth database.
-   real                        :: runoff_time    ! Runoff time scale for no runoff scheme.
+   integer                                    :: isoilbc        ! Bottom layer bnd. cond.
+   integer, dimension(maxgrds)                :: isoilflg       ! Soil initialization flag.
+   integer                                    :: nslcon         ! Default soil texture
+   real                                       :: slxclay        ! Clay soil fraction
+   real                                       :: slxsand        ! Sand soil fraction
+   real                                       :: zrough         ! Default soil roughness.
+   real, dimension(nzgmax)                    :: slmstr         ! Initial soil moist. frac.
+   real, dimension(nzgmax)                    :: stgoff         ! Initial soil temp. offset
+   real, dimension(nzgmax)                    :: slz            ! Soil levels.
+   character(len=str_len), dimension(maxgrds) :: veg_database   ! Land/sea mask database
+   character(len=str_len), dimension(maxgrds) :: soil_database  ! Soil texture database
+   character(len=str_len)                     :: soilstate_db   ! Soil state database.
+   character(len=str_len)                     :: soildepth_db   ! Soil depth database.
+   integer                                    :: isoilstateinit ! Soil state initial cond. 
+   integer                                    :: isoildepthflg  ! Soil depth initial cond. 
+   real                                       :: runoff_time    ! Default runoff time scale.
    !---------------------------------------------------------------------------------------!
 
 

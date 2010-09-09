@@ -1329,11 +1329,6 @@ canopy_struct_dynamics.o : $(ED_DYNAMICS)/canopy_struct_dynamics.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
-canopy_update_euler.o : $(ED_DYNAMICS)/canopy_update_euler.f90
-	cp -f $< $(<F:.f90=.f90)
-	$(F90_COMMAND) $(<F:.f90=.f90)
-	rm -f $(<F:.f90=.f90)
-
 consts_coms.o : $(ED_MEMORY)/consts_coms.F90
 	cp -f $< $(<F:.F90=.F90)
 	$(FPP_COMMAND) $(<F:.F90=.F90)
@@ -1539,6 +1534,11 @@ hdf5_utils.o : $(ED_UTILS)/hdf5_utils.f90
 	$(F90_COMMAND) $(HDF5_INCS) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
+heun_driver.o: $(ED_DYNAMICS)/heun_driver.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
 hydrology_coms.o: $(ED_MEMORY)/hydrology_coms.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
@@ -1619,7 +1619,7 @@ phenology_driv.o : $(ED_DYNAMICS)/phenology_driv.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
-phenology_init.o : $(ED_INIT)/phenology_init.f90
+phenology_startup.o : $(ED_INIT)/phenology_startup.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)

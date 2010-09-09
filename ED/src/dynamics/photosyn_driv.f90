@@ -83,7 +83,6 @@ subroutine canopy_photosynthesis(csite,ipa,vels,atm_tmp,prss,ed_ktrans,ntext_soi
    end do
 
 
-
    !----- Calculate liquid water available for transpiration. -----------------------------!
    available_liquid_water(nzg) = wdns * dslz(nzg) * soil_fracliq(nzg)                      &
                                * max(0.0, soil_water(nzg) - soil(ntext_soil(nzg))%soilwp )

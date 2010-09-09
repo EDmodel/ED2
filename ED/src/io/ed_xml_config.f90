@@ -69,6 +69,7 @@ recursive subroutine read_ed_xml_config(filename)
   use decomp_coms
   use fusion_fission_coms
   use ed_misc_coms
+  use grid_coms, only : ngrids
 
   use soil_coms  !, only: infiltration_method, dewmax, water_stab_thresh
 !  use ed_data
@@ -80,6 +81,7 @@ recursive subroutine read_ed_xml_config(filename)
   real(8) :: rval
   character*(*) :: filename
   character(len=256)  :: cval
+  integer             :: ng
 !  type(eddata) :: data
 
   print*,"Opening ED2 XML Config file",trim(filename)
@@ -131,7 +133,8 @@ recursive subroutine read_ed_xml_config(filename)
          call getConfigSTRING  ('output_filepath','misc',i,cval,texist)
          if(texist) ffilout = trim(cval)
          call getConfigSTRING  ('input_filepath','misc',i,cval,texist)
-         if(texist) ed_inputs_dir = trim(cval)
+         if (texist) thsums_database = trim(cval)
+
          call getConfigSTRING  ('history_out_filepath','misc',i,cval,texist)
          if(texist) sfilout = trim(cval)
          call getConfigINT  ('integration_scheme','misc',i,ival,texist)
@@ -521,14 +524,27 @@ recursive subroutine read_ed_xml_config(filename)
          if(texist) infiltration_method = ival
          call getConfigREAL  ('dewmax','soil',i,rval,texist)
          if(texist) dewmax = real(rval)
+
          call getConfigSTRING  ('vegetation_database','soil',i,cval,texist)
-         if(texist) veg_database = trim(cval)
+         if (texist) then
+            do ng=1,ngrids
+               veg_database(ng) = trim(cval)
+            end do
+         end if
+
          call getConfigSTRING  ('soil_database','soil',i,cval,texist)
-         if(texist) soil_database = trim(cval)
+         if (texist) then
+            do ng=1,ngrids
+               soil_database(ng) = trim(cval)
+            end do
+         end if
+
          call getConfigSTRING  ('soilstate_db','soil',i,cval,texist)
-         if(texist) soilstate_db = trim(cval)
+         if (texist) soilstate_db = trim(cval)
+
          call getConfigSTRING  ('soildepth_db','soil',i,cval,texist)
-         if(texist) soildepth_db = trim(cval)
+         if (texist) soildepth_db = trim(cval)
+
          call getConfigINT  ('isoilstateinit','soil',i,ival,texist)
          if(texist) isoilstateinit = ival
          call getConfigINT  ('isoildepthflg','soil',i,ival,texist)
@@ -637,8 +653,6 @@ recursive subroutine read_ed_xml_config(filename)
         call libxml2f90__ll_selecttag('DOWN','disturbance',i)
         
         !! GENERAL
-        call getConfigINT  ('patch_dynamics','disturbance',i,ival,texist)
-        if(texist) patch_dynamics = ival
         call getConfigREAL  ('min_new_patch_area','disturbance',i,rval,texist)
         if(texist) min_new_patch_area = real(rval)
         call getConfigINT  ('include_fire','disturbance',i,ival,texist)
