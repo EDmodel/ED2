@@ -478,7 +478,10 @@ subroutine fill_datp(n2,n3,no,iblksizo,isbego,iwbego  &
    ,platn,plonn,offlat,offlon,deltallo,ofn,iaction,nmiss,fnmiss,h5name)
 
 use mem_mksfc
+
+#if USE_HDF5
 use hdf5_utils
+#endif
 
 implicit none
 character(len=*) :: ofn,iaction,fnmiss(*)
@@ -643,6 +646,7 @@ do jfile = 1,jfile_max
          
          inquire(file=title3(1:lb),exist=l1,opened=l2)
 
+#if USE_HDF5
 ! If file not found, then check for an hdf5 file.
 
          h5=.false.
@@ -655,7 +659,7 @@ do jfile = 1,jfile_max
             inquire(file=trim(title3),exist=l1,opened=l2)
             h5=.true.
          endif
-
+#endif
 ! Read file or set missing flag to 1
 
 !!         if (l1) then
@@ -686,6 +690,7 @@ do jfile = 1,jfile_max
            print*, 'getting file ',trim(title3)
            
             if (iaction == 'ndvi') then
+#if USE_HDF5
                if (h5) then
                   call shdf5_open_f(title3,'R')
                   ndims=2 ; idims(1)=no ; idims(2)=no
@@ -693,9 +698,14 @@ do jfile = 1,jfile_max
                   call shdf5_close_f()
                else
                   print*,'NDVI file not in HDF5 format!'
-                  stop 'landuse_input: bad NDVI format'
+                  call abort_run('Bad NDVI format','fill_datp','landuse_input.F90')
                endif
+#else
+               print*,'NDVI file not in HDF5 format!'
+               call abort_run('Bad NDVI format','fill_datp','landuse_input.F90')
+#endif
             else
+#if USE_HDF5
                if (h5) then
                   call shdf5_open_f(title3,'R')
                   ndims=2 ; idims(1)=no ; idims(2)=no
@@ -711,6 +721,16 @@ do jfile = 1,jfile_max
                      enddo
                   enddo
                endif
+#else
+               call rams_c_open(title3(1:lb)//char(0),'rb'//char(0))
+               call rams_c_read_char(4,no*no,cdato(1,1))
+               call rams_c_close()
+               do jj = 1,no
+                  do ii = 1,no
+                     idato(ii,jj)=ichar(cdato(ii,jj))
+                  enddo
+               enddo
+#endif
             endif
          else
             do nn=1,nmiss
