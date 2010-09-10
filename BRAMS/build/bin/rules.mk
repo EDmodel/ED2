@@ -294,7 +294,7 @@ hdf5_coms.o : $(MEMORY)/hdf5_coms.F90
 	$(FPP_COMMAND) $(HDF5_INCS) $(<F:.F90=.F90)
 	rm -f $(<F:.F90=.F90)
 
-hdf5_utils.o : $(ED_UTILS)/hdf5_utils.F90
+hdf5_utils.o : $(UTILS_LIB)/hdf5_utils.F90
 	cp -f $< $(<F:.F90=.F90)
 	$(FPP_COMMAND) $(HDF5_INCS) $(<F:.F90=.F90)
 	rm -f $(<F:.F90=.F90)
