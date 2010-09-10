@@ -493,7 +493,7 @@ integer :: n2,n3,no,iblksizo,isbego,iwbego,isoc,iwoc,iofr  &
 real :: rio,rjo,rno,platn,plonn,offlat,offlon  &
        ,glatp1,glonp1,deltallo,wio2,wjo2,wio1,wjo1
 
-character :: title1*3,title2*4,title3*80
+character :: title1*3,title2*4,title3*256
 
 logical l1,l2,h5
 integer :: ndims,idims(4),ii,jj
