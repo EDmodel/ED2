@@ -136,8 +136,8 @@ gridset.o: grid_dims.mod mem_grid.mod rconstants.mod
 rams_grid.o: mem_grid.mod node_mod.mod rconstants.mod
 rdint.o: catt_start.mod domain_decomp.mod emission_source_map.mod grell_coms.mod
 rdint.o: grid_dims.mod io_params.mod isan_coms.mod mem_basic.mod mem_cuparm.mod
-rdint.o: mem_emiss.mod mem_gaspart.mod mem_globrad.mod mem_grid.mod mem_leaf.mod
-rdint.o: mem_mass.mod mem_micro.mod mem_oda.mod mem_radiate.mod mem_scalar.mod
+rdint.o: mem_emiss.mod mem_gaspart.mod mem_grid.mod mem_leaf.mod mem_mass.mod
+rdint.o: mem_micro.mod mem_oda.mod mem_radiate.mod mem_scalar.mod
 rdint.o: mem_scratch.mod mem_soil_moisture.mod mem_teb.mod mem_teb_common.mod
 rdint.o: mem_turb.mod mem_varinit.mod micphys.mod node_mod.mod plume_utils.mod
 rdint.o: ref_sounding.mod teb_spm_start.mod teb_vars_const.mod therm_lib.mod
@@ -153,8 +153,8 @@ inithis.o: mem_scratch.mod rconstants.mod ref_sounding.mod therm_lib.mod
 inithis.o: var_tables.mod
 io_params.o: grid_dims.mod
 opspec.o: catt_start.mod grell_coms.mod io_params.mod mem_basic.mod
-opspec.o: mem_cuparm.mod mem_emiss.mod mem_globrad.mod mem_grid.mod mem_leaf.mod
-opspec.o: mem_mass.mod mem_radiate.mod mem_turb.mod mem_varinit.mod micphys.mod
+opspec.o: mem_cuparm.mod mem_emiss.mod mem_grid.mod mem_leaf.mod mem_mass.mod
+opspec.o: mem_radiate.mod mem_turb.mod mem_varinit.mod micphys.mod
 opspec.o: teb_spm_start.mod therm_lib.mod
 rams_read_header.o: an_header.mod
 ranlavg.o: io_params.mod mem_basic.mod mem_grid.mod mem_scratch.mod mem_turb.mod
@@ -169,8 +169,8 @@ rio.o: an_header.mod grid_dims.mod io_params.mod mem_aerad.mod mem_basic.mod
 rio.o: mem_cuparm.mod mem_grid.mod mem_scratch.mod mem_turb.mod rconstants.mod
 rio.o: ref_sounding.mod therm_lib.mod var_tables.mod
 rname.o: catt_start.mod domain_decomp.mod emission_source_map.mod grell_coms.mod
-rname.o: mem_all.mod mem_globrad.mod mem_mass.mod mem_soil_moisture.mod
-rname.o: plume_utils.mod teb_spm_start.mod therm_lib.mod turb_coms.mod
+rname.o: mem_all.mod mem_mass.mod mem_soil_moisture.mod plume_utils.mod
+rname.o: teb_spm_start.mod therm_lib.mod turb_coms.mod
 rprnt.o: io_params.mod leaf_coms.mod mem_all.mod mem_basic.mod mem_grid.mod
 rprnt.o: mem_leaf.mod mem_scratch.mod mem_turb.mod rconstants.mod
 rprnt.o: ref_sounding.mod therm_lib.mod var_tables.mod
@@ -189,6 +189,7 @@ refstate.o: rconstants.mod therm_lib.mod
 v_interps.o: isan_coms.mod rconstants.mod therm_lib.mod
 dateutils.o: rconstants.mod
 getvar.o: an_header.mod
+hdf5_utils.o: hdf5_coms.mod
 map_proj.o: rconstants.mod
 numutils.o: rconstants.mod therm_lib.mod
 polarst.o: rconstants.mod
@@ -203,6 +204,7 @@ dealloc.o: catt_start.mod mem_aerad.mod mem_all.mod mem_ensemble.mod
 dealloc.o: mem_gaspart.mod mem_globaer.mod mem_globrad.mod mem_mass.mod
 dealloc.o: mem_opt.mod mem_scratch1_grell.mod mem_scratch_grell.mod mem_teb.mod
 dealloc.o: mem_teb_common.mod teb_spm_start.mod
+hdf5_coms.o: 
 mem_all.o: io_params.mod mem_basic.mod mem_cuparm.mod mem_grid.mod mem_leaf.mod
 mem_all.o: mem_micro.mod mem_nestb.mod mem_oda.mod mem_radiate.mod
 mem_all.o: mem_scalar.mod mem_scratch.mod mem_scratch1.mod mem_tend.mod
@@ -268,10 +270,9 @@ mpass_full.o: mem_grid.mod mem_scratch.mod mem_varinit.mod node_mod.mod
 mpass_full.o: rpara.mod var_tables.mod
 mpass_init.o: catt_start.mod cyclic_mod.mod emission_source_map.mod
 mpass_init.o: grell_coms.mod grid_dims.mod mem_all.mod mem_cuparm.mod
-mpass_init.o: mem_emiss.mod mem_globrad.mod mem_grid.mod mem_mass.mod
-mpass_init.o: micphys.mod node_mod.mod plume_utils.mod ref_sounding.mod
-mpass_init.o: rpara.mod teb_spm_start.mod teb_vars_const.mod therm_lib.mod
-mpass_init.o: turb_coms.mod
+mpass_init.o: mem_emiss.mod mem_grid.mod mem_mass.mod micphys.mod node_mod.mod
+mpass_init.o: plume_utils.mod ref_sounding.mod rpara.mod teb_spm_start.mod
+mpass_init.o: teb_vars_const.mod therm_lib.mod turb_coms.mod
 mpass_lbc.o: grid_dims.mod mem_cuparm.mod mem_grid.mod mem_scratch.mod
 mpass_lbc.o: node_mod.mod var_tables.mod
 mpass_nest.o: grid_dims.mod mem_basic.mod mem_grid.mod mem_nestb.mod
@@ -325,7 +326,7 @@ harr_radinit.o: mem_radiate.mod micphys.mod
 mem_aerad.o: mem_grid_dim_defs.mod
 mem_carma.o: grid_dims.mod mem_aerad.mod mem_globrad.mod
 mem_globaer.o: mem_aerad.mod
-mem_globrad.o: mem_aerad.mod mem_radiate.mod rconstants.mod
+mem_globrad.o: mem_aerad.mod rconstants.mod
 mem_mclat.o: rconstants.mod
 mem_radiate.o: var_tables.mod
 rad_carma.o: catt_start.mod grid_dims.mod mem_aerad.mod mem_carma.mod

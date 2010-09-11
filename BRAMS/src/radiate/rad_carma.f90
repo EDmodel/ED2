@@ -27,7 +27,6 @@ module rad_carma
       use mem_grid    , only : ngrid              ! ! intent(in)
       use grid_dims   , only : nzpmax             ! ! intent(in)
       use mem_aerad   , only : nwave              ! ! intent(in)
-      use mem_globrad , only : rad_data_not_read  ! ! intent(inout)
       use rconstants  , only : day_sec            & ! intent(in)
                              , p00                & ! intent(in)
                              , t00                & ! intent(in)

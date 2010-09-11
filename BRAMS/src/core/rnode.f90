@@ -392,7 +392,6 @@ subroutine init_params(init)
   call nodeget_gridset
   call nodeget_cofnest()
   call nodeget_micphys
-  if (ISWRTYP==4 .or. ILWRTYP==4) call nodeget_carma()
   if (if_oda == 1) call nodeget_oda()
   call nodeget_misc
 end subroutine init_params

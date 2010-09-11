@@ -30,9 +30,6 @@ subroutine initlz (name_name)
        RECYCLE_TRACERS                                     ! intent(in)
   use emission_source_map, only: read_emission_sources_map ! Subroutine
 
-  ! CARMA Radiation
-  use mem_globrad, only: master_read_carma_data ! Subroutine
-
   ! TEB_SPM
   use teb_spm_start, only : TEB_SPM   ! intent(in)
   use mem_teb, only       : teb_g     ! intent(inout)
@@ -295,9 +292,6 @@ subroutine initlz (name_name)
 
      endif
 
-     ! Read Radiation Parameters if CARMA Radiation is selected
-     call master_read_carma_data()
-
      ! Initialise turbulence factor akscal
      if (if_adap == 1) then
         do ifm=1,ngrids
@@ -490,10 +484,6 @@ subroutine initlz (name_name)
         print*,'            ! ',NGRIDS, ' grids to be run.        '
         print*,' +-------------------------------------'
      endif
-
-     ! Read Radiation Parameters if CARMA Radiation is selected
-     call master_read_carma_data()
-     !
 
      ! CATT
      if (CATT==1) then
@@ -765,8 +755,6 @@ subroutine ReadNamelist(fileName)
        ndeepest, &
        nshallowest, &
        cptime
-  use mem_globrad, only: raddatfn, & !CARMA
-       rdatfnum                      !CARMA
   use grell_coms, only:  &
           closure_type,  & ! intent(out)
           maxclouds,     & ! intent(out)
@@ -1116,7 +1104,7 @@ subroutine ReadNamelist(fileName)
   namelist /MODEL_OPTIONS/ &
        naddsc, icorflg, iexev,imassflx, ibnd, jbnd, cphas, lsflg, nfpt,   &
        distim,iswrtyp, ilwrtyp,icumfdbk,                                  &
-       raddatfn,radfrq, lonrad, npatch, nvegpat, isfcl,dtleaf,istar,ico2, &
+       radfrq, lonrad, npatch, nvegpat, isfcl,dtleaf,istar,ico2,          &
        co2con, nvgcon, pctlcon, nslcon, drtcon, zrough, albedo, seatmp,   &
        dthcon, soil_moist, soil_moist_fail, usdata_in, usmodel_in, slz,   &
        slmstr, stgoff, if_urban_canopy, idiffk, ibruvais, ibotflx,        &
@@ -1698,7 +1686,6 @@ subroutine ReadNamelist(fileName)
      write (*, *) "distim=",distim
      write (*, *) "iswrtyp=",iswrtyp
      write (*, *) "ilwrtyp=",ilwrtyp
-     write (*, *) "raddatfn=", RADDATFN
      write (*, *) "radfrq=",radfrq
      write (*, *) "lonrad=",lonrad
      write (*, *) "npatch=",npatch

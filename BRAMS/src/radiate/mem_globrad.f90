@@ -348,9 +348,7 @@ module mem_globrad
    real :: alb_tomi
    real :: alb_toai
 
-   character(LEN=256) :: raddatfn
    integer :: rdatfnum=22  !0
-   logical :: rad_data_not_read
 
    contains
 
@@ -373,7 +371,6 @@ module mem_globrad
      ncount = nhigh - nlow
      
      rdatfnum = 22
-     rad_data_not_read = .true.
 
      ! Allocating arrays:
      allocate(o3mix(nlayer))
@@ -628,32 +625,12 @@ module mem_globrad
 
    ! **************************************************************************
 
-   subroutine master_read_carma_data()
-
-     use mem_radiate, only: ISWRTYP, ILWRTYP ! Intent(in)
+   subroutine init_globrad_params()
 
      implicit none
 
      ! Local Variables
-     integer, parameter :: input_unit=22
      integer :: n
-
-     namelist /rad/ &
-          o3mixp,pj,ako3,akco2,akh2o,contnm,gangle, &
-          gratio,gweight,weight,treal,ttmag,nprob,  &
-          pso2,pso3,psh2o,psco2,wave,solfx,xah2o, &
-          xaco2,xao2,xao3,ta,tb,wa,wb,ga,gb,tia,tib, &
-          wia,wib,gia,gib,alpha,gama,caseE,caseW,caseG
-
-     ! Check if CARMA Radiation is selected
-     if (ISWRTYP/=4 .and. ILWRTYP/=4) return
-     
-! IN THE OLD METHOD< ONE READS IN THE PARAMETERS IN THE CARMA FILE
-! WE WERE HAVING TROUBLE READING IT IN     
-!     write (unit=*,fmt='(a)') 'Reading CARMA settings...'
-!     open (unit=input_unit,file=raddatfn,status='old')
-!     read (unit=input_unit,nml=rad)
-!     close(unit=input_unit)
 
      o3mixp= (/5.3E-08,     5.5E-08,      6.5E-08,     2.2E-07,     1.4E-06,     1.14E-05/)
 
@@ -1656,7 +1633,6 @@ caseG(9,:)= (/0.70840   , 0.70600   , 0.70440   , 0.70554   , 0.70684   , 0.6967
             0.61900   , 0.61900   /)
 
 
-     rad_data_not_read=.false.
 
      !   DERIVED PARAMETERS
      !
@@ -1664,6 +1640,6 @@ caseG(9,:)= (/0.70840   , 0.70600   , 0.70440   , 0.70554   , 0.70684   , 0.6967
      jn      =   jdble-1
      
 
-   end subroutine master_read_carma_data
+   end subroutine init_globrad_params
   
 end module mem_globrad 

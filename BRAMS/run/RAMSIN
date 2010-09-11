@@ -534,9 +534,6 @@
                              !    0 - No , 1 - Yes
                              ! (Used for i?wrtyp = 3 only)
                              !
-   RADDATFN = 'CARMA_IN',    ! Radiation parameterization datafile
-                             ! (only if iswrtyp and/or ilwrtyp is 4).
-                             !
    RADFRQ   = 600.,          ! Freq. of radiation tendency update (s)
    LONRAD   = 1,             ! Longitudinal variation of shortwave
                              !    (0-no, 1-yes)
