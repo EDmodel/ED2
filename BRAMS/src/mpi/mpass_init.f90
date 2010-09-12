@@ -94,7 +94,6 @@ subroutine masterput_nl(master_num)
                                   ,zcutdown                    & ! intent(in)
                                   ,z_detr                      ! ! intent(in)
    use catt_start         , only : catt                        ! ! intent(in)
-   use mem_globrad        , only : raddatfn                    ! ! intent(in)
    use emission_source_map, only : plumerise                   ! ! intent(in)
    use plume_utils        , only : prfrq                       ! ! intent(in)
    use teb_spm_start      , only : teb_spm                     ! ! intent(in)
@@ -287,7 +286,6 @@ subroutine masterput_nl(master_num)
    call MPI_Bcast(IF_URBAN_CANOPY,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    
    call MPI_Bcast(CATT,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(RADDATFN(1:160),160,MPI_CHARACTER,mainnum,MPI_COMM_WORLD,ierr)! 
 
 
    if (CATT == 1) then
@@ -815,92 +813,6 @@ end subroutine masterput_micphys
 
 !==========================================================================================!
 !==========================================================================================!
-!     This subroutine sends some CARMA radiation variables to the nodes.                   !
-!------------------------------------------------------------------------------------------!
-subroutine masterput_carma(master_num)
-
-   use mem_globrad, only: &
-        nirp, ngauss, ntotal, nwave, nsol, nsolp, &
-        o3mixp,pj,ako3,akco2,akh2o,contnm,gangle, &
-        gratio,gweight,weight,treal,ttmag,nprob,  &
-        pso2,pso3,psh2o,psco2,wave,solfx,xah2o, &
-        xaco2,xao2,xao3,ta,tb,wa,wb,ga,gb,tia,tib, &
-        wia,wib,gia,gib,alpha,gama,caseE,caseW,caseG, &
-        jdble,jn,rad_data_not_read
-   use rpara
-
-   implicit none
-   !----- External variable declaration ---------------------------------------------------!
-   include 'interface.h'
-   include 'mpif.h'
-   !----- Arguments -----------------------------------------------------------------------!
-   integer, intent(in) :: master_num
-   !----- Local variables -----------------------------------------------------------------!
-   integer             :: ierr
-   !---------------------------------------------------------------------------------------!
-
-   !---------------------------------------------------------------------------------------!
-   !    Now all the intended variables are broadcast, they will be caught by the nodes.    !
-   ! Here THE ORDER MATTERS A LOT. If you are including new variables, make sure that the  !
-   ! variables listed here are in the very same order as the nodeget_carma subroutine      !
-   ! (later in this file), otherwise horrible things will happen to your run.              !
-   !---------------------------------------------------------------------------------------!
-   call MPI_Bcast(o3mixp,6,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(pj,6,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(ako3,4*6,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(akco2,6*6,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(akh2o,54*6,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(contnm,nirp,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(gangle,ngauss,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(gratio,ngauss,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(gweight,ngauss,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(weight,ntotal,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(treal,2*nwave,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(ttmag,2*nwave,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(nprob,ntotal,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(pso2,ntotal,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(pso3,ntotal,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(psh2o,ntotal,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(psco2,ntotal,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(wave,(nwave+1),MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(solfx,nsol,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(xah2o,nsolp,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(xaco2,nsolp,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(xao2,nsolp,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(xao3,nsolp,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(ta,ntotal,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(tb,ntotal,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(wa,ntotal,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(wb,ntotal,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(ga,ntotal,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(gb,ntotal,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(tia,ntotal,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(tib,ntotal,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(wia,ntotal,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(wib,ntotal,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(gia,ntotal,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(gib,ntotal,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(alpha,ntotal,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(gama,ntotal,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(caseE,(9*nwave),MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(caseW,(9*nwave),MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(caseG,(9*nwave),MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(jdble,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(jn,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(rad_data_not_read,1,MPI_LOGICAL,master_num,MPI_COMM_WORLD,ierr)
-
-   return
-end subroutine masterput_carma
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
 !    This routine catches the basic processor ID sent from the head node.                  !
 !------------------------------------------------------------------------------------------!
 subroutine nodeget_processid(init)
@@ -972,7 +884,6 @@ subroutine nodeget_nl
                                   ,zcutdown                    & ! intent(out)
                                   ,z_detr                      ! ! intent(out)
    use catt_start         , only : catt                        ! ! intent(out)
-   use mem_globrad        , only : raddatfn                    ! ! intent(out)
    use emission_source_map, only : plumerise                   ! ! intent(out)
    use plume_utils        , only : prfrq                       ! ! intent(out)
    use teb_spm_start      , only : teb_spm                     ! ! intent(out)
@@ -1160,7 +1071,6 @@ subroutine nodeget_nl
    call MPI_Bcast(IF_URBAN_CANOPY,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
   
    call MPI_Bcast(CATT,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(RADDATFN(1:160),160,MPI_CHARACTER,master_num,MPI_COMM_WORLD,ierr)
 
 
    if (CATT == 1) then
@@ -1684,92 +1594,5 @@ subroutine nodeget_micphys
 
    return
 end subroutine nodeget_micphys
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-!     This subroutine receives some CARMA radiation variables from the nodes.              !
-!------------------------------------------------------------------------------------------!
-subroutine nodeget_carma()
-
-
-   use mem_globrad, only: &
-        nirp, ngauss, ntotal, nwave, nsol, nsolp, &
-        o3mixp,pj,ako3,akco2,akh2o,contnm,gangle, &
-        gratio,gweight,weight,treal,ttmag,nprob,  &
-        pso2,pso3,psh2o,psco2,wave,solfx,xah2o, &
-        xaco2,xao2,xao3,ta,tb,wa,wb,ga,gb,tia,tib, &
-        wia,wib,gia,gib,alpha,gama,caseE,caseW,caseG, &
-        jdble,jn,rad_data_not_read
-   use rpara
-   use node_mod, only: master_num
-   implicit none
-   !----- External variable declaration ---------------------------------------------------!
-   include 'interface.h'
-   include 'mpif.h'
-   !----- Local variables -----------------------------------------------------------------!
-   integer             :: ierr
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !    Now all the broadcasted variables are captured by each slave node.                 !
-   ! Here THE ORDER MATTERS A LOT. If you are including new variables, make sure that the  !
-   ! variables listed here are in the very same order as the masterput_carma subroutine    !
-   ! (earlier in this file), otherwise horrible things will happen to your run.            !
-   !---------------------------------------------------------------------------------------!
-   call MPI_Bcast(o3mixp,6,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(pj,6,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(ako3,4*6,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(akco2,6*6,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(akh2o,54*6,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(contnm,nirp,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(gangle,ngauss,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(gratio,ngauss,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(gweight,ngauss,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(weight,ntotal,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(treal,2*nwave,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(ttmag,2*nwave,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(nprob,ntotal,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(pso2,ntotal,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(pso3,ntotal,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(psh2o,ntotal,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(psco2,ntotal,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(wave,(nwave+1),MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(solfx,nsol,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(xah2o,nsolp,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(xaco2,nsolp,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(xao2,nsolp,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(xao3,nsolp,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(ta,ntotal,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(tb,ntotal,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(wa,ntotal,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(wb,ntotal,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(ga,ntotal,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(gb,ntotal,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(tia,ntotal,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(tib,ntotal,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(wia,ntotal,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(wib,ntotal,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(gia,ntotal,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(gib,ntotal,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(alpha,ntotal,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(gama,ntotal,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(caseE,(9*nwave),MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(caseW,(9*nwave),MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(caseG,(9*nwave),MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(jdble,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(jn,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
-   call MPI_Bcast(rad_data_not_read,1,MPI_LOGICAL,master_num,MPI_COMM_WORLD,ierr)
-
-   return
-end subroutine nodeget_carma
 !==========================================================================================!
 !==========================================================================================!

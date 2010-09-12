@@ -390,7 +390,6 @@ subroutine opspec2
   use mem_grid
   use mem_varinit
   use mem_radiate, only: ISWRTYP, ILWRTYP ! Intent(in)
-  use mem_globrad, only: raddatfn ! Intent(in)
   use therm_lib, only: level
 
   implicit none
@@ -551,25 +550,6 @@ subroutine opspec2
         endif
      endif
   enddo
-
-  ! Checking problems with CARMA Radiation - BRAMS 4
-  if (ISWRTYP==4 .or. ILWRTYP==4) then   
-     if(trim(raddatfn)=='') then 
-        ifaterr=ifaterr+1
-        print *,'FATAL ERROR: rad data file name not set (empty).'
-        print *,'Please, check the RADDATFN variable in RAMSIN.'
-        print *, "Program will stop."
-     else
-        inquire(FILE=raddatfn,exist=ex)
-        if (.not.ex) then
-           ifaterr=ifaterr+1
-           print *, "FATAL ERROR: file=", trim(raddatfn), &
-                " does not exist."
-           print *, "Program will stop."
-        endif
-     endif
-  endif
-  !
     
 
   ! this need to be done here since varfiles are filled before opspec3

@@ -478,7 +478,11 @@ subroutine fill_datp(n2,n3,no,iblksizo,isbego,iwbego  &
    ,platn,plonn,offlat,offlon,deltallo,ofn,iaction,nmiss,fnmiss,h5name)
 
 use mem_mksfc
+use io_params, only : iuselai
+
+#if USE_HDF5
 use hdf5_utils
+#endif
 
 implicit none
 character(len=*) :: ofn,iaction,fnmiss(*)
@@ -493,7 +497,7 @@ integer :: n2,n3,no,iblksizo,isbego,iwbego,isoc,iwoc,iofr  &
 real :: rio,rjo,rno,platn,plonn,offlat,offlon  &
        ,glatp1,glonp1,deltallo,wio2,wjo2,wio1,wjo1
 
-character :: title1*3,title2*4,title3*80
+character :: title1*3,title2*4,title3*256
 
 logical l1,l2,h5
 integer :: ndims,idims(4),ii,jj
@@ -638,48 +642,42 @@ do jfile = 1,jfile_max
 
          lb = len_trim(ofn)
          title3 = ofn(1:lb)//title1//title2
-         if (iaction == 'ndvi') title3=trim(title3)//'.hdf'
+         if (iaction == 'ndvi') then
+            select case (iuselai)
+            case (0)
+               h5 = .false.
+               title3=trim(title3)//'.hdf'
+            case (1)
+               h5 = .true.
+#if USE_HDF5
+               title3=trim(title3)//'.h5'
+#else
+               call abort_run('You must compile BRAMS with HDF5 to use LAI data' &
+                             ,'fill_datp','landuse_input.F90')
+#endif
+            end select
+         else
+            h5 = .false.
+         end if
+
          lb = len_trim(title3)
-         
          inquire(file=title3(1:lb),exist=l1,opened=l2)
 
-! If file not found, then check for an hdf5 file.
-
-         h5=.false.
+#if USE_HDF5
+         ! If file not found, then check for an hdf5 file.
          if (.not. l1) then
             if (iaction == 'ndvi') then
                title3=title3(1:lb-3)//'h5'
             else
                title3=trim(title3)//'.h5'
-            endif
+            end if
+
             inquire(file=trim(title3),exist=l1,opened=l2)
-            h5=.true.
-         endif
-
+            h5 = l1
+         end if
+#endif
 ! Read file or set missing flag to 1
-
-!!         if (l1) then
-!!            missing = 0
-!!           print*, 'getting file ',title3(1:lb)
-           
-!!            if (iaction == 'ndvi') then
-!!               call read_hdf(no,no,dato,title3(1:lb))
-!!            else
-!!               call rams_c_open(title3(1:lb)//char(0),'rb'//char(0))
-!!               call rams_c_read_char(4,no*no,cdato(1,1))
-!!               call rams_c_close()
-!!            endif
-!!         else
-!!            do nn=1,nmiss
-!!               if(trim(title3(1:lb)) == trim(fnmiss(nn)) ) goto 302
-!!            enddo
-!!            nmiss=nmiss+1
-!!            fnmiss(nmiss)=title3(1:lb)
-!!302         continue
-!!            missing = 1
-!!         endif
-
-         
+     
          if (l1) then
             missing = 0
            !print*, 'getting file ',title3(1:lb),ir,jr,ip,jp
@@ -687,15 +685,24 @@ do jfile = 1,jfile_max
            
             if (iaction == 'ndvi') then
                if (h5) then
+#if USE_HDF5
                   call shdf5_open_f(title3,'R')
                   ndims=2 ; idims(1)=no ; idims(2)=no
                   call shdf5_irec_f(ndims,idims,trim(h5name),rvara=dato)
                   call shdf5_close_f()
+#else
+                  call abort_run('You must compile BRAMS with HDF5 to use HDF5 data' &
+                                ,'fill_datp','landuse_input.F90')
+#endif
+               elseif (iuselai == 0) then
+                  call read_hdf(no,no,dato,title3(1:lb))
                else
-                  print*,'NDVI file not in HDF5 format!'
-                  stop 'landuse_input: bad NDVI format'
-               endif
+                  call abort_run('LAI data must be in HDF5 format...' &
+                                ,'fill_datp','landuse_input.F90')
+               end if
+
             else
+#if USE_HDF5
                if (h5) then
                   call shdf5_open_f(title3,'R')
                   ndims=2 ; idims(1)=no ; idims(2)=no
@@ -711,7 +718,17 @@ do jfile = 1,jfile_max
                      enddo
                   enddo
                endif
-            endif
+#else
+               call rams_c_open(title3(1:lb)//char(0),'rb'//char(0))
+               call rams_c_read_char(4,no*no,cdato(1,1))
+               call rams_c_close()
+               do jj = 1,no
+                  do ii = 1,no
+                     idato(ii,jj)=ichar(cdato(ii,jj))
+                  end do
+               end do
+#endif
+            end if
          else
             do nn=1,nmiss
                if(trim(title3(1:lb)) == trim(fnmiss(nn)) ) goto 302

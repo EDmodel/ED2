@@ -214,6 +214,10 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,npat,ifm,can_theta,can_prss,glat,glon
       write(unit=*,fmt='(a)') '|     points outside the input domain         |'
       write(unit=*,fmt='(a)') '|---------------------------------------------|'
 
+      where (slmstr > 1.0)
+         slmstr = 1.0
+      end where
+
       hoploop: do ipat= 2,npat
          hojloop: do j = 1,n3
             hoiloop: do i = 1,n2
@@ -222,9 +226,8 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,npat,ifm,can_theta,can_prss,glat,glon
 
                hokloop: do k = 1,mzg
                   nsoil = nint(soil_text(k,i,j,ipat))
-
-                  soil_water(k,i,j,ipat) = max(soilcp(nsoil)                               &
-                                              ,min(1.0,slmstr(k))*slmsts(nsoil))
+                  soil_water(k,i,j,ipat) = soilcp(nsoil)                                   &
+                                         + slmstr(k) * (slmsts(nsoil) - soilcp(nsoil))
                   tsoil = can_temp + stgoff(k)
                   if (tsoil >= t3ple) then
                      soil_energy(k,i,j,ipat) = slcpd(nsoil) * tsoil                        &
@@ -401,8 +404,11 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,npat,ifm,can_theta,can_prss,glat,glon
                         do ipat=2,npat
                            nsoil = nint(soil_text(k,i,j,ipat))
                            !----- Only reasonable soil moisture values are accepted. ------!
-                           if (usdum(kk+1) >= soilcp(nsoil) .and.                          &
-                               usdum(kk+1) <= slmsts(nsoil) ) then
+                           if (usdum(kk+1) < soilcp(nsoil)) then
+                              soil_water(k,i,j,ipat) = soilcp(nsoil)
+                           elseif (usdum(kk+1) > slmsts(nsoil)) then
+                              soil_water(k,i,j,ipat) = slmsts(nsoil)
+                           else
                               soil_water(k,i,j,ipat) = usdum(kk+1)
                            end if
                         end do
@@ -410,8 +416,11 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,npat,ifm,can_theta,can_prss,glat,glon
                      else
                         do ipat=2,npat
                            nsoil = nint(soil_text(k,i,j,ipat))
-                           if (usdum(1) >= soilcp(nsoil) .and. usdum(1) <= slmsts(nsoil))  &
-                           then
+                           if (usdum(1) < soilcp(nsoil)) then
+                              soil_water(k,i,j,ipat) = soilcp(nsoil)
+                           elseif (usdum(1) > slmsts(nsoil)) then
+                              soil_water(k,i,j,ipat) = slmsts(nsoil)
+                           else
                               soil_water(k,i,j,ipat) = usdum(1)
                            end if
                         end do

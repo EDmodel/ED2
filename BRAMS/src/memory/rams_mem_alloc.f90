@@ -47,6 +47,7 @@ subroutine rams_mem_alloc(proc_type)
    use mem_globaer, only: &
         initial_definitions_globaer !Subroutine
    use mem_globrad, only: &
+        init_globrad_params,          & ! Subroutine
         initial_definitions_globrad !Subroutine
    use extras
    use mem_turb_scalar
@@ -641,6 +642,7 @@ subroutine rams_mem_alloc(proc_type)
    if (ilwrtyp==4 .or. iswrtyp==4) then
        write (unit=*,fmt=*) ' [+] CARMA allocation on node ',mynum,'...'
       call initial_definitions_aerad()
+      call init_globrad_params()
       call initial_definitions_globrad()
       call initial_definitions_globaer()
 

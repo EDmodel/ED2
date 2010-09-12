@@ -67,6 +67,8 @@ OBJ_MODEL =                         \
 	harr_rad.o                  \
 	harr_raddriv.o              \
 	harr_radinit.o              \
+	hdf5_coms.o                 \
+	hdf5_utils.o                \
 	hemi2.o                     \
 	htint-opt.o                 \
 	inithis.o                   \
@@ -309,8 +311,6 @@ OBJ_MODEL =                         \
 	grid_coms.o                 \
 	growth_balive.o             \
 	h5_output.o                 \
-	hdf5_coms.o                 \
-	hdf5_utils.o                \
 	heun_driver.o               \
 	hydrology_coms.o            \
 	hydrology_constants.o       \

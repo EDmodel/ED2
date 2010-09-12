@@ -45,8 +45,6 @@ subroutine NAMEOUT
   use emission_source_map, only: FIREMAPFN, & ! intent(in)
        plumerise                              ! intent(in)
 
-  use mem_globrad, only: RADDATFN, &   !  intent(in)
-                         RDATFNUM    !  intent(in)
 
   use plume_utils, only: prfrq !INTENT(IN)
 
@@ -312,13 +310,6 @@ subroutine NAMEOUT
      write(6,FMT='(A,F8.2)') 'PRFRQ= ', PRFRQ
   else
      write(6,FMT='(A,I2)') 'CATT Not activated: CATT=', CATT
-  endif
-
-  !New rad carma
-  if (ISWRTYP==4 .or. ILWRTYP==4) then
-     !write(6,FMT='("RADDATFN  =",A80)')  trim(RADDATFN)
-     write(6,FMT='("RADDATFN = ",A80)')  trim(RADDATFN)
-     !write(6,FMT='("RDATFNUM=",I3)')  RDATFNUM
   endif
 
   if (TEB_SPM/=1) then

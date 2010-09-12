@@ -11,14 +11,14 @@ subroutine init_hdf5_env()
   
   integer :: hdferr
   
-
+#if USE_HDF5
   call h5open_f(hdferr)
   if (hdferr /= 0) then
      print*,'HDF5 Open error #:',hdferr
      call fatal_error('Could not initialize the hdf environment' &
           ,'h5_output','h5_output.F90')
   endif
-
+#endif
 end subroutine init_hdf5_env
 
 !===============================================================================
@@ -31,9 +31,11 @@ implicit none
 
 character(len=*) :: dsetname ! Dataset name
 integer :: dims(*)
+integer :: ndims ! Dataset rank (in file)
+
+#if USE_HDF5
 integer(HSIZE_T),dimension(4) :: dimshf,maxdims
 
-integer :: ndims ! Dataset rank (in file)
 integer :: hdferr ! Error flag
 
 ! Open the dataset.
@@ -76,6 +78,7 @@ endif
 !print*,'ndims: ',ndims
 !print*,'dims: ',dims(1:ndims)
 
+#endif
 return
 end subroutine shdf5_info_f
 
@@ -97,6 +100,7 @@ subroutine shdf5_io(action,ndims,dims,dsetname,ivara,rvara,cvara,dvara,lvara  &
   ! THIS ROUTINE CALLS SHDF5_IREC OR SHDF5_OREC TO READ OR WRITE A VARIABLE
   ! DEPENDING ON WHETHER 'ACTION' EQUALS 'READ' OR 'WRITE'
 
+#if USE_HDF5
   if (trim(action) == 'READ') then
      
      call shdf5_irec_f(ndims,dims,dsetname,ivara,rvara,cvara,dvara,lvara  &
@@ -114,7 +118,8 @@ subroutine shdf5_io(action,ndims,dims,dsetname,ivara,rvara,cvara,dvara,lvara  &
      stop     "Ending model run"
 
   endif
-  
+#endif
+ 
 end subroutine shdf5_io
 
 ! ========================================
@@ -129,6 +134,7 @@ subroutine shdf5_open_f(locfn,access,idelete)
   character(len=*) :: access    ! File access ('R','W','RW')
   integer, optional :: idelete  ! If W, delete/overwrite file if exists? 1=yes, 0=no
   ! Only needed when access='W'
+#if USE_HDF5
 
   integer :: hdferr ! Error flag for HDF5
   character(len=2) :: caccess ! File access ('R ','W ','RW')
@@ -209,6 +215,7 @@ subroutine shdf5_open_f(locfn,access,idelete)
   endif
   
   return
+#endif
 end  subroutine shdf5_open_f
 
 ! =======================================================================
@@ -229,6 +236,7 @@ subroutine shdf5_orec_f(ndims,dims,dsetname,ivara,rvara,cvara,dvara,lvara  &
   character(len=*), optional :: cvara(*),cvars
   real(kind=8),     optional :: dvara(*),dvars
   logical,          optional :: lvara(*),lvars
+#if USE_HDF5
   
   integer:: h5_type   ! Local type designator
   
@@ -394,6 +402,7 @@ subroutine shdf5_orec_f(ndims,dims,dsetname,ivara,rvara,cvara,dvara,lvara  &
   endif
     
   return
+#endif
 end subroutine shdf5_orec_f
 
 ! ==============================================================================
@@ -414,6 +423,7 @@ subroutine shdf5_irec_f(ndims,dims,dsetname,ivara,rvara,cvara,dvara,lvara  &
   real(kind=8),     optional :: dvara(*),dvars
   logical,          optional :: lvara(*),lvars
   
+#if USE_HDF5
   integer, dimension(4) :: dimsh ! Dataset dimensions.
   
   integer(HSIZE_T),dimension(4) :: dimshf
@@ -508,7 +518,8 @@ subroutine shdf5_irec_f(ndims,dims,dsetname,ivara,rvara,cvara,dvara,lvara  &
   call h5sclose_f(dspaceid_f, hdferr)
   call h5dclose_f(dsetid_f, hdferr)
   
-  
+#endif
+ 
   return
 end subroutine shdf5_irec_f
 
@@ -519,6 +530,7 @@ subroutine shdf5_close_f()
   use hdf5_coms
   implicit none
   
+#if USE_HDF5
   integer :: hdferr  ! Error flags
   
   ! Close the hdf file.
@@ -532,6 +544,7 @@ subroutine shdf5_close_f()
   
   call h5close_f(hdferr)
   
+#endif
   return
 end  subroutine shdf5_close_f
 
