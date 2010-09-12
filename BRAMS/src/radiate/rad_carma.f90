@@ -1271,7 +1271,6 @@ module rad_carma
     INTEGER :: mgroup
     INTEGER :: mrad
     INTEGER :: mwave
-    INTEGER :: n_thetd
     LOGICAL :: all_ok
     REAL    :: awave
     REAL    :: corerad
@@ -1286,7 +1285,7 @@ module rad_carma
     REAL    :: sum1
     REAL    :: sum2
     REAL    :: t1
-    REAL    :: thetd(1)
+    REAL    :: thetd
     REAL    :: tmag
     REAL    :: v
     REAL    :: wvno
@@ -2554,7 +2553,6 @@ module rad_carma
           !	<j_thetd> is number of <thetd> values to consider
           !
           thetd = 0.0
-          n_thetd = 1
           DO  l=1,nwave
              !
              !kml for biomass burning particles:
@@ -2597,15 +2595,8 @@ module rad_carma
                    ! limit x=twopi/wave to no larger 1000 to avoid anguish in the mie code.
                    !
                    IF( wvno*rr .gt. 1000. ) rr = 1000./wvno
-                   !  print*,'-------------------------------------------------'
-                   !     IF(j.eq.1) rr = 0.1 * 1.e-4
-                   !    corerad=0.5*rr
-                   !  print*, rr,corerad,rr/corerad
-                   !  print*, rr,real,tmag,thetd,n_thetd,qextd,qscatd,ctbrqs,
-                   ! 1	       corerad,corereal,coreimag,wvno
-                   !  print*,'-------------------------------------------------'
-                   !      stop
-                   CALL miess(rr,r_real,tmag,thetd,n_thetd,qextd,qscatd,ctbrqs,&
+
+                   CALL miess(rr,r_real,tmag,thetd,qextd,qscatd,ctbrqs,&
                         corerad,corereal,coreimag,wvno)
                    !     IF(l.eq.7 .or. l.eq.8)
                    ! &      print*,'qex qsc=',qextd,qscatd
@@ -4185,513 +4176,506 @@ module rad_carma
     d		  =  d*t1**4
    
   END SUBROUTINE plnk
-  
-  
-  
-  SUBROUTINE miess( ro, rfr, rfi, thetd, jx, qext, qscat,  &
-  	  ctbrqs, r, re2, tmag2, wvno  )
-    use rconstants, only: pio180
-    !
-    ! **********************************************************************
-    !	 THIS SUBROUTINE COMPUTES MIE SCATTERING BY A STRATIFIED SPHERE,
-    !	 I.E. A PARTICLE CONSISTING OF A SPHERICAL CORE SURROUNDED BY A
-    !	 SPHERICAL SHELL.  THE BASIC CODE USED WAS THAT DESCRIBED IN THE
-    !	 REPORT: " SUBROUTINES FOR COMPUTING THE PARAMETERS OF THE
-    !	 ELECTROMAGNETIC RADIATION SCATTERED BY A SPHERE " J.V. DAVE,
-    !	 I B M SCIENTIFIC CENTER, PALO ALTO , CALIFORNIA.
-    !	 REPORT NO. 320 - 3236 .. MAY 1968 .
-    !
-    !	 THE MODIFICATIONS FOR STRATIFIED SPHERES ARE DESCRIBED IN
-    !	     TOON AND ACKERMAN, APPL. OPTICS, IN PRESS, 1981
-    !
-    !	 THE PARAMETERS IN THE CALLING STATEMENT ARE DEFINED AS FOLLOWS :
-    !	   RO IS THE OUTER (SHELL) RADIUS;
-    !	   R  IS THE CORE RADIUS;
-    !	   RFR, RFI  ARE THE REAL AND IMAGINARY PARTS OF THE SHELL INDEX
-    !	       OF REFRACTION IN THE FORM (RFR - I* RFI);
-    !	   RE2, TMAG2  ARE THE INDEX PARTS FOR THE CORE;
-    !	       ( WE ASSUME SPACE HAS UNIT INDEX. )
-    !	   THETD(J): ANGLE IN DEGREES BETWEEN THE DIRECTIONS OF THE INCIDENT
-    !	       AND THE SCATTERED RADIATION.  THETD(J) IS< OR= 90.0
-    !	       IF THETD(J) SHOULD HAPPEN TO BE GREATER THAN 90.0, ENTER WITH
-    !	       SUPPLEMENTARY VALUE, SEE COMMENTS BELOW ON ELTRMX;
-    !	   JX: TOTAL NUMBER OF THETD FOR WHICH THE COMPUTATIONS ARE
-    !	       REQUIRED.  JX SHOULD NOT EXCEED IT UNLESS THE DIMENSIONS
-    !	       STATEMENTS ARE APPROPRIATEDLY MODIFIED;
-    !
-    !	   THE DEFINITIONS FOR THE FOLLOWING SYMBOLS CAN BE FOUND IN"LIGHT
-    !	       SCATTERING BY SMALL PARTICLES,H.C.VAN DE HULST, JOHN WILEY '
-    !	       SONS, INC., NEW YORK, 1957" .
-    !	   QEXT: EFFICIENCY FACTOR FOR EXTINCTION,VAN DE HULST,P.14 ' 127.
-    !	   QSCAT: EFFICIENCY FACTOR FOR SCATTERING,V.D. HULST,P.14 ' 127.
-    !	   CTBRQS: AVERAGE(COSINE THETA) * QSCAT,VAN DE HULST,P.128
-    !	   ELTRMX(I,J,K): ELEMENTS OF THE TRANSFORMATION MATRIX F,V.D.HULST
-    !	       ,P.34,45 ' 125. I=1: ELEMENT M SUB 2..I=2: ELEMENT M SUB 1..
-    !	       I = 3: ELEMENT S SUB 21.. I = 4: ELEMENT D SUB 21..
-    !	   ELTRMX(I,J,1) REPRESENTS THE ITH ELEMENT OF THE MATRIX FOR
-    !	       THE ANGLE THETD(J).. ELTRMX(I,J,2) REPRESENTS THE ITH ELEMENT
-    !	       OF THE MATRIX FOR THE ANGLE 180.0 - THETD(J) ..
-    !	   QBS IS THE BACK SCATTER CROSS SECTION.
-    !
-    !	   IT: IS THE DIMENSION OF THETD, ELTRMX, CSTHT, PI, TAU, SI2THT,
-    !	       IT MUST CORRESPOND EXACTLY TO THE SECOND DIMENSION OF ELTRMX.
-    !	   IACAP IS THE DIMENSION OF ACAP
-    !	       IN THE ORIGINAL PROGRAM THE DIMENSION OF ACAP WAS 7000.
-    !	       FOR CONSERVING SPACE THIS SHOULD BE NOT MUCH HIGHER THAN
-    !	       THE VALUE, N=1.1*(NREAL**2 + NIMAG**2)**.5 * X + 1
-    !	   WVNO: 2*PI / WAVELENGTH
-    !
-    !	 ALSO THE SUBROUTINE COMPUTES THE CAPITAL A FUNCTION BY MAKING USE O
-    !	 DOWNWARD RECURRENCE RELATIONSHIP.
-    !
-    !	   TA(1): REAL PART OF WFN(1).  TA(2): IMAGINARY PART OF WFN(1).
-    !	   TA(3): REAL PART OF WFN(2).  TA(4): IMAGINARY PART OF WFN(2).
-    !	   TB(1): REAL PART OF FNA.	TB(2): IMAGINARY PART OF FNA.
-    !	   TC(1): REAL PART OF FNB.	TC(2): IMAGINARY PART OF FNB.
-    !	   TD(1): REAL PART OF FNAP.	TD(2): IMAGINARY PART OF FNAP.
-    !	   TE(1): REAL PART OF FNBP.	TE(2): IMAGINARY PART OF FNBP.
-    !	   FNAP, FNBP  ARE THE PRECEDING VALUES OF FNA, FNB RESPECTIVELY.
-    ! **********************************************************************
-    !
-    !
-    !	Include implicit declarations
-    !
-    !INCLUDE 'precision.h'
-    !
-    !
-    !	Define dimensions of local arrays and arrays passed as arguments
-    !
-    IMPLICIT NONE
-    
-    INTEGER, PARAMETER :: iacap = 200000
-    INTEGER, PARAMETER :: it = 1
-    REAL, INTENT(IN)			     :: ro
-    REAL, INTENT(IN)			     :: rfr
-    REAL, INTENT(IN)			     :: rfi
-    INTEGER, INTENT(IN) 		     :: jx
-    REAL, INTENT(INOUT)	                     :: thetd(jx)
-    REAL, INTENT(OUT)			     :: qext
-    REAL, INTENT(OUT)			     :: qscat
-    REAL, INTENT(OUT)			     :: ctbrqs
-    REAL, INTENT(IN)			     :: r
-    REAL, INTENT(IN)			     :: re2
-    REAL, INTENT(IN)			     :: tmag2
-    REAL, INTENT(IN)			     :: wvno
-    !
-    !
-    !	Declare arguments passed as arrays
-    !
-   
-    !
-    !
-    !	Declare local variables
-    !
-    DOUBLE PRECISION, PARAMETER :: epsilon_mie = 1.d-14
-   
-    DOUBLE COMPLEX :: fnap,   fnbp,   acap(iacap),  &
-  	fna,	fnb,	rf,	  rrf, rrfx,   wm1,    fn1,	 fn2,  &
-  	tc1,	tc2,	wfn(2),   z(4), k1,	k2,	k3,	  w(3,iacap),  &
-  	rc,	u(8),	dh1, dh2,    dh4,    p24h24,   p24h21,  &
-  	pstore, hstore, dummy,    dumsq
-   
-    DOUBLE PRECISION :: t(5), ta(4), tb(2), tc(2), td(2), te(2),  &
-  	pi(3,it), tau(3,it), cstht(it), si2tht(it), eltrmx(4,it,2),  &
-  	x, x1, x4, y1, y4, rx, sinx1, sinx4, cosx1, cosx4,  &
-  	ey1, e2y1, ey4, ey1my4, ey1py4, aa, bb, cc, dd, denom,  &
-  	realp, amagp, qbsr, qbsi, rmm
-   
-    !INTEGER, external :: imag
-    INTEGER :: iflag
-    INTEGER :: nmx1
-    INTEGER :: nmx2
-    INTEGER :: n
-    INTEGER :: nn
-    INTEGER :: m
-    INTEGER :: j
-    INTEGER :: k
-    INTEGER :: i
-  
-    EQUIVALENCE (fna,tb(1)),(fnb,tc(1)),(fnap,td(1)),(fnbp,te(1))
-    !
-    !
-    !  Some compilers (e.g. absoft) don't the support imag(z) generic intrinsic function.
-    !  In that situation, uncomment the following 2 lines to define stmt function to
-    !  redefine imag() function to the alternative function.  I.e. change "alt_function"
-    !  in following stmt function to the appropriate function that will return the
-    !  imaginary part of a double complex for the compiler being used.
-    !  For compilers that support imag(z), simply leave following 2 statments commented.
-    !  The "c--alt_imag" comment prefix is designed to be recognized by the
-    !  automated editing script create_dmiess, so please do not modify this prefix
-    !  in the dmiess.f.template file.
-    !  -bm  Nov-1999
-    !
-    !DOUBLE COMPLEX :: z_dum_arg
-   
-    !imag(z_dum_arg) = DIMAG(z_dum_arg)
-    !
-   
-    !	    print*, RO, RFR, RFI, THETD, JX, QEXT, QSCAT, CTBRQS,
-    !	  1		     R, RE2, TMAG2, WVNO
-   
-    !
-    !	IF THE CORE IS SMALL SCATTERING IS COMPUTED FOR THE SHELL ONLY
-    !
-    iflag = 1
-    IF ( r/ro < 1.d-6 )   iflag = 2
-    IF ( jx <= it )   GO TO 20
-    WRITE( *,7 )
-    WRITE( *,6 )
-    STOP 30
-    20 rf =  CMPLX( rfr,  -rfi )
-    rc =  CMPLX( re2, -tmag2 )
-    x  =  ro * wvno
-    k1 =  rc * wvno
-    k2 =  rf * wvno
-    k3 =  CMPLX( wvno, 0.0 )
-    z(1) =  k2 * ro
-    z(2) =  k3 * ro
-    z(3) =  k1 * r
-    z(4) =  k2 * r
-    x1   =  REAL( z(1) )
-    x4   =  REAL( z(4) )
-    y1   =  DIMAG( z(1) )
-    y4   =  DIMAG( z(4) )
-    !	   print*,'Z(1)','Z(4)','x1','x4','y1','y4'
-    !	   print*,Z(1),Z(4),x1,x4,y1,y4
-   
-    rrf  =  1.0 / rf
-    rx   =  1.0 / x
-    rrfx =  rrf * rx
-    t(1) =  ( x**2 ) * ( rfr**2 + rfi**2 )
-    t(1) =  SQRT( t(1) )
-    nmx1 =  1.10 * t(1)
-    !
-    IF ( nmx1 <= iacap-1 )   GO TO 21
-    WRITE(*,8)
-    STOP 32
-    21 nmx2 = t(1)
-    IF ( nmx1 >  150 )   GO TO 22
-    nmx1 = 150
-    nmx2 = 135
-    !
-    22 acap( nmx1+1 )  =  ( 0.0,0.0 )
-    IF ( iflag == 2 )	GO TO 26
-    DO n = 1,3
-      w( n,nmx1+1 )  =  ( 0.0,0.0 )
-    END DO
-    26 CONTINUE
-    DO n = 1,nmx1
-      nn = nmx1 - n + 1
-      acap(nn) = (nn+1) * rrfx - 1.0 / ( (nn+1) * rrfx + acap(nn+1) )
-      IF ( iflag == 2 )   GO TO 23
-      DO m = 1,3
-  	w( m,nn ) = (nn+1) / z(m+1)  - 1.0 / (  (nn+1) / z(m+1)  +  w( m,nn+1 )  )
-      END DO
-      23 CONTINUE
-    END DO
-    !
-    DO    j = 1,jx
-      IF ( thetd(j) < 0.0 )  thetd(j) =  ABS( thetd(j) )
-      IF ( thetd(j) > 0.0 )  GO TO 24
-      cstht(j)  = 1.0
-      si2tht(j) = 0.0
-      CYCLE
-      24 IF ( thetd(j) >= 90.0 )  GO TO 25
-      t(1)	=  pio180 * thetd(j)
-      cstht(j)  =  COS( t(1) )
-      si2tht(j) =  1.0 - cstht(j)**2
-      CYCLE
-      25 IF ( thetd(j) > 90.0 )  GO TO 28
-      cstht(j)  =  0.0
-      si2tht(j) =  1.0
-      CYCLE
-      28 WRITE( *,5 )  thetd(j)
-      WRITE( *,6 )
-      STOP 34
-    END DO
-    !
-    DO   j = 1,jx
-      pi(1,j)  =  0.0
-      pi(2,j)  =  1.0
-      tau(1,j) =  0.0
-      tau(2,j) =  cstht(j)
-    END DO
-    !
-    ! INITIALIZATION OF HOMOGENEOUS SPHERE
-    !
-    t(1)   =  COS(x)
-    t(2)   =  SIN(x)
-    wm1    =  CMPLX( t(1),-t(2) )
-    wfn(1) =  CMPLX( t(2), t(1) )
-    ta(1)  =  t(2)
-    ta(2)  =  t(1)
-    wfn(2) =  rx * wfn(1) - wm1
-    ta(3)  =  REAL(wfn(2))
-    ta(4)  =  DIMAG(wfn(2))
-    !	   print*,'WFN(2)','TA(3)','TA(4)'
-    !	   print*,WFN(2),TA(3),TA(4)
-   
-    !
-    IF ( iflag == 2 )	GO TO 560
-    n = 1
-    !
-    ! INITIALIZATION PROCEDURE FOR STRATIFIED SPHERE BEGINS HERE
-    !
-    sinx1   =  SIN( x1 )
-    sinx4   =  SIN( x4 )
-    cosx1   =  COS( x1 )
-    cosx4   =  COS( x4 )
-    ey1     =  EXP( y1 )
-    e2y1    =  ey1 * ey1
-    ey4     =  EXP( y4 )
-    ey1my4  =  EXP( y1 - y4 )
-    ey1py4  =  ey1 * ey4
-    ey1my4  =  EXP( y1 - y4 )
-    aa  =  sinx4 * ( ey1py4 + ey1my4 )
-    bb  =  cosx4 * ( ey1py4 - ey1my4 )
-    cc  =  sinx1 * ( e2y1 + 1.0 )
-    dd  =  cosx1 * ( e2y1 - 1.0 )
-    denom   =  1.0  +  e2y1 * ( 4.0 * sinx1 * sinx1 - 2.0 + e2y1 )
-    realp   =  ( aa * cc  +  bb * dd ) / denom
-    amagp   =  ( bb * cc  -  aa * dd ) / denom
-    dummy   =  CMPLX( realp, amagp )
-    aa  =  sinx4 * sinx4 - 0.5
-    bb  =  cosx4 * sinx4
-    p24h24  =  0.5 + CMPLX( aa,bb ) * ey4 * ey4
-    aa  =  sinx1 * sinx4  -  cosx1 * cosx4
-    bb  =  sinx1 * cosx4  +  cosx1 * sinx4
-    cc  =  sinx1 * sinx4  +  cosx1 * cosx4
-    dd  = -sinx1 * cosx4  +  cosx1 * sinx4
-    p24h21  =  0.5 * CMPLX( aa,bb ) * ey1 * ey4  + 0.5 * CMPLX( cc,dd ) * ey1my4
-    dh4  =  z(4) / ( 1.0 + ( 0.0,1.0 ) * z(4) )  -  1.0 / z(4)
-    dh1  =  z(1) / ( 1.0 + ( 0.0,1.0 ) * z(1) )  -  1.0 / z(1)
-    dh2  =  z(2) / ( 1.0 + ( 0.0,1.0 ) * z(2) )  -  1.0 / z(2)
-    pstore  =  ( dh4 + n / z(4) )  *  ( w(3,n) + n / z(4) )
-    p24h24  =  p24h24 / pstore
-    hstore  =  ( dh1 + n / z(1) )  *  ( w(3,n) + n / z(4) )
-    p24h21  =  p24h21 / hstore
-    pstore  =  ( acap(n) + n / z(1) )  /  ( w(3,n) + n / z(4) )
-    dummy   =  dummy * pstore
-    dumsq   =  dummy * dummy
-    !
-    ! NOTE:  THE DEFINITIONS OF U(I) IN THIS PROGRAM ARE NOT THE SAME AS
-    !	     THE USUBI DEFINED IN THE ARTICLE BY TOON AND ACKERMAN.  THE
-    !	     CORRESPONDING TERMS ARE:
-    !	       USUB1 = U(1)			  USUB2 = U(5)
-    !	       USUB3 = U(7)			  USUB4 = DUMSQ
-    !	       USUB5 = U(2)			  USUB6 = U(3)
-    !	       USUB7 = U(6)			  USUB8 = U(4)
-    !	       RATIO OF SPHERICAL BESSEL FTN TO SPHERICAL HENKAL FTN = U(8)
-    !
-    u(1) =  k3 * acap(n)  -  k2 * w(1,n)
-    u(2) =  k3 * acap(n)  -  k2 * dh2
-    u(3) =  k2 * acap(n)  -  k3 * w(1,n)
-    u(4) =  k2 * acap(n)  -  k3 * dh2
-    u(5) =  k1 *  w(3,n)  -  k2 * w(2,n)
-    u(6) =  k2 *  w(3,n)  -  k1 * w(2,n)
-    u(7) =  ( 0.0,-1.0 )  *  ( dummy * p24h21 - p24h24 )
-    u(8) =  ta(3) / wfn(2)
-    !
-    fna  =  u(8) * ( u(1)*u(5)*u(7)  +  k1*u(1)  -  dumsq*k3*u(5) ) /  &
-  	( u(2)*u(5)*u(7)  +  k1*u(2)  -  dumsq*k3*u(5) )
-    fnb  =  u(8) * ( u(3)*u(6)*u(7)  +  k2*u(3)  -  dumsq*k2*u(6) ) /  &
-  	( u(4)*u(6)*u(7)  +  k2*u(4)  -  dumsq*k2*u(6) )
-    GO TO 561
-    560 tc1  =  acap(1) * rrf  +  rx
-    tc2  =  acap(1) * rf   +  rx
-    fna  =  ( tc1 * ta(3)  -  ta(1) ) / ( tc1 * wfn(2)  -  wfn(1) )
-    fnb  =  ( tc2 * ta(3)  -  ta(1) ) / ( tc2 * wfn(2)  -  wfn(1) )
-    !
-    561 CONTINUE
-    fnap = fna
-    fnbp = fnb
-    t(1) = 1.50
-    !
-    !	 FROM HERE TO THE STATMENT NUMBER 90, ELTRMX(I,J,K) HAS
-    !	 FOLLOWING MEANING:
-    !	 ELTRMX(1,J,K): REAL PART OF THE FIRST COMPLEX AMPLITUDE.
-    !	 ELTRMX(2,J,K): IMAGINARY PART OF THE FIRST COMPLEX AMPLITUDE.
-    !	 ELTRMX(3,J,K): REAL PART OF THE SECOND COMPLEX AMPLITUDE.
-    !	 ELTRMX(4,J,K): IMAGINARY PART OF THE SECOND COMPLEX AMPLITUDE.
-    !	 K = 1 : FOR THETD(J) AND K = 2 : FOR 180.0 - THETD(J)
-    !	 DEFINITION OF THE COMPLEX AMPLITUDE: VAN DE HULST,P.125.
-    !
-    tb(1) = t(1) * tb(1)
-    tb(2) = t(1) * tb(2)
-    tc(1) = t(1) * tc(1)
-    tc(2) = t(1) * tc(2)
-    DO  j = 1,jx
-      eltrmx(1,j,1) = tb(1) * pi(2,j) + tc(1) * tau(2,j)
-      eltrmx(2,j,1) = tb(2) * pi(2,j) + tc(2) * tau(2,j)
-      eltrmx(3,j,1) = tc(1) * pi(2,j) + tb(1) * tau(2,j)
-      eltrmx(4,j,1) = tc(2) * pi(2,j) + tb(2) * tau(2,j)
-      eltrmx(1,j,2) = tb(1) * pi(2,j) - tc(1) * tau(2,j)
-      eltrmx(2,j,2) = tb(2) * pi(2,j) - tc(2) * tau(2,j)
-      eltrmx(3,j,2) = tc(1) * pi(2,j) - tb(1) * tau(2,j)
-      eltrmx(4,j,2) = tc(2) * pi(2,j) - tb(2) * tau(2,j)
-    END DO
-    !
-    qext   = 2.0 * ( tb(1) + tc(1))
-    qscat  = ( tb(1)**2 + tb(2)**2 + tc(1)**2 + tc(2)**2 ) / 0.75
-    ctbrqs = 0.0
-    qbsr   = -2.0*(tc(1) - tb(1))
-    qbsi   = -2.0*(tc(2) - tb(2))
-    rmm    = -1.0
-    n = 2
-    65 t(1) = 2*n - 1
-    t(2) =   n - 1
-    t(3) = 2*n + 1
-    DO   j = 1,jx
-      pi(3,j)  = ( t(1) * pi(2,j) * cstht(j) - n * pi(1,j) ) / t(2)
-      tau(3,j) = cstht(j) * ( pi(3,j) - pi(1,j) )  -  &
-  	  t(1) * si2tht(j) * pi(2,j)  +  tau(1,j)
-    END DO
-    !
-    ! HERE SET UP HOMOGENEOUS SPHERE
-    !
-    wm1    =  wfn(1)
-    wfn(1) =  wfn(2)
-    ta(1)  =  REAL(wfn(1))
-    ta(2)  =  DIMAG(wfn(1))
-    ta(4)  =  DIMAG(wfn(2))
-    wfn(2) =  t(1) * rx * wfn(1)  -  wm1
-    ta(3)  =  REAL(wfn(2))
-   
-    !	   print*,'WFN(1)','TA(1)','TA(2)'
-    !	   print*,WFN(1),TA(1),TA(2)
-    !
-    IF ( iflag == 2 )	GO TO 1000
-    !
-    ! HERE SET UP STRATIFIED SPHERE
-    !
-    dh2  =  - n / z(2)  +  1.0 / ( n / z(2) - dh2 )
-    dh4  =  - n / z(4)  +  1.0 / ( n / z(4) - dh4 )
-    dh1  =  - n / z(1)  +  1.0 / ( n / z(1) - dh1 )
-    pstore  =  ( dh4 + n / z(4) )  *  ( w(3,n) + n / z(4) )
-    p24h24  =  p24h24 / pstore
-    hstore  =  ( dh1 + n / z(1) )  *  ( w(3,n) + n / z(4) )
-    p24h21  =  p24h21 / hstore
-    pstore  =  ( acap(n) + n / z(1) )  /  ( w(3,n) + n / z(4) )
-    dummy   =  dummy * pstore
-    dumsq   =  dummy * dummy
-    !
-    u(1) =  k3 * acap(n)  -  k2 * w(1,n)
-    u(2) =  k3 * acap(n)  -  k2 * dh2
-    u(3) =  k2 * acap(n)  -  k3 * w(1,n)
-    u(4) =  k2 * acap(n)  -  k3 * dh2
-    u(5) =  k1 *  w(3,n)  -  k2 * w(2,n)
-    u(6) =  k2 *  w(3,n)  -  k1 * w(2,n)
-    u(7) =  ( 0.0,-1.0 )  *  ( dummy * p24h21 - p24h24 )
-    u(8) =  ta(3) / wfn(2)
-    !
-    fna  =  u(8) * ( u(1)*u(5)*u(7)  +  k1*u(1)  -  dumsq*k3*u(5) ) /  &
-  	( u(2)*u(5)*u(7)  +  k1*u(2)  -  dumsq*k3*u(5) )
-    fnb  =  u(8) * ( u(3)*u(6)*u(7)  +  k2*u(3)  -  dumsq*k2*u(6) ) /  &
-  	( u(4)*u(6)*u(7)  +  k2*u(4)  -  dumsq*k2*u(6) )
-    !
-    1000 CONTINUE
-    tc1  =  acap(n) * rrf  +  n * rx
-    tc2  =  acap(n) * rf   +  n * rx
-    fn1  =  ( tc1 * ta(3)  -  ta(1) ) /  ( tc1 * wfn(2) - wfn(1) )
-    fn2  =  ( tc2 * ta(3)  -  ta(1) ) /  ( tc2 * wfn(2) - wfn(1) )
-    m	 =  wvno * r
-    IF ( n < m )   GO TO 1002
-    IF ( iflag == 2 )	GO TO 1001
-    IF (ABS((fn1-fna)/fn1) < epsilon_mie .AND.  &
-  	ABS(  ( fn2-fnb ) / fn2  ) < epsilon_mie  ) iflag = 2
-    IF ( iflag == 1 )	GO TO 1002
-    1001 fna  =  fn1
-    fnb  =  fn2
-    !
-    1002 CONTINUE
-    t(5)  =  n
-    t(4)  =  t(1) / ( t(5) * t(2) )
-    t(2)  =  (  t(2) * ( t(5) + 1.0 )  ) / t(5)
-    !
-    ctbrqs  =  ctbrqs  +  t(2) * ( td(1) * tb(1)  +  td(2) * tb(2)  &
-  	+	    te(1) * tc(1)  +  te(2) * tc(2) )  &
-  	+  t(4) * ( td(1) * te(1)  +  td(2) * te(2) )
-    qext    =	qext  +  t(3) * ( tb(1) + tc(1) )
-    !	  $	   T(3), TB(1), TC(1), QEXT
-    t(4)    =  tb(1)**2 + tb(2)**2 + tc(1)**2 + tc(2)**2
-    qscat   =  qscat  +  t(3) * t(4)
-    rmm     =  -rmm
-    qbsr    =  qbsr + t(3)*rmm*(tc(1) - tb(1))
-    qbsi    =  qbsi + t(3)*rmm*(tc(2) - tb(2))
-    !
-    t(2)    =  n * (n+1)
-    t(1)    =  t(3) / t(2)
-    k = (n/2)*2
-    DO  j = 1,jx
-      eltrmx(1,j,1) = eltrmx(1,j,1)+t(1)*(tb(1)*pi(3,j)+tc(1)*tau(3,j))
-      eltrmx(2,j,1) = eltrmx(2,j,1)+t(1)*(tb(2)*pi(3,j)+tc(2)*tau(3,j))
-      eltrmx(3,j,1) = eltrmx(3,j,1)+t(1)*(tc(1)*pi(3,j)+tb(1)*tau(3,j))
-      eltrmx(4,j,1) = eltrmx(4,j,1)+t(1)*(tc(2)*pi(3,j)+tb(2)*tau(3,j))
-      IF ( k == n )  THEN
-  	eltrmx(1,j,2) =eltrmx(1,j,2)+t(1)*(-tb(1)*pi(3,j)+tc(1)*tau(3,j))
-  	eltrmx(2,j,2) =eltrmx(2,j,2)+t(1)*(-tb(2)*pi(3,j)+tc(2)*tau(3,j))
-  	eltrmx(3,j,2) =eltrmx(3,j,2)+t(1)*(-tc(1)*pi(3,j)+tb(1)*tau(3,j))
-  	eltrmx(4,j,2) =eltrmx(4,j,2)+t(1)*(-tc(2)*pi(3,j)+tb(2)*tau(3,j))
-      ELSE
-  	eltrmx(1,j,2) = eltrmx(1,j,2)+t(1)*(tb(1)*pi(3,j)-tc(1)*tau(3,j))
-  	eltrmx(2,j,2) = eltrmx(2,j,2)+t(1)*(tb(2)*pi(3,j)-tc(2)*tau(3,j))
-  	eltrmx(3,j,2) = eltrmx(3,j,2)+t(1)*(tc(1)*pi(3,j)-tb(1)*tau(3,j))
-  	eltrmx(4,j,2) = eltrmx(4,j,2)+t(1)*(tc(2)*pi(3,j)-tb(2)*tau(3,j))
-      END IF
-    END DO
-    !
-    IF ( t(4) < epsilon_mie )	GO TO 100
-    n = n + 1
-    DO  j = 1,jx
-      pi(1,j)	=   pi(2,j)
-      pi(2,j)	=   pi(3,j)
-      tau(1,j)  =  tau(2,j)
-      tau(2,j)  =  tau(3,j)
-    END DO
-    fnap  =  fna
-    fnbp  =  fnb
-    IF ( n <= nmx2 )   GO TO 65
-    !	      print*,N,NMX2
-    WRITE( *,8 )
-    STOP 36
-    100 CONTINUE
-    DO j = 1,jx
-      DO k = 1,2
-  	DO    i= 1,4
-  	  t(i)  =  eltrmx(i,j,k)
-  	END DO
-  	eltrmx(2,j,k)  =      t(1)**2  +  t(2)**2
-  	eltrmx(1,j,k)  =      t(3)**2  +  t(4)**2
-  	eltrmx(3,j,k)  =  t(1) * t(3)  +  t(2) * t(4)
-  	eltrmx(4,j,k)  =  t(2) * t(3)  -  t(4) * t(1)
-      END DO
-    END DO
-    t(1)    =	 2.0 * rx**2
-    qext    =	qext * t(1)
-    qscat   =  qscat * t(1)
-    ctbrqs  =  2.0 * ctbrqs * t(1)
-   
-   
-   
-    !	   RO IS THE OUTER (SHELL) RADIUS;
-    !	   R  IS THE CORE RADIUS;
-    !	   RFR, RFI  ARE THE REAL AND IMAGINARY PARTS OF THE SHELL INDEX
-    !	       OF REFRACTION IN THE FORM (RFR - I* RFI);
-    !	   RE2, TMAG2  ARE THE INDEX PARTS FOR THE CORE;
-   
-    !
-    ! QBS IS THE BACK SCATTER CROSS SECTION
-    !
-    !	   PIG   = ACOS(-1.0)
-    !	   RXP4  = RX*RX/(4.0*PIG)
-    !	   QBS   = RXP4*(QBSR**2 + QBSI**2)
-    !
-    5  FORMAT( 10X,' THE VALUE OF THE SCATTERING ANGLE IS GREATER THAN 90.0 DEGREES. IT IS ', e15.4 )
-    6  FORMAT( // 10X, 'PLEASE READ COMMENTS.' // )
-    7  FORMAT( // 10X, 'THE VALUE OF THE ARGUMENT JX IS GREATER THAN IT'//)
-    8  FORMAT( // 10X, 'THE UPPER LIMIT FOR ACAP IS NOT ENOUGH. SUGGEST GET DETAILED OUTPUT AND MODIFY SUBROUTINE' // )
-    !
-  END SUBROUTINE miess
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !    This subroutine computes mie scattering by a stratified sphere, i.e. a particle    !
+   ! consisting of a spherical core surrounded by a spherical shell.  The basic code used  !
+   ! was that described in the report: " subroutines for computing the parameters of the   !
+   ! electromagnetic radiation scattered by a sphere ", J.V. Dave, I B M scientific        !
+   ! center, Palo Alto , California. Report no. 320 - 3236 .. May 1968.                    !
+   !    The modifications for stratified spheres are described in Toon and Ackerman, Appl. !
+   ! Optics, in press, 1981                                                                !
+   !    The parameters in the calling statement are defined as follows :                   !
+   !    - ro is the outer (shell) radius;                                                  !
+   !    - r  is the core radius;                                                           !
+   !    - rfr, rfi  are the real and imaginary parts of the shell index of refraction in   !
+   !          the form (rfr - i* rfi);                                                     !
+   !    - re2, tmag2  are the index parts for the core;                                    !
+   !          ( we assume space has unit index. )                                          !
+   !    - thetd: angle in degrees between the directions of the incident and the           !
+   !          scattered radiation.  thetd is< or= 90.0 if thetd should happen to be        !
+   !          greater than 90.0, enter with supplementary value, see comments below on     !
+   !          eltrmx;                                                                      !
+   !                                                                                       !
+   !    The definitions for the following symbols can be found in "Light scattering by     !
+   ! small particles,H.C.van de Hulst, John Wiley' sons, inc., New York, 1957" .           !
+   !    - qext: efficiency factor for extinction,  van de Hulst, p.14 ' 127.               !
+   !    - qscat: efficiency factor for scattering, van de Hulst, p.14 ' 127.               !
+   !    - ctbrqs: average(cosine theta) * qscat,   van de Hulst, p.128                     !
+   !    - eltrmx(i,j,k): elements of the transformation matrix f, van de Hulst,            !
+   !          p.34,45 ' 125. i=1: element m sub 2..i=2: element m sub 1..                  !
+   !          i = 3: element s sub 21.. i = 4: element d sub 21..                          !
+   !    - eltrmx(i,j,1) represents the ith element of the matrix for  the angle thetd(j).. !
+   !          eltrmx(i,j,2) represents the ith element of the matrix for the angle         !
+   !          180.0 - thetd(j) ..                                                          !
+   !    - qbs is the back scatter cross section.                                           !
+   !                                                                                       !
+   !    - iacap is the dimension of acap in the original program the dimension of acap was !
+   !          7000. for conserving space this should be not much higher than               !
+   !          the value, n=1.1*(nreal**2 + nimag**2)**.5 * x + 1                           !
+   !    - wvno: 2*pi / wavelength                                                          !
+   !                                                                                       !
+   !    Also, the subroutine computes the capital a function by making use of downward     !
+   ! recurrence relationship.                                                              !
+   !                                                                                       !
+   !    - ta(1): real part of wfn(1).  ta(2): imaginary part of wfn(1).                    !
+   !    - ta(3): real part of wfn(2).  ta(4): imaginary part of wfn(2).                    !
+   !    - tb(1): real part of fna.     tb(2): imaginary part of fna.                       !
+   !    - tc(1): real part of fnb.     tc(2): imaginary part of fnb.                       !
+   !    - td(1): real part of fnap.    td(2): imaginary part of fnap.                      !
+   !    - te(1): real part of fnbp.    te(2): imaginary part of fnbp.                      !
+   !    - fnap, fnbp  are the preceding values of fna, fnb respectively.                   !
+   !---------------------------------------------------------------------------------------!
+   subroutine miess(ro,rfr,rfi,thetd,qext,qscat,ctbrqs,r,re2,tmag2,wvno)
+      use rconstants, only: pio1808 ! ! intent(in)
+      implicit none
+      !----- Local parameters. ------------------------------------------------------------!
+      integer                             , parameter        :: iacap = 20000
+      real(kind=8)                        , parameter        :: epsilon_mie = 1.d-14
+      !----- Arguments. -------------------------------------------------------------------!
+      real                                , intent(in)       :: ro
+      real                                , intent(in)       :: rfr
+      real                                , intent(in)       :: rfi
+      real                                , intent(inout)    :: thetd
+      real                                , intent(out)      :: qext
+      real                                , intent(out)      :: qscat
+      real                                , intent(out)      :: ctbrqs
+      real                                , intent(in)       :: r
+      real                                , intent(in)       :: re2
+      real                                , intent(in)       :: tmag2
+      real                                , intent(in)       :: wvno
+      !----- Local variables. -------------------------------------------------------------!
+      complex(kind=16), dimension(iacap)                     :: acap
+      complex(kind=16), dimension(2)                         :: wfn
+      complex(kind=16), dimension(4)                         :: z
+      complex(kind=16), dimension(3,iacap)                   :: w
+      complex(kind=16), dimension(8)                         :: u
+      complex(kind=16)                                       :: fnap
+      complex(kind=16)                                       :: fnbp
+      complex(kind=16)                                       :: fna
+      complex(kind=16)                                       :: fnb
+      complex(kind=16)                                       :: rf
+      complex(kind=16)                                       :: rrf
+      complex(kind=16)                                       :: rrfx
+      complex(kind=16)                                       :: wm1
+      complex(kind=16)                                       :: fn1
+      complex(kind=16)                                       :: fn2
+      complex(kind=16)                                       :: tc1
+      complex(kind=16)                                       :: tc2
+      complex(kind=16)                                       :: k1
+      complex(kind=16)                                       :: k2
+      complex(kind=16)                                       :: k3
+      complex(kind=16)                                       :: rc
+      complex(kind=16)                                       :: dh1
+      complex(kind=16)                                       :: dh2
+      complex(kind=16)                                       :: dh4
+      complex(kind=16)                                       :: p24h24
+      complex(kind=16)                                       :: p24h21
+      complex(kind=16)                                       :: pstore
+      complex(kind=16)                                       :: hstore
+      complex(kind=16)                                       :: dummy
+      complex(kind=16)                                       :: dumsq
+      real(kind=8)    , dimension(5)                         :: t
+      real(kind=8)    , dimension(4)                         :: ta
+      real(kind=8)    , dimension(2)                         :: tb
+      real(kind=8)    , dimension(2)                         :: tc
+      real(kind=8)    , dimension(2)                         :: td
+      real(kind=8)    , dimension(2)                         :: te
+      real(kind=8)    , dimension(3)                         :: piz
+      real(kind=8)    , dimension(3)                         :: tau
+      real(kind=8)                                           :: cstht
+      real(kind=8)                                           :: si2tht
+      real(kind=8)    , dimension(4,2)                       :: eltrmx
+      real(kind=8)                                           :: x
+      real(kind=8)                                           :: x1
+      real(kind=8)                                           :: x4
+      real(kind=8)                                           :: y1
+      real(kind=8)                                           :: y4
+      real(kind=8)                                           :: rx
+      real(kind=8)                                           :: sinx1
+      real(kind=8)                                           :: sinx4
+      real(kind=8)                                           :: cosx1
+      real(kind=8)                                           :: cosx4
+      real(kind=8)                                           :: ey1
+      real(kind=8)                                           :: e2y1
+      real(kind=8)                                           :: ey4
+      real(kind=8)                                           :: ey1my4
+      real(kind=8)                                           :: ey1py4
+      real(kind=8)                                           :: aa
+      real(kind=8)                                           :: bb
+      real(kind=8)                                           :: cc
+      real(kind=8)                                           :: dd
+      real(kind=8)                                           :: denom
+      real(kind=8)                                           :: realp
+      real(kind=8)                                           :: amagp
+      real(kind=8)                                           :: qbsr
+      real(kind=8)                                           :: qbsi
+      real(kind=8)                                           :: rmm
+      logical                                                :: iflag
+      integer                                                :: nmx1
+      integer                                                :: nmx2
+      integer                                                :: n
+      integer                                                :: nn
+      integer                                                :: m
+      integer                                                :: k
+      integer                                                :: i
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Iflag is a logical test, used in several places. -----------------------------!
+      iflag = r/ro < 1.d-6
+
+      rf   =  cmplx( rfr,  -rfi )
+      rc   =  cmplx( re2, -tmag2 )
+      x    =  ro * wvno
+      k1   =  rc * wvno
+      k2   =  rf * wvno
+      k3   =  cmplx( wvno, 0.d0 )
+      z(1) =  k2 * ro
+      z(2) =  k3 * ro
+      z(3) =  k1 * r
+      z(4) =  k2 * r
+      x1   =  dble (z(1))
+      x4   =  dble (z(4))
+      y1   =  aimag(z(1))
+      y4   =  aimag(z(4))
+      rrf  =  1.d0 / rf
+      rx   =  1.d0 / x
+      rrfx =  rrf * rx
+      t(1) =  ( x*x ) * ( rfr*rfr + rfi*rfi )
+      t(1) =  sqrt( t(1) )
+      nmx1 =  1.1d0 * t(1)
+
+      if ( nmx1 > iacap-1 )  then
+         write (unit=*,fmt='(a,1x,i)') ' NMX1  = ',nmx1
+         write (unit=*,fmt='(a,1x,i)') ' IACAP = ',iacap
+         call abort_run('The upper limit for acap is not enough.'                          &
+                       ,'miess','rad_carma.f90')
+      end if
+
+      nmx2 = t(1)
+
+      if ( nmx1 <= 150 ) then
+         nmx1 = 150
+         nmx2 = 135
+      end if
+      acap(nmx1+1 ) = dcmplx(0.d0,0.d0)
+
+      if (.not. iflag) then
+         do n = 1,3
+           w(n,nmx1+1) = dcmplx(0.d0,0.d0)
+         end do
+      end if
+
+      loop1: do n = 1,nmx1
+         nn       = nmx1 - n + 1
+         acap(nn) = (nn+1) * rrfx - 1.d0 / ( (nn+1) * rrfx + acap(nn+1))
+         if (iflag) cycle loop1
+         do m = 1,3
+           w(m,nn) = (nn+1) / z(m+1) - 1.d0 / ((nn+1)/z(m+1) + w(m,nn+1))
+         end do
+      end do loop1
+
+      loop2: do
+         if ( thetd < 0.0 )  thetd = abs(thetd)
+
+         if ( thetd <= 0.0 ) then
+            cstht  = 1.0
+            si2tht = 0.0
+            exit loop2
+         end if
+
+         if ( thetd < 90. )  then
+            t(1)   =  pio1808 * thetd
+            cstht  =  cos( t(1) )
+            si2tht =  1.d0 - cstht*cstht
+            exit loop2
+         end if
+
+         if ( thetd <= 90. ) then
+            cstht  =  0.0
+            si2tht =  1.0
+            exit loop2
+         end if
+
+         write (unit=*,fmt='(a,1x,es12.5)') ' THETD = ',thetd
+         call abort_run('The value of the scattering angle is greater than 90.0 degrees!'  &
+                       ,'miess','rad_carma.f90')
+      end do loop2
+
+         piz(1)  =  0.0
+         piz(2)  =  1.0
+         tau(1)  =  0.0
+         tau(2)  =  cstht
+
+      !----- Initialisation of homogeneous sphere. ----------------------------------------!
+      t(1)   =  cos(x)
+      t(2)   =  sin(x)
+      wm1    =  cmplx( t(1),-t(2) )
+      wfn(1) =  cmplx( t(2), t(1) )
+      ta(1)  =  t(2)
+      ta(2)  =  t(1)
+      wfn(2) =  rx * wfn(1) - wm1
+      ta(3)  =  dble(wfn(2))
+      ta(4)  =  aimag(wfn(2))
+
+      if (iflag)  then
+         tc1   = acap(1) * rrf  +  rx
+         tc2   = acap(1) * rf   +  rx
+         fna   = (tc1 * ta(3) - ta(1)) / (tc1 * wfn(2) - wfn(1))
+         fnb   = (tc2 * ta(3) - ta(1)) / (tc2 * wfn(2) - wfn(1))
+         tb(1) = dble(fna)
+         tb(2) = aimag(fna)
+         tc(1) = dble(fnb)
+         tc(2) = aimag(fnb)
+      else
+         n = 1
+         !----- Initialisation procedure for stratified sphere begins here. ---------------!
+         sinx1   =  sin(x1)
+         sinx4   =  sin(x4)
+         cosx1   =  cos(x1)
+         cosx4   =  cos(x4)
+         ey1     =  exp(y1)
+         e2y1    =  ey1 * ey1
+         ey4     =  exp(y4)
+         ey1my4  =  exp(y1 - y4)
+         ey1py4  =  ey1 * ey4
+         ey1my4  =  exp(y1 - y4)
+         aa      =  sinx4 * (ey1py4 + ey1my4)
+         bb      =  cosx4 * (ey1py4 - ey1my4)
+         cc      =  sinx1 * (e2y1 + 1.d0)
+         dd      =  cosx1 * (e2y1 - 1.d0)
+         denom   =  1.d0  +  e2y1 * ( 4.d0 * sinx1 * sinx1 - 2.d0 + e2y1 )
+         realp   =  (aa * cc + bb * dd) / denom
+         amagp   =  (bb * cc - aa * dd) / denom
+         dummy   =  cmplx( realp, amagp )
+         aa      =  sinx4 * sinx4 - 0.5
+         bb      =  cosx4 * sinx4
+         p24h24  =  5.d-1 + cmplx( aa,bb ) * ey4 * ey4
+         aa      =  sinx1 * sinx4  -  cosx1 * cosx4
+         bb      =  sinx1 * cosx4  +  cosx1 * sinx4
+         cc      =  sinx1 * sinx4  +  cosx1 * cosx4
+         dd      = -sinx1 * cosx4  +  cosx1 * sinx4
+         p24h21  =  0.5 * cmplx( aa,bb ) * ey1 * ey4  + 0.5 * cmplx( cc,dd ) * ey1my4
+         dh4     =  z(4) / ( 1.0 + dcmplx( 0.d0,1.d0 ) * z(4) )  -  1.d0 / z(4)
+         dh1     =  z(1) / ( 1.0 + dcmplx( 0.d0,1.d0 ) * z(1) )  -  1.d0 / z(1)
+         dh2     =  z(2) / ( 1.0 + dcmplx( 0.d0,1.d0 ) * z(2) )  -  1.d0 / z(2)
+         pstore  =  ( dh4 + n / z(4) )  *  ( w(3,n) + n / z(4) )
+         p24h24  =  p24h24 / pstore
+         hstore  =  ( dh1 + n / z(1) )  *  ( w(3,n) + n / z(4) )
+         p24h21  =  p24h21 / hstore
+         pstore  =  ( acap(n) + n / z(1) )  /  ( w(3,n) + n / z(4) )
+         dummy   =  dummy * pstore
+         dumsq   =  dummy * dummy
+         !---------------------------------------------------------------------------------!
+         ! Note:  the definitions of u(i) in this program are not the same as the usubi    !
+         !        defined in the article by Toon and Ackerman.  The corresponding terms    !
+         !        are:                                                                     !
+         !          usub1 = u(1)                       usub2 = u(5)                        !
+         !          usub3 = u(7)                       usub4 = dumsq                       !
+         !          usub5 = u(2)                       usub6 = u(3)                        !
+         !          usub7 = u(6)                       usub8 = u(4)                        !
+         !          ratio of spherical bessel ftn to spherical henkal ftn = u(8)           !
+         !---------------------------------------------------------------------------------!
+         u(1)  = k3 * acap(n)  -  k2 * w(1,n)
+         u(2)  = k3 * acap(n)  -  k2 * dh2
+         u(3)  = k2 * acap(n)  -  k3 * w(1,n)
+         u(4)  = k2 * acap(n)  -  k3 * dh2
+         u(5)  = k1 *  w(3,n)  -  k2 * w(2,n)
+         u(6)  = k2 *  w(3,n)  -  k1 * w(2,n)
+         u(7)  = dcmplx( 0.d0,-1.d0 )  *  ( dummy * p24h21 - p24h24 )
+         u(8)  = ta(3) / wfn(2)
+         fna   = u(8) * (u(1)*u(5)*u(7) + k1*u(1) - dumsq*k3*u(5))                         &
+                      / (u(2)*u(5)*u(7) + k1*u(2) - dumsq*k3*u(5))
+         fnb   = u(8) * (u(3)*u(6)*u(7) + k2*u(3) - dumsq*k2*u(6))                         &
+                      / (u(4)*u(6)*u(7) + k2*u(4) - dumsq*k2*u(6))
+         tb(1) = dble(fna)
+         tb(2) = aimag(fna)
+         tc(1) = dble(fnb)
+         tc(2) = aimag(fnb)
+      end if
+
+      fnap  = fna
+      fnbp  = fnb
+      td(1) = dble(fnap)
+      td(2) = aimag(fnap)
+      te(1) = dble(fnbp)
+      te(2) = aimag(fnbp)
+      t(1)  = 1.50
+      !------------------------------------------------------------------------------------!
+      !    From here on eltrmx(i,j,k) has the following meaning:                           !
+      !    - eltrmx(1,j,k): real part of the first complex amplitude.                      !
+      !    - eltrmx(2,j,k): imaginary part of the first complex amplitude.                 !
+      !    - eltrmx(3,j,k): real part of the second complex amplitude.                     !
+      !    - eltrmx(4,j,k): imaginary part of the second complex amplitude.                !
+      !    - k = 1 : for thetd(j) and k = 2 : for 180.0 - thetd(j)                         !
+      !    - definition of the complex amplitude: van de Hulst,p.125.                      !
+      !------------------------------------------------------------------------------------!
+      tb(1) = t(1) * tb(1)
+      tb(2) = t(1) * tb(2)
+      tc(1) = t(1) * tc(1)
+      tc(2) = t(1) * tc(2)
+      fna   = dcmplx(tb(1),tb(2))
+      fnb   = dcmplx(tc(1),tc(2))
+
+      eltrmx(1,1) = tb(1) * piz(2) + tc(1) * tau(2)
+      eltrmx(2,1) = tb(2) * piz(2) + tc(2) * tau(2)
+      eltrmx(3,1) = tc(1) * piz(2) + tb(1) * tau(2)
+      eltrmx(4,1) = tc(2) * piz(2) + tb(2) * tau(2)
+      eltrmx(1,2) = tb(1) * piz(2) - tc(1) * tau(2)
+      eltrmx(2,2) = tb(2) * piz(2) - tc(2) * tau(2)
+      eltrmx(3,2) = tc(1) * piz(2) - tb(1) * tau(2)
+      eltrmx(4,2) = tc(2) * piz(2) - tb(2) * tau(2)
+
+      qext   = 2.0 * sngl( tb(1) + tc(1))
+      qscat  = sngl( tb(1)* tb(1) + tb(2)* tb(2) + tc(1)*tc(1) + tc(2)*tc(2) ) / 0.75
+      ctbrqs = 0.0
+      qbsr   = -2.d0*(tc(1) - tb(1))
+      qbsi   = -2.d0*(tc(2) - tb(2))
+      rmm    = -1.d0
+      n = 2
+
+      bigloop: do
+         t(1)   = 2*n - 1
+         t(2)   =   n - 1
+         t(3)   = 2*n + 1
+         piz(3) = (t(1)*piz(2)*cstht - n*piz(1)) / t(2)
+         tau(3) = cstht * (piz(3)-piz(1)) - t(1)*si2tht*piz(2) + tau(1)
+         !----- Here we set up the homogeneous sphere. ------------------------------------!
+         wm1    =  wfn(1)
+         wfn(1) =  wfn(2)
+         ta(1)  =  dble(wfn(1))
+         ta(2)  =  aimag(wfn(1))
+         ta(4)  =  aimag(wfn(2))
+         wfn(2) =  t(1) * rx * wfn(1)  -  wm1
+         ta(3)  =  dble(wfn(2))
+
+         if (.not. iflag ) then
+            !
+            !----- Here we set up the stratified sphere. ----------------------------------!
+            dh2     =  - n / z(2) + 1.0 / ( n / z(2) - dh2 )
+            dh4     =  - n / z(4) + 1.0 / ( n / z(4) - dh4 )
+            dh1     =  - n / z(1) + 1.0 / ( n / z(1) - dh1 )
+            pstore  =  ( dh4 + n / z(4) )  *  ( w(3,n) + n / z(4) )
+            p24h24  =  p24h24 / pstore
+            hstore  =  ( dh1 + n / z(1) )  *  ( w(3,n) + n / z(4) )
+            p24h21  =  p24h21 / hstore
+            pstore  =  ( acap(n) + n / z(1) )  /  ( w(3,n) + n / z(4) )
+            dummy   =  dummy * pstore
+            dumsq   =  dummy * dummy
+            u(1) =  k3 * acap(n)  -  k2 * w(1,n)
+            u(2) =  k3 * acap(n)  -  k2 * dh2
+            u(3) =  k2 * acap(n)  -  k3 * w(1,n)
+            u(4) =  k2 * acap(n)  -  k3 * dh2
+            u(5) =  k1 *  w(3,n)  -  k2 * w(2,n)
+            u(6) =  k2 *  w(3,n)  -  k1 * w(2,n)
+            u(7) =  ( 0.0,-1.0 )  *  ( dummy * p24h21 - p24h24 )
+            u(8) =  ta(3) / wfn(2)
+            fna  =  u(8) * (u(1)*u(5)*u(7) + k1*u(1) - dumsq*k3*u(5))                      &
+                         / (u(2)*u(5)*u(7) + k1*u(2) - dumsq*k3*u(5))
+            fnb  =  u(8) * (u(3)*u(6)*u(7) + k2*u(3) - dumsq*k2*u(6))                      &
+                         / (u(4)*u(6)*u(7) + k2*u(4) - dumsq*k2*u(6))
+            tb(1) = dble(fna)
+            tb(2) = aimag(fna)
+            tc(1) = dble(fnb)
+            tc(2) = aimag(fnb)
+         end if
+
+         tc1 = acap(n) * rrf + n * rx
+         tc2 = acap(n) * rf  + n * rx
+         fn1 = (tc1 * ta(3) - ta(1)) / (tc1 * wfn(2) - wfn(1))
+         fn2 = (tc2 * ta(3) - ta(1)) / (tc2 * wfn(2) - wfn(1))
+         m   = wvno * r
+         if ( n >= m ) then
+            if (.not. iflag) then
+               iflag = abs((fn1-fna)/fn1) < epsilon_mie .and.                              &
+                       abs(  ( fn2-fnb ) / fn2  ) < epsilon_mie  
+            end if
+            if (iflag) then
+               fna   =  fn1
+               fnb   =  fn2
+               tb(1) = dble(fna)
+               tb(2) = aimag(fna)
+               tc(1) = dble(fnb)
+               tc(2) = aimag(fnb)
+            end if
+         end if
+         t(5)    = n
+         t(4)    = t(1) / (t(5) * t(2))
+         t(2)    = (t(2) * (t(5) + 1.0)) / t(5)
+         ctbrqs  = ctbrqs + t(2) * (td(1)*tb(1) + td(2)*tb(2) + te(1)*tc(1) + te(2)*tc(2)) &
+                          + t(4) * (td(1)*te(1) + td(2)*te(2))
+         qext    = qext + t(3) * (tb(1) + tc(1))
+         t(4)    =  tb(1)*tb(1) + tb(2)*tb(2) + tc(1)*tc(1) + tc(2)*tc(2)
+         qscat   =  qscat  +  t(3) * t(4)
+         rmm     =  -rmm
+         qbsr    =  qbsr + t(3)*rmm*(tc(1) - tb(1))
+         qbsi    =  qbsi + t(3)*rmm*(tc(2) - tb(2))
+         t(2)    =  n * (n+1)
+         t(1)    =  t(3) / t(2)
+         k       = (n/2)*2
+
+         eltrmx(1,1) = eltrmx(1,1)+t(1)*(tb(1)*piz(3)+tc(1)*tau(3))
+         eltrmx(2,1) = eltrmx(2,1)+t(1)*(tb(2)*piz(3)+tc(2)*tau(3))
+         eltrmx(3,1) = eltrmx(3,1)+t(1)*(tc(1)*piz(3)+tb(1)*tau(3))
+         eltrmx(4,1) = eltrmx(4,1)+t(1)*(tc(2)*piz(3)+tb(2)*tau(3))
+         if ( k == n )  then
+           eltrmx(1,2) = eltrmx(1,2)+t(1)*(-tb(1)*piz(3)+tc(1)*tau(3)) 
+           eltrmx(2,2) = eltrmx(2,2)+t(1)*(-tb(2)*piz(3)+tc(2)*tau(3)) 
+           eltrmx(3,2) = eltrmx(3,2)+t(1)*(-tc(1)*piz(3)+tb(1)*tau(3)) 
+           eltrmx(4,2) = eltrmx(4,2)+t(1)*(-tc(2)*piz(3)+tb(2)*tau(3)) 
+         else
+           eltrmx(1,2) = eltrmx(1,2)+t(1)*(tb(1)*piz(3)-tc(1)*tau(3))
+           eltrmx(2,2) = eltrmx(2,2)+t(1)*(tb(2)*piz(3)-tc(2)*tau(3))
+           eltrmx(3,2) = eltrmx(3,2)+t(1)*(tc(1)*piz(3)-tb(1)*tau(3))
+           eltrmx(4,2) = eltrmx(4,2)+t(1)*(tc(2)*piz(3)-tb(2)*tau(3))
+         end if
+
+         if ( t(4) < epsilon_mie ) exit bigloop
+
+         n = n + 1
+         piz(1) = piz(2)
+         piz(2) = piz(3)
+         tau(1) = tau(2)
+         tau(2) = tau(3)
+         fnap   = fna
+         fnbp   = fnb
+         td(1)  = dble(fnap)
+         td(2)  = aimag(fnap)
+         te(1)  = dble(fnbp)
+         te(2)  = aimag(fnbp)
+         if ( n > nmx2 ) then
+            write (unit=*,fmt='(a,1x,i6)') 'N    = ',n
+            write (unit=*,fmt='(a,1x,i6)') 'NMX2 = ',nmx2
+            call abort_run('The upper limit for acap is not large enough.'                 &
+                          ,'miess','rad_carma.f90')
+         end if
+      end do bigloop
+
+      do k = 1,2
+         do i= 1,4
+            t(i) = eltrmx(i,k)
+         end do
+         eltrmx(2,k) = t(1)*t(1) + t(2)*t(2)
+         eltrmx(1,k) = t(3)*t(3) + t(4)*t(4)
+         eltrmx(3,k) = t(1)*t(3) + t(2)*t(4)
+         eltrmx(4,k) = t(2)*t(3) - t(4)*t(1)
+      end do
+      t(1)   =   2.0 * rx * rx
+      qext   =  qext * t(1)
+      qscat  = qscat * t(1)
+      ctbrqs =   2.0 * ctbrqs * t(1)
+
+      return
+   end subroutine miess
    !=======================================================================================!
    !=======================================================================================!
 
