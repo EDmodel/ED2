@@ -288,7 +288,6 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
        edtype,polygontype,sitetype, &
        patchtype,allocate_patchtype,copy_patchtype,deallocate_patchtype 
   use pft_coms, only:sla,qsw,q,hgt_min, agf_bs
-  use ed_misc_coms, only: integration_scheme
   use disturbance_utils,only: plant_patch
   use ed_therm_lib, only: calc_hcapveg,update_veg_energy_cweh
   use fuse_fiss_utils, only: terminate_cohorts
@@ -442,7 +441,6 @@ subroutine event_planting(pft,density8)
        patchtype,allocate_patchtype,copy_patchtype,deallocate_patchtype, &
        filltab_alltypes 
   use pft_coms, only:sla,qsw,q,hgt_min
-  use ed_misc_coms, only: integration_scheme
   use disturbance_utils,only: plant_patch
 
   integer(kind=4),intent(in) :: pft
@@ -497,9 +495,7 @@ subroutine event_planting(pft,density8)
   end do
 
   ! Re-allocate integration buffer
-  if (integration_scheme == 1 .or. integration_scheme == 2) then
-     call initialize_rk4patches(0)
-  end if
+  call initialize_rk4patches(.false.)
 
   ! Reset hdf vars since number of cohorts changed mid-month
   call filltab_alltypes
@@ -512,7 +508,6 @@ subroutine event_fertilize(rval8)
        edtype,polygontype,sitetype, &
        patchtype,allocate_patchtype,copy_patchtype,deallocate_patchtype 
   use pft_coms, only:sla,qsw,q,hgt_min, agf_bs
-  use ed_misc_coms, only: integration_scheme
   use disturbance_utils,only: plant_patch
   real(kind=8),intent(in),dimension(5) :: rval8
 

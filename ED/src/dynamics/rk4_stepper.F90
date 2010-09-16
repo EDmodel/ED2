@@ -73,7 +73,7 @@ module rk4_stepper
          !    two types of new tries.  If step failed to be minimally reasonable (reject-  !
          !    ed) we have assigned a standard large error (10.0).  Otherwise a new step is !
          !    calculated based on the size of that error.  Hopefully, those new steps      !
-         !    should be less then the previous h.  If the error was small, i.e. less then  !
+         !    should be less than the previous h.  If the error was small, i.e. less then  !
          !    rk4eps, then we are done with this step, and we can move forward             !
          !    time: x = x + h                                                              !
          !---------------------------------------------------------------------------------!
@@ -174,9 +174,11 @@ module rk4_stepper
             x    = x + h
             hdid = h
             
-            !----- 3e. Copying the temporary structure to the intermediate state. ---------!
+            !------------------------------------------------------------------------------!
+            !    3e. Copying the temporary structure to the intermediate state.            !
+            !------------------------------------------------------------------------------!
             call copy_rk4_patch(integration_buff%ytemp,integration_buff%y                  &
-                                  ,csite%patch(ipa))
+                               ,csite%patch(ipa))
             exit hstep
          end if
       end do hstep
@@ -202,35 +204,35 @@ module rk4_stepper
                                , integration_vars    & ! structure
                                , rk4site             & ! intent(in)
                                , print_diags         & ! intent(in)
-                               , a2                  & ! intent(in)
-                               , a3                  & ! intent(in)
-                               , a4                  & ! intent(in)
-                               , a5                  & ! intent(in)
-                               , a6                  & ! intent(in)
-                               , b21                 & ! intent(in)
-                               , b31                 & ! intent(in)
-                               , b32                 & ! intent(in)
-                               , b41                 & ! intent(in)
-                               , b42                 & ! intent(in)
-                               , b43                 & ! intent(in)
-                               , b51                 & ! intent(in)
-                               , b52                 & ! intent(in)
-                               , b53                 & ! intent(in)
-                               , b54                 & ! intent(in)
-                               , b61                 & ! intent(in)
-                               , b62                 & ! intent(in)
-                               , b63                 & ! intent(in)
-                               , b64                 & ! intent(in)
-                               , b65                 & ! intent(in)
-                               , c1                  & ! intent(in)
-                               , c3                  & ! intent(in)
-                               , c4                  & ! intent(in)
-                               , c6                  & ! intent(in)
-                               , dc5                 & ! intent(in)
-                               , dc1                 & ! intent(in)
-                               , dc3                 & ! intent(in)
-                               , dc4                 & ! intent(in)
-                               , dc6                 ! ! intent(in)
+                               , rk4_a2              & ! intent(in)
+                               , rk4_a3              & ! intent(in)
+                               , rk4_a4              & ! intent(in)
+                               , rk4_a5              & ! intent(in)
+                               , rk4_a6              & ! intent(in)
+                               , rk4_b21             & ! intent(in)
+                               , rk4_b31             & ! intent(in)
+                               , rk4_b32             & ! intent(in)
+                               , rk4_b41             & ! intent(in)
+                               , rk4_b42             & ! intent(in)
+                               , rk4_b43             & ! intent(in)
+                               , rk4_b51             & ! intent(in)
+                               , rk4_b52             & ! intent(in)
+                               , rk4_b53             & ! intent(in)
+                               , rk4_b54             & ! intent(in)
+                               , rk4_b61             & ! intent(in)
+                               , rk4_b62             & ! intent(in)
+                               , rk4_b63             & ! intent(in)
+                               , rk4_b64             & ! intent(in)
+                               , rk4_b65             & ! intent(in)
+                               , rk4_c1              & ! intent(in)
+                               , rk4_c3              & ! intent(in)
+                               , rk4_c4              & ! intent(in)
+                               , rk4_c6              & ! intent(in)
+                               , rk4_dc5             & ! intent(in)
+                               , rk4_dc1             & ! intent(in)
+                               , rk4_dc3             & ! intent(in)
+                               , rk4_dc4             & ! intent(in)
+                               , rk4_dc6             ! ! intent(in)
       use ed_state_vars , only : sitetype            & ! structure
                                , patchtype           ! ! structure
       implicit none
@@ -249,21 +251,6 @@ module rk4_stepper
       !------------------------------------------------------------------------------------!
 
 
-      !----- Interfaces, in case the model is compiled without forcing them. --------------!
-#if USE_INTERF
-      interface
-         subroutine leaf_derivs(initp,dydx,csite,ipa)
-            use rk4_coms      ,only : rk4patchtype
-            use ed_state_vars ,only : sitetype
-            implicit none
-            integer             , intent(in) :: ipa
-            type (rk4patchtype) , target     :: initp
-            type (rk4patchtype) , target     :: dydx
-            type (sitetype)     , target     :: csite
-         end subroutine leaf_derivs
-      end interface
-#endif
-
       !------------------------------------------------------------------------------------!
       !     Start and assume that nothing went wrong up to this point... If we find any    !
       ! seriously bad step, quit and reduce the time step without even bothering to try    !
@@ -274,8 +261,8 @@ module rk4_stepper
       cpatch => csite%patch(ipa)
 
       call copy_rk4_patch(y, ak7, cpatch)
-      call inc_rk4_patch(ak7, dydx, b21*h, cpatch)
-      combh = b21*h
+      call inc_rk4_patch(ak7, dydx, rk4_b21*h, cpatch)
+      combh = rk4_b21*h
       call adjust_veg_properties(ak7,combh,csite,ipa)
       call adjust_topsoil_properties(ak7,combh,csite,ipa)
       call redistribute_snow(ak7, csite,ipa)
@@ -285,9 +272,9 @@ module rk4_stepper
 
       call leaf_derivs(ak7, ak2, csite, ipa)
       call copy_rk4_patch(y, ak7, cpatch)
-      call inc_rk4_patch(ak7, dydx, b31*h, cpatch)
-      call inc_rk4_patch(ak7, ak2, b32*h, cpatch)
-      combh = (b31+b32)*h
+      call inc_rk4_patch(ak7, dydx, rk4_b31*h, cpatch)
+      call inc_rk4_patch(ak7,  ak2, rk4_b32*h, cpatch)
+      combh = (rk4_b31+rk4_b32)*h
       call adjust_veg_properties(ak7,combh,csite,ipa)
       call adjust_topsoil_properties(ak7,combh,csite,ipa)
       call redistribute_snow(ak7, csite,ipa)
@@ -299,10 +286,10 @@ module rk4_stepper
 
       call leaf_derivs(ak7, ak3, csite,ipa)
       call copy_rk4_patch(y, ak7, cpatch)
-      call inc_rk4_patch(ak7, dydx, b41*h, cpatch)
-      call inc_rk4_patch(ak7,  ak2, b42*h, cpatch)
-      call inc_rk4_patch(ak7,  ak3, b43*h, cpatch)
-      combh = (b41+b42+b43)*h
+      call inc_rk4_patch(ak7, dydx, rk4_b41*h, cpatch)
+      call inc_rk4_patch(ak7,  ak2, rk4_b42*h, cpatch)
+      call inc_rk4_patch(ak7,  ak3, rk4_b43*h, cpatch)
+      combh = (rk4_b41+rk4_b42+rk4_b43)*h
       call adjust_veg_properties(ak7,combh,csite,ipa)
       call adjust_topsoil_properties(ak7,combh,csite,ipa)
       call redistribute_snow(ak7, csite,ipa)
@@ -314,11 +301,11 @@ module rk4_stepper
 
       call leaf_derivs(ak7, ak4, csite, ipa)
       call copy_rk4_patch(y, ak7, cpatch)
-      call inc_rk4_patch(ak7, dydx, b51*h, cpatch)
-      call inc_rk4_patch(ak7,  ak2, b52*h, cpatch)
-      call inc_rk4_patch(ak7,  ak3, b53*h, cpatch)
-      call inc_rk4_patch(ak7,  ak4, b54*h, cpatch)
-      combh = (b51+b52+b53+b54)*h
+      call inc_rk4_patch(ak7, dydx, rk4_b51*h, cpatch)
+      call inc_rk4_patch(ak7,  ak2, rk4_b52*h, cpatch)
+      call inc_rk4_patch(ak7,  ak3, rk4_b53*h, cpatch)
+      call inc_rk4_patch(ak7,  ak4, rk4_b54*h, cpatch)
+      combh = (rk4_b51+rk4_b52+rk4_b53+rk4_b54)*h
       call adjust_veg_properties(ak7,combh,csite,ipa)
       call adjust_topsoil_properties(ak7,combh,csite,ipa)
       call redistribute_snow(ak7, csite,ipa)
@@ -330,12 +317,12 @@ module rk4_stepper
 
       call leaf_derivs(ak7, ak5, csite, ipa)
       call copy_rk4_patch(y, ak7, cpatch)
-      call inc_rk4_patch(ak7, dydx, b61*h, cpatch)
-      call inc_rk4_patch(ak7,  ak2, b62*h, cpatch)
-      call inc_rk4_patch(ak7,  ak3, b63*h, cpatch)
-      call inc_rk4_patch(ak7,  ak4, b64*h, cpatch)
-      call inc_rk4_patch(ak7,  ak5, b65*h, cpatch)
-      combh = (b61+b62+b63+b64+b65)*h
+      call inc_rk4_patch(ak7, dydx, rk4_b61*h, cpatch)
+      call inc_rk4_patch(ak7,  ak2, rk4_b62*h, cpatch)
+      call inc_rk4_patch(ak7,  ak3, rk4_b63*h, cpatch)
+      call inc_rk4_patch(ak7,  ak4, rk4_b64*h, cpatch)
+      call inc_rk4_patch(ak7,  ak5, rk4_b65*h, cpatch)
+      combh = (rk4_b61+rk4_b62+rk4_b63+rk4_b64+rk4_b65)*h
       call adjust_veg_properties(ak7,combh,csite,ipa)
       call adjust_topsoil_properties(ak7,combh,csite,ipa)
       call redistribute_snow(ak7, csite,ipa)
@@ -345,11 +332,11 @@ module rk4_stepper
 
       call leaf_derivs(ak7, ak6, csite,ipa)
       call copy_rk4_patch(y, yout, cpatch)
-      call inc_rk4_patch(yout, dydx, c1*h, cpatch)
-      call inc_rk4_patch(yout,  ak3, c3*h, cpatch)
-      call inc_rk4_patch(yout,  ak4, c4*h, cpatch)
-      call inc_rk4_patch(yout,  ak6, c6*h, cpatch)
-      combh = (c1+c3+c4+c6)*h
+      call inc_rk4_patch(yout, dydx, rk4_c1*h, cpatch)
+      call inc_rk4_patch(yout,  ak3, rk4_c3*h, cpatch)
+      call inc_rk4_patch(yout,  ak4, rk4_c4*h, cpatch)
+      call inc_rk4_patch(yout,  ak6, rk4_c6*h, cpatch)
+      combh = (rk4_c1+rk4_c3+rk4_c4+rk4_c6)*h
       call adjust_veg_properties(yout,combh,csite,ipa)
       call adjust_topsoil_properties(yout,combh,csite,ipa)
       call redistribute_snow(yout, csite,ipa)
@@ -358,11 +345,11 @@ module rk4_stepper
       if(reject_result)return
 
       call copy_rk4_patch(dydx, yerr, cpatch)
-      call inc_rk4_patch(yerr, dydx, dc1*h-1.d0, cpatch)
-      call inc_rk4_patch(yerr, ak3,  dc3*h     , cpatch)
-      call inc_rk4_patch(yerr, ak4,  dc4*h     , cpatch)
-      call inc_rk4_patch(yerr, ak5,  dc5*h     , cpatch)
-      call inc_rk4_patch(yerr, ak6,  dc6*h     , cpatch)
+      call inc_rk4_patch(yerr, dydx, rk4_dc1*h-1.d0, cpatch)
+      call inc_rk4_patch(yerr, ak3,  rk4_dc3*h     , cpatch)
+      call inc_rk4_patch(yerr, ak4,  rk4_dc4*h     , cpatch)
+      call inc_rk4_patch(yerr, ak5,  rk4_dc5*h     , cpatch)
+      call inc_rk4_patch(yerr, ak6,  rk4_dc6*h     , cpatch)
 
       return
    end subroutine rkck
@@ -388,6 +375,8 @@ module rk4_stepper
                                        , toocold              & ! intent(in)
                                        , rk4min_can_temp      & ! intent(in)
                                        , rk4max_can_temp      & ! intent(in)
+                                       , rk4min_can_theiv     & ! intent(in)
+                                       , rk4max_can_theiv     & ! intent(in)
                                        , rk4max_can_rhv       & ! intent(in)
                                        , rk4max_can_shv       & ! intent(in)
                                        , rk4min_can_shv       & ! intent(in)
@@ -460,7 +449,8 @@ module rk4_stepper
       !------------------------------------------------------------------------------------!
       !   Checking whether the canopy temperature is too hot or too cold.                  !
       !------------------------------------------------------------------------------------! 
-      if (y%can_temp  > rk4max_can_temp  .or. y%can_temp  < rk4min_can_temp ) then
+      if (y%can_temp  > rk4max_can_temp  .or. y%can_temp  < rk4min_can_temp .or.           &
+          y%can_theiv > rk4max_can_theiv .or. y%can_theiv < rk4min_can_theiv     ) then
          reject_step = .true.
          if(record_err) integ_err(1,2) = integ_err(1,2) + 1_8
          if (print_problems) then
@@ -470,11 +460,11 @@ module rk4_stepper
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:        ',y%can_shv
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_TEMP:       ',y%can_temp
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_CO2:        ',y%can_co2
-            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_ENTHALPY:   ',y%can_enthalpy
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THEIV:      ',y%can_theiv
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_DEPTH:      ',y%can_depth
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHOS:       ',y%can_rhos
             write(unit=*,fmt='(a,1x,es12.4)') ' PRESSURE:       ',y%can_prss
-            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_ENTH)/Dt: ',dydx%can_enthalpy
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_THEIV)/Dt:',dydx%can_theiv
             write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_SHV)/Dt:  ',dydx%can_shv
             write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_CO2)/Dt:  ',dydx%can_co2
             write(unit=*,fmt='(a,1x,es12.4)') ' H:              ',h
@@ -506,11 +496,11 @@ module rk4_stepper
                write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:        ',y%can_shv
                write(unit=*,fmt='(a,1x,es12.4)') ' CAN_TEMP:       ',y%can_temp
                write(unit=*,fmt='(a,1x,es12.4)') ' CAN_CO2:        ',y%can_co2
-               write(unit=*,fmt='(a,1x,es12.4)') ' CAN_ENTHALPY:   ',y%can_enthalpy
+               write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THEIV:      ',y%can_theiv
                write(unit=*,fmt='(a,1x,es12.4)') ' CAN_DEPTH:      ',y%can_depth
                write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHOS:       ',y%can_rhos
                write(unit=*,fmt='(a,1x,es12.4)') ' PRESSURE:       ',y%can_prss
-               write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_ENTH)/Dt: ',dydx%can_enthalpy
+               write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_THEIV)/Dt:',dydx%can_theiv
                write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_H2O)/Dt:  ',dydx%can_shv
                write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_CO2)/Dt:  ',dydx%can_co2
                write(unit=*,fmt='(a,1x,es12.4)') ' H:              ',h
@@ -526,29 +516,29 @@ module rk4_stepper
       !------------------------------------------------------------------------------------!
       !   Checking whether the canopy CO2 is reasonable.                                   !
       !------------------------------------------------------------------------------------! 
-      !if (y%can_co2 > rk4max_can_co2 .or. y%can_co2 < rk4min_can_co2) then
-      !   reject_step = .true.
-      !   if(record_err) integ_err(3,2) = integ_err(3,2) + 1_8
-      !   if (print_problems) then
-      !      write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-      !      write(unit=*,fmt='(a)')           ' + Canopy air CO2  is off-track...       '
-      !      write(unit=*,fmt='(a)')           '-----------------------------------------'
-      !      write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:        ',y%can_shv
-      !      write(unit=*,fmt='(a,1x,es12.4)') ' CAN_TEMP:       ',y%can_temp
-      !      write(unit=*,fmt='(a,1x,es12.4)') ' CAN_CO2:        ',y%can_co2
-      !      write(unit=*,fmt='(a,1x,es12.4)') ' CAN_ENTHALPY:   ',y%can_enthalpy
-      !      write(unit=*,fmt='(a,1x,es12.4)') ' CAN_DEPTH:      ',y%can_depth
-      !      write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHOS:       ',y%can_rhos
-      !      write(unit=*,fmt='(a,1x,es12.4)') ' PRESSURE:       ',y%can_prss
-      !      write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_ENTH)/Dt: ',dydx%can_enthalpy
-      !      write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_SHV)/Dt:  ',dydx%can_shv
-      !      write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_CO2)/Dt:  ',dydx%can_co2
-      !      write(unit=*,fmt='(a,1x,es12.4)') ' H:              ',h
-      !      write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-      !   elseif (.not. record_err) then
-      !      return
-      !   end if
-      !end if
+      ! if (y%can_co2 > rk4max_can_co2 .or. y%can_co2 < rk4min_can_co2) then
+      !    reject_step = .true.
+      !    if(record_err) integ_err(3,2) = integ_err(3,2) + 1_8
+      !    if (print_problems) then
+      !       write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+      !       write(unit=*,fmt='(a)')           ' + Canopy air CO2  is off-track...       '
+      !       write(unit=*,fmt='(a)')           '-----------------------------------------'
+      !       write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:        ',y%can_shv
+      !       write(unit=*,fmt='(a,1x,es12.4)') ' CAN_TEMP:       ',y%can_temp
+      !       write(unit=*,fmt='(a,1x,es12.4)') ' CAN_CO2:        ',y%can_co2
+      !       write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THEIV:      ',y%can_theiv
+      !       write(unit=*,fmt='(a,1x,es12.4)') ' CAN_DEPTH:      ',y%can_depth
+      !       write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHOS:       ',y%can_rhos
+      !       write(unit=*,fmt='(a,1x,es12.4)') ' PRESSURE:       ',y%can_prss
+      !       write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_THEIV)/Dt:',dydx%can_theiv
+      !       write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_SHV)/Dt:  ',dydx%can_shv
+      !       write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_CO2)/Dt:  ',dydx%can_co2
+      !       write(unit=*,fmt='(a,1x,es12.4)') ' H:              ',h
+      !       write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+      !    elseif (.not. record_err) then
+      !       return
+      !    end if
+      ! end if
       !------------------------------------------------------------------------------------!
 
 

@@ -740,7 +740,7 @@ subroutine update_met_drivers(cgrid)
                              , tsupercool        ! ! intent(in)
    use therm_lib      , only : rslif             & ! function
                              , ptrh2rvapil       & ! function
-                             , ptqz2enthalpy     & ! function
+                             , thetaeiv          & ! function
                              , rehuil            & ! function
                              , qtk               ! ! function
 
@@ -1140,12 +1140,10 @@ subroutine update_met_drivers(cgrid)
       end if
 
       !------------------------------------------------------------------------------------!
-      !    We now find the enthalpy.                                                       !
+      !    We now find the equivalent potential temperature.                               !
       !------------------------------------------------------------------------------------!
-      cgrid%met(ipy)%atm_enthalpy = ptqz2enthalpy(cgrid%met(ipy)%prss                      &
-                                                 ,cgrid%met(ipy)%atm_tmp                   &
-                                                 ,cgrid%met(ipy)%atm_shv                   &
-                                                 ,cgrid%met(ipy)%geoht)
+      cgrid%met(ipy)%atm_theiv = thetaeiv(cgrid%met(ipy)%atm_theta,cgrid%met(ipy)%prss     &
+                                         ,cgrid%met(ipy)%atm_tmp,rvaux,rvaux,1)
 
       !------ Apply met to sites, and adjust met variables for topography. ----------------!
       call calc_met_lapse(cgrid,ipy)
@@ -1157,8 +1155,8 @@ subroutine update_met_drivers(cgrid)
       siteloop: do isi = 1,cpoly%nsites
          
          !----- Vels. The site level is also still in kinetic energy form. ----------------!
-         cpoly%met(isi)%vels = sqrt(max(0.0,cpoly%met(isi)%vels))
-         cpoly%met(isi)%vels_stab = max(ubmin,cpoly%met(isi)%vels)
+         cpoly%met(isi)%vels        = sqrt(max(0.0,cpoly%met(isi)%vels))
+         cpoly%met(isi)%vels_stab   = max(ubmin,cpoly%met(isi)%vels)
          cpoly%met(isi)%vels_unstab = max(ubmin,cpoly%met(isi)%vels)
          
          !----- CO2.  In case we used the namelist, use that value. -----------------------!
@@ -1168,8 +1166,9 @@ subroutine update_met_drivers(cgrid)
          !---------------------------------------------------------------------------------!
          !     We now find some derived properties.  In case several sites exist, the      !
          ! lapse rate was applied to pressure, temperature, and mixing ratio.  Then we     !
-         ! calculate the Exner function, potential temperature and enthalpy so it will     !
-         ! respect the ideal gas law and first law of thermodynamics.                      !
+         ! calculate the Exner function, potential temperature and equivalent potential    !
+         ! temperature, so it will respect the ideal gas law and first law of thermo-      !
+         ! dynamics.                                                                       !
          !---------------------------------------------------------------------------------!
          cpoly%met(isi)%exner        = cp * (p00i * cpoly%met(isi)%prss) **rocp
          cpoly%met(isi)%atm_theta    = cp * cpoly%met(isi)%atm_tmp / cpoly%met(isi)%exner
@@ -1196,11 +1195,9 @@ subroutine update_met_drivers(cgrid)
             cpoly%met(isi)%atm_shv = rvaux / (1. + rvaux)
          end if
 
-         !----- Find the atmospheric enthalpy. --------------------------------------------!
-         cpoly%met(isi)%atm_enthalpy = ptqz2enthalpy(cpoly%met(isi)%prss                   &
-                                                    ,cpoly%met(isi)%atm_tmp                &
-                                                    ,cpoly%met(isi)%atm_shv                &
-                                                    ,cpoly%met(isi)%geoht)
+         !----- Find the atmospheric equivalent potential temperature. --------------------!
+         cpoly%met(isi)%atm_theiv = thetaeiv(cpoly%met(isi)%atm_theta,cpoly%met(isi)%prss  &
+                                            ,cpoly%met(isi)%atm_tmp,rvaux,rvaux,2)
 
          !----- Solar radiation -----------------------------------------------------------!
          cpoly%met(isi)%rshort_diffuse = cpoly%met(isi)%par_diffuse                        &
@@ -1268,7 +1265,7 @@ subroutine update_met_drivers(cgrid)
          cpoly%met(isi)%qpcpg = max(0.0, cpoly%met(isi)%pcpg)                              &
                               * ( (1.0-fice) * cliq * ( max(t3ple,cpoly%met(isi)%atm_tmp)  &
                                                       - tsupercool)                        &
-                                + fice *cice * min(cpoly%met(isi)%atm_tmp,t3ple))
+                                + fice * cice * min(cpoly%met(isi)%atm_tmp,t3ple))
          !---------------------------------------------------------------------------------!
 
 

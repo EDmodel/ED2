@@ -1,4 +1,5 @@
-! -------------------------------------------------------------
+!==========================================================================================!
+!==========================================================================================!
 ! -                                                           -
 ! - RAMSPOST - RAMS Post Processor for GrADS.                 -
 ! -                                                           -
@@ -13,11 +14,14 @@ program ramspost
   ! -----------------------
 
   use rpost_coms
+  use rpost_dims, only : fnm_len & ! intent(in)
+                       , str_len ! ! intent(in)
   use brams_data
-  character*600 fln(maxfiles)
-  character*80 inp
-  character*600 fprefix,gprefix
-  character*600 cfln
+  character(len=fnm_len), dimension(maxfiles) :: fln
+  character(len=str_len)                      :: inp
+  character(len=fnm_len)                      :: fprefix
+  character(len=fnm_len)                      :: gprefix
+  character(len=fnm_len)                      :: cfln
   character*40 vpln(200),cdum1
   character*10 vp(200),vpun(200),cdum2,proj,anl2gra
   character*1 cgrid
@@ -27,6 +31,7 @@ program ramspost
   integer nvp,nfiles,nzvp(200),nrec,ipresslev,iplevs(nplmax)
   integer inplevs,zlevmax(maxgrds),ndim(200),iproj,ianl2gra,icld
   integer fim_inp
+  integer hunit
 
   real a(nxpmax,nypmax,nzpmax),b(nxpmax,nypmax,nzpmax),        &
        rout(nxpmax,nypmax,nzpmax),                             &
@@ -52,9 +57,7 @@ program ramspost
        'oct','nov','dec'/	
 
   dimension dep_zlev(nzpmax,maxgrds),iep_nx(maxgrds),       &
-       iep_ny(maxgrds),iep_nz(maxgrds),        &
-       iep_stdate(6),iep_step(6),                      &
-       dep_glat(2,maxgrds), dep_glon(2,maxgrds)
+       iep_ny(maxgrds),iep_nz(maxgrds),dep_glat(2,maxgrds), dep_glon(2,maxgrds)
 
   character*600 wfln(maxfiles)
 
@@ -85,7 +88,7 @@ program ramspost
   ic=lastchar(gprefix)
   call RAMS_anal_init(nfiles,fln,fprefix,        &
        dep_zlev,iep_nx,iep_ny,iep_nz,iep_ng,iep_np,iep_nc,   &
-       iep_stdate,iep_step,iep_ngrids)
+       iep_ngrids)
   chdate='00:00z00mmm1900'
   call RAMS_get_time_init(1,iyear,imonth,idate,ihour,imin)
   call RAMS_get_time_step(iistep,hunit,nfiles)
@@ -108,8 +111,9 @@ program ramspost
 
 
   do ng=1,iep_ngrids
-     print*,'=========================================='
-     print *,'           Writing Grid ',ng
+     write (unit=*,fmt='(a)')       ' '
+     write (unit=*,fmt='(a)')       '========================================================='
+     write (unit=*,fmt='(a,1x,i5)'),' + Writing Grid ',ng
      !.................
      nnvp=nvp
      iv=1
@@ -119,14 +123,25 @@ program ramspost
      !.................
      !   rlat and rlon = lat and lon of "thermodynamic points" of RAMS model.
      !
+     write(unit=*,fmt='(a)') ' '
+     write(unit=*,fmt='(2(a,1x))') '     * Variable:  ','lat'
+
      call ep_getvar('lat',                    &
           rlat,a,b,iep_nx(ng),iep_ny(ng),         &
           1,ng,cfln(1:ip),vpln(iv),		     &
           vpun(iv),n,iep_np,iep_nc,iep_ng,a2,rout2,a6,rout6)
+     write(unit=*,fmt='(a,1x,i5)') '       # Output variable type:  ',n
+
+     write(unit=*,fmt='(a)') ' '
+     write(unit=*,fmt='(2(a,1x))') '     * Variable:  ','lon'
+
      call ep_getvar('lon',                    &
           rlon,a,b,iep_nx(ng),iep_ny(ng),         &
           1,ng,cfln(1:ip),vpln(iv),  	     &
           vpun(iv),n,iep_np,iep_nc,iep_ng,a2,rout2,a6,rout6)
+     write(unit=*,fmt='(a,1x,i5)') '       # Output variable type:  ',n
+
+
      !.................
      call geo_grid(iep_nx(ng),iep_ny(ng),rlat,rlon,  &
           dep_glon(1,ng),dep_glon(2,ng),     &
@@ -169,8 +184,8 @@ program ramspost
      endif
 
      do nfn=1,nfiles,nstep
-        print *, ' --- > doing timestep ',nfn
-        print *, ' --- >'
+        write(unit=*,fmt='(a)')        ' '
+        write(unit=*,fmt='(a,1x,i5)')  '   - Timestep: ',nfn
 
         cfln=fln(nfn)
         ip=lastchar(cfln)-9
@@ -195,26 +210,35 @@ program ramspost
 !.................
 
         if(ipresslev.gt.0) then
+           write(unit=*,fmt='(a)') ' '
+           write(unit=*,fmt='(2(a,1x))') '     * Variable:  ','topo'
 
            call ep_getvar('topo',mytopo,a,b,iep_nx(ng),iep_ny(ng), &
                 1,ng,cfln(1:ip),vpln(iv),		    &
                 vpun(iv),n,iep_np,iep_nc,iep_ng,a2,rout2,a6,rout6)
+           write(unit=*,fmt='(a,1x,i5)') '       # Output variable type:  ',n
+
+           write(unit=*,fmt='(a)') ' '
+           write(unit=*,fmt='(2(a,1x))') '     * Variable:  ','pi'
 
            call ep_getvar('pi',mypi,a,b,iep_nx(ng),iep_ny(ng),     &
                 iep_nz(ng),ng,cfln(1:ip),vpln(iv),       &
                 vpun(iv),n,iep_np,iep_nc,iep_ng,a2,rout2,a6,rout6)
+           write(unit=*,fmt='(a,1x,i5)') '       # Output variable type:  ',n
 
         endif
 
       DO iv=1,nvp
+           write(unit=*,fmt='(a)') ' '
+           write(unit=*,fmt='(2(a,1x))') '     * Variable:  ',vp(iv)
            !.................
            call ep_getvar(vp(iv),                               &
                 rout,a,b,iep_nx(ng),iep_ny(ng),        &
                 iep_nz(ng),ng,cfln(1:ip),vpln(iv),	 &
                 vpun(iv),n,iep_np,iep_nc,iep_ng,a2,rout2,a6,rout6)
+           write(unit=*,fmt='(a,1x,i5)') '       # Output variable type:  ',n
 
            ndim(iv)=n
-           print*,'Get variable:  ',vp(iv),' dimension=',ndim(iv)
            !................
            !.....            
            IF(ndim(iv).eq.8) then
@@ -399,10 +423,6 @@ program ramspost
            !
 
         ENDDO
-        print*,'------------------------------------------------'
-        print*,'Grid=',ng,' Bytes=',4*nrec*  &
-             (nxb(ng)-nxa(ng)+1)*(nyb(ng)-nya(ng)+1)
-        print*,'------------------------------------------------'
         !.................
 
         if(anl2gra(1:ianl2gra).eq.'ONE'.or.anl2gra(1:ianl2gra).eq.'one') close(19)
@@ -563,6 +583,7 @@ program ramspost
      if(anl2gra(1:ianl2gra).ne.'ONE'.and.anl2gra(1:ianl2gra).ne.'one' .and. &
         nfn == 1 ) exit
    enddo ! enddo do NFILES
+   write (unit=*,fmt='(a)')       '========================================================='
 
   enddo  !enddo do NGRIDS
 
@@ -576,74 +597,77 @@ program ramspost
 2008 format(a,1x,i4,1x,' 99    - RAMS : ',1x,a,'[',1x,a8,1x,']')
 2055 format(60f7.0)
 close (iunit+1)
+
+  write(*,'(a)') ' ------ Ramspost execution ends ------'
   stop
 end program ramspost
-
-! ---------------------------------------------------------------
-! -   SUBROUTINE EP_GETVAR : LOAD RAMS VARIABLE FROM ANALYSIS   -
-! ---------------------------------------------------------------
-
-subroutine ep_getvar(cvar,rout,a,b,                      &
-     nx,ny,nz,ng,fn,cdname,cdunits,itype,   &
-     npatch,nzg,nclouds,a2,rout2,a6,rout6)
-  dimension a(nx,ny,nz),b(nx,ny,nz),rout(nx,ny,nz),            &
-       a2(nx,ny,nzg,npatch),rout2(nx,ny,nzg,npatch), &
-       a6(nx,ny,nz,nclouds),rout6(nx,ny,nz,nclouds)
-  character*(*) cvar,fn,cdname,cdunits
-
-  call RAMS_varlib(cvar,nx,ny,nz,nzg,npatch,nclouds,ng,fn,      &
-       cdname,cdunits,itype,a,b,a2,a6)   
+!==========================================================================================!
+!==========================================================================================!
 
 
 
-  IF(itype.eq.8) THEN
-     do i=1,nx
-        do j=1,ny
-           do izg=1,nzg
-              do ip=1,npatch
-                 rout2(i,j,izg,ip)=a2(i,j,izg,ip)
-                 !             print*,i,j,izg,ip,a2(i,j,izg,ip)
-              enddo
-           enddo
-        enddo
-     enddo
-  ELSEIF(itype.eq.6) THEN
-     do i=1,nx
-        do j=1,ny
-           do k=1,nz
-              do ic=1,nclouds
-                 rout6(i,j,k,ic)=a6(i,j,k,ic)
-                 !             print*,i,j,izg,ip,a2(i,j,izg,ip)
-              enddo
-           enddo
-        enddo
-     enddo
-  ELSE
-     do k=1,nz
-	do i=1,nx
-           do j=1,ny
-              rout(i,j,k)=a(i,j,k)
-              !cc
-              !         if(a(i,j,k).gt.1.) &
-              !print*,'Var= ',cvar,i,j,k,a(i,j,k)
-              !cc
-           enddo
-        enddo
-     enddo
-  ENDIF
-  !xxxxxxxxxxxxxxxxxxxxxxxxx
-  !      k=1
-  !        write(17,'(52f10.3)')((rout(ii,jj,k),ii=1,nx),jj=1,ny)
-  !        
-  !xxxxxxxxxxxxxxxxxxxxxxxxx
-  return
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+subroutine ep_getvar(cvar,rout,a,b,nx,ny,nz,ng,fn,cdname,cdunits,itype,npatch,nclouds,nzg  &
+                    ,a2,rout2,a6,rout6)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   character(len=*)            , intent(in)    :: cvar
+   character(len=*)            , intent(in)    :: fn
+   character(len=*)            , intent(out)   :: cdname
+   character(len=*)            , intent(out)   :: cdunits
+   integer                     , intent(in)    :: nx
+   integer                     , intent(in)    :: ny
+   integer                     , intent(in)    :: nz
+   integer                     , intent(in)    :: ng
+   integer                     , intent(out)   :: itype
+   integer                     , intent(in)    :: npatch
+   integer                     , intent(in)    :: nzg
+   integer                     , intent(in)    :: nclouds
+   real   , dimension(*)       , intent(inout) :: a
+   real   , dimension(*)       , intent(inout) :: b
+   real   , dimension(*)       , intent(inout) :: a2
+   real   , dimension(*)       , intent(inout) :: a6
+   real   , dimension(*)       , intent(inout) :: rout
+   real   , dimension(*)       , intent(inout) :: rout2
+   real   , dimension(*)       , intent(inout) :: rout6
+   !---------------------------------------------------------------------------------------!
+
+   !----- Load the variable. --------------------------------------------------------------!
+   call RAMS_varlib(cvar,nx,ny,nz,nzg,npatch,nclouds,ng,fn,cdname,cdunits,itype,a,b,a2,a6)   
+
+   !----- Copy to the appropriate scratch. ------------------------------------------------!
+   select case (itype)
+   case (2)
+      call atob(nx*ny,a,rout)
+   case (3)
+      call atob(nx*ny*nz,a,rout)
+   case (6)
+      call atob(nx*ny*nzg*nclouds,a6,rout6)
+   case (7)
+      call atob(nx*ny*npatch,a,rout)
+   case (8)
+      call atob(nx*ny*nzg*npatch,a2,rout2)
+   case (9)
+      call atob(nx*ny*nclouds,a,rout)
+   case (10)
+      call atob(nx*ny*nzg,a,rout)
+   end select
+   return
 end subroutine ep_getvar
+!==========================================================================================!
+!==========================================================================================!
 
 
-! -------------------------------------------------
-! -   SUBROUTINE EP_SETDATE : PARSE DATE RECORD   -
-! -------------------------------------------------
 
+
+
+
+!==========================================================================================!
+!==========================================================================================!
 subroutine ep_setdate(iyear1,imonth1,idate1,strtim,itrec)
   real time
 
@@ -768,7 +792,7 @@ Subroutine Matriz_interp(ng,nxg,nyg,nxr,nyr,rlat1,dlat, &
 
   !       Construcao da matriz de interpolacao.
   !       Flag para pontos do grads fora do dominio do modelo
-  undef=-9.99e+15
+  undef=-9.99e33
   do i=1,nxg
      do j=1,nyg
         iinf(i,j)=1

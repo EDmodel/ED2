@@ -1090,7 +1090,7 @@ subroutine ed_opspec_misc
       write (unit=*,fmt='(a)') ' simulations only.  If that''s not what you wanted, change '
       write (unit=*,fmt='(a)') ' your IED_INIT_MODE variable on your ED2IN.                '
       write (unit=*,fmt='(a)') '==========================================================='
-   elseif (ied_init_mode < 0 .or. ied_init_mode > 6 ) then
+   elseif ((ied_init_mode < 0 .or. ied_init_mode > 6) .and. ied_init_mode /= 99 ) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
                       'Invalid IED_INIT_MODE, it must be between 0 and 6. Yours is set to' &
                      ,ied_init_mode,'...'
@@ -1233,18 +1233,7 @@ end do
    ! using it in case the user decides for Euler.                                          !
    !---------------------------------------------------------------------------------------!
    select case (integration_scheme)
-   case (0)
-      !if (ibranch_thermo /= 0) then
-      !   write (reason,fmt='(a,1x,a)') 'Invalid IBRANCH_THERMO.  You must set it to 0'    &
-      !                                ,'when using the Euler integration method...'
-      !   call opspec_fatal(reason,'opspec_misc')
-      !   ifaterr = ifaterr + 1
-      !end if
-      write (reason,fmt='(a)')                                                             &
-               'Euler scheme is currently not available, so please use Runge-Kutta.'
-      call opspec_fatal(reason,'opspec_misc')
-      ifaterr = ifaterr +1
-   case (1)
+   case (0:2)
       !------------------------------------------------------------------------------------!
       !   Check the branch thermodynamics.                                                 !
       !------------------------------------------------------------------------------------!
@@ -1268,7 +1257,7 @@ end do
       end if
    case default
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-               'Invalid INTEGRATION_SCHEME, it must be 1. Yours is set to'                 &
+               'Invalid INTEGRATION_SCHEME, it must be 0, 1, or 2. Yours is set to'        &
                ,integration_scheme,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1

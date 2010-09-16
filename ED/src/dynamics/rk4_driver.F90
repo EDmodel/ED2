@@ -48,11 +48,11 @@ module rk4_driver
       real                                    :: ecurr_loss2drainage
       real                                    :: wcurr_loss2runoff
       real                                    :: ecurr_loss2runoff
-      real                                    :: ecurr_latent
-      real                                    :: old_can_enthalpy
+      real                                    :: old_can_theiv
       real                                    :: old_can_shv
       real                                    :: old_can_co2
       real                                    :: old_can_rhos
+      real                                    :: old_can_temp
 
 
       logical                   , save        :: first_time=.true.
@@ -94,7 +94,6 @@ module rk4_driver
                
                !----- Reset all buffers to zero, as a safety measure. ---------------------!
                call zero_rk4_patch(integration_buff%initp)
-               call zero_rk4_patch(integration_buff%dinitp)
                call zero_rk4_patch(integration_buff%yscal)
                call zero_rk4_patch(integration_buff%y)
                call zero_rk4_patch(integration_buff%dydx)
@@ -107,7 +106,6 @@ module rk4_driver
                call zero_rk4_patch(integration_buff%ak6)
                call zero_rk4_patch(integration_buff%ak7)
                call zero_rk4_cohort(integration_buff%initp)
-               call zero_rk4_cohort(integration_buff%dinitp)
                call zero_rk4_cohort(integration_buff%yscal)
                call zero_rk4_cohort(integration_buff%y)
                call zero_rk4_cohort(integration_buff%dydx)
@@ -121,10 +119,11 @@ module rk4_driver
                call zero_rk4_cohort(integration_buff%ak7)
 
                !----- Save the previous thermodynamic state. ------------------------------!
-               old_can_enthalpy = csite%can_enthalpy(ipa)
+               old_can_theiv    = csite%can_theiv(ipa)
                old_can_shv      = csite%can_shv(ipa)
                old_can_co2      = csite%can_co2(ipa)
                old_can_rhos     = csite%can_rhos(ipa)
+               old_can_temp     = csite%can_temp(ipa)
 
                !----- Get velocity for aerodynamic resistance. ----------------------------!
                if (csite%can_theta(ipa) < cpoly%met(isi)%atm_theta) then
@@ -136,7 +135,7 @@ module rk4_driver
                !---------------------------------------------------------------------------!
                !    Copy the meteorological variables to the rk4site structure.            !
                !---------------------------------------------------------------------------!
-               call copy_met_2_rk4site(cpoly%met(isi)%vels,cpoly%met(isi)%atm_enthalpy     &
+               call copy_met_2_rk4site(cpoly%met(isi)%vels,cpoly%met(isi)%atm_theiv        &
                                       ,cpoly%met(isi)%atm_theta,cpoly%met(isi)%atm_tmp     &
                                       ,cpoly%met(isi)%atm_shv,cpoly%met(isi)%atm_co2       &
                                       ,cpoly%met(isi)%geoht,cpoly%met(isi)%exner           &
@@ -179,10 +178,10 @@ module rk4_driver
                !---------------------------------------------------------------------------!
                !    This is the driver for the integration process...                      !
                !---------------------------------------------------------------------------!
-               call integrate_patch(csite,integration_buff%initp,ipa,wcurr_loss2atm        &
-                                   ,ecurr_loss2atm,co2curr_loss2atm,wcurr_loss2drainage    &
-                                   ,ecurr_loss2drainage,wcurr_loss2runoff                  &
-                                   ,ecurr_loss2runoff,ecurr_latent,nsteps)
+               call integrate_patch_rk4(csite,integration_buff%initp,ipa,wcurr_loss2atm    &
+                                       ,ecurr_loss2atm,co2curr_loss2atm                    &
+                                       ,wcurr_loss2drainage,ecurr_loss2drainage            &
+                                       ,wcurr_loss2runoff,ecurr_loss2runoff,nsteps)
 
                !----- Add the number of steps into the step counter. ----------------------!
                cgrid%workload(13,ipy) = cgrid%workload(13,ipy) + real(nsteps)
@@ -201,8 +200,8 @@ module rk4_driver
                                   ,cpoly%met(isi)%qpcpg,ipa,wcurr_loss2atm,ecurr_loss2atm  &
                                   ,co2curr_loss2atm,wcurr_loss2drainage                    &
                                   ,ecurr_loss2drainage,wcurr_loss2runoff,ecurr_loss2runoff &
-                                  ,ecurr_latent,cpoly%area(isi),cgrid%cbudget_nep(ipy)     &
-                                  ,old_can_enthalpy,old_can_shv,old_can_co2,old_can_rhos)
+                                  ,cpoly%area(isi),cgrid%cbudget_nep(ipy),old_can_theiv    &
+                                  ,old_can_shv,old_can_co2,old_can_rhos,old_can_temp)
                
 
             end do patchloop
@@ -225,9 +224,9 @@ module rk4_driver
    !=======================================================================================!
    !     This subroutine will drive the integration process.                               !
    !---------------------------------------------------------------------------------------!
-   subroutine integrate_patch(csite,initp,ipa,wcurr_loss2atm,ecurr_loss2atm                &
-                             ,co2curr_loss2atm,wcurr_loss2drainage,ecurr_loss2drainage     &
-                             ,wcurr_loss2runoff,ecurr_loss2runoff,ecurr_latent,nsteps)
+   subroutine integrate_patch_rk4(csite,initp,ipa,wcurr_loss2atm,ecurr_loss2atm            &
+                                 ,co2curr_loss2atm,wcurr_loss2drainage,ecurr_loss2drainage &
+                                 ,wcurr_loss2runoff,ecurr_loss2runoff,nsteps)
       use ed_state_vars   , only : sitetype             & ! structure
                                  , patchtype            ! ! structure
       use ed_misc_coms    , only : dtlsm                ! ! intent(in)
@@ -261,7 +260,6 @@ module rk4_driver
       real                  , intent(out) :: ecurr_loss2drainage
       real                  , intent(out) :: wcurr_loss2runoff
       real                  , intent(out) :: ecurr_loss2runoff
-      real                  , intent(out) :: ecurr_latent
       integer               , intent(out) :: nsteps
       !----- Local variables --------------------------------------------------------------!
       real(kind=8)                          :: hbeg
@@ -330,10 +328,10 @@ module rk4_driver
       !------------------------------------------------------------------------------------!
       call initp2modelp(tend-tbeg,initp,csite,ipa,wcurr_loss2atm,ecurr_loss2atm            &
                        ,co2curr_loss2atm,wcurr_loss2drainage,ecurr_loss2drainage           &
-                       ,wcurr_loss2runoff,ecurr_loss2runoff,ecurr_latent)
+                       ,wcurr_loss2runoff,ecurr_loss2runoff)
 
       return
-   end subroutine integrate_patch
+   end subroutine integrate_patch_rk4
    !=======================================================================================!
    !=======================================================================================!
 
@@ -349,7 +347,7 @@ module rk4_driver
    !---------------------------------------------------------------------------------------!
    subroutine initp2modelp(hdid,initp,csite,ipa,wbudget_loss2atm,ebudget_loss2atm          &
                           ,co2budget_loss2atm,wbudget_loss2drainage,ebudget_loss2drainage  &
-                          ,wbudget_loss2runoff,ebudget_loss2runoff,ebudget_latent)
+                          ,wbudget_loss2runoff,ebudget_loss2runoff)
       use rk4_coms             , only : rk4patchtype         & ! structure
                                       , rk4site              & ! intent(in)
                                       , rk4min_veg_temp      & ! intent(in)
@@ -382,7 +380,6 @@ module rk4_driver
       real              , intent(out) :: ebudget_loss2drainage
       real              , intent(out) :: wbudget_loss2runoff
       real              , intent(out) :: ebudget_loss2runoff
-      real              , intent(out) :: ebudget_latent
       !----- Local variables --------------------------------------------------------------!
       type(patchtype)   , pointer     :: cpatch
       integer                         :: mould
@@ -408,7 +405,7 @@ module rk4_driver
       ! those in which this is not true.  All floating point variables are converted back  !
       ! to single precision.                                                               !
       !------------------------------------------------------------------------------------!
-      csite%can_enthalpy(ipa) = sngloff(initp%can_enthalpy  ,tiny_offset)
+      csite%can_theiv(ipa)    = sngloff(initp%can_theiv     ,tiny_offset)
       csite%can_theta(ipa)    = sngloff(initp%can_theta     ,tiny_offset)
       csite%can_prss(ipa)     = sngloff(initp%can_prss      ,tiny_offset)
       csite%can_temp(ipa)     = sngloff(initp%can_temp      ,tiny_offset)
@@ -417,16 +414,19 @@ module rk4_driver
       csite%can_rhos(ipa)     = sngloff(initp%can_rhos      ,tiny_offset)
       csite%can_depth(ipa)    = sngloff(initp%can_depth     ,tiny_offset)
 
-      csite%ustar(ipa)    = sngloff(initp%ustar   ,tiny_offset)
-      csite%tstar(ipa)    = sngloff(initp%tstar   ,tiny_offset)
-      csite%qstar(ipa)    = sngloff(initp%qstar   ,tiny_offset)
-      csite%cstar(ipa)    = sngloff(initp%cstar   ,tiny_offset)
+      csite%ustar (ipa)   = sngloff(initp%ustar   ,tiny_offset)
+      csite%tstar (ipa)   = sngloff(initp%tstar   ,tiny_offset)
+      csite%qstar (ipa)   = sngloff(initp%qstar   ,tiny_offset)
+      csite%cstar (ipa)   = sngloff(initp%cstar   ,tiny_offset)
 
-      csite%upwp(ipa)     = sngloff(initp%upwp    ,tiny_offset)
-      csite%wpwp(ipa)     = sngloff(initp%wpwp    ,tiny_offset)
-      csite%tpwp(ipa)     = sngloff(initp%tpwp    ,tiny_offset)
-      csite%qpwp(ipa)     = sngloff(initp%qpwp    ,tiny_offset)
-      csite%cpwp(ipa)     = sngloff(initp%cpwp    ,tiny_offset)
+      csite%zeta  (ipa)   = sngloff(initp%zeta    ,tiny_offset)
+      csite%ribulk(ipa)   = sngloff(initp%ribulk  ,tiny_offset)
+
+      csite%upwp  (ipa)   = sngloff(initp%upwp    ,tiny_offset)
+      csite%wpwp  (ipa)   = sngloff(initp%wpwp    ,tiny_offset)
+      csite%tpwp  (ipa)   = sngloff(initp%tpwp    ,tiny_offset)
+      csite%qpwp  (ipa)   = sngloff(initp%qpwp    ,tiny_offset)
+      csite%cpwp  (ipa)   = sngloff(initp%cpwp    ,tiny_offset)
 
       !------------------------------------------------------------------------------------!
       !    These variables are fast scale fluxes, and they may not be allocated, so just   !
@@ -463,7 +463,6 @@ module rk4_driver
          ebudget_loss2atm      = sngloff(initp%ebudget_loss2atm     ,tiny_offset)
          ebudget_loss2drainage = sngloff(initp%ebudget_loss2drainage,tiny_offset)
          ebudget_loss2runoff   = sngloff(initp%ebudget_loss2runoff  ,tiny_offset)
-         ebudget_latent        = sngloff(initp%ebudget_latent       ,tiny_offset)
          wbudget_loss2atm      = sngloff(initp%wbudget_loss2atm     ,tiny_offset)
          wbudget_loss2drainage = sngloff(initp%wbudget_loss2drainage,tiny_offset)
          wbudget_loss2runoff   = sngloff(initp%wbudget_loss2runoff  ,tiny_offset)
@@ -472,7 +471,6 @@ module rk4_driver
          ebudget_loss2atm               = 0.
          ebudget_loss2drainage          = 0.
          ebudget_loss2runoff            = 0.
-         ebudget_latent                 = 0.
          wbudget_loss2atm               = 0.
          wbudget_loss2drainage          = 0.
          wbudget_loss2runoff            = 0.
@@ -648,7 +646,7 @@ module rk4_driver
       nsoil = csite%ntext_soil(nzg,ipa)
       nlsw1 = max(1, ksn)
       call ed_grndvap(ksn,nsoil,csite%soil_water(nzg,ipa),csite%soil_energy(nzg,ipa)       &
-                     ,csite%sfcwater_energy(nlsw1,ipa),csite%can_rhos(ipa)                 &
+                     ,csite%sfcwater_energy(nlsw1,ipa),csite%can_prss(ipa)                 &
                      ,csite%can_shv(ipa),csite%ground_shv(ipa),csite%surface_ssh(ipa)      &
                      ,surface_temp,surface_fliq)
       return

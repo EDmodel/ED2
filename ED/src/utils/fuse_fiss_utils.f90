@@ -264,24 +264,24 @@ module fuse_fiss_utils
             cpatch%hcapveg(ico)             = cpatch%hcapveg(ico)             * area_scale
             cpatch%veg_energy(ico)          = cpatch%veg_energy(ico)          * area_scale
             cpatch%monthly_dndt(ico)        = cpatch%monthly_dndt(ico)        * area_scale
-            if (idoutput > 0 .or. imoutput > 0 ) then                                       
-               cpatch%dmean_par_v     (ico) = cpatch%dmean_par_v     (ico)    * area_scale 
-               cpatch%dmean_par_v_beam(ico) = cpatch%dmean_par_v_beam(ico)    * area_scale 
-               cpatch%dmean_par_v_diff(ico) = cpatch%dmean_par_v_diff(ico)    * area_scale 
-            end if                                                                         
-            if (imoutput > 0 ) then                                                        
-               cpatch%mmean_par_v     (ico) = cpatch%mmean_par_v     (ico)    * area_scale 
-               cpatch%mmean_par_v_beam(ico) = cpatch%mmean_par_v_beam(ico)    * area_scale 
-               cpatch%mmean_par_v_diff(ico) = cpatch%mmean_par_v_diff(ico)    * area_scale 
-            end if                                                                         
+            if (idoutput > 0 .or. imoutput > 0 ) then
+               cpatch%dmean_par_v     (ico) = cpatch%dmean_par_v     (ico)    * area_scale
+               cpatch%dmean_par_v_beam(ico) = cpatch%dmean_par_v_beam(ico)    * area_scale
+               cpatch%dmean_par_v_diff(ico) = cpatch%dmean_par_v_diff(ico)    * area_scale
+            end if
+            if (imoutput > 0 ) then
+               cpatch%mmean_par_v     (ico) = cpatch%mmean_par_v     (ico)    * area_scale
+               cpatch%mmean_par_v_beam(ico) = cpatch%mmean_par_v_beam(ico)    * area_scale
+               cpatch%mmean_par_v_diff(ico) = cpatch%mmean_par_v_diff(ico)    * area_scale
+            end if
          end do
       end do
 
       if (abs(new_area-1.0) > 1.e-5) then
          write (unit=*,fmt='(a,1x,es12.5)') ' + ELIM_AREA:',elim_area
          write (unit=*,fmt='(a,1x,es12.5)') ' + NEW_AREA: ',new_area
-         call fatal_error('New_area should be 1 but it isn''t!!!','terminate_patches'   &
-                       &,'fuse_fiss_utils.f90')
+         call fatal_error('New_area should be 1 but it isn''t!!!','terminate_patches'      &
+                         ,'fuse_fiss_utils.f90')
       end if 
       
       return
@@ -1904,6 +1904,10 @@ module fuse_fiss_utils
                                      ( csite%can_theta(donp)          * csite%area(donp)   &
                                      + csite%can_theta(recp)          * csite%area(recp) )
 
+      csite%can_theiv(recp)          = newareai *                                          &
+                                     ( csite%can_theiv(donp)          * csite%area(donp)   &
+                                     + csite%can_theiv(recp)          * csite%area(recp) )
+
       csite%can_prss(recp)           = newareai *                                          &
                                      ( csite%can_prss(donp)           * csite%area(donp)   &
                                      + csite%can_prss(recp)           * csite%area(recp) )
@@ -2169,10 +2173,6 @@ module fuse_fiss_utils
                                       ( csite%ebudget_netrad(donp) * csite%area(donp)      &
                                       + csite%ebudget_netrad(recp) * csite%area(recp) )
 
-      csite%ebudget_latent(recp)      = newareai *                                         &
-                                      ( csite%ebudget_latent(donp) * csite%area(donp)      &
-                                      + csite%ebudget_latent(recp) * csite%area(recp) )
-
       csite%ebudget_precipgain(recp)  = newareai *                                         &
                                   ( csite%ebudget_precipgain(donp) * csite%area(donp)      &
                                   + csite%ebudget_precipgain(recp) * csite%area(recp) )
@@ -2322,7 +2322,6 @@ module fuse_fiss_utils
       !    We now update the canopy thermodynamic propeties:                               !
       ! + csite%can_temp(recp)                                                             !
       ! + csite%can_rhos(recp)                                                             !
-      ! + csite%can_enthalpy(recp)                                                         !
       !------------------------------------------------------------------------------------!
       call update_patch_thermo_props(csite,recp,recp)
 

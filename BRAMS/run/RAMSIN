@@ -312,9 +312,11 @@
                                ! 0 - Interpolate from coarser grid   
  
    IUPDNDVI  = 0,             ! 0 - No update of NDVI values during run
-   IUPDSST  = 1,              ! 0 - No update of SST values during run
+   IUPDSST   = 1,             ! 0 - No update of SST values during run
                               ! 1 - Update values during run
- 
+
+   IUSELAI   = 1,             ! 0 - Don't substitute LAI data for the NDVI data
+                              ! 1 - The NDVI data files are actually LAI data
    !---------------------------------------------------------------------------------------!
    !    The following only apply for IxxxxFLG=1. If IVEGTFLG and/or ISOILFLG are set to 3  !
    ! and it is a coupled run, then you must set up VEG_DATABASE and/or SOIL_DATABASE,      !
@@ -531,9 +533,6 @@
    ICUMFDBK = 1,             ! Add effects of parameterized cumulus in radiation?
                              !    0 - No , 1 - Yes
                              ! (Used for i?wrtyp = 3 only)
-                             !
-   RADDATFN = 'CARMA_IN',    ! Radiation parameterization datafile
-                             ! (only if iswrtyp and/or ilwrtyp is 4).
                              !
    RADFRQ   = 600.,          ! Freq. of radiation tendency update (s)
    LONRAD   = 1,             ! Longitudinal variation of shortwave
@@ -788,40 +787,79 @@
    FFILOUT   = '/n/moorcroft_scratch/mlongo/EDBRAMS/bbarca/ecoss/bbarca',       ! Fast-time scal analysis output prefix
    SFILOUT   = '/n/moorcroft_scratch/mlongo/EDBRAMS/bbarca/ecoss/bbarca',       ! Output prefix for the state variables
 
-   IED_INIT_MODE   =   1,           !  0 - signifies a start from near-bare ground.
-                                    !
-                                    !  1 - Allows you to do a history restart from ED1-type
-                                    !      restart files
-                                    !  2 - Allows you to do a standard history restart from
-                                    !      ED2-type restart files.
-                                    !  3 - initialize via ed-2 and site file restarts
-                                    !
-                                    ! -1 - use a mix of ED-1 and ED-2 files. This should
-                                    !      be avoided by all means, unless:
-                                    !      a. You are absolute sure of what you're doing;
-                                    !      b. You have absolutely no idea about what 
-                                    !         you're doing;
+   !---------------------------------------------------------------------------------------!
+   ! IED_INIT_MODE determines how the ecosystem should be initialized.                     !
+   ! 0 - Start from near-bare ground (only a few seedling from every PFT included in this  !
+   !     run).                                                                             !
+   ! 1 - This will use history files from ED-1.0 to initialise the ecosystem state (like   !
+   !     biomass, LAI, plant density, etc.), but starting the thermodynamic state as a     !
+   !     new simulation.                                                                   !
+   ! 2 - Same as 1, but using history files from ED-2.0 without multiple sites.            !
+   ! 3 - Same as 1, but using history files from ED-2.0 with multiple sites.               !
+   ! 4 - Same as 1, but using ED2.1 H5 history/state files that take the form:             !
+   !     'dir/prefix-gxx.h5'                                                               !
+   !     Initialization files MUST end with -gxx.h5 where xx is a two digit integer grid   !
+   !     number.  Each grid has its own initialization file.  As an example, if a user has !
+   !     two files to initialize their grids with:                                         !
+   !     example_file_init-g01.h5 and example_file_init-g02.h5                             !
+   !     NL%SFILIN = 'example_file_init'                                                   !
+   !                                                                                       !
+   ! 5 - This is similar to option 4, except that you may provide several files (including !
+   !     a mix of regional and POI runs, each file ending at a different date).  This will !
+   !     not check date nor grid structure, it will simply read all polygons and match the !
+   !     nearest neighbour to each polygon of your run.  SFILIN must have the directory    !
+   !     common to all history files that are sought to be used, up to the last character  !
+   !     the files have in common.  For example if your files are                          !
+   !     /mypath/P0001-S-2000-01-01-000000-g01.h5,                                         !
+   !     /mypath/P0002-S-1966-01-01-000000-g02.h5,                                         !
+   !     ...                                                                               !
+   !     /mypath/P1000-S-1687-01-01-000000-g01.h5:                                         !
+   !     NL%SFILIN = '/mypath/P'                                                           !
+   !                                                                                       !
+   ! 6 - Initialize with ED-2 style files without multiple sites, exactly like option 2,   !
+   !     except that the PFT types are preserved.                                          !
+   !                                                                                       !
+   ! -1 - use a mix of ED-1 and ED-2 files. This should                                    !
+   !      be avoided by all means, unless you are                                          !
+   !      absolute sure of what you're doing;                                              !
+   !---------------------------------------------------------------------------------------!
+   IED_INIT_MODE   = 5,
 
-   EDRES  = 1.0,                     ! ED2/ED1 restart grid resolution
+   EDRES  = 1.0,                       ! ED2/ED1 restart grid resolution
+                                       !    (Ignored unless ied_init_mode is 3.
 
-                                    ! If this is a history type restart
-                                    ! then the timing information
-                                    ! is accessed via the BRAMS restart info
-   SFILIN   = '/n/Moorcroft_Lab/Lab/data/brams_data/restart/lu.sa.05.restart.01.',
-   !SFILIN   = '/n/Moorcroft_Lab/Lab/data/mlongo/BU-restart/112km/2040/bau_ed2.',
-
-!-------------------------------------------------------------------------!
+   SFILIN   = '/n/Moorcroft_Lab/Lab/data/ed2_data/21restart/bau2008/BAU',
+   !---------------------------------------------------------------------------------------!
 
 
-!-------------------------------------------------------------------------!
-!  Input databases                                                        !
-!-------------------------------------------------------------------------!
 
-   VEG_DATABASE = '/n/Moorcroft_Lab/Lab/data/ed2_data/oge2OLD/OGE2_',
-   SOIL_DATABASE = '/n/Moorcroft_Lab/Lab/data/ed2_data/faoOLD/FAO_',
-   ED_INPUTS_DIR   = '/n/Moorcroft_Lab/Lab/data/ed2_data/ed_inputs/',
-
-                    ! Directory where chd, dgd and glu data are kept.
+   !---------------------------------------------------------------------------------------!
+   !  Input databases                                                                      !
+   !  VEG_DATABASE  - vegetation database, used only to determine the land/water mask.     !
+   !                  Fill with the path and the prefix.                                   !
+   !  SOIL_DATABASE - soil database, used to determine the soil type.  Fill with the path  !
+   !                  and the prefix.                                                      !
+   !  LU_DATABASE   - land-use change disturbance rates database, used only when           !
+   !                  IANTH_DISTURB is set to 1.  Fill with the path and the prefix.       !
+   !  PLANTATION_FILE - plantation fraction file.  In case you don't have such a file or   !
+   !                    you do not want to use it, you must leave this variable empty:     !
+   !                    (PLANTATION_FILE = '',                                             !
+   !  LU_RESCALE_FILE - file containing the sought land use fraction for each type.  This  !
+   !                    will change the area of the patches to make sure that the total    !
+   !                    starts matching this file.  This file will be used only when       !
+   !                    RUNTYPE is set to INITIAL, IED_INIT_MODE is 5, and                 !
+   !                    LU_RESCALE_FILE is a valid file.  If you don't want to use this,   !
+   !                    leave it empty (NL%LU_RESCALE_FILE = ''  ).  In the future this    !
+   !                    option will be extended to all IED_INIT_MODE options except 0.     !
+   !  ED_INPUTS_DIR - input directory for chd and dgd (not sure for what this is used).    !
+   !---------------------------------------------------------------------------------------!
+   VEG_DATABASE      = '/n/Moorcroft_Lab/Lab/data/ed2_data/oge2OLD/OGE2_',
+   SOIL_DATABASE     = '/n/Moorcroft_Lab/Lab/data/ed2_data/faoOLD/FAO_',
+   LU_DATABASE       = '/n/Moorcroft_Lab/Lab/data/ed2_data/land_use/glu/glu-',
+   PLANTATION_FILE   = '',
+   LU_RESCALE_FILE   = '',
+   THSUMS_DATABASE   = '/n/Moorcroft_Lab/Lab/data/ed2_data/ed_inputs/',
+   !---------------------------------------------------------------------------------------!
 
    SOILSTATE_DB='./ined2/STW1996OCT.dat',
    SOILDEPTH_DB='./ined2/soil_depths.dat',
@@ -852,10 +890,9 @@
                               ! is integrated:
                               !  0  --  Euler step
                               !  1  --  Fourth-order Runge Kutta
-                              !  2  --  Same as 1, but it solves canopy
-                              !         enthalpy instead of canopy 
-                              !         temperature.
-   RK4_TOLERANCE  = 0.01,     ! This is the relative tolerance for the Runge-Kutta 
+                              !  2  --  Heun's method (second-order Runge-Kutta)
+
+   RK4_TOLERANCE  = 0.01,     ! This is the relative tolerance for Runge-Kutta or Heun's
                               !   integration.  Larger numbers will make runs go faster, 
                               !   at the expense of being less accurate.  Currently the 
                               !   valid range is between 1.e-7 and 1.e-1, but recommended
@@ -901,10 +938,10 @@
                               ! 1 -- Lloyd and Taylor (1994) model 
                               !      [[1 requires parameters to be set in xml]]
 
-   N_PLANT_LIM     = 1,       ! Determines whether (1) or not (0) plants can
+   N_PLANT_LIM     = 0,       ! Determines whether (1) or not (0) plants can
                               ! be limited by nitrogen
 
-   N_DECOMP_LIM    = 1,       ! Determines whether (1) or not (0) decomposition
+   N_DECOMP_LIM    = 0,       ! Determines whether (1) or not (0) decomposition
                               ! can be limited by nitrogen
 
    INCLUDE_FIRE    = 2,       ! Determines how to apply fire in the model:
@@ -919,11 +956,11 @@
                               !    total soil water at the top 75 cm falls below a 
                               !    threshold. 
 
-   IANTH_DISTURB   = 0,       ! Flag specifying whether (1) or not (0) to include
+   IANTH_DISTURB   = 1,       ! Flag specifying whether (1) or not (0) to include
                               ! anthropogenic disturbances such as agriculture, 
                               ! abandonment, and harvesting.
 
-   ICANTURB        = 0,       ! Canopy turbulence scheme
+   ICANTURB        = 2,       ! Canopy turbulence scheme
                               ! -1. (very deprecated) This is the original ED-2.0 
                               !     scheme, added here for backward compability.  
                               !     THIS SHOULD BE AVOIDED, since it gives strange 
@@ -951,11 +988,11 @@
    INCLUDE_THESE_PFT = 1,2,3,4,5,7,    ! List of PFTs to be included 
    
    ! The STOCK variables set up land use PFTs (used only when ianth_disturb=1)
-   AGRI_STOCK        = 5,              ! PFT assigned for agriculture 
-   PLANTATION_STOCK  = 7,              ! PFT assigned for forest plantation
+   AGRI_STOCK        = 1,              ! PFT assigned for agriculture 
+   PLANTATION_STOCK  = 3,              ! PFT assigned for forest plantation
 
 
-   PFT_1ST_CHECK = 0, ! What should I do when I find a cohort with an unexpected PFT 
+   PFT_1ST_CHECK = 0,   ! What should I do when I find a cohort with an unexpected PFT 
                         !    in the history start?
                         ! 0. Stop the run;
                         ! 1. Add the PFT in the INCLUDE_THESE_PFT list;
@@ -964,9 +1001,9 @@
                         ! This option is ignored in near bare ground runs.
 
 !----- Patch and cohort dimension settings ------------------------------------------------!
-   MAXPATCH  =  10,  ! If number of patches in a given site exceeds 
+   MAXPATCH  =  20,  ! If number of patches in a given site exceeds 
                      ! MAXPATCH, force patch fusion.
-   MAXCOHORT =  80,  ! If number of cohorts in a given patch exceeds
+   MAXCOHORT = 100,  ! If number of cohorts in a given patch exceeds
                      ! MAXCOHORT, force cohort fusion.
                      !
                      ! For both MAXPATCH and MAXCOHORT, 0 means that fusion
@@ -1156,13 +1193,13 @@
 
 ! Input data file prefixes
 
-   IAPR    = '/n/Moorcroft_Lab/Lab/data/brams_data/barcab/ecmwf/1stguess/e1st', ! Archived 1st guess   file name
+   IAPR    = '/n/home11/mhayek/nobackup/metfiles/1stguess/e1st',       ! Archived 1st guess   file name
    IARAWI  = '/n/Moorcroft_Lab/Lab/data/brams_data/barcab/radio/ir',       ! Archived rawindsonde file name
    IASRFCE = '/n/Moorcroft_Lab/Lab/data/brams_data/barcab/weasta/es',  ! Archived surface obs file name
 
 ! File names and dispose flags 
 
-   VARPFX    = '/n/moorcroft_scratch/mlongo/EDBRAMS/bbarca/isean/ecmwf',
+   VARPFX    = '/n/moorcroft_scratch/mlongo/EDBRAMS/barca/isean/ecmwf',
    IOFLGISZ  = 0,           ! Isen-sigz file flag: 0 = no write, 1 = write
    IOFLGVAR  = 1,           ! Var file flag: 0 = no write, 1 = write
 

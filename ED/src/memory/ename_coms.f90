@@ -1,203 +1,378 @@
-Module ename_coms
+!==========================================================================================!
+!==========================================================================================!
+!     Module ename_coms.  This module contains the namelist structure, and it will be the  !
+! first place where the namelist variables will be stored before the variables are loaded. !
+!------------------------------------------------------------------------------------------!
+module ename_coms
 
-  use ed_max_dims, only: max_poi, max_ed_regions, str_len,n_pft,maxgrds, nzgmax,maxpvars
+   use ed_max_dims, only : max_poi        & ! intent(in)
+                         , max_ed_regions & ! intent(in)
+                         , str_len        & ! intent(in)
+                         , n_pft          & ! intent(in)
+                         , maxgrds        & ! intent(in)
+                         , nzgmax         & ! intent(in)
+                         , maxpvars       ! ! intent(in)
+   implicit none
 
-  implicit none
+   !---------------------------------------------------------------------------------------!
+   !      This is the namelist structure.  Please assign the appropriate non-sense initial !
+   ! value at the subroutine below in case you add a new variable.  This is to make the    !
+   ! user aware that he or she needs to define a new variable.                             !
+   !---------------------------------------------------------------------------------------!
+   type ename_vars
+      !----- This is just to give some name to this simulation, otherwise not used. -------!
+      character(len=str_len)                            :: expnme 
 
-  integer :: i
+      !----- Type of simulation (INITIAL or HISTORY). -------------------------------------!
+      character(len=str_len)                            :: runtype
+
+      !------ Node balance method if this is a regional, parallel run. --------------------!
+      integer                                           :: loadmeth
+
+      !------ Simulation starting time. ---------------------------------------------------!
+      integer                                           :: itimea
+      integer                                           :: idatea
+      integer                                           :: imontha
+      integer                                           :: iyeara
+
+      !----- Simulation ending time. ------------------------------------------------------!
+      integer                                           :: itimez
+      integer                                           :: idatez
+      integer                                           :: imonthz
+      integer                                           :: iyearz
+
+      !----- Timestep specification. ------------------------------------------------------!
+      real                                              :: dtlsm
+      real                                              :: radfrq
+
+      !----- Analysis/history files. ------------------------------------------------------!
+      integer                                           :: ifoutput
+      integer                                           :: idoutput
+      integer                                           :: imoutput
+      integer                                           :: iyoutput
+      integer                                           :: itoutput
+      integer                                           :: isoutput
+      integer                                           :: attach_metadata
+      integer                                           :: iclobber
+      integer                                           :: unitfast
+      integer                                           :: unitstate
+      real                                              :: frqfast
+      real                                              :: frqstate
+      real                                              :: outfast
+      real                                              :: outstate
+
+      character(len=str_len)                            :: ffilout
+      integer                                           :: ied_init_mode
+
+      character(len=str_len), dimension(maxgrds)        :: sfilin
+      character(len=str_len)                            :: sfilout
+
+      integer                                           :: itimeh
+      integer                                           :: idateh
+      integer                                           :: imonthh
+      integer                                           :: iyearh
+
+      !----- Polar stereographic projection parameters. -----------------------------------!
+      integer                                           :: ngrids
+      integer               , dimension(maxgrds)        :: nnxp
+      integer               , dimension(maxgrds)        :: nnyp
+      real                                              :: deltay
+      real                                              :: deltax
+      integer               , dimension(maxgrds)        :: nstratx
+      integer               , dimension(maxgrds)        :: nstraty
+      real                                              :: polelat
+      real                                              :: polelon
+      real                  , dimension(maxgrds)        :: centlat
+      real                  , dimension(maxgrds)        :: centlon
+      integer               , dimension(maxgrds)        :: ninest
+      integer               , dimension(maxgrds)        :: njnest
+
+      !----- Soil/surface water variables. ------------------------------------------------!
+      integer                                           :: nzg
+      integer                                           :: nzs
+      integer               , dimension(maxgrds)        :: isoilflg
+      integer                                           :: nslcon
+      real                                              :: slxclay
+      real                                              :: slxsand
+      integer                                           :: isoilstateinit
+      integer                                           :: isoildepthflg
+      integer                                           :: isoilbc
+
+      real                  , dimension(nzgmax)         :: slz
+      real                  , dimension(nzgmax)         :: slmstr
+      real                  , dimension(nzgmax)         :: stgoff
+
+      !----- Input databases. -------------------------------------------------------------!
+      character(len=str_len), dimension(maxgrds)        :: soil_database
+      character(len=str_len), dimension(maxgrds)        :: veg_database
+      character(len=str_len), dimension(maxgrds)        :: lu_database
+      character(len=str_len), dimension(maxgrds)        :: plantation_file
+      character(len=str_len), dimension(maxgrds)        :: lu_rescale_file
+      character(len=str_len)                            :: thsums_database 
+      character(len=str_len)                            :: soilstate_db
+      character(len=str_len)                            :: soildepth_db
+      character(len=str_len)                            :: ed_met_driver_db
+
+      !----- ED polygon specification. ----------------------------------------------------!
+      integer                                           :: n_poi
+      integer                                           :: n_ed_region
+      integer                                           :: grid_type
+      real                                              :: grid_res
+      real                  , dimension(max_poi)        :: poi_lat
+      real                  , dimension(max_poi)        :: poi_lon
+      real                  , dimension(max_ed_regions) :: ed_reg_latmin
+      real                  , dimension(max_ed_regions) :: ed_reg_latmax
+      real                  , dimension(max_ed_regions) :: ed_reg_lonmin
+      real                  , dimension(max_ed_regions) :: ed_reg_lonmax
   
-  ! The following variables will be read by the namelist.  The default is to use non-sense
-  ! numbers so the user will know if he or she is not including all variables in his or 
-  ! her ED2IN
 
-  Type ename_vars
+      !----- Options for model dynamics. --------------------------------------------------!
+      integer                                           :: integration_scheme
+      real                                              :: rk4_tolerance
+      integer                                           :: ibranch_thermo
+      integer                                           :: istoma_scheme
+      integer                                           :: iphen_scheme
+      integer                                           :: repro_scheme
+      integer                                           :: lapse_scheme
+      integer                                           :: crown_mod
+      integer                                           :: n_plant_lim
+      integer                                           :: n_decomp_lim
+      integer                                           :: decomp_scheme
+      integer                                           :: include_fire
+      integer                                           :: ianth_disturb
+      integer                                           :: icanturb
+      integer                                           :: isfclyrm
+      integer               , dimension(n_pft)          :: include_these_pft
+      integer                                           :: agri_stock
+      integer                                           :: plantation_stock
+      integer                                           :: pft_1st_check
+      real                                              :: treefall_disturbance_rate
+      real                                              :: runoff_time
 
-!!    RUNTYPE/NAME
+      !----- Options for printing polygon vectors/arrays to standard output. --------------!
+      integer                                           :: iprintpolys
+      integer                                           :: npvars
+      character(len=str_len), dimension(maxpvars)       :: printvars
+      character(len=str_len), dimension(maxpvars)       :: pfmtstr
+      integer                                           :: ipmin
+      integer                                           :: ipmax
 
-      character(len=str_len) :: expnme   = 'ED2 test'
-      character(len=str_len) :: runtype  = ''
+      !----- Options controlling meteorological forcing. ----------------------------------!
+      integer                                           :: imettype
+      integer                                           :: ishuffle
+      integer                                           :: metcyc1
+      integer                                           :: metcycf
+      real                                              :: initial_co2
 
-!!   LOAD METHOD (default is to equally split poly's on nodes)
+      !------ Options controlling prescribed phenology forcing. ---------------------------!
+      integer                                           :: iphenys1
+      integer                                           :: iphenysf
+      integer                                           :: iphenyf1
+      integer                                           :: iphenyff
 
-      integer :: loadmeth = -1
-      
+      !------ XML, phenology, and prescribed event files. ---------------------------------!
+      character(len=str_len)                            :: iedcnfgf
+      character(len=str_len)                            :: phenpath
+      character(len=str_len)                            :: event_file
 
-!!    START OF SIMULATION
+      !----- Variables that control the sought number of patches and cohorts. -------------!
+      integer                                           :: maxpatch
+      integer                                           :: maxcohort
 
-      integer           :: itimea  = -999
-      integer           :: idatea  = -999
-      integer           :: imontha = -999
-      integer           :: iyeara  = -999
+      !----- Directory for optimizer inputs. ----------------------------------------------!
+      character(len=str_len)                            :: ioptinpt
 
-!!    SIMULATION ENDING TIME
+      !----- Roughness length. ------------------------------------------------------------!
+      real                                              :: zrough
 
-      integer           :: itimez  = -999
-      integer           :: idatez  = -999
-      integer           :: imonthz = -999
-      integer           :: iyearz  = -999
-      
-!!    TIMESTEP SPECIFICATION
+      !----- ED restart grid resolution. --------------------------------------------------!
+      real                                              :: edres
+   end Type ename_vars
 
-      real              :: dtlsm  = -999.9
-      real              :: radfrq = -999.9
+   !----- This is the name of the structure containing the namelist. ----------------------!
+   type(ename_vars), save :: nl
 
-!!    ANALYSIS/HISTORY FILES
-
-      integer :: ifoutput  = -999
-      integer :: idoutput  = -999
-      integer :: imoutput  = -999
-      integer :: iyoutput  = -999
-      integer :: itoutput  = -999
-      integer :: isoutput  = -999
-      
-      integer :: attach_metadata = -999
-
-      integer :: iclobber    = -999
-      integer :: unitfast    = -999
-      integer :: unitstate   = -999
-      real    :: frqfast     = -999.9
-      real    :: frqstate    = -999.9
-      real    :: outfast     = -999.9
-      real    :: outstate    = -999.9
-
-      character(len=str_len) :: ffilout   = '/nowhere/X'
-      integer                :: ied_init_mode = -999
-
-      character(len=str_len) :: sfilin    = '/nowhere/X'
-      character(len=str_len) :: sfilout   = '/nowhere/X'
-
-      integer           :: itimeh  = -999
-      integer           :: idateh  = -999
-      integer           :: imonthh = -999
-      integer           :: iyearh  = -999
+   !=======================================================================================!
+   !=======================================================================================!
 
 
-!!    POLAR STEREOGRAPHIC PROJECTION PARAMETERS
-      integer                     :: ngrids  = -999
-      integer, dimension(maxgrds) :: nnxp    = (/ (-999, i=1,maxgrds) /)
-      integer, dimension(maxgrds) :: nnyp    = (/ (-999, i=1,maxgrds) /)
-      real                        :: deltay  = -999.9
-      real                        :: deltax  = -999.9
-      integer, dimension(maxgrds) :: nstratx = (/ (-999, i=1,maxgrds) /)
-      integer, dimension(maxgrds) :: nstraty = (/ (-999, i=1,maxgrds) /)
-      real                        :: polelat = -999.9
-      real                        :: polelon = -999.9
-      real   , dimension(maxgrds) :: centlat = (/ (-999.9, i=1,maxgrds) /)
-      real   , dimension(maxgrds) :: centlon = (/ (-999.9, i=1,maxgrds) /)
-      integer, dimension(maxgrds) :: ninest  = (/ (-999, i=1,maxgrds) /)
-      integer, dimension(maxgrds) :: njnest  = (/ (-999, i=1,maxgrds) /)
+   contains
 
-!!    SOIL/SURFACE WATER VARIABLES
-      integer :: nzg      = -999
-      integer :: nzs      = -999
-      integer, dimension(maxgrds) :: isoilflg = (/ (-999,i=1,maxgrds) /)
-      integer :: nslcon   = -999
-      real    :: slxclay  = -999.           ! Use default clay fraction (NML)
-      real    :: slxsand  = -999.           ! Use default sand fraction (NML)
-      integer :: isoilstateinit = -999
-      integer :: isoildepthflg  = -999
-      integer :: isoilbc        = -999
 
-      real, dimension(nzgmax) :: slz    = (/ ( 999.9, i=1,nzgmax) /)
-      real, dimension(nzgmax) :: slmstr = (/ (-999.9, i=1,nzgmax) /)
-      real, dimension(nzgmax) :: stgoff = (/ (-999.9, i=1,nzgmax) /)
 
-!!    INPUT DATABASES
+   !=======================================================================================!
+   !=======================================================================================!
+   !      The namelist structure will be read by the namelist, but we first assign         !
+   ! default values, which don't make any sense, so the user will know if he or she is not !
+   ! including all variables in his or her ED2IN.                                          !
+   !---------------------------------------------------------------------------------------!
+   subroutine init_ename_vars(enl)
+      use ed_max_dims, only : undef_real      & ! intent(in)
+                            , undef_real      & ! intent(in)
+                            , undef_integer   & ! intent(in)
+                            , undef_character & ! intent(in)
+                            , undef_path      & ! intent(in)
+                            , undef_logical   ! ! intent(in)
 
-      character(len=str_len) :: soil_database    = '/nowhere/X'
-      character(len=str_len) :: veg_database     = '/nowhere/X'
-      character(len=str_len) :: ed_inputs_dir    = '/nowhere/X'
-      character(len=str_len) :: ed_met_driver_db = '/nowhere/X'
-      character(len=str_len) :: soilstate_db     = '/nowhere/X'
-      character(len=str_len) :: soildepth_db     = '/nowhere/'
+      !----- Arguments. -------------------------------------------------------------------!
+      type(ename_vars), intent(out) :: enl
+      !----- Local variables. -------------------------------------------------------------!
+      integer                       :: i
+      !------------------------------------------------------------------------------------!
 
-!!    ED SITE SPECIFICATION
+      enl%expnme                    = undef_character
+      enl%runtype                   = undef_character
+      enl%loadmeth                  = undef_integer
+      enl%itimea                    = undef_integer
+      enl%idatea                    = undef_integer
+      enl%imontha                   = undef_integer
+      enl%iyeara                    = undef_integer
+      enl%itimez                    = undef_integer
+      enl%idatez                    = undef_integer
+      enl%imonthz                   = undef_integer
+      enl%iyearz                    = undef_integer
 
-      integer           :: n_poi         = -999
-      integer           :: n_ed_region   = -999
-      integer           :: grid_type     = -999
-      real              :: grid_res      = -999.9
-      real, dimension(max_poi) :: poi_lat = (/ (-999.9, i=1,max_poi) /)
-      real, dimension(max_poi) :: poi_lon = (/ (-999.9, i=1,max_poi) /)
-      real, dimension(max_ed_regions) :: ed_reg_latmin = (/ (-999.9,i=1,max_ed_regions) /)
-      real, dimension(max_ed_regions) :: ed_reg_latmax = (/ (-999.9,i=1,max_ed_regions) /)
-      real, dimension(max_ed_regions) :: ed_reg_lonmin = (/ (-999.9,i=1,max_ed_regions) /)
-      real, dimension(max_ed_regions) :: ed_reg_lonmax = (/ (-999.9,i=1,max_ed_regions) /)
+      enl%dtlsm                     = undef_real
+      enl%radfrq                    = undef_real
+
+      enl%ifoutput                  = undef_integer
+      enl%idoutput                  = undef_integer
+      enl%imoutput                  = undef_integer
+      enl%iyoutput                  = undef_integer
+      enl%itoutput                  = undef_integer
+      enl%isoutput                  = undef_integer
+
+      enl%attach_metadata           = undef_integer
+
+      enl%iclobber                  = undef_integer
+      enl%unitfast                  = undef_integer
+      enl%unitstate                 = undef_integer
+      enl%frqfast                   = undef_real
+      enl%frqstate                  = undef_real
+      enl%outfast                   = undef_real
+      enl%outstate                  = undef_real
+
+      enl%ffilout                   = undef_path
+      enl%ied_init_mode             = undef_integer
+
+      enl%sfilin                    = (/ (undef_path, i=1,maxgrds) /)
+      enl%sfilout                   = undef_path
+
+      enl%itimeh                    = undef_integer
+      enl%idateh                    = undef_integer
+      enl%imonthh                   = undef_integer
+      enl%iyearh                    = undef_integer
+
+      enl%ngrids                    = undef_integer
+      enl%nnxp                      = (/ (undef_integer, i=1,maxgrds) /)
+      enl%nnyp                      = (/ (undef_integer, i=1,maxgrds) /)
+      enl%deltay                    = undef_real
+      enl%deltax                    = undef_real
+      enl%nstratx                   = (/ (undef_integer, i=1,maxgrds) /)
+      enl%nstraty                   = (/ (undef_integer, i=1,maxgrds) /)
+      enl%polelat                   = undef_real
+      enl%polelon                   = undef_real
+      enl%centlat                   = (/ (undef_real, i=1,maxgrds) /)
+      enl%centlon                   = (/ (undef_real, i=1,maxgrds) /)
+      enl%ninest                    = (/ (undef_integer, i=1,maxgrds) /)
+      enl%njnest                    = (/ (undef_integer, i=1,maxgrds) /)
+
+      enl%nzg                       = undef_integer
+      enl%nzs                       = undef_integer
+      enl%isoilflg                  = (/ (undef_integer,i=1,maxgrds) /)
+      enl%nslcon                    = undef_integer
+      enl%slxclay                   = undef_real
+      enl%slxsand                   = undef_real
+      enl%isoilstateinit            = undef_integer
+      enl%isoildepthflg             = undef_integer
+      enl%isoilbc                   = undef_integer
+
+      enl%slz                       = (/ (-undef_real, i=1,nzgmax) /)
+      enl%slmstr                    = (/ ( undef_real, i=1,nzgmax) /)
+      enl%stgoff                    = (/ ( undef_real, i=1,nzgmax) /)
+
+
+      enl%soil_database             = (/ (undef_path, i=1,maxgrds) /)
+      enl%veg_database              = (/ (undef_path, i=1,maxgrds) /)
+      enl%lu_database               = (/ (undef_path, i=1,maxgrds) /)
+      enl%plantation_file           = (/ (undef_path, i=1,maxgrds) /)
+      enl%lu_rescale_file           = (/ (undef_path, i=1,maxgrds) /)
+
+      enl%thsums_database           =     undef_path
+      enl%soilstate_db              =     undef_path
+      enl%soildepth_db              =     undef_path
+      enl%ed_met_driver_db          =     undef_path
+
+      enl%n_poi                     = undef_integer
+      enl%n_ed_region               = undef_integer
+      enl%grid_type                 = undef_integer
+      enl%grid_res                  = undef_real
+      enl%poi_lat                   = (/ (undef_real, i=1,max_poi) /)
+      enl%poi_lon                   = (/ (undef_real, i=1,max_poi) /)
+      enl%ed_reg_latmin             = (/ (undef_real,i=1,max_ed_regions) /)
+      enl%ed_reg_latmax             = (/ (undef_real,i=1,max_ed_regions) /)
+      enl%ed_reg_lonmin             = (/ (undef_real,i=1,max_ed_regions) /)
+      enl%ed_reg_lonmax             = (/ (undef_real,i=1,max_ed_regions) /)
  
 
-!!    OPTIONS FOR MODEL DYNAMICS
-      integer                   :: integration_scheme = -999
-      real                      :: rk4_tolerance      = -999.9
-      integer                   :: ibranch_thermo     = -999
-      integer                   :: istoma_scheme      = -999
-      integer                   :: iphen_scheme       = -999
-      integer                   :: repro_scheme       = -999
-      integer                   :: lapse_scheme       = -999
-      integer                   :: crown_mod          = -999
-      integer                   :: n_plant_lim        = -999
-      integer                   :: n_decomp_lim       = -999
-      integer                   :: decomp_scheme      = -999
-      integer                   :: include_fire       = -999
-      integer                   :: ianth_disturb      = -999
-      integer                   :: icanturb           = -999
-      integer                   :: isfclyrm           = -999
-      
-      ! Huge(1) will initialize with the maximum representable number, which 
-      !   will be ignored by ED, which include pfts that are <= n_pft only.
-      integer, dimension(n_pft) :: include_these_pft = (/(huge(1),i=1,n_pft)/) 
-      integer                   :: agri_stock        = -999
-      integer                   :: plantation_stock  = -999
-      integer                   :: pft_1st_check     = -999
-      
-      real                      :: treefall_disturbance_rate = -999.9
-      real                      :: runoff_time               = -999.9
+      enl%integration_scheme        = undef_integer
+      enl%rk4_tolerance             = undef_real
+      enl%ibranch_thermo            = undef_integer
+      enl%istoma_scheme             = undef_integer
+      enl%iphen_scheme              = undef_integer
+      enl%repro_scheme              = undef_integer
+      enl%lapse_scheme              = undef_integer
+      enl%crown_mod                 = undef_integer
+      enl%n_plant_lim               = undef_integer
+      enl%n_decomp_lim              = undef_integer
+      enl%decomp_scheme             = undef_integer
+      enl%include_fire              = undef_integer
+      enl%ianth_disturb             = undef_integer
+      enl%icanturb                  = undef_integer
+      enl%isfclyrm                  = undef_integer
 
-!!    OPTIONS FOR PRINTING POLYGON VECTORS/ARRAYS TO STANDARD OUTPUT
-      integer :: iprintpolys = -999
-      integer :: npvars = -999
-      character(len=str_len),dimension(maxpvars) :: printvars = (/ ('', i=1,maxpvars) /)
-      character(len=str_len),dimension(maxpvars) :: pfmtstr = (/ ('', i=1,maxpvars) /)
-      integer :: ipmin = -999
-      integer :: ipmax = -999
+      enl%include_these_pft         = (/(undef_integer,i=1,n_pft)/) 
+      enl%agri_stock                = undef_integer
+      enl%plantation_stock          = undef_integer
+      enl%pft_1st_check             = undef_integer
 
-!!    OPTIONS CONTROLLING METEOROLOGICAL FORCING
-      integer           :: imettype      = -999
-      integer           :: ishuffle      = -999
-      integer           :: metcyc1       = -999
-      integer           :: metcycf       = -999
-      real              :: initial_co2   = -999.
+      enl%treefall_disturbance_rate = undef_real
+      enl%runoff_time               = undef_real
 
-!!    OPTIONS CONTROLLING PRESCRIBED PHENOLOGY FORCING
-      integer           :: iphenys1       = -999
-      integer           :: iphenysf       = -999
-      integer           :: iphenyf1       = -999
-      integer           :: iphenyff       = -999
+      enl%iprintpolys               = undef_integer
+      enl%npvars                    = undef_integer
+      enl%printvars                 = (/ (undef_character, i=1,maxpvars) /)
+      enl%pfmtstr                   = (/ (undef_character, i=1,maxpvars) /)
+      enl%ipmin                     = undef_integer
+      enl%ipmax                     = undef_integer
 
-!!    XML CONFIGURATION FILE
-      character(len=str_len) :: iedcnfgf='/nowhere'
+      enl%imettype                  = undef_integer
+      enl%ishuffle                  = undef_integer
+      enl%metcyc1                   = undef_integer
+      enl%metcycf                   = undef_integer
+      enl%initial_co2               = undef_real
 
-!!    phenology file
-      character(len=str_len) :: phenpath='/nowhere'
+      enl%iphenys1                  = undef_integer
+      enl%iphenysf                  = undef_integer
+      enl%iphenyf1                  = undef_integer
+      enl%iphenyff                  = undef_integer
 
-!!    XML EVENT FILE
-      character(len=str_len) :: event_file='/nowhere'
+      enl%iedcnfgf                  = undef_path
+      enl%phenpath                  = undef_path
+      enl%event_file                = undef_path
 
-!!    Variables that control the sought number of patches and cohorts
-      integer :: maxpatch  = 999 ! Maximum # of patches
-      integer :: maxcohort = 999 ! Maximum # of cohorts
-      
-  
-!! Directory for optimizer inputs
-      character(len=str_len) :: ioptinpt  ='/nowhere'
+      enl%maxpatch                  = undef_integer
+      enl%maxcohort                 = undef_integer
+       
+   
+      enl%ioptinpt                  = undef_path
+      enl%zrough                    = undef_real
+      enl%edres                     = undef_real 
 
-!! Roughness length
-      real :: zrough=-999.9
-
-!! ED restart grid resolution
-      real :: edres=-999.9
-      
-   End Type ename_vars
-
-   type(ename_vars),save :: nl
-
-end Module ename_coms
+      return
+   end subroutine init_ename_vars
+   !=======================================================================================!
+   !=======================================================================================!
+end module ename_coms
+!==========================================================================================!
+!==========================================================================================!

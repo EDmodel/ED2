@@ -12,6 +12,7 @@ OBJECTS =                           \
             abort_run.o             \
             an_header.o             \
             brams_data.o            \
+            comp_lib.o              \
             charutils.o             \
             dateutils.o             \
             dted.o                  \
@@ -34,7 +35,10 @@ OBJECTS =                           \
             rpost_coms.o            \
             rpost_dims.o            \
             rpost_misc.o            \
+            rsys.o                  \
             rutil.o                 \
+            scratch_coms.o          \
+            soil_coms.o             \
             somevars.o              \
             therm_lib.o             \
             tmpname.o               \

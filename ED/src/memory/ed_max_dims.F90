@@ -178,14 +178,28 @@ module ed_max_dims
    integer, parameter :: huge_cohort  = 20000
    integer, parameter :: max_water    = 100
 
+   !----- Maximum number of land use polygons that can be read by filelist. ---------------!
+   integer, parameter :: huge_lu = 30000
+
    !----- The maximum number of printable variables. --------------------------------------!
    integer, parameter :: maxpvars = 50
 
    !----- Maximum number of files that can be read by filelist. ---------------------------!
-   integer, parameter :: maxfiles = 6666  
+   integer, parameter :: maxfiles = 30000
 
    !----- Maximum number of files (site+patch+cohort). ------------------------------------!
    integer, parameter :: maxlist = 3 * maxfiles
+
+   !---------------------------------------------------------------------------------------!
+   !     Although these aren't maximum dimensions, these are used to initialise the name-  !
+   ! list variables.                                                                       !
+   !---------------------------------------------------------------------------------------!
+   real                  , parameter :: undef_real      = -999.9
+   real(kind=8)          , parameter :: undef_dble      = -9.999d2
+   integer               , parameter :: undef_integer   = -999
+   character(len=str_len), parameter :: undef_character = 'nothing'
+   character(len=str_len), parameter :: undef_path      = '/nowhere'
+   logical               , parameter :: undef_logical   = .false.
 
 end module ed_max_dims
 !==========================================================================================!

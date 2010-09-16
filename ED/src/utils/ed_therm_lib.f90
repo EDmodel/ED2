@@ -215,13 +215,13 @@ module ed_therm_lib
    !      This routine computes surface_ssh, which is is the saturation mixing ratio of    !
    ! the top soil or snow surface and is used for dew formation and snow evaporation.      !
    !---------------------------------------------------------------------------------------!
-   subroutine ed_grndvap(nlev_sfcwater,nts,soil_water,soil_energy,sfcwater_energy,rhos     &
+   subroutine ed_grndvap(nlev_sfcwater,nts,soil_water,soil_energy,sfcwater_energy,can_prss &
                         ,can_shv,ground_shv,surface_ssh,surface_tempk,surface_fracliq)
      
       use soil_coms   , only: ed_nstyp,soil
       use grid_coms   , only: nzg
       use consts_coms , only: pi1,wdns,gorh2o
-      use therm_lib   , only: rhovsil,qtk,qwtk
+      use therm_lib   , only: rslif,qtk,qwtk
      
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -231,7 +231,7 @@ module ed_therm_lib
       real   , intent(in)  :: soil_water      ! soil water content              [m訛h2o/m設
       real   , intent(in)  :: soil_energy     ! Soil internal energy            [     J/m設
       real   , intent(in)  :: sfcwater_energy ! Snow/water internal energy      [     J/kg]
-      real   , intent(in)  :: rhos            ! air density                     [    kg/m設
+      real   , intent(in)  :: can_prss        ! canopy pressure                 [       Pa]
       real   , intent(in)  :: can_shv         ! canopy vapor spec humidity      [kg_vap/kg]
       real   , intent(out) :: ground_shv      ! ground equilibrium spec hum     [kg_vap/kg]
       real   , intent(out) :: surface_ssh     ! surface (saturation) spec hum   [kg_vap/kg]
@@ -247,7 +247,9 @@ module ed_therm_lib
       if (nlev_sfcwater > 0 .and. sfcwater_energy > 0.) then
          !----- If a temporary layer exists, this is the surface. -------------------------!
          call qtk(sfcwater_energy,surface_tempk,surface_fracliq)
-         surface_ssh = rhovsil(surface_tempk) / rhos
+         surface_ssh = rslif(can_prss,surface_tempk)
+         surface_ssh = surface_ssh / (1.0 + surface_ssh)
+         ground_shv  = surface_ssh
       else
          !---------------------------------------------------------------------------------!
          !      Without snowcover, ground_shv is the effective saturation mixing ratio of  !
@@ -256,7 +258,8 @@ module ed_therm_lib
          !---------------------------------------------------------------------------------!
          call qwtk(soil_energy,soil_water*wdns,soil(nts)%slcpd,surface_tempk               &
                   ,surface_fracliq)
-         surface_ssh = rhovsil(surface_tempk) / rhos
+         surface_ssh = rslif(can_prss,surface_tempk)
+         surface_ssh = surface_ssh / (1.0 + surface_ssh)
          slpotvn     = soil(nts)%slpots * (soil(nts)%slmsts / soil_water) ** soil(nts)%slbs
          lnalpha     = gorh2o * slpotvn / surface_tempk
          if (lnalpha > -38.) then
@@ -283,12 +286,13 @@ module ed_therm_lib
    ! the top soil or snow surface and is used for dew formation and snow evaporation.      !
    ! This uses double precision arguments for real numbers.                                !
    !---------------------------------------------------------------------------------------!
-   subroutine ed_grndvap8(nlev_sfcwater,nts,soil_water,soil_energy,sfcwater_energy,rhos    &
-                        ,can_shv,ground_shv,surface_ssh,surface_tempk,surface_fracliq)
+   subroutine ed_grndvap8(nlev_sfcwater,nts,soil_water,soil_energy,sfcwater_energy         &
+                        ,can_prss,can_shv,ground_shv,surface_ssh,surface_tempk             &
+                        ,surface_fracliq)
       use soil_coms   , only: ed_nstyp,soil8
       use grid_coms   , only: nzg
       use consts_coms , only: pi18,wdns8,gorh2o8
-      use therm_lib8  , only: rhovsil8,qtk8,qwtk8
+      use therm_lib8  , only: rslif8,qtk8,qwtk8
      
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -298,7 +302,7 @@ module ed_therm_lib
       real(kind=8), intent(in)  :: soil_water      ! soil water content         [m訛h2o/m設
       real(kind=8), intent(in)  :: soil_energy     ! Soil internal energy       [     J/m設
       real(kind=8), intent(in)  :: sfcwater_energy ! Snow/water internal energy [     J/kg]
-      real(kind=8), intent(in)  :: rhos            ! air density                [    kg/m設
+      real(kind=8), intent(in)  :: can_prss        ! canopy air pressure        [       Pa]
       real(kind=8), intent(in)  :: can_shv         ! canopy vapor spec humidity [kg_vap/kg]
       real(kind=8), intent(out) :: ground_shv      ! Gnd. equilibrium spec hum  [kg_vap/kg]
       real(kind=8), intent(out) :: surface_ssh     ! Sfc. sat. spec hum         [kg_vap/kg]
@@ -314,7 +318,10 @@ module ed_therm_lib
       if (nlev_sfcwater > 0 .and. sfcwater_energy > 0.d0) then
          !----- If a temporary layer exists, this is the surface. -------------------------!
          call qtk8(sfcwater_energy,surface_tempk,surface_fracliq)
-         surface_ssh = rhovsil8(surface_tempk) / rhos
+         surface_ssh = rslif8(can_prss,surface_tempk)
+         surface_ssh = surface_ssh / (1.d0 + surface_ssh)
+         ground_shv  = surface_ssh
+         ground_shv  = surface_ssh
       else
          !---------------------------------------------------------------------------------!
          !      Without snowcover, ground_shv is the effective saturation mixing ratio of  !
@@ -323,7 +330,8 @@ module ed_therm_lib
          !---------------------------------------------------------------------------------!
          call qwtk8(soil_energy,soil_water*wdns8,soil8(nts)%slcpd,surface_tempk            &
                   ,surface_fracliq)
-         surface_ssh = rhovsil8(surface_tempk) / rhos
+         surface_ssh = rslif8(can_prss,surface_tempk)
+         surface_ssh = surface_ssh / (1.d0 + surface_ssh)
          slpotvn     = soil8(nts)%slpots*(soil8(nts)%slmsts / soil_water)                  &
                      ** soil8(nts)%slbs
          lnalpha     = gorh2o8 * slpotvn / surface_tempk
