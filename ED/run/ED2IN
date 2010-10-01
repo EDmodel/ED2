@@ -350,8 +350,11 @@
 
    NL%ISOILBC        = 1  ! Soil boundary condition at lowest soil level
                           ! 0 - Bedrock;
-                          ! 1 - Free drainage.
+                          ! 1 - Free drainage with soil water content in of the boundary
+                          !     layer equal to that of the bottom layer.
                           ! 2 - Half drainage.
+                          ! 3 - Free drainage with soil water content in of the boundary
+                          !     layer equal to the field capacity.
 !------------------------------------------------------------------------------------------!
 
 
