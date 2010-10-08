@@ -373,13 +373,18 @@ module rk4_stepper
                                        , rk4site              & ! intent(in)
                                        , rk4eps               & ! intent(in)
                                        , toocold              & ! intent(in)
+                                       , rk4min_can_theiv     & ! intent(in)
+                                       , rk4max_can_theiv     & ! intent(in)
+                                       , rk4max_can_shv       & ! intent(in)
+                                       , rk4min_can_shv       & ! intent(in)
+                                       , rk4min_can_rhv       & ! intent(in)
+                                       , rk4max_can_rhv       & ! intent(in)
                                        , rk4min_can_temp      & ! intent(in)
                                        , rk4max_can_temp      & ! intent(in)
                                        , rk4min_can_theiv     & ! intent(in)
                                        , rk4max_can_theiv     & ! intent(in)
-                                       , rk4max_can_rhv       & ! intent(in)
-                                       , rk4max_can_shv       & ! intent(in)
-                                       , rk4min_can_shv       & ! intent(in)
+                                       , rk4min_can_rhos      & ! intent(in)
+                                       , rk4max_can_rhos      & ! intent(in)
                                        , rk4min_can_co2       & ! intent(in)
                                        , rk4max_can_co2       & ! intent(in)
                                        , rk4max_veg_temp      & ! intent(in)
@@ -391,16 +396,19 @@ module rk4_stepper
                                        , rk4min_soil_temp     & ! intent(in)
                                        , rk4min_sfcw_mass     & ! intent(in)
                                        , rk4min_virt_water    & ! intent(in)
-                                       , rk4min_sfcwater_mass ! ! intent(in)
+                                       , rk4min_sfcwater_mass & ! intent(in)
+                                       , integ_err            & ! intent(inout)
+                                       , record_err           & ! intent(in)
+                                       , osow                 & ! intent(in)
+                                       , osoe                 & ! intent(in)
+                                       , oswe                 & ! intent(in)
+                                       , oswm                 ! ! intent(in)
       use ed_state_vars         , only : sitetype             & ! structure
                                        , patchtype            ! ! structure
       use grid_coms             , only : nzg                  ! ! intent(in)
       use soil_coms             , only : soil8                ! ! intent(in), lookup table
       use consts_coms           , only : t3ple8               ! ! intent(in)
-      use ed_misc_coms          , only : integ_err            & ! intent(inout)
-                                       , record_err           ! ! intent(inout)
-      use therm_lib8            , only : rehuil8              & ! function
-                                       , qtk8                 ! ! subroutine
+      use therm_lib8            , only : qtk8                 ! ! subroutine
 
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -418,57 +426,43 @@ module rk4_stepper
       real(kind=8)                     :: total_sfcw_mass
       real(kind=8)                     :: mean_sfcw_tempk
       real(kind=8)                     :: mean_sfcw_fracliq
-      integer                          :: ipa,ico
-      logical                          :: cflag1,cflag2,introuble
+      real(kind=8)                     :: virtual_temp
+      real(kind=8)                     :: virtual_fliq
+      integer                          :: ipa
+      integer                          :: ico
+      logical                          :: cflag6
+      logical                          :: cflag7
       !------------------------------------------------------------------------------------!
 
 
-      !----- Assigning initial values for flags. ------------------------------------------!
-      cflag1 = .false.
-      cflag2 = .false.
-
-      !----- First check, if top soil temperature is NaN, end of story... -----------------!
-      if (y%soil_tempk(nzg) /= y%soil_tempk(nzg)) then
-         write (unit=*,fmt='(a)') 'Top soil temperature is NaN!!!'
-         call print_rk4patch(y,csite,ipa)
-      end if
-
-      !----- Being optimistic and assuming things are fine --------------------------------!
+      !----- Be optimistic and start assuming that things are fine. -----------------------!
       reject_step = .false.
       !------------------------------------------------------------------------------------!
 
-      !------------------------------------------------------------------------------------!
-      !  MLO.  The sanity check on liquid fraction against temperature and values of       !
-      !        liquid water fraction were removed, since the only way they would fail is   !
-      !        if the thermodynamic functions were incorrect. The soil properties may be   !
-      !        absurd, but the liquid fraction should be consistent with that.  Same       !
-      !        argument for the temporary surface water.                                   !
-      !------------------------------------------------------------------------------------!
-
 
       !------------------------------------------------------------------------------------!
-      !   Checking whether the canopy temperature is too hot or too cold.                  !
-      !------------------------------------------------------------------------------------! 
-      if (y%can_temp  > rk4max_can_temp  .or. y%can_temp  < rk4min_can_temp .or.           &
-          y%can_theiv > rk4max_can_theiv .or. y%can_theiv < rk4min_can_theiv     ) then
+      !   Check whether the canopy air equivalent potential temperature is off.            !
+      !------------------------------------------------------------------------------------!
+      if (y%can_theiv > rk4max_can_theiv .or. y%can_theiv < rk4min_can_theiv) then
          reject_step = .true.
          if(record_err) integ_err(1,2) = integ_err(1,2) + 1_8
          if (print_problems) then
-            write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            write(unit=*,fmt='(a)')           ' + Canopy air temperature is off-track...'
-            write(unit=*,fmt='(a)')           '-----------------------------------------'
-            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:        ',y%can_shv
-            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_TEMP:       ',y%can_temp
-            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_CO2:        ',y%can_co2
-            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THEIV:      ',y%can_theiv
-            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_DEPTH:      ',y%can_depth
-            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHOS:       ',y%can_rhos
-            write(unit=*,fmt='(a,1x,es12.4)') ' PRESSURE:       ',y%can_prss
-            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_THEIV)/Dt:',dydx%can_theiv
-            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_SHV)/Dt:  ',dydx%can_shv
-            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_CO2)/Dt:  ',dydx%can_co2
-            write(unit=*,fmt='(a,1x,es12.4)') ' H:              ',h
-            write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+            write(unit=*,fmt='(a)')           '==========================================='
+            write(unit=*,fmt='(a)')           ' + Canopy air theta_Eiv is off-track...'
+            write(unit=*,fmt='(a)')           '-------------------------------------------'
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THEIV:         ',y%can_theiv
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:           ',y%can_shv
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHV:           ',y%can_rhv
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_TEMP:          ',y%can_temp
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHOS:          ',y%can_rhos
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_CO2:           ',y%can_co2
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_DEPTH:         ',y%can_depth
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_PRSS:          ',y%can_prss
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_LNTHEIV )/Dt:',dydx%can_lntheiv
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_SHV     )/Dt:',dydx%can_shv
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_CO2     )/Dt:',dydx%can_co2
+            write(unit=*,fmt='(a)')           '==========================================='
+            write(unit=*,fmt='(a)')           ' '
          elseif (.not. record_err) then
             return
          end if
@@ -476,74 +470,324 @@ module rk4_stepper
       !------------------------------------------------------------------------------------!
 
 
-      !------------------------------------------------------------------------------------!
-      !     The check of canopy humidity is done only when temperature makes sense, to     !
-      ! avoid floating point exceptions when temperature is too cold or too hot.           !
-      !------------------------------------------------------------------------------------!
-      if (.not. reject_step) then
-         !----- Finding canopy relative humidity ------------------------------------------!
-         can_rhv = rehuil8(y%can_prss,max(y%can_temp,toocold),y%can_shv)
 
-         !----- Checking whether the canopy air is too dry or too humid. ------------------!
-         if ((can_rhv > rk4max_can_rhv .and. y%can_shv > rk4max_can_shv) .or.              &
-             y%can_shv < rk4min_can_shv )then
-            reject_step = .true.
-            if(record_err) integ_err(2,2) = integ_err(2,2) + 1_8
-            if (print_problems) then
-               write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-               write(unit=*,fmt='(a)')           ' + Canopy air spec. hum. is off-track...'
-               write(unit=*,fmt='(a)')           '----------------------------------------'
-               write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:        ',y%can_shv
-               write(unit=*,fmt='(a,1x,es12.4)') ' CAN_TEMP:       ',y%can_temp
-               write(unit=*,fmt='(a,1x,es12.4)') ' CAN_CO2:        ',y%can_co2
-               write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THEIV:      ',y%can_theiv
-               write(unit=*,fmt='(a,1x,es12.4)') ' CAN_DEPTH:      ',y%can_depth
-               write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHOS:       ',y%can_rhos
-               write(unit=*,fmt='(a,1x,es12.4)') ' PRESSURE:       ',y%can_prss
-               write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_THEIV)/Dt:',dydx%can_theiv
-               write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_H2O)/Dt:  ',dydx%can_shv
-               write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_CO2)/Dt:  ',dydx%can_co2
-               write(unit=*,fmt='(a,1x,es12.4)') ' H:              ',h
-               write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            elseif (.not. record_err) then
-               return
-            end if
+      !------------------------------------------------------------------------------------!
+      !   Check whether the canopy air equivalent potential temperature is off.            !
+      !------------------------------------------------------------------------------------!
+      if (y%can_shv > rk4max_can_shv .or. y%can_shv < rk4min_can_shv) then
+         reject_step = .true.
+         if(record_err) integ_err(2,2) = integ_err(2,2) + 1_8
+         if (print_problems) then
+            write(unit=*,fmt='(a)')           '==========================================='
+            write(unit=*,fmt='(a)')           ' + Canopy air sp. humidity is off-track...'
+            write(unit=*,fmt='(a)')           '-------------------------------------------'
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THEIV:         ',y%can_theiv
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:           ',y%can_shv
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHV:           ',y%can_rhv
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_TEMP:          ',y%can_temp
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHOS:          ',y%can_rhos
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_CO2:           ',y%can_co2
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_DEPTH:         ',y%can_depth
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_PRSS:          ',y%can_prss
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_LNTHEIV )/Dt:',dydx%can_lntheiv
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_SHV     )/Dt:',dydx%can_shv
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_CO2     )/Dt:',dydx%can_co2
+            write(unit=*,fmt='(a)')           '==========================================='
+            write(unit=*,fmt='(a)')           ' '
+         elseif (.not. record_err) then
+            return
          end if
       end if
       !------------------------------------------------------------------------------------!
 
 
+
       !------------------------------------------------------------------------------------!
-      !   Checking whether the canopy CO2 is reasonable.                                   !
-      !------------------------------------------------------------------------------------! 
-      ! if (y%can_co2 > rk4max_can_co2 .or. y%can_co2 < rk4min_can_co2) then
-      !    reject_step = .true.
-      !    if(record_err) integ_err(3,2) = integ_err(3,2) + 1_8
-      !    if (print_problems) then
-      !       write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-      !       write(unit=*,fmt='(a)')           ' + Canopy air CO2  is off-track...       '
-      !       write(unit=*,fmt='(a)')           '-----------------------------------------'
-      !       write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:        ',y%can_shv
-      !       write(unit=*,fmt='(a,1x,es12.4)') ' CAN_TEMP:       ',y%can_temp
-      !       write(unit=*,fmt='(a,1x,es12.4)') ' CAN_CO2:        ',y%can_co2
-      !       write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THEIV:      ',y%can_theiv
-      !       write(unit=*,fmt='(a,1x,es12.4)') ' CAN_DEPTH:      ',y%can_depth
-      !       write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHOS:       ',y%can_rhos
-      !       write(unit=*,fmt='(a,1x,es12.4)') ' PRESSURE:       ',y%can_prss
-      !       write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_THEIV)/Dt:',dydx%can_theiv
-      !       write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_SHV)/Dt:  ',dydx%can_shv
-      !       write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_CO2)/Dt:  ',dydx%can_co2
-      !       write(unit=*,fmt='(a,1x,es12.4)') ' H:              ',h
-      !       write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-      !    elseif (.not. record_err) then
-      !       return
-      !    end if
-      ! end if
+      !   Check whether the canopy air equivalent potential temperature is off.            !
+      !------------------------------------------------------------------------------------!
+      if (y%can_temp > rk4max_can_temp .or. y%can_temp < rk4min_can_temp) then
+         reject_step = .true.
+         if(record_err) integ_err(3,2) = integ_err(3,2) + 1_8
+         if (print_problems) then
+            write(unit=*,fmt='(a)')           '==========================================='
+            write(unit=*,fmt='(a)')           ' + Canopy air temperature is off-track...'
+            write(unit=*,fmt='(a)')           '-------------------------------------------'
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THEIV:         ',y%can_theiv
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:           ',y%can_shv
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHV:           ',y%can_rhv
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_TEMP:          ',y%can_temp
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHOS:          ',y%can_rhos
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_CO2:           ',y%can_co2
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_DEPTH:         ',y%can_depth
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_PRSS:          ',y%can_prss
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_LNTHEIV )/Dt:',dydx%can_lntheiv
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_SHV     )/Dt:',dydx%can_shv
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_CO2     )/Dt:',dydx%can_co2
+            write(unit=*,fmt='(a)')           '==========================================='
+            write(unit=*,fmt='(a)')           ' '
+         elseif (.not. record_err) then
+            return
+         end if
+      end if
       !------------------------------------------------------------------------------------!
 
 
+
       !------------------------------------------------------------------------------------!
-      !    Checking whether the temporary snow/water layer(s) has(ve) reasonable values.   !
+      !   Check whether the canopy air equivalent potential temperature is off.            !
+      !------------------------------------------------------------------------------------!
+      if (y%can_rhos > rk4max_can_rhos .or. y%can_rhos < rk4min_can_rhos) then
+         reject_step = .true.
+         if(record_err) integ_err(4,2) = integ_err(4,2) + 1_8
+         if (print_problems) then
+            write(unit=*,fmt='(a)')           '==========================================='
+            write(unit=*,fmt='(a)')           ' + Canopy air density is off-track...'
+            write(unit=*,fmt='(a)')           '-------------------------------------------'
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THEIV:         ',y%can_theiv
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:           ',y%can_shv
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHV:           ',y%can_rhv
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_TEMP:          ',y%can_temp
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHOS:          ',y%can_rhos
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_CO2:           ',y%can_co2
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_DEPTH:         ',y%can_depth
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_PRSS:          ',y%can_prss
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_LNTHEIV )/Dt:',dydx%can_lntheiv
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_SHV     )/Dt:',dydx%can_shv
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_CO2     )/Dt:',dydx%can_co2
+            write(unit=*,fmt='(a)')           '==========================================='
+            write(unit=*,fmt='(a)')           ' '
+         elseif (.not. record_err) then
+            return
+         end if
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !   Check whether the canopy air equivalent potential temperature is off.            !
+      !------------------------------------------------------------------------------------!
+      if (y%can_co2 > rk4max_can_co2 .or. y%can_co2 < rk4min_can_co2) then
+         reject_step = .true.
+         if(record_err) integ_err(5,2) = integ_err(4,2) + 1_8
+         if (print_problems) then
+            write(unit=*,fmt='(a)')           '==========================================='
+            write(unit=*,fmt='(a)')           ' + Canopy air CO2 is off-track...'
+            write(unit=*,fmt='(a)')           '-------------------------------------------'
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THEIV:         ',y%can_theiv
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:           ',y%can_shv
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHV:           ',y%can_rhv
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_TEMP:          ',y%can_temp
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHOS:          ',y%can_rhos
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_CO2:           ',y%can_co2
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_DEPTH:         ',y%can_depth
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_PRSS:          ',y%can_prss
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_LNTHEIV )/Dt:',dydx%can_lntheiv
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_SHV     )/Dt:',dydx%can_shv
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_CO2     )/Dt:',dydx%can_co2
+            write(unit=*,fmt='(a)')           '==========================================='
+            write(unit=*,fmt='(a)')           ' '
+         elseif (.not. record_err) then
+            return
+         end if
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Check leaf temperature, but only for those cohorts with sufficient LAI.        !
+      !------------------------------------------------------------------------------------!
+      cpatch => csite%patch(ipa)
+      cflag6 = .false.
+      cflag7 = .false.
+      cohortloop: do ico = 1,cpatch%ncohorts
+         if (.not. y%solvable(ico)) cycle cohortloop
+
+         !----- Check leaf surface water. -------------------------------------------------!
+         if (y%veg_water(ico) < rk4min_veg_lwater * y%tai(ico)) then
+            reject_step = .true.
+            if(record_err) cflag6 = .true.
+            if (print_problems) then
+               write(unit=*,fmt='(a)')           '========================================'
+               write(unit=*,fmt='(a)')           ' + Leaf surface water is off-track...'
+               write(unit=*,fmt='(a)')           '========================================'
+               write(unit=*,fmt='(a,1x,i6)')     ' PFT:          ',cpatch%pft(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' HEIGHT:       ',cpatch%hite(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LAI:          ',y%lai(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WAI:          ',y%wai(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WPA:          ',y%wpa(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' TAI:          ',y%tai(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' HCAPVEG:      ',y%hcapveg(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' VEG_TEMP:     ',y%veg_temp(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' VEG_FRACLIQ:  ',y%veg_fliq(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' VEG_ENERGY:   ',y%veg_energy(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' VEG_WATER:    ',y%veg_water(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' D(VEG_EN)/Dt: ',dydx%veg_energy(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' D(VEG_WAT)/Dt:',dydx%veg_water(ico)
+               write(unit=*,fmt='(a)')           '========================================'
+            elseif (.not. record_err) then
+               return
+            end if
+         end if
+
+         !----- Check leaf temperature. ---------------------------------------------------!
+         if (y%veg_temp(ico) > rk4max_veg_temp .or. y%veg_temp(ico) < rk4min_veg_temp) then
+            reject_step = .true.
+            if(record_err) cflag7 = .true.
+            if (print_problems) then
+               write(unit=*,fmt='(a)')           '========================================'
+               write(unit=*,fmt='(a)')           ' + Leaf temperature is off-track...'
+               write(unit=*,fmt='(a)')           '========================================'
+               write(unit=*,fmt='(a,1x,i6)')     ' PFT:          ',cpatch%pft(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' HEIGHT:       ',cpatch%hite(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LAI:          ',y%lai(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WAI:          ',y%wai(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' WPA:          ',y%wpa(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' TAI:          ',y%tai(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' HCAPVEG:      ',y%hcapveg(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' VEG_TEMP:     ',y%veg_temp(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' VEG_FRACLIQ:  ',y%veg_fliq(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' VEG_ENERGY:   ',y%veg_energy(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' VEG_WATER:    ',y%veg_water(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' D(VEG_EN)/Dt: ',dydx%veg_energy(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' D(VEG_WAT)/Dt:',dydx%veg_water(ico)
+               write(unit=*,fmt='(a)')           '========================================'
+            elseif (.not. record_err) then
+               return
+            end if
+         end if
+      end do cohortloop
+      if(record_err .and. cflag6) integ_err(6,2) = integ_err(6,2) + 1_8
+      if(record_err .and. cflag7) integ_err(7,2) = integ_err(7,2) + 1_8
+      !------------------------------------------------------------------------------------!
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Check the water mass of the virtual pool.  The energy is checked only when we  !
+      ! compare                                          
+      !------------------------------------------------------------------------------------!
+      if (y%virtual_water < rk4min_virt_water) then
+         reject_step = .true.
+         if(record_err) integ_err(9,2) = integ_err(9,2) + 1_8
+         if (print_problems) then
+            write(unit=*,fmt='(a)')           '==========================================='
+            write(unit=*,fmt='(a)')           ' + Virtual layer mass is off-track...'
+            write(unit=*,fmt='(a)')           '-------------------------------------------'
+            write(unit=*,fmt='(a,1x,i6)')     ' Level:           ',k
+            write(unit=*,fmt='(a,1x,es12.4)') ' VIRT_WATER:      ',y%virtual_water
+            write(unit=*,fmt='(a,1x,es12.4)') ' VIRT_HEAT :      ',y%virtual_heat
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(VIRT_WATER)/Dt:',dydx%virtual_water
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(VIRT_HEAT)/Dt :',dydx%virtual_heat
+            write(unit=*,fmt='(a)')           '==========================================='
+         elseif (.not. record_err) then
+            return
+         end if
+         return
+      elseif(y%virtual_water >= rk4min_sfcwater_mass) then
+         call qtk8(y%virtual_heat/y%virtual_water,virtual_temp,virtual_fliq)
+         if (virtual_temp < rk4min_sfcw_temp .or. virtual_temp > rk4max_sfcw_temp) then
+            reject_step = .true.
+            if(record_err) integ_err(8,2) = integ_err(8,2) + 1_8
+            if (print_problems) then
+               write(unit=*,fmt='(a)')           '========================================'
+               write(unit=*,fmt='(a)')           ' + Virtual layer temp. is off-track...'
+               write(unit=*,fmt='(a)')           '----------------------------------------'
+               write(unit=*,fmt='(a,1x,i6)')     ' Level:           ',k
+               write(unit=*,fmt='(a,1x,es12.4)') ' VIRT_WATER:      ',y%virtual_water
+               write(unit=*,fmt='(a,1x,es12.4)') ' VIRT_HEAT :      ',y%virtual_heat
+               write(unit=*,fmt='(a,1x,es12.4)') ' VIRT_TEMP :      ',virtual_temp
+               write(unit=*,fmt='(a,1x,es12.4)') ' VIRT_FLIQ :      ',virtual_fliq
+               write(unit=*,fmt='(a,1x,es12.4)') ' D(VIRT_WATER)/Dt:',dydx%virtual_water
+               write(unit=*,fmt='(a,1x,es12.4)') ' D(VIRT_HEAT)/Dt :',dydx%virtual_heat
+               write(unit=*,fmt='(a)')           '========================================'
+            elseif (.not. record_err) then
+               return
+            end if
+            return
+         end if
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !    Checking whether the soil layers have decent moisture and temperatures.         !
+      !------------------------------------------------------------------------------------!
+      do k=rk4site%lsl,nzg
+         !----- Soil moisture -------------------------------------------------------------!
+         if (y%soil_water(k)< (1.d0-rk4eps)*soil8(csite%ntext_soil(k,ipa))%soilcp .or.     &
+             y%soil_water(k)> (1.d0+rk4eps)*soil8(csite%ntext_soil(k,ipa))%slmsts     )    &
+         then
+            reject_step = .true.
+            if(record_err) integ_err(osow+k,2) = integ_err(osow+k,2) + 1_8
+            if (print_problems) then
+               write(unit=*,fmt='(a)')           '========================================'
+               write(unit=*,fmt='(a)')           ' + Soil layer water is off-track...'
+               write(unit=*,fmt='(a)')           '----------------------------------------'
+               write(unit=*,fmt='(a,1x,i6)')     ' Level:       ',k
+               write(unit=*,fmt='(a,1x,es12.4)') ' H:           ',h
+               write(unit=*,fmt='(a,1x,es12.4)') ' SOIL_TEMPK:  ',y%soil_tempk(k)
+               write(unit=*,fmt='(a,1x,es12.4)') ' SOIL_FLIQ :  ',y%soil_fracliq(k)
+               write(unit=*,fmt='(a,1x,es12.4)') ' SOIL_ENERGY: ',y%soil_energy(k)
+               write(unit=*,fmt='(a,1x,es12.4)') ' SOIL_WATER:  ',y%soil_water(k)
+               write(unit=*,fmt='(a,1x,es12.4)') ' D(SOIL_E)/Dt:',dydx%soil_energy(k)
+               write(unit=*,fmt='(a,1x,es12.4)') ' D(SOIL_M)/Dt:',dydx%soil_water(k)
+               if (k == nzg .and. y%nlev_sfcwater > 0) then
+                  write(unit=*,fmt='(a,1x,es12.4)') ' SFCW_TEMP:   ',y%sfcwater_tempk(1)
+                  write(unit=*,fmt='(a,1x,es12.4)') ' SFCW_ENERGY: ',y%sfcwater_energy(1)
+                  write(unit=*,fmt='(a,1x,es12.4)') ' SFCW_MASS:   ',y%sfcwater_mass(1)
+                  write(unit=*,fmt='(a,1x,es12.4)') ' SFCW_DEPTH:  ',y%sfcwater_depth(1)
+                  write(unit=*,fmt='(a,1x,es12.4)') ' D(SFCW_E)/Dt:',dydx%sfcwater_energy(1)
+                  write(unit=*,fmt='(a,1x,es12.4)') ' D(SFCW_M)/Dt:',dydx%sfcwater_mass(1)
+               end if
+               write(unit=*,fmt='(a)')           '========================================'
+            elseif (.not. record_err) then
+               return
+            end if
+         end if
+
+         !----- Soil temperature ----------------------------------------------------------!
+         if (y%soil_tempk(k) > rk4max_soil_temp .or. y%soil_tempk(k) < rk4min_soil_temp )  &
+         then
+            reject_step = .true.
+            if(record_err) integ_err(osoe+k,2) = integ_err(osoe+k,2) + 1_8
+            if (print_problems) then
+               write(unit=*,fmt='(a)')           '========================================'
+               write(unit=*,fmt='(a)')           ' + Soil layer temp is off-track...'
+               write(unit=*,fmt='(a)')           '----------------------------------------'
+               write(unit=*,fmt='(a,1x,i6)')     ' Level:       ',k
+               write(unit=*,fmt='(a,1x,es12.4)') ' H:           ',h
+               write(unit=*,fmt='(a,1x,es12.4)') ' SOIL_TEMPK:  ',y%soil_tempk(k)
+               write(unit=*,fmt='(a,1x,es12.4)') ' SOIL_FLIQ :  ',y%soil_fracliq(k)
+               write(unit=*,fmt='(a,1x,es12.4)') ' SOIL_ENERGY: ',y%soil_energy(k)
+               write(unit=*,fmt='(a,1x,es12.4)') ' SOIL_WATER:  ',y%soil_water(k)
+               write(unit=*,fmt='(a,1x,es12.4)') ' D(SOIL_E)/Dt:',dydx%soil_energy(k)
+               write(unit=*,fmt='(a,1x,es12.4)') ' D(SOIL_M)/Dt:',dydx%soil_water(k)
+               if (k == nzg .and. y%nlev_sfcwater > 0) then
+                  write(unit=*,fmt='(a,1x,es12.4)') ' SFCW_TEMP:   ',y%sfcwater_tempk(1)
+                  write(unit=*,fmt='(a,1x,es12.4)') ' SFCW_ENERGY: ',y%sfcwater_energy(1)
+                  write(unit=*,fmt='(a,1x,es12.4)') ' SFCW_MASS:   ',y%sfcwater_mass(1)
+                  write(unit=*,fmt='(a,1x,es12.4)') ' SFCW_DEPTH:  ',y%sfcwater_depth(1)
+                  write(unit=*,fmt='(a,1x,es12.4)') ' D(SFCW_E)/Dt:',dydx%sfcwater_energy(1)
+                  write(unit=*,fmt='(a,1x,es12.4)') ' D(SFCW_M)/Dt:',dydx%sfcwater_mass(1)
+               end if
+               write(unit=*,fmt='(a)')           '========================================'
+            elseif (.not. record_err) then
+               return
+            end if
+         end if
+      end do
+      !------------------------------------------------------------------------------------!
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !    Check whether the temporary snow/water layer(s) has(ve) reasonable values.      !
       !------------------------------------------------------------------------------------!
       ksn = y%nlev_sfcwater
       if (ksn >= 1) then
@@ -560,7 +804,7 @@ module rk4_stepper
          if (mean_sfcw_tempk < rk4min_sfcw_temp .or. mean_sfcw_tempk > rk4max_sfcw_temp)   &
          then
             reject_step = .true.
-            if(record_err) integ_err(44,2) = integ_err(44,2) + 1_8
+            if(record_err) integ_err(oswe+ksn,2) = integ_err(oswe+ksn,2) + 1_8
             if (print_problems) then
                write(unit=*,fmt='(a)')              '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
                write(unit=*,fmt='(a)')              ' + Snow/pond temperature is off...'
@@ -590,7 +834,7 @@ module rk4_stepper
          !----- Mass ----------------------------------------------------------------------!
          if (total_sfcw_mass < rk4min_sfcw_mass) then
             reject_step = .true.
-            if(record_err) integ_err(32+ksn,2) = integ_err(32+ksn,2) + 1_8
+            if(record_err) integ_err(oswm+ksn,2) = integ_err(oswm+ksn,2) + 1_8
             if (print_problems) then
                write(unit=*,fmt='(a)')              '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
                write(unit=*,fmt='(a)')              ' + Snow/pond layer has weird mass...'
@@ -621,169 +865,21 @@ module rk4_stepper
 
 
 
-      !------------------------------------------------------------------------------------!
-      !    Checking whether the soil layers have decent moisture and temperatures.         !
-      !------------------------------------------------------------------------------------!
-      cflag1 = .false.
-      do k=rk4site%lsl,nzg
-         !----- Soil moisture -------------------------------------------------------------!
-         if (y%soil_water(k)< (1.d0-rk4eps)*soil8(csite%ntext_soil(k,ipa))%soilcp .or.     &
-             y%soil_water(k)> (1.d0+rk4eps)*soil8(csite%ntext_soil(k,ipa))%slmsts     )    &
-         then
-            reject_step = .true.
-            if(record_err) integ_err(3+k,2) = integ_err(3+k,2) + 1_8
-            if (print_problems) then
-               write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-               write(unit=*,fmt='(a)')           ' + Soil layer water is off-track...'
-               write(unit=*,fmt='(a)')           '----------------------------------------'
-               write(unit=*,fmt='(a,1x,i6)')     ' Level:       ',k
-               write(unit=*,fmt='(a,1x,es12.4)') ' H:           ',h
-               write(unit=*,fmt='(a,1x,es12.4)') ' SOIL_TEMPK:  ',y%soil_tempk(k)
-               write(unit=*,fmt='(a,1x,es12.4)') ' SOIL_FLIQ :  ',y%soil_fracliq(k)
-               write(unit=*,fmt='(a,1x,es12.4)') ' SOIL_ENERGY: ',y%soil_energy(k)
-               write(unit=*,fmt='(a,1x,es12.4)') ' SOIL_WATER:  ',y%soil_water(k)
-               write(unit=*,fmt='(a,1x,es12.4)') ' D(SOIL_E)/Dt:',dydx%soil_energy(k)
-               write(unit=*,fmt='(a,1x,es12.4)') ' D(SOIL_M)/Dt:',dydx%soil_water(k)
-               if (k == nzg .and. y%nlev_sfcwater > 0) then
-                  write(unit=*,fmt='(a,1x,es12.4)') ' SFCW_TEMP:   ',y%sfcwater_tempk(1)
-                  write(unit=*,fmt='(a,1x,es12.4)') ' SFCW_ENERGY: ',y%sfcwater_energy(1)
-                  write(unit=*,fmt='(a,1x,es12.4)') ' SFCW_MASS:   ',y%sfcwater_mass(1)
-                  write(unit=*,fmt='(a,1x,es12.4)') ' SFCW_DEPTH:  ',y%sfcwater_depth(1)
-                  write(unit=*,fmt='(a,1x,es12.4)') ' D(SFCW_E)/Dt:',dydx%sfcwater_energy(1)
-                  write(unit=*,fmt='(a,1x,es12.4)') ' D(SFCW_M)/Dt:',dydx%sfcwater_mass(1)
-               end if
-               write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            elseif (.not. record_err) then
-               return
-            end if
-         end if
-
-         !----- Soil temperature ----------------------------------------------------------!
-         if (y%soil_tempk(k) > rk4max_soil_temp .or. y%soil_tempk(k) < rk4min_soil_temp )  &
-         then
-            reject_step = .true.
-            if(record_err) cflag1 = .true.
-            if (print_problems) then
-               write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-               write(unit=*,fmt='(a)')           ' + Soil layer temp is off-track...'
-               write(unit=*,fmt='(a)')           '----------------------------------------'
-               write(unit=*,fmt='(a,1x,i6)')     ' Level:       ',k
-               write(unit=*,fmt='(a,1x,es12.4)') ' H:           ',h
-               write(unit=*,fmt='(a,1x,es12.4)') ' SOIL_TEMPK:  ',y%soil_tempk(k)
-               write(unit=*,fmt='(a,1x,es12.4)') ' SOIL_FLIQ :  ',y%soil_fracliq(k)
-               write(unit=*,fmt='(a,1x,es12.4)') ' SOIL_ENERGY: ',y%soil_energy(k)
-               write(unit=*,fmt='(a,1x,es12.4)') ' SOIL_WATER:  ',y%soil_water(k)
-               write(unit=*,fmt='(a,1x,es12.4)') ' D(SOIL_E)/Dt:',dydx%soil_energy(k)
-               write(unit=*,fmt='(a,1x,es12.4)') ' D(SOIL_M)/Dt:',dydx%soil_water(k)
-               if (k == nzg .and. y%nlev_sfcwater > 0) then
-                  write(unit=*,fmt='(a,1x,es12.4)') ' SFCW_TEMP:   ',y%sfcwater_tempk(1)
-                  write(unit=*,fmt='(a,1x,es12.4)') ' SFCW_ENERGY: ',y%sfcwater_energy(1)
-                  write(unit=*,fmt='(a,1x,es12.4)') ' SFCW_MASS:   ',y%sfcwater_mass(1)
-                  write(unit=*,fmt='(a,1x,es12.4)') ' SFCW_DEPTH:  ',y%sfcwater_depth(1)
-                  write(unit=*,fmt='(a,1x,es12.4)') ' D(SFCW_E)/Dt:',dydx%sfcwater_energy(1)
-                  write(unit=*,fmt='(a,1x,es12.4)') ' D(SFCW_M)/Dt:',dydx%sfcwater_mass(1)
-               end if
-               write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            elseif (.not. record_err) then
-               return
-            end if
-         end if
-      end do
-      if(record_err .and. cflag1) integ_err(45,2) = integ_err(45,2) + 1_8
-      !------------------------------------------------------------------------------------!
-
-
-
-      !------------------------------------------------------------------------------------!
-      !     Negative rk4 increment factors can make this value significantly negative, but !
-      ! it should not slow down the integration.
-      !------------------------------------------------------------------------------------!
-      if (y%virtual_water < rk4min_virt_water) then
-         reject_step = .true.
-         if(record_err) integ_err(39,2) = integ_err(39,2) + 1_8
-         if (print_problems) then
-            write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            write(unit=*,fmt='(a)')           ' + Virtual layer mass is off-track...'
-            write(unit=*,fmt='(a)')           '----------------------------------------'
-            write(unit=*,fmt='(a,1x,i6)')     ' Level:           ',k
-            write(unit=*,fmt='(a,1x,es12.4)') ' VIRT_WATER:      ',y%virtual_water
-            write(unit=*,fmt='(a,1x,es12.4)') ' VIRT_HEAT :      ',y%virtual_heat
-            write(unit=*,fmt='(a,1x,es12.4)') ' D(VIRT_WATER)/Dt:',dydx%virtual_water
-            write(unit=*,fmt='(a,1x,es12.4)') ' D(VIRT_HEAT)/Dt :',dydx%virtual_heat
-            write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-         elseif (.not. record_err) then
-            return
-         end if
-         return
+      if (reject_step .and. print_problems) then
+         write(unit=*,fmt='(a,1x,es12.4)') ' H:                 ',h
+         write(unit=*,fmt='(a,1x,es12.4)') ' MIN_THEIV:         ',rk4min_can_theiv
+         write(unit=*,fmt='(a,1x,es12.4)') ' MAX_THEIV:         ',rk4max_can_theiv
+         write(unit=*,fmt='(a,1x,es12.4)') ' MIN_SHV:           ',rk4min_can_shv
+         write(unit=*,fmt='(a,1x,es12.4)') ' MAX_SHV:           ',rk4max_can_shv
+         write(unit=*,fmt='(a,1x,es12.4)') ' MIN_RHV:           ',rk4min_can_rhv
+         write(unit=*,fmt='(a,1x,es12.4)') ' MAX_RHV:           ',rk4max_can_rhv
+         write(unit=*,fmt='(a,1x,es12.4)') ' MIN_TEMP:          ',rk4min_can_temp
+         write(unit=*,fmt='(a,1x,es12.4)') ' MAX_TEMP:          ',rk4max_can_temp
+         write(unit=*,fmt='(a,1x,es12.4)') ' MIN_RHOS:          ',rk4min_can_rhos
+         write(unit=*,fmt='(a,1x,es12.4)') ' MAX_RHOS:          ',rk4max_can_rhos
+         write(unit=*,fmt='(a,1x,es12.4)') ' MIN_CO2:           ',rk4min_can_co2
+         write(unit=*,fmt='(a,1x,es12.4)') ' MAX_CO2:           ',rk4max_can_co2
       end if
-      !------------------------------------------------------------------------------------!
-
-
-
-      !------------------------------------------------------------------------------------!
-      !     Checking leaf temperature, but only for those cohorts with sufficient LAI.     !
-      !------------------------------------------------------------------------------------!
-      cpatch => csite%patch(ipa)
-      cflag1 = .false.
-      do ico = 1,cpatch%ncohorts
-         if (y%solvable(ico)) then
-            if (y%veg_temp(ico) > rk4max_veg_temp .or. y%veg_temp(ico) < rk4min_veg_temp)  &
-            then
-               reject_step = .true.
-               if(record_err) cflag1 = .true.
-               if (print_problems) then
-                  write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-                  write(unit=*,fmt='(a)')           ' + Leaf temperature is off-track...'
-                  write(unit=*,fmt='(a)')           '--------------------------------------'
-                  write(unit=*,fmt='(a,1x,i6)')     ' PFT:          ',cpatch%pft(ico)
-                  write(unit=*,fmt='(a,1x,es12.4)') ' LAI:          ',y%lai(ico)
-                  write(unit=*,fmt='(a,1x,es12.4)') ' WAI:          ',y%wai(ico)
-                  write(unit=*,fmt='(a,1x,es12.4)') ' WPA:          ',y%wpa(ico)
-                  write(unit=*,fmt='(a,1x,es12.4)') ' TAI:          ',y%tai(ico)
-                  write(unit=*,fmt='(a,1x,es12.4)') ' HCAPVEG:      ',y%hcapveg(ico)
-                  write(unit=*,fmt='(a,1x,es12.4)') ' VEG_TEMP:     ',y%veg_temp(ico)
-                  write(unit=*,fmt='(a,1x,es12.4)') ' VEG_FRACLIQ:  ',y%veg_fliq(ico)
-                  write(unit=*,fmt='(a,1x,es12.4)') ' VEG_ENERGY:   ',y%veg_energy(ico)
-                  write(unit=*,fmt='(a,1x,es12.4)') ' VEG_WATER:    ',y%veg_water(ico)
-                  write(unit=*,fmt='(a,1x,es12.4)') ' D(VEG_EN)/Dt: ',dydx%veg_energy(ico)
-                  write(unit=*,fmt='(a,1x,es12.4)') ' D(VEG_WAT)/Dt:',dydx%veg_water(ico)
-                  write(unit=*,fmt='(a,1x,es12.4)') ' H:            ',h
-                  write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-               elseif (.not. record_err) then
-                  return
-               end if
-            end if
-            if (y%veg_water(ico) < rk4min_veg_lwater * y%tai(ico)) then
-               reject_step = .true.
-               if(record_err) cflag1 = .true.
-               if (print_problems) then
-                  write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-                  write(unit=*,fmt='(a)')           ' + Leaf water is off-track...'
-                  write(unit=*,fmt='(a)')           '--------------------------------------'
-                  write(unit=*,fmt='(a,1x,i6)')     ' PFT:          ',cpatch%pft(ico)
-                  write(unit=*,fmt='(a,1x,es12.4)') ' LAI:          ',y%lai(ico)
-                  write(unit=*,fmt='(a,1x,es12.4)') ' WAI:          ',y%wai(ico)
-                  write(unit=*,fmt='(a,1x,es12.4)') ' WPA:          ',y%wpa(ico)
-                  write(unit=*,fmt='(a,1x,es12.4)') ' TAI:          ',y%tai(ico)
-                  write(unit=*,fmt='(a,1x,es12.4)') ' HCAPVEG:      ',y%hcapveg(ico)
-                  write(unit=*,fmt='(a,1x,es12.4)') ' VEG_TEMP:     ',y%veg_temp(ico)
-                  write(unit=*,fmt='(a,1x,es12.4)') ' VEG_FRACLIQ:  ',y%veg_fliq(ico)
-                  write(unit=*,fmt='(a,1x,es12.4)') ' VEG_ENERGY:   ',y%veg_energy(ico)
-                  write(unit=*,fmt='(a,1x,es12.4)') ' VEG_WATER:    ',y%veg_water(ico)
-                  write(unit=*,fmt='(a,1x,es12.4)') ' D(VEG_EN)/Dt: ',dydx%veg_energy(ico)
-                  write(unit=*,fmt='(a,1x,es12.4)') ' D(VEG_WAT)/Dt:',dydx%veg_water(ico)
-                  write(unit=*,fmt='(a,1x,es12.4)') ' H:            ',h
-                  write(unit=*,fmt='(a)')           '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-               elseif (.not. record_err) then
-                  return
-               end if
-            end if
-         end if      
-
-      end do
-      if(record_err .and. cflag1) integ_err(46,2) = integ_err(46,2) + 1_8
-      !------------------------------------------------------------------------------------!
-
 
       return
    end subroutine rk4_sanity_check

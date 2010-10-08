@@ -8,7 +8,8 @@
 !        definition is wrong, please correct it. Thanks!                                   !
 !------------------------------------------------------------------------------------------!
 module rk4_coms
-   use ed_max_dims, only : n_pft
+   use ed_max_dims, only : n_pft   & ! intent(in)
+                         , str_len ! ! intent(in)
 
    implicit none
 
@@ -27,6 +28,7 @@ module rk4_coms
       real(kind=8)                        :: can_temp     ! Temperature          [       K]
       real(kind=8)                        :: can_shv      ! Specific humidity    [   kg/kg]
       real(kind=8)                        :: can_rvap     ! Vapour mixing ratio  [   kg/kg]
+      real(kind=8)                        :: can_rhv      ! Relative humidity    [     ---]
       real(kind=8)                        :: can_co2      ! CO_2                 [µmol/mol]
       real(kind=8)                        :: can_depth    ! Canopy depth         [       m]
       real(kind=8)                        :: can_rhos     ! Canopy air density   [   kg/m³]
@@ -330,6 +332,8 @@ module rk4_coms
    logical      :: checkbudget ! Flag to decide whether we will check whether the budgets 
                                !    close every time step (and stop the run if they don't)
                                !    or if we will skip this part.
+   logical      :: record_err  ! Flag to keep track of which variable is causing the most
+                               !    errors in the integrator.
    logical      :: newsnow     ! Flag to decide whether we use the new snow percolation
                                !    scheme or not. 
    !---------------------------------------------------------------------------------------!
@@ -380,10 +384,9 @@ module rk4_coms
    !---------------------------------------------------------------------------------------!
    real(kind=8) :: rk4min_can_temp      ! Minimum canopy    temperature         [        K]
    real(kind=8) :: rk4max_can_temp      ! Maximum canopy    temperature         [        K]
-   real(kind=8) :: rk4min_can_theiv     ! Minimum canopy    eq. pot. temp.      [        K]
-   real(kind=8) :: rk4max_can_theiv     ! Maximum canopy    eq. pot. temp.      [        K]
    real(kind=8) :: rk4min_can_shv       ! Minimum canopy    specific humidity   [kg/kg_air]
    real(kind=8) :: rk4max_can_shv       ! Maximum canopy    specific humidity   [kg/kg_air]
+   real(kind=8) :: rk4min_can_rhv       ! Minimum canopy    relative humidity   [      ---]
    real(kind=8) :: rk4max_can_rhv       ! Maximum canopy    relative humidity   [      ---]
    real(kind=8) :: rk4min_can_co2       ! Minimum canopy    CO2 mixing ratio    [ µmol/mol]
    real(kind=8) :: rk4max_can_co2       ! Maximum canopy    CO2 mixing ratio    [ µmol/mol]
@@ -400,6 +403,13 @@ module rk4_coms
    !----- The following variables will be defined in sfcdata_ed (ed_init.f90). ------------!
    real(kind=8) :: rk4min_sfcw_mass     ! Minimum snow/pond    mass             [    kg/m²]
    real(kind=8) :: rk4min_virt_water    ! Minimum virtual pool mass             [    kg/m²]
+   !----- The following variables will be defined every time step. ------------------------!
+   real(kind=8) :: rk4min_can_theta     ! Minimum canopy    potential temp.     [        K]
+   real(kind=8) :: rk4max_can_theta     ! Maximum canopy    potential temp.     [        K]
+   real(kind=8) :: rk4min_can_theiv     ! Minimum canopy    eq. pot. temp.      [        K]
+   real(kind=8) :: rk4max_can_theiv     ! Maximum canopy    eq. pot. temp.      [        K]
+   real(kind=8) :: rk4min_can_rhos      ! Minimum canopy    density             [    kg/m³]
+   real(kind=8) :: rk4max_can_rhos      ! Maximum canopy    density             [    kg/m³]
    !---------------------------------------------------------------------------------------!
 
 
@@ -470,7 +480,38 @@ module rk4_coms
 
 
 
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !      Integrator error statistics.                                                     !
+   !---------------------------------------------------------------------------------------!
+   !----- Number of variables other than soil and surface that will be analysed. ----------!
+   integer                          , parameter   :: nerrfix = 17
+
+   !----- Total number of variables that will be analysed. --------------------------------!
+   integer                                        :: nerr
+
+   !----- Default file name to be given to the error files. -------------------------------!
+   character(len=str_len)                         :: errmax_fout
+   character(len=str_len)                         :: sanity_fout
+
+   !----- The error counter and label. ----------------------------------------------------!
+   integer(kind=8)  , dimension(:,:), allocatable :: integ_err
+   character(len=13), dimension(:)  , allocatable :: integ_lab
+
+   !----- Offset needed for each of the following variables. ------------------------------!
+   integer                                        :: osow ! Soil water.
+   integer                                        :: osoe ! Soil energy.
+   integer                                        :: oswe ! Surface water energy.
+   integer                                        :: oswm ! Surface water mass.
+   !=======================================================================================!
+   !=======================================================================================!
+
+
    contains
+
+
+
    !=======================================================================================!
    !=======================================================================================!
    !     This subroutine will perform the temporary patch allocation for the RK4           !
@@ -594,6 +635,7 @@ module rk4_coms
       y%can_temp                       = 0.d0
       y%can_rvap                       = 0.d0
       y%can_shv                        = 0.d0
+      y%can_rhv                        = 0.d0
       y%can_co2                        = 0.d0
       y%can_theta                      = 0.d0
       y%can_theiv                      = 0.d0
@@ -888,6 +930,192 @@ module rk4_coms
 
       return
    end subroutine deallocate_rk4_coh
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This function allocates the integration error counter.                            !
+   !---------------------------------------------------------------------------------------!
+   subroutine alloc_integ_err()
+      use grid_coms, only : nzg & ! intent(in)
+                          , nzs ! ! intent(in)
+      implicit none
+      !------------------------------------------------------------------------------------!
+      !     Find the total number of variables to be analysed, and find the offset for     !
+      ! soil and surface water (snow) properties.                                          !
+      !------------------------------------------------------------------------------------!
+      nerr = nerrfix + 2 * nzg + 2 * nzs
+      osow = nerrfix
+      osoe = osow + nzg
+      oswe = osoe + nzg
+      oswm = oswe + nzs
+      !------------------------------------------------------------------------------------!
+
+      if (.not. allocated(integ_err)) allocate(integ_err(nerr,2))
+      if (.not. allocated(integ_lab)) allocate(integ_lab(nerr))
+
+      return
+
+   end subroutine alloc_integ_err
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This sub-routine flushes the integrator error counter to zero.                    !
+   !---------------------------------------------------------------------------------------!
+   subroutine reset_integ_err()
+      implicit none
+      if (allocated(integ_err)) integ_err(:,:) = 0_8
+      return
+   end subroutine reset_integ_err
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This function creates the labels for the error analysis.                          !
+   !---------------------------------------------------------------------------------------!
+   subroutine assign_err_label()
+      use grid_coms, only : nzg & ! intent(in)
+                          , nzs ! ! intent(in)
+      implicit none
+      !----- Local constants. -------------------------------------------------------------!
+      character(len=13), dimension(nerrfix), parameter :: err_lab_fix = (/                 &
+           'CAN_THEIV    ','CAN_SHV      ','CAN_TEMP     ','CAN_RHOS     ','CAN_CO2      ' &
+          ,'VEG_WATER    ','VEG_ENERGY   ','VIRT_HEAT    ','VIRT_WATER   ','CO2B_STORAGE ' &
+          ,'CO2B_LOSS2ATM','EB_LOSS2ATM  ','WATB_LOSS2ATM','ENB_LOSS2DRA ','WATB_LOSS2DRA' &
+          ,'ENB_STORAGE  ','WATB_STORAGE '/)
+      !----- Local variables. -------------------------------------------------------------!
+      integer                                          :: n
+      character(len=13)                                :: err_lab_loc
+      !------------------------------------------------------------------------------------!
+
+      !----- First we fill the labels for the size-independent variables. -----------------!
+      do n=1,nerrfix
+         integ_lab(n) = adjustr(err_lab_fix(n))
+      end do
+
+      !----- Soil water. ------------------------------------------------------------------!
+      do n=1,nzg
+         write(err_lab_loc,fmt='(a,i2.2)') 'SOIL_WATER_',n
+         integ_lab(osow+n) = adjustr(err_lab_loc)
+      end do
+
+      !----- Soil energy. -----------------------------------------------------------------!
+      do n=1,nzg
+         write(err_lab_loc,fmt='(a,i2.2)') 'SOIL_ENER_',n
+         integ_lab(osoe+n) = adjustr(err_lab_loc)
+      end do
+
+      !----- Surface water energy. --------------------------------------------------------!
+      do n=1,nzs
+         write(err_lab_loc,fmt='(a,i2.2)') 'SFCW_ENER_',n
+         integ_lab(oswe+n) = adjustr(err_lab_loc)
+      end do
+
+      !----- Surface water energy. --------------------------------------------------------!
+      do n=1,nzs
+         write(err_lab_loc,fmt='(a,i2.2)') 'SFCW_MASS_',n
+         integ_lab(oswm+n) = adjustr(err_lab_loc)
+      end do
+
+      return
+   end subroutine assign_err_label
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   subroutine find_derived_thbounds(can_prss,can_depth)
+      use consts_coms, only : p008         & ! intent(in)
+                            , rocp8        & ! intent(in)
+                            , cp8          & ! intent(in)
+                            , ep8          & ! intent(in)
+                            , mmdryi8      ! ! intent(in)
+      use therm_lib8 , only : thetaeiv8    & ! function
+                            , thetaeivs8   & ! function
+                            , idealdenssh8 & ! function
+                            , eslif8       & ! function
+                            , rslif8       ! ! function
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      real(kind=8), intent(in) :: can_prss
+      real(kind=8), intent(in) :: can_depth
+      !----- Local variables. -------------------------------------------------------------!
+      real(kind=8)             :: can_rvap_use
+      real(kind=8)             :: can_shv_use
+      real(kind=8)             :: can_rsat
+      real(kind=8)             :: can_ssh
+      !----- Local parameters and locally saved variables. --------------------------------!
+      logical     , parameter  :: print_bounds = .false.
+      logical     , save       :: firsttime    = .true.
+      !------------------------------------------------------------------------------------!
+
+
+
+      !----- Minimum and maximum density. -------------------------------------------------!
+      can_rsat        = rslif8(can_prss,rk4max_can_temp)
+      can_ssh         = can_rsat / (1.d0 + can_rsat)
+      can_shv_use     = min(rk4max_can_shv,can_ssh * rk4max_can_rhv)
+      rk4min_can_rhos = idealdenssh8(can_prss,rk4max_can_temp,can_shv_use   )
+      rk4max_can_rhos = idealdenssh8(can_prss,rk4min_can_temp,rk4min_can_shv)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !----- Minimum and maximum potential temperature. -----------------------------------!
+      rk4min_can_theta = rk4min_can_temp * (p008 / can_prss) ** rocp8
+      rk4max_can_theta = rk4max_can_temp * (p008 / can_prss) ** rocp8
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !      Minimum and maximum of both LCL temperature and ice-vapour equivalent         !
+      ! potential temperature.                                                             !
+      !------------------------------------------------------------------------------------!
+      rk4min_can_theiv = rk4min_can_theta
+
+      can_rvap_use  = rk4max_can_shv / (1.d0 - rk4max_can_shv)
+
+      rk4max_can_theiv = thetaeivs8(rk4max_can_theta,rk4max_can_temp,can_rvap_use,0.d0,0.d0)
+      !------------------------------------------------------------------------------------!
+
+      if (print_bounds) then
+         if (firsttime) then
+            write(unit=39,fmt='(6(a,1x))') '   MIN_THETA','   MAX_THETA','   MIN_THEIV'    &
+                                          ,'   MAX_THEIV','    MIN_RHOS','    MAX_RHOS'
+            firsttime = .false.
+         end if
+         write (unit=39,fmt='(6(es12.5,1x))') rk4min_can_theta,rk4max_can_theta            &
+                                             ,rk4min_can_theiv,rk4max_can_theiv            &
+                                             ,rk4min_can_rhos ,rk4max_can_rhos
+      end if
+
+      return
+   end subroutine find_derived_thbounds
    !=======================================================================================!
    !=======================================================================================!
 end module rk4_coms

@@ -249,15 +249,15 @@ contains
     if (associated(turb%cdrag))  &
          call vtables2 (turb%cdrag(1,1,1),turbm%cdrag(1,1,1)  &
          ,ng, npts, imean,  &
-         'CDRAG :3:hist:anal:mpti')
+         'CDRAG :3:hist:anal:mpti:mpt3:mpt1')
     if (associated(turb%ltscale)) &
        call vtables2 (turb%ltscale(1,1,1),turbm%ltscale(1,1,1) &
          ,ng, npts, imean, &
-         'TL :3:hist:anal:mpti:mpt3')
+         'TL :3:hist:anal:mpti:mpt3:mpt1')
     if (associated(turb%sigw)) &
        call vtables2 (turb%sigw(1,1,1),turbm%sigw(1,1,1) &
          ,ng, npts, imean, &
-         'SIGW :3:hist:anal:mpti:mpt3')
+         'SIGW :3:hist:anal:mpti:mpt3:mpt1')
 
     npts=n2*n3
     if (associated(turb%sflux_u))  &
@@ -271,31 +271,31 @@ contains
     if (associated(turb%sflux_w))  &
          call vtables2 (turb%sflux_w(1,1),turbm%sflux_w(1,1)  &
          ,ng, npts, imean,  &
-         'SFLUX_W :2:anal:mpt3')
+         'SFLUX_W :2:anal:mpt3:mpt1')
     if (associated(turb%sflux_t))  &
          call vtables2 (turb%sflux_t(1,1),turbm%sflux_t(1,1)  &
          ,ng, npts, imean,  &
-         'SFLUX_T :2:anal:mpt3')
+         'SFLUX_T :2:anal:mpt3:mpt1')
     if (associated(turb%sflux_r))  &
          call vtables2 (turb%sflux_r(1,1),turbm%sflux_r(1,1)  &
          ,ng, npts, imean,  &
-         'SFLUX_R :2:anal:mpt3')
+         'SFLUX_R :2:anal:mpt3:mpt1')
     if (associated(turb%sflux_c))  &
          call vtables2 (turb%sflux_c(1,1),turbm%sflux_c(1,1)  &
          ,ng, npts, imean,  &
-         'SFLUX_C :2:anal:mpt3')
+         'SFLUX_C :2:anal:mpt3:mpt1')
     if (associated(turb%akscal))  &
          call vtables2 (turb%akscal(1,1),turbm%akscal(1,1)  &
          ,ng, npts, imean,  &
-         'AKSCAL :2:hist:anal:mpti:mpt3')
+         'AKSCAL :2:hist:anal:mpti:mpt3:mpt1')
     if (associated(turb%pblhgt)) &
        call vtables2 (turb%pblhgt(1,1),turbm%pblhgt(1,1) &
          ,ng, npts, imean, &
-         'PBLHGT :2:hist:anal:mpti:mpt3')
+         'PBLHGT :2:hist:anal:mpti:mpt3:mpt1')
     if (associated(turb%lmo)) &
        call vtables2 (turb%lmo(1,1),turbm%lmo(1,1) &
          ,ng, npts, imean, &
-         'LMO    :2:hist:anal:mpti:mpt3')
+         'LMO    :2:hist:anal:mpti:mpt3:mpt1')
 
     return
   end subroutine filltab_turb

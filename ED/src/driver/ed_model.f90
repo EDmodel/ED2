@@ -25,9 +25,6 @@ subroutine ed_model()
                             , outfast             & ! intent(in)
                             , nrec_fast           & ! intent(in)
                             , nrec_state          & ! intent(in)
-                            , integ_err           & ! intent(in)
-                            , record_err          & ! intent(in)
-                            , err_label           & ! intent(in)
                             , ffilout             & ! intent(in)
                             , runtype
    use ed_misc_coms  , only : outputMonth         & ! intent(in)
@@ -46,11 +43,21 @@ subroutine ed_model()
                             , filltab_alltypes    & ! intent(in)
                             , filltables          ! ! intent(in)
    use rk4_driver    , only : rk4_timestep        ! ! intent(in)
-   use rk4_coms      , only : checkbudget         ! ! intent(in)
+   use rk4_coms      , only : checkbudget         & ! intent(in)
+                            , integ_err           & ! intent(in)
+                            , integ_lab           & ! intent(in)
+                            , record_err          & ! intent(inout)
+                            , nerr                & ! intent(in)
+                            , errmax_fout         & ! intent(in)
+                            , sanity_fout         & ! intent(in)
+                            , alloc_integ_err     & ! subroutine
+                            , assign_err_label    & ! subroutine
+                            , reset_integ_err     ! ! subroutine
    use ed_node_coms  , only : mynum               & ! intent(in)
                             , nnodetot            ! ! intent(in)
    use disturb_coms  , only : include_fire        ! ! intent(in)
    use mem_polygons  , only : n_ed_region         & ! intent(in)
+                            , n_poi               & ! intent(in)
                             , maxpatch            & ! intent(in)
                             , maxcohort           ! ! intent(in)
    use consts_coms   , only : day_sec             ! ! intent(in)
@@ -59,9 +66,11 @@ subroutine ed_model()
    include 'mpif.h'
    !----- Local variables. ----------------------------------------------------------------!
    character(len=10)  :: c0
-   character(len=512) :: integ_fname
+   character(len=28)  :: fmthead
+   character(len=32)  :: fmtcntr
    integer            :: ifm,i
    integer            :: ierr
+   integer            :: nn
    integer            :: ndays
    logical            :: analysis_time, new_day, new_month, new_year, the_end
    logical            :: writing_dail,writing_mont,writing_year,history_time, annual_time
@@ -91,13 +100,32 @@ subroutine ed_model()
 
    wtime_start=walltime(0.)
    istp = 0
+
+   !---------------------------------------------------------------------------------------!
+   !     If we are going to record the integrator errors, here is the time to open it for  !
+   ! the first time and write the header.  But just before we do it, we check whether this !
+   ! is a single POI run, the only case where we will allow this recording.                !
+   !---------------------------------------------------------------------------------------!
+   record_err = record_err .and. n_ed_region == 0 .and. n_poi == 1
    if(record_err) then
-      integ_err = 0_8
-      integ_fname = "integrator.log"
-      open  (unit=77,file=trim(integ_fname),form="formatted",status="replace")     
-      write (unit=77,fmt='(a)') "num  name  ERMAX  IFLAG"
+      !----- Initialise the error structures. ---------------------------------------------!
+      call alloc_integ_err()
+      call reset_integ_err()
+      call assign_err_label()
+
+      !----- Define the formats for both the header and the actual output. ----------------!
+      write(fmthead,fmt='(a,i3.3,a)')  '(a4,1x,2(a3,1x),',nerr,'(a13,1x))'
+      write(fmtcntr,fmt='(a,i3.3,a)')  '(i4.4,1x,2(i3.2,1x),',nerr,'(i13,1x))'
+
+      open  (unit=77,file=trim(errmax_fout),form='formatted',status='replace')
+      write (unit=77,fmt=fmthead) 'YEAR','MON','DAY',(integ_lab(nn),nn=1,nerr)
       close (unit=77,status='keep')
+
+      open  (unit=78,file=trim(sanity_fout),form='formatted',status='replace')
+      write (unit=78,fmt=fmthead) 'YEAR','MON','DAY',(integ_lab(nn),nn=1,nerr)
+      close (unit=78,status='keep')
    end if
+
    writing_dail      = idoutput > 0
    writing_mont      = imoutput > 0
    writing_year      = iyoutput > 0
@@ -258,18 +286,23 @@ subroutine ed_model()
       end if
 
       !----- Check if this is the beginning of a new simulated day. -----------------------!
-      if(new_day)then
-         if(record_err) then
-            open(unit=77,file=trim(integ_fname),form="formatted",access="append"           &
-                ,status="old")
-            do i = 1,46
-               if(sum(integ_err(i,1:2)) > 0_8) then
-                  write(unit=77,fmt='(2(i4,1x),a,2(1x,i7))') mynum,i,trim(err_label(i))    &
-                                                                    ,integ_err(i,1:2)
-               end if
-            end do
+      if (new_day) then
+
+         if (record_err) then
+
+            open (unit=77,file=trim(errmax_fout),form='formatted',access='append'          &
+                 ,status='old')
+            write (unit=77,fmt=fmtcntr) current_time%year,current_time%month               &
+                                       ,current_time%date,(integ_err(nn,1),nn=1,nerr)
             close(unit=77,status='keep')
-            integ_err = 0_8
+
+            open (unit=78,file=trim(sanity_fout),form='formatted',access='append'          &
+                 ,status='old')
+            write (unit=78,fmt=fmtcntr) current_time%year,current_time%month               &
+                                       ,current_time%date,(integ_err(nn,2),nn=1,nerr)
+            close(unit=78,status='keep')
+
+            call reset_integ_err()
          end if
 
          ! Do phenology, growth, mortality, recruitment, disturbance.

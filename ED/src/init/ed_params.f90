@@ -555,14 +555,14 @@ subroutine init_can_air_params()
    select case (isfclyrm)
    case (1)
       !----- This is the minimum ustar under stable and unstable conditions. --------------!
-      ustmin    = 0.025 ! 0.10
+      ustmin    = 0.10 ! 0.10
       !----- This is the minimum wind scale under stable and unstable conditions. ---------!
-      ubmin     = 0.25  ! 0.65
+      ubmin     = 0.65 ! 0.65
    case default
       !----- This is the minimum ustar under stable and unstable conditions. --------------!
-      ustmin    = 0.025
+      ustmin    = 0.05
       !----- This is the minimum wind scale under stable and unstable conditions. ---------!
-      ubmin     = 0.25
+      ubmin     = 0.65
    end select
    !----- Louis (1979) model. -------------------------------------------------------------!
    bl79        = 5.0    ! b prime parameter
@@ -2109,10 +2109,9 @@ subroutine init_rk4_params()
                                    , rk4snowmin            & ! intent(out)
                                    , rk4min_can_temp       & ! intent(out)
                                    , rk4max_can_temp       & ! intent(out)
-                                   , rk4min_can_theiv      & ! intent(out)
-                                   , rk4max_can_theiv      & ! intent(out)
                                    , rk4min_can_shv        & ! intent(out)
                                    , rk4max_can_shv        & ! intent(out)
+                                   , rk4min_can_rhv        & ! intent(out)
                                    , rk4max_can_rhv        & ! intent(out)
                                    , rk4min_can_co2        & ! intent(out)
                                    , rk4max_can_co2        & ! intent(out)
@@ -2126,7 +2125,10 @@ subroutine init_rk4_params()
                                    , rk4min_sfcw_moist     & ! intent(out)
                                    , rk4min_virt_moist     & ! intent(out)
                                    , check_maxleaf         & ! intent(out)
-                                   , supersat_ok           ! ! intent(out)
+                                   , supersat_ok           & ! intent(out)
+                                   , record_err            & ! intent(out)
+                                   , errmax_fout           & ! intent(out)
+                                   , sanity_fout           ! ! intent(out)
    implicit none
 
    !---------------------------------------------------------------------------------------!
@@ -2149,7 +2151,7 @@ subroutine init_rk4_params()
    rk4eps2     = rk4eps**2           ! square of the accuracy
    hmin        = 1.d-7               ! The minimum step size.
    print_diags = .false.             ! Flag to print the diagnostic check.
-   checkbudget = .false.             ! Flag to check CO2, water, and energy budgets every 
+   checkbudget = .true.              ! Flag to check CO2, water, and energy budgets every 
                                      !     time step and stop the run in case any of these 
                                      !     budgets don't close.
    !---------------------------------------------------------------------------------------!
@@ -2164,6 +2166,15 @@ subroutine init_rk4_params()
    lai_to_cover  = 1.5d0    ! Canopies with LAI less than this number  are assumed to be 
                             !     open, ie, some fraction of the rain-drops can reach
                             !    the soil/litter layer unimpeded.
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Variables used to keep track on the error.                                        !
+   !---------------------------------------------------------------------------------------!
+   record_err    = .false.                  ! Compute and keep track of the errors.
+   errmax_fout   = 'error_max_count.txt'    ! File with the maximum error count 
+   sanity_fout   = 'sanity_check_count.txt' ! File with the sanity check count
    !---------------------------------------------------------------------------------------!
 
 
@@ -2186,13 +2197,11 @@ subroutine init_rk4_params()
    !---------------------------------------------------------------------------------------!
    rk4min_can_temp   =  1.8400d2  ! Minimum canopy    temperature               [        K]
    rk4max_can_temp   =  3.4100d2  ! Maximum canopy    temperature               [        K]
-   rk4min_can_theiv  =  1.8400d2  ! Minimum canopy    equiv. pot. temperature   [        K]
-   rk4max_can_theiv  =  4.6000d2  ! Maximum canopy    equiv. pot. temperature   [        K]
    rk4min_can_shv    =  1.0000d-8 ! Minimum canopy    specific humidity         [kg/kg_air]
    rk4max_can_shv    =  4.6000d-2 ! Maximum canopy    specific humidity         [kg/kg_air]
    rk4max_can_rhv    =  1.1000d0  ! Maximum canopy    relative humidity (**)    [      ---]
    rk4min_can_co2    =  1.0000d2  ! Minimum canopy    CO2 mixing ratio          [ µmol/mol]
-   rk4max_can_co2    =  1.5000d3  ! Maximum canopy    CO2 mixing ratio          [ µmol/mol]
+   rk4max_can_co2    =  2.0000d3  ! Maximum canopy    CO2 mixing ratio          [ µmol/mol]
    rk4min_soil_temp  =  1.8400d2  ! Minimum soil      temperature               [        K]
    rk4max_soil_temp  =  3.5100d2  ! Maximum soil      temperature               [        K]
    rk4min_veg_temp   =  1.8400d2  ! Minimum leaf      temperature               [        K]

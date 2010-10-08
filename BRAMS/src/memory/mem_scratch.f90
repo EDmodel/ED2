@@ -78,7 +78,8 @@ module mem_scratch
          ntpts  = max(nmxp(ng)*nmyp(ng)*nmzp(ng),nmxp(ng)*nmyp(ng)*nclouds                 &
                      ,nmxp(ng)*nmyp(ng)*npatch,ntpts )
          ntpts2 = max(nmxp(ng)*nmyp(ng),ntpts2 )
-         ntpts4 = max(nmxp(ng)*nmyp(ng)*nmzp(ng)*nclouds,ntpts4)
+         ntpts4 = max(nmxp(ng)*nmyp(ng)*max(nmzp(ng),nzg,nzs,nwave)*max(npatch,nclouds)    &
+                     ,ntpts4)
       enddo
       
       !----- Setting the maximum possible number for scr1 and scr2. -----------------------!

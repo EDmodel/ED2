@@ -636,11 +636,15 @@ subroutine get_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
    use rk4_coms              , only : rk4patchtype       & ! structure
                                     , rk4eps             & ! intent(in)
                                     , rk4site            & ! intent(in)
-                                    , checkbudget        ! ! intent(in)
+                                    , checkbudget        & ! intent(in)
+                                    , integ_err          & ! intent(inout)
+                                    , record_err         & ! intent(in)
+                                    , osow               & ! intent(in)
+                                    , osoe               & ! intent(in)
+                                    , oswe               & ! intent(in)
+                                    , oswm               ! ! intent(in)
    use ed_state_vars         , only : patchtype          ! ! structure
    use grid_coms             , only : nzg                ! ! intent(in)
-   use ed_misc_coms          , only : integ_err          & ! intent(in)
-                                    , record_err         ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(rk4patchtype) , target      :: yerr             ! Error structure
@@ -667,6 +671,12 @@ subroutine get_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
    ! be our worst guess in the end.                                                        !
    !---------------------------------------------------------------------------------------!
 
+
+   !---------------------------------------------------------------------------------------!
+   !     Get the canopy air space errors.  Only the ice-vapour equivalent potential        !
+   ! temperature, water vapour mixing ratio and carbon dioxide mixing ratio are accounted. !
+   ! Temperature and density will be also checked for sanity.                              !
+   !---------------------------------------------------------------------------------------!
    err    = abs(yerr%can_lntheiv/yscal%can_lntheiv)
    errmax = max(errmax,err)
    if(record_err .and. err > rk4eps) integ_err(1,1) = integ_err(1,1) + 1_8 
@@ -677,42 +687,13 @@ subroutine get_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
 
    err    = abs(yerr%can_co2/yscal%can_co2)
    errmax = max(errmax,err)
-   if(record_err .and. err > rk4eps) integ_err(3,1) = integ_err(3,1) + 1_8 
-  
-   do k=rk4site%lsl,nzg
-      err    = abs(yerr%soil_water(k)/yscal%soil_water(k))
-      errmax = max(errmax,err)
-      if(record_err .and. err > rk4eps) integ_err(3+k,1) = integ_err(3+k,1) + 1_8 
-   end do
+   if(record_err .and. err > rk4eps) integ_err(5,1) = integ_err(5,1) + 1_8 
+   !---------------------------------------------------------------------------------------!
 
-   do k=rk4site%lsl,nzg
-      err    = abs(yerr%soil_energy(k)/yscal%soil_energy(k))
-      errmax = max(errmax,err)
-      if(record_err .and. err > rk4eps) integ_err(15+k,1) = integ_err(15+k,1) + 1_8
-   end do
 
-   do k=1,ytemp%nlev_sfcwater
-      err = abs(yerr%sfcwater_energy(k) / yscal%sfcwater_energy(k))
-      errmax = max(errmax,err)
-      if(record_err .and. err > rk4eps) integ_err(27+k,1) = integ_err(27+k,1) + 1_8
-   end do
-
-   do k=1,ytemp%nlev_sfcwater
-      err    = abs(yerr%sfcwater_mass(k) / yscal%sfcwater_mass(k))
-      errmax = max(errmax,err)
-      if(record_err .and. err > rk4eps) integ_err(32+k,1) = integ_err(32+k,1) + 1_8
-   end do
-
-   err    = abs(yerr%virtual_heat/yscal%virtual_heat)
-   errmax = max(errmax,err)
-   if(record_err .and. err > rk4eps) integ_err(38,1) = integ_err(38,1) + 1_8
-
-   err    = abs(yerr%virtual_water/yscal%virtual_water)
-   errmax = max(errmax,err)
-   if(record_err .and. err > rk4eps) integ_err(39,1) = integ_err(39,1) + 1_8      
 
    !---------------------------------------------------------------------------------------!
-   !     Getting the worst error only amongst the cohorts in which leaf properties were    !
+   !     Get the worst error only amongst the cohorts in which leaf properties were        !
    ! computed.                                                                             !
    !---------------------------------------------------------------------------------------!
    do ico = 1,cpatch%ncohorts
@@ -727,35 +708,100 @@ subroutine get_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
       end if
    end do
    if(cpatch%ncohorts > 0 .and. record_err) then
-      if (errh2oMAX > rk4eps) integ_err(40,1) = integ_err(40,1) + 1_8
-      if (erreneMAX > rk4eps) integ_err(41,1) = integ_err(41,1) + 1_8
+      if (errh2oMAX > rk4eps) integ_err(40,1) = integ_err(6,1) + 1_8
+      if (erreneMAX > rk4eps) integ_err(41,1) = integ_err(7,1) + 1_8
    end if
+   !---------------------------------------------------------------------------------------!
 
-   !-------------------------------------------------------------------------!
-   !     Here we just need to make sure the user is checking mass, otherwise !
-   ! these variables will not be computed at all.  If this turns out to be   !
-   ! essential, we will make this permanent and not dependent on             !
-   ! checkbudget.  The only one that is not checked is the runoff, because   !
-   ! it is computed after a step was accepted.                               !
-   !-------------------------------------------------------------------------!
+
+   !---------------------------------------------------------------------------------------!
+   !     Virtual pool.                                                                     !
+   !---------------------------------------------------------------------------------------!
+   err    = abs(yerr%virtual_heat/yscal%virtual_heat)
+   errmax = max(errmax,err)
+   if(record_err .and. err > rk4eps) integ_err(8,1) = integ_err(8,1) + 1_8
+
+   err    = abs(yerr%virtual_water/yscal%virtual_water)
+   errmax = max(errmax,err)
+   if(record_err .and. err > rk4eps) integ_err(9,1) = integ_err(9,1) + 1_8      
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Here we just need to make sure the user is checking mass, otherwise these         !
+   ! variables will not be computed at all.  The only one that is not checked is the       !
+   ! runoff, because it is computed only after a step was accepted.                        !
+   !---------------------------------------------------------------------------------------!
    if (checkbudget) then
       err    = abs(yerr%co2budget_storage/yscal%co2budget_storage)
       errmax = max(errmax,err)
+      if(record_err .and. err > rk4eps) integ_err(10,1) = integ_err(10,1) + 1_8
+
       err    = abs(yerr%co2budget_loss2atm/yscal%co2budget_loss2atm)
       errmax = max(errmax,err)
+      if(record_err .and. err > rk4eps) integ_err(11,1) = integ_err(11,1) + 1_8
+
       err    = abs(yerr%ebudget_loss2atm/yscal%ebudget_loss2atm)
       errmax = max(errmax,err)
+      if(record_err .and. err > rk4eps) integ_err(12,1) = integ_err(12,1) + 1_8
+
       err    = abs(yerr%wbudget_loss2atm/yscal%wbudget_loss2atm)
       errmax = max(errmax,err)
+      if(record_err .and. err > rk4eps) integ_err(13,1) = integ_err(13,1) + 1_8
+
       err    = abs(yerr%ebudget_loss2drainage/yscal%ebudget_loss2drainage)
       errmax = max(errmax,err)
+      if(record_err .and. err > rk4eps) integ_err(14,1) = integ_err(14,1) + 1_8
+
       err    = abs(yerr%wbudget_loss2drainage/yscal%wbudget_loss2drainage)
       errmax = max(errmax,err)
+      if(record_err .and. err > rk4eps) integ_err(15,1) = integ_err(15,1) + 1_8
+
       err    = abs(yerr%ebudget_storage/yscal%ebudget_storage)
       errmax = max(errmax,err)
+      if(record_err .and. err > rk4eps) integ_err(16,1) = integ_err(16,1) + 1_8
+
       err    = abs(yerr%wbudget_storage/yscal%wbudget_storage)
       errmax = max(errmax,err)
+      if(record_err .and. err > rk4eps) integ_err(17,1) = integ_err(17,1) + 1_8
    end if
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Soil properties.  Notice that the index depends on the number of layers.          !
+   !---------------------------------------------------------------------------------------!
+   do k=rk4site%lsl,nzg
+      err    = abs(yerr%soil_water(k)/yscal%soil_water(k))
+      errmax = max(errmax,err)
+      if(record_err .and. err > rk4eps) integ_err(osow+k,1) = integ_err(osow+k,1) + 1_8 
+   end do
+
+   do k=rk4site%lsl,nzg
+      err    = abs(yerr%soil_energy(k)/yscal%soil_energy(k))
+      errmax = max(errmax,err)
+      if(record_err .and. err > rk4eps) integ_err(osoe+k,1) = integ_err(osoe+k,1) + 1_8
+   end do
+   !---------------------------------------------------------------------------------------!
+
+   !---------------------------------------------------------------------------------------!
+   !     Surface water/snow properties.  Notice that the index also depends on the number  !
+   ! of layers.                                                                            !
+   !---------------------------------------------------------------------------------------!
+   do k=1,ytemp%nlev_sfcwater
+      err = abs(yerr%sfcwater_energy(k) / yscal%sfcwater_energy(k))
+      errmax = max(errmax,err)
+      if(record_err .and. err > rk4eps) integ_err(oswe+k,1) = integ_err(oswe+k,1) + 1_8
+   end do
+
+   do k=1,ytemp%nlev_sfcwater
+      err    = abs(yerr%sfcwater_mass(k) / yscal%sfcwater_mass(k))
+      errmax = max(errmax,err)
+      if(record_err .and. err > rk4eps) integ_err(oswm+k,1) = integ_err(oswm+k,1) + 1_8
+   end do
+   !---------------------------------------------------------------------------------------!
 
    return
 end subroutine get_errmax
@@ -803,6 +849,8 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
    targetp%can_prss      = sourcep%can_prss
    targetp%can_exner     = sourcep%can_exner
    targetp%can_depth     = sourcep%can_depth
+   targetp%can_rvap      = sourcep%can_rvap
+   targetp%can_rhv       = sourcep%can_rhv
 
    targetp%virtual_water = sourcep%virtual_water
    targetp%virtual_heat  = sourcep%virtual_heat

@@ -431,19 +431,25 @@ subroutine spatial_averages
             !------------------------------------------------------------------------------!
             cpoly%avg_soil_wetness(isi)     = 0.0
             do k=cpoly%lsl(isi),nzg
-               cpoly%avg_sensible_gg(k,isi) = sum(csite%avg_sensible_gg(k,:) * csite%area) &
-                                            * site_area_i
-               cpoly%avg_smoist_gg(k,isi)   = sum(csite%avg_smoist_gg(k,:)   * csite%area) &
-                                            * site_area_i
-               cpoly%avg_smoist_gc(k,isi)   = sum(csite%avg_smoist_gc(k,:)   * csite%area) &
-                                            * site_area_i
-               cpoly%aux_s(k,isi)           = sum(csite%aux_s(k,:)           * csite%area) &
-                                            * site_area_i
+               cpoly%avg_sensible_gg(k,isi) =                                              &
+                     sum(csite%avg_sensible_gg(k,1:csite%npatches) * csite%area)           &
+                   * site_area_i
+               cpoly%avg_smoist_gg(k,isi)   =                                              &
+                     sum(csite%avg_smoist_gg(k,1:csite%npatches)   * csite%area)           &
+                   * site_area_i
+               cpoly%avg_smoist_gc(k,isi)   =                                              &
+                     sum(csite%avg_smoist_gc(k,1:csite%npatches)   * csite%area)           &
+                   * site_area_i
+               cpoly%aux_s(k,isi)           =                                              &
+                     sum(csite%aux_s(k,1:csite%npatches)           * csite%area)           &
+                   * site_area_i
 
-               cpoly%avg_soil_energy(k,isi) = sum(csite%soil_energy(k,:)     * csite%area) &
-                                            * site_area_i
-               cpoly%avg_soil_water(k,isi)  = sum(csite%soil_water(k,:)      * csite%area) &
-                                            * site_area_i
+               cpoly%avg_soil_energy(k,isi) =                                              &
+                     sum(csite%soil_energy(k,1:csite%npatches)     * csite%area)           &
+                   * site_area_i
+               cpoly%avg_soil_water(k,isi)  =                                              &
+                     sum(csite%soil_water(k,1:csite%npatches)      * csite%area)           &
+                   * site_area_i
 
                !---------------------------------------------------------------------------!
                !    Finding the mean heat capacity. This shouldn't matter in the current   !
@@ -905,18 +911,18 @@ subroutine spatial_averages
          ! the average temperature and liquid water fraction.                              !
          !---------------------------------------------------------------------------------!
          do k=cgrid%lsl(ipy),nzg
-            cgrid%avg_sensible_gg(k,ipy) = sum(cpoly%avg_sensible_gg(k,:)*cpoly%area)      &
-                                         * poly_area_i
-            cgrid%avg_smoist_gg(k,ipy)   = sum(cpoly%avg_smoist_gg(k,:)  *cpoly%area)      &
-                                         * poly_area_i
-            cgrid%avg_smoist_gc(k,ipy)   = sum(cpoly%avg_smoist_gc(k,:)  *cpoly%area)      &
-                                         * poly_area_i
-            cgrid%aux_s(k,ipy)           = sum(cpoly%aux_s(k,:)          *cpoly%area)      &
-                                         * poly_area_i
-            cgrid%avg_soil_energy(k,ipy) = sum(cpoly%avg_soil_energy(k,:)*cpoly%area)      &
-                                         * poly_area_i
-            cgrid%avg_soil_water(k,ipy)  = sum(cpoly%avg_soil_water(k,:) *cpoly%area)      &
-                                         * poly_area_i
+            cgrid%avg_sensible_gg(k,ipy) =                                                 &
+                  sum(cpoly%avg_sensible_gg(k,1:cpoly%nsites) * cpoly%area) * poly_area_i
+            cgrid%avg_smoist_gg(k,ipy)   =                                                 &
+                  sum(cpoly%avg_smoist_gg(k,1:cpoly%nsites)   * cpoly%area) * poly_area_i
+            cgrid%avg_smoist_gc(k,ipy)   =                                                 &
+                  sum(cpoly%avg_smoist_gc(k,1:cpoly%nsites)   * cpoly%area) * poly_area_i
+            cgrid%aux_s(k,ipy)           =                                                 &
+                  sum(cpoly%aux_s(k,1:cpoly%nsites)           * cpoly%area) * poly_area_i
+            cgrid%avg_soil_energy(k,ipy) =                                                 &
+                  sum(cpoly%avg_soil_energy(k,1:cpoly%nsites) * cpoly%area) * poly_area_i
+            cgrid%avg_soil_water(k,ipy)  =                                                 &
+                  sum(cpoly%avg_soil_water(k,1:cpoly%nsites)  * cpoly%area) * poly_area_i
 
             !------------------------------------------------------------------------------!
             !     Finding the average temperature and liquid fraction.  The polygon-level  !

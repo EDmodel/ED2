@@ -734,11 +734,11 @@ subroutine canopy_derivs_two(initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,dewgnd
    !---------------------------------------------------------------------------------------!
    !    Computing the fluxes from atmosphere to canopy.                                    !
    !---------------------------------------------------------------------------------------!
-   rho_ustar = initp%can_rhos * initp%ustar                     ! Aux. variable
-   hflxac    = rho_ustar      * initp%tstar * initp%can_exner   ! Sensible Heat flux
-   eflxac    = rho_ustar      * initp%estar * initp%can_exner   ! Enthalpy flux
-   wflxac    = rho_ustar      * initp%qstar                     ! Water flux
-   cflxac    = rho_ustar      * initp%cstar * mmdryi8           ! CO2 flux [umol/m2/s]
+   rho_ustar = initp%can_rhos * initp%ustar                          ! Aux. variable
+   hflxac    = rho_ustar      * initp%tstar * initp%can_exner        ! Sensible Heat flux
+   eflxac    = rho_ustar      * initp%estar * cp8 * initp%can_temp   ! Enthalpy flux
+   wflxac    = rho_ustar      * initp%qstar                          ! Water flux
+   cflxac    = rho_ustar      * initp%cstar * mmdryi8                ! CO2 flux [umol/m2/s]
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!

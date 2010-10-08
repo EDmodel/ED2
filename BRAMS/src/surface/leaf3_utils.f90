@@ -233,11 +233,11 @@ subroutine leaf_stars(theta_atm,theiv_atm,shv_atm,rvap_atm,co2_atm              
    end select
 
    !----- Finding all stars. --------------------------------------------------------------!
-   tstar = c3 * (theta_atm    - theta_can   )
-   estar = c3 * (theiv_atm    - theiv_can   )
-   qstar = c3 * (shv_atm      - shv_can     )
-   rstar = c3 * (rvap_atm     - rvap_can    )
-   cstar = c3 * (co2_atm      - co2_can     )
+   tstar = c3 *    (theta_atm - theta_can)
+   estar = c3 * log(theiv_atm / theiv_can)
+   qstar = c3 *    (shv_atm   - shv_can  )
+   rstar = c3 *    (rvap_atm  - rvap_can )
+   cstar = c3 *    (co2_atm   - co2_can  )
 
    return
 

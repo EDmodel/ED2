@@ -1629,10 +1629,10 @@ module canopy_struct_dynamics
       end select
 
       !----- Computing the other scales. --------------------------------------------------!
-      qstar = c3 * (shv_atm      - shv_can     )
-      tstar = c3 * (theta_atm    - theta_can   )
-      estar = c3 * (theiv_atm    - theiv_can   )
-      cstar = c3 * (co2_atm      - co2_can     )
+      qstar = c3 *    (shv_atm   - shv_can   )
+      tstar = c3 *    (theta_atm - theta_can )
+      estar = c3 * log(theiv_atm / theiv_can )
+      cstar = c3 *    (co2_atm   - co2_can   )
 
       return
    end subroutine ed_stars
@@ -1867,10 +1867,10 @@ module canopy_struct_dynamics
       end select
 
       !----- Computing the other scales. --------------------------------------------------!
-      qstar = c3 * (shv_atm      - shv_can     )
-      tstar = c3 * (theta_atm    - theta_can   )
-      cstar = c3 * (co2_atm      - co2_can     )
-      estar = c3 * (theiv_atm    - theiv_can   )
+      qstar = c3 *    (shv_atm   - shv_can   )
+      tstar = c3 *    (theta_atm - theta_can )
+      estar = c3 * log(theiv_atm / theiv_can )
+      cstar = c3 *    (co2_atm   - co2_can   )
 
       return
    end subroutine ed_stars8

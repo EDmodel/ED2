@@ -405,14 +405,14 @@ subroutine reset_averaged_vars(cgrid)
          end do
 
 
-      enddo
+      end do
 
       cpoly%avg_soil_temp(:,:)      = 0.0
       cpoly%avg_soil_water(:,:)     = 0.0
       cpoly%avg_soil_energy(:,:)    = 0.0
       cpoly%avg_soil_fracliq(:,:)   = 0.0
 
-   enddo
+   end do
 
 
    return

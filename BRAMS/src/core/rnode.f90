@@ -407,12 +407,13 @@ subroutine init_fields(init)
 
   use mem_leaf, only : ISFCL ! For SiB
   use mem_cuparm, only : nclouds
+  use mem_aerad , only : nwave
 
   implicit none
 
   integer :: init
   integer :: ierr
-
+  integer :: hugedim
   include 'interface.h'
   include 'mpif.h'
 
@@ -449,6 +450,16 @@ subroutine init_fields(init)
   ! itype=6 !Changed for reproducibility - Saulo Barros
   itype=7
 
+  ! If using cyclic boundary conditions, initialize parallel communication
+  ! for them
+  !  Find number of lbc variables to be communicated.
+  npvar=0
+  do nv = 1,num_var(1)
+     if(vtab_r(nv,1)%impt1 == 1 ) then
+        npvar=npvar+1
+     endif
+  enddo
+
   nbuff_feed=0
   do ng=1,ngrids
      do nm=1,nmachs
@@ -456,7 +467,8 @@ subroutine init_fields(init)
         i2=ipaths(2,itype,ng,nm)
         j1=ipaths(3,itype,ng,nm)
         j2=ipaths(4,itype,ng,nm)
-        memf=(i2-i1+1)*(j2-j1+1)*nnzp(ng)*(4+num_scalar(ng))
+        hugedim = max(nnzp(ng),nzg,nzs) * max(npatch,nclouds,nwave)
+        memf=(i2-i1+1)*(j2-j1+1)*hugedim*npvar
         nbuff_feed=max(nbuff_feed,memf)
      enddo
   enddo
@@ -499,16 +511,6 @@ subroutine init_fields(init)
    if (node_buffs_st(nm)%nrecv > 0) &
        allocate(node_buffs_st(nm)%lbc_recv_buff(node_buffs_st(nm)%nrecv*f_ndmd_size))
   end do
-
-  ! If using cyclic boundary conditions, initialize parallel communication
-  ! for them
-  !  Find number of lbc variables to be communicated.
-  npvar=0
-  do nv = 1,num_var(1)
-     if(vtab_r(nv,1)%impt1 == 1 ) then
-        npvar=npvar+1
-     endif
-  enddo
 
   if (ibnd == 4 .or. jbnd == 4) then
      call node_cycinit(nnzp(1),nnxp(1),nnyp(1),npvar,nmachs,ibnd,jbnd,mynum)

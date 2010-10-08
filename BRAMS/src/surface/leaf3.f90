@@ -458,7 +458,7 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz,leaf,basic,turb,radiate,grid,cu
                   cflxgc  = 0. !----- No water carbon emission model available...
 
                   !----- Compute the fluxes from atmosphere to canopy air space. ----------!
-                  eflxac  = rho_ustar * estar              * can_exner
+                  eflxac  = rho_ustar * estar              * cp * can_temp
                   wflxac  = rho_ustar * leaf%rstar(i,j,ip)
                   cflxac  = rho_ustar * leaf%cstar(i,j,ip) * mmdryi
 
@@ -1472,9 +1472,9 @@ subroutine leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mas
       !     Find the atmosphere -> canopy fluxes.                                          !
       !------------------------------------------------------------------------------------!
       rho_ustar  = can_rhos  * ustar
-      eflxac     = rho_ustar * estar * can_exner ! Enthalpy exchange
-      wflxac     = rho_ustar * rstar             ! Water vapour exchange
-      cflxac     = rho_ustar * cstar * mmdryi    ! CO2 exchange
+      eflxac     = rho_ustar * estar * cp * can_temp ! Enthalpy exchange
+      wflxac     = rho_ustar * rstar                 ! Water vapour exchange
+      cflxac     = rho_ustar * cstar * mmdryi        ! CO2 exchange
       !------------------------------------------------------------------------------------!
 
 
@@ -1589,9 +1589,9 @@ subroutine leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mas
       !     Find the atmosphere -> canopy fluxes.                                          !
       !------------------------------------------------------------------------------------!
       rho_ustar  = can_rhos  * ustar
-      eflxac     = rho_ustar * estar * can_exner ! Enthalpy exchange
-      wflxac     = rho_ustar * rstar             ! Water vapour exchange
-      cflxac     = rho_ustar * cstar * mmdryi    ! CO2 exchange
+      eflxac     = rho_ustar * estar * cp * can_temp ! Enthalpy exchange
+      wflxac     = rho_ustar * rstar                 ! Water vapour exchange
+      cflxac     = rho_ustar * cstar * mmdryi        ! CO2 exchange
       !------------------------------------------------------------------------------------!
 
 

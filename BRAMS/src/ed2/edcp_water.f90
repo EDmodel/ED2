@@ -377,7 +377,7 @@ subroutine simple_lake_model(time,dtlongest)
             water_lc        = can_rhos * ( water_ssh - can_shv) * rdi
             water_ac        = can_rhos * ustar * qstar
             sensible_lc     = can_rhos * cp * (water_temp -  can_temp) * rdi 
-            enthalpy_ac     = can_rhos * ustar * estar * can_exner
+            enthalpy_ac     = can_rhos * ustar * estar * cp * can_temp
             carbon_emission = 0. ! For the time being, no idea of what to put in here...
             carbon_uptake   = 0. ! For the time being, no idea of what to put in here...
             carbon_ac       = can_rhos * ustar * cstar * mmdryi

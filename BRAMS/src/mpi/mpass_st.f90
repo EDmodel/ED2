@@ -276,29 +276,16 @@ subroutine mkstbuff(n1,n2,n3,n4,arr,buff,il,ir,jb,jt,ind)
 
    ind=0
    
-   !----- Safety check, we cannot handle 4-D arrays. --------------------------------------!
-   if (n1 > 1 .and. n4 > 1) then
-      call abort_run('N1 and N4 cannot be > 1 at the same time!!!','mkstbuff'              &
-                    ,'mpass_st.f90')
-   elseif (n1 > 1) then
-      do j=jb,jt
-         do i=il,ir
-            do k=1,n1
-               ind=ind+1
-               buff(ind) = arr(k,i,j,1)
-            end do
-         end do
-      end do
-   else ! if (n4 > 1) then
-      do j=jb,jt
-         do i=il,ir
+   do j=jb,jt
+      do i=il,ir
+         do k=1,n1
             do l=1,n4
-               ind=ind+1
-               buff(ind) = arr(1,i,j,l)
+              ind=ind+1
+              buff(ind) = arr(k,i,j,l)
             end do
          end do
       end do
-   end if
+   end do
 
    return
 end subroutine mkstbuff
@@ -339,31 +326,18 @@ subroutine exstbuff(n1,n2,n3,n4,arr,buff,il,ir,jb,jt,ind)
 
    ind=0
 
-   !----- Safety check, we cannot handle 4-D arrays. --------------------------------------!
-   if (n1 > 1 .and. n4 > 1) then
-      call abort_run('N1 and N4 cannot be > 1 at the same time!!!','exstbuff'              &
-                    ,'mpass_st.f90')
-   elseif (n1 > 1) then
-      do j=jb,jt
-         do i=il,ir
-            do k=1,n1
-               ind=ind+1
-               arr(k,i,j,1) = buff(ind)
-            end do
-         end do
-      end do
-   else ! if (n4 > 1) then
-      do j=jb,jt
-         do i=il,ir
+   do j=jb,jt
+      do i=il,ir
+         do k=1,n1
             do l=1,n4
                ind=ind+1
-               arr(1,i,j,l) = buff(ind)
+               arr(k,i,j,l) = buff(ind)
             end do
          end do
       end do
-   end if
+   end do
 
-  return
+   return
 end subroutine exstbuff
 !==========================================================================================!
 !==========================================================================================!

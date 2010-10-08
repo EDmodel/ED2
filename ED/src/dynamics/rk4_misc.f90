@@ -30,12 +30,14 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
                                    , wcapcani              & ! intent(out)
                                    , rk4water_stab_thresh  & ! intent(in)
                                    , rk4min_sfcwater_mass  & ! intent(in)
-                                   , checkbudget           ! ! intent(in)
+                                   , checkbudget           & ! intent(in)
+                                   , find_derived_thbounds ! ! sub-routine
    use ed_max_dims          , only : n_pft                 ! ! intent(in)
    use canopy_radiation_coms, only : tai_min               ! ! intent(in)
    use therm_lib8           , only : qwtk8                 & ! subroutine
                                    , thetaeiv8             & ! function
                                    , idealdenssh8          & ! function
+                                   , rehuil8               & ! function
                                    , reducedpress8         ! ! function
    use allometry            , only : dbh2bl                ! ! function
    implicit none
@@ -75,11 +77,18 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
                                        ,targetp%can_depth)
    targetp%can_exner    = cp8 * (targetp%can_prss * p00i8) ** rocp8
 
-   !----- 3. Update temperature, and density and the natural logarithm of theta_eiv. ------!
+   !---------------------------------------------------------------------------------------!
+   !  3. Update the natural logarithm of theta_eiv, temperature, density, and relative     !
+   !     humidity.                                                                         !
+   !---------------------------------------------------------------------------------------!
    targetp%can_lntheiv  = log(targetp%can_theiv)
    targetp%can_temp     = cpi8 * targetp%can_theta * targetp%can_exner
    targetp%can_rhos     = idealdenssh8(targetp%can_prss,targetp%can_temp,targetp%can_shv)
+   targetp%can_rhv      = rehuil8(targetp%can_prss,targetp%can_temp,targetp%can_rvap)
    !---------------------------------------------------------------------------------------!
+
+   !----- 4. Find the lower and upper bounds for the derived properties. ------------------!
+   call find_derived_thbounds(targetp%can_prss,targetp%can_depth)
 
    do k = rk4site%lsl, nzg
       targetp%soil_water(k)   = dble(sourcesite%soil_water(k,ipa))
@@ -366,7 +375,8 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
    use therm_lib8            , only : qwtk8                & ! subroutine
                                     , qtk8                 & ! subroutine
                                     , thetaeiv2thil8       & ! function
-                                    , idealdenssh8         ! ! function
+                                    , idealdenssh8         & ! function
+                                    , rehuil8              ! ! function
    use consts_coms           , only : alvl8                & ! intent(in)
                                     , wdns8                & ! intent(in)
                                     , rdryi8               & ! intent(in)
@@ -406,20 +416,9 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
       initp%can_rvap  = initp%can_shv / (1.d0 - initp%can_shv)
       initp%can_theta = thetaeiv2thil8(initp%can_theiv,initp%can_prss,initp%can_rvap)
       initp%can_temp  = cpi8 * initp%can_theta * initp%can_exner
-   elseif (ok_shv) then
-      initp%can_rvap  = initp%can_shv / (1.d0 - initp%can_shv)
-      initp%can_theta = thetaeiv2thil8(rk4min_can_theiv,initp%can_prss,initp%can_rvap)
-      initp%can_temp  = cpi8 * initp%can_theta * initp%can_exner
-   elseif (ok_theiv) then
-      initp%can_rvap  = rk4min_can_shv / (1.d0 - rk4min_can_shv)
-      initp%can_theta = thetaeiv2thil8(initp%can_theiv,initp%can_prss,initp%can_rvap)
-      initp%can_temp  = cpi8 * initp%can_theta * initp%can_exner
-   else
-      initp%can_rvap  = rk4min_can_shv / (1.d0 - rk4min_can_shv)
-      initp%can_theta = thetaeiv2thil8(rk4min_can_theiv,initp%can_prss,initp%can_rvap)
-      initp%can_temp  = cpi8 * initp%can_theta * initp%can_exner
+      initp%can_rhv   = rehuil8(initp%can_prss,initp%can_temp,initp%can_rvap)
+      initp%can_rhos  = idealdenssh8(initp%can_prss,initp%can_temp,initp%can_shv)
    end if
-
    !---------------------------------------------------------------------------------------!
 
    !----- Updating soil temperature and liquid water fraction. ----------------------------!
@@ -1843,14 +1842,18 @@ subroutine print_csiteipa(csite, ipa)
 
    write (unit=*,fmt='(80a)') ('-',k=1,80)
 
-   write (unit=*,fmt='(11(a12,1x))') '  VEG_HEIGHT','   VEG_ROUGH','         LAI'          &
-                                    ,'        HTRY','     CAN_CO2','    CAN_TEMP'          &
-                                    ,'     CAN_SHV','    CAN_RHOS','    CAN_PRSS'          &
-                                    ,'   CAN_THEIV','   CAN_DEPTH'
-   write (unit=*,fmt='(11(es12.4,1x))') csite%veg_height(ipa),csite%veg_rough(ipa)         &
-         ,csite%lai(ipa),csite%htry(ipa),csite%can_co2(ipa),csite%can_temp(ipa)            &
-         ,csite%can_shv(ipa),csite%can_rhos(ipa),csite%can_prss(ipa)                       &
-         ,csite%can_theiv(ipa),csite%can_depth(ipa) 
+   write (unit=*,fmt='(6(a12,1x))')  '  VEG_HEIGHT','   VEG_ROUGH','         LAI'          &
+                                    ,'        HTRY','    CAN_PRSS','   CAN_DEPTH'
+   write (unit=*,fmt='(6(es12.4,1x))') csite%veg_height(ipa),csite%veg_rough(ipa)          &
+                                      ,csite%lai(ipa),csite%htry(ipa)                      &
+                                      ,csite%can_prss(ipa),csite%can_depth(ipa)
+
+   write (unit=*,fmt='(80a)') ('-',k=1,80)
+
+   write (unit=*,fmt='(4(a12,1x))')  '   CAN_THEIV','    CAN_TEMP','     CAN_SHV'          &
+                                    ,'     CAN_CO2'
+   write (unit=*,fmt='(4(es12.4,1x))') csite%can_theiv(ipa),csite%can_temp(ipa)            &
+                                      ,csite%can_shv(ipa),csite%can_rhos(ipa)
 
    write (unit=*,fmt='(80a)') ('-',k=1,80)
 
@@ -1991,15 +1994,20 @@ subroutine print_rk4patch(y,csite,ipa)
    write (unit=*,fmt='(a)'  ) ' '
    write (unit=*,fmt='(80a)') ('-',k=1,80)
 
-   write (unit=*,fmt='(11(a12,1x))')  '  VEG_HEIGHT','   VEG_ROUGH','   PATCH_LAI'         &
-                                     ,'     CAN_CO2','   CAN_THEIV','   CAN_THETA'         &
-                                     ,'    CAN_TEMP','     CAN_SHV','    CAN_RHOS'         &
-                                     ,'    CAN_PRSS','   CAN_DEPTH'
+   write (unit=*,fmt='(6(a12,1x))')  '  VEG_HEIGHT','   VEG_ROUGH','   PATCH_LAI'          &
+                                     ,'    CAN_PRSS','   CAN_DEPTH','     CAN_CO2'
                                      
-   write (unit=*,fmt='(11(es12.4,1x))') csite%veg_height(ipa),csite%veg_rough(ipa)         &
-                                       ,csite%lai(ipa),y%can_co2,y%can_theiv               &
-                                       ,y%can_theta,y%can_temp,y%can_shv,y%can_rhos        &
-                                       ,y%can_prss,y%can_depth
+   write (unit=*,fmt='(6(es12.4,1x))') csite%veg_height(ipa),csite%veg_rough(ipa)          &
+                                       ,csite%lai(ipa),y%can_prss,y%can_depth,y%can_co2
+
+   write (unit=*,fmt='(7(a12,1x))')  '   CAN_THEIV','   CAN_THETA','    CAN_TEMP'          &
+                                    ,'     CAN_SHV','    CAN_RVAP','     CAN_RHV'          &
+                                    ,'    CAN_RHOS'
+                                     
+                                     
+   write (unit=*,fmt='(11(es12.4,1x))') y%can_theiv,y%can_theta,y%can_temp                 &
+                                       ,y%can_shv  ,y%can_rvap ,y%can_rhv ,y%can_rhos
+                                       
 
    write (unit=*,fmt='(80a)') ('-',k=1,80)
 
