@@ -499,6 +499,7 @@ contains
                 write(clon,'(f4.1)')cgrid%lon(ipy)
              endif
           else
+print*,"GRIDRES = ",grid_res
              call fatal_error('Bad grid_res in phenology_init','read_prescribed_phenology' &
                               ,'phenology_init.f90')
           end if

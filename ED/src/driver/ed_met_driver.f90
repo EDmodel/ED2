@@ -381,7 +381,7 @@ subroutine read_met_drivers_init
             else
                year_use = year_use + 1
             end if
-
+print*,"METYEARS",iyear,year_use,metcyc1,metcycf
             metyears(iyear) = year_use
          end do
 
@@ -446,6 +446,7 @@ subroutine read_met_drivers_init
          if (exans) then
             call shdf5_open_f(trim(infile),'R')
          else
+            print*,iyear,year_use
             call fatal_error('Cannot open met driver input file '//trim(infile)//'!'       &
                             ,'read_met_drivers_init','ed_met_driver.f90')
          end if
@@ -772,7 +773,7 @@ subroutine update_met_drivers(cgrid)
    real                       :: relhum
    real                       :: snden !! snow density (kg/m3)
    real                       :: fice  !! precipication ice fraction
-   real                       :: fliq,tsnow
+   real                       :: fliq,tsnow, airT
    !----- External functions --------------------------------------------------------------!
    logical         , external :: isleap
    !---------------------------------------------------------------------------------------!
@@ -1033,13 +1034,22 @@ subroutine update_met_drivers(cgrid)
                !---------------------------------------------------------------------------!
                do ipy = 1,cgrid%npolygons
 
-                  theta_next = cgrid%metinput(ipy)%tmp(mnext)                              &
-                             * (p00 / cgrid%metinput(ipy)%pres(mnext))** rocp
-                  theta_prev = cgrid%metinput(ipy)%tmp(mprev)                              &
-                             * (p00 / cgrid%metinput(ipy)%pres(mprev))** rocp
+!                  theta_next = cgrid%metinput(ipy)%tmp(mnext)                              &
+!                             * (p00 / cgrid%metinput(ipy)%pres(mnext))** rocp
+!                  theta_prev = cgrid%metinput(ipy)%tmp(mprev)                              &
+!                             * (p00 / cgrid%metinput(ipy)%pres(mprev))** rocp
+!
+!                  !----- Interpolate potential temperature. -------------------------------!
+!                  cgrid%met(ipy)%atm_theta = theta_next * wnext + theta_prev * wprev
 
-                  !----- Interpolate potential temperature. -------------------------------!
-                  cgrid%met(ipy)%atm_theta = theta_next * wnext + theta_prev * wprev
+                  !---- First interpolate temperature --------!
+                  airT = cgrid%metinput(ipy)%tmp(mnext) * wnext &
+                       + cgrid%metinput(ipy)%tmp(mprev) * wprev
+
+                  !--- Second calculate potential temperature (assumes Pressure has already been filled) ---!
+                  cgrid%met(ipy)%atm_theta = airT &
+                                           * (p00 / cgrid%met(ipy)%prss)** rocp
+
                end do
 
             case('nbdsf')   !----- Near IR beam downward shortwave flux. ------ [   W/m²] -!

@@ -223,7 +223,7 @@ subroutine init_met_params()
    atm_tmp_max = 331.     ! Highest temperature ever measured, in El Azizia, Libya
    !----- Minimum and maximum acceptable air specific humidity [kg_H2O/kg_air]. -----------!
    atm_shv_min = 1.e-6    ! That corresponds to a relative humidity of 0.1% at 1000hPa
-   atm_shv_max = 3.e-2    ! That corresponds to a dew point of 32°C at 1000hPa.
+   atm_shv_max = 3.2e-2 !3.e-2    ! That corresponds to a dew point of 32°C at 1000hPa.
    !----- Minimum and maximum acceptable CO2 mixing ratio [µmol/mol]. ---------------------!
    atm_co2_min = 100.     ! 
    atm_co2_max = 1100.    ! 

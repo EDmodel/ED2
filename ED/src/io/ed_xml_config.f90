@@ -96,19 +96,17 @@ recursive subroutine read_ed_xml_config(filename)
   call libxml2f90__ll_exist('DOWN','extern',ntag)    !get number of pft tags
   print*,"EXTERN READ FROM FILE ::",ntag
 
- call getConfigSTRING  ('output_filepath','misc',i,cval,texist)
-
   if(ntag .ge. 1) then
      do i=1,ntag
-        call getConfigSTRING  ('extern','config',i,cval,texist)
-
-!        call libxml2f90__ll_selecttag('DOWN','extern',i)
-!        call libxml2f90__existid('extern',texist)
+!        call getConfigSTRING  ('extern','config',i,cval,texist)
+!print*,cval,texist
+        call libxml2f90__ll_selecttag('DOWN','extern',i)
+        call libxml2f90__existid('extern',texist)
         if(texist) then 
-!           call libxml2f90__ll_getsize('extern',len)
+           call libxml2f90__ll_getsize('extern',len)
            !----- MLO. Changed this to scalar so the interface check will work. -----------!
-!           call libxml2f90__ll_getch_scal('extern',len,cval)
-!           cval = cval(1:len)
+           call libxml2f90__ll_getch('extern',len,cval)
+           cval = cval(1:len)
            print*,"XML recursively loading ",trim(cval)
            call read_ed_xml_config(trim(cval))
         endif
@@ -201,8 +199,8 @@ recursive subroutine read_ed_xml_config(filename)
            call getConfigINT('include_pft','pft',i,ival,texist)
            if(texist) then
               include_pft(myPFT) = ival
-           else
-              include_pft(myPFT) = 1  !! if a PFT is defined, assume it's meant to be included
+!           else
+!              include_pft(myPFT) = 1  !! if a PFT is defined, assume it's meant to be included
            endif
            call getConfigINT('include_pft_ag','pft',i,ival,texist)
            if(texist) include_pft_ag(myPFT) = ival
