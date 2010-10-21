@@ -2,46 +2,77 @@
 !==========================================================================================!
 !     This file will read the landuse files and assign the anthropogenic disturbance       !
 ! matrices.                                                                                !
-!  MLO.  Added the possibility to start the run before the initial anthropogenic           !
-!        disturbance, by padding zeroes in the years before and after the dataset.         !
 !------------------------------------------------------------------------------------------!
 subroutine landuse_init
 
-   use ed_state_vars , only : edtype         & ! structure
-                            , polygontype    & ! structure
-                            , sitetype       & ! structure
-                            , edgrid_g       ! ! structure
-   use consts_coms   , only : erad           & ! intent(in)
-                            , pio180         ! ! intent(in)
-   use disturb_coms  , only : lutime         & ! intent(in)
-                            , max_lu_years   & ! intent(in)
-                            , num_lu_trans   & ! intent(in)
-                            , ianth_disturb  ! ! intent(in)
-   use ed_misc_coms     , only : iyeara         & ! intent(in)
-                            , iyearz         ! ! intent(in)
-   use grid_coms     , only : ngrids         ! ! intent(in)
-   use ed_max_dims      , only : str_len        ! ! intent(in)
+   use ed_state_vars , only : edtype          & ! structure
+                            , polygontype     & ! structure
+                            , sitetype        & ! structure
+                            , edgrid_g        ! ! structure
+   use consts_coms   , only : erad            & ! intent(in)
+                            , pio180          ! ! intent(in)
+   use disturb_coms  , only : lutime          & ! intent(in)
+                            , max_lu_years    & ! intent(in)
+                            , num_lu_trans    & ! intent(in)
+                            , ianth_disturb   & ! intent(in)
+                            , lu_database     ! ! intent(in)
+   use ed_misc_coms  , only : iyeara          & ! intent(in)
+                            , iyearz          ! ! intent(in)
+   use grid_coms     , only : ngrids          ! ! intent(in)
+   use pft_coms      , only : is_grass        ! ! intent(in)
+   use ed_max_dims   , only : str_len         & ! intent(in)
+                            , huge_lu         & ! intent(in)
+                            , n_pft           & ! intent(in)
+                            , maxlist         ! ! intent(in)
+
    implicit none
    !----- Local variables -----------------------------------------------------------------!
-   type(edtype)     , pointer    :: cgrid
-   type(polygontype), pointer    :: cpoly
-   type(sitetype)   , pointer    :: csite
-   real                          :: file_lat
-   real                          :: file_lon
-   character(len=256)            :: fname
-   real                          :: lu_area_i
-   integer                       :: ierr
-   logical                       :: exans
-   integer                       :: iyear
-   integer                       :: igr
-   integer                       :: ipy
-   integer                       :: isi
-   integer                       :: sim_years
-   integer                       :: lu_years
-   integer                       :: yd_1st
-   integer                       :: yd_this
-   integer                       :: yd_last
-   integer                       :: yd_tot
+   type(edtype)          , pointer            :: cgrid
+   type(polygontype)     , pointer            :: cpoly
+   type(sitetype)        , pointer            :: csite
+   type(lutime)          , pointer            :: clutime
+   character(len=str_len), dimension(maxlist) :: full_list
+   character(len=str_len), dimension(maxlist) :: lu_list
+   real                  , dimension(maxlist) :: llon_list
+   real                  , dimension(maxlist) :: llat_list
+   real                  , dimension(maxlist) :: file_ldist
+   character(len=str_len)                     :: lu_name
+   character(len=str_len)                     :: cdum
+   integer                                    :: nharvest
+   integer               , dimension(n_pft)   :: harvest_pft
+   integer                                    :: ierr
+   integer                                    :: nf
+   integer                                    :: nflist
+   integer                                    :: nfllu
+   integer                                    :: ncl
+   integer                                    :: iyear
+   integer                                    :: igr
+   integer                                    :: ipy
+   integer                                    :: isi
+   integer                                    :: ipft
+   integer                                    :: h
+   integer                                    :: sim_years
+   integer                                    :: lu_years
+   integer                                    :: yd_1st
+   integer                                    :: yd_this
+   integer                                    :: yd_last
+   integer                                    :: yd_tot
+   logical                                    :: inside
+   real                  , dimension(n_pft)   :: mindbh_1ary
+   real                  , dimension(n_pft)   :: harvprob_1ary
+   real                  , dimension(n_pft)   :: mindbh_2ary
+   real                  , dimension(n_pft)   :: harvprob_2ary
+   real                                       :: lu_area
+   real                                       :: lu_area_i
+   real                                       :: wlon
+   real                                       :: elon
+   real                                       :: slat
+   real                                       :: nlat
+   !----- Local constants. ----------------------------------------------------------------!
+   character(len=12)    , parameter           :: fffmt='(a,1x,f12.5)'
+   character(len=13)    , parameter           :: esfmt='(a,1x,es12.5)'
+   !----- External function. --------------------------------------------------------------!
+   real                 , external            :: dist_gc
    !---------------------------------------------------------------------------------------!
 
    !----- Finding number of simulation years ----------------------------------------------!
@@ -56,102 +87,192 @@ subroutine landuse_init
       write (unit=*,fmt='(a)') ' so MAX_LU_YEARS >= IYEARZ-IYEARA+1, then recompile'
       write (unit=*,fmt='(a)') ' your model.'
       call fatal_error ('Simulation is too long for anthropogenic disturbance.'            &
-                      &,'landuse_init','landuse_init.f90')
+                       ,'landuse_init','landuse_init.f90')
    end if
 
-   do igr = 1,ngrids
+
+   gridloop: do igr = 1,ngrids
+
+      !------------------------------------------------------------------------------------!
+      !     Find the list of disturbance rate files.                                       !
+      !------------------------------------------------------------------------------------!
+      call ed_filelist(full_list,lu_database(igr),nflist)
+      call ed1_fileinfo('.lu',nflist,full_list,nfllu,lu_list,llon_list,llat_list)
+      !------------------------------------------------------------------------------------!
+
       cgrid=>edgrid_g(igr)
 
-      do ipy = 1,cgrid%npolygons
+      polyloop: do ipy = 1,cgrid%npolygons
          cpoly => cgrid%polygon(ipy)
 
-         !----- Generate the landuse file name. -------------------------------------------!
-         call landuse_file_name(cgrid%lat(ipy),cgrid%lon(ipy),file_lat,file_lon,fname)
+         !---------------------------------------------------------------------------------!
+         !     Comput the distance between the current polygon and all the files.          !
+         !---------------------------------------------------------------------------------!
+         do nf=1,nfllu
+            file_ldist(nf) = dist_gc(cgrid%lon(ipy),llon_list(nf)                          &
+                                    ,cgrid%lat(ipy),llat_list(nf) )
+         end do
+
+         !---------------------------------------------------------------------------------!
+         !    Pick the closest file.  This is not a guarantee that it will be used because !
+         ! the closest polygon area must contain the point associated to the current       !
+         ! polygon.                                                                        !
+         !---------------------------------------------------------------------------------!
+         ncl     = minloc(file_ldist(1:nfllu),dim=1)
+         lu_name = lu_list(ncl)
+         write (unit=*,fmt='(2a)') 'Using land use file: ',trim(lu_name)
+
+         !---------------------------------------------------------------------------------!
+         !    Open the patch file and read in all patches.                                 !
+         !---------------------------------------------------------------------------------!
+         open(unit=12,file=trim(lu_name),form='formatted',status='old',action='read')
+
+         !---------------------------------------------------------------------------------!
+         !     Initialise the temporary arrays with data that will not cause any harvest-  !
+         ! ing.  The actual variables will be read in the following block.                 !
+         !---------------------------------------------------------------------------------!
+         harvest_pft(1:n_pft)   = -1
+         mindbh_1ary(1:n_pft)   = huge(1.)
+         harvprob_1ary(1:n_pft) = 0.
+         mindbh_2ary(1:n_pft)   = huge(1.)
+         harvprob_2ary(1:n_pft) = 0.
+
+         !----- Read the header. ----------------------------------------------------------!
+         read (unit=12,fmt=*) cdum,cdum,wlon
+         read (unit=12,fmt=*) cdum,cdum,elon
+         read (unit=12,fmt=*) cdum,cdum,slat
+         read (unit=12,fmt=*) cdum,cdum,nlat
+         read (unit=12,fmt=*) cdum,cdum,lu_area
+         read (unit=12,fmt=*) cdum,cdum,yd_1st
+         read (unit=12,fmt=*) cdum,cdum,yd_last
+         read (unit=12,fmt=*) cdum,cdum,nharvest
+
+         if (nharvest > 0 ) then
+            !------------------------------------------------------------------------------!
+            !     If nharvest is not 0, then the harvesting is not PFT-blind, read the PFT !
+            ! information in the file.                                                     !
+            !------------------------------------------------------------------------------!
+            read (unit=12,fmt=*) cdum,cdum,(harvest_pft(h)  ,h=1,nharvest)
+            read (unit=12,fmt=*) cdum,cdum,(mindbh_1ary(h)  ,h=1,nharvest)
+            read (unit=12,fmt=*) cdum,cdum,(harvprob_1ary(h),h=1,nharvest)
+            read (unit=12,fmt=*) cdum,cdum,(mindbh_2ary(h)  ,h=1,nharvest)
+            read (unit=12,fmt=*) cdum,cdum,(harvprob_2ary(h),h=1,nharvest)
+         else
+            !------------------------------------------------------------------------------!
+            !     No specific PFT information was given, this is likely to be a case in    !
+            ! which the logging is based on absolute target biomass (PFT- and DBH-blind).  !
+            !------------------------------------------------------------------------------!
+            h = 0
+            nopftloop: do ipft=1,n_pft
+               h=h+1
+               harvest_pft(h)       = ipft
+               mindbh_1ary(1:n_pft) = 0.
+               mindbh_2ary(1:n_pft) = 0.
+            end do nopftloop
+         end if
+         read (unit=12,fmt=*) 
 
          !----- Use file_lat to compute the physical area sampled by the file. ------------!
-         lu_area_i = 1. / ((erad * pio180)*(erad * pio180) * abs(cos(pio180 * file_lat)))
+         lu_area_i = 1. / lu_area
 
-         !----- If we are doing anthropogenic disturbance, check for file existence. ------!
-         inquire(file=trim(fname),exist=exans)
-         
-         if (exans .and. ianth_disturb == 1) then
-            !----- File exists, allocate the maximum number of years ----------------------!
+         !----- Determine whether this block contains the current polygon. ----------------!
+         inside = cgrid%lon(ipy) >= wlon .and. cgrid%lon(ipy) <= elon .and.                &
+                  cgrid%lat(ipy) >= slat .and. cgrid%lat(ipy) <= nlat
+
+
+         !---------------------------------------------------------------------------------!
+         !     Here we will only use the land information if the anthropogenic disturbance !
+         ! is sought and if the polygon centre is inside the block of land use disturbance !
+         ! we are about to read.                                                           !
+         !---------------------------------------------------------------------------------!
+         if (ianth_disturb == 1 .and. inside) then
+            !----- File exists, allocate the maximum number of years. ---------------------!
             allocate(cpoly%clutimes(max_lu_years,cpoly%nsites))
-            
-            siteloop: do isi = 1,cpoly%nsites
-               csite => cpoly%site(isi)
-               
-               !----- Open the file -------------------------------------------------------!
-               open(unit=12,file=trim(fname),form='formatted',status='old')
-               
-               !---------------------------------------------------------------------------!
-               !    Here we pretend we read the file, but only read the first and last     !
-               ! year.  We will zero-pad the years before and after the land use data set  !
-               ! if needed.                                                                !
-               !---------------------------------------------------------------------------!
-               read (unit=12,fmt=*) ! Header
-               read(unit=12,fmt=*,iostat=ierr) yd_1st
-               if (ierr /= 0) then
-                  call fatal_error('Error reading landuse file :'//trim(fname)//'...'      &
-                                  &,'landuse_init','landuse_init.f90')
-               end if
-               yd_last = yd_1st
-               !----- Read years until the end to find out first and last year. -----------!
-               rangeread: do 
-                  read (unit=12,fmt=*,iostat=ierr) yd_this
-                  if (ierr == 0) then
-                     !----- Found another year. -------------------------------------------!
-                     yd_last = yd_this
-                  else
-                     !----- End of file. --------------------------------------------------!
-                     exit rangeread
-                  end if
-               end do rangeread
-               !----- Rewind the file and skip the header. --------------------------------!
-               rewind(unit=12)
-               read(unit=12,fmt=*)
-               !---------------------------------------------------------------------------!
 
+
+            !----- Copy the file information to the first site. ---------------------------!
+            isi = 1
+            csite => cpoly%site(isi)
+
+
+            !----- Determine the number of disturbance years. -----------------------------!
+            cpoly%num_landuse_years(isi) = max(yd_last,iyearz)-min(yd_1st,iyeara) + 1
+
+
+            !----- Initialise the PFT-dependent arrays. -----------------------------------!
+            cpoly%mindbh_primary    (1:n_pft,isi) = huge(1.)
+            cpoly%probharv_primary  (1:n_pft,isi) = 0.
+            cpoly%mindbh_secondary  (1:n_pft,isi) = huge(1.)
+            cpoly%probharv_secondary(1:n_pft,isi) = 0.
+
+            !----- Fill the arrays with the appropriate PFT. ------------------------------!
+            do ipft=1,n_pft
+               harvloop: do h=1,nharvest
+                  if (harvest_pft(h) == ipft) then
+                     cpoly%mindbh_primary    (ipft,isi) = mindbh_1ary  (h)
+                     cpoly%probharv_primary  (ipft,isi) = harvprob_1ary(h)
+                     cpoly%mindbh_secondary  (ipft,isi) = mindbh_2ary  (h)
+                     cpoly%probharv_secondary(ipft,isi) = harvprob_2ary(h)
+                     exit harvloop
+                  end if
+               end do harvloop
+            end do
+
+
+            !----- Padding disturbances with zero before first available lu year. ---------!
+            iyear = 0
+            do yd_this = iyeara,(yd_1st-1)
+               iyear = iyear + 1
+               clutime => cpoly%clutimes(iyear,isi)
+
+               clutime%landuse_year            = yd_this
+               clutime%landuse(1:num_lu_trans) = 0.0
+            end do
+
+            !---- Reading the years that have data ----------------------------------------!
+            do yd_this = yd_1st,yd_last
+               iyear = iyear + 1
+               clutime => cpoly%clutimes(iyear,isi)
+
+               read(unit=12,fmt=*) clutime%landuse_year, clutime%landuse(1:num_lu_trans)
+               
+               !---------------------------------------------------------------------------!
+               !    Here we normalise by the area, except when landuse(12) and/or          !
+               ! landuse(14) are negative (a special flag to use the selective logging.    !
+               !---------------------------------------------------------------------------!
+               if ( clutime%landuse(12) > 0. ) then
+                  clutime%landuse(12) = lu_area_i * clutime%landuse(12)
+               end if
+               if ( clutime%landuse(14) > 0. ) then
+                  clutime%landuse(14) = lu_area_i * clutime%landuse(14) 
+               end if
+               clutime%landuse(16) = lu_area_i * clutime%landuse(16)
+               clutime%landuse(18) = lu_area_i * clutime%landuse(18)
+            end do
+            close(unit=12,status='keep')
+
+            !----- Padding disturbances with zero after last available lu year. -----------!
+            do yd_this = (yd_last+1),iyearz
+               iyear = iyear + 1
+               clutime => cpoly%clutimes(iyear,isi)
+               clutime%landuse_year            = yd_this
+               clutime%landuse(1:num_lu_trans) = 0.0
+            end do
+
+
+            !----- Copy the information from the first site to the other, if they exist. --!
+            siteloop: do isi = 2,cpoly%nsites
+               csite => cpoly%site(isi)
 
                !----- Determine the number of disturbance years. --------------------------!
-               cpoly%num_landuse_years(isi) = max(yd_last,iyearz)-min(yd_1st,iyeara) + 1
+               cpoly%num_landuse_years(isi) = cpoly%num_landuse_years(1)
 
 
-               !----- Padding disturbances with zero before first available lu year. ------!
-               iyear = 0
-               do yd_this = iyeara,(yd_1st-1)
-                  iyear = iyear + 1
-                  cpoly%clutimes(iyear,isi)%landuse_year            = yd_this
-                  cpoly%clutimes(iyear,isi)%landuse(1:num_lu_trans) = 0.0
-               end do
-
-               !---- Reading the years that have data -------------------------------------!
-               do yd_this = yd_1st,yd_last
-                  iyear = iyear + 1
-                  read(unit=12,fmt=*) cpoly%clutimes(iyear,isi)%landuse_year               &
-                                     ,cpoly%clutimes(iyear,isi)%landuse(1:num_lu_trans)
-                  
-                  !----- Normalize by the area --------------------------------------------!
-                  cpoly%clutimes(iyear,isi)%landuse(12) = lu_area_i                        &
-                                           * cpoly%clutimes(iyear,isi)%landuse(12) 
-
-                  cpoly%clutimes(iyear,isi)%landuse(14) = lu_area_i                        &
-                                           * cpoly%clutimes(iyear,isi)%landuse(14) 
-                                           
-                  cpoly%clutimes(iyear,isi)%landuse(16) = lu_area_i                        &
-                                           * cpoly%clutimes(iyear,isi)%landuse(16)
-
-                  cpoly%clutimes(iyear,isi)%landuse(18) = lu_area_i                        &
-                                           * cpoly%clutimes(iyear,isi)%landuse(18)
-                  
-               end do
-               close(unit=12,status='keep')
-
-               !----- Padding disturbances with zero after last available lu year. --------!
-               do yd_this = (yd_last+1),iyearz
-                  iyear = iyear + 1
-                  cpoly%clutimes(iyear,isi)%landuse_year            = yd_this
-                  cpoly%clutimes(iyear,isi)%landuse(1:num_lu_trans) = 0.0
+               !----- Disturbances. -------------------------------------------------------!
+               do iyear = 1,cpoly%num_landuse_years(isi)
+                  clutime => cpoly%clutimes(iyear,isi)
+                  clutime%landuse_year            = clutime%landuse_year 
+                  clutime%landuse(1:num_lu_trans) = clutime%landuse(1:num_lu_trans)
                end do
 
             end do siteloop
@@ -162,25 +283,46 @@ subroutine landuse_init
             !------------------------------------------------------------------------------!
             
             if (ianth_disturb==1) then
-               write(unit=*,fmt='(3(a,1x))') 'Land use file:',trim(fname)                  &
-                                           &,' not found.  assigning 0s for landuse'
+
+               write (unit=*,fmt='(a)') '----------------------------------------------------------'
+               write (unit=*,fmt='(a)') ' The closest land use point is too far away...'
+               write (unit=*,fmt='(a)') ' - File:                        ',trim(lu_name)
+               write (unit=*,fmt=fffmt) ' - Polygon longitude:           ',cgrid%lon(ipy)
+               write (unit=*,fmt=fffmt) ' - Polygon latitude:            ',cgrid%lat(ipy)
+               write (unit=*,fmt=fffmt) ' - Closest LU central longitude:',llon_list(ncl)
+               write (unit=*,fmt=fffmt) ' - Closest LU central latitude: ',llat_list(ncl)
+               write (unit=*,fmt=fffmt) ' - Closest LU western edge:     ',wlon
+               write (unit=*,fmt=fffmt) ' - Closest LU eastern edge:     ',elon
+               write (unit=*,fmt=fffmt) ' - Closest LU southern edge:    ',slat
+               write (unit=*,fmt=fffmt) ' - Closest LU northern edge:    ',nlat
+               write (unit=*,fmt=esfmt) ' - Distance:                    ',file_ldist(ncl)
+               write (unit=*,fmt=*)     ' '
+               write (unit=*,fmt='(a)') ' We will assign no land use disturbance rate.'
+               write (unit=*,fmt='(a)') '----------------------------------------------------------'
             end if
 
             !----- Allocate just 1 landuse year. ------------------------------------------!
             allocate(cpoly%clutimes(1,cpoly%nsites))
+
+            !----- Set the parameters in a way that no logging/ploughing will happen. -----!
             do isi = 1,cpoly%nsites
-               cpoly%num_landuse_years(isi) = 1
-               cpoly%clutimes(1,isi)%landuse_year = iyeara
+               cpoly%num_landuse_years(isi)                  = 1
+               cpoly%mindbh_primary    (1:n_pft,isi)         = huge(1.)
+               cpoly%probharv_primary  (1:n_pft,isi)         = 0.
+               cpoly%mindbh_secondary  (1:n_pft,isi)         = huge(1.)
+               cpoly%probharv_secondary(1:n_pft,isi)         = 0.
+               cpoly%clutimes(1,isi)%landuse_year            = iyeara
                cpoly%clutimes(1,isi)%landuse(1:num_lu_trans) = 0.0
             end do
 
          end if
- 
+         !---------------------------------------------------------------------------------!
+
          cpoly%plantation(:) = 0
-         call read_plantation_fractions(cpoly, file_lat, file_lon)
+         call read_plantation_fractions(cpoly,cgrid%lon(ipy),cgrid%lat(ipy),igr)
          
-      enddo
-   enddo
+      end do polyloop
+   end do gridloop
 
    return
 end subroutine landuse_init
@@ -194,119 +336,113 @@ end subroutine landuse_init
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine landuse_file_name(lat, lon, file_lat, file_lon, fname)
-  
-  use ed_misc_coms, only: ed_inputs_dir
-
-  implicit none
-
-  real, intent(in) :: lat
-  real, intent(in) :: lon
-  real, intent(out) :: file_lat
-  character(len=256), intent(out) :: fname
-  character(len=5) :: file_lat_string
-  real, intent(out) :: file_lon
-  character(len=6) :: file_lon_string
-  
-  if(lat > 0.0)then
-     file_lat = 0.5 + real(int(lat))
-     if(file_lat < 10.0)then
-        write(file_lat_string,'(f3.1)')file_lat
-     else
-        write(file_lat_string,'(f4.1)')file_lat
-     endif
-  else
-     file_lat = - (0.5 + real(int(-lat)))
-     if(file_lat > -10.0)then
-        write(file_lat_string,'(f4.1)')file_lat
-     else
-        write(file_lat_string,'(f5.1)')file_lat
-     endif
-  endif
-
-  if(lon > 0.0)then
-     file_lon = 0.5 + real(int(lon))
-     if(file_lon < 10.0)then
-        write(file_lon_string,'(f3.1)')file_lon
-     elseif(lon < 100.0)then
-        write(file_lon_string,'(f4.1)')file_lon
-     else
-        write(file_lon_string,'(f5.1)')file_lon
-     endif
-  else
-     file_lon = - (0.5 + real(int(-lon)))
-     if(lon > -10.0)then
-        write(file_lon_string,'(f4.1)')file_lon
-     elseif(lon > -100.0)then
-        write(file_lon_string,'(f5.1)')file_lon
-     else
-        write(file_lon_string,'(f6.1)')file_lon
-     endif
-  endif
-  
-  fname = trim(ed_inputs_dir)//'glu/lat'//trim(file_lat_string)
-  fname = trim(fname)//'lon'//trim(file_lon_string)//'.lu'
-
-  return
-end subroutine landuse_file_name
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
 !     This subroutine reads the plantation fraction.                                       !
 !------------------------------------------------------------------------------------------!
-subroutine read_plantation_fractions(cpoly, file_lat, file_lon)
-   use ed_state_vars , only : polygontype   ! ! structure
-   use ed_misc_coms     , only : ed_inputs_dir ! ! intent(in)
-   use ed_max_dims      , only : str_len       ! ! intent(in)
+subroutine read_plantation_fractions(cpoly,polylon,polylat,igr)
+   use ed_state_vars , only : polygontype         ! ! structure
+   use ed_max_dims   , only : str_len             ! ! intent(in)
+   use disturb_coms  , only : plantation_file     & ! intent(in)
+                            , max_plantation_dist & ! intent(in)
+                            , min_plantation_frac ! ! intent(in)
+
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
-   type(polygontype), target     :: cpoly
-   real             , intent(in) :: file_lat
-   real             , intent(in) :: file_lon
+   type(polygontype)     , target      :: cpoly
+   real                  , intent(in)  :: polylon
+   real                  , intent(in)  :: polylat
+   integer               , intent(in)  :: igr
    !----- Local variables -----------------------------------------------------------------!
-   character(len=str_len)        :: fname
-   logical                       :: exans
-   integer                       :: ierr
-   integer                       :: isi
-   real                          :: lat
-   real                          :: lon
-   real                          :: fracplant
+   character(len=str_len)              :: fname
+   logical                             :: exans
+   integer                             :: ierr
+   integer                             :: isi
+   real, dimension(:)    , allocatable :: plantlon
+   real, dimension(:)    , allocatable :: plantlat
+   real, dimension(:)    , allocatable :: plantdist
+   real, dimension(:)    , allocatable :: fracplant
+   real                                :: rdum
+   integer                             :: ndat
+   integer                             :: n
+   !----- Local constants. ----------------------------------------------------------------!
+   character(len=12)    , parameter    :: fffmt='(a,1x,f12.5)'
+   character(len=13)    , parameter    :: esfmt='(a,1x,es12.5)'
+   !----- External functions. -------------------------------------------------------------!
+   real                  , external    :: dist_gc
    !---------------------------------------------------------------------------------------!
 
 
-   !----- Set plantation fraction file and checking whether it exists. --------------------!
-   fname = trim(ed_inputs_dir)//'fraction.plantation'
-   inquire(file=trim(fname),exist=exans)
-   if (.not.exans)then
-      write(unit=*,fmt='(a)') 'There is no plantation file.  Exiting.'
-      write(unit=*,fmt='(a)') 'Assigning no plantations'
-      write(unit=*,fmt='(a)') 'File :'//trim(fname)//' not found...'
+   !---------------------------------------------------------------------------------------!
+   !     If the user left the plantation file empty, it means that they don't want to      !
+   ! use plantation files, skip the subroutine and don't print any warnings.               !
+   !---------------------------------------------------------------------------------------!
+   if (len_trim(plantation_file(igr)) == 0) then
       return
-   end if
-
-   open(unit=12, file=trim(fname), form='formatted', status='old')
-   read_plantation: do
-      read (unit=12,fmt=*,iostat=ierr) lat, lon, fracplant
-      !----- End of file. -----------------------------------------------------------------!
-      if(ierr /= 0) exit read_plantation
-
-      if (lat == file_lat .and. lon == file_lon) then
-         if(fracplant > 0.125) then
-            do isi = 1,cpoly%nsites
-               cpoly%plantation(isi) = 1
-            end do
-         end if
-         exit read_plantation
+   else
+      !----- Check whether plantation file exists. ----------------------------------------!
+      inquire(file=trim(plantation_file(igr)),exist=exans)
+      if (.not.exans)then
+         write (unit=*,fmt='(a)') '-------------------------------------------------------'
+         write (unit=*,fmt='(a)') 'File :'//trim(plantation_file(igr))//' not found...'
+         write (unit=*,fmt='(a)') 'Assuming that there are no plantations'
+         write (unit=*,fmt='(a)') '-------------------------------------------------------'
+         return
       end if
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     If we reach this point, then there is a plantation file. Open it.                 !
+   !---------------------------------------------------------------------------------------!
+   open (unit=12, file=trim(plantation_file(igr)), form='formatted', status='old')
+   !----- The first loop will determine how many points are available. --------------------!
+   ndat = 0
+   countloop: do
+      read (unit=12,fmt=*,iostat=ierr) rdum
+      if (ierr /= 0) exit countloop
+      
+      ndat = ndat + 1
+   end do countloop
+   rewind(unit=12)
+
+   !----- Now that we know the number of lines, allocate the temporary vectors. -----------!
+   allocate (plantlon(ndat),plantlat(ndat),plantdist(ndat),fracplant(ndat))
+
+   !----- Now we read the data. -----------------------------------------------------------!
+   read_plantation: do n=1,ndat
+      read (unit=12,fmt=*) plantlat(n), plantlon(n), fracplant(n)
+      plantdist(n) = dist_gc(polylon,plantlon(n),polylat,plantlat(n))
    end do read_plantation
-   close(unit=12)
+   close(unit=12,status='keep')
+
+   !----- Determine which point was the closest one. --------------------------------------!
+   n = minloc(plantdist,dim=1)
+
+   !----- Check whether the distance is not too large.  If it is, don't use it. -----------!
+   if (plantdist(n) > max_plantation_dist) then
+      write (unit=*,fmt='(a)') '----------------------------------------------------------'
+      write (unit=*,fmt=*)     ' The closest plantation point is too far away...'
+      write (unit=*,fmt=fffmt) ' - Polygon longitude:                       ',polylon
+      write (unit=*,fmt=fffmt) ' - Polygon latitude:                        ',polylat
+      write (unit=*,fmt=fffmt) ' - Plantation closest longitude:            ',plantlon(n)
+      write (unit=*,fmt=fffmt) ' - Plantation closest latitude:             ',plantlat(n)
+      write (unit=*,fmt=esfmt) ' - Distance between polygon and plantation: ',plantdist(n)
+      write (unit=*,fmt=esfmt) ' - Maximum accepted distance:               '              &
+                                  ,max_plantation_dist
+      write (unit=*,fmt=*)     ' '
+      write (unit=*,fmt='(a)') ' We will assume no plantations in this polygon.'
+      write (unit=*,fmt='(a)') '----------------------------------------------------------'
+
+   elseif (fracplant(n) > min_plantation_frac) then
+      !----- Assume that all sites are plantation sites. ----------------------------------!
+      do isi = 1,cpoly%nsites
+         cpoly%plantation(isi) = 1
+      end do
+   end if
+   !---------------------------------------------------------------------------------------!
+
+   deallocate(plantlon,plantlat,fracplant,plantdist)
 
    return
 end subroutine read_plantation_fractions

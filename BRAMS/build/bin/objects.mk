@@ -67,6 +67,8 @@ OBJ_MODEL =                         \
 	harr_rad.o                  \
 	harr_raddriv.o              \
 	harr_radinit.o              \
+	hdf5_coms.o                 \
+	hdf5_utils.o                \
 	hemi2.o                     \
 	htint-opt.o                 \
 	inithis.o                   \
@@ -271,7 +273,6 @@ OBJ_MODEL =                         \
 	canopy_air_coms.o           \
 	canopy_radiation_coms.o     \
 	canopy_struct_dynamics.o    \
-	canopy_update_euler.o       \
 	consts_coms.o               \
 	decomp_coms.o               \
 	disturb_coms.o              \
@@ -310,8 +311,7 @@ OBJ_MODEL =                         \
 	grid_coms.o                 \
 	growth_balive.o             \
 	h5_output.o                 \
-	hdf5_coms.o                 \
-	hdf5_utils.o                \
+	heun_driver.o               \
 	hydrology_coms.o            \
 	hydrology_constants.o       \
 	init_hydro_sites.o          \
@@ -328,7 +328,7 @@ OBJ_MODEL =                         \
 	phenology_aux.o             \
 	phenology_coms.o            \
 	phenology_driv.o            \
-	phenology_init.o            \
+	phenology_startup.o         \
 	photosyn_driv.o             \
 	physiology_coms.o           \
 	pft_coms.o                  \

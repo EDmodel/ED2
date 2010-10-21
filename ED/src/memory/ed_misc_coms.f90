@@ -1,7 +1,7 @@
 Module ed_misc_coms
 
 
-  use ed_max_dims, only: str_len,maxpvars,str_len_short
+  use ed_max_dims, only: str_len,maxpvars,str_len_short,maxgrds
 
   implicit none
 
@@ -59,12 +59,29 @@ Module ed_misc_coms
   type(simtime) :: out_time_fast
   type(simtime) :: out_time_state
 
-  character(len=str_len) :: sfilin
+  character(len=str_len), dimension(maxgrds) :: sfilin
   character(len=str_len) ::ffilout 
   character(len=str_len) ::sfilout
   integer :: ied_init_mode
   
-  character(len=str_len) :: ed_inputs_dir
+  character(len=str_len) :: thsums_database
+
+  !----------------------------------------------------------------------------------------!
+  !    Maximum distance to the current polygon that we still consider the file grid point  !
+  ! to be representative of the polygon for thermal sums.                                  !
+  !----------------------------------------------------------------------------------------!
+  real    :: max_thsums_dist
+
+
+  !----------------------------------------------------------------------------------------!
+  !      Alternative method for mixing 1 grid and POI's.  Only use the grid if their is    !
+  ! NOT an POI  within a user specified resolution.  Remember, this assumes there is only  !
+  ! 1 gridded file, and it is the first file when ied_init_mode is set to 99  (Developer   !
+  ! use only).                                                                             !
+  !----------------------------------------------------------------------------------------!
+  real    :: max_poi99_dist
+  !----------------------------------------------------------------------------------------!
+
   integer :: integration_scheme
 
 
