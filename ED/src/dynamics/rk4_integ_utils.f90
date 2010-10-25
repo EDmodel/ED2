@@ -20,11 +20,14 @@ subroutine odeint(h1,csite,ipa,nsteps)
                              , dtrk4                  & ! intent(in)
                              , dtrk4i                 & ! intent(in)
                              , tiny_offset            & ! intent(in)
-                             , checkbudget            ! ! intent(in)
+                             , checkbudget            & ! intent(in)
+                             , print_detailed         & ! intent(in)
+                             , norm_rk4_fluxes        ! ! sub-routine
    use rk4_stepper    , only : rkqs                   ! ! subroutine
    use ed_misc_coms   , only : fast_diagnostics       ! ! intent(in)
    use hydrology_coms , only : useRUNOFF              ! ! intent(in)
-   use grid_coms      , only : nzg                    ! ! intent(in)
+   use grid_coms      , only : nzg                    & ! intent(in)
+                             , nzs                    ! ! intent(in)
    use soil_coms      , only : dslz8                  & ! intent(in)
                              , runoff_time            ! ! intent(in)
    use consts_coms    , only : cliq8                  & ! intent(in)
@@ -72,7 +75,7 @@ subroutine odeint(h1,csite,ipa,nsteps)
    !    If top snow layer is too thin for computational stability, have it evolve in       !
    ! thermal equilibrium with top soil layer.                                              !
    !---------------------------------------------------------------------------------------!
-   call redistribute_snow(integration_buff%initp, csite,ipa)
+   call redistribute_snow(nzg,nzs,integration_buff%initp, csite,ipa)
    call update_diagnostic_vars(integration_buff%initp,csite,ipa)
 
 
@@ -143,7 +146,7 @@ subroutine odeint(h1,csite,ipa,nsteps)
                integration_buff%y%sfcwater_energy(ksn) =                                   &
                                      integration_buff%y%sfcwater_energy(ksn) - qwfree
 
-               call redistribute_snow(integration_buff%y,csite,ipa)
+               call redistribute_snow(nzg,nzs,integration_buff%y,csite,ipa)
                call update_diagnostic_vars(integration_buff%y,csite,ipa)
 
                !----- Compute runoff for output -------------------------------------------!
@@ -156,12 +159,12 @@ subroutine odeint(h1,csite,ipa,nsteps)
                                              + sngloff(qwfree * dtrk4i,tiny_offset)
                end if
                if (checkbudget) then
-                  integration_buff%initp%wbudget_loss2runoff = wfreeb
-                  integration_buff%initp%ebudget_loss2runoff = qwfree
-                  integration_buff%initp%wbudget_storage =                                 &
-                     integration_buff%initp%wbudget_storage - wfreeb
-                  integration_buff%initp%ebudget_storage =                                 &
-                     integration_buff%initp%ebudget_storage - qwfree
+                  integration_buff%y%wbudget_loss2runoff = wfreeb
+                  integration_buff%y%ebudget_loss2runoff = qwfree
+                  integration_buff%y%wbudget_storage =                                     &
+                     integration_buff%y%wbudget_storage - wfreeb
+                  integration_buff%y%ebudget_storage =                                     &
+                     integration_buff%y%ebudget_storage - qwfree
                end if
 
             else
@@ -219,11 +222,12 @@ end subroutine odeint
 ! ables.                                                                                   !
 !------------------------------------------------------------------------------------------!
 subroutine copy_met_2_rk4site(vels,atm_theiv,atm_theta,atm_tmp,atm_shv,atm_co2,zoff        &
-                            ,exner,pcpg,qpcpg,dpcpg,prss,geoht,lsl,green_leaf_factor       &
-                            ,lon,lat)
+                            ,exner,pcpg,qpcpg,dpcpg,prss,rshort,rlong,geoht,lsl            &
+                            ,green_leaf_factor,lon,lat)
    use ed_max_dims    , only : n_pft         ! ! intent(in)
    use rk4_coms       , only : rk4site       ! ! structure
    use canopy_air_coms, only : ubmin8        ! ! intent(in)
+   use therm_lib8     , only : rehuil8       ! ! function
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    integer                  , intent(in) :: lsl
@@ -239,6 +243,8 @@ subroutine copy_met_2_rk4site(vels,atm_theiv,atm_theta,atm_tmp,atm_shv,atm_co2,z
    real                     , intent(in) :: qpcpg
    real                     , intent(in) :: dpcpg
    real                     , intent(in) :: prss
+   real                     , intent(in) :: rshort
+   real                     , intent(in) :: rlong
    real                     , intent(in) :: geoht
    real   , dimension(n_pft), intent(in) :: green_leaf_factor
    real                     , intent(in) :: lon
@@ -248,25 +254,38 @@ subroutine copy_met_2_rk4site(vels,atm_theiv,atm_theta,atm_tmp,atm_shv,atm_co2,z
    !---------------------------------------------------------------------------------------!
 
    
+   !----- Copy the integer variables. -----------------------------------------------------!
    rk4site%lsl     = lsl
-   !----- Converting to double precision. -------------------------------------------------!
-   rk4site%vels                  = max(ubmin8,dble(vels))
-   rk4site%atm_theiv             = dble(atm_theiv        )
-   rk4site%atm_lntheiv           = log (rk4site%atm_theiv)
-   rk4site%atm_theta             = dble(atm_theta        )
-   rk4site%atm_tmp               = dble(atm_tmp          )
-   rk4site%atm_shv               = dble(atm_shv          )
-   rk4site%atm_co2               = dble(atm_co2          )
-   rk4site%zoff                  = dble(zoff             )
-   rk4site%atm_exner             = dble(exner            )
-   rk4site%pcpg                  = dble(pcpg             )
-   rk4site%qpcpg                 = dble(qpcpg            )
-   rk4site%dpcpg                 = dble(dpcpg            )
-   rk4site%atm_prss              = dble(prss             )
-   rk4site%geoht                 = dble(geoht            )
-   rk4site%lon                   = dble(lon              )
-   rk4site%lat                   = dble(lat              )
+
+   !----- Convert to double precision. ----------------------------------------------------!
+   rk4site%atm_theiv             = dble(atm_theiv           )
+   rk4site%atm_theta             = dble(atm_theta           )
+   rk4site%atm_tmp               = dble(atm_tmp             )
+   rk4site%atm_shv               = dble(atm_shv             )
+   rk4site%atm_co2               = dble(atm_co2             )
+   rk4site%zoff                  = dble(zoff                )
+   rk4site%atm_exner             = dble(exner               )
+   rk4site%pcpg                  = dble(pcpg                )
+   rk4site%qpcpg                 = dble(qpcpg               )
+   rk4site%dpcpg                 = dble(dpcpg               )
+   rk4site%atm_prss              = dble(prss                )
+   rk4site%rshort                = dble(rshort              )
+   rk4site%rlong                 = dble(rlong               )
+   rk4site%geoht                 = dble(geoht               )
+   rk4site%lon                   = dble(lon                 )
+   rk4site%lat                   = dble(lat                 )
    rk4site%green_leaf_factor(:)  = dble(green_leaf_factor(:))
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Find the other variables that require a little math. ----------------------------!
+   rk4site%vels                  = max(ubmin8,dble(vels))
+   rk4site%atm_lntheta           = log(rk4site%atm_theta)
+   rk4site%atm_rvap              = rk4site%atm_shv / (1.d0 - rk4site%atm_shv)
+   rk4site%atm_rhv               = rehuil8(rk4site%atm_prss,rk4site%atm_tmp                &
+                                          ,rk4site%atm_rvap)
+   !---------------------------------------------------------------------------------------!
+
 
    return
 end subroutine copy_met_2_rk4site
@@ -288,7 +307,8 @@ subroutine inc_rk4_patch(rkp, inc, fac, cpatch)
                             , patchtype          ! ! structure
    use rk4_coms      , only : rk4patchtype       & ! structure
                             , rk4site            & ! intent(in)
-                            , checkbudget        ! ! intent(in)
+                            , checkbudget        & ! intent(in)
+                            , print_detailed     ! ! intent(in)
    use grid_coms     , only : nzg                & ! intent(in)
                             , nzs                ! ! intent(in)
    use ed_misc_coms  , only : fast_diagnostics   ! ! intent(in)
@@ -305,7 +325,7 @@ subroutine inc_rk4_patch(rkp, inc, fac, cpatch)
    integer                         :: k      ! Counter
    !---------------------------------------------------------------------------------------!
 
-   rkp%can_lntheiv  = rkp%can_lntheiv  + fac * inc%can_lntheiv
+   rkp%can_lntheta  = rkp%can_lntheta  + fac * inc%can_lntheta
    rkp%can_shv      = rkp%can_shv      + fac * inc%can_shv
    rkp%can_co2      = rkp%can_co2      + fac * inc%can_co2
 
@@ -360,6 +380,7 @@ subroutine inc_rk4_patch(rkp, inc, fac, cpatch)
       rkp%avg_vapor_gc       = rkp%avg_vapor_gc       + fac * inc%avg_vapor_gc
       rkp%avg_wshed_vg       = rkp%avg_wshed_vg       + fac * inc%avg_wshed_vg
       rkp%avg_intercepted    = rkp%avg_intercepted    + fac * inc%avg_intercepted
+      rkp%avg_throughfall    = rkp%avg_throughfall    + fac * inc%avg_throughfall
       rkp%avg_vapor_ac       = rkp%avg_vapor_ac       + fac * inc%avg_vapor_ac
       rkp%avg_transp         = rkp%avg_transp         + fac * inc%avg_transp
       rkp%avg_evap           = rkp%avg_evap           + fac * inc%avg_evap
@@ -369,6 +390,7 @@ subroutine inc_rk4_patch(rkp, inc, fac, cpatch)
       rkp%avg_sensible_vc    = rkp%avg_sensible_vc    + fac * inc%avg_sensible_vc
       rkp%avg_qwshed_vg      = rkp%avg_qwshed_vg      + fac * inc%avg_qwshed_vg
       rkp%avg_qintercepted   = rkp%avg_qintercepted   + fac * inc%avg_qintercepted
+      rkp%avg_qthroughfall   = rkp%avg_qthroughfall   + fac * inc%avg_qthroughfall
       rkp%avg_sensible_gc    = rkp%avg_sensible_gc    + fac * inc%avg_sensible_gc
       rkp%avg_sensible_ac    = rkp%avg_sensible_ac    + fac * inc%avg_sensible_ac
 
@@ -379,6 +401,42 @@ subroutine inc_rk4_patch(rkp, inc, fac, cpatch)
       end do
 
    end if
+
+   !---------------------------------------------------------------------------------------!
+   !    Increment the instantaneous fluxes.  The derivative term should be the same as the !
+   ! the full fluxes, the only difference is that these variables are normalised and       !
+   ! re-set after each time step.                                                          !
+   !---------------------------------------------------------------------------------------!
+   if (print_detailed) then
+      rkp%flx_carbon_ac      = rkp%flx_carbon_ac      + fac * inc%avg_carbon_ac
+      
+      rkp%flx_vapor_vc       = rkp%flx_vapor_vc       + fac * inc%avg_vapor_vc
+      rkp%flx_dew_cg         = rkp%flx_dew_cg         + fac * inc%avg_dew_cg
+      rkp%flx_vapor_gc       = rkp%flx_vapor_gc       + fac * inc%avg_vapor_gc
+      rkp%flx_wshed_vg       = rkp%flx_wshed_vg       + fac * inc%avg_wshed_vg
+      rkp%flx_intercepted    = rkp%flx_intercepted    + fac * inc%avg_intercepted
+      rkp%flx_throughfall    = rkp%flx_throughfall    + fac * inc%avg_throughfall
+      rkp%flx_vapor_ac       = rkp%flx_vapor_ac       + fac * inc%avg_vapor_ac
+      rkp%flx_transp         = rkp%flx_transp         + fac * inc%avg_transp
+      rkp%flx_evap           = rkp%flx_evap           + fac * inc%avg_evap
+      rkp%flx_drainage       = rkp%flx_drainage       + fac * inc%avg_drainage
+      rkp%flx_drainage_heat  = rkp%flx_drainage_heat  + fac * inc%avg_drainage_heat
+      rkp%flx_netrad         = rkp%flx_netrad         + fac * inc%avg_netrad
+      rkp%flx_sensible_vc    = rkp%flx_sensible_vc    + fac * inc%avg_sensible_vc
+      rkp%flx_qwshed_vg      = rkp%flx_qwshed_vg      + fac * inc%avg_qwshed_vg
+      rkp%flx_qintercepted   = rkp%flx_qintercepted   + fac * inc%avg_qintercepted
+      rkp%flx_qthroughfall   = rkp%flx_qthroughfall   + fac * inc%avg_qthroughfall
+      rkp%flx_sensible_gc    = rkp%flx_sensible_gc    + fac * inc%avg_sensible_gc
+      rkp%flx_sensible_ac    = rkp%flx_sensible_ac    + fac * inc%avg_sensible_ac
+
+      do k=rk4site%lsl,nzg
+         rkp%flx_sensible_gg(k)  = rkp%flx_sensible_gg(k)  + fac * inc%avg_sensible_gg(k)
+         rkp%flx_smoist_gg(k)    = rkp%flx_smoist_gg(k)    + fac * inc%avg_smoist_gg(k)  
+         rkp%flx_smoist_gc(k)    = rkp%flx_smoist_gc(k)    + fac * inc%avg_smoist_gc(k)  
+      end do
+
+   end if
+   !---------------------------------------------------------------------------------------!
 
    return
 end subroutine inc_rk4_patch
@@ -427,7 +485,7 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
    integer                        :: ico                   ! Current cohort ID
    !---------------------------------------------------------------------------------------!
 
-   yscal%can_lntheiv  = abs(y%can_lntheiv ) + abs(dy%can_lntheiv  * htry)
+   yscal%can_lntheta  = abs(y%can_lntheta ) + abs(dy%can_lntheta  * htry)
    yscal%can_shv      = abs(y%can_shv     ) + abs(dy%can_shv      * htry)
    yscal%can_co2      = abs(y%can_co2     ) + abs(dy%can_co2      * htry)
 
@@ -677,7 +735,7 @@ subroutine get_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
    ! temperature, water vapour mixing ratio and carbon dioxide mixing ratio are accounted. !
    ! Temperature and density will be also checked for sanity.                              !
    !---------------------------------------------------------------------------------------!
-   err    = abs(yerr%can_lntheiv/yscal%can_lntheiv)
+   err    = abs(yerr%can_lntheta/yscal%can_lntheta)
    errmax = max(errmax,err)
    if(record_err .and. err > rk4eps) integ_err(1,1) = integ_err(1,1) + 1_8 
 
@@ -687,7 +745,7 @@ subroutine get_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
 
    err    = abs(yerr%can_co2/yscal%can_co2)
    errmax = max(errmax,err)
-   if(record_err .and. err > rk4eps) integ_err(5,1) = integ_err(5,1) + 1_8 
+   if(record_err .and. err > rk4eps) integ_err(6,1) = integ_err(6,1) + 1_8 
    !---------------------------------------------------------------------------------------!
 
 
@@ -708,8 +766,8 @@ subroutine get_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
       end if
    end do
    if(cpatch%ncohorts > 0 .and. record_err) then
-      if (errh2oMAX > rk4eps) integ_err(40,1) = integ_err(6,1) + 1_8
-      if (erreneMAX > rk4eps) integ_err(41,1) = integ_err(7,1) + 1_8
+      if (errh2oMAX > rk4eps) integ_err(7,1) = integ_err(7,1) + 1_8
+      if (erreneMAX > rk4eps) integ_err(8,1) = integ_err(8,1) + 1_8
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -719,11 +777,11 @@ subroutine get_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
    !---------------------------------------------------------------------------------------!
    err    = abs(yerr%virtual_heat/yscal%virtual_heat)
    errmax = max(errmax,err)
-   if(record_err .and. err > rk4eps) integ_err(8,1) = integ_err(8,1) + 1_8
+   if(record_err .and. err > rk4eps) integ_err( 9,1) = integ_err( 9,1) + 1_8
 
    err    = abs(yerr%virtual_water/yscal%virtual_water)
    errmax = max(errmax,err)
-   if(record_err .and. err > rk4eps) integ_err(9,1) = integ_err(9,1) + 1_8      
+   if(record_err .and. err > rk4eps) integ_err(10,1) = integ_err(10,1) + 1_8      
    !---------------------------------------------------------------------------------------!
 
 
@@ -736,35 +794,35 @@ subroutine get_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
    if (checkbudget) then
       err    = abs(yerr%co2budget_storage/yscal%co2budget_storage)
       errmax = max(errmax,err)
-      if(record_err .and. err > rk4eps) integ_err(10,1) = integ_err(10,1) + 1_8
+      if(record_err .and. err > rk4eps) integ_err(11,1) = integ_err(11,1) + 1_8
 
       err    = abs(yerr%co2budget_loss2atm/yscal%co2budget_loss2atm)
       errmax = max(errmax,err)
-      if(record_err .and. err > rk4eps) integ_err(11,1) = integ_err(11,1) + 1_8
+      if(record_err .and. err > rk4eps) integ_err(12,1) = integ_err(12,1) + 1_8
 
       err    = abs(yerr%ebudget_loss2atm/yscal%ebudget_loss2atm)
       errmax = max(errmax,err)
-      if(record_err .and. err > rk4eps) integ_err(12,1) = integ_err(12,1) + 1_8
+      if(record_err .and. err > rk4eps) integ_err(13,1) = integ_err(13,1) + 1_8
 
       err    = abs(yerr%wbudget_loss2atm/yscal%wbudget_loss2atm)
       errmax = max(errmax,err)
-      if(record_err .and. err > rk4eps) integ_err(13,1) = integ_err(13,1) + 1_8
+      if(record_err .and. err > rk4eps) integ_err(14,1) = integ_err(14,1) + 1_8
 
       err    = abs(yerr%ebudget_loss2drainage/yscal%ebudget_loss2drainage)
       errmax = max(errmax,err)
-      if(record_err .and. err > rk4eps) integ_err(14,1) = integ_err(14,1) + 1_8
+      if(record_err .and. err > rk4eps) integ_err(15,1) = integ_err(15,1) + 1_8
 
       err    = abs(yerr%wbudget_loss2drainage/yscal%wbudget_loss2drainage)
       errmax = max(errmax,err)
-      if(record_err .and. err > rk4eps) integ_err(15,1) = integ_err(15,1) + 1_8
+      if(record_err .and. err > rk4eps) integ_err(16,1) = integ_err(16,1) + 1_8
 
       err    = abs(yerr%ebudget_storage/yscal%ebudget_storage)
       errmax = max(errmax,err)
-      if(record_err .and. err > rk4eps) integ_err(16,1) = integ_err(16,1) + 1_8
+      if(record_err .and. err > rk4eps) integ_err(17,1) = integ_err(17,1) + 1_8
 
       err    = abs(yerr%wbudget_storage/yscal%wbudget_storage)
       errmax = max(errmax,err)
-      if(record_err .and. err > rk4eps) integ_err(17,1) = integ_err(17,1) + 1_8
+      if(record_err .and. err > rk4eps) integ_err(18,1) = integ_err(18,1) + 1_8
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -822,7 +880,8 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
 
    use rk4_coms      , only : rk4site           & ! intent(in)
                             , rk4patchtype      & ! structure
-                            , checkbudget       ! ! intent(in)
+                            , checkbudget       & ! intent(in)
+                            , print_detailed    ! ! intent(in)
    use ed_state_vars , only : sitetype          & ! structure
                             , patchtype         ! ! structure
    use grid_coms     , only : nzg               & ! intent(in)
@@ -840,7 +899,7 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
    !---------------------------------------------------------------------------------------!
 
    targetp%can_theiv     = sourcep%can_theiv
-   targetp%can_lntheiv   = sourcep%can_lntheiv
+   targetp%can_lntheta   = sourcep%can_lntheta
    targetp%can_theta     = sourcep%can_theta
    targetp%can_temp      = sourcep%can_temp
    targetp%can_shv       = sourcep%can_shv
@@ -851,6 +910,9 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
    targetp%can_depth     = sourcep%can_depth
    targetp%can_rvap      = sourcep%can_rvap
    targetp%can_rhv       = sourcep%can_rhv
+   targetp%can_ssh       = sourcep%can_ssh
+
+   targetp%flag_wflxgc   = sourcep%flag_wflxgc
 
    targetp%virtual_water = sourcep%virtual_water
    targetp%virtual_heat  = sourcep%virtual_heat
@@ -945,6 +1007,7 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
       targetp%avg_vapor_gc           = sourcep%avg_vapor_gc
       targetp%avg_wshed_vg           = sourcep%avg_wshed_vg
       targetp%avg_intercepted        = sourcep%avg_intercepted
+      targetp%avg_throughfall        = sourcep%avg_throughfall
       targetp%avg_vapor_ac           = sourcep%avg_vapor_ac
       targetp%avg_transp             = sourcep%avg_transp  
       targetp%avg_evap               = sourcep%avg_evap   
@@ -952,6 +1015,7 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
       targetp%avg_sensible_vc        = sourcep%avg_sensible_vc  
       targetp%avg_qwshed_vg          = sourcep%avg_qwshed_vg    
       targetp%avg_qintercepted       = sourcep%avg_qintercepted
+      targetp%avg_qthroughfall       = sourcep%avg_qthroughfall
       targetp%avg_sensible_gc        = sourcep%avg_sensible_gc  
       targetp%avg_sensible_ac        = sourcep%avg_sensible_ac
       targetp%avg_drainage           = sourcep%avg_drainage
@@ -961,6 +1025,34 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
          targetp%avg_sensible_gg(k) = sourcep%avg_sensible_gg(k)
          targetp%avg_smoist_gg(k)   = sourcep%avg_smoist_gg(k)  
          targetp%avg_smoist_gc(k)   = sourcep%avg_smoist_gc(k)  
+      end do
+   end if
+
+   if (print_detailed) then
+      targetp%flx_carbon_ac          = sourcep%flx_carbon_ac
+      targetp%flx_vapor_vc           = sourcep%flx_vapor_vc
+      targetp%flx_dew_cg             = sourcep%flx_dew_cg  
+      targetp%flx_vapor_gc           = sourcep%flx_vapor_gc
+      targetp%flx_wshed_vg           = sourcep%flx_wshed_vg
+      targetp%flx_intercepted        = sourcep%flx_intercepted
+      targetp%flx_throughfall        = sourcep%flx_throughfall
+      targetp%flx_vapor_ac           = sourcep%flx_vapor_ac
+      targetp%flx_transp             = sourcep%flx_transp  
+      targetp%flx_evap               = sourcep%flx_evap   
+      targetp%flx_netrad             = sourcep%flx_netrad   
+      targetp%flx_sensible_vc        = sourcep%flx_sensible_vc  
+      targetp%flx_qwshed_vg          = sourcep%flx_qwshed_vg    
+      targetp%flx_qintercepted       = sourcep%flx_qintercepted
+      targetp%flx_qthroughfall       = sourcep%flx_qthroughfall
+      targetp%flx_sensible_gc        = sourcep%flx_sensible_gc  
+      targetp%flx_sensible_ac        = sourcep%flx_sensible_ac
+      targetp%flx_drainage           = sourcep%flx_drainage
+      targetp%flx_drainage_heat      = sourcep%flx_drainage_heat
+
+      do k=rk4site%lsl,nzg
+         targetp%flx_sensible_gg(k) = sourcep%flx_sensible_gg(k)
+         targetp%flx_smoist_gg(k)   = sourcep%flx_smoist_gg(k)  
+         targetp%flx_smoist_gc(k)   = sourcep%flx_smoist_gc(k)  
       end do
    end if
 

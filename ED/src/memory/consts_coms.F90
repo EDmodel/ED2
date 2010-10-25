@@ -34,7 +34,9 @@ Module consts_coms
      , b_rdryi      => rdryi      , b_eta3ple    => eta3ple    , b_cimcp      => cimcp     &
      , b_clmcp      => clmcp      , b_p00k       => p00k       , b_p00ki      => p00ki     &
      , b_halfpi     => halfpi     , b_yr_sec     => yr_sec     , b_sqrttwopi  => sqrttwopi &
-     , b_sqrthalfpi => sqrthalfpi , b_fdns       => fdns       , b_fdnsi      => fdnsi
+     , b_sqrthalfpi => sqrthalfpi , b_fdns       => fdns       , b_fdnsi      => fdnsi     &
+     , b_cv         => cv         , b_cpocv      => cpocv      , b_rocv       => rocv      &
+     , b_hr_min     => hr_min
 
    implicit none
 
@@ -84,7 +86,9 @@ Module consts_coms
    real, parameter :: p00ki      = b_p00ki      , halfpi     = b_halfpi
    real, parameter :: yr_sec     = b_yr_sec     , sqrthalfpi = b_sqrthalfpi
    real, parameter :: sqrttwopi  = b_sqrttwopi  , fdns       = b_fdns
-   real, parameter :: fdnsi      = b_fdnsi
+   real, parameter :: fdnsi      = b_fdnsi      , cv         = b_cv
+   real, parameter :: rocv       = b_rocv       , cpocv      = b_cpocv
+   real, parameter :: hr_min     = b_hr_min
 #else
    implicit none
 
@@ -154,6 +158,7 @@ Module consts_coms
    real, parameter :: day_hr  = 24.              ! # of hours in a day          [   hr/day]
    real, parameter :: hr_sec  = 3600.            ! # of seconds in an hour      [     s/hr]
    real, parameter :: min_sec = 60.              ! # of seconds in a minute     [    s/min]
+   real, parameter :: hr_min  = 60.              ! # of minutes in an hour      [   min/hr]
    real, parameter :: yr_sec  = yr_day * day_sec ! # of seconds in a year       [     s/yr]
    !---------------------------------------------------------------------------------------!
 
@@ -179,9 +184,12 @@ Module consts_coms
    !---------------------------------------------------------------------------------------!
    real, parameter :: rdry   = rmol/mmdry ! Gas constant for dry air (Ra)       [   J/kg/K]
    real, parameter :: rdryi  = mmdry/rmol ! 1./Gas constant for dry air (Ra)    [   kg K/J]
-   real, parameter :: cp     = 1004.      ! Specific heat at constant pressure  [   J/kg/K]
-   real, parameter :: cpog   = cp /grav   ! cp/g                                [      m/K]
+   real, parameter :: cp     = 3.5*rdry   ! Specific heat at constant pressure  [   J/kg/K]
+   real, parameter :: cv     = 2.5 * rdry ! Specific heat at constant volume    [   J/kg/K]
    real, parameter :: rocp   = rdry / cp  ! Ra/cp                               [     ----]
+   real, parameter :: rocv   = rdry / cv  ! Ra/cv                               [     ----]
+   real, parameter :: cpocv  = cp / cv       ! Cp/Cv                            [     ----]
+   real, parameter :: cpog   = cp /grav   ! cp/g                                [      m/K]
    real, parameter :: cpor   = cp / rdry  ! Cp/Ra                               [     ----]
    real, parameter :: cpi    = 1. / cp    ! 1/Cp                                [   kg K/J]
    real, parameter :: cpi4   = 4. * cpi   ! 4/Cp                                [   kg K/J]
@@ -360,8 +368,11 @@ Module consts_coms
    real(kind=8), parameter :: rdry8           = dble(rdry          )
    real(kind=8), parameter :: rdryi8          = dble(rdryi         )
    real(kind=8), parameter :: cp8             = dble(cp            )
+   real(kind=8), parameter :: cv8             = dble(cv            )
    real(kind=8), parameter :: cpog8           = dble(cpog          )
    real(kind=8), parameter :: rocp8           = dble(rocp          )
+   real(kind=8), parameter :: rocv8           = dble(rocv          )
+   real(kind=8), parameter :: cpocv8          = dble(cpocv         )
    real(kind=8), parameter :: cpor8           = dble(cpor          )
    real(kind=8), parameter :: cpi8            = dble(cpi           )
    real(kind=8), parameter :: cpi48           = dble(cpi4          )

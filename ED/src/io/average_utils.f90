@@ -179,6 +179,7 @@ subroutine normalize_averaged_vars(cgrid,frqsum,dtlsm)
             csite%avg_vapor_gc(ipa)     = csite%avg_vapor_gc(ipa)      * frqsumi
             csite%avg_wshed_vg(ipa)     = csite%avg_wshed_vg(ipa)      * frqsumi
             csite%avg_intercepted(ipa)  = csite%avg_intercepted(ipa)   * frqsumi
+            csite%avg_throughfall(ipa)  = csite%avg_throughfall(ipa)   * frqsumi
             csite%avg_vapor_ac(ipa)     = csite%avg_vapor_ac(ipa)      * frqsumi
             csite%avg_transp(ipa)       = csite%avg_transp(ipa)        * frqsumi
             csite%avg_evap(ipa)         = csite%avg_evap(ipa)          * frqsumi
@@ -187,6 +188,7 @@ subroutine normalize_averaged_vars(cgrid,frqsum,dtlsm)
             csite%avg_sensible_vc(ipa)  = csite%avg_sensible_vc(ipa)   * frqsumi
             csite%avg_qwshed_vg(ipa)    = csite%avg_qwshed_vg(ipa)     * frqsumi
             csite%avg_qintercepted(ipa) = csite%avg_qintercepted(ipa)  * frqsumi
+            csite%avg_qthroughfall(ipa) = csite%avg_qthroughfall(ipa)  * frqsumi
             csite%avg_sensible_gc(ipa)  = csite%avg_sensible_gc(ipa)   * frqsumi
             csite%avg_sensible_ac(ipa)  = csite%avg_sensible_ac(ipa)   * frqsumi
             csite%avg_carbon_ac(ipa)    = csite%avg_carbon_ac(ipa)     * frqsumi
@@ -369,6 +371,7 @@ subroutine reset_averaged_vars(cgrid)
             csite%avg_vapor_gc(ipa)         = 0.0
             csite%avg_wshed_vg(ipa)         = 0.0
             csite%avg_intercepted(ipa)      = 0.0
+            csite%avg_throughfall(ipa)      = 0.0
             csite%avg_vapor_ac(ipa)         = 0.0
             csite%avg_transp(ipa)           = 0.0
             csite%avg_evap(ipa)             = 0.0
@@ -382,6 +385,7 @@ subroutine reset_averaged_vars(cgrid)
             csite%avg_sensible_vc(ipa)      = 0.0
             csite%avg_qwshed_vg(ipa)        = 0.0
             csite%avg_qintercepted(ipa)     = 0.0
+            csite%avg_qthroughfall(ipa)     = 0.0
             csite%avg_sensible_gc(ipa)      = 0.0
             csite%avg_sensible_ac(ipa)      = 0.0
             csite%avg_sensible_gg(:,ipa)    = 0.0

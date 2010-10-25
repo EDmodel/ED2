@@ -97,12 +97,14 @@ Module mem_leaf
       !------------------------------------------------------------------------------------!
       !     Surface fluxes, dimensioned by (nxp,nyp,npatch).                               !
       !------------------------------------------------------------------------------------!
-      real, dimension(:,:,:), pointer :: gpp      & ! Gross primary production  [µmol/m²/s]
-                                       , resphet  & ! Heterotrophic respiration [µmol/m²/s]
-                                       , plresp   & ! Plant respiration         [µmol/m²/s]
-                                       , evap     & ! Evaporation               [     W/m²]
-                                       , transp   & ! Transpiration             [     W/m²]
-                                       , sensible ! ! Sensible heat flux        [     W/m²]
+      real, dimension(:,:,:), pointer :: gpp         & ! Gross primary prod.    [µmol/m²/s]
+                                       , resphet     & ! Heterotrophic resp.    [µmol/m²/s]
+                                       , plresp      & ! Plant respiration      [µmol/m²/s]
+                                       , evap_gc     & ! Evaporation (Gnd->Can) [     W/m²]
+                                       , evap_vc     & ! Evaporation (Veg->Can) [     W/m²]
+                                       , transp      & ! Transpiration          [     W/m²]
+                                       , sensible_gc & ! Sens. heat (Gnd->Can)  [     W/m²]
+                                       , sensible_vc ! ! Sens. heat (Veg->Can)  [     W/m²]
 
       !------------------------------------------------------------------------------------!
       !     Miscellaneous properties, dimensioned by (nxp,nyp,npatch).                     !
@@ -231,9 +233,11 @@ Module mem_leaf
       allocate (leaf%gpp              (    nx,ny,np))
       allocate (leaf%resphet          (    nx,ny,np))
       allocate (leaf%plresp           (    nx,ny,np))
-      allocate (leaf%evap             (    nx,ny,np))
+      allocate (leaf%evap_gc          (    nx,ny,np))
+      allocate (leaf%evap_vc          (    nx,ny,np))
       allocate (leaf%transp           (    nx,ny,np))
-      allocate (leaf%sensible         (    nx,ny,np))
+      allocate (leaf%sensible_gc      (    nx,ny,np))
+      allocate (leaf%sensible_vc      (    nx,ny,np))
 
       allocate (leaf%R_aer            (    nx,ny,np))
 
@@ -321,9 +325,11 @@ Module mem_leaf
       if (associated(leaf%gpp              ))  nullify(leaf%gpp              )
       if (associated(leaf%resphet          ))  nullify(leaf%resphet          )
       if (associated(leaf%plresp           ))  nullify(leaf%plresp           )
-      if (associated(leaf%evap             ))  nullify(leaf%evap             )
+      if (associated(leaf%evap_gc          ))  nullify(leaf%evap_gc          )
+      if (associated(leaf%evap_vc          ))  nullify(leaf%evap_vc          )
       if (associated(leaf%transp           ))  nullify(leaf%transp           )
-      if (associated(leaf%sensible         ))  nullify(leaf%sensible         )
+      if (associated(leaf%sensible_gc      ))  nullify(leaf%sensible_gc      )
+      if (associated(leaf%sensible_vc      ))  nullify(leaf%sensible_vc      )
 
       if (associated(leaf%R_aer            ))  nullify(leaf%R_aer            )
       if (associated(leaf%G_URBAN          ))  nullify(leaf%G_URBAN          )
@@ -408,9 +414,11 @@ Module mem_leaf
       if (associated(leaf%gpp              ))  deallocate(leaf%gpp              )
       if (associated(leaf%resphet          ))  deallocate(leaf%resphet          )
       if (associated(leaf%plresp           ))  deallocate(leaf%plresp           )
-      if (associated(leaf%evap             ))  deallocate(leaf%evap             )
+      if (associated(leaf%evap_vc          ))  deallocate(leaf%evap_vc          )
+      if (associated(leaf%evap_gc          ))  deallocate(leaf%evap_gc          )
       if (associated(leaf%transp           ))  deallocate(leaf%transp           )
-      if (associated(leaf%sensible         ))  deallocate(leaf%sensible         )
+      if (associated(leaf%sensible_gc      ))  deallocate(leaf%sensible_gc      )
+      if (associated(leaf%sensible_vc      ))  deallocate(leaf%sensible_vc      )
 
       if (associated(leaf%R_aer            ))  deallocate(leaf%R_aer            )
       if (associated(leaf%G_URBAN          ))  deallocate(leaf%G_URBAN          )
@@ -662,17 +670,25 @@ Module mem_leaf
          call vtables2(leaf%plresp(1,1,1),leafm%plresp(1,1,1),ng,npts,imean                &
                       ,'PLRESP :6:hist:anal:mpti:mpt1:mpt3')
 
-      if (associated(leaf%evap))                                                           &
-         call vtables2(leaf%evap(1,1,1),leafm%evap(1,1,1),ng,npts,imean                    &
-                      ,'EVAP :6:hist:anal:mpti:mpt1:mpt3')
+      if (associated(leaf%evap_gc))                                                        &
+         call vtables2(leaf%evap_gc(1,1,1),leafm%evap_gc(1,1,1),ng,npts,imean              &
+                      ,'EVAP_GC :6:hist:anal:mpti:mpt1:mpt3')
+
+      if (associated(leaf%evap_vc))                                                        &
+         call vtables2(leaf%evap_vc(1,1,1),leafm%evap_vc(1,1,1),ng,npts,imean              &
+                      ,'EVAP_VC :6:hist:anal:mpti:mpt1:mpt3')
 
       if (associated(leaf%transp))                                                         &
          call vtables2(leaf%transp(1,1,1),leafm%transp(1,1,1),ng,npts,imean                &
                       ,'TRANSP :6:hist:anal:mpti:mpt1:mpt3')
 
-      if (associated(leaf%sensible))                                                       &
-         call vtables2(leaf%sensible(1,1,1),leafm%sensible(1,1,1),ng,npts,imean            &
-                      ,'SENSIBLE :6:hist:anal:mpti:mpt1:mpt3')
+      if (associated(leaf%sensible_gc))                                                    &
+         call vtables2(leaf%sensible_gc(1,1,1),leafm%sensible_gc(1,1,1),ng,npts,imean      &
+                      ,'SENSIBLE_GC :6:hist:anal:mpti:mpt1:mpt3')
+
+      if (associated(leaf%sensible_vc))                                                    &
+         call vtables2(leaf%sensible_vc(1,1,1),leafm%sensible_vc(1,1,1),ng,npts,imean      &
+                      ,'SENSIBLE_VC :6:hist:anal:mpti:mpt1:mpt3')
 
       if (associated(leaf%R_aer))                                                          &
          call vtables2(leaf%R_aer(1,1,1),leafm%R_aer(1,1,1),ng,npts,imean                  &

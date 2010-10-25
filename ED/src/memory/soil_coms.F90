@@ -129,23 +129,23 @@ module soil_coms
    !                             Tremback & Kessler, 1985).                                !
    !---------------------------------------------------------------------------------------!
    type soil_class
-      real :: slpots     ! Soil moisture potential at saturation                 [       m]
-      real :: slmsts     ! Soil moisture at saturation                           [   m3/m3]
-      real :: slbs       ! B exponent                                            [     n/d]
-      real :: slcpd      ! Specific heat of dry soil                             [  J/m3/K]
-      real :: soilcp     ! Dry soil capacity (at -3.1MPa)                        [   m3/m3]
-      real :: soilwp     ! Wilting point capacity (at -1.5MPa)                   [   m3/m3]
-      real :: slcons     ! hydraulic conductivity at saturation                  [     m/s]
-      real :: slcons0    ! ?Dry soil density (also total soil porosity)          [   kg/m3]
-      real :: soilcond0
-      real :: soilcond1
-      real :: soilcond2
-      real :: sfldcap
-      real :: xsand
-      real :: xclay
-      real :: xorgan
-      real :: xrobulk
-      real :: slden
+      real :: slpots             ! Soil moisture potential at saturation         [       m]
+      real :: slmsts             ! Soil moisture at saturation                   [   m3/m3]
+      real :: slbs               ! B exponent                                    [     n/d]
+      real :: slcpd              ! Specific heat of dry soil                     [  J/m3/K]
+      real :: soilcp             ! Dry soil capacity (at -3.1MPa)                [   m3/m3]
+      real :: soilwp             ! Wilting point capacity (at -1.5MPa)           [   m3/m3]
+      real :: slcons             ! hydraulic conductivity at saturation          [     m/s]
+      real :: slcons0            ! Surface value for slcons                      [     m/s]
+      real :: soilcond0          ! Intercept for conductivity calculation        [   N/K/s]
+      real :: soilcond1          ! Linear coefficient for conductivity           [   N/K/s]
+      real :: soilcond2          ! Quadratic coefficient for conductivity        [   N/K/s]
+      real :: sfldcap            ! Soil field capacity                           [   m3/m3]
+      real :: xsand              ! Percentage of sand                            [     ---]
+      real :: xclay              ! Percentage of clay                            [     ---]
+      real :: xorgan             ! Percentage of organic material                [     ---]
+      real :: xrobulk            ! Bulk density                                  [     ---]
+      real :: slden              ! "Dry" soil density (porosity)                 [   kg/m3]
    end type soil_class
    !----- Double precision version --------------------------------------------------------!
    type soil_class8
@@ -156,16 +156,16 @@ module soil_coms
       real(kind=8) :: soilcp     ! Dry soil capacity (at -3.1MPa)                [   m3/m3]
       real(kind=8) :: soilwp     ! Wilting point capacity (at -1.5MPa)           [   m3/m3]
       real(kind=8) :: slcons     ! hydraulic conductivity at saturation          [     m/s]
-      real(kind=8) :: slcons0    ! ?Dry soil density (also total soil porosity)   [   kg/m3]
-      real(kind=8) :: soilcond0
-      real(kind=8) :: soilcond1
-      real(kind=8) :: soilcond2
-      real(kind=8) :: sfldcap
-      real(kind=8) :: xsand
-      real(kind=8) :: xclay
-      real(kind=8) :: xorgan
-      real(kind=8) :: xrobulk
-      real(kind=8) :: slden
+      real(kind=8) :: slcons0    ! Surface value for slcons                      [     m/s]
+      real(kind=8) :: soilcond0  ! Intercept for conductivity calculation        [   N/K/s]
+      real(kind=8) :: soilcond1  ! Linear coefficient for conductivity           [   N/K/s]
+      real(kind=8) :: soilcond2  ! Quadratic coefficient for conductivity        [   N/K/s]
+      real(kind=8) :: sfldcap    ! Soil field capacity                           [   m3/m3]
+      real(kind=8) :: xsand      ! Percentage of sand                            [     ---]
+      real(kind=8) :: xclay      ! Percentage of clay                            [     ---]
+      real(kind=8) :: xorgan     ! Percentage of organic material                [     ---]
+      real(kind=8) :: xrobulk    ! Bulk density                                  [     ---]
+      real(kind=8) :: slden      ! "Dry" soil density (porosity)                 [   kg/m3]
    end type soil_class8
    !---------------------------------------------------------------------------------------!
    !----- To be filled in ed_params.f90. --------------------------------------------------!

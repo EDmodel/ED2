@@ -313,6 +313,7 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
   csite%avg_vapor_gc      (ip1:ip2)  = 0.0
   csite%avg_wshed_vg      (ip1:ip2)  = 0.0
   csite%avg_intercepted   (ip1:ip2)  = 0.0
+  csite%avg_throughfall   (ip1:ip2)  = 0.0
   csite%avg_vapor_ac      (ip1:ip2)  = 0.0
   csite%avg_transp        (ip1:ip2)  = 0.0
   csite%avg_evap          (ip1:ip2)  = 0.0
@@ -324,6 +325,7 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
   csite%avg_sensible_vc   (ip1:ip2)  = 0.0
   csite%avg_qwshed_vg     (ip1:ip2)  = 0.0
   csite%avg_qintercepted  (ip1:ip2)  = 0.0
+  csite%avg_qthroughfall  (ip1:ip2)  = 0.0
   csite%avg_sensible_gc   (ip1:ip2)  = 0.0
   csite%avg_sensible_ac   (ip1:ip2)  = 0.0
   csite%avg_runoff_heat   (ip1:ip2)  = 0.0

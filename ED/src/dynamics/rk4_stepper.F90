@@ -22,9 +22,14 @@ module rk4_stepper
                                , pgrow               & ! intent(in)
                                , pshrnk              & ! intent(in)
                                , errcon              & ! intent(in)
-                               , print_diags
+                               , print_diags         & ! intent(in)
+                               , print_detailed      & ! intent(in)
+                               , norm_rk4_fluxes     & ! intent(in)
+                               , reset_rk4_fluxes    ! ! intent(in)
       use ed_state_vars , only : sitetype            & ! structure
                                , patchtype           ! ! structure
+      use grid_coms     , only : nzg                 & ! intent(in)
+                               , nzs                 ! ! intent(in)
 
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -101,6 +106,7 @@ module rk4_stepper
                write (unit=*,fmt='(a,1x,f9.4)')   ' + LONGITUDE:     ',rk4site%lon
                write (unit=*,fmt='(a,1x,f9.4)')   ' + LATITUDE:      ',rk4site%lat
                write (unit=*,fmt='(a)')           ' + PATCH INFO:    '
+               write (unit=*,fmt='(a,1x,i6)')     '   - NUMBER:      ',ipa
                write (unit=*,fmt='(a,1x,es12.4)') '   - AGE:         ',csite%age(ipa)
                write (unit=*,fmt='(a,1x,i6)')     '   - DIST_TYPE:   ',csite%dist_type(ipa)
                write (unit=*,fmt='(a,1x,l1)')     ' + REJECT_STEP:   ',reject_step
@@ -154,7 +160,7 @@ module rk4_stepper
             !----- ii.  Final update of top soil properties to avoid off-bounds moisture. -!
             call adjust_topsoil_properties(integration_buff%ytemp,h,csite,ipa)
             !----- iii. Make snow layers stable and positively defined. -------------------!
-            call redistribute_snow(integration_buff%ytemp, csite,ipa)
+            call redistribute_snow(nzg,nzs,integration_buff%ytemp, csite,ipa)
             !----- iv.  Update the diagnostic variables. ----------------------------------!
             call update_diagnostic_vars(integration_buff%ytemp, csite,ipa)
             !------------------------------------------------------------------------------!
@@ -170,15 +176,30 @@ module rk4_stepper
             endif
             hnext = max(2.d0*hmin,hnext)
 
-            !----- 3d. Updating time. -----------------------------------------------------!
-            x    = x + h
-            hdid = h
-            
+            !------ 3d. Normalise the fluxes if the user wants detailed debugging. --------!
+            if (print_detailed) then
+               call norm_rk4_fluxes(integration_buff%ytemp,h)
+               call print_rk4_state(integration_buff%y,integration_buff%ytemp,csite,ipa,x,h)
+            end if
+
             !------------------------------------------------------------------------------!
-            !    3e. Copying the temporary structure to the intermediate state.            !
+            !    3e. Copy the temporary structure to the intermediate state.               !
             !------------------------------------------------------------------------------!
             call copy_rk4_patch(integration_buff%ytemp,integration_buff%y                  &
                                ,csite%patch(ipa))
+
+            !------------------------------------------------------------------------------!
+            !    3f. Flush step-by-step fluxes to zero if the user wants detailed          !
+            !        debugging.                                                            !
+            !------------------------------------------------------------------------------!
+            if (print_detailed) then
+               call reset_rk4_fluxes(integration_buff%y)
+            end if
+
+            !----- 3g. Update time. -------------------------------------------------------!
+            x    = x + h
+            hdid = h
+
             exit hstep
          end if
       end do hstep
@@ -235,6 +256,8 @@ module rk4_stepper
                                , rk4_dc6             ! ! intent(in)
       use ed_state_vars , only : sitetype            & ! structure
                                , patchtype           ! ! structure
+      use grid_coms     , only : nzg                 & ! intent(in)
+                               , nzs                 ! ! intent(in)
       implicit none
 
       !----- Arguments --------------------------------------------------------------------!
@@ -265,7 +288,7 @@ module rk4_stepper
       combh = rk4_b21*h
       call adjust_veg_properties(ak7,combh,csite,ipa)
       call adjust_topsoil_properties(ak7,combh,csite,ipa)
-      call redistribute_snow(ak7, csite,ipa)
+      call redistribute_snow(nzg,nzs,ak7, csite,ipa)
       call update_diagnostic_vars(ak7, csite,ipa)
       call rk4_sanity_check(ak7, reject_step, csite, ipa,dydx,h,print_diags)
       if (reject_step) return
@@ -277,7 +300,7 @@ module rk4_stepper
       combh = (rk4_b31+rk4_b32)*h
       call adjust_veg_properties(ak7,combh,csite,ipa)
       call adjust_topsoil_properties(ak7,combh,csite,ipa)
-      call redistribute_snow(ak7, csite,ipa)
+      call redistribute_snow(nzg,nzs,ak7, csite,ipa)
       call update_diagnostic_vars(ak7, csite,ipa)
       call rk4_sanity_check(ak7,reject_step,csite,ipa,dydx,h,print_diags)
       if (reject_step) return
@@ -292,7 +315,7 @@ module rk4_stepper
       combh = (rk4_b41+rk4_b42+rk4_b43)*h
       call adjust_veg_properties(ak7,combh,csite,ipa)
       call adjust_topsoil_properties(ak7,combh,csite,ipa)
-      call redistribute_snow(ak7, csite,ipa)
+      call redistribute_snow(nzg,nzs,ak7, csite,ipa)
       call update_diagnostic_vars(ak7, csite,ipa)
       call rk4_sanity_check(ak7, reject_step, csite,ipa,dydx,h,print_diags)
       if (reject_step) return
@@ -308,7 +331,7 @@ module rk4_stepper
       combh = (rk4_b51+rk4_b52+rk4_b53+rk4_b54)*h
       call adjust_veg_properties(ak7,combh,csite,ipa)
       call adjust_topsoil_properties(ak7,combh,csite,ipa)
-      call redistribute_snow(ak7, csite,ipa)
+      call redistribute_snow(nzg,nzs,ak7, csite,ipa)
       call update_diagnostic_vars(ak7, csite,ipa)
       call rk4_sanity_check(ak7,reject_step,csite,ipa,dydx,h,print_diags)
       if (reject_step) return
@@ -325,7 +348,7 @@ module rk4_stepper
       combh = (rk4_b61+rk4_b62+rk4_b63+rk4_b64+rk4_b65)*h
       call adjust_veg_properties(ak7,combh,csite,ipa)
       call adjust_topsoil_properties(ak7,combh,csite,ipa)
-      call redistribute_snow(ak7, csite,ipa)
+      call redistribute_snow(nzg,nzs,ak7, csite,ipa)
       call update_diagnostic_vars(ak7, csite,ipa)
       call rk4_sanity_check(ak7, reject_step, csite,ipa,dydx,h,print_diags)
       if(reject_step)return
@@ -339,7 +362,7 @@ module rk4_stepper
       combh = (rk4_c1+rk4_c3+rk4_c4+rk4_c6)*h
       call adjust_veg_properties(yout,combh,csite,ipa)
       call adjust_topsoil_properties(yout,combh,csite,ipa)
-      call redistribute_snow(yout, csite,ipa)
+      call redistribute_snow(nzg,nzs,yout, csite,ipa)
       call update_diagnostic_vars(yout, csite,ipa)
       call rk4_sanity_check(yout, reject_result, csite,ipa,dydx,h,print_diags)
       if(reject_result)return
@@ -375,6 +398,8 @@ module rk4_stepper
                                        , toocold              & ! intent(in)
                                        , rk4min_can_theiv     & ! intent(in)
                                        , rk4max_can_theiv     & ! intent(in)
+                                       , rk4min_can_theta     & ! intent(in)
+                                       , rk4max_can_theta     & ! intent(in)
                                        , rk4max_can_shv       & ! intent(in)
                                        , rk4min_can_shv       & ! intent(in)
                                        , rk4min_can_rhv       & ! intent(in)
@@ -383,8 +408,8 @@ module rk4_stepper
                                        , rk4max_can_temp      & ! intent(in)
                                        , rk4min_can_theiv     & ! intent(in)
                                        , rk4max_can_theiv     & ! intent(in)
-                                       , rk4min_can_rhos      & ! intent(in)
-                                       , rk4max_can_rhos      & ! intent(in)
+                                       , rk4min_can_prss      & ! intent(in)
+                                       , rk4max_can_prss      & ! intent(in)
                                        , rk4min_can_co2       & ! intent(in)
                                        , rk4max_can_co2       & ! intent(in)
                                        , rk4max_veg_temp      & ! intent(in)
@@ -394,6 +419,8 @@ module rk4_stepper
                                        , rk4max_sfcw_temp     & ! intent(in)
                                        , rk4max_soil_temp     & ! intent(in)
                                        , rk4min_soil_temp     & ! intent(in)
+                                       , rk4max_soil_water    & ! intent(in)
+                                       , rk4min_soil_water    & ! intent(in)
                                        , rk4min_sfcw_mass     & ! intent(in)
                                        , rk4min_virt_water    & ! intent(in)
                                        , rk4min_sfcwater_mass & ! intent(in)
@@ -407,7 +434,8 @@ module rk4_stepper
                                        , patchtype            ! ! structure
       use grid_coms             , only : nzg                  ! ! intent(in)
       use soil_coms             , only : soil8                ! ! intent(in), lookup table
-      use consts_coms           , only : t3ple8               ! ! intent(in)
+      use consts_coms           , only : t3ple8               & ! intent(in)
+                                       , ttripoli8            ! ! intent(in)
       use therm_lib8            , only : qtk8                 ! ! subroutine
 
       implicit none
@@ -421,7 +449,6 @@ module rk4_stepper
       integer                          :: k
       integer                          :: ksn
       real(kind=8)                     :: h
-      real(kind=8)                     :: can_rhv
       real(kind=8)                     :: total_sfcw_energy
       real(kind=8)                     :: total_sfcw_mass
       real(kind=8)                     :: mean_sfcw_tempk
@@ -430,8 +457,8 @@ module rk4_stepper
       real(kind=8)                     :: virtual_fliq
       integer                          :: ipa
       integer                          :: ico
-      logical                          :: cflag6
       logical                          :: cflag7
+      logical                          :: cflag8
       !------------------------------------------------------------------------------------!
 
 
@@ -443,7 +470,7 @@ module rk4_stepper
       !------------------------------------------------------------------------------------!
       !   Check whether the canopy air equivalent potential temperature is off.            !
       !------------------------------------------------------------------------------------!
-      if (y%can_theiv > rk4max_can_theiv .or. y%can_theiv < rk4min_can_theiv) then
+      if (y%can_theiv > rk4max_can_theiv .or. y%can_theiv < rk4min_can_theiv ) then
          reject_step = .true.
          if(record_err) integ_err(1,2) = integ_err(1,2) + 1_8
          if (print_problems) then
@@ -451,6 +478,7 @@ module rk4_stepper
             write(unit=*,fmt='(a)')           ' + Canopy air theta_Eiv is off-track...'
             write(unit=*,fmt='(a)')           '-------------------------------------------'
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THEIV:         ',y%can_theiv
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THETA:         ',y%can_theta
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:           ',y%can_shv
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHV:           ',y%can_rhv
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_TEMP:          ',y%can_temp
@@ -458,7 +486,39 @@ module rk4_stepper
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_CO2:           ',y%can_co2
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_DEPTH:         ',y%can_depth
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_PRSS:          ',y%can_prss
-            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_LNTHEIV )/Dt:',dydx%can_lntheiv
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_LNTHETA )/Dt:',dydx%can_lntheta
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_SHV     )/Dt:',dydx%can_shv
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_CO2     )/Dt:',dydx%can_co2
+            write(unit=*,fmt='(a)')           '==========================================='
+            write(unit=*,fmt='(a)')           ' '
+         elseif (.not. record_err) then
+            return
+         end if
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !   Check whether the canopy air potential temperature is off.                       !
+      !------------------------------------------------------------------------------------!
+      if (y%can_theta > rk4max_can_theta .or. y%can_theta < rk4min_can_theta ) then
+         reject_step = .true.
+         if(record_err) integ_err(2,2) = integ_err(2,2) + 1_8
+         if (print_problems) then
+            write(unit=*,fmt='(a)')           '==========================================='
+            write(unit=*,fmt='(a)')           ' + Canopy air pot. temp. is off-track...'
+            write(unit=*,fmt='(a)')           '-------------------------------------------'
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THEIV:         ',y%can_theiv
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THETA:         ',y%can_theta
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:           ',y%can_shv
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHV:           ',y%can_rhv
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_TEMP:          ',y%can_temp
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHOS:          ',y%can_rhos
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_CO2:           ',y%can_co2
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_DEPTH:         ',y%can_depth
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_PRSS:          ',y%can_prss
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_LNTHETA )/Dt:',dydx%can_lntheta
             write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_SHV     )/Dt:',dydx%can_shv
             write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_CO2     )/Dt:',dydx%can_co2
             write(unit=*,fmt='(a)')           '==========================================='
@@ -474,14 +534,18 @@ module rk4_stepper
       !------------------------------------------------------------------------------------!
       !   Check whether the canopy air equivalent potential temperature is off.            !
       !------------------------------------------------------------------------------------!
-      if (y%can_shv > rk4max_can_shv .or. y%can_shv < rk4min_can_shv) then
+      if ( y%can_shv > rk4max_can_shv .or.                                                 &
+           y%can_shv < rk4min_can_shv .or.                                                 &
+           ( y%can_shv > 5.d-1 * rk4max_can_shv .and. y%can_rhv > rk4max_can_rhv) .or.     &
+           ( y%can_temp > ttripoli8             .and. y%can_rhv < rk4min_can_shv) ) then
          reject_step = .true.
-         if(record_err) integ_err(2,2) = integ_err(2,2) + 1_8
+         if(record_err) integ_err(3,2) = integ_err(3,2) + 1_8
          if (print_problems) then
             write(unit=*,fmt='(a)')           '==========================================='
             write(unit=*,fmt='(a)')           ' + Canopy air sp. humidity is off-track...'
             write(unit=*,fmt='(a)')           '-------------------------------------------'
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THEIV:         ',y%can_theiv
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THETA:         ',y%can_theta
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:           ',y%can_shv
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHV:           ',y%can_rhv
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_TEMP:          ',y%can_temp
@@ -489,7 +553,7 @@ module rk4_stepper
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_CO2:           ',y%can_co2
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_DEPTH:         ',y%can_depth
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_PRSS:          ',y%can_prss
-            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_LNTHEIV )/Dt:',dydx%can_lntheiv
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_LNTHETA )/Dt:',dydx%can_lntheta
             write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_SHV     )/Dt:',dydx%can_shv
             write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_CO2     )/Dt:',dydx%can_co2
             write(unit=*,fmt='(a)')           '==========================================='
@@ -507,12 +571,13 @@ module rk4_stepper
       !------------------------------------------------------------------------------------!
       if (y%can_temp > rk4max_can_temp .or. y%can_temp < rk4min_can_temp) then
          reject_step = .true.
-         if(record_err) integ_err(3,2) = integ_err(3,2) + 1_8
+         if(record_err) integ_err(4,2) = integ_err(4,2) + 1_8
          if (print_problems) then
             write(unit=*,fmt='(a)')           '==========================================='
             write(unit=*,fmt='(a)')           ' + Canopy air temperature is off-track...'
             write(unit=*,fmt='(a)')           '-------------------------------------------'
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THEIV:         ',y%can_theiv
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THETA:         ',y%can_theta
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:           ',y%can_shv
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHV:           ',y%can_rhv
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_TEMP:          ',y%can_temp
@@ -520,7 +585,7 @@ module rk4_stepper
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_CO2:           ',y%can_co2
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_DEPTH:         ',y%can_depth
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_PRSS:          ',y%can_prss
-            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_LNTHEIV )/Dt:',dydx%can_lntheiv
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_LNTHETA )/Dt:',dydx%can_lntheta
             write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_SHV     )/Dt:',dydx%can_shv
             write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_CO2     )/Dt:',dydx%can_co2
             write(unit=*,fmt='(a)')           '==========================================='
@@ -536,14 +601,15 @@ module rk4_stepper
       !------------------------------------------------------------------------------------!
       !   Check whether the canopy air equivalent potential temperature is off.            !
       !------------------------------------------------------------------------------------!
-      if (y%can_rhos > rk4max_can_rhos .or. y%can_rhos < rk4min_can_rhos) then
+      if (y%can_prss > rk4max_can_prss .or. y%can_prss < rk4min_can_prss) then
          reject_step = .true.
-         if(record_err) integ_err(4,2) = integ_err(4,2) + 1_8
+         if(record_err) integ_err(5,2) = integ_err(5,2) + 1_8
          if (print_problems) then
             write(unit=*,fmt='(a)')           '==========================================='
-            write(unit=*,fmt='(a)')           ' + Canopy air density is off-track...'
+            write(unit=*,fmt='(a)')           ' + Canopy air pressure is off-track...'
             write(unit=*,fmt='(a)')           '-------------------------------------------'
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THEIV:         ',y%can_theiv
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THETA:         ',y%can_theta
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:           ',y%can_shv
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHV:           ',y%can_rhv
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_TEMP:          ',y%can_temp
@@ -551,7 +617,7 @@ module rk4_stepper
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_CO2:           ',y%can_co2
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_DEPTH:         ',y%can_depth
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_PRSS:          ',y%can_prss
-            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_LNTHEIV )/Dt:',dydx%can_lntheiv
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_LNTHETA )/Dt:',dydx%can_lntheta
             write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_SHV     )/Dt:',dydx%can_shv
             write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_CO2     )/Dt:',dydx%can_co2
             write(unit=*,fmt='(a)')           '==========================================='
@@ -570,12 +636,13 @@ module rk4_stepper
       !------------------------------------------------------------------------------------!
       if (y%can_co2 > rk4max_can_co2 .or. y%can_co2 < rk4min_can_co2) then
          reject_step = .true.
-         if(record_err) integ_err(5,2) = integ_err(4,2) + 1_8
+         if(record_err) integ_err(6,2) = integ_err(6,2) + 1_8
          if (print_problems) then
             write(unit=*,fmt='(a)')           '==========================================='
             write(unit=*,fmt='(a)')           ' + Canopy air CO2 is off-track...'
             write(unit=*,fmt='(a)')           '-------------------------------------------'
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THEIV:         ',y%can_theiv
+            write(unit=*,fmt='(a,1x,es12.4)') ' CAN_THETA:         ',y%can_theta
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_SHV:           ',y%can_shv
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_RHV:           ',y%can_rhv
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_TEMP:          ',y%can_temp
@@ -583,7 +650,7 @@ module rk4_stepper
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_CO2:           ',y%can_co2
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_DEPTH:         ',y%can_depth
             write(unit=*,fmt='(a,1x,es12.4)') ' CAN_PRSS:          ',y%can_prss
-            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_LNTHEIV )/Dt:',dydx%can_lntheiv
+            write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_LNTHETA )/Dt:',dydx%can_lntheta
             write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_SHV     )/Dt:',dydx%can_shv
             write(unit=*,fmt='(a,1x,es12.4)') ' D(CAN_CO2     )/Dt:',dydx%can_co2
             write(unit=*,fmt='(a)')           '==========================================='
@@ -600,15 +667,15 @@ module rk4_stepper
       !     Check leaf temperature, but only for those cohorts with sufficient LAI.        !
       !------------------------------------------------------------------------------------!
       cpatch => csite%patch(ipa)
-      cflag6 = .false.
       cflag7 = .false.
+      cflag8 = .false.
       cohortloop: do ico = 1,cpatch%ncohorts
          if (.not. y%solvable(ico)) cycle cohortloop
 
          !----- Check leaf surface water. -------------------------------------------------!
          if (y%veg_water(ico) < rk4min_veg_lwater * y%tai(ico)) then
             reject_step = .true.
-            if(record_err) cflag6 = .true.
+            if(record_err) cflag7 = .true.
             if (print_problems) then
                write(unit=*,fmt='(a)')           '========================================'
                write(unit=*,fmt='(a)')           ' + Leaf surface water is off-track...'
@@ -624,6 +691,8 @@ module rk4_stepper
                write(unit=*,fmt='(a,1x,es12.4)') ' VEG_FRACLIQ:  ',y%veg_fliq(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' VEG_ENERGY:   ',y%veg_energy(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' VEG_WATER:    ',y%veg_water(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' VEG_LWATER:   ', y%veg_water(ico)       &
+                                                                  / y%tai(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' D(VEG_EN)/Dt: ',dydx%veg_energy(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' D(VEG_WAT)/Dt:',dydx%veg_water(ico)
                write(unit=*,fmt='(a)')           '========================================'
@@ -635,7 +704,7 @@ module rk4_stepper
          !----- Check leaf temperature. ---------------------------------------------------!
          if (y%veg_temp(ico) > rk4max_veg_temp .or. y%veg_temp(ico) < rk4min_veg_temp) then
             reject_step = .true.
-            if(record_err) cflag7 = .true.
+            if(record_err) cflag8 = .true.
             if (print_problems) then
                write(unit=*,fmt='(a)')           '========================================'
                write(unit=*,fmt='(a)')           ' + Leaf temperature is off-track...'
@@ -651,6 +720,8 @@ module rk4_stepper
                write(unit=*,fmt='(a,1x,es12.4)') ' VEG_FRACLIQ:  ',y%veg_fliq(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' VEG_ENERGY:   ',y%veg_energy(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' VEG_WATER:    ',y%veg_water(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' VEG_LWATER:   ', y%veg_water(ico)       &
+                                                                  / y%tai(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' D(VEG_EN)/Dt: ',dydx%veg_energy(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' D(VEG_WAT)/Dt:',dydx%veg_water(ico)
                write(unit=*,fmt='(a)')           '========================================'
@@ -659,8 +730,8 @@ module rk4_stepper
             end if
          end if
       end do cohortloop
-      if(record_err .and. cflag6) integ_err(6,2) = integ_err(6,2) + 1_8
       if(record_err .and. cflag7) integ_err(7,2) = integ_err(7,2) + 1_8
+      if(record_err .and. cflag8) integ_err(8,2) = integ_err(8,2) + 1_8
       !------------------------------------------------------------------------------------!
 
 
@@ -672,7 +743,7 @@ module rk4_stepper
       !------------------------------------------------------------------------------------!
       if (y%virtual_water < rk4min_virt_water) then
          reject_step = .true.
-         if(record_err) integ_err(9,2) = integ_err(9,2) + 1_8
+         if(record_err) integ_err(10,2) = integ_err(10,2) + 1_8
          if (print_problems) then
             write(unit=*,fmt='(a)')           '==========================================='
             write(unit=*,fmt='(a)')           ' + Virtual layer mass is off-track...'
@@ -691,7 +762,7 @@ module rk4_stepper
          call qtk8(y%virtual_heat/y%virtual_water,virtual_temp,virtual_fliq)
          if (virtual_temp < rk4min_sfcw_temp .or. virtual_temp > rk4max_sfcw_temp) then
             reject_step = .true.
-            if(record_err) integ_err(8,2) = integ_err(8,2) + 1_8
+            if(record_err) integ_err(9,2) = integ_err(9,2) + 1_8
             if (print_problems) then
                write(unit=*,fmt='(a)')           '========================================'
                write(unit=*,fmt='(a)')           ' + Virtual layer temp. is off-track...'
@@ -719,9 +790,8 @@ module rk4_stepper
       !------------------------------------------------------------------------------------!
       do k=rk4site%lsl,nzg
          !----- Soil moisture -------------------------------------------------------------!
-         if (y%soil_water(k)< (1.d0-rk4eps)*soil8(csite%ntext_soil(k,ipa))%soilcp .or.     &
-             y%soil_water(k)> (1.d0+rk4eps)*soil8(csite%ntext_soil(k,ipa))%slmsts     )    &
-         then
+         if (y%soil_water(k)< rk4min_soil_water(k) .or.                                    &
+             y%soil_water(k)> rk4max_soil_water(k) ) then
             reject_step = .true.
             if(record_err) integ_err(osow+k,2) = integ_err(osow+k,2) + 1_8
             if (print_problems) then
@@ -806,7 +876,7 @@ module rk4_stepper
             reject_step = .true.
             if(record_err) integ_err(oswe+ksn,2) = integ_err(oswe+ksn,2) + 1_8
             if (print_problems) then
-               write(unit=*,fmt='(a)')              '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+               write(unit=*,fmt='(a)')              '====================================='
                write(unit=*,fmt='(a)')              ' + Snow/pond temperature is off...'
                write(unit=*,fmt='(a)')              '-------------------------------------'
                write(unit=*,fmt='(a,1x,es12.4)')    ' TOTAL_MASS:  ',total_sfcw_mass
@@ -825,7 +895,7 @@ module rk4_stepper
                   write(unit=*,fmt='(a)')           '-------------------------------------'
                end do
                write(unit=*,fmt='(a,1x,es12.4)')    ' H:           ',h
-               write(unit=*,fmt='(a)')              '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+               write(unit=*,fmt='(a)')              '====================================='
             elseif (.not. record_err) then
                return
             end if
@@ -836,7 +906,7 @@ module rk4_stepper
             reject_step = .true.
             if(record_err) integ_err(oswm+ksn,2) = integ_err(oswm+ksn,2) + 1_8
             if (print_problems) then
-               write(unit=*,fmt='(a)')              '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+               write(unit=*,fmt='(a)')              '====================================='
                write(unit=*,fmt='(a)')              ' + Snow/pond layer has weird mass...'
                write(unit=*,fmt='(a)')              '-------------------------------------'
                write(unit=*,fmt='(a,1x,es12.4)')    ' TOTAL_MASS:  ',total_sfcw_mass
@@ -855,7 +925,7 @@ module rk4_stepper
                   write(unit=*,fmt='(a)')           '-------------------------------------'
                end do
                write(unit=*,fmt='(a,1x,es12.4)')    ' H:           ',h
-               write(unit=*,fmt='(a)')              '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+               write(unit=*,fmt='(a)')              '====================================='
             elseif (.not. record_err) then
                return
             end if
@@ -866,19 +936,54 @@ module rk4_stepper
 
 
       if (reject_step .and. print_problems) then
-         write(unit=*,fmt='(a,1x,es12.4)') ' H:                 ',h
-         write(unit=*,fmt='(a,1x,es12.4)') ' MIN_THEIV:         ',rk4min_can_theiv
-         write(unit=*,fmt='(a,1x,es12.4)') ' MAX_THEIV:         ',rk4max_can_theiv
-         write(unit=*,fmt='(a,1x,es12.4)') ' MIN_SHV:           ',rk4min_can_shv
-         write(unit=*,fmt='(a,1x,es12.4)') ' MAX_SHV:           ',rk4max_can_shv
-         write(unit=*,fmt='(a,1x,es12.4)') ' MIN_RHV:           ',rk4min_can_rhv
-         write(unit=*,fmt='(a,1x,es12.4)') ' MAX_RHV:           ',rk4max_can_rhv
-         write(unit=*,fmt='(a,1x,es12.4)') ' MIN_TEMP:          ',rk4min_can_temp
-         write(unit=*,fmt='(a,1x,es12.4)') ' MAX_TEMP:          ',rk4max_can_temp
-         write(unit=*,fmt='(a,1x,es12.4)') ' MIN_RHOS:          ',rk4min_can_rhos
-         write(unit=*,fmt='(a,1x,es12.4)') ' MAX_RHOS:          ',rk4max_can_rhos
-         write(unit=*,fmt='(a,1x,es12.4)') ' MIN_CO2:           ',rk4min_can_co2
-         write(unit=*,fmt='(a,1x,es12.4)') ' MAX_CO2:           ',rk4max_can_co2
+         write(unit=*,fmt='(a)')           ' '
+         write(unit=*,fmt='(78a)')         ('=',k=1,78)
+         write(unit=*,fmt='(a,1x,es12.4)') ' TIMESTEP:          ',h
+         write(unit=*,fmt='(a)')           ' '
+         write(unit=*,fmt='(a)')           '         ---- SANITY CHECK BOUNDS ----'
+         write(unit=*,fmt='(a)')           ' '
+         write(unit=*,fmt='(a)')           ' 1. CANOPY AIR SPACE: '
+         write(unit=*,fmt='(a)')           ' '
+         write(unit=*,fmt='(6(a,1x))')     '   MIN_THEIV','   MAX_THEIV','     MIN_SHV'    &
+                                          ,'     MAX_SHV','     MIN_RHV','     MAX_RHV'
+         write(unit=*,fmt='(6(es12.5,1x))')  rk4min_can_theiv,rk4max_can_theiv             &
+                                            ,rk4min_can_shv  ,rk4max_can_shv                &
+                                            ,rk4min_can_rhv  ,rk4max_can_rhv
+         write(unit=*,fmt='(a)') ' '
+         write(unit=*,fmt='(4(a,1x))')     '    MIN_TEMP','    MAX_TEMP','   MIN_THETA'    &
+                                          ,'   MAX_THETA'
+         write(unit=*,fmt='(4(es12.5,1x))') rk4min_can_temp ,rk4max_can_temp               &
+                                           ,rk4min_can_theta,rk4max_can_theta
+         write(unit=*,fmt='(a)') ' '
+         write(unit=*,fmt='(4(a,1x))')     '    MIN_PRSS','    MAX_PRSS','     MIN_CO2'    &
+                                          ,'     MAX_CO2'
+         write(unit=*,fmt='(4(es12.5,1x))') rk4min_can_prss ,rk4max_can_prss               &
+                                           ,rk4min_can_co2  ,rk4max_can_co2
+         write(unit=*,fmt='(a)') ' '
+         write(unit=*,fmt='(78a)')         ('-',k=1,78)
+         write(unit=*,fmt='(a)')           ' '
+         write(unit=*,fmt='(a)')           ' 2. LEAF PROPERTIES: '
+         write(unit=*,fmt='(3(a,1x))')     '    MIN_TEMP','    MAX_TEMP','  MIN_LWATER'
+         write(unit=*,fmt='(3(es12.5,1x))') rk4min_veg_temp ,rk4max_veg_temp               &
+                                           ,rk4min_veg_lwater
+         write(unit=*,fmt='(a)')           ' '
+         write(unit=*,fmt='(78a)')         ('-',k=1,78)
+         write(unit=*,fmt='(a)')           ' '
+         write(unit=*,fmt='(a)')           ' 3. SURFACE WATER / VIRTUAL POOL PROPERTIES: '
+         write(unit=*,fmt='(3(a,1x))')     '    MIN_TEMP','    MAX_TEMP','   MIN_WMASS'
+         write(unit=*,fmt='(3(es12.5,1x))') rk4min_sfcw_temp ,rk4max_sfcw_temp             &
+                                           ,rk4min_sfcw_mass
+         write(unit=*,fmt='(a)')           ' '
+         write(unit=*,fmt='(78a)')         ('-',k=1,78)
+         write(unit=*,fmt='(a)')           ' '
+         write(unit=*,fmt='(a)')           ' 4. SOIL (TEXTURE CLASS AT TOP LAYER): '
+         write(unit=*,fmt='(4(a,1x))')     '   MIN_WATER','   MAX_WATER','    MIN_TEMP'            &
+                                          ,'    MAX_TEMP'
+         write(unit=*,fmt='(4(es12.5,1x))') rk4min_soil_water(nzg),rk4max_soil_water(nzg)  &
+                                           ,rk4min_soil_temp      ,rk4max_soil_temp
+         write(unit=*,fmt='(a)')           ' '
+         write(unit=*,fmt='(78a)')         ('=',k=1,78)
+         write(unit=*,fmt='(a)')           ' '
       end if
 
       return

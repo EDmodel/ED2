@@ -71,7 +71,8 @@ subroutine sfclyr(mzp,mxp,myp,ia,iz,ja,jz,ibcon)
                   , leaf_g(ng)%veg_energy          , leaf_g(ng)%can_prss                   &
                   , leaf_g(ng)%can_theiv           , leaf_g(ng)%can_theta                  &
                   , leaf_g(ng)%can_rvap            , leaf_g(ng)%can_co2                    &
-                  , leaf_g(ng)%sensible            , leaf_g(ng)%evap                       &
+                  , leaf_g(ng)%sensible_gc         , leaf_g(ng)%sensible_vc                &
+                  , leaf_g(ng)%evap_gc             , leaf_g(ng)%evap_vc                    &
                   , leaf_g(ng)%transp              , leaf_g(ng)%gpp                        &
                   , leaf_g(ng)%plresp              , leaf_g(ng)%resphet                    &
                   , leaf_g(ng)%veg_ndvip           , leaf_g(ng)%veg_ndvic                  &
@@ -105,7 +106,7 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz,leaf,basic,turb,radiate,grid,cu
                              , tslif         & ! function
                              , reducedpress  & ! function
                              , thetaeiv      & ! function
-                             , thetaeiv2thil & ! function
+                             , thrhsh2temp   & ! function
                              , idealdenssh   & ! function
                              , qwtk          ! ! subroutine
    use mem_scratch    , only : scratch
@@ -246,7 +247,7 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz,leaf,basic,turb,radiate,grid,cu
             leaf%can_theiv (i,j,2) = thetaeiv(leaf%can_theta(i,j,2),leaf%can_prss(i,j,2)   &
                                              ,can_temp,leaf%can_rvap(i,j,2)                &
                                              ,leaf%can_rvap(i,j,2),-8)
-            can_lntheiv            = log(leaf%can_theiv (i,j,2))
+            can_lntheta            = log(leaf%can_theta (i,j,2))
             leaf%patch_area(i,j,1) = min(1.0,max(tiny_parea,1.-pctlcon))
             leaf%patch_area(i,j,2) = 1.0 - leaf%patch_area(i,j,1)
          end if
@@ -255,12 +256,14 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz,leaf,basic,turb,radiate,grid,cu
          ploop1: do ip = 1,np
 
             !----- Resetting all fluxes. --------------------------------------------------!
-            leaf%sensible(i,j,ip) = 0.
-            leaf%evap    (i,j,ip) = 0.
-            leaf%transp  (i,j,ip) = 0.
-            leaf%gpp     (i,j,ip) = 0.
-            leaf%plresp  (i,j,ip) = 0.
-            leaf%resphet (i,j,ip) = 0.
+            leaf%sensible_gc(i,j,ip) = 0.
+            leaf%sensible_vc(i,j,ip) = 0.
+            leaf%evap_gc    (i,j,ip) = 0.
+            leaf%evap_vc    (i,j,ip) = 0.
+            leaf%transp     (i,j,ip) = 0.
+            leaf%gpp        (i,j,ip) = 0.
+            leaf%plresp     (i,j,ip) = 0.
+            leaf%resphet    (i,j,ip) = 0.
 
             !----- Update time-dependent vegetation LAI and fractional coverage -----------!
             if (ip >= 2 .and. leaf%patch_area(i,j,ip) >= tiny_parea .and. isfcl >= 1) then
@@ -357,7 +360,7 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz,leaf,basic,turb,radiate,grid,cu
                        , ts_town                         )
                   else
                      !----- Update canopy air temperature, density, and theta. ------------!
-                     can_lntheiv            = log(leaf%can_theiv(i,j,ip))
+                     can_lntheta            = log(leaf%can_theta(i,j,ip))
                      can_exner              = cp  * (p00i * leaf%can_prss(i,j,ip)) ** rocp
                      can_temp               = cpi * leaf%can_theta(i,j,ip) * can_exner
                      can_shv                = leaf%can_rvap(i,j,ip)                        &
@@ -370,7 +373,7 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz,leaf,basic,turb,radiate,grid,cu
                   end if
                else
                   !----- Update canopy air temperature, density, and theta. ---------------!
-                  can_lntheiv            = log(leaf%can_theiv(i,j,ip))
+                  can_lntheta            = log(leaf%can_theta(i,j,ip))
                   can_exner              = cp  * (p00i * leaf%can_prss(i,j,ip)) ** rocp
                   can_temp               = cpi * leaf%can_theta(i,j,ip) * can_exner
                   can_shv                = leaf%can_rvap(i,j,ip)                           &
@@ -459,12 +462,13 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz,leaf,basic,turb,radiate,grid,cu
 
                   !----- Compute the fluxes from atmosphere to canopy air space. ----------!
                   eflxac  = rho_ustar * estar              * cp * can_temp
+                  hflxac  = rho_ustar * leaf%tstar(i,j,ip) * can_exner
                   wflxac  = rho_ustar * leaf%rstar(i,j,ip)
                   cflxac  = rho_ustar * leaf%cstar(i,j,ip) * mmdryi
 
                   !----- Integrate the state variables. -----------------------------------!
-                  can_lntheiv            = can_lntheiv                                     &
-                                         + dtllohcc * (hflxgc + qwflxgc + eflxac)
+                  can_lntheta            = can_lntheta                                     &
+                                         + dtllohcc * (hflxgc + hflxac)
 
                   leaf%can_rvap(i,j,ip)  = leaf%can_rvap(i,j,ip)                           &
                                          + dtllowcc * (wflxgc + wflxac)
@@ -473,24 +477,29 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz,leaf,basic,turb,radiate,grid,cu
                                          + dtlloccc * (cflxgc + cflxac)
 
                   !----- Integrate the fluxes. --------------------------------------------!
-                  leaf%sensible(i,j,ip) = leaf%sensible(i,j,ip) + hflxgc * dtll_factor
-                  leaf%evap    (i,j,ip) = leaf%evap    (i,j,ip) + wflxgc * dtll_factor
-                  leaf%plresp  (i,j,ip) = leaf%plresp  (i,j,ip) + cflxgc * dtll_factor
+                  leaf%sensible_gc(i,j,ip) = leaf%sensible_gc(i,j,ip) + hflxgc*dtll_factor
+                  leaf%evap_gc    (i,j,ip) = leaf%evap_gc    (i,j,ip) + wflxgc*dtll_factor
+                  leaf%plresp     (i,j,ip) = leaf%plresp     (i,j,ip) + cflxgc*dtll_factor
 
                   !------------------------------------------------------------------------!
                   !    Update canopy air properties.  This is done inside the loop to      !
                   ! ensure that we leave here with the right canopy air potential temper-  !
                   ! ature.                                                                 !
                   !------------------------------------------------------------------------!
-                  leaf%can_theiv(i,j,ip) = exp(can_lntheiv)
-                  leaf%can_theta(i,j,ip) = thetaeiv2thil(leaf%can_theiv(i,j,ip)            &
-                                                        ,leaf%can_prss (i,j,ip)            &
-                                                        ,leaf%can_rvap (i,j,ip))
+                  leaf%can_theta(i,j,ip) = exp(can_lntheta)
                   can_shv                = leaf%can_rvap(i,j,ip)                           &
                                          / (leaf%can_rvap(i,j,ip) + 1.)
-                  can_temp               = cpi * leaf%can_theta(i,j,ip) * can_exner
-                  can_rhos               = idealdenssh(leaf%can_prss(i,j,ip)               &
-                                                      ,can_temp,can_shv)
+                  can_temp               = thrhsh2temp(leaf%can_theta(i,j,ip)              &
+                                                      ,can_rhos,can_shv)
+                  leaf%can_prss(i,j,ip)  = can_rhos * rdry * can_temp                      &
+                                         * (1. + epim1 * can_shv)
+                  can_exner    = cp  * (p00i * leaf%can_prss(i,j,ip)) ** rocp
+                  leaf%can_theiv(i,j,ip) = thetaeiv(leaf%can_theta(i,j,ip)                 &
+                                                   ,leaf%can_prss(i,j,ip)                  &
+                                                   ,can_temp                               &
+                                                   ,leaf%can_rvap(i,j,ip)                  &
+                                                   ,leaf%can_rvap(i,j,ip),-8)
+
 
                   !----- KML - drydep -----------------------------------------------------!
                   if (catt == 1) leaf%R_aer(i,j,ip) = .2 * leaf%ustar(i,j,ip)
@@ -577,7 +586,8 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz,leaf,basic,turb,radiate,grid,cu
                           , leaf%veg_energy       (i,j,ip), leaf%can_prss         (i,j,ip) &
                           , leaf%can_theiv        (i,j,ip), leaf%can_theta        (i,j,ip) &
                           , leaf%can_rvap         (i,j,ip), leaf%can_co2          (i,j,ip) &
-                          , leaf%sensible         (i,j,ip), leaf%evap             (i,j,ip) &
+                          , leaf%sensible_gc      (i,j,ip), leaf%sensible_vc      (i,j,ip) &
+                          , leaf%evap_gc          (i,j,ip), leaf%evap_vc          (i,j,ip) &
                           , leaf%transp           (i,j,ip), leaf%gpp              (i,j,ip) &
                           , leaf%plresp           (i,j,ip), leaf%resphet          (i,j,ip) &
                           , leaf%veg_ndvip        (i,j,ip), leaf%veg_ndvic        (i,j,ip) &
@@ -645,8 +655,9 @@ subroutine leaftw(mzg,mzs,np,soil_water, soil_energy,soil_text,sfcwater_mass    
                  ,veg_tai,veg_rough,veg_height,patch_area,patch_rough,patch_wetind         &
                  ,leaf_class,soil_rough,sfcwater_nlev,stom_resist,ground_rsat,ground_rvap  &
                  ,ground_temp,ground_fliq,veg_water,veg_hcap,veg_energy,can_prss,can_theiv &
-                 ,can_theta,can_rvap,can_co2,sensible,evap,transp,gpp,plresp,resphet       &
-                 ,veg_ndvip,veg_ndvic,veg_ndvif,rshort,cosz,ip,i,j)
+                 ,can_theta,can_rvap,can_co2,sensible_gc,sensible_vc,evap_gc,evap_vc       &
+                 ,transp,gpp,plresp,resphet,veg_ndvip,veg_ndvic,veg_ndvif,rshort,cosz,ip   &
+                 ,i,j)
 
    use leaf_coms
    use mem_leaf
@@ -696,8 +707,10 @@ subroutine leaftw(mzg,mzs,np,soil_water, soil_energy,soil_text,sfcwater_mass    
    real                   , intent(inout) :: can_theta
    real                   , intent(inout) :: can_rvap
    real                   , intent(inout) :: can_co2
-   real                   , intent(inout) :: sensible
-   real                   , intent(inout) :: evap
+   real                   , intent(inout) :: sensible_gc
+   real                   , intent(inout) :: sensible_vc
+   real                   , intent(inout) :: evap_gc
+   real                   , intent(inout) :: evap_vc
    real                   , intent(inout) :: transp
    real                   , intent(inout) :: gpp
    real                   , intent(inout) :: plresp
@@ -825,9 +838,9 @@ subroutine leaftw(mzg,mzs,np,soil_water, soil_energy,soil_text,sfcwater_mass    
    call leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mass,ustar       &
                    ,tstar,rstar,cstar,soil_rough,veg_rough,veg_height,veg_lai,veg_tai      &
                    ,veg_water,veg_hcap,veg_energy,leaf_class,veg_fracarea,stom_resist      &
-                   ,can_prss,can_theiv,can_theta,can_rvap,can_co2,sensible,evap,transp,gpp &
-                   ,plresp,resphet,ground_rsat,ground_rvap,ground_temp,ground_fliq         &
-                   ,available_water,rshort,i,j,ip)
+                   ,can_prss,can_theiv,can_theta,can_rvap,can_co2,sensible_gc,sensible_vc  &
+                   ,evap_gc,evap_vc,transp,gpp,plresp,resphet,ground_rsat,ground_rvap      &
+                   ,ground_temp,ground_fliq,available_water,rshort,i,j,ip)
 
    !----- Compute soil and effective snow heat resistance times layer depth (rfactor). ----!
    do k = 1,mzg
@@ -1124,15 +1137,16 @@ end subroutine leaftw
 subroutine leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mass          &
                       ,ustar,tstar,rstar,cstar,soil_rough,veg_rough,veg_height,veg_lai     &
                       ,veg_tai,veg_water,veg_hcap,veg_energy,leaf_class,veg_fracarea       &
-                      ,stom_resist,can_prss,can_theiv,can_theta,can_rvap,can_co2,sensible  &
-                      ,evap,transp,gpp,plresp,resphet,ground_rsat,ground_rvap,ground_temp  &
-                      ,ground_fliq,available_water,rshort,i,j,ip)
+                      ,stom_resist,can_prss,can_theiv,can_theta,can_rvap,can_co2           &
+                      ,sensible_gc,sensible_vc,evap_gc,evap_vc,transp,gpp,plresp,resphet   &
+                      ,ground_rsat,ground_rvap,ground_temp,ground_fliq,available_water     &
+                      ,rshort,i,j,ip)
    use leaf_coms
    use rconstants
    use therm_lib , only : eslif          & ! function
                         , rslif          & ! function
-                        , thetaeiv2thil  & ! function
-                        , idealdenssh    & ! function
+                        , thetaeiv       & ! function
+                        , thrhsh2temp    & ! function
                         , tslif          & ! function
                         , qwtk           ! ! subroutine
    use catt_start, only : CATT
@@ -1171,8 +1185,10 @@ subroutine leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mas
    real                , intent(inout) :: can_theta
    real                , intent(inout) :: can_rvap
    real                , intent(inout) :: can_co2
-   real                , intent(inout) :: sensible
-   real                , intent(inout) :: evap
+   real                , intent(inout) :: sensible_gc
+   real                , intent(inout) :: sensible_vc
+   real                , intent(inout) :: evap_gc
+   real                , intent(inout) :: evap_vc
    real                , intent(inout) :: transp
    real                , intent(inout) :: gpp
    real                , intent(inout) :: plresp
@@ -1233,7 +1249,7 @@ subroutine leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mas
    real                                :: old_can_shv
    real                                :: old_can_theta
    real                                :: old_can_temp
-   real                                :: old_can_rhos
+   real                                :: old_can_prss
    !----- Local constants. ----------------------------------------------------------------!
    character(len=9)      , parameter   :: fmti='(a,1x,i6)'
    character(len=13)     , parameter   :: fmtf='(a,1x,es12.5)'
@@ -1256,7 +1272,7 @@ subroutine leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mas
    old_can_shv      = can_shv
    old_can_theta    = can_theta
    old_can_temp     = can_temp
-   old_can_rhos     = can_rhos
+   old_can_prss     = can_prss
 
 
 
@@ -1473,6 +1489,7 @@ subroutine leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mas
       !------------------------------------------------------------------------------------!
       rho_ustar  = can_rhos  * ustar
       eflxac     = rho_ustar * estar * cp * can_temp ! Enthalpy exchange
+      hflxac     = rho_ustar * tstar * can_exner     ! Sensible heat exchange
       wflxac     = rho_ustar * rstar                 ! Water vapour exchange
       cflxac     = rho_ustar * cstar * mmdryi        ! CO2 exchange
       !------------------------------------------------------------------------------------!
@@ -1483,9 +1500,8 @@ subroutine leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mas
       !------------------------------------------------------------------------------------!
       !      Update enthalpy, CO2, and canopy mixing ratio.                                !
       !------------------------------------------------------------------------------------!
-      can_lntheiv      = can_lntheiv                                                       &
-                       + dtllohcc * ( hflxgc + hflxvc + eflxac                             &
-                                    + qwflxgc - qdewgndflx + qwflxvc + qtransp_loc)
+      can_lntheta      = can_lntheta                                                       &
+                       + dtllohcc * ( hflxgc + hflxvc + hflxac)
       can_rvap         = can_rvap                                                          &
                        + dtllowcc * (wflxgc - dewgndflx + wflxvc + transp_loc + wflxac)
       !------------------------------------------------------------------------------------!
@@ -1505,23 +1521,26 @@ subroutine leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mas
 
 
       !----- Update the fluxes. -----------------------------------------------------------!
-      sensible = sensible + (hflxvc  + hflxgc ) * dtll_factor
-      evap     = evap     + (qwflxvc + qwflxgc) * dtll_factor
-      transp   = transp   + (qtransp_loc      ) * dtll_factor
+      sensible_gc = sensible_gc +  hflxgc                * dtll_factor
+      sensible_vc = sensible_vc +  hflxvc                * dtll_factor
+      evap_gc     = evap_gc     + (qwflxgc - qdewgndflx) * dtll_factor
+      evap_vc     = evap_vc     +  qwflxvc               * dtll_factor
+      transp      = transp      +  qtransp_loc           * dtll_factor
 
       !----- Find the vegetation diagnostic variables for next time step. -----------------!
       call qwtk(veg_energy,veg_water,veg_hcap,veg_temp,veg_fliq)
 
       !----- Find the canopy air diagnostic variables for next time step. -----------------!
-      can_theiv = exp(can_lntheiv)
+      can_theta = exp(can_lntheta)
       can_shv   = can_rvap / (can_rvap + 1.)
-      can_theta = thetaeiv2thil(can_theiv,can_prss,can_rvap)
-      can_temp  = cpi * can_theta * can_exner
-      can_rhos  = idealdenssh(can_prss,can_temp,can_shv)
+      can_temp  = thrhsh2temp(can_theta,can_rhos,can_shv)
+      can_prss  = can_rhos * rdry * can_temp * (1. + epim1 * can_shv)
+      can_exner = cp  * (p00i * can_prss) ** rocp
+      can_theiv = thetaeiv(can_theta,can_prss,can_temp,can_rvap,can_rvap,-8)
       !------------------------------------------------------------------------------------!
 
 
-      if (can_lntheiv /= can_lntheiv .or. can_theiv /= can_theiv) then
+      if (can_lntheta /= can_lntheta .or. can_theiv /= can_theiv) then
          nsoil = nint(soil_text(mzg))
          write (unit=*,fmt=fmtc) '------------ Canopy theta_Eiv is screwed. ------------'
          write (unit=*,fmt=fmtc) ' - Vegetated patch. '
@@ -1535,9 +1554,9 @@ subroutine leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mas
          write (unit=*,fmt=fmtf) ' - OLD_CAN_RVAP     = ',old_can_rvap
          write (unit=*,fmt=fmtf) ' - CAN_CO2          = ',can_co2
          write (unit=*,fmt=fmtf) ' - CAN_PRSS         = ',can_prss
+         write (unit=*,fmt=fmtf) ' - OLD_CAN_PRSS     = ',old_can_prss
          write (unit=*,fmt=fmtf) ' - OLD_CAN_THETA    = ',old_can_theta
          write (unit=*,fmt=fmtf) ' - OLD_CAN_TEMP     = ',old_can_temp
-         write (unit=*,fmt=fmtf) ' - OLD_CAN_RHOS     = ',old_can_rhos
          write (unit=*,fmt=fmtc) ' '
          write (unit=*,fmt=fmtf) ' - VEG_ENERGY       = ',veg_energy
          write (unit=*,fmt=fmtf) ' - OLD_VEG_ENERGY   = ',old_veg_energy
@@ -1554,6 +1573,7 @@ subroutine leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mas
          write (unit=*,fmt=fmtc) ' '
          write (unit=*,fmt=fmtf) ' - HFLXGC           = ',hflxgc
          write (unit=*,fmt=fmtf) ' - HFLXVC           = ',hflxvc
+         write (unit=*,fmt=fmtf) ' - HFLXAC           = ',hflxac
          write (unit=*,fmt=fmtf) ' - EFLXAC           = ',eflxac
          write (unit=*,fmt=fmtf) ' - QWFLXGC          = ',qwflxgc
          write (unit=*,fmt=fmtf) ' - QDEWGNDFLX       = ',qdewgndflx
@@ -1590,13 +1610,14 @@ subroutine leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mas
       !------------------------------------------------------------------------------------!
       rho_ustar  = can_rhos  * ustar
       eflxac     = rho_ustar * estar * cp * can_temp ! Enthalpy exchange
+      hflxac     = rho_ustar * tstar * can_exner     ! Sensible heat exchange
       wflxac     = rho_ustar * rstar                 ! Water vapour exchange
       cflxac     = rho_ustar * cstar * mmdryi        ! CO2 exchange
       !------------------------------------------------------------------------------------!
 
 
       !----- Update the canopy prognostic variables. --------------------------------------!
-      can_lntheiv  = can_lntheiv  + dtllohcc * (hflxgc + qwflxgc - qdewgndflx + eflxac)
+      can_lntheta  = can_lntheta  + dtllohcc * (hflxgc + qwflxgc   + hflxac)
       can_rvap     = can_rvap     + dtllowcc * (wflxgc - dewgndflx + wflxac)
 
       !------------------------------------------------------------------------------------!
@@ -1608,18 +1629,21 @@ subroutine leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mas
       !------------------------------------------------------------------------------------!
 
       !----- Update the fluxes. -----------------------------------------------------------!
-      sensible = sensible + hflxgc  * dtll_factor
-      evap     = evap     + qwflxgc * dtll_factor
+      sensible_gc = sensible_gc +  hflxgc                * dtll_factor
+      evap_gc     = evap_gc     + (qwflxgc - qdewgndflx) * dtll_factor
 
       !----- Find the diagnostic canopy air variables for next time step. -----------------!
-      can_theiv = exp(can_lntheiv)
+
+      !----- Find the canopy air diagnostic variables for next time step. -----------------!
+      can_theta = exp(can_lntheta)
       can_shv   = can_rvap / (can_rvap + 1.)
-      can_theta = thetaeiv2thil(can_theiv,can_prss,can_rvap)
-      can_temp  = cpi * can_theta * can_exner
-      can_rhos  = idealdenssh(can_prss,can_temp,can_shv)
+      can_temp  = thrhsh2temp(can_theta,can_rhos,can_shv)
+      can_prss  = can_rhos * rdry * can_temp * (1. + epim1 * can_shv)
+      can_exner = cp  * (p00i * can_prss) ** rocp
+      can_theiv = thetaeiv(can_theta,can_prss,can_temp,can_rvap,can_rvap,-8)
       !------------------------------------------------------------------------------------!
 
-      if (can_lntheiv /= can_lntheiv .or. can_theiv /= can_theiv) then
+      if (can_lntheta /= can_lntheta .or. can_theiv /= can_theiv) then
          write (unit=*,fmt=fmtc) '------------ Canopy theta_Eiv is screwed. ------------'
          write (unit=*,fmt=fmtc) ' - Non-vegetated patch. '
          write (unit=*,fmt=fmtc) ' '
@@ -1629,9 +1653,9 @@ subroutine leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mas
          write (unit=*,fmt=fmtf) ' - OLD_CAN_RVAP     = ',old_can_rvap
          write (unit=*,fmt=fmtf) ' - CAN_CO2          = ',can_co2
          write (unit=*,fmt=fmtf) ' - CAN_PRSS         = ',can_prss
+         write (unit=*,fmt=fmtf) ' - OLD_CAN_PRSS     = ',old_can_prss
          write (unit=*,fmt=fmtf) ' - OLD_CAN_THETA    = ',old_can_theta
          write (unit=*,fmt=fmtf) ' - OLD_CAN_TEMP     = ',old_can_temp
-         write (unit=*,fmt=fmtf) ' - OLD_CAN_RHOS     = ',old_can_rhos
          write (unit=*,fmt=fmtc) ' '
          write (unit=*,fmt=fmtf) ' - HFLXGC           = ',hflxgc
          write (unit=*,fmt=fmtf) ' - EFLXAC           = ',eflxac

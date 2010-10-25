@@ -28,8 +28,8 @@ module leaf_coms
    !---------------------------------------------------------------------------------------!
    !     Speed-related minimum values we will consider.                                    !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: ubmin    = 0.25  ! Minimum velocity                        [     m/s]
-   real, parameter :: ustmin   = 0.025 ! Minimum ustar                           [     m/s]
+   real, parameter :: ubmin    = 0.65  ! Minimum velocity                        [     m/s]
+   real, parameter :: ustmin   = 0.10  ! Minimum ustar                           [     m/s]
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!

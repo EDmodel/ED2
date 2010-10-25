@@ -47,6 +47,7 @@ subroutine ed_model()
                             , integ_err           & ! intent(in)
                             , integ_lab           & ! intent(in)
                             , record_err          & ! intent(inout)
+                            , print_detailed      & ! intent(inout)
                             , nerr                & ! intent(in)
                             , errmax_fout         & ! intent(in)
                             , sanity_fout         & ! intent(in)
@@ -106,7 +107,8 @@ subroutine ed_model()
    ! the first time and write the header.  But just before we do it, we check whether this !
    ! is a single POI run, the only case where we will allow this recording.                !
    !---------------------------------------------------------------------------------------!
-   record_err = record_err .and. n_ed_region == 0 .and. n_poi == 1
+   record_err     = record_err     .and. n_ed_region == 0 .and. n_poi == 1
+   print_detailed = print_detailed .and. n_ed_region == 0 .and. n_poi == 1
    if(record_err) then
       !----- Initialise the error structures. ---------------------------------------------!
       call alloc_integ_err()
@@ -172,7 +174,8 @@ subroutine ed_model()
    end do
    
    
-   if (writing_year) call h5_output('YEAR')
+   if (ifoutput /= 0) call h5_output('INST')
+   if (writing_year ) call h5_output('YEAR')
 
    !         Start the timesteps
 

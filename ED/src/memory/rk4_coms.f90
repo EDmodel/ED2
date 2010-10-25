@@ -23,10 +23,11 @@ module rk4_coms
 
       !----- Canopy air variables. --------------------------------------------------------!
       real(kind=8)                        :: can_theiv    ! Eq. pot. temperature [       K]
-      real(kind=8)                        :: can_lntheiv  ! Log (theta_eiv)      [     ---]
+      real(kind=8)                        :: can_lntheta  ! Log (theta)          [     ---]
       real(kind=8)                        :: can_theta    ! Pot. Temperature     [       K]
       real(kind=8)                        :: can_temp     ! Temperature          [       K]
       real(kind=8)                        :: can_shv      ! Specific humidity    [   kg/kg]
+      real(kind=8)                        :: can_ssh      ! Sat. spec. humidity  [   kg/kg]
       real(kind=8)                        :: can_rvap     ! Vapour mixing ratio  [   kg/kg]
       real(kind=8)                        :: can_rhv      ! Relative humidity    [     ---]
       real(kind=8)                        :: can_co2      ! CO_2                 [µmol/mol]
@@ -34,6 +35,9 @@ module rk4_coms
       real(kind=8)                        :: can_rhos     ! Canopy air density   [   kg/m³]
       real(kind=8)                        :: can_prss     ! Pressure             [      Pa]
       real(kind=8)                        :: can_exner    ! Exner function       [  J/kg/K]
+
+      !----- Ground -> flux type. ---------------------------------------------------------!
+      integer                             :: flag_wflxgc  ! Flag for water flux.
 
       !----- Soil variables. --------------------------------------------------------------!
       real(kind=8), dimension(:), pointer :: soil_energy  ! Internal energy       [   J/m³]
@@ -132,6 +136,9 @@ module rk4_coms
       !----- Mass and energy input due to intercepted water. ------------------------------!
       real(kind=8) :: avg_intercepted   ! Mass flux
       real(kind=8) :: avg_qintercepted  ! Energy flux
+      !----- Mass and energy input due to throughfall precipitation. ----------------------!
+      real(kind=8) :: avg_throughfall   ! Mass flux
+      real(kind=8) :: avg_qthroughfall  ! Energy flux
       !----- Sensible heat flux -----------------------------------------------------------!
       real(kind=8) :: avg_sensible_vc   ! Leaf      -> canopy air
       real(kind=8) :: avg_sensible_gc   ! Ground    -> canopy air
@@ -145,6 +152,40 @@ module rk4_coms
       real(kind=8),pointer,dimension(:) :: avg_sensible_gg   ! Soil heat flux between layers
       real(kind=8)                      :: avg_drainage      ! Drainage at the bottom.
       real(kind=8)                      :: avg_drainage_heat ! Drainage at the bottom.
+      !------------------------------------------------------------------------------------!
+      !     Fast time flux variables for each time step.  These variables will be defined  !
+      ! only when the user is debugging.                                                   !
+      !------------------------------------------------------------------------------------!
+      real(kind=8) :: flx_netrad        ! Net radiation
+      !----- Water fluxes -----------------------------------------------------------------!
+      real(kind=8) :: flx_vapor_vc      ! Leaf       -> canopy air:  evap./cond. flux
+      real(kind=8) :: flx_dew_cg        ! Canopy     -> ground    :  condensation flux
+      real(kind=8) :: flx_vapor_gc      ! Ground     -> canopy air:  evaporation flux
+      real(kind=8) :: flx_vapor_ac      ! Free atm.  -> canopy air:  vapour flux
+      real(kind=8) :: flx_transp        ! Transpiration
+      real(kind=8) :: flx_evap          ! Evaporation
+      !----- Mass and energy fluxes due to water shedding. --------------------------------!
+      real(kind=8) :: flx_wshed_vg      ! Mass flux
+      real(kind=8) :: flx_qwshed_vg     ! Energy flux
+      !----- Mass and energy input due to intercepted water. ------------------------------!
+      real(kind=8) :: flx_intercepted   ! Mass flux
+      real(kind=8) :: flx_qintercepted  ! Energy flux
+      !----- Mass and energy input due to throughfall precipitation. ----------------------!
+      real(kind=8) :: flx_throughfall   ! Mass flux
+      real(kind=8) :: flx_qthroughfall  ! Energy flux
+      !----- Sensible heat flux -----------------------------------------------------------!
+      real(kind=8) :: flx_sensible_vc   ! Leaf      -> canopy air
+      real(kind=8) :: flx_sensible_gc   ! Ground    -> canopy air
+      real(kind=8) :: flx_sensible_ac   ! Free atm. -> canopy air
+      real(kind=8) :: flx_heatstor_veg  ! Heat storage in vegetation
+      !----- Carbon flux ------------------------------------------------------------------!
+      real(kind=8) :: flx_carbon_ac     ! Free atm. -> canopy air
+      !----- Soil fluxes ------------------------------------------------------------------!
+      real(kind=8),pointer,dimension(:) :: flx_smoist_gg     ! Moisture flux between layers
+      real(kind=8),pointer,dimension(:) :: flx_smoist_gc     ! Transpired soil moisture sink
+      real(kind=8),pointer,dimension(:) :: flx_sensible_gg   ! Soil heat flux between layers
+      real(kind=8)                      :: flx_drainage      ! Drainage at the bottom.
+      real(kind=8)                      :: flx_drainage_heat ! Drainage at the bottom.
       !----- Full budget variables --------------------------------------------------------!
       real(kind=8) :: co2budget_storage
       real(kind=8) :: co2budget_loss2atm
@@ -172,8 +213,10 @@ module rk4_coms
       real(kind=8)                   :: atm_tmp
       real(kind=8)                   :: atm_theta
       real(kind=8)                   :: atm_theiv
-      real(kind=8)                   :: atm_lntheiv
+      real(kind=8)                   :: atm_lntheta
       real(kind=8)                   :: atm_shv
+      real(kind=8)                   :: atm_rvap
+      real(kind=8)                   :: atm_rhv
       real(kind=8)                   :: atm_co2
       real(kind=8)                   :: zoff
       real(kind=8)                   :: atm_exner
@@ -182,6 +225,8 @@ module rk4_coms
       real(kind=8)                   :: dpcpg
       real(kind=8)                   :: atm_prss
       real(kind=8)                   :: geoht
+      real(kind=8)                   :: rshort
+      real(kind=8)                   :: rlong
       real(kind=8)                   :: lon
       real(kind=8)                   :: lat
    end type rk4sitetype
@@ -323,19 +368,26 @@ module rk4_coms
    !---------------------------------------------------------------------------------------!
 
    !----- The following variables control the Runge-Kutta performance. --------------------!
-   integer      :: maxstp      ! Maximum number of intermediate steps.
-   real(kind=8) :: rk4eps      ! Desired relative accuracy
-   real(kind=8) :: rk4epsi     ! Inverse of rk4eps
-   real(kind=8) :: rk4eps2     ! rk4eps * rk4eps
-   real(kind=8) :: hmin        ! Minimum step size
-   logical      :: print_diags ! Flag to print the diagnostic check.
-   logical      :: checkbudget ! Flag to decide whether we will check whether the budgets 
-                               !    close every time step (and stop the run if they don't)
-                               !    or if we will skip this part.
-   logical      :: record_err  ! Flag to keep track of which variable is causing the most
-                               !    errors in the integrator.
-   logical      :: newsnow     ! Flag to decide whether we use the new snow percolation
-                               !    scheme or not. 
+   integer      :: maxstp         ! Maximum number of intermediate steps.
+   real(kind=8) :: rk4eps         ! Desired relative accuracy
+   real(kind=8) :: rk4epsi        ! Inverse of rk4eps
+   real(kind=8) :: rk4eps2        ! rk4eps * rk4eps
+   real(kind=8) :: hmin           ! Minimum step size
+   logical      :: print_diags    ! Flag to print the diagnostic check.
+   logical      :: checkbudget    ! Flag to decide whether we will check whether the 
+                                  !    budgets close every time step (and stop the run if 
+                                  !    they don't) or if we will skip this part.
+   logical      :: record_err     ! Flag to keep track of which variable is causing the 
+                                  !    most errors in the integrator.
+   logical      :: print_detailed ! Flag to determine whether to print the patch 
+                                  !     thermodynamic state every time step, including the
+                                  !     intermediate ones.  This will create one file for
+                                  !     each patch, so it is not recommended to be used 
+                                  !     accross months, as the patches change.
+   logical      :: print_thbnd    ! Flag to keep track of which variable is causing the
+                                  !     most errors in the integrator.
+   logical      :: newsnow        ! Flag to decide whether we use the new snow percolation
+                                  !     scheme or not. 
    !---------------------------------------------------------------------------------------!
 
 
@@ -386,6 +438,8 @@ module rk4_coms
    real(kind=8) :: rk4max_can_temp      ! Maximum canopy    temperature         [        K]
    real(kind=8) :: rk4min_can_shv       ! Minimum canopy    specific humidity   [kg/kg_air]
    real(kind=8) :: rk4max_can_shv       ! Maximum canopy    specific humidity   [kg/kg_air]
+   real(kind=8) :: rk4min_can_rvap      ! Minimum canopy    mixing ratio        [kg/kg_air]
+   real(kind=8) :: rk4max_can_rvap      ! Maximum canopy    mixing ratio        [kg/kg_air]
    real(kind=8) :: rk4min_can_rhv       ! Minimum canopy    relative humidity   [      ---]
    real(kind=8) :: rk4max_can_rhv       ! Maximum canopy    relative humidity   [      ---]
    real(kind=8) :: rk4min_can_co2       ! Minimum canopy    CO2 mixing ratio    [ µmol/mol]
@@ -406,10 +460,12 @@ module rk4_coms
    !----- The following variables will be defined every time step. ------------------------!
    real(kind=8) :: rk4min_can_theta     ! Minimum canopy    potential temp.     [        K]
    real(kind=8) :: rk4max_can_theta     ! Maximum canopy    potential temp.     [        K]
+   real(kind=8) :: rk4min_can_lntheta   ! Minimum canopy    log of theta        [      ---]
+   real(kind=8) :: rk4max_can_lntheta   ! Maximum canopy    log of theta        [      ---]
    real(kind=8) :: rk4min_can_theiv     ! Minimum canopy    eq. pot. temp.      [        K]
    real(kind=8) :: rk4max_can_theiv     ! Maximum canopy    eq. pot. temp.      [        K]
-   real(kind=8) :: rk4min_can_rhos      ! Minimum canopy    density             [    kg/m³]
-   real(kind=8) :: rk4max_can_rhos      ! Maximum canopy    density             [    kg/m³]
+   real(kind=8) :: rk4min_can_prss      ! Minimum canopy    pressure            [       Pa]
+   real(kind=8) :: rk4max_can_prss      ! Maximum canopy    pressure            [       Pa]
    !---------------------------------------------------------------------------------------!
 
 
@@ -419,6 +475,19 @@ module rk4_coms
    real(kind=8) :: rk4snowmin           ! Min. snow mass required for a new lyr [    kg/m²]
    real(kind=8) :: rk4dry_veg_lwater    ! Min. non-negligible leaf water mass   [kg/m²leaf]
    real(kind=8) :: rk4fullveg_lwater    ! Max. leaf water mass possible         [kg/m²leaf]
+   !---------------------------------------------------------------------------------------!
+
+   !---------------------------------------------------------------------------------------!
+   !     The following variables are going to be allocated at the first time step, and     !
+   ! they will be re-calculated every time the integrator is called.                       !
+   ! rk4min_soil_water                  ! Minimum soil moisture                 [    m³/m³]!
+   ! rk4max_soil_water                  ! Maximum soil moisture                 [    m³/m³]!
+   !---------------------------------------------------------------------------------------!
+   real(kind=8), dimension(:), allocatable :: rk4min_soil_water
+   real(kind=8), dimension(:), allocatable :: rk4max_soil_water
+   !---------------------------------------------------------------------------------------!
+
+
    !=======================================================================================!
    !=======================================================================================!
 
@@ -486,7 +555,7 @@ module rk4_coms
    !      Integrator error statistics.                                                     !
    !---------------------------------------------------------------------------------------!
    !----- Number of variables other than soil and surface that will be analysed. ----------!
-   integer                          , parameter   :: nerrfix = 17
+   integer                          , parameter   :: nerrfix = 18
 
    !----- Total number of variables that will be analysed. --------------------------------!
    integer                                        :: nerr
@@ -494,6 +563,8 @@ module rk4_coms
    !----- Default file name to be given to the error files. -------------------------------!
    character(len=str_len)                         :: errmax_fout
    character(len=str_len)                         :: sanity_fout
+   character(len=str_len)                         :: thbnds_fout
+   character(len=str_len)                         :: detail_pref
 
    !----- The error counter and label. ----------------------------------------------------!
    integer(kind=8)  , dimension(:,:), allocatable :: integ_err
@@ -522,7 +593,7 @@ module rk4_coms
                                , nzs          ! ! intent(in)
       implicit none
       !----- Argument ---------------------------------------------------------------------!
-      type(rk4patchtype) :: y
+      type(rk4patchtype), target :: y
       !------------------------------------------------------------------------------------!
 
       call nullify_rk4_patch(y)
@@ -551,6 +622,9 @@ module rk4_coms
       allocate(y%avg_sensible_gg(nzg))
       allocate(y%avg_smoist_gg(nzg))
       allocate(y%avg_smoist_gc(nzg))
+      allocate(y%flx_sensible_gg(nzg))
+      allocate(y%flx_smoist_gg(nzg))
+      allocate(y%flx_smoist_gc(nzg))
 
       call zero_rk4_patch(y)
 
@@ -571,7 +645,7 @@ module rk4_coms
    subroutine nullify_rk4_patch(y)
       implicit none
       !----- Argument ---------------------------------------------------------------------!
-      type(rk4patchtype) :: y
+      type(rk4patchtype), target :: y
       !------------------------------------------------------------------------------------!
 
       nullify(y%soil_energy)
@@ -598,6 +672,9 @@ module rk4_coms
       nullify(y%avg_smoist_gg)
       nullify(y%avg_smoist_gc)
       nullify(y%avg_sensible_gg)
+      nullify(y%flx_smoist_gg)
+      nullify(y%flx_smoist_gc)
+      nullify(y%flx_sensible_gg)
 
       return
    end subroutine nullify_rk4_patch
@@ -618,7 +695,7 @@ module rk4_coms
                                , nzs          ! ! intent(in)
       implicit none
       !----- Argument ---------------------------------------------------------------------!
-      type(rk4patchtype) :: y
+      type(rk4patchtype), target :: y
       !------------------------------------------------------------------------------------!
 
       y%co2budget_storage              = 0.d0
@@ -635,15 +712,17 @@ module rk4_coms
       y%can_temp                       = 0.d0
       y%can_rvap                       = 0.d0
       y%can_shv                        = 0.d0
+      y%can_ssh                        = 0.d0
       y%can_rhv                        = 0.d0
       y%can_co2                        = 0.d0
       y%can_theta                      = 0.d0
       y%can_theiv                      = 0.d0
-      y%can_lntheiv                    = 0.d0
+      y%can_lntheta                    = 0.d0
       y%can_depth                      = 0.d0
       y%can_rhos                       = 0.d0
       y%can_prss                       = 0.d0
       y%can_exner                      = 0.d0
+      y%flag_wflxgc                    = -1
       y%virtual_water                  = 0.d0
       y%virtual_heat                   = 0.d0
       y%virtual_depth                  = 0.d0
@@ -688,6 +767,7 @@ module rk4_coms
       y%avg_vapor_gc                   = 0.d0
       y%avg_wshed_vg                   = 0.d0
       y%avg_intercepted                = 0.d0
+      y%avg_throughfall                = 0.d0
       y%avg_vapor_ac                   = 0.d0
       y%avg_transp                     = 0.d0
       y%avg_evap                       = 0.d0
@@ -695,12 +775,35 @@ module rk4_coms
       y%avg_sensible_vc                = 0.d0
       y%avg_qwshed_vg                  = 0.d0
       y%avg_qintercepted               = 0.d0
+      y%avg_qthroughfall               = 0.d0
       y%avg_sensible_gc                = 0.d0
       y%avg_sensible_ac                = 0.d0
       y%avg_heatstor_veg               = 0.d0
 
       y%avg_drainage                   = 0.d0
       y%avg_drainage_heat              = 0.d0
+
+      y%flx_carbon_ac                  = 0.d0
+      y%flx_vapor_vc                   = 0.d0
+      y%flx_dew_cg                     = 0.d0
+      y%flx_vapor_gc                   = 0.d0
+      y%flx_wshed_vg                   = 0.d0
+      y%flx_intercepted                = 0.d0
+      y%flx_throughfall                = 0.d0
+      y%flx_vapor_ac                   = 0.d0
+      y%flx_transp                     = 0.d0
+      y%flx_evap                       = 0.d0
+      y%flx_netrad                     = 0.d0
+      y%flx_sensible_vc                = 0.d0
+      y%flx_qwshed_vg                  = 0.d0
+      y%flx_qintercepted               = 0.d0
+      y%flx_qthroughfall               = 0.d0
+      y%flx_sensible_gc                = 0.d0
+      y%flx_sensible_ac                = 0.d0
+      y%flx_heatstor_veg               = 0.d0
+
+      y%flx_drainage                   = 0.d0
+      y%flx_drainage_heat              = 0.d0
 
       !----- The following variables are pointers, check whether they are linked or not. --!
       if(associated(y%soil_energy           ))   y%soil_energy(:)                 = 0.d0
@@ -724,8 +827,116 @@ module rk4_coms
       if(associated(y%avg_smoist_gc         ))   y%avg_smoist_gc(:)               = 0.d0
       if(associated(y%avg_sensible_gg       ))   y%avg_sensible_gg(:)             = 0.d0
 
+      if(associated(y%flx_smoist_gg         ))   y%flx_smoist_gg(:)               = 0.d0
+      if(associated(y%flx_smoist_gc         ))   y%flx_smoist_gc(:)               = 0.d0
+      if(associated(y%flx_sensible_gg       ))   y%flx_sensible_gg(:)             = 0.d0
+
       return
    end subroutine zero_rk4_patch
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !    Re-set the instantaneous flux variables to zero.                                   !
+   !---------------------------------------------------------------------------------------!
+   subroutine reset_rk4_fluxes(y)
+      use grid_coms     , only : nzg          & ! intent(in)
+                               , nzs          ! ! intent(in)
+      implicit none
+      !----- Argument ---------------------------------------------------------------------!
+      type(rk4patchtype), target :: y
+      !------------------------------------------------------------------------------------!
+
+
+      y%flx_carbon_ac                  = 0.d0
+      y%flx_vapor_vc                   = 0.d0
+      y%flx_dew_cg                     = 0.d0
+      y%flx_vapor_gc                   = 0.d0
+      y%flx_wshed_vg                   = 0.d0
+      y%flx_intercepted                = 0.d0
+      y%flx_throughfall                = 0.d0
+      y%flx_vapor_ac                   = 0.d0
+      y%flx_transp                     = 0.d0
+      y%flx_evap                       = 0.d0
+      y%flx_netrad                     = 0.d0
+      y%flx_sensible_vc                = 0.d0
+      y%flx_qwshed_vg                  = 0.d0
+      y%flx_qintercepted               = 0.d0
+      y%flx_qthroughfall               = 0.d0
+      y%flx_sensible_gc                = 0.d0
+      y%flx_sensible_ac                = 0.d0
+      y%flx_heatstor_veg               = 0.d0
+
+      y%flx_drainage                   = 0.d0
+      y%flx_drainage_heat              = 0.d0
+
+      if(associated(y%flx_smoist_gg         ))   y%flx_smoist_gg(:)               = 0.d0
+      if(associated(y%flx_smoist_gc         ))   y%flx_smoist_gc(:)               = 0.d0
+      if(associated(y%flx_sensible_gg       ))   y%flx_sensible_gg(:)             = 0.d0
+
+      return
+   end subroutine reset_rk4_fluxes
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !    This sub-routine normalises the fluxes by dividing it by the actual time step.     !
+   !---------------------------------------------------------------------------------------!
+   subroutine norm_rk4_fluxes(y,hdid)
+      use grid_coms     , only : nzg          & ! intent(in)
+                               , nzs          ! ! intent(in)
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(rk4patchtype), target        :: y
+      real(kind=8)      , intent(in)    :: hdid
+      !----- Local variables. -------------------------------------------------------------!
+      real(kind=8)                      :: hdidi
+      !------------------------------------------------------------------------------------!
+
+      !----- Find the inverse of the time step. -------------------------------------------!
+      hdidi = 1.d0 / hdid
+
+
+      y%flx_carbon_ac     = y%flx_carbon_ac     * hdidi
+      y%flx_vapor_vc      = y%flx_vapor_vc      * hdidi
+      y%flx_dew_cg        = y%flx_dew_cg        * hdidi
+      y%flx_vapor_gc      = y%flx_vapor_gc      * hdidi
+      y%flx_wshed_vg      = y%flx_wshed_vg      * hdidi
+      y%flx_intercepted   = y%flx_intercepted   * hdidi
+      y%flx_throughfall   = y%flx_throughfall   * hdidi
+      y%flx_vapor_ac      = y%flx_vapor_ac      * hdidi
+      y%flx_transp        = y%flx_transp        * hdidi
+      y%flx_evap          = y%flx_evap          * hdidi
+      y%flx_netrad        = y%flx_netrad        * hdidi
+      y%flx_sensible_vc   = y%flx_sensible_vc   * hdidi
+      y%flx_qwshed_vg     = y%flx_qwshed_vg     * hdidi
+      y%flx_qintercepted  = y%flx_qintercepted  * hdidi
+      y%flx_qthroughfall  = y%flx_qthroughfall  * hdidi
+      y%flx_sensible_gc   = y%flx_sensible_gc   * hdidi
+      y%flx_sensible_ac   = y%flx_sensible_ac   * hdidi
+      y%flx_heatstor_veg  = y%flx_heatstor_veg  * hdidi
+
+      y%flx_drainage      = y%flx_drainage      * hdidi
+      y%flx_drainage_heat = y%flx_drainage_heat * hdidi
+
+      if(associated(y%flx_smoist_gg  )) y%flx_smoist_gg  (:) = y%flx_smoist_gg  (:) * hdidi
+      if(associated(y%flx_smoist_gc  )) y%flx_smoist_gc  (:) = y%flx_smoist_gc  (:) * hdidi
+      if(associated(y%flx_sensible_gg)) y%flx_sensible_gg(:) = y%flx_sensible_gg(:) * hdidi
+
+      return
+   end subroutine norm_rk4_fluxes
    !=======================================================================================!
    !=======================================================================================!
 
@@ -741,7 +952,7 @@ module rk4_coms
    subroutine deallocate_rk4_patch(y)
       implicit none
       !----- Argument ---------------------------------------------------------------------!
-      type(rk4patchtype) :: y
+      type(rk4patchtype), target :: y
       !------------------------------------------------------------------------------------!
 
       if (associated(y%soil_energy))             deallocate(y%soil_energy)
@@ -765,6 +976,9 @@ module rk4_coms
       if (associated(y%avg_smoist_gg))           deallocate(y%avg_smoist_gg)
       if (associated(y%avg_smoist_gc))           deallocate(y%avg_smoist_gc)
       if (associated(y%avg_sensible_gg))         deallocate(y%avg_sensible_gg)
+      if (associated(y%flx_smoist_gg))           deallocate(y%flx_smoist_gg)
+      if (associated(y%flx_smoist_gc))           deallocate(y%flx_smoist_gc)
+      if (associated(y%flx_sensible_gg))         deallocate(y%flx_sensible_gg)
 
       return
    end subroutine deallocate_rk4_patch
@@ -784,7 +998,7 @@ module rk4_coms
    subroutine allocate_rk4_coh(maxcohort,y)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      type(rk4patchtype)              :: y
+      type(rk4patchtype) , target     :: y
       integer            , intent(in) :: maxcohort
       !------------------------------------------------------------------------------------!
       
@@ -828,7 +1042,7 @@ module rk4_coms
    subroutine nullify_rk4_cohort(y)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      type(rk4patchtype) :: y
+      type(rk4patchtype), target :: y
       !------------------------------------------------------------------------------------!
           
       nullify(y%veg_energy   )
@@ -867,7 +1081,7 @@ module rk4_coms
    subroutine zero_rk4_cohort(y)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      type(rk4patchtype) :: y
+      type(rk4patchtype), target :: y
       !------------------------------------------------------------------------------------!
 
       if(associated(y%veg_energy    ))  y%veg_energy    = 0.d0
@@ -906,7 +1120,7 @@ module rk4_coms
    subroutine deallocate_rk4_coh(y)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      type(rk4patchtype) :: y
+      type(rk4patchtype), target :: y
       !------------------------------------------------------------------------------------!
 
       if(associated(y%veg_energy    ))  deallocate(y%veg_energy  )
@@ -998,10 +1212,10 @@ module rk4_coms
       implicit none
       !----- Local constants. -------------------------------------------------------------!
       character(len=13), dimension(nerrfix), parameter :: err_lab_fix = (/                 &
-           'CAN_THEIV    ','CAN_SHV      ','CAN_TEMP     ','CAN_RHOS     ','CAN_CO2      ' &
-          ,'VEG_WATER    ','VEG_ENERGY   ','VIRT_HEAT    ','VIRT_WATER   ','CO2B_STORAGE ' &
-          ,'CO2B_LOSS2ATM','EB_LOSS2ATM  ','WATB_LOSS2ATM','ENB_LOSS2DRA ','WATB_LOSS2DRA' &
-          ,'ENB_STORAGE  ','WATB_STORAGE '/)
+           'CAN_THEIV    ','CAN_THETA    ','CAN_SHV      ','CAN_TEMP     ','CAN_PRSS     ' &
+          ,'CAN_CO2      ','VEG_WATER    ','VEG_ENERGY   ','VIRT_HEAT    ','VIRT_WATER   ' &
+          ,'CO2B_STORAGE ','CO2B_LOSS2ATM','EB_LOSS2ATM  ','WATB_LOSS2ATM','ENB_LOSS2DRA ' &
+          ,'WATB_LOSS2DRA','ENB_STORAGE  ','WATB_STORAGE '/)
       !----- Local variables. -------------------------------------------------------------!
       integer                                          :: n
       character(len=13)                                :: err_lab_loc
@@ -1048,71 +1262,176 @@ module rk4_coms
 
    !=======================================================================================!
    !=======================================================================================!
-   subroutine find_derived_thbounds(can_prss,can_depth)
-      use consts_coms, only : p008         & ! intent(in)
-                            , rocp8        & ! intent(in)
-                            , cp8          & ! intent(in)
-                            , ep8          & ! intent(in)
-                            , mmdryi8      ! ! intent(in)
-      use therm_lib8 , only : thetaeiv8    & ! function
-                            , thetaeivs8   & ! function
-                            , idealdenssh8 & ! function
-                            , eslif8       & ! function
-                            , rslif8       ! ! function
+   subroutine find_derived_thbounds(lsl,mzg,can_rhos,can_temp,can_shv,can_rvap,can_prss    &
+                                   ,can_depth,nsoil)
+      use grid_coms   , only : nzg          ! ! intent(in)
+      use consts_coms , only : p008         & ! intent(in)
+                             , rocp8        & ! intent(in)
+                             , cp8          & ! intent(in)
+                             , rdry8        & ! intent(in)
+                             , epim18       & ! intent(in)
+                             , ep8          & ! intent(in)
+                             , mmdryi8      & ! intent(in)
+                             , day_sec      & ! intent(in)
+                             , hr_sec       & ! intent(in)
+                             , min_sec      ! ! intent(in)
+      use therm_lib8  , only : thetaeiv8    & ! function
+                             , thetaeivs8   & ! function
+                             , idealdenssh8 & ! function
+                             , eslif8       & ! function
+                             , rslif8       ! ! function
+      use soil_coms   , only : soil8        ! ! intent(in)
+      use ed_misc_coms, only : current_time ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      real(kind=8), intent(in) :: can_prss
-      real(kind=8), intent(in) :: can_depth
+      integer                     , intent(in) :: lsl
+      integer                     , intent(in) :: mzg
+      real(kind=8)                , intent(in) :: can_rhos
+      real(kind=8)                , intent(in) :: can_temp
+      real(kind=8)                , intent(in) :: can_shv
+      real(kind=8)                , intent(in) :: can_rvap
+      real(kind=8)                , intent(in) :: can_prss
+      real(kind=8)                , intent(in) :: can_depth
+      integer     , dimension(mzg), intent(in) :: nsoil
       !----- Local variables. -------------------------------------------------------------!
-      real(kind=8)             :: can_rvap_use
-      real(kind=8)             :: can_shv_use
-      real(kind=8)             :: can_rsat
-      real(kind=8)             :: can_ssh
+      real(kind=8)                             :: can_prss_try
+      real(kind=8)                             :: can_theta_try
+      real(kind=8)                             :: can_theiv_try
+      integer                                  :: k
+      integer                                  :: hour
+      integer                                  :: minute
+      integer                                  :: second
       !----- Local parameters and locally saved variables. --------------------------------!
-      logical     , parameter  :: print_bounds = .false.
-      logical     , save       :: firsttime    = .true.
+      logical                     , save       :: firsttime    = .true.
       !------------------------------------------------------------------------------------!
 
 
-
-      !----- Minimum and maximum density. -------------------------------------------------!
-      can_rsat        = rslif8(can_prss,rk4max_can_temp)
-      can_ssh         = can_rsat / (1.d0 + can_rsat)
-      can_shv_use     = min(rk4max_can_shv,can_ssh * rk4max_can_rhv)
-      rk4min_can_rhos = idealdenssh8(can_prss,rk4max_can_temp,can_shv_use   )
-      rk4max_can_rhos = idealdenssh8(can_prss,rk4min_can_temp,rk4min_can_shv)
       !------------------------------------------------------------------------------------!
-
-
-
-      !----- Minimum and maximum potential temperature. -----------------------------------!
-      rk4min_can_theta = rk4min_can_temp * (p008 / can_prss) ** rocp8
-      rk4max_can_theta = rk4max_can_temp * (p008 / can_prss) ** rocp8
+      !     When we call this sub-routine for the first time, we must allocate the sanity  !
+      ! check bounds for soil moisture.  Also, if the debugger of the sanity check is      !
+      ! going to be used, we write the file header.                                        !
       !------------------------------------------------------------------------------------!
+      if (firsttime) then
 
+         allocate(rk4min_soil_water(mzg))
+         allocate(rk4max_soil_water(mzg))
 
-
-      !------------------------------------------------------------------------------------!
-      !      Minimum and maximum of both LCL temperature and ice-vapour equivalent         !
-      ! potential temperature.                                                             !
-      !------------------------------------------------------------------------------------!
-      rk4min_can_theiv = rk4min_can_theta
-
-      can_rvap_use  = rk4max_can_shv / (1.d0 - rk4max_can_shv)
-
-      rk4max_can_theiv = thetaeivs8(rk4max_can_theta,rk4max_can_temp,can_rvap_use,0.d0,0.d0)
-      !------------------------------------------------------------------------------------!
-
-      if (print_bounds) then
-         if (firsttime) then
-            write(unit=39,fmt='(6(a,1x))') '   MIN_THETA','   MAX_THETA','   MIN_THEIV'    &
-                                          ,'   MAX_THEIV','    MIN_RHOS','    MAX_RHOS'
-            firsttime = .false.
+         if (print_thbnd) then
+            open (unit=39,file=trim(thbnds_fout),status='replace',action='write')
+            write(unit=39,fmt='(16(a,1x))')  '        YEAR','       MONTH','         DAY'  &
+                                            ,'        HOUR','        MINU','        SECO'  &
+                                            ,'    MIN_TEMP','    MAX_TEMP','     MIN_SHV'  &
+                                            ,'     MAX_SHV','   MIN_THETA','   MAX_THETA'  &
+                                            ,'   MIN_THEIV','   MAX_THEIV','    MIN_PRSS'  &
+                                            ,'    MAX_PRSS'
+            close(unit=39,status='keep')
          end if
-         write (unit=39,fmt='(6(es12.5,1x))') rk4min_can_theta,rk4max_can_theta            &
-                                             ,rk4min_can_theiv,rk4max_can_theiv            &
-                                             ,rk4min_can_rhos ,rk4max_can_rhos
+         firsttime = .false.
       end if
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the bounds for pressure.  To avoid the pressure range to be too relaxed,  !
+      ! switch one of the dependent variable a time, and use the current values for the    !
+      ! other.                                                                             !
+      !------------------------------------------------------------------------------------!
+      !----- 1. Initial value, the most extreme one. --------------------------------------!
+      rk4min_can_prss =  huge(1.d0)
+      rk4max_can_prss = -huge(1.d0)
+      !----- 2. Minimum temperature. ------------------------------------------------------!
+      can_prss_try    = can_rhos * rdry8 * rk4min_can_temp * (1.d0 + epim18 * can_shv)
+      rk4min_can_prss = min(rk4min_can_prss,can_prss_try)
+      rk4max_can_prss = max(rk4max_can_prss,can_prss_try)
+      !----- 3. Maximum temperature. ------------------------------------------------------!
+      can_prss_try    = can_rhos * rdry8 * rk4max_can_temp * (1.d0 + epim18 * can_shv)
+      rk4min_can_prss = min(rk4min_can_prss,can_prss_try)
+      rk4max_can_prss = max(rk4max_can_prss,can_prss_try)
+      !----- 4. Minimum specific humidity. ------------------------------------------------!
+      can_prss_try    = can_rhos * rdry8 * can_temp * (1.d0 + epim18 * rk4min_can_shv)
+      rk4min_can_prss = min(rk4min_can_prss,can_prss_try)
+      rk4max_can_prss = max(rk4max_can_prss,can_prss_try)
+      !----- 5. Maximum specific humidity. ------------------------------------------------!
+      can_prss_try    = can_rhos * rdry8 * can_temp * (1.d0 + epim18 * rk4max_can_shv)
+      rk4min_can_prss = min(rk4min_can_prss,can_prss_try)
+      rk4max_can_prss = max(rk4max_can_prss,can_prss_try)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the bounds for potential temperature.  To avoid the pressure range to be  !
+      ! too relaxed, switch one of the dependent variable a time, and use the current      !
+      ! values for the other.                                                              !
+      !------------------------------------------------------------------------------------!
+      !----- 1. Initial value, the most extreme one. --------------------------------------!
+      rk4min_can_theta   =  huge(1.d0)
+      rk4max_can_theta   = -huge(1.d0)
+      !----- 2. Minimum temperature. ------------------------------------------------------!
+      can_theta_try      = rk4min_can_temp * (p008 / can_prss) ** rocp8
+      rk4min_can_theta   = min(rk4min_can_theta,can_theta_try)
+      rk4max_can_theta   = max(rk4max_can_theta,can_theta_try)
+      !----- 3. Maximum temperature. ------------------------------------------------------!
+      can_theta_try      = rk4max_can_temp * (p008 / can_prss) ** rocp8
+      rk4min_can_theta   = min(rk4min_can_theta,can_theta_try)
+      rk4max_can_theta   = max(rk4max_can_theta,can_theta_try)
+      !----- 4. Minimum pressure. ---------------------------------------------------------!
+      can_theta_try      = can_temp * (p008 / rk4min_can_prss) ** rocp8
+      rk4min_can_theta   = min(rk4min_can_theta,can_theta_try)
+      rk4max_can_theta   = max(rk4max_can_theta,can_theta_try)
+      !----- 5. Maximum pressure. ---------------------------------------------------------!
+      can_theta_try      = can_temp * (p008 / rk4max_can_prss) ** rocp8
+      rk4min_can_theta   = min(rk4min_can_theta,can_theta_try)
+      rk4max_can_theta   = max(rk4max_can_theta,can_theta_try)
+      !----- 6. Find the logarithms. ------------------------------------------------------!
+      rk4min_can_lntheta = log(rk4min_can_theta)
+      rk4max_can_lntheta = log(rk4max_can_theta)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !      Minimum and maximum ice-vapour equivalent potential temperature.              !
+      !------------------------------------------------------------------------------------!
+      !----- 1. Initial value, the most extreme one. --------------------------------------!
+      rk4min_can_theiv = rk4min_can_theta
+      rk4max_can_theiv = -huge(1.d0)
+      !----- 2. Maximum temperature. ------------------------------------------------------!
+      can_theta_try    = rk4max_can_temp * (p008 / can_prss) ** rocp8
+      can_theiv_try    = thetaeivs8(can_theta_try,rk4max_can_temp,can_rvap,0.d0,0.d0)
+      rk4max_can_theiv = max(rk4max_can_theiv,can_theiv_try)
+      !----- 3. Minimum pressure. ---------------------------------------------------------!
+      can_theta_try    = can_temp * (p008 / rk4min_can_prss) ** rocp8
+      can_theiv_try    = thetaeivs8(can_theta_try,can_temp,can_rvap,0.d0,0.d0)
+      rk4max_can_theiv = max(rk4max_can_theiv,can_theiv_try)
+      !----- 4. Maximum vapour mixing ratio. ----------------------------------------------!
+      can_theta_try    = can_temp * (p008 / can_prss) ** rocp8
+      can_theiv_try    = thetaeivs8(can_theta_try,can_temp,rk4max_can_rvap,0.d0,0.d0)
+      rk4max_can_theiv = max(rk4max_can_theiv,can_theiv_try)
+      !------------------------------------------------------------------------------------!
+
+      if (print_thbnd) then
+         hour   = floor(nint(current_time%time) / hr_sec)
+         minute = floor((nint(current_time%time) - hour * hr_sec) / min_sec)
+         second = mod(nint(current_time%time) - hour * hr_sec - minute * min_sec,min_sec)
+
+         open (unit=39,file=trim(thbnds_fout),status='old',action='write'                  &
+                      ,position='append')
+         write (unit=39,fmt='(6(i12,1x),10(es12.5,1x))')                                   &
+                                 current_time%year, current_time%month,  current_time%date &
+                              ,               hour,             minute,             second &
+                              ,    rk4min_can_temp,    rk4max_can_temp,     rk4min_can_shv &
+                              ,     rk4min_can_shv,   rk4min_can_theta,   rk4max_can_theta &
+                              ,   rk4min_can_theiv,   rk4max_can_theiv,    rk4min_can_prss &
+                              ,    rk4max_can_prss
+         close (unit=39,status='keep')
+      end if
+
+
+      do k = lsl, mzg
+         rk4min_soil_water(k) = soil8(nsoil(k))%soilcp * (1.d0 - rk4eps)
+         rk4max_soil_water(k) = soil8(nsoil(k))%slmsts * (1.d0 + rk4eps)
+      end do
 
       return
    end subroutine find_derived_thbounds

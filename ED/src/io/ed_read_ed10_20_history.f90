@@ -103,7 +103,6 @@ subroutine read_ed10_ed20_history_file
    integer                                                :: nsitepat
    integer                                                :: npatch2
    integer                                                :: nw
-   integer                                                :: ied_init_mode_local
    logical              , dimension(huge_cohort)          :: add_this_cohort
    logical                                                :: renumber_pfts
    logical                                                :: site_match
@@ -165,9 +164,6 @@ subroutine read_ed10_ed20_history_file
    ! cohorts from the closest polygon.                                                     !
    !---------------------------------------------------------------------------------------!
    gridloop: do igr = 1,ngrids
-
-      !----- Copy the namelist variable to the local one, so we can change it here. -------!
-      ied_init_mode_local = ied_init_mode 
 
       !----- Retrieve all files with the specified prefix. --------------------------------!
       call ed_filelist(full_list,sfilin(igr),nflist)
@@ -242,24 +238,11 @@ subroutine read_ed10_ed20_history_file
             !    Open the patch file and read in all patches.                              !
             !------------------------------------------------------------------------------!
             open(unit=12,file=trim(pss_name),form='formatted',status='old',action='read')
-            !----- Header.  This is read for when ied_init_mode is -1. --------------------!
             read(unit=12,fmt='(a4)')  cdum
-
-            !------------------------------------------------------------------------------!
-            !    If the user chose to run a mixed ED-1.0/ED-2.0 initialisation, then we    !
-            ! must decide here whether the file format of the current polygon.             !
-            !------------------------------------------------------------------------------!
-            if (ied_init_mode == -1) then
-               if (trim(cdum) == 'time') then
-                  ied_init_mode_local = 2
-               else
-                  ied_init_mode_local = 1
-               end if
-            end if
             
             !----- Read the other information from the header (if there is any...). -------!
             nwater = 1
-            select case (ied_init_mode_local)
+            select case (ied_init_mode)
             case (1)
                read (unit=12,fmt=*) cdum,nwater
                read (unit=12,fmt=*) cdum,depth(1:nwater)
@@ -294,7 +277,7 @@ subroutine read_ed10_ed20_history_file
                !    If we can still add new patches, read the next one, according to the   !
                ! input format type.                                                        !
                !---------------------------------------------------------------------------!
-               select case (ied_init_mode_local)
+               select case (ied_init_mode)
                case (1)
                   !----- ED-1.0 file. -----------------------------------------------------!
                   read(unit=12,fmt=*,iostat=ierr) time(ip),pname(ip),trk(ip),dage,darea    &
@@ -495,24 +478,9 @@ subroutine read_ed10_ed20_history_file
          !    Open the cohort file and read in all cohorts.                                !
          !---------------------------------------------------------------------------------!
          open(unit=12,file=trim(css_name),form='formatted',status='old')
-         !----- Header.  This is read for when ied_init_mode is -1. -----------------------!
          read(unit=12,fmt='(a4)')  cdum
 
-         !---------------------------------------------------------------------------------!
-         !    If the user chose to run a mixed ED-1.0/ED-2.0 initialisation, then we must  !
-         ! decide here whether the file format of the current polygon.                     !
-         !---------------------------------------------------------------------------------!
-         if (ied_init_mode == -1) then
-            if (trim(cdum) == 'time') then
-               ied_init_mode_local = 2
-            else
-               ied_init_mode_local = 1
-            end if
-         else
-            ied_init_mode_local = ied_init_mode
-         end if
-
-         if (ied_init_mode_local == 1) then
+         if (ied_init_mode == 1) then
             read(unit=12,fmt=*) !---- Skip second line. -----------------------------------!
          end if
          ic = 0
@@ -543,7 +511,7 @@ subroutine read_ed10_ed20_history_file
             !    If we can still add new cohorts, read the next one, according to the      !
             ! input format type.                                                           !
             !------------------------------------------------------------------------------!
-            select case (ied_init_mode_local)
+            select case (ied_init_mode)
             case (1)
                !----- ED-1.0 file. --------------------------------------------------------!
                read(unit=12,fmt=*,iostat=ierr)  ctime(ic),cpname(ic),cname(ic),dbh(ic)     &
@@ -676,7 +644,7 @@ subroutine read_ed10_ed20_history_file
                         ! in the ED-2.1 standard.                                          !
                         !------------------------------------------------------------------!
                         !----- Plant density, it should be in [plants/m2]. ----------------!
-                        if(ied_init_mode_local == 1) then
+                        if(ied_init_mode == 1) then
                            cpatch%nplant(ic2) = nplant(ic) / (csite%area(ipa) )
                         else
                            cpatch%nplant(ic2) = nplant(ic)

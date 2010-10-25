@@ -204,6 +204,11 @@ getvar.o: $(UTILS_LIB)/getvar.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
+great_circle.o : $(UTILS_LIB)/great_circle.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90) 
+
 grell_coms.o : $(CUPARM)/grell_coms.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
@@ -785,6 +790,11 @@ nest_filldens.o : $(NESTING)/nest_filldens.f90
 	rm -f $(<F:.f90=.f90) 
 
 nest_geosst.o : $(MKSFC)/nest_geosst.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90) 
+
+nest_init_aux.o : $(MKSFC)/nest_init_aux.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90) 
@@ -1513,11 +1523,6 @@ fuse_fiss_utils.o : $(ED_UTILS)/fuse_fiss_utils.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
-
-great_circle.o : $(ED_UTILS)/great_circle.f90
-	cp -f $< $(<F:.f90=.f90)
-	$(F90_COMMAND) $(<F:.f90=.f90)
-	rm -f $(<F:.f90=.f90) 
 
 grid_coms.o : $(ED_MEMORY)/grid_coms.f90
 	cp -f $< $(<F:.f90=.f90)

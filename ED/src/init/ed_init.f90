@@ -154,14 +154,14 @@ subroutine load_ecosystem_state()
   
 
    select case (ied_init_mode)
-   case(-8,0)
+   case(-8,-1,0)
       !----- Initialize everything with near-bare ground ----------------------------------!
       if (mynum /= 1) write(unit=*,fmt='(a)') ' + Doing near bare ground initialization...'
       do igr=1,ngrids
            call near_bare_ground_init(edgrid_g(igr))
       end do
 
-   case(-1,1,2,3,6)
+   case(1,2,3,6)
       !----- Initialize with ED1-type restart information. --------------------------------!
       write(unit=*,fmt='(a,i3.3)') ' + Initializing from ED restart file. Node: ',mynum
       call read_ed10_ed20_history_file

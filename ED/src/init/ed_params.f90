@@ -508,8 +508,8 @@ subroutine init_can_air_params()
    !---------------------------------------------------------------------------------------!
    !    Maximum leaf water that plants can hold.  Should leaf water exceed this number,    !
    ! water will be no longer intercepted by the leaves, and any value in excess of this    !
-   ! will be promptly removed through shedding.  This value is in kg/[m2 plant], so it     !
-   ! will be always scaled by (LAI+WAI).                                                   !
+   ! will be promptly removed through shedding or throughfall.  This value is in           !
+   ! kg/[m2 plant], so it will be always scaled by (LAI+WAI).                              !
    !---------------------------------------------------------------------------------------!
    fullveg_lwater = 0.11
    !---------------------------------------------------------------------------------------!
@@ -560,7 +560,7 @@ subroutine init_can_air_params()
       ubmin     = 0.65 ! 0.65
    case default
       !----- This is the minimum ustar under stable and unstable conditions. --------------!
-      ustmin    = 0.05
+      ustmin    = 0.10
       !----- This is the minimum wind scale under stable and unstable conditions. ---------!
       ubmin     = 0.65
    end select
@@ -586,7 +586,7 @@ subroutine init_can_air_params()
    atetf       = ate   * fbh91 ! a * e * f
    z0moz0h     = 1.0           ! z0(M)/z0(h)
    z0hoz0m     = 1. / z0moz0h  ! z0(M)/z0(h)
-   ribmaxbh91  = 6.00          ! Maximum bulk Richardson number
+   ribmaxbh91  = 0.20          ! Maximum bulk Richardson number
    !----- Used by OD95 and BH91. ----------------------------------------------------------!
    gamm        = 13.0          ! Gamma for momentum.
    gamh        = 13.0          ! Gamma for heat.
@@ -1803,22 +1803,22 @@ subroutine init_soil_coms
                              , infiltration_method   ! ! intent(out)
                              
    use grid_coms      , only : ngrids                ! ! intent(in)
-   use consts_coms    , only : grav                  
+   use consts_coms    , only : grav                  & ! intent(in)
+                             , hr_sec                & ! intent(in)
+                             , day_sec               ! ! intent(in)
 
    implicit none
-   !----- Local variable ------------------------------------------------------------------!
-   integer :: nsoil
-   integer :: ifm
-!   real    :: fieldcp_MPa        ! soil-water potential at field capacity         [ MPa]
-   real    :: fieldcp_K          ! hydraulic conductivity at field capacity       [mm/day]
-   real    :: soilcp_MPa         ! soil-water potential for air dry soil          [ MPa]
-   real    :: soilwp_MPa         ! soil-water potential at wilting point          [ MPa]
-   
-!   fieldcp_MPa         = 0.033 
-   fieldcp_K           = 0.1
-   soilcp_MPa          = 3.1   
-   soilwp_MPa          = 1.5
+   !----- Local variables. ----------------------------------------------------------------!
+   integer            :: nsoil
+   integer            :: ifm
+   !----- Local constants. ----------------------------------------------------------------!
+   real   , parameter :: fieldcp_K  = 0.1 ! hydraulic conduct. at field capacity   [mm/day]
+   real   , parameter :: soilcp_MPa = 3.1 ! soil-water potential for air dry soil  [   MPa]
+   real   , parameter :: soilwp_MPa = 1.5 ! soil-water potential at wilting point  [   MPa]
+   !---------------------------------------------------------------------------------------!
 
+
+   !----- Initialise some standard variables. ---------------------------------------------!
    water_stab_thresh   = 3.0    ! Minimum water mass to be considered stable     [   kg/m2]
    snowmin             = 3.0    ! Minimum snow mass needed to create a new layer [   kg/m2]
    dewmax              = 3.0e-5 ! Maximum dew flux rate (deprecated)             [ kg/m2/s]
@@ -1826,104 +1826,144 @@ subroutine init_soil_coms
    snow_rough          = 0.001  ! Snowcover roughness height                     [       m]
    min_sfcwater_mass   = 1.0e-6 ! Minimum allowed mass in temporary layers       [   kg/m2]
    infiltration_method = 0      ! Infiltration method, used in rk4_derivs        [     0|1]
+   !---------------------------------------------------------------------------------------!
 
 
-!------------------------------------------------------------------------------------------!
-!      UPDATED based on Cosby et al. 1984, soil clay and sand fractions from table 2,      !
-! slpots, slmsts, slbs, and slcons calculated based on table 4 sfldcap calculated based on !
-! Clapp and Hornberger equation 2 and a soil hydraulic conductivity of 0.1mm/day, soilcp   !
-! (air dry soil moisture capacity) is calculated based on Cosby et al. 1984 equation 1 and !
-! a soil-water potential of -3.1MPa.  soilwp (the wilting point soil moisture) is          !
-! calculated based on Cosby et al 1985 equation 1 and a soil-water potential of -1.5MPa    !
-! (Equation 1 in Cosby is not correct it should be saturated moisture potential over       !
-! moisture potential)  (NML, 2/2010)                                                       !
-!------------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+   !      UPDATED based on Cosby et al. 1984, soil clay and sand fractions from table 2,   !
+   ! slpots, slmsts, slbs, and slcons calculated based on table 4 sfldcap calculated based !
+   ! on Clapp and Hornberger equation 2 and a soil hydraulic conductivity of 0.1mm/day,    !
+   ! soilcp (air dry soil moisture capacity) is calculated based on Cosby et al. 1984      !
+   ! equation 1 and a soil-water potential of -3.1MPa.  soilwp (the wilting point soil     !
+   ! moisture) is calculated based on Cosby et al 1985 equation 1 and a soil-water poten-  !
+   ! tial of -1.5MPa (Equation 1 in Cosby is not correct it should be saturated moisture   !
+   ! potential over moisture potential)  (NML, 2/2010)                                     !
+   !---------------------------------------------------------------------------------------!
 
-! *Rows are folded over to adere to coding standard, ie maximum line lengt
-!------------------------------------------------------------------------------------------!
-! (1st fold)           slpots     slmsts       slbs     slcpd         soilcp               !
-! (2nd) soilwp     slcons        slcons0   soilcond0 soilcond1  soilcond2                  !       
-! (3rd)sfldcap     xsand    xclay   xorgan    xrobulk  slden                               !
-!------------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+   ! (1st line)          slpots        slmsts          slbs     slcpd        soilcp        !
+   ! (2nd line)          soilwp        slcons       slcons0 soilcond0     soilcond1        !
+   ! (3rd line)       soilcond2       sfldcap         xsand     xclay        xorgan        !
+   ! (4th line)         xrobulk         slden                                              !
+   !---------------------------------------------------------------------------------------!
+   soil = (/                                                                               &
+      !----- 1. Sand. ---------------------------------------------------------------------!
+       soil_class( -0.049831046,     0.373250,     3.295000, 1465000.,  0.026183447        &
+                 ,  0.032636854,  2.446420e-5,  0.000500000,   0.3000,       4.8000        &
+                 ,      -2.7000,  0.132130936,       0.9200,   0.0300,       0.0500        &
+                 ,        1200.,        1600.                                      )       &
+      !----- 2. Loamy sand. ---------------------------------------------------------------!
+      ,soil_class( -0.068643592,     0.386340,     3.796000, 1407000.,  0.041873866        &
+                 ,  0.050698650,  1.751180e-5,  0.000600000,   0.3000,       4.6600        &
+                 ,      -2.6000,  0.155720881,       0.8200,   0.0600,       0.1200        &
+                 ,        1250.,        1600.                                      )       &
+      !----- 3. Sandy loam. ---------------------------------------------------------------!
+      ,soil_class( -0.155095787,     0.418940,     4.496000, 1344000.,  0.076932647        &
+                 ,  0.090413463,  8.228700e-6,  0.000769000,   0.2900,       4.2700        &
+                 ,      -2.3100,  0.199963447,       0.5800,   0.1000,       0.3200        &
+                 ,        1300.,        1600.                                      )       &
+      !----- 4. Silt loam. ----------------------------------------------------------------!
+      ,soil_class( -0.659933234,     0.476050,     5.090000, 1273000.,  0.141599910        &
+                 ,  0.163306007,  2.396240e-6,  0.000010600,   0.2700,       3.4700        &
+                 ,      -1.7400,  0.266720155,       0.1700,   0.1300,       0.7000        &
+                 ,        1400.,        1600.                                      )       &
+      !----- 5. Loam. ---------------------------------------------------------------------!
+      ,soil_class( -0.238341682,     0.437280,     5.797000, 1214000.,  0.126501190        &
+                 ,  0.143377074,  4.732940e-6,  0.002200000,   0.2800,       3.6300        &
+                 ,      -1.8500,  0.247334654,       0.4300,   0.1800,       0.3900        &
+                 ,        1350.,        1600.                                      )       &
+      !----- 6. Sandy clay loam. ----------------------------------------------------------!
+      ,soil_class( -0.121199269,     0.412650,     7.165000, 1177000.,  0.137648733        &
+                 ,  0.152325872,  6.405180e-6,  0.001500000,   0.2800,       3.7800        &
+                 ,      -1.9600,  0.250954745,       0.5800,   0.2700,       0.1500        &
+                 ,        1350.,        1600.                                      )       & 
+      !----- 7. Silty clay loam. ----------------------------------------------------------!
+      ,soil_class( -0.627769194,     0.478220,     8.408000, 1319000.,  0.228171947        &
+                 ,  0.248747504,  1.435260e-6,  0.000107000,   0.2600,       2.7300        &
+                 ,      -1.2000,  0.333825332,       0.1000,   0.3400,       0.5600        &
+                 ,        1500.,        1600.)                                             &
+      !----- 8. Clay loam. ----------------------------------------------------------------!
+      ,soil_class( -0.281968114,     0.446980,     8.342000, 1227000.,  0.192624431        &
+                 ,  0.210137962,  2.717260e-6,  0.002200000,   0.2700,       3.2300        &
+                 ,      -1.5600,  0.301335491,       0.3200,   0.3400,       0.3400        &
+                 ,        1450.,        1600.                                      )       &
+      !----- 9. Sandy clay. ---------------------------------------------------------------!
+      ,soil_class( -0.121283019,     0.415620,     9.538000, 1177000.,  0.182198910        &
+                 ,  0.196607427,  4.314510e-6,  0.000002167,   0.2700,       3.3200        &
+                 ,      -1.6300,  0.286363001,       0.5200,   0.4200,       0.0600        &
+                 ,        1450.,        1600.                                      )       &
+      !----- 10. Silty clay. --------------------------------------------------------------!
+      ,soil_class( -0.601312179,     0.479090,     10.46100, 1151000.,  0.263228486        &
+                 ,  0.282143846,  1.055190e-6,  0.000001033,   0.2500,       2.5800        &
+                 ,      -1.0900,  0.360319788,       0.0600,   0.4700,       0.4700        &
+                 ,        1650.,        1600.                                      )       & 
+      !----- 11. Clay. --------------------------------------------------------------------!
+      ,soil_class( -0.286417797,     0.452300,     12.14000, 1088000.,  0.253968998        &
+                 ,  0.269618857,  1.427350e-6,  0.000001283,   0.2500,       2.4000        &
+                 ,      -0.9600,  0.348432364,       0.2200,   0.5800,       0.2000        &
+                 ,        1700.,        1600.                                      )       &
+      !----- 12. Peat. --------------------------------------------------------------------!
+      ,soil_class( -0.534564359,     0.469200,     6.180000, 8740000.,  0.167047523        &
+                 ,  0.187868805,  2.357930e-6,  0.000008000,   0.0600,       0.4600        &
+                 ,       0.0000,  0.285709966,       0.2000,   0.2000,       0.6000        &
+                 ,         500.,         300.                                      )       &
+   /)
+   !---------------------------------------------------------------------------------------!
 
 
 
-soil= (/ soil_class(-0.049831046,  0.373250,  3.295000,  1465000.,  0.026183447,  &
-     0.032636854,  2.446420e-5,  0.000500000,   0.3000,   4.8000,  -2.7000,  &
-     0.132130936,  0.9200,  0.0300,  0.0500,   1200.,  1600.)  & ! 1. Sand
-     ,  soil_class(-0.068643592,  0.386340,  3.796000,  1407000.,  0.041873866,  &
-     0.050698650,  1.751180e-5,  0.000600000,   0.3000,   4.6600,  -2.6000,  &
-     0.155720881,  0.8200,  0.0600,  0.1200,   1250.,  1600.)  & ! 2. Loamy Sand
-     ,  soil_class(-0.155095787,  0.418940,  4.496000,  1344000.,  0.076932647,  &
-     0.090413463,  8.228700e-6,  0.000769000,   0.2900,   4.2700,  -2.3100,  &
-     0.199963447,  0.5800,  0.1000,  0.3200,   1300.,  1600.)  & ! 3. Sandy loam
-     ,  soil_class(-0.659933234,  0.476050,  5.090000,  1273000.,  0.141599910,  &
-     0.163306007,  2.396240e-6,  0.000010600,   0.2700,   3.4700,  -1.7400,  &
-     0.266720155,  0.1700,  0.1300,  0.7000,   1400.,  1600.)  & ! 4. Silt loam
-     ,  soil_class(-0.238341682,  0.437280,  5.797000,  1214000.,  0.126501190,  &
-     0.143377074,  4.732940e-6,  0.002200000,   0.2800,   3.6300,  -1.8500,  &
-     0.247334654,  0.4300,  0.1800,  0.3900,   1350.,  1600.)  & ! 5. Loam
-     ,  soil_class(-0.121199269,  0.412650,  7.165000,  1177000.,  0.137648733,  &
-     0.152325872,  6.405180e-6,  0.001500000,   0.2800,   3.7800,  -1.9600,  &
-     0.250954745,  0.5800,  0.2700,  0.1500,   1350.,  1600.)  & ! 6. Sandy clay loam
-     ,  soil_class(-0.627769194,  0.478220,  8.408000,  1319000.,  0.228171947,  &
-     0.248747504,  1.435260e-6,  0.000107000,   0.2600,   2.7300,  -1.2000,  &
-     0.333825332,  0.1000,  0.3400,  0.5600,   1500.,  1600.)  & ! 7. Silty clay loam
-     ,  soil_class(-0.281968114,  0.446980,  8.342000,  1227000.,  0.192624431,  &
-     0.210137962,  2.717260e-6,  0.002200000,   0.2700,   3.2300,  -1.5600,  &
-     0.301335491,  0.3200,  0.3400,  0.3400,   1450.,  1600.)  & ! 8. Clay loam
-     ,  soil_class(-0.121283019,  0.415620,  9.538000,  1177000.,  0.182198910,  &
-     0.196607427,  4.314510e-6,  0.000002167,   0.2700,   3.3200,  -1.6300,  &
-     0.286363001,  0.5200,  0.4200,  0.0600,   1450.,  1600.)  & ! 9. Sandy clay
-     ,  soil_class(-0.601312179,  0.479090,  10.46100,  1151000.,  0.263228486,  &
-     0.282143846,  1.055190e-6,  0.000001033,   0.2500,   2.5800,  -1.0900,  &
-     0.360319788,  0.0600,  0.4700,  0.4700,   1650.,  1600.)  & !10. Silty clay
-     ,  soil_class(-0.286417797,  0.452300,  12.14000,  1088000.,  0.253968998,  &
-     0.269618857,  1.427350e-6,  0.000001283,   0.2500,   2.4000,  -0.9600,  &
-     0.348432364,  0.2200,  0.5800,  0.2000,   1700.,  1600.)  & !11. Clay
-     ,  soil_class(-0.534564359,  0.469200,  6.180000,  8740000.,  0.167047523,  &
-     0.187868805,  2.357930e-6,  0.000008000,   0.0600,   0.4600,   0.0000,  &
-     0.285709966,  0.2000,  0.2000,  0.6000,    500.,   300.) /) !12. Peat
+   !---------------------------------------------------------------------------------------!
+   !******** Correct soil_class table using sand and clay fractions (if provided)  ********!
+   !      Based on Cosby et al 1984, using table 4 and equation 1 (which is incorrect it   !
+   ! should be saturated moisture potential over moisture potential).  NML 2/2010          !
+   !---------------------------------------------------------------------------------------!
+   do ifm=1,ngrids
+      if ( isoilflg(ifm)==2 .and. slxclay > 0. .and. slxsand > 0. .and.                    &
+           (slxclay + slxsand) <= 1. ) then
+         !----- B exponent [unitless]. ----------------------------------------------------!
+         soil(nslcon)%slbs    = 3.10 + 15.7*slxclay - 0.3*slxsand
 
-!------------------------------------------------------------------------------------------!
-!********* Correct soil_class table using sand and clay fractions (if provided)  **********!
-! Based on Cosby et al 1984, using table 4 and equation 1 (which is incorrect it should be !
-! saturated moisture potential over moisture potential).  NML 2/2010
-!--------------------------------------------------------------------------------------------------!
-do ifm=1,ngrids
-     if (isoilflg(ifm)==2 .and. slxclay >0. .and. slxsand > 0. .and. (slxclay + slxsand) <=1. ) then
-        soil(nslcon)%slbs=        3.10 + 15.7*slxclay - 0.3*slxsand                                     ! [ unitless]
-        
-        soil(nslcon)%slpots=      -1 * (10**(2.17 - 0.63*slxclay - 1.58*slxsand)) * 0.01                ! [ m ]
-        
-        soil(nslcon)%slcons=      (10**(-0.60 + 1.26*slxsand - 0.64*slxclay)) * 0.0254/(60*60)          ! [ m/s ]
-        
-        soil(nslcon)%slmsts=      (50.5 - 14.2*slxsand - 3.7*slxclay)/100                               ! [ m^3/m^3 ]
-        
-!        soil(nslcon)%sfldcap=     soil(nslcon)%slmsts * ( soil(nslcon)%slpots / (fieldcp_MPa*1000/9.80665))** & 
-!                                       (1 / soil(nslcon)%slbs)                                          ! [ m^3/m^3 ]
-        soil(nslcon)%sfldcap=     soil(nslcon)%slmsts * ((fieldcp_K/1000/(60*60*24))/soil(nslcon)%slcons)** & 
-                                       (1 / (2*soil(nslcon)%slbs+3))                                          ! [ m^3/m^3 ]
-        
-        soil(nslcon)%soilcp=      soil(nslcon)%slmsts * ( -1.*soil(nslcon)%slpots / (soilcp_MPa*1000/grav))** & 
-                                       (1 / soil(nslcon)%slbs)                                          ! [ m^3/m^3 ]
+         !----- Soil moisture potential at saturation [ m ]. ------------------------------!
+         soil(nslcon)%slpots  = -1. * (10.**(2.17 - 0.63*slxclay - 1.58*slxsand)) * 0.01
 
-        soil(nslcon)%soilwp=      soil(nslcon)%slmsts * ( -1.*soil(nslcon)%slpots / (soilwp_MPa*1000/grav))** & 
-                                       (1 / soil(nslcon)%slbs)                                          ! [ m^3/m^3 ]       
-                                       
-        write(unit=*,fmt='(a)') '*********************************************'
-        write(unit=*,fmt='(a)') '**RESET SOIL PARAMS:                         '
-        write(unit=*,fmt='(a,1x,f8.4)') 'new slbs ', soil(nslcon)%slbs
-        write(unit=*,fmt='(a,1x,f8.4)') 'new slpots ', soil(nslcon)%slpots
-        write(unit=*,fmt='(a,1x,es9.2)') 'new slcons ', soil(nslcon)%slcons
-        write(unit=*,fmt='(a,1x,f8.4)') 'new slmsts ', soil(nslcon)%slmsts
-        write(unit=*,fmt='(a,1x,f8.4)') 'new sfldcap ', soil(nslcon)%sfldcap
-        write(unit=*,fmt='(a,1x,f8.4)') 'new soilcp ', soil(nslcon)%soilcp
-        write(unit=*,fmt='(a,1x,f8.4)') 'new soilwp ', soil(nslcon)%soilwp
-        write(unit=*,fmt='(a)') '*********************************************'
+         !----- Hydraulic conductivity at saturation [ m/s ]. -----------------------------!
+         soil(nslcon)%slcons  = (10.**(-0.60 + 1.26*slxsand - 0.64*slxclay))               &
+                              * 0.0254/hr_sec
+         !----- Soil moisture at saturation [ m^3/m^3 ]. ----------------------------------!
+         soil(nslcon)%slmsts  = (50.5 - 14.2*slxsand - 3.7*slxclay) / 100.
+         !----- Soil field capacity[ m^3/m^3 ]. -------------------------------------------!
+         soil(nslcon)%sfldcap = soil(nslcon)%slmsts                                        &
+                              *  ( (fieldcp_K/1000./day_sec)/soil(nslcon)%slcons)          &
+                              ** (1. / (2.*soil(nslcon)%slbs+3.))
+         !----- Dry soil capacity (at -3.1MPa) [ m^3/m^3 ]. -------------------------------!
+         soil(nslcon)%soilcp  = soil(nslcon)%slmsts                                        &
+                              *  ( -1.*soil(nslcon)%slpots / (soilcp_MPa * 1000. / grav))  &
+                              ** (1. / soil(nslcon)%slbs)                                         
+         !----- Wilting point capacity (at -1.5MPa) [ m^3/m^3 ]. --------------------------!
+         soil(nslcon)%soilwp  = soil(nslcon)%slmsts                                        &
+                              *  ( -1.*soil(nslcon)%slpots / (soilwp_MPa * 1000. / grav))  &
+                              ** ( 1. / soil(nslcon)%slbs)
+         !---------------------------------------------------------------------------------!
 
-     endif
-enddo
+
+         write(unit=*,fmt='(a)') ''
+         write(unit=*,fmt='(a)') '-----------------------------------------------------'
+         write(unit=*,fmt='(a)') ' Soil parameters were redefined based on your ED2IN: '
+         write(unit=*,fmt='(a,1x,i12)')    ' NSLCON        =', nslcon
+         write(unit=*,fmt='(a,1x,es12.5)') ' CLAY FRACTION =', slxclay
+         write(unit=*,fmt='(a,1x,es12.5)') ' SAND FRACTION =', slxsand
+         write(unit=*,fmt='(a,1x,es12.5)') ' SLBS          =', soil(nslcon)%slbs
+         write(unit=*,fmt='(a,1x,es12.5)') ' SLPOTS        =', soil(nslcon)%slpots
+         write(unit=*,fmt='(a,1x,es12.5)') ' SLCONS        =', soil(nslcon)%slcons
+         write(unit=*,fmt='(a,1x,es12.5)') ' SLMSTS        =', soil(nslcon)%slmsts
+         write(unit=*,fmt='(a,1x,es12.5)') ' SFLDCAP       =', soil(nslcon)%sfldcap
+         write(unit=*,fmt='(a,1x,es12.5)') ' SOILCP        =', soil(nslcon)%soilcp
+         write(unit=*,fmt='(a,1x,es12.5)') ' SOILWP        =', soil(nslcon)%soilwp
+         write(unit=*,fmt='(a)') '-----------------------------------------------------'
+         write(unit=*,fmt='(a)') ''
+      end if
+   end do
+   !---------------------------------------------------------------------------------------!
 
 
 
@@ -2111,6 +2151,8 @@ subroutine init_rk4_params()
                                    , rk4max_can_temp       & ! intent(out)
                                    , rk4min_can_shv        & ! intent(out)
                                    , rk4max_can_shv        & ! intent(out)
+                                   , rk4min_can_rvap       & ! intent(out)
+                                   , rk4max_can_rvap       & ! intent(out)
                                    , rk4min_can_rhv        & ! intent(out)
                                    , rk4max_can_rhv        & ! intent(out)
                                    , rk4min_can_co2        & ! intent(out)
@@ -2127,8 +2169,12 @@ subroutine init_rk4_params()
                                    , check_maxleaf         & ! intent(out)
                                    , supersat_ok           & ! intent(out)
                                    , record_err            & ! intent(out)
+                                   , print_detailed        & ! intent(out)
+                                   , print_thbnd           & ! intent(out)
                                    , errmax_fout           & ! intent(out)
-                                   , sanity_fout           ! ! intent(out)
+                                   , sanity_fout           & ! intent(out)
+                                   , thbnds_fout           & ! intent(out)
+                                   , detail_pref           ! ! intent(out)
    implicit none
 
    !---------------------------------------------------------------------------------------!
@@ -2172,9 +2218,16 @@ subroutine init_rk4_params()
    !---------------------------------------------------------------------------------------!
    !     Variables used to keep track on the error.                                        !
    !---------------------------------------------------------------------------------------!
-   record_err    = .false.                  ! Compute and keep track of the errors.
-   errmax_fout   = 'error_max_count.txt'    ! File with the maximum error count 
-   sanity_fout   = 'sanity_check_count.txt' ! File with the sanity check count
+   record_err     = .true.                   ! Compute and keep track of the errors.
+   print_detailed = .false.                  ! Print detailed information about the thermo-
+                                             !    dynamic state.  This will create one file
+                                             !    for each patch, so it is not recommended 
+                                             !    for simulations that span over one month.
+   print_thbnd    = .false.                  ! Make a file with thermodynamic boundaries.
+   errmax_fout    = 'error_max_count.txt'    ! File with the maximum error count 
+   sanity_fout    = 'sanity_check_count.txt' ! File with the sanity check count
+   thbnds_fout    = 'thermo_bounds.txt'      ! File with the thermodynamic boundaries.
+   detail_pref    = 'thermo_state_patch_'    ! Prefix for the detailed thermodynamic file
    !---------------------------------------------------------------------------------------!
 
 
@@ -2212,6 +2265,14 @@ subroutine init_rk4_params()
    ! (**) Please, don't be too strict here.  The model currently doesn't have radiation    !
    !      fog, so supersaturation may happen.  This is a problem we may want to address in !
    !      the future, though...                                                            !
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Compute the minimum and maximum mixing ratio based on the specific humidity.      !
+   !---------------------------------------------------------------------------------------!
+   rk4min_can_rvap = rk4min_can_shv / (1.d0 - rk4min_can_shv)
+   rk4max_can_rvap = rk4max_can_shv / (1.d0 - rk4max_can_shv)
    !---------------------------------------------------------------------------------------!
 
 
@@ -2255,7 +2316,7 @@ subroutine init_rk4_params()
    ! canopy air temperature (but not at the soil or vegetation temperature).  Otherwise,   !
    ! evaporation and transpiration will be interrupted until the air becomes sub-saturated !
    ! again.  The air can still become super-saturated because mixing with the free atmo-   !
-   ! sphere will not stop.                                                                 !
+   ! sphere will not stop, but that is unlikely.                                           !
    !---------------------------------------------------------------------------------------!
    supersat_ok = .false.
 

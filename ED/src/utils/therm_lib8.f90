@@ -1616,6 +1616,39 @@ module therm_lib8
 
    !=======================================================================================!
    !=======================================================================================!
+   !     This function finds the temperature given the potential temperature, density, and !
+   ! specific humidity.  This comes from a combination of the definition of potential      !
+   ! temperature and the ideal gas law, to eliminate pressure, when pressure is also       !
+   ! unknown.                                                                              !
+   !---------------------------------------------------------------------------------------!
+   real(kind=8) function thrhsh2temp8(theta,dens,qvpr)
+      use consts_coms, only : cpocv8  & ! intent(in)
+                            , p00i8   & ! intent(in)
+                            , rdry8   & ! intent(in)
+                            , epim18  & ! intent(in)
+                            , rocv8   ! ! intent(in)
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      real(kind=8), intent(in) :: theta    ! Potential temperature                 [     K]
+      real(kind=8), intent(in) :: dens     ! Density                               [    Pa]
+      real(kind=8), intent(in) :: qvpr     ! Specific humidity                     [ kg/kg]
+      !------------------------------------------------------------------------------------!
+
+      thrhsh2temp8 = theta ** cpocv8                                                       &
+                   * (p00i8 * dens * rdry8 * (1.d0 + epim18 * qvpr)) ** rocv8
+
+      return
+   end function thrhsh2temp8
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
    !     This fucntion computes the ice liquid potential temperature given the Exner       !
    ! function [J/kg/K], temperature [K], and liquid and ice mixing ratios [kg/kg].         !
    !---------------------------------------------------------------------------------------!

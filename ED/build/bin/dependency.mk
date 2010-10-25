@@ -1,7 +1,7 @@
 # DO NOT DELETE THIS LINE - used by make depend
 ed_1st.o: ed_misc_coms.mod ed_para_coms.mod ed_state_vars.mod
 ed_driver.o: consts_coms.mod ed_misc_coms.mod ed_node_coms.mod ed_state_vars.mod
-ed_driver.o: grid_coms.mod soil_coms.mod
+ed_driver.o: fuse_fiss_utils.mod grid_coms.mod soil_coms.mod
 ed_met_driver.o: canopy_air_coms.mod consts_coms.mod ed_max_dims.mod
 ed_met_driver.o: ed_misc_coms.mod ed_state_vars.mod grid_coms.mod hdf5_utils.mod
 ed_met_driver.o: mem_polygons.mod met_driver_coms.mod therm_lib.mod
@@ -60,10 +60,11 @@ rk4_derivs.o: ed_therm_lib.mod grid_coms.mod pft_coms.mod rk4_coms.mod
 rk4_derivs.o: soil_coms.mod therm_lib8.mod
 rk4_driver.o: canopy_air_coms.mod canopy_struct_dynamics.mod consts_coms.mod
 rk4_driver.o: ed_misc_coms.mod ed_state_vars.mod ed_therm_lib.mod grid_coms.mod
-rk4_driver.o: rk4_coms.mod soil_coms.mod therm_lib.mod
+rk4_driver.o: met_driver_coms.mod rk4_coms.mod soil_coms.mod therm_lib.mod
 rk4_integ_utils.o: canopy_air_coms.mod consts_coms.mod ed_max_dims.mod
 rk4_integ_utils.o: ed_misc_coms.mod ed_state_vars.mod grid_coms.mod
 rk4_integ_utils.o: hydrology_coms.mod rk4_coms.mod rk4_stepper.mod soil_coms.mod
+rk4_integ_utils.o: therm_lib8.mod
 rk4_misc.o: allometry.mod canopy_radiation_coms.mod canopy_struct_dynamics.mod
 rk4_misc.o: consts_coms.mod ed_max_dims.mod ed_misc_coms.mod ed_state_vars.mod
 rk4_misc.o: grid_coms.mod rk4_coms.mod soil_coms.mod therm_lib8.mod
@@ -165,7 +166,8 @@ optimiz_coms.o: ed_max_dims.mod
 pft_coms.o: ed_max_dims.mod
 phenology_coms.o: ed_max_dims.mod
 physiology_coms.o: ed_max_dims.mod
-rk4_coms.o: consts_coms.mod ed_max_dims.mod grid_coms.mod therm_lib8.mod
+rk4_coms.o: consts_coms.mod ed_max_dims.mod ed_misc_coms.mod grid_coms.mod
+rk4_coms.o: soil_coms.mod therm_lib8.mod
 soil_coms.o: ed_max_dims.mod grid_coms.mod 
 ed_mpass_init.o: canopy_air_coms.mod canopy_radiation_coms.mod decomp_coms.mod
 ed_mpass_init.o: disturb_coms.mod ed_max_dims.mod ed_misc_coms.mod
@@ -186,10 +188,9 @@ budget_utils.o: ed_state_vars.mod grid_coms.mod rk4_coms.mod soil_coms.mod
 dateutils.o: consts_coms.mod
 ed_filelist.o: ed_max_dims.mod
 ed_grid.o: consts_coms.mod ed_max_dims.mod ed_node_coms.mod grid_coms.mod
-ed_therm_lib.o: allometry.mod consts_coms.mod ed_state_vars.mod grid_coms.mod
-ed_therm_lib.o: pft_coms.mod rk4_coms.mod soil_coms.mod therm_lib.mod
-ed_therm_lib.o: therm_lib8.mod
-fatal_error.o: canopy_air_coms.mod ed_misc_coms.mod ed_node_coms.mod
+ed_therm_lib.o: allometry.mod consts_coms.mod ed_state_vars.mod pft_coms.mod
+ed_therm_lib.o: rk4_coms.mod soil_coms.mod therm_lib.mod therm_lib8.mod
+fatal_error.o: canopy_air_coms.mod ed_node_coms.mod
 fuse_fiss_utils.o: allometry.mod consts_coms.mod decomp_coms.mod
 fuse_fiss_utils.o: disturb_coms.mod ed_max_dims.mod ed_misc_coms.mod
 fuse_fiss_utils.o: ed_node_coms.mod ed_state_vars.mod fusion_fission_coms.mod

@@ -3,11 +3,11 @@
 !      This subroutine initializes a near-bare ground polygon.                             !
 !------------------------------------------------------------------------------------------!
 subroutine near_bare_ground_init(cgrid)
-   use ed_state_vars , only : edtype           & ! structure
-                            , polygontype      & ! structure
-                            , sitetype         & ! structure
-                            ,allocate_sitetype ! ! subroutine
-   use ed_misc_coms  , only : ied_init_mode    ! ! intent(in)
+   use ed_state_vars , only : edtype            & ! structure
+                            , polygontype       & ! structure
+                            , sitetype          & ! structure
+                            , allocate_sitetype ! ! subroutine
+   use ed_misc_coms  , only : ied_init_mode     ! ! intent(in)
    
    implicit none
 
@@ -47,7 +47,7 @@ subroutine near_bare_ground_init(cgrid)
          select case (ied_init_mode)
          case (-8)
             call init_cohorts_by_layers(csite,cpoly%lsl(isi),1,csite%npatches)
-         case (0)
+         case (-1,0)
             call init_nbg_cohorts(csite,cpoly%lsl(isi),1,csite%npatches)
          end select
 
@@ -83,6 +83,7 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
                                  , allocate_sitetype  & ! subroutine
                                  , allocate_patchtype ! ! subroutine
    use ed_max_dims        , only : n_pft              ! ! intent(in)
+   use ed_misc_coms       , only : ied_init_mode      ! ! intent(in)
    use pft_coms           , only : q                  & ! intent(in)
                                  , qsw                & ! intent(in)
                                  , sla                & ! intent(in)
@@ -123,12 +124,22 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
    patchloop: do ipa=ipa_a,ipa_z
       cpatch => csite%patch(ipa)
 
-      ! Decide how many cohorts to allocate
-      select case (csite%dist_type(ipa))
-      case (1)   ! Agriculture
-         mypfts = sum(include_pft_ag)
-      case (2,3) ! Secondary or primary forest
-         mypfts= sum(include_pft)
+      !----- Check which initialisation we are going to use. ------------------------------!
+      select case (ied_init_mode)
+      case (-1) !------ True bare ground simulation (absolute desert). --------------------!
+         mypfts = 0
+      case ( 0) !------ Nearly bare ground simulation (start with a few seedlings). -------!
+
+         !---------------------------------------------------------------------------------!
+         !     Decide how many cohorts to allocate.                                        !
+         !---------------------------------------------------------------------------------!
+         select case (csite%dist_type(ipa))
+         case (1)   !---- Agriculture. ----------------------------------------------------!
+            mypfts = sum(include_pft_ag)
+         case (2,3) !---- Secondary or primary forest. ------------------------------------!
+            mypfts= sum(include_pft)
+         end select
+         !---------------------------------------------------------------------------------!
       end select
 
       !----- Perform cohort allocation. ---------------------------------------------------!

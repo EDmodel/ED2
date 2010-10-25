@@ -877,27 +877,26 @@ module ed_state_vars
      !----- Moisture ---------------------------------------------------
 
      real,pointer,dimension(:)   :: avg_carbon_ac   ! Average carbon flux, ATM -> CAS,       [umol/m2/s]
-     real,pointer,dimension(:)   :: avg_vapor_vc    ! Average water vapor flux, VEG -> CAS   [kg/m2/s]
-     real,pointer,dimension(:)   :: avg_dew_cg      ! Average dew flux, CAS -> GND           [kg/m2/s]
-     real,pointer,dimension(:)   :: avg_vapor_gc    ! Average water vapor flux, GND -> CAS   [kg/m2/s]
-     real,pointer,dimension(:)   :: avg_wshed_vg    ! Average flux of precip that bypasses
-                                                    !  leaves at water holding capacity (throughfall)
-     real,pointer,dimension(:)   :: avg_intercepted ! Average flux of precip that is intercepted
-                                                    !                                        [kg/m2/s]
-     real,pointer,dimension(:)   :: avg_vapor_ac    ! Average water vapor flux, ATM-CAS      [kg/m2/s]
-     real,pointer,dimension(:)   :: avg_transp      ! Average transpiration of water vapor   [kg/m2/s]
+     real,pointer,dimension(:)   :: avg_vapor_vc    ! Average water vapor flux, VEG -> CAS     [kg/m2/s]
+     real,pointer,dimension(:)   :: avg_dew_cg      ! Average dew flux, CAS -> GND             [kg/m2/s]
+     real,pointer,dimension(:)   :: avg_vapor_gc    ! Average water vapor flux, GND -> CAS     [kg/m2/s]
+     real,pointer,dimension(:)   :: avg_wshed_vg    ! Average precip that falls from leaves    [kg/m2/s]
+     real,pointer,dimension(:)   :: avg_intercepted ! Average precip that is intercepted       [kg/m2/s]
+     real,pointer,dimension(:)   :: avg_throughfall ! Average precip that is never intercepted [kg/m2/s]
+     real,pointer,dimension(:)   :: avg_vapor_ac    ! Average water vapor flux, ATM-CAS        [kg/m2/s]
+     real,pointer,dimension(:)   :: avg_transp      ! Average transpiration of water vapor     [kg/m2/s]
      real,pointer,dimension(:)   :: avg_evap        ! Average evaporation from leaf and
-                                                    !  and ground surfaces -> CAS            [kg/m2/s]
+                                                    !  and ground surfaces -> CAS              [kg/m2/s]
      real,pointer,dimension(:,:) :: avg_smoist_gg   ! Moisture flux between soil layers
                                                     !  where layer (nzg) is the flux from the
-                                                    !  surface water into the top layer      [kg/m2/s]
+                                                    !  surface water into the top layer        [kg/m2/s]
      real,pointer,dimension(:,:) :: avg_smoist_gc   ! Transpired soil moisture sink in each layer
-                                                    !                                        [kg/m2/s]
-     real,pointer,dimension(:)   :: avg_runoff      ! Average surface water runoff           [kg/m2/s]
+                                                    !                                          [kg/m2/s]
+     real,pointer,dimension(:)   :: avg_runoff      ! Average surface water runoff             [kg/m2/s]
      real,pointer,dimension(:)   :: avg_drainage    ! Average water drainage through the lower 
-                                                    !  soil layer                            [kg/m2/s]
+                                                    !  soil layer                              [kg/m2/s]
      real,pointer,dimension(:)   :: avg_drainage_heat! Average internal energy loss due to water 
-                                                     ! drainage through the lower soil layer [kg/m2/s]
+                                                     ! drainage through the lower soil layer   [kg/m2/s]
 
      !----- Auxillary Variables (user can modify to view any variable ----------------------!
      real,pointer,dimension(:)   :: aux             ! Auxillary surface variable
@@ -905,15 +904,14 @@ module ed_state_vars
      
      !----- Sensible heat ------------------------------------------------------------------!
 
-     real,pointer,dimension(:) :: avg_sensible_vc   ! Sensible heat flux, VEG -> CAS         [W/m2]
-     real,pointer,dimension(:) :: avg_qwshed_vg     ! Internal energy flux of precipitation
-                                                    !  througfall                            [W/m2]
-     real,pointer,dimension(:) :: avg_qintercepted  ! Internal energy flux of intercepted
-                                                    !  precipitation                         [W/m2]
-     real,pointer,dimension(:) :: avg_sensible_gc   ! Sensible heat flux, GND -> CAS         [W/m2]
-     real,pointer,dimension(:) :: avg_sensible_ac   ! Sensible heat flux, ATM -> CAS         [W/m2]
-     real,pointer,dimension(:,:) :: avg_sensible_gg ! Net soil heat flux between layers      [W/m2]
-     real,pointer,dimension(:) :: avg_runoff_heat   ! Surface runoff internal energy flux    [W/m2]
+     real,pointer,dimension(:) :: avg_sensible_vc   ! Sensible heat flux, VEG -> CAS           [  W/m2]
+     real,pointer,dimension(:) :: avg_qwshed_vg     ! Average precip that falls from leaves    [  W/m2]
+     real,pointer,dimension(:) :: avg_qintercepted  ! Average precip that is intercepted       [  W/m2]
+     real,pointer,dimension(:) :: avg_qthroughfall  ! Average precip that is never intercepted [  W/m2]
+     real,pointer,dimension(:) :: avg_sensible_gc   ! Sensible heat flux, GND -> CAS           [  W/m2]
+     real,pointer,dimension(:) :: avg_sensible_ac   ! Sensible heat flux, ATM -> CAS           [  W/m2]
+     real,pointer,dimension(:,:) :: avg_sensible_gg ! Net soil heat flux between layers        [  W/m2]
+     real,pointer,dimension(:) :: avg_runoff_heat   ! Surface runoff internal energy flux      [  W/m2]
 
      !----- Mass and Energy ----------------------------------------------------------------!
 
@@ -1155,8 +1153,9 @@ module ed_state_vars
      real,pointer,dimension(:)   :: avg_vapor_vc    ! Vegetation to canopy air latent heat flux [kg/m2/s]
      real,pointer,dimension(:)   :: avg_dew_cg      ! Dew to ground flux
      real,pointer,dimension(:)   :: avg_vapor_gc    ! Ground to canopy air latent heat flux [kg/m2/s]
-     real,pointer,dimension(:)   :: avg_wshed_vg    ! Throughfall
+     real,pointer,dimension(:)   :: avg_wshed_vg    ! Water shedding
      real,pointer,dimension(:)   :: avg_intercepted ! Intercepted
+     real,pointer,dimension(:)   :: avg_throughfall ! Throughfall
      real,pointer,dimension(:)   :: avg_vapor_ac    ! Canopy to atmosphere water flux [kg/m2/s]
      real,pointer,dimension(:)   :: avg_transp      ! Transpiration
      real,pointer,dimension(:)   :: avg_evap        ! Evaporation
@@ -1179,8 +1178,9 @@ module ed_state_vars
      !----- Sensible heat -------------------------------------------------------------------------------------------!
      !                                              | Description
      real,pointer,dimension(:) :: avg_sensible_vc   ! Vegetation to Canopy sensible heat flux
-     real,pointer,dimension(:) :: avg_qwshed_vg     ! Internal energy of throughfall precipitation
+     real,pointer,dimension(:) :: avg_qwshed_vg     ! Internal energy of water shedding from leaves
      real,pointer,dimension(:) :: avg_qintercepted  ! Internal energy of intercepted precipitation
+     real,pointer,dimension(:) :: avg_qthroughfall  ! Internal energy of throughfall precipitation
      real,pointer,dimension(:) :: avg_sensible_gc   ! Ground to canopy air sensible heat flux
      real,pointer,dimension(:) :: avg_sensible_ac   ! Canopy to atmosphere sensible heat flux
      real,pointer,dimension(:,:) :: avg_sensible_gg ! Net soil heat flux between layers
@@ -1427,8 +1427,9 @@ module ed_state_vars
      real,pointer,dimension(:)   :: avg_vapor_vc    ! Vegetation to canopy air latent heat flux
      real,pointer,dimension(:)   :: avg_dew_cg      ! Dew to ground flux
      real,pointer,dimension(:)   :: avg_vapor_gc    ! Ground to canopy air latent heat flux [kg/m2/s]
-     real,pointer,dimension(:)   :: avg_wshed_vg    ! Throughfall
+     real,pointer,dimension(:)   :: avg_wshed_vg    ! Water shedding from the leaves
      real,pointer,dimension(:)   :: avg_intercepted ! Intercepted
+     real,pointer,dimension(:)   :: avg_throughfall ! Throughfall
      real,pointer,dimension(:)   :: avg_vapor_ac    ! Canopy to atmosphere water flux [kg/m2/s]
      real,pointer,dimension(:)   :: avg_transp      ! Transpiration
      real,pointer,dimension(:)   :: avg_evap        ! Evaporation
@@ -1451,13 +1452,14 @@ module ed_state_vars
 
      !----- Sensible heat Flux -----------------------------------------------!
 
-     real,pointer,dimension(:) :: avg_sensible_vc   ! Vegetation to Canopy sensible heat flux
-     real,pointer,dimension(:) :: avg_qwshed_vg     ! Internal energy of throughfall precipitation
-     real,pointer,dimension(:) :: avg_qintercepted  ! Internal energy of intercepted precipitation
-     real,pointer,dimension(:) :: avg_sensible_gc   ! Ground to canopy air sensible heat flux
-     real,pointer,dimension(:) :: avg_sensible_ac   ! Canopy to atmosphere sensible heat flux
-     real,pointer,dimension(:,:) :: avg_sensible_gg ! Net soil heat flux between layers
-     real,pointer,dimension(:) :: avg_runoff_heat   ! Total runoff internal energy flux
+     real,pointer,dimension(:)   :: avg_sensible_vc  ! Vegetation to Canopy sensible heat flux
+     real,pointer,dimension(:)   :: avg_qwshed_vg    ! Internal energy of leaf water shedding
+     real,pointer,dimension(:)   :: avg_qintercepted ! Internal energy of intercepted precipitation
+     real,pointer,dimension(:)   :: avg_qthroughfall ! Internal energy of intercepted precipitation
+     real,pointer,dimension(:)   :: avg_sensible_gc  ! Ground to canopy air sensible heat flux
+     real,pointer,dimension(:)   :: avg_sensible_ac  ! Canopy to atmosphere sensible heat flux
+     real,pointer,dimension(:,:) :: avg_sensible_gg  ! Net soil heat flux between layers
+     real,pointer,dimension(:)   :: avg_runoff_heat  ! Total runoff internal energy flux
 
      !----- Mass and Energy --------------------------------------------------!
 
@@ -1961,6 +1963,7 @@ contains
        allocate(cgrid%avg_vapor_gc  (npolygons))
        allocate(cgrid%avg_wshed_vg  (npolygons))
        allocate(cgrid%avg_intercepted (npolygons))
+       allocate(cgrid%avg_throughfall (npolygons))
        allocate(cgrid%avg_vapor_ac  (npolygons))
        allocate(cgrid%avg_transp    (npolygons))
        allocate(cgrid%avg_evap      (npolygons))
@@ -1974,6 +1977,7 @@ contains
        allocate(cgrid%avg_sensible_vc  (npolygons))
        allocate(cgrid%avg_qwshed_vg    (npolygons))
        allocate(cgrid%avg_qintercepted (npolygons))
+       allocate(cgrid%avg_qthroughfall (npolygons))
        allocate(cgrid%avg_sensible_gc  (npolygons))
        allocate(cgrid%avg_sensible_ac  (npolygons))
        allocate(cgrid%avg_sensible_gg  (nzg,npolygons))
@@ -2339,6 +2343,7 @@ contains
     allocate(cpoly%avg_vapor_gc  (nsites))
     allocate(cpoly%avg_wshed_vg  (nsites))
     allocate(cpoly%avg_intercepted (nsites))
+    allocate(cpoly%avg_throughfall (nsites))
     allocate(cpoly%avg_vapor_ac  (nsites))
     allocate(cpoly%avg_transp    (nsites))
     allocate(cpoly%avg_evap      (nsites))
@@ -2353,6 +2358,7 @@ contains
     allocate(cpoly%avg_sensible_vc  (nsites))
     allocate(cpoly%avg_qwshed_vg    (nsites))
     allocate(cpoly%avg_qintercepted (nsites))
+    allocate(cpoly%avg_qthroughfall (nsites))
     allocate(cpoly%avg_sensible_gc  (nsites))
     allocate(cpoly%avg_sensible_ac  (nsites))
     allocate(cpoly%avg_sensible_gg  (nzg,nsites))
@@ -2597,6 +2603,7 @@ contains
     allocate(csite%avg_vapor_gc  (npatches))
     allocate(csite%avg_wshed_vg  (npatches))
     allocate(csite%avg_intercepted (npatches))
+    allocate(csite%avg_throughfall (npatches))
     allocate(csite%avg_vapor_ac  (npatches))
     allocate(csite%avg_transp    (npatches))
     allocate(csite%avg_evap      (npatches))
@@ -2611,6 +2618,7 @@ contains
     allocate(csite%avg_sensible_vc  (npatches))
     allocate(csite%avg_qwshed_vg    (npatches))
     allocate(csite%avg_qintercepted (npatches))
+    allocate(csite%avg_qthroughfall (npatches))
     allocate(csite%avg_sensible_gc  (npatches))
     allocate(csite%avg_sensible_ac  (npatches))
     allocate(csite%avg_sensible_gg  (nzg,npatches))
@@ -2911,6 +2919,7 @@ contains
        nullify(cgrid%avg_vapor_gc            )
        nullify(cgrid%avg_wshed_vg            )
        nullify(cgrid%avg_intercepted         )
+       nullify(cgrid%avg_throughfall         )
        nullify(cgrid%avg_vapor_ac            )
        nullify(cgrid%avg_transp              )
        nullify(cgrid%avg_evap                )
@@ -2924,6 +2933,7 @@ contains
        nullify(cgrid%avg_sensible_vc         )
        nullify(cgrid%avg_qwshed_vg           )
        nullify(cgrid%avg_qintercepted        )
+       nullify(cgrid%avg_qthroughfall        )
        nullify(cgrid%avg_sensible_gc         )
        nullify(cgrid%avg_sensible_ac         )
        nullify(cgrid%avg_sensible_gg         )
@@ -3255,6 +3265,7 @@ contains
     nullify(cpoly%avg_vapor_gc  )
     nullify(cpoly%avg_wshed_vg  )
     nullify(cpoly%avg_intercepted)
+    nullify(cpoly%avg_throughfall)
     nullify(cpoly%avg_vapor_ac  )
     nullify(cpoly%avg_transp    )
     nullify(cpoly%avg_evap      )
@@ -3268,6 +3279,7 @@ contains
     nullify(cpoly%avg_sensible_vc  )
     nullify(cpoly%avg_qwshed_vg    )
     nullify(cpoly%avg_qintercepted )
+    nullify(cpoly%avg_qthroughfall )
     nullify(cpoly%avg_sensible_gc  )
     nullify(cpoly%avg_sensible_ac  )
     nullify(cpoly%avg_sensible_gg  )
@@ -3504,6 +3516,7 @@ contains
     nullify(csite%avg_vapor_gc  )
     nullify(csite%avg_wshed_vg  )
     nullify(csite%avg_intercepted)
+    nullify(csite%avg_throughfall)
     nullify(csite%avg_vapor_ac  )
     nullify(csite%avg_transp    )
     nullify(csite%avg_evap      )
@@ -3518,6 +3531,7 @@ contains
     nullify(csite%avg_sensible_vc  )
     nullify(csite%avg_qwshed_vg    )
     nullify(csite%avg_qintercepted )
+    nullify(csite%avg_qthroughfall )
     nullify(csite%avg_sensible_gc  )
     nullify(csite%avg_sensible_ac  )
     nullify(csite%avg_sensible_gg  )
@@ -3782,6 +3796,7 @@ contains
        if(associated(cgrid%avg_vapor_gc            )) deallocate(cgrid%avg_vapor_gc            )
        if(associated(cgrid%avg_wshed_vg            )) deallocate(cgrid%avg_wshed_vg            )
        if(associated(cgrid%avg_intercepted         )) deallocate(cgrid%avg_intercepted         )
+       if(associated(cgrid%avg_throughfall         )) deallocate(cgrid%avg_throughfall         )
        if(associated(cgrid%avg_vapor_ac            )) deallocate(cgrid%avg_vapor_ac            )
        if(associated(cgrid%avg_transp              )) deallocate(cgrid%avg_transp              )
        if(associated(cgrid%avg_evap                )) deallocate(cgrid%avg_evap                )
@@ -3795,6 +3810,7 @@ contains
        if(associated(cgrid%avg_sensible_vc         )) deallocate(cgrid%avg_sensible_vc         )
        if(associated(cgrid%avg_qwshed_vg           )) deallocate(cgrid%avg_qwshed_vg           )
        if(associated(cgrid%avg_qintercepted        )) deallocate(cgrid%avg_qintercepted        )
+       if(associated(cgrid%avg_qthroughfall        )) deallocate(cgrid%avg_qthroughfall        )
        if(associated(cgrid%avg_sensible_gc         )) deallocate(cgrid%avg_sensible_gc         )
        if(associated(cgrid%avg_sensible_ac         )) deallocate(cgrid%avg_sensible_ac         )
        if(associated(cgrid%avg_sensible_gg         )) deallocate(cgrid%avg_sensible_gg         )
@@ -4143,6 +4159,7 @@ contains
     if(associated(cpoly%avg_vapor_gc                )) deallocate(cpoly%avg_vapor_gc                )
     if(associated(cpoly%avg_wshed_vg                )) deallocate(cpoly%avg_wshed_vg                )
     if(associated(cpoly%avg_intercepted             )) deallocate(cpoly%avg_intercepted             )
+    if(associated(cpoly%avg_throughfall             )) deallocate(cpoly%avg_throughfall             )
     if(associated(cpoly%avg_vapor_ac                )) deallocate(cpoly%avg_vapor_ac                )
     if(associated(cpoly%avg_transp                  )) deallocate(cpoly%avg_transp                  )
     if(associated(cpoly%avg_evap                    )) deallocate(cpoly%avg_evap                    )
@@ -4156,6 +4173,7 @@ contains
     if(associated(cpoly%avg_sensible_vc             )) deallocate(cpoly%avg_sensible_vc             )
     if(associated(cpoly%avg_qwshed_vg               )) deallocate(cpoly%avg_qwshed_vg               )
     if(associated(cpoly%avg_qintercepted            )) deallocate(cpoly%avg_qintercepted            )
+    if(associated(cpoly%avg_qthroughfall            )) deallocate(cpoly%avg_qthroughfall            )
     if(associated(cpoly%avg_sensible_gc             )) deallocate(cpoly%avg_sensible_gc             )
     if(associated(cpoly%avg_sensible_ac             )) deallocate(cpoly%avg_sensible_ac             )
     if(associated(cpoly%avg_sensible_gg             )) deallocate(cpoly%avg_sensible_gg             )
@@ -4390,6 +4408,7 @@ contains
     if(associated(csite%avg_vapor_gc                 )) deallocate(csite%avg_vapor_gc                 )
     if(associated(csite%avg_wshed_vg                 )) deallocate(csite%avg_wshed_vg                 )
     if(associated(csite%avg_intercepted              )) deallocate(csite%avg_intercepted              )
+    if(associated(csite%avg_throughfall              )) deallocate(csite%avg_throughfall              )
     if(associated(csite%avg_vapor_ac                 )) deallocate(csite%avg_vapor_ac                 )
     if(associated(csite%avg_transp                   )) deallocate(csite%avg_transp                   )
     if(associated(csite%avg_evap                     )) deallocate(csite%avg_evap                     )
@@ -4404,6 +4423,7 @@ contains
     if(associated(csite%avg_sensible_vc              )) deallocate(csite%avg_sensible_vc              )
     if(associated(csite%avg_qwshed_vg                )) deallocate(csite%avg_qwshed_vg                )
     if(associated(csite%avg_qintercepted             )) deallocate(csite%avg_qintercepted             )
+    if(associated(csite%avg_qthroughfall             )) deallocate(csite%avg_qthroughfall             )
     if(associated(csite%avg_sensible_gc              )) deallocate(csite%avg_sensible_gc              )
     if(associated(csite%avg_sensible_ac              )) deallocate(csite%avg_sensible_ac              )
     if(associated(csite%avg_sensible_gg              )) deallocate(csite%avg_sensible_gg              )
@@ -4721,6 +4741,7 @@ contains
     if(associated(cgrid%avg_vapor_gc            )) cgrid%avg_vapor_gc             = large_real
     if(associated(cgrid%avg_wshed_vg            )) cgrid%avg_wshed_vg             = large_real
     if(associated(cgrid%avg_intercepted         )) cgrid%avg_intercepted          = large_real
+    if(associated(cgrid%avg_throughfall         )) cgrid%avg_throughfall          = large_real
     if(associated(cgrid%avg_vapor_ac            )) cgrid%avg_vapor_ac             = large_real
     if(associated(cgrid%avg_transp              )) cgrid%avg_transp               = large_real
     if(associated(cgrid%avg_evap                )) cgrid%avg_evap                 = large_real
@@ -4734,6 +4755,7 @@ contains
     if(associated(cgrid%avg_sensible_vc         )) cgrid%avg_sensible_vc          = large_real
     if(associated(cgrid%avg_qwshed_vg           )) cgrid%avg_qwshed_vg            = large_real
     if(associated(cgrid%avg_qintercepted        )) cgrid%avg_qintercepted         = large_real
+    if(associated(cgrid%avg_qthroughfall        )) cgrid%avg_qthroughfall         = large_real
     if(associated(cgrid%avg_sensible_gc         )) cgrid%avg_sensible_gc          = large_real
     if(associated(cgrid%avg_sensible_ac         )) cgrid%avg_sensible_ac          = large_real
     if(associated(cgrid%avg_sensible_gg         )) cgrid%avg_sensible_gg          = large_real
@@ -5078,6 +5100,7 @@ contains
     if(associated(cpoly%avg_vapor_gc                )) cpoly%avg_vapor_gc                = large_real
     if(associated(cpoly%avg_wshed_vg                )) cpoly%avg_wshed_vg                = large_real
     if(associated(cpoly%avg_intercepted             )) cpoly%avg_intercepted             = large_real
+    if(associated(cpoly%avg_throughfall             )) cpoly%avg_throughfall             = large_real
     if(associated(cpoly%avg_vapor_ac                )) cpoly%avg_vapor_ac                = large_real
     if(associated(cpoly%avg_transp                  )) cpoly%avg_transp                  = large_real
     if(associated(cpoly%avg_evap                    )) cpoly%avg_evap                    = large_real
@@ -5091,6 +5114,7 @@ contains
     if(associated(cpoly%avg_sensible_vc             )) cpoly%avg_sensible_vc             = large_real
     if(associated(cpoly%avg_qwshed_vg               )) cpoly%avg_qwshed_vg               = large_real
     if(associated(cpoly%avg_qintercepted            )) cpoly%avg_qintercepted            = large_real
+    if(associated(cpoly%avg_qthroughfall            )) cpoly%avg_qthroughfall            = large_real
     if(associated(cpoly%avg_sensible_gc             )) cpoly%avg_sensible_gc             = large_real
     if(associated(cpoly%avg_sensible_ac             )) cpoly%avg_sensible_ac             = large_real
     if(associated(cpoly%avg_sensible_gg             )) cpoly%avg_sensible_gg             = large_real
@@ -5338,6 +5362,7 @@ contains
     if(associated(csite%avg_vapor_gc                 )) csite%avg_vapor_gc                 = large_real
     if(associated(csite%avg_wshed_vg                 )) csite%avg_wshed_vg                 = large_real
     if(associated(csite%avg_intercepted              )) csite%avg_intercepted              = large_real
+    if(associated(csite%avg_throughfall              )) csite%avg_throughfall              = large_real
     if(associated(csite%avg_vapor_ac                 )) csite%avg_vapor_ac                 = large_real
     if(associated(csite%avg_transp                   )) csite%avg_transp                   = large_real
     if(associated(csite%avg_evap                     )) csite%avg_evap                     = large_real
@@ -5352,6 +5377,7 @@ contains
     if(associated(csite%avg_sensible_vc              )) csite%avg_sensible_vc              = large_real
     if(associated(csite%avg_qwshed_vg                )) csite%avg_qwshed_vg                = large_real
     if(associated(csite%avg_qintercepted             )) csite%avg_qintercepted             = large_real
+    if(associated(csite%avg_qthroughfall             )) csite%avg_qthroughfall             = large_real
     if(associated(csite%avg_sensible_gc              )) csite%avg_sensible_gc              = large_real
     if(associated(csite%avg_sensible_ac              )) csite%avg_sensible_ac              = large_real
     if(associated(csite%avg_sensible_gg              )) csite%avg_sensible_gg              = large_real
@@ -5901,6 +5927,7 @@ contains
     siteout%avg_vapor_gc(1:inc)         = pack(sitein%avg_vapor_gc,logmask)
     siteout%avg_wshed_vg(1:inc)         = pack(sitein%avg_wshed_vg,logmask)
     siteout%avg_intercepted(1:inc)      = pack(sitein%avg_intercepted,logmask)
+    siteout%avg_throughfall(1:inc)      = pack(sitein%avg_throughfall,logmask)
     siteout%avg_vapor_ac(1:inc)         = pack(sitein%avg_vapor_ac,logmask)
     siteout%avg_transp(1:inc)           = pack(sitein%avg_transp,logmask)
     siteout%avg_evap(1:inc)             = pack(sitein%avg_evap,logmask)
@@ -5912,6 +5939,7 @@ contains
     siteout%avg_sensible_vc(1:inc)      = pack(sitein%avg_sensible_vc,logmask)
     siteout%avg_qwshed_vg(1:inc)        = pack(sitein%avg_qwshed_vg,logmask)
     siteout%avg_qintercepted(1:inc)     = pack(sitein%avg_qintercepted,logmask)
+    siteout%avg_qthroughfall(1:inc)     = pack(sitein%avg_qthroughfall,logmask)
     siteout%avg_sensible_gc(1:inc)      = pack(sitein%avg_sensible_gc,logmask)
     siteout%avg_sensible_ac(1:inc)      = pack(sitein%avg_sensible_ac,logmask)
     siteout%avg_runoff_heat(1:inc)      = pack(sitein%avg_runoff_heat,logmask)
@@ -7250,6 +7278,13 @@ contains
        call metadata_edio(nvar,igr,'Polygon averaged intercepted precipitation by vegetation','[kg/m2/s]','ipoly') 
     endif
     
+    if (associated(cgrid%avg_throughfall)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%avg_throughfall(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'AVG_THROUGHFALL :11:hist:anal') 
+       call metadata_edio(nvar,igr,'Polygon averaged throughfall precipitation','[kg/m2/s]','ipoly') 
+    endif
+    
     if (associated(cgrid%avg_vapor_ac)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_vapor_ac(1),nvar,igr,init,cgrid%pyglob_id, &
@@ -7339,7 +7374,15 @@ contains
        call vtable_edio_r(cgrid%avg_qintercepted(1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'AVG_QINTERCEPTED :11:hist:anal') 
        call metadata_edio(nvar,igr,&
-'Polygon averaged internal energy flux of intercepted precipitation by vegetation','[W/m2]','ipoly') 
+       'Polygon averaged internal energy flux of intercepted precipitation by vegetation','[W/m2]','ipoly') 
+    endif
+     
+    if (associated(cgrid%avg_qthroughfall)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%avg_qthroughfall(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'AVG_QTHROUGHFALL :11:hist:anal') 
+       call metadata_edio(nvar,igr,&
+           'Polygon averaged internal energy flux of throughfall precipitation','[W/m2]','ipoly') 
     endif
    
     if (associated(cgrid%avg_sensible_gc)) then

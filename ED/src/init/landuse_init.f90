@@ -36,6 +36,7 @@ subroutine landuse_init
    real                  , dimension(maxlist) :: llon_list
    real                  , dimension(maxlist) :: llat_list
    real                  , dimension(maxlist) :: file_ldist
+   character(len=6)                           :: hform
    character(len=str_len)                     :: lu_name
    character(len=str_len)                     :: cdum
    integer                                    :: nharvest
@@ -71,6 +72,7 @@ subroutine landuse_init
    !----- Local constants. ----------------------------------------------------------------!
    character(len=12)    , parameter           :: fffmt='(a,1x,f12.5)'
    character(len=13)    , parameter           :: esfmt='(a,1x,es12.5)'
+   integer              , parameter           :: hoff = 18
    !----- External function. --------------------------------------------------------------!
    real                 , external            :: dist_gc
    !---------------------------------------------------------------------------------------!
@@ -137,26 +139,66 @@ subroutine landuse_init
          mindbh_2ary(1:n_pft)   = huge(1.)
          harvprob_2ary(1:n_pft) = 0.
 
+         !----- Define the format for the header. -----------------------------------------!
+         write(hform,fmt='(a,i3.3,a)') '(a',str_len,')'
+
          !----- Read the header. ----------------------------------------------------------!
-         read (unit=12,fmt=*) cdum,cdum,wlon
-         read (unit=12,fmt=*) cdum,cdum,elon
-         read (unit=12,fmt=*) cdum,cdum,slat
-         read (unit=12,fmt=*) cdum,cdum,nlat
-         read (unit=12,fmt=*) cdum,cdum,lu_area
-         read (unit=12,fmt=*) cdum,cdum,yd_1st
-         read (unit=12,fmt=*) cdum,cdum,yd_last
-         read (unit=12,fmt=*) cdum,cdum,nharvest
+         read (unit=12,fmt=hform) cdum
+         cdum = cdum(hoff:)
+         read (cdum, fmt=*) wlon
+
+         read (unit=12,fmt=hform) cdum
+         cdum = cdum(hoff:)
+         read (cdum, fmt=*) elon
+
+         read (unit=12,fmt=hform) cdum
+         cdum = cdum(hoff:)
+         read (cdum, fmt=*) slat
+
+         read (unit=12,fmt=hform) cdum
+         cdum = cdum(hoff:)
+         read (cdum, fmt=*) nlat
+
+         read (unit=12,fmt=hform) cdum
+         cdum = cdum(hoff:)
+         read (cdum, fmt=*) lu_area
+
+         read (unit=12,fmt=hform) cdum
+         cdum = cdum(hoff:)
+         read (cdum, fmt=*) yd_1st
+
+         read (unit=12,fmt=hform) cdum
+         cdum = cdum(hoff:)
+         read (cdum, fmt=*) yd_last
+
+         read (unit=12,fmt=hform) cdum
+         cdum = cdum(hoff:)
+         read (cdum, fmt=*) nharvest
 
          if (nharvest > 0 ) then
             !------------------------------------------------------------------------------!
             !     If nharvest is not 0, then the harvesting is not PFT-blind, read the PFT !
             ! information in the file.                                                     !
             !------------------------------------------------------------------------------!
-            read (unit=12,fmt=*) cdum,cdum,(harvest_pft(h)  ,h=1,nharvest)
-            read (unit=12,fmt=*) cdum,cdum,(mindbh_1ary(h)  ,h=1,nharvest)
-            read (unit=12,fmt=*) cdum,cdum,(harvprob_1ary(h),h=1,nharvest)
-            read (unit=12,fmt=*) cdum,cdum,(mindbh_2ary(h)  ,h=1,nharvest)
-            read (unit=12,fmt=*) cdum,cdum,(harvprob_2ary(h),h=1,nharvest)
+            read (unit=12,fmt=hform)  cdum
+            cdum = cdum(hoff:)
+            read (cdum, fmt=*) (harvest_pft(h)  ,h=1,nharvest)
+
+            read (unit=12,fmt=hform)  cdum
+            cdum = cdum(hoff:)
+            read (cdum, fmt=*) (mindbh_1ary(h)  ,h=1,nharvest)
+
+            read (unit=12,fmt=hform)  cdum
+            cdum = cdum(hoff:)
+            read (cdum, fmt=*) (harvprob_1ary(h)  ,h=1,nharvest)
+
+            read (unit=12,fmt=hform)  cdum
+            cdum = cdum(hoff:)
+            read (cdum, fmt=*) (mindbh_2ary(h)  ,h=1,nharvest)
+
+            read (unit=12,fmt=hform)  cdum
+            cdum = cdum(hoff:)
+            read (cdum, fmt=*) (harvprob_2ary(h)  ,h=1,nharvest)
          else
             !------------------------------------------------------------------------------!
             !     No specific PFT information was given, this is likely to be a case in    !
@@ -173,7 +215,23 @@ subroutine landuse_init
          read (unit=12,fmt=*) 
 
          !----- Use file_lat to compute the physical area sampled by the file. ------------!
-         lu_area_i = 1. / lu_area
+         if (lu_area == 0.) then
+            write (unit=*,fmt='(a)')           '------------------------------------------'
+            write (unit=*,fmt='(2(a,1x))')     ' - File:    ',trim(lu_name)
+            write (unit=*,fmt='(a,1x,es12.5)') ' - Wlon:    ',wlon
+            write (unit=*,fmt='(a,1x,es12.5)') ' - Elon:    ',elon
+            write (unit=*,fmt='(a,1x,es12.5)') ' - Slat:    ',slat
+            write (unit=*,fmt='(a,1x,es12.5)') ' - Nlat:    ',nlat
+            write (unit=*,fmt='(a,1x,es12.5)') ' - Lu_area: ',lu_area
+            write (unit=*,fmt='(a,1x,i6)')     ' - Yd_1st:  ',yd_1st
+            write (unit=*,fmt='(a,1x,i6)')     ' - Yd_last: ',yd_last
+            write (unit=*,fmt='(a,1x,i6)')     ' - Nharvest:',nharvest
+            write (unit=*,fmt='(a)')           '------------------------------------------'
+            call fatal_error('Land use area is zero, it doesn''t make any sense!'          &
+                            ,'landuse_init','landuse_init.f90')
+         else
+            lu_area_i = 1. / lu_area
+         end if
 
          !----- Determine whether this block contains the current polygon. ----------------!
          inside = cgrid%lon(ipy) >= wlon .and. cgrid%lon(ipy) <= elon .and.                &

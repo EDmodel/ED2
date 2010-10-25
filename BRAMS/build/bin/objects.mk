@@ -49,6 +49,7 @@ OBJ_MODEL =                         \
 	gaspart.o                   \
 	geodat.o                    \
 	getvar.o                    \
+	great_circle.o              \
 	grell_coms.o                \
 	grell_cupar_aux.o           \
 	grell_cupar_downdraft.o     \
@@ -166,6 +167,7 @@ OBJ_MODEL =                         \
 	nest_feed.o                 \
 	nest_filldens.o             \
 	nest_geosst.o               \
+	nest_init_aux.o             \
 	nest_intrp.o                \
 	nest_move.o                 \
 	node_mod.o                  \
@@ -307,7 +309,6 @@ OBJ_MODEL =                         \
 	forestry.o                  \
 	fuse_fiss_utils.o           \
 	fusion_fission_coms.o       \
-	great_circle.o              \
 	grid_coms.o                 \
 	growth_balive.o             \
 	h5_output.o                 \

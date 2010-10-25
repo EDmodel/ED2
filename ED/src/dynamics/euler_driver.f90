@@ -27,41 +27,44 @@ subroutine euler_timestep(cgrid)
 
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
-   type(edtype)             , target    :: cgrid
+   type(edtype)             , target      :: cgrid
    !----- Local variables -----------------------------------------------------------------!
-   type(polygontype)        , pointer   :: cpoly
-   type(sitetype)           , pointer   :: csite
-   type(patchtype)          , pointer   :: cpatch
-   type(met_driv_state)     , pointer   :: cmet
-   integer                              :: ipy
-   integer                              :: isi
-   integer                              :: ipa
-   integer                              :: ico
-   integer                              :: nsteps
-   integer, dimension(nzg)              :: ed_ktrans
-   real                                 :: thetaatm
-   real                                 :: thetacan
-   real                                 :: rasveg
-   real                                 :: storage_decay
-   real                                 :: leaf_flux
-   real                                 :: veg_tai
-   real                                 :: sum_lai_rbi
-   real                                 :: wcurr_loss2atm
-   real                                 :: ecurr_loss2atm
-   real                                 :: co2curr_loss2atm
-   real                                 :: wcurr_loss2drainage
-   real                                 :: ecurr_loss2drainage
-   real                                 :: wcurr_loss2runoff
-   real                                 :: ecurr_loss2runoff
-   real                                 :: old_can_theiv
-   real                                 :: old_can_shv
-   real                                 :: old_can_co2
-   real                                 :: old_can_rhos
-   real                                 :: old_can_temp
-   real                                 :: fm
+   type(polygontype)        , pointer     :: cpoly
+   type(sitetype)           , pointer     :: csite
+   type(patchtype)          , pointer     :: cpatch
+   type(met_driv_state)     , pointer     :: cmet
+   integer                                :: ipy
+   integer                                :: isi
+   integer                                :: ipa
+   integer                                :: ico
+   integer                                :: nsteps
+   integer, dimension(:)    , allocatable :: ed_ktrans
+   real                                   :: thetaatm
+   real                                   :: thetacan
+   real                                   :: rasveg
+   real                                   :: storage_decay
+   real                                   :: leaf_flux
+   real                                   :: veg_tai
+   real                                   :: sum_lai_rbi
+   real                                   :: wcurr_loss2atm
+   real                                   :: ecurr_loss2atm
+   real                                   :: co2curr_loss2atm
+   real                                   :: wcurr_loss2drainage
+   real                                   :: ecurr_loss2drainage
+   real                                   :: wcurr_loss2runoff
+   real                                   :: ecurr_loss2runoff
+   real                                   :: old_can_theiv
+   real                                   :: old_can_shv
+   real                                   :: old_can_co2
+   real                                   :: old_can_rhos
+   real                                   :: old_can_temp
+   real                                   :: fm
    !----- External functions. -------------------------------------------------------------!
-   real, external                       :: compute_netrad
+   real, external                         :: compute_netrad
    !---------------------------------------------------------------------------------------!
+
+   !----- Allocate scratch variables. -----------------------------------------------------!
+   allocate (ed_ktrans(nzg))
 
    polyloop: do ipy = 1,cgrid%npolygons
       cpoly => cgrid%polygon(ipy)
@@ -108,7 +111,7 @@ subroutine euler_timestep(cgrid)
             call copy_met_2_rk4site(cmet%vels,cmet%atm_theiv,cmet%atm_theta                &
                                    ,cmet%atm_tmp,cmet%atm_shv,cmet%atm_co2,cmet%geoht      &
                                    ,cmet%exner,cmet%pcpg,cmet%qpcpg,cmet%dpcpg,cmet%prss   &
-                                   ,cmet%geoht,cpoly%lsl(isi)                              &
+                                   ,cmet%rshort,cmet%rlong,cmet%geoht,cpoly%lsl(isi)       &
                                    ,cpoly%green_leaf_factor(:,isi)                         &
                                    ,cgrid%lon(ipy),cgrid%lat(ipy))
 
@@ -179,6 +182,9 @@ subroutine euler_timestep(cgrid)
          end do patchloop
       end do siteloop
    end do polyloop
+
+   !----- De-allocate scratch variables. --------------------------------------------------!
+   deallocate (ed_ktrans)
 
    return
 end subroutine euler_timestep
@@ -348,12 +354,16 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nsteps)
                              , safety                 & ! intent(in)
                              , pgrow                  & ! intent(in)
                              , pshrnk                 & ! intent(in)
-                             , errcon                 ! ! intent(in)
+                             , errcon                 & ! intent(in)
+                             , print_detailed         & ! intent(in)
+                             , norm_rk4_fluxes        & ! sub-routine
+                             , reset_rk4_fluxes       ! ! sub-routine
    use rk4_stepper    , only : rk4_sanity_check       & ! subroutine
                              , print_sanity_check     ! ! subroutine
    use ed_misc_coms   , only : fast_diagnostics       ! ! intent(in)
    use hydrology_coms , only : useRUNOFF              ! ! intent(in)
    use grid_coms      , only : nzg                    & ! intent(in)
+                             , nzs                    & ! intent(in)
                              , time                   ! ! intent(in)
    use soil_coms      , only : dslz8                  & ! intent(in)
                              , runoff_time            ! ! intent(in)
@@ -399,8 +409,6 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nsteps)
    real(kind=8)              , save        :: runoff_time_i
    !----- External function. --------------------------------------------------------------!
    real                      , external    :: sngloff
-   !----- Local constant. -----------------------------------------------------------------!
-   logical                   , parameter   :: print_intstep = .false.
    !---------------------------------------------------------------------------------------!
    
    !----- Checking whether we will use runoff or not, and saving this check to save time. -!
@@ -412,17 +420,6 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nsteps)
          runoff_time_i = 0.d0
       end if
       first_time   = .false.
-
-      if (print_intstep) then
-         write (unit=66,fmt='(27(a,1x))')                                                  &
-                       '  ELAPSED_TIME','     TIME_STEP','       ATM_SHV','       CAN_SHV' &
-                      ,'    GROUND_SHV','     ATM_THETA','     CAN_THETA','      ATM_TEMP' &
-                      ,'      CAN_TEMP','     ATM_THEIV','     CAN_THEIV','      ATM_PRSS' &
-                      ,'      CAN_PRSS','      ATM_RHOS','      CAN_RHOS','      ATM_VELS' &
-                      ,'     CAN_DEPTH','          RAIN','         USTAR','         TSTAR' &
-                      ,'         ESTAR','         QSTAR','          ZETA','        RIBULK' &
-                      ,'     SFCW_MASS','    SFCW_DEPTH','    SOIL_WATER'
-      end if
    end if
 
    !----- Use some aliases for simplicity. ------------------------------------------------!
@@ -432,7 +429,7 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nsteps)
    !    If top snow layer is too thin for computational stability, have it evolve in       !
    ! thermal equilibrium with top soil layer.                                              !
    !---------------------------------------------------------------------------------------!
-   call redistribute_snow(initp, csite,ipa)
+   call redistribute_snow(nzg,nzs,initp, csite,ipa)
    call update_diagnostic_vars(initp,csite,ipa)
 
    !---------------------------------------------------------------------------------------!
@@ -479,7 +476,7 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nsteps)
          call inc_rk4_patch(ytemp,dinitp,h,cpatch)
          call adjust_veg_properties(ytemp,h,csite,ipa)
          call adjust_topsoil_properties(ytemp,h,csite,ipa)
-         call redistribute_snow(ytemp,csite,ipa)
+         call redistribute_snow(nzg,nzs,ytemp,csite,ipa)
          call update_diagnostic_vars(ytemp,csite,ipa)
 
          !----- Perform a sanity check. ---------------------------------------------------!
@@ -536,6 +533,7 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nsteps)
                write (unit=*,fmt='(a,1x,f9.4)')   ' + LONGITUDE:     ',rk4site%lon
                write (unit=*,fmt='(a,1x,f9.4)')   ' + LATITUDE:      ',rk4site%lat
                write (unit=*,fmt='(a)')           ' + PATCH INFO:    '
+               write (unit=*,fmt='(a,1x,i6)')     '   - NUMBER:      ',ipa
                write (unit=*,fmt='(a,1x,es12.4)') '   - AGE:         ',csite%age(ipa)
                write (unit=*,fmt='(a,1x,i6)')     '   - DIST_TYPE:   ',csite%dist_type(ipa)
                write (unit=*,fmt='(a,1x,l1)')     ' + MINSTEP:       ',minstep
@@ -565,7 +563,7 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nsteps)
             !----- ii.  Final update of top soil properties to avoid off-bounds moisture. -!
             call adjust_topsoil_properties(ytemp,h,csite,ipa)
             !----- iii. Make snow layers stable and positively defined. -------------------!
-            call redistribute_snow(ytemp, csite,ipa)
+            call redistribute_snow(nzg,nzs,ytemp, csite,ipa)
             !----- iv.  Update the diagnostic variables. ----------------------------------!
             call update_diagnostic_vars(ytemp, csite,ipa)
             !------------------------------------------------------------------------------!
@@ -581,23 +579,25 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nsteps)
             endif
             hnext = max(2.d0*hmin,hnext)
 
-            !----- 3d. Copying the temporary structure to the intermediate state. ---------!
+            !------ 3d. Normalise the fluxes if the user wants detailed debugging. --------!
+            if (print_detailed) then
+               call norm_rk4_fluxes(ytemp,h)
+               call print_rk4_state(initp,ytemp,csite,ipa,x,h)
+            end if
+
+            !----- 3e. Copy the temporary structure to the intermediate state. ------------!
             call copy_rk4_patch(ytemp, initp,csite%patch(ipa))
             call copy_rk4_patch(dydx ,dinitp,csite%patch(ipa))
 
-            !----- 3e. Print the output if the user wants it. -----------------------------!
-            if (print_intstep) then
-               write (unit=66,fmt='(27(es14.7,1x))')                                       &
-                     elaptime,h,rk4site%atm_shv,initp%can_shv,initp%ground_shv             &
-                    ,rk4site%atm_theta,initp%can_theta,rk4site%atm_tmp,initp%can_temp      &
-                    ,rk4site%atm_theiv,initp%can_theiv,rk4site%atm_prss                    &
-                    ,initp%can_prss,rk4site%rhos,initp%can_rhos,rk4site%vels               &
-                    ,initp%can_depth,rk4site%pcpg,initp%ustar,initp%tstar,initp%estar      &
-                    ,initp%qstar,initp%zeta,initp%ribulk,initp%sfcwater_mass(1)            &
-                    ,initp%sfcwater_depth(1),initp%soil_water(nzg)
+            !------------------------------------------------------------------------------!
+            !    3f. Flush step-by-step fluxes to zero if the user wants detailed          !
+            !        debugging.                                                            !
+            !------------------------------------------------------------------------------!
+            if (print_detailed) then
+               call reset_rk4_fluxes(initp)
             end if
 
-            !----- 3f. Updating time. -----------------------------------------------------!
+            !----- 3g. Update time. -------------------------------------------------------!
             x        = x + h
             h        = hnext
             elaptime = elaptime + h
@@ -631,7 +631,7 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nsteps)
                !----- Recompute the energy removing runoff --------------------------------!
                initp%sfcwater_energy(ksn) = initp%sfcwater_energy(ksn) - qwfree
 
-               call redistribute_snow(initp,csite,ipa)
+               call redistribute_snow(nzg,nzs,initp,csite,ipa)
                call update_diagnostic_vars(initp,csite,ipa)
 
                !----- Compute runoff for output -------------------------------------------!

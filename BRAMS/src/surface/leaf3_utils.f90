@@ -349,23 +349,25 @@ subroutine leaf_grndvap(soil_energy,soil_water,soil_text,sfcw_energy_int,sfcwate
 
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
-   real, intent(in)  :: soil_energy
-   real, intent(in)  :: soil_water
-   real, intent(in)  :: soil_text
-   real, intent(in)  :: sfcw_energy_int
-   real, intent(in)  :: sfcwater_nlev
-   real, intent(in)  :: can_rvap
-   real, intent(in)  :: can_prss
-   real, intent(out) :: ground_rsat
-   real, intent(out) :: ground_rvap
-   real, intent(out) :: ground_temp
-   real, intent(out) :: ground_fliq
+   real, intent(in)  :: soil_energy      ! Soil internal energy                 [     J/m³]
+   real, intent(in)  :: soil_water       ! Soil water content                   [m³_h2o/m³]
+   real, intent(in)  :: soil_text        ! Soil texture class                   [      ---]
+   real, intent(in)  :: sfcw_energy_int  ! Soil internal energy                 [     J/kg]
+   real, intent(in)  :: sfcwater_nlev    ! # active levels of surface water     [      ---]
+   real, intent(in)  :: can_rvap         ! Canopy vapour mixing ratio           [kg_vap/kg]
+   real, intent(in)  :: can_prss         ! Canopy pressure                      [       Pa]
+   real, intent(out) :: ground_rsat      ! Surface (saturation) mixing ratio    [kg_vap/kg]
+   real, intent(out) :: ground_rvap      ! Ground equilibrium mixing ratio      [kg_vap/kg]
+   real, intent(out) :: ground_temp      ! Surface temperature                  [        K]
+   real, intent(out) :: ground_fliq      ! Fraction of sfc H2O in liquid phase  [      ---]
    !----- Local variables. ----------------------------------------------------------------!
-   integer           :: ksn
-   integer           :: nsoil
-   real              :: slpotvn
-   real              :: alpha
-   real              :: beta
+   integer           :: ksn              ! # active levels of surface water
+   integer           :: nsoil            ! Soil texture class                   [      ---]
+   real              :: slpotvn          ! soil water potential                 [        m]
+   real              :: alpha            ! "alpha" term in Lee and Pielke (1993)
+   real              :: beta             ! "beta" term in Lee and Pielke (1993)
+   real              :: lnalpha          ! ln(alpha)
+   real              :: smterm           ! soil moisture term                   [     ----]
    !---------------------------------------------------------------------------------------!
 
 
@@ -400,8 +402,13 @@ subroutine leaf_grndvap(soil_energy,soil_water,soil_text,sfcw_energy_int,sfcwate
       ground_rsat = rslif(can_prss,ground_temp)
 
       slpotvn     = slpots(nsoil) * (slmsts(nsoil) / soil_water) ** slbs(nsoil)
-      alpha       = exp(gorh2o * slpotvn / ground_temp)
-      beta        = .25 * (1. - cos (min(1.,soil_water / sfldcap(nsoil)) * pi1)) ** 2
+      lnalpha     = gorh2o * slpotvn / surface_tempk
+      if (lnalpha > -38.) then
+         alpha    = exp(lnalpha)
+      else
+         alpha    = 0.0
+      end if
+      beta        = .5 * (1. - cos (min(1.,soil_water / sfldcap(nsoil)) * pi1))
       ground_rvap = ground_rsat * alpha * beta + (1. - beta) * can_rvap
    end if
 
@@ -426,8 +433,8 @@ subroutine leaf_bcond(m2,m3,mzg,mzs,npat,jdim,soil_water,sfcwater_mass,soil_ener
                      ,veg_height,patch_area,patch_rough,patch_wetind,leaf_class,soil_rough &
                      ,sfcwater_nlev,stom_resist,ground_rsat,ground_rvap,ground_temp        &
                      ,ground_fliq,veg_water,veg_hcap,veg_energy,can_prss,can_theiv         &
-                     ,can_theta,can_rvap,can_co2,sensible,evap,transp,gpp,plresp,resphet   &
-                     ,veg_ndvip,veg_ndvic,veg_ndvif)
+                     ,can_theta,can_rvap,can_co2,sensible_gc,sensible_vc,evap_gc,evap_vc   &
+                     ,transp,gpp,plresp,resphet,veg_ndvip,veg_ndvic,veg_ndvif)
 
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
@@ -445,7 +452,8 @@ subroutine leaf_bcond(m2,m3,mzg,mzs,npat,jdim,soil_water,sfcwater_mass,soil_ener
    real, dimension(m2,m3,npat)    , intent(inout) :: veg_water,veg_energy,veg_hcap
    real, dimension(m2,m3,npat)    , intent(inout) :: can_prss,can_theiv,can_theta
    real, dimension(m2,m3,npat)    , intent(inout) :: can_rvap,can_co2
-   real, dimension(m2,m3,npat)    , intent(inout) :: sensible,evap,transp
+   real, dimension(m2,m3,npat)    , intent(inout) :: sensible_gc,sensible_vc
+   real, dimension(m2,m3,npat)    , intent(inout) :: evap_gc,evap_vc,transp
    real, dimension(m2,m3,npat)    , intent(inout) :: gpp,plresp,resphet
    real, dimension(m2,m3,npat)    , intent(inout) :: veg_ndvip,veg_ndvic,veg_ndvif
    !----- Local variables. ----------------------------------------------------------------!
@@ -484,8 +492,10 @@ subroutine leaf_bcond(m2,m3,mzg,mzs,npat,jdim,soil_water,sfcwater_mass,soil_ener
          can_theta      (1,j,ipat) = can_theta        (2,j,ipat)
          can_rvap       (1,j,ipat) = can_rvap         (2,j,ipat)
          can_co2        (1,j,ipat) = can_co2          (2,j,ipat)
-         sensible       (1,j,ipat) = sensible         (2,j,ipat)
-         evap           (1,j,ipat) = evap             (2,j,ipat)
+         sensible_gc    (1,j,ipat) = sensible_gc      (2,j,ipat)
+         sensible_vc    (1,j,ipat) = sensible_vc      (2,j,ipat)
+         evap_gc        (1,j,ipat) = evap_gc          (2,j,ipat)
+         evap_vc        (1,j,ipat) = evap_vc          (2,j,ipat)
          transp         (1,j,ipat) = transp           (2,j,ipat)
          gpp            (1,j,ipat) = gpp              (2,j,ipat)
          plresp         (1,j,ipat) = plresp           (2,j,ipat)
@@ -525,8 +535,10 @@ subroutine leaf_bcond(m2,m3,mzg,mzs,npat,jdim,soil_water,sfcwater_mass,soil_ener
          can_theta     (m2,j,ipat) = can_theta     (m2-1,j,ipat)
          can_rvap      (m2,j,ipat) = can_rvap      (m2-1,j,ipat)
          can_co2       (m2,j,ipat) = can_co2       (m2-1,j,ipat)
-         sensible      (m2,j,ipat) = sensible      (m2-1,j,ipat)
-         evap          (m2,j,ipat) = evap          (m2-1,j,ipat)
+         sensible_gc   (m2,j,ipat) = sensible_gc   (m2-1,j,ipat)
+         sensible_vc   (m2,j,ipat) = sensible_vc   (m2-1,j,ipat)
+         evap_gc       (m2,j,ipat) = evap_gc       (m2-1,j,ipat)
+         evap_vc       (m2,j,ipat) = evap_vc       (m2-1,j,ipat)
          transp        (m2,j,ipat) = transp        (m2-1,j,ipat)
          gpp           (m2,j,ipat) = gpp           (m2-1,j,ipat)
          plresp        (m2,j,ipat) = plresp        (m2-1,j,ipat)
@@ -590,8 +602,10 @@ subroutine leaf_bcond(m2,m3,mzg,mzs,npat,jdim,soil_water,sfcwater_mass,soil_ener
             can_theta      (i,1,ipat) = can_theta        (i,2,ipat)
             can_rvap       (i,1,ipat) = can_rvap         (i,2,ipat)
             can_co2        (i,1,ipat) = can_co2          (i,2,ipat)
-            sensible       (i,1,ipat) = sensible         (i,2,ipat)
-            evap           (i,1,ipat) = evap             (i,2,ipat)
+            sensible_gc    (i,1,ipat) = sensible_gc      (i,2,ipat)
+            sensible_vc    (i,1,ipat) = sensible_vc      (i,2,ipat)
+            evap_gc        (i,1,ipat) = evap_gc          (i,2,ipat)
+            evap_vc        (i,1,ipat) = evap_vc          (i,2,ipat)
             transp         (i,1,ipat) = transp           (i,2,ipat)
             gpp            (i,1,ipat) = gpp              (i,2,ipat)
             plresp         (i,1,ipat) = plresp           (i,2,ipat)
@@ -631,8 +645,10 @@ subroutine leaf_bcond(m2,m3,mzg,mzs,npat,jdim,soil_water,sfcwater_mass,soil_ener
             can_theta     (i,m3,ipat) = can_theta     (i,m3-1,ipat)
             can_rvap      (i,m3,ipat) = can_rvap      (i,m3-1,ipat)
             can_co2       (i,m3,ipat) = can_co2       (i,m3-1,ipat)
-            sensible      (i,m3,ipat) = can_co2       (i,m3-1,ipat)
-            evap          (i,m3,ipat) = can_co2       (i,m3-1,ipat)
+            sensible_gc   (i,m3,ipat) = sensible_gc   (i,m3-1,ipat)
+            sensible_vc   (i,m3,ipat) = sensible_vc   (i,m3-1,ipat)
+            evap_gc       (i,m3,ipat) = evap_gc       (i,m3-1,ipat)
+            evap_vc       (i,m3,ipat) = evap_vc       (i,m3-1,ipat)
             transp        (i,m3,ipat) = can_co2       (i,m3-1,ipat)
             gpp           (i,m3,ipat) = gpp           (i,m3-1,ipat)
             plresp        (i,m3,ipat) = plresp        (i,m3-1,ipat)
@@ -1202,7 +1218,7 @@ subroutine sfcrad(mzg,mzs,ip,soil_energy,soil_water,soil_text,sfcwater_energy   
    !     First we update the canopy air properties.                                        !
    !---------------------------------------------------------------------------------------!
    can_exner    = cp  * (p00i * can_prss) ** rocp
-   can_lntheiv  = log(can_theiv)
+   can_lntheta  = log(can_theta)
    can_temp     = cpi * can_theta * can_exner
    can_shv      = can_rvap / (can_rvap + 1.)
    can_rhos     = idealdenssh(can_prss,can_temp,can_shv)

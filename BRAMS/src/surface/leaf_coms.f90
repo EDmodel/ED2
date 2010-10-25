@@ -57,7 +57,7 @@ module leaf_coms
             , vf           & ! product of veg_fracarea and (1-snowfac)           [     ---]
             , can_exner    & ! canopy air Exner function                         [  J/kg/K]
             , can_temp     & ! canopy air temperature                            [       K]
-            , can_lntheiv  & ! canopy air equivalent potential temperature       [     ---]
+            , can_lntheta  & ! log of canopy air potential temperature           [     ---]
             , can_rhos     & ! canopy air density                                [   kg/m³]
             , can_shv      & ! canopy air specific humidity                      [   kg/kg]
             , can_depth    & ! canopy depth                                      [       m]
@@ -88,6 +88,7 @@ module leaf_coms
             , qwflxgc      & ! latent heat from ground to canopy                [   J/m²/s]
             , cflxgc       & ! carbon from ground to canopy                     [µmol/m²/s]
             , eflxac       & ! enthalpy flux from atmosphere to canopy          [   J/m²/s]
+            , hflxac       & ! sensible heat flux from atmosphere to canopy     [   J/m²/s]
             , wflxac       & ! water flux from atmosphere to canopy             [  kg/m²/s]
             , cflxac       & ! carbon flux from atmosphere to canopy            [µmol/m²/s]
             , hflxvc       & ! sensible heat from vegetation to canopy          [   J/m²/s]
@@ -194,8 +195,8 @@ module leaf_coms
    !---------------------------------------------------------------------------------------!
    !     Speed-related minimum values we will consider.                                    !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: ubmin    = 0.25  ! Minimum velocity                        [     m/s]
-   real, parameter :: ustmin   = 0.025 ! Minimum ustar                           [     m/s]
+   real, parameter :: ubmin    = 0.65  ! Minimum velocity                        [     m/s]
+   real, parameter :: ustmin   = 0.10  ! Minimum ustar                           [     m/s]
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!

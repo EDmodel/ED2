@@ -218,11 +218,13 @@ module ed_therm_lib
    subroutine ed_grndvap(nlev_sfcwater,nts,soil_water,soil_energy,sfcwater_energy,can_prss &
                         ,can_shv,ground_shv,surface_ssh,surface_tempk,surface_fracliq)
      
-      use soil_coms   , only: ed_nstyp,soil
-      use grid_coms   , only: nzg
-      use consts_coms , only: pi1,wdns,gorh2o
-      use therm_lib   , only: rslif,qtk,qwtk
-     
+      use soil_coms   , only : soil      ! ! intent(in)
+      use consts_coms , only : pi1       & ! intent(in)
+                             , wdns      & ! intent(in)
+                             , gorh2o    ! ! intent(in)
+      use therm_lib   , only : rslif     & ! function
+                             , qtk       & ! function
+                             , qwtk      ! ! function
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       integer, intent(in)  :: nlev_sfcwater   ! # active levels of surface water
@@ -242,6 +244,7 @@ module ed_therm_lib
       real                 :: alpha           ! "alpha" term in Lee and Pielke (1993)
       real                 :: beta            ! "beta" term in Lee and Pielke (1993)
       real                 :: lnalpha         ! ln(alpha)
+      real                 :: smterm          ! soil moisture term              [     ----]
       !------------------------------------------------------------------------------------!
       
       if (nlev_sfcwater > 0 .and. sfcwater_energy > 0.) then
@@ -263,11 +266,13 @@ module ed_therm_lib
          slpotvn     = soil(nts)%slpots * (soil(nts)%slmsts / soil_water) ** soil(nts)%slbs
          lnalpha     = gorh2o * slpotvn / surface_tempk
          if (lnalpha > -38.) then
-            alpha       = exp(lnalpha)
+            alpha   = exp(lnalpha)
          else
-            alpha       = 0.0
+            alpha   = 0.0
          end if
-         beta        = .25 * (1. - cos (min(1.,soil_water / soil(nts)%sfldcap) * pi1)) ** 2
+         smterm     = (soil_water - soil(nts)%soilcp)                                      &
+                    / (soil(nts)%sfldcap - soil(nts)%soilcp)
+         beta        = .5 * (1. - cos (min(1.,smterm) * pi1))
          ground_shv  = surface_ssh * alpha * beta + (1. - beta) * can_shv
       end if
       return
@@ -289,16 +294,18 @@ module ed_therm_lib
    subroutine ed_grndvap8(nlev_sfcwater,nts,soil_water,soil_energy,sfcwater_energy         &
                         ,can_prss,can_shv,ground_shv,surface_ssh,surface_tempk             &
                         ,surface_fracliq)
-      use soil_coms   , only: ed_nstyp,soil8
-      use grid_coms   , only: nzg
-      use consts_coms , only: pi18,wdns8,gorh2o8
-      use therm_lib8  , only: rslif8,qtk8,qwtk8
+      use soil_coms   , only : soil8      ! ! intent(in)
+      use consts_coms , only : pi18       & ! intent(in)
+                             , wdns8      & ! intent(in)
+                             , gorh2o8    ! ! intent(in)
+      use therm_lib8  , only : rslif8     & ! function
+                             , qtk8       & ! function
+                             , qwtk8      ! ! function
      
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      integer, intent(in)  :: nlev_sfcwater   ! # active levels of surface water
-      integer, intent(in)  :: nts             ! soil textural class (local name)
-     
+      integer     , intent(in)  :: nlev_sfcwater   ! # active levels of surface water
+      integer     , intent(in)  :: nts             ! soil textural class (local name)
       real(kind=8), intent(in)  :: soil_water      ! soil water content         [m³_h2o/m³]
       real(kind=8), intent(in)  :: soil_energy     ! Soil internal energy       [     J/m³]
       real(kind=8), intent(in)  :: sfcwater_energy ! Snow/water internal energy [     J/kg]
@@ -313,6 +320,7 @@ module ed_therm_lib
       real(kind=8)              :: alpha           ! "alpha" term in Lee and Pielke (1993)
       real(kind=8)              :: beta            ! "beta" term in Lee and Pielke (1993)
       real(kind=8)              :: lnalpha         ! ln(alpha)
+      real(kind=8)              :: smterm          ! soil moisture term         [     ----]
       !------------------------------------------------------------------------------------!
       
       if (nlev_sfcwater > 0 .and. sfcwater_energy > 0.d0) then
@@ -335,14 +343,15 @@ module ed_therm_lib
          slpotvn     = soil8(nts)%slpots*(soil8(nts)%slmsts / soil_water)                  &
                      ** soil8(nts)%slbs
          lnalpha     = gorh2o8 * slpotvn / surface_tempk
-         if (lnalpha > -38.) then
-            alpha       = exp(lnalpha)
+         if (lnalpha > -3.8d1) then
+            alpha   = exp(lnalpha)
          else
-            alpha       = 0.d0
+            alpha   = 0.d0
          end if
-         beta        = 2.5d-1                                                              &
-                     * (1.d0 - cos (min(1.d0,soil_water / soil8(nts)%sfldcap) * pi18)) ** 2
-         ground_shv  = surface_ssh * alpha * beta + (1.d0 - beta) * can_shv
+         smterm     = (soil_water - soil8(nts)%soilcp)                                     &
+                    / (soil8(nts)%sfldcap - soil8(nts)%soilcp)
+         beta       = 5.d-1 * (1.d0 - cos (min(1.d0,smterm) * pi18))
+         ground_shv = surface_ssh * alpha * beta + (1.d0 - beta) * can_shv
       end if
       return
    end subroutine ed_grndvap8

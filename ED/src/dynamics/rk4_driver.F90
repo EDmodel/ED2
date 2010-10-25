@@ -22,6 +22,7 @@ module rk4_driver
                                         , polygontype          & ! structure
                                         , sitetype             & ! structure
                                         , patchtype            ! ! structure
+      use met_driver_coms        , only : met_driv_state       ! ! structure
       use grid_coms              , only : nzg                  ! ! intent(in)
       use canopy_struct_dynamics , only : canopy_turbulence8   ! ! subroutine
       use ed_misc_coms           , only : current_time         ! ! intent(in)
@@ -36,9 +37,12 @@ module rk4_driver
       type(polygontype)         , pointer     :: cpoly
       type(sitetype)            , pointer     :: csite
       type(patchtype)           , pointer     :: cpatch
-      integer                                 :: ipy,isi,ipa
+      type(met_driv_state)      , pointer     :: cmet
+      integer                                 :: ipy
+      integer                                 :: isi
+      integer                                 :: ipa
       integer                                 :: iun
-      integer, dimension(nzg)                 :: ed_ktrans
+      integer, dimension(:)     , allocatable :: ed_ktrans
       integer                                 :: nsteps
       real                                    :: sum_lai_rbi
       real                                    :: wcurr_loss2atm
@@ -53,20 +57,24 @@ module rk4_driver
       real                                    :: old_can_co2
       real                                    :: old_can_rhos
       real                                    :: old_can_temp
-
-
+      !----- Locally saved variables. -----------------------------------------------------!
       logical                   , save        :: first_time=.true.
       !----- Local constants. -------------------------------------------------------------!
       logical                   , parameter   :: print_dbg_fields = .false.
       !----- Functions --------------------------------------------------------------------!
       real                      , external    :: walltime
       !------------------------------------------------------------------------------------!
-      
+
+
+      !----- Allocate the auxiliary variables. --------------------------------------------!
+      allocate(ed_ktrans(nzg))
+
       polygonloop: do ipy = 1,cgrid%npolygons
          cpoly => cgrid%polygon(ipy)
 
          siteloop: do isi = 1,cpoly%nsites
             csite => cpoly%site(isi)
+            cmet  => cpoly%met(isi)
 
             patchloop: do ipa = 1,csite%npatches
                cpatch => csite%patch(ipa)
@@ -126,23 +134,20 @@ module rk4_driver
                old_can_temp     = csite%can_temp(ipa)
 
                !----- Get velocity for aerodynamic resistance. ----------------------------!
-               if (csite%can_theta(ipa) < cpoly%met(isi)%atm_theta) then
-                  cpoly%met(isi)%vels = cpoly%met(isi)%vels_stab
+               if (csite%can_theta(ipa) < cmet%atm_theta) then
+                  cmet%vels = cmet%vels_stab
                else
-                  cpoly%met(isi)%vels = cpoly%met(isi)%vels_unstab
+                  cmet%vels = cmet%vels_unstab
                end if
 
                !---------------------------------------------------------------------------!
                !    Copy the meteorological variables to the rk4site structure.            !
                !---------------------------------------------------------------------------!
-               call copy_met_2_rk4site(cpoly%met(isi)%vels,cpoly%met(isi)%atm_theiv        &
-                                      ,cpoly%met(isi)%atm_theta,cpoly%met(isi)%atm_tmp     &
-                                      ,cpoly%met(isi)%atm_shv,cpoly%met(isi)%atm_co2       &
-                                      ,cpoly%met(isi)%geoht,cpoly%met(isi)%exner           &
-                                      ,cpoly%met(isi)%pcpg,cpoly%met(isi)%qpcpg            &
-                                      ,cpoly%met(isi)%dpcpg,cpoly%met(isi)%prss            &
-                                      ,cpoly%met(isi)%geoht,cpoly%lsl(isi)                 &
-                                      ,cpoly%green_leaf_factor(:,isi)                      &
+               call copy_met_2_rk4site(cmet%vels,cmet%atm_theiv,cmet%atm_theta             &
+                                      ,cmet%atm_tmp,cmet%atm_shv,cmet%atm_co2,cmet%geoht   &
+                                      ,cmet%exner,cmet%pcpg,cmet%qpcpg,cmet%dpcpg          &
+                                      ,cmet%prss,cmet%rshort,cmet%rlong,cmet%geoht         &
+                                      ,cpoly%lsl(isi),cpoly%green_leaf_factor(:,isi)       &
                                       ,cgrid%lon(ipy),cgrid%lat(ipy))
 
                !----- Compute current storage terms. --------------------------------------!
@@ -161,11 +166,12 @@ module rk4_driver
 
 
                !----- Get photosynthesis, stomatal conductance, and transpiration. --------!
-               call canopy_photosynthesis(csite,ipa,cpoly%met(isi)%vels                    &
-                          ,cpoly%met(isi)%atm_tmp,cpoly%met(isi)%prss,ed_ktrans            &
-                          ,csite%ntext_soil(:,ipa),csite%soil_water(:,ipa)                 &
-                          ,csite%soil_fracliq(:,ipa),cpoly%lsl(isi),sum_lai_rbi            &
-                          ,cpoly%leaf_aging_factor(:,isi),cpoly%green_leaf_factor(:,isi) )
+               call canopy_photosynthesis(csite,ipa,cmet%vels,cmet%atm_tmp,cmet%prss       &
+                                         ,ed_ktrans,csite%ntext_soil(:,ipa)                &
+                                         ,csite%soil_water(:,ipa)                          &
+                                         ,csite%soil_fracliq(:,ipa),cpoly%lsl(isi)         &
+                                         ,sum_lai_rbi,cpoly%leaf_aging_factor(:,isi)       &
+                                         ,cpoly%green_leaf_factor(:,isi) )
 
                !----- Compute root and heterotrophic respiration. -------------------------!
                call soil_respiration(csite,ipa)
@@ -196,13 +202,12 @@ module rk4_driver
                !---------------------------------------------------------------------------!
                !     Compute the residuals.                                                !
                !---------------------------------------------------------------------------!
-               call compute_budget(csite,cpoly%lsl(isi),cpoly%met(isi)%pcpg                &
-                                  ,cpoly%met(isi)%qpcpg,ipa,wcurr_loss2atm,ecurr_loss2atm  &
-                                  ,co2curr_loss2atm,wcurr_loss2drainage                    &
-                                  ,ecurr_loss2drainage,wcurr_loss2runoff,ecurr_loss2runoff &
-                                  ,cpoly%area(isi),cgrid%cbudget_nep(ipy),old_can_theiv    &
-                                  ,old_can_shv,old_can_co2,old_can_rhos,old_can_temp)
-               
+               call compute_budget(csite,cpoly%lsl(isi),cmet%pcpg,cmet%qpcpg,ipa           &
+                                  ,wcurr_loss2atm,ecurr_loss2atm,co2curr_loss2atm          &
+                                  ,wcurr_loss2drainage,ecurr_loss2drainage                 &
+                                  ,wcurr_loss2runoff,ecurr_loss2runoff,cpoly%area(isi)     &
+                                  ,cgrid%cbudget_nep(ipy),old_can_theiv,old_can_shv        &
+                                  ,old_can_co2,old_can_rhos,old_can_temp)
 
             end do patchloop
          end do siteloop
@@ -210,6 +215,11 @@ module rk4_driver
       end do polygonloop
 
       first_time = .false.
+
+
+      !----- De-allocate scratch variables. -----------------------------------------------!
+      deallocate (ed_ktrans)
+
       return
    end subroutine rk4_timestep
    !=======================================================================================!
@@ -432,13 +442,14 @@ module rk4_driver
       !    These variables are fast scale fluxes, and they may not be allocated, so just   !
       ! check this before copying.                                                         !
       !------------------------------------------------------------------------------------!
-      if(fast_diagnostics) then
+      if (fast_diagnostics) then
 
          csite%avg_vapor_vc(ipa)         =sngloff(initp%avg_vapor_vc      ,tiny_offset)
          csite%avg_dew_cg(ipa)           =sngloff(initp%avg_dew_cg        ,tiny_offset)
          csite%avg_vapor_gc(ipa)         =sngloff(initp%avg_vapor_gc      ,tiny_offset)
          csite%avg_wshed_vg(ipa)         =sngloff(initp%avg_wshed_vg      ,tiny_offset)
          csite%avg_intercepted(ipa)      =sngloff(initp%avg_intercepted   ,tiny_offset)
+         csite%avg_throughfall(ipa)      =sngloff(initp%avg_throughfall   ,tiny_offset)
          csite%avg_vapor_ac(ipa)         =sngloff(initp%avg_vapor_ac      ,tiny_offset)
          csite%avg_transp(ipa)           =sngloff(initp%avg_transp        ,tiny_offset)
          csite%avg_evap(ipa)             =sngloff(initp%avg_evap          ,tiny_offset)
@@ -448,6 +459,7 @@ module rk4_driver
          csite%avg_sensible_vc(ipa)      =sngloff(initp%avg_sensible_vc   ,tiny_offset)
          csite%avg_qwshed_vg(ipa)        =sngloff(initp%avg_qwshed_vg     ,tiny_offset)
          csite%avg_qintercepted(ipa)     =sngloff(initp%avg_qintercepted  ,tiny_offset)
+         csite%avg_qthroughfall(ipa)     =sngloff(initp%avg_qthroughfall  ,tiny_offset)
          csite%avg_sensible_gc(ipa)      =sngloff(initp%avg_sensible_gc   ,tiny_offset)
          csite%avg_sensible_ac(ipa)      =sngloff(initp%avg_sensible_ac   ,tiny_offset)
          csite%avg_carbon_ac(ipa)        =sngloff(initp%avg_carbon_ac     ,tiny_offset)

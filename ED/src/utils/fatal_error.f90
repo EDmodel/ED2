@@ -7,7 +7,6 @@ subroutine fatal_error(reason,subr,file)
 !------------------------------------------------------------------------------------------!
    use ed_node_coms   , only : nnodetot       & ! intent(in)
                              , mynum          ! ! intent(in)
-   use ed_misc_coms   , only : ied_init_mode  ! ! intent(in)
    use canopy_air_coms, only : icanturb       ! ! intent(in)
    implicit none
    character(len=*), intent(in) :: reason
@@ -37,22 +36,6 @@ subroutine fatal_error(reason,subr,file)
    !---------------------------------------------------------------------------------------!
    !     Remind the user of deprecated ED2IN choices...                                    !
    !---------------------------------------------------------------------------------------!
-   if (ied_init_mode == -1) then
-      write(unit=*,fmt='(a)') ' '
-      write(unit=*,fmt='(a)') '------------------------------------------------------------'
-      write(unit=*,fmt='(a)') '     I TOLD YOU NOT TO RUN WITH MIXED ED-1 AND ED-2         '
-      write(unit=*,fmt='(a)') ' RESTARTS.  It''s always like that, I warn, I try to        '
-      write(unit=*,fmt='(a)') ' convince it is a very bad idea to run me with deprecated   '
-      write(unit=*,fmt='(a)') ' options, for what, I ask myself...  In the end, they never '
-      write(unit=*,fmt='(a)') ' listen to me, they ignore my advices and keep insisting on '
-      write(unit=*,fmt='(a)') ' these bad choices.  Oh well, but at least this time        '
-      write(unit=*,fmt='(a)') ' I can say that I told you, I told you, I told you...  But  '
-      write(unit=*,fmt='(a)') ' hey, please, don''t take it personally, I''m still a nice  '
-      write(unit=*,fmt='(a)') ' model and I promise that I will try my best to give you    '
-      write(unit=*,fmt='(a)') ' good results should you try me with another IED_INIT_MODE  '
-      write(unit=*,fmt='(a)') ' (0, 1, 2, 3, 4, or 5).                                     '
-      write(unit=*,fmt='(a)') '------------------------------------------------------------'
-   end if
    if (icanturb == -1) then
       write(unit=*,fmt='(a)') ' '
       write(unit=*,fmt='(a)') '------------------------------------------------------------'

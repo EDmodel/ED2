@@ -360,9 +360,9 @@ subroutine sfcinit_nofile_user(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,so
                               ,soil_rough,sfcwater_nlev,stom_resist,ground_rsat            &
                               ,ground_rvap,ground_temp,ground_fliq,veg_water,veg_hcap      &
                               ,veg_energy,can_prss,can_theiv,can_theta,can_rvap,can_co2    &
-                              ,sensible,evap,transp,gpp,plresp,resphet,veg_ndvip,veg_ndvic &
-                              ,veg_ndvif,snow_mass,snow_depth,rvv,prsv,piv,vt2da,vt2db     &
-                              ,glat,glon,zot,flpw,rtgt)
+                              ,sensible_gc,sensible_vc,evap_gc,evap_vc,transp,gpp,plresp   &
+                              ,resphet,veg_ndvip,veg_ndvic,veg_ndvif,snow_mass,snow_depth  &
+                              ,rvv,prsv,piv,vt2da,vt2db,glat,glon,zot,flpw,rtgt)
 
    use mem_grid
    use mem_leaf
@@ -393,7 +393,8 @@ subroutine sfcinit_nofile_user(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,so
    real, dimension(    n2,n3,npat), intent(inout) :: veg_water,veg_energy,veg_hcap
    real, dimension(    n2,n3,npat), intent(inout) :: can_prss,can_theiv,can_theta
    real, dimension(    n2,n3,npat), intent(inout) :: can_rvap,can_co2
-   real, dimension(    n2,n3,npat), intent(inout) :: sensible,evap,transp
+   real, dimension(    n2,n3,npat), intent(inout) :: sensible_gc,sensible_vc
+   real, dimension(    n2,n3,npat), intent(inout) :: evap_gc,evap_vc,transp
    real, dimension(    n2,n3,npat), intent(inout) :: gpp,plresp,resphet
    real, dimension(    n2,n3,npat), intent(inout) :: veg_ndvip,veg_ndvic,veg_ndvif
    real, dimension(   n2,n3)      , intent(inout) :: rvv,prsv,piv,vt2da,vt2db,glat,glon,zot
@@ -446,12 +447,14 @@ subroutine sfcinit_nofile_user(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,so
    !                                                      * timefac_sst  - tsupercool)
 
    !         !----- Fluxes.  Initially they should be all zero. ---------------------------!
-   !         sensible (i,j,1) = 0.0
-   !         evap     (i,j,1) = 0.0
-   !         transp   (i,j,1) = 0.0
-   !         gpp      (i,j,1) = 0.0
-   !         plresp   (i,j,1) = 0.0
-   !         resphet  (i,j,1) = 0.0
+   !         sensible_gc (i,j,1) = 0.0
+   !         sensible_vc (i,j,1) = 0.0
+   !         evap_gc     (i,j,1) = 0.0
+   !         evap_vc     (i,j,1) = 0.0
+   !         transp      (i,j,1) = 0.0
+   !         gpp         (i,j,1) = 0.0
+   !         plresp      (i,j,1) = 0.0
+   !         resphet     (i,j,1) = 0.0
 
    !         !----- Above-ground biomass.  This should be always 0 for water patches. -----!
    !         veg_agb  (i,j,1) = 
@@ -485,12 +488,14 @@ subroutine sfcinit_nofile_user(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,so
    !            can_co2  (i,j,ipat) = 
 
    !            !----- Fluxes. ------------------------------------------------------------!
-   !            sensible (i,j,ipat) = 
-   !            evap     (i,j,ipat) = 
-   !            transp   (i,j,ipat) = 
-   !            gpp      (i,j,ipat) = 
-   !            plresp   (i,j,ipat) = 
-   !            resphet  (i,j,ipat) = 
+   !            sensible_gc (i,j,ipat) = 
+   !            sensible_vc (i,j,ipat) = 
+   !            evap_gc     (i,j,ipat) = 
+   !            evap_vc     (i,j,ipat) = 
+   !            transp      (i,j,ipat) = 
+   !            gpp         (i,j,ipat) = 
+   !            plresp      (i,j,ipat) = 
+   !            resphet     (i,j,ipat) = 
 
    !            do k = 1,mzg
 

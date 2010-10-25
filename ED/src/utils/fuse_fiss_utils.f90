@@ -2065,6 +2065,10 @@ module fuse_fiss_utils
                                       ( csite%avg_intercepted(donp)   * csite%area(donp)   &
                                       + csite%avg_intercepted(recp)   * csite%area(donp) )
 
+      csite%avg_throughfall(recp)     = newareai *                                         &
+                                      ( csite%avg_throughfall(donp)   * csite%area(donp)   &
+                                      + csite%avg_throughfall(recp)   * csite%area(donp) )
+
       csite%avg_vapor_ac(recp)        = newareai *                                         &
                                       ( csite%avg_vapor_ac(donp)      * csite%area(donp)   &
                                       + csite%avg_vapor_ac(recp)      * csite%area(recp) )  
@@ -2100,6 +2104,10 @@ module fuse_fiss_utils
       csite%avg_qintercepted(recp)    = newareai *                                         &
                                       ( csite%avg_qintercepted(donp)  * csite%area(donp)   &
                                       + csite%avg_qintercepted(recp)  * csite%area(donp) )
+
+      csite%avg_qthroughfall(recp)    = newareai *                                         &
+                                      ( csite%avg_qthroughfall(donp)  * csite%area(donp)   &
+                                      + csite%avg_qthroughfall(recp)  * csite%area(donp) )
 
       csite%avg_sensible_gc(recp)     = newareai *                                         &
                                       ( csite%avg_sensible_gc(donp)   * csite%area(donp)   &

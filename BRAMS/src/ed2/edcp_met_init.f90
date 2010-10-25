@@ -224,10 +224,11 @@ subroutine ed_init_coup_atm()
                      if (csite%soil_tempk(k,ipa) > t3ple) then
                         nsoil=csite%ntext_soil(k,ipa)
                         csite%soil_fracliq(k,ipa) = 1.0
-                        csite%soil_water(k,ipa)   = max(soil(nsoil)%soilcp                 &
+                        csite%soil_water(k,ipa)   = min(soil(nsoil)%slmsts                 &
+                                                   ,max(soil(nsoil)%soilcp                 &
                                                        , slmstr(k) * ( soil(nsoil)%slmsts  &
                                                                      - soil(nsoil)%soilwp) &
-                                                       + soil(nsoil)%soilwp)
+                                                       + soil(nsoil)%soilwp))
                         csite%soil_energy(k,ipa)  = soil(nsoil)%slcpd                      &
                                                   * csite%soil_tempk(k,ipa)                &
                                                   + csite%soil_water(k,ipa) * cliqvlme     &
@@ -235,10 +236,11 @@ subroutine ed_init_coup_atm()
                      else
                         nsoil=csite%ntext_soil(k,ipa)
                         csite%soil_fracliq(k,ipa) = 0.0
-                        csite%soil_water(k,ipa)   = max(soil(nsoil)%soilcp                 &
+                        csite%soil_water(k,ipa)   = min(soil(nsoil)%slmsts                 &
+                                                   ,max(soil(nsoil)%soilcp                 &
                                                        , slmstr(k) * ( soil(nsoil)%slmsts  &
                                                                      - soil(nsoil)%soilwp) &
-                                                       + soil(nsoil)%soilwp)
+                                                       + soil(nsoil)%soilwp))
                         csite%soil_energy(k,ipa)  = soil(nsoil)%slcpd                      &
                                                   * csite%soil_tempk(k,ipa)                &
                                                   + csite%soil_water(k,ipa)                &
@@ -273,6 +275,15 @@ subroutine ed_init_coup_atm()
                   !----- Compute patch-level LAI, vegetation height, and roughness. -------!
                   call update_patch_derived_props(csite,cpoly%lsl(isi),cpoly%met(isi)%prss &
                                                  ,ipa)
+
+                  nls   = csite%nlev_sfcwater(ipa)
+                  nlsw1 = max(nls,1)
+                  
+                  call ed_grndvap(nls,csite%ntext_soil(nzg,ipa),csite%soil_water(nzg,ipa)  &
+                                 ,csite%soil_energy(nzg,ipa)                               &
+                                 ,csite%sfcwater_energy(nlsw1,ipa),csite%can_prss(ipa)     &
+                                 ,csite%can_shv(ipa),csite%ground_shv(ipa)                 &
+                                 ,csite%surface_ssh(ipa),surface_temp,surface_fliq)
                end if
 
 
@@ -350,13 +361,14 @@ end subroutine ed_init_coup_atm
 !     This subroutine will initialise the upwelling radiation (surface emission) and       !
 ! albedo.                                                                                  !
 !------------------------------------------------------------------------------------------!
-subroutine ed_init_radiation
+subroutine ed_init_radiation()
 
-   use mem_radiate,only:radiate_g
-   use mem_leaf,only:leaf_g
-   use mem_grid,only:ngrids
-   use rconstants,only:stefan
-   use ed_state_vars,only:edgrid_g,edtype
+   use mem_radiate  , only : radiate_g ! ! intent(inout)
+   use mem_leaf     , only : leaf_g    ! ! intent(inout)
+   use mem_grid     , only : ngrids    ! ! intent(in)
+   use rconstants   , only : stefan    ! ! intent(in)
+   use ed_state_vars, only : edgrid_g  & ! intent(inout)
+                           , edtype    ! ! structure
 
    implicit none
    !----- Local variables. ----------------------------------------------------------------!
@@ -401,6 +413,8 @@ end subroutine ed_init_radiation
 
 !==========================================================================================!
 !==========================================================================================!
+!    This sub-routine copies the soil moisture information from LEAF-3 to ED.              !
+!------------------------------------------------------------------------------------------!
 subroutine leaf2ed_soil_moist_energy(cgrid,ifm)
    use ed_state_vars, only : edtype       & ! structure
                            , polygontype  & ! structure
@@ -421,26 +435,30 @@ subroutine leaf2ed_soil_moist_energy(cgrid,ifm)
    
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
-   type(edtype)      , target     :: cgrid  ! Alias for current ED grid
-   integer           , intent(in) :: ifm
+   type(edtype)         , target      :: cgrid           ! Alias for current ED grid
+   integer              , intent(in)  :: ifm             ! Current grid
    !----- Local variables -----------------------------------------------------------------!
-   type(polygontype) , pointer    :: cpoly           ! Alias for current polygon
-   type(sitetype)    , pointer    :: csite           ! Alias for current site
-   type(patchtype)   , pointer    :: cpatch          ! Alias for current patch
-   integer                        :: ntext           ! Alias for ED-2 soil texture class
-   integer, dimension(nzg)        :: lsoil_text      ! LEAF-3 soil texture class
-   integer                        :: ipy,isi,ipa,ico ! Counters for all structures
-   integer                        :: k               ! Counter for soil layers
-   integer                        :: ix,iy           ! Counter for lon/lat
-   integer                        :: ksn, ksnw1      ! Alias for # of pond/snow layers
-   real, dimension(nzg)           :: lsoil_temp      ! LEAF-3 soil temperature
-   real, dimension(nzg)           :: lsoil_fliq      ! LEAF-3 soil liquid fraction
-   real                           :: surface_temp    ! Scratch variable for ed_grndvap
-   real                           :: surface_fliq    ! Scratch variable for ed_grndvap
-   real                           :: fice            ! soil ice fraction
+   type(polygontype)    , pointer     :: cpoly           ! Alias for current polygon
+   type(sitetype)       , pointer     :: csite           ! Alias for current site
+   type(patchtype)      , pointer     :: cpatch          ! Alias for current patch
+   integer                            :: ntext           ! Alias for ED-2 soil text. class
+   integer, dimension(:), allocatable :: lsoil_text      ! LEAF-3 soil texture class
+   integer                            :: ipy,isi,ipa,ico ! Counters for all structures
+   integer                            :: k               ! Counter for soil layers
+   integer                            :: ix,iy           ! Counter for lon/lat
+   integer                            :: ksn, ksnw1      ! Alias for # of pond/snow layers
+   real   , dimension(:), allocatable :: lsoil_temp      ! LEAF-3 soil temperature
+   real   , dimension(:), allocatable :: lsoil_fliq      ! LEAF-3 soil liquid fraction
+   real                               :: surface_temp    ! Scratch variable for ed_grndvap
+   real                               :: surface_fliq    ! Scratch variable for ed_grndvap
+   real                               :: fice            ! soil ice fraction
    !---------------------------------------------------------------------------------------!
 
 
+   !----- Allocate the scratch arrays. ----------------------------------------------------!
+   allocate (lsoil_text(nzg))
+   allocate (lsoil_temp(nzg))
+   allocate (lsoil_fliq(nzg))
 
    !----- Loop over land points -----------------------------------------------------------!
    polyloop: do ipy=1,cgrid%npolygons
@@ -448,7 +466,7 @@ subroutine leaf2ed_soil_moist_energy(cgrid,ifm)
       iy = cgrid%ilat(ipy)
       
       !------------------------------------------------------------------------------------!
-      !    Determining initial soil temperature and liquid fraction.  The reason we find   !
+      !    Determine initial soil temperature and liquid fraction.  The reason we find     !
       ! this for LEAF-3 instead of simply copying the soil energy and water to ED-2 is     !
       ! that depending on the way the user set up his or her RAMSIN, soil types may not    !
       ! match and this could put ED-2.1 in an inconsistent initial state.                  !
@@ -522,6 +540,11 @@ subroutine leaf2ed_soil_moist_energy(cgrid,ifm)
       end do siteloop
    end do polyloop
   
+   !----- Allocate the scratch arrays. ----------------------------------------------------!
+   deallocate (lsoil_text)
+   deallocate (lsoil_temp)
+   deallocate (lsoil_fliq)
+
    return
 end subroutine leaf2ed_soil_moist_energy
 !==========================================================================================!

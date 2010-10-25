@@ -226,26 +226,27 @@ subroutine cloud_sketch(m1,m2,m3,ia,iz,ja,jz,deltat,flpw,rtgt,kpbl,tke,upmf,rtsr
 
    use mem_grid, only: zt,zm
    implicit none
-
-   integer                  , intent(in)  :: m1,m2,m3    ! Matrix dimensions
-   integer                  , intent(in)  :: ia,iz,ja,jz ! Node boundaries
-   real                     , intent(in)  :: deltat      ! Time step
-   real, dimension   (m2,m3), intent(in)  :: flpw        ! Lowest point above ground
-   real, dimension   (m2,m3), intent(in)  :: rtgt        ! Correction
-   integer, dimension(m2,m3), intent(in)  :: kpbl        ! PBL top
-   real, dimension(m1,m2,m3), intent(in)  :: tke         ! TKE
-   real, dimension(m1,m2,m3), intent(in)  :: rtsrc       ! Moistening rate
-   real, dimension   (m2,m3), intent(in)  :: conprr      ! Precipitation rate
-   real, dimension   (m2,m3), intent(in)  :: upmf        ! Updraft reference 
-   real, dimension(m1,m2,m3), intent(out) :: cupcond     ! My Frankeinstein cloud
-   
-   integer :: i,j,k,lpw,kcldbase,kzdown
-   real :: dnmf
-   
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                     , intent(in)  :: m1,m2,m3    ! Matrix dimensions
+   integer                     , intent(in)  :: ia,iz,ja,jz ! Node boundaries
+   real                        , intent(in)  :: deltat      ! Time step
+   real   , dimension   (m2,m3), intent(in)  :: flpw        ! Lowest point above ground
+   real   , dimension   (m2,m3), intent(in)  :: rtgt        ! Correction
+   integer, dimension   (m2,m3), intent(in)  :: kpbl        ! PBL top
+   real   , dimension(m1,m2,m3), intent(in)  :: tke         ! TKE
+   real   , dimension(m1,m2,m3), intent(in)  :: rtsrc       ! Moistening rate
+   real   , dimension   (m2,m3), intent(in)  :: conprr      ! Precipitation rate
+   real   , dimension   (m2,m3), intent(in)  :: upmf        ! Updraft reference 
+   real   , dimension(m1,m2,m3), intent(out) :: cupcond     ! My Frankeinstein cloud
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                   :: i,j,k,lpw,kcldbase,kzdown
+   real                                      :: dnmf
+   !----- Local constants. ----------------------------------------------------------------!
    real, parameter :: zcldbase=1600. ! Fixed height for cloud base
    real, parameter :: zdown=3000.    ! Fixed height for downdraft origin
    real, parameter :: epsilon= 0.3   ! Just an arbitrary epsilon, dnmf/upmf
    real, parameter :: dnmfdef= 0.1   ! Just an arbitrary defaul dnmf
+   !---------------------------------------------------------------------------------------!
 
    call azero(m1*m2*m3,cupcond)
 

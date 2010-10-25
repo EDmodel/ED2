@@ -6,15 +6,15 @@
 !------------------------------------------------------------------------------------------!
 subroutine ed_timestep()
   
-   use grid_dims   , only : maxgrds      ! ! intent(in)
-   use mem_grid    , only : ngrid        & ! intent(in)
-                          , time         & ! intent(in)
-                          , dtlt         ! ! intent
-   use ed_node_coms, only : mynum        ! ! intent(in)
-   use ed_misc_coms, only : dtlsm        & ! intent(in)
-                          , current_time ! ! intent(inout)
-   use mem_edcp    , only : edtime1      & ! intent(out)
-                          , edtime2      ! ! intent(out)
+   use grid_dims    , only : maxgrds             ! ! intent(in)
+   use mem_grid     , only : ngrid               & ! intent(in)
+                           , time                & ! intent(in)
+                           , dtlt                ! ! intent
+   use ed_node_coms , only : mynum               ! ! intent(in)
+   use ed_misc_coms , only : dtlsm               & ! intent(in)
+                           , current_time        ! ! intent(inout)
+   use mem_edcp     , only : edtime1             & ! intent(out)
+                           , edtime2             ! ! intent(out)
    implicit none
    !----- Local variables. ----------------------------------------------------------------!
    real(kind=8)                            :: thistime
@@ -33,9 +33,7 @@ subroutine ed_timestep()
    !----- External function. --------------------------------------------------------------!
    real                       , external   :: walltime
    !---------------------------------------------------------------------------------------!
-
-
-  
+   
    !---------------------------------------------------------------------------------------!
    !     Now the solve the water fluxes.  This is called every time step.                  !
    !---------------------------------------------------------------------------------------!
@@ -87,7 +85,7 @@ subroutine ed_timestep()
       end if
 
 
-      
+
       !------------------------------------------------------------------------------------!
       !      If this is the first time the routine is called, then the ed_fluxp_g arrays   !
       ! (the flux arrays from previous time) are zero.  So just this once, copy the future !
@@ -101,8 +99,8 @@ subroutine ed_timestep()
   
 
    !---------------------------------------------------------------------------------------!
-   !      Update the leaf_g surface flux arrays of tstar,rstar and ustar.  This gets       !
-   ! called every step because it is a time interpolation.                                 !
+   !      Update the leaf_g surface flux arrays of tstar,rstar and ustar.  This is called  !
+   ! every step because it is a time interpolation.                                        !
    !---------------------------------------------------------------------------------------!
    call transfer_ed2leaf(ngrid,time)
 
@@ -156,8 +154,12 @@ subroutine ed_coup_model(ifm)
    use ed_state_vars, only : edgrid_g           & ! intent(inout)
                            , edtype             & ! variable type
                            , patchtype          & ! variable type
-                           , filltab_alltypes   ! ! subroutine
+                           , filltab_alltypes   & ! subroutine
+                           , filltables         ! ! intent(in)
    use rk4_driver   , only : rk4_timestep       ! ! subroutine
+   use rk4_coms     , only : record_err         & ! intent(out)
+                           , print_detailed     & ! intent(out)
+                           , print_thbnd        ! ! intent(out)
    use ed_node_coms , only : mynum              & ! intent(in)
                            , nnodetot           ! ! intent(in)
    use mem_polygons , only : maxpatch           & ! intent(in)
@@ -192,12 +194,17 @@ subroutine ed_coup_model(ifm)
 
 
    !---------------------------------------------------------------------------------------!
-   !     Saving some of the output control variables. The test can be done only once.      !
+   !     Save some of the output control variables, and settings that should never happen  !
+   ! in a coupled model.  The test can be done only once.                                  !
    !---------------------------------------------------------------------------------------!
    if (first_time) then
       writing_dail      = idoutput > 0
       writing_mont      = imoutput > 0
       writing_year      = iyoutput > 0
+      filltables        = .false.
+      record_err        = .false.
+      print_detailed    = .false.
+      print_thbnd       = .false.
       calledgrid(:)     = .false.
       first_time        = .false.
    end if
@@ -345,8 +352,9 @@ subroutine ed_coup_model(ifm)
          ! vectors must be updated, and the global definitions of the total numbers must   !
          ! be exported to every node.                                                      !
          !---------------------------------------------------------------------------------!
-         if (new_month .and. (maxpatch >= 0 .or. maxcohort >= 0)) then
-            call filltab_alltypes
+         if (new_month) then
+            !----- Flag to run the subroutine filltab_alltypes. ---------------------------!
+            if (maxcohort >= 0 .or. maxpatch >= 0) filltables=.true.
 
             !---- Also, we must re-allocate the cohort-level integration buffer. ----------!
             call initialize_rk4patches(.false.)
@@ -359,6 +367,12 @@ subroutine ed_coup_model(ifm)
          end do
       end if
    
+
+      if (analysis_time .and. new_month .and. new_day .and. current_time%month == 6) then
+         do jfm = 1,ngrids
+            call update_ed_yearly_vars(edgrid_g(jfm))
+         end do
+      end if
 
       !----- Update Lateral hydrology. ----------------------------------------------------!
       call calcHydroSubsurface()

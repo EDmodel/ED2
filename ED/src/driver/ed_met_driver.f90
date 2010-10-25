@@ -304,7 +304,8 @@ subroutine read_met_drivers_init
    use mem_polygons      , only : grid_type      ! ! intent(in)
    use ed_misc_coms      , only : current_time   & ! intent(in)
                                 , iyeara         & ! intent(in)
-                                , iyearz         ! ! intent(in)
+                                , iyearz         & ! intent(in)
+                                , imonthz        ! ! intent(in)
    use grid_coms         , only : ngrids         ! ! intent(in)
    use consts_coms       , only : day_sec        ! ! intent(in)
    implicit none
@@ -348,9 +349,17 @@ subroutine read_met_drivers_init
    if (first_time) then
       first_time = .false.
 
-      !------ Defining the number of years we have meteorological information available. --!
+      !------------------------------------------------------------------------------------!
+      !     Define the number of years we have meteorological information available.  In   !
+      ! case the simulation is supposed to end in December, we must add an extra year, be- !
+      ! cause the meteorological forcing may need to access the following month.           !
+      !------------------------------------------------------------------------------------!
       ncyc   = metcycf - metcyc1 + 1
-      nyears = iyearz  - iyeara  + 1
+      if (imonthz == 12) then
+         nyears = iyearz  - iyeara  + 2
+      else
+         nyears = iyearz  - iyeara  + 1
+      end if
 
       !------ Allocating the sequence of years. -------------------------------------------!
       allocate(metyears(nyears))      
