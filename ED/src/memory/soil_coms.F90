@@ -61,7 +61,7 @@ module soil_coms
    real    :: snow_rough          ! snowcover roughness height                   [       m]
    real    :: dewmax              ! Maximum dew flux rate (deprecated)           [ kg/m2/s]
    real    :: water_stab_thresh   ! stability threshold for RK4 integrator       [   kg/m2]
-   real    :: min_sfcwater_mass   ! Minimum mass allowed in temporary layers     [   kg/m2]
+   real    :: tiny_sfcwater_mass  ! Minimum mass allowed in temporary layers     [   kg/m2]
    real    :: snowmin             ! Minimum snow mass needed to create a new lyr [   kg/m2]
    integer :: infiltration_method ! Infiltration scheme (used in rk4_derivs)     [     0|1]
    !---------------------------------------------------------------------------------------!

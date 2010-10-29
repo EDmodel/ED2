@@ -261,30 +261,30 @@ end subroutine avg_ed_daily_output_pool
 !------------------------------------------------------------------------------------------!
 subroutine spatial_averages
 
-   use ed_state_vars         , only : edtype            & ! structure
-                                    , polygontype       & ! structure
-                                    , sitetype          & ! structure
-                                    , patchtype         & ! structure
-                                    , edgrid_g          ! ! structure
-   use grid_coms             , only : ngrids            & ! intent(in)
-                                    , nzg               & ! intent(in)
-                                    , nzs               ! ! intent(in)
-   use consts_coms           , only : alvl              & ! intent(in)
-                                    , cpi               & ! intent(in)
-                                    , wdns              & ! intent(in)
-                                    , p00i              & ! intent(in)
-                                    , rocp              & ! intent(in)
-                                    , umol_2_kgC        & ! intent(in)
-                                    , day_sec           ! ! intent(in)
-   use ed_misc_coms          , only : frqsum            ! ! intent(in)
-   use therm_lib             , only : qwtk              & ! subroutine
-                                    , qtk               & ! subroutine
-                                    , idealdenssh       ! ! function
-   use soil_coms             , only : min_sfcwater_mass & ! intent(in)
-                                    , soil              & ! intent(in)
-                                    , dslz              ! ! intent(in)
-   use c34constants          , only : n_stoma_atts
-   use ed_max_dims           , only : n_pft
+   use ed_state_vars         , only : edtype             & ! structure
+                                    , polygontype        & ! structure
+                                    , sitetype           & ! structure
+                                    , patchtype          & ! structure
+                                    , edgrid_g           ! ! structure
+   use grid_coms             , only : ngrids             & ! intent(in)
+                                    , nzg                & ! intent(in)
+                                    , nzs                ! ! intent(in)
+   use consts_coms           , only : alvl               & ! intent(in)
+                                    , cpi                & ! intent(in)
+                                    , wdns               & ! intent(in)
+                                    , p00i               & ! intent(in)
+                                    , rocp               & ! intent(in)
+                                    , umol_2_kgC         & ! intent(in)
+                                    , day_sec            ! ! intent(in)
+   use ed_misc_coms          , only : frqsum             ! ! intent(in)
+   use therm_lib             , only : qwtk               & ! subroutine
+                                    , qtk                & ! subroutine
+                                    , idealdenssh        ! ! function
+   use soil_coms             , only : tiny_sfcwater_mass & ! intent(in)
+                                    , soil               & ! intent(in)
+                                    , dslz               ! ! intent(in)
+   use c34constants          , only : n_stoma_atts       ! ! intent(in)
+   use ed_max_dims           , only : n_pft              ! ! intent(in)
    implicit none
    !----- Local variables -----------------------------------------------------------------!
    type(edtype)         , pointer :: cgrid
@@ -521,7 +521,7 @@ subroutine spatial_averages
             ! the mean temperature and liquid fraction.  Otherwise, make them with zero/   !
             ! default values.                                                              !
             !------------------------------------------------------------------------------!
-            if (cpoly%avg_sfcw_mass(isi) > min_sfcwater_mass) then
+            if (cpoly%avg_sfcw_mass(isi) > tiny_sfcwater_mass) then
                cpoly%avg_sfcw_energy(isi) = cpoly%avg_sfcw_energy(isi)                     &
                                           / cpoly%avg_sfcw_mass(isi)
                call qtk(cpoly%avg_sfcw_energy(isi),cpoly%avg_sfcw_tempk(isi)               &
@@ -945,7 +945,7 @@ subroutine spatial_averages
                                          * cpoly%avg_sfcw_mass * cpoly%area) * poly_area_i
 
          !----- Scale energy and find temp and fracliq if there is enogh mass -------------!
-         if (cgrid%avg_sfcw_mass(ipy) > min_sfcwater_mass) then
+         if (cgrid%avg_sfcw_mass(ipy) > tiny_sfcwater_mass) then
             cgrid%avg_sfcw_energy(ipy) = cgrid%avg_sfcw_energy(ipy)                        &
                                        / cgrid%avg_sfcw_mass(ipy)
             call qtk(cgrid%avg_sfcw_energy(ipy),cgrid%avg_sfcw_tempk(ipy)                  &

@@ -13,7 +13,7 @@ subroutine odeint(h1,csite,ipa,nsteps)
    use rk4_coms       , only : integration_vars       & ! structure
                              , integration_buff       & ! intent(inout)
                              , rk4site                & ! intent(in)
-                             , rk4min_sfcwater_mass   & ! intent(in)
+                             , rk4tiny_sfcw_mass      & ! intent(in)
                              , maxstp                 & ! intent(in)
                              , tbeg                   & ! intent(in)
                              , tend                   & ! intent(in)
@@ -75,7 +75,7 @@ subroutine odeint(h1,csite,ipa,nsteps)
    !    If top snow layer is too thin for computational stability, have it evolve in       !
    ! thermal equilibrium with top soil layer.                                              !
    !---------------------------------------------------------------------------------------!
-   call redistribute_snow(nzg,nzs,integration_buff%initp, csite,ipa)
+   call adjust_sfcw_properties(nzg,nzs,integration_buff%initp, csite,ipa)
    call update_diagnostic_vars(integration_buff%initp,csite,ipa)
 
 
@@ -146,7 +146,7 @@ subroutine odeint(h1,csite,ipa,nsteps)
                integration_buff%y%sfcwater_energy(ksn) =                                   &
                                      integration_buff%y%sfcwater_energy(ksn) - qwfree
 
-               call redistribute_snow(nzg,nzs,integration_buff%y,csite,ipa)
+               call adjust_sfcw_properties(nzg,nzs,integration_buff%y,csite,ipa)
                call update_diagnostic_vars(integration_buff%y,csite,ipa)
 
                !----- Compute runoff for output -------------------------------------------!
@@ -454,21 +454,21 @@ end subroutine inc_rk4_patch
 ! later used to define the relative error.                                                 !
 !------------------------------------------------------------------------------------------!
 subroutine get_yscal(y,dy,htry,yscal,cpatch)
-   use ed_state_vars        , only : patchtype            ! ! structure
-   use rk4_coms             , only : rk4patchtype         & ! structure
-                                   , rk4site              & ! intent(in)
-                                   , tiny_offset          & ! intent(in)
-                                   , huge_offset          & ! intent(in)
-                                   , rk4water_stab_thresh & ! intent(in)
-                                   , rk4min_sfcwater_mass & ! intent(in)
-                                   , rk4dry_veg_lwater    & ! intent(in)
-                                   , checkbudget          ! ! intent(in)
-   use grid_coms            , only : nzg                  & ! intent(in)
-                                   , nzs                  ! ! intent(in)
-   use consts_coms          , only : cliq8                & ! intent(in)
-                                   , qliqt38              & ! intent(in)
-                                   , wdnsi8               ! ! intent(in)
-   use soil_coms            , only : isoilbc              ! ! intent(in)
+   use ed_state_vars        , only : patchtype             ! ! structure
+   use rk4_coms             , only : rk4patchtype          & ! structure
+                                   , rk4site               & ! intent(in)
+                                   , tiny_offset           & ! intent(in)
+                                   , huge_offset           & ! intent(in)
+                                   , rk4water_stab_thresh  & ! intent(in)
+                                   , rk4tiny_sfcw_mass     & ! intent(in)
+                                   , rk4dry_veg_lwater     & ! intent(in)
+                                   , checkbudget           ! ! intent(in)
+   use grid_coms            , only : nzg                   & ! intent(in)
+                                   , nzs                   ! ! intent(in)
+   use consts_coms          , only : cliq8                 & ! intent(in)
+                                   , qliqt38               & ! intent(in)
+                                   , wdnsi8                ! ! intent(in)
+   use soil_coms            , only : isoilbc               ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(rk4patchtype), target     :: y                     ! Struct. with the guesses
@@ -485,18 +485,25 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
    integer                        :: ico                   ! Current cohort ID
    !---------------------------------------------------------------------------------------!
 
-   yscal%can_lntheta  = abs(y%can_lntheta ) + abs(dy%can_lntheta  * htry)
-   yscal%can_shv      = abs(y%can_shv     ) + abs(dy%can_shv      * htry)
-   yscal%can_co2      = abs(y%can_co2     ) + abs(dy%can_co2      * htry)
+   yscal%can_lntheta =  abs(dy%can_lntheta  * htry)
+   yscal%can_shv     =  abs(dy%can_shv      * htry)
+   yscal%can_co2     =  abs(dy%can_co2      * htry)
 
+   !---------------------------------------------------------------------------------------!
+   !     We don't solve pressure prognostically, so the scale cannot be computed based on  !
+   ! the derivative.  Also, pressure is a variable with a large absolute variable and tiny !
+   ! variation, so the scale is given by the scale of the variability...                   !
+   !---------------------------------------------------------------------------------------!
+   yscal%can_prss    = abs(rk4site%atm_prss - y%can_prss)
+   !---------------------------------------------------------------------------------------!
 
    do k=1,rk4site%lsl-1
-      yscal%soil_water(k)  = huge_offset
+      yscal%soil_water (k) = huge_offset
       yscal%soil_energy(k) = huge_offset
    end do
    do k=rk4site%lsl,nzg
-      yscal%soil_water(k)  = abs(y%soil_water(k))  + abs(dy%soil_water(k)*htry)
-      yscal%soil_energy(k) = abs(y%soil_energy(k)) + abs(dy%soil_energy(k)*htry)
+      yscal%soil_water (k) = abs(dy%soil_water(k)*htry)
+      yscal%soil_energy(k) = abs(dy%soil_energy(k)*htry)
    end do
 
    tot_sfcw_mass = 0.d0
@@ -548,7 +555,7 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
    if (abs(y%virtual_water) > 1.d-2*rk4water_stab_thresh) then
       yscal%virtual_water = abs(y%virtual_water) + abs(dy%virtual_water*htry)
       yscal%virtual_heat  = abs(y%virtual_heat) + abs(dy%virtual_heat*htry)
-   elseif (abs(y%virtual_water) > rk4min_sfcwater_mass) then
+   elseif (abs(y%virtual_water) > rk4tiny_sfcw_mass) then
       yscal%virtual_water = 1.d-2*rk4water_stab_thresh
       yscal%virtual_heat  = (yscal%virtual_water / abs(y%virtual_water))                   &
                           * (abs(y%virtual_heat) + abs(dy%virtual_heat*htry))
@@ -570,8 +577,8 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
          yscal%veg_energy(ico) = huge_offset
       elseif (y%veg_water(ico) > rk4dry_veg_lwater*y%tai(ico)) then
          yscal%solvable(ico)   = .true.
-         yscal%veg_water(ico)  = abs(y%veg_water(ico))  + abs(dy%veg_water(ico)  * htry)
-         yscal%veg_energy(ico) = abs(y%veg_energy(ico)) + abs(dy%veg_energy(ico) * htry)
+         yscal%veg_water(ico)  = abs(dy%veg_water(ico)  * htry)
+         yscal%veg_energy(ico) = abs(dy%veg_energy(ico) * htry)
       else
          yscal%solvable(ico)   = .true.
          yscal%veg_water(ico)  = rk4dry_veg_lwater*y%tai(ico)
@@ -597,8 +604,7 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
           abs(dy%co2budget_loss2atm) < tiny_offset) then
          yscal%co2budget_loss2atm = 1.d-1
       else 
-         yscal%co2budget_loss2atm = abs(y%co2budget_loss2atm)                              &
-                                  + abs(dy%co2budget_loss2atm*htry)
+         yscal%co2budget_loss2atm = abs(dy%co2budget_loss2atm*htry)
          yscal%co2budget_loss2atm = max(yscal%co2budget_loss2atm,1.d-1)
       end if
 
@@ -606,8 +612,7 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
           abs(dy%ebudget_loss2atm) < tiny_offset) then
          yscal%ebudget_loss2atm = 1.d0
       else 
-         yscal%ebudget_loss2atm = abs(y%ebudget_loss2atm)                                  &
-                                + abs(dy%ebudget_loss2atm*htry)
+         yscal%ebudget_loss2atm = abs(dy%ebudget_loss2atm*htry)
          yscal%ebudget_loss2atm = max(yscal%ebudget_loss2atm,1.d0)
       end if
 
@@ -615,8 +620,7 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
           abs(dy%wbudget_loss2atm) < tiny_offset) then
          yscal%wbudget_loss2atm      = 1.d-6
       else 
-         yscal%wbudget_loss2atm = abs(y%wbudget_loss2atm)                                  &
-                                + abs(dy%wbudget_loss2atm*htry)
+         yscal%wbudget_loss2atm = abs(dy%wbudget_loss2atm*htry)
          yscal%wbudget_loss2atm = max(yscal%wbudget_loss2atm,1.d-6)
       end if
 
@@ -624,24 +628,21 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
           abs(dy%ebudget_storage) < tiny_offset) then
          yscal%ebudget_storage = huge_offset
       else 
-         yscal%ebudget_storage = abs(y%ebudget_storage)                                    &
-                               + abs(dy%ebudget_storage*htry)
+         yscal%ebudget_storage = abs(dy%ebudget_storage*htry)
       end if
 
       if (abs(y%co2budget_storage)  < tiny_offset .and.                                    &
           abs(dy%co2budget_storage) < tiny_offset) then
          yscal%co2budget_storage = huge_offset
       else 
-         yscal%co2budget_storage = abs(y%co2budget_storage)                                &
-                                 + abs(dy%co2budget_storage*htry)
+         yscal%co2budget_storage = abs(dy%co2budget_storage*htry)
       end if
 
       if (abs(y%wbudget_storage)  < tiny_offset .and.                                      &
           abs(dy%wbudget_storage) < tiny_offset) then
          yscal%wbudget_storage      = huge_offset
       else 
-         yscal%wbudget_storage = abs(y%wbudget_storage)                                    &
-                               + abs(dy%wbudget_storage*htry)
+         yscal%wbudget_storage = abs(dy%wbudget_storage*htry)
       end if
 
       !------------------------------------------------------------------------------------!
@@ -652,15 +653,13 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
                              abs(dy%ebudget_loss2drainage) < tiny_offset)      ) then
          yscal%ebudget_loss2drainage = huge_offset
       else 
-         yscal%ebudget_loss2drainage = abs(y%ebudget_loss2drainage)                        &
-                                     + abs(dy%ebudget_loss2drainage*htry)
+         yscal%ebudget_loss2drainage = abs(dy%ebudget_loss2drainage*htry)
       end if
       if (isoilbc == 0 .or. (abs(y%wbudget_loss2drainage)  < tiny_offset .and.             &
                              abs(dy%wbudget_loss2drainage) < tiny_offset)      ) then
          yscal%wbudget_loss2drainage = huge_offset
       else 
-         yscal%wbudget_loss2drainage = abs(y%wbudget_loss2drainage)                        &
-                                     + abs(dy%wbudget_loss2drainage*htry)
+         yscal%wbudget_loss2drainage = abs(dy%wbudget_loss2drainage*htry)
       end if
 
    else 
@@ -718,11 +717,19 @@ subroutine get_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
    real(kind=8)                     :: err              ! Scratch error variable
    real(kind=8)                     :: errh2oMAX        ! Scratch error variable
    real(kind=8)                     :: erreneMAX        ! Scratch error variable
+   real(kind=8)                     :: scal_err_prss    ! Scaling factor for CAS pressure
    integer                          :: k                ! Counter
+   !----- Local constants. ----------------------------------------------------------------!
+   real(kind=8)      , parameter    :: rk4eps_prss = 1.d-5
    !---------------------------------------------------------------------------------------!
 
-   !----- Initialize error ----------------------------------------------------------------!
+   !----- Initialiee the error with an optimistic number... -------------------------------!
    errmax = 0.d0
+
+
+   !----- Compute the scaling factor, which should never be less than 1. ------------------!
+   scal_err_prss = max(1.d0, rk4eps / rk4eps_prss)
+
 
    !---------------------------------------------------------------------------------------!
    !    We know check each variable error, and keep track of the worst guess, which will   !
@@ -746,6 +753,14 @@ subroutine get_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
    err    = abs(yerr%can_co2/yscal%can_co2)
    errmax = max(errmax,err)
    if(record_err .and. err > rk4eps) integ_err(6,1) = integ_err(6,1) + 1_8 
+
+   !---------------------------------------------------------------------------------------!
+   !      Pressure is only a semi-prognostic variable, which means that we don't really    !
+   ! have a good error estimate, but we try to get a sense of the error.                   !
+   !---------------------------------------------------------------------------------------!
+   err    = abs(yerr%can_prss/yscal%can_prss)
+   errmax = max(errmax,err)
+   if(record_err .and. err > rk4eps) integ_err(5,1) = integ_err(5,1) + 1_8 
    !---------------------------------------------------------------------------------------!
 
 

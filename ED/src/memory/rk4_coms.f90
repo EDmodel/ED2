@@ -44,6 +44,7 @@ module rk4_coms
       real(kind=8), dimension(:), pointer :: soil_tempk   ! Specific humidity     [      K]
       real(kind=8), dimension(:), pointer :: soil_fracliq ! Liquid fraction       [   ----]
       real(kind=8), dimension(:), pointer :: soil_water   ! Water content         [  m³/m³]
+      real(kind=8), dimension(:), pointer :: soil_restz   ! Resistance term       [    m/s]
       real(kind=8), dimension(:), pointer :: psiplusz     ! Water potential       [      m]
       real(kind=8), dimension(:), pointer :: soilair99    ! 99% of field capacity [  m³/m³]
       real(kind=8), dimension(:), pointer :: soilair01    !  1% above wilting pt. [  m³/m³]
@@ -58,6 +59,7 @@ module rk4_coms
       real(kind=8), dimension(:), pointer :: sfcwater_energy  ! Internal energy   [   J/m²]
       real(kind=8), dimension(:), pointer :: sfcwater_tempk   ! Temperature       [      K]
       real(kind=8), dimension(:), pointer :: sfcwater_fracliq ! Liquid fraction   [   ----]
+      real(kind=8), dimension(:), pointer :: sfcwater_restz   ! Resistance term   [   ----]
 
       !----- Virtual layer variables. -----------------------------------------------------!
       integer                             :: virtual_flag     ! Status flag       [  -----]
@@ -470,11 +472,12 @@ module rk4_coms
 
 
    !----- The following variables are double precision version of some bounds. ------------!
-   real(kind=8) :: rk4min_sfcwater_mass ! Min. non-negligible snow/pond mass    [    kg/m²]
-   real(kind=8) :: rk4water_stab_thresh ! Min. mass for a layer to be stable    [    kg/m²]
-   real(kind=8) :: rk4snowmin           ! Min. snow mass required for a new lyr [    kg/m²]
-   real(kind=8) :: rk4dry_veg_lwater    ! Min. non-negligible leaf water mass   [kg/m²leaf]
-   real(kind=8) :: rk4fullveg_lwater    ! Max. leaf water mass possible         [kg/m²leaf]
+   real(kind=8) :: rk4tiny_sfcw_mass     ! Min. non-negligible snow/pond mass   [    kg/m²]
+   real(kind=8) :: rk4water_stab_thresh  ! Min. mass for a layer to be stable   [    kg/m²]
+   real(kind=8) :: rk4snowmin            ! Min. snow mass required for new lyr  [    kg/m²]
+   real(kind=8) :: rk4dry_veg_lwater     ! Min. non-negligible leaf water mass  [kg/m²leaf]
+   real(kind=8) :: rk4fullveg_lwater     ! Max. leaf water mass possible        [kg/m²leaf]
+   real(kind=8) :: rk4tiny_sfcw_depth    ! Minimum snow/pond depth              [        m]
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
@@ -1262,31 +1265,33 @@ module rk4_coms
 
    !=======================================================================================!
    !=======================================================================================!
-   subroutine find_derived_thbounds(lsl,mzg,can_rhos,can_temp,can_shv,can_rvap,can_prss    &
-                                   ,can_depth,nsoil)
-      use grid_coms   , only : nzg          ! ! intent(in)
-      use consts_coms , only : p008         & ! intent(in)
-                             , rocp8        & ! intent(in)
-                             , cp8          & ! intent(in)
-                             , rdry8        & ! intent(in)
-                             , epim18       & ! intent(in)
-                             , ep8          & ! intent(in)
-                             , mmdryi8      & ! intent(in)
-                             , day_sec      & ! intent(in)
-                             , hr_sec       & ! intent(in)
-                             , min_sec      ! ! intent(in)
-      use therm_lib8  , only : thetaeiv8    & ! function
-                             , thetaeivs8   & ! function
-                             , idealdenssh8 & ! function
-                             , eslif8       & ! function
-                             , rslif8       ! ! function
-      use soil_coms   , only : soil8        ! ! intent(in)
-      use ed_misc_coms, only : current_time ! ! intent(in)
+   subroutine find_derived_thbounds(lsl,mzg,can_rhos,can_theta,can_temp,can_shv,can_rvap   &
+                                   ,can_prss,can_depth,nsoil)
+      use grid_coms   , only : nzg           ! ! intent(in)
+      use consts_coms , only : p008          & ! intent(in)
+                             , rocp8         & ! intent(in)
+                             , cp8           & ! intent(in)
+                             , rdry8         & ! intent(in)
+                             , epim18        & ! intent(in)
+                             , ep8           & ! intent(in)
+                             , mmdryi8       & ! intent(in)
+                             , day_sec       & ! intent(in)
+                             , hr_sec        & ! intent(in)
+                             , min_sec       ! ! intent(in)
+      use therm_lib8  , only : thetaeiv8     & ! function
+                             , thetaeivs8    & ! function
+                             , idealdenssh8  & ! function
+                             , reducedpress8 & ! function
+                             , eslif8        & ! function
+                             , rslif8        ! ! function
+      use soil_coms   , only : soil8         ! ! intent(in)
+      use ed_misc_coms, only : current_time  ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       integer                     , intent(in) :: lsl
       integer                     , intent(in) :: mzg
       real(kind=8)                , intent(in) :: can_rhos
+      real(kind=8)                , intent(in) :: can_theta
       real(kind=8)                , intent(in) :: can_temp
       real(kind=8)                , intent(in) :: can_shv
       real(kind=8)                , intent(in) :: can_rvap
@@ -1334,11 +1339,14 @@ module rk4_coms
       !------------------------------------------------------------------------------------!
       !     Find the bounds for pressure.  To avoid the pressure range to be too relaxed,  !
       ! switch one of the dependent variable a time, and use the current values for the    !
-      ! other.                                                                             !
+      ! other.  In addition, we force pressure to be bounded between the reduced pressure  !
+      ! in case the reference height was different by the order of 10%.                    !
       !------------------------------------------------------------------------------------!
       !----- 1. Initial value, the most extreme one. --------------------------------------!
-      rk4min_can_prss =  huge(1.d0)
-      rk4max_can_prss = -huge(1.d0)
+      rk4min_can_prss = reducedpress8(rk4site%atm_prss,rk4site%atm_theta,rk4site%atm_shv   &
+                                     ,5.d-1*rk4site%geoht,can_theta,can_shv,can_depth)
+      rk4max_can_prss = reducedpress8(rk4site%atm_prss,rk4site%atm_theta,rk4site%atm_shv   &
+                                     ,1.1d0*rk4site%geoht,can_theta,can_shv,can_depth)
       !----- 2. Minimum temperature. ------------------------------------------------------!
       can_prss_try    = can_rhos * rdry8 * rk4min_can_temp * (1.d0 + epim18 * can_shv)
       rk4min_can_prss = min(rk4min_can_prss,can_prss_try)

@@ -249,12 +249,13 @@ subroutine sfcdata_ed()
                           , soil              & ! intent(in)
                           , thicknet          & ! intent(out)
                           , thick             ! ! intent(out)
-   use consts_coms , only : wdns              ! ! intent(in)
+   use consts_coms , only : wdns              & ! intent(in)
+                          , wdnsi8            ! ! intent(in)
    use rk4_coms    , only : rk4min_sfcw_moist & ! intent(in)
                           , rk4min_virt_moist & ! intent(in)
                           , rk4min_sfcw_mass  & ! intent(out)
                           , rk4min_virt_water ! ! intent(out)
-   use ed_misc_coms   , only : dtlsm             ! ! intent(in)
+   use ed_misc_coms, only : dtlsm             ! ! intent(in)
    implicit none
    !----- Local variables -----------------------------------------------------------------!
    integer                :: k
@@ -335,8 +336,8 @@ subroutine sfcdata_ed()
    end do
 
    !----- Assigning some soil grid-dependent RK4 variables --------------------------------!
-   rk4min_sfcw_mass  = rk4min_sfcw_moist * wdns * dslz(nzg)
-   rk4min_virt_water = rk4min_virt_moist * wdns * dslz(nzg)
+   rk4min_sfcw_mass  = rk4min_sfcw_moist * wdns   * dslz(nzg)
+   rk4min_virt_water = rk4min_virt_moist * wdns   * dslz(nzg)
 
    return
 end subroutine sfcdata_ed

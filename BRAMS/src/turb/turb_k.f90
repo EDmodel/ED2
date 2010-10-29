@@ -94,7 +94,7 @@ subroutine diffuse()
    nullify(hkh_p)
 
    !---------------------------------------------------------------------------------------!
-   !    Coping the vapour and total mixing ratio to scratch vectors. This way the Brunt-   !
+   !    Copying the vapour and total mixing ratio to scratch vectors. This way the Brunt-  !
    ! -Väisälä frequency and Nakanishi-Niino subroutines will also work for runs that       !
    !  don't use water.                                                                     !
    !  - vt3dp -> water vapour mixing ratio;                                                !

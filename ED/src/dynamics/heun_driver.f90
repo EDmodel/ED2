@@ -332,7 +332,6 @@ subroutine heun_integ(h1,csite,ipa,nsteps)
    use rk4_coms       , only : integration_vars       & ! structure
                              , integration_buff       & ! structure
                              , rk4site                & ! intent(in)
-                             , rk4min_sfcwater_mass   & ! intent(in)
                              , print_diags            & ! intent(in)
                              , print_detailed         & ! intent(in)
                              , maxstp                 & ! intent(in)
@@ -419,7 +418,7 @@ subroutine heun_integ(h1,csite,ipa,nsteps)
    !    If top snow layer is too thin for computational stability, have it evolve in       !
    ! thermal equilibrium with top soil layer.                                              !
    !---------------------------------------------------------------------------------------!
-   call redistribute_snow(nzg,nzs,integration_buff%initp, csite,ipa)
+   call adjust_sfcw_properties(nzg,nzs,integration_buff%initp, csite,ipa)
    call update_diagnostic_vars(integration_buff%initp,csite,ipa)
 
    !---------------------------------------------------------------------------------------!
@@ -573,13 +572,13 @@ subroutine heun_integ(h1,csite,ipa,nsteps)
             !------------------------------------------------------------------------------!
             !----- i.   Final update of leaf properties to avoid negative water. ----------!
             call adjust_veg_properties(integration_buff%ytemp,h,csite,ipa)
-            !----- ii.  Final update of top soil properties to avoid off-bounds moisture. -!
-            call adjust_topsoil_properties(integration_buff%ytemp,h,csite,ipa)
-            !----- iii. Make snow layers stable and positively defined. -------------------!
-            call redistribute_snow(nzg,nzs,integration_buff%ytemp, csite,ipa)
-            !----- iv.  Update the diagnostic variables. ----------------------------------!
-            call update_diagnostic_vars(integration_buff%ytemp, csite,ipa)
+            !----- ii.  Make snow layers stable and positively defined. -------------------!
+            call adjust_sfcw_properties(nzg,nzs,integration_buff%ytemp,csite,ipa)
+            !----- iii. Update the diagnostic variables. ----------------------------------!
+            call update_diagnostic_vars(integration_buff%ytemp,csite,ipa)
             !------------------------------------------------------------------------------!
+
+
 
             !------------------------------------------------------------------------------!
             ! 3c. Set up h for the next time.  And here we can relax h for the next step,  !
@@ -649,7 +648,7 @@ subroutine heun_integ(h1,csite,ipa,nsteps)
                integration_buff%y%sfcwater_energy(ksn) =                                   &
                                   integration_buff%y%sfcwater_energy(ksn) - qwfree
 
-               call redistribute_snow(nzg,nzs,integration_buff%y,csite,ipa)
+               call adjust_sfcw_properties(nzg,nzs,integration_buff%y,csite,ipa)
                call update_diagnostic_vars(integration_buff%y,csite,ipa)
 
                !----- Compute runoff for output -------------------------------------------!
@@ -763,6 +762,7 @@ subroutine heun_stepper(x,h,csite,ipa,reject_step,reject_result)
    !----- Local variables -----------------------------------------------------------------!
    type(patchtype)   , pointer     :: cpatch
    real(kind=8)                    :: combh
+   real(kind=8)                    :: dpdt
    !---------------------------------------------------------------------------------------!
 
 
@@ -782,11 +782,21 @@ subroutine heun_stepper(x,h,csite,ipa,reject_step,reject_result)
    call copy_rk4_patch(integration_buff%y,integration_buff%ak3,cpatch)
    call inc_rk4_patch (integration_buff%ak3,integration_buff%dydx, heun_b21*h, cpatch)
    combh = heun_b21*h
-   call adjust_veg_properties    (integration_buff%ak3,combh,csite,ipa)
-   call adjust_topsoil_properties(integration_buff%ak3,combh,csite,ipa)
-   call redistribute_snow        (nzg,nzs,integration_buff%ak3      ,csite,ipa)
-   call update_diagnostic_vars   (integration_buff%ak3      ,csite,ipa)
+   call adjust_veg_properties (integration_buff%ak3,combh,csite,ipa)
+   call adjust_sfcw_properties(nzg,nzs,integration_buff%ak3,csite,ipa)
+   call update_diagnostic_vars(integration_buff%ak3      ,csite,ipa)
    !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !       Estimate the derivative of canopy pressure.                                     !
+   !---------------------------------------------------------------------------------------!
+   dpdt          = (integration_buff%ak7%can_prss - integration_buff%y%can_prss) / combh
+   integration_buff%dydx%can_prss = dpdt * heun_b21
+   !---------------------------------------------------------------------------------------!
+
 
 
 
@@ -818,10 +828,9 @@ subroutine heun_stepper(x,h,csite,ipa,reject_step,reject_result)
    combh = (heun_c1+heun_c2) * h ! Which should be h
 
    !----- Update the diagnostic properties and make final adjustments. --------------------!
-   call adjust_veg_properties    (integration_buff%ytemp,combh,csite,ipa)
-   call adjust_topsoil_properties(integration_buff%ytemp,combh,csite,ipa)
-   call redistribute_snow        (nzg,nzs,integration_buff%ytemp      ,csite,ipa)
-   call update_diagnostic_vars   (integration_buff%ytemp      ,csite,ipa)
+   call adjust_veg_properties    (integration_buff%ytemp,combh  ,csite,ipa)
+   call adjust_sfcw_properties   (nzg,nzs,integration_buff%ytemp,csite,ipa)
+   call update_diagnostic_vars   (integration_buff%ytemp        ,csite,ipa)
    !---------------------------------------------------------------------------------------!
 
 
@@ -834,6 +843,26 @@ subroutine heun_stepper(x,h,csite,ipa,reject_step,reject_result)
                         ,integration_buff%ak2,h,print_diags)
    if(reject_result)return
    !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !       Estimate the derivative of canopy pressure.                                     !
+   !---------------------------------------------------------------------------------------!
+   dpdt          = (integration_buff%ak7%can_prss - integration_buff%y%can_prss) / combh
+   integration_buff%dydx%can_prss = integration_buff%dydx%can_prss + dpdt * heun_c1
+   integration_buff%ak2%can_prss  =                                  dpdt * heun_c2
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Average the pressure derivative estimates.                                       !
+   !---------------------------------------------------------------------------------------!
+   integration_buff%dydx%can_prss = integration_buff%dydx%can_prss / (heun_b21 + heun_c1)
+   integration_buff%ak2%can_prss  = integration_buff%ak2%can_prss  / (           heun_c2)
+   !---------------------------------------------------------------------------------------!
+
 
 
    !---------------------------------------------------------------------------------------!

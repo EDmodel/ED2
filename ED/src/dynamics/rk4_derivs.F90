@@ -78,38 +78,38 @@ end subroutine leaf_derivs
 !==========================================================================================!
 !==========================================================================================!
 subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
-   use ed_max_dims          , only : nzgmax               & ! intent(in)
-                                   , nzsmax               ! ! intent(in)
-   use consts_coms          , only : alvl8                & ! intent(in)
-                                   , cliqvlme8            & ! intent(in)
-                                   , tsupercool8          & ! intent(in)
-                                   , wdns8                & ! intent(in)
-                                   , wdnsi8               ! ! intent(in)
-   use soil_coms            , only : soil8                & ! intent(in)
-                                   , slz8                 & ! intent(in)
-                                   , dslz8                & ! intent(in)
-                                   , dslzi8               & ! intent(in)
-                                   , infiltration_method  & ! intent(in)
-                                   , dslzti8              & ! intent(in)
-                                   , slcons18             & ! intent(in)
-                                   , slzt8                & ! intent(in)
-                                   , ss                   & ! intent(in)
-                                   , isoilbc              ! ! intent(in)
-   use ed_misc_coms         , only : dtlsm                & ! intent(in)
-                                   , current_time         & ! intent(in)
-                                   , fast_diagnostics     ! ! intent(in)
-   use rk4_coms             , only : rk4eps               & ! intent(in)
-                                   , rk4min_sfcwater_mass & ! intent(in)
-                                   , checkbudget          & ! intent(in)
-                                   , any_solvable         & ! intent(in)
-                                   , rk4site              & ! intent(in)
-                                   , rk4patchtype         & ! structure
-                                   , print_detailed       ! ! intent(in)
-   use ed_state_vars        , only : sitetype             & ! structure
-                                   , patchtype            & ! structure
+   use ed_max_dims          , only : nzgmax                & ! intent(in)
+                                   , nzsmax                ! ! intent(in)
+   use consts_coms          , only : alvl8                 & ! intent(in)
+                                   , cliqvlme8             & ! intent(in)
+                                   , tsupercool8           & ! intent(in)
+                                   , wdns8                 & ! intent(in)
+                                   , wdnsi8                ! ! intent(in)
+   use soil_coms            , only : soil8                 & ! intent(in)
+                                   , slz8                  & ! intent(in)
+                                   , dslz8                 & ! intent(in)
+                                   , dslzi8                & ! intent(in)
+                                   , infiltration_method   & ! intent(in)
+                                   , dslzti8               & ! intent(in)
+                                   , slcons18              & ! intent(in)
+                                   , slzt8                 & ! intent(in)
+                                   , ss                    & ! intent(in)
+                                   , isoilbc               ! ! intent(in)
+   use ed_misc_coms         , only : dtlsm                 & ! intent(in)
+                                   , current_time          & ! intent(in)
+                                   , fast_diagnostics      ! ! intent(in)
+   use rk4_coms             , only : rk4eps                & ! intent(in)
+                                   , rk4tiny_sfcw_mass     & ! intent(in)
+                                   , checkbudget           & ! intent(in)
+                                   , any_solvable          & ! intent(in)
+                                   , rk4site               & ! intent(in)
+                                   , rk4patchtype          & ! structure
+                                   , print_detailed        ! ! intent(in)
+   use ed_state_vars        , only : sitetype              & ! structure
+                                   , patchtype             & ! structure
                                    , polygontype
-   use ed_therm_lib         , only : ed_grndvap8          ! ! subroutine
-   use therm_lib8           , only : qtk8                 ! ! subroutine
+   use ed_therm_lib         , only : ed_grndvap8           ! ! subroutine
+   use therm_lib8           , only : qtk8                  ! ! subroutine
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(rk4patchtype)  , target     :: initp            ! RK4 structure, intermediate step
@@ -228,7 +228,7 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
    !---------------------------------------------------------------------------------------!
    nsoil = csite%ntext_soil(mzg,ipa)
    k = max(1,ksn)
-   if (abs(initp%sfcwater_mass(k)) > rk4min_sfcwater_mass) then
+   if (abs(initp%sfcwater_mass(k)) > rk4tiny_sfcw_mass) then
       int_sfcw_u = initp%sfcwater_energy(k)/initp%sfcwater_mass(k)
    else
       int_sfcw_u = 0.0d0
@@ -1364,15 +1364,15 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
    !---------------------------------------------------------------------------------------!
    !     If the single pond layer is too thin, force equilibrium with top soil layer.      !
    ! This is done in two steps: first, we don't transfer all the energy to the top soil    !
-   ! layer.  Then, in redistribute_snow, we will make them in thermal equilibrium.         !
+   ! layer.  Then, in adjust_sfcw_properties, we will make them in thermal equilibrium.    !
    !---------------------------------------------------------------------------------------!
-   if (initp%nlev_sfcwater == 1) then
-      if (abs(initp%sfcwater_mass(1)) < rk4water_stab_thresh) then
-         dinitp%soil_energy(mzg)   = dinitp%soil_energy(mzg)                               &
-                                   + dinitp%sfcwater_energy(1) * dslzi8(mzg)
-         dinitp%sfcwater_energy(1) = 0.d0
-      end if
-   end if
+   !if (initp%nlev_sfcwater == 1) then
+   !   if (abs(initp%sfcwater_mass(1)) < rk4water_stab_thresh) then
+   !      dinitp%soil_energy(mzg)   = dinitp%soil_energy(mzg)                               &
+   !                                + dinitp%sfcwater_energy(1) * dslzi8(mzg)
+   !      dinitp%sfcwater_energy(1) = 0.d0
+   !   end if
+   !end if
 
    return
 end subroutine canopy_derivs_two

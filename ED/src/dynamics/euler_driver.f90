@@ -337,7 +337,6 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nsteps)
    use rk4_coms       , only : integration_vars       & ! structure
                              , rk4patchtype           & ! structure
                              , rk4site                & ! intent(in)
-                             , rk4min_sfcwater_mass   & ! intent(in)
                              , print_diags            & ! intent(in)
                              , maxstp                 & ! intent(in)
                              , tbeg                   & ! intent(in)
@@ -429,7 +428,7 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nsteps)
    !    If top snow layer is too thin for computational stability, have it evolve in       !
    ! thermal equilibrium with top soil layer.                                              !
    !---------------------------------------------------------------------------------------!
-   call redistribute_snow(nzg,nzs,initp, csite,ipa)
+   call adjust_sfcw_properties(nzg,nzs,initp, csite,ipa)
    call update_diagnostic_vars(initp,csite,ipa)
 
    !---------------------------------------------------------------------------------------!
@@ -475,8 +474,7 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nsteps)
          !---------------------------------------------------------------------------------!
          call inc_rk4_patch(ytemp,dinitp,h,cpatch)
          call adjust_veg_properties(ytemp,h,csite,ipa)
-         call adjust_topsoil_properties(ytemp,h,csite,ipa)
-         call redistribute_snow(nzg,nzs,ytemp,csite,ipa)
+         call adjust_sfcw_properties(nzg,nzs,ytemp,csite,ipa)
          call update_diagnostic_vars(ytemp,csite,ipa)
 
          !----- Perform a sanity check. ---------------------------------------------------!
@@ -560,11 +558,9 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nsteps)
             !------------------------------------------------------------------------------!
             !----- i.   Final update of leaf properties to avoid negative water. ----------!
             call adjust_veg_properties(ytemp,h,csite,ipa)
-            !----- ii.  Final update of top soil properties to avoid off-bounds moisture. -!
-            call adjust_topsoil_properties(ytemp,h,csite,ipa)
-            !----- iii. Make snow layers stable and positively defined. -------------------!
-            call redistribute_snow(nzg,nzs,ytemp, csite,ipa)
-            !----- iv.  Update the diagnostic variables. ----------------------------------!
+            !----- ii. Make temporary surface water layers stable and positively defined. -!
+            call adjust_sfcw_properties(nzg,nzs,ytemp,csite,ipa)
+            !----- iii.  Update the diagnostic variables. ---------------------------------!
             call update_diagnostic_vars(ytemp, csite,ipa)
             !------------------------------------------------------------------------------!
 
@@ -631,7 +627,7 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nsteps)
                !----- Recompute the energy removing runoff --------------------------------!
                initp%sfcwater_energy(ksn) = initp%sfcwater_energy(ksn) - qwfree
 
-               call redistribute_snow(nzg,nzs,initp,csite,ipa)
+               call adjust_sfcw_properties(nzg,nzs,initp,csite,ipa)
                call update_diagnostic_vars(initp,csite,ipa)
 
                !----- Compute runoff for output -------------------------------------------!

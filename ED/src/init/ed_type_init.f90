@@ -559,17 +559,17 @@ end subroutine init_ed_poly_vars
 ! and temporary layer temperature and liquid fraction, and the surface properties.         !
 !------------------------------------------------------------------------------------------!
 subroutine new_patch_sfc_props(csite,ipa)
-   use ed_state_vars , only : sitetype          & ! structure
-                            , patchtype         ! ! structure
-   use grid_coms     , only : nzg               & ! intent(in)
-                            , nzs               ! ! intent(in)
-   use soil_coms     , only : soil              & ! intent(in), look-up table
-                            , slz               & ! intent(in)
-                            , min_sfcwater_mass ! ! intent(in)
-   use consts_coms   , only : wdns              ! ! intent(in)
-   use therm_lib     , only : qwtk              & ! subroutine
-                            , qtk               ! ! subroutine
-   use ed_therm_lib  , only : ed_grndvap        ! ! subroutine
+   use ed_state_vars , only : sitetype           & ! structure
+                            , patchtype          ! ! structure
+   use grid_coms     , only : nzg                & ! intent(in)
+                            , nzs                ! ! intent(in)
+   use soil_coms     , only : soil               & ! intent(in), look-up table
+                            , slz                & ! intent(in)
+                            , tiny_sfcwater_mass ! ! intent(in)
+   use consts_coms   , only : wdns               ! ! intent(in)
+   use therm_lib     , only : qwtk               & ! subroutine
+                            , qtk                ! ! subroutine
+   use ed_therm_lib  , only : ed_grndvap         ! ! subroutine
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(sitetype) , target     :: csite          ! Current site
@@ -601,7 +601,7 @@ subroutine new_patch_sfc_props(csite,ipa)
    csite%nlev_sfcwater(ipa) = 0
    snowloop: do k=1,nzs
       !----- Leave the loop if there is not enough mass in this layer... ------------------!
-      if (csite%sfcwater_mass(k,ipa) <= min_sfcwater_mass)  exit snowloop
+      if (csite%sfcwater_mass(k,ipa) <= tiny_sfcwater_mass)  exit snowloop
       csite%nlev_sfcwater(ipa) = k
       csite%sfcwater_energy(k,ipa) = csite%sfcwater_energy(k,ipa)                          &
                                    / csite%sfcwater_mass(k,ipa)

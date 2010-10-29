@@ -157,11 +157,9 @@ module rk4_stepper
             !------------------------------------------------------------------------------!
             !----- i.   Final update of leaf properties to avoid negative water. ----------!
             call adjust_veg_properties(integration_buff%ytemp,h,csite,ipa)
-            !----- ii.  Final update of top soil properties to avoid off-bounds moisture. -!
-            call adjust_topsoil_properties(integration_buff%ytemp,h,csite,ipa)
-            !----- iii. Make snow layers stable and positively defined. -------------------!
-            call redistribute_snow(nzg,nzs,integration_buff%ytemp, csite,ipa)
-            !----- iv.  Update the diagnostic variables. ----------------------------------!
+            !----- ii. Make temporary surface water layers stable and positively defined. -!
+            call adjust_sfcw_properties(nzg,nzs,integration_buff%ytemp, csite,ipa)
+            !----- iii.  Update the diagnostic variables. ---------------------------------!
             call update_diagnostic_vars(integration_buff%ytemp, csite,ipa)
             !------------------------------------------------------------------------------!
 
@@ -253,7 +251,9 @@ module rk4_stepper
                                , rk4_dc1             & ! intent(in)
                                , rk4_dc3             & ! intent(in)
                                , rk4_dc4             & ! intent(in)
-                               , rk4_dc6             ! ! intent(in)
+                               , rk4_dc6             & ! intent(in)
+                               , zero_rk4_patch      & ! intent(in)
+                               , zero_rk4_cohort     ! ! intent(in)
       use ed_state_vars , only : sitetype            & ! structure
                                , patchtype           ! ! structure
       use grid_coms     , only : nzg                 & ! intent(in)
@@ -271,6 +271,7 @@ module rk4_stepper
       !----- Local variables --------------------------------------------------------------!
       type(patchtype)   , pointer     :: cpatch
       real(kind=8)                    :: combh
+      real(kind=8)                    :: dpdt
       !------------------------------------------------------------------------------------!
 
 
@@ -282,47 +283,95 @@ module rk4_stepper
       reject_step   = .false.
       reject_result = .false.
       cpatch => csite%patch(ipa)
+      !------------------------------------------------------------------------------------!
 
+
+
+      !------------------------------------------------------------------------------------!
+      !     For each stage we checked the sanity, so we avoid using non-sense values to    !
+      ! advance.  Also, we estimate the derivative of pressure after each stage, and in    !
+      ! the end we estimate the full step derivative as the weighted average for each of   !
+      ! these partial steps taken.                                                         !
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Second stage (the first was the Euler, whose derivative is already computed    !
+      ! and saved in dydx.                                                                 !
+      !------------------------------------------------------------------------------------!
       call copy_rk4_patch(y, ak7, cpatch)
       call inc_rk4_patch(ak7, dydx, rk4_b21*h, cpatch)
       combh = rk4_b21*h
-      call adjust_veg_properties(ak7,combh,csite,ipa)
-      call adjust_topsoil_properties(ak7,combh,csite,ipa)
-      call redistribute_snow(nzg,nzs,ak7, csite,ipa)
+      call adjust_veg_properties (ak7,combh,csite,ipa)
+      call adjust_sfcw_properties(nzg,nzs,ak7, csite,ipa)
       call update_diagnostic_vars(ak7, csite,ipa)
       call rk4_sanity_check(ak7, reject_step, csite, ipa,dydx,h,print_diags)
       if (reject_step) return
 
+      !------ Estimate the derivative of canopy pressure. ---------------------------------!
+      dpdt          = (ak7%can_prss - y%can_prss) / combh
+      dydx%can_prss = dpdt * rk4_b21
+
+      !------ Get the new derivative evaluation. ------------------------------------------!
       call leaf_derivs(ak7, ak2, csite, ipa)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !    Third stage.                                                                    !
+      !------------------------------------------------------------------------------------!
       call copy_rk4_patch(y, ak7, cpatch)
       call inc_rk4_patch(ak7, dydx, rk4_b31*h, cpatch)
       call inc_rk4_patch(ak7,  ak2, rk4_b32*h, cpatch)
       combh = (rk4_b31+rk4_b32)*h
       call adjust_veg_properties(ak7,combh,csite,ipa)
-      call adjust_topsoil_properties(ak7,combh,csite,ipa)
-      call redistribute_snow(nzg,nzs,ak7, csite,ipa)
+      call adjust_sfcw_properties(nzg,nzs,ak7, csite,ipa)
       call update_diagnostic_vars(ak7, csite,ipa)
       call rk4_sanity_check(ak7,reject_step,csite,ipa,dydx,h,print_diags)
       if (reject_step) return
 
+      !------ Estimate the derivative of canopy pressure. ---------------------------------!
+      dpdt          = (ak7%can_prss - y%can_prss) / combh
+      dydx%can_prss = dydx%can_prss + dpdt * rk4_b31
+      ak2%can_prss  =                 dpdt * rk4_b32
 
-
+      !------ Get the new derivative evaluation. ------------------------------------------!
       call leaf_derivs(ak7, ak3, csite,ipa)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !    Fourth stage.                                                                   !
+      !------------------------------------------------------------------------------------!
       call copy_rk4_patch(y, ak7, cpatch)
       call inc_rk4_patch(ak7, dydx, rk4_b41*h, cpatch)
       call inc_rk4_patch(ak7,  ak2, rk4_b42*h, cpatch)
       call inc_rk4_patch(ak7,  ak3, rk4_b43*h, cpatch)
       combh = (rk4_b41+rk4_b42+rk4_b43)*h
       call adjust_veg_properties(ak7,combh,csite,ipa)
-      call adjust_topsoil_properties(ak7,combh,csite,ipa)
-      call redistribute_snow(nzg,nzs,ak7, csite,ipa)
+      call adjust_sfcw_properties(nzg,nzs,ak7, csite,ipa)
       call update_diagnostic_vars(ak7, csite,ipa)
       call rk4_sanity_check(ak7, reject_step, csite,ipa,dydx,h,print_diags)
       if (reject_step) return
 
+      !------ Estimate the derivative of canopy pressure. ---------------------------------!
+      dpdt          = (ak7%can_prss - y%can_prss) / combh
+      dydx%can_prss = dydx%can_prss + dpdt * rk4_b41
+      ak2%can_prss  = ak2%can_prss  + dpdt * rk4_b42
+      ak3%can_prss  =                 dpdt * rk4_b43
 
-
+      !------ Get the new derivative evaluation. ------------------------------------------!
       call leaf_derivs(ak7, ak4, csite, ipa)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !    Fifth stage.                                                                    !
+      !------------------------------------------------------------------------------------!
       call copy_rk4_patch(y, ak7, cpatch)
       call inc_rk4_patch(ak7, dydx, rk4_b51*h, cpatch)
       call inc_rk4_patch(ak7,  ak2, rk4_b52*h, cpatch)
@@ -330,15 +379,27 @@ module rk4_stepper
       call inc_rk4_patch(ak7,  ak4, rk4_b54*h, cpatch)
       combh = (rk4_b51+rk4_b52+rk4_b53+rk4_b54)*h
       call adjust_veg_properties(ak7,combh,csite,ipa)
-      call adjust_topsoil_properties(ak7,combh,csite,ipa)
-      call redistribute_snow(nzg,nzs,ak7, csite,ipa)
+      call adjust_sfcw_properties(nzg,nzs,ak7, csite,ipa)
       call update_diagnostic_vars(ak7, csite,ipa)
       call rk4_sanity_check(ak7,reject_step,csite,ipa,dydx,h,print_diags)
       if (reject_step) return
 
+      !------ Estimate the derivative of canopy pressure. ---------------------------------!
+      dpdt          = (ak7%can_prss - y%can_prss) / combh
+      dydx%can_prss = dydx%can_prss + dpdt * rk4_b51
+      ak2%can_prss  = ak2%can_prss  + dpdt * rk4_b52
+      ak3%can_prss  = ak3%can_prss  + dpdt * rk4_b53
+      ak4%can_prss  =                 dpdt * rk4_b54
 
-
+      !------ Get the new derivative evaluation. ------------------------------------------!
       call leaf_derivs(ak7, ak5, csite, ipa)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !    Sixth stage.                                                                    !
+      !------------------------------------------------------------------------------------!
       call copy_rk4_patch(y, ak7, cpatch)
       call inc_rk4_patch(ak7, dydx, rk4_b61*h, cpatch)
       call inc_rk4_patch(ak7,  ak2, rk4_b62*h, cpatch)
@@ -347,13 +408,28 @@ module rk4_stepper
       call inc_rk4_patch(ak7,  ak5, rk4_b65*h, cpatch)
       combh = (rk4_b61+rk4_b62+rk4_b63+rk4_b64+rk4_b65)*h
       call adjust_veg_properties(ak7,combh,csite,ipa)
-      call adjust_topsoil_properties(ak7,combh,csite,ipa)
-      call redistribute_snow(nzg,nzs,ak7, csite,ipa)
+      call adjust_sfcw_properties(nzg,nzs,ak7, csite,ipa)
       call update_diagnostic_vars(ak7, csite,ipa)
       call rk4_sanity_check(ak7, reject_step, csite,ipa,dydx,h,print_diags)
       if(reject_step)return
 
+      !------ Estimate the derivative of canopy pressure. ---------------------------------!
+      dpdt          = (ak7%can_prss - y%can_prss) / combh
+      dydx%can_prss = dydx%can_prss + dpdt * rk4_b61
+      ak2%can_prss  = ak2%can_prss  + dpdt * rk4_b62
+      ak3%can_prss  = ak3%can_prss  + dpdt * rk4_b63
+      ak4%can_prss  = ak4%can_prss  + dpdt * rk4_b64
+      ak5%can_prss  =                 dpdt * rk4_b65
+
+      !------ Get the new derivative evaluation. ------------------------------------------!
       call leaf_derivs(ak7, ak6, csite,ipa)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !    Aggregate all derivatives to make the new guess.                                !
+      !------------------------------------------------------------------------------------!
       call copy_rk4_patch(y, yout, cpatch)
       call inc_rk4_patch(yout, dydx, rk4_c1*h, cpatch)
       call inc_rk4_patch(yout,  ak3, rk4_c3*h, cpatch)
@@ -361,18 +437,51 @@ module rk4_stepper
       call inc_rk4_patch(yout,  ak6, rk4_c6*h, cpatch)
       combh = (rk4_c1+rk4_c3+rk4_c4+rk4_c6)*h
       call adjust_veg_properties(yout,combh,csite,ipa)
-      call adjust_topsoil_properties(yout,combh,csite,ipa)
-      call redistribute_snow(nzg,nzs,yout, csite,ipa)
+      call adjust_sfcw_properties(nzg,nzs,yout, csite,ipa)
       call update_diagnostic_vars(yout, csite,ipa)
       call rk4_sanity_check(yout, reject_result, csite,ipa,dydx,h,print_diags)
       if(reject_result)return
 
-      call copy_rk4_patch(dydx, yerr, cpatch)
-      call inc_rk4_patch(yerr, dydx, rk4_dc1*h-1.d0, cpatch)
-      call inc_rk4_patch(yerr, ak3,  rk4_dc3*h     , cpatch)
-      call inc_rk4_patch(yerr, ak4,  rk4_dc4*h     , cpatch)
-      call inc_rk4_patch(yerr, ak5,  rk4_dc5*h     , cpatch)
-      call inc_rk4_patch(yerr, ak6,  rk4_dc6*h     , cpatch)
+      !------ Estimate the derivative of canopy pressure. ---------------------------------!
+      dpdt          = (ak7%can_prss - y%can_prss) / combh
+      dydx%can_prss = dydx%can_prss + dpdt * rk4_c1
+      ak3%can_prss  = ak3%can_prss  + dpdt * rk4_c3
+      ak4%can_prss  = ak4%can_prss  + dpdt * rk4_c4
+      ak6%can_prss  =                 dpdt * rk4_c6
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !      Average the pressure derivative estimates.                                    !
+      !------------------------------------------------------------------------------------!
+      dydx%can_prss = dydx%can_prss                                                        &
+                    / (rk4_b21 + rk4_b31 + rk4_b41 + rk4_b51 + rk4_b61 + rk4_c1)
+      ak2%can_prss  = ak2%can_prss                                                         &
+                    / (          rk4_b32 + rk4_b42 + rk4_b52 + rk4_b62         )
+      ak3%can_prss  = ak3%can_prss                                                         &
+                    / (                    rk4_b43 + rk4_b53 + rk4_b63 + rk4_c3)
+      ak4%can_prss  = ak4%can_prss                                                         &
+                    / (                              rk4_b54 + rk4_b64 + rk4_c4)
+      ak5%can_prss  = ak5%can_prss                                                         &
+                    / (                                        rk4_b65         )
+      ak6%can_prss  = ak6%can_prss                                                         &
+                    / (                                                  rk4_c6)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !    Estimate the error for this step.                                               !
+      !------------------------------------------------------------------------------------!
+      call zero_rk4_patch (yerr)
+      call zero_rk4_cohort(yerr)
+      call inc_rk4_patch(yerr, dydx, rk4_dc1*h, cpatch)
+      call inc_rk4_patch(yerr, ak3,  rk4_dc3*h, cpatch)
+      call inc_rk4_patch(yerr, ak4,  rk4_dc4*h, cpatch)
+      call inc_rk4_patch(yerr, ak5,  rk4_dc5*h, cpatch)
+      call inc_rk4_patch(yerr, ak6,  rk4_dc6*h, cpatch)
+      !------------------------------------------------------------------------------------!
 
       return
    end subroutine rkck
@@ -391,52 +500,52 @@ module rk4_stepper
    ! some reason, you can adjust there.                                                    !
    !---------------------------------------------------------------------------------------!
    subroutine rk4_sanity_check(y,reject_step, csite,ipa,dydx,h,print_problems)
-      use rk4_coms              , only : rk4patchtype         & ! structure
-                                       , integration_vars     & ! structure
-                                       , rk4site              & ! intent(in)
-                                       , rk4eps               & ! intent(in)
-                                       , toocold              & ! intent(in)
-                                       , rk4min_can_theiv     & ! intent(in)
-                                       , rk4max_can_theiv     & ! intent(in)
-                                       , rk4min_can_theta     & ! intent(in)
-                                       , rk4max_can_theta     & ! intent(in)
-                                       , rk4max_can_shv       & ! intent(in)
-                                       , rk4min_can_shv       & ! intent(in)
-                                       , rk4min_can_rhv       & ! intent(in)
-                                       , rk4max_can_rhv       & ! intent(in)
-                                       , rk4min_can_temp      & ! intent(in)
-                                       , rk4max_can_temp      & ! intent(in)
-                                       , rk4min_can_theiv     & ! intent(in)
-                                       , rk4max_can_theiv     & ! intent(in)
-                                       , rk4min_can_prss      & ! intent(in)
-                                       , rk4max_can_prss      & ! intent(in)
-                                       , rk4min_can_co2       & ! intent(in)
-                                       , rk4max_can_co2       & ! intent(in)
-                                       , rk4max_veg_temp      & ! intent(in)
-                                       , rk4min_veg_temp      & ! intent(in)
-                                       , rk4min_veg_lwater    & ! intent(in)
-                                       , rk4min_sfcw_temp     & ! intent(in)
-                                       , rk4max_sfcw_temp     & ! intent(in)
-                                       , rk4max_soil_temp     & ! intent(in)
-                                       , rk4min_soil_temp     & ! intent(in)
-                                       , rk4max_soil_water    & ! intent(in)
-                                       , rk4min_soil_water    & ! intent(in)
-                                       , rk4min_sfcw_mass     & ! intent(in)
-                                       , rk4min_virt_water    & ! intent(in)
-                                       , rk4min_sfcwater_mass & ! intent(in)
-                                       , integ_err            & ! intent(inout)
-                                       , record_err           & ! intent(in)
-                                       , osow                 & ! intent(in)
-                                       , osoe                 & ! intent(in)
-                                       , oswe                 & ! intent(in)
-                                       , oswm                 ! ! intent(in)
-      use ed_state_vars         , only : sitetype             & ! structure
-                                       , patchtype            ! ! structure
-      use grid_coms             , only : nzg                  ! ! intent(in)
-      use soil_coms             , only : soil8                ! ! intent(in), lookup table
-      use consts_coms           , only : t3ple8               & ! intent(in)
-                                       , ttripoli8            ! ! intent(in)
-      use therm_lib8            , only : qtk8                 ! ! subroutine
+      use rk4_coms              , only : rk4patchtype          & ! structure
+                                       , integration_vars      & ! structure
+                                       , rk4site               & ! intent(in)
+                                       , rk4eps                & ! intent(in)
+                                       , toocold               & ! intent(in)
+                                       , rk4min_can_theiv      & ! intent(in)
+                                       , rk4max_can_theiv      & ! intent(in)
+                                       , rk4min_can_theta      & ! intent(in)
+                                       , rk4max_can_theta      & ! intent(in)
+                                       , rk4max_can_shv        & ! intent(in)
+                                       , rk4min_can_shv        & ! intent(in)
+                                       , rk4min_can_rhv        & ! intent(in)
+                                       , rk4max_can_rhv        & ! intent(in)
+                                       , rk4min_can_temp       & ! intent(in)
+                                       , rk4max_can_temp       & ! intent(in)
+                                       , rk4min_can_theiv      & ! intent(in)
+                                       , rk4max_can_theiv      & ! intent(in)
+                                       , rk4min_can_prss       & ! intent(in)
+                                       , rk4max_can_prss       & ! intent(in)
+                                       , rk4min_can_co2        & ! intent(in)
+                                       , rk4max_can_co2        & ! intent(in)
+                                       , rk4max_veg_temp       & ! intent(in)
+                                       , rk4min_veg_temp       & ! intent(in)
+                                       , rk4min_veg_lwater     & ! intent(in)
+                                       , rk4min_sfcw_temp      & ! intent(in)
+                                       , rk4max_sfcw_temp      & ! intent(in)
+                                       , rk4max_soil_temp      & ! intent(in)
+                                       , rk4min_soil_temp      & ! intent(in)
+                                       , rk4max_soil_water     & ! intent(in)
+                                       , rk4min_soil_water     & ! intent(in)
+                                       , rk4min_sfcw_mass      & ! intent(in)
+                                       , rk4min_virt_water     & ! intent(in)
+                                       , rk4tiny_sfcw_mass     & ! intent(in)
+                                       , integ_err             & ! intent(inout)
+                                       , record_err            & ! intent(in)
+                                       , osow                  & ! intent(in)
+                                       , osoe                  & ! intent(in)
+                                       , oswe                  & ! intent(in)
+                                       , oswm                  ! ! intent(in)
+      use ed_state_vars         , only : sitetype              & ! structure
+                                       , patchtype             ! ! structure
+      use grid_coms             , only : nzg                   ! ! intent(in)
+      use soil_coms             , only : soil8                 ! ! intent(in), lookup table
+      use consts_coms           , only : t3ple8                & ! intent(in)
+                                       , ttripoli8             ! ! intent(in)
+      use therm_lib8            , only : qtk8                  ! ! subroutine
 
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -758,7 +867,7 @@ module rk4_stepper
             return
          end if
          return
-      elseif(y%virtual_water >= rk4min_sfcwater_mass) then
+      elseif(y%virtual_water > rk4tiny_sfcw_mass) then
          call qtk8(y%virtual_heat/y%virtual_water,virtual_temp,virtual_fliq)
          if (virtual_temp < rk4min_sfcw_temp .or. virtual_temp > rk4max_sfcw_temp) then
             reject_step = .true.
@@ -863,7 +972,7 @@ module rk4_stepper
       if (ksn >= 1) then
          total_sfcw_energy = sum(y%sfcwater_energy(1:ksn))
          total_sfcw_mass   = sum(y%sfcwater_mass(1:ksn))
-         if (abs(total_sfcw_mass) > rk4min_sfcwater_mass) then
+         if (abs(total_sfcw_mass) > rk4tiny_sfcw_mass) then
             call qtk8(total_sfcw_energy/total_sfcw_mass,mean_sfcw_tempk,mean_sfcw_fracliq)
          else
             mean_sfcw_tempk   = t3ple8

@@ -1807,8 +1807,7 @@ module fuse_fiss_utils
                                ,elim_nplant,elim_lai)
       use ed_state_vars      , only : sitetype              & ! Structure 
                                     , patchtype             ! ! Structure
-      use soil_coms          , only : soil                  & ! intent(in), lookup table
-                                    , min_sfcwater_mass     ! ! intent(in)
+      use soil_coms          , only : soil                  ! ! intent(in), lookup table
       use grid_coms          , only : nzg                   & ! intent(in)
                                     , nzs                   ! ! intent(in)
       use fusion_fission_coms, only : ff_ndbh               ! ! intent(in)
