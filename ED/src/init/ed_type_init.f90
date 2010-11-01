@@ -630,9 +630,11 @@ subroutine new_patch_sfc_props(csite,ipa)
    !----- Now we can compute the surface properties. --------------------------------------!
    k=max(1,csite%nlev_sfcwater(ipa))
    call ed_grndvap(csite%nlev_sfcwater(ipa),csite%ntext_soil(nzg,ipa)                      &
-                  ,csite%soil_water(nzg,ipa),csite%soil_energy(nzg,ipa)                    &
-                  ,csite%sfcwater_energy(k,ipa), csite%can_prss(ipa),csite%can_shv(ipa)    &
-                  ,csite%ground_shv(ipa),csite%surface_ssh(ipa),surface_temp,surface_fliq)
+                  ,csite%soil_water(nzg,ipa),csite%soil_tempk(nzg,ipa)                     &
+                  ,csite%soil_fracliq(nzg,ipa),csite%sfcwater_tempk(k,ipa)                 &
+                  ,csite%sfcwater_fracliq(k,ipa),csite%can_prss(ipa)                       &
+                  ,csite%can_shv(ipa),csite%ground_shv(ipa),csite%surface_ssh(ipa)         &
+                  ,surface_temp,surface_fliq)
    !---------------------------------------------------------------------------------------! 
 
 

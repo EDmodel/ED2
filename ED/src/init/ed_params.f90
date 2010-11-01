@@ -2169,6 +2169,7 @@ subroutine init_rk4_params()
                              , rk4min_sfcw_moist      & ! intent(out)
                              , rk4min_virt_moist      & ! intent(out)
                              , check_maxleaf          & ! intent(out)
+                             , force_idealgas         & ! intent(out)
                              , supersat_ok            & ! intent(out)
                              , record_err             & ! intent(out)
                              , print_detailed         & ! intent(out)
@@ -2222,7 +2223,7 @@ subroutine init_rk4_params()
    !     Variables used to keep track on the error.                                        !
    !---------------------------------------------------------------------------------------!
    record_err     = .true.                   ! Compute and keep track of the errors.
-   print_detailed = .true.                   ! Print detailed information about the thermo-
+   print_detailed = .false.                  ! Print detailed information about the thermo-
                                              !    dynamic state.  This will create one file
                                              !    for each patch, so it is not recommended 
                                              !    for simulations that span over one month.
@@ -2294,9 +2295,10 @@ subroutine init_rk4_params()
    ! pact of such exchange dependent on the soil depth, we assign the scale a function of  !
    ! the top layer thickness.                                                              !
    !---------------------------------------------------------------------------------------!
-   rk4min_sfcw_moist = -5.0000d-4 ! Minimum water mass allowed.
-   rk4min_virt_moist = -5.0000d-4 ! Minimum water allowed at virtual pool.
+   rk4min_sfcw_moist =  -5.0000d-4 ! Minimum water mass allowed.
+   rk4min_virt_moist =  -5.0000d-4 ! Minimum water allowed at virtual pool.
    !---------------------------------------------------------------------------------------!
+
 
 
    !---------------------------------------------------------------------------------------!
@@ -2310,6 +2312,8 @@ subroutine init_rk4_params()
    ! other and decide based on their own needs.                                            !
    !---------------------------------------------------------------------------------------!
    check_maxleaf = .false.
+   !---------------------------------------------------------------------------------------!
+
 
 
    !---------------------------------------------------------------------------------------!
@@ -2322,12 +2326,27 @@ subroutine init_rk4_params()
    ! sphere will not stop, but that is unlikely.                                           !
    !---------------------------------------------------------------------------------------!
    supersat_ok = .false.
+   !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
    !     This flag is used to control the method used to define water percolation through  !
    ! snow layers.                                                                          !
    !---------------------------------------------------------------------------------------!
    newsnow = .true.
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     The integrator will adjust pressure every time step, including the internal ones, !
+   ! to make sure the ideal gas is respected.  If set to false, it will keep pressure      !
+   ! constant within on DTLSM time step, and not bother forcing the canopy air space to    !
+   ! respect the ideal gas equation.                                                       !
+   !---------------------------------------------------------------------------------------!
+   force_idealgas = .false.
+   !---------------------------------------------------------------------------------------!
+
 
    return
 end subroutine init_rk4_params

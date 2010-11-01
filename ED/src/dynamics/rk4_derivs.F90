@@ -108,7 +108,6 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
    use ed_state_vars        , only : sitetype              & ! structure
                                    , patchtype             & ! structure
                                    , polygontype
-   use ed_therm_lib         , only : ed_grndvap8           ! ! subroutine
    use therm_lib8           , only : qtk8                  ! ! subroutine
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
@@ -141,15 +140,12 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
    real(kind=8)                     :: wloss            ! Water loss due to transpiration
    real(kind=8)                     :: qwloss           ! Energy loss due to transpiration
    real(kind=8)                     :: dqwt             ! Energy adjustment aux. variable
-   real(kind=8)                     :: fracliq          ! Fraction of liquid water
-   real(kind=8)                     :: tempk            ! Temperature
    real(kind=8)                     :: qwgoal           ! Goal energy for thin snow layers.
    real(kind=8)                     :: wprevious        ! Previous water content
    real(kind=8)                     :: infilt           ! Surface infiltration rate
    real(kind=8)                     :: qinfilt          ! Surface infiltration heat rate
    real(kind=8)                     :: snowdens         ! Snow density (kg/m2)
    real(kind=8)                     :: soilhcap         ! Soil heat capacity
-   real(kind=8)                     :: int_sfcw_u       ! Intensive sfc. water internal en.
    real(kind=8)                     :: surface_water    ! Temp. variable. Availible liquid 
                                                         !   water on the soil sfc. (kg/m2)
    real(kind=8)                     :: freezeCor        ! Correction to conductivity for 
@@ -214,29 +210,11 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
    dinitp%sfcwater_depth(:)  = 0.0d0
    dinitp%sfcwater_energy(:) = 0.0d0
    dinitp%sfcwater_mass(:)   = 0.0d0
-   dinitp%virtual_heat       = 0.0d0
+   dinitp%virtual_energy     = 0.0d0
    dinitp%virtual_water      = 0.0d0
    dinitp%virtual_depth      = 0.0d0
    initp%extracted_water(:)  = 0.0d0
    dinitp%avg_smoist_gc(:)   = 0.0d0
-
-   !---------------------------------------------------------------------------------------!
-   !     Copy the soil texture flag to an alias, define the level top temporary surface    !
-   ! water/snow layer (assign it to 1 if there is none, to avoid accessing memory points   !
-   ! that do not exist).  Also, ed_grndvap8 expects the surface water/snow internal energy !
-   ! to be in J/kg, not J/m2, so we must convert it here.                                  !
-   !---------------------------------------------------------------------------------------!
-   nsoil = csite%ntext_soil(mzg,ipa)
-   k = max(1,ksn)
-   if (abs(initp%sfcwater_mass(k)) > rk4tiny_sfcw_mass) then
-      int_sfcw_u = initp%sfcwater_energy(k)/initp%sfcwater_mass(k)
-   else
-      int_sfcw_u = 0.0d0
-   end if
-   
-   call ed_grndvap8(ksn,nsoil,initp%soil_water(mzg),initp%soil_energy(mzg),int_sfcw_u      &
-                   ,initp%can_prss,initp%can_shv,initp%ground_shv,initp%surface_ssh        &
-                   ,initp%surface_temp,initp%surface_fliq)
 
    !---------------------------------------------------------------------------------------!
    !     Calculate water available to vegetation (in meters). SLZ is specified in RAMSIN.  !
@@ -244,6 +222,7 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
    ! Eg, SLZ = -2, -1, -0.5, -0.25.  There are four soil layers in this example; soil      !
    ! layer 1 goes from 2 meters below the surface to 1 meter below the surface.            !
    !---------------------------------------------------------------------------------------!
+   nsoil = csite%ntext_soil(mzg,ipa)
    initp%available_liquid_water(mzg) = dslz8(mzg)                                          &
                                      * max(0.0d0                                           &
                                           ,initp%soil_fracliq(mzg)*(initp%soil_water(mzg)  &
@@ -399,9 +378,9 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
       dinitp%sfcwater_energy(ksn) = dinitp%sfcwater_energy(ksn) - qw_flux(mzg+ksn+1)
       dinitp%sfcwater_depth(ksn)  = -d_flux(ksn+1)
    else if (w_flux(mzg+1) < 0.d0) then
-      dinitp%virtual_heat  = -qw_flux(mzg+1)
-      dinitp%virtual_water = -w_flux(mzg+1)
-      dinitp%virtual_depth = -d_flux(1)
+      dinitp%virtual_energy = -qw_flux(mzg+1)
+      dinitp%virtual_water  = -w_flux(mzg+1)
+      dinitp%virtual_depth  = -d_flux(1)
       qw_flux(mzg+1)       = 0.d0
       w_flux(mzg+1)        = wflxgc
    else
@@ -429,23 +408,21 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
       if (initp%virtual_water /= 0.d0) then  !!process "virtural water" pool
          nsoil = csite%ntext_soil(mzg,ipa)
          if (nsoil /= 13) then
-            call qtk8(initp%virtual_heat/initp%virtual_water,tempk,fracliq)
             infilt = -dslzi8(mzg)* 5.d-1 * slcons18(mzg,nsoil)                             &
                    * (initp%soil_water(mzg) / soil8(nsoil)%slmsts)                         &
                      **(2.d0 * soil8(nsoil)%slbs + 3.d0)                                   &
                    * (initp%psiplusz(mzg)-initp%virtual_water/2.d3) & !diff. in pot.
-                   * 5.d-1 * (initp%soil_fracliq(mzg)+ fracliq)       ! mean liquid fraction
-            qinfilt = infilt * cliqvlme8 * (tempk - tsupercool8)
+                   * 5.d-1 * (initp%soil_fracliq(mzg)+ initp%virtual_fracliq) ! mean liquid fraction
+            qinfilt = infilt * cliqvlme8 * (initp%virtual_tempk - tsupercool8)
             !----- Adjust other rates accordingly -----------------------------------------!
             w_flux(mzg+1)  = w_flux(mzg+1) + infilt
             qw_flux(mzg+1) = qw_flux(mzg+1)+ qinfilt
-            dinitp%virtual_water = dinitp%virtual_water - infilt*wdns8
-            dinitp%virtual_heat  = dinitp%virtual_heat  - qinfilt
+            dinitp%virtual_water  = dinitp%virtual_water  - infilt*wdns8
+            dinitp%virtual_energy = dinitp%virtual_energy - qinfilt
          end if
       end if  !! end virtual water pool
       if (initp%nlev_sfcwater >= 1) then !----- Process "snow" water pool -----------------! 
-         call qtk8(initp%sfcwater_energy(1)/initp%sfcwater_mass(1),tempk,fracliq)
-         surface_water = initp%sfcwater_mass(1)*fracliq*wdnsi8 !(m/m2)
+         surface_water = initp%sfcwater_mass(1)*initp%sfcwater_fracliq(1)*wdnsi8 !(m/m2)
          nsoil = csite%ntext_soil(mzg,ipa)
          if (nsoil /= 13) then
             !----- Calculate infiltration rate (m/s) --------------------------------------!
@@ -453,8 +430,8 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
                    * (initp%soil_water(mzg) / soil8(nsoil)%slmsts)                         &
                      **(2.d0 * soil8(nsoil)%slbs + 3.d0)                                   &
                    * (initp%psiplusz(mzg) - surface_water/2.d0) & !difference in potentials
-                   * 5.d-1 * (initp%soil_fracliq(mzg)+ fracliq)   ! mean liquid fraction
-            qinfilt = infilt * cliqvlme8 * (tempk - tsupercool8)
+                   * 5.d-1 * (initp%soil_fracliq(mzg) + initp%sfcwater_fracliq(1))
+            qinfilt = infilt * cliqvlme8 * (initp%sfcwater_tempk(1) - tsupercool8)
             !----- Adjust other rates accordingly -----------------------------------------!
             w_flux(mzg+1)             = w_flux(mzg+1)             + infilt
             qw_flux(mzg+1)            = qw_flux(mzg+1)            + qinfilt 
@@ -627,7 +604,6 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
                                     , ccapcani             & ! intent(in)
                                     , any_solvable         & ! intent(in)
                                     , tiny_offset          & ! intent(in)
-                                    , rk4water_stab_thresh & ! intent(in)
                                     , rk4dry_veg_lwater    & ! intent(in)
                                     , rk4fullveg_lwater    & ! intent(in)
                                     , checkbudget          & ! intent(in)
@@ -1347,7 +1323,10 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
       dinitp%ebudget_storage    = dinitp%ebudget_storage   + eflxac + dinitp%avg_netrad
       dinitp%wbudget_storage    = dinitp%wbudget_storage   + wflxac
    end if
-  
+   !---------------------------------------------------------------------------------------!
+
+
+
    !---------------------------------------------------------------------------------------!
    !     These variables below are virtual copies of the variables above, but are here for !
    ! for use in the coupled model. They form the set of canopy-atmosphere fluxes that are  !
@@ -1359,20 +1338,25 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
    dinitp%cpwp = -(initp%ustar*initp%cstar)
    dinitp%tpwp = -(initp%ustar*initp%tstar)
    dinitp%wpwp = vertical_vel_flux8(initp%zeta,initp%tstar,initp%ustar)
+   !---------------------------------------------------------------------------------------!
+
 
 
    !---------------------------------------------------------------------------------------!
-   !     If the single pond layer is too thin, force equilibrium with top soil layer.      !
-   ! This is done in two steps: first, we don't transfer all the energy to the top soil    !
-   ! layer.  Then, in adjust_sfcw_properties, we will make them in thermal equilibrium.    !
+   !     If the single pond layer is too thin, we force equilibrium with top soil layer.   !
+   ! This is done in two steps: first, we transfer all the energy to the top soil layer.   !
+   ! Then, in adjust_sfcw_properties, we make them in thermal equilibrium.  We use the     !
+   ! flag_sfcwater to transfer the energy rather than the actual mass because if a layer   !
+   ! is considered to thin at the beginning of the time step, we want it to keep the same  !
+   ! status throughout the entire step.                                                    !
    !---------------------------------------------------------------------------------------!
-   !if (initp%nlev_sfcwater == 1) then
-   !   if (abs(initp%sfcwater_mass(1)) < rk4water_stab_thresh) then
-   !      dinitp%soil_energy(mzg)   = dinitp%soil_energy(mzg)                               &
-   !                                + dinitp%sfcwater_energy(1) * dslzi8(mzg)
-   !      dinitp%sfcwater_energy(1) = 0.d0
-   !   end if
-   !end if
+   select case (initp%flag_sfcwater)
+   case (1)
+      dinitp%soil_energy(mzg)   = dinitp%soil_energy(mzg)                                  &
+                                + dinitp%sfcwater_energy(1) * dslzi8(mzg)
+      dinitp%sfcwater_energy(1) = 0.d0
+   end select
+   !---------------------------------------------------------------------------------------!
 
    return
 end subroutine canopy_derivs_two

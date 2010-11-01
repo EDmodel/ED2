@@ -477,7 +477,7 @@ subroutine read_soil_moist_temp(cgrid,igr)
                         end do
 
 
-                       !----- Initial condition is with no snow/pond. ----------------------!
+                       !----- Initial condition is with no snow/pond. ---------------------!
                        csite%nlev_sfcwater(ipa)    = 0
                        csite%total_snow_depth(ipa) = 0.
                         do k=1,nzs
@@ -498,14 +498,18 @@ subroutine read_soil_moist_temp(cgrid,igr)
                            csite%soil_fracliq(1:4,ipa) =   1.0
                         endif
                         
-                        nls = 1
-                        call ed_grndvap(nls,csite%ntext_soil(nzg,ipa)                      &
-                                       ,csite%soil_water(nzg,ipa)                          &
-                                       ,csite%soil_energy(nzg,ipa)                         &
-                                       ,csite%sfcwater_energy(nlsw1,ipa)                   &
-                                       ,csite%can_prss(ipa),csite%can_shv(ipa)             &
-                                       ,csite%ground_shv(ipa),csite%surface_ssh(ipa)       &
-                                       ,surface_temp,surface_fliq)
+                        !----- Compute the ground specific humidity. ----------------------!
+                        ntext = csite%ntext_soil(k,ipa)
+                        nls   = csite%nlev_sfcwater(ipa)
+                        nlsw1 = max(1,nls)
+                        call ed_grndvap(nls,ntext,csite%soil_water(nzg,ipa)                &
+                                       ,csite%soil_tempk(nzg,ipa)                          &
+                                       ,csite%soil_fracliq(nzg,ipa)                        &
+                                       ,csite%sfcwater_tempk(nlsw1,ipa)                    &
+                                       ,csite%sfcwater_fracliq(nlsw1,ipa)                  &
+                                       ,csite%can_prss(ipa)                                &
+                                       ,csite%can_shv(ipa),csite%ground_shv(ipa)           &
+                                       ,csite%surface_ssh(ipa),surface_temp,surface_fliq)
 
                      end do patchloop
                   end do siteloop

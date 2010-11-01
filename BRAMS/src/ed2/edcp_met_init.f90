@@ -263,12 +263,13 @@ subroutine ed_init_coup_atm()
                   call update_patch_derived_props(csite,cpoly%lsl(isi),cpoly%met(isi)%prss &
                                                  ,ipa)
 
+                  nsoil = csite%ntext_soil(nzg,ipa)
                   nls   = csite%nlev_sfcwater(ipa)
                   nlsw1 = max(nls,1)
-                  
-                  call ed_grndvap(nls,csite%ntext_soil(nzg,ipa),csite%soil_water(nzg,ipa)  &
-                                 ,csite%soil_energy(nzg,ipa)                               &
-                                 ,csite%sfcwater_energy(nlsw1,ipa),csite%can_prss(ipa)     &
+                  call ed_grndvap(nls,nsoil,csite%soil_water(nzg,ipa)                      &
+                                 ,csite%soil_tempk(nzg,ipa),csite%soil_fracliq(nzg,ipa)    &
+                                 ,csite%sfcwater_tempk(nlsw1,ipa)                          &
+                                 ,csite%sfcwater_fracliq(nlsw1,ipa),csite%can_prss(ipa)    &
                                  ,csite%can_shv(ipa),csite%ground_shv(ipa)                 &
                                  ,csite%surface_ssh(ipa),surface_temp,surface_fliq)
                else
@@ -276,12 +277,13 @@ subroutine ed_init_coup_atm()
                   call update_patch_derived_props(csite,cpoly%lsl(isi),cpoly%met(isi)%prss &
                                                  ,ipa)
 
+                  nsoil = csite%ntext_soil(nzg,ipa)
                   nls   = csite%nlev_sfcwater(ipa)
                   nlsw1 = max(nls,1)
-                  
-                  call ed_grndvap(nls,csite%ntext_soil(nzg,ipa),csite%soil_water(nzg,ipa)  &
-                                 ,csite%soil_energy(nzg,ipa)                               &
-                                 ,csite%sfcwater_energy(nlsw1,ipa),csite%can_prss(ipa)     &
+                  call ed_grndvap(nls,nsoil,csite%soil_water(nzg,ipa)                      &
+                                 ,csite%soil_tempk(nzg,ipa),csite%soil_fracliq(nzg,ipa)    &
+                                 ,csite%sfcwater_tempk(nlsw1,ipa)                          &
+                                 ,csite%sfcwater_fracliq(nlsw1,ipa),csite%can_prss(ipa)    &
                                  ,csite%can_shv(ipa),csite%ground_shv(ipa)                 &
                                  ,csite%surface_ssh(ipa),surface_temp,surface_fliq)
                end if
@@ -528,14 +530,19 @@ subroutine leaf2ed_soil_moist_energy(cgrid,ifm)
                csite%sfcwater_tempk  (k,ipa) = csite%soil_tempk(nzg,ipa)
                csite%sfcwater_fracliq(k,ipa) = csite%soil_fracliq(nzg,ipa)
             end do
-            
-            !----- Compute the ground properties ------------------------------------------!
-            ksn   = csite%nlev_sfcwater(ipa)
-            ksnw1 = max(ksn,1)
-            call ed_grndvap(ksn,csite%ntext_soil(nzg,ipa),csite%soil_water(nzg,ipa)        &
-                           ,csite%soil_energy(nzg,ipa),csite%sfcwater_energy(ksnw1,ipa)    &
-                           ,csite%can_prss(ipa),csite%can_shv(ipa),csite%ground_shv(ipa)   &
-                           ,csite%surface_ssh(ipa),surface_temp,surface_fliq)
+
+
+
+
+            ntext = csite%ntext_soil(nzg,ipa)
+            nls   = csite%nlev_sfcwater(ipa)
+            nlsw1 = max(nls,1)
+            call ed_grndvap(nls,ntext,csite%soil_water(nzg,ipa),csite%soil_tempk(nzg,ipa)  &
+                           ,csite%soil_fracliq(nzg,ipa),csite%sfcwater_tempk(nlsw1,ipa)    &
+                           ,csite%sfcwater_fracliq(nlsw1,ipa),csite%can_prss(ipa)          &
+                           ,csite%can_shv(ipa),csite%ground_shv(ipa)                       &
+                           ,csite%surface_ssh(ipa),surface_temp,surface_fliq )
+
          end do patchloop
       end do siteloop
    end do polyloop

@@ -418,8 +418,8 @@ subroutine heun_integ(h1,csite,ipa,nsteps)
    !    If top snow layer is too thin for computational stability, have it evolve in       !
    ! thermal equilibrium with top soil layer.                                              !
    !---------------------------------------------------------------------------------------!
-   call adjust_sfcw_properties(nzg,nzs,integration_buff%initp, csite,ipa)
-   call update_diagnostic_vars(integration_buff%initp,csite,ipa)
+   ! call adjust_sfcw_properties(nzg,nzs,integration_buff%initp, csite,ipa)
+   ! call update_diagnostic_vars(integration_buff%initp,csite,ipa)
 
    !---------------------------------------------------------------------------------------!
    !     Create temporary patches.                                                         !
@@ -572,9 +572,11 @@ subroutine heun_integ(h1,csite,ipa,nsteps)
             !------------------------------------------------------------------------------!
             !----- i.   Final update of leaf properties to avoid negative water. ----------!
             call adjust_veg_properties(integration_buff%ytemp,h,csite,ipa)
-            !----- ii.  Make snow layers stable and positively defined. -------------------!
+            !----- ii.  Final update of top soil properties to avoid off-bounds moisture. -!
+            ! call adjust_topsoil_properties(integration_buff%ytemp,h,csite,ipa)
+            !----- iii.  Make snow layers stable and positively defined. ------------------!
             call adjust_sfcw_properties(nzg,nzs,integration_buff%ytemp,csite,ipa)
-            !----- iii. Update the diagnostic variables. ----------------------------------!
+            !----- iv. Update the diagnostic variables. -----------------------------------!
             call update_diagnostic_vars(integration_buff%ytemp,csite,ipa)
             !------------------------------------------------------------------------------!
 
@@ -827,8 +829,13 @@ subroutine heun_stepper(x,h,csite,ipa,reject_step,reject_result)
    call inc_rk4_patch(integration_buff%ytemp,integration_buff%ak2 , heun_c2*h, cpatch)
    combh = (heun_c1+heun_c2) * h ! Which should be h
 
-   !----- Update the diagnostic properties and make final adjustments. --------------------!
+   !---------------------------------------------------------------------------------------!
+   !      Update the diagnostic properties and make final adjustments.  This time we will  !
+   ! run the full adjustment, to make sure that the step will be rejected especially if    !
+   ! there are issues with the top soil properties.                                        !
+   !---------------------------------------------------------------------------------------!
    call adjust_veg_properties    (integration_buff%ytemp,combh  ,csite,ipa)
+   call adjust_topsoil_properties(integration_buff%ytemp,combh  ,csite,ipa)
    call adjust_sfcw_properties   (nzg,nzs,integration_buff%ytemp,csite,ipa)
    call update_diagnostic_vars   (integration_buff%ytemp        ,csite,ipa)
    !---------------------------------------------------------------------------------------!

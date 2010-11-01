@@ -232,19 +232,18 @@ subroutine ed_init_atm
                  call update_patch_derived_props(csite,cpoly%lsl(isi),cpoly%met(isi)%prss  &
                                                 ,ipa)
 
+                 !----- Compute the ground specific humidity. -----------------------------!
+                 nsoil = csite%ntext_soil(k,ipa)
                  nls   = csite%nlev_sfcwater(ipa)
                  nlsw1 = max(1,nls)
-                 call ed_grndvap(nls,                    &
-                      csite%ntext_soil       (nzg,ipa),  &
-                      csite%soil_water       (nzg,ipa),  &
-                      csite%soil_energy      (nzg,ipa),  &
-                      csite%sfcwater_energy(nlsw1,ipa),  &
-                      csite%can_prss(ipa),  &
-                      csite%can_shv(ipa),  &
-                      csite%ground_shv(ipa),  &
-                      csite%surface_ssh(ipa), surface_temp, surface_fliq)
-              else
+                 call ed_grndvap(nls,nsoil,csite%soil_water(nzg,ipa)                       &
+                                ,csite%soil_tempk(nzg,ipa),csite%soil_fracliq(nzg,ipa)     &
+                                ,csite%sfcwater_tempk(nlsw1,ipa)                           &
+                                ,csite%sfcwater_fracliq(nlsw1,ipa),csite%can_prss(ipa)     &
+                                ,csite%can_shv(ipa),csite%ground_shv(ipa)                  &
+                                ,csite%surface_ssh(ipa),surface_temp,surface_fliq)
 
+              else
                  !----- Compute patch-level LAI, vegetation height, and roughness. --------!
                  call update_patch_derived_props(csite,cpoly%lsl(isi),cpoly%met(isi)%prss  &
                                                 ,ipa)

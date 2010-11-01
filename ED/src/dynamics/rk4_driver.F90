@@ -376,7 +376,6 @@ module rk4_driver
       use grid_coms            , only : nzg                  & ! intent(in)
                                       , nzs                  ! ! intent(in)
       use therm_lib            , only : qwtk                 ! ! subroutine
-      use ed_therm_lib         , only : ed_grndvap           ! ! subroutine
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(rk4patchtype), target      :: initp
@@ -401,8 +400,6 @@ module rk4_driver
       integer                         :: nlsw1
       real(kind=8)                    :: available_water
       real(kind=8)                    :: tmp_energy
-      real                            :: surface_temp
-      real                            :: surface_fliq
       !----- Local contants ---------------------------------------------------------------!
       real        , parameter         :: tendays_sec=10.*day_sec
       !----- External function ------------------------------------------------------------!
@@ -653,14 +650,10 @@ module rk4_driver
          !---------------------------------------------------------------------------------!
       end do
 
+      !------ Copy the ground variables to the output. ------------------------------------!
+      csite%ground_shv (ipa) = sngloff(initp%ground_shv , tiny_offset)
+      csite%surface_ssh(ipa) = sngloff(initp%surface_ssh, tiny_offset)
 
-      ksn   = csite%nlev_sfcwater(ipa)
-      nsoil = csite%ntext_soil(nzg,ipa)
-      nlsw1 = max(1, ksn)
-      call ed_grndvap(ksn,nsoil,csite%soil_water(nzg,ipa),csite%soil_energy(nzg,ipa)       &
-                     ,csite%sfcwater_energy(nlsw1,ipa),csite%can_prss(ipa)                 &
-                     ,csite%can_shv(ipa),csite%ground_shv(ipa),csite%surface_ssh(ipa)      &
-                     ,surface_temp,surface_fliq)
       return
    end subroutine initp2modelp
    !=======================================================================================!

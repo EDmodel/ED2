@@ -54,6 +54,7 @@ module rk4_coms
 
       !----- Temporary surface water variables. -------------------------------------------!
       integer                             :: nlev_sfcwater    ! # of layers       [   ----]
+      integer                             :: flag_sfcwater    ! Status flag       [  -----]
       real(kind=8), dimension(:), pointer :: sfcwater_depth   ! Depth             [      m]
       real(kind=8), dimension(:), pointer :: sfcwater_mass    ! Mass              [  kg/m²]
       real(kind=8), dimension(:), pointer :: sfcwater_energy  ! Internal energy   [   J/m²]
@@ -62,10 +63,11 @@ module rk4_coms
       real(kind=8), dimension(:), pointer :: sfcwater_restz   ! Resistance term   [   ----]
 
       !----- Virtual layer variables. -----------------------------------------------------!
-      integer                             :: virtual_flag     ! Status flag       [  -----]
       real(kind=8)                        :: virtual_water    ! Mass              [  kg/m²]
-      real(kind=8)                        :: virtual_heat     ! Internal energy   [  kg/m²]
+      real(kind=8)                        :: virtual_energy   ! Internal energy   [  kg/m²]
       real(kind=8)                        :: virtual_depth    ! Depth             [      m]
+      real(kind=8)                        :: virtual_tempk    ! Temperature       [      K]
+      real(kind=8)                        :: virtual_fracliq  ! Liquid fraction   [      K]
 
       !----- Surface variables. -----------------------------------------------------------!
       real(kind=8)                        :: ground_shv   ! Ground sp. humidity   [  kg/kg]
@@ -210,7 +212,7 @@ module rk4_coms
    type rk4sitetype
       integer                        :: lsl
       real(kind=8), dimension(n_pft) :: green_leaf_factor
-      real(kind=8)                   :: rhos
+      real(kind=8)                   :: atm_rhos
       real(kind=8)                   :: vels
       real(kind=8)                   :: atm_tmp
       real(kind=8)                   :: atm_theta
@@ -395,25 +397,32 @@ module rk4_coms
 
 
    !----- Constants used in rk4_derivs ----------------------------------------------------!
-   logical      :: supersat_ok   ! It is fine for evaporation and transpiration to
-                                 !    occur even if this causes the canopy air to 
-                                 !    be super-saturated                           [   T|F]
-                                 !    (N.B. Super-saturation can occur even if 
-                                 !     supersat_ok is .false., but in this case
-                                 !     only mixing with free atmosphere can cause
-                                 !     the super-saturation).
-   logical      :: check_maxleaf ! The integrator will check whether the leaves are
-                                 !    at their maximum holding capacity before let-
-                                 !    ting water to be intercepted and dew/frost
-                                 !    to remain at the leaf surfaces.  If FALSE, 
-                                 !    the amount of water will be adjusted outside
-                                 !    the derivative calculation.                  [   T|F]
-   logical      :: debug         ! Verbose output for debug                        [   T|F]
-   real(kind=8) :: toocold       ! Minimum temperature for saturation spec. hum.   [     K]
-   real(kind=8) :: toohot        ! Maximum temperature for saturation spec. hum.   [     K]
-   real(kind=8) :: lai_to_cover  ! Canopies with LAI less than this number are assumed to
-                                 !     be open, ie, some fraction of the rain-drops can 
-                                 !     reach the soil/litter layer unimpeded.
+   logical      :: supersat_ok    ! It is fine for evaporation and transpiration to
+                                  !    occur even if this causes the canopy air to 
+                                  !    be super-saturated                          [   T|F]
+                                  !    (N.B. Super-saturation can occur even if 
+                                  !     supersat_ok is .false., but in this case
+                                  !     only mixing with free atmosphere can cause
+                                  !     the super-saturation).
+   logical      :: check_maxleaf  ! The integrator will check whether the leaves are
+                                  !    at their maximum holding capacity before let-
+                                  !    ting water to be intercepted and dew/frost
+                                  !    to remain at the leaf surfaces.  If FALSE, 
+                                  !    the amount of water will be adjusted outside
+                                  !    the derivative calculation.                 [   T|F]
+   logical      :: force_idealgas ! The integrator will adjust pressure every time 
+                                  !    step, including the internal ones, to make 
+                                  !    sure the ideal gas is respected.  If set to
+                                  !    false, it will keep pressure constant 
+                                  !    within on DTLSM time step, and not bother
+                                  !    forcing the canopy air space to respect the
+                                  !    ideal gas                                   [   T|F]
+   logical      :: debug          ! Verbose output for debug                       [   T|F]
+   real(kind=8) :: toocold        ! Minimum temperature for saturation spec. hum.  [     K]
+   real(kind=8) :: toohot         ! Maximum temperature for saturation spec. hum.  [     K]
+   real(kind=8) :: lai_to_cover   ! Canopies with LAI less than this number are assumed to
+                                  !     be open, ie, some fraction of the rain-drops can 
+                                  !     reach the soil/litter layer unimpeded.
    !---------------------------------------------------------------------------------------!
 
 
@@ -727,17 +736,20 @@ module rk4_coms
       y%can_exner                      = 0.d0
       y%flag_wflxgc                    = -1
       y%virtual_water                  = 0.d0
-      y%virtual_heat                   = 0.d0
+      y%virtual_energy                 = 0.d0
       y%virtual_depth                  = 0.d0
+      y%virtual_tempk                  = 0.d0
+      y%virtual_fracliq                = 0.d0
      
       y%ground_shv                     = 0.d0
       y%surface_ssh                    = 0.d0
       y%surface_temp                   = 0.d0
       y%surface_fliq                   = 0.d0
       y%nlev_sfcwater                  = 0
-     
+      y%flag_sfcwater                  = 0
+
       y%rough                          = 0.d0
-     
+
       y%ustar                          = 0.d0
       y%cstar                          = 0.d0
       y%tstar                          = 0.d0
@@ -752,10 +764,6 @@ module rk4_coms
       y%cwd_rh                         = 0.d0
       y%rh                             = 0.d0
 
-
-      y%virtual_flag                   = 0
-      y%avg_carbon_ac                  = 0.d0
-     
       y%upwp                           = 0.d0
       y%wpwp                           = 0.d0
       y%tpwp                           = 0.d0
@@ -765,6 +773,7 @@ module rk4_coms
       y%rasveg                         = 0.d0
      
 
+      y%avg_carbon_ac                  = 0.d0
       y%avg_vapor_vc                   = 0.d0
       y%avg_dew_cg                     = 0.d0
       y%avg_vapor_gc                   = 0.d0
