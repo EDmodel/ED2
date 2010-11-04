@@ -96,6 +96,44 @@ module canopy_air_coms
 
    !=======================================================================================!
    !=======================================================================================!
+   !      Parameters for the aerodynamic resistance between the leaf and the canopy air    !
+   ! space.  These are the A, B, n, and m parameters that define the Nusselt number for    !
+   ! forced and free convection, at equations 10.7 and 10.9:                               !
+   !                                                                                       !
+   ! M08 - Monteith, J. L., M. H. Unsworth, 2008. Principles of Environmental Physics,     !
+   !       3rd. edition, Academic Press, Amsterdam, 418pp.  (Mostly Chapter 10).           !
+   !---------------------------------------------------------------------------------------!
+   real                    :: aflat_turb  ! A (forced convection), turbulent flow
+   real                    :: aflat_lami  ! A (forced convection), laminar   flow
+   real                    :: nflat_turb  ! n (forced convection), turbulent flow
+   real                    :: nflat_lami  ! n (forced convection), laminar   flow
+
+   real                    :: bflat_turb  ! B (free   convection), turbulent flow
+   real                    :: bflat_lami  ! B (free   convection), laminar   flow
+   real                    :: mflat_turb  ! m (free   convection), turbulent flow
+   real                    :: mflat_lami  ! m (free   convection), laminar   flow
+
+   real(kind=8)            :: aflat_turb8 ! A (forced convection), turbulent flow
+   real(kind=8)            :: aflat_lami8 ! A (forced convection), laminar   flow
+   real(kind=8)            :: nflat_turb8 ! n (forced convection), turbulent flow
+   real(kind=8)            :: nflat_lami8 ! n (forced convection), laminar   flow
+
+   real(kind=8)            :: bflat_turb8 ! B (free   convection), turbulent flow
+   real(kind=8)            :: bflat_lami8 ! B (free   convection), laminar   flow
+   real(kind=8)            :: mflat_turb8 ! m (free   convection), turbulent flow
+   real(kind=8)            :: mflat_lami8 ! m (free   convection), laminar   flow
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
    !      Parameters for surface layer models.                                             !
    !---------------------------------------------------------------------------------------!
    !----- Louis (1979) model. -------------------------------------------------------------!

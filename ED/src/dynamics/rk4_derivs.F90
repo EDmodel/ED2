@@ -16,7 +16,6 @@ subroutine leaf_derivs(initp,dinitp,csite,ipa)
                                      , cpi8               ! ! intent(in)
    use grid_coms              , only : nzg                & ! intent(in)
                                      , nzs                ! ! intent(in)
-   use canopy_struct_dynamics , only : canopy_turbulence8 ! ! subroutine
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(rk4patchtype) , target     :: initp     ! Structure with RK4 intermediate state
@@ -55,15 +54,8 @@ subroutine leaf_derivs(initp,dinitp,csite,ipa)
    dinitp%wbudget_storage   = 0.d0
    dinitp%co2budget_storage = 0.d0
 
-   !----- Compute canopy turbulence properties. -------------------------------------------!
-   call canopy_turbulence8(csite,initp,ipa,.false.)
-
    !----- Finding the derivatives. --------------------------------------------------------!
    call leaftw_derivs(nzg,nzs,initp,dinitp,csite,ipa)
-
-
-   !----- Nlev_sfcwater derivative... I doubt it's really used... -------------------------!
-   dinitp%nlev_sfcwater = initp%nlev_sfcwater
 
    return
 end subroutine leaf_derivs

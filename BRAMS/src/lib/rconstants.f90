@@ -120,6 +120,33 @@ Module rconstants
 
 
    !---------------------------------------------------------------------------------------!
+   ! Reference for this block:                                                             !
+   ! MU08 - Monteith, J. L., M. H. Unsworth, 2008. Principles of Environmental Physics,    !
+   !        third edition, Academic Press, Amsterdam, 418pp.  (Chapters 3 and 10).         !
+   !                                                                                       !
+   !     Air diffusion properties. These properties are temperature-dependent in reality,  !
+   ! but for simplicity we assume them constants, using the value at 20°C.                 !
+   !                                                                                       !
+   ! Thermal diffusivity - Straight from Table 15.1 of MU08                                !
+   ! Kinematic viscosity - Computed from equation on page 32 of MU08;                      !
+   ! Thermal expansion coefficient - determined by inverting the coefficient at equation   !
+   !                                 10.11 (MU08).                                         !
+   ! These terms could be easily made function of temperature in the future if needed be.  !
+   !---------------------------------------------------------------------------------------!
+   real, parameter :: th_diff  = 2.060e-5     ! Air thermal diffusivity         [     m²/s]
+   real, parameter :: th_diffi = 1./th_diff   ! 1/ air thermal diffusivity      [     s/m²]
+   real, parameter :: kin_visc = 1.516e-5     ! Kinematic viscosity             [     m²/s]
+   real, parameter :: th_expan = 3.43e-3      ! Air thermal expansion coeff.    [      1/K]
+   !---------------------------------------------------------------------------------------!
+   !    Grashof coefficient [1/(K m³)].  This is the coefficient a*g/(nu²) in MU08's       !
+   ! equation 10.8, in the equation that defines the Grashof number.                       !
+   !---------------------------------------------------------------------------------------!
+   real, parameter :: gr_coeff = th_expan * grav * th_diffi * th_diffi
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
    ! Dry air properties                                                                    !
    !---------------------------------------------------------------------------------------!
    real, parameter :: rdry   = rmol/mmdry    ! Gas constant for dry air (Ra)    [   J/kg/K]
@@ -375,6 +402,11 @@ Module rconstants
    real(kind=8), parameter :: ltscalemax8     = dble(ltscalemax    )
    real(kind=8), parameter :: abswltlmin8     = dble(abswltlmin    )
    real(kind=8), parameter :: lturbmin8       = dble(lturbmin      )
+   real(kind=8), parameter :: th_diff8        = dble(th_diff       )
+   real(kind=8), parameter :: th_diffi8       = dble(th_diffi      )
+   real(kind=8), parameter :: kin_visc8       = dble(kin_visc      )
+   real(kind=8), parameter :: th_expan8       = dble(th_expan      )
+   real(kind=8), parameter :: gr_coeff8       = dble(gr_coeff      )
    !---------------------------------------------------------------------------------------!
 
 

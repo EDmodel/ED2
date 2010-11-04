@@ -4,47 +4,49 @@
 ! to a buffer structure.                                                                   !
 !------------------------------------------------------------------------------------------!
 subroutine copy_patch_init(sourcesite,ipa,targetp)
-   use ed_state_vars        , only : sitetype               & ! structure
-                                   , patchtype              ! ! structure
-   use grid_coms            , only : nzg                    & ! intent(in)
-                                   , nzs                    ! ! intent(in) 
-   use ed_misc_coms         , only : fast_diagnostics       ! ! intent(in)
-   use consts_coms          , only : cpi8                   & ! intent(in)
-                                   , ep8                    & ! intent(in)
-                                   , cp8                    & ! intent(in)
-                                   , epim18                 & ! intent(in)
-                                   , alvl8                  & ! intent(in)
-                                   , rdry8                  & ! intent(in)
-                                   , rdryi8                 & ! intent(in)
-                                   , p00i8                  & ! intent(in)
-                                   , rocp8                  ! ! intent(in)
-   use rk4_coms             , only : rk4patchtype           & ! structure
-                                   , rk4site                & ! structure
-                                   , hcapveg_ref            & ! intent(in)
-                                   , rk4eps                 & ! intent(in)
-                                   , min_height             & ! intent(in)
-                                   , any_solvable           & ! intent(out)
-                                   , zoveg                  & ! intent(out)
-                                   , zveg                   & ! intent(out)
-                                   , wcapcan                & ! intent(out)
-                                   , wcapcani               & ! intent(out)
-                                   , rk4water_stab_thresh   & ! intent(in)
-                                   , rk4tiny_sfcw_mass      & ! intent(in)
-                                   , checkbudget            & ! intent(in)
-                                   , print_detailed         & ! intent(in)
-                                   , find_derived_thbounds  & ! sub-routine
-                                   , reset_rk4_fluxes       ! ! sub-routine
-   use ed_max_dims          , only : n_pft                  ! ! intent(in)
-   use canopy_radiation_coms, only : tai_min                ! ! intent(in)
-   use therm_lib8           , only : qwtk8                  & ! subroutine
-                                   , thetaeiv8              & ! function
-                                   , idealdenssh8           & ! function
-                                   , rehuil8                & ! function
-                                   , rslif8                 & ! function
-                                   , reducedpress8          ! ! function
-   use allometry            , only : dbh2bl                 ! ! function
-   use soil_coms            , only : soil8                  ! ! intent(in)
-   use ed_therm_lib         , only : ed_grndvap8            ! ! subroutine
+   use ed_state_vars         , only : sitetype               & ! structure
+                                    , patchtype              ! ! structure
+   use grid_coms             , only : nzg                    & ! intent(in)
+                                    , nzs                    ! ! intent(in) 
+   use ed_misc_coms          , only : fast_diagnostics       ! ! intent(in)
+   use consts_coms           , only : cpi8                   & ! intent(in)
+                                    , ep8                    & ! intent(in)
+                                    , cp8                    & ! intent(in)
+                                    , epim18                 & ! intent(in)
+                                    , alvl8                  & ! intent(in)
+                                    , rdry8                  & ! intent(in)
+                                    , rdryi8                 & ! intent(in)
+                                    , p00i8                  & ! intent(in)
+                                    , rocp8                  ! ! intent(in)
+   use rk4_coms              , only : rk4patchtype           & ! structure
+                                    , rk4site                & ! structure
+                                    , hcapveg_ref            & ! intent(in)
+                                    , rk4eps                 & ! intent(in)
+                                    , min_height             & ! intent(in)
+                                    , any_solvable           & ! intent(out)
+                                    , zoveg                  & ! intent(out)
+                                    , zveg                   & ! intent(out)
+                                    , wcapcan                & ! intent(out)
+                                    , wcapcani               & ! intent(out)
+                                    , rk4water_stab_thresh   & ! intent(in)
+                                    , rk4tiny_sfcw_mass      & ! intent(in)
+                                    , checkbudget            & ! intent(in)
+                                    , print_detailed         & ! intent(in)
+                                    , find_derived_thbounds  & ! sub-routine
+                                    , reset_rk4_fluxes       ! ! sub-routine
+   use ed_max_dims           , only : n_pft                  ! ! intent(in)
+   use canopy_radiation_coms , only : tai_min                ! ! intent(in)
+   use therm_lib8            , only : qwtk8                  & ! subroutine
+                                    , thetaeiv8              & ! function
+                                    , idealdenssh8           & ! function
+                                    , rehuil8                & ! function
+                                    , rslif8                 & ! function
+                                    , reducedpress8          ! ! function
+   use allometry             , only : dbh2bl                 ! ! function
+   use soil_coms             , only : soil8                  ! ! intent(in)
+   use ed_therm_lib          , only : ed_grndvap8            ! ! subroutine
+   use canopy_struct_dynamics, only : can_whcap8            & ! subroutine
+                                    , canopy_turbulence8    ! ! subroutine
    implicit none
 
    !----- Arguments -----------------------------------------------------------------------!
@@ -162,21 +164,13 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
 
 
 
-   targetp%ustar         = dble(sourcesite%ustar (ipa))
-   targetp%cstar         = dble(sourcesite%cstar (ipa))
-   targetp%tstar         = dble(sourcesite%tstar (ipa))
-   targetp%qstar         = dble(sourcesite%qstar (ipa))
-   targetp%estar         = 0.d0
-
-   targetp%zeta          = dble(sourcesite%zeta  (ipa))
-   targetp%ribulk        = dble(sourcesite%ribulk(ipa))
-
+   !----- Initialise some turbulence properties. ------------------------------------------!
    targetp%upwp          = dble(sourcesite%upwp  (ipa))
    targetp%wpwp          = dble(sourcesite%wpwp  (ipa))
    targetp%tpwp          = dble(sourcesite%tpwp  (ipa))
    targetp%qpwp          = dble(sourcesite%qpwp  (ipa))
    targetp%cpwp          = dble(sourcesite%cpwp  (ipa))
-
+   !---------------------------------------------------------------------------------------!
   
 
    !---------------------------------------------------------------------------------------!
@@ -267,6 +261,16 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
          targetp%veg_energy(ico) = targetp%hcapveg(ico) * targetp%veg_temp(ico)
       end if
    end do
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Initialise the characteristic properties, and the heat capacities. --------------!
+   call canopy_turbulence8(sourcesite,targetp,ipa,.true.)
+   call can_whcap8(sourcesite,ipa,targetp%can_rhos,targetp%can_temp,targetp%can_depth)
+   !---------------------------------------------------------------------------------------!
+
+
 
    !----- Diagnostics variables -----------------------------------------------------------!
    if(fast_diagnostics) then
@@ -463,7 +467,8 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
                                     , cliq8                 & ! intent(in)
                                     , cice8                 & ! intent(in)
                                     , tsupercool8           ! ! intent(in)
-   use canopy_struct_dynamics, only : can_whcap8            ! ! subroutine
+   use canopy_struct_dynamics, only : can_whcap8            & ! subroutine
+                                    , canopy_turbulence8    ! ! subroutine
    use ed_therm_lib          , only : ed_grndvap8           ! ! subroutine
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
@@ -538,10 +543,6 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
    !---------------------------------------------------------------------------------------!
 
 
-
-   !----- Update the canopy air space capacities for water, heat, and carbon dioxide. -----!
-   call can_whcap8(csite,ipa,initp%can_rhos,initp%can_temp,initp%can_depth)
-   !---------------------------------------------------------------------------------------!
 
 
 
@@ -726,6 +727,13 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
       end if
    end do cohortloop
    !---------------------------------------------------------------------------------------!
+
+
+   !----- Compute canopy turbulence properties. -------------------------------------------!
+   call canopy_turbulence8(csite,initp,ipa,.true.)
+   call can_whcap8(csite,ipa,initp%can_rhos,initp%can_temp,initp%can_depth)
+   !---------------------------------------------------------------------------------------!
+
 
    return
 end subroutine update_diagnostic_vars
@@ -1899,6 +1907,8 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
                                    , wdnsi8             & ! intent(in)
                                    , fdnsi8             ! ! intent(in)
    use therm_lib8           , only : qwtk8              ! ! subroutine
+   use grid_coms            , only : nzg                ! ! intent(in)
+   use soil_coms            , only : dslzi8             ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(rk4patchtype)     , target     :: initp  ! Integration buffer
@@ -2020,14 +2030,40 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
    ! or may not become a temporary surface water layer.                                    !
    !---------------------------------------------------------------------------------------!
    ksn = initp%nlev_sfcwater
-   if (ksn > 0) then
-      initp%sfcwater_mass(ksn)   = initp%sfcwater_mass(ksn)   + veg_wshed_tot
-      initp%sfcwater_energy(ksn) = initp%sfcwater_energy(ksn) + veg_qwshed_tot
-      initp%sfcwater_depth(ksn)  = initp%sfcwater_depth(ksn)  + veg_dwshed_tot
-   else
+   select case(initp%flag_sfcwater)
+   case (0)
+      !------ No temporary water, shed the water into the virtual layer. ------------------!
       initp%virtual_water        = initp%virtual_water        + veg_wshed_tot
       initp%virtual_energy       = initp%virtual_energy       + veg_qwshed_tot
       initp%virtual_depth        = initp%virtual_depth        + veg_dwshed_tot
+      !------------------------------------------------------------------------------------!
+
+   case (1)
+      !------------------------------------------------------------------------------------!
+      !     There is a temporary water but it is not stable, shed the water into the       !
+      ! temporary surface water, but send the energy to the top soil layer, because they   !
+      ! will be brought to thermal equilibrium.                                            !
+      !------------------------------------------------------------------------------------!
+      initp%sfcwater_mass (ksn)  = initp%sfcwater_mass(ksn)   + veg_wshed_tot
+      initp%soil_energy   (nzg)  = initp%soil_energy  (nzg)   + veg_qwshed_tot*dslzi8(nzg)
+      initp%sfcwater_depth(ksn)  = initp%sfcwater_depth(ksn)  + veg_dwshed_tot
+      !------------------------------------------------------------------------------------!
+
+   case (2)
+      !------------------------------------------------------------------------------------!
+      !     There is a temporary water, and it is stable, shed both the mass and energy    !
+      ! into the temporary surface water.                                                  !
+      !------------------------------------------------------------------------------------!
+      initp%sfcwater_mass(ksn)   = initp%sfcwater_mass(ksn)   + veg_wshed_tot
+      initp%sfcwater_energy(ksn) = initp%sfcwater_energy(ksn) + veg_qwshed_tot
+      initp%sfcwater_depth(ksn)  = initp%sfcwater_depth(ksn)  + veg_dwshed_tot
+      !------------------------------------------------------------------------------------!
+
+   end select
+
+
+   if (ksn > 0) then
+   else
    end if
 
    !----- Update the canopy air specific humidity. ----------------------------------------!
@@ -2468,8 +2504,8 @@ subroutine print_rk4patch(y,csite,ipa)
    write (unit=*,fmt='(a)'  ) 'Cohort information (only those solvable are shown): '
    write (unit=*,fmt='(80a)') ('-',k=1,80)
    write (unit=*,fmt='(2(a7,1x),8(a12,1x))')                                               &
-         '    PFT','KRDEPTH','      NPLANT','        HITE','         DBH','       BDEAD'   &
-                           &,'      BALIVE','     FS_OPEN','         FSW','         FSN'
+         '    PFT','KRDEPTH','      NPLANT','      HEIGHT','         DBH','       BDEAD'   &
+                            ,'      BALIVE','     FS_OPEN','         FSW','         FSN'
    do ico = 1,cpatch%ncohorts
       if (cpatch%solvable(ico)) then
          write(unit=*,fmt='(2(i7,1x),8(es12.4,1x))') cpatch%pft(ico), cpatch%krdepth(ico)  &
@@ -2483,9 +2519,21 @@ subroutine print_rk4patch(y,csite,ipa)
              ,'   VEG_WATER','    VEG_HCAP','    VEG_TEMP','    VEG_FLIQ'
    do ico = 1,cpatch%ncohorts
       if (y%solvable(ico)) then
-         write(unit=*,fmt='(2(i7,1x),9(es12.4,1x))') cpatch%pft(ico), cpatch%krdepth(ico)  &
+         write(unit=*,fmt='(2(i7,1x),8(es12.4,1x))') cpatch%pft(ico), cpatch%krdepth(ico)  &
                ,y%lai(ico),y%wpa(ico),y%tai(ico),y%veg_energy(ico),y%veg_water(ico)        &
                ,y%hcapveg(ico),y%veg_temp(ico),y%veg_fliq(ico)
+      end if
+   end do
+   write (unit=*,fmt='(80a)') ('-',k=1,80)
+   write (unit=*,fmt='(1(a7,1x),9(a12,1x))')                                               &
+         '    PFT','         LAI','      HEIGHT','    VEG_TEMP','    VEG_WIND'             &
+                  ,'    REYNOLDS','     GRASHOF','NUSSELT_FORC','NUSSELT_FREE'             &
+                  ,'          RB'
+   do ico = 1,cpatch%ncohorts
+      if (y%solvable(ico)) then
+         write(unit=*,fmt='(2(i7,1x),9(es12.4,1x))') cpatch%pft(ico),y%lai(ico)            &
+               ,cpatch%hite(ico),y%veg_temp(ico),y%veg_wind(ico),y%veg_reynolds(ico)       &
+               ,y%veg_grashof(ico),y%veg_nussforc(ico),y%veg_nussfree(ico),y%rb(ico)
       end if
    end do
    write (unit=*,fmt='(80a)') ('=',k=1,80)
@@ -2603,6 +2651,7 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
    type(patchtype)       , pointer    :: cpatch
    character(len=str_len)             :: detail_fout
    integer                            :: k
+   integer                            :: jpa
    integer                            :: nsoil
    integer                            :: ico
    logical                            :: isthere
@@ -2619,7 +2668,28 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
    !----- Local constants. ----------------------------------------------------------------!
    character(len=10), parameter :: hfmt='(63(a,1x))'
    character(len=48), parameter :: bfmt='(3(i13,1x),2(es13.6,1x),3(i13,1x),55(es13.6,1x))'
+   !----- Locally saved variables. --------------------------------------------------------!
+   logical          , save      :: first_time=.true.
    !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     First time here.  Delete all files.                                               !
+   !---------------------------------------------------------------------------------------!
+   if (first_time) then
+      do jpa = 1, csite%npatches
+         write (detail_fout,fmt='(a,i4.4,a)') trim(detail_pref),jpa,'.txt'
+         inquire(file=trim(detail_fout),exist=isthere)
+         if (isthere) then
+            !---- Open the file to delete when closing. -----------------------------------!
+            open (unit=83,file=trim(detail_fout),status='old',action='write')
+            close(unit=83,status='delete')
+         end if
+      end do
+      first_time = .false.
+   end if
+   !---------------------------------------------------------------------------------------!
+
 
 
    !---------------------------------------------------------------------------------------!

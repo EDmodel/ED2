@@ -1,8 +1,11 @@
 Module consts_coms
 
-! Making the constants to match when running a coupled run.
 
 #if defined(COUPLED)
+   !---------------------------------------------------------------------------------------!
+   !    This is done only when compiling the ED-BRAMS coupled code.  This will make sure   !
+   ! that all constants are defined in the same way in both models.                        !
+   !---------------------------------------------------------------------------------------!
    use rconstants, only:                                                                   &
        b_pi1        => pi1        , b_twopi      => twopi      , b_pio180     => pio180    &
      , b_pi4        => pi4        , b_pio4       => pio4       , b_srtwo      => srtwo     &
@@ -36,7 +39,8 @@ Module consts_coms
      , b_halfpi     => halfpi     , b_yr_sec     => yr_sec     , b_sqrttwopi  => sqrttwopi &
      , b_sqrthalfpi => sqrthalfpi , b_fdns       => fdns       , b_fdnsi      => fdnsi     &
      , b_cv         => cv         , b_cpocv      => cpocv      , b_rocv       => rocv      &
-     , b_hr_min     => hr_min
+     , b_hr_min     => hr_min     , b_th_diff    => th_diff    , b_th_diffi   => th_diffi  &
+     , b_kin_visc   => kin_visc   , b_th_expan   => th_expan   , b_gr_coeff   => gr_coeff
 
    implicit none
 
@@ -88,7 +92,11 @@ Module consts_coms
    real, parameter :: sqrttwopi  = b_sqrttwopi  , fdns       = b_fdns
    real, parameter :: fdnsi      = b_fdnsi      , cv         = b_cv
    real, parameter :: rocv       = b_rocv       , cpocv      = b_cpocv
-   real, parameter :: hr_min     = b_hr_min
+   real, parameter :: hr_min     = b_hr_min     , th_diff    = b_th_diff
+   real, parameter :: th_diffi   = b_thdiffi    , kin_visc   = b_kin_visc
+   real, parameter :: th_expan   = b_th_expan   , gr_coeff   = b_gr_coeff
+   !---------------------------------------------------------------------------------------!
+
 #else
    implicit none
 
@@ -175,6 +183,33 @@ Module consts_coms
    real, parameter :: p00i      = 1. / p00    ! 1/p00                           [     1/Pa]
    real, parameter :: p00k      = 26.870941   ! p0 ** (Ra/Cp)                   [ Pa^0.286]
    real, parameter :: p00ki     = 1. / p00k   ! p0 ** (-Ra/Cp)                  [Pa^-0.286]
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   ! Reference for this block:                                                             !
+   ! MU08 - Monteith, J. L., M. H. Unsworth, 2008. Principles of Environmental Physics,    !
+   !        third edition, Academic Press, Amsterdam, 418pp.  (Chapters 3 and 10).         !
+   !                                                                                       !
+   !     Air diffusion properties. These properties are temperature-dependent in reality,  !
+   ! but for simplicity we assume them constants, using the value at 20°C.                 !
+   !                                                                                       !
+   ! Thermal diffusivity - Straight from Table 15.1 of MU08                                !
+   ! Kinematic viscosity - Computed from equation on page 32 of MU08;                      !
+   ! Thermal expansion coefficient - determined by inverting the coefficient at equation   !
+   !                                 10.11 (MU08).                                         !
+   ! These terms could be easily made function of temperature in the future if needed be.  !!
+   !---------------------------------------------------------------------------------------!
+   real, parameter :: th_diff  = 2.060e-5     ! Air thermal diffusivity         [     m²/s]
+   real, parameter :: th_diffi = 1./th_diff   ! 1/ air thermal diffusivity      [     s/m²]
+   real, parameter :: kin_visc = 1.516e-5     ! Kinematic viscosity             [     m²/s]
+   real, parameter :: th_expan = 3.43e-3      ! Air thermal expansion coeff.    [      1/K]
+   !---------------------------------------------------------------------------------------!
+   !    Grashof coefficient [1/(K m³)].  This is the coefficient a*g/(nu²) in MU08's       !
+   ! equation 10.8, in the equation that defines the Grashof number.                       !
+   !---------------------------------------------------------------------------------------!
+   real, parameter :: gr_coeff = th_expan * grav  * th_diffi * th_diffi
    !---------------------------------------------------------------------------------------!
 
 
@@ -418,6 +453,11 @@ Module consts_coms
    real(kind=8), parameter :: umol_2_kgC8     = dble(umol_2_kgC    )
    real(kind=8), parameter :: kgom2_2_tonoha8 = dble(kgom2_2_tonoha)
    real(kind=8), parameter :: tonoha_2_kgom28 = dble(tonoha_2_kgom2)
+   real(kind=8), parameter :: th_diff8        = dble(th_diff       )
+   real(kind=8), parameter :: th_diffi8       = dble(th_diffi      )
+   real(kind=8), parameter :: kin_visc8       = dble(kin_visc      )
+   real(kind=8), parameter :: th_expan8       = dble(th_expan      )
+   real(kind=8), parameter :: gr_coeff8       = dble(gr_coeff      )
    !---------------------------------------------------------------------------------------!
 
 

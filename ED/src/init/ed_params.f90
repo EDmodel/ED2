@@ -424,7 +424,8 @@ end subroutine init_can_rad_params
 !    This subroutine will assign some canopy air related parameters.                       !
 !------------------------------------------------------------------------------------------!
 subroutine init_can_air_params()
-   use consts_coms    , only : twothirds             & ! intent(in)
+   use consts_coms    , only : onethird              & ! intent(in)
+                             , twothirds             & ! intent(in)
                              , vonk                  ! ! intent(in)
    use pft_coms       , only : hgt_min               ! ! intent(in)
    use canopy_air_coms, only : icanturb              & ! intent(in)
@@ -495,7 +496,23 @@ subroutine init_can_air_params()
                              , ate8                  & ! intent(out)
                              , atetf8                & ! intent(out)
                              , z0moz0h8              & ! intent(out)
-                             , z0hoz0m8              ! ! intent(out)
+                             , z0hoz0m8              & ! intent(out)
+                             , aflat_turb            & ! intent(out)
+                             , aflat_lami            & ! intent(out)
+                             , bflat_turb            & ! intent(out)
+                             , bflat_lami            & ! intent(out)
+                             , nflat_turb            & ! intent(out)
+                             , nflat_lami            & ! intent(out)
+                             , mflat_turb            & ! intent(out)
+                             , mflat_lami            & ! intent(out)
+                             , aflat_turb8           & ! intent(out)
+                             , aflat_lami8           & ! intent(out)
+                             , bflat_turb8           & ! intent(out)
+                             , bflat_lami8           & ! intent(out)
+                             , nflat_turb8           & ! intent(out)
+                             , nflat_lami8           & ! intent(out)
+                             , mflat_turb8           & ! intent(out)
+                             , mflat_lami8           ! ! intent(out)
    implicit none
    !---------------------------------------------------------------------------------------!
    !    Minimum leaf water content to be considered.  Values smaller than this will be     !
@@ -604,6 +621,33 @@ subroutine init_can_air_params()
    
    !----- This is the conversion from vegetation height to displacement height. -----------!
    vh2dh  = 0.63
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Parameters for the aerodynamic resistance between the leaf and the canopy air    !
+   ! space.  These are the A, B, n, and m parameters that define the Nusselt number for    !
+   ! forced and free convection, at equations 10.7 and 10.9.  The parameters are found at  !
+   ! the appendix A.5(a) and A.5(b).                                                       !
+   !                                                                                       !
+   ! M08 - Monteith, J. L., M. H. Unsworth, 2008. Principles of Environmental Physics,     !
+   !       3rd. edition, Academic Press, Amsterdam, 418pp.  (Mostly Chapter 10).           !
+   !---------------------------------------------------------------------------------------!
+   aflat_turb = 0.600    ! A (forced convection), turbulent flow
+   aflat_lami = 0.032    ! A (forced convection), laminar   flow
+   bflat_turb = 0.500    ! B (free   convection), turbulent flow
+   bflat_lami = 0.130    ! B (free   convection), laminar   flow
+   nflat_turb = 0.500    ! n (forced convection), turbulent flow
+   nflat_lami = 0.800    ! n (forced convection), laminar   flow
+   mflat_turb = 0.250    ! m (free   convection), turbulent flow
+   mflat_lami = onethird ! m (free   convection), laminar   flow
+   !---------------------------------------------------------------------------------------!
+
 
 
    !----- Set the double precision variables. ---------------------------------------------!
@@ -637,6 +681,14 @@ subroutine init_can_air_params()
    atetf8                = dble(atetf               )
    z0moz0h8              = dble(z0moz0h             )
    z0hoz0m8              = dble(z0hoz0m             )
+   aflat_turb8           = dble(aflat_turb          )
+   aflat_lami8           = dble(aflat_lami          )
+   bflat_turb8           = dble(bflat_turb          )
+   bflat_lami8           = dble(bflat_lami          )
+   nflat_turb8           = dble(nflat_turb          )
+   nflat_lami8           = dble(nflat_lami          )
+   mflat_turb8           = dble(mflat_turb          )
+   mflat_lami8           = dble(mflat_lami          )
 
    return
 end subroutine init_can_air_params
@@ -2222,7 +2274,7 @@ subroutine init_rk4_params()
    !---------------------------------------------------------------------------------------!
    !     Variables used to keep track on the error.                                        !
    !---------------------------------------------------------------------------------------!
-   record_err     = .true.                   ! Compute and keep track of the errors.
+   record_err     = .false.                   ! Compute and keep track of the errors.
    print_detailed = .false.                  ! Print detailed information about the thermo-
                                              !    dynamic state.  This will create one file
                                              !    for each patch, so it is not recommended 
@@ -2311,7 +2363,7 @@ subroutine init_rk4_params()
    ! check in the integrator, so we leave this flag so one can switch between one and the  !
    ! other and decide based on their own needs.                                            !
    !---------------------------------------------------------------------------------------!
-   check_maxleaf = .false.
+   check_maxleaf = .true.
    !---------------------------------------------------------------------------------------!
 
 

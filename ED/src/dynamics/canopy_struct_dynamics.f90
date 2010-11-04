@@ -76,6 +76,7 @@ module canopy_struct_dynamics
       use pft_coms       , only : crown_depth_fraction & ! intent(in)
                                 , leaf_width           ! ! intent(in)
       use canopy_air_coms, only : icanturb             & ! intent(in), can. turb. scheme
+                                , ustmin               & ! intent(in)
                                 , exar                 & ! intent(in)
                                 , vh2dh                & ! intent(in)
                                 , dz                   & ! intent(in)
@@ -185,7 +186,7 @@ module canopy_struct_dynamics
          end if
 
          zref     = cmet%geoht
-         h        = csite%can_depth(ipa)
+         h        = csite%veg_height(ipa)
          d0       = 0.
 
          !----- Calculate the surface roughness inside the canopy. ------------------------!
@@ -285,16 +286,11 @@ module canopy_struct_dynamics
                   hite  = cpatch%hite(ico)
 
                   !----- Calculate the wind speed at height z. ----------------------------!
-                  uz = cmet%vels * exp ( -0.5 * laicum)
+                  uz = max(ustmin,cmet%vels * exp ( -0.5 * laicum))
 
                   !----- Find the aerodynamic resistance. [s/m] ---------------------------!
-                  cpatch%rb(ico) = min(rb_max                                              &
-                                      ,1.0 / ( 3.e-3 * sqrt(uz/dble(leaf_width(ipft)))     &
-                                              + 5.e-1 * 2.06e-5                            &
-                                              * (1.6e8 * abs( cpatch%veg_temp(ico)         &
-                                                            - csite%can_temp(ipa))         &
-                                                * leaf_width(ipft)**3 ) **0.25             &
-                                              / leaf_width(ipft) ) )
+                  cpatch%rb(ico) = aerodyn_resist(ipft,cpatch%veg_temp(ico)                &
+                                                 ,csite%can_temp(ipa),uz)
                   laicum = laicum + cpatch%lai(ico)
                else
                   cpatch%rb(ico) = 0.0
@@ -382,7 +378,7 @@ module canopy_struct_dynamics
          if(get_flow_geom) then
 
             !----- Top of canopy wind speed. ----------------------------------------------!
-            uh = (csite%ustar(ipa)/vonk) * (log(h/csite%rough(ipa))/sqrt(fm))
+            uh = (csite%ustar(ipa)/vonk) * (log(cpatch%hite(1)/csite%rough(ipa))/sqrt(fm))
             
             do ico=1,cpatch%ncohorts
 
@@ -393,16 +389,11 @@ module canopy_struct_dynamics
                z = 0.5 * (hite + h2trunkh(cpatch%hite(ico)))
 
                !----- Calculate the wind speed at height z. -------------------------------!
-               uz = uh * exp(-exar * (1.0 - z/h))
+               uz = max(ustmin,uh * exp(-exar * (1.0 - z/h)))
                
                !----- Find the aerodynamic resistance. [s/m] ------------------------------!
-               cpatch%rb(ico) = min(rb_max                                                 &
-                                   ,1.0 / ( 3.e-3 * sqrt(uz/dble(leaf_width(ipft)))        &
-                                           + 5.e-1 * 2.06e-5                               &
-                                           * (1.6e8 * abs( cpatch%veg_temp(ico)            &
-                                                         - csite%can_temp(ipa))            &
-                                             * leaf_width(ipft)**3 ) **0.25                &
-                                           / leaf_width(ipft) ) )
+               cpatch%rb(ico) = aerodyn_resist(ipft,cpatch%veg_temp(ico)                   &
+                                              ,csite%can_temp(ipa),uz)
             end do
 
             !------------------------------------------------------------------------------!
@@ -498,7 +489,7 @@ module canopy_struct_dynamics
          if(get_flow_geom) then
 
             !----- Top of canopy wind speed. ----------------------------------------------!
-            uh = (csite%ustar(ipa)/vonk)*(log(h/csite%rough(ipa))/sqrt(fm))
+            uh = (csite%ustar(ipa)/vonk)*(log(cpatch%hite(1)/csite%rough(ipa))/sqrt(fm))
 
             do ico=1,cpatch%ncohorts
                ipft  = cpatch%pft(ico)
@@ -507,16 +498,12 @@ module canopy_struct_dynamics
                z = hite * (1.0 - 0.5 * crown_depth_fraction(ipft))
 
                !----- Calculate the wind speed at height z. -------------------------------!
-               uz = uh * exp(- exar * (1.0 - z/h))
+               uz = max(ustmin,uh * exp(- exar * (1.0 - z/h)))
                
                !----- Find the aerodynamic resistance. [s/m] ------------------------------!
-               cpatch%rb(ico) = min(rb_max                                                 &
-                                   ,1.0 / ( 3.e-3 * sqrt(uz/dble(leaf_width(ipft)))        &
-                                           + 5.e-1 * 2.06e-5                               &
-                                           * (1.6e8 * abs( cpatch%veg_temp(ico)            &
-                                                         - csite%can_temp(ipa))            &
-                                             * leaf_width(ipft)**3 ) **0.25                &
-                                           / leaf_width(ipft) ) )
+               cpatch%rb(ico) = aerodyn_resist(ipft,cpatch%veg_temp(ico)                   &
+                                              ,csite%can_temp(ipa),uz)
+
             end do
          end if
       !------------------------------------------------------------------------------------!
@@ -696,16 +683,12 @@ module canopy_struct_dynamics
                k = ceiling(z/dz)
 
                !----- Calculate the wind speed at height z. -------------------------------!
-               uz = uh * exp(-eta * (1. - zeta(k)/zeta(zcan) ))
+               uz = max(ustmin, uh * exp(-eta * (1. - zeta(k)/zeta(zcan) )))
 
                !----- Find the aerodynamic resistance. [s/m] ------------------------------!
-               cpatch%rb(ico) = min(rb_max                                                 &
-                                   ,1.0 / ( 3.e-3 * sqrt(uz/dble(leaf_width(ipft)))        &
-                                           + 5.e-1 * 2.06e-5                               &
-                                           * (1.6e8 * abs( cpatch%veg_temp(ico)            &
-                                                         - csite%can_temp(ipa))            &
-                                             * leaf_width(ipft)**3 ) **0.25                &
-                                           / leaf_width(ipft) ) )
+               cpatch%rb(ico) = aerodyn_resist(ipft,cpatch%veg_temp(ico)                   &
+                                              ,csite%can_temp(ipa),uz)
+
             end do
 
             !------------------------------------------------------------------------------!
@@ -792,6 +775,7 @@ module canopy_struct_dynamics
       use pft_coms       , only : crown_depth_fraction & ! intent(in)
                                 , leaf_width           ! ! intent(in)
       use canopy_air_coms, only : icanturb             & ! intent(in), can. turb. scheme
+                                , ustmin8              & ! intent(in)
                                 , exar8                & ! intent(in)
                                 , vh2dh8               & ! intent(in)
                                 , ubmin8               & ! intent(in)
@@ -846,7 +830,6 @@ module canopy_struct_dynamics
       real(kind=8)   :: surf_rough ! Roughness length of the bare ground 
                                    !     at canopy bottom                       [        m]
       real(kind=8)   :: uh         ! Wind speed at the canopy top (z=h)         [      m/s]
-      real(kind=8)   :: uz         ! Wind speed at some height z below h        [      m/s]
       real(kind=8)   :: fm         ! Stability parameter (multiplicative) using RIb
       real(kind=8)   :: factv      ! Wind-dependent term for old rasveg
       real(kind=8)   :: aux        ! Aux. variable
@@ -987,21 +970,27 @@ module canopy_struct_dynamics
                   ipft  = cpatch%pft(ico)
 
                   !----- Calculate the wind speed at height z. ----------------------------!
-                  uz = vels_ref * exp ( - 5.d-1 * laicum)
-                  !----- Find the aerodynamic resistance. [s/m] ------------------------------!
-                  initp%rb(ico) = min(rb_max                                               &
-                                     ,1.d0 / ( 3.d-3 * sqrt(uz/dble(leaf_width(ipft)))     &
-                                             + 5.d-1 * 2.06d-5                             &
-                                             * (1.6d8 * abs( initp%veg_temp(ico)           &
-                                                           - initp%can_temp)               &
-                                               * dble(leaf_width(ipft))**3 ) ** 2.5d-1     &
-                                             / dble(leaf_width(ipft)) ) )
+                  initp%veg_wind(ico) = max(ustmin8,vels_ref * exp ( - 5.d-1 * laicum))
+                  !----- Find the aerodynamic resistance. [s/m] ---------------------------!
+                  initp%rb(ico) = aerodyn_resist8(ipft                                     &
+                                                 ,initp%veg_temp    (ico)                  &
+                                                 ,initp%can_temp                           &
+                                                 ,initp%veg_wind    (ico)                  &
+                                                 ,initp%veg_reynolds(ico)                  &
+                                                 ,initp%veg_grashof (ico)                  &
+                                                 ,initp%veg_nussfree(ico)                  &
+                                                 ,initp%veg_nussforc(ico) )
                   cpatch%rb(ico) = sngloff(initp%rb(ico),tiny_offset)
 
                   laicum = laicum + initp%lai(ico)
                else
-                  initp%rb(ico)  = 0.d0
-                  cpatch%rb(ico) = 0.d0
+                  initp%veg_wind    (ico) = 0.d0
+                  initp%veg_reynolds(ico) = 0.d0
+                  initp%veg_grashof (ico) = 0.d0
+                  initp%veg_nussfree(ico) = 0.d0
+                  initp%veg_nussforc(ico) = 0.d0
+                  initp%rb(ico)           = 0.d0
+                  cpatch%rb(ico)          = 0.d0
                end if
             end do
 
@@ -1088,15 +1077,14 @@ module canopy_struct_dynamics
                z = 5.d-1 * (hite8 + dble(h2trunkh(cpatch%hite(ico))))
 
                !----- Calculate the wind speed at height z. -------------------------------!
-               uz = uh * exp(-exar8 * (1.d0 - z/h))
+               initp%veg_wind(ico) = max(ustmin8,uh * exp(-exar8 * (1.d0 - z/h)))
                
                !----- Find the aerodynamic resistance. [s/m] ------------------------------!
-               initp%rb(ico) = min(rb_max                                                  &
-                                  ,1.d0 / ( 3.d-3 * sqrt(uz/dble(leaf_width(ipft)))        &
-                                          + 5.d-1 * 2.06d-5                                &
-                                          * (1.6d8*abs(initp%veg_temp(ico)-initp%can_temp) &
-                                            * dble(leaf_width(ipft))**3 ) **2.5d-1         &
-                                          / dble(leaf_width(ipft)) ) )
+               initp%rb(ico) = aerodyn_resist8(ipft,initp%veg_temp(ico),initp%can_temp     &
+                                              ,initp%veg_wind(ico),initp%veg_reynolds(ico) &
+                                              ,initp%veg_grashof (ico)                     &
+                                              ,initp%veg_nussfree(ico)                     &
+                                              ,initp%veg_nussforc(ico) )
                cpatch%rb(ico) = sngloff(initp%rb(ico),tiny_offset)
             end do
 
@@ -1188,15 +1176,14 @@ module canopy_struct_dynamics
                z = hite8 * (1.d0-5.d-1*dble(crown_depth_fraction(ipft)))
 
                !----- Calculate the wind speed at height z. -------------------------------!
-               uz = uh * exp(-exar8 * (1.d0 - z/h))
+               initp%veg_wind(ico) = max(ustmin8,uh * exp(-exar8 * (1.d0 - z/h)))
                
                !----- Find the aerodynamic resistance. [s/m] ------------------------------!
-               initp%rb(ico) = min(rb_max                                                  &
-                                  ,1.d0 / ( 3.d-3 * sqrt(uz/dble(leaf_width(ipft)))        &
-                                          + 5.d-1 * 2.06d-5                                &
-                                          * (1.6d8*abs(initp%veg_temp(ico)-initp%can_temp) &
-                                            * dble(leaf_width(ipft))**3 ) **2.5d-1         &
-                                          / dble(leaf_width(ipft)) ) )
+               initp%rb(ico) = aerodyn_resist8(ipft,initp%veg_temp(ico),initp%can_temp     &
+                                              ,initp%veg_wind(ico),initp%veg_reynolds(ico) &
+                                              ,initp%veg_grashof (ico)                     &
+                                              ,initp%veg_nussfree(ico)                     &
+                                              ,initp%veg_nussforc(ico) )
                cpatch%rb(ico) = sngloff(initp%rb(ico),tiny_offset)
             end do
          end if
@@ -1376,15 +1363,15 @@ module canopy_struct_dynamics
                k = ceiling(z/dz8)
 
                !----- Calculate the wind speed at height z. -------------------------------!
-               uz = uh * exp(-eta * (1.d0 - zeta(k)/zeta(zcan) ))
+               initp%veg_wind(ico) = max(ustmin8                                           &
+                                        ,uh * exp(-eta * (1.d0 - zeta(k)/zeta(zcan) )))
                
                !----- Find the aerodynamic resistance. [s/m] ------------------------------!
-               initp%rb(ico) = min(rb_max                                                  &
-                                  ,1.d0 / ( 3.d-3 * sqrt(uz/dble(leaf_width(ipft)))        &
-                                          + 5.d-1 * 2.06d-5                                &
-                                          * (1.6d8*abs(initp%veg_temp(ico)-initp%can_temp) &
-                                            * dble(leaf_width(ipft))**3 ) **2.5d-1         &
-                                          / dble(leaf_width(ipft)) ) )
+               initp%rb(ico) = aerodyn_resist8(ipft,initp%veg_temp(ico),initp%can_temp     &
+                                              ,initp%veg_wind(ico),initp%veg_reynolds(ico) &
+                                              ,initp%veg_grashof (ico)                     &
+                                              ,initp%veg_nussfree(ico)                     &
+                                              ,initp%veg_nussforc(ico) )
 
                cpatch%rb(ico) = sngloff(initp%rb(ico),tiny_offset)
             end do
@@ -2036,6 +2023,207 @@ module canopy_struct_dynamics
    end subroutine can_whcap8
    !=======================================================================================!
    !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This function computes the aerodynamic resistance between leaf and canopy air     !
+   ! space, based on:                                                                      !
+   !                                                                                       !
+   ! L95 - Leuning, R., F. M. Kelliher, D. G. G. de Pury, E. D. Schulze, 1995: Leaf        !
+   !       nitrogen, photosynthesis, conductance and transpiration: scaling from leaves to !
+   !       canopies.  Plant, Cell and Environ., 18, 1183-1200.                             !
+   ! M08 - Monteith, J. L., M. H. Unsworth, 2008. Principles of Environmental Physics,     !
+   !       3rd. edition, Academic Press, Amsterdam, 418pp.  (Mostly Chapter 10).           !
+   !---------------------------------------------------------------------------------------!
+   real(kind=4) function aerodyn_resist(ipft,veg_temp,can_temp,wind)
+      use ed_state_vars  , only : patchtype  ! ! structure
+      use pft_coms       , only : leaf_width ! ! intent(in)
+      use canopy_air_coms, only : aflat_turb & ! intent(in)
+                                , aflat_lami & ! intent(in)
+                                , nflat_turb & ! intent(in)
+                                , nflat_lami & ! intent(in)
+                                , bflat_turb & ! intent(in)
+                                , bflat_lami & ! intent(in)
+                                , mflat_turb & ! intent(in)
+                                , mflat_lami ! ! intent(in)
+      use consts_coms    , only : gr_coeff   & ! intent(in)
+                                , th_diffi   & ! intent(in)
+                                , th_diff    ! ! intent(in)
+
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      integer                     :: ipft
+      real(kind=4)   , intent(in) :: veg_temp
+      real(kind=4)   , intent(in) :: can_temp
+      real(kind=4)   , intent(in) :: wind
+      !----- Local variables. -------------------------------------------------------------!
+      real(kind=4)                :: lwidth
+      real(kind=4)                :: grashof
+      real(kind=4)                :: reynolds
+      real(kind=4)                :: nusselt_lami
+      real(kind=4)                :: nusselt_turb
+      real(kind=4)                :: nusselt
+      real(kind=4)                :: freeconv_cond
+      real(kind=4)                :: forcedconv_cond
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Save the leaf width of this PFT. ---------------------------------------------!
+      lwidth = leaf_width(ipft)
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the resistance associated with forced convection.                         !
+      !------------------------------------------------------------------------------------!
+      !----- 1. Compute the Reynolds number. ----------------------------------------------!
+      reynolds        = wind * lwidth * th_diffi
+      !----- 2. Compute the Nusselt number for both the laminar and turbulent case. -------!
+      nusselt_lami    = aflat_lami * reynolds ** bflat_lami
+      nusselt_turb    = aflat_turb * reynolds ** bflat_turb
+      !----- 3. The right Nusselt number is the largest of the both. ----------------------!
+      nusselt         = max(nusselt_lami,nusselt_turb)
+      !----- 4. The conductivity is given by MU08 - equation 10.4 -------------------------!
+      forcedconv_cond = th_diff * nusselt / lwidth
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the resistance associated with free convection.                           !
+      !------------------------------------------------------------------------------------!
+      !----- 1. Find the Grashof number. --------------------------------------------------!
+      grashof         = gr_coeff * lwidth ** 3 * abs(veg_temp - can_temp)
+      !----- 2. Compute the Nusselt number for both the laminar and turbulent case. -------!
+      nusselt_lami    = bflat_lami * grashof ** mflat_lami
+      nusselt_turb    = bflat_turb * grashof ** mflat_turb
+      !----- 3. The right Nusselt number is the largest of the both. ----------------------!
+      nusselt         = max(nusselt_lami,nusselt_turb)
+      !----- 4. The conductivity is given by MU08 - equation 10.4 -------------------------!
+      freeconv_cond   = th_diff * nusselt / lwidth
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     The aerodynamic resistance [s/m] is given by the combination of conductivities !
+      ! found above.  We impose a maximum based on the patch-level LAI, to avoid           !
+      ! super-resistances.                                                                 !
+      !------------------------------------------------------------------------------------!
+      aerodyn_resist = 1.0 / (freeconv_cond + forcedconv_cond)
+      !------------------------------------------------------------------------------------!
+
+      return
+   end function aerodyn_resist
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This function computes the aerodynamic resistance between leaf and canopy air     !
+   ! space, based on:                                                                      !
+   !                                                                                       !
+   ! L95 - Leuning, R., F. M. Kelliher, D. G. G. de Pury, E. D. Schulze, 1995: Leaf        !
+   !       nitrogen, photosynthesis, conductance and transpiration: scaling from leaves to !
+   !       canopies.  Plant, Cell and Environ., 18, 1183-1200.                             !
+   ! M08 - Monteith, J. L., M. H. Unsworth, 2008. Principles of Environmental Physics,     !
+   !       3rd. edition, Academic Press, Amsterdam, 418pp.  (Mostly Chapter 10).           !
+   !---------------------------------------------------------------------------------------!
+   real(kind=8) function aerodyn_resist8(ipft,veg_temp,can_temp,wind,reynolds,grashof      &
+                                        ,nusselt_free,nusselt_forced)
+      use ed_state_vars  , only : patchtype  ! ! structure
+      use pft_coms       , only : leaf_width ! ! intent(in)
+      use canopy_air_coms, only : aflat_turb8 & ! intent(in)
+                                , aflat_lami8 & ! intent(in)
+                                , nflat_turb8 & ! intent(in)
+                                , nflat_lami8 & ! intent(in)
+                                , bflat_turb8 & ! intent(in)
+                                , bflat_lami8 & ! intent(in)
+                                , mflat_turb8 & ! intent(in)
+                                , mflat_lami8 ! ! intent(in)
+      use consts_coms    , only : gr_coeff8   & ! intent(in)
+                                , th_diffi8   & ! intent(in)
+                                , th_diff8    ! ! intent(in)
+
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      integer                      :: ipft
+      real(kind=8)   , intent(in)  :: veg_temp
+      real(kind=8)   , intent(in)  :: can_temp
+      real(kind=8)   , intent(in)  :: wind
+      real(kind=8)   , intent(out) :: reynolds
+      real(kind=8)   , intent(out) :: grashof
+      real(kind=8)   , intent(out) :: nusselt_free
+      real(kind=8)   , intent(out) :: nusselt_forced
+      !----- Local variables. -------------------------------------------------------------!
+      real(kind=8)                 :: lwidth
+      real(kind=8)                 :: nusselt_lami
+      real(kind=8)                 :: nusselt_turb
+      real(kind=8)                 :: freeconv_cond
+      real(kind=8)                 :: forcedconv_cond
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Save the leaf width of this PFT. ---------------------------------------------!
+      lwidth = dble(leaf_width(ipft))
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the resistance associated with forced convection.                         !
+      !------------------------------------------------------------------------------------!
+      !----- 1. Compute the Reynolds number. ----------------------------------------------!
+      reynolds        = wind * lwidth * th_diffi8
+      !----- 2. Compute the Nusselt number for both the laminar and turbulent case. -------!
+      nusselt_lami    = aflat_lami8 * reynolds ** bflat_lami8
+      nusselt_turb    = aflat_turb8 * reynolds ** bflat_turb8
+      !----- 3. The right Nusselt number is the largest of the both. ----------------------!
+      nusselt_forced  = max(nusselt_lami,nusselt_turb)
+      !----- 4. The conductivity is given by MU08 - equation 10.4 -------------------------!
+      forcedconv_cond = th_diff8 * nusselt_forced / lwidth
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the resistance associated with free convection.                           !
+      !------------------------------------------------------------------------------------!
+      !----- 1. Find the Grashof number. --------------------------------------------------!
+      grashof         = gr_coeff8 * lwidth ** 3 * abs(veg_temp - can_temp)
+      !----- 2. Compute the Nusselt number for both the laminar and turbulent case. -------!
+      nusselt_lami    = bflat_lami8 * grashof ** mflat_lami8
+      nusselt_turb    = bflat_turb8 * grashof ** mflat_turb8
+      !----- 3. The right Nusselt number is the largest of the both. ----------------------!
+      nusselt_free    = max(nusselt_lami,nusselt_turb)
+      !----- 4. The conductivity is given by MU08 - equation 10.4 -------------------------!
+      freeconv_cond   = th_diff8 * nusselt_free / lwidth
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     The aerodynamic resistance [s/m] is given by the combination of conductivities !
+      ! found above.  We impose a maximum based on the patch-level LAI, to avoid           !
+      ! super-resistances.                                                                 !
+      !------------------------------------------------------------------------------------!
+      aerodyn_resist8 = 1.d0 / (freeconv_cond + forcedconv_cond)
+      !------------------------------------------------------------------------------------!
+
+      return
+   end function aerodyn_resist8
+   !=======================================================================================!
+   !=======================================================================================!
+
 end module canopy_struct_dynamics
 !==========================================================================================!
 !==========================================================================================!

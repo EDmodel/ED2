@@ -806,6 +806,12 @@ module rk4_stepper
                write(unit=*,fmt='(a,1x,es12.4)') ' VEG_WATER:    ',y%veg_water(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' VEG_LWATER:   ', y%veg_water(ico)       &
                                                                   / y%tai(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' VEG_WIND:     ',y%veg_wind(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' RB:           ',y%rb(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' REYNOLDS:     ',y%veg_reynolds(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' GRASHOF:      ',y%veg_grashof(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' NUSSELT_FREE: ',y%veg_nussfree(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' NUSSELT_FORC: ',y%veg_nussforc(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' D(VEG_EN)/Dt: ',dydx%veg_energy(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' D(VEG_WAT)/Dt:',dydx%veg_water(ico)
                write(unit=*,fmt='(a)')           '========================================'
@@ -835,7 +841,13 @@ module rk4_stepper
                write(unit=*,fmt='(a,1x,es12.4)') ' VEG_WATER:    ',y%veg_water(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' VEG_LWATER:   ', y%veg_water(ico)       &
                                                                   / y%tai(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' D(VEG_EN)/Dt: ',dydx%veg_energy(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' RB:           ',y%rb(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' VEG_WIND:     ',y%veg_wind(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' REYNOLDS:     ',y%veg_reynolds(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' GRASHOF:      ',y%veg_grashof(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' NUSSELT_FREE: ',y%veg_nussfree(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' NUSSELT_FORC: ',y%veg_nussforc(ico)
+                write(unit=*,fmt='(a,1x,es12.4)') ' D(VEG_EN)/Dt: ',dydx%veg_energy(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' D(VEG_WAT)/Dt:',dydx%veg_water(ico)
                write(unit=*,fmt='(a)')           '========================================'
             elseif (.not. record_err) then
@@ -860,24 +872,6 @@ module rk4_stepper
          if (print_problems) then
             write(unit=*,fmt='(a)')           '==========================================='
             write(unit=*,fmt='(a)')           ' + Virtual layer mass is off-track...'
-            write(unit=*,fmt='(a)')           '-------------------------------------------'
-            write(unit=*,fmt='(a,1x,es12.4)') ' VIRTUAL_ENERGY:   ',y%virtual_energy
-            write(unit=*,fmt='(a,1x,es12.4)') ' VIRTUAL_WATER:    ',y%virtual_water
-            write(unit=*,fmt='(a,1x,es12.4)') ' VIRTUAL_DEPTH:    ',y%virtual_depth
-            write(unit=*,fmt='(a,1x,es12.4)') ' VIRTUAL_TEMPK:    ',y%virtual_tempk
-            write(unit=*,fmt='(a,1x,es12.4)') ' VIRTUAL_FLIQ :    ',y%virtual_fracliq
-            write(unit=*,fmt='(a,1x,es12.4)') ' D(VIRT_WATER)/Dt: ',dydx%virtual_water
-            write(unit=*,fmt='(a,1x,es12.4)') ' D(VIRT_ENERGY)/Dt:',dydx%virtual_energy
-            write(unit=*,fmt='(a)')           '==========================================='
-         elseif (.not. record_err) then
-            return
-         end if
-      elseif (y%virtual_water*y%virtual_energy < 0.d0) then
-         reject_step = .true.
-         if(record_err) integ_err(9,2) = integ_err(9,2) + 1_8
-         if (print_problems) then
-            write(unit=*,fmt='(a)')           '==========================================='
-            write(unit=*,fmt='(a)')           ' + Virtual layer energy is off-track...'
             write(unit=*,fmt='(a)')           '-------------------------------------------'
             write(unit=*,fmt='(a,1x,es12.4)') ' VIRTUAL_ENERGY:   ',y%virtual_energy
             write(unit=*,fmt='(a,1x,es12.4)') ' VIRTUAL_WATER:    ',y%virtual_water
@@ -1024,29 +1018,6 @@ module rk4_stepper
             if (print_problems) then
                write(unit=*,fmt='(a)')           '========================================'
                write(unit=*,fmt='(a)')           ' + Snow/pond mass is off...'
-               write(unit=*,fmt='(a)')           '----------------------------------------'
-               write(unit=*,fmt='(a,1x,i6)')     ' This layer:    ',k
-               write(unit=*,fmt='(a,1x,i6)')     ' # of layers:   ',y%nlev_sfcwater
-               write(unit=*,fmt='(a,1x,i6)')     ' Stability flag:',y%flag_sfcwater
-               write(unit=*,fmt='(a,1x,es12.4)') ' SFCW_TEMP:     ',y%sfcwater_tempk(k)
-               write(unit=*,fmt='(a,1x,es12.4)') ' SFCW_ENERGY:   ',y%sfcwater_energy(k)
-               write(unit=*,fmt='(a,1x,es12.4)') ' SFCW_MASS:     ',y%sfcwater_mass(k)
-               write(unit=*,fmt='(a,1x,es12.4)') ' SFCW_DEPTH:    ',y%sfcwater_depth(k)
-               write(unit=*,fmt='(a,1x,es12.4)') ' D(SFCW_E)/Dt:  ',dydx%sfcwater_energy(k)
-               write(unit=*,fmt='(a,1x,es12.4)') ' D(SFCW_M)/Dt:  ',dydx%sfcwater_mass(k)
-               write(unit=*,fmt='(a)')           '========================================'
-            elseif (.not. record_err) then
-               return
-            end if
-         end if
-
-         !----- Energy --------------------------------------------------------------------!
-         if (y%sfcwater_mass(k)*y%sfcwater_energy(k) < 0.d0) then
-            reject_step = .true.
-            if(record_err) integ_err(oswm+ksn,2) = integ_err(oswm+ksn,2) + 1_8
-            if (print_problems) then
-               write(unit=*,fmt='(a)')           '========================================'
-               write(unit=*,fmt='(a)')           ' + Snow/pond energy is off...'
                write(unit=*,fmt='(a)')           '----------------------------------------'
                write(unit=*,fmt='(a,1x,i6)')     ' This layer:    ',k
                write(unit=*,fmt='(a,1x,i6)')     ' # of layers:   ',y%nlev_sfcwater

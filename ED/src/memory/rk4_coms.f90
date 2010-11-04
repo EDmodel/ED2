@@ -107,6 +107,11 @@ module rk4_coms
       real(kind=8), pointer, dimension(:) :: veg_temp     ! Temperature         [        K]
       real(kind=8), pointer, dimension(:) :: veg_fliq     ! Liquid fraction     [      ---]
       real(kind=8), pointer, dimension(:) :: hcapveg      ! Heat capacity       [   J/m²/K]
+      real(kind=8), pointer, dimension(:) :: veg_wind     ! Wind felt by cohort [      m/s]
+      real(kind=8), pointer, dimension(:) :: veg_reynolds ! Reynolds number     [      ---]
+      real(kind=8), pointer, dimension(:) :: veg_grashof  ! Grashof number      [      ---]
+      real(kind=8), pointer, dimension(:) :: veg_nussfree ! Nusselt # (free)    [      ---]
+      real(kind=8), pointer, dimension(:) :: veg_nussforc ! Nusselt # (forced)  [      ---]
       real(kind=8), pointer, dimension(:) :: nplant       ! Plant density       [ plant/m²]
       real(kind=8), pointer, dimension(:) :: lai          ! Leaf area index     [    m²/m²]
       real(kind=8), pointer, dimension(:) :: wai          ! Wood area index     [    m²/m²]
@@ -1021,6 +1026,11 @@ module rk4_coms
       allocate(y%veg_temp     (maxcohort))
       allocate(y%veg_fliq     (maxcohort))
       allocate(y%hcapveg      (maxcohort))
+      allocate(y%veg_wind     (maxcohort))
+      allocate(y%veg_reynolds (maxcohort))
+      allocate(y%veg_grashof  (maxcohort))
+      allocate(y%veg_nussfree (maxcohort))
+      allocate(y%veg_nussforc (maxcohort))
       allocate(y%nplant       (maxcohort))
       allocate(y%lai          (maxcohort))
       allocate(y%wai          (maxcohort))
@@ -1062,6 +1072,11 @@ module rk4_coms
       nullify(y%veg_temp     )
       nullify(y%veg_fliq     )
       nullify(y%hcapveg      )
+      nullify(y%veg_wind     )
+      nullify(y%veg_reynolds )
+      nullify(y%veg_grashof  )
+      nullify(y%veg_nussfree )
+      nullify(y%veg_nussforc )
       nullify(y%nplant       )
       nullify(y%lai          )
       nullify(y%wai          )
@@ -1140,6 +1155,11 @@ module rk4_coms
       if(associated(y%veg_temp      ))  deallocate(y%veg_temp    )
       if(associated(y%veg_fliq      ))  deallocate(y%veg_fliq    )
       if(associated(y%hcapveg       ))  deallocate(y%hcapveg     )
+      if(associated(y%veg_wind      ))  deallocate(y%veg_wind    )
+      if(associated(y%veg_reynolds  ))  deallocate(y%veg_reynolds)
+      if(associated(y%veg_grashof   ))  deallocate(y%veg_grashof )
+      if(associated(y%veg_nussfree  ))  deallocate(y%veg_nussfree)
+      if(associated(y%veg_nussforc  ))  deallocate(y%veg_nussforc)
       if(associated(y%nplant        ))  deallocate(y%nplant      )
       if(associated(y%lai           ))  deallocate(y%lai         )
       if(associated(y%wai           ))  deallocate(y%wai         )
