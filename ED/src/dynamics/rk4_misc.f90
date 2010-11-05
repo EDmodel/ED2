@@ -158,8 +158,8 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    call ed_grndvap8(ksn,sourcesite%ntext_soil(nzg,ipa),targetp%soil_water(nzg)             &
                    ,targetp%soil_tempk(nzg),targetp%soil_fracliq(nzg)                      &
                    ,targetp%sfcwater_tempk(k),targetp%sfcwater_fracliq(k),targetp%can_prss &
-                   ,targetp%can_shv,targetp%ground_shv,targetp%surface_ssh                 &
-                   ,targetp%surface_temp,targetp%surface_fliq)
+                   ,targetp%can_shv,targetp%ground_shv,targetp%ground_ssh                  &
+                   ,targetp%ground_temp,targetp%ground_fliq)
    !---------------------------------------------------------------------------------------!
 
 
@@ -681,8 +681,8 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
    call ed_grndvap8(ksn,csite%ntext_soil(nzg,ipa),initp%soil_water(nzg)                    &
                    ,initp%soil_tempk(nzg),initp%soil_fracliq(nzg),initp%sfcwater_tempk(k)  &
                    ,initp%sfcwater_fracliq(k),initp%can_prss,initp%can_shv                 &
-                   ,initp%ground_shv,initp%surface_ssh,initp%surface_temp                  &
-                   ,initp%surface_fliq)
+                   ,initp%ground_shv,initp%ground_ssh,initp%ground_temp                    &
+                   ,initp%ground_fliq)
    !---------------------------------------------------------------------------------------!
 
 
@@ -2576,10 +2576,10 @@ subroutine print_rk4patch(y,csite,ipa)
                                              ,y%virtual_fracliq
    write (unit=*,fmt='(80a)') ('-',k=1,80)
 
-   write (unit=*,fmt='(4(a12,1x))')    '  GROUND_SHV',' SURFACE_SSH','SURFACE_TEMP'        &
-                                      ,'SURFACE_FLIQ'
-   write (unit=*,fmt='(4(es12.4,1x))') y%ground_shv, y%surface_ssh, y%surface_temp         &
-                                      ,y%surface_fliq
+   write (unit=*,fmt='(4(a12,1x))')    '  GROUND_SHV','  GROUND_SSH',' GROUND_TEMP'        &
+                                      ,' GROUND_FLIQ'
+   write (unit=*,fmt='(4(es12.4,1x))') y%ground_shv, y%ground_ssh, y%ground_temp           &
+                                      ,y%ground_fliq
 
    write (unit=*,fmt='(80a)') ('-',k=1,80)
 
@@ -2803,7 +2803,7 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
                    , initp%can_prss        , initp%can_temp        , initp%can_shv         &
                    , initp%can_co2         , initp%can_depth       , initp%can_rhos        &
                    , initp%can_rhv         , initp%can_theta       , initp%can_theiv       &
-                   , initp%surface_temp    , initp%ground_shv      , avg_veg_temp          &
+                   , initp%ground_temp     , initp%ground_shv      , avg_veg_temp          &
                    , sum_veg_water         , initp%soil_tempk(nzg) , initp%soil_water(nzg) &
                    , soil8(nsoil)%soilcp   , soil8(nsoil)%soilwp   , soil8(nsoil)%sfldcap  &
                    , soil8(nsoil)%slmsts   , initp%ustar           , initp%tstar           &

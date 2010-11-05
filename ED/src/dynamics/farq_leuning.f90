@@ -2,11 +2,15 @@
 !==========================================================================================!
 !      This is the main driver for the Farquar and Leuning (1995) photosynthesis model.    !
 !------------------------------------------------------------------------------------------!
-subroutine lphysiol_full(T_L,e_A,C_A,PAR,rb,adens,A_open,A_cl,rsw_open,rsw_cl,pft,prss     &
-                        ,leaf_resp,green_leaf_factor,leaf_aging_factor,old_st_data,llspan  &
-                        ,vm_bar)
+subroutine lphysiol_full(T_L,e_A,C_A,PAR,rb,adens,A_open,A_cl,rsw_open,rsw_cl,veg_co2_open &
+                        ,veg_co2_cl,pft,prss,leaf_resp,green_leaf_factor,leaf_aging_factor &
+                        ,old_st_data,llspan,vm_bar,ilimit)
 
-   use c34constants  !, only : .....
+   use c34constants   , only : stoma_data               & ! structure
+                             , farqdata                 & ! structure
+                             , metdat                   & ! structure
+                             , solution                 & ! structure
+                             , glim                     ! ! structure
    use pft_coms       , only : D0                       & ! intent(in)
                              , cuticular_cond           & ! intent(in)
                              , dark_respiration_factor  & ! intent(in)
@@ -17,13 +21,18 @@ subroutine lphysiol_full(T_L,e_A,C_A,PAR,rb,adens,A_open,A_cl,rsw_open,rsw_cl,pf
                              , Vm_low_temp              & ! intent(in)
                              , Vm_high_temp             & ! intent(in)
                              , phenology                ! ! intent(in)
-   use physiology_coms, only : istoma_scheme            ! ! intent(in)
+   use physiology_coms, only : istoma_scheme            & ! intent(in)
+                             , c34smin_ci               & ! intent(in)
+                             , c34smax_ci               & ! intent(in)
+                             , c34smin_gsw              & ! intent(in)
+                             , c34smax_gsw              ! ! intent(in)
    use phenology_coms , only : vm_tran                  & ! intent(in)
                              , vm_slop                  & ! intent(in)
                              , vm_amp                   & ! intent(in)
                              , vm_min                   ! ! intent(in)
    use therm_lib      , only : rslif                    ! ! function
    use consts_coms    , only : t00                      & ! intent(in)
+                             , mmdry1000                & ! intent(in)
                              , epi                      ! ! intent(in)
    implicit none
    !------ Arguments. ---------------------------------------------------------------------!
@@ -34,14 +43,17 @@ subroutine lphysiol_full(T_L,e_A,C_A,PAR,rb,adens,A_open,A_cl,rsw_open,rsw_cl,pf
    real             , intent(in)    :: rb
    real             , intent(in)    :: adens
    real             , intent(in)    :: prss
-   real             , intent(out)   :: A_open
-   real             , intent(out)   :: A_cl
-   real             , intent(out)   :: rsw_open
-   real             , intent(out)   :: rsw_cl
-   real             , intent(out)   :: leaf_resp
+   real             , intent(inout) :: A_open
+   real             , intent(inout) :: A_cl
+   real             , intent(inout) :: rsw_open
+   real             , intent(inout) :: rsw_cl
+   real             , intent(inout) :: veg_co2_open
+   real             , intent(inout) :: veg_co2_cl
+   real             , intent(inout) :: leaf_resp
    real             , intent(in)    :: green_leaf_factor
    real             , intent(in)    :: leaf_aging_factor
    integer          , intent(in)    :: pft
+   integer          , intent(out)   :: ilimit
    type(stoma_data) , intent(inout) :: old_st_data
    real             , intent(in)    :: llspan
    real             , intent(in)    :: vm_bar
@@ -51,20 +63,19 @@ subroutine lphysiol_full(T_L,e_A,C_A,PAR,rb,adens,A_open,A_cl,rsw_open,rsw_cl,pf
    type(solution)                   :: sol
    logical                          :: recalc
    type(glim)                       :: apar
-   integer                          :: ilimit
    real                             :: co2cp
    real                             :: vmbar
    real                             :: vmllspan
    !---------------------------------------------------------------------------------------!
 
 
-
+   ilimit = -1
 
    !----- Load physiological parameters into structure. -----------------------------------!
-   gsdata%D0 = D0(pft)
-   gsdata%b = cuticular_cond(pft)
+   gsdata%D0    = D0(pft)
+   gsdata%b     = cuticular_cond(pft)
    gsdata%gamma = dark_respiration_factor(pft)
-   gsdata%m = stomatal_slope(pft)
+   gsdata%m     = stomatal_slope(pft)
    gsdata%alpha = quantum_efficiency(pft)
 
    !----- Load met into structure. --------------------------------------------------------!
@@ -83,6 +94,20 @@ subroutine lphysiol_full(T_L,e_A,C_A,PAR,rb,adens,A_open,A_cl,rsw_open,rsw_cl,pf
    sol%eps       = 3.0e-8
    sol%ninterval = 6
 
+   !----- Set up the first guess for the new method. --------------------------------------!
+   if (rsw_open == 0.0 ) then
+      sol%gsw2_1st = sqrt(c34smin_gsw*c34smax_gsw)
+   else
+      sol%gsw2_1st  = 1.0e9 * adens  / (mmdry1000 * rsw_open)
+      if (sol%gsw2_1st < c34smin_gsw .or. sol%gsw2_1st > c34smax_gsw) then
+         sol%gsw2_1st = sqrt(c34smin_gsw*c34smax_gsw)
+      end if
+   end if
+   if (veg_co2_open * 1.e-6 < c34smin_ci .or. veg_co2_open * 1.e-6 > c34smax_ci) then
+      sol%ci2_1st   = met%ca
+   else
+      sol%ci2_1st   = veg_co2_open * 1.e-6
+   end if
 
    !----- Set variables for light-controlled phenology. -----------------------------------!
    if (phenology(pft) == 3) then
@@ -114,11 +139,13 @@ subroutine lphysiol_full(T_L,e_A,C_A,PAR,rb,adens,A_open,A_cl,rsw_open,rsw_cl,pf
    end if
 
    if (recalc) then
-      call fill_lphys_sol_exact(A_open,rsw_open,A_cl,rsw_cl,sol,adens)
+      call fill_lphys_sol_exact(A_open,rsw_open,A_cl,rsw_cl,veg_co2_open,veg_co2_cl,sol    &
+                               ,adens)
       if (istoma_scheme == 1) old_st_data%recalc = 0
    else
-      call fill_lphys_sol_approx(gsdata,met,apar,old_st_data,sol,A_cl,rsw_cl,adens         &
-                                ,rsw_open,A_open,photosyn_pathway(pft),prss)
+      call fill_lphys_sol_approx(gsdata,met,apar,old_st_data,sol,A_cl,rsw_cl,veg_co2_open  &
+                                ,veg_co2_cl,adens,rsw_open,A_open,photosyn_pathway(pft)    &
+                                ,prss)
    end if
 
    return
@@ -134,7 +161,7 @@ end subroutine lphysiol_full
 !==========================================================================================!
 !==========================================================================================!
 subroutine c3solver(met,apar,gsdata,sol,ilimit)
-  use c34constants
+  use c34constants, only : farqdata, metdat,glim,solution
   implicit none
 
   
@@ -142,7 +169,7 @@ subroutine c3solver(met,apar,gsdata,sol,ilimit)
   type(metdat) :: met
   type(glim) :: apar
   type(solution) :: sol
-  integer :: success_flag
+  logical :: success_flag
   integer :: ilimit
 
   ! Solve par case
@@ -152,26 +179,26 @@ subroutine c3solver(met,apar,gsdata,sol,ilimit)
   ! Return if nighttime
   if(met%par < 1.0e-3)then
      call closed2open(sol,1)
-     ilimit = -1
+     ilimit = 0
      return
   endif
-  success_flag = 1
+  success_flag = .true.
   call solve_open_case_c3(gsdata,met,apar,sol,1,success_flag)
-  if(success_flag == 0)then
+  if(.not. success_flag)then
      call closed2open(sol,1)
      ilimit = -1
      return
-  endif
+  end if
 
   ! Solve the vm case
   call setapar_c3(gsdata,met,apar,2)
   call solve_closed_case_c3(gsdata,met,apar,sol,2)
   call solve_open_case_c3(gsdata,met,apar,sol,2,success_flag)
-  if(success_flag == 0)then
+  if(.not. success_flag)then
      call closed2open(sol,1)
-     ilimit = -1
+     ilimit = -2
      return
-  endif
+  end if
 
   if(sol%a(1,2) < sol%a(1,1))then
      sol%gsw(1,1) = sol%gsw(1,2)
@@ -190,7 +217,7 @@ subroutine c3solver(met,apar,gsdata,sol,ilimit)
   endif
 
   if(sol%cs(2,1) > 1.25e7)then
-     success_flag = 0
+     success_flag = .false.
      
 !     print*,'Stomatal conductance dangerously close to upper limit.  Stopping.'
 !     print*,met%ea,met%ca,met%rn,met%tl,met%par,met%gbc,met%gbw,met%ta  &
@@ -204,7 +231,7 @@ end subroutine c3solver
 !================================================================
 
 subroutine c4solver(met,apar,gsdata,sol,ilimit)
-  use c34constants
+  use c34constants, only : farqdata, metdat, glim, solution
   implicit none
   
 
@@ -222,7 +249,7 @@ subroutine c4solver(met,apar,gsdata,sol,ilimit)
      call solve_closed_case_c4(gsdata,met,apar,sol,1)
      if(met%par < 1.0e-3)then
         call closed2open(sol,1)
-        ilimit = -1
+        ilimit = 0
         return ! nighttime; return
      endif 
      success_flag = 1
@@ -242,7 +269,7 @@ subroutine c4solver(met,apar,gsdata,sol,ilimit)
      call solve_open_case_c4(gsdata,met,apar,sol,1,success_flag)
      if(success_flag == 0)then
         call closed2open(sol,1)
-        ilimit = -1
+        ilimit = -2
         return
      endif
   endif
@@ -258,17 +285,17 @@ subroutine c4solver(met,apar,gsdata,sol,ilimit)
 
   if(sol%a(1,2) < sol%a(1,1))then
      sol%gsw(1,1) = sol%gsw(1,2)
-     sol%es(1,1) = sol%es(1,2)
-     sol%ci(1,1) = sol%ci(1,2)
-     sol%cs(1,1) = sol%cs(1,2)
-     sol%a(1,1) = sol%a(1,2)
+     sol%es(1,1)  = sol%es(1,2)
+     sol%ci(1,1)  = sol%ci(1,2)
+     sol%cs(1,1)  = sol%cs(1,2)
+     sol%a(1,1)   = sol%a(1,2)
   endif
   if(sol%a(2,2) < sol%a(2,1))then
      sol%gsw(2,1) = sol%gsw(2,2)
-     sol%es(2,1) = sol%es(2,2)
-     sol%ci(2,1) = sol%ci(2,2)
-     sol%cs(2,1) = sol%cs(2,2)
-     sol%a(2,1) = sol%a(2,2)
+     sol%es(2,1)  = sol%es(2,2)
+     sol%ci(2,1)  = sol%ci(2,2)
+     sol%cs(2,1)  = sol%cs(2,2)
+     sol%a(2,1)   = sol%a(2,2)
      ilimit = 3
   endif
 
@@ -285,7 +312,9 @@ end subroutine c4solver
 
 !=====================================
 subroutine setapar_c3(gsdata,met,apar,i)
-  use c34constants
+  use c34constants, only : glim     & ! structure
+                         , farqdata & ! structure
+                         , metdat   ! ! structure
   implicit none
   
 
@@ -309,7 +338,7 @@ end subroutine setapar_c3
 
 !=====================================
 subroutine setapar_c4(gsdata,met,apar,i)
-  use c34constants
+  use c34constants, only : glim, farqdata, metdat
   implicit none
   
 
@@ -334,7 +363,7 @@ end subroutine setapar_c4
 
 !================================================
 real function aflux_c3(apar,gsw,ci)
-  use c34constants
+  use c34constants, only : glim
   implicit none
   
   type(glim) :: apar
@@ -347,7 +376,7 @@ end function aflux_c3
 
 !================================================
 real function aflux_c4(apar,met,gsw)
-  use c34constants
+  use c34constants, only : glim, metdat
   implicit none
   
   type(glim) :: apar
@@ -364,7 +393,7 @@ end function aflux_c4
 
 !================================================
 real function csc_c4(apar,met,gsw)
-  use c34constants
+  use c34constants, only : glim, metdat
   implicit none
   
   type(metdat) :: met
@@ -381,7 +410,7 @@ end function csc_c4
 
 !================================================
 real function csc_c3(met,a)
-  use c34constants
+  use c34constants, only : metdat
   implicit none
   
   type(metdat) :: met
@@ -395,7 +424,7 @@ end function csc_c3
 
 !================================================
 real function residual_c3(gsdata,met,apar,x)
-  use c34constants
+  use c34constants, only : farqdata,metdat,glim
   implicit none
   
 
@@ -403,13 +432,13 @@ real function residual_c3(gsdata,met,apar,x)
   type(metdat) :: met
   type(glim) :: apar
   real :: x,ci,a,cs
-  integer :: success
+  logical :: success
   real, external :: quad4ci
   real, external :: aflux_c3
   real, external :: csc_c3
 
   ci = quad4ci(gsdata,met,apar,x,success)
-  if(success == 0)then
+  if(.not. success)then
      residual_c3 = 9.9e9
      return
   endif
@@ -425,7 +454,7 @@ end function residual_c3
 
 !================================================
 real function residual_c4(gsdata,met,apar,x)
-  use c34constants
+  use c34constants, only : farqdata,metdat,glim
   implicit none
   
 
@@ -449,14 +478,15 @@ end function residual_c4
 
 !===============================
 subroutine zbrak_c3(gsdata,met,apar,x1,x2,n,xb1,xb2,nb)
-  use c34constants
+  use c34constants, only :glim, farqdata,metdat
+  use physiology_coms, only : maxroots
   implicit none
   
 
   real :: x1,x2
   integer :: n,nb,nbb,i
   real :: x,dx,fp,fc
-  real, dimension(nb) :: xb1,xb2
+  real, dimension(maxroots) :: xb1,xb2
   type(glim) :: apar
   type(farqdata) :: gsdata
   type(metdat) :: met
@@ -484,7 +514,7 @@ end subroutine zbrak_c3
 
 !-----------------------------------
 real function zbrent_c3(gsdata,met,apar,x1,x2,tol,success_flag)
-  use c34constants
+  use c34constants, only : glim, farqdata,metdat
   implicit none
   
 
@@ -494,7 +524,8 @@ real function zbrent_c3(gsdata,met,apar,x1,x2,tol,success_flag)
   integer, parameter :: itmax = 100
   real, parameter :: eps = 3.0e-8
   real :: x1,x2,tol,a,b,fa,fb,fc,c,d,e,tol1,s,q,p,r,xm
-  integer :: iter,success_flag
+  integer :: iter
+  logical :: success_flag
   real, external :: residual_c3
 
   a = x1
@@ -505,7 +536,7 @@ real function zbrent_c3(gsdata,met,apar,x1,x2,tol,success_flag)
   if(fb*fa > 0.0)then
      print*,'Root must be bracketed for ZBRENT_C3.'
      print*,fa,fb
-     success_flag = 0
+     success_flag = .false.
      zbrent_c3=0.0
      return
   endif
@@ -571,14 +602,15 @@ end function zbrent_c3
 
 !===============================
 subroutine zbrak_c4(gsdata,met,apar,x1,x2,n,xb1,xb2,nb)
-  use c34constants
+  use c34constants, only : glim, farqdata, metdat
+  use physiology_coms, only : maxroots
   implicit none
   
 
   real :: x1,x2
   integer :: n,nb,nbb,i
   real :: x,dx,fp,fc
-  real, dimension(nb) :: xb1,xb2
+  real, dimension(maxroots) :: xb1,xb2
   type(glim) :: apar
   type(farqdata) :: gsdata
   type(metdat) :: met
@@ -606,7 +638,7 @@ end subroutine zbrak_c4
 
 !-----------------------------------
 real function zbrent_c4(gsdata,met,apar,x1,x2,tol,success_flag)
-  use c34constants
+  use c34constants, only : glim, farqdata, metdat
   implicit none
   
 
@@ -695,7 +727,7 @@ end function zbrent_c4
 
 !=====================================================
 subroutine solve_closed_case_c3(gsdata,met,apar,sol,ilimit)
-  use c34constants
+  use c34constants, only : glim, farqdata, metdat, solution
   implicit none
   
 
@@ -745,7 +777,7 @@ subroutine solve_closed_case_c3(gsdata,met,apar,sol,ilimit)
 end subroutine solve_closed_case_c3
 !=====================================================
 subroutine solve_closed_case_c4(gsdata,met,apar,sol,ilimit)
-  use c34constants
+  use c34constants, only : glim, farqdata, metdat, solution
   implicit none
   
 
@@ -766,63 +798,134 @@ subroutine solve_closed_case_c4(gsdata,met,apar,sol,ilimit)
 
   return
 end subroutine solve_closed_case_c4
+!==========================================================================================!
+!==========================================================================================!
 
-!=========================================================
 
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
 subroutine solve_open_case_c3(gsdata,met,apar,sol,ilimit,success_flag)
-  use c34constants
-  implicit none
+   use c34constants   , only : glim          & ! structure
+                             , farqdata      & ! structure
+                             , metdat        & ! structure
+                             , solution      ! ! structure
+   use physiology_coms, only : new_c3_solver & ! intent(in)
+                             , maxroots      ! ! intent(in)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                     , intent(in)    :: ilimit
+   logical                     , intent(inout) :: success_flag
+   type(glim)                  , intent(in)    :: apar
+   type(farqdata)              , intent(in)    :: gsdata
+   type(metdat)                , intent(in)    :: met
+   type(solution)              , intent(inout) :: sol
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                     :: nroot
+   integer                                     :: isol
+   integer                                     :: nsteps
+   logical                                     :: success_quad
+   real                                        :: gswmin
+   real                                        :: gswmax
+   real                                        :: errnorm
+   real   , dimension(maxroots)                :: xb1
+   real   , dimension(maxroots)                :: xb2
+   real                        , external      :: aflux_c3
+   real                        , external      :: quad4ci
+   real                        , external      :: zbrent_c3
+   real                        , external      :: csc_c3
+   !---------------------------------------------------------------------------------------!
 
-  
-  integer :: ilimit,success_flag
-  type(glim) :: apar
-  type(farqdata) :: gsdata
-  type(metdat) :: met
-  type(solution) :: sol
 
-  integer, parameter :: maxroots=5
-  integer :: nroot,isol,success
-  real :: gswmin,gswmax
-  real, dimension(maxroots) :: xb1,xb2
-  real, external :: aflux_c3
-  real, external :: quad4ci
-  real, external :: zbrent_c3
-  real, external :: csc_c3
+   !----- Initialise the acceptable range for gsw and the number of roots. ----------------!
+   gswmin = gsdata%b
+   gswmax = 1.3e7
+   nroot  = maxroots
+   !---------------------------------------------------------------------------------------!
 
-  gswmin = gsdata%b
-  gswmax = 1.3e7
-  nroot = maxroots
 
-  call zbrak_c3(gsdata,met,apar,gswmin,gswmax,sol%ninterval,xb1,xb2,nroot)
-  if(nroot == 0)then
-     ! No open case solution.  Values revert to those from closed case.
-!     call closed2open(sol,ilimit)
-     success_flag = 0
-  else
-     ! We did find a solution
-     do isol=1,nroot
-        sol%gsw(2,ilimit) = zbrent_c3(gsdata,met,apar  &
-             ,xb1(isol),xb2(isol),sol%eps,success_flag)
-        if(success_flag == 0)return
-        sol%ci(2,ilimit) = quad4ci(gsdata,met,apar,sol%gsw(2,ilimit),success)
-        if(success /= 0)then
-           sol%a(2,ilimit)= aflux_c3(apar,sol%gsw(2,ilimit),sol%ci(2,ilimit))
-           sol%cs(2,ilimit) = csc_c3(met,sol%a(2,ilimit))
-           sol%es(2,ilimit) = (met%ea*met%gbw+sol%gsw(2,ilimit)*met%el)  &
-                /(sol%gsw(2,ilimit)+met%gbw)
-        elseif(nroot == 1)then
- !          call closed2open(sol,ilimit)
-           success_flag = 0
-       endif
 
-     enddo
-  endif
+   !---------------------------------------------------------------------------------------!
+   !     Here we decide which method we use to solve the conductance and the internal      !
+   ! carbon.                                                                               !
+   !---------------------------------------------------------------------------------------!
+   if (new_c3_solver) then
+      !------------------------------------------------------------------------------------!
+      !     New method, which solves the internal carbon and conductance simultaneously.   !
+      !------------------------------------------------------------------------------------!
 
-  return
+      !------ Initial guess for the variables. --------------------------------------------!
+      sol%ci (2,ilimit) = sol%ci2_1st
+      sol%gsw(2,ilimit) = sol%gsw2_1st
+      !------------------------------------------------------------------------------------!
+
+
+      !------ Solve using the 2-dimensional Newton's method. ------------------------------!
+      call gpp_solver2(apar,gsdata,met,sol%ci(2,ilimit),sol%gsw(2,ilimit),errnorm,nsteps   &
+                      ,success_flag)
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Compute the other variables in case of success. ------------------------------!
+      if (success_flag) then
+         sol%a(2,ilimit)  = aflux_c3(apar,sol%gsw(2,ilimit),sol%ci(2,ilimit))
+         sol%cs(2,ilimit) = csc_c3(met,sol%a(2,ilimit))
+         sol%es(2,ilimit) = (met%ea*met%gbw+sol%gsw(2,ilimit)*met%el)                      &
+                          / (sol%gsw(2,ilimit)+met%gbw)
+      end if
+      !------------------------------------------------------------------------------------!
+   else
+      !------------------------------------------------------------------------------------!
+      !     Old method, which solves the internal carbon and conductance separately.       !
+      !------------------------------------------------------------------------------------!
+
+      !------ Find the bracket that is likely to contain the solution. --------------------!
+      call zbrak_c3(gsdata,met,apar,gswmin,gswmax,sol%ninterval,xb1,xb2,nroot)
+      !------------------------------------------------------------------------------------!
+
+
+      if(nroot == 0)then
+         !---------------------------------------------------------------------------------!
+         !     No open case solution.  Values revert to those from closed case.            !
+         !---------------------------------------------------------------------------------!
+         success_flag = .false.
+      else
+         !---------------------------------------------------------------------------------!
+         !     We did find a solution.                                                     !
+         !---------------------------------------------------------------------------------!
+         do isol=1,nroot
+            sol%gsw(2,ilimit) = zbrent_c3(gsdata,met,apar,xb1(isol),xb2(isol),sol%eps      &
+                                         ,success_flag)
+            if (.not. success_flag) return
+            sol%ci(2,ilimit) = quad4ci(gsdata,met,apar,sol%gsw(2,ilimit),success_quad)
+            if (success_quad) then
+               sol%a(2,ilimit)  = aflux_c3(apar,sol%gsw(2,ilimit),sol%ci(2,ilimit))
+               sol%cs(2,ilimit) = csc_c3(met,sol%a(2,ilimit))
+               sol%es(2,ilimit) = (met%ea*met%gbw+sol%gsw(2,ilimit)*met%el)                &
+                                / (sol%gsw(2,ilimit)+met%gbw)
+            elseif (nroot == 1) then
+               success_flag = .false.
+           end if
+         end do
+         !---------------------------------------------------------------------------------!
+      end if
+   end if
+
+   return
 end subroutine solve_open_case_c3
+!==========================================================================================!
+!==========================================================================================!
 
-!=====================================================
 
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
 subroutine solve_open_case_c4(gsdata,met,apar,sol,ilimit,success_flag)
   use c34constants
   implicit none
@@ -900,7 +1003,7 @@ real function quad4ci(gsdata,met,apar,x,success)
   type(metdat) :: met
   real :: b,c,q,x
   real, dimension(2) :: ci
-  integer :: success
+  logical :: success
   integer, dimension(2) :: sol_flag  
   integer :: isol
   logical,external :: isnan_ext
@@ -916,7 +1019,7 @@ real function quad4ci(gsdata,met,apar,x,success)
   endif
   ci(1) = q
   ci(2) = c / q
-  success = 1
+  success = .true.
 
   ! Test to see if the solutions are greater than zero.
   sol_flag(1:2) = 1
@@ -936,7 +1039,7 @@ real function quad4ci(gsdata,met,apar,x,success)
      endif
   else
      quad4ci = met%ca
-     success = 0
+     success = .false.
   endif
 
   return
@@ -1347,39 +1450,60 @@ subroutine store_exact_lphys_solution(old_st_data, met, prss,   &
 
   return
 end subroutine store_exact_lphys_solution
+!==========================================================================================!
+!==========================================================================================!
 
-!==================================================================
 
-subroutine fill_lphys_sol_exact(A_open, rsw_open, A_cl, rsw_cl, sol, adens)
 
-  use consts_coms, only : mmdry1000
-  use c34constants
 
-  implicit none
 
-  
 
-  real, intent(out) :: A_open
-  real, intent(out) :: A_cl
-  real, intent(out) :: rsw_open
-  real, intent(out) :: rsw_cl
-  type(solution), intent(in) :: sol
-  real, intent(in) :: adens
+!==========================================================================================!
+!==========================================================================================!
+!      This subroutine will make the appropriate conversions for the output.               !
+!------------------------------------------------------------------------------------------!
+subroutine fill_lphys_sol_exact(A_open, rsw_open, A_cl, rsw_cl, veg_co2_open,veg_co2_cl    &
+                               ,sol, adens)
 
-  A_open = sol%a(2,1)
-  rsw_open = 1.0e9 * adens / (mmdry1000 * sol%gsw(2,1))
-!  rsw_open = (2.9e-8 * adens) / sol%gsw(2,1)
-  A_cl = sol%a(1,1)
-  rsw_cl = 1.0e9 * adens / (mmdry1000 * sol%gsw(1,1))
-!  rsw_cl = (2.9e-8 * adens) / sol%gsw(1,1)
+   use consts_coms , only : mmdry1000 ! ! structure
+   use c34constants, only : solution  ! ! structure
+   implicit none
 
-  return
+   !----- Arguments. ----------------------------------------------------------------------!
+   real          , intent(out) :: A_open
+   real          , intent(out) :: A_cl
+   real          , intent(out) :: rsw_open
+   real          , intent(out) :: rsw_cl
+   real          , intent(out) :: veg_co2_open
+   real          , intent(out) :: veg_co2_cl
+   type(solution), intent(in)  :: sol
+   real          , intent(in)  :: adens
+
+   !----- Copy the open stomata case. -----------------------------------------------------!
+   A_open       = sol%a(2,1)
+   rsw_open     = 1.0e9 * adens / (mmdry1000 * sol%gsw(2,1))
+   veg_co2_open = sol%ci(2,1) * 1.e6
+
+   !----- Copy the open stomata case. -----------------------------------------------------!
+   A_cl         = sol%a(1,1)
+   rsw_cl       = 1.0e9 * adens / (mmdry1000 * sol%gsw(1,1))
+   veg_co2_cl   = sol%ci(1,1) * 1.e6
+
+   return
 end subroutine fill_lphys_sol_exact
+!==========================================================================================!
+!==========================================================================================!
 
-!=======================================================================
 
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
 subroutine fill_lphys_sol_approx(gsdata, met, apar, old_st_data, sol,   &
-     A_cl, rsw_cl, adens, rsw_open, A_open, photosyn_pathway, prss)
+     A_cl, rsw_cl, veg_co2_open, veg_co2_cl, adens, rsw_open, A_open, photosyn_pathway &
+      , prss)
 
   use c34constants
   use consts_coms, only : mmdry1000
@@ -1397,11 +1521,13 @@ subroutine fill_lphys_sol_approx(gsdata, met, apar, old_st_data, sol,   &
   real, intent(out) :: A_open
   real, intent(out) :: rsw_cl 
   real, intent(out) :: rsw_open
+  real, intent(out) :: veg_co2_open
+  real, intent(out) :: veg_co2_cl
   real, intent(in) :: adens
   integer, intent(in) :: photosyn_pathway
   real, intent(in) :: prss
 
-  integer :: success
+  logical :: success
   real :: gsw_update
   real :: ci_approx
   real, external :: aflux_c4
@@ -1429,7 +1555,7 @@ subroutine fill_lphys_sol_approx(gsdata, met, apar, old_st_data, sol,   &
      
      if(photosyn_pathway == 3)then
         ci_approx = quad4ci(gsdata,met,apar,gsw_update,success)
-        if(success == 1)then
+        if(success)then
            A_open = aflux_c3(apar,gsw_update,ci_approx)
            rsw_open = 1.0e9 * adens / (mmdry1000 * gsw_update)
 !           rsw_open = (2.9e-8 * adens) / gsw_update
@@ -1443,10 +1569,678 @@ subroutine fill_lphys_sol_approx(gsdata, met, apar, old_st_data, sol,   &
 !        rsw_open = (2.9e-8 * adens) / gsw_update
      endif
   else
-     A_open = A_cl
+     A_open   = A_cl
      rsw_open = rsw_cl
-  endif
-
+  end if
+  if (old_st_data%ilimit >= 1) then
+     veg_co2_open  = sol%ci(2,old_st_data%ilimit) * 1.e6
+     veg_co2_cl    = sol%ci(1,old_st_data%ilimit) * 1.e6
+  else
+     veg_co2_open  = met%ca * 1.e6
+     veg_co2_cl    = met%ca * 1.e6 
+  end if
   return
 end subroutine fill_lphys_sol_approx
+!==========================================================================================!
+!==========================================================================================!
 
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+subroutine gpp_solver2(apar,gsdata,met,ci,gsw,errnorm,n,converged)
+   use c34constants   , only : glim          & ! structure
+                             , farqdata      & ! structure
+                             , metdat        ! ! structure
+   use physiology_coms, only : c34smin_ci    & ! intent(out)
+                             , c34smax_ci    & ! intent(out)
+                             , c34smin_gsw   & ! intent(out)
+                             , c34smax_gsw   & ! intent(out)
+                             , nudgescal     & ! intent(out)
+                             , alfls         & ! intent(out)
+                             , maxmdne       & ! intent(out)
+                             , normstmax     & ! intent(out)
+                             , hugenum       & ! intent(out)
+                             , xdim          ! ! intent(out)
+   use therm_lib      , only : toler         ! ! intent(in)
+
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   type(glim)    , intent(in)               :: apar
+   type(farqdata), intent(in)               :: gsdata
+   type(metdat)  , intent(in)               :: met
+   real(kind=4)  , intent(inout)            :: ci
+   real(kind=4)  , intent(inout)            :: gsw
+   real(kind=4)  , intent(out)              :: errnorm     ! Norm of the norm. error.
+   integer       , intent(out)              :: n           ! Iteration counter
+   logical       , intent(out)              :: converged   ! The method converged.
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                  :: i           ! Best alpha
+   logical                                  :: singular    ! Matrix is singular
+   logical                                  :: dxconv      ! Check for spurious conv. 
+   real(kind=4), dimension(xdim,xdim)       :: jacob       ! Array with the Jacobian
+   real(kind=4), dimension(xdim,xdim)       :: jacobt      ! Transpose of the Jacobian
+   real(kind=4), dimension(xdim)            :: x           ! Current normalised guess.
+   real(kind=4), dimension(xdim)            :: xtry        ! Potential new guess
+   real(kind=4), dimension(xdim)            :: xsmin       ! Lower bounds
+   real(kind=4), dimension(xdim)            :: xsmax       ! Higher bounds
+   real(kind=4), dimension(xdim)            :: s           ! Characteristic scales
+   real(kind=4), dimension(xdim)            :: xnudge      ! Nudging perturbation in x
+   real(kind=4), dimension(xdim)            :: dx          ! Vector with the increment
+   real(kind=4), dimension(xdim)            :: dxnorm      ! Standardised increment
+   real(kind=4), dimension(xdim)            :: error       ! Error vector (auxiliary)
+   real(kind=4), dimension(xdim)            :: gradfn2     ! Gradient of fn2.
+   real(kind=4), dimension(xdim)            :: fun         ! Function eval of curr. guess
+   real(kind=4), dimension(xdim)            :: funtry      ! Function eval of new guess
+   real(kind=4)                             :: fn2         ! 1/2 F dot F
+   real(kind=4)                             :: fn2try      ! New guess 1/2 F dot F
+   real(kind=4)                             :: fn2pbt      ! Previous back track
+   real(kind=4)                             :: stepmax     ! Maximum step to be taken.
+   real(kind=4)                             :: stepsize    ! Size of this new step.
+   real(kind=4)                             :: slope       ! Slope of the descent
+   real(kind=4)                             :: lambda      ! Lambda scale
+   real(kind=4)                             :: lambdapbt   ! Lambda of the back track
+   real(kind=4)                             :: lambdatry   ! Attempt for next lambda
+   real(kind=4)                             :: lambdamin   ! Minimum lambda
+   real(kind=4)                             :: rhstry      ! Auxiliary variable
+   real(kind=4)                             :: rhspbt      ! Auxiliary variable
+   real(kind=4)                             :: abask       ! Auxiliary variable
+   real(kind=4)                             :: bbask       ! Auxiliary variable
+   real(kind=4)                             :: discr       ! Auxiliary variable
+   !----- Locally saved variables. --------------------------------------------------------!
+   logical                     , save       :: firsttime  = .true.
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !------ Initialise the random number generator. ----------------------------------------!
+   if (firsttime) then
+      call random_seed()
+      firsttime = .false.
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !------ Initialise the convergence flag. -----------------------------------------------!
+   converged = .false.
+   singular  = .false.
+   n         = 0
+   errnorm   = huge(1.)
+   !---------------------------------------------------------------------------------------!
+
+
+   !------ Initialise the edges and scale. ------------------------------------------------!
+   xsmin = (/ c34smin_ci, c34smin_gsw /)  ! Minimum values that will be accepted.
+   xsmax = (/ c34smax_ci, c34smax_gsw /)  ! Maximum values that will be accepted.
+   s     = (/ ci        , gsw         /)  ! s1 and s2  -> first guess of Ci and gsw
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !------ Initialise the "x" vector with the first guess. --------------------------------!
+   xtry  = (/  1., 1. /)
+   where (xtry(:)*s(:) < xsmin(:)) 
+      xtry(:) = xsmin(:) / s(:)
+   end where
+   where (xtry(:)*s(:) > xsmax(:))
+      xtry(:) = xsmax(:) / s(:)
+   end where
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !------ Initialise the function evaluation. --------------------------------------------!
+   call gppsolver2_fun(xtry,s,xsmin,xsmax, apar, met, gsdata,funtry)
+   fn2try = 0.5 * sum(funtry(:)*funtry(:))
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Unlikely, but if we are really lucky and hit the jackpot with the first guess,   !
+   ! we quit, that is indeed what we were looking for, and if we continue the iteration    !
+   ! may send the guess away...                                                            !
+   !---------------------------------------------------------------------------------------!
+   if (all(funtry == 0.)) then
+      converged = .true.
+      errnorm   = 0.0
+      ci        = xtry(1)*s(1)
+      gsw       = xtry(2)*s(2)
+      return
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
+      
+   !---------------------------------------------------------------------------------------!
+   !     Define the maximum allowed step.  The step is normalised to make our comparisons  !
+   ! more independent on the size of each component.                                       !
+   !---------------------------------------------------------------------------------------!
+   stepmax = normstmax * max(sqrt(sum(xtry(:)*xtry(:))),real(xdim))
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !-----Big loop for Newton's method. ----------------------------------------------------!
+   newtonloop: do n=1,maxmdne
+      !----- Update the old guess. --------------------------------------------------------!
+      x      = xtry(:)
+      fun    = funtry(:)
+      fn2    = fn2try
+
+      !----- Compute the Jacobian. --------------------------------------------------------!
+      call gppsolver2_jacob(x,s,xsmin,xsmax,apar,met,gsdata,jacob)
+      !----- Comput the gradient of the fn2. ----------------------------------------------!
+      gradfn2 = matmul(jacob,fun)
+
+      !----- Solve the linear system. -----------------------------------------------------!
+      funtry = -fun
+      call lisys_solver(xdim,jacob,funtry,dx,singular)
+      
+      !------------------------------------------------------------------------------------! 
+      !    Check whether we have a solution or not, based on the Jacobian condition        !
+      ! number.                                                                            !
+      !------------------------------------------------------------------------------------! 
+      if (singular) then
+         !---------------------------------------------------------------------------------!
+         !     In case it is indeed a singularity, the only remedy is to start over but    !
+         ! applying some random noise to the current guess, and hopefully this will make   !
+         ! the method to approach the solution through a more reasonable path.             !
+         !---------------------------------------------------------------------------------!
+         call random_number(xnudge)
+         xnudge(:) = (2*xnudge(:) - 1.) * nudgescal
+         xtry(:)   = xtry(:) * (1. + xnudge(:))
+         where (xtry(:)*s(:) < xsmin(:))
+            xtry(:) = xsmin(:)/s(:)
+         end where
+         where (xtry(:)*s(:) > xsmax(:))
+            xtry(:) = xsmax(:)/s(:)
+         end where
+   
+         call gppsolver2_fun(xtry,s,xsmin,xsmax, apar, met, gsdata,funtry)
+         fn2try = 0.5 * sum(funtry(:)*funtry(:))
+
+         !---------------------------------------------------------------------------------!
+         !      Unlikely, but if we are really lucky and hit the jackpot with the first    !
+         ! guess, we quit, that is indeed what we were looking for, and if we continue the !
+         ! iteration may send the guess away...                                            !
+         !---------------------------------------------------------------------------------!
+         if (all(funtry == 0.)) then
+            converged = .true.
+            errnorm   = 0.
+            ci        = xtry(1)*s(1)
+            gsw       = xtry(2)*s(2)
+            return
+         end if
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !     Define the maximum allowed step.  The step is normalised to make our        !
+         ! comparisons more independent on the size of each component.                     !
+         !---------------------------------------------------------------------------------!
+         stepmax = normstmax * max(sqrt( sum(xtry(:)*xtry(:))), real(xdim))
+         !---------------------------------------------------------------------------------!
+         cycle newtonloop
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Now we decide whether this step is safe or not to be taken.  First thing,      !
+      ! we check whether the step is too big, and in case it is, we shorten the size of    !
+      ! the step.                                                                          !
+      !------------------------------------------------------------------------------------!
+      stepsize = sqrt(sum(dx(:)*dx(:)))
+      if (stepsize > stepmax) dx(:) = dx(:) * stepmax / stepsize
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Check the slope of the step we are about to take.  Hopefully this is going to  !
+      ! be always negative.  Also, we check whether the step we are about to take will     !
+      ! keep guesses in the right place.  In case it is not, we may need to start over.    !
+      !------------------------------------------------------------------------------------!
+      slope   = sum(gradfn2(:)*dx(:))
+      xtry(:) = x(:) + dx(:)
+      if (slope >= 0. .or. any(xtry(:)*s(:) < 0.90*xsmin(:))  .or.                         &
+                           any(xtry(:)*s(:) > 1.10*xsmax(:)) ) then
+         call random_number(xnudge)
+         xnudge(:) = (2*xnudge(:) - 1.) * nudgescal
+         xtry(:)   = xtry(:) * (1. + xnudge(:))
+         where (xtry(:)*s(:) < xsmin(:))
+            xtry(:) = xsmin(:) / s(:)
+         end where
+         where (xtry(:)*s(:) > xsmax(:))
+            xtry(:) = xsmax(:) / s(:)
+         end where
+   
+         call gppsolver2_fun(xtry,s,xsmin,xsmax, apar, met, gsdata, funtry)
+         fn2try = 0.5 * sum(funtry(:)*funtry(:))
+
+         !---------------------------------------------------------------------------------!
+         !      Unlikely, but if we are really lucky and hit the jackpot with the first    !
+         ! guess, we quit, that is indeed what we were looking for, and if we continue the !
+         ! iteration may send the guess away...                                            !
+         !---------------------------------------------------------------------------------!
+         if (all(funtry == 0.)) then
+            converged = .true.
+            errnorm   = 0
+            ci       = xtry(1)*s(1)
+            gsw      = xtry(2)*s(2)
+            return
+         end if
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------! 
+         !     Define the maximum allowed step.  The step is normalised to make our        !
+         ! comparisons more independent on the size of each component.                     !
+         !---------------------------------------------------------------------------------! 
+         stepmax = normstmax * max(sqrt( sum(xtry(:)*xtry(:))),real(xdim))
+         !---------------------------------------------------------------------------------! 
+
+         cycle newtonloop
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Now we compute the minimum lambda.  First we obtain the scale for it.          !
+      !------------------------------------------------------------------------------------!
+      where (abs(x(:)) < 1.)
+         dxnorm(:) = abs(dx(:))
+      elsewhere
+         dxnorm(:) = abs(dx(:))/abs(x(:))
+      end where
+      lambdamin = toler/maxval(dxnorm)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Initialise lambda.  It's good to be optimistic, so we start with lambda=1,     !
+      ! which corresponds to the "normal" Newton's method.                                 !
+      !------------------------------------------------------------------------------------!
+      lambda = 1.
+
+      !------------------------------------------------------------------------------------!
+      !     This loop is going to do the line search, seeking a step that will be the      !
+      ! fastest possible, but playing it safe, and taking a shorter step if the full step  !
+      ! is too dangerous.                                                                  !
+      !------------------------------------------------------------------------------------!
+      linesearch: do
+         !----- Update the guess. ---------------------------------------------------------!
+         xtry = x(:) + lambda * dx(:)
+         
+         !----- Find the updated function and the fn2 term. -------------------------------!
+         call gppsolver2_fun(xtry,s,xsmin,xsmax, apar, met, gsdata,funtry)
+         fn2try = 0.5 * sum(funtry(:)*funtry(:))
+         
+         if (lambda < lambdamin) then
+            !------------------------------------------------------------------------------!
+            !     Convergence on delta x, the check outside this loop should check whether !
+            ! this has achieve convergence or if this is a spurious convergence.           !
+            !------------------------------------------------------------------------------!
+            xtry(:) = x(:)
+            dxconv = .true.
+            exit linesearch
+         elseif (fn2try <= fn2 + alfls * lambda * slope) then
+            !----- The function is going to the right direction, quit line search. --------!
+            dxconv = .false.
+            exit linesearch
+         elseif (lambda == 1.) then
+            !----- First call of the back track, we use a simple expression. --------------!
+            dxconv    = .false.
+            lambdatry = - slope / (2. * (fn2try - fn2 -slope))
+         else
+            !------------------------------------------------------------------------------!
+            !     Back track, the calls other than the first one.  In this case we use     !
+            ! the information from the previous attempt, and we use a cubic polynomial     !
+            ! to minimise the value of the gradient as a function of lambda.  Following    !
+            ! Press et al. (1992), section 9.7, we approximate the function to a cubic     !
+            ! polynomial in lambda, and we use both the most recent value and the value    !
+            ! right before that (lambda, and lambdapbt, respectively).                     !
+            !------------------------------------------------------------------------------!
+            dxconv = .false.
+
+            rhstry   = fn2try - fn2 - lambda    * slope
+            rhspbt   = fn2pbt - fn2 - lambdapbt * slope
+            
+            abask  = ( rhstry/(lambda*lambda) - rhspbt/(lambdapbt*lambdapbt) )             &
+                     / (lambda - lambdapbt)
+            bbask  = ( lambda    * rhspbt / (lambdapbt * lambdapbt)                        &
+                     - lambdapbt * rhstry / (lambda    * lambda   ) )                      &
+                   / ( lambda - lambdapbt )
+
+            if (abask == 0.) then 
+               lambdatry = - slope / (2. * bbask)
+            else
+               discr = bbask * bbask - 3. * abask * slope
+               if (discr < 0.) then
+                  lambdatry = 0.5 * lambda
+               elseif (bbask <= 0.) then 
+                  lambdatry = ( - bbask + sqrt(discr)) / (3. * abask)
+               else
+                  lambdatry = - slope / (bbask + sqrt(discr))
+               end if
+            end if
+            !------------------------------------------------------------------------------!
+
+            
+            !------------------------------------------------------------------------------!
+            !     Here we impose that the new lambda should not exceed half the previous   !
+            ! lambda.                                                                      !
+            !------------------------------------------------------------------------------!
+            lambdatry = min(0.5 * lambda,lambdatry)
+            !------------------------------------------------------------------------------!
+         end if
+         
+         !---------------------------------------------------------------------------------!
+         !     We also want to make the new lambda at least 10% of the previous, even when !
+         ! this is the first call of the back track.                                       !
+         !---------------------------------------------------------------------------------!
+         lambdatry = max(lambdatry, 0.1 * lambda)
+
+         !------ Update the older guess. --------------------------------------------------!
+         lambdapbt = lambda
+         fn2pbt    = fn2try
+         lambda    = lambdatry
+      end do linesearch
+      !------------------------------------------------------------------------------------!
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Check the results, and assume success if we hit the true solution, or if we    !
+      ! are sufficently close to the true solution.                                        !
+      !------------------------------------------------------------------------------------!
+      error = abs(funtry(:))
+      errnorm  = maxval(error)
+
+      !------------------------------------------------------------------------------------!
+      !      If Newton's method succeeded, we update the output and quit the sub-routine   !
+      ! now.                                                                               !
+      !------------------------------------------------------------------------------------!
+      if (dxconv .and. errnorm < toler) then
+         !----- The gradient is small but we are indeed close to zero. --------------------!
+         converged = .true.
+         ci        = xtry(1)*s(1)
+         gsw       = xtry(2)*s(2)
+         return
+      elseif (dxconv) then
+         !---------------------------------------------------------------------------------!
+         !     Here we have hit a spurious zero gradient (a bad thing), because the        !
+         ! function evaluation is not within the tolerance.  The only remedy is to start   !
+         ! over but applying some random noise to the current guess, and hopefully this    !
+         ! will make the method to approach the solution through a better path.            !
+         !---------------------------------------------------------------------------------!
+         call random_number(xnudge)
+         xnudge(:) = (2*xnudge(:) - 1.) * nudgescal
+         xtry(:)   = xtry(:) * (1. + xnudge(:))
+         where (xtry(:)*s(:) < xsmin(:))
+            xtry(:) = xsmin(:) / s(:)
+         end where
+         where (xtry(:)*s(:) > xsmax(:))
+            xtry(:) = xsmax(:) / s(:)
+         end where
+
+         call gppsolver2_fun(xtry,s,xsmin,xsmax, apar, met, gsdata, funtry)
+         fn2try = 0.5 * sum(funtry(:)*funtry(:))
+
+         !---------------------------------------------------------------------------------!
+         !      Unlikely, but if we are really lucky and hit the jackpot with the first    !
+         ! guess, we quit, that is indeed what we were looking for, and if we continue the !
+         ! iteration may send the guess away...                                            !
+         !---------------------------------------------------------------------------------!
+         if (all(funtry == 0.)) then
+            converged = .true.
+            errnorm   = 0.
+            ci        = xtry(1)*s(1)
+            gsw       = xtry(2)*s(2)
+            return
+         end if
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !     Define the maximum allowed step.  The step is normalised to make our        !
+         ! comparisons more independent on the size of each component.                     !
+         !---------------------------------------------------------------------------------!
+         stepmax = normstmax * max(sqrt(sum(xtry(:)*xtry(:))),real(xdim))
+         !---------------------------------------------------------------------------------!
+
+         cycle newtonloop
+      else
+         !----- Check for convergence on delta-x. -----------------------------------------!
+         where (x(:) < 1.)
+            error(:) = abs(xtry(:)-x(:))
+         elsewhere
+            error(:) = abs(xtry(:)-x(:)) / abs(x(:))
+         end where
+         errnorm  = max(errnorm,maxval(error))
+         !---------------------------------------------------------------------------------!
+         !      If Newton's method succeeded, we update the output and quit the sub-       !
+         ! routine now.                                                                    !
+         !---------------------------------------------------------------------------------!
+         if (errnorm < toler) then
+            converged = .true.
+            ci        = xtry(1)*s(1)
+            gsw       = xtry(2)*s(2)
+            return
+         end if
+         !---------------------------------------------------------------------------------!
+      end if
+   end do newtonloop
+   !---------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     If we have reached this point, this means that both Newton's with linear search-  !
+   ! ing method failed to converge.  We will acknowledge that  but we fill the output      !
+   ! variables with what we have.                                                          !
+   !---------------------------------------------------------------------------------------!
+   ci        = xtry(1)*s(1)
+   gsw       = xtry(2)*s(2)
+   converged = .false.
+   !---------------------------------------------------------------------------------------!
+
+   return
+end subroutine gpp_solver2
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+subroutine gppsolver2_fun(x,s,xsmin,xsmax, apar, met, gsdata,fun)
+   use c34constants   , only : glim          & ! structure
+                             , farqdata      & ! structure
+                             , metdat        ! ! structure
+   use physiology_coms, only : hugenum       & ! intent(in)
+                             , xdim          ! ! intent(in)
+
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   real(kind=4), dimension(xdim), intent(in)  :: x        ! Normalised variable vector.
+   real(kind=4), dimension(xdim), intent(in)  :: s        ! Characteristic scale
+   real(kind=4), dimension(xdim), intent(in)  :: xsmin    ! Lowest acceptable bounds
+   real(kind=4), dimension(xdim), intent(in)  :: xsmax    ! Highest acceptable bounds
+   type(glim)                   , intent(in)  :: apar
+   type(farqdata)               , intent(in)  :: gsdata
+   type(metdat)                 , intent(in)  :: met
+   real(kind=4), dimension(xdim), intent(out) :: fun      ! The vector with the functions
+   !----- Local variables. ----------------------------------------------------------------!
+   real(kind=4), dimension(xdim)              :: xs       ! Re-scaled variables.
+   real(kind=4)                               :: a1       ! Auxiliary coefficient
+   real(kind=4)                               :: a2       ! Auxiliary coefficient
+   real(kind=4)                               :: b1       ! Auxiliary coefficient
+   real(kind=4)                               :: b2       ! Auxiliary coefficient
+   real(kind=4)                               :: c1i      ! Auxiliary coefficient
+   real(kind=4)                               :: c2       ! Auxiliary coefficient
+   real(kind=4)                               :: ao       ! Auxiliary coefficient
+   real(kind=4)                               :: qq       ! Auxiliary coefficient
+   real(kind=4)                               :: rr       ! Auxiliary coefficient
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Re-scale the variables. ---------------------------------------------------------!
+   xs(:) = x(:) * s(:)
+   !---------------------------------------------------------------------------------------!
+
+   !---------------------------------------------------------------------------------------!
+   !     This is to avoid floating point exceptions.  If the guess goes off the reasonable !
+   ! range, then we make the function evaluation poor.                                     !
+   !---------------------------------------------------------------------------------------!
+   if (any(xs < 0.90 * xsmin .or. xs > 1.10 * xsmax)) then
+      fun(:) = hugenum
+      return
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Function 1, solving Ci polynomial.                                               !
+   !---------------------------------------------------------------------------------------!
+   b1 =  apar%tau - met%ca + (apar%rho + apar%nu) * (1.0/(1.4 * met%gbc)) 
+   b2 = (apar%rho + apar%nu) / 1.6
+  
+   c1i = 1.                                                                                &
+       / (-apar%tau * met%ca + (apar%sigma + apar%nu * apar%tau) * (1.0 / (1.4 * met%gbc)))
+   c2  =  (apar%sigma + apar%nu * apar%tau) / 1.6
+
+   fun(1) =  c1i * (xs(1)*xs(1) + b1 * xs(1)  + b2 * xs(1)/xs(2) + c2 /xs(2)) + 1.
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Function 2, solving gsw polynomial.                                              !
+   !---------------------------------------------------------------------------------------!
+   ao = (apar%rho * xs(1) + apar%sigma) / (xs(1) + apar.tau) + apar.nu
+   qq = met%gbc * met%eta - gsdata%b
+   rr = gsdata%b * met%eta * met%gbc
+
+   a1 = met%ca - met%compp
+   a2 = - 1. / (1.4 * met%gbc)
+
+   b1 = qq * a1
+   b2 = -1.0 * (qq/(1.4*met%gbc) + gsdata%m)
+
+   c1i = 1./ (-rr * a1)
+   c2  = rr / (1.4 * met%gbc) - gsdata%m * met%gbc
+ 
+   fun(2) = c1i * ((a1 + a2*ao)*xs(2)*xs(2) + (b1 + b2*ao) * xs(2)  + c2 * ao) + 1.
+   !---------------------------------------------------------------------------------------!
+
+   return
+end subroutine gppsolver2_fun
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+subroutine gppsolver2_jacob(x,s,xsmin,xsmax, apar, met, gsdata,jacob)
+   use c34constants   , only : glim          & ! structure
+                             , farqdata      & ! structure
+                             , metdat        ! ! structure
+   use physiology_coms, only : xdim          ! ! intent(in)
+       
+
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   real(kind=4), dimension(xdim)     , intent(in)  :: x      ! Normalised variable vector.
+   real(kind=4), dimension(xdim)     , intent(in)  :: s      ! Characteristic scale
+   real(kind=4), dimension(xdim)     , intent(in)  :: xsmin  ! Lowest acceptable bounds
+   real(kind=4), dimension(xdim)     , intent(in)  :: xsmax  ! Highest acceptable bounds
+   type(glim)                        , intent(in)  :: apar
+   type(farqdata)                    , intent(in)  :: gsdata
+   type(metdat)                      , intent(in)  :: met
+   real(kind=4), dimension(xdim,xdim), intent(out) :: jacob  ! Jacobian matrix
+   !----- Local variables. ----------------------------------------------------------------!
+   real(kind=4), dimension(xdim)                   :: xs       ! Re-scaled variables.
+   real(kind=4)                                    :: a1       ! Auxiliary coefficient
+   real(kind=4)                                    :: a2       ! Auxiliary coefficient
+   real(kind=4)                                    :: b1       ! Auxiliary coefficient
+   real(kind=4)                                    :: b2       ! Auxiliary coefficient
+   real(kind=4)                                    :: c1i      ! Auxiliary coefficient
+   real(kind=4)                                    :: c2       ! Auxiliary coefficient
+   real(kind=4)                                    :: ao       ! A_open
+   real(kind=4)                                    :: daodt    ! derivative of A_open
+   real(kind=4)                                    :: qq       ! Auxiliary coefficient
+   real(kind=4)                                    :: rr       ! Auxiliary coefficient
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Re-scale the variables. ---------------------------------------------------------!
+   xs(:) = x(:) * s(:)
+
+   !----- This should never happen. -------------------------------------------------------!
+   if (any(xs < 0.90 * xsmin .or. xs > 1.10 * xsmax)) then
+      jacob(:,:) = 0.
+      return
+   end if
+
+   !---------------------------------------------------------------------------------------!
+   !      Derivatives of function 1, solving Ci polynomial.                                !
+   !---------------------------------------------------------------------------------------!
+   b1 =  apar%tau - met%ca + (apar%rho + apar%nu) * (1.0/(1.4 * met%gbc)) 
+   b2 = (apar%rho + apar%nu) / 1.6
+  
+   c1i = 1.                                                                                &
+       / (-apar%tau * met%ca + (apar%sigma + apar%nu * apar%tau) * (1.0 / (1.4 * met%gbc)))
+   c2  =  (apar%sigma + apar%nu * apar%tau) / 1.6
+
+   jacob(1,1) = c1i * (2*xs(1)*s(1) + b1 * s(1) + b2*s(1)/xs(2))
+   jacob(1,2) = c1i * (-b2*xs(1)*s(2)/(xs(2)*xs(2)) - c2*s(2)/(xs(2)*xs(2)))
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Derivatives of function 2, solving gsw polynomial.                               !
+   !---------------------------------------------------------------------------------------!
+   ao    = (apar%rho * xs(1) + apar%sigma) / (xs(1) + apar.tau) + apar.nu
+   dAodt = (s(1) * (apar%rho * (xs(1) + apar%tau) - apar%rho*xs(1) - apar%sigma))          &
+         / ((xs(1) + apar%tau) * (xs(1) + apar%tau))
+   qq    = met%gbc * met%eta - gsdata%b
+   rr    = gsdata%b * met%eta * met%gbc
+
+   a1 = met%ca - met%compp
+   a2 = - 1. / (1.4 * met%gbc)
+
+   b1 = qq * a1
+   b2 = -1.0 * (qq/(1.4*met%gbc) + gsdata%m)
+
+   c1i = 1./ (-rr * a1)
+   c2  = rr / (1.4 * met%gbc) - gsdata%m * met%gbc
+
+   jacob(2,1) = dAodt * c1i * (a2 * (xs(2)*xs(2)) + b2*xs(2) + c2) * s(1)
+   jacob(2,2) = c1i * (2*(a1+a2*ao)*xs(2)*s(2)  + (b1+b2*ao)*s(2))
+   !---------------------------------------------------------------------------------------!
+
+   return
+end subroutine gppsolver2_jacob
+!==========================================================================================!
+!==========================================================================================!

@@ -860,8 +860,8 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
    !     Both are defined as positive quantities.  Sensible heat is defined by only one    !
    ! variable, hflxgc [J/m2/s], which can be either positive or negative.                  !
    !---------------------------------------------------------------------------------------!
-   hflxgc = cp8 * (initp%surface_temp - initp%can_temp) * rdi
-   wflx   =       (initp%surface_ssh  - initp%can_shv ) * rdi
+   hflxgc = cp8 * (initp%ground_temp - initp%can_temp) * rdi
+   wflx   =       (initp%ground_ssh  - initp%can_shv ) * rdi
    !---------------------------------------------------------------------------------------!
 
 
@@ -880,9 +880,9 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
       ! density based on MCD suggestion on 11/16/2009.                                     !
       !------------------------------------------------------------------------------------!
       dewgndflx  = - wflx
-      qdewgndflx = dewgndflx * (alvi8 - initp%surface_fliq * alli8)
+      qdewgndflx = dewgndflx * (alvi8 - initp%ground_fliq * alli8)
       ddewgndflx = dewgndflx                                                               &
-                 * (initp%surface_fliq * wdnsi8 + (1.d0-initp%surface_fliq) * fdnsi8)
+                 * (initp%ground_fliq * wdnsi8 + (1.d0-initp%ground_fliq) * fdnsi8)
       !----- Set evaporation fluxes to zero. ----------------------------------------------!
       wflxgc     = 0.d0
       qwflxgc    = 0.d0
@@ -914,7 +914,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
       qdewgndflx = 0.d0
       ddewgndflx = 0.d0
       wflxgc     = wflx
-      qwflxgc    = wflx * (alvi8 - initp%surface_fliq * alli8)
+      qwflxgc    = wflx * (alvi8 - initp%ground_fliq * alli8)
 
       !----- Set flux flag. ---------------------------------------------------------------!
       initp%flag_wflxgc = 3
@@ -953,7 +953,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
       !------------------------------------------------------------------------------------!
       wflxgc = max( 0.d0, (initp%ground_shv - initp%can_shv) * rdi)
       !----- Adjusting the flux accordingly to the surface fraction (no phase bias). ------!
-      qwflxgc = wflxgc * ( alvi8 - initp%surface_fliq * alli8)
+      qwflxgc = wflxgc * ( alvi8 - initp%ground_fliq * alli8)
       !----- Set condensation fluxes to zero. ---------------------------------------------!
       dewgndflx  = 0.d0
       qdewgndflx = 0.d0

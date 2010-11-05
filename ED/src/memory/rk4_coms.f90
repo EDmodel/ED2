@@ -71,9 +71,9 @@ module rk4_coms
 
       !----- Surface variables. -----------------------------------------------------------!
       real(kind=8)                        :: ground_shv   ! Ground sp. humidity   [  kg/kg]
-      real(kind=8)                        :: surface_ssh  ! Surface sp. humidity  [  kg/kg]
-      real(kind=8)                        :: surface_temp ! Surface sp. humidity  [  kg/kg]
-      real(kind=8)                        :: surface_fliq ! Surface sp. humidity  [  kg/kg]
+      real(kind=8)                        :: ground_ssh   ! Ground sat. humidity  [  kg/kg]
+      real(kind=8)                        :: ground_temp  ! Ground temperature    [      K]
+      real(kind=8)                        :: ground_fliq  ! Ground liquid frac.   [    ---]
       real(kind=8)                        :: rough        ! Roughness             [      m]
 
       !----- Characteristic scale. --------------------------------------------------------!
@@ -747,9 +747,9 @@ module rk4_coms
       y%virtual_fracliq                = 0.d0
      
       y%ground_shv                     = 0.d0
-      y%surface_ssh                    = 0.d0
-      y%surface_temp                   = 0.d0
-      y%surface_fliq                   = 0.d0
+      y%ground_ssh                     = 0.d0
+      y%ground_temp                    = 0.d0
+      y%ground_fliq                    = 0.d0
       y%nlev_sfcwater                  = 0
       y%flag_sfcwater                  = 0
 

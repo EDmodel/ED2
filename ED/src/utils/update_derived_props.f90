@@ -182,10 +182,16 @@ end subroutine update_patch_derived_props
 subroutine update_patch_thermo_props(csite,ipaa,ipaz)
   
    use ed_state_vars, only : sitetype      ! ! structure
-   use therm_lib    , only : idealdenssh   ! ! function
+   use therm_lib    , only : idealdenssh   & ! function
+                           , qwtk          & ! function
+                           , qtk           ! ! function
    use consts_coms  , only : p00i          & ! intent(in)
                            , rocp          & ! intent(in)
-                           , t00           ! ! intent(in)
+                           , t00           & ! intent(in)
+                           , wdns          ! ! intent(in)
+   use grid_coms    , only : nzg           & ! intent(in)
+                           , nzs           ! ! intent(in)
+   use soil_coms    , only : soil          ! ! intent(in)
    implicit none
 
    !----- Arguments -----------------------------------------------------------------------!
@@ -194,6 +200,10 @@ subroutine update_patch_thermo_props(csite,ipaa,ipaz)
    integer         , intent(in) :: ipaz
    !----- Local variables. ----------------------------------------------------------------!
    integer                      :: ipa
+   integer                      :: nsoil
+   integer                      :: ksn
+   integer                      :: k
+   real                         :: soilhcap
    !---------------------------------------------------------------------------------------!
 
 
@@ -213,6 +223,30 @@ subroutine update_patch_thermo_props(csite,ipaa,ipaz)
       csite%can_temp(ipa)     = csite%can_theta(ipa) * (p00i * csite%can_prss(ipa)) ** rocp
       csite%can_rhos(ipa)     = idealdenssh(csite%can_prss(ipa),csite%can_temp(ipa)        &
                                            ,csite%can_shv(ipa))
+
+      !----- Update soil temperature and liquid water fraction. ---------------------------!
+      do k = 1, nzg
+         nsoil    = csite%ntext_soil(k,ipa)
+         soilhcap = soil(nsoil)%slcpd
+         call qwtk(csite%soil_energy(k,ipa),csite%soil_water(k,ipa)*wdns,soilhcap          &
+                  ,csite%soil_tempk(k,ipa),csite%soil_fracliq(k,ipa))
+      end do
+
+      !----- Update temporary surface water temperature and liquid water fraction. --------!
+      ksn = csite%nlev_sfcwater(ipa)
+      do k = 1, ksn
+         call qtk(csite%sfcwater_energy(k,ipa),csite%sfcwater_tempk(k,ipa)                 &
+                 ,csite%sfcwater_fracliq(k,ipa))
+      end do
+      do k = ksn+1,nzs
+         if (k == 1) then
+            csite%sfcwater_tempk  (k,ipa) = csite%soil_tempk  (nzg,ipa)
+            csite%sfcwater_fracliq(k,ipa) = csite%soil_fracliq(nzg,ipa)
+         else
+            csite%sfcwater_tempk  (k,ipa) = csite%sfcwater_tempk  (k-1,ipa)
+            csite%sfcwater_fracliq(k,ipa) = csite%sfcwater_fracliq(k-1,ipa)
+         end if
+      end do
    end do
 
    return
@@ -375,8 +409,6 @@ subroutine read_soil_moist_temp(cgrid,igr)
    integer                        :: ipa            !
    logical                        :: l1             !
    real                           :: glat           !
-   real                           :: surface_temp   !
-   real                           :: surface_fliq   !
    real                           :: glon           !
    real                           :: soil_tempaux   !
    real                           :: tmp1           !
@@ -509,7 +541,8 @@ subroutine read_soil_moist_temp(cgrid,igr)
                                        ,csite%sfcwater_fracliq(nlsw1,ipa)                  &
                                        ,csite%can_prss(ipa)                                &
                                        ,csite%can_shv(ipa),csite%ground_shv(ipa)           &
-                                       ,csite%surface_ssh(ipa),surface_temp,surface_fliq)
+                                       ,csite%ground_ssh(ipa),csite%ground_temp(ipa)       &
+                                       ,csite%ground_fliq(ipa))
 
                      end do patchloop
                   end do siteloop

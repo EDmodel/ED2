@@ -132,11 +132,8 @@ subroutine euler_timestep(cgrid)
             call canopy_turbulence8(csite,integration_buff%initp,ipa,.true.)
 
             !----- Get photosynthesis, stomatal conductance, and transpiration. -----------!
-            call canopy_photosynthesis(csite,ipa,cmet%vels,cmet%atm_tmp,cmet%prss          &
-                                      ,ed_ktrans,csite%ntext_soil(:,ipa)                   &
-                                      ,csite%soil_water(:,ipa),csite%soil_fracliq(:,ipa)   &
-                                      ,cpoly%lsl(isi),sum_lai_rbi                          &
-                                      ,cpoly%leaf_aging_factor(:,isi)                      &
+            call canopy_photosynthesis(csite,cmet,nzg,ipa,ed_ktrans,cpoly%lsl(isi)         &
+                                      ,sum_lai_rbi,cpoly%leaf_aging_factor(:,isi)          &
                                       ,cpoly%green_leaf_factor(:,isi))
 
             !----- Compute root and heterotrophic respiration. ----------------------------!

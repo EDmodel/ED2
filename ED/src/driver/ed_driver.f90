@@ -118,9 +118,6 @@ subroutine ed_driver()
       end if
       call init_full_history_restart()
 
-      !----- TEMPORARY THING... We eliminate all patches but the one to be debugged. ------!
-      !call exterminate_patches_except(16)
-
       if (mynum < nnodetot ) then
          call MPI_Send(ping,1,MPI_INTEGER,sendnum,81,MPI_COMM_WORLD,ierr)
       end if
@@ -137,6 +134,9 @@ subroutine ed_driver()
       call load_ecosystem_state()
       !------------------------------------------------------------------------------------!
    end if
+
+   !----- TEMPORARY THING... We eliminate all patches but the one to be debugged. ---------!
+   !call exterminate_patches_except(3)
    !---------------------------------------------------------------------------------------!
 
 

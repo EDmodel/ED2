@@ -225,8 +225,8 @@ module ed_therm_lib
    ! LP93 - Lee, T. J., R. A. Pielke, 1993: CORRIGENDUM, J. Appl. Meteorol., 32, 580.      !
    !---------------------------------------------------------------------------------------!
    subroutine ed_grndvap(ksn,nsoil,topsoil_water,topsoil_temp,topsoil_fliq,sfcwater_temp   &
-                        ,sfcwater_fliq,can_prss,can_shv,ground_shv,surface_ssh             &
-                        ,surface_temp,surface_fliq)
+                        ,sfcwater_fliq,can_prss,can_shv,ground_shv,ground_ssh              &
+                        ,ground_temp,ground_fliq)
 
       use soil_coms   , only : soil   ! ! intent(in)
       use consts_coms , only : pi1    & ! intent(in)
@@ -245,9 +245,9 @@ module ed_therm_lib
       real(kind=4), intent(in)  :: can_prss      ! canopy pressure              [       Pa]
       real(kind=4), intent(in)  :: can_shv       ! canopy vapour spec humidity  [kg_vap/kg]
       real(kind=4), intent(out) :: ground_shv    ! ground equilibrium spec hum  [kg_vap/kg]
-      real(kind=4), intent(out) :: surface_ssh   ! sfc. saturation spec. hum.   [kg_vap/kg]
-      real(kind=4), intent(out) :: surface_temp  ! Surface temperature          [        K]
-      real(kind=4), intent(out) :: surface_fliq  ! Surface liquid water frac.   [       --]
+      real(kind=4), intent(out) :: ground_ssh    ! sfc. saturation spec. hum.   [kg_vap/kg]
+      real(kind=4), intent(out) :: ground_temp   ! Surface temperature          [        K]
+      real(kind=4), intent(out) :: ground_fliq   ! Surface liquid water frac.   [       --]
       !----- Local variables --------------------------------------------------------------!
       real(kind=4)              :: slpotvn       ! soil water potential         [        m]
       real(kind=4)              :: alpha         ! alpha term (Lee-Pielke,1992) [     ----]
@@ -271,15 +271,15 @@ module ed_therm_lib
          ! saturation value when the soil moisture is near or above field capacity.  These !
          ! tendencies will be determined by the alpha and beta parameters.                 !
          !---------------------------------------------------------------------------------!
-         surface_temp = topsoil_temp
-         surface_fliq = topsoil_fliq
+         ground_temp = topsoil_temp
+         ground_fliq = topsoil_fliq
          !----- Compute the saturation specific humidity at ground temperature. -----------!
-         surface_ssh  = rslif(can_prss,surface_temp)
-         surface_ssh  = surface_ssh / (1.0 + surface_ssh)
+         ground_ssh  = rslif(can_prss,ground_temp)
+         ground_ssh  = ground_ssh / (1.0 + ground_ssh)
          !----- Determine alpha. ----------------------------------------------------------!
          slpotvn      = soil(nsoil)%slpots                                                 &
                       * (soil(nsoil)%slmsts / topsoil_water) ** soil(nsoil)%slbs
-         lnalpha     = gorh2o * slpotvn / surface_temp
+         lnalpha     = gorh2o * slpotvn / ground_temp
          if (lnalpha > -38.) then
             alpha   = exp(lnalpha)
          else
@@ -300,7 +300,7 @@ module ed_therm_lib
                     / (soil(nsoil)%sfldcap - soil(nsoil)%soilcp)
          beta       = .5 * (1. - cos (min(1.,smterm) * pi1))
          !----- Use the expression from LP92 to determine the specific humidity. ----------!
-         ground_shv = surface_ssh * alpha * beta + (1. - beta) * can_shv
+         ground_shv = ground_ssh * alpha * beta + (1. - beta) * can_shv
          !---------------------------------------------------------------------------------!
 
       case default
@@ -309,13 +309,13 @@ module ed_therm_lib
          ! this is "pure" water or snow, we let it evaporate freely.  We can understand    !
          ! this as the limit of alpha and beta tending to one.                             !
          !---------------------------------------------------------------------------------!
-         surface_temp = sfcwater_temp
-         surface_fliq = sfcwater_fliq
+         ground_temp = sfcwater_temp
+         ground_fliq = sfcwater_fliq
          !----- Compute the saturation specific humidity at ground temperature. -----------!
-         surface_ssh = rslif(can_prss,surface_temp)
-         surface_ssh = surface_ssh / (1.0 + surface_ssh)
+         ground_ssh = rslif(can_prss,ground_temp)
+         ground_ssh = ground_ssh / (1.0 + ground_ssh)
          !----- The ground specific humidity in this case is just the saturation value. ---!
-         ground_shv  = surface_ssh
+         ground_shv  = ground_ssh
          !---------------------------------------------------------------------------------!
       end select
       !------------------------------------------------------------------------------------!
@@ -346,8 +346,8 @@ module ed_therm_lib
    ! LP93 - Lee, T. J., R. A. Pielke, 1993: CORRIGENDUM, J. Appl. Meteorol., 32, 580.      !
    !---------------------------------------------------------------------------------------!
    subroutine ed_grndvap8(ksn,nsoil,topsoil_water,topsoil_temp,topsoil_fliq,sfcwater_temp  &
-                         ,sfcwater_fliq,can_prss,can_shv,ground_shv,surface_ssh            &
-                         ,surface_temp,surface_fliq)
+                         ,sfcwater_fliq,can_prss,can_shv,ground_shv,ground_ssh             &
+                         ,ground_temp,ground_fliq)
       use soil_coms   , only : soil8      ! ! intent(in)
       use consts_coms , only : pi18       & ! intent(in)
                              , wdns8      & ! intent(in)
@@ -366,9 +366,9 @@ module ed_therm_lib
       real(kind=8), intent(in)  :: can_prss      ! canopy pressure              [       Pa]
       real(kind=8), intent(in)  :: can_shv       ! canopy vapour spec humidity  [kg_vap/kg]
       real(kind=8), intent(out) :: ground_shv    ! ground equilibrium spec hum  [kg_vap/kg]
-      real(kind=8), intent(out) :: surface_ssh   ! sfc. saturation spec. hum.   [kg_vap/kg]
-      real(kind=8), intent(out) :: surface_temp  ! Surface temperature          [        K]
-      real(kind=8), intent(out) :: surface_fliq  ! Surface liquid water frac.   [       --]
+      real(kind=8), intent(out) :: ground_ssh    ! sfc. saturation spec. hum.   [kg_vap/kg]
+      real(kind=8), intent(out) :: ground_temp   ! Surface temperature          [        K]
+      real(kind=8), intent(out) :: ground_fliq   ! Surface liquid water frac.   [       --]
       !----- Local variables --------------------------------------------------------------!
       real(kind=8)              :: slpotvn       ! soil water potential         [        m]
       real(kind=8)              :: alpha         ! alpha term (Lee-Pielke,1992) [     ----]
@@ -392,15 +392,15 @@ module ed_therm_lib
          ! saturation value when the soil moisture is near or above field capacity.  These !
          ! tendencies will be determined by the alpha and beta parameters.                 !
          !---------------------------------------------------------------------------------!
-         surface_temp = topsoil_temp
-         surface_fliq = topsoil_fliq
+         ground_temp = topsoil_temp
+         ground_fliq = topsoil_fliq
          !----- Compute the saturation specific humidity at ground temperature. -----------!
-         surface_ssh  = rslif8(can_prss,surface_temp)
-         surface_ssh  = surface_ssh / (1.d0 + surface_ssh)
+         ground_ssh  = rslif8(can_prss,ground_temp)
+         ground_ssh  = ground_ssh / (1.d0 + ground_ssh)
          !----- Determine alpha. ----------------------------------------------------------!
          slpotvn      = soil8(nsoil)%slpots                                                &
                       * (soil8(nsoil)%slmsts / topsoil_water) ** soil8(nsoil)%slbs
-         lnalpha     = gorh2o8 * slpotvn / surface_temp
+         lnalpha     = gorh2o8 * slpotvn / ground_temp
          if (lnalpha > -3.8d1) then
             alpha   = exp(lnalpha)
          else
@@ -421,7 +421,7 @@ module ed_therm_lib
                     / (soil8(nsoil)%sfldcap - soil8(nsoil)%soilcp)
          beta       = 5.d-1 * (1.d0 - cos (min(1.d0,smterm) * pi18))
          !----- Use the expression from LP92 to determine the specific humidity. ----------!
-         ground_shv = surface_ssh * alpha * beta + (1.d0 - beta) * can_shv
+         ground_shv = ground_ssh * alpha * beta + (1.d0 - beta) * can_shv
          !---------------------------------------------------------------------------------!
 
       case default
@@ -430,13 +430,13 @@ module ed_therm_lib
          ! this is "pure" water or snow, we let it evaporate freely.  We can understand    !
          ! this as the limit of alpha and beta tending to one.                             !
          !---------------------------------------------------------------------------------!
-         surface_temp = sfcwater_temp
-         surface_fliq = sfcwater_fliq
+         ground_temp = sfcwater_temp
+         ground_fliq = sfcwater_fliq
          !----- Compute the saturation specific humidity at ground temperature. -----------!
-         surface_ssh = rslif8(can_prss,surface_temp)
-         surface_ssh = surface_ssh / (1.d0 + surface_ssh)
+         ground_ssh = rslif8(can_prss,ground_temp)
+         ground_ssh = ground_ssh / (1.d0 + ground_ssh)
          !----- The ground specific humidity in this case is just the saturation value. ---!
-         ground_shv  = surface_ssh
+         ground_shv  = ground_ssh
          !---------------------------------------------------------------------------------!
       end select
       !------------------------------------------------------------------------------------!

@@ -166,12 +166,9 @@ module rk4_driver
 
 
                !----- Get photosynthesis, stomatal conductance, and transpiration. --------!
-               call canopy_photosynthesis(csite,ipa,cmet%vels,cmet%atm_tmp,cmet%prss       &
-                                         ,ed_ktrans,csite%ntext_soil(:,ipa)                &
-                                         ,csite%soil_water(:,ipa)                          &
-                                         ,csite%soil_fracliq(:,ipa),cpoly%lsl(isi)         &
+               call canopy_photosynthesis(csite,cmet,nzg,ipa,ed_ktrans,cpoly%lsl(isi)      &
                                          ,sum_lai_rbi,cpoly%leaf_aging_factor(:,isi)       &
-                                         ,cpoly%green_leaf_factor(:,isi) )
+                                         ,cpoly%green_leaf_factor(:,isi))
 
                !----- Compute root and heterotrophic respiration. -------------------------!
                call soil_respiration(csite,ipa)
@@ -652,8 +649,9 @@ module rk4_driver
 
       !------ Copy the ground variables to the output. ------------------------------------!
       csite%ground_shv (ipa) = sngloff(initp%ground_shv , tiny_offset)
-      csite%surface_ssh(ipa) = sngloff(initp%surface_ssh, tiny_offset)
-
+      csite%ground_ssh (ipa) = sngloff(initp%ground_ssh , tiny_offset)
+      csite%ground_temp(ipa) = sngloff(initp%ground_temp, tiny_offset)
+      csite%ground_fliq(ipa) = sngloff(initp%ground_fliq, tiny_offset)
       return
    end subroutine initp2modelp
    !=======================================================================================!

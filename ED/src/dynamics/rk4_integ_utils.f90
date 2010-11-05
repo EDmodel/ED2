@@ -998,9 +998,9 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
    targetp%cpwp            = sourcep%cpwp
 
    targetp%ground_shv      = sourcep%ground_shv
-   targetp%surface_ssh     = sourcep%surface_ssh
-   targetp%surface_temp    = sourcep%surface_temp
-   targetp%surface_fliq    = sourcep%surface_fliq
+   targetp%ground_ssh      = sourcep%ground_ssh
+   targetp%ground_temp     = sourcep%ground_temp
+   targetp%ground_fliq     = sourcep%ground_fliq
 
    targetp%ustar           = sourcep%ustar
    targetp%cstar           = sourcep%cstar

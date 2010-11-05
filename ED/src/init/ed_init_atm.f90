@@ -28,7 +28,6 @@ subroutine ed_init_atm
   real    :: rvaux
   real    :: site_area_i, poly_area_i
   real    :: poly_lai, poly_nplant
-  real    :: surface_temp, surface_fliq
   integer, parameter :: harvard_override = 0
   include 'mpif.h'
   integer :: ping,ierr
@@ -241,7 +240,8 @@ subroutine ed_init_atm
                                 ,csite%sfcwater_tempk(nlsw1,ipa)                           &
                                 ,csite%sfcwater_fracliq(nlsw1,ipa),csite%can_prss(ipa)     &
                                 ,csite%can_shv(ipa),csite%ground_shv(ipa)                  &
-                                ,csite%surface_ssh(ipa),surface_temp,surface_fliq)
+                                ,csite%ground_ssh(ipa),csite%ground_temp(ipa)              &
+                                ,csite%ground_fliq(ipa))
 
               else
                  !----- Compute patch-level LAI, vegetation height, and roughness. --------!

@@ -821,6 +821,8 @@ module fuse_fiss_utils
       cpatch%veg_temp(idt)            = cpatch%veg_temp(isc)
       cpatch%veg_fliq(idt)            = cpatch%veg_fliq(isc)
       cpatch%veg_water(idt)           = cpatch%veg_water(isc)
+      cpatch%veg_co2_open(idt)        = cpatch%veg_co2_open(isc)
+      cpatch%veg_co2_closed(idt)      = cpatch%veg_co2_closed(isc)
       cpatch%mean_gpp(idt)            = cpatch%mean_gpp(isc)
       cpatch%mean_leaf_resp(idt)      = cpatch%mean_leaf_resp(isc)
       cpatch%mean_root_resp(idt)      = cpatch%mean_root_resp(isc)
@@ -1133,6 +1135,20 @@ module fuse_fiss_utils
 
       cpatch%today_root_resp(recc) = cpatch%today_root_resp(recc)                          &
                                    + cpatch%today_root_resp(donc)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !    Fuse intenal CO2.  Since this is an intensive property, I scale by the number   !
+      ! of plants.                                                                         !
+      !------------------------------------------------------------------------------------!
+      cpatch%veg_co2_open(recc) = ( cpatch%veg_co2_open(recc) * cpatch%nplant(recc)        &
+                                  + cpatch%veg_co2_open(donc) * cpatch%nplant(donc) )      &
+                                * newni
+      cpatch%veg_co2_closed(recc) = ( cpatch%veg_co2_closed(recc) * cpatch%nplant(recc)    &
+                                    + cpatch%veg_co2_closed(donc) * cpatch%nplant(donc) )  &
+                                  * newni
       !------------------------------------------------------------------------------------!
 
 
@@ -2006,7 +2022,9 @@ module fuse_fiss_utils
       !    This subroutine takes care of filling:                                          !
       !                                                                                    !
       ! + csite%ground_shv(recp)                                                           !
-      ! + csite%surface_ssh(recp)                                                          !
+      ! + csite%ground_ssh(recp)                                                           !
+      ! + csite%ground_temp(recp)                                                          !
+      ! + csite%ground_fliq(recp)                                                          !
       ! + csite%soil_tempk(k,recp)                                                         !
       ! + csite%soil_fracliq(k,recp)                                                       !
       ! + csite%nlev_sfcwater(recp)                                                        !

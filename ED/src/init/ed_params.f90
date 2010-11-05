@@ -25,6 +25,7 @@ subroutine load_ed_ecosystem_params()
    call init_decomp_params()
    call init_ff_coms()
    call init_disturb_params()
+   call init_physiology_params()
    call init_met_params()
    call init_lapse_params()
    call init_can_rad_params()
@@ -704,16 +705,15 @@ end subroutine init_can_air_params
 !==========================================================================================!
 subroutine init_pft_photo_params()
 
-   use ed_max_dims, only : n_pft                ! ! intent(in)
-   use pft_coms   , only : D0                   & ! intent(out)
-                         , Vm_low_temp          & ! intent(out)
-                         , Vm_high_temp         & ! intent(out)
-                         , Vm0                  & ! intent(out)
-                         , stomatal_slope       & ! intent(out)
-                         , cuticular_cond       & ! intent(out)
-                         , quantum_efficiency   & ! intent(out)
-                         , photosyn_pathway     ! ! intent(out)
-
+   use ed_max_dims    , only : n_pft                ! ! intent(in)
+   use pft_coms       , only : D0                   & ! intent(out)
+                             , Vm_low_temp          & ! intent(out)
+                             , Vm_high_temp         & ! intent(out)
+                             , Vm0                  & ! intent(out)
+                             , stomatal_slope       & ! intent(out)
+                             , cuticular_cond       & ! intent(out)
+                             , quantum_efficiency   & ! intent(out)
+                             , photosyn_pathway     ! ! intent(out)
    implicit none
 
 
@@ -818,6 +818,7 @@ subroutine init_pft_photo_params()
    photosyn_pathway(5)       = 3
    photosyn_pathway(6:13)    = 3
    photosyn_pathway(14:15)   = 4
+
 
    return
 end subroutine init_pft_photo_params
@@ -1783,6 +1784,84 @@ subroutine init_disturb_params
    return
 
 end subroutine init_disturb_params
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+subroutine init_physiology_params()
+   use physiology_coms, only : new_c3_solver     & ! intent(out)
+                             , c34smin_ci        & ! intent(out)
+                             , c34smax_ci        & ! intent(out)
+                             , c34smin_gsw       & ! intent(out)
+                             , c34smax_gsw       & ! intent(out)
+                             , nudgescal         & ! intent(out)
+                             , alfls             & ! intent(out)
+                             , maxmdne           & ! intent(out)
+                             , normstmax         & ! intent(out)
+                             , hugenum           & ! intent(out)
+                             , tinynum           & ! intent(out)
+                             , print_photo_debug & ! intent(out)
+                             , photo_prefix      ! ! intent(out)
+   implicit none
+
+
+   !---------------------------------------------------------------------------------------!
+   !     This flag controls whether the internal carbon and conductivity should be solved  !
+   ! using the new method (2-dimensional Newton, solving both equations simultaneously),   !
+   ! or the original method (Brent method with bracketing on gsw).                         !
+   !---------------------------------------------------------------------------------------!
+   new_c3_solver = .true.
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Parameters for the 2-D Newton's method with line searching).                      !
+   !---------------------------------------------------------------------------------------!
+   !----- Bounds for the new C3 solver. ---------------------------------------------------!
+   c34smin_ci    = 1.0e-4        ! Minimum carbon dioxide concentration          [ mol/mol]
+   c34smax_ci    = 1.2e-3        ! Maximum carbon dioxide concentration          [ mol/mol]
+   c34smin_gsw   = 1.0e+4        ! Minimum conductivity                          [     m/s]
+   c34smax_gsw   = 1.0e+7        ! Maximum conductivity                          [     m/s]
+   !----- Relative scale for the nudging the guess when the solver gets stuck. ------------!
+   nudgescal     = 0.2
+   !---------------------------------------------------------------------------------------!
+   !      The parameter used as a fraction of the average rate of decrease of fn2 in the   !
+   ! line search method.  Press' suggested value is 1.e-4.                                 !
+   !---------------------------------------------------------------------------------------!
+   alfls         = 1.e-4
+   !----- Maximum normalised value of a step for a line search. ---------------------------!
+   maxmdne       = 1000
+   !----- A small number that is almost the floating point accuracy, but somewhat larger. -!
+   normstmax     = 100.
+   !---------------------------------------------------------------------------------------!
+   !      A large number that can still be squared without causing overflow.  Usually      !
+   ! the reciprocal of tinynum.                                                            !
+   !---------------------------------------------------------------------------------------!
+   tinynum       = 2.*epsilon(1.)
+   !----- Maximum number of iterations before giving up. ----------------------------------!
+   hugenum       = 1./ tinynum
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Parameters that control debugging output.                                         !
+   !---------------------------------------------------------------------------------------!
+   !----- I should print detailed debug information. --------------------------------------!
+   print_photo_debug = .false.
+   !----- File name prefix for the detailed information in case of debugging. -------------!
+   photo_prefix      = 'photo_state_cohort_'
+   !---------------------------------------------------------------------------------------!
+
+   return
+end subroutine init_physiology_params
 !==========================================================================================!
 !==========================================================================================!
 

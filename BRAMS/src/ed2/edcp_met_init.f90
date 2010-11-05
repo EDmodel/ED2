@@ -65,8 +65,6 @@ subroutine ed_init_coup_atm()
    real                       :: poly_nplant
    real                       :: elim_nplant
    real                       :: elim_lai
-   real                       :: surface_temp
-   real                       :: surface_fliq
    real                       :: rvaux
    !----- Add the MPI common block. -------------------------------------------------------!
    include 'mpif.h'
@@ -271,7 +269,8 @@ subroutine ed_init_coup_atm()
                                  ,csite%sfcwater_tempk(nlsw1,ipa)                          &
                                  ,csite%sfcwater_fracliq(nlsw1,ipa),csite%can_prss(ipa)    &
                                  ,csite%can_shv(ipa),csite%ground_shv(ipa)                 &
-                                 ,csite%surface_ssh(ipa),surface_temp,surface_fliq)
+                                 ,csite%ground_ssh(ipa),csite%ground_temp(ipa)             &
+                                 ,csite%ground_fliq(ipa))
                else
                   !----- Compute patch-level LAI, vegetation height, and roughness. -------!
                   call update_patch_derived_props(csite,cpoly%lsl(isi),cpoly%met(isi)%prss &
@@ -285,7 +284,8 @@ subroutine ed_init_coup_atm()
                                  ,csite%sfcwater_tempk(nlsw1,ipa)                          &
                                  ,csite%sfcwater_fracliq(nlsw1,ipa),csite%can_prss(ipa)    &
                                  ,csite%can_shv(ipa),csite%ground_shv(ipa)                 &
-                                 ,csite%surface_ssh(ipa),surface_temp,surface_fliq)
+                                 ,csite%ground_ssh(ipa),csite%ground_temp(ipa)             &
+                                 ,csite%ground_fliq(ipa))
                end if
 
 
@@ -541,7 +541,8 @@ subroutine leaf2ed_soil_moist_energy(cgrid,ifm)
                            ,csite%soil_fracliq(nzg,ipa),csite%sfcwater_tempk(nlsw1,ipa)    &
                            ,csite%sfcwater_fracliq(nlsw1,ipa),csite%can_prss(ipa)          &
                            ,csite%can_shv(ipa),csite%ground_shv(ipa)                       &
-                           ,csite%surface_ssh(ipa),surface_temp,surface_fliq )
+                           ,csite%ground_ssh(ipa),csite%ground_temp(ipa)                   &
+                           ,csite%ground_fliq(ipa))
 
          end do patchloop
       end do siteloop

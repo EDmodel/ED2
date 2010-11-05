@@ -162,6 +162,12 @@ module ed_state_vars
      ! Vegetation surface water (kg/m2 ground)
      real ,pointer,dimension(:) :: veg_water
 
+     ! Open stomata CO2  (umol/mol)
+     real ,pointer,dimension(:) :: veg_co2_open
+
+     ! Closed stomata CO2  (umol/mol)
+     real ,pointer,dimension(:) :: veg_co2_closed
+
      ! Leaf (vegetation) heat capacity [ J/m2/K]
      real, pointer,dimension(:) :: hcapveg
 
@@ -567,7 +573,13 @@ module ed_state_vars
      real,    pointer,dimension(:) :: ground_shv
      
      ! Surface saturation specific humidity (kg/kg)
-     real,    pointer,dimension(:) :: surface_ssh
+     real,    pointer,dimension(:) :: ground_ssh
+
+     ! Ground temperature (either the top soil or top surface snow/water) (K)
+     real, pointer, dimension (:) :: ground_temp
+
+     ! Ground temperature (either the top soil or top surface snow/water) (K)
+     real, pointer, dimension (:) :: ground_fliq
 
      ! Net roughness length (m)
      real,    pointer,dimension(:)  :: rough
@@ -2499,7 +2511,9 @@ contains
     allocate(csite%soil_tempk(nzg,npatches))
     allocate(csite%soil_fracliq(nzg,npatches))
     allocate(csite%ground_shv(npatches))
-    allocate(csite%surface_ssh(npatches))
+    allocate(csite%ground_ssh(npatches))
+    allocate(csite%ground_temp(npatches))
+    allocate(csite%ground_fliq(npatches))
     allocate(csite%rough(npatches))
     allocate(csite%A_o_max(n_pft,npatches)) 
     allocate(csite%A_c_max(n_pft,npatches)) 
@@ -2717,6 +2731,8 @@ contains
     allocate(cpatch%veg_energy(ncohorts))
     allocate(cpatch%veg_temp(ncohorts))
     allocate(cpatch%veg_fliq(ncohorts))
+    allocate(cpatch%veg_co2_open(ncohorts))
+    allocate(cpatch%veg_co2_closed(ncohorts))
     allocate(cpatch%veg_water(ncohorts))
     allocate(cpatch%mean_gpp(ncohorts))
     allocate(cpatch%mean_leaf_resp(ncohorts))
@@ -3405,7 +3421,9 @@ contains
     nullify(csite%soil_tempk)
     nullify(csite%soil_fracliq)
     nullify(csite%ground_shv)
-    nullify(csite%surface_ssh)
+    nullify(csite%ground_ssh)
+    nullify(csite%ground_temp)
+    nullify(csite%ground_fliq)
     nullify(csite%rough)
     nullify(csite%A_o_max) 
     nullify(csite%A_c_max) 
@@ -3606,6 +3624,8 @@ contains
     nullify(cpatch%veg_energy)
     nullify(cpatch%veg_temp)
     nullify(cpatch%veg_fliq)
+    nullify(cpatch%veg_co2_open)
+    nullify(cpatch%veg_co2_closed)
     nullify(cpatch%veg_water)
     nullify(cpatch%mean_gpp)
     nullify(cpatch%mean_leaf_resp)
@@ -4298,7 +4318,9 @@ contains
     if(associated(csite%soil_tempk                   )) deallocate(csite%soil_tempk                   )
     if(associated(csite%soil_fracliq                 )) deallocate(csite%soil_fracliq                 )
     if(associated(csite%ground_shv                   )) deallocate(csite%ground_shv                   )
-    if(associated(csite%surface_ssh                  )) deallocate(csite%surface_ssh                  )
+    if(associated(csite%ground_ssh                   )) deallocate(csite%ground_ssh                   )
+    if(associated(csite%ground_temp                  )) deallocate(csite%ground_temp                  )
+    if(associated(csite%ground_fliq                  )) deallocate(csite%ground_fliq                  )
     if(associated(csite%rough                        )) deallocate(csite%rough                        )
     if(associated(csite%A_o_max                      )) deallocate(csite%A_o_max                      )
     if(associated(csite%A_c_max                      )) deallocate(csite%A_c_max                      )
@@ -4503,6 +4525,8 @@ contains
     if(associated(cpatch%veg_temp))            deallocate(cpatch%veg_temp)
     if(associated(cpatch%veg_fliq))            deallocate(cpatch%veg_fliq)
     if(associated(cpatch%veg_water))           deallocate(cpatch%veg_water)
+    if(associated(cpatch%veg_co2_open))        deallocate(cpatch%veg_co2_open)
+    if(associated(cpatch%veg_co2_closed))      deallocate(cpatch%veg_co2_closed)
     if(associated(cpatch%mean_gpp))            deallocate(cpatch%mean_gpp)
     if(associated(cpatch%mean_leaf_resp))      deallocate(cpatch%mean_leaf_resp)
     if(associated(cpatch%mean_root_resp))      deallocate(cpatch%mean_root_resp)
@@ -5235,7 +5259,9 @@ contains
     if(associated(csite%soil_tempk                   )) csite%soil_tempk                   = large_real
     if(associated(csite%soil_fracliq                 )) csite%soil_fracliq                 = large_real
     if(associated(csite%ground_shv                   )) csite%ground_shv                   = large_real
-    if(associated(csite%surface_ssh                  )) csite%surface_ssh                  = large_real
+    if(associated(csite%ground_ssh                   )) csite%ground_ssh                   = large_real
+    if(associated(csite%ground_temp                  )) csite%ground_temp                  = large_real
+    if(associated(csite%ground_fliq                  )) csite%ground_fliq                  = large_real
     if(associated(csite%rough                        )) csite%rough                        = large_real
     if(associated(csite%A_o_max                      )) csite%A_o_max                      = large_real
     if(associated(csite%A_c_max                      )) csite%A_c_max                      = large_real
@@ -5448,6 +5474,8 @@ contains
     if(associated(cpatch%veg_temp))             cpatch%veg_temp            = large_real
     if(associated(cpatch%veg_fliq))             cpatch%veg_fliq            = large_real
     if(associated(cpatch%veg_water))            cpatch%veg_water           = large_real
+    if(associated(cpatch%veg_co2_open))         cpatch%veg_co2_open        = large_real
+    if(associated(cpatch%veg_co2_closed))       cpatch%veg_co2_closed      = large_real
     if(associated(cpatch%mean_gpp))             cpatch%mean_gpp            = large_real
     if(associated(cpatch%mean_leaf_resp))       cpatch%mean_leaf_resp      = large_real
     if(associated(cpatch%mean_root_resp))       cpatch%mean_root_resp      = large_real
@@ -5918,7 +5946,9 @@ contains
     siteout%avg_carbon_ac(1:inc)        = pack(sitein%avg_carbon_ac,logmask)
     siteout%nlev_sfcwater(1:inc)        = pack(sitein%nlev_sfcwater,logmask)
     siteout%ground_shv(1:inc)           = pack(sitein%ground_shv,logmask)
-    siteout%surface_ssh(1:inc)          = pack(sitein%surface_ssh,logmask)
+    siteout%ground_ssh(1:inc)           = pack(sitein%ground_ssh,logmask)
+    siteout%ground_temp(1:inc)          = pack(sitein%ground_temp,logmask)
+    siteout%ground_fliq(1:inc)          = pack(sitein%ground_fliq,logmask)
     siteout%rough(1:inc)                = pack(sitein%rough,logmask)
 
     siteout%avg_carbon_ac(1:inc)        = pack(sitein%avg_carbon_ac,logmask)
@@ -6125,6 +6155,8 @@ contains
     patchout%veg_temp(1:inc)         = pack(patchin%veg_temp,mask)
     patchout%veg_fliq(1:inc)         = pack(patchin%veg_fliq,mask)
     patchout%veg_water(1:inc)        = pack(patchin%veg_water,mask)
+    patchout%veg_co2_open(1:inc)     = pack(patchin%veg_co2_open,mask)
+    patchout%veg_co2_closed(1:inc)   = pack(patchin%veg_co2_closed,mask)
     patchout%mean_gpp(1:inc)         = pack(patchin%mean_gpp,mask)
     patchout%mean_leaf_resp(1:inc)   = pack(patchin%mean_leaf_resp,mask)
     patchout%mean_root_resp(1:inc)   = pack(patchin%mean_root_resp,mask)
@@ -6340,6 +6372,8 @@ contains
        patchout%veg_temp(iout)         = patchin%veg_temp(iin)
        patchout%veg_fliq(iout)         = patchin%veg_fliq(iin)
        patchout%veg_water(iout)        = patchin%veg_water(iin)
+       patchout%veg_co2_open(iout)     = patchin%veg_co2_open(iin)
+       patchout%veg_co2_closed(iout)   = patchin%veg_co2_closed(iin)
        patchout%mean_gpp(iout)         = patchin%mean_gpp(iin)
        patchout%mean_leaf_resp(iout)   = patchin%mean_leaf_resp(iin)
        patchout%mean_root_resp(iout)   = patchin%mean_root_resp(iin)
@@ -9733,10 +9767,24 @@ contains
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
-    if (associated(csite%surface_ssh)) then
+    if (associated(csite%ground_ssh)) then
        nvar=nvar+1
-         call vtable_edio_r(csite%surface_ssh(1),nvar,igr,init,csite%paglob_id, &
-         var_len,var_len_global,max_ptrs,'SURFACE_SSH :31:hist') 
+         call vtable_edio_r(csite%ground_ssh(1),nvar,igr,init,csite%paglob_id, &
+         var_len,var_len_global,max_ptrs,'GROUND_SSH :31:hist') 
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
+
+    if (associated(csite%ground_temp)) then
+       nvar=nvar+1
+         call vtable_edio_r(csite%ground_temp(1),nvar,igr,init,csite%paglob_id, &
+         var_len,var_len_global,max_ptrs,'GROUND_TEMP :31:hist') 
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
+
+    if (associated(csite%ground_fliq)) then
+       nvar=nvar+1
+         call vtable_edio_r(csite%ground_fliq(1),nvar,igr,init,csite%paglob_id, &
+         var_len,var_len_global,max_ptrs,'GROUND_FLIQ :31:hist') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
@@ -10693,6 +10741,20 @@ contains
        nvar=nvar+1
          call vtable_edio_r(cpatch%veg_water(1),nvar,igr,init,cpatch%coglob_id, &
          var_len,var_len_global,max_ptrs,'VEG_WATER :41:hist') 
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
+
+    if (associated(cpatch%veg_co2_open)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%veg_co2_open(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'VEG_CO2_OPEN :41:hist') 
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
+
+    if (associated(cpatch%veg_co2_closed)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%veg_co2_closed(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'VEG_CO2_CLOSED :41:hist') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 

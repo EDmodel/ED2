@@ -120,11 +120,13 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
   cpatch%new_recruit_flag(ico) = 0
   cpatch%bseeds(ico) = 0.0
 
-  cpatch%hcapveg(ico)    = 0.
-  cpatch%veg_energy(ico) = 0.
-  cpatch%veg_temp(ico)   = 0.
-  cpatch%veg_water(ico)  = 0.
-  cpatch%veg_fliq(ico)   = 0.
+  cpatch%hcapveg(ico)        = 0.
+  cpatch%veg_energy(ico)     = 0.
+  cpatch%veg_temp(ico)       = 0.
+  cpatch%veg_water(ico)      = 0.
+  cpatch%veg_fliq(ico)       = 0.
+  cpatch%veg_co2_open(ico)   = 0.
+  cpatch%veg_co2_closed(ico) = 0.
 
   cpatch%turnover_amp(ico) = 1.0
 
@@ -211,13 +213,22 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
      enddo
   enddo
 
+  ! Initialise soil state variables
+  csite%ntext_soil(1:nzg,ip1:ip2)    = 0
+  csite%soil_water(1:nzg,ip1:ip2)     = 0.0
+  csite%soil_energy(1:nzg,ip1:ip2)   = 0.0
+  csite%soil_tempk(1:nzg,ip1:ip2)    = 0.0
+  csite%soil_fracliq(1:nzg,ip1:ip2)  = 0.0
+
 
   ! Initialize sfcwater state variables
-  csite%sfcwater_mass(1:nzs,ip1:ip2)   = 0.0
-  csite%sfcwater_energy(1:nzs,ip1:ip2) = 0.0
-  csite%sfcwater_depth(1:nzs,ip1:ip2)  = 0.0
-  csite%total_snow_depth(ip1:ip2)      = 0.0
-  csite%snowfac(ip1:ip2)               = 0.0
+  csite%sfcwater_mass(1:nzs,ip1:ip2)     = 0.0
+  csite%sfcwater_energy(1:nzs,ip1:ip2)   = 0.0
+  csite%sfcwater_depth(1:nzs,ip1:ip2)    = 0.0
+  csite%sfcwater_tempk(1:nzs,ip1:ip2)    = 0.0
+  csite%sfcwater_fracliq(1:nzs,ip1:ip2)  = 0.0
+  csite%total_snow_depth(ip1:ip2)        = 0.0
+  csite%snowfac(ip1:ip2)                 = 0.0
 
   csite%rshort_s(:,ip1:ip2) = 0.0
   csite%rshort_s_beam(:,ip1:ip2) = 0.0
@@ -380,7 +391,9 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
   csite%can_temp    (ip1:ip2) = 0.0
   csite%can_rhos    (ip1:ip2) = 0.0
   csite%ground_shv  (ip1:ip2) = 0.0
-  csite%surface_ssh (ip1:ip2) = 0.0
+  csite%ground_ssh  (ip1:ip2) = 0.0
+  csite%ground_temp (ip1:ip2) = 0.0
+  csite%ground_fliq (ip1:ip2) = 0.0
 
   csite%old_stoma_data_max(:,ip1:ip2)%recalc = 1
   csite%old_stoma_data_max(:,ip1:ip2)%T_L = 0.0
@@ -579,8 +592,6 @@ subroutine new_patch_sfc_props(csite,ipa)
    integer                     :: k              ! Layer counter
    integer                     :: ico            ! Cohort counter
    integer                     :: nsoil          ! Alias for soil texture class
-   real                        :: surface_temp   ! Scratch variable for ed_grndvap
-   real                        :: surface_fliq   ! Scratch variable for ed_grndvap
    !---------------------------------------------------------------------------------------!
   
    !----- Finding soil temperature and liquid water fraction. -----------------------------!
@@ -633,8 +644,8 @@ subroutine new_patch_sfc_props(csite,ipa)
                   ,csite%soil_water(nzg,ipa),csite%soil_tempk(nzg,ipa)                     &
                   ,csite%soil_fracliq(nzg,ipa),csite%sfcwater_tempk(k,ipa)                 &
                   ,csite%sfcwater_fracliq(k,ipa),csite%can_prss(ipa)                       &
-                  ,csite%can_shv(ipa),csite%ground_shv(ipa),csite%surface_ssh(ipa)         &
-                  ,surface_temp,surface_fliq)
+                  ,csite%can_shv(ipa),csite%ground_shv(ipa),csite%ground_ssh(ipa)          &
+                  ,csite%ground_temp(ipa),csite%ground_fliq(ipa))
    !---------------------------------------------------------------------------------------! 
 
 
