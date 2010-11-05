@@ -1091,7 +1091,13 @@ subroutine adjust_topsoil_properties(initp,hdid,csite,ipa)
                initp%sfcwater_depth(kw)  = 0.d0
                initp%nlev_sfcwater       = initp%nlev_sfcwater - 1
                !----- If no surface water layer is left, look for another source... -------!
-               if (initp%nlev_sfcwater == 0) exit sfcwsrc
+               if (initp%nlev_sfcwater <= 0) exit sfcwsrc
+            else
+               !---------------------------------------------------------------------------!
+               ! Should never get here because this indicates we have a surface water layer!
+               ! with either zero or negative water, but need a way out of the loop        !
+               !---------------------------------------------------------------------------!
+               exit sfcwsrc
             end if
          end do sfcwsrc
       end if

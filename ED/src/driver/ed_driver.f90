@@ -121,12 +121,6 @@ subroutine ed_driver
 
   end if
 
-  !--------------------------------------------------------------------------------!
-  ! STEP 7: Initialize hydrology related variables                                 !
-  !--------------------------------------------------------------------------------!
-  if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] initHydrology...'
-  call initHydrology()
-
 
   !-----------------------------------------------------------------------!
   ! STEP 8: Initialize meteorological drivers                             !
@@ -155,6 +149,13 @@ subroutine ed_driver
   if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Ed_Init_Atm...'
   call ed_init_atm
   
+
+  !--------------------------------------------------------------------------------!
+  ! STEP 7: Initialize hydrology related variables                                 !
+  !--------------------------------------------------------------------------------!
+  if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] initHydrology...'
+  call initHydrology()
+
   !-----------------------------------------------------------------------!
   ! STEP 10. Initialized some derived variables. This must be done        !
   !          outside init_full_history_restart because it depends on some !

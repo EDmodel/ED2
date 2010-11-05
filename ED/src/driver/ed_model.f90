@@ -154,7 +154,7 @@ subroutine ed_model()
 
 
    timestep: do while (time < timmax)
-      
+
       istp = istp + 1
       !     begtime=time
       
@@ -192,7 +192,7 @@ subroutine ed_model()
             call heun_timestep(edgrid_g(ifm))
          end do
       end select
-      
+
       !-------------------------------------------------------------------!
       ! Update the daily averages if daily or monthly analysis are needed !
       !-------------------------------------------------------------------!
@@ -259,6 +259,7 @@ subroutine ed_model()
 
       !----- Check if this is the beginning of a new simulated day. -----------------------!
       if(new_day)then
+
          if(record_err) then
             open(unit=77,file=trim(integ_fname),form="formatted",access="append"           &
                 ,status="old")

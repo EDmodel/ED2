@@ -8,7 +8,7 @@ subroutine calc_met_lapse(cgrid,ipy)
   
    use ed_state_vars         , only : edtype      & ! structure
                                     , polygontype ! ! structure
-   use consts_coms           , only : toodry      ! ! intent(in)
+   use consts_coms           , only : toodry,pi1      ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    type(edtype)     , target     :: cgrid
@@ -39,7 +39,7 @@ subroutine calc_met_lapse(cgrid,ipy)
 
    if (bypass) then
       do isi = 1,cpoly%nsites
-         hillshade = cpoly%slope(isi)/180.
+         hillshade = sin(pi1*cpoly%slope(isi)/180.)/2.
          cpoly%met(isi)%geoht       = cgrid%met(ipy)%geoht
          cpoly%met(isi)%atm_tmp     = cgrid%met(ipy)%atm_tmp
          cpoly%met(isi)%atm_shv     = cgrid%met(ipy)%atm_shv
