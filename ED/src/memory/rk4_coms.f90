@@ -112,12 +112,14 @@ module rk4_coms
       real(kind=8), pointer, dimension(:) :: veg_grashof  ! Grashof number      [      ---]
       real(kind=8), pointer, dimension(:) :: veg_nussfree ! Nusselt # (free)    [      ---]
       real(kind=8), pointer, dimension(:) :: veg_nussforc ! Nusselt # (forced)  [      ---]
+      real(kind=8), pointer, dimension(:) :: lint_shv     ! Intercell. sp. hum. [    kg/kg]
       real(kind=8), pointer, dimension(:) :: nplant       ! Plant density       [ plant/m²]
       real(kind=8), pointer, dimension(:) :: lai          ! Leaf area index     [    m²/m²]
       real(kind=8), pointer, dimension(:) :: wai          ! Wood area index     [    m²/m²]
       real(kind=8), pointer, dimension(:) :: wpa          ! Wood projected area [    m²/m²]
       real(kind=8), pointer, dimension(:) :: tai          ! Tree area index     [    m²/m²]
-      real(kind=8), pointer, dimension(:) :: rb           ! Aerodynamic resist. [      s/m]
+      real(kind=8), pointer, dimension(:) :: rbh          ! Aerodynamic resist. [      s/m]
+      real(kind=8), pointer, dimension(:) :: rbw          ! Aerodynamic resist. [      s/m]
       logical     , pointer, dimension(:) :: solvable     ! solve this cohort   [      T|F]
       real(kind=8), pointer, dimension(:) :: gpp          ! Gross primary prod. [µmol/m²/s]
       real(kind=8), pointer, dimension(:) :: leaf_resp    ! Leaf respiration    [µmol/m²/s]
@@ -1031,12 +1033,14 @@ module rk4_coms
       allocate(y%veg_grashof  (maxcohort))
       allocate(y%veg_nussfree (maxcohort))
       allocate(y%veg_nussforc (maxcohort))
+      allocate(y%lint_shv     (maxcohort))
       allocate(y%nplant       (maxcohort))
       allocate(y%lai          (maxcohort))
       allocate(y%wai          (maxcohort))
       allocate(y%wpa          (maxcohort))
       allocate(y%tai          (maxcohort))
-      allocate(y%rb           (maxcohort))
+      allocate(y%rbh          (maxcohort))
+      allocate(y%rbw          (maxcohort))
       allocate(y%solvable     (maxcohort))
       allocate(y%gpp          (maxcohort))
       allocate(y%leaf_resp    (maxcohort))
@@ -1077,12 +1081,14 @@ module rk4_coms
       nullify(y%veg_grashof  )
       nullify(y%veg_nussfree )
       nullify(y%veg_nussforc )
+      nullify(y%lint_shv     )
       nullify(y%nplant       )
       nullify(y%lai          )
       nullify(y%wai          )
       nullify(y%wpa          )
       nullify(y%tai          )
-      nullify(y%rb           )
+      nullify(y%rbh          )
+      nullify(y%rbw          )
       nullify(y%solvable     )
       nullify(y%gpp          )
       nullify(y%leaf_resp    )
@@ -1121,7 +1127,8 @@ module rk4_coms
       if(associated(y%wai           ))  y%wai           = 0.d0
       if(associated(y%wpa           ))  y%wpa           = 0.d0
       if(associated(y%tai           ))  y%tai           = 0.d0
-      if(associated(y%rb            ))  y%rb            = 0.d0
+      if(associated(y%rbh           ))  y%rbh           = 0.d0
+      if(associated(y%rbw           ))  y%rbw           = 0.d0
       if(associated(y%solvable      ))  y%solvable      = .false.
       if(associated(y%gpp           ))  y%gpp           = 0.d0
       if(associated(y%leaf_resp     ))  y%leaf_resp     = 0.d0
@@ -1160,12 +1167,14 @@ module rk4_coms
       if(associated(y%veg_grashof   ))  deallocate(y%veg_grashof )
       if(associated(y%veg_nussfree  ))  deallocate(y%veg_nussfree)
       if(associated(y%veg_nussforc  ))  deallocate(y%veg_nussforc)
+      if(associated(y%lint_shv      ))  deallocate(y%lint_shv    )
       if(associated(y%nplant        ))  deallocate(y%nplant      )
       if(associated(y%lai           ))  deallocate(y%lai         )
       if(associated(y%wai           ))  deallocate(y%wai         )
       if(associated(y%wpa           ))  deallocate(y%wpa         )
       if(associated(y%tai           ))  deallocate(y%tai         )
-      if(associated(y%rb            ))  deallocate(y%rb          )
+      if(associated(y%rbh           ))  deallocate(y%rbh         )
+      if(associated(y%rbw           ))  deallocate(y%rbw         )
       if(associated(y%solvable      ))  deallocate(y%solvable    )
       if(associated(y%gpp           ))  deallocate(y%gpp         )
       if(associated(y%leaf_resp     ))  deallocate(y%leaf_resp   )

@@ -72,7 +72,8 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
   cpatch%rlong_v_surf(ico)     = 0.0
   cpatch%rlong_v_incid(ico)    = 0.0
        
-  cpatch%rb(ico)               = 0.0
+  cpatch%rbh(ico)              = 0.0
+  cpatch%rbw(ico)              = 0.0
   cpatch%A_open(ico)           = 0.0
   cpatch%A_closed(ico)         = 0.0
   cpatch%Psi_closed(ico)       = 0.0
@@ -120,13 +121,19 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
   cpatch%new_recruit_flag(ico) = 0
   cpatch%bseeds(ico) = 0.0
 
-  cpatch%hcapveg(ico)        = 0.
-  cpatch%veg_energy(ico)     = 0.
-  cpatch%veg_temp(ico)       = 0.
-  cpatch%veg_water(ico)      = 0.
-  cpatch%veg_fliq(ico)       = 0.
-  cpatch%veg_co2_open(ico)   = 0.
-  cpatch%veg_co2_closed(ico) = 0.
+  cpatch%hcapveg(ico)          = 0.
+  cpatch%veg_energy(ico)       = 0.
+  cpatch%veg_temp(ico)         = 0.
+  cpatch%veg_water(ico)        = 0.
+  cpatch%veg_fliq(ico)         = 0.
+  cpatch%veg_wind(ico)         = 0.
+  cpatch%lsfc_shv_open(ico)    = 0.
+  cpatch%lsfc_shv_closed(ico)  = 0.
+  cpatch%lsfc_co2_open(ico)    = 0.
+  cpatch%lsfc_co2_closed(ico)  = 0.
+  cpatch%lint_shv(ico)         = 0.
+  cpatch%lint_co2_open(ico)    = 0.
+  cpatch%lint_co2_closed(ico)  = 0.
 
   cpatch%turnover_amp(ico) = 1.0
 

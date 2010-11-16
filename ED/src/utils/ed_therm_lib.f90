@@ -228,11 +228,12 @@ module ed_therm_lib
                         ,sfcwater_fliq,can_prss,can_shv,ground_shv,ground_ssh              &
                         ,ground_temp,ground_fliq)
 
-      use soil_coms   , only : soil   ! ! intent(in)
-      use consts_coms , only : pi1    & ! intent(in)
-                             , wdns   & ! intent(in)
-                             , gorh2o ! ! intent(in)
-      use therm_lib   , only : rslif  ! ! function
+      use soil_coms   , only : soil      ! ! intent(in)
+      use consts_coms , only : pi1       & ! intent(in)
+                             , wdns      & ! intent(in)
+                             , gorh2o    & ! intent(in)
+                             , lnexp_min ! ! intent(in)
+      use therm_lib   , only : rslif     ! ! function
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       integer     , intent(in)  :: ksn           ! # of surface water layers    [     ----]
@@ -280,7 +281,7 @@ module ed_therm_lib
          slpotvn      = soil(nsoil)%slpots                                                 &
                       * (soil(nsoil)%slmsts / topsoil_water) ** soil(nsoil)%slbs
          lnalpha     = gorh2o * slpotvn / ground_temp
-         if (lnalpha > -38.) then
+         if (lnalpha > lnexp_min) then
             alpha   = exp(lnalpha)
          else
             alpha   = 0.0
@@ -351,7 +352,8 @@ module ed_therm_lib
       use soil_coms   , only : soil8      ! ! intent(in)
       use consts_coms , only : pi18       & ! intent(in)
                              , wdns8      & ! intent(in)
-                             , gorh2o8    ! ! intent(in)
+                             , gorh2o8    & ! intent(in)
+                             , lnexp_min8 ! ! intent(in) 
       use therm_lib8  , only : rslif8     ! ! function
 
       implicit none
@@ -401,7 +403,7 @@ module ed_therm_lib
          slpotvn      = soil8(nsoil)%slpots                                                &
                       * (soil8(nsoil)%slmsts / topsoil_water) ** soil8(nsoil)%slbs
          lnalpha     = gorh2o8 * slpotvn / ground_temp
-         if (lnalpha > -3.8d1) then
+         if (lnalpha > lnexp_min8) then
             alpha   = exp(lnalpha)
          else
             alpha   = 0.d0

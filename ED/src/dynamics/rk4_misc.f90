@@ -242,13 +242,12 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
       targetp%hcapveg(ico) = dble(cpatch%hcapveg(ico)) * hcap_scale
 
       !------------------------------------------------------------------------------------!
-      !     Checking whether this is considered a "safe" one or not.  In case it is, we    !
-      ! copy water, temperature, and liquid fraction, and scale energy and heat capacity   !
+      !     Check whether this is considered a "safe" one or not.  In case it is, we copy  !
+      ! the water, temperature, and liquid fraction, and scale energy and heat capacity    !
       ! as needed.  Otherwise, just fill with some safe values, but the cohort won't be    !
       ! really solved.                                                                     !
       !------------------------------------------------------------------------------------!
       targetp%veg_water(ico)     = dble(cpatch%veg_water(ico))
-
       if (targetp%solvable(ico)) then
          targetp%veg_energy(ico)    = dble(cpatch%veg_energy(ico))                         &
                                     + (targetp%hcapveg(ico)-dble(cpatch%hcapveg(ico)))     &
@@ -260,6 +259,12 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
          targetp%veg_temp(ico)   = dble(cpatch%veg_temp(ico))
          targetp%veg_energy(ico) = targetp%hcapveg(ico) * targetp%veg_temp(ico)
       end if
+
+      !------------------------------------------------------------------------------------!
+      !     Compute the leaf intercellular specific humidity, assumed to be at saturation. !
+      !------------------------------------------------------------------------------------!
+      targetp%lint_shv(ico) = rslif8(targetp%can_prss,targetp%veg_temp(ico))
+      targetp%lint_shv(ico) = targetp%lint_shv(ico) / (1.d0 + targetp%lint_shv(ico))
    end do
    !---------------------------------------------------------------------------------------!
 
@@ -436,6 +441,8 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
                                     , rk4min_can_temp       & ! intent(in)
                                     , rk4max_can_shv        & ! intent(in)
                                     , rk4min_veg_lwater     & ! intent(in)
+                                    , rk4min_veg_temp       & ! intent(in)
+                                    , rk4max_veg_temp       & ! intent(in)
                                     , rk4water_stab_thresh  & ! intent(in)
                                     , tiny_offset           & ! intent(in)
                                     , force_idealgas        & ! intent(in)
@@ -708,6 +715,17 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
          else
             call qwtk8(initp%veg_energy(ico),initp%veg_water(ico),initp%hcapveg(ico)       &
                       ,initp%veg_temp(ico),initp%veg_fliq(ico))
+            if (initp%veg_temp(ico) < rk4min_veg_temp .or.                                 &
+                initp%veg_temp(ico) > rk4max_veg_temp) then
+               cycle cohortloop
+            else
+               !---------------------------------------------------------------------------!
+               !     Compute the leaf intercellular specific humidity, assumed to be at    !
+               ! saturation.                                                               !
+               !---------------------------------------------------------------------------!
+               initp%lint_shv(ico) = rslif8(initp%can_prss,initp%veg_temp(ico))
+               initp%lint_shv(ico) = initp%lint_shv(ico) / (1.d0 + initp%lint_shv(ico))
+            end if
          end if
       else
          !---------------------------------------------------------------------------------!
@@ -724,6 +742,12 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
          else
             initp%veg_fliq(ico) = 0.d0
          end if
+         !---------------------------------------------------------------------------------!
+         !     Compute the leaf intercellular specific humidity, assumed to be at          !
+         ! saturation.                                                                     !
+         !---------------------------------------------------------------------------------!
+         initp%lint_shv(ico) = rslif8(initp%can_prss,initp%veg_temp(ico))
+         initp%lint_shv(ico) = initp%lint_shv(ico) / (1.d0 + initp%lint_shv(ico))
       end if
    end do cohortloop
    !---------------------------------------------------------------------------------------!
@@ -2514,26 +2538,38 @@ subroutine print_rk4patch(y,csite,ipa)
       end if
    end do
    write (unit=*,fmt='(80a)') ('-',k=1,80)
-   write (unit=*,fmt='(2(a7,1x),8(a12,1x))')                                               &
+   write (unit=*,fmt='(2(a7,1x),9(a12,1x))')                                               &
          '    PFT','KRDEPTH','         LAI','         WPA','         TAI','  VEG_ENERGY'   &
-             ,'   VEG_WATER','    VEG_HCAP','    VEG_TEMP','    VEG_FLIQ'
+             ,'   VEG_WATER','    VEG_HCAP','    VEG_TEMP','    VEG_FLIQ','    LINT_SHV'
    do ico = 1,cpatch%ncohorts
       if (y%solvable(ico)) then
-         write(unit=*,fmt='(2(i7,1x),8(es12.4,1x))') cpatch%pft(ico), cpatch%krdepth(ico)  &
+         write(unit=*,fmt='(2(i7,1x),9(es12.4,1x))') cpatch%pft(ico), cpatch%krdepth(ico)  &
                ,y%lai(ico),y%wpa(ico),y%tai(ico),y%veg_energy(ico),y%veg_water(ico)        &
-               ,y%hcapveg(ico),y%veg_temp(ico),y%veg_fliq(ico)
+               ,y%hcapveg(ico),y%veg_temp(ico),y%veg_fliq(ico),y%lint_shv(ico)
       end if
    end do
    write (unit=*,fmt='(80a)') ('-',k=1,80)
-   write (unit=*,fmt='(1(a7,1x),9(a12,1x))')                                               &
-         '    PFT','         LAI','      HEIGHT','    VEG_TEMP','    VEG_WIND'             &
-                  ,'    REYNOLDS','     GRASHOF','NUSSELT_FORC','NUSSELT_FREE'             &
-                  ,'          RB'
+   write (unit=*,fmt='(2(a7,1x),8(a12,1x))')                                               &
+              '    PFT','KRDEPTH','         LAI','      HEIGHT','    VEG_TEMP'             &
+                  ,'    VEG_WIND','    REYNOLDS','     GRASHOF','NUSSELT_FORC'             &
+                  ,'NUSSELT_FREE'
    do ico = 1,cpatch%ncohorts
       if (y%solvable(ico)) then
-         write(unit=*,fmt='(2(i7,1x),9(es12.4,1x))') cpatch%pft(ico),y%lai(ico)            &
-               ,cpatch%hite(ico),y%veg_temp(ico),y%veg_wind(ico),y%veg_reynolds(ico)       &
-               ,y%veg_grashof(ico),y%veg_nussforc(ico),y%veg_nussfree(ico),y%rb(ico)
+         write(unit=*,fmt='(2(i7,1x),8(es12.4,1x))') cpatch%pft(ico),cpatch%krdepth(ico)   &
+               ,y%lai(ico),cpatch%hite(ico),y%veg_temp(ico),y%veg_wind(ico)                &
+               ,y%veg_reynolds(ico),y%veg_grashof(ico),y%veg_nussforc(ico)                 &
+               ,y%veg_nussfree(ico)
+      end if
+   end do
+   write (unit=*,fmt='(80a)') ('-',k=1,80)
+   write (unit=*,fmt='(2(a7,1x),7(a12,1x))')                                               &
+              '    PFT','KRDEPTH','         LAI','      HEIGHT','         RBH'             &
+                  ,'         RBW','  RSW_CLOSED','    RSW_OPEN','     FS_OPEN'
+   do ico = 1,cpatch%ncohorts
+      if (y%solvable(ico)) then
+         write(unit=*,fmt='(2(i7,1x),7(es12.4,1x))') cpatch%pft(ico),cpatch%krdepth(ico)   &
+               ,y%lai(ico),cpatch%hite(ico),y%rbh(ico),y%rbw(ico),cpatch%rsw_closed(ico)   &
+               ,cpatch%rsw_open(ico),cpatch%fs_open(ico)
       end if
    end do
    write (unit=*,fmt='(80a)') ('=',k=1,80)

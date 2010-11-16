@@ -714,56 +714,58 @@ subroutine init_pft_photo_params()
                              , cuticular_cond       & ! intent(out)
                              , quantum_efficiency   & ! intent(out)
                              , photosyn_pathway     ! ! intent(out)
+   use consts_coms    , only : t00                  & ! intent(in)
+                             , umol_2_mol           ! ! intent(in)
    implicit none
 
 
    D0(1:15)                  = 0.01 ! same for all PFTs
 
-   Vm_low_temp(1)            = 5.0     ! c4 grass
-   Vm_low_temp(2)            = 5.0     ! early tropical
-   Vm_low_temp(3)            = 5.0     ! mid tropical
-   Vm_low_temp(4)            = 5.0     ! late tropical
-   Vm_low_temp(5)            = 4.7137  ! c3 grass
-   Vm_low_temp(6)            = 4.7137  ! northern pines ! 5.0
-   Vm_low_temp(7)            = 4.7137  ! southern pines ! 5.0
-   Vm_low_temp(8)            = 4.7137  ! late conifers  ! 5.0
-   Vm_low_temp(9)            = 4.7137  ! early hardwoods
-   Vm_low_temp(10)           = 4.7137  ! mid hardwoods
-   Vm_low_temp(11)           = 4.7137  ! late hardwoods
-   Vm_low_temp(12)           = 4.7137  ! c3 pasture
-   Vm_low_temp(13)           = 4.7137  ! c3 crop
-   Vm_low_temp(14)           = 5.0     ! c4 pasture
-   Vm_low_temp(15)           = 5.0     ! c4 crop
+   Vm_low_temp(1)            = 5.0       ! c4 grass
+   Vm_low_temp(2)            = 5.0       ! early tropical
+   Vm_low_temp(3)            = 5.0       ! mid tropical
+   Vm_low_temp(4)            = 5.0       ! late tropical
+   Vm_low_temp(5)            = 4.7137    ! c3 grass
+   Vm_low_temp(6)            = 4.7137    ! northern pines ! 5.0
+   Vm_low_temp(7)            = 4.7137    ! southern pines ! 5.0
+   Vm_low_temp(8)            = 4.7137    ! late conifers  ! 5.0
+   Vm_low_temp(9)            = 4.7137    ! early hardwoods
+   Vm_low_temp(10)           = 4.7137    ! mid hardwoods
+   Vm_low_temp(11)           = 4.7137    ! late hardwoods
+   Vm_low_temp(12)           = 4.7137    ! c3 pasture
+   Vm_low_temp(13)           = 4.7137    ! c3 crop
+   Vm_low_temp(14)           = 5.0       ! c4 pasture
+   Vm_low_temp(15)           = 5.0       ! c4 crop
 
-   Vm_high_temp(1)           = 100.0    ! C4
-   Vm_high_temp(2)           =  45.0    ! C3
-   Vm_high_temp(3)           =  45.0    ! C3
-   Vm_high_temp(4)           =  45.0    ! C3
-   Vm_high_temp(5)           =  45.0    ! C3
-   Vm_high_temp(6)           =  45.0    ! C3
-   Vm_high_temp(7)           =  45.0    ! C3
-   Vm_high_temp(8)           =  45.0    ! C3
-   Vm_high_temp(9)           =  45.0    ! C3
-   Vm_high_temp(10)          =  45.0    ! C3
-   Vm_high_temp(11)          =  45.0    ! C3
-   Vm_high_temp(12)          =  45.0    ! C3
-   Vm_high_temp(13)          =  45.0    ! C3
-   Vm_high_temp(14)          = 100.0    ! C4
-   Vm_high_temp(15)          = 100.0    ! C4
+   Vm_high_temp(1)           = 100.0      ! C4
+   Vm_high_temp(2)           =  45.0      ! C3
+   Vm_high_temp(3)           =  45.0      ! C3
+   Vm_high_temp(4)           =  45.0      ! C3
+   Vm_high_temp(5)           =  45.0      ! C3
+   Vm_high_temp(6)           =  45.0      ! C3
+   Vm_high_temp(7)           =  45.0      ! C3
+   Vm_high_temp(8)           =  45.0      ! C3
+   Vm_high_temp(9)           =  45.0      ! C3
+   Vm_high_temp(10)          =  45.0      ! C3
+   Vm_high_temp(11)          =  45.0      ! C3
+   Vm_high_temp(12)          =  45.0      ! C3
+   Vm_high_temp(13)          =  45.0      ! C3
+   Vm_high_temp(14)          = 100.0      ! C4
+   Vm_high_temp(15)          = 100.0      ! C4
 
-   Vm0(1)                    = 12.5
-   Vm0(2)                    = 18.8
-   Vm0(3)                    = 12.5
-   Vm0(4)                    = 6.25
-   Vm0(5)                    = 18.3
-   Vm0(6)                    = 15.625 * 0.7264
-   Vm0(7)                    = 15.625 * 0.7264
-   Vm0(8)                    = 6.25   * 0.7264
-   Vm0(9)                    = 18.25  * 1.1171
-   Vm0(10)                   = 15.625 * 1.1171
-   Vm0(11)                   = 6.25   * 1.1171
-   Vm0(12:13)                = 18.3
-   Vm0(14:15)                = 12.5
+   Vm0(1)                    = 12.5            
+   Vm0(2)                    = 18.8            
+   Vm0(3)                    = 12.5            
+   Vm0(4)                    = 6.25            
+   Vm0(5)                    = 18.3            
+   Vm0(6)                    = 15.625 * 0.7264 
+   Vm0(7)                    = 15.625 * 0.7264 
+   Vm0(8)                    = 6.25   * 0.7264 
+   Vm0(9)                    = 18.25  * 1.1171 
+   Vm0(10)                   = 15.625 * 1.1171 
+   Vm0(11)                   = 6.25   * 1.1171 
+   Vm0(12:13)                = 18.3            
+   Vm0(14:15)                = 12.5            
 
    stomatal_slope(1)         = 10.0
    stomatal_slope(2)         = 8.0
@@ -786,9 +788,9 @@ subroutine init_pft_photo_params()
    cuticular_cond(3)         = 10000.0
    cuticular_cond(4)         = 10000.0
    cuticular_cond(5)         = 10000.0
-   cuticular_cond(6)         = 1000.0
-   cuticular_cond(7)         = 1000.0
-   cuticular_cond(8)         = 1000.0
+   cuticular_cond(6)         = 1000.0 
+   cuticular_cond(7)         = 1000.0 
+   cuticular_cond(8)         = 1000.0 
    cuticular_cond(9)         = 20000.0
    cuticular_cond(10)        = 20000.0
    cuticular_cond(11)        = 20000.0
@@ -1795,58 +1797,181 @@ end subroutine init_disturb_params
 !==========================================================================================!
 !==========================================================================================!
 subroutine init_physiology_params()
-   use physiology_coms, only : new_c3_solver     & ! intent(out)
-                             , c34smin_ci        & ! intent(out)
-                             , c34smax_ci        & ! intent(out)
-                             , c34smin_gsw       & ! intent(out)
+   use physiology_coms, only : c34smin_lint_co2  & ! intent(out)
+                             , c34smax_lint_co2  & ! intent(out)
                              , c34smax_gsw       & ! intent(out)
-                             , nudgescal         & ! intent(out)
-                             , alfls             & ! intent(out)
-                             , maxmdne           & ! intent(out)
-                             , normstmax         & ! intent(out)
-                             , hugenum           & ! intent(out)
-                             , tinynum           & ! intent(out)
+                             , gbh_2_gbw         & ! intent(out)
+                             , gbw_2_gbc         & ! intent(out)
+                             , gsw_2_gsc         & ! intent(out)
+                             , gsc_2_gsw         & ! intent(out)
+                             , rbh_2_rbw         & ! intent(out)
+                             , tarrh             & ! intent(out)
+                             , tarrhi            & ! intent(out)
+                             , compp_refkin      & ! intent(out)
+                             , compp_ecoeff      & ! intent(out)
+                             , vm_ecoeff         & ! intent(out)
+                             , vm_tempcoeff      & ! intent(out)
+                             , kco2_prefac       & ! intent(out)
+                             , kco2_ecoeff       & ! intent(out)
+                             , ko2_prefac        & ! intent(out)
+                             , ko2_ecoeff        & ! intent(out)
+                             , klowco2           & ! intent(out)
+                             , o2_ref            & ! intent(out)
+                             , par_twilight_min  & ! intent(out)
+                             , c34smin_lint_co28 & ! intent(out)
+                             , c34smax_lint_co28 & ! intent(out)
+                             , c34smax_gsw8      & ! intent(out)
+                             , gbh_2_gbw8        & ! intent(out)
+                             , gbw_2_gbc8        & ! intent(out)
+                             , gsw_2_gsc8        & ! intent(out)
+                             , gsc_2_gsw8        & ! intent(out)
+                             , rbh_2_rbw8        & ! intent(out)
+                             , tarrh8            & ! intent(out)
+                             , tarrhi8           & ! intent(out)
+                             , compp_refkin8     & ! intent(out)
+                             , compp_ecoeff8     & ! intent(out)
+                             , vm_ecoeff8        & ! intent(out)
+                             , vm_tempcoeff8     & ! intent(out)
+                             , kco2_prefac8      & ! intent(out)
+                             , kco2_ecoeff8      & ! intent(out)
+                             , ko2_prefac8       & ! intent(out)
+                             , ko2_ecoeff8       & ! intent(out)
+                             , klowco28          & ! intent(out)
+                             , par_twilight_min8 & ! intent(out)
+                             , o2_ref8           & ! intent(out)
                              , print_photo_debug & ! intent(out)
                              , photo_prefix      ! ! intent(out)
+   use consts_coms    , only : umol_2_mol        & ! intent(in)
+                             , t00               & ! intent(in)
+                             , Watts_2_Ein       ! ! intent(in)
    implicit none
 
 
+
    !---------------------------------------------------------------------------------------!
-   !     This flag controls whether the internal carbon and conductivity should be solved  !
-   ! using the new method (2-dimensional Newton, solving both equations simultaneously),   !
-   ! or the original method (Brent method with bracketing on gsw).                         !
+   !     Bounds for internal carbon and water stomatal conductance.                        !
    !---------------------------------------------------------------------------------------!
-   new_c3_solver = .true.
+   c34smin_lint_co2 = 10.   * umol_2_mol ! Minimum carbon dioxide concentration [  mol/mol]
+   c34smax_lint_co2 = 1200. * umol_2_mol ! Maximum carbon dioxide concentration [  mol/mol]
+   c34smax_gsw      = 1.e+2              ! Max. stomatal conductance (water)    [ mol/m²/s]
    !---------------------------------------------------------------------------------------!
 
 
 
    !---------------------------------------------------------------------------------------!
-   !     Parameters for the 2-D Newton's method with line searching).                      !
+   !     Many parameters in the model are temperature-dependent and utilise a modified     !
+   ! Arrhenius function to determine this dependence.  For that to work, reference values  !
+   ! at a given temperature (tarrh, in Kelvin). 
    !---------------------------------------------------------------------------------------!
-   !----- Bounds for the new C3 solver. ---------------------------------------------------!
-   c34smin_ci    = 1.0e-4        ! Minimum carbon dioxide concentration          [ mol/mol]
-   c34smax_ci    = 1.2e-3        ! Maximum carbon dioxide concentration          [ mol/mol]
-   c34smin_gsw   = 1.0e+4        ! Minimum conductivity                          [     m/s]
-   c34smax_gsw   = 1.0e+7        ! Maximum conductivity                          [     m/s]
-   !----- Relative scale for the nudging the guess when the solver gets stuck. ------------!
-   nudgescal     = 0.2
+   tarrh        = 15.0+t00
+   tarrhi       = 1./tarrh
    !---------------------------------------------------------------------------------------!
-   !      The parameter used as a fraction of the average rate of decrease of fn2 in the   !
-   ! line search method.  Press' suggested value is 1.e-4.                                 !
+
+
+
    !---------------------------------------------------------------------------------------!
-   alfls         = 1.e-4
-   !----- Maximum normalised value of a step for a line search. ---------------------------!
-   maxmdne       = 1000
-   !----- A small number that is almost the floating point accuracy, but somewhat larger. -!
-   normstmax     = 100.
+   !     The following parameter is the concentration of oxygen, assumed constant through- !
+   ! out the integration.  The value is in mol/mol.                                        !
    !---------------------------------------------------------------------------------------!
-   !      A large number that can still be squared without causing overflow.  Usually      !
-   ! the reciprocal of tinynum.                                                            !
+   o2_ref       = 0.209
    !---------------------------------------------------------------------------------------!
-   tinynum       = 2.*epsilon(1.)
-   !----- Maximum number of iterations before giving up. ----------------------------------!
-   hugenum       = 1./ tinynum
+
+
+   !---------------------------------------------------------------------------------------!
+   !     The next two variables are the parameters for the compensation point.             !
+   !---------------------------------------------------------------------------------------!
+   compp_refkin =  4500.  ! Reference ratio of "kinetic parameters describing the
+                          !    partioning of enzyme activity to carboxylase or
+                          !    oxylase function" (F96)                           [    ----]
+   compp_ecoeff = -5000.  ! "Activation energy" parameter                        [       K]
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      The next two variables are the parameter for the maximum capacity of Rubisco to  !
+   ! perform the carboxylase function.  The reference value is PFT-dependent and the       !
+   ! values are assigned in init_pft_photo_params.                                         !
+   !---------------------------------------------------------------------------------------!
+   vm_ecoeff    = 3000.     ! Reference exponential coeff. for carboxylase fctn. [       K]
+   vm_tempcoeff = 0.4       ! Coefficient to control the temperature dependence  [     ---]
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      The following terms are used to find the Michaelis-Menten coefficient for CO2.   !
+   !---------------------------------------------------------------------------------------!
+   kco2_prefac    = 150. * umol_2_mol ! Reference CO2 concentration              [ mol/mol]
+   kco2_ecoeff    = 6000.             ! Reference exponential coefficient        [       K]
+   !---------------------------------------------------------------------------------------! 
+
+
+
+   !---------------------------------------------------------------------------------------! 
+   !     These terms are used to find the Michaelis-Mentencoefficient for O2.              !
+   !---------------------------------------------------------------------------------------!
+   ko2_prefac    = 0.250     ! Reference O2 concentration.                        [ mol/mol]
+   ko2_ecoeff    =  1400.    ! Reference exponential coefficient                  [       K]
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !    The following parameter is the k coefficient in Foley et al. (1996) that is used   !
+   ! to determine the CO2-limited photosynthesis for C4 grasses.                           !
+   !---------------------------------------------------------------------------------------!
+   klowco2      = 18000.    ! coefficient for low CO2                            [ mol/mol]
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     These are constants obtained in Leuning et al. (1995). to convert different       !
+   ! conductivities.                                                                       !
+   !---------------------------------------------------------------------------------------!
+   gbh_2_gbw  = 1.075           ! heat  to water  - leaf boundary layer
+   gbw_2_gbc  = 1./1.4          ! water to carbon - leaf boundary layer
+   gsw_2_gsc  = 1./1.6          ! water to carbon - stomata
+   gsc_2_gsw  = 1./gsw_2_gsc    ! carbon to water - stomata
+   !----- The following are used to convert resistance. -----------------------------------!
+   rbh_2_rbw  = 1./gbh_2_gbw    ! heat  to water  - leaf boundary layer
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     This is the minimum threshold for the photosynthetically active radiation, in     !
+   ! µmol/m²/s to consider non-night time conditions (day time or twilight).               !
+   !---------------------------------------------------------------------------------------!
+   par_twilight_min = 0.5 * Watts_2_Ein ! Minimum non-nocturnal PAR.             [mol/m²/s]
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Find the double precision version of the variables above.                          !
+   !---------------------------------------------------------------------------------------!
+   c34smin_lint_co28 = dble(c34smin_lint_co2)
+   c34smax_lint_co28 = dble(c34smax_lint_co2)
+   c34smax_gsw8      = dble(c34smax_gsw     )
+   gbh_2_gbw8        = dble(gbh_2_gbw       )
+   gbw_2_gbc8        = dble(gbw_2_gbc       )
+   gsw_2_gsc8        = dble(gsw_2_gsc       )
+   gsc_2_gsw8        = dble(gsc_2_gsw       )
+   rbh_2_rbw8        = dble(rbh_2_rbw       )
+   tarrh8            = dble(tarrh           )
+   tarrhi8           = dble(tarrhi          )
+   compp_refkin8     = dble(compp_refkin    )
+   compp_ecoeff8     = dble(compp_ecoeff    )
+   vm_ecoeff8        = dble(vm_ecoeff       )
+   vm_tempcoeff8     = dble(vm_tempcoeff    )
+   kco2_prefac8      = dble(kco2_prefac     )
+   kco2_ecoeff8      = dble(kco2_ecoeff     )
+   ko2_prefac8       = dble(ko2_prefac      )
+   ko2_ecoeff8       = dble(ko2_ecoeff      )
+   klowco28          = dble(klowco2         )
+   o2_ref8           = dble(o2_ref          )
+   par_twilight_min8 = dble(par_twilight_min)
    !---------------------------------------------------------------------------------------!
 
 
@@ -1855,7 +1980,7 @@ subroutine init_physiology_params()
    !     Parameters that control debugging output.                                         !
    !---------------------------------------------------------------------------------------!
    !----- I should print detailed debug information. --------------------------------------!
-   print_photo_debug = .false.
+   print_photo_debug = .true.
    !----- File name prefix for the detailed information in case of debugging. -------------!
    photo_prefix      = 'photo_state_cohort_'
    !---------------------------------------------------------------------------------------!

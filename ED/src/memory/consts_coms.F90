@@ -40,7 +40,8 @@ Module consts_coms
      , b_sqrthalfpi => sqrthalfpi , b_fdns       => fdns       , b_fdnsi      => fdnsi     &
      , b_cv         => cv         , b_cpocv      => cpocv      , b_rocv       => rocv      &
      , b_hr_min     => hr_min     , b_th_diff    => th_diff    , b_th_diffi   => th_diffi  &
-     , b_kin_visc   => kin_visc   , b_th_expan   => th_expan   , b_gr_coeff   => gr_coeff
+     , b_kin_visc   => kin_visc   , b_th_expan   => th_expan   , b_gr_coeff   => gr_coeff  &
+     , b_mmh2oi     => mmh2oi     , b_lnexp_min  => lnexp_min  , b_lnexp_max  => lnexp_max
 
    implicit none
 
@@ -95,6 +96,8 @@ Module consts_coms
    real, parameter :: hr_min     = b_hr_min     , th_diff    = b_th_diff
    real, parameter :: th_diffi   = b_thdiffi    , kin_visc   = b_kin_visc
    real, parameter :: th_expan   = b_th_expan   , gr_coeff   = b_gr_coeff
+   real, parameter :: mmh2oi     = b_mmh2o      , lnexp_min  = b_lnexp_min
+   real, parameter :: lnexp_max  = b_lnexp_max
    !---------------------------------------------------------------------------------------!
 
 #else
@@ -154,6 +157,7 @@ Module consts_coms
    real, parameter :: mmdry1000   = 1000.*mmdry    ! Mean dry air molar mass    [   kg/mol]
    real, parameter :: mmcod1em6   = mmcod * 1.e-6  ! Convert ppm to kgCO2/kgair [     ----]
    real, parameter :: mmdryi      = 1./mmdry       ! 1./mmdry                   [   mol/kg]
+   real, parameter :: mmh2oi      = 1./mmh2o       ! 1./mmh2o                   [   mol/kg]
    real, parameter :: mmco2i      = 1./mmco2       ! 1./mmco2                   [   mol/kg]
    !---------------------------------------------------------------------------------------!
 
@@ -340,12 +344,26 @@ Module consts_coms
    real, parameter :: htripolii = 1./htripoli ! 1./htripoli                     [     kg/J]
    !---------------------------------------------------------------------------------------!
 
+
+
+   !---------------------------------------------------------------------------------------!
+   !     These are the lower and upper bounds in which we compute exponentials.  This is   !
+   ! to avoid overflows and/or underflows when we compute exponentials.                    !
+   !---------------------------------------------------------------------------------------!
+   real, parameter :: lnexp_min = -38.
+   real, parameter :: lnexp_max =  38.
+   !---------------------------------------------------------------------------------------!
+
 #endif
 
    !---------------------------------------------------------------------------------------!
    ! Unit conversion, it must be defined locally even for coupled runs.                    !
    !---------------------------------------------------------------------------------------!
+   real, parameter :: mol_2_umol     = 1.e6                 ! mol         => µmol
+   real, parameter :: umol_2_mol     = 1.e-6                ! µmol        => mol
    real, parameter :: umol_2_kgC     = 1.20107e-8           ! µmol(CO2)   => kg(C)
+   real, parameter :: Watts_2_Ein    = 4.6e-6               ! W/m2        => mol/m²/s
+   real, parameter :: Ein_2_Watts    = 1./Watts_2_Ein       ! mol/m²/s    => W/m2
    real, parameter :: kgC_2_umol     = 1. / umol_2_kgC      ! kg(C)       => µmol(CO2)
    real, parameter :: kgom2_2_tonoha = 10.                  ! kg(C)/m²    => ton(C)/ha
    real, parameter :: tonoha_2_kgom2 = 0.1                  ! ton(C)/ha   => kg(C)/m²
@@ -386,6 +404,7 @@ Module consts_coms
    real(kind=8), parameter :: mmdry10008      = dble(mmdry1000     )
    real(kind=8), parameter :: mmcod1em68      = dble(mmcod1em6     )
    real(kind=8), parameter :: mmdryi8         = dble(mmdryi        )
+   real(kind=8), parameter :: mmh2oi8         = dble(mmh2oi        )
    real(kind=8), parameter :: mmco2i8         = dble(mmco2i        )
    real(kind=8), parameter :: yr_day8         = dble(yr_day        )
    real(kind=8), parameter :: day_sec8        = dble(day_sec       )
@@ -458,6 +477,12 @@ Module consts_coms
    real(kind=8), parameter :: kin_visc8       = dble(kin_visc      )
    real(kind=8), parameter :: th_expan8       = dble(th_expan      )
    real(kind=8), parameter :: gr_coeff8       = dble(gr_coeff      )
+   real(kind=8), parameter :: Watts_2_Ein8    = dble(Watts_2_Ein   )
+   real(kind=8), parameter :: Ein_2_Watts8    = dble(Ein_2_Watts   )
+   real(kind=8), parameter :: mol_2_umol8     = dble(mol_2_umol    )
+   real(kind=8), parameter :: umol_2_mol8     = dble(umol_2_mol    )
+   real(kind=8), parameter :: lnexp_min8      = dble(lnexp_min     )
+   real(kind=8), parameter :: lnexp_max8      = dble(lnexp_max     )
    !---------------------------------------------------------------------------------------!
 
 

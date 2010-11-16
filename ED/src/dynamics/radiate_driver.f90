@@ -143,9 +143,7 @@ subroutine sfcrad_ed(cosz, cosaoi, csite, maxcohort, rshort_tot,rshort_diffuse)
 
    use ed_state_vars        , only : sitetype             & ! structure  
                                    , patchtype            ! ! structure  
-   use canopy_radiation_coms, only : Watts2Ein            & ! intent(in) 
-                                   , Ein2Watts            & ! intent(in)
-                                   , crown_mod            & ! intent(in)
+   use canopy_radiation_coms, only : crown_mod            & ! intent(in)
                                    , visible_fraction_dir & ! intent(in)
                                    , visible_fraction_dif ! ! intent(in)
    use grid_coms            , only : nzg                  & ! intent(in) 
@@ -437,8 +435,8 @@ subroutine sfcrad_ed(cosz, cosaoi, csite, maxcohort, rshort_tot,rshort_diffuse)
                il = il + 1
                cpatch%rshort_v_beam(ico)    = rshort_v_beam_array(il)
                cpatch%rshort_v_diffuse(ico) = rshort_v_diffuse_array(il)
-               cpatch%par_v_beam(ico)       = par_v_beam_array(il)    * Watts2Ein
-               cpatch%par_v_diffuse(ico)    = par_v_diffuse_array(il) * Watts2Ein
+               cpatch%par_v_beam(ico)       = par_v_beam_array(il)
+               cpatch%par_v_diffuse(ico)    = par_v_diffuse_array(il)
                cpatch%rlong_v_surf(ico)     = lw_v_surf_array(il)
                cpatch%rlong_v_incid(ico)    = lw_v_incid_array(il)
                cpatch%lambda_light(ico)     = sngloff(lambda_array(il),tiny_offset)
@@ -506,12 +504,6 @@ subroutine sfcrad_ed(cosz, cosaoi, csite, maxcohort, rshort_tot,rshort_diffuse)
             cpatch%light_level_diff(ico) = remaining_par_diff
             cpatch%light_level_beam(ico) = remaining_par_beam
 
-            !-----
-            !cpatch%norm_par_beam   (ico) = (1.0-difffac) * cpatch%par_v_beam(ico)          &
-            !                             * Ein2Watts / visible_fraction_dir
-            !cpatch%norm_par_diff   (ico) =      difffac  * cpatch%par_v_diffuse(ico)       &
-            !                             * Ein2Watts / visible_fraction_dif
-
             cpatch%norm_par_beam    (ico) = cpatch%rshort_v_beam(ico)      
             cpatch%norm_par_diff    (ico) = cpatch%rshort_v_diffuse(ico)
             !----- Remove the radiation of this cohort from the total. --------------------!
@@ -520,8 +512,7 @@ subroutine sfcrad_ed(cosz, cosaoi, csite, maxcohort, rshort_tot,rshort_diffuse)
             remaining_par_diff        = remaining_par_diff                                 &
                                       -      difffac  * cpatch%norm_par_diff(ico)
             remaining_par             = remaining_par_beam + remaining_par_diff
-         
-            !----- 
+            !------------------------------------------------------------------------------!
          
          
          end do

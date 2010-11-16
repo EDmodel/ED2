@@ -470,7 +470,8 @@ module fuse_fiss_utils
 
                      !----- Proceed with fusion -------------------------------------------!
                      call fuse_2_cohorts(cpatch,donc,recc,newn                             &
-                                        ,green_leaf_factor(cpatch%pft(donc)),lsl)
+                                        ,green_leaf_factor(cpatch%pft(donc))               &
+                                        ,csite%can_prss(ipa),lsl)
 
                      !----- Flag donating cohort as gone, so it won't be checked again. ---!
                      fuse_table(donc) = .false.
@@ -821,8 +822,14 @@ module fuse_fiss_utils
       cpatch%veg_temp(idt)            = cpatch%veg_temp(isc)
       cpatch%veg_fliq(idt)            = cpatch%veg_fliq(isc)
       cpatch%veg_water(idt)           = cpatch%veg_water(isc)
-      cpatch%veg_co2_open(idt)        = cpatch%veg_co2_open(isc)
-      cpatch%veg_co2_closed(idt)      = cpatch%veg_co2_closed(isc)
+      cpatch%veg_wind(idt)            = cpatch%veg_wind(isc)
+      cpatch%lsfc_shv_open(idt)       = cpatch%lsfc_shv_open(isc)
+      cpatch%lsfc_shv_closed(idt)     = cpatch%lsfc_shv_closed(isc)
+      cpatch%lsfc_co2_open(idt)       = cpatch%lsfc_co2_open(isc)
+      cpatch%lsfc_co2_closed(idt)     = cpatch%lsfc_co2_closed(isc)
+      cpatch%lint_shv(idt)            = cpatch%lint_shv(isc)
+      cpatch%lint_co2_open(idt)       = cpatch%lint_co2_open(isc)
+      cpatch%lint_co2_closed(idt)     = cpatch%lint_co2_closed(isc)
       cpatch%mean_gpp(idt)            = cpatch%mean_gpp(isc)
       cpatch%mean_leaf_resp(idt)      = cpatch%mean_leaf_resp(isc)
       cpatch%mean_root_resp(idt)      = cpatch%mean_root_resp(isc)
@@ -865,7 +872,8 @@ module fuse_fiss_utils
       cpatch%diffext_level(idt)       = cpatch%diffext_level(isc)
       cpatch%norm_par_beam(idt)       = cpatch%norm_par_beam(isc)
       cpatch%norm_par_diff(idt)       = cpatch%norm_par_diff(isc)
-      cpatch%rb(idt)                  = cpatch%rb(isc)
+      cpatch%rbh(idt)                 = cpatch%rbh(isc)
+      cpatch%rbw(idt)                 = cpatch%rbw(isc)
       cpatch%A_open(idt)              = cpatch%A_open(isc)
       cpatch%A_closed(idt)            = cpatch%A_closed(isc)
       cpatch%Psi_closed(idt)          = cpatch%Psi_closed(isc)
@@ -978,11 +986,12 @@ module fuse_fiss_utils
    !  information from both cohorts.                                                       !
    !                                                                                       !
    !---------------------------------------------------------------------------------------!
-   subroutine fuse_2_cohorts(cpatch,donc,recc, newn,green_leaf_factor, lsl)
+   subroutine fuse_2_cohorts(cpatch,donc,recc, newn,green_leaf_factor, can_prss,lsl)
       use ed_state_vars , only : patchtype              ! ! Structure
       use pft_coms      , only : q                      & ! intent(in), lookup table
                                , qsw                    ! ! intent(in), lookup table
-      use therm_lib     , only : qwtk                   ! ! subroutine
+      use therm_lib     , only : qwtk                   & ! subroutine
+                               , rslif                  ! ! function
       use allometry     , only : calc_root_depth        & ! function
                                , assign_root_depth      & ! function
                                , bd2dbh                 & ! function
@@ -997,6 +1006,7 @@ module fuse_fiss_utils
       integer                      :: recc              ! Receptor cohort.
       real            , intent(in) :: newn              ! New nplant
       real            , intent(in) :: green_leaf_factor ! Green leaf factor
+      real            , intent(in) :: can_prss          ! Canopy air pressure
       integer         , intent(in) :: lsl               ! Lowest soil level
       !----- Local variables --------------------------------------------------------------!
       integer                      :: imon              ! Month for cb loop
@@ -1075,6 +1085,10 @@ module fuse_fiss_utils
          cpatch%veg_fliq(recc)  = 0.0
       end if
 
+      !------ Find the intercellular value assuming saturation. ---------------------------!
+      cpatch%lint_shv(recc) = rslif(can_prss,cpatch%veg_temp(recc))
+      cpatch%lint_shv(recc) = cpatch%lint_shv(recc) / (1. + cpatch%lint_shv(recc))
+
       cb_act = 0.
       cb_max = 0.
       do imon = 1,12
@@ -1140,15 +1154,28 @@ module fuse_fiss_utils
 
 
       !------------------------------------------------------------------------------------!
-      !    Fuse intenal CO2.  Since this is an intensive property, I scale by the number   !
-      ! of plants.                                                                         !
+      !    Fuse the leaf surface and intenal properties.  Since they are intensive         !
+      ! properties, they are scaled by the number of plants.  These numbers are diagnostic !
+      ! and this should be used for the output only.                                       !
       !------------------------------------------------------------------------------------!
-      cpatch%veg_co2_open(recc) = ( cpatch%veg_co2_open(recc) * cpatch%nplant(recc)        &
-                                  + cpatch%veg_co2_open(donc) * cpatch%nplant(donc) )      &
-                                * newni
-      cpatch%veg_co2_closed(recc) = ( cpatch%veg_co2_closed(recc) * cpatch%nplant(recc)    &
-                                    + cpatch%veg_co2_closed(donc) * cpatch%nplant(donc) )  &
-                                  * newni
+      cpatch%lsfc_shv_open(recc) = ( cpatch%lsfc_shv_open(recc) * cpatch%nplant(recc)      &
+                                   + cpatch%lsfc_shv_open(donc) * cpatch%nplant(donc) )    &
+                                   * newni
+      cpatch%lsfc_shv_closed(recc) = ( cpatch%lsfc_shv_closed(recc) * cpatch%nplant(recc)  &
+                                     + cpatch%lsfc_shv_closed(donc) * cpatch%nplant(donc)) &
+                                   * newni
+      cpatch%lsfc_co2_open(recc) = ( cpatch%lsfc_co2_open(recc) * cpatch%nplant(recc)      &
+                                   + cpatch%lsfc_co2_open(donc) * cpatch%nplant(donc) )    &
+                                   * newni
+      cpatch%lsfc_co2_closed(recc) = ( cpatch%lsfc_co2_closed(recc) * cpatch%nplant(recc)  &
+                                     + cpatch%lsfc_co2_closed(donc) * cpatch%nplant(donc)) &
+                                   * newni
+      cpatch%lint_co2_open(recc) = ( cpatch%lint_co2_open(recc) * cpatch%nplant(recc)      &
+                                   + cpatch%lint_co2_open(donc) * cpatch%nplant(donc) )    &
+                                   * newni
+      cpatch%lint_co2_closed(recc) = ( cpatch%lint_co2_closed(recc) * cpatch%nplant(recc)  &
+                                     + cpatch%lint_co2_closed(donc) * cpatch%nplant(donc)) &
+                                   * newni
       !------------------------------------------------------------------------------------!
 
 
@@ -1191,6 +1218,9 @@ module fuse_fiss_utils
       cpatch%norm_par_diff(recc)    = ( cpatch%norm_par_diff(recc) *cpatch%nplant(recc)    &
                                       + cpatch%norm_par_diff(donc) *cpatch%nplant(donc))   &
                                     * newni
+      !------------------------------------------------------------------------------------!
+
+
 
       !------------------------------------------------------------------------------------!
       !    Not sure about the following variables.  From ed_state_vars, I would say that   !
@@ -1216,6 +1246,7 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------!
 
 
+
       !------------------------------------------------------------------------------------!
       !    Merging biomass and basal area.  Contrary to the patch/site/polygon levels,     !
       ! these variables are "intensive" (or per plant) at the cohort level, so we must     !
@@ -1238,6 +1269,8 @@ module fuse_fiss_utils
                                 * newni
       !------------------------------------------------------------------------------------!
 
+
+
       !------------------------------------------------------------------------------------!
       !     Updating the tendency of plant density.  All variables are per unit of area,   !
       ! so they should be added, not scaled.                                               !
@@ -1249,7 +1282,8 @@ module fuse_fiss_utils
 
       cpatch%fsn(recc) = ( cpatch%fsn(recc) * cpatch%nplant(recc)                          &
                          + cpatch%fsn(donc) * cpatch%nplant(donc) ) * newni
-     
+      !------------------------------------------------------------------------------------!
+
 
 
       !------------------------------------------------------------------------------------!

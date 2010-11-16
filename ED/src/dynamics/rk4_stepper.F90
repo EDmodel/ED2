@@ -807,7 +807,9 @@ module rk4_stepper
                write(unit=*,fmt='(a,1x,es12.4)') ' VEG_LWATER:   ', y%veg_water(ico)       &
                                                                   / y%tai(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' VEG_WIND:     ',y%veg_wind(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' RB:           ',y%rb(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LINT_SHV:     ',y%lint_shv(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' RBH:          ',y%rbh(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' RBW:          ',y%rbw(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' REYNOLDS:     ',y%veg_reynolds(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' GRASHOF:      ',y%veg_grashof(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' NUSSELT_FREE: ',y%veg_nussfree(ico)
@@ -841,8 +843,10 @@ module rk4_stepper
                write(unit=*,fmt='(a,1x,es12.4)') ' VEG_WATER:    ',y%veg_water(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' VEG_LWATER:   ', y%veg_water(ico)       &
                                                                   / y%tai(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' RB:           ',y%rb(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' RBH:          ',y%rbh(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' RBW:          ',y%rbw(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' VEG_WIND:     ',y%veg_wind(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' LINT_SHV:     ',y%lint_shv(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' REYNOLDS:     ',y%veg_reynolds(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' GRASHOF:      ',y%veg_grashof(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' NUSSELT_FREE: ',y%veg_nussfree(ico)

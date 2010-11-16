@@ -78,6 +78,7 @@ Module rconstants
    real, parameter :: mmdry1000   = 1000.*mmdry    ! Mean dry air molar mass    [   kg/mol]
    real, parameter :: mmcod1em6   = mmcod * 1.e-6  ! Convert ppm to kgCO2/kgair [     ----]
    real, parameter :: mmdryi      = 1./mmdry       ! 1./mmdry                   [   mol/kg]
+   real, parameter :: mmh2oi      = 1./mmh2o       ! 1./mmdry                   [   mol/kg]
    real, parameter :: mmco2i      = 1./mmco2       ! 1./mmco2                   [   mol/kg]
    !---------------------------------------------------------------------------------------!
 
@@ -301,6 +302,16 @@ Module rconstants
 
 
    !---------------------------------------------------------------------------------------!
+   !     These are the lower and upper bounds in which we compute exponentials.  This is   !
+   ! to avoid overflows and/or underflows when we compute exponentials.                    !
+   !---------------------------------------------------------------------------------------!
+   real, parameter :: lnexp_min = -38.
+   real, parameter :: lnexp_max =  38.
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
    !    Double precision version of all constants used in Runge-Kutta.                     !
    !---------------------------------------------------------------------------------------!
    real(kind=8), parameter :: pi18            = dble(pi1           )
@@ -332,6 +343,7 @@ Module rconstants
    real(kind=8), parameter :: mmdry10008      = dble(mmdry1000     )
    real(kind=8), parameter :: mmcod1em68      = dble(mmcod1em6     )
    real(kind=8), parameter :: mmdryi8         = dble(mmdryi        )
+   real(kind=8), parameter :: mmh2oi8         = dble(mmh2oi        )
    real(kind=8), parameter :: mmco2i8         = dble(mmco2i        )
    real(kind=8), parameter :: yr_day8         = dble(yr_day        )
    real(kind=8), parameter :: day_sec8        = dble(day_sec       )
@@ -407,6 +419,8 @@ Module rconstants
    real(kind=8), parameter :: kin_visc8       = dble(kin_visc      )
    real(kind=8), parameter :: th_expan8       = dble(th_expan      )
    real(kind=8), parameter :: gr_coeff8       = dble(gr_coeff      )
+   real(kind=8), parameter :: lnexp_min8      = dble(lnexp_min     )
+   real(kind=8), parameter :: lnexp_max8      = dble(lnexp_max     )
    !---------------------------------------------------------------------------------------!
 
 

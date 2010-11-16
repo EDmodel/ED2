@@ -162,11 +162,29 @@ module ed_state_vars
      ! Vegetation surface water (kg/m2 ground)
      real ,pointer,dimension(:) :: veg_water
 
-     ! Open stomata CO2  (umol/mol)
-     real ,pointer,dimension(:) :: veg_co2_open
+     ! Reduced wind at the cohort level (m/s)
+     real ,pointer,dimension(:) :: veg_wind
 
-     ! Closed stomata CO2  (umol/mol)
-     real ,pointer,dimension(:) :: veg_co2_closed
+     ! Leaf surface specific humidity for open stomata (kg/kg)
+     real ,pointer,dimension(:) :: lsfc_shv_open
+
+     ! Leaf surface specific humidity for closed stomata (kg/kg)
+     real ,pointer,dimension(:) :: lsfc_shv_closed
+
+     ! Leaf surface CO2 for open stomata (µmol/mol)
+     real ,pointer,dimension(:) :: lsfc_co2_open
+
+     ! Leaf surface CO2 for closed stomata (µmol/mol)
+     real ,pointer,dimension(:) :: lsfc_co2_closed
+
+     ! Leaf interecellular specific humidity (kg/kg)
+     real ,pointer,dimension(:) :: lint_shv
+
+     ! Leaf intercellular CO2 for open stomata (µmol/mol)
+     real ,pointer,dimension(:) :: lint_co2_open
+
+     ! Leaf intercellular CO2 for closed stomata (µmol/mol)
+     real ,pointer,dimension(:) :: lint_co2_closed
 
      ! Leaf (vegetation) heat capacity [ J/m2/K]
      real, pointer,dimension(:) :: hcapveg
@@ -294,19 +312,19 @@ module ed_state_vars
      real, pointer, dimension(:) :: mmean_lambda_light
 
      ! Photosynthetically active radiation (PAR) absorbed by the 
-     ! cohort (units are Einsteins/m2/s)
+     ! cohort (units are W/m2)
      real ,pointer,dimension(:) :: par_v
      real ,pointer,dimension(:) :: dmean_par_v
      real ,pointer,dimension(:) :: mmean_par_v
 
      ! Photosynthetically active radiation (PAR) absorbed by the 
-     ! cohort (units are Einsteins/m2/s), beam component
+     ! cohort (units are W/m2), beam component
      real ,pointer,dimension(:) :: par_v_beam
      real ,pointer,dimension(:) :: dmean_par_v_beam
      real ,pointer,dimension(:) :: mmean_par_v_beam
 
      ! Photosynthetically active radiation (PAR) absorbed by the 
-     ! cohort (units are Einsteins/m2/s), diffuse component
+     ! cohort (units are W/m2), diffuse component
      real ,pointer,dimension(:) :: par_v_diffuse
      real ,pointer,dimension(:) :: dmean_par_v_diff
      real ,pointer,dimension(:) :: mmean_par_v_diff
@@ -332,8 +350,11 @@ module ed_state_vars
      ! the incident atmospheric long wave alone
      real ,pointer,dimension(:) :: rlong_v_incid
 
-     ! Leaf aerodynamic resistance (s/m)
-     real ,pointer,dimension(:) :: rb
+     ! Leaf aerodynamic resistance for heat  (s/m)
+     real ,pointer,dimension(:) :: rbh
+
+     ! Leaf aerodynamic resistance for water (s/m)
+     real ,pointer,dimension(:) :: rbw
 
      ! Photosynthesis rate, open stomata (umol/m2 leaf/s)
      real ,pointer,dimension(:) :: A_open
@@ -2731,9 +2752,15 @@ contains
     allocate(cpatch%veg_energy(ncohorts))
     allocate(cpatch%veg_temp(ncohorts))
     allocate(cpatch%veg_fliq(ncohorts))
-    allocate(cpatch%veg_co2_open(ncohorts))
-    allocate(cpatch%veg_co2_closed(ncohorts))
     allocate(cpatch%veg_water(ncohorts))
+    allocate(cpatch%veg_wind(ncohorts))
+    allocate(cpatch%lsfc_shv_open(ncohorts))
+    allocate(cpatch%lsfc_shv_closed(ncohorts))
+    allocate(cpatch%lsfc_co2_open(ncohorts))
+    allocate(cpatch%lsfc_co2_closed(ncohorts))
+    allocate(cpatch%lint_shv(ncohorts))
+    allocate(cpatch%lint_co2_open(ncohorts))
+    allocate(cpatch%lint_co2_closed(ncohorts))
     allocate(cpatch%mean_gpp(ncohorts))
     allocate(cpatch%mean_leaf_resp(ncohorts))
     allocate(cpatch%mean_root_resp(ncohorts))
@@ -2777,7 +2804,8 @@ contains
     allocate(cpatch%rlong_v(ncohorts))
     allocate(cpatch%rlong_v_surf(ncohorts))
     allocate(cpatch%rlong_v_incid(ncohorts))
-    allocate(cpatch%rb(ncohorts))
+    allocate(cpatch%rbh(ncohorts))
+    allocate(cpatch%rbw(ncohorts))
     allocate(cpatch%A_open(ncohorts))
     allocate(cpatch%A_closed(ncohorts))
     allocate(cpatch%Psi_closed(ncohorts))
@@ -3624,9 +3652,15 @@ contains
     nullify(cpatch%veg_energy)
     nullify(cpatch%veg_temp)
     nullify(cpatch%veg_fliq)
-    nullify(cpatch%veg_co2_open)
-    nullify(cpatch%veg_co2_closed)
     nullify(cpatch%veg_water)
+    nullify(cpatch%veg_wind)
+    nullify(cpatch%lsfc_shv_open)
+    nullify(cpatch%lsfc_shv_closed)
+    nullify(cpatch%lsfc_co2_open)
+    nullify(cpatch%lsfc_co2_closed)
+    nullify(cpatch%lint_shv)
+    nullify(cpatch%lint_co2_open)
+    nullify(cpatch%lint_co2_closed)
     nullify(cpatch%mean_gpp)
     nullify(cpatch%mean_leaf_resp)
     nullify(cpatch%mean_root_resp)
@@ -3699,7 +3733,8 @@ contains
     nullify(cpatch%rlong_v)
     nullify(cpatch%rlong_v_surf)
     nullify(cpatch%rlong_v_incid)
-    nullify(cpatch%rb)
+    nullify(cpatch%rbh)
+    nullify(cpatch%rbw)
     nullify(cpatch%A_open)    
     nullify(cpatch%A_closed)
     nullify(cpatch%Psi_closed)
@@ -4525,8 +4560,14 @@ contains
     if(associated(cpatch%veg_temp))            deallocate(cpatch%veg_temp)
     if(associated(cpatch%veg_fliq))            deallocate(cpatch%veg_fliq)
     if(associated(cpatch%veg_water))           deallocate(cpatch%veg_water)
-    if(associated(cpatch%veg_co2_open))        deallocate(cpatch%veg_co2_open)
-    if(associated(cpatch%veg_co2_closed))      deallocate(cpatch%veg_co2_closed)
+    if(associated(cpatch%veg_wind))            deallocate(cpatch%veg_wind)
+    if(associated(cpatch%lsfc_shv_open))       deallocate(cpatch%lsfc_shv_open)
+    if(associated(cpatch%lsfc_shv_closed))     deallocate(cpatch%lsfc_shv_closed)
+    if(associated(cpatch%lsfc_co2_open))       deallocate(cpatch%lsfc_co2_open)
+    if(associated(cpatch%lsfc_co2_closed))     deallocate(cpatch%lsfc_co2_closed)
+    if(associated(cpatch%lint_shv))            deallocate(cpatch%lint_shv)
+    if(associated(cpatch%lint_co2_open))       deallocate(cpatch%lint_co2_open)
+    if(associated(cpatch%lint_co2_closed))     deallocate(cpatch%lint_co2_closed)
     if(associated(cpatch%mean_gpp))            deallocate(cpatch%mean_gpp)
     if(associated(cpatch%mean_leaf_resp))      deallocate(cpatch%mean_leaf_resp)
     if(associated(cpatch%mean_root_resp))      deallocate(cpatch%mean_root_resp)
@@ -4600,7 +4641,8 @@ contains
     if(associated(cpatch%rlong_v))                deallocate(cpatch%rlong_v)
     if(associated(cpatch%rlong_v_surf))           deallocate(cpatch%rlong_v_surf)
     if(associated(cpatch%rlong_v_incid))          deallocate(cpatch%rlong_v_incid)
-    if(associated(cpatch%rb))                     deallocate(cpatch%rb)
+    if(associated(cpatch%rbh))                    deallocate(cpatch%rbh)
+    if(associated(cpatch%rbw))                    deallocate(cpatch%rbw)
     if(associated(cpatch%A_open))                 deallocate(cpatch%A_open)    
     if(associated(cpatch%A_closed))               deallocate(cpatch%A_closed)
     if(associated(cpatch%Psi_closed))             deallocate(cpatch%Psi_closed)
@@ -5474,8 +5516,14 @@ contains
     if(associated(cpatch%veg_temp))             cpatch%veg_temp            = large_real
     if(associated(cpatch%veg_fliq))             cpatch%veg_fliq            = large_real
     if(associated(cpatch%veg_water))            cpatch%veg_water           = large_real
-    if(associated(cpatch%veg_co2_open))         cpatch%veg_co2_open        = large_real
-    if(associated(cpatch%veg_co2_closed))       cpatch%veg_co2_closed      = large_real
+    if(associated(cpatch%veg_wind))             cpatch%veg_wind            = large_real
+    if(associated(cpatch%lsfc_shv_open))        cpatch%lsfc_shv_open       = large_real
+    if(associated(cpatch%lsfc_shv_closed))      cpatch%lsfc_shv_closed     = large_real
+    if(associated(cpatch%lsfc_co2_open))        cpatch%lsfc_co2_open       = large_real
+    if(associated(cpatch%lsfc_co2_closed))      cpatch%lsfc_co2_closed     = large_real
+    if(associated(cpatch%lint_shv))             cpatch%lint_shv            = large_real
+    if(associated(cpatch%lint_co2_open))        cpatch%lint_co2_open       = large_real
+    if(associated(cpatch%lint_co2_closed))      cpatch%lint_co2_closed     = large_real
     if(associated(cpatch%mean_gpp))             cpatch%mean_gpp            = large_real
     if(associated(cpatch%mean_leaf_resp))       cpatch%mean_leaf_resp      = large_real
     if(associated(cpatch%mean_root_resp))       cpatch%mean_root_resp      = large_real
@@ -5569,7 +5617,8 @@ contains
     if(associated(cpatch%rlong_v))              cpatch%rlong_v             = large_real
     if(associated(cpatch%rlong_v_surf))         cpatch%rlong_v_surf        = large_real
     if(associated(cpatch%rlong_v_incid))        cpatch%rlong_v_incid       = large_real
-    if(associated(cpatch%rb))                   cpatch%rb                  = large_real
+    if(associated(cpatch%rbh))                  cpatch%rbh                 = large_real
+    if(associated(cpatch%rbw))                  cpatch%rbw                 = large_real
     if(associated(cpatch%A_open))               cpatch%A_open              = large_real
     if(associated(cpatch%A_closed))             cpatch%A_closed            = large_real
     if(associated(cpatch%Psi_closed))           cpatch%Psi_closed          = large_real
@@ -6155,8 +6204,14 @@ contains
     patchout%veg_temp(1:inc)         = pack(patchin%veg_temp,mask)
     patchout%veg_fliq(1:inc)         = pack(patchin%veg_fliq,mask)
     patchout%veg_water(1:inc)        = pack(patchin%veg_water,mask)
-    patchout%veg_co2_open(1:inc)     = pack(patchin%veg_co2_open,mask)
-    patchout%veg_co2_closed(1:inc)   = pack(patchin%veg_co2_closed,mask)
+    patchout%veg_wind(1:inc)         = pack(patchin%veg_wind,mask)
+    patchout%lsfc_shv_open(1:inc)    = pack(patchin%lsfc_shv_open,mask)
+    patchout%lsfc_shv_closed(1:inc)  = pack(patchin%lsfc_shv_closed,mask)
+    patchout%lsfc_co2_open(1:inc)    = pack(patchin%lsfc_co2_open,mask)
+    patchout%lsfc_co2_closed(1:inc)  = pack(patchin%lsfc_co2_closed,mask)
+    patchout%lint_shv(1:inc)         = pack(patchin%lint_shv,mask)
+    patchout%lint_co2_open(1:inc)    = pack(patchin%lint_co2_open,mask)
+    patchout%lint_co2_closed(1:inc)  = pack(patchin%lint_co2_closed,mask)
     patchout%mean_gpp(1:inc)         = pack(patchin%mean_gpp,mask)
     patchout%mean_leaf_resp(1:inc)   = pack(patchin%mean_leaf_resp,mask)
     patchout%mean_root_resp(1:inc)   = pack(patchin%mean_root_resp,mask)
@@ -6195,7 +6250,8 @@ contains
     patchout%rlong_v(1:inc)          = pack(patchin%rlong_v,mask)
     patchout%rlong_v_surf(1:inc)     = pack(patchin%rlong_v_surf,mask)
     patchout%rlong_v_incid(1:inc)    = pack(patchin%rlong_v_incid,mask)
-    patchout%rb(1:inc)               = pack(patchin%rb,mask)
+    patchout%rbh(1:inc)              = pack(patchin%rbh,mask)
+    patchout%rbw(1:inc)              = pack(patchin%rbw,mask)
     patchout%A_open(1:inc)           = pack(patchin%A_open,mask)
     patchout%A_closed(1:inc)         = pack(patchin%A_closed,mask)
     patchout%Psi_closed(1:inc)       = pack(patchin%Psi_closed,mask)
@@ -6372,8 +6428,14 @@ contains
        patchout%veg_temp(iout)         = patchin%veg_temp(iin)
        patchout%veg_fliq(iout)         = patchin%veg_fliq(iin)
        patchout%veg_water(iout)        = patchin%veg_water(iin)
-       patchout%veg_co2_open(iout)     = patchin%veg_co2_open(iin)
-       patchout%veg_co2_closed(iout)   = patchin%veg_co2_closed(iin)
+       patchout%veg_wind(iout)         = patchin%veg_wind(iin)
+       patchout%lsfc_shv_open(iout)    = patchin%lsfc_shv_open(iin)
+       patchout%lsfc_shv_closed(iout)  = patchin%lsfc_shv_closed(iin)
+       patchout%lsfc_co2_open(iout)    = patchin%lsfc_co2_open(iin)
+       patchout%lsfc_co2_closed(iout)  = patchin%lsfc_co2_closed(iin)
+       patchout%lint_shv(iout)         = patchin%lint_shv(iin)
+       patchout%lint_co2_open(iout)    = patchin%lint_co2_open(iin)
+       patchout%lint_co2_closed(iout)  = patchin%lint_co2_closed(iin)
        patchout%mean_gpp(iout)         = patchin%mean_gpp(iin)
        patchout%mean_leaf_resp(iout)   = patchin%mean_leaf_resp(iin)
        patchout%mean_root_resp(iout)   = patchin%mean_root_resp(iin)
@@ -6413,7 +6475,8 @@ contains
        patchout%rlong_v(iout)          = patchin%rlong_v(iin)
        patchout%rlong_v_surf(iout)     = patchin%rlong_v_surf(iin)
        patchout%rlong_v_incid(iout)    = patchin%rlong_v_incid(iin)
-       patchout%rb(iout)               = patchin%rb(iin)
+       patchout%rbh(iout)              = patchin%rbh(iin)
+       patchout%rbw(iout)              = patchin%rbw(iin)
        patchout%A_open(iout)           = patchin%A_open(iin)
        patchout%A_closed(iout)         = patchin%A_closed(iin)
        patchout%Psi_closed(iout)       = patchin%Psi_closed(iin)
@@ -10744,17 +10807,59 @@ contains
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
-    if (associated(cpatch%veg_co2_open)) then
+    if (associated(cpatch%veg_wind)) then
        nvar=nvar+1
-         call vtable_edio_r(cpatch%veg_co2_open(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'VEG_CO2_OPEN :41:hist') 
+         call vtable_edio_r(cpatch%veg_wind(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'VEG_WIND :41:hist') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
-    if (associated(cpatch%veg_co2_closed)) then
+    if (associated(cpatch%lsfc_shv_closed)) then
        nvar=nvar+1
-         call vtable_edio_r(cpatch%veg_co2_closed(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'VEG_CO2_CLOSED :41:hist') 
+         call vtable_edio_r(cpatch%lsfc_shv_closed(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'LSFC_SHV_CLOSED :41:hist') 
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
+
+    if (associated(cpatch%lsfc_shv_open)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%lsfc_shv_open(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'LSFC_SHV_OPEN :41:hist') 
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
+
+    if (associated(cpatch%lsfc_co2_closed)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%lsfc_co2_closed(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'LSFC_CO2_CLOSED :41:hist') 
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
+
+    if (associated(cpatch%lsfc_co2_open)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%lsfc_co2_open(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'LSFC_CO2_OPEN :41:hist') 
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
+
+    if (associated(cpatch%lint_shv)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%lint_shv(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'LINT_SHV :41:hist') 
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
+
+    if (associated(cpatch%lint_co2_closed)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%lint_co2_closed(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'LINT_CO2_CLOSED :41:hist') 
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
+
+    if (associated(cpatch%lint_co2_open)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%lint_co2_open(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'LINT_CO2_OPEN :41:hist') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
@@ -11234,10 +11339,17 @@ contains
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
-    if (associated(cpatch%rb)) then
+    if (associated(cpatch%rbh)) then
        nvar=nvar+1
-         call vtable_edio_r(cpatch%rb(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'RB :41:hist') 
+         call vtable_edio_r(cpatch%rbh(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'RBH :41:hist') 
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
+
+    if (associated(cpatch%rbw)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%rbw(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'RBW :41:hist') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 

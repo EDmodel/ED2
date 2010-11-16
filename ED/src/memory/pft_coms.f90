@@ -135,7 +135,7 @@ module pft_coms
    !----- Intercept of the Ball/Berry stomatal conductance relationship [µmol/m2/s]. ------!
    real, dimension(n_pft) :: cuticular_cond
 
-   !----- Efficiency of using PAR to fix CO2 [mol_CO2/Einstein]. --------------------------!
+   !----- Efficiency of using PAR to fix CO2 [ ----]. -------------------------------------!
    real, dimension(n_pft) :: quantum_efficiency
 
    !----- Specifies photosynthetic pathway.  3 corresponds to C3, 4 corresponds to C4. ----!

@@ -1389,6 +1389,11 @@ ed_init.o : $(ED_INIT)/ed_init.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
+ed_init_atm.o : $(ED_INIT)/ed_init_atm.F90
+	cp -f $< $(<F:.F90=.F90)
+	$(FPP_COMMAND) $(<F:.F90=.F90)
+	rm -f $(<F:.F90=.F90) 
+
 ed_init_full_history.o : $(ED_IO)/ed_init_full_history.F90
 	cp -f $< $(<F:.F90=.F90)
 	$(FPP_COMMAND) $(HDF5_INCS) $(<F:.F90=.F90)

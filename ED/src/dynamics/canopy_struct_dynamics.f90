@@ -96,6 +96,7 @@ module canopy_struct_dynamics
       use soil_coms      , only : snow_rough           & ! intent(in)
                                 , soil_rough           ! ! intent(in)
       use allometry      , only : h2trunkh             ! ! function
+      use physiology_coms, only : rbh_2_rbw            ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(polygontype)   , target      :: cpoly
@@ -137,7 +138,6 @@ module canopy_struct_dynamics
       real           :: surf_rough   ! Roughness length of the bare ground 
                                      !     at canopy bottom                     [        m]
       real           :: uh           ! Wind speed at the canopy top (z=h)       [      m/s]
-      real           :: uz           ! Wind speed at some height z below h      [      m/s]
       real           :: fm           ! Stability parameter (multiplicative) using RIb
       real           :: factv        ! Wind-dependent term for old rasveg
       real           :: aux          ! Aux. variable
@@ -286,14 +286,18 @@ module canopy_struct_dynamics
                   hite  = cpatch%hite(ico)
 
                   !----- Calculate the wind speed at height z. ----------------------------!
-                  uz = max(ustmin,cmet%vels * exp ( -0.5 * laicum))
+                  cpatch%veg_wind(ico) = max(ustmin,cmet%vels * exp ( -0.5 * laicum))
 
-                  !----- Find the aerodynamic resistance. [s/m] ---------------------------!
-                  cpatch%rb(ico) = aerodyn_resist(ipft,cpatch%veg_temp(ico)                &
-                                                 ,csite%can_temp(ipa),uz)
-                  laicum = laicum + cpatch%lai(ico)
+                  !----- Find the aerodynamic resistances. [s/m] --------------------------!
+                  cpatch%rbh(ico)      = aerodyn_resist_heat(ipft,cpatch%veg_temp(ico)     &
+                                                            ,csite%can_temp(ipa)           &
+                                                            ,cpatch%veg_wind(ico))
+                  cpatch%rbw(ico)      = rbh_2_rbw * cpatch%rbh(ico)
+                  laicum = laicum      + cpatch%lai(ico)
                else
-                  cpatch%rb(ico) = 0.0
+                  cpatch%rbh(ico)      = 0.0
+                  cpatch%rbw(ico)      = 0.0
+                  cpatch%veg_wind(ico) = cmet%vels
                end if
             end do
 
@@ -389,11 +393,13 @@ module canopy_struct_dynamics
                z = 0.5 * (hite + h2trunkh(cpatch%hite(ico)))
 
                !----- Calculate the wind speed at height z. -------------------------------!
-               uz = max(ustmin,uh * exp(-exar * (1.0 - z/h)))
+               cpatch%veg_wind(ico) = max(ustmin,uh * exp(-exar * (1.0 - z/h)))
                
-               !----- Find the aerodynamic resistance. [s/m] ------------------------------!
-               cpatch%rb(ico) = aerodyn_resist(ipft,cpatch%veg_temp(ico)                   &
-                                              ,csite%can_temp(ipa),uz)
+               !----- Find the aerodynamic resistances. [s/m] -----------------------------!
+               cpatch%rbh(ico)      = aerodyn_resist_heat(ipft,cpatch%veg_temp(ico)        &
+                                                         ,csite%can_temp(ipa)              &
+                                                         ,cpatch%veg_wind(ico))
+               cpatch%rbw(ico)      = rbh_2_rbw * cpatch%rbh(ico)
             end do
 
             !------------------------------------------------------------------------------!
@@ -498,12 +504,13 @@ module canopy_struct_dynamics
                z = hite * (1.0 - 0.5 * crown_depth_fraction(ipft))
 
                !----- Calculate the wind speed at height z. -------------------------------!
-               uz = max(ustmin,uh * exp(- exar * (1.0 - z/h)))
+               cpatch%veg_wind(ico) = max(ustmin,uh * exp(- exar * (1.0 - z/h)))
                
-               !----- Find the aerodynamic resistance. [s/m] ------------------------------!
-               cpatch%rb(ico) = aerodyn_resist(ipft,cpatch%veg_temp(ico)                   &
-                                              ,csite%can_temp(ipa),uz)
-
+               !----- Find the aerodynamic resistances. [s/m] -----------------------------!
+               cpatch%rbh(ico)      = aerodyn_resist_heat(ipft,cpatch%veg_temp(ico)        &
+                                                         ,csite%can_temp(ipa)              &
+                                                         ,cpatch%veg_wind(ico))
+               cpatch%rbw(ico)      = rbh_2_rbw * cpatch%rbh(ico)
             end do
          end if
       !------------------------------------------------------------------------------------!
@@ -683,12 +690,13 @@ module canopy_struct_dynamics
                k = ceiling(z/dz)
 
                !----- Calculate the wind speed at height z. -------------------------------!
-               uz = max(ustmin, uh * exp(-eta * (1. - zeta(k)/zeta(zcan) )))
+               cpatch%veg_wind(ico) = max(ustmin, uh*exp(-eta * (1. - zeta(k)/zeta(zcan))))
 
-               !----- Find the aerodynamic resistance. [s/m] ------------------------------!
-               cpatch%rb(ico) = aerodyn_resist(ipft,cpatch%veg_temp(ico)                   &
-                                              ,csite%can_temp(ipa),uz)
-
+               !----- Find the aerodynamic resistances. [s/m] -----------------------------!
+               cpatch%rbh(ico)      = aerodyn_resist_heat(ipft,cpatch%veg_temp(ico)        &
+                                                         ,csite%can_temp(ipa)              &
+                                                         ,cpatch%veg_wind(ico))
+               cpatch%rbw(ico)      = rbh_2_rbw * cpatch%rbh(ico)
             end do
 
             !------------------------------------------------------------------------------!
@@ -795,6 +803,7 @@ module canopy_struct_dynamics
       use soil_coms      , only : snow_rough           & ! intent(in)
                                 , soil_rough           ! ! intent(in)
       use allometry      , only : h2trunkh             ! ! function
+      use physiology_coms, only : rbh_2_rbw8           ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype)     , target     :: csite
@@ -971,26 +980,30 @@ module canopy_struct_dynamics
 
                   !----- Calculate the wind speed at height z. ----------------------------!
                   initp%veg_wind(ico) = max(ustmin8,vels_ref * exp ( - 5.d-1 * laicum))
-                  !----- Find the aerodynamic resistance. [s/m] ---------------------------!
-                  initp%rb(ico) = aerodyn_resist8(ipft                                     &
-                                                 ,initp%veg_temp    (ico)                  &
-                                                 ,initp%can_temp                           &
-                                                 ,initp%veg_wind    (ico)                  &
-                                                 ,initp%veg_reynolds(ico)                  &
-                                                 ,initp%veg_grashof (ico)                  &
-                                                 ,initp%veg_nussfree(ico)                  &
-                                                 ,initp%veg_nussforc(ico) )
-                  cpatch%rb(ico) = sngloff(initp%rb(ico),tiny_offset)
+                  !----- Find the aerodynamic resistances. [s/m] ---------------------------!
+                  initp%rbh(ico)  = aerodyn_resist_heat8(ipft                               &
+                                                        ,initp%veg_temp    (ico)           &
+                                                        ,initp%can_temp                    &
+                                                        ,initp%veg_wind    (ico)           &
+                                                        ,initp%veg_reynolds(ico)           &
+                                                        ,initp%veg_grashof (ico)           &
+                                                        ,initp%veg_nussfree(ico)           &
+                                                        ,initp%veg_nussforc(ico) )
+                  initp%rbw(ico)  = rbh_2_rbw8 * initp%rbh(ico)
+                  cpatch%rbh(ico) = sngloff(initp%rbh(ico),tiny_offset)
+                  cpatch%rbw(ico) = sngloff(initp%rbw(ico),tiny_offset)
 
                   laicum = laicum + initp%lai(ico)
                else
-                  initp%veg_wind    (ico) = 0.d0
+                  initp%veg_wind    (ico) = vels_ref
                   initp%veg_reynolds(ico) = 0.d0
                   initp%veg_grashof (ico) = 0.d0
                   initp%veg_nussfree(ico) = 0.d0
                   initp%veg_nussforc(ico) = 0.d0
-                  initp%rb(ico)           = 0.d0
-                  cpatch%rb(ico)          = 0.d0
+                  initp%rbh(ico)          = 0.d0
+                  initp%rbw(ico)          = 0.d0
+                  cpatch%rbh(ico)         = 0.0
+                  cpatch%rbw(ico)         = 0.0
                end if
             end do
 
@@ -1079,13 +1092,18 @@ module canopy_struct_dynamics
                !----- Calculate the wind speed at height z. -------------------------------!
                initp%veg_wind(ico) = max(ustmin8,uh * exp(-exar8 * (1.d0 - z/h)))
                
-               !----- Find the aerodynamic resistance. [s/m] ------------------------------!
-               initp%rb(ico) = aerodyn_resist8(ipft,initp%veg_temp(ico),initp%can_temp     &
-                                              ,initp%veg_wind(ico),initp%veg_reynolds(ico) &
-                                              ,initp%veg_grashof (ico)                     &
-                                              ,initp%veg_nussfree(ico)                     &
-                                              ,initp%veg_nussforc(ico) )
-               cpatch%rb(ico) = sngloff(initp%rb(ico),tiny_offset)
+               !----- Find the aerodynamic resistances. [s/m] -----------------------------!
+               initp%rbh(ico)  = aerodyn_resist_heat8(ipft                                 &
+                                                     ,initp%veg_temp    (ico)              &
+                                                     ,initp%can_temp                       &
+                                                     ,initp%veg_wind    (ico)              &
+                                                     ,initp%veg_reynolds(ico)              &
+                                                     ,initp%veg_grashof (ico)              &
+                                                     ,initp%veg_nussfree(ico)              &
+                                                     ,initp%veg_nussforc(ico) )
+               initp%rbw(ico)  = rbh_2_rbw8 * initp%rbh(ico)
+               cpatch%rbh(ico) = sngloff(initp%rbh(ico),tiny_offset)
+               cpatch%rbw(ico) = sngloff(initp%rbw(ico),tiny_offset)
             end do
 
             !------------------------------------------------------------------------------!
@@ -1177,14 +1195,18 @@ module canopy_struct_dynamics
 
                !----- Calculate the wind speed at height z. -------------------------------!
                initp%veg_wind(ico) = max(ustmin8,uh * exp(-exar8 * (1.d0 - z/h)))
-               
-               !----- Find the aerodynamic resistance. [s/m] ------------------------------!
-               initp%rb(ico) = aerodyn_resist8(ipft,initp%veg_temp(ico),initp%can_temp     &
-                                              ,initp%veg_wind(ico),initp%veg_reynolds(ico) &
-                                              ,initp%veg_grashof (ico)                     &
-                                              ,initp%veg_nussfree(ico)                     &
-                                              ,initp%veg_nussforc(ico) )
-               cpatch%rb(ico) = sngloff(initp%rb(ico),tiny_offset)
+               !----- Find the aerodynamic resistances. [s/m] -----------------------------!
+               initp%rbh(ico)  = aerodyn_resist_heat8(ipft                                 &
+                                                     ,initp%veg_temp    (ico)              &
+                                                     ,initp%can_temp                       &
+                                                     ,initp%veg_wind    (ico)              &
+                                                     ,initp%veg_reynolds(ico)              &
+                                                     ,initp%veg_grashof (ico)              &
+                                                     ,initp%veg_nussfree(ico)              &
+                                                     ,initp%veg_nussforc(ico) )
+               initp%rbw(ico)  = rbh_2_rbw8 * initp%rbh(ico)
+               cpatch%rbh(ico) = sngloff(initp%rbh(ico),tiny_offset)
+               cpatch%rbw(ico) = sngloff(initp%rbw(ico),tiny_offset)
             end do
          end if
       !------------------------------------------------------------------------------------!
@@ -1365,15 +1387,18 @@ module canopy_struct_dynamics
                !----- Calculate the wind speed at height z. -------------------------------!
                initp%veg_wind(ico) = max(ustmin8                                           &
                                         ,uh * exp(-eta * (1.d0 - zeta(k)/zeta(zcan) )))
-               
-               !----- Find the aerodynamic resistance. [s/m] ------------------------------!
-               initp%rb(ico) = aerodyn_resist8(ipft,initp%veg_temp(ico),initp%can_temp     &
-                                              ,initp%veg_wind(ico),initp%veg_reynolds(ico) &
-                                              ,initp%veg_grashof (ico)                     &
-                                              ,initp%veg_nussfree(ico)                     &
-                                              ,initp%veg_nussforc(ico) )
-
-               cpatch%rb(ico) = sngloff(initp%rb(ico),tiny_offset)
+               !----- Find the aerodynamic resistances. [s/m] -----------------------------!
+               initp%rbh(ico)  = aerodyn_resist_heat8(ipft                                 &
+                                                     ,initp%veg_temp    (ico)              &
+                                                     ,initp%can_temp                       &
+                                                     ,initp%veg_wind    (ico)              &
+                                                     ,initp%veg_reynolds(ico)              &
+                                                     ,initp%veg_grashof (ico)              &
+                                                     ,initp%veg_nussfree(ico)              &
+                                                     ,initp%veg_nussforc(ico) )
+               initp%rbw(ico)  = rbh_2_rbw8 * initp%rbh(ico)
+               cpatch%rbh(ico) = sngloff(initp%rbh(ico),tiny_offset)
+               cpatch%rbw(ico) = sngloff(initp%rbw(ico),tiny_offset)
             end do
 
             !------------------------------------------------------------------------------!
@@ -2031,8 +2056,8 @@ module canopy_struct_dynamics
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This function computes the aerodynamic resistance between leaf and canopy air     !
-   ! space, based on:                                                                      !
+   !     This function computes the heat aerodynamic resistance between leaf and canopy    !
+   ! air space, based on:                                                                  !
    !                                                                                       !
    ! L95 - Leuning, R., F. M. Kelliher, D. G. G. de Pury, E. D. Schulze, 1995: Leaf        !
    !       nitrogen, photosynthesis, conductance and transpiration: scaling from leaves to !
@@ -2040,7 +2065,7 @@ module canopy_struct_dynamics
    ! M08 - Monteith, J. L., M. H. Unsworth, 2008. Principles of Environmental Physics,     !
    !       3rd. edition, Academic Press, Amsterdam, 418pp.  (Mostly Chapter 10).           !
    !---------------------------------------------------------------------------------------!
-   real(kind=4) function aerodyn_resist(ipft,veg_temp,can_temp,wind)
+   real(kind=4) function aerodyn_resist_heat(ipft,veg_temp,can_temp,wind)
       use ed_state_vars  , only : patchtype  ! ! structure
       use pft_coms       , only : leaf_width ! ! intent(in)
       use canopy_air_coms, only : aflat_turb & ! intent(in)
@@ -2115,11 +2140,11 @@ module canopy_struct_dynamics
       ! found above.  We impose a maximum based on the patch-level LAI, to avoid           !
       ! super-resistances.                                                                 !
       !------------------------------------------------------------------------------------!
-      aerodyn_resist = 1.0 / (freeconv_cond + forcedconv_cond)
+      aerodyn_resist_heat = 1.0 / (freeconv_cond + forcedconv_cond)
       !------------------------------------------------------------------------------------!
 
       return
-   end function aerodyn_resist
+   end function aerodyn_resist_heat
    !=======================================================================================!
    !=======================================================================================!
 
@@ -2130,8 +2155,8 @@ module canopy_struct_dynamics
 
    !=======================================================================================!
    !=======================================================================================!
-   !     This function computes the aerodynamic resistance between leaf and canopy air     !
-   ! space, based on:                                                                      !
+   !     This function computes the heat aerodynamic resistance between leaf and canopy    !
+   ! air space, based on:                                                                  !
    !                                                                                       !
    ! L95 - Leuning, R., F. M. Kelliher, D. G. G. de Pury, E. D. Schulze, 1995: Leaf        !
    !       nitrogen, photosynthesis, conductance and transpiration: scaling from leaves to !
@@ -2139,8 +2164,8 @@ module canopy_struct_dynamics
    ! M08 - Monteith, J. L., M. H. Unsworth, 2008. Principles of Environmental Physics,     !
    !       3rd. edition, Academic Press, Amsterdam, 418pp.  (Mostly Chapter 10).           !
    !---------------------------------------------------------------------------------------!
-   real(kind=8) function aerodyn_resist8(ipft,veg_temp,can_temp,wind,reynolds,grashof      &
-                                        ,nusselt_free,nusselt_forced)
+   real(kind=8) function aerodyn_resist_heat8(ipft,veg_temp,can_temp,wind,reynolds,grashof &
+                                             ,nusselt_free,nusselt_forced)
       use ed_state_vars  , only : patchtype  ! ! structure
       use pft_coms       , only : leaf_width ! ! intent(in)
       use canopy_air_coms, only : aflat_turb8 & ! intent(in)
@@ -2216,11 +2241,11 @@ module canopy_struct_dynamics
       ! found above.  We impose a maximum based on the patch-level LAI, to avoid           !
       ! super-resistances.                                                                 !
       !------------------------------------------------------------------------------------!
-      aerodyn_resist8 = 1.d0 / (freeconv_cond + forcedconv_cond)
+      aerodyn_resist_heat8 = 1.d0 / (freeconv_cond + forcedconv_cond)
       !------------------------------------------------------------------------------------!
 
       return
-   end function aerodyn_resist8
+   end function aerodyn_resist_heat8
    !=======================================================================================!
    !=======================================================================================!
 

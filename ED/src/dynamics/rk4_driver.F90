@@ -372,7 +372,8 @@ module rk4_driver
                                       , slz8                 ! ! intent(in)
       use grid_coms            , only : nzg                  & ! intent(in)
                                       , nzs                  ! ! intent(in)
-      use therm_lib            , only : qwtk                 ! ! subroutine
+      use therm_lib            , only : qwtk                 & ! subroutine
+                                      , rslif                ! ! function
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(rk4patchtype), target      :: initp
@@ -576,7 +577,8 @@ module rk4_driver
          if (initp%solvable(ico)) then
             !------------------------------------------------------------------------------!
             !    The cohort was solved, update internal energy and water, and re-calculate !
-            ! temperature.  Note that energy may need to be scaled back.                   !
+            ! temperature and leaf intercellular specific humidity.  Note that energy may  !
+            ! need to be scaled back.                                                      !
             !------------------------------------------------------------------------------!
             cpatch%veg_water(ico)  = sngloff(initp%veg_water(ico),tiny_offset)
             tmp_energy             = initp%veg_energy(ico)                                 &
@@ -586,6 +588,15 @@ module rk4_driver
             cpatch%veg_energy(ico) = sngloff(tmp_energy,tiny_offset)
             call qwtk(cpatch%veg_energy(ico),cpatch%veg_water(ico),cpatch%hcapveg(ico)     &
                      ,cpatch%veg_temp(ico),cpatch%veg_fliq(ico))
+            !------------------------------------------------------------------------------!
+            !     The intercellular specific humidity is always assumed to be at           !
+            ! saturation for a given temperature.  Find the saturation mixing ratio, then  !
+            ! convert it to specific humidity.                                             !
+            !------------------------------------------------------------------------------!
+            cpatch%lint_shv(ico) = rslif(csite%can_prss(ipa),cpatch%veg_temp(ico))
+            cpatch%lint_shv(ico) = cpatch%lint_shv(ico) / (1. + cpatch%lint_shv(ico))
+            !----- Convert the wind. ------------------------------------------------------!
+            cpatch%veg_wind(ico) = sngloff(initp%veg_wind(ico),tiny_offset)
          elseif (cpatch%hite(ico) <=  csite%total_snow_depth(ipa)) then
             !------------------------------------------------------------------------------!
             !    For plants buried in snow, fix the leaf temperature to the snow temper-   !
@@ -599,6 +610,15 @@ module rk4_driver
             cpatch%veg_fliq(ico)   = 0.
             cpatch%veg_water(ico)  = 0.
             cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * cpatch%veg_temp(ico)
+            !------------------------------------------------------------------------------!
+            !     The intercellular specific humidity is always assumed to be at           !
+            ! saturation for a given temperature.  Find the saturation mixing ratio, then  !
+            ! convert it to specific humidity.                                             !
+            !------------------------------------------------------------------------------!
+            cpatch%lint_shv(ico) = rslif(csite%can_prss(ipa),cpatch%veg_temp(ico))
+            cpatch%lint_shv(ico) = cpatch%lint_shv(ico) / (1. + cpatch%lint_shv(ico))
+            !----- Copy the meteorological wind to here. ----------------------------------!
+            cpatch%veg_wind(ico) = sngloff(rk4site%vels, sngloff)
          else
             !------------------------------------------------------------------------------!
             !     For plants with minimal foliage or very sparse patches, fix the leaf     !
@@ -608,6 +628,15 @@ module rk4_driver
             cpatch%veg_fliq(ico)   = 0.
             cpatch%veg_water(ico)  = 0. 
             cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * cpatch%veg_temp(ico)
+            !------------------------------------------------------------------------------!
+            !     The intercellular specific humidity is always assumed to be at           !
+            ! saturation for a given temperature.  Find the saturation mixing ratio, then  !
+            ! convert it to specific humidity.                                             !
+            !------------------------------------------------------------------------------!
+            cpatch%lint_shv(ico) = rslif(csite%can_prss(ipa),cpatch%veg_temp(ico))
+            cpatch%lint_shv(ico) = cpatch%lint_shv(ico) / (1. + cpatch%lint_shv(ico))
+            !----- Copy the meteorological wind to here. ----------------------------------!
+            cpatch%veg_wind(ico) = sngloff(rk4site%vels, sngloff)
          end if
 
          !---------------------------------------------------------------------------------!

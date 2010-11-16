@@ -1,1852 +1,466 @@
 !==========================================================================================!
 !==========================================================================================!
-!      This is the main driver for the Farquar and Leuning (1995) photosynthesis model.    !
+!     This module contains the Photosynthesis model.  The references are:                  !
+! - M09 - Medvigy, D.M., S. C. Wofsy, J. W. Munger, D. Y. Hollinger, P. R. Moorcroft,      !
+!         2009: Mechanistic scaling of ecosystem function and dynamics in space and time:  !
+!         Ecosystem Demography model version 2.  J. Geophys. Res., 114, G01002,            !
+!         doi:10.1029/2008JG000812.                                                        !
+! - M06 - Medvigy, D.M., 2006: The State of the Regional Carbon Cycle: results from a      !
+!         constrained coupled ecosystem-atmosphere model, 2006.  Ph.D. dissertation,       !
+!         Harvard University, Cambridge, MA, 322pp.                                        !
+! - M01 - Moorcroft, P. R., G. C. Hurtt, S. W. Pacala, 2001: A method for scaling          !
+!         vegetation dynamics: the ecosystem demography model, Ecological Monographs, 71,  !
+!         557-586.                                                                         !
+! - F96 - Foley, J. A., I. Colin Prentice, N. Ramankutty, S. Levis, D. Pollard, S. Sitch,  !
+!         A. Haxeltime, 1996: An integrated biosphere model of land surface processes,     !
+!         terrestrial carbon balance, and vegetation dynamics. Glob. Biogeochem. Cycles,   !
+!         10, 603-602.                                                                     !
+! - L95 - Leuning, R., F. M. Kelliher, D. G. G. de Pury, E. D. Schulze, 1995: Leaf         !
+!         nitrogen, photosynthesis, conductance, and transpiration: scaling from leaves to !
+!         canopies. Plant, Cell, and Environ., 18, 1183-1200.                              !
 !------------------------------------------------------------------------------------------!
-subroutine lphysiol_full(T_L,e_A,C_A,PAR,rb,adens,A_open,A_cl,rsw_open,rsw_cl,veg_co2_open &
-                        ,veg_co2_cl,pft,prss,leaf_resp,green_leaf_factor,leaf_aging_factor &
-                        ,old_st_data,llspan,vm_bar,ilimit)
+module farq_leuning
 
-   use c34constants   , only : stoma_data               & ! structure
-                             , farqdata                 & ! structure
-                             , metdat                   & ! structure
-                             , solution                 & ! structure
-                             , glim                     ! ! structure
-   use pft_coms       , only : D0                       & ! intent(in)
-                             , cuticular_cond           & ! intent(in)
-                             , dark_respiration_factor  & ! intent(in)
-                             , stomatal_slope           & ! intent(in)
-                             , quantum_efficiency       & ! intent(in)
-                             , photosyn_pathway         & ! intent(in)
-                             , Vm0                      & ! intent(in)
-                             , Vm_low_temp              & ! intent(in)
-                             , Vm_high_temp             & ! intent(in)
-                             , phenology                ! ! intent(in)
-   use physiology_coms, only : istoma_scheme            & ! intent(in)
-                             , c34smin_ci               & ! intent(in)
-                             , c34smax_ci               & ! intent(in)
-                             , c34smin_gsw              & ! intent(in)
-                             , c34smax_gsw              ! ! intent(in)
-   use phenology_coms , only : vm_tran                  & ! intent(in)
-                             , vm_slop                  & ! intent(in)
-                             , vm_amp                   & ! intent(in)
-                             , vm_min                   ! ! intent(in)
-   use therm_lib      , only : rslif                    ! ! function
-   use consts_coms    , only : t00                      & ! intent(in)
-                             , mmdry1000                & ! intent(in)
-                             , epi                      ! ! intent(in)
-   implicit none
-   !------ Arguments. ---------------------------------------------------------------------!
-   real             , intent(in)    :: T_L
-   real             , intent(in)    :: e_A
-   real             , intent(in)    :: C_A
-   real             , intent(in)    :: PAR
-   real             , intent(in)    :: rb
-   real             , intent(in)    :: adens
-   real             , intent(in)    :: prss
-   real             , intent(inout) :: A_open
-   real             , intent(inout) :: A_cl
-   real             , intent(inout) :: rsw_open
-   real             , intent(inout) :: rsw_cl
-   real             , intent(inout) :: veg_co2_open
-   real             , intent(inout) :: veg_co2_cl
-   real             , intent(inout) :: leaf_resp
-   real             , intent(in)    :: green_leaf_factor
-   real             , intent(in)    :: leaf_aging_factor
-   integer          , intent(in)    :: pft
-   integer          , intent(out)   :: ilimit
-   type(stoma_data) , intent(inout) :: old_st_data
-   real             , intent(in)    :: llspan
-   real             , intent(in)    :: vm_bar
-   !----- Local variables. ----------------------------------------------------------------!
-   type(farqdata)                   :: gsdata
-   type(metdat)                     :: met
-   type(solution)                   :: sol
-   logical                          :: recalc
-   type(glim)                       :: apar
-   real                             :: co2cp
-   real                             :: vmbar
-   real                             :: vmllspan
+
    !---------------------------------------------------------------------------------------!
-
-
-   ilimit = -1
-
-   !----- Load physiological parameters into structure. -----------------------------------!
-   gsdata%D0    = D0(pft)
-   gsdata%b     = cuticular_cond(pft)
-   gsdata%gamma = dark_respiration_factor(pft)
-   gsdata%m     = stomatal_slope(pft)
-   gsdata%alpha = quantum_efficiency(pft)
-
-   !----- Load met into structure. --------------------------------------------------------!
-   met%tl    = T_L
-   met%ea    = e_A
-   met%ca    = C_A
-   met%par   = PAR * (1.0e6)
-   met%gbc   = adens / (rb*4.06e-8)
-   met%gbci  = 1.0 / met%gbc
-   met%el    = epi * rslif(prss, met%tl + t00)
-   met%compp = co2cp(met%tl)
-   met%gbw   = 1.4 * met%gbc
-   met%eta   = 1.0 + (met%el-met%ea)/gsdata%d0
-
-   !----- Set up how we look for the solution. --------------------------------------------!
-   sol%eps       = 3.0e-8
-   sol%ninterval = 6
-
-   !----- Set up the first guess for the new method. --------------------------------------!
-   if (rsw_open == 0.0 ) then
-      sol%gsw2_1st = sqrt(c34smin_gsw*c34smax_gsw)
-   else
-      sol%gsw2_1st  = 1.0e9 * adens  / (mmdry1000 * rsw_open)
-      if (sol%gsw2_1st < c34smin_gsw .or. sol%gsw2_1st > c34smax_gsw) then
-         sol%gsw2_1st = sqrt(c34smin_gsw*c34smax_gsw)
-      end if
-   end if
-   if (veg_co2_open * 1.e-6 < c34smin_ci .or. veg_co2_open * 1.e-6 > c34smax_ci) then
-      sol%ci2_1st   = met%ca
-   else
-      sol%ci2_1st   = veg_co2_open * 1.e-6
-   end if
-
-   !----- Set variables for light-controlled phenology. -----------------------------------!
-   if (phenology(pft) == 3) then
-      vmllspan = vm_amp / (1.0 + (llspan/vm_tran)**vm_slop) + vm_min
-      vmbar    = vm_bar
-   else
-      vmllspan = 0.0
-      vmbar    = 0.0
-   endif
-
-   !----- Prepare derived terms for both exact and approximate solutions. -----------------!
-   call prep_lphys_solution(photosyn_pathway(pft),Vm0(pft),met,Vm_low_temp(pft)            &
-                           ,Vm_high_temp(pft),leaf_aging_factor,green_leaf_factor          &
-                           ,leaf_resp,vmllspan,vmbar,gsdata,apar)
-
-   !----- Decide whether to do the exact solution or the approximation. -------------------!
-   recalc = .true.
-   if (istoma_scheme == 1) then
-      if (old_st_data%recalc == 0) recalc = .false.
-   end if
-
-   if (recalc) call exact_lphys_solution(photosyn_pathway(pft),met,apar,gsdata,sol,ilimit)
-
-   if (istoma_scheme == 1 .and. recalc) then
-      call store_exact_lphys_solution(old_st_data,met,prss,leaf_aging_factor               &
-                                     ,green_leaf_factor,sol,ilimit,gsdata,apar             &
-                                     ,photosyn_pathway(pft),Vm0(pft),Vm_low_temp(pft)      &
-                                     ,Vm_high_temp(pft),vmbar)
-   end if
-
-   if (recalc) then
-      call fill_lphys_sol_exact(A_open,rsw_open,A_cl,rsw_cl,veg_co2_open,veg_co2_cl,sol    &
-                               ,adens)
-      if (istoma_scheme == 1) old_st_data%recalc = 0
-   else
-      call fill_lphys_sol_approx(gsdata,met,apar,old_st_data,sol,A_cl,rsw_cl,veg_co2_open  &
-                                ,veg_co2_cl,adens,rsw_open,A_open,photosyn_pathway(pft)    &
-                                ,prss)
-   end if
-
-   return
-end subroutine lphysiol_full
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-subroutine c3solver(met,apar,gsdata,sol,ilimit)
-  use c34constants, only : farqdata, metdat,glim,solution
-  implicit none
-
-  
-  type(farqdata) :: gsdata
-  type(metdat) :: met
-  type(glim) :: apar
-  type(solution) :: sol
-  logical :: success_flag
-  integer :: ilimit
-
-  ! Solve par case
-  ilimit = 1
-  call setapar_c3(gsdata,met,apar,1)
-  call solve_closed_case_c3(gsdata,met,apar,sol,1)
-  ! Return if nighttime
-  if(met%par < 1.0e-3)then
-     call closed2open(sol,1)
-     ilimit = 0
-     return
-  endif
-  success_flag = .true.
-  call solve_open_case_c3(gsdata,met,apar,sol,1,success_flag)
-  if(.not. success_flag)then
-     call closed2open(sol,1)
-     ilimit = -1
-     return
-  end if
-
-  ! Solve the vm case
-  call setapar_c3(gsdata,met,apar,2)
-  call solve_closed_case_c3(gsdata,met,apar,sol,2)
-  call solve_open_case_c3(gsdata,met,apar,sol,2,success_flag)
-  if(.not. success_flag)then
-     call closed2open(sol,1)
-     ilimit = -2
-     return
-  end if
-
-  if(sol%a(1,2) < sol%a(1,1))then
-     sol%gsw(1,1) = sol%gsw(1,2)
-     sol%es(1,1) = sol%es(1,2)
-     sol%ci(1,1) = sol%ci(1,2)
-     sol%cs(1,1) = sol%cs(1,2)
-     sol%a(1,1) = sol%a(1,2)
-  endif
-  if(sol%a(2,2) < sol%a(2,1))then
-     sol%gsw(2,1) = sol%gsw(2,2)
-     sol%es(2,1) = sol%es(2,2)
-     sol%ci(2,1) = sol%ci(2,2)
-     sol%cs(2,1) = sol%cs(2,2)
-     sol%a(2,1) = sol%a(2,2)
-     ilimit = 2
-  endif
-
-  if(sol%cs(2,1) > 1.25e7)then
-     success_flag = .false.
-     
-!     print*,'Stomatal conductance dangerously close to upper limit.  Stopping.'
-!     print*,met%ea,met%ca,met%rn,met%tl,met%par,met%gbc,met%gbw,met%ta  &
-!          ,met%el,met%compp,met%eta
-
-  endif
-
-  return
-
-end subroutine c3solver
-!================================================================
-
-subroutine c4solver(met,apar,gsdata,sol,ilimit)
-  use c34constants, only : farqdata, metdat, glim, solution
-  implicit none
-  
-
-  type(farqdata) :: gsdata
-  type(metdat) :: met
-  type(glim) :: apar
-  type(solution) :: sol
-  integer :: success_flag
-  integer :: ilimit
-
-  if(apar%vm > gsdata%alpha*met%par)then
-     ! Solve par case
-     ilimit = 1
-     call setapar_c4(gsdata,met,apar,1)
-     call solve_closed_case_c4(gsdata,met,apar,sol,1)
-     if(met%par < 1.0e-3)then
-        call closed2open(sol,1)
-        ilimit = 0
-        return ! nighttime; return
-     endif 
-     success_flag = 1
-     call solve_open_case_c4(gsdata,met,apar,sol,1,success_flag)
-     if(success_flag == 0)then
-        call closed2open(sol,1)
-        ilimit = -1
-        return
-     endif
-  else
-     ! Solve the vm case
-     ilimit = 2
-     call setapar_c4(gsdata,met,apar,2)
-     ! yes, these should be ones below.  
-     call solve_closed_case_c4(gsdata,met,apar,sol,1)
-     success_flag = 1
-     call solve_open_case_c4(gsdata,met,apar,sol,1,success_flag)
-     if(success_flag == 0)then
-        call closed2open(sol,1)
-        ilimit = -2
-        return
-     endif
-  endif
-  ! Solve the third case
-  call setapar_c4(gsdata,met,apar,3)
-  call solve_closed_case_c4(gsdata,met,apar,sol,2)
-  call solve_open_case_c4(gsdata,met,apar,sol,2,success_flag)
-  if(success_flag == 0)then
-     call closed2open(sol,1)
-     ilimit = -1
-     return
-  endif
-
-  if(sol%a(1,2) < sol%a(1,1))then
-     sol%gsw(1,1) = sol%gsw(1,2)
-     sol%es(1,1)  = sol%es(1,2)
-     sol%ci(1,1)  = sol%ci(1,2)
-     sol%cs(1,1)  = sol%cs(1,2)
-     sol%a(1,1)   = sol%a(1,2)
-  endif
-  if(sol%a(2,2) < sol%a(2,1))then
-     sol%gsw(2,1) = sol%gsw(2,2)
-     sol%es(2,1)  = sol%es(2,2)
-     sol%ci(2,1)  = sol%ci(2,2)
-     sol%cs(2,1)  = sol%cs(2,2)
-     sol%a(2,1)   = sol%a(2,2)
-     ilimit = 3
-  endif
-
-  if(sol%cs(2,1) > 1.25e7)then
-     print*,'Stomatal conductance dangerously close to upper limit.  Stopping.'
-     success_flag = 0
-     print*,met%ea,met%ca,met%rn,met%tl,met%par,met%gbc,met%gbw,met%ta  &
-          ,met%el,met%compp,met%eta
-  endif
-
-  return
-
-end subroutine c4solver
-
-!=====================================
-subroutine setapar_c3(gsdata,met,apar,i)
-  use c34constants, only : glim     & ! structure
-                         , farqdata & ! structure
-                         , metdat   ! ! structure
-  implicit none
-  
-
-  type(glim) :: apar
-  type(farqdata) :: gsdata
-  type(metdat) :: met
-  integer :: i
-
-  if(i == 1)then
-     apar%rho = gsdata%alpha*met%par
-     apar%sigma = -gsdata%alpha*met%par*met%compp
-     apar%tau = 2.0*met%compp
-  elseif(i == 2)then
-     apar%rho = apar%vm
-     apar%sigma = -apar%vm*met%compp
-     apar%tau = apar%k1*(1.0+apar%k2)
-  endif
-
-  return
-end subroutine setapar_c3
-
-!=====================================
-subroutine setapar_c4(gsdata,met,apar,i)
-  use c34constants, only : glim, farqdata, metdat
-  implicit none
-  
-
-  type(glim) :: apar
-  type(farqdata) :: gsdata
-  type(metdat) :: met
-  integer :: i
-
-  if(i == 1)then
-     apar%rho = 0.0
-     apar%sigma = gsdata%alpha*met%par-gsdata%gamma*apar%vm
-  elseif(i == 2)then
-     apar%rho = 0.0
-     apar%sigma = apar%vm*(1.0-gsdata%gamma)
-  elseif(i == 3)then
-     apar%rho = 18000.0*apar%vm
-     apar%sigma = -gsdata%gamma*apar%vm
-  endif
-
-  return
-end subroutine setapar_c4
-
-!================================================
-real function aflux_c3(apar,gsw,ci)
-  use c34constants, only : glim
-  implicit none
-  
-  type(glim) :: apar
-  real :: gsw,ci
-
-  aflux_c3 = (apar%rho*ci+apar%sigma)/(ci+apar%tau)+apar%nu
-
-  return
-end function aflux_c3
-
-!================================================
-real function aflux_c4(apar,met,gsw)
-  use c34constants, only : glim, metdat
-  implicit none
-  
-  type(glim) :: apar
-  type(metdat) :: met
-  real :: gsw
-
-  aflux_c4 = apar%rho * gsw * (-gsw*apar%sigma   &
-       + met%gbc*met%ca*(1.6*apar%rho+gsw))  &
-       /((1.6*apar%rho+gsw)*(apar%rho*gsw+met%gbc*(1.6*apar%rho+gsw))) &
-       +apar%sigma*gsw/(1.6*apar%rho+gsw)
-
-  return
-end function aflux_c4
-
-!================================================
-real function csc_c4(apar,met,gsw)
-  use c34constants, only : glim, metdat
-  implicit none
-  
-  type(metdat) :: met
-  type(glim) :: apar
-  real :: gsw
-
-  csc_c4 = (-gsw*apar%sigma   &
-       + met%gbc*met%ca*(1.6*apar%rho+gsw))  &
-       /(apar%rho*gsw+met%gbc*(1.6*apar%rho+gsw))
-
-
-  return
-end function csc_c4
-
-!================================================
-real function csc_c3(met,a)
-  use c34constants, only : metdat
-  implicit none
-  
-  type(metdat) :: met
-  real :: a
-
-  csc_c3 = met%ca-a*met%gbci
-
-
-  return
-end function csc_c3
-
-!================================================
-real function residual_c3(gsdata,met,apar,x)
-  use c34constants, only : farqdata,metdat,glim
-  implicit none
-  
-
-  type(farqdata) :: gsdata
-  type(metdat) :: met
-  type(glim) :: apar
-  real :: x,ci,a,cs
-  logical :: success
-  real, external :: quad4ci
-  real, external :: aflux_c3
-  real, external :: csc_c3
-
-  ci = quad4ci(gsdata,met,apar,x,success)
-  if(.not. success)then
-     residual_c3 = 9.9e9
-     return
-  endif
-  a = aflux_c3(apar,x,ci)
-  cs = csc_c3(met,a)
-
-  residual_c3 = (cs-met%compp)*x**2   &
-       + ((met%gbw*met%eta-gsdata%b)*(cs-met%compp)-gsdata%m*a)*x  &
-       -gsdata%b*met%eta*met%gbw*(cs-met%compp)-gsdata%m*a*met%gbw
-
-  return
-end function residual_c3
-
-!================================================
-real function residual_c4(gsdata,met,apar,x)
-  use c34constants, only : farqdata,metdat,glim
-  implicit none
-  
-
-  type(farqdata) :: gsdata
-  type(metdat) :: met
-  type(glim) :: apar
-  real :: a,cs,x
-  real, external :: aflux_c4
-  real, external :: csc_c4
-
-  a = aflux_c4(apar,met,x)
-  cs = csc_c4(apar,met,x)
-
-  residual_c4 = (cs-met%compp)*x**2   &
-       + ((met%gbw*met%eta-gsdata%b)*(cs-met%compp)-gsdata%m*a)*x  &
-       -gsdata%b*met%eta*met%gbw*(cs-met%compp)-gsdata%m*a*met%gbw
-
-
-  return
-end function residual_c4
-
-!===============================
-subroutine zbrak_c3(gsdata,met,apar,x1,x2,n,xb1,xb2,nb)
-  use c34constants, only :glim, farqdata,metdat
-  use physiology_coms, only : maxroots
-  implicit none
-  
-
-  real :: x1,x2
-  integer :: n,nb,nbb,i
-  real :: x,dx,fp,fc
-  real, dimension(maxroots) :: xb1,xb2
-  type(glim) :: apar
-  type(farqdata) :: gsdata
-  type(metdat) :: met
-  real, external :: residual_c3
-
-  nbb = nb
-  nb = 0
-  x = x1
-  dx = (x2-x1)/real(n)
-  fp = residual_c3(gsdata,met,apar,x)
-  do i=1,n
-     x = x + dx
-     fc = residual_c3(gsdata,met,apar,x)
-     if(fc*fp < 0.0)then
-        nb = nb + 1
-        xb1(nb) = x-dx
-        xb2(nb) = x
-     endif
-     fp = fc
-     if(nbb == nb)return
-  enddo
-
-  return
-end subroutine zbrak_c3
-
-!-----------------------------------
-real function zbrent_c3(gsdata,met,apar,x1,x2,tol,success_flag)
-  use c34constants, only : glim, farqdata,metdat
-  implicit none
-  
-
-  type(glim) :: apar
-  type(farqdata) :: gsdata
-  type(metdat) :: met
-  integer, parameter :: itmax = 100
-  real, parameter :: eps = 3.0e-8
-  real :: x1,x2,tol,a,b,fa,fb,fc,c,d,e,tol1,s,q,p,r,xm
-  integer :: iter
-  logical :: success_flag
-  real, external :: residual_c3
-
-  a = x1
-  b = x2
-
-  fa = residual_c3(gsdata,met,apar,a)
-  fb = residual_c3(gsdata,met,apar,b)
-  if(fb*fa > 0.0)then
-     print*,'Root must be bracketed for ZBRENT_C3.'
-     print*,fa,fb
-     success_flag = .false.
-     zbrent_c3=0.0
-     return
-  endif
-  fc=fb
-  do iter = 1,itmax
-     if(fb*fc > 0.0)then
-        c=a
-        fc=fa
-        d=b-a
-        e=d
-     endif
-     if(abs(fc) < abs(fb))then
-        a=b
-        b=c
-        c=a
-        fa=fb
-        fb=fc
-        fc=fa
-     endif
-     tol1=2.0*eps*abs(b)+0.5*tol
-     xm = 0.5*(c-b)
-     if(abs(xm) <= tol1.or.fb == 0.0)then
-        zbrent_c3=b
-        return
-     endif
-     if(abs(e) >= tol1 .and. abs(fa) > abs(fb))then
-        s=fb/fa
-        if(a == c)then
-           p=2.0*xm*s
-           q=1.0-s
-        else
-           q=fa/fc
-           r=fb/fc
-           p=s*(2.0*xm*q*(q-r)-(b-a)*(r-1.0))
-           q=(q-1.0)*(r-1.0)*(s-1.0)
-        endif
-        if(p > 0.0) q = -q
-        p=abs(p)
-        if(2.0*p  <  min(3.0*xm*q-abs(tol1*q),abs(e*q)))then
-           e=d
-           d=p/q
-        else
-           d=xm
-           e=d
-        endif
-     else
-        d=xm
-        e=d
-     endif
-     a=b
-     fa=fb
-     if(abs(d) > tol1)then
-        b=b+d
-     else
-        b=b+sign(tol1,xm)
-     endif
-     fb = residual_c3(gsdata,met,apar,b)
-  enddo
-  write (unit=*,fmt='(a)') 'ZBRENT_C3 exceeding maximum iterations.'
-  zbrent_c3=b
-  return
-end function zbrent_c3
-
-!===============================
-subroutine zbrak_c4(gsdata,met,apar,x1,x2,n,xb1,xb2,nb)
-  use c34constants, only : glim, farqdata, metdat
-  use physiology_coms, only : maxroots
-  implicit none
-  
-
-  real :: x1,x2
-  integer :: n,nb,nbb,i
-  real :: x,dx,fp,fc
-  real, dimension(maxroots) :: xb1,xb2
-  type(glim) :: apar
-  type(farqdata) :: gsdata
-  type(metdat) :: met
-  real, external :: residual_c4
-
-  nbb = nb
-  nb = 0
-  x = x1
-  dx = (x2-x1)/real(n)
-  fp = residual_c4(gsdata,met,apar,x)
-  do i=1,n
-     x = x + dx
-     fc = residual_c4(gsdata,met,apar,x)
-     if(fc*fp < 0.0)then
-        nb = nb + 1
-        xb1(nb) = x-dx
-        xb2(nb) = x
-     endif
-     fp = fc
-     if(nbb == nb)return
-  enddo
-
-  return
-end subroutine zbrak_c4
-
-!-----------------------------------
-real function zbrent_c4(gsdata,met,apar,x1,x2,tol,success_flag)
-  use c34constants, only : glim, farqdata, metdat
-  implicit none
-  
-
-  type(glim) :: apar
-  type(farqdata) :: gsdata
-  type(metdat) :: met
-  integer, parameter :: itmax = 100
-  real, parameter :: eps = 3.0e-8
-  real :: x1,x2,tol,a,b,fa,fb,fc,c,d,e,tol1,s,q,p,r,xm
-  integer :: iter,success_flag
-  real, external :: residual_c4
-
-  a = x1
-  b = x2
-
-  fa = residual_c4(gsdata,met,apar,a)
-  fb = residual_c4(gsdata,met,apar,b)
-  if(fb*fa > 0.0)then
-     print*,'Root must be bracketed for ZBRENT_C4.'
-     print*,fa,fb
-     success_flag = 0
-     zbrent_c4 = 0.0
-     print*,met%ea,met%ca,met%rn,met%tl,met%par,met%gbc,met%gbw,met%ta  &
-          ,met%el,met%compp,met%eta
-     return
-  endif
-  fc=fb
-  do iter = 1,itmax
-     if(fb*fc > 0.0)then
-        c=a
-        fc=fa
-        d=b-a
-        e=d
-     endif
-     if(abs(fc) < abs(fb))then
-        a=b
-        b=c
-        c=a
-        fa=fb
-        fb=fc
-        fc=fa
-     endif
-     tol1=2.0*eps*abs(b)+0.5*tol
-     xm = 0.5*(c-b)
-     if(abs(xm) <= tol1.or.fb == 0.0)then
-        zbrent_c4=b
-        return
-     endif
-     if(abs(e) >= tol1 .and. abs(fa) > abs(fb))then
-        s=fb/fa
-        if(a == c)then
-           p=2.0*xm*s
-           q=1.0-s
-        else
-           q=fa/fc
-           r=fb/fc
-           p=s*(2.0*xm*q*(q-r)-(b-a)*(r-1.0))
-           q=(q-1.0)*(r-1.0)*(s-1.0)
-        endif
-        if(p > 0.0) q = -q
-        p=abs(p)
-        if(2.0*p  <  min(3.0*xm*q-abs(tol1*q),abs(e*q)))then
-           e=d
-           d=p/q
-        else
-           d=xm
-           e=d
-        endif
-     else
-        d=xm
-        e=d
-     endif
-     a=b
-     fa=fb
-     if(abs(d) > tol1)then
-        b=b+d
-     else
-        b=b+sign(tol1,xm)
-     endif
-     fb = residual_c4(gsdata,met,apar,b)
-  enddo
-  print*, 'ZBRENT_C4 exceeding maximum iterations.'  !! pause removed, obsolescent in Fortran 90
-  zbrent_c4=b
-  return
-end function zbrent_c4
-
-!=====================================================
-subroutine solve_closed_case_c3(gsdata,met,apar,sol,ilimit)
-  use c34constants, only : glim, farqdata, metdat, solution
-  implicit none
-  
-
-  integer :: ilimit
-  type(glim) :: apar
-  type(farqdata) :: gsdata
-  type(metdat) :: met
-  type(solution) :: sol
-  real :: b,c,q
-  real, dimension(2) :: ci
-  integer :: j
-  
-
-  ! Do not allow assimilation
-
-  sol%gsw(1,ilimit) = gsdata%b
-  sol%es(1,ilimit) = (met%ea*met%gbw+gsdata%b*met%el)/(gsdata%b+met%gbw)
-!  sol%a(1,ilimit) = -gsdata%gamma*apar%vm ![KIM] - buggy if leaf_resp is estimated in a different way
-  sol%a(1,ilimit) = apar%nu
-  sol%cs(1,ilimit) = met%ca - sol%a(1,ilimit)/met%gbc
-  sol%ci(1,ilimit) = sol%cs(1,ilimit) - sol%a(1,ilimit) * 1.6 / gsdata%b
-  return
-
-  ! Allow assimilation
-
-
-  b=apar%tau-met%ca+(apar%rho+apar%nu)*(gsdata%b+1.6*met%gbc)  &
-       /(gsdata%b*met%gbc)
-  c=(apar%sigma+apar%nu*apar%tau)*(gsdata%b+1.6*met%gbc)/(gsdata%b*met%gbc)  &
-       -apar%tau*met%ca
-  q=-0.5*b*(1.0+sqrt(1.0-4.0*c/b**2))
-  ci(1)=q
-  ci(2)=c/q
-  if(abs(ci(1)-met%ca) < abs(ci(2)-met%ca))then
-     j=1
-  else
-     j=2
-  endif
-
-  sol%gsw(1,ilimit) = gsdata%b
-  sol%es(1,ilimit) = (met%ea*met%gbw+gsdata%b*met%el)/(gsdata%b+met%gbw)
-  sol%ci(1,ilimit) = ci(j)
-  sol%cs(1,ilimit) = (gsdata%b*ci(j)+1.6*met%gbc*met%ca)/(gsdata%b+1.6*met%gbc)
-  sol%a(1,ilimit) = met%gbc*(met%ca-sol%cs(1,ilimit))
-
-  return
-end subroutine solve_closed_case_c3
-!=====================================================
-subroutine solve_closed_case_c4(gsdata,met,apar,sol,ilimit)
-  use c34constants, only : glim, farqdata, metdat, solution
-  implicit none
-  
-
-  integer :: ilimit
-  type(glim) :: apar
-  type(farqdata) :: gsdata
-  type(metdat) :: met
-  type(solution) :: sol
-
-  sol%gsw(1,ilimit) = gsdata%b
-  sol%es(1,ilimit) = (met%ea*met%gbw+gsdata%b*met%el)/(gsdata%b+met%gbw)
-  sol%ci(1,ilimit) = (gsdata%b*met%gbc*met%ca-apar%sigma  &
-       *(gsdata%b+1.6*met%gbc)) &
-       / (apar%rho*(gsdata%b+1.6*met%gbc)+gsdata%b*met%gbc)
-  sol%cs(1,ilimit) = (gsdata%b*sol%ci(1,ilimit)+1.6*met%gbc*met%ca)  &
-       /(gsdata%b+1.6*met%gbc)
-  sol%a(1,ilimit) = apar%sigma + apar%rho * sol%ci(1,ilimit)
-
-  return
-end subroutine solve_closed_case_c4
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-subroutine solve_open_case_c3(gsdata,met,apar,sol,ilimit,success_flag)
-   use c34constants   , only : glim          & ! structure
-                             , farqdata      & ! structure
-                             , metdat        & ! structure
-                             , solution      ! ! structure
-   use physiology_coms, only : new_c3_solver & ! intent(in)
-                             , maxroots      ! ! intent(in)
-   implicit none
-   !----- Arguments. ----------------------------------------------------------------------!
-   integer                     , intent(in)    :: ilimit
-   logical                     , intent(inout) :: success_flag
-   type(glim)                  , intent(in)    :: apar
-   type(farqdata)              , intent(in)    :: gsdata
-   type(metdat)                , intent(in)    :: met
-   type(solution)              , intent(inout) :: sol
-   !----- Local variables. ----------------------------------------------------------------!
-   integer                                     :: nroot
-   integer                                     :: isol
-   integer                                     :: nsteps
-   logical                                     :: success_quad
-   real                                        :: gswmin
-   real                                        :: gswmax
-   real                                        :: errnorm
-   real   , dimension(maxroots)                :: xb1
-   real   , dimension(maxroots)                :: xb2
-   real                        , external      :: aflux_c3
-   real                        , external      :: quad4ci
-   real                        , external      :: zbrent_c3
-   real                        , external      :: csc_c3
+   !     This is a flag used in various sub-routines and functions and denote that we      !
+   ! should ignore the result.                                                             !
    !---------------------------------------------------------------------------------------!
-
-
-   !----- Initialise the acceptable range for gsw and the number of roots. ----------------!
-   gswmin = gsdata%b
-   gswmax = 1.3e7
-   nroot  = maxroots
+   real(kind=8), parameter :: discard = huge(1.d0)
    !---------------------------------------------------------------------------------------!
 
 
 
    !---------------------------------------------------------------------------------------!
-   !     Here we decide which method we use to solve the conductance and the internal      !
-   ! carbon.                                                                               !
+   !    This is the tolerance for iterative methods.  Some of the functions are quite flat !
+   ! so it is a good idea to use a somewhat more strict tolerance than the ones used in    !
+   ! therm_lib8.                                                                           !
    !---------------------------------------------------------------------------------------!
-   if (new_c3_solver) then
-      !------------------------------------------------------------------------------------!
-      !     New method, which solves the internal carbon and conductance simultaneously.   !
-      !------------------------------------------------------------------------------------!
+   real(kind=8), parameter :: tolerfl8 = 1.d-10
+   !---------------------------------------------------------------------------------------!
 
-      !------ Initial guess for the variables. --------------------------------------------!
-      sol%ci (2,ilimit) = sol%ci2_1st
-      sol%gsw(2,ilimit) = sol%gsw2_1st
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Since this is more strict than therm_lib, the maximum number of attempts for the   !
+   ! Regula Falsi method should be also increased.                                         !
+   !---------------------------------------------------------------------------------------!
+   integer     , parameter :: maxfpofl = 320
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+   contains
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !      This is the main driver for the photosynthesis model.                            !
+   !---------------------------------------------------------------------------------------!
+   subroutine lphysiol_full(can_prss,can_rhos,can_shv,can_co2,ipft,leaf_par,veg_temp       &
+                           ,lint_shv,green_leaf_factor,leaf_aging_factor,llspan,vm_bar     &
+                           ,rbw,A_open,A_closed,rsw_open,rsw_closed,lsfc_shv_open          &
+                           ,lsfc_shv_closed,lsfc_co2_open,lsfc_co2_closed,lint_co2_open    &
+                           ,lint_co2_closed,leaf_resp,vmout,comppout,limit_flag            &
+                           ,old_st_data)
+      use rk4_coms       , only : tiny_offset              ! ! intent(in)
+      use c34constants   , only : stoma_data               & ! structure
+                                , thispft                  & ! intent(out)
+                                , met                      & ! intent(out)
+                                , aparms                   & ! intent(out)
+                                , stclosed                 & ! intent(inout)
+                                , stopen                   ! ! intent(inout)
+      use pft_coms       , only : photosyn_pathway         & ! intent(in)
+                                , phenology                & ! intent(in)
+                                , D0                       & ! intent(in)
+                                , Vm0                      & ! intent(in)
+                                , vm_low_temp              & ! intent(in)
+                                , vm_high_temp             & ! intent(in)
+                                , cuticular_cond           & ! intent(in)
+                                , dark_respiration_factor  & ! intent(in)
+                                , stomatal_slope           & ! intent(in)
+                                , quantum_efficiency       ! ! intent(in)
+      use phenology_coms , only : vm_tran                  & ! intent(in)
+                                , vm_slop                  & ! intent(in)
+                                , vm_amp                   & ! intent(in)
+                                , vm_min                   ! ! intent(in)
+      use physiology_coms, only : istoma_scheme            & ! intent(in)
+                                , compp_refkin8            & ! intent(in)
+                                , compp_ecoeff8            & ! intent(in)
+                                , c34smin_lint_co28        & ! intent(in)
+                                , c34smax_lint_co28        & ! intent(in)
+                                , gbh_2_gbw8               & ! intent(in)
+                                , gbw_2_gbc8               & ! intent(in)
+                                , o2_ref8                  ! ! intent(in)
+      use therm_lib8     , only : rslif8                   ! ! function
+      use consts_coms    , only : mmh2oi8                  & ! intent(in)
+                                , mmh2o8                   & ! intent(in)
+                                , ep8                      & ! intent(in)
+                                , epi8                     & ! intent(in)
+                                , t008                     & ! intent(in)
+                                , umol_2_mol8              & ! intent(in)
+                                , mol_2_umol8              & ! intent(in)
+                                , Watts_2_Ein8             ! ! intent(in)
+      implicit none
+      !------ Arguments. ------------------------------------------------------------------!
+      real(kind=4), intent(in)    :: can_prss          ! Canopy air pressure    [       Pa]
+      real(kind=4), intent(in)    :: can_rhos          ! Canopy air density     [    kg/m³]
+      real(kind=4), intent(in)    :: can_shv           ! Canopy air sp. hum.    [    kg/kg]
+      real(kind=4), intent(in)    :: can_co2           ! Canopy air CO2         [ µmol/mol]
+      integer     , intent(in)    :: ipft              ! Plant functional type  [      ---]
+      real(kind=4), intent(in)    :: leaf_par          ! Absorbed PAR           [     W/m²]
+      real(kind=4), intent(in)    :: veg_temp          ! Vegetation temperature [        K]
+      real(kind=4), intent(in)    :: lint_shv          ! Leaf interc. sp. hum.  [    kg/kg]
+      real(kind=4), intent(in)    :: green_leaf_factor ! Frac. of on-allom. gr. [      ---]
+      real(kind=4), intent(in)    :: leaf_aging_factor ! Ageing parameter       [      ---]
+      real(kind=4), intent(in)    :: llspan            ! Leaf life span         [       yr]
+      real(kind=4), intent(in)    :: vm_bar            ! Average Vm function    [µmol/m²/s]
+      real(kind=4), intent(in)    :: rbw               ! Aerodyn. res. of H2O   [      s/m]
+      real(kind=4), intent(out)   :: A_open            ! Photosyn. rate (op.)   [µmol/m²/s]
+      real(kind=4), intent(out)   :: A_closed          ! Photosyn. rate (cl.)   [µmol/m²/s]
+      real(kind=4), intent(out)   :: rsw_open          ! St. res. of H2O  (op.) [      s/m]
+      real(kind=4), intent(out)   :: rsw_closed        ! St. res. of H2O  (cl.) [      s/m]
+      real(kind=4), intent(out)   :: lsfc_shv_open     ! Leaf sfc. sp.hum.(op.) [    kg/kg] 
+      real(kind=4), intent(out)   :: lsfc_shv_closed   ! Leaf sfc. sp.hum.(cl.) [    kg/kg]
+      real(kind=4), intent(out)   :: lsfc_co2_open     ! Leaf sfc. CO2    (op.) [ µmol/mol]
+      real(kind=4), intent(out)   :: lsfc_co2_closed   ! Leaf sfc. CO2    (cl.) [ µmol/mol]
+      real(kind=4), intent(out)   :: lint_co2_open     ! Intercell. CO2   (op.) [ µmol/mol]
+      real(kind=4), intent(out)   :: lint_co2_closed   ! Intercell. CO2   (cl.) [ µmol/mol]
+      real(kind=4), intent(out)   :: leaf_resp         ! Leaf respiration rate  [µmol/m²/s]
+      real(kind=4), intent(out)   :: vmout             ! Max. Rubisco capacity  [µmol/m²/s]
+      real(kind=4), intent(out)   :: comppout          ! GPP compensation point [ µmol/mol]
+      integer     , intent(out)   :: limit_flag        ! Photosyn. limit. flag  [      ---]
+      !----- This structure save the full stomatal state for the small pert. solver. ------!
+      type(stoma_data), intent(inout) :: old_st_data ! Previous results.
+      !----- External function. -----------------------------------------------------------!
+      real(kind=8)    , external      :: sngloff     ! Safe double -> single precision
       !------------------------------------------------------------------------------------!
 
 
-      !------ Solve using the 2-dimensional Newton's method. ------------------------------!
-      call gpp_solver2(apar,gsdata,met,sol%ci(2,ilimit),sol%gsw(2,ilimit),errnorm,nsteps   &
-                      ,success_flag)
+      !----- Initialise limit_flag to night time value. -----------------------------------!
+      limit_flag = 0
+
+
+      !------------------------------------------------------------------------------------!
+      !     Load physiological parameters that are PFT-dependent to the thispft structure. !
+      ! Convert all variables to mol and Kelvin, when needed.                              !
+      !------------------------------------------------------------------------------------!
+      thispft%photo_pathway = photosyn_pathway(ipft)
+      thispft%D0            = dble(D0(ipft))
+      thispft%b             = dble(cuticular_cond(ipft)) * umol_2_mol8
+      thispft%gamma         = dble(dark_respiration_factor(ipft))
+      thispft%m             = dble(stomatal_slope(ipft))
+      thispft%alpha         = dble(quantum_efficiency(ipft))
+      thispft%vm_low_temp   = dble(vm_low_temp(ipft))  + t008
+      thispft%vm_high_temp  = dble(vm_high_temp(ipft)) + t008
+      !------------------------------------------------------------------------------------!
+      !     Find Vm0 for photosynthesis and respiration, depending on whether this PFT     !
+      ! has a light-controlled phenology or not.  Convert the resulting Vm into mol/m²/s.  !
+      !------------------------------------------------------------------------------------!
+      select case(phenology(ipft))
+      case (3)
+         !------ Light-controlled phenology. ----------------------------------------------!
+         thispft%vm0_photo = dble(vm_amp / (1.0 + (llspan/vm_tran)**vm_slop) + vm_min)     &
+                           * umol_2_mol8
+         thispft%vm0_resp  = dble(vm_bar) * umol_2_mol8
+      case default
+         !------ Other phenologies, no distinction on Vm0. --------------------------------!
+         thispft%vm0_photo = dble(vm0(ipft)) * umol_2_mol8
+         thispft%vm0_resp  = dble(vm0(ipft)) * umol_2_mol8
+      end select
       !------------------------------------------------------------------------------------!
 
 
-      !----- Compute the other variables in case of success. ------------------------------!
-      if (success_flag) then
-         sol%a(2,ilimit)  = aflux_c3(apar,sol%gsw(2,ilimit),sol%ci(2,ilimit))
-         sol%cs(2,ilimit) = csc_c3(met,sol%a(2,ilimit))
-         sol%es(2,ilimit) = (met%ea*met%gbw+sol%gsw(2,ilimit)*met%el)                      &
-                          / (sol%gsw(2,ilimit)+met%gbw)
-      end if
+
       !------------------------------------------------------------------------------------!
-   else
+      !     Copy the meteorological forcing to the "met" structure.  Notice that some      !
+      ! variables go through unit conversions, and all variables are converted to double   !
+      ! precision.                                                                         !
       !------------------------------------------------------------------------------------!
-      !     Old method, which solves the internal carbon and conductance separately.       !
+      !----- 1. Variables that remain with the same units. --------------------------------!
+      met%leaf_temp    = dble(veg_temp)
+      met%can_rhos     = dble(can_rhos)
+      met%can_prss     = dble(can_prss)
+      met%can_o2       = o2_ref8
+      !----- 2. Convert specific humidity to mol/mol. -------------------------------------!
+      met%can_shv      = epi8 * dble(can_shv) 
+      !----- 3. Convert CO2 to mol/mol. ---------------------------------------------------!
+      met%can_co2      = dble(can_co2) * umol_2_mol8
+      !----- 4. Convert W/m2 to mol/m2/s. -------------------------------------------------!
+      met%par          = dble(leaf_par) * Watts_2_Ein8
+      !------------------------------------------------------------------------------------!
+      !  5. Intercellular specific humidity, which is assumed to be at saturation          !
+      !     given the leaf temperature.  We convert it to mol/mol.                         !
+      !------------------------------------------------------------------------------------!
+      met%lint_shv    = epi8 * dble(lint_shv)
+      !------------------------------------------------------------------------------------!
+      !  6. Find the conductivities for water and carbon.  The input for water is in m/s,  !
+      !     and here we convert to mol/m²/s.  The convertion coefficient from water to     !
+      !     carbon dioxide comes from M09's equation B14.                                  !
+      !------------------------------------------------------------------------------------!
+      met%blyr_cond_h2o = (met%can_rhos * met%can_shv * mmh2oi8) / dble(rbw)
+      met%blyr_cond_co2 = gbw_2_gbc8 * met%blyr_cond_h2o
+      !------------------------------------------------------------------------------------!
+      !  7. Find the compensation point (Gamma) for this temperature.  I am not sure about !
+      !     this one, but from F96's paragraph after equation (7), it seems C4 grasses     !
+      !     should have the compensation point set to 0.                                   !
+      !------------------------------------------------------------------------------------!
+      select case (thispft%photo_pathway)
+      case (3)
+         met%compp    = met%can_o2                                                         &
+                      / (2.d0 * arrhenius(met%leaf_temp,compp_refkin8,compp_ecoeff8))
+      case (4)
+         met%compp    = 0.d0
+      end select
       !------------------------------------------------------------------------------------!
 
-      !------ Find the bracket that is likely to contain the solution. --------------------!
-      call zbrak_c3(gsdata,met,apar,gswmin,gswmax,sol%ninterval,xb1,xb2,nroot)
+
+
+      !------------------------------------------------------------------------------------!
+      !     Compute the maximum capacity of Rubisco to perform the carboxylase function    !
+      ! (M09's Vm function).                                                               !
+      !------------------------------------------------------------------------------------!
+      call comp_maxcap_rubisco(ipft,leaf_aging_factor,green_leaf_factor)
       !------------------------------------------------------------------------------------!
 
 
-      if(nroot == 0)then
-         !---------------------------------------------------------------------------------!
-         !     No open case solution.  Values revert to those from closed case.            !
-         !---------------------------------------------------------------------------------!
-         success_flag = .false.
-      else
-         !---------------------------------------------------------------------------------!
-         !     We did find a solution.                                                     !
-         !---------------------------------------------------------------------------------!
-         do isol=1,nroot
-            sol%gsw(2,ilimit) = zbrent_c3(gsdata,met,apar,xb1(isol),xb2(isol),sol%eps      &
-                                         ,success_flag)
-            if (.not. success_flag) return
-            sol%ci(2,ilimit) = quad4ci(gsdata,met,apar,sol%gsw(2,ilimit),success_quad)
-            if (success_quad) then
-               sol%a(2,ilimit)  = aflux_c3(apar,sol%gsw(2,ilimit),sol%ci(2,ilimit))
-               sol%cs(2,ilimit) = csc_c3(met,sol%a(2,ilimit))
-               sol%es(2,ilimit) = (met%ea*met%gbw+sol%gsw(2,ilimit)*met%el)                &
-                                / (sol%gsw(2,ilimit)+met%gbw)
-            elseif (nroot == 1) then
-               success_flag = .false.
-           end if
-         end do
-         !---------------------------------------------------------------------------------!
-      end if
-   end if
 
-   return
-end subroutine solve_open_case_c3
-!==========================================================================================!
-!==========================================================================================!
+      !------------------------------------------------------------------------------------!
+      !     At this point we call the main solver.  If we choose the exact solver, we will !
+      ! always solve all fluxes interactively, otherwise we will use a first order         !
+      ! approximation for some of the steps, and update the exact solution less often.     !
+      !------------------------------------------------------------------------------------!
+      select case (istoma_scheme)
+      case (0)
+          call photosynthesis_exact_solver(limit_flag)
+
+      case (1)
+         write (unit=*,fmt='(a)') '------------------------------------------------------'
+         write (unit=*,fmt='(a)') '     Sorry, the small perturbation scheme for '
+         write (unit=*,fmt='(a)') ' photosynthesis is temporarily down. '
+         write (unit=*,fmt='(a)') '------------------------------------------------------'
+         call fatal_error('ISTOMA_SCHEME = 1 is temporarily unavailable','lphysiol_full'   &
+                         ,'farq_leuning.f90')
+      end select
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !    Copy the solution to the standard output variables.  Here we convert the values !
+      ! back to the standard ED units                                                      !
+      !------------------------------------------------------------------------------------!
+      !----- Carbon demand, convert them to [µmol/m²/s]. ----------------------------------!
+      A_closed       = sngloff(stclosed%co2_demand * mol_2_umol8, tiny_offset)
+      A_open         = sngloff(stopen%co2_demand   * mol_2_umol8, tiny_offset)
+      !----- Stomatal resistance, convert the conductances to [s/m]. ----------------------!
+      rsw_closed     = sngloff( met%can_rhos * stclosed%lsfc_shv * mmh2oi8                 &
+                              / stclosed%stom_cond_h2o, tiny_offset)
+      rsw_open       = sngloff( met%can_rhos * stopen%lsfc_shv * mmh2oi8                   &
+                              / stopen%stom_cond_h2o  , tiny_offset)
+      !----- Leaf surface specific humidity, convert them to [kg/kg]. ---------------------!
+      lsfc_shv_closed = sngloff(stclosed%lsfc_shv * ep8, tiny_offset)
+      lsfc_shv_open   = sngloff(stopen%lsfc_shv   * ep8, tiny_offset)
+      !----- Leaf surface CO2 concentration, convert them to [µmol/mol]. ------------------!
+      lsfc_co2_closed = sngloff(stclosed%lsfc_co2 * mol_2_umol8, tiny_offset)
+      lsfc_co2_open   = sngloff(stopen%lsfc_co2   * mol_2_umol8, tiny_offset)
+      !----- Intercellular carbon dioxide concentration, convert them to [µmol/mol]. ------!
+      lint_co2_closed = sngloff(stclosed%lint_co2 * mol_2_umol8, tiny_offset)
+      lint_co2_open   = sngloff(stopen%lint_co2   * mol_2_umol8, tiny_offset)
+      !----- Leaf respiration [µmol/m²/s]. ------------------------------------------------!
+      leaf_resp       = sngloff(aparms%leaf_resp * mol_2_umol8, tiny_offset)
+      !----- Maximum Rubisco capacity to perform the carboxylase function [µmol/m²/s]. ----!
+      vmout           = sngloff(aparms%vm * mol_2_umol8, tiny_offset)
+      !----- Gross photosynthesis compensation point, convert it to [µmol/mol]. -----------!
+      comppout        = sngloff(met%compp * mol_2_umol8, tiny_offset)
+      !------------------------------------------------------------------------------------!
 
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-subroutine solve_open_case_c4(gsdata,met,apar,sol,ilimit,success_flag)
-  use c34constants
-  implicit none
-  
-
-  integer :: ilimit
-  type(glim) :: apar
-  type(farqdata) :: gsdata
-  type(metdat) :: met
-  type(solution) :: sol
-
-  integer, parameter :: maxroots=5
-  integer :: nroot,isol
-  real :: gswmin,gswmax
-  real, dimension(maxroots) :: xb1,xb2
-  integer :: success_flag
-  real, external :: zbrent_c4
-
-  gswmin = gsdata%b
-  gswmax = 1.3e7
-  nroot = maxroots
-
-  call zbrak_c4(gsdata,met,apar,gswmin,gswmax,sol%ninterval,xb1,xb2,nroot)
-  if(nroot == 0)then
-     ! No open case solution.  Values revert to those from closed case.
-!     call closed2open(sol,ilimit)
-     success_flag = 0
-  else
-     ! We did find a solution
-     do isol=1,nroot
-        sol%gsw(2,ilimit) = zbrent_c4(gsdata,met,apar  &
-             ,xb1(isol),xb2(isol),sol%eps,success_flag)
-        if(success_flag == 0)return
-        sol%cs(2,ilimit) = (-apar%sigma*sol%gsw(2,ilimit)  &
-             +met%gbc*met%ca*(1.6*apar%rho+sol%gsw(2,ilimit)))  &
-             /(apar%rho*sol%gsw(2,ilimit)  &
-             +met%gbc*(1.6*apar%rho+sol%gsw(2,ilimit)))
-        sol%a(2,ilimit) = met%gbc*(met%ca-sol%cs(2,ilimit))
-        sol%ci(2,ilimit) = sol%cs(2,ilimit)  &
-             -1.6*sol%a(2,ilimit)/sol%gsw(2,ilimit)
-        sol%es(2,ilimit) = (met%ea*met%gbw+sol%gsw(2,ilimit)*met%el)  &
-             /(sol%gsw(2,ilimit)+met%gbw)
-
-     enddo
-  endif
-
-  return
-end subroutine solve_open_case_c4
-
-!=====================================================
-subroutine closed2open(sol,ilimit)
-  use c34constants
-  implicit none
-  
-
-  type(solution) :: sol
-  integer :: ilimit
-
-  sol%gsw(2,ilimit) = sol%gsw(1,ilimit)
-  sol%es(2,ilimit) = sol%es(1,ilimit)
-  sol%ci(2,ilimit) = sol%ci(1,ilimit)
-  sol%cs(2,ilimit) = sol%cs(1,ilimit)
-  sol%a(2,ilimit) = sol%a(1,ilimit)
-
-  return
-end subroutine closed2open
-!=====================================================
-real function quad4ci(gsdata,met,apar,x,success)
-  use c34constants
-  implicit none
-  
-
-  type(glim) :: apar
-  type(farqdata) :: gsdata
-  type(metdat) :: met
-  real :: b,c,q,x
-  real, dimension(2) :: ci
-  logical :: success
-  integer, dimension(2) :: sol_flag  
-  integer :: isol
-  logical,external :: isnan_ext
-
-  b = (apar%rho + apar%nu) * (x + 1.6 * met%gbc) / (x * met%gbc) -   &
-       met%ca + apar%tau
-  c = (apar%sigma + apar%nu * apar%tau) * (x + 1.6 * met%gbc) /   &
-       (x * met%gbc) - apar%tau * met%ca
-  if (b == 0.) then
-     q = tiny(0.)
-  else
-     q = -0.5 * b * (1.0 + sqrt(1.0 - 4.0 * c / b**2))
-  endif
-  ci(1) = q
-  ci(2) = c / q
-  success = .true.
-
-  ! Test to see if the solutions are greater than zero.
-  sol_flag(1:2) = 1
-  do isol = 1,2
-     if(ci(isol) <= 0.0 .or. ci(isol) /= ci(isol))sol_flag(isol) = 0
-  enddo
-
-  if(sol_flag(1) == 0 .and. sol_flag(2) /= 0)then
-     quad4ci = ci(2)
-  elseif(sol_flag(1) /= 0 .and. sol_flag(2) == 0)then
-     quad4ci = ci(1)
-  elseif(sol_flag(1) /= 0 .and. sol_flag(2) /= 0)then
-     if(abs(ci(1)-met%ca) < abs(ci(2)-met%ca))then
-        quad4ci = ci(1)
-     else
-        quad4ci = ci(2)
-     endif
-  else
-     quad4ci = met%ca
-     success = .false.
-  endif
-
-  return
-end function quad4ci
-
-!=============================================
-
-logical function isnan_ext(rv)
-  implicit none
-  real :: rv
-  if (rv == rv) then
-     isnan_ext=.false.
-  else
-     isnan_ext=.true.
-  endif
-  return
-end function isnan_Ext
-
-!==============================================
-
-real function co2cp(T)
-  implicit none
-  real :: arrhenius,T
-  co2cp = arrhenius(T,2.12e-5,5000.0)
-  return
-end function co2cp
-
-!=================================================
-
-real function arrhenius(T,c1,c2)
-  use consts_coms, only: t00
-  implicit none
-  real :: T,c1,c2
-  real(kind=8) :: arr8
-  arr8 = dble(c1) * dexp( dble(c2)*(dble(1.)/dble(288.15)-dble(1.0)/dble(T+t00)))
-  arrhenius = sngl(arr8)
-  return
-end function arrhenius
-
-!=================================================
-
-real(kind=8) function arrhenius8(T,c1,c2)
-  use consts_coms, only: t008
-  implicit none
-  real(kind=8)  :: T,c1,c2
-  arrhenius8 = c1 * dexp( c2 *(1.d0/2.8815d2-1.d0/(T+t008)))
-  return
-end function arrhenius8
-
-!=========================================
-subroutine testsolution(gsdata,met,apar,x)
-
-  use c34constants
-
-  implicit none
-
-  type(farqdata) :: gsdata
-  type(metdat) :: met
-  type(glim) :: apar
-  real :: cs,ci,eta,gamma,co2cp,a
-  real :: x,es
-
-  eta = 1.0 + (met%el-met%ea)/gsdata%d0
-  gamma = co2cp(met%tl)
-
-  a = apar%rho * x * (-x*apar%sigma   &
-       + met%gbc*met%ca*(1.6*apar%rho+x))  &
-       /((1.6*apar%rho+x)*(apar%rho*x+met%gbc*(1.6*apar%rho+x))) &
-       +apar%sigma*x/(1.6*apar%rho+x)
-  cs = (-x*apar%sigma   &
-       + met%gbc*met%ca*(1.6*apar%rho+x))  &
-       /(apar%rho*x+met%gbc*(1.6*apar%rho+x))
-  ci = (x*cs/1.6-apar%sigma)/(apar%rho+x/1.6)
-  es = (met%ea*met%gbw+x*met%el)/(x+met%gbw)
-
-  return
-end subroutine testsolution
-
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-subroutine prep_lphys_solution(photosyn_pathway, Vm0, met, Vm_low_temp,Vm_high_temp        &
-                              ,leaf_aging_factor,green_leaf_factor,leaf_resp,vmllspan      &
-                              ,vmbar,gsdata,apar)
-   use c34constants
-   implicit none
-   !------ Arguments. ---------------------------------------------------------------------!
-   integer       , intent(in)    :: photosyn_pathway
-   real          , intent(in)    :: Vm0
-   real          , intent(in)    :: Vm_low_temp
-   real          , intent(in)    :: Vm_high_temp
-   type(metdat)  , intent(in)    :: met
-   real          , intent(in)    :: leaf_aging_factor
-   real          , intent(in)    :: green_leaf_factor
-   real          , intent(in)    :: vmllspan
-   real          , intent(in)    :: vmbar
-   real          , intent(out)   :: leaf_resp
-   type(farqdata), intent(in)    :: gsdata
-   type(glim)    , intent(inout) :: apar
-   !----- Local variables. ----------------------------------------------------------------!
-   real(kind=8)                  :: vmdble
-   real(kind=8)                  :: tdble
-   real(kind=8)                  :: Vm_low_temp8
-   real(kind=8)                  :: Vm_high_temp8
-   real                          :: vmbar_temp
-   !----- External functions. -------------------------------------------------------------!
-   real(kind=8)  , external      :: arrhenius8
-   real          , external      :: arrhenius
-   !---------------------------------------------------------------------------------------!
-
-   !----- Saving some variables in double precision. --------------------------------------!
-   tdble         = dble(met%tl)
-   Vm_low_temp8  = dble(Vm_low_temp)
-   Vm_high_temp8 = dble(Vm_high_temp)
-
-   if (photosyn_pathway == 3) then
-
-      !----- C3 parameters. ---------------------------------------------------------------!
-      vmdble = dble(Vm0) * arrhenius8(tdble, 1.d0, 3.d3)                                   &
-             / ( (1.d0 + dexp(4.d-1 * (Vm_low_temp8 - tdble) ))                            &
-               * (1.d0 + dexp(4.d-1 * (met%tl - Vm_high_temp8 ))) )
-      apar%vm = sngl(vmdble)
-
-      if (vmllspan > 0.0) then
-         vmdble = dble(vmllspan) * arrhenius8(tdble, 1.d0, 3.d3)                           &
-                / ( (1.d0 + dexp(4.d-1 *  (Vm_low_temp8 - tdble) ))                        &
-                  * (1.d0 + dexp(4.d-1 *  (tdble - Vm_high_temp8 ))) )
-         apar%vm = sngl(vmdble)
-      end if
-
-      !----- Adjust Vm according to the aging factor. -------------------------------------!
-      if (leaf_aging_factor > 0.01 .and. green_leaf_factor > 0.0001) then
-         apar%vm = apar%vm * leaf_aging_factor / green_leaf_factor
-      end if
-
-      !----- Compute leaf respiration and other constants. --------------------------------!
-      leaf_resp = apar%vm * gsdata%gamma
-
-      if (vmbar > 0.0) then
-         vmdble = dble(vmbar) * arrhenius8(tdble, 1.d0, 3.d3)                              &
-                / ( (1.d0 + dexp(4.d-1 * (Vm_low_temp8 - tdble) ))                         &
-                  * (1.d0 + dexp(4.d-1 * (met%tl - Vm_high_temp8 ))) )
-         vmbar_temp = sngl(vmdble)
-         leaf_resp  = vmbar_temp * gsdata%gamma
-      end if  
-
-      apar%nu = -leaf_resp
-      apar%k1 = arrhenius(met%tl, 1.5e-4, 6000.0)
-      apar%k2 = arrhenius(met%tl, 0.836, -1400.0)
-
-   else
-      !----- C4 parameters. ---------------------------------------------------------------!
-      vmdble    = dble(Vm0) * arrhenius8(tdble, 1.d0, 3.d3)                                &
-                / ( (1.d0 + dexp(4.d-1 * (Vm_low_temp8 - tdble) ))                         &
-                  * (1.d0 + dexp(4.d-1 * (met%tl - Vm_high_temp8 ))) )
-      apar%vm   = sngl(vmdble)
-
-      leaf_resp = apar%vm * gsdata%gamma
-
-   endif
-
-   return
-end subroutine prep_lphys_solution
-
-!===================================================================
-
-subroutine exact_lphys_solution(photosyn_pathway, met, apar, gsdata, sol,ilimit)
-
-  use c34constants
-
-  implicit none
-
-  
-
-  integer, intent(in) :: photosyn_pathway
-  type(metdat), intent(in) :: met
-  type(glim), intent(inout) :: apar
-  type(farqdata), intent(in) :: gsdata
-  type(solution), intent(inout) :: sol
-  integer, intent(out) :: ilimit
-
-
-  if(photosyn_pathway == 3)then
-
-     call c3solver(met,apar,gsdata,sol,ilimit)
-
-  else
-
-     call c4solver(met,apar,gsdata,sol,ilimit)
-
-  endif
-
-  return
-
-end subroutine exact_lphys_solution
-
-!========================================================================
-
-subroutine store_exact_lphys_solution(old_st_data, met, prss,   &
-     leaf_aging_factor, green_leaf_factor, sol, ilimit, gsdata, apar,  &
-     photosyn_pathway, Vm0, Vm_low_temp, Vm_high_temp, vmbar)
-
-  use c34constants
-  use therm_lib, only: rslif
-  use consts_coms, only: t00,epi
-  implicit none
-
-  
-
-  integer, intent(in) :: photosyn_pathway
-  type(stoma_data), intent(inout) :: old_st_data
-  type(metdat), intent(inout) :: met
-  real, intent(in) :: prss
-  real, intent(in) :: leaf_aging_factor
-  real, intent(in) :: green_leaf_factor
-  type(solution), intent(in) :: sol
-  integer, intent(in) :: ilimit
-  type(farqdata), intent(in) :: gsdata
-  type(glim), intent(inout) :: apar
-  real, intent(in) :: Vm0
-  real, intent(in) :: Vm_low_temp
-  real, intent(in) :: Vm_high_temp
-  real, intent(in) :: vmbar
-
-
-  real, external :: co2cp
-  real, external :: arrhenius
-  real :: dprss
-  real, external :: residual_c3
-  real, external :: residual_c4
-  real :: vmbar_temp
-
-  ! Save old meteorological information
-  old_st_data%T_L = met%tl
-  old_st_data%e_a = met%ea
-  old_st_data%par = met%par
-  old_st_data%rb_factor = met%gbc
-  old_st_data%prss = prss
-  old_st_data%phenology_factor = leaf_aging_factor / green_leaf_factor
-  old_st_data%gsw_open = sol%gsw(2,1)
-  old_st_data%ilimit = ilimit
-  
-  if(ilimit == -1)then
-
-     ! In this case, no open-stomata solution was found to exist.
-
-     old_st_data%gsw_residual = 0.0
-     old_st_data%t_l_residual = 0.0
-     old_st_data%e_a_residual = 0.0
-     old_st_data%par_residual = 0.0
-     old_st_data%rb_residual = 0.0
-     old_st_data%prss_residual = 0.0
-     old_st_data%leaf_residual = 0.0
-
-  else
-
-     if(photosyn_pathway == 3)then
-
-        ! Set parameters
-        call setapar_c3(gsdata,met,apar,ilimit)
-
-        ! stomatal conductance derivative
-        old_st_data%gsw_residual = residual_c3(gsdata,met,apar,  &
-             sol%gsw(2,1)*1.01) / (0.01*sol%gsw(2,1))
-        
-        ! Temperature derivative
-        met%tl = met%tl + 0.1
-        met%el = epi * rslif(prss,met%tl + t00)
-        met%compp = co2cp(met%tl)
-        apar%vm = Vm0 * arrhenius(met%tl,1.0,3000.0)  &
-             /(1.0+exp(0.4*(Vm_low_temp-met%tl)))  &
-             /(1.0+exp(0.4*(met%tl-Vm_high_temp))) 
-        if(leaf_aging_factor > 0.01)then
-           apar%vm = apar%vm * leaf_aging_factor   &
-                / green_leaf_factor
-        endif
-        apar%nu = -apar%vm * gsdata%gamma
-        if (vmbar > 0.0) then
-           vmbar_temp = vmbar * arrhenius(met%tl, 1.0, 3000.0) / ( &
-             (1.0 + exp(0.4*(Vm_low_temp - met%tl))) * &
-             (1.0 + exp(0.4*(met%tl - Vm_high_temp ))) )
-           apar%nu = -vmbar_temp * gsdata%gamma
-        endif  
-        apar%k1 = arrhenius(met%tl,1.5e-4,6000.0)
-        apar%k2 = arrhenius(met%tl,0.836,-1400.0)
-        call setapar_c3(gsdata,met,apar,ilimit)
-        old_st_data%T_L_residual = residual_c3(gsdata,met,apar,  &
-             sol%gsw(2,1)) / (0.1 * old_st_data%gsw_residual)
-
-        ! Reset parameters
-        met%tl = met%tl - 0.1
-        met%el = epi * rslif(prss,met%tl+t00)
-        met%compp = co2cp(met%tl)
-        apar%vm = Vm0 * arrhenius(met%tl,1.0,3000.0)  &
-             /(1.0+exp(0.4*(Vm_low_temp-met%tl)))  &
-             /(1.0+exp(0.4*(met%tl-Vm_high_temp))) 
-        if(leaf_aging_factor > 0.01)then
-           apar%vm = apar%vm * leaf_aging_factor   &
-                / green_leaf_factor
-        endif
-        apar%nu = -apar%vm * gsdata%gamma
-        if (vmbar > 0.0) then
-           vmbar_temp = vmbar * arrhenius(met%tl, 1.0, 3000.0) / ( &
-             (1.0 + exp(0.4*(Vm_low_temp - met%tl))) * &
-             (1.0 + exp(0.4*(met%tl - Vm_high_temp ))) )
-           apar%nu = -vmbar_temp * gsdata%gamma
-        endif  
-        apar%k1 = arrhenius(met%tl,1.5e-4,6000.0)
-        apar%k2 = arrhenius(met%tl,0.836,-1400.0)
-        
-        ! humidity derivative
-        met%ea = met%ea * 0.99
-        met%eta = 1.0 + (met%el-met%ea)/gsdata%d0
-        call setapar_c3(gsdata,met,apar,ilimit)
-        old_st_data%e_a_residual = residual_c3(gsdata,met,apar,sol%gsw(2,1)) &
-             / (met%ea*(1.0-1.0/0.99)*old_st_data%gsw_residual)
-        met%ea = met%ea / 0.99
-        met%eta = 1.0 + (met%el-met%ea)/gsdata%d0
-
-        ! PAR derivative
-        met%par = met%par * 1.01
-        call setapar_c3(gsdata,met,apar,ilimit)
-        old_st_data%par_residual = residual_c3(gsdata,met,apar,sol%gsw(2,1)) &
-             / (met%par*(1.0-1.0/1.01)*old_st_data%gsw_residual)
-        met%par = met%par / 1.01
-
-        ! aerodynamics resistance derivative
-        met%gbc = met%gbc * 1.01
-        call setapar_c3(gsdata,met,apar,ilimit)
-        old_st_data%rb_residual = residual_c3(gsdata,met,apar,sol%gsw(2,1)) &
-             / (met%gbc*(1.0-1.0/1.01)*old_st_data%gsw_residual)
-        met%gbc = met%gbc / 1.01
-
-        ! pressure derivative
-        dprss = prss * 1.005
-        met%el = epi * rslif(dprss,met%tl+t00)
-        met%eta = 1.0 + (met%el-met%ea)/gsdata%d0
-        call setapar_c3(gsdata,met,apar,ilimit)
-        old_st_data%prss_residual = residual_c3(gsdata,met,apar,sol%gsw(2,1)) &
-             / (dprss*(1.0-1.0/1.005)*old_st_data%gsw_residual)
-        met%el = epi * rslif(prss,met%tl+t00)
-        met%eta = 1.0 + (met%el-met%ea)/gsdata%d0
-
-     else
-
-        ! Now do the same for C4 plants
-        
-        call setapar_c4(gsdata,met,apar,ilimit)
-        old_st_data%gsw_residual = residual_c4(gsdata,met,apar,  &
-             sol%gsw(2,1)*1.01) / (0.01*sol%gsw(2,1))
-        
-        met%tl = met%tl + 0.1
-        met%el = epi * rslif(prss,met%tl+t00)
-        met%compp = co2cp(met%tl)
-        apar%vm = Vm0 * arrhenius(met%tl,1.0,3000.0)  &
-             /(1.0+exp(0.4*(Vm_low_temp-met%tl)))/(1.0+exp(0.4*(met%tl-Vm_high_temp))) 
-        call setapar_c4(gsdata,met,apar,ilimit)
-        old_st_data%T_L_residual =   &
-             residual_c4(gsdata,met,apar,sol%gsw(2,1)) &
-             / (0.1 * old_st_data%gsw_residual)
-        met%tl = met%tl - 0.1
-        met%el = epi * rslif(prss,met%tl+t00)
-        met%compp = co2cp(met%tl)
-        apar%vm = Vm0 * arrhenius(met%tl,1.0,3000.0)  &
-             /(1.0+exp(0.4*(Vm_low_temp-met%tl)))/(1.0+exp(0.4*(met%tl-Vm_high_temp))) 
-        
-        met%ea = met%ea * 0.99
-        met%eta = 1.0 + (met%el-met%ea)/gsdata%d0
-        call setapar_c4(gsdata,met,apar,ilimit)
-        old_st_data%e_a_residual =   &
-             residual_c4(gsdata,met,apar,sol%gsw(2,1)) &
-             / (met%ea*(1.0-1.0/0.99)*old_st_data%gsw_residual)
-        met%ea = met%ea / 0.99
-        met%eta = 1.0 + (met%el-met%ea)/gsdata%d0
-        
-        met%par = met%par * 1.01
-        call setapar_c4(gsdata,met,apar,ilimit)
-        old_st_data%par_residual =   &
-             residual_c4(gsdata,met,apar,sol%gsw(2,1)) &
-             / (met%par*(1.0-1.0/1.01)*old_st_data%gsw_residual)
-        met%par = met%par / 1.01
-        
-        met%gbc = met%gbc * 1.01
-        call setapar_c4(gsdata,met,apar,ilimit)
-        old_st_data%rb_residual =   &
-             residual_c4(gsdata,met,apar,sol%gsw(2,1)) &
-             / (met%gbc*(1.0-1.0/1.01)*old_st_data%gsw_residual)
-        met%gbc = met%gbc / 1.01
-        
-        dprss = prss * 1.005
-        met%el = epi * rslif(dprss,met%tl+t00)
-        met%eta = 1.0 + (met%el-met%ea)/gsdata%d0
-        call setapar_c4(gsdata,met,apar,ilimit)
-        old_st_data%prss_residual = residual_c4(gsdata,met,apar,sol%gsw(2,1)) &
-             / (dprss*(1.0-1.0/1.005)*old_st_data%gsw_residual)
-        met%el = epi * rslif(prss,met%tl+t00)
-        met%eta = 1.0 + (met%el-met%ea)/gsdata%d0
-        
-     endif
-  endif
-
-  return
-end subroutine store_exact_lphys_solution
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-!      This subroutine will make the appropriate conversions for the output.               !
-!------------------------------------------------------------------------------------------!
-subroutine fill_lphys_sol_exact(A_open, rsw_open, A_cl, rsw_cl, veg_co2_open,veg_co2_cl    &
-                               ,sol, adens)
-
-   use consts_coms , only : mmdry1000 ! ! structure
-   use c34constants, only : solution  ! ! structure
-   implicit none
-
-   !----- Arguments. ----------------------------------------------------------------------!
-   real          , intent(out) :: A_open
-   real          , intent(out) :: A_cl
-   real          , intent(out) :: rsw_open
-   real          , intent(out) :: rsw_cl
-   real          , intent(out) :: veg_co2_open
-   real          , intent(out) :: veg_co2_cl
-   type(solution), intent(in)  :: sol
-   real          , intent(in)  :: adens
-
-   !----- Copy the open stomata case. -----------------------------------------------------!
-   A_open       = sol%a(2,1)
-   rsw_open     = 1.0e9 * adens / (mmdry1000 * sol%gsw(2,1))
-   veg_co2_open = sol%ci(2,1) * 1.e6
-
-   !----- Copy the open stomata case. -----------------------------------------------------!
-   A_cl         = sol%a(1,1)
-   rsw_cl       = 1.0e9 * adens / (mmdry1000 * sol%gsw(1,1))
-   veg_co2_cl   = sol%ci(1,1) * 1.e6
-
-   return
-end subroutine fill_lphys_sol_exact
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-subroutine fill_lphys_sol_approx(gsdata, met, apar, old_st_data, sol,   &
-     A_cl, rsw_cl, veg_co2_open, veg_co2_cl, adens, rsw_open, A_open, photosyn_pathway &
-      , prss)
-
-  use c34constants
-  use consts_coms, only : mmdry1000
-
-  implicit none
-
-  
-
-  type(farqdata), intent(in) :: gsdata
-  type(metdat), intent(in) :: met
-  type(glim), intent(inout) :: apar
-  type(stoma_data), intent(in) :: old_st_data
-  type(solution), intent(inout) :: sol
-  real, intent(out) :: A_cl
-  real, intent(out) :: A_open
-  real, intent(out) :: rsw_cl 
-  real, intent(out) :: rsw_open
-  real, intent(out) :: veg_co2_open
-  real, intent(out) :: veg_co2_cl
-  real, intent(in) :: adens
-  integer, intent(in) :: photosyn_pathway
-  real, intent(in) :: prss
-
-  logical :: success
-  real :: gsw_update
-  real :: ci_approx
-  real, external :: aflux_c4
-  real, external :: aflux_c3
-  real, external :: quad4ci
-
-  if(photosyn_pathway == 3)then
-     call setapar_c3(gsdata,met,apar,max(1,old_st_data%ilimit))
-     call solve_closed_case_c3(gsdata,met,apar,sol,1)
-  else
-     call setapar_c4(gsdata,met,apar,max(1,old_st_data%ilimit))
-     call solve_closed_case_c4(gsdata,met,apar,sol,1)
-  endif
-
-  A_cl = sol%a(1,1)
-  rsw_cl = 1.0e9 * adens / (mmdry1000 * sol%gsw(1,1))
-!  rsw_cl = (2.9e-8 * adens) / sol%gsw(1,1)
-  if(old_st_data%ilimit /= -1)then
-     gsw_update = old_st_data%gsw_open - &
-          old_st_data%t_l_residual * (met%tl - old_st_data%t_l) - &
-          old_st_data%e_a_residual * (met%ea - old_st_data%e_a) - &
-          old_st_data%par_residual * (met%par - old_st_data%par) - &
-          old_st_data%rb_residual * (met%gbc - old_st_data%rb_factor) - &
-          old_st_data%prss_residual * (prss - old_st_data%prss)
-     
-     if(photosyn_pathway == 3)then
-        ci_approx = quad4ci(gsdata,met,apar,gsw_update,success)
-        if(success)then
-           A_open = aflux_c3(apar,gsw_update,ci_approx)
-           rsw_open = 1.0e9 * adens / (mmdry1000 * gsw_update)
-!           rsw_open = (2.9e-8 * adens) / gsw_update
-        else
-           A_open = A_cl
-           rsw_open = rsw_cl
-        endif
-     else
-        A_open = aflux_c4(apar,met,gsw_update)
-        rsw_open = 1.0e9 * adens / (mmdry1000 * gsw_update)
-!        rsw_open = (2.9e-8 * adens) / gsw_update
-     endif
-  else
-     A_open   = A_cl
-     rsw_open = rsw_cl
-  end if
-  if (old_st_data%ilimit >= 1) then
-     veg_co2_open  = sol%ci(2,old_st_data%ilimit) * 1.e6
-     veg_co2_cl    = sol%ci(1,old_st_data%ilimit) * 1.e6
-  else
-     veg_co2_open  = met%ca * 1.e6
-     veg_co2_cl    = met%ca * 1.e6 
-  end if
-  return
-end subroutine fill_lphys_sol_approx
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-subroutine gpp_solver2(apar,gsdata,met,ci,gsw,errnorm,n,converged)
-   use c34constants   , only : glim          & ! structure
-                             , farqdata      & ! structure
-                             , metdat        ! ! structure
-   use physiology_coms, only : c34smin_ci    & ! intent(out)
-                             , c34smax_ci    & ! intent(out)
-                             , c34smin_gsw   & ! intent(out)
-                             , c34smax_gsw   & ! intent(out)
-                             , nudgescal     & ! intent(out)
-                             , alfls         & ! intent(out)
-                             , maxmdne       & ! intent(out)
-                             , normstmax     & ! intent(out)
-                             , hugenum       & ! intent(out)
-                             , xdim          ! ! intent(out)
-   use therm_lib      , only : toler         ! ! intent(in)
-
-   implicit none
-   !----- Arguments. ----------------------------------------------------------------------!
-   type(glim)    , intent(in)               :: apar
-   type(farqdata), intent(in)               :: gsdata
-   type(metdat)  , intent(in)               :: met
-   real(kind=4)  , intent(inout)            :: ci
-   real(kind=4)  , intent(inout)            :: gsw
-   real(kind=4)  , intent(out)              :: errnorm     ! Norm of the norm. error.
-   integer       , intent(out)              :: n           ! Iteration counter
-   logical       , intent(out)              :: converged   ! The method converged.
-   !----- Local variables. ----------------------------------------------------------------!
-   integer                                  :: i           ! Best alpha
-   logical                                  :: singular    ! Matrix is singular
-   logical                                  :: dxconv      ! Check for spurious conv. 
-   real(kind=4), dimension(xdim,xdim)       :: jacob       ! Array with the Jacobian
-   real(kind=4), dimension(xdim,xdim)       :: jacobt      ! Transpose of the Jacobian
-   real(kind=4), dimension(xdim)            :: x           ! Current normalised guess.
-   real(kind=4), dimension(xdim)            :: xtry        ! Potential new guess
-   real(kind=4), dimension(xdim)            :: xsmin       ! Lower bounds
-   real(kind=4), dimension(xdim)            :: xsmax       ! Higher bounds
-   real(kind=4), dimension(xdim)            :: s           ! Characteristic scales
-   real(kind=4), dimension(xdim)            :: xnudge      ! Nudging perturbation in x
-   real(kind=4), dimension(xdim)            :: dx          ! Vector with the increment
-   real(kind=4), dimension(xdim)            :: dxnorm      ! Standardised increment
-   real(kind=4), dimension(xdim)            :: error       ! Error vector (auxiliary)
-   real(kind=4), dimension(xdim)            :: gradfn2     ! Gradient of fn2.
-   real(kind=4), dimension(xdim)            :: fun         ! Function eval of curr. guess
-   real(kind=4), dimension(xdim)            :: funtry      ! Function eval of new guess
-   real(kind=4)                             :: fn2         ! 1/2 F dot F
-   real(kind=4)                             :: fn2try      ! New guess 1/2 F dot F
-   real(kind=4)                             :: fn2pbt      ! Previous back track
-   real(kind=4)                             :: stepmax     ! Maximum step to be taken.
-   real(kind=4)                             :: stepsize    ! Size of this new step.
-   real(kind=4)                             :: slope       ! Slope of the descent
-   real(kind=4)                             :: lambda      ! Lambda scale
-   real(kind=4)                             :: lambdapbt   ! Lambda of the back track
-   real(kind=4)                             :: lambdatry   ! Attempt for next lambda
-   real(kind=4)                             :: lambdamin   ! Minimum lambda
-   real(kind=4)                             :: rhstry      ! Auxiliary variable
-   real(kind=4)                             :: rhspbt      ! Auxiliary variable
-   real(kind=4)                             :: abask       ! Auxiliary variable
-   real(kind=4)                             :: bbask       ! Auxiliary variable
-   real(kind=4)                             :: discr       ! Auxiliary variable
-   !----- Locally saved variables. --------------------------------------------------------!
-   logical                     , save       :: firsttime  = .true.
-   !---------------------------------------------------------------------------------------!
-
-
-
-
-   !------ Initialise the random number generator. ----------------------------------------!
-   if (firsttime) then
-      call random_seed()
-      firsttime = .false.
-   end if
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !------ Initialise the convergence flag. -----------------------------------------------!
-   converged = .false.
-   singular  = .false.
-   n         = 0
-   errnorm   = huge(1.)
-   !---------------------------------------------------------------------------------------!
-
-
-   !------ Initialise the edges and scale. ------------------------------------------------!
-   xsmin = (/ c34smin_ci, c34smin_gsw /)  ! Minimum values that will be accepted.
-   xsmax = (/ c34smax_ci, c34smax_gsw /)  ! Maximum values that will be accepted.
-   s     = (/ ci        , gsw         /)  ! s1 and s2  -> first guess of Ci and gsw
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !------ Initialise the "x" vector with the first guess. --------------------------------!
-   xtry  = (/  1., 1. /)
-   where (xtry(:)*s(:) < xsmin(:)) 
-      xtry(:) = xsmin(:) / s(:)
-   end where
-   where (xtry(:)*s(:) > xsmax(:))
-      xtry(:) = xsmax(:) / s(:)
-   end where
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !------ Initialise the function evaluation. --------------------------------------------!
-   call gppsolver2_fun(xtry,s,xsmin,xsmax, apar, met, gsdata,funtry)
-   fn2try = 0.5 * sum(funtry(:)*funtry(:))
-   !---------------------------------------------------------------------------------------!
-
-
-   !---------------------------------------------------------------------------------------!
-   !      Unlikely, but if we are really lucky and hit the jackpot with the first guess,   !
-   ! we quit, that is indeed what we were looking for, and if we continue the iteration    !
-   ! may send the guess away...                                                            !
-   !---------------------------------------------------------------------------------------!
-   if (all(funtry == 0.)) then
-      converged = .true.
-      errnorm   = 0.0
-      ci        = xtry(1)*s(1)
-      gsw       = xtry(2)*s(2)
       return
-   end if
+   end subroutine lphysiol_full
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This subroutine computes the maximum capacity of Rubisco to perform the           !
+   ! carboxylase function at a certain temperature, given the PFT and phenology            !
+   ! properties, and, in case of light controlled phenology, the leaf life span and the    !
+   ! average reference value of the Vm function (Vm0).  The output variables are stored in !
+   ! the aparms structure, as they are going to be used in other sub-routines. Both Vm and !
+   ! the reference value Vm0 have units of µmol/m²/s                                       !
    !---------------------------------------------------------------------------------------!
+   subroutine comp_maxcap_rubisco(ipft,leaf_aging_factor,green_leaf_factor)
+      use physiology_coms, only : vm_ecoeff8       & ! intent(in)
+                                , vm_tempcoeff8    ! ! intent(in)
+      use c34constants   , only : met              & ! intent(in) 
+                                , aparms           & ! intent(in)
+                                , thispft          ! ! intent(in)
+      use consts_coms    , only : lnexp_min8       & ! intent(in)
+                                , lnexp_max8       ! ! intent(in)
+      implicit none
+      !------ Arguments. ------------------------------------------------------------------!
+      integer     , intent(in) :: ipft              ! PFT type.                 [      ---]
+      real(kind=4), intent(in) :: leaf_aging_factor ! Ageing factor             [      ---]
+      real(kind=4), intent(in) :: green_leaf_factor ! Greeness (prescr. phen.)  [      ---]
+      !------ Local variables. ------------------------------------------------------------!
+      real(kind=8)             :: vm_resp           ! Vm  for leaf respiration  [ mol/m²/s]
+      real(kind=8)             :: lnexplow          ! Low temperature exponent  [      ---]
+      real(kind=8)             :: lnexphigh         ! High temperature exponent [      ---]
+      real(kind=8)             :: tlow_fun          ! Low temperature bound     [      ---]
+      real(kind=8)             :: thigh_fun         ! High temperature bound    [      ---]
+      real(kind=8)             :: greeness          ! Leaf "Greeness"           [   0 to 1]
+      !------------------------------------------------------------------------------------!
 
 
-      
+
+      !------------------------------------------------------------------------------------!
+      !     If this plant functional type has cold phenology associated with it, we must   !
+      ! determine the correction term for Vm.  Otherwise, we set the greeness to 1.        !
+      !------------------------------------------------------------------------------------!
+      if (leaf_aging_factor > 0.01 .and. green_leaf_factor > 0.0001) then
+         greeness = dble(leaf_aging_factor) / dble(green_leaf_factor)
+      else
+         greeness = 1.d0
+      end if
+
+
+
+      !------------------------------------------------------------------------------------!
+      !    Compute the functions that will control the Vm function for low and high tem-   !
+      ! perature.  In order to avoid floating point exceptions, we check whether the       !
+      ! temperature will make the exponential too large or too small.                      !
+      !------------------------------------------------------------------------------------!
+      !----- Low temperature. -------------------------------------------------------------!
+      lnexplow  = vm_tempcoeff8 * (thispft%vm_low_temp  - met%leaf_temp)
+      lnexplow  = max(lnexp_min8,min(lnexp_max8,lnexplow))
+      tlow_fun  = 1.d0 +  exp(lnexplow)
+      !----- High temperature. ------------------------------------------------------------!
+      lnexphigh = vm_tempcoeff8 * (met%leaf_temp - thispft%vm_high_temp)
+      lnexphigh = max(lnexp_min8,min(lnexp_max8,lnexphigh))
+      thigh_fun = 1.d0 + exp(lnexphigh)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !----- Compute Vm for photosynthesis, using M09's equation (B3). --------------------!
+      aparms%vm = greeness * arrhenius(met%leaf_temp,thispft%vm0_photo,vm_ecoeff8)         &
+                / (tlow_fun * thigh_fun)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Compute Vm and the leaf respiration.  The vm_resp factor will be different     !
+      ! from vm_photo only for the light-controlled phenology case.                        !
+      !------------------------------------------------------------------------------------!
+      vm_resp          = greeness * arrhenius(met%leaf_temp,thispft%vm0_resp,vm_ecoeff8)   &
+                       / (tlow_fun * thigh_fun)
+      aparms%leaf_resp = vm_resp * thispft%gamma
+      !------------------------------------------------------------------------------------!
+
+
+      return
+   end subroutine comp_maxcap_rubisco
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This subroutine is the main driver for the C3 photosynthesis.                     !
    !---------------------------------------------------------------------------------------!
-   !     Define the maximum allowed step.  The step is normalised to make our comparisons  !
-   ! more independent on the size of each component.                                       !
-   !---------------------------------------------------------------------------------------!
-   stepmax = normstmax * max(sqrt(sum(xtry(:)*xtry(:))),real(xdim))
-   !---------------------------------------------------------------------------------------!
+   subroutine photosynthesis_exact_solver(limit_flag)
+      use c34constants   , only : met              & ! intent(in)
+                                , thispft          & ! intent(in)
+                                , aparms           & ! intent(in)
+                                , stopen           & ! intent(inout)
+                                , stclosed         & ! intent(inout)
+                                , rubiscolim       & ! intent(inout)
+                                , co2lim           & ! intent(inout)
+                                , lightlim         & ! intent(inout)
+                                , copy_solution    ! ! intent(in)
+      use physiology_coms, only : par_twilight_min & ! intent(in)
+                                , c34smax_gsw8     ! ! intent(in)
+      implicit none
+      !------ Arguments. ------------------------------------------------------------------!
+      integer     , intent(out) :: limit_flag  ! Flag with limiting property      [    ---]
+      !------ Local variables. ------------------------------------------------------------!
+      logical                   :: success     ! The solver successfully run.     [    T|F]
+      !------------------------------------------------------------------------------------!
 
 
 
-   !-----Big loop for Newton's method. ----------------------------------------------------!
-   newtonloop: do n=1,maxmdne
-      !----- Update the old guess. --------------------------------------------------------!
-      x      = xtry(:)
-      fun    = funtry(:)
-      fn2    = fn2try
-
-      !----- Compute the Jacobian. --------------------------------------------------------!
-      call gppsolver2_jacob(x,s,xsmin,xsmax,apar,met,gsdata,jacob)
-      !----- Comput the gradient of the fn2. ----------------------------------------------!
-      gradfn2 = matmul(jacob,fun)
-
-      !----- Solve the linear system. -----------------------------------------------------!
-      funtry = -fun
-      call lisys_solver(xdim,jacob,funtry,dx,singular)
-      
-      !------------------------------------------------------------------------------------! 
-      !    Check whether we have a solution or not, based on the Jacobian condition        !
-      ! number.                                                                            !
-      !------------------------------------------------------------------------------------! 
-      if (singular) then
-         !---------------------------------------------------------------------------------!
-         !     In case it is indeed a singularity, the only remedy is to start over but    !
-         ! applying some random noise to the current guess, and hopefully this will make   !
-         ! the method to approach the solution through a more reasonable path.             !
-         !---------------------------------------------------------------------------------!
-         call random_number(xnudge)
-         xnudge(:) = (2*xnudge(:) - 1.) * nudgescal
-         xtry(:)   = xtry(:) * (1. + xnudge(:))
-         where (xtry(:)*s(:) < xsmin(:))
-            xtry(:) = xsmin(:)/s(:)
-         end where
-         where (xtry(:)*s(:) > xsmax(:))
-            xtry(:) = xsmax(:)/s(:)
-         end where
-   
-         call gppsolver2_fun(xtry,s,xsmin,xsmax, apar, met, gsdata,funtry)
-         fn2try = 0.5 * sum(funtry(:)*funtry(:))
-
-         !---------------------------------------------------------------------------------!
-         !      Unlikely, but if we are really lucky and hit the jackpot with the first    !
-         ! guess, we quit, that is indeed what we were looking for, and if we continue the !
-         ! iteration may send the guess away...                                            !
-         !---------------------------------------------------------------------------------!
-         if (all(funtry == 0.)) then
-            converged = .true.
-            errnorm   = 0.
-            ci        = xtry(1)*s(1)
-            gsw       = xtry(2)*s(2)
-            return
-         end if
-         !---------------------------------------------------------------------------------!
+      !------------------------------------------------------------------------------------!
+      !      Initialise the parameters to compute the carbon demand for the case where the !
+      ! stomata are closed.  We call the solver for the specific case in which the stomata !
+      ! are closed, because in this case neither the carbon demand nor the stomatal water  !
+      ! conductance depend on the intercellular CO2 mixing ratio.                          !
+      !------------------------------------------------------------------------------------!
+      call set_co2_demand_params('CLOSED')
+      call solve_closed_case(stclosed)
+      !------------------------------------------------------------------------------------!
 
 
-         !---------------------------------------------------------------------------------!
-         !     Define the maximum allowed step.  The step is normalised to make our        !
-         ! comparisons more independent on the size of each component.                     !
-         !---------------------------------------------------------------------------------!
-         stepmax = normstmax * max(sqrt( sum(xtry(:)*xtry(:))), real(xdim))
-         !---------------------------------------------------------------------------------!
-         cycle newtonloop
+      !------------------------------------------------------------------------------------!
+      !    Check whether this is night time.  In case it is, no photosynthesis should      !
+      ! happen, we copy the closed case stomata values to the open case.  Limit_flag       !
+      ! becomes 0, which is the flag for night time limitation.                            !
+      !------------------------------------------------------------------------------------!
+      if (met%par < par_twilight_min) then
+         call copy_solution(stclosed,stopen)
+         limit_flag = 0
+         return
       end if
       !------------------------------------------------------------------------------------!
 
 
 
       !------------------------------------------------------------------------------------!
-      !     Now we decide whether this step is safe or not to be taken.  First thing,      !
-      ! we check whether the step is too big, and in case it is, we shorten the size of    !
-      ! the step.                                                                          !
+      !    There is enough light to be considered at least dawn or dusk, so we go with     !
+      ! photosynthesis.  The closed stomata is already solved, so now we must solve the    !
+      ! open stomata case only.                                                            !
+      !    During the day, conditions may lead to light, rubisco, or CO2 limitation on the !
+      ! photosynthesis.  Following M01, we solve all cases and determine which ones gives  !
+      ! the lowest carbon demand.  The actual solution is going to be simply the one with  !
+      ! the lowest carbon_demand.                                                          !
       !------------------------------------------------------------------------------------!
-      stepsize = sqrt(sum(dx(:)*dx(:)))
-      if (stepsize > stepmax) dx(:) = dx(:) * stepmax / stepsize
-      !------------------------------------------------------------------------------------!
 
 
 
       !------------------------------------------------------------------------------------!
-      !     Check the slope of the step we are about to take.  Hopefully this is going to  !
-      ! be always negative.  Also, we check whether the step we are about to take will     !
-      ! keep guesses in the right place.  In case it is not, we may need to start over.    !
+      !   1. The light-limited (aka PAR) case.                                             !
       !------------------------------------------------------------------------------------!
-      slope   = sum(gradfn2(:)*dx(:))
-      xtry(:) = x(:) + dx(:)
-      if (slope >= 0. .or. any(xtry(:)*s(:) < 0.90*xsmin(:))  .or.                         &
-                           any(xtry(:)*s(:) > 1.10*xsmax(:)) ) then
-         call random_number(xnudge)
-         xnudge(:) = (2*xnudge(:) - 1.) * nudgescal
-         xtry(:)   = xtry(:) * (1. + xnudge(:))
-         where (xtry(:)*s(:) < xsmin(:))
-            xtry(:) = xsmin(:) / s(:)
-         end where
-         where (xtry(:)*s(:) > xsmax(:))
-            xtry(:) = xsmax(:) / s(:)
-         end where
-   
-         call gppsolver2_fun(xtry,s,xsmin,xsmax, apar, met, gsdata, funtry)
-         fn2try = 0.5 * sum(funtry(:)*funtry(:))
-
-         !---------------------------------------------------------------------------------!
-         !      Unlikely, but if we are really lucky and hit the jackpot with the first    !
-         ! guess, we quit, that is indeed what we were looking for, and if we continue the !
-         ! iteration may send the guess away...                                            !
-         !---------------------------------------------------------------------------------!
-         if (all(funtry == 0.)) then
-            converged = .true.
-            errnorm   = 0
-            ci       = xtry(1)*s(1)
-            gsw      = xtry(2)*s(2)
-            return
-         end if
-         !---------------------------------------------------------------------------------!
-
-
-         !---------------------------------------------------------------------------------! 
-         !     Define the maximum allowed step.  The step is normalised to make our        !
-         ! comparisons more independent on the size of each component.                     !
-         !---------------------------------------------------------------------------------! 
-         stepmax = normstmax * max(sqrt( sum(xtry(:)*xtry(:))),real(xdim))
-         !---------------------------------------------------------------------------------! 
-
-         cycle newtonloop
+      !----- Update the CO2 demand function parameters for light limitation. --------------!
+      call set_co2_demand_params('LIGHT')
+      !----- Choose the appropriate solver depending on the kind of photosynthesis. -------!
+      select case(thispft%photo_pathway)
+      case (3)
+         call solve_iterative_case(lightlim,success)
+      case (4)
+         call solve_aofixed_case(lightlim,success)
+      end select
+      !------------------------------------------------------------------------------------!
+      !     In case success was returned as "false", this means that the light-limited     !
+      ! case didn't converge (there was no root).  If this is the case we give up and      !
+      ! close all stomata, as there was no viable state for stomata to remain opened.      !
+      !------------------------------------------------------------------------------------!
+      if (.not. success) then
+         call copy_solution(stclosed,lightlim)
+         lightlim%co2_demand = discard
       end if
       !------------------------------------------------------------------------------------!
 
@@ -1854,393 +468,1227 @@ subroutine gpp_solver2(apar,gsdata,met,ci,gsw,errnorm,n,converged)
 
 
       !------------------------------------------------------------------------------------!
-      !     Now we compute the minimum lambda.  First we obtain the scale for it.          !
+      !    2. The Rubisco-limited (aka Vm) case.                                           !
       !------------------------------------------------------------------------------------!
-      where (abs(x(:)) < 1.)
-         dxnorm(:) = abs(dx(:))
-      elsewhere
-         dxnorm(:) = abs(dx(:))/abs(x(:))
-      end where
-      lambdamin = toler/maxval(dxnorm)
+      !----- Update the CO2 demand function parameters for Rubisco limitation. ------------!
+      call set_co2_demand_params('RUBISCO')
+      !----- Choose the appropriate solver depending on the kind of photosynthesis. -------!
+      select case(thispft%photo_pathway)
+      case (3)
+         call solve_iterative_case(rubiscolim,success)
+      case (4)
+         call solve_aofixed_case(rubiscolim,success)
+      end select
+      !------------------------------------------------------------------------------------!
+      !     In case success was returned as "false", this means that the Rubisco-limited   !
+      ! case didn't converge (there was no root).  If this is the case we give up and      !
+      ! close all stomata, as there was no viable state for stomata to remain opened.      !
+      !------------------------------------------------------------------------------------!
+      if (.not. success) then
+         call copy_solution(stclosed,rubiscolim)
+         rubiscolim%co2_demand = discard
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      ! 3. The low CO2 concentration case (aka the CO2 case).                              !
+      !------------------------------------------------------------------------------------!
+      !----- Update the CO2 demand function parameters for CO2 limitation. ----------------!
+      call set_co2_demand_params('CO2')
+      !----- Choose the appropriate solver depending on the kind of photosynthesis. -------!
+      select case(thispft%photo_pathway)
+      case (3)
+         !---------------------------------------------------------------------------------!
+         !    C3, there is no CO2 limitation in this formulation.  Copy the closed stomata !
+         ! case, but assign a large number for carbon_demand, so this will never be        !
+         ! chosen.                                                                         !
+         !---------------------------------------------------------------------------------!
+         call copy_solution(stclosed,co2lim)
+         co2lim%co2_demand = discard
+         success           = .true.
+
+      case (4)
+         !---------------------------------------------------------------------------------!
+         !    C4, both carbon_demand and stomatal conductance of water depend on the       !
+         ! inter-cellular CO2 concentration.  We must find all these three variables       !
+         ! simultaneously, using an iterative method.                                      !
+         !---------------------------------------------------------------------------------!
+         call solve_iterative_case(co2lim,success)
+      end select
+      !------------------------------------------------------------------------------------!
+      !     In case success was returned as "false", this means that the CO2-limited case  !
+      ! didn't converge (there was no root).  If this is the case we give up and close all !
+      ! stomata, as there was no viable state for stomata to remain opened.                !
+      !------------------------------------------------------------------------------------!
+      if (.not. success) then
+         call copy_solution(stclosed,co2lim)
+         co2lim%co2_demand = discard
+         return
+      end if
+      !------------------------------------------------------------------------------------!
+      
+
+
+      !------------------------------------------------------------------------------------!
+      !     The actual solution will be the one with the lowest carbon demand.  In case    !
+      ! all three states failed, the solution is considered invalid and therefore all      !
+      ! stomata are closed.                                                                !
+      !------------------------------------------------------------------------------------!
+      if (lightlim%co2_demand == discard .and. rubiscolim%co2_demand == discard .and.      &
+          co2lim%co2_demand == discard) then
+         call copy_solution(stclosed,stopen)
+         limit_flag = -1
+      elseif (lightlim%co2_demand <= rubiscolim%co2_demand .and.                           &
+          lightlim%co2_demand <= co2lim%co2_demand              )  then
+         !----- Light is the strongest limitation. ----------------------------------------!
+         call copy_solution(lightlim,stopen)
+         limit_flag = 1
+      elseif (rubiscolim%co2_demand < lightlim%co2_demand .and.                            &
+              rubiscolim%co2_demand <= co2lim%co2_demand        ) then
+         !----- Rubisco is the strongest limitation. --------------------------------------!
+         call copy_solution(rubiscolim,stopen)
+         limit_flag = 2
+      else
+         !----- CO2 is the strongest limitation. ------------------------------------------!
+         call copy_solution(co2lim,stopen)
+         limit_flag = 3
+      end if
       !------------------------------------------------------------------------------------!
 
 
 
       !------------------------------------------------------------------------------------!
-      !     Initialise lambda.  It's good to be optimistic, so we start with lambda=1,     !
-      ! which corresponds to the "normal" Newton's method.                                 !
+      !     Final sanity check.  If the conductivity has somehow become negative, close    !
+      ! all stomata.                                                                       !
       !------------------------------------------------------------------------------------!
-      lambda = 1.
+      if (stopen%stom_cond_h2o < thispft%b) then
+         call copy_solution(stclosed,stopen)
+         limit_flag = -4
+      elseif (stopen%stom_cond_h2o > c34smax_gsw8) then
+         call copy_solution(stclosed,stopen)
+         limit_flag = 4
+      end if
+      return
+   end subroutine photosynthesis_exact_solver
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This subroutine solves the model for the case where the stomata are closed.  This !
+   ! is much simpler because the carbon demand doesn't depend on the intercellular CO2     !
+   ! concentration, nor does the stomatal water conductivity.                              !
+   !---------------------------------------------------------------------------------------!
+   subroutine solve_closed_case(answer)
+      use c34constants   , only : solution_vars & ! structure
+                                , met           & ! intent(in)
+                                , thispft       & ! intent(in)
+                                , aparms        ! ! intent(in)
+      use physiology_coms, only : gsw_2_gsc8    ! ! intent(in)
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(solution_vars), intent(out) :: answer
+      !------------------------------------------------------------------------------------!
+
 
       !------------------------------------------------------------------------------------!
-      !     This loop is going to do the line search, seeking a step that will be the      !
-      ! fastest possible, but playing it safe, and taking a shorter step if the full step  !
-      ! is too dangerous.                                                                  !
+      !   1. Since the carbon demand doesn't depend on the intercellular CO2, compute it   !
+      !      using the first guess.                                                        !
       !------------------------------------------------------------------------------------!
-      linesearch: do
-         !----- Update the guess. ---------------------------------------------------------!
-         xtry = x(:) + lambda * dx(:)
-         
-         !----- Find the updated function and the fn2 term. -------------------------------!
-         call gppsolver2_fun(xtry,s,xsmin,xsmax, apar, met, gsdata,funtry)
-         fn2try = 0.5 * sum(funtry(:)*funtry(:))
-         
-         if (lambda < lambdamin) then
-            !------------------------------------------------------------------------------!
-            !     Convergence on delta x, the check outside this loop should check whether !
-            ! this has achieve convergence or if this is a spurious convergence.           !
-            !------------------------------------------------------------------------------!
-            xtry(:) = x(:)
-            dxconv = .true.
-            exit linesearch
-         elseif (fn2try <= fn2 + alfls * lambda * slope) then
-            !----- The function is going to the right direction, quit line search. --------!
-            dxconv = .false.
-            exit linesearch
-         elseif (lambda == 1.) then
-            !----- First call of the back track, we use a simple expression. --------------!
-            dxconv    = .false.
-            lambdatry = - slope / (2. * (fn2try - fn2 -slope))
+      answer%co2_demand = calc_co2_demand(met%can_co2)
+      !------------------------------------------------------------------------------------!
+      !   2. Assign the stomatal conductance of water, which is a constant in this case.   !
+      !      Apply the conversion factor and find the stomatal CO2 conductance.            !
+      !------------------------------------------------------------------------------------!
+      answer%stom_cond_h2o = thispft%b
+      answer%stom_cond_co2 = gsw_2_gsc8 * answer%stom_cond_h2o
+      !----- 3. Compute the leaf surface CO2. ---------------------------------------------!
+      answer%lsfc_co2  = met%can_co2 - answer%co2_demand / met%blyr_cond_co2
+      !----- 4. Compute the intercellular CO2. --------------------------------------------!
+      answer%lint_co2  = answer%lsfc_co2 - answer%co2_demand / answer%stom_cond_co2
+      !----- 5. Compute the leaf surface vapour mixing ratio. -----------------------------!
+      answer%lsfc_shv = ( answer%stom_cond_h2o * met%lint_shv                              &
+                        + met%blyr_cond_h2o    * met%can_shv  )                            &
+                      / ( met%blyr_cond_h2o + answer%stom_cond_h2o)
+      !------------------------------------------------------------------------------------!
+      return
+   end subroutine solve_closed_case
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This subroutine solves the model for the case where the carbon demand doesn't     !
+   ! depend on the internal carbon.  This is simpler than the iterative case because we    !
+   ! can solve through a quadratic equation for the stomatal conductance for water vapour. !
+   !---------------------------------------------------------------------------------------!
+   subroutine solve_aofixed_case(answer,success)
+      use c34constants   , only : solution_vars     & ! structure
+                                , met               & ! intent(in)
+                                , thispft           & ! intent(in)
+                                , aparms            ! ! intent(in)
+      use physiology_coms, only : gsw_2_gsc8        & ! intent(in)
+                                , c34smax_gsw8      & ! intent(in)
+                                , c34smin_lint_co28 & ! intent(in)
+                                , c34smax_lint_co28 ! ! intent(in)
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(solution_vars), intent(out) :: answer
+      logical            , intent(out) :: success
+      !----- Local variables. -------------------------------------------------------------!
+      real(kind=8)                     :: qterm1
+      real(kind=8)                     :: qterm2
+      real(kind=8)                     :: qterm3
+      real(kind=8)                     :: aquad
+      real(kind=8)                     :: bquad
+      real(kind=8)                     :: cquad
+      real(kind=8)                     :: discr
+      real(kind=8)                     :: restot
+      real(kind=8)                     :: gswroot1
+      real(kind=8)                     :: gswroot2
+      real(kind=8)                     :: ciroot1
+      real(kind=8)                     :: ciroot2
+      logical                          :: bounded1
+      logical                          :: bounded2
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !   1. Initialise the success flag as true.  In case we have trouble solving this    !
+      !      case, we switch the flag to false before we quit.                             !
+      !------------------------------------------------------------------------------------!
+      success = .true.
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !   2. Since the carbon demand doesn't depend on the intercellular CO2, compute it   !
+      !      using the first guess.                                                        !
+      !------------------------------------------------------------------------------------!
+      answer%co2_demand = calc_co2_demand(met%can_co2)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !----- 3. Compute the leaf surface CO2. ---------------------------------------------!
+      answer%lsfc_co2  = met%can_co2 - answer%co2_demand / met%blyr_cond_co2
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !   4. Find auxiliary coefficients to compute the quadratic terms.                   !
+      !------------------------------------------------------------------------------------!
+      qterm1 = (met%can_co2 - met%compp) * met%blyr_cond_co2 - answer%co2_demand
+      qterm2 = (thispft%d0 + met%lint_shv - met%can_shv) * met%blyr_cond_h2o
+      qterm3 = thispft%m * answer%co2_demand * thispft%d0 * met%blyr_cond_co2
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !   5. Find the coefficients for the quadratic equation.                             !
+      !------------------------------------------------------------------------------------!
+      aquad = qterm1 * thispft%d0
+      bquad = qterm1 * qterm2 - aquad * thispft%b - qterm3
+      cquad = - qterm1 * qterm2 * thispft%b - qterm3 * met%blyr_cond_h2o
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !   6. Solve the quadratic equation for gsw.                                         !
+      !------------------------------------------------------------------------------------!
+      if (aquad == 0.d0) then
+         !----- Not really a quadratic equation. ------------------------------------------!
+         gswroot1 = -cquad / bquad
+         gswroot2 = discard
+      else
+         !----- A quadratic equation, find the discriminant. ------------------------------!
+         discr = bquad * bquad - 4.d0 * aquad * cquad
+
+
+         !----- Decide what to do based on the discriminant. ------------------------------!
+         if (discr == 0.d0) then
+            !----- Double root. -----------------------------------------------------------!
+            gswroot1 = - bquad / (2.d0 * aquad)
+            gswroot2 = discard
+         elseif (discr > 0.d0) then
+            !----- Two distinct roots. ----------------------------------------------------!
+            gswroot1 = (- bquad - sqrt(discr)) / (2.d0 * aquad)
+            gswroot2 = (- bquad + sqrt(discr)) / (2.d0 * aquad)
          else
-            !------------------------------------------------------------------------------!
-            !     Back track, the calls other than the first one.  In this case we use     !
-            ! the information from the previous attempt, and we use a cubic polynomial     !
-            ! to minimise the value of the gradient as a function of lambda.  Following    !
-            ! Press et al. (1992), section 9.7, we approximate the function to a cubic     !
-            ! polynomial in lambda, and we use both the most recent value and the value    !
-            ! right before that (lambda, and lambdapbt, respectively).                     !
-            !------------------------------------------------------------------------------!
-            dxconv = .false.
+            !----- None of the roots are real, this solution failed. ----------------------!
+            success = .false.
+            return
+         end if
+      end if
+      !------------------------------------------------------------------------------------!
 
-            rhstry   = fn2try - fn2 - lambda    * slope
-            rhspbt   = fn2pbt - fn2 - lambdapbt * slope
-            
-            abask  = ( rhstry/(lambda*lambda) - rhspbt/(lambdapbt*lambdapbt) )             &
-                     / (lambda - lambdapbt)
-            bbask  = ( lambda    * rhspbt / (lambdapbt * lambdapbt)                        &
-                     - lambdapbt * rhstry / (lambda    * lambda   ) )                      &
-                   / ( lambda - lambdapbt )
 
-            if (abask == 0.) then 
-               lambdatry = - slope / (2. * bbask)
+
+      !------------------------------------------------------------------------------------!
+      !   7. Check both solutions, and decide which one makes sense.  Once the right one   !
+      !      was determined, compute the stomatal resistance for CO2 and the intercellular !
+      !      CO2 concentration.  In case both make solutions make sense (unlikely), we     !
+      !      decide the root based on the intercellular CO2.                               !
+      !------------------------------------------------------------------------------------!
+      bounded1 = gswroot1 >= thispft%b .and. gswroot1 <= c34smax_gsw8
+      bounded2 = gswroot2 >= thispft%b .and. gswroot2 <= c34smax_gsw8
+      if (bounded1 .and. bounded2) then
+         !----- Both solutions are valid, warn the user as this shouldn't usually happen. -!
+         write (unit=*,fmt='(2(a,1x,es12.5,1x))') ' + Both GSW are fine.  GSW1 =',gswroot1 &
+                                                 ,                       'GSW2 =',gswroot2
+         ciroot1 = answer%lsfc_co2 - answer%co2_demand / (gsw_2_gsc8 * gswroot1)
+         ciroot2 = answer%lsfc_co2 - answer%co2_demand / (gsw_2_gsc8 * gswroot2)
+
+         bounded1 = ciroot1 >= c34smin_lint_co28 .and.                                     &
+                    ciroot1 <= min(c34smax_lint_co28,met%can_co2)
+         bounded2 = ciroot2 >= c34smin_lint_co28 .and.                                     &
+                    ciroot2 <= min(c34smax_lint_co28,met%can_co2)
+          
+         if (bounded1 .and. bounded2) then
+            !----- Both intercellular CO2 are fine, pick the highest and warn the user. ---!
+            write (unit=*,fmt='(2(a,1x,es12.5,1x))') ' + Both CI are fine.  CI1 =',ciroot1 &
+                                                    ,                      'CI2 =',ciroot2
+            if (ciroot1 >= ciroot2) then
+               answer%stom_cond_h2o = gswroot1
+               answer%stom_cond_co2 = gsw_2_gsc8 * answer%stom_cond_h2o
+               answer%lint_co2      = ciroot1
             else
-               discr = bbask * bbask - 3. * abask * slope
-               if (discr < 0.) then
-                  lambdatry = 0.5 * lambda
-               elseif (bbask <= 0.) then 
-                  lambdatry = ( - bbask + sqrt(discr)) / (3. * abask)
-               else
-                  lambdatry = - slope / (bbask + sqrt(discr))
+               answer%stom_cond_h2o = gswroot2
+               answer%stom_cond_co2 = gsw_2_gsc8 * answer%stom_cond_h2o
+               answer%lint_co2      = ciroot2
+            end if
+         elseif (bounded1) then
+            answer%stom_cond_h2o = gswroot1
+            answer%stom_cond_co2 = gsw_2_gsc8 * answer%stom_cond_h2o
+            answer%lint_co2      = ciroot1
+         elseif (bounded2) then
+            answer%stom_cond_h2o = gswroot2
+            answer%stom_cond_co2 = gsw_2_gsc8 * answer%stom_cond_h2o
+            answer%lint_co2      = ciroot2
+         else
+            success = .false.
+            return
+         end if
+      elseif (bounded1) then
+         !----- First root is the only one that makes sense. ------------------------------!
+         answer%stom_cond_h2o = gswroot1
+         answer%stom_cond_co2 = gsw_2_gsc8 * answer%stom_cond_h2o
+         answer%lint_co2      = answer%lsfc_co2 - answer%co2_demand / answer%stom_cond_co2
+
+      elseif (bounded2) then
+         !----- Second root is the only one that makes sense. -----------------------------!
+         answer%stom_cond_h2o = gswroot1
+         answer%stom_cond_co2 = gsw_2_gsc8 * answer%stom_cond_h2o
+         answer%lint_co2      = answer%lsfc_co2 - answer%co2_demand / answer%stom_cond_co2
+      else
+         !----- None of the solutions are bounded.  This solution failed. -----------------!
+         success = .false.
+         return
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !   8. Lastly, find the surface water specific humidity.                             !
+      !------------------------------------------------------------------------------------!
+      answer%lsfc_shv = ( answer%stom_cond_h2o * met%lint_shv                              &
+                        + met%blyr_cond_h2o    * met%can_shv  )                            &
+                      / ( met%blyr_cond_h2o + answer%stom_cond_h2o)
+      !------------------------------------------------------------------------------------!
+
+      return
+   end subroutine solve_aofixed_case
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This sub-routine will solve the case in which both the carbon demand and the      !
+   ! stomatal conductance of water are functions of the intercellular CO2.  This function  !
+   ! can be used for the simpler cases too, but it's not advisable because this is based   !
+   ! on iterative methods, which makes the solution slower.                                !
+   !     The iterative method is designed to use Newton's method as the default, and this  !
+   ! should take care of most cases.  In case Newton's method fails, it will fall back to  !
+   ! the modified Regula Falsi method (Illinois) and look for guesses with opposite sign.  !
+   ! If the method fails finding the pair, it means that there is no viable solution       !
+   ! within this range, so the method quits and return the error message.                  !
+   !---------------------------------------------------------------------------------------!
+   subroutine solve_iterative_case(answer,converged)
+      use c34constants   , only : solution_vars     & ! structure
+                                , met               & ! intent(in)
+                                , thispft           & ! intent(in)
+                                , aparms            ! ! intent(in)
+      use physiology_coms, only : gsw_2_gsc8        ! ! intent(in)
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(solution_vars), intent(out) :: answer    ! The strutcure with the answer
+      logical            , intent(out) :: converged ! A solution was found     [      T|F]
+      !----- Local variables. -------------------------------------------------------------!
+      real(kind=8)                     :: ci        ! Intercellular CO2         [  mol/mol]
+      real(kind=8)                     :: cia       ! Smallest/previous guess   [  mol/mol]
+      real(kind=8)                     :: ciz       ! Largest/new guess         [  mol/mol]
+      real(kind=8)                     :: deriv     ! Function derivative       [  mol/mol]
+      real(kind=8)                     :: fun       ! Function evaluation       [mol²/mol²]
+      real(kind=8)                     :: funa      ! Smallest  guess function  [mol²/mol²]
+      real(kind=8)                     :: funz      ! Largest   guess function  [mol²/mol²]
+      real(kind=8)                     :: delta     ! Aux. var to find 2nd guess[         ]
+      real(kind=8)                     :: cimin     ! Minimum intercell. CO2    [  mol/mol]
+      real(kind=8)                     :: cimax     ! Maximum intercell. CO2    [  mol/mol]
+      integer                          :: itn       ! Iteration counter         [      ---]
+      integer                          :: itb       ! Iteration counter         [      ---]
+      logical                          :: zside     ! Check for 1-sided appr.   [      ---]
+      logical                          :: hitmin    ! 2nd guess tried minimum   [      ---]
+      logical                          :: hitmax    ! 2nd guess tried maximum   [      ---]
+      logical                          :: bounded   ! Guess range is bounded.   [      T|F]
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !      Initialise the convergence flag.  Here we start realistic, ops, I mean,       !
+      ! pessimistic, and assume that we are failing.  This will be switched to true only   !
+      ! if a real answer is found, so in case we quit the sub-routine due to impossible    !
+      ! solution, the result will be failure.                                              !
+      !------------------------------------------------------------------------------------!
+      converged = .false.
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !    Determine the minimum and maximum intercellular CO2 that will still produce  a  !
+      ! positive and bounded conductance, which should be above the cuticular conductance  !
+      ! (otherwise there is no reason to keep stomata opened.                              !
+      !------------------------------------------------------------------------------------!
+      call find_lint_co2_bounds(cimin,cimax,bounded)
+      if (bounded) then
+         !---------------------------------------------------------------------------------!
+         !     We have found bounds, find put the first guess in the middle and find the   !
+         ! function evaluation and derivative of this guess.                               !
+         !---------------------------------------------------------------------------------!
+         cia = sqrt(cimin*cimax)
+         call iter_solver_step(.true.,cia,funa,deriv)
+      else
+         !----- No reasonable bound was found, we don't even bother solving this case. ----!
+         return
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
+      !----- Copy to the new guess just in case it fails at the first iteration -----------!
+      ciz = cia
+      fun = funa
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Enter Newton's method loop:                                                    !
+      !------------------------------------------------------------------------------------!
+      newloop: do itn = 1,maxfpofl/6
+         !---------------------------------------------------------------------------------!
+         !    In case the derivative is bad, we give up on Newton's and go with Regula     !
+         ! Falsi.                                                                          !
+         !---------------------------------------------------------------------------------!
+         if (abs(deriv) < tolerfl8) exit newloop
+         !---------------------------------------------------------------------------------!
+
+
+         !----- Copy the previous guess. --------------------------------------------------!
+         cia   = ciz
+         funa  = fun
+         !---------------------------------------------------------------------------------!
+
+
+         !----- Update guess. -------------------------------------------------------------!
+         ciz      = cia - fun/deriv
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !     Check whether the method converged.                                         !
+         !---------------------------------------------------------------------------------!
+         converged = 2.d0 * abs(cia-ciz) < tolerfl8 * (abs(cia)+abs(ciz))
+         !---------------------------------------------------------------------------------!
+
+ 
+         !---------------------------------------------------------------------------------!
+         !    At this point we perform several tests on the current status of the guess.   !
+         !---------------------------------------------------------------------------------!
+         if (ciz < cimin .or. ciz > cimax) then
+            !----- This guess went off-bounds, we give up on Newton's. --------------------!
+            exit newloop
+         elseif (converged) then
+            !----- Converged, find the root as the mid-point. -----------------------------!
+            ci  = 5.d-1 * (cia+ciz)
+            exit newloop
+         else
+            !----- Not there yet, update the function evaluation and the derivative. ------!
+            call iter_solver_step(.true.,ciz,fun,deriv)
+            if (fun == 0.d0) then 
+               !----- We have actually hit the jackpot, the answer is ciz. ----------------!
+               ci = ciz
+               exit newloop
+            end if
+         end if
+         !---------------------------------------------------------------------------------!
+      end do newloop
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      if (.not. converged) then 
+
+         !---------------------------------------------------------------------------------!
+         !     If we have reached this point it means that Newton's method failed.  We     !
+         ! switch to the Regula Falsi instead.  The first step is to find two solutions of !
+         ! the opposite side.                                                              !
+         !---------------------------------------------------------------------------------!
+         if (ciz < cimin .or. ciz > cimax) then
+            !----- The guess is outside the range, discard it and start over. -------------!
+            cia      = sqrt(cimin*cimax)
+            call iter_solver_step(.false.,cia,funa,deriv)
+            zside    = .false.
+         else if (funa * fun < 0.d0) then
+            funz     = fun
+            zside    = .true.
+         else
+            zside    = .false.
+         end if
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !     If we still don't have a good second guess, look for one.                   !
+         !---------------------------------------------------------------------------------!
+         if (.not. zside) then
+            !----- Find the extrapolation term to try to hit the other side. --------------!
+            delta = 1.d-2 * min(abs(cimax-cia),abs(cimin-cia),abs(cimax-cimin))
+            !------------------------------------------------------------------------------!
+
+
+
+            !----- First attempt. ---------------------------------------------------------!
+            ciz   = cia + delta
+            zside = .false.
+            !------------------------------------------------------------------------------!
+
+
+            !------------------------------------------------------------------------------!
+            !     Second guess seeker loop.                                                !
+            !------------------------------------------------------------------------------!
+            hitmin = .false.
+            hitmax = .false.
+            itb    = 0
+            zgssloop: do
+               itb = itb + 1
+               if (hitmin .and. hitmax) then
+                   !-----------------------------------------------------------------------!
+                   !     We searched through the entire range of ci, and we couldn't find  !
+                   ! any pair of roots of the opposite sign, it's likely that there is no  !
+                   ! solution, so we give up.                                              !
+                   !-----------------------------------------------------------------------!
+                   return
                end if
+
+               ciz = cia + dble((-1)**itb * (itb+3)/2) * delta
+               if (ciz < cimin) then
+                   !-----------------------------------------------------------------------!
+                   !    We have hit the minimum.  Force it to be the minimum, and make the !
+                   ! hitmin flag true.                                                     !
+                   !-----------------------------------------------------------------------!
+                   ciz    = cimin
+                   hitmin = .true.
+               elseif (ciz > cimax) then
+                   ciz    = cimax
+                   hitmax = .true.
+               end if
+               !---------------------------------------------------------------------------!
+               !     Compute the function evaluate and check signs.                        !
+               !---------------------------------------------------------------------------!
+               call iter_solver_step(.false.,ciz,funz,deriv)
+               zside = funa*funz < 0.d0
+               if (zside) exit zgssloop
+            end do zgssloop
+            !------------------------------------------------------------------------------!
+         end if
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !     If we have reached this points, it means that there is a root that hasn't   !
+         ! been found yet, but at least we know that it is between cia and ciz.  Use the   !
+         ! modified Regula Falsi (Illinois) method to find it.                             !
+         !---------------------------------------------------------------------------------!
+         fpoloop: do itb=itn,maxfpofl
+            ci = (funz * cia - funa * ciz) / (funz-funa)
+
+            !------------------------------------------------------------------------------!
+            !     Now that we updated the guess, check whether they are really close.      !
+            ! In case they are, this means that it converged, we can use this as our root. !
+            !------------------------------------------------------------------------------!
+            converged = 2.d0 * abs(ci - cia) < tolerfl8 * (abs(cia)+abs(ciz))
+            if (converged) then
+               exit fpoloop
             end if
             !------------------------------------------------------------------------------!
 
-            
-            !------------------------------------------------------------------------------!
-            !     Here we impose that the new lambda should not exceed half the previous   !
-            ! lambda.                                                                      !
-            !------------------------------------------------------------------------------!
-            lambdatry = min(0.5 * lambda,lambdatry)
-            !------------------------------------------------------------------------------!
-         end if
-         
-         !---------------------------------------------------------------------------------!
-         !     We also want to make the new lambda at least 10% of the previous, even when !
-         ! this is the first call of the back track.                                       !
-         !---------------------------------------------------------------------------------!
-         lambdatry = max(lambdatry, 0.1 * lambda)
 
-         !------ Update the older guess. --------------------------------------------------!
-         lambdapbt = lambda
-         fn2pbt    = fn2try
-         lambda    = lambdatry
-      end do linesearch
-      !------------------------------------------------------------------------------------!
+            !----- Find the new function evaluation. --------------------------------------!
+            call iter_solver_step(.false.,ci,fun,deriv)
 
 
-
-
-      !------------------------------------------------------------------------------------!
-      !     Check the results, and assume success if we hit the true solution, or if we    !
-      ! are sufficently close to the true solution.                                        !
-      !------------------------------------------------------------------------------------!
-      error = abs(funtry(:))
-      errnorm  = maxval(error)
-
-      !------------------------------------------------------------------------------------!
-      !      If Newton's method succeeded, we update the output and quit the sub-routine   !
-      ! now.                                                                               !
-      !------------------------------------------------------------------------------------!
-      if (dxconv .and. errnorm < toler) then
-         !----- The gradient is small but we are indeed close to zero. --------------------!
-         converged = .true.
-         ci        = xtry(1)*s(1)
-         gsw       = xtry(2)*s(2)
-         return
-      elseif (dxconv) then
-         !---------------------------------------------------------------------------------!
-         !     Here we have hit a spurious zero gradient (a bad thing), because the        !
-         ! function evaluation is not within the tolerance.  The only remedy is to start   !
-         ! over but applying some random noise to the current guess, and hopefully this    !
-         ! will make the method to approach the solution through a better path.            !
-         !---------------------------------------------------------------------------------!
-         call random_number(xnudge)
-         xnudge(:) = (2*xnudge(:) - 1.) * nudgescal
-         xtry(:)   = xtry(:) * (1. + xnudge(:))
-         where (xtry(:)*s(:) < xsmin(:))
-            xtry(:) = xsmin(:) / s(:)
-         end where
-         where (xtry(:)*s(:) > xsmax(:))
-            xtry(:) = xsmax(:) / s(:)
-         end where
-
-         call gppsolver2_fun(xtry,s,xsmin,xsmax, apar, met, gsdata, funtry)
-         fn2try = 0.5 * sum(funtry(:)*funtry(:))
-
-         !---------------------------------------------------------------------------------!
-         !      Unlikely, but if we are really lucky and hit the jackpot with the first    !
-         ! guess, we quit, that is indeed what we were looking for, and if we continue the !
-         ! iteration may send the guess away...                                            !
-         !---------------------------------------------------------------------------------!
-         if (all(funtry == 0.)) then
-            converged = .true.
-            errnorm   = 0.
-            ci        = xtry(1)*s(1)
-            gsw       = xtry(2)*s(2)
-            return
-         end if
-         !---------------------------------------------------------------------------------!
-
-
-         !---------------------------------------------------------------------------------!
-         !     Define the maximum allowed step.  The step is normalised to make our        !
-         ! comparisons more independent on the size of each component.                     !
-         !---------------------------------------------------------------------------------!
-         stepmax = normstmax * max(sqrt(sum(xtry(:)*xtry(:))),real(xdim))
-         !---------------------------------------------------------------------------------!
-
-         cycle newtonloop
-      else
-         !----- Check for convergence on delta-x. -----------------------------------------!
-         where (x(:) < 1.)
-            error(:) = abs(xtry(:)-x(:))
-         elsewhere
-            error(:) = abs(xtry(:)-x(:)) / abs(x(:))
-         end where
-         errnorm  = max(errnorm,maxval(error))
-         !---------------------------------------------------------------------------------!
-         !      If Newton's method succeeded, we update the output and quit the sub-       !
-         ! routine now.                                                                    !
-         !---------------------------------------------------------------------------------!
-         if (errnorm < toler) then
-            converged = .true.
-            ci        = xtry(1)*s(1)
-            gsw       = xtry(2)*s(2)
-            return
-         end if
+            !------ Define the new interval based on the intermediate value theorem. ------!
+            if (fun*funa < 0.d0 ) then
+               ciz = ci
+               funz  = fun
+               !----- If we are updating zside again, modify aside (Illinois method) ------!
+               if (zside) funa=funa * 5.d-1
+               !----- We just updated zside, set zside to true. ---------------------------!
+               zside = .true.
+            else
+               cia = ci
+               funa   = fun
+               !----- If we are updating aside again, modify aside (Illinois method) ------!
+               if (.not. zside) funz=funz * 5.d-1
+               !----- We just updated aside, set zside to false. --------------------------!
+               zside = .false.
+            end if
+         end do fpoloop
          !---------------------------------------------------------------------------------!
       end if
-   end do newtonloop
-   !---------------------------------------------------------------------------------------!
-   !---------------------------------------------------------------------------------------!
-   !---------------------------------------------------------------------------------------!
-
-
-   !---------------------------------------------------------------------------------------!
-   !     If we have reached this point, this means that both Newton's with linear search-  !
-   ! ing method failed to converge.  We will acknowledge that  but we fill the output      !
-   ! variables with what we have.                                                          !
-   !---------------------------------------------------------------------------------------!
-   ci        = xtry(1)*s(1)
-   gsw       = xtry(2)*s(2)
-   converged = .false.
-   !---------------------------------------------------------------------------------------!
-
-   return
-end subroutine gpp_solver2
-!==========================================================================================!
-!==========================================================================================!
+      !------------------------------------------------------------------------------------!
 
 
 
 
 
+      !------------------------------------------------------------------------------------!
+      !     In case it converged, we can compute the answer.                               !
+      !------------------------------------------------------------------------------------!
+      if (converged) then
+         !----- 1. Intercellular CO2, we just utilise the answer we've just got. ----------!
+         answer%lint_co2      = ci
+         !----- 3. Compute the CO2 demand. ------------------------------------------------!
+         answer%co2_demand    = calc_co2_demand(answer%lint_co2)
+         !----- 4. Compute the actual stomatal conductance of water and CO2. --------------!
+         answer%stom_cond_h2o = calc_stom_cond_h2o(answer%lint_co2,answer%co2_demand)
+         answer%stom_cond_co2 = gsw_2_gsc8 * answer%stom_cond_h2o
+         !----- 5. Compute the leaf surface CO2. ------------------------------------------!
+         answer%lsfc_co2  = met%can_co2 - answer%co2_demand / met%blyr_cond_co2
+         !----- 6. Compute the leaf surface vapour mixing ratio. --------------------------!
+         answer%lsfc_shv  = ( answer%stom_cond_h2o * met%lint_shv                          &
+                            + met%blyr_cond_h2o    * met%can_shv  )                        &
+                          / ( met%blyr_cond_h2o + answer%stom_cond_h2o)
+         !---------------------------------------------------------------------------------!
+      end if
+      !------------------------------------------------------------------------------------!
 
-!==========================================================================================!
-!==========================================================================================!
-subroutine gppsolver2_fun(x,s,xsmin,xsmax, apar, met, gsdata,fun)
-   use c34constants   , only : glim          & ! structure
-                             , farqdata      & ! structure
-                             , metdat        ! ! structure
-   use physiology_coms, only : hugenum       & ! intent(in)
-                             , xdim          ! ! intent(in)
-
-   implicit none
-   !----- Arguments. ----------------------------------------------------------------------!
-   real(kind=4), dimension(xdim), intent(in)  :: x        ! Normalised variable vector.
-   real(kind=4), dimension(xdim), intent(in)  :: s        ! Characteristic scale
-   real(kind=4), dimension(xdim), intent(in)  :: xsmin    ! Lowest acceptable bounds
-   real(kind=4), dimension(xdim), intent(in)  :: xsmax    ! Highest acceptable bounds
-   type(glim)                   , intent(in)  :: apar
-   type(farqdata)               , intent(in)  :: gsdata
-   type(metdat)                 , intent(in)  :: met
-   real(kind=4), dimension(xdim), intent(out) :: fun      ! The vector with the functions
-   !----- Local variables. ----------------------------------------------------------------!
-   real(kind=4), dimension(xdim)              :: xs       ! Re-scaled variables.
-   real(kind=4)                               :: a1       ! Auxiliary coefficient
-   real(kind=4)                               :: a2       ! Auxiliary coefficient
-   real(kind=4)                               :: b1       ! Auxiliary coefficient
-   real(kind=4)                               :: b2       ! Auxiliary coefficient
-   real(kind=4)                               :: c1i      ! Auxiliary coefficient
-   real(kind=4)                               :: c2       ! Auxiliary coefficient
-   real(kind=4)                               :: ao       ! Auxiliary coefficient
-   real(kind=4)                               :: qq       ! Auxiliary coefficient
-   real(kind=4)                               :: rr       ! Auxiliary coefficient
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !----- Re-scale the variables. ---------------------------------------------------------!
-   xs(:) = x(:) * s(:)
-   !---------------------------------------------------------------------------------------!
-
-   !---------------------------------------------------------------------------------------!
-   !     This is to avoid floating point exceptions.  If the guess goes off the reasonable !
-   ! range, then we make the function evaluation poor.                                     !
-   !---------------------------------------------------------------------------------------!
-   if (any(xs < 0.90 * xsmin .or. xs > 1.10 * xsmax)) then
-      fun(:) = hugenum
       return
-   end if
+   end subroutine solve_iterative_case
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This subroutine will adjust the terms used to compute the CO2 demand function     !
+   ! (A_open / A_closed) for the light-, and rubisco-limited cases, as well as the closed  !
+   ! stomata case (when most terms are not going to be used in any case).                  !
+   !     The CO2 demand function A is defined in the most generic format at M09's          !
+   ! equations B1 (open) and B2 (closed).  For the actual solver, M09's equation B2 is     !
+   ! substituted by the more generic format, M06's equation B2.                            !
    !---------------------------------------------------------------------------------------!
+   subroutine set_co2_demand_params(whichlim)
+      use c34constants   , only : aparms       & ! intent(inout)
+                                , thispft      & ! intent(in)
+                                , met          ! ! intent(in)
+      use physiology_coms, only : kco2_prefac8 & ! intent(in)
+                                , kco2_ecoeff8 & ! intent(in)
+                                , ko2_prefac8  & ! intent(in)
+                                , ko2_ecoeff8  & ! intent(in)
+                                , klowco28     ! ! intent(in)
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      character(len=*), intent(in) :: whichlim      ! A flag telling which case we are
+                                                    !   about to solve
+      !----- Local variables. -------------------------------------------------------------!
+      real(kind=8)                 :: kco2          ! K1 term from M01's equation A1
+      real(kind=8)                 :: ko2           ! K2 term from M01's equation A1
+      !------------------------------------------------------------------------------------!
 
 
-   !---------------------------------------------------------------------------------------!
-   !      Function 1, solving Ci polynomial.                                               !
-   !---------------------------------------------------------------------------------------!
-   b1 =  apar%tau - met%ca + (apar%rho + apar%nu) * (1.0/(1.4 * met%gbc)) 
-   b2 = (apar%rho + apar%nu) / 1.6
-  
-   c1i = 1.                                                                                &
-       / (-apar%tau * met%ca + (apar%sigma + apar%nu * apar%tau) * (1.0 / (1.4 * met%gbc)))
-   c2  =  (apar%sigma + apar%nu * apar%tau) / 1.6
+      !------------------------------------------------------------------------------------!
+      !    Define the parameters based on this call.                                       !
+      !------------------------------------------------------------------------------------!
+      select case(trim(whichlim))
+      case ('CLOSED')
+         !----- Closed stomata case, or night time.  These are the same for C3 and C4. ----!
+         aparms%rho   = 0.d0
+         aparms%sigma = 0.d0
+         aparms%xi    = 0.d0
+         aparms%tau   = 1.d0
+         aparms%nu    = - aparms%leaf_resp
+      case default
+         !---------------------------------------------------------------------------------!
+         !     Open stomata case, so now we distinguish between C3 and C4 as their         !
+         ! functional forms are different.                                                 !
+         !---------------------------------------------------------------------------------!
+         select case (thispft%photo_pathway)
+         case (3)
+            !------------------------------------------------------------------------------!
+            !     C3 case.  Decide whether this is the light- or Rubisco-limited case.     !
+            !------------------------------------------------------------------------------!
+            select case (trim(whichlim))
+            case ('LIGHT')
+               !---- Light-limited case. --------------------------------------------------!
+               aparms%rho   =  thispft%alpha * met%par
+               aparms%sigma = -thispft%alpha * met%par * met%compp
+               aparms%xi    = 1.d0
+               aparms%tau   = 2.d0 * met%compp
+               aparms%nu    = -aparms%leaf_resp
 
-   fun(1) =  c1i * (xs(1)*xs(1) + b1 * xs(1)  + b2 * xs(1)/xs(2) + c2 /xs(2)) + 1.
-   !---------------------------------------------------------------------------------------!
+            case ('RUBISCO')
+               !----- Rubisco-limited rate of photosynthesis case. ------------------------!
+               aparms%rho   =  aparms%vm
+               aparms%sigma = -aparms%vm * met%compp
+               aparms%xi    = 1.d0
+               kco2         = arrhenius(met%leaf_temp, kco2_prefac8, kco2_ecoeff8)
+               ko2          = arrhenius(met%leaf_temp, ko2_prefac8, ko2_ecoeff8)
+               aparms%tau   = kco2 * (1.d0 + met%can_o2 / ko2)
+               aparms%nu    = -aparms%leaf_resp
+            !------------------------------------------------------------------------------!
 
+            case ('CO2')
+               !----- CO2-limited for low CO2 concentration case (unused). ----------------!
+               aparms%rho   = 0.d0
+               aparms%sigma = huge(1.d0)
+               aparms%xi    = 0.d0
+               aparms%tau   = 1.d0
+               aparms%nu    = -aparms%leaf_resp
 
+            end select
+         case (4)
+            !------------------------------------------------------------------------------!
+            !     C4 case.  There are three possibilities, the light-limited, the Rubisco- !
+            ! limited, and the CO2-limited cases.                                          !
+            !------------------------------------------------------------------------------!
+            select case(trim(whichlim))
+            case ('LIGHT')
+               !----- Light-limited case. -------------------------------------------------!
+               aparms%rho   = 0.d0
+               aparms%sigma = thispft%alpha * met%par
+               aparms%xi    = 0.d0
+               aparms%tau   = 1.d0
+               aparms%nu    = - aparms%leaf_resp
 
-   !---------------------------------------------------------------------------------------!
-   !      Function 2, solving gsw polynomial.                                              !
-   !---------------------------------------------------------------------------------------!
-   ao = (apar%rho * xs(1) + apar%sigma) / (xs(1) + apar.tau) + apar.nu
-   qq = met%gbc * met%eta - gsdata%b
-   rr = gsdata%b * met%eta * met%gbc
+            case ('RUBISCO')
+               !----- Rubisco-limited rate of photosynthesis case. ------------------------!
+               aparms%rho   = 0.d0
+               aparms%sigma = aparms%vm
+               aparms%xi    = 0.d0
+               aparms%tau   = 1.d0
+               aparms%nu    = -aparms%leaf_resp
 
-   a1 = met%ca - met%compp
-   a2 = - 1. / (1.4 * met%gbc)
+            case ('CO2')
+               !----- CO2-limited for low CO2 concentration case. -------------------------!
+               aparms%rho   = klowco28 * aparms%vm
+               aparms%sigma = 0.d0
+               aparms%xi    = 0.d0
+               aparms%tau   = 1.d0
+               aparms%nu    = -aparms%leaf_resp
 
-   b1 = qq * a1
-   b2 = -1.0 * (qq/(1.4*met%gbc) + gsdata%m)
-
-   c1i = 1./ (-rr * a1)
-   c2  = rr / (1.4 * met%gbc) - gsdata%m * met%gbc
- 
-   fun(2) = c1i * ((a1 + a2*ao)*xs(2)*xs(2) + (b1 + b2*ao) * xs(2)  + c2 * ao) + 1.
-   !---------------------------------------------------------------------------------------!
-
-   return
-end subroutine gppsolver2_fun
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-subroutine gppsolver2_jacob(x,s,xsmin,xsmax, apar, met, gsdata,jacob)
-   use c34constants   , only : glim          & ! structure
-                             , farqdata      & ! structure
-                             , metdat        ! ! structure
-   use physiology_coms, only : xdim          ! ! intent(in)
-       
-
-   implicit none
-   !----- Arguments. ----------------------------------------------------------------------!
-   real(kind=4), dimension(xdim)     , intent(in)  :: x      ! Normalised variable vector.
-   real(kind=4), dimension(xdim)     , intent(in)  :: s      ! Characteristic scale
-   real(kind=4), dimension(xdim)     , intent(in)  :: xsmin  ! Lowest acceptable bounds
-   real(kind=4), dimension(xdim)     , intent(in)  :: xsmax  ! Highest acceptable bounds
-   type(glim)                        , intent(in)  :: apar
-   type(farqdata)                    , intent(in)  :: gsdata
-   type(metdat)                      , intent(in)  :: met
-   real(kind=4), dimension(xdim,xdim), intent(out) :: jacob  ! Jacobian matrix
-   !----- Local variables. ----------------------------------------------------------------!
-   real(kind=4), dimension(xdim)                   :: xs       ! Re-scaled variables.
-   real(kind=4)                                    :: a1       ! Auxiliary coefficient
-   real(kind=4)                                    :: a2       ! Auxiliary coefficient
-   real(kind=4)                                    :: b1       ! Auxiliary coefficient
-   real(kind=4)                                    :: b2       ! Auxiliary coefficient
-   real(kind=4)                                    :: c1i      ! Auxiliary coefficient
-   real(kind=4)                                    :: c2       ! Auxiliary coefficient
-   real(kind=4)                                    :: ao       ! A_open
-   real(kind=4)                                    :: daodt    ! derivative of A_open
-   real(kind=4)                                    :: qq       ! Auxiliary coefficient
-   real(kind=4)                                    :: rr       ! Auxiliary coefficient
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !----- Re-scale the variables. ---------------------------------------------------------!
-   xs(:) = x(:) * s(:)
-
-   !----- This should never happen. -------------------------------------------------------!
-   if (any(xs < 0.90 * xsmin .or. xs > 1.10 * xsmax)) then
-      jacob(:,:) = 0.
+            end select
+            !------------------------------------------------------------------------------!
+         end select
+         !---------------------------------------------------------------------------------!
+      end select
+      !------------------------------------------------------------------------------------!
       return
-   end if
+   end subroutine set_co2_demand_params
+   !=======================================================================================!
+   !=======================================================================================!
 
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This subroutine finds the updated function evaluation and derivative for the      !
+   ! iterative step for Newton's (or Regula Falsi) method.  The "function" here is a       !
+   ! combination of the definition of the water stomatal conductance for open stomata      !
+   ! (F96's equation 13), after substituting Ds by a combination of M09's equations B13    !
+   ! and B16 so water demand is eliminated(Psi_open), and incorporating F96's equation 14  !
+   ! to eliminate the surface carbon.  This function has the property of having one root   !
+   ! that corresponds to the intercellular CO2 concentration.                              !
+   !  The logical variable is used to decide whether to compute the derivatives or not.    !
+   ! They are necessary only when it is a Newton's method call.                            !
    !---------------------------------------------------------------------------------------!
-   !      Derivatives of function 1, solving Ci polynomial.                                !
+   subroutine iter_solver_step(newton,lint_co2,fun,deriv)
+      use c34constants, only : thispft & ! intent(in)
+                             , met     ! ! intent(in)
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      logical     , intent(in)  :: newton              ! Newton's method step  [       T|F]
+      real(kind=8), intent(in)  :: lint_co2            ! Intercell. CO2 conc.  [   mol/mol]
+      real(kind=8), intent(out) :: fun                 ! Function evaluation   [       ---]
+      real(kind=8), intent(out) :: deriv               ! Derivative.           [   mol/mol]
+      !----- Local variables. -------------------------------------------------------------!
+      real(kind=8)              :: stom_cond_h2o       ! Water conductance     [  mol/m²/s]
+      real(kind=8)              :: co2_demand          ! CO2 demand            [  mol/m²/s]
+      real(kind=8)              :: co2_demand_prime    ! Deriv. of CO2 demand  [1/mol/m²/s]
+      real(kind=8)              :: stom_cond_h2o_prime ! Deriv. of H2O cond.   [1/mol/m²/s]
+      real(kind=8)              :: efun1               ! 1st term
+      real(kind=8)              :: efun2               ! 2nd term
+      real(kind=8)              :: efun3               ! 3rd term
+      real(kind=8)              :: eprime1             ! Derivative of the 1st term
+      real(kind=8)              :: eprime2             ! Derivative of the 2nd term
+      real(kind=8)              :: eprime3             ! Derivative of the 3rd term
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Find the CO2 demand. ---------------------------------------------------------!
+      co2_demand       = calc_co2_demand(lint_co2)
+      !----- Find the stomatal conductance of water. --------------------------------------!
+      stom_cond_h2o    = calc_stom_cond_h2o(lint_co2,co2_demand)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the function components, then the function evaluation.                    !
+      !------------------------------------------------------------------------------------!
+      efun1 = (stom_cond_h2o - thispft%b) / (thispft%m * co2_demand)
+      efun2 = (met%can_co2 - met%compp - co2_demand/met%blyr_cond_co2)
+      efun3 = 1.d0 + ( met%blyr_cond_h2o * (met%lint_shv - met%can_shv)                    &
+                     / (thispft%d0 * (met%blyr_cond_h2o + stom_cond_h2o)))
+      fun   = efun1 * efun2 * efun3 - 1.d0
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     In case this is a Newton's step, we must also compute the derivatives.  Other- !
+      ! wise, we assign any number, but it should not be used.                             !
+      !------------------------------------------------------------------------------------!
+      if (newton) then
+         !----- CO2 demand. ---------------------------------------------------------------!
+         co2_demand_prime    = calc_co2_demand_prime(lint_co2,co2_demand)
+         !----- stomatal conductance of water. --------------------------------------------!
+         stom_cond_h2o_prime = calc_stom_cond_h2o_prime(lint_co2,stom_cond_h2o,co2_demand  &
+                                                       ,co2_demand_prime)
+         !----- Function components. ------------------------------------------------------!
+         eprime1 = ( stom_cond_h2o_prime * co2_demand                                      &
+                   - co2_demand_prime * (stom_cond_h2o - thispft%b) )                      &
+                 / (thispft%m * co2_demand * co2_demand)
+
+         eprime2 = - co2_demand_prime / met%blyr_cond_co2
+
+         eprime3 = - (efun3 - 1.d0) *  stom_cond_h2o_prime                                 &
+                 / ( met%blyr_cond_h2o + stom_cond_h2o )
+
+         deriv   = eprime1 * efun2   * efun3                                               &
+                 + efun1   * eprime2 * efun3                                               &
+                 + efun1   * efun2   * eprime3
+      else
+         deriv = 0.d0
+      end if
+      !------------------------------------------------------------------------------------!
+
+      return
+   end subroutine iter_solver_step
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This function computes the CO2 demand given the intercellular CO2 concentration.  !
    !---------------------------------------------------------------------------------------!
-   b1 =  apar%tau - met%ca + (apar%rho + apar%nu) * (1.0/(1.4 * met%gbc)) 
-   b2 = (apar%rho + apar%nu) / 1.6
-  
-   c1i = 1.                                                                                &
-       / (-apar%tau * met%ca + (apar%sigma + apar%nu * apar%tau) * (1.0 / (1.4 * met%gbc)))
-   c2  =  (apar%sigma + apar%nu * apar%tau) / 1.6
+   real(kind=8) function calc_co2_demand(lint_co2)
+      use c34constants, only : aparms ! ! intent(in)
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      real(kind=8), intent(in) :: lint_co2 ! Intercellular CO2 concentration    [  mol/mol]
+      !------------------------------------------------------------------------------------!
+      
+      calc_co2_demand = (aparms%rho * lint_co2 + aparms%sigma)                             &
+                      / (aparms%xi  * lint_co2 + aparms%tau  ) + aparms%nu
+      return
+   end function calc_co2_demand
+   !=======================================================================================!
+   !=======================================================================================!
 
-   jacob(1,1) = c1i * (2*xs(1)*s(1) + b1 * s(1) + b2*s(1)/xs(2))
-   jacob(1,2) = c1i * (-b2*xs(1)*s(2)/(xs(2)*xs(2)) - c2*s(2)/(xs(2)*xs(2)))
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This function computes the derivative of the CO2 regarding the intercellular CO2  !
+   ! concentration.                                                                        !
    !---------------------------------------------------------------------------------------!
+   real(kind=8) function calc_co2_demand_prime(lint_co2,co2_demand)
+      use c34constants, only : aparms ! ! intent(in)
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      real(kind=8), intent(in) :: lint_co2   ! Intercellular CO2 concentration  [  mol/mol]
+      real(kind=8), intent(in) :: co2_demand ! CO2 demand                       [ mol/m²/s]
+      !------------------------------------------------------------------------------------!
+      
+      calc_co2_demand_prime = (aparms%rho - aparms%xi * (co2_demand - aparms%nu))          &
+                            / (aparms%xi  * lint_co2 + aparms%tau  )
+      return
+   end function calc_co2_demand_prime
+   !=======================================================================================!
+   !=======================================================================================!
 
 
 
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This function computes the stomatal conductance of water given the intercellular  !
+   ! CO2 concentration and the CO2 demand.                                                 !
    !---------------------------------------------------------------------------------------!
-   !      Derivatives of function 2, solving gsw polynomial.                               !
+   real(kind=8) function calc_stom_cond_h2o(lint_co2,co2_demand)
+      use c34constants   , only : met        ! ! intent(in)
+      use physiology_coms, only : gsw_2_gsc8 ! ! intent(in)
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      real(kind=8), intent(in) :: lint_co2   ! Intercellular CO2 concentration  [  mol/mol]
+      real(kind=8), intent(in) :: co2_demand ! CO2 demand                       [ mol/m²/s]
+      !------------------------------------------------------------------------------------!
+
+      calc_stom_cond_h2o = met%blyr_cond_co2 * co2_demand                                  &
+                         / (gsw_2_gsc8 * ( (met%can_co2 - lint_co2) * met%blyr_cond_co2    &
+                                         - co2_demand ) )
+
+      return
+   end function calc_stom_cond_h2o
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This function computes the stomatal conductance of water derivative given the     !
+   ! intercellular CO2 concentration, the water stomatal conductance, and the CO2 demand   !
+   ! and its derivative.                                                                   !
    !---------------------------------------------------------------------------------------!
-   ao    = (apar%rho * xs(1) + apar%sigma) / (xs(1) + apar.tau) + apar.nu
-   dAodt = (s(1) * (apar%rho * (xs(1) + apar%tau) - apar%rho*xs(1) - apar%sigma))          &
-         / ((xs(1) + apar%tau) * (xs(1) + apar%tau))
-   qq    = met%gbc * met%eta - gsdata%b
-   rr    = gsdata%b * met%eta * met%gbc
+   real(kind=8) function calc_stom_cond_h2o_prime(lint_co2,stom_cond_h2o,co2_demand        &
+                                                 ,co2_demand_prime)
+      use c34constants   , only : met        ! ! intent(in)
+      use physiology_coms, only : gsw_2_gsc8 ! ! intent(in)
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      real(kind=8), intent(in) :: lint_co2         ! Intercell. CO2 conc.      [   mol/mol]
+      real(kind=8), intent(in) :: stom_cond_h2o    ! Water                     [  mol/m²/s]
+      real(kind=8), intent(in) :: co2_demand       ! CO2 demand                [  mol/m²/s]
+      real(kind=8), intent(in) :: co2_demand_prime ! Derivative of CO2 demand  [1/mol/m²/s]
+      !------------------------------------------------------------------------------------!
 
-   a1 = met%ca - met%compp
-   a2 = - 1. / (1.4 * met%gbc)
+      calc_stom_cond_h2o_prime = stom_cond_h2o                                             &
+                               * ( co2_demand_prime / co2_demand                           &
+                                 + (met%blyr_cond_co2 + co2_demand_prime)                  &
+                                 / (gsw_2_gsc8 * ( (met%can_co2 - lint_co2)                &
+                                                 * met%blyr_cond_co2 - co2_demand) ))
 
-   b1 = qq * a1
-   b2 = -1.0 * (qq/(1.4*met%gbc) + gsdata%m)
+      return
+   end function calc_stom_cond_h2o_prime
+   !=======================================================================================!
+   !=======================================================================================!
 
-   c1i = 1./ (-rr * a1)
-   c2  = rr / (1.4 * met%gbc) - gsdata%m * met%gbc
 
-   jacob(2,1) = dAodt * c1i * (a2 * (xs(2)*xs(2)) + b2*xs(2) + c2) * s(1)
-   jacob(2,2) = c1i * (2*(a1+a2*ao)*xs(2)*s(2)  + (b1+b2*ao)*s(2))
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This sub-routine computes the minimum and maximum intercellular carbon dioxide    !
+   ! concentration that we should seek the solution.  This must be done based on the       !
+   ! conductance, otherwise the conductance could go negative and not only this is         !
+   ! unrealistic, but it also makes the stepper function to reach infinity, which breaks   !
+   ! the assumption of continuous function.                                                !
    !---------------------------------------------------------------------------------------!
+   subroutine find_lint_co2_bounds(cimin,cimax,bounded)
+      use c34constants   , only : thispft           & ! intent(in)
+                                , aparms            & ! intent(in)
+                                , met               ! ! intent(in)
+      use physiology_coms, only : gsw_2_gsc8        & ! intent(in)
+                                , c34smin_lint_co28 & ! intent(in)
+                                , c34smax_lint_co28 & ! intent(in)
+                                , c34smax_gsw8      ! ! intent(in)
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      real(kind=8), intent(out)  :: cimin   ! Minimum intercellular CO2         [  mol/mol]
+      real(kind=8), intent(out)  :: cimax   ! Maximum intercellular CO2         [  mol/mol]
+      logical     , intent(out)  :: bounded ! This problem is bounded           [      T|F]
+      !----- Local variables. -------------------------------------------------------------!
+      real(kind=8)               :: gsw     ! The stom. conductance for water   [ mol/m²/s]
+      real(kind=8)               :: restot  ! Total resistance (bnd.lyr.+stom.) [ m² s/mol]
+      real(kind=8)               :: aquad   ! Quadratic coefficient             [      ---]
+      real(kind=8)               :: bquad   ! Linear coefficient                [  mol/mol]
+      real(kind=8)               :: cquad   ! Intercept                         [mol²/mol²]
+      real(kind=8)               :: discr   ! The discriminant of the quad. eq. [mol²/mol²]
+      real(kind=8)               :: ciroot1 ! 1st root for the quadratic eqn.   [  mol/mol]
+      real(kind=8)               :: ciroot2 ! 2nd root for the quadratic eqn.   [  mol/mol]
+      real(kind=8), dimension(2) :: cibnds  ! Good root for the low gsw case    [  mol/mol]
+      logical                    :: ok1     ! 1st root is okay.                 [      T|F]
+      logical                    :: ok2     ! 2nd root is okay.                 [      T|F]
+      integer                    :: ibnd    ! Loop for low and high conductance.
+      !------------------------------------------------------------------------------------!
 
-   return
-end subroutine gppsolver2_jacob
+
+
+      !------------------------------------------------------------------------------------!
+      !     The loop is to make sure we solve for two cases, the low and the high water    !
+      ! stomatal conductance bounds.                                                       !
+      !------------------------------------------------------------------------------------!
+       write (unit=92,fmt='(109a)') ('-',ibnd=1,109)
+       write (unit=92,fmt='(9(1x,a))')         ' BND','         GSW','       AQUAD'         &
+                                      ,'       BQUAD','       CQUAD','       DISCR'         &
+                                      ,'      CROOT1','      CROOT2','      CHOSEN'
+      do ibnd=1,2
+         !---------------------------------------------------------------------------------!
+         !  1.  Define the conductance edge.                                               !
+         !---------------------------------------------------------------------------------!
+         select case (ibnd)
+         case (1)
+            !------------------------------------------------------------------------------!
+            !  A. The low conductance case.  It doesn't make sense for the conductivitiy   !
+            !     of the open stomata case to be lower than when stomata are closed.       !
+            !     Therefore, the minimum gsw allowed is defined by the cuticular conduct-  !
+            !     ance.                                                                    !
+            !------------------------------------------------------------------------------!
+            gsw = thispft%b
+         case (2)
+            !------------------------------------------------------------------------------!
+            !  B. The high conductance case.  It doesn't make sense for the conductivitiy  !
+            !     to be several orders of magnitude higher for the open stomata case than  !
+            !     compared to the closed case, the maximum gsw allowed is defined by the   !
+            !     cuticular conductance times 20,000, which is roughly what used to be in  !
+            !     the old solver.                                                          !
+            !------------------------------------------------------------------------------!
+            gsw = c34smax_gsw8
+         end select
+
+         !----- 2. Define the total resistance. -------------------------------------------!
+         restot = (gsw_2_gsc8 * gsw + met%blyr_cond_co2)                                   &
+                / (gsw_2_gsc8 * gsw * met%blyr_cond_co2)
+         !----- 3. Define the coefficients for the quadratic equation. --------------------!
+         aquad = aparms%xi
+         bquad = aparms%tau - aparms%xi * met%can_co2 + aparms%xi * restot * aparms%nu     &
+               + restot * aparms%rho
+         cquad = restot * aparms%sigma + restot * aparms%nu * aparms%tau                   &
+               - aparms%tau * met%can_co2
+         !----- 4. Decide whether this is a true quadratic case or not. -------------------!
+         if (aquad /= 0.d0) then
+            !------------------------------------------------------------------------------!
+            !     This is a true quadratic case, the first step is to find the             !
+            ! discriminant.                                                                !
+            !------------------------------------------------------------------------------!
+            discr = bquad * bquad - 4.d0 * aquad * cquad
+            if (discr == 0.d0) then
+               !---------------------------------------------------------------------------!
+               !      Discriminant is zero, both roots are the same.  We save only one,    !
+               ! and make the other negative, which will make the guess discarded.         !
+               !---------------------------------------------------------------------------!
+               ciroot1      = - bquad / (2.d0 * aquad)
+               ciroot2      = discard
+            elseif (discr > 0.d0) then
+               ciroot1 = (- bquad + sqrt(discr)) / (2.d0 * aquad)
+               ciroot2 = (- bquad - sqrt(discr)) / (2.d0 * aquad)
+            else
+               !----- Discriminant is negative.  Impossible to solve. ---------------------!
+               ciroot1      = discard
+               ciroot2      = discard
+            end if
+         else
+            !------------------------------------------------------------------------------!
+            !    This is a linear case, the xi term is zero.  There is only one number     !
+            ! that works for this case.                                                    !
+            !------------------------------------------------------------------------------!
+            ciroot1      = - cquad / bquad
+            ciroot2      = discard
+            !----- Not used, just for the debugging process. ------------------------------!
+            discr        = bquad * bquad
+         end if
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !     Choose the best root for this guess.                                        !
+         !---------------------------------------------------------------------------------!
+         !----- Flag the answers as reasonable or not. ------------------------------------!
+         ok1 = ciroot1 >= c34smin_lint_co28 .and. ciroot1 <= c34smax_lint_co28
+         ok2 = ciroot2 >= c34smin_lint_co28 .and. ciroot2 <= c34smax_lint_co28
+         if (ok1 .and. ok2) then
+            select case (ibnd)
+            case (1)
+               cibnds(ibnd) = max(ciroot1,ciroot2)
+            case (2)
+               cibnds(ibnd) = min(ciroot1,ciroot2)
+            end select
+            write (unit=*,fmt='(a,2(1x,es12.5))') ' + Both roots are reasonable'           &
+                                                 ,ciroot1,ciroot2
+         elseif (ok1) then
+            cibnds(ibnd) = ciroot1
+         elseif (ok2) then
+            cibnds(ibnd) = ciroot2
+         elseif (ciroot1 == discard .and. ciroot2 == discard) then
+            cimin   = discard
+            cimax   = discard
+            bounded = .false.
+            return
+         elseif (ciroot1 == discard) then
+            cibnds(ibnd) = ciroot2
+         elseif (ciroot2 == discard) then
+            cibnds(ibnd) = ciroot1
+         else
+            select case (ibnd)
+            case (1)
+               cibnds(ibnd) = max(ciroot1,ciroot2)
+            case (2)
+               cibnds(ibnd) = min(ciroot1,ciroot2)
+            end select
+            write (unit=*,fmt='(a,2(1x,es12.5))') ' + Both roots are unreasonable'         &
+                                                 ,ciroot1,ciroot2
+         end if
+
+         !---------------------------------------------------------------------------------!
+         !     Temporary thing: print the guesses to see how do they look like.            !
+         !---------------------------------------------------------------------------------!
+          write(unit=92,fmt='(i5,8(1x,es12.5))') ibnd,gsw,aquad,bquad,cquad,discr           &
+                                                  ,ciroot1,ciroot2,cibnds(ibnd)
+         !---------------------------------------------------------------------------------!
+      end do
+       write (unit=92,fmt='(109a)') ('-',ibnd=1,109)
+       write (unit=92,fmt='(a)')     ' '
+      !------------------------------------------------------------------------------------!
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !    In the last part we make sure that the two guesses are positively defined, and  !
+      ! in case both of them were non-positive, this means that a solution is impossible   !
+      ! in this case.                                                                      !
+      !------------------------------------------------------------------------------------!
+      cimin = minval(cibnds)
+      cimax = maxval(cibnds)
+      if (cimin <= 0.d0 .and. cimax <= c34smin_lint_co28) then
+         cimin = c34smin_lint_co28
+         cimax = c34smin_lint_co28
+         bounded = .false.
+      elseif (cimin <= 0.d0) then
+         cimin = c34smin_lint_co28
+         bounded = .true.
+      else
+         bounded = .true.
+      end if
+      !------------------------------------------------------------------------------------!
+      !     Final adjustment, do not allow the carbon dioxide content with open stomata to !
+      ! be greater than the canopy air CO2 concentration.                                  !
+      !------------------------------------------------------------------------------------!
+      if (cimax > met%can_co2) cimax = met%can_co2
+      return
+   end subroutine find_lint_co2_bounds
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !      This is the Arrhenius function, written as a function of a reference temper-     !
+   ! ature, given by tarrh8.  The output variable will have the same unit as the pre-      !
+   ! factor coefficient.                                                                   !
+   !---------------------------------------------------------------------------------------!
+   real(kind=8) function arrhenius(temp,prefactor,expcoeff)
+      use physiology_coms, only : tarrhi8    ! ! intent(in)
+      use consts_coms    , only : lnexp_min8 ! ! intent(in)
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      real(kind=8), intent(in) :: temp      ! Temperature                           [    K]
+      real(kind=8), intent(in) :: prefactor ! Pre-factor coefficient                [  any]
+      real(kind=8), intent(in) :: expcoeff  ! Exponential coefficient               [    K]
+      !----- Local variables. -------------------------------------------------------------!
+      real(kind=8)             :: lnexp     ! Term that will go to the exponential  [  ---]
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the term that goes to the exponential term, and check its size.  This is  !
+      ! to avoid floating point exceptions due to overflow or underflow.                   !
+      !------------------------------------------------------------------------------------!
+      lnexp = expcoeff * (tarrhi8 - 1.d0/temp)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     If the exponential factor is tiny, make it zero, otherwise compute the actual  !
+      ! function.                                                                          !
+      !------------------------------------------------------------------------------------!
+      if (lnexp_min8 < lnexp_min8) then
+         arrhenius = 0.d0
+      else
+         arrhenius = prefactor * exp(lnexp)
+      end if
+      !------------------------------------------------------------------------------------!
+
+      return
+   end function arrhenius
+   !=======================================================================================!
+   !=======================================================================================!
+end module farq_leuning
 !==========================================================================================!
 !==========================================================================================!

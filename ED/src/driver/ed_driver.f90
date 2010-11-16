@@ -174,10 +174,19 @@ subroutine ed_driver()
 
 
    !---------------------------------------------------------------------------------------!
+   !      Initialise the site-level meteorological forcing.                                !
+   !---------------------------------------------------------------------------------------!
+   if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Update_met_drivers...'
+   do ifm=1,ngrids
+      call update_met_drivers(edgrid_g(ifm))
+   end do
+
+
+   !---------------------------------------------------------------------------------------!
    !      Initialize ed fields that depend on the atmosphere.                              !
    !---------------------------------------------------------------------------------------!
    if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Ed_Init_Atm...'
-   call ed_init_atm
+   call ed_init_atm()
    !---------------------------------------------------------------------------------------!
 
 

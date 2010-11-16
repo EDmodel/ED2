@@ -279,6 +279,7 @@ rm -fv ed_bare_restart.o          ed_bare_restart.mod
 rm -fv ed_filelist.o              ed_filelist.mod
 rm -fv ed_grid.o                  ed_grid.mod
 rm -fv ed_init.o                  ed_init.mod
+rm -fv ed_init_atm.o              ed_init_atm.mod
 rm -fv ed_init_full_history.o     ed_init_full_history.mod
 rm -fv ed_max_dims.o              ed_max_dims.mod
 rm -fv ed_mem_grid_dim_defs.o     ed_mem_grid_dim_defs.mod

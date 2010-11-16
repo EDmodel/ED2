@@ -674,7 +674,8 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
    real(kind=8)                     :: c3tai            ! Coefficient (????)
    real(kind=8)                     :: hflxvc           ! Leaf->canopy heat flux
    real(kind=8)                     :: rasgnd           ! 
-   real(kind=8)                     :: rbi              ! 
+   real(kind=8)                     :: rbhi             ! 
+   real(kind=8)                     :: rbwi             ! 
    real(kind=8)                     :: rd               !
    real(kind=8)                     :: sigmaw           !
    real(kind=8)                     :: wflxvc           !
@@ -712,10 +713,6 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
    real(kind=8)                     :: water_demand     !
    real(kind=8)                     :: water_supply     !
    real(kind=8)                     :: flux_area        ! Area between canopy and plant
-   real(kind=8)                     :: veg_ssh          ! Veg. surface sat. sp. humidity
-   real(kind=8)                     :: temp_sat         ! Temperature for saturation
-                                                        ! (forced to be > toocold to avoid
-                                                        !  singularities).
    real(kind=8)                     :: crown_area       ! Crown area.
    !----- Functions -----------------------------------------------------------------------!
    real        , external           :: sngloff
@@ -1045,17 +1042,6 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
             sigmaw = 0.d0
          end if
 
-
-         !---------------------------------------------------------------------------------!
-         !     Finding the saturation specific humidity associated with leaf temperature.  !
-         ! The minimum is set to one to avoid FPE errors, the step will be rejected should !
-         ! this happen.                                                                    !
-         !---------------------------------------------------------------------------------!
-         temp_sat = max(toocold,initp%veg_temp(ico))
-         veg_ssh  = rslif8(initp%can_prss,temp_sat)
-         !----- Converting mixing ratio to specific humidity. -----------------------------!
-         veg_ssh  = veg_ssh / (1.d0 + veg_ssh)
-
          !---------------------------------------------------------------------------------!
          !    Here we must compute two different areas.  For transpiration, we want the    !
          ! leaf area index only, because we assume transpiration to happen only through    !
@@ -1064,12 +1050,15 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
          !---------------------------------------------------------------------------------!
          !----- Transpiration "flux" ------------------------------------------------------!
          flux_area = initp%lai(ico)
-         c3lai  = sngloff( flux_area * initp%can_rhos * (veg_ssh - initp%can_shv)          &
+         c3lai  = sngloff( flux_area * initp%can_rhos                                      &
+                         * (initp%lint_shv(ico) - initp%can_shv)                           &
                          , tiny_offset)
          !----- Evaporation/condensation "flux" -------------------------------------------!
          flux_area = effarea_water * initp%tai(ico)
-         c3tai  = flux_area * initp%can_rhos * (veg_ssh - initp%can_shv)
-         rbi    = 1.d0 / initp%rb(ico)
+         c3tai  = flux_area * initp%can_rhos                                               &
+                * (initp%lint_shv(ico) - initp%can_shv)
+         rbhi    = 1.d0 / initp%rbh(ico)
+         rbwi    = 1.d0 / initp%rbw(ico)
 
          !---------------------------------------------------------------------------------!
          !    Computing the evapotranspiration or dew/frost deposition.                    !
@@ -1084,12 +1073,12 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
                !     Evaporation, energy is scaled by liquid/ice partition (no phase       !
                ! bias).                                                                    !
                !---------------------------------------------------------------------------!
-               wflxvc  = c3tai * sigmaw * rbi
+               wflxvc  = c3tai * sigmaw * rbwi
                qwflxvc = wflxvc * (alvi8 - initp%veg_fliq(ico) * alli8)
                !----- Transpiration, consider the leaf area rather than TAI. --------------!
                if (initp%available_liquid_water(kroot) > 0.d0 ) then
-                  cpatch%Psi_open(ico)   = c3lai / (cpatch%rb(ico)+cpatch%rsw_open(ico)  )
-                  cpatch%Psi_closed(ico) = c3lai / (cpatch%rb(ico)+cpatch%rsw_closed(ico))
+                  cpatch%Psi_open(ico)   = c3lai / (cpatch%rbw(ico)+cpatch%rsw_open(ico)  )
+                  cpatch%Psi_closed(ico) = c3lai / (cpatch%rbw(ico)+cpatch%rsw_closed(ico))
                   transp = dble(cpatch%fs_open(ico)) * dble(cpatch%Psi_open(ico))          &
                          + (1.0d0-dble(cpatch%fs_open(ico))) * dble(cpatch%Psi_closed(ico))
                else
@@ -1113,7 +1102,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
             !     Dew/frost formation. The deposition will conserve the liquid/ice         !
             ! partition (or use the default if there is no water).                         !
             !------------------------------------------------------------------------------!
-            wflxvc                 = c3tai * rbi
+            wflxvc                 = c3tai * rbwi
             qwflxvc                = wflxvc * (alvi8 - initp%veg_fliq(ico)*alli8)
             transp                 = 0.0d0
             qtransp                = 0.0d0
@@ -1132,7 +1121,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
          ! factor (which to make it scalable with the cilinder.                            !
          !---------------------------------------------------------------------------------!
          flux_area = effarea_heat * initp%lai(ico) + pi18 * initp%wai(ico)
-         hflxvc    = flux_area * cp8 * initp%can_rhos * rbi                                &
+         hflxvc    = flux_area * cp8 * initp%can_rhos * rbhi                               &
                    * (initp%veg_temp(ico) - initp%can_temp)
 
          !---------------------------------------------------------------------------------!
