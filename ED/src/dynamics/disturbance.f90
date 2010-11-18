@@ -707,15 +707,15 @@ module disturbance_utils
       csite%total_plant_nitrogen_uptake(np) = 0.0
       !------------------------------------------------------------------------------------!
 
+      !----- Initialise all fast variables. -----------------------------------------------!
+      call init_ed_patch_vars(csite,np,np,lsl)
+
       !------------------------------------------------------------------------------------!
       !     Soil texture is the only one that doesn't receive zeroes, but the soil type    !
       ! from the donor patch.  In reality, this should be revised when multiple soil       !
       ! types are allowed in the same polygon.                                             !
       !------------------------------------------------------------------------------------!
       csite%ntext_soil(1:nzg,np) = csite%ntext_soil(1:nzg,dp)
-
-      !----- Initialise all fast variables. -----------------------------------------------!
-      call init_ed_patch_vars(csite,np,np,lsl)
 
 
       return

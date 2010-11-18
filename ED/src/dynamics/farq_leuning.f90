@@ -138,7 +138,7 @@ module farq_leuning
       !----- This structure save the full stomatal state for the small pert. solver. ------!
       type(stoma_data), intent(inout) :: old_st_data ! Previous results.
       !----- External function. -----------------------------------------------------------!
-      real(kind=8)    , external      :: sngloff     ! Safe double -> single precision
+      real(kind=4)    , external      :: sngloff     ! Safe double -> single precision
       !------------------------------------------------------------------------------------!
 
 
@@ -237,7 +237,7 @@ module farq_leuning
       !------------------------------------------------------------------------------------!
       select case (istoma_scheme)
       case (0)
-          call photosynthesis_exact_solver(limit_flag)
+          call photosynthesis_exact_solver(ipft,limit_flag)
 
       case (1)
          write (unit=*,fmt='(a)') '------------------------------------------------------'
@@ -279,7 +279,6 @@ module farq_leuning
       !----- Gross photosynthesis compensation point, convert it to [µmol/mol]. -----------!
       comppout        = sngloff(met%compp * mol_2_umol8, tiny_offset)
       !------------------------------------------------------------------------------------!
-
       return
    end subroutine lphysiol_full
    !=======================================================================================!
@@ -383,7 +382,7 @@ module farq_leuning
    !=======================================================================================!
    !     This subroutine is the main driver for the C3 photosynthesis.                     !
    !---------------------------------------------------------------------------------------!
-   subroutine photosynthesis_exact_solver(limit_flag)
+   subroutine photosynthesis_exact_solver(ipft,limit_flag)
       use c34constants   , only : met              & ! intent(in)
                                 , thispft          & ! intent(in)
                                 , aparms           & ! intent(in)
@@ -397,6 +396,7 @@ module farq_leuning
                                 , c34smax_gsw8     ! ! intent(in)
       implicit none
       !------ Arguments. ------------------------------------------------------------------!
+      integer     , intent(in ) :: ipft        ! Plant functional type            [    ---]
       integer     , intent(out) :: limit_flag  ! Flag with limiting property      [    ---]
       !------ Local variables. ------------------------------------------------------------!
       logical                   :: success     ! The solver successfully run.     [    T|F]
@@ -411,7 +411,11 @@ module farq_leuning
       ! conductance depend on the intercellular CO2 mixing ratio.                          !
       !------------------------------------------------------------------------------------!
       call set_co2_demand_params('CLOSED')
-      call solve_closed_case(stclosed)
+      call solve_aofixed_case(stclosed,success)
+      if (.not. success) then
+         call fatal_error ('Solution failed for closed case'                               &
+                          ,'photosynthesis_exact_solver','farq_leuning.f90')
+      end if
       !------------------------------------------------------------------------------------!
 
 
@@ -529,7 +533,7 @@ module farq_leuning
          return
       end if
       !------------------------------------------------------------------------------------!
-      
+
 
 
       !------------------------------------------------------------------------------------!
@@ -540,7 +544,7 @@ module farq_leuning
       if (lightlim%co2_demand == discard .and. rubiscolim%co2_demand == discard .and.      &
           co2lim%co2_demand == discard) then
          call copy_solution(stclosed,stopen)
-         limit_flag = -1
+         limit_flag = -2
       elseif (lightlim%co2_demand <= rubiscolim%co2_demand .and.                           &
           lightlim%co2_demand <= co2lim%co2_demand              )  then
          !----- Light is the strongest limitation. ----------------------------------------!
@@ -561,66 +565,49 @@ module farq_leuning
 
 
       !------------------------------------------------------------------------------------!
-      !     Final sanity check.  If the conductivity has somehow become negative, close    !
-      ! all stomata.                                                                       !
+      !     Final sanity check.  If the carbon demand is negative, or if the conductivity  !
+      ! has somehow become negative, close all stomata.                                    !
       !------------------------------------------------------------------------------------!
-      if (stopen%stom_cond_h2o < thispft%b) then
+      if (stopen%co2_demand < 0.d0 .and. limit_flag > 0) then
+         select case (limit_flag)
+         case (1)
+            call set_co2_demand_params('LIGHT')
+         case (2)
+            call set_co2_demand_params('RUBISCO')
+         case (3)
+            call set_co2_demand_params('CO2')
+         end select
+
+         call copy_solution(stclosed,stopen)
+         limit_flag = -1
+      elseif (stopen%stom_cond_h2o < thispft%b) then
+         select case (limit_flag)
+         case (1)
+            call set_co2_demand_params('LIGHT')
+         case (2)
+            call set_co2_demand_params('RUBISCO')
+         case (3)
+            call set_co2_demand_params('CO2')
+         end select
+
          call copy_solution(stclosed,stopen)
          limit_flag = -4
       elseif (stopen%stom_cond_h2o > c34smax_gsw8) then
+
+         select case (limit_flag)
+         case (1)
+            call set_co2_demand_params('LIGHT')
+         case (2)
+            call set_co2_demand_params('RUBISCO')
+         case (3)
+            call set_co2_demand_params('CO2')
+         end select
+
          call copy_solution(stclosed,stopen)
          limit_flag = 4
       end if
       return
    end subroutine photosynthesis_exact_solver
-   !=======================================================================================!
-   !=======================================================================================!
-
-
-
-
-
-
-   !=======================================================================================!
-   !=======================================================================================!
-   !     This subroutine solves the model for the case where the stomata are closed.  This !
-   ! is much simpler because the carbon demand doesn't depend on the intercellular CO2     !
-   ! concentration, nor does the stomatal water conductivity.                              !
-   !---------------------------------------------------------------------------------------!
-   subroutine solve_closed_case(answer)
-      use c34constants   , only : solution_vars & ! structure
-                                , met           & ! intent(in)
-                                , thispft       & ! intent(in)
-                                , aparms        ! ! intent(in)
-      use physiology_coms, only : gsw_2_gsc8    ! ! intent(in)
-      implicit none
-      !----- Arguments. -------------------------------------------------------------------!
-      type(solution_vars), intent(out) :: answer
-      !------------------------------------------------------------------------------------!
-
-
-      !------------------------------------------------------------------------------------!
-      !   1. Since the carbon demand doesn't depend on the intercellular CO2, compute it   !
-      !      using the first guess.                                                        !
-      !------------------------------------------------------------------------------------!
-      answer%co2_demand = calc_co2_demand(met%can_co2)
-      !------------------------------------------------------------------------------------!
-      !   2. Assign the stomatal conductance of water, which is a constant in this case.   !
-      !      Apply the conversion factor and find the stomatal CO2 conductance.            !
-      !------------------------------------------------------------------------------------!
-      answer%stom_cond_h2o = thispft%b
-      answer%stom_cond_co2 = gsw_2_gsc8 * answer%stom_cond_h2o
-      !----- 3. Compute the leaf surface CO2. ---------------------------------------------!
-      answer%lsfc_co2  = met%can_co2 - answer%co2_demand / met%blyr_cond_co2
-      !----- 4. Compute the intercellular CO2. --------------------------------------------!
-      answer%lint_co2  = answer%lsfc_co2 - answer%co2_demand / answer%stom_cond_co2
-      !----- 5. Compute the leaf surface vapour mixing ratio. -----------------------------!
-      answer%lsfc_shv = ( answer%stom_cond_h2o * met%lint_shv                              &
-                        + met%blyr_cond_h2o    * met%can_shv  )                            &
-                      / ( met%blyr_cond_h2o + answer%stom_cond_h2o)
-      !------------------------------------------------------------------------------------!
-      return
-   end subroutine solve_closed_case
    !=======================================================================================!
    !=======================================================================================!
 
@@ -691,119 +678,117 @@ module farq_leuning
 
 
       !------------------------------------------------------------------------------------!
-      !   4. Find auxiliary coefficients to compute the quadratic terms.                   !
+      !   3. Here we check the sign of the carbon demand.                                  !
       !------------------------------------------------------------------------------------!
-      qterm1 = (met%can_co2 - met%compp) * met%blyr_cond_co2 - answer%co2_demand
-      qterm2 = (thispft%d0 + met%lint_shv - met%can_shv) * met%blyr_cond_h2o
-      qterm3 = thispft%m * answer%co2_demand * thispft%d0 * met%blyr_cond_co2
-      !------------------------------------------------------------------------------------!
-
-
-
-      !------------------------------------------------------------------------------------!
-      !   5. Find the coefficients for the quadratic equation.                             !
-      !------------------------------------------------------------------------------------!
-      aquad = qterm1 * thispft%d0
-      bquad = qterm1 * qterm2 - aquad * thispft%b - qterm3
-      cquad = - qterm1 * qterm2 * thispft%b - qterm3 * met%blyr_cond_h2o
-      !------------------------------------------------------------------------------------!
-
-
-
-      !------------------------------------------------------------------------------------!
-      !   6. Solve the quadratic equation for gsw.                                         !
-      !------------------------------------------------------------------------------------!
-      if (aquad == 0.d0) then
-         !----- Not really a quadratic equation. ------------------------------------------!
-         gswroot1 = -cquad / bquad
-         gswroot2 = discard
+      if (answer%co2_demand <= 0.d0) then
+         !---------------------------------------------------------------------------------!
+         !     If carbon demand is zero or negative, this means that light is below the    !
+         ! light compensation point, so all stomata should remain closed.                  !
+         !---------------------------------------------------------------------------------!
+         answer%stom_cond_h2o = thispft%b
+         answer%stom_cond_co2 = gsw_2_gsc8 * answer%stom_cond_h2o
+         answer%lint_co2      = answer%lsfc_co2 - answer%co2_demand / answer%stom_cond_co2
       else
-         !----- A quadratic equation, find the discriminant. ------------------------------!
-         discr = bquad * bquad - 4.d0 * aquad * cquad
-
-
-         !----- Decide what to do based on the discriminant. ------------------------------!
-         if (discr == 0.d0) then
-            !----- Double root. -----------------------------------------------------------!
-            gswroot1 = - bquad / (2.d0 * aquad)
+         !---------------------------------------------------------------------------------!
+         !     Carbon demand is positive, look for a solution.                             !
+         !---------------------------------------------------------------------------------!
+         !----- Find auxiliary coefficients to compute the quadratic terms. ---------------!
+         qterm1 = (met%can_co2 - met%compp) * met%blyr_cond_co2 - answer%co2_demand
+         qterm2 = (thispft%d0 + met%lint_shv - met%can_shv) * met%blyr_cond_h2o
+         qterm3 = thispft%m * answer%co2_demand * thispft%d0 * met%blyr_cond_co2
+         !----- Find the coefficients for the quadratic equation. -------------------------!
+         aquad = qterm1 * thispft%d0
+         bquad = qterm1 * qterm2 - aquad * thispft%b - qterm3
+         cquad = - qterm1 * qterm2 * thispft%b - qterm3 * met%blyr_cond_h2o
+         !----- Solve the quadratic equation for gsw. -------------------------------------!
+         if (aquad == 0.d0) then
+            !----- Not really a quadratic equation. ---------------------------------------!
+            gswroot1 = -cquad / bquad
             gswroot2 = discard
-         elseif (discr > 0.d0) then
-            !----- Two distinct roots. ----------------------------------------------------!
-            gswroot1 = (- bquad - sqrt(discr)) / (2.d0 * aquad)
-            gswroot2 = (- bquad + sqrt(discr)) / (2.d0 * aquad)
          else
-            !----- None of the roots are real, this solution failed. ----------------------!
-            success = .false.
-            return
+            !----- A quadratic equation, find the discriminant. ---------------------------!
+            discr = bquad * bquad - 4.d0 * aquad * cquad
+            !----- Decide what to do based on the discriminant. ---------------------------!
+            if (discr == 0.d0) then
+               !----- Double root. --------------------------------------------------------!
+               gswroot1 = - bquad / (2.d0 * aquad)
+               gswroot2 = discard
+            elseif (discr > 0.d0) then
+               !----- Two distinct roots. -------------------------------------------------!
+               gswroot1 = (- bquad - sqrt(discr)) / (2.d0 * aquad)
+               gswroot2 = (- bquad + sqrt(discr)) / (2.d0 * aquad)
+            else
+               !----- None of the roots are real, this solution failed. -------------------!
+               success = .false.
+               return
+            end if
          end if
-      end if
-      !------------------------------------------------------------------------------------!
+         !---------------------------------------------------------------------------------!
 
 
 
-      !------------------------------------------------------------------------------------!
-      !   7. Check both solutions, and decide which one makes sense.  Once the right one   !
-      !      was determined, compute the stomatal resistance for CO2 and the intercellular !
-      !      CO2 concentration.  In case both make solutions make sense (unlikely), we     !
-      !      decide the root based on the intercellular CO2.                               !
-      !------------------------------------------------------------------------------------!
-      bounded1 = gswroot1 >= thispft%b .and. gswroot1 <= c34smax_gsw8
-      bounded2 = gswroot2 >= thispft%b .and. gswroot2 <= c34smax_gsw8
-      if (bounded1 .and. bounded2) then
-         !----- Both solutions are valid, warn the user as this shouldn't usually happen. -!
-         write (unit=*,fmt='(2(a,1x,es12.5,1x))') ' + Both GSW are fine.  GSW1 =',gswroot1 &
-                                                 ,                       'GSW2 =',gswroot2
-         ciroot1 = answer%lsfc_co2 - answer%co2_demand / (gsw_2_gsc8 * gswroot1)
-         ciroot2 = answer%lsfc_co2 - answer%co2_demand / (gsw_2_gsc8 * gswroot2)
-
-         bounded1 = ciroot1 >= c34smin_lint_co28 .and.                                     &
-                    ciroot1 <= min(c34smax_lint_co28,met%can_co2)
-         bounded2 = ciroot2 >= c34smin_lint_co28 .and.                                     &
-                    ciroot2 <= min(c34smax_lint_co28,met%can_co2)
-          
+         !---------------------------------------------------------------------------------!
+         !     Check both solutions, and decide which one makes sense.  Once the right     !
+         ! one is determined, compute the stomatal resistance for CO2 and the inter-       !
+         ! cellular CO2 concentration.  In case both make solutions make sense (unlikely), !
+         ! we decide the root based on the intercellular CO2.                              !
+         !---------------------------------------------------------------------------------!
+         bounded1 = gswroot1 >= thispft%b .and. gswroot1 <= c34smax_gsw8
+         bounded2 = gswroot2 >= thispft%b .and. gswroot2 <= c34smax_gsw8
          if (bounded1 .and. bounded2) then
-            !----- Both intercellular CO2 are fine, pick the highest and warn the user. ---!
-            write (unit=*,fmt='(2(a,1x,es12.5,1x))') ' + Both CI are fine.  CI1 =',ciroot1 &
-                                                    ,                      'CI2 =',ciroot2
-            if (ciroot1 >= ciroot2) then
+            !----- Both solutions are valid, warn the user as this should never happen. ---!
+            ciroot1 = answer%lsfc_co2 - answer%co2_demand / (gsw_2_gsc8 * gswroot1)
+            ciroot2 = answer%lsfc_co2 - answer%co2_demand / (gsw_2_gsc8 * gswroot2)
+
+            bounded1 = ciroot1 >= c34smin_lint_co28 .and.                                  &
+                       ciroot1 <= min(c34smax_lint_co28,met%can_co2)
+            bounded2 = ciroot2 >= c34smin_lint_co28 .and.                                  &
+                       ciroot2 <= min(c34smax_lint_co28,met%can_co2)
+             
+            if (bounded1 .and. bounded2) then
+               !----- Both intercellular CO2 work, pick the highest and warn the user. ----!
+               if (ciroot1 >= ciroot2) then
+                  answer%stom_cond_h2o = gswroot1
+                  answer%stom_cond_co2 = gsw_2_gsc8 * answer%stom_cond_h2o
+                  answer%lint_co2      = ciroot1
+               else
+                  answer%stom_cond_h2o = gswroot2
+                  answer%stom_cond_co2 = gsw_2_gsc8 * answer%stom_cond_h2o
+                  answer%lint_co2      = ciroot2
+               end if
+            elseif (bounded1) then
                answer%stom_cond_h2o = gswroot1
                answer%stom_cond_co2 = gsw_2_gsc8 * answer%stom_cond_h2o
                answer%lint_co2      = ciroot1
-            else
+            elseif (bounded2) then
                answer%stom_cond_h2o = gswroot2
                answer%stom_cond_co2 = gsw_2_gsc8 * answer%stom_cond_h2o
                answer%lint_co2      = ciroot2
+            else
+               success = .false.
+               return
             end if
          elseif (bounded1) then
+            !----- First root is the only one that makes sense. ---------------------------!
             answer%stom_cond_h2o = gswroot1
             answer%stom_cond_co2 = gsw_2_gsc8 * answer%stom_cond_h2o
-            answer%lint_co2      = ciroot1
+            answer%lint_co2      = answer%lsfc_co2                                         &
+                                 - answer%co2_demand / answer%stom_cond_co2
+
          elseif (bounded2) then
+            !----- Second root is the only one that makes sense. --------------------------!
             answer%stom_cond_h2o = gswroot2
             answer%stom_cond_co2 = gsw_2_gsc8 * answer%stom_cond_h2o
-            answer%lint_co2      = ciroot2
+            answer%lint_co2      = answer%lsfc_co2                                         &
+                                 - answer%co2_demand / answer%stom_cond_co2
          else
+            !----- None of the solutions are bounded.  This solution failed. --------------!
             success = .false.
             return
          end if
-      elseif (bounded1) then
-         !----- First root is the only one that makes sense. ------------------------------!
-         answer%stom_cond_h2o = gswroot1
-         answer%stom_cond_co2 = gsw_2_gsc8 * answer%stom_cond_h2o
-         answer%lint_co2      = answer%lsfc_co2 - answer%co2_demand / answer%stom_cond_co2
-
-      elseif (bounded2) then
-         !----- Second root is the only one that makes sense. -----------------------------!
-         answer%stom_cond_h2o = gswroot1
-         answer%stom_cond_co2 = gsw_2_gsc8 * answer%stom_cond_h2o
-         answer%lint_co2      = answer%lsfc_co2 - answer%co2_demand / answer%stom_cond_co2
-      else
-         !----- None of the solutions are bounded.  This solution failed. -----------------!
-         success = .false.
-         return
+         !---------------------------------------------------------------------------------!
       end if
       !------------------------------------------------------------------------------------!
-
 
 
       !------------------------------------------------------------------------------------!
@@ -1488,10 +1473,6 @@ module farq_leuning
       !     The loop is to make sure we solve for two cases, the low and the high water    !
       ! stomatal conductance bounds.                                                       !
       !------------------------------------------------------------------------------------!
-       write (unit=92,fmt='(109a)') ('-',ibnd=1,109)
-       write (unit=92,fmt='(9(1x,a))')         ' BND','         GSW','       AQUAD'         &
-                                      ,'       BQUAD','       CQUAD','       DISCR'         &
-                                      ,'      CROOT1','      CROOT2','      CHOSEN'
       do ibnd=1,2
          !---------------------------------------------------------------------------------!
          !  1.  Define the conductance edge.                                               !
@@ -1573,8 +1554,6 @@ module farq_leuning
             case (2)
                cibnds(ibnd) = min(ciroot1,ciroot2)
             end select
-            write (unit=*,fmt='(a,2(1x,es12.5))') ' + Both roots are reasonable'           &
-                                                 ,ciroot1,ciroot2
          elseif (ok1) then
             cibnds(ibnd) = ciroot1
          elseif (ok2) then
@@ -1595,19 +1574,8 @@ module farq_leuning
             case (2)
                cibnds(ibnd) = min(ciroot1,ciroot2)
             end select
-            write (unit=*,fmt='(a,2(1x,es12.5))') ' + Both roots are unreasonable'         &
-                                                 ,ciroot1,ciroot2
          end if
-
-         !---------------------------------------------------------------------------------!
-         !     Temporary thing: print the guesses to see how do they look like.            !
-         !---------------------------------------------------------------------------------!
-          write(unit=92,fmt='(i5,8(1x,es12.5))') ibnd,gsw,aquad,bquad,cquad,discr           &
-                                                  ,ciroot1,ciroot2,cibnds(ibnd)
-         !---------------------------------------------------------------------------------!
       end do
-       write (unit=92,fmt='(109a)') ('-',ibnd=1,109)
-       write (unit=92,fmt='(a)')     ' '
       !------------------------------------------------------------------------------------!
 
 

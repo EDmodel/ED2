@@ -1931,8 +1931,8 @@ subroutine init_physiology_params()
    ! conductivities.                                                                       !
    !---------------------------------------------------------------------------------------!
    gbh_2_gbw  = 1.075           ! heat  to water  - leaf boundary layer
-   gbw_2_gbc  = 1./1.4          ! water to carbon - leaf boundary layer
-   gsw_2_gsc  = 1./1.6          ! water to carbon - stomata
+   gbw_2_gbc  = 1.4             ! water to carbon - leaf boundary layer
+   gsw_2_gsc  = 1.6             ! water to carbon - stomata
    gsc_2_gsw  = 1./gsw_2_gsc    ! carbon to water - stomata
    !----- The following are used to convert resistance. -----------------------------------!
    rbh_2_rbw  = 1./gbh_2_gbw    ! heat  to water  - leaf boundary layer
@@ -1980,7 +1980,7 @@ subroutine init_physiology_params()
    !     Parameters that control debugging output.                                         !
    !---------------------------------------------------------------------------------------!
    !----- I should print detailed debug information. --------------------------------------!
-   print_photo_debug = .true.
+   print_photo_debug = .false.
    !----- File name prefix for the detailed information in case of debugging. -------------!
    photo_prefix      = 'photo_state_cohort_'
    !---------------------------------------------------------------------------------------!
