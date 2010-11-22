@@ -44,7 +44,6 @@ module rk4_driver
       integer                                 :: iun
       integer, dimension(:)     , allocatable :: ed_ktrans
       integer                                 :: nsteps
-      real                                    :: sum_lai_rbi
       real                                    :: wcurr_loss2atm
       real                                    :: ecurr_loss2atm
       real                                    :: co2curr_loss2atm
@@ -167,7 +166,7 @@ module rk4_driver
 
                !----- Get photosynthesis, stomatal conductance, and transpiration. --------!
                call canopy_photosynthesis(csite,cmet,nzg,ipa,ed_ktrans,cpoly%lsl(isi)      &
-                                         ,sum_lai_rbi,cpoly%leaf_aging_factor(:,isi)       &
+                                         ,cpoly%leaf_aging_factor(:,isi)                   &
                                          ,cpoly%green_leaf_factor(:,isi))
 
                !----- Compute root and heterotrophic respiration. -------------------------!
@@ -597,6 +596,14 @@ module rk4_driver
             cpatch%lint_shv(ico) = cpatch%lint_shv(ico) / (1. + cpatch%lint_shv(ico))
             !----- Convert the wind. ------------------------------------------------------!
             cpatch%veg_wind(ico) = sngloff(initp%veg_wind(ico),tiny_offset)
+            
+            !------------------------------------------------------------------------------!
+            !     Divide the values of water demand by the time step to obtain the average !
+            ! value over the past DTLSM period.                                            !
+            !------------------------------------------------------------------------------!
+            cpatch%psi_open  (ico) = sngloff(initp%psi_open  (ico),tiny_offset) / hdid
+            cpatch%psi_closed(ico) = sngloff(initp%psi_closed(ico),tiny_offset) / hdid
+
          elseif (cpatch%hite(ico) <=  csite%total_snow_depth(ipa)) then
             !------------------------------------------------------------------------------!
             !    For plants buried in snow, fix the leaf temperature to the snow temper-   !
@@ -618,7 +625,11 @@ module rk4_driver
             cpatch%lint_shv(ico) = rslif(csite%can_prss(ipa),cpatch%veg_temp(ico))
             cpatch%lint_shv(ico) = cpatch%lint_shv(ico) / (1. + cpatch%lint_shv(ico))
             !----- Copy the meteorological wind to here. ----------------------------------!
-            cpatch%veg_wind(ico) = sngloff(rk4site%vels, sngloff)
+            cpatch%veg_wind(ico) = sngloff(rk4site%vels, tiny_offset)
+            !----- Make water demand 0. ---------------------------------------------------!
+            cpatch%psi_open  (ico) = 0.0
+            cpatch%psi_closed(ico) = 0.0
+
          else
             !------------------------------------------------------------------------------!
             !     For plants with minimal foliage or very sparse patches, fix the leaf     !
@@ -636,7 +647,10 @@ module rk4_driver
             cpatch%lint_shv(ico) = rslif(csite%can_prss(ipa),cpatch%veg_temp(ico))
             cpatch%lint_shv(ico) = cpatch%lint_shv(ico) / (1. + cpatch%lint_shv(ico))
             !----- Copy the meteorological wind to here. ----------------------------------!
-            cpatch%veg_wind(ico) = sngloff(rk4site%vels, sngloff)
+            cpatch%veg_wind(ico) = sngloff(rk4site%vels, tiny_offset)
+            !----- Make water demand 0. ---------------------------------------------------!
+            cpatch%psi_open  (ico) = 0.0
+            cpatch%psi_closed(ico) = 0.0
          end if
 
          !---------------------------------------------------------------------------------!

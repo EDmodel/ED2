@@ -350,11 +350,11 @@ module ed_state_vars
      ! the incident atmospheric long wave alone
      real ,pointer,dimension(:) :: rlong_v_incid
 
-     ! Leaf aerodynamic resistance for heat  (s/m)
-     real ,pointer,dimension(:) :: rbh
+     ! Leaf boundary layer conductance for heat/entropy  (J/K/m2/s)
+     real ,pointer,dimension(:) :: gbh
 
-     ! Leaf aerodynamic resistance for water (s/m)
-     real ,pointer,dimension(:) :: rbw
+     ! Leaf boundary layer conductance for water (kg/m2/s)
+     real ,pointer,dimension(:) :: gbw
 
      ! Photosynthesis rate, open stomata (umol/m2 leaf/s)
      real ,pointer,dimension(:) :: A_open
@@ -365,11 +365,11 @@ module ed_state_vars
      ! Transpiration rate, closed stomata (mm/s)
      real ,pointer,dimension(:) :: Psi_closed
 
-     ! Stomatal resistance for water, open stomata (s/m)
-     real ,pointer,dimension(:) :: rsw_open
+     ! Stomatal conductance for water, open stomata (kg_H2O/m2/s)
+     real ,pointer,dimension(:) :: gsw_open
 
-     ! Stomatal resistance for water, closed stomata (s/m)
-     real ,pointer,dimension(:) :: rsw_closed
+     ! Stomatal conductance for water, closed stomata (kg_H2O/m2/s)
+     real ,pointer,dimension(:) :: gsw_closed
 
      ! Weighting factor for open and closed stomata (fsw=1 => fully open)
      real ,pointer,dimension(:) :: fsw
@@ -377,16 +377,25 @@ module ed_state_vars
      ! Product of fsw and fsn
      real ,pointer,dimension(:) :: fs_open
 
-     ! Daily and monthly means of the weighting factors for open and closed stomata
-     real ,pointer,dimension(:) :: dmean_fs_open
-     real ,pointer,dimension(:) :: dmean_fsw
-     real ,pointer,dimension(:) :: dmean_fsn
-     real ,pointer,dimension(:) :: mmean_fs_open
-     real ,pointer,dimension(:) :: mmean_fsw
-     real ,pointer,dimension(:) :: mmean_fsn
+     ! Water supply (kg_H2O/m2/s)
+     real , pointer, dimension(:) :: water_supply
 
-     ! Net stomatal resistance [s/m]
-     real ,pointer,dimension(:) :: stomatal_resistance
+     ! Daily and monthly means of the weighting factors for open and closed stomata
+     real , pointer, dimension(:) :: dmean_fs_open
+     real , pointer, dimension(:) :: dmean_fsw
+     real , pointer, dimension(:) :: dmean_fsn
+     real , pointer, dimension(:) :: dmean_psi_open
+     real , pointer, dimension(:) :: dmean_psi_closed
+     real , pointer, dimension(:) :: dmean_water_supply
+     real , pointer, dimension(:) :: mmean_fs_open
+     real , pointer, dimension(:) :: mmean_fsw
+     real , pointer, dimension(:) :: mmean_fsn
+     real , pointer, dimension(:) :: mmean_psi_open
+     real , pointer, dimension(:) :: mmean_psi_closed
+     real , pointer, dimension(:) :: mmean_water_supply
+
+     ! Net stomatal conductance [kg_H2O/m2/s]
+     real ,pointer,dimension(:) :: stomatal_conductance
 
      ! Plant maintenance costs due to turnover of leaves and fine 
      ! roots [kgC/plant]
@@ -1653,7 +1662,6 @@ module ed_state_vars
      real, pointer, dimension(:)   :: dmean_fs_open
      real, pointer, dimension(:)   :: dmean_fsw
      real, pointer, dimension(:)   :: dmean_fsn
-     
      real, pointer, dimension(:)   :: dmean_can_temp      ! (npolygons)
      real, pointer, dimension(:)   :: dmean_can_shv       ! (npolygons)
      real, pointer, dimension(:)   :: dmean_can_co2       ! (npolygons)
@@ -2804,16 +2812,17 @@ contains
     allocate(cpatch%rlong_v(ncohorts))
     allocate(cpatch%rlong_v_surf(ncohorts))
     allocate(cpatch%rlong_v_incid(ncohorts))
-    allocate(cpatch%rbh(ncohorts))
-    allocate(cpatch%rbw(ncohorts))
+    allocate(cpatch%gbh(ncohorts))
+    allocate(cpatch%gbw(ncohorts))
     allocate(cpatch%A_open(ncohorts))
     allocate(cpatch%A_closed(ncohorts))
     allocate(cpatch%Psi_closed(ncohorts))
-    allocate(cpatch%rsw_open(ncohorts))
-    allocate(cpatch%rsw_closed(ncohorts))
+    allocate(cpatch%gsw_open(ncohorts))
+    allocate(cpatch%gsw_closed(ncohorts))
     allocate(cpatch%fsw(ncohorts))
     allocate(cpatch%fs_open(ncohorts))
-    allocate(cpatch%stomatal_resistance(ncohorts))
+    allocate(cpatch%water_supply(ncohorts))
+    allocate(cpatch%stomatal_conductance(ncohorts))
     allocate(cpatch%leaf_maintenance(ncohorts))
     allocate(cpatch%root_maintenance(ncohorts))
     allocate(cpatch%leaf_drop(ncohorts))
@@ -2843,6 +2852,9 @@ contains
        allocate(cpatch%dmean_fs_open(ncohorts))
        allocate(cpatch%dmean_fsw(ncohorts))
        allocate(cpatch%dmean_fsn(ncohorts))
+       allocate(cpatch%dmean_psi_open(ncohorts))
+       allocate(cpatch%dmean_psi_closed(ncohorts))
+       allocate(cpatch%dmean_water_supply(ncohorts))
        allocate(cpatch%dmean_gpp(ncohorts))
        allocate(cpatch%dmean_leaf_resp(ncohorts))
        allocate(cpatch%dmean_root_resp(ncohorts))
@@ -2863,6 +2875,9 @@ contains
        allocate(cpatch%mmean_fs_open(ncohorts))
        allocate(cpatch%mmean_fsw(ncohorts))
        allocate(cpatch%mmean_fsn(ncohorts))
+       allocate(cpatch%mmean_psi_open(ncohorts))
+       allocate(cpatch%mmean_psi_closed(ncohorts))
+       allocate(cpatch%mmean_water_supply(ncohorts))
        allocate(cpatch%mmean_leaf_maintenance(ncohorts))
        allocate(cpatch%mmean_root_maintenance(ncohorts))
        allocate(cpatch%mmean_leaf_drop(ncohorts))
@@ -3733,22 +3748,29 @@ contains
     nullify(cpatch%rlong_v)
     nullify(cpatch%rlong_v_surf)
     nullify(cpatch%rlong_v_incid)
-    nullify(cpatch%rbh)
-    nullify(cpatch%rbw)
+    nullify(cpatch%gbh)
+    nullify(cpatch%gbw)
     nullify(cpatch%A_open)    
     nullify(cpatch%A_closed)
     nullify(cpatch%Psi_closed)
-    nullify(cpatch%rsw_open)
-    nullify(cpatch%rsw_closed)
+    nullify(cpatch%gsw_open)
+    nullify(cpatch%gsw_closed)
     nullify(cpatch%fsw)
     nullify(cpatch%fs_open)
+    nullify(cpatch%water_supply)
     nullify(cpatch%dmean_fs_open)
     nullify(cpatch%dmean_fsw)
     nullify(cpatch%dmean_fsn)
+    nullify(cpatch%dmean_psi_open)
+    nullify(cpatch%dmean_psi_closed)
+    nullify(cpatch%dmean_water_supply)
     nullify(cpatch%mmean_fs_open)
     nullify(cpatch%mmean_fsw)
     nullify(cpatch%mmean_fsn)
-    nullify(cpatch%stomatal_resistance)
+    nullify(cpatch%mmean_psi_open)
+    nullify(cpatch%mmean_psi_closed)
+    nullify(cpatch%mmean_water_supply)
+    nullify(cpatch%stomatal_conductance)
     nullify(cpatch%leaf_maintenance)
     nullify(cpatch%root_maintenance)
     nullify(cpatch%mmean_leaf_maintenance)
@@ -4641,22 +4663,29 @@ contains
     if(associated(cpatch%rlong_v))                deallocate(cpatch%rlong_v)
     if(associated(cpatch%rlong_v_surf))           deallocate(cpatch%rlong_v_surf)
     if(associated(cpatch%rlong_v_incid))          deallocate(cpatch%rlong_v_incid)
-    if(associated(cpatch%rbh))                    deallocate(cpatch%rbh)
-    if(associated(cpatch%rbw))                    deallocate(cpatch%rbw)
+    if(associated(cpatch%gbh))                    deallocate(cpatch%gbh)
+    if(associated(cpatch%gbw))                    deallocate(cpatch%gbw)
     if(associated(cpatch%A_open))                 deallocate(cpatch%A_open)    
     if(associated(cpatch%A_closed))               deallocate(cpatch%A_closed)
     if(associated(cpatch%Psi_closed))             deallocate(cpatch%Psi_closed)
-    if(associated(cpatch%rsw_open))               deallocate(cpatch%rsw_open)
-    if(associated(cpatch%rsw_closed))             deallocate(cpatch%rsw_closed)
+    if(associated(cpatch%gsw_open))               deallocate(cpatch%gsw_open)
+    if(associated(cpatch%gsw_closed))             deallocate(cpatch%gsw_closed)
     if(associated(cpatch%fsw))                    deallocate(cpatch%fsw)
     if(associated(cpatch%fs_open))                deallocate(cpatch%fs_open)
+    if(associated(cpatch%water_supply))           deallocate(cpatch%water_supply)
     if(associated(cpatch%dmean_fs_open))          deallocate(cpatch%dmean_fs_open)
     if(associated(cpatch%dmean_fsw))              deallocate(cpatch%dmean_fsw)
     if(associated(cpatch%dmean_fsn))              deallocate(cpatch%dmean_fsn)
+    if(associated(cpatch%dmean_psi_open))         deallocate(cpatch%dmean_psi_open)
+    if(associated(cpatch%dmean_psi_closed))       deallocate(cpatch%dmean_psi_closed)
+    if(associated(cpatch%dmean_water_supply))     deallocate(cpatch%dmean_water_supply)
     if(associated(cpatch%mmean_fs_open))          deallocate(cpatch%mmean_fs_open)
     if(associated(cpatch%mmean_fsw))              deallocate(cpatch%mmean_fsw)
     if(associated(cpatch%mmean_fsn))              deallocate(cpatch%mmean_fsn)
-    if(associated(cpatch%stomatal_resistance))    deallocate(cpatch%stomatal_resistance)
+    if(associated(cpatch%mmean_psi_open))         deallocate(cpatch%mmean_psi_open)
+    if(associated(cpatch%mmean_psi_closed))       deallocate(cpatch%mmean_psi_closed)
+    if(associated(cpatch%mmean_water_supply))     deallocate(cpatch%mmean_water_supply)
+    if(associated(cpatch%stomatal_conductance))   deallocate(cpatch%stomatal_conductance)
     if(associated(cpatch%leaf_maintenance))       deallocate(cpatch%leaf_maintenance)
     if(associated(cpatch%root_maintenance))       deallocate(cpatch%root_maintenance)
     if(associated(cpatch%mmean_leaf_maintenance)) deallocate(cpatch%mmean_leaf_maintenance)
@@ -5617,22 +5646,29 @@ contains
     if(associated(cpatch%rlong_v))              cpatch%rlong_v             = large_real
     if(associated(cpatch%rlong_v_surf))         cpatch%rlong_v_surf        = large_real
     if(associated(cpatch%rlong_v_incid))        cpatch%rlong_v_incid       = large_real
-    if(associated(cpatch%rbh))                  cpatch%rbh                 = large_real
-    if(associated(cpatch%rbw))                  cpatch%rbw                 = large_real
+    if(associated(cpatch%gbh))                  cpatch%gbh                 = large_real
+    if(associated(cpatch%gbw))                  cpatch%gbw                 = large_real
     if(associated(cpatch%A_open))               cpatch%A_open              = large_real
     if(associated(cpatch%A_closed))             cpatch%A_closed            = large_real
     if(associated(cpatch%Psi_closed))           cpatch%Psi_closed          = large_real
-    if(associated(cpatch%rsw_open))             cpatch%rsw_open            = large_real
-    if(associated(cpatch%rsw_closed))           cpatch%rsw_closed          = large_real
+    if(associated(cpatch%gsw_open))             cpatch%gsw_open            = large_real
+    if(associated(cpatch%gsw_closed))           cpatch%gsw_closed          = large_real
     if(associated(cpatch%fsw))                  cpatch%fsw                 = large_real
     if(associated(cpatch%fs_open))              cpatch%fs_open             = large_real
+    if(associated(cpatch%water_supply))         cpatch%water_supply        = large_real
     if(associated(cpatch%dmean_fs_open))        cpatch%dmean_fs_open       = large_real
     if(associated(cpatch%dmean_fsw))            cpatch%dmean_fsw           = large_real
     if(associated(cpatch%dmean_fsn))            cpatch%dmean_fsn           = large_real
+    if(associated(cpatch%dmean_psi_open))       cpatch%dmean_psi_open      = large_real
+    if(associated(cpatch%dmean_psi_closed))     cpatch%dmean_psi_closed    = large_real
+    if(associated(cpatch%dmean_water_supply))   cpatch%dmean_water_supply  = large_real
     if(associated(cpatch%mmean_fs_open))        cpatch%mmean_fs_open       = large_real
     if(associated(cpatch%mmean_fsw))            cpatch%mmean_fsw           = large_real
     if(associated(cpatch%mmean_fsn))            cpatch%mmean_fsn           = large_real
-    if(associated(cpatch%stomatal_resistance))  cpatch%stomatal_resistance = large_real
+    if(associated(cpatch%mmean_psi_open))       cpatch%mmean_psi_open      = large_real
+    if(associated(cpatch%mmean_psi_closed))     cpatch%mmean_psi_closed    = large_real
+    if(associated(cpatch%mmean_water_supply))   cpatch%mmean_water_supply  = large_real
+    if(associated(cpatch%stomatal_conductance)) cpatch%stomatal_conductance = large_real
     if(associated(cpatch%leaf_maintenance))     cpatch%leaf_maintenance    = large_real
     if(associated(cpatch%root_maintenance))     cpatch%root_maintenance    = large_real
     if(associated(cpatch%mmean_leaf_maintenance)) cpatch%mmean_leaf_maintenance = large_real
@@ -6250,16 +6286,17 @@ contains
     patchout%rlong_v(1:inc)          = pack(patchin%rlong_v,mask)
     patchout%rlong_v_surf(1:inc)     = pack(patchin%rlong_v_surf,mask)
     patchout%rlong_v_incid(1:inc)    = pack(patchin%rlong_v_incid,mask)
-    patchout%rbh(1:inc)              = pack(patchin%rbh,mask)
-    patchout%rbw(1:inc)              = pack(patchin%rbw,mask)
+    patchout%gbh(1:inc)              = pack(patchin%gbh,mask)
+    patchout%gbw(1:inc)              = pack(patchin%gbw,mask)
     patchout%A_open(1:inc)           = pack(patchin%A_open,mask)
     patchout%A_closed(1:inc)         = pack(patchin%A_closed,mask)
     patchout%Psi_closed(1:inc)       = pack(patchin%Psi_closed,mask)
-    patchout%rsw_open(1:inc)         = pack(patchin%rsw_open,mask)
-    patchout%rsw_closed(1:inc)       = pack(patchin%rsw_closed,mask)
+    patchout%gsw_open(1:inc)         = pack(patchin%gsw_open,mask)
+    patchout%gsw_closed(1:inc)       = pack(patchin%gsw_closed,mask)
     patchout%fsw(1:inc)              = pack(patchin%fsw,mask)
     patchout%fs_open(1:inc)          = pack(patchin%fs_open,mask)
-    patchout%stomatal_resistance(1:inc) = pack(patchin%stomatal_resistance,mask)
+    patchout%water_supply(1:inc)     = pack(patchin%water_supply,mask)
+    patchout%stomatal_conductance(1:inc) = pack(patchin%stomatal_conductance,mask)
     patchout%leaf_maintenance(1:inc) = pack(patchin%leaf_maintenance,mask)
     patchout%root_maintenance(1:inc) = pack(patchin%root_maintenance,mask)
     patchout%leaf_drop(1:inc)        = pack(patchin%leaf_drop,mask)
@@ -6319,6 +6356,9 @@ contains
        patchout%dmean_fs_open         (1:inc) = pack(patchin%dmean_fs_open         ,mask)
        patchout%dmean_fsw             (1:inc) = pack(patchin%dmean_fsw             ,mask)
        patchout%dmean_fsn             (1:inc) = pack(patchin%dmean_fsn             ,mask)
+       patchout%dmean_psi_open        (1:inc) = pack(patchin%dmean_psi_open        ,mask)
+       patchout%dmean_psi_closed      (1:inc) = pack(patchin%dmean_psi_closed      ,mask)
+       patchout%dmean_water_supply    (1:inc) = pack(patchin%dmean_water_supply    ,mask)
        patchout%dmean_lambda_light    (1:inc) = pack(patchin%dmean_lambda_light    ,mask)
        patchout%dmean_light_level     (1:inc) = pack(patchin%dmean_light_level     ,mask)
        patchout%dmean_light_level_beam(1:inc) = pack(patchin%dmean_light_level_beam,mask)
@@ -6338,6 +6378,9 @@ contains
        patchout%mmean_fs_open         (1:inc) = pack(patchin%mmean_fs_open         ,mask)
        patchout%mmean_fsw             (1:inc) = pack(patchin%mmean_fsw             ,mask)
        patchout%mmean_fsn             (1:inc) = pack(patchin%mmean_fsn             ,mask)
+       patchout%mmean_psi_open        (1:inc) = pack(patchin%mmean_psi_open        ,mask)
+       patchout%mmean_psi_closed      (1:inc) = pack(patchin%mmean_psi_closed      ,mask)
+       patchout%mmean_water_supply    (1:inc) = pack(patchin%mmean_water_supply    ,mask)
        patchout%mmean_leaf_maintenance(1:inc) = pack(patchin%mmean_leaf_maintenance,mask)
        patchout%mmean_root_maintenance(1:inc) = pack(patchin%mmean_root_maintenance,mask)
        patchout%mmean_leaf_drop       (1:inc) = pack(patchin%mmean_leaf_drop       ,mask)
@@ -6475,16 +6518,17 @@ contains
        patchout%rlong_v(iout)          = patchin%rlong_v(iin)
        patchout%rlong_v_surf(iout)     = patchin%rlong_v_surf(iin)
        patchout%rlong_v_incid(iout)    = patchin%rlong_v_incid(iin)
-       patchout%rbh(iout)              = patchin%rbh(iin)
-       patchout%rbw(iout)              = patchin%rbw(iin)
+       patchout%gbh(iout)              = patchin%gbh(iin)
+       patchout%gbw(iout)              = patchin%gbw(iin)
        patchout%A_open(iout)           = patchin%A_open(iin)
        patchout%A_closed(iout)         = patchin%A_closed(iin)
        patchout%Psi_closed(iout)       = patchin%Psi_closed(iin)
-       patchout%rsw_open(iout)         = patchin%rsw_open(iin)
-       patchout%rsw_closed(iout)       = patchin%rsw_closed(iin)
+       patchout%gsw_open(iout)         = patchin%gsw_open(iin)
+       patchout%gsw_closed(iout)       = patchin%gsw_closed(iin)
        patchout%fsw(iout)              = patchin%fsw(iin)
        patchout%fs_open(iout)          = patchin%fs_open(iin)
-       patchout%stomatal_resistance(iout) = patchin%stomatal_resistance(iin)
+       patchout%water_supply(iout)     = patchin%water_supply(iin)
+       patchout%stomatal_conductance(iout) = patchin%stomatal_conductance(iin)
        patchout%leaf_maintenance(iout) = patchin%leaf_maintenance(iin)
        patchout%root_maintenance(iout) = patchin%root_maintenance(iin)
        patchout%leaf_drop(iout)        = patchin%leaf_drop(iin)
@@ -6524,6 +6568,9 @@ contains
           patchout%dmean_fs_open           (iout) = patchin%dmean_fs_open           (iin)
           patchout%dmean_fsw               (iout) = patchin%dmean_fsw               (iin)
           patchout%dmean_fsn               (iout) = patchin%dmean_fsn               (iin)
+          patchout%dmean_psi_open          (iout) = patchin%dmean_psi_open          (iin)
+          patchout%dmean_psi_closed        (iout) = patchin%dmean_psi_closed        (iin)
+          patchout%dmean_water_supply      (iout) = patchin%dmean_water_supply      (iin)
           patchout%dmean_light_level       (iout) = patchin%dmean_light_level       (iin)
           patchout%dmean_light_level_beam  (iout) = patchin%dmean_light_level_beam  (iin)
           patchout%dmean_light_level_diff  (iout) = patchin%dmean_light_level_diff  (iin)
@@ -6543,6 +6590,9 @@ contains
           patchout%mmean_fs_open           (iout) = patchin%mmean_fs_open           (iin)
           patchout%mmean_fsw               (iout) = patchin%mmean_fsw               (iin)
           patchout%mmean_fsn               (iout) = patchin%mmean_fsn               (iin)
+          patchout%mmean_psi_open          (iout) = patchin%mmean_psi_open          (iin)
+          patchout%mmean_psi_closed        (iout) = patchin%mmean_psi_closed        (iin)
+          patchout%mmean_water_supply      (iout) = patchin%mmean_water_supply      (iin)
           patchout%mmean_leaf_maintenance  (iout) = patchin%mmean_leaf_maintenance  (iin)
           patchout%mmean_root_maintenance  (iout) = patchin%mmean_root_maintenance  (iin)
           patchout%mmean_leaf_drop         (iout) = patchin%mmean_leaf_drop         (iin)
@@ -10684,14 +10734,14 @@ contains
     if (associated(cpatch%bdead)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%bdead(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'BDEAD :41:hist:mont:dail:year') 
+         var_len,var_len_global,max_ptrs,'BDEAD :41:hist:mont:anal:dail:year') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%bleaf)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%bleaf(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'BLEAF :41:hist:year:dail:mont') 
+         var_len,var_len_global,max_ptrs,'BLEAF :41:hist:year:anal:dail:mont') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
@@ -10705,49 +10755,49 @@ contains
     if (associated(cpatch%balive)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%balive(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'BALIVE :41:hist:year:dail:mont') 
+         var_len,var_len_global,max_ptrs,'BALIVE :41:hist:year:dail:anal:mont') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%broot)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%broot(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'BROOT :41:hist:year:dail:mont') 
+         var_len,var_len_global,max_ptrs,'BROOT :41:hist:year:dail:anal:mont') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%bsapwood)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%bsapwood(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'BSAPWOOD :41:hist:year:dail:mont') 
+         var_len,var_len_global,max_ptrs,'BSAPWOOD :41:hist:year:dail:anal:mont') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%lai)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%lai(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'LAI_CO :41:hist:dail:dail:mont:year') 
+         var_len,var_len_global,max_ptrs,'LAI_CO :41:hist:dail:anal:mont:year') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%wpa)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%wpa(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'WPA_CO :41:hist:dail:dail:mont:year') 
+         var_len,var_len_global,max_ptrs,'WPA_CO :41:hist:dail:anal:mont:year') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%wai)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%wai(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'WAI_CO :41:hist:dail:dail:mont:year') 
+         var_len,var_len_global,max_ptrs,'WAI_CO :41:hist:dail:anal:mont:year') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%bstorage)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%bstorage(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'BSTORAGE :41:hist:year:dail:mont') 
+         var_len,var_len_global,max_ptrs,'BSTORAGE :41:hist:year:anal:dail:mont') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
@@ -10782,105 +10832,105 @@ contains
     if (associated(cpatch%veg_energy)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%veg_energy(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'VEG_ENERGY :41:hist') 
+         var_len,var_len_global,max_ptrs,'VEG_ENERGY :41:hist:anal') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%veg_temp)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%veg_temp(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'VEG_TEMP :41:hist') 
+         var_len,var_len_global,max_ptrs,'VEG_TEMP :41:hist:anal') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%veg_fliq)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%veg_fliq(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'VEG_FLIQ :41:hist') 
+         var_len,var_len_global,max_ptrs,'VEG_FLIQ :41:hist:anal') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%veg_water)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%veg_water(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'VEG_WATER :41:hist') 
+         var_len,var_len_global,max_ptrs,'VEG_WATER :41:hist:anal') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%veg_wind)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%veg_wind(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'VEG_WIND :41:hist') 
+         var_len,var_len_global,max_ptrs,'VEG_WIND :41:hist:anal') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%lsfc_shv_closed)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%lsfc_shv_closed(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'LSFC_SHV_CLOSED :41:hist') 
+         var_len,var_len_global,max_ptrs,'LSFC_SHV_CLOSED :41:hist:anal') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%lsfc_shv_open)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%lsfc_shv_open(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'LSFC_SHV_OPEN :41:hist') 
+         var_len,var_len_global,max_ptrs,'LSFC_SHV_OPEN :41:hist:anal') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%lsfc_co2_closed)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%lsfc_co2_closed(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'LSFC_CO2_CLOSED :41:hist') 
+         var_len,var_len_global,max_ptrs,'LSFC_CO2_CLOSED :41:hist:anal') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%lsfc_co2_open)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%lsfc_co2_open(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'LSFC_CO2_OPEN :41:hist') 
+         var_len,var_len_global,max_ptrs,'LSFC_CO2_OPEN :41:hist:anal') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%lint_shv)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%lint_shv(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'LINT_SHV :41:hist') 
+         var_len,var_len_global,max_ptrs,'LINT_SHV :41:hist:anal') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%lint_co2_closed)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%lint_co2_closed(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'LINT_CO2_CLOSED :41:hist') 
+         var_len,var_len_global,max_ptrs,'LINT_CO2_CLOSED :41:hist:anal') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%lint_co2_open)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%lint_co2_open(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'LINT_CO2_OPEN :41:hist') 
+         var_len,var_len_global,max_ptrs,'LINT_CO2_OPEN :41:hist:anal') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%mean_gpp)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%mean_gpp(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'MEAN_GPP :41:hist') 
+         var_len,var_len_global,max_ptrs,'MEAN_GPP :41:hist:anal') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%mean_leaf_resp)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%mean_leaf_resp(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'MEAN_LEAF_RESP :41:hist') 
+         var_len,var_len_global,max_ptrs,'MEAN_LEAF_RESP :41:hist:anal') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%mean_root_resp)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%mean_root_resp(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'MEAN_ROOT_RESP :41:hist') 
+         var_len,var_len_global,max_ptrs,'MEAN_ROOT_RESP :41:hist:anal') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
@@ -10922,21 +10972,21 @@ contains
     if (associated(cpatch%growth_respiration)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%growth_respiration(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'GROWTH_RESPIRATION :41:hist') 
+         var_len,var_len_global,max_ptrs,'GROWTH_RESPIRATION :41:hist:anal') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%storage_respiration)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%storage_respiration(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'STORAGE_RESPIRATION :41:hist') 
+         var_len,var_len_global,max_ptrs,'STORAGE_RESPIRATION :41:hist:anal') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%vleaf_respiration)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%vleaf_respiration(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'VLEAF_RESPIRATION :41:hist') 
+         var_len,var_len_global,max_ptrs,'VLEAF_RESPIRATION :41:hist:anal') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif  
 
@@ -11006,7 +11056,7 @@ contains
     if (associated(cpatch%fsn)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%fsn(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'FSN :41:hist') 
+         var_len,var_len_global,max_ptrs,'FSN :41:hist:anal') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
     
@@ -11041,14 +11091,14 @@ contains
     if (associated(cpatch%Psi_open)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%Psi_open(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'PSI_OPEN :41:hist') 
+         var_len,var_len_global,max_ptrs,'PSI_OPEN :41:hist:anal') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%krdepth)) then
        nvar=nvar+1
          call vtable_edio_i(cpatch%krdepth(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'KRDEPTH :41:hist') 
+         var_len,var_len_global,max_ptrs,'KRDEPTH :41:hist:anal') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
@@ -11069,49 +11119,49 @@ contains
     if (associated(cpatch%light_level)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%light_level(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'LIGHT_LEVEL :41:hist') 
+         var_len,var_len_global,max_ptrs,'LIGHT_LEVEL :41:hist:anal') 
        call metadata_edio(nvar,igr,'Relative light level','[NA]','icohort') 
     endif
 
     if (associated(cpatch%light_level_beam)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%light_level_beam(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'LIGHT_LEVEL_BEAM :41:hist') 
+         var_len,var_len_global,max_ptrs,'LIGHT_LEVEL_BEAM :41:hist:anal') 
        call metadata_edio(nvar,igr,'Relative light level, beam fraction','[NA]','icohort') 
     endif
 
     if (associated(cpatch%light_level_diff)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%light_level_diff(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'LIGHT_LEVEL_DIFF :41:hist') 
+         var_len,var_len_global,max_ptrs,'LIGHT_LEVEL_DIFF :41:hist:anal') 
        call metadata_edio(nvar,igr,'Relative light level, diffuse fraction','[NA]','icohort') 
     endif
 
     if (associated(cpatch%beamext_level)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%light_level(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'BEAMEXT_LEVEL :41:hist') 
+         var_len,var_len_global,max_ptrs,'BEAMEXT_LEVEL :41:hist:anal') 
        call metadata_edio(nvar,igr,'Beam extinction level','[NA]','icohort') 
     endif
 
     if (associated(cpatch%diffext_level)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%light_level(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'DIFFEXT_LEVEL :41:hist') 
+         var_len,var_len_global,max_ptrs,'DIFFEXT_LEVEL :41:hist:anal') 
        call metadata_edio(nvar,igr,'diff extinction level','[NA]','icohort') 
     endif
 
     if (associated(cpatch%norm_par_beam)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%norm_par_beam(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'NORM_PAR_BEAM :41:hist') 
+         var_len,var_len_global,max_ptrs,'NORM_PAR_BEAM :41:hist:anal') 
        call metadata_edio(nvar,igr,'Relative light level, beam fraction','[NA]','icohort') 
     endif
 
     if (associated(cpatch%norm_par_diff)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%norm_par_diff(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'NORM_PAR_DIFF :41:hist') 
+         var_len,var_len_global,max_ptrs,'NORM_PAR_DIFF :41:hist:anal') 
        call metadata_edio(nvar,igr,'Relative light level, diffuse fraction','[NA]','icohort') 
     endif
 
@@ -11216,7 +11266,7 @@ contains
     if (associated(cpatch%lambda_light)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%lambda_light(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'LAMBDA_LIGHT_CO :41:hist') 
+         var_len,var_len_global,max_ptrs,'LAMBDA_LIGHT_CO :41:hist:anal') 
        call metadata_edio(nvar,igr,'Light extinction','[m2/m2]','icohort') 
     endif
 
@@ -11237,21 +11287,21 @@ contains
     if (associated(cpatch%par_v)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%par_v(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'PAR_V :41:hist') 
+         var_len,var_len_global,max_ptrs,'PAR_V :41:hist:anal') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%par_v_beam)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%par_v_beam(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'PAR_V_BEAM :41:hist') 
+         var_len,var_len_global,max_ptrs,'PAR_V_BEAM :41:hist:anal') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%par_v_diffuse)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%par_v_diffuse(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'PAR_V_DIFFUSE :41:hist') 
+         var_len,var_len_global,max_ptrs,'PAR_V_DIFFUSE :41:hist:anal') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
@@ -11300,105 +11350,112 @@ contains
     if (associated(cpatch%rshort_v)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%rshort_v(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'RSHORT_V :41:hist') 
+         var_len,var_len_global,max_ptrs,'RSHORT_V :41:hist:anal') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%rshort_v_beam)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%rshort_v_beam(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'RSHORT_V_BEAM :41:hist') 
+         var_len,var_len_global,max_ptrs,'RSHORT_V_BEAM :41:hist:anal') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%rshort_v_diffuse)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%rshort_v_diffuse(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'RSHORT_V_DIFFUSE :41:hist') 
+         var_len,var_len_global,max_ptrs,'RSHORT_V_DIFFUSE :41:hist:anal') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%rlong_v)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%rlong_v(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'RLONG_V :41:hist') 
+         var_len,var_len_global,max_ptrs,'RLONG_V :41:hist:anal') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%rlong_v_surf)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%rlong_v_surf(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'RLONG_V_SURF :41:hist') 
+         var_len,var_len_global,max_ptrs,'RLONG_V_SURF :41:hist:anal') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%rlong_v_incid)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%rlong_v_incid(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'RLONG_V_INCID :41:hist') 
+         var_len,var_len_global,max_ptrs,'RLONG_V_INCID :41:hist:anal') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
-    if (associated(cpatch%rbh)) then
+    if (associated(cpatch%gbh)) then
        nvar=nvar+1
-         call vtable_edio_r(cpatch%rbh(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'RBH :41:hist') 
+         call vtable_edio_r(cpatch%gbh(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'GBH :41:hist:anal') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
-    if (associated(cpatch%rbw)) then
+    if (associated(cpatch%gbw)) then
        nvar=nvar+1
-         call vtable_edio_r(cpatch%rbw(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'RBW :41:hist') 
+         call vtable_edio_r(cpatch%gbw(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'GBW :41:hist:anal') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%A_open)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%A_open(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'A_OPEN :41:hist') 
+         var_len,var_len_global,max_ptrs,'A_OPEN :41:hist:anal') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%A_closed)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%A_closed(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'A_CLOSED :41:hist') 
+         var_len,var_len_global,max_ptrs,'A_CLOSED :41:hist:anal') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%Psi_closed)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%Psi_closed(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'PSI_CLOSED :41:hist') 
+         var_len,var_len_global,max_ptrs,'PSI_CLOSED :41:hist:anal') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
-    if (associated(cpatch%rsw_open)) then
+    if (associated(cpatch%gsw_open)) then
        nvar=nvar+1
-         call vtable_edio_r(cpatch%rsw_open(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'RSW_OPEN :41:hist') 
+         call vtable_edio_r(cpatch%gsw_open(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'GSW_OPEN :41:hist:anal') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
-    if (associated(cpatch%rsw_closed)) then
+    if (associated(cpatch%gsw_closed)) then
        nvar=nvar+1
-         call vtable_edio_r(cpatch%rsw_closed(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'RSW_CLOSED :41:hist') 
+         call vtable_edio_r(cpatch%gsw_closed(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'GSW_CLOSED :41:hist:anal') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%fsw)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%fsw(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'FSW :41:hist') 
+         var_len,var_len_global,max_ptrs,'FSW :41:hist:anal') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
     if (associated(cpatch%fs_open)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%fs_open(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'FS_OPEN :41:hist') 
+         var_len,var_len_global,max_ptrs,'FS_OPEN :41:hist:anal') 
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
+
+    if (associated(cpatch%water_supply)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%water_supply(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'WATER_SUPPLY :41:hist:anal') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
@@ -11423,6 +11480,27 @@ contains
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
+    if (associated(cpatch%dmean_psi_open)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%dmean_psi_open(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'DMEAN_PSI_OPEN_CO :41:dail:hist') 
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
+
+    if (associated(cpatch%dmean_psi_closed)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%dmean_psi_closed(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'DMEAN_PSI_CLOSED_CO :41:dail:hist') 
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
+
+    if (associated(cpatch%dmean_water_supply)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%dmean_water_supply(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'DMEAN_WATER_SUPPLY_CO :41:dail:hist') 
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
+
     if (associated(cpatch%mmean_fs_open)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%mmean_fs_open(1),nvar,igr,init,cpatch%coglob_id, &
@@ -11444,10 +11522,31 @@ contains
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 
-    if (associated(cpatch%stomatal_resistance)) then
+    if (associated(cpatch%mmean_psi_open)) then
        nvar=nvar+1
-         call vtable_edio_r(cpatch%stomatal_resistance(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'STOMATAL_RESISTANCE :41:hist') 
+         call vtable_edio_r(cpatch%mmean_psi_open(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'MMEAN_PSI_OPEN_CO :41:mont:hist') 
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
+
+    if (associated(cpatch%mmean_psi_closed)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%mmean_psi_closed(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'MMEAN_PSI_CLOSED_CO :41:mont:hist') 
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
+
+    if (associated(cpatch%mmean_water_supply)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%mmean_water_supply(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'MMEAN_WATER_SUPPLY_CO :41:mont:hist') 
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
+
+    if (associated(cpatch%stomatal_conductance)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%stomatal_conductance(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'STOMATAL_CONDUCTANCE :41:hist') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 

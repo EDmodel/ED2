@@ -352,8 +352,10 @@ subroutine init_can_rad_params()
                                     , leaf_trans_nir              & ! intent(out)
                                     , lai_min                     & ! intent(out)
                                     , tai_min                     & ! intent(out)
-                                    , patch_lai_min               & ! intent(out)!!!SOLVE2
-                                    , blfac_min                   ! ! intent(out)
+                                    , patch_lai_min               & ! intent(out)
+                                    , blfac_min                   & ! intent(out)
+                                    , rshort_twilight_min         & ! intent(out)
+                                    , cosz_min                    ! ! intent(out)
    use ed_max_dims              , only : n_pft                    ! ! intent(out)
    use pft_coms              , only : phenology                   ! ! intent(out)
 
@@ -409,6 +411,14 @@ subroutine init_can_rad_params()
    lai_min       = 1.0e-5
    tai_min       = 1.0e-5
    blfac_min     = 1.0e-2
+
+   !---------------------------------------------------------------------------------------!
+   !     These variables are the thresholds for things that should be computed during the  !
+   ! day time hours only.                                                                  !
+   !---------------------------------------------------------------------------------------!
+   rshort_twilight_min = 0.5
+   cosz_min            = 0.0009
+   !---------------------------------------------------------------------------------------!
 
    return
 end subroutine init_can_rad_params
@@ -536,8 +546,8 @@ subroutine init_can_air_params()
    !      Variables to define the vegetation aerodynamic resistance.  They are currently   !
    ! not PFT dependent.                                                                    !
    !---------------------------------------------------------------------------------------!
-   rb_slope = 25.0
-   rb_inter = 0.0 
+   rb_slope =  25.0
+   rb_inter =   0.0
 
    !---------------------------------------------------------------------------------------!
    ! veg_height_min       - This is the minimum vegetation height allowed [m].  Vegetation !
@@ -713,13 +723,15 @@ subroutine init_pft_photo_params()
                              , stomatal_slope       & ! intent(out)
                              , cuticular_cond       & ! intent(out)
                              , quantum_efficiency   & ! intent(out)
-                             , photosyn_pathway     ! ! intent(out)
+                             , photosyn_pathway     & ! intent(out)
+                             , water_conductance    ! ! intent(out)
    use consts_coms    , only : t00                  & ! intent(in)
-                             , umol_2_mol           ! ! intent(in)
+                             , umol_2_mol           & ! intent(in)
+                             , yr_sec               ! ! intent(in)
    implicit none
 
 
-   D0(1:15)                  = 0.01 ! same for all PFTs
+   D0(1:15)                  = 0.01      ! same for all PFTs
 
    Vm_low_temp(1)            = 5.0       ! c4 grass
    Vm_low_temp(2)            = 5.0       ! early tropical
@@ -753,51 +765,53 @@ subroutine init_pft_photo_params()
    Vm_high_temp(14)          = 100.0      ! C4
    Vm_high_temp(15)          = 100.0      ! C4
 
-   Vm0(1)                    = 12.5            
-   Vm0(2)                    = 18.8            
-   Vm0(3)                    = 12.5            
-   Vm0(4)                    = 6.25            
-   Vm0(5)                    = 18.3            
-   Vm0(6)                    = 15.625 * 0.7264 
-   Vm0(7)                    = 15.625 * 0.7264 
-   Vm0(8)                    = 6.25   * 0.7264 
-   Vm0(9)                    = 18.25  * 1.1171 
-   Vm0(10)                   = 15.625 * 1.1171 
-   Vm0(11)                   = 6.25   * 1.1171 
-   Vm0(12:13)                = 18.3            
-   Vm0(14:15)                = 12.5            
+   !------ Based on the new photosynthesis solver, Vm should be about 1.6 higher. ---------!
+   Vm0(1)                    = 12.5   * 1.60
+   Vm0(2)                    = 18.8   * 1.60
+   Vm0(3)                    = 12.5   * 1.60
+   Vm0(4)                    = 6.25   * 1.60
+   Vm0(5)                    = 18.3   * 1.60
+   Vm0(6)                    = 15.625 * 0.7264
+   Vm0(7)                    = 15.625 * 0.7264
+   Vm0(8)                    = 6.25   * 0.7264
+   Vm0(9)                    = 18.25  * 1.1171
+   Vm0(10)                   = 15.625 * 1.1171
+   Vm0(11)                   = 6.25   * 1.1171
+   Vm0(12:13)                = 18.3   * 1.60
+   Vm0(14:15)                = 12.5   * 1.60
 
-   stomatal_slope(1)         = 10.0
-   stomatal_slope(2)         = 8.0
-   stomatal_slope(3)         = 8.0
-   stomatal_slope(4)         = 8.0
-   stomatal_slope(5)         = 6.3949
-   stomatal_slope(6)         = 6.3949 ! 8.0
-   stomatal_slope(7)         = 6.3949 ! 8.0
-   stomatal_slope(8)         = 6.3949 ! 8.0
-   stomatal_slope(9)         = 6.3949
-   stomatal_slope(10)        = 6.3949
-   stomatal_slope(11)        = 6.3949
-   stomatal_slope(12)        = 6.3949
-   stomatal_slope(13)        = 6.3949
+   !------ These numbers were reverted back to the original IBIS values. ------------------!
+   stomatal_slope(1)         = 10.0      ! 10.0
+   stomatal_slope(2)         =  8.0      ! 8.0
+   stomatal_slope(3)         =  8.0      ! 8.0
+   stomatal_slope(4)         =  8.0      ! 8.0
+   stomatal_slope(5)         =  8.0 
+   stomatal_slope(6)         =  6.3949
+   stomatal_slope(7)         =  6.3949
+   stomatal_slope(8)         =  6.3949
+   stomatal_slope(9)         =  6.3949
+   stomatal_slope(10)        =  6.3949
+   stomatal_slope(11)        =  6.3949
+   stomatal_slope(12)        =  6.3949
+   stomatal_slope(13)        =  6.3949
    stomatal_slope(14)        = 10.0 
    stomatal_slope(15)        = 10.0 
 
-   cuticular_cond(1)         = 10000.0
-   cuticular_cond(2)         = 10000.0
-   cuticular_cond(3)         = 10000.0
-   cuticular_cond(4)         = 10000.0
-   cuticular_cond(5)         = 10000.0
+   cuticular_cond(1)         = 10000.0    ! 10000.0
+   cuticular_cond(2)         = 10000.0    ! 10000.0
+   cuticular_cond(3)         = 10000.0    ! 10000.0
+   cuticular_cond(4)         = 10000.0    ! 10000.0
+   cuticular_cond(5)         = 10000.0    ! 10000.0
    cuticular_cond(6)         = 1000.0 
    cuticular_cond(7)         = 1000.0 
    cuticular_cond(8)         = 1000.0 
    cuticular_cond(9)         = 20000.0
    cuticular_cond(10)        = 20000.0
    cuticular_cond(11)        = 20000.0
-   cuticular_cond(12)        = 10000.0
-   cuticular_cond(13)        = 10000.0
-   cuticular_cond(14)        = 10000.0
-   cuticular_cond(15)        = 10000.0
+   cuticular_cond(12)        = 20000.0    ! 10000.0
+   cuticular_cond(13)        = 20000.0    ! 10000.0
+   cuticular_cond(14)        = 20000.0    ! 10000.0
+   cuticular_cond(15)        = 20000.0    ! 10000.0
 
    quantum_efficiency(1)     = 0.06
    quantum_efficiency(2)     = 0.08
@@ -814,6 +828,14 @@ subroutine init_pft_photo_params()
    quantum_efficiency(13)    = 0.08
    quantum_efficiency(14)    = 0.06
    quantum_efficiency(15)    = 0.06
+
+   !---------------------------------------------------------------------------------------!
+   !     The KW parameter. Medvigy et al. (2009) and Moorcroft et al. (2001) give the      !
+   ! number in m²/yr/kg_C_root.  Here we must define it in m²/s/kg_C_root.                 !
+   !---------------------------------------------------------------------------------------!
+   water_conductance(1:15) = 150. / yr_sec
+   !---------------------------------------------------------------------------------------!
+
 
    photosyn_pathway(1)       = 4
    photosyn_pathway(2:4)     = 3
@@ -893,7 +915,7 @@ subroutine init_pft_resp_params()
    growth_resp_factor(4)          = 0.333
    growth_resp_factor(5)          = 0.333
    growth_resp_factor(6)          = 0.4503 ! 0.333
-   growth_resp_factor(7)          = 0.4503 ! 0.333
+   growth_resp_factor(7)          = 0.333
    growth_resp_factor(8)          = 0.4503 ! 0.333
    growth_resp_factor(9)          = 0.0
    growth_resp_factor(10)         = 0.0
@@ -924,9 +946,9 @@ subroutine init_pft_resp_params()
    root_turnover_rate(2)          = 1.0
    root_turnover_rate(3)          = 0.5
    root_turnover_rate(4)          = 0.333
-   root_turnover_rate(5)          = 0.333
+   root_turnover_rate(5)          = 2.0
    root_turnover_rate(6)          = 3.927218 ! 0.333
-   root_turnover_rate(7)          = 4.117847 ! 0.333
+   root_turnover_rate(7)          = 0.333
    root_turnover_rate(8)          = 3.800132 ! 0.333
    root_turnover_rate(9)          = 5.772506
    root_turnover_rate(10)         = 5.083700
@@ -1155,14 +1177,14 @@ subroutine init_pft_alloc_params()
    ! used only for branch area purposes.                                                   !
    !---------------------------------------------------------------------------------------!
 ![KIM] - new tropical parameters
-!   rho(1)     = 0.53
-!   rho(2)     = 0.53
-!   rho(3)     = 0.71
-!   rho(4)     = 0.90
-   rho(1)     = 0.40
-   rho(2)     = 0.40
-   rho(3)     = 0.60
-   rho(4)     = 0.87
+   rho(1)     = 0.53
+   rho(2)     = 0.53
+   rho(3)     = 0.71
+   rho(4)     = 0.90
+!   rho(1)     = 0.40
+!   rho(2)     = 0.40
+!   rho(3)     = 0.60
+!   rho(4)     = 0.87
    rho(5)     = 0.53   ! Copied from C4 grass
    rho(6:11)  = 0.00   ! Currently not used
    rho(12:13) = 0.53
@@ -1171,8 +1193,8 @@ subroutine init_pft_alloc_params()
 
    !----- Specific leaf area [m² leaf / kg C] ---------------------------------------------!
 ![KIM] - new tropical parameters
-!   SLA(1:4)   = 10.0**((2.4-0.46*log10(12.0/leaf_turnover_rate(1:4)))) * C2B * 0.1
-   SLA(1:4) = 10.0**(1.6923-0.3305*log10(12.0/leaf_turnover_rate(1:4)))
+   SLA(1:4)   = 10.0**((2.4-0.46*log10(12.0/leaf_turnover_rate(1:4)))) * C2B * 0.1
+!   SLA(1:4) = 10.0**(1.6923-0.3305*log10(12.0/leaf_turnover_rate(1:4)))
    SLA(5)     = 22.0
    SLA(6)     =  6.0
    SLA(7)     =  9.0
@@ -1211,7 +1233,7 @@ subroutine init_pft_alloc_params()
    q(4)     = 1.0
    q(5)     = 1.0
    q(6)     = 0.3463 ! 1.0
-   q(7)     = 0.3463 ! 1.0
+   q(7)     = 1.0 ! 0.3463 ! 1.0
    q(8)     = 0.3463 ! 1.0
    q(9)     = 1.1274
    q(10)    = 1.1274
@@ -1400,7 +1422,7 @@ end subroutine init_pft_alloc_params
 !==========================================================================================!
 subroutine init_pft_nitro_params()
 
-use pft_coms, only: c2n_leaf, Vm0, SLA, water_conductance, &
+use pft_coms, only: c2n_leaf, Vm0, SLA, &
      c2n_slow,c2n_structural,c2n_storage,c2n_stem,l2n_stem, &
      C2B,plant_N_supply_scale
 
@@ -1424,11 +1446,6 @@ c2n_leaf(10) = 1000.0 / ((0.11289 + 0.12947 * 15.625) * SLA(10))
 c2n_leaf(11) = 1000.0 / ((0.11289 + 0.12947 * 6.25) * SLA(11))
 
 
-
-water_conductance(1:4) = 0.00476           !OLD=KW60=0.001904 KW80=0.00253505, KW100=0.00316881, KW125=0.00396101
-water_conductance(5:11) = 0.00476           ! equal to KW150
-water_conductance(12:13) = 0.00476
-water_conductance(14:15) = 0.001904
 
 return
 end subroutine init_pft_nitro_params
@@ -1804,7 +1821,6 @@ subroutine init_physiology_params()
                              , gbw_2_gbc         & ! intent(out)
                              , gsw_2_gsc         & ! intent(out)
                              , gsc_2_gsw         & ! intent(out)
-                             , rbh_2_rbw         & ! intent(out)
                              , tarrh             & ! intent(out)
                              , tarrhi            & ! intent(out)
                              , compp_refkin      & ! intent(out)
@@ -1825,7 +1841,6 @@ subroutine init_physiology_params()
                              , gbw_2_gbc8        & ! intent(out)
                              , gsw_2_gsc8        & ! intent(out)
                              , gsc_2_gsw8        & ! intent(out)
-                             , rbh_2_rbw8        & ! intent(out)
                              , tarrh8            & ! intent(out)
                              , tarrhi8           & ! intent(out)
                              , compp_refkin8     & ! intent(out)
@@ -1840,7 +1855,8 @@ subroutine init_physiology_params()
                              , par_twilight_min8 & ! intent(out)
                              , o2_ref8           & ! intent(out)
                              , print_photo_debug & ! intent(out)
-                             , photo_prefix      ! ! intent(out)
+                             , photo_prefix      & ! intent(out)
+                             , new_fsw_method    ! ! intent(out)
    use consts_coms    , only : umol_2_mol        & ! intent(in)
                              , t00               & ! intent(in)
                              , Watts_2_Ein       ! ! intent(in)
@@ -1927,15 +1943,13 @@ subroutine init_physiology_params()
 
 
    !---------------------------------------------------------------------------------------!
-   !     These are constants obtained in Leuning et al. (1995). to convert different       !
-   ! conductivities.                                                                       !
+   !     These are constants obtained in Leuning et al. (1995) and Collatz et al. (1991)   !
+   ! to convert different conductivities.                                                  !
    !---------------------------------------------------------------------------------------!
    gbh_2_gbw  = 1.075           ! heat  to water  - leaf boundary layer
    gbw_2_gbc  = 1.4             ! water to carbon - leaf boundary layer
    gsw_2_gsc  = 1.6             ! water to carbon - stomata
    gsc_2_gsw  = 1./gsw_2_gsc    ! carbon to water - stomata
-   !----- The following are used to convert resistance. -----------------------------------!
-   rbh_2_rbw  = 1./gbh_2_gbw    ! heat  to water  - leaf boundary layer
    !---------------------------------------------------------------------------------------!
 
 
@@ -1958,7 +1972,6 @@ subroutine init_physiology_params()
    gbw_2_gbc8        = dble(gbw_2_gbc       )
    gsw_2_gsc8        = dble(gsw_2_gsc       )
    gsc_2_gsw8        = dble(gsc_2_gsw       )
-   rbh_2_rbw8        = dble(rbh_2_rbw       )
    tarrh8            = dble(tarrh           )
    tarrhi8           = dble(tarrhi          )
    compp_refkin8     = dble(compp_refkin    )
@@ -1980,9 +1993,18 @@ subroutine init_physiology_params()
    !     Parameters that control debugging output.                                         !
    !---------------------------------------------------------------------------------------!
    !----- I should print detailed debug information. --------------------------------------!
-   print_photo_debug = .false.
+   print_photo_debug = .true.
    !----- File name prefix for the detailed information in case of debugging. -------------!
    photo_prefix      = 'photo_state_cohort_'
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Parameters that define which equation to determine the FSW, the original          !
+   ! (.false.) or the new (.true.).                                                        !
+   !---------------------------------------------------------------------------------------!
+   new_fsw_method = .false.
    !---------------------------------------------------------------------------------------!
 
    return
@@ -2478,7 +2500,7 @@ subroutine init_rk4_params()
    !---------------------------------------------------------------------------------------!
    !     Variables used to keep track on the error.                                        !
    !---------------------------------------------------------------------------------------!
-   record_err     = .false.                   ! Compute and keep track of the errors.
+   record_err     = .false.                  ! Compute and keep track of the errors.
    print_detailed = .false.                  ! Print detailed information about the thermo-
                                              !    dynamic state.  This will create one file
                                              !    for each patch, so it is not recommended 
@@ -2498,7 +2520,7 @@ subroutine init_rk4_params()
    ! nominal heat capacity, the laziest way to turn this off is by setting hcapveg_ref to  !
    ! a small number.  Don't set it to zero, otherwise you may have FPE issues.             !
    !---------------------------------------------------------------------------------------!
-   hcapveg_ref         = 3.0d3  ! 3.0d-1  ! Reference heat capacity value          [J/m³/K]
+   hcapveg_ref         = 3.0d3 ! 3.0d-1   ! Reference heat capacity value          [J/m³/K]
    min_height          = 1.5d0            ! Minimum vegetation height              [     m]
    !---------------------------------------------------------------------------------------!
 

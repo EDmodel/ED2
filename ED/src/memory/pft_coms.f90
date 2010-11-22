@@ -267,7 +267,7 @@ module pft_coms
    !----- Supply coefficient for plant nitrogen uptake [m2/kgC_fine_root/day].  -----------!
    real :: plant_N_supply_scale
    !---------------------------------------------------------------------------------------!
-   !    Supply coefficient for plant water uptake [kg_H2O*m2_ground/m3_H2O/kgC_root/sec].  !
+   !    Supply coefficient for plant water uptake [m2_ground/kgC_root/sec].                !
    !---------------------------------------------------------------------------------------!
    real, dimension(n_pft) :: water_conductance  
    !=======================================================================================!
@@ -291,7 +291,7 @@ module pft_coms
    !----- Mass ratio between sapwood and leaves [kg_sapwood]/[kg_leaves]. -----------------!
    real   , dimension(n_pft)    :: qsw
    real   , dimension(n_pft)    :: sapwood_ratio ! AREA ratio
-   real   , dimension(n_pft)    :: hgt_ref     ! ref height for diam/ht allom (Temperate)
+   real   , dimension(n_pft)    :: hgt_ref ! ref height for diam/ht allom (Temperate)
    real   , dimension(n_pft)    :: b1Ht  !  DBH-height allometry intercept (m).  Temperate PFTs only.
    real   , dimension(n_pft)    :: b2Ht  !  DBH-height allometry slope (1/cm).  Temperate PFTs only.
    real   , dimension(n_pft)    :: b1Bs  !  DBH-stem allometry intercept (kg stem biomass / plant * cm^{-b2Bs}).  Temperate PFTs only.
@@ -325,7 +325,7 @@ module pft_coms
    !----- A 0-1 factor indicating degree of clumpiness of leaves and shoots. --------------!
    real(kind=8), dimension(n_pft) :: clumping_factor
 
-   !----- Leaf width [m], which is used to compute the aerodynamic resistance. ------------!
+   !----- Leaf width [m], which is used to compute the leaf boundary layer conductance. ---!
    real, dimension(n_pft) :: leaf_width
 
    !---------------------------------------------------------------------------------------!

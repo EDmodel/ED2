@@ -349,8 +349,11 @@ subroutine inc_rk4_patch(rkp, inc, fac, cpatch)
 
   
    do ico = 1,cpatch%ncohorts
-      rkp%veg_water(ico)     = rkp%veg_water(ico)  + fac * inc%veg_water(ico)
-      rkp%veg_energy(ico)    = rkp%veg_energy(ico) + fac * inc%veg_energy(ico)
+      rkp%veg_water (ico) = rkp%veg_water (ico) + fac * inc%veg_water (ico)
+      rkp%veg_energy(ico) = rkp%veg_energy(ico) + fac * inc%veg_energy(ico)
+
+      rkp%psi_open  (ico) = rkp%psi_open  (ico) + fac * inc%psi_open  (ico)
+      rkp%psi_closed(ico) = rkp%psi_closed(ico) + fac * inc%psi_closed(ico)
    end do
 
    if(checkbudget) then
@@ -1057,8 +1060,13 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
       targetp%wpa         (k) = sourcep%wpa         (k)
       targetp%tai         (k) = sourcep%tai         (k)
       targetp%solvable    (k) = sourcep%solvable    (k)
-      targetp%rbh         (k) = sourcep%rbh         (k)
-      targetp%rbw         (k) = sourcep%rbw         (k)
+      targetp%gbh         (k) = sourcep%gbh         (k)
+      targetp%gbw         (k) = sourcep%gbw         (k)
+      targetp%gsw_open    (k) = sourcep%gsw_open    (k)
+      targetp%gsw_closed  (k) = sourcep%gsw_closed  (k)
+      targetp%psi_open    (k) = sourcep%psi_open    (k)
+      targetp%psi_closed  (k) = sourcep%psi_closed  (k)
+      targetp%fs_open     (k) = sourcep%fs_open     (k)
       targetp%gpp         (k) = sourcep%gpp         (k)
       targetp%leaf_resp   (k) = sourcep%leaf_resp   (k)
       targetp%root_resp   (k) = sourcep%root_resp   (k)

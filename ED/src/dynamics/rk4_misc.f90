@@ -265,6 +265,25 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
       !------------------------------------------------------------------------------------!
       targetp%lint_shv(ico) = rslif8(targetp%can_prss,targetp%veg_temp(ico))
       targetp%lint_shv(ico) = targetp%lint_shv(ico) / (1.d0 + targetp%lint_shv(ico))
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------ Copy the stomatal conductances and the fraction of open stomata. ------------!
+      targetp%fs_open   (ico) = dble(cpatch%fs_open   (ico))
+      targetp%gsw_open  (ico) = dble(cpatch%gsw_open  (ico))
+      targetp%gsw_closed(ico) = dble(cpatch%gsw_closed(ico))
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Initialise psi_open and psi_closed with zeroes, they will be averaged over the !
+      ! course of one Runge-Kutta time step.                                               !
+      !------------------------------------------------------------------------------------!
+      targetp%psi_open(ico)   = 0.d0
+      targetp%psi_closed(ico) = 0.d0
+      !------------------------------------------------------------------------------------!
    end do
    !---------------------------------------------------------------------------------------!
 
@@ -274,8 +293,6 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    call canopy_turbulence8(sourcesite,targetp,ipa,.true.)
    call can_whcap8(sourcesite,ipa,targetp%can_rhos,targetp%can_temp,targetp%can_depth)
    !---------------------------------------------------------------------------------------!
-
-
 
    !----- Diagnostics variables -----------------------------------------------------------!
    if(fast_diagnostics) then
@@ -2563,13 +2580,13 @@ subroutine print_rk4patch(y,csite,ipa)
    end do
    write (unit=*,fmt='(80a)') ('-',k=1,80)
    write (unit=*,fmt='(2(a7,1x),7(a12,1x))')                                               &
-              '    PFT','KRDEPTH','         LAI','      HEIGHT','         RBH'             &
-                  ,'         RBW','  RSW_CLOSED','    RSW_OPEN','     FS_OPEN'
+              '    PFT','KRDEPTH','         LAI','      HEIGHT','         GBH'             &
+                  ,'         GBW','  GSW_CLOSED','    GSW_OPEN','     FS_OPEN'
    do ico = 1,cpatch%ncohorts
       if (y%solvable(ico)) then
          write(unit=*,fmt='(2(i7,1x),7(es12.4,1x))') cpatch%pft(ico),cpatch%krdepth(ico)   &
-               ,y%lai(ico),cpatch%hite(ico),y%rbh(ico),y%rbw(ico),cpatch%rsw_closed(ico)   &
-               ,cpatch%rsw_open(ico),cpatch%fs_open(ico)
+               ,y%lai(ico),cpatch%hite(ico),y%gbh(ico),y%gbw(ico),y%gsw_closed(ico)        &
+               ,y%gsw_open(ico),cpatch%fs_open(ico)
       end if
    end do
    write (unit=*,fmt='(80a)') ('=',k=1,80)
