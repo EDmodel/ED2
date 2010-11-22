@@ -236,7 +236,7 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ed_ktrans,lsl,sum_lai_rbi   
              , leaf_aging_factor(ipft)     & ! Ageing parameter to scale VM     [      ---]
              , cpatch%llspan(ico)          & ! Leaf life span                   [       yr]
              , cpatch%vm_bar(ico)          & ! Average Vm function              [µmol/m²/s]
-             , cpatch%rbw(tuco)            & ! Aerodyn. resist. of water vapour [      s/m]
+             , cpatch%rbw(ico)            & ! Aerodyn. resist. of water vapour [      s/m]
              , cpatch%A_open(ico)          & ! Photosynthesis rate     (open)   [µmol/m²/s]
              , cpatch%A_closed(ico)        & ! Photosynthesis rate     (closed) [µmol/m²/s]
              , cpatch%rsw_open(ico)        & ! Stom. resist. of water  (open)   [      s/m]
