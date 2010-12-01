@@ -65,6 +65,13 @@ module physiology_coms
 
 
    !---------------------------------------------------------------------------------------!
+   !     This parameter will decide whether the fraction of open stomata should be         !
+   ! calculated through the original method or the new empirical relation.                 !
+   !---------------------------------------------------------------------------------------!
+   logical      :: new_fsw_method
+
+
+   !---------------------------------------------------------------------------------------!
    !     Parameters that control debugging output.  These are also assigned in the sub-    !
    ! routine init_physiology_params (ed_params.f90).                                       !
    !---------------------------------------------------------------------------------------!
@@ -83,8 +90,6 @@ module physiology_coms
    real(kind=4) :: gbw_2_gbc ! water to carbon - leaf boundary layer
    real(kind=4) :: gsw_2_gsc ! water to carbon - stomata
    real(kind=4) :: gsc_2_gsw ! carbon to water - stomata
-   !----- The following are used to convert resistance. -----------------------------------!
-   real(kind=4) :: rbh_2_rbw ! heat  to water  - leaf boundary layr
    !---------------------------------------------------------------------------------------!
 
 
@@ -127,7 +132,6 @@ module physiology_coms
    real(kind=8) :: gbw_2_gbc8 
    real(kind=8) :: gsw_2_gsc8 
    real(kind=8) :: gsc_2_gsw8 
-   real(kind=8) :: rbh_2_rbw8 
    real(kind=8) :: tarrh8
    real(kind=8) :: tarrhi8
    real(kind=8) :: compp_refkin8

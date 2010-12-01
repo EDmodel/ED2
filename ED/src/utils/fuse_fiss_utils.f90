@@ -796,110 +796,111 @@ module fuse_fiss_utils
       type(stoma_data), pointer    :: osdt,ossc
       !------------------------------------------------------------------------------------!
 
-      cpatch%pft(idt)                 = cpatch%pft(isc)
-      cpatch%nplant(idt)              = cpatch%nplant(isc)
-      cpatch%hite(idt)                = cpatch%hite(isc)
-      cpatch%dbh(idt)                 = cpatch%dbh(isc)
-      cpatch%bdead(idt)               = cpatch%bdead(isc)
-      cpatch%bleaf(idt)               = cpatch%bleaf(isc)
-      cpatch%broot(idt)               = cpatch%broot(isc)
-      cpatch%bsapwood(idt)            = cpatch%bsapwood(isc)
-      cpatch%phenology_status(idt)    = cpatch%phenology_status(isc)
-      cpatch%balive(idt)              = cpatch%balive(isc)
-      cpatch%lai(idt)                 = cpatch%lai(isc)
-      cpatch%wpa(idt)                 = cpatch%wpa(isc)
-      cpatch%wai(idt)                 = cpatch%wai(isc)
-      cpatch%bstorage(idt)            = cpatch%bstorage(isc)
-      cpatch%solvable(idt)            = cpatch%solvable(isc)
+      cpatch%pft(idt)                  = cpatch%pft(isc)
+      cpatch%nplant(idt)               = cpatch%nplant(isc)
+      cpatch%hite(idt)                 = cpatch%hite(isc)
+      cpatch%dbh(idt)                  = cpatch%dbh(isc)
+      cpatch%bdead(idt)                = cpatch%bdead(isc)
+      cpatch%bleaf(idt)                = cpatch%bleaf(isc)
+      cpatch%broot(idt)                = cpatch%broot(isc)
+      cpatch%bsapwood(idt)             = cpatch%bsapwood(isc)
+      cpatch%phenology_status(idt)     = cpatch%phenology_status(isc)
+      cpatch%balive(idt)               = cpatch%balive(isc)
+      cpatch%lai(idt)                  = cpatch%lai(isc)
+      cpatch%wpa(idt)                  = cpatch%wpa(isc)
+      cpatch%wai(idt)                  = cpatch%wai(isc)
+      cpatch%bstorage(idt)             = cpatch%bstorage(isc)
+      cpatch%solvable(idt)             = cpatch%solvable(isc)
 
       do imonth = 1,13
-         cpatch%cb(imonth,idt)        = cpatch%cb(imonth,isc)
-         cpatch%cb_max(imonth,idt)    = cpatch%cb_max(imonth,isc)
+         cpatch%cb(imonth,idt)         = cpatch%cb(imonth,isc)
+         cpatch%cb_max(imonth,idt)     = cpatch%cb_max(imonth,isc)
       enddo
 
-      cpatch%cbr_bar(idt)             = cpatch%cbr_bar(isc)
-      cpatch%veg_energy(idt)          = cpatch%veg_energy(isc)
-      cpatch%veg_temp(idt)            = cpatch%veg_temp(isc)
-      cpatch%veg_fliq(idt)            = cpatch%veg_fliq(isc)
-      cpatch%veg_water(idt)           = cpatch%veg_water(isc)
-      cpatch%veg_wind(idt)            = cpatch%veg_wind(isc)
-      cpatch%lsfc_shv_open(idt)       = cpatch%lsfc_shv_open(isc)
-      cpatch%lsfc_shv_closed(idt)     = cpatch%lsfc_shv_closed(isc)
-      cpatch%lsfc_co2_open(idt)       = cpatch%lsfc_co2_open(isc)
-      cpatch%lsfc_co2_closed(idt)     = cpatch%lsfc_co2_closed(isc)
-      cpatch%lint_shv(idt)            = cpatch%lint_shv(isc)
-      cpatch%lint_co2_open(idt)       = cpatch%lint_co2_open(isc)
-      cpatch%lint_co2_closed(idt)     = cpatch%lint_co2_closed(isc)
-      cpatch%mean_gpp(idt)            = cpatch%mean_gpp(isc)
-      cpatch%mean_leaf_resp(idt)      = cpatch%mean_leaf_resp(isc)
-      cpatch%mean_root_resp(idt)      = cpatch%mean_root_resp(isc)
-      cpatch%mean_storage_resp(idt)   = cpatch%mean_storage_resp(isc)
-      cpatch%mean_growth_resp(idt)    = cpatch%mean_growth_resp(isc)
-      cpatch%mean_vleaf_resp(idt)     = cpatch%mean_vleaf_resp(isc)
-      cpatch%today_leaf_resp(idt)     = cpatch%today_leaf_resp(isc)
-      cpatch%today_root_resp(idt)     = cpatch%today_root_resp(isc)
-      cpatch%today_gpp(idt)           = cpatch%today_gpp(isc)
-      cpatch%today_gpp_pot(idt)       = cpatch%today_gpp_pot(isc)
-      cpatch%today_gpp_max(idt)       = cpatch%today_gpp_max(isc)
-      cpatch%growth_respiration(idt)  = cpatch%growth_respiration(isc)
-      cpatch%storage_respiration(idt) = cpatch%storage_respiration(isc)
-      cpatch%vleaf_respiration(idt)   = cpatch%vleaf_respiration(isc)
-      cpatch%fsn(idt)                 = cpatch%fsn(isc)
-      cpatch%monthly_dndt(idt)        = cpatch%monthly_dndt(isc)
-      cpatch%agb(idt)                 = cpatch%agb(isc)
-      cpatch%basarea(idt)             = cpatch%basarea(isc)
-      cpatch%dagb_dt(idt)             = cpatch%dagb_dt(isc)
-      cpatch%dba_dt(idt)              = cpatch%dba_dt(isc)
-      cpatch%ddbh_dt(idt)             = cpatch%ddbh_dt(isc)
-      cpatch%Psi_open(idt)            = cpatch%Psi_open(isc)
-      cpatch%krdepth(idt)             = cpatch%krdepth(isc)
-      cpatch%first_census(idt)        = cpatch%first_census(isc)
-      cpatch%new_recruit_flag(idt)    = cpatch%new_recruit_flag(isc)
-      cpatch%par_v(idt)               = cpatch%par_v(isc)
-      cpatch%par_v_beam(idt)          = cpatch%par_v_beam(isc)
-      cpatch%par_v_diffuse(idt)       = cpatch%par_v_diffuse(isc)
-      cpatch%rshort_v(idt)            = cpatch%rshort_v(isc)
-      cpatch%rshort_v_beam(idt)       = cpatch%rshort_v_beam(isc)
-      cpatch%rshort_v_diffuse(idt)    = cpatch%rshort_v_diffuse(isc)
-      cpatch%rlong_v(idt)             = cpatch%rlong_v(isc)
-      cpatch%rlong_v_surf(idt)        = cpatch%rlong_v_surf(isc)
-      cpatch%rlong_v_incid(idt)       = cpatch%rlong_v_incid(isc)
-      cpatch%light_level(idt)         = cpatch%light_level(isc)
-      cpatch%light_level_beam(idt)    = cpatch%light_level_beam(isc)
-      cpatch%light_level_diff(idt)    = cpatch%light_level_diff(isc)
-      cpatch%lambda_light(idt)        = cpatch%lambda_light(isc)
-      cpatch%beamext_level(idt)       = cpatch%beamext_level(isc)
-      cpatch%diffext_level(idt)       = cpatch%diffext_level(isc)
-      cpatch%norm_par_beam(idt)       = cpatch%norm_par_beam(isc)
-      cpatch%norm_par_diff(idt)       = cpatch%norm_par_diff(isc)
-      cpatch%rbh(idt)                 = cpatch%rbh(isc)
-      cpatch%rbw(idt)                 = cpatch%rbw(isc)
-      cpatch%A_open(idt)              = cpatch%A_open(isc)
-      cpatch%A_closed(idt)            = cpatch%A_closed(isc)
-      cpatch%Psi_closed(idt)          = cpatch%Psi_closed(isc)
-      cpatch%rsw_open(idt)            = cpatch%rsw_open(isc)
-      cpatch%rsw_closed(idt)          = cpatch%rsw_closed(isc)
-      cpatch%fsw(idt)                 = cpatch%fsw(isc)
-      cpatch%fs_open(idt)             = cpatch%fs_open(isc)
-      cpatch%stomatal_resistance(idt) = cpatch%stomatal_resistance(isc)
-      cpatch%leaf_maintenance(idt)    = cpatch%leaf_maintenance(isc)
-      cpatch%root_maintenance(idt)    = cpatch%root_maintenance(isc)
-      cpatch%leaf_drop(idt)           = cpatch%leaf_drop(isc)
-      cpatch%bseeds(idt)              = cpatch%bseeds(isc)
-      cpatch%leaf_respiration(idt)    = cpatch%leaf_respiration(isc)
-      cpatch%root_respiration(idt)    = cpatch%root_respiration(isc)
-      cpatch%hcapveg(idt)             = cpatch%hcapveg(isc)
-      cpatch%mort_rate(:,idt)         = cpatch%mort_rate(:,isc)
+      cpatch%cbr_bar(idt)              = cpatch%cbr_bar(isc)
+      cpatch%veg_energy(idt)           = cpatch%veg_energy(isc)
+      cpatch%veg_temp(idt)             = cpatch%veg_temp(isc)
+      cpatch%veg_fliq(idt)             = cpatch%veg_fliq(isc)
+      cpatch%veg_water(idt)            = cpatch%veg_water(isc)
+      cpatch%veg_wind(idt)             = cpatch%veg_wind(isc)
+      cpatch%lsfc_shv_open(idt)        = cpatch%lsfc_shv_open(isc)
+      cpatch%lsfc_shv_closed(idt)      = cpatch%lsfc_shv_closed(isc)
+      cpatch%lsfc_co2_open(idt)        = cpatch%lsfc_co2_open(isc)
+      cpatch%lsfc_co2_closed(idt)      = cpatch%lsfc_co2_closed(isc)
+      cpatch%lint_shv(idt)             = cpatch%lint_shv(isc)
+      cpatch%lint_co2_open(idt)        = cpatch%lint_co2_open(isc)
+      cpatch%lint_co2_closed(idt)      = cpatch%lint_co2_closed(isc)
+      cpatch%mean_gpp(idt)             = cpatch%mean_gpp(isc)
+      cpatch%mean_leaf_resp(idt)       = cpatch%mean_leaf_resp(isc)
+      cpatch%mean_root_resp(idt)       = cpatch%mean_root_resp(isc)
+      cpatch%mean_storage_resp(idt)    = cpatch%mean_storage_resp(isc)
+      cpatch%mean_growth_resp(idt)     = cpatch%mean_growth_resp(isc)
+      cpatch%mean_vleaf_resp(idt)      = cpatch%mean_vleaf_resp(isc)
+      cpatch%today_leaf_resp(idt)      = cpatch%today_leaf_resp(isc)
+      cpatch%today_root_resp(idt)      = cpatch%today_root_resp(isc)
+      cpatch%today_gpp(idt)            = cpatch%today_gpp(isc)
+      cpatch%today_gpp_pot(idt)        = cpatch%today_gpp_pot(isc)
+      cpatch%today_gpp_max(idt)        = cpatch%today_gpp_max(isc)
+      cpatch%growth_respiration(idt)   = cpatch%growth_respiration(isc)
+      cpatch%storage_respiration(idt)  = cpatch%storage_respiration(isc)
+      cpatch%vleaf_respiration(idt)    = cpatch%vleaf_respiration(isc)
+      cpatch%fsn(idt)                  = cpatch%fsn(isc)
+      cpatch%monthly_dndt(idt)         = cpatch%monthly_dndt(isc)
+      cpatch%agb(idt)                  = cpatch%agb(isc)
+      cpatch%basarea(idt)              = cpatch%basarea(isc)
+      cpatch%dagb_dt(idt)              = cpatch%dagb_dt(isc)
+      cpatch%dba_dt(idt)               = cpatch%dba_dt(isc)
+      cpatch%ddbh_dt(idt)              = cpatch%ddbh_dt(isc)
+      cpatch%Psi_open(idt)             = cpatch%Psi_open(isc)
+      cpatch%krdepth(idt)              = cpatch%krdepth(isc)
+      cpatch%first_census(idt)         = cpatch%first_census(isc)
+      cpatch%new_recruit_flag(idt)     = cpatch%new_recruit_flag(isc)
+      cpatch%par_v(idt)                = cpatch%par_v(isc)
+      cpatch%par_v_beam(idt)           = cpatch%par_v_beam(isc)
+      cpatch%par_v_diffuse(idt)        = cpatch%par_v_diffuse(isc)
+      cpatch%rshort_v(idt)             = cpatch%rshort_v(isc)
+      cpatch%rshort_v_beam(idt)        = cpatch%rshort_v_beam(isc)
+      cpatch%rshort_v_diffuse(idt)     = cpatch%rshort_v_diffuse(isc)
+      cpatch%rlong_v(idt)              = cpatch%rlong_v(isc)
+      cpatch%rlong_v_surf(idt)         = cpatch%rlong_v_surf(isc)
+      cpatch%rlong_v_incid(idt)        = cpatch%rlong_v_incid(isc)
+      cpatch%light_level(idt)          = cpatch%light_level(isc)
+      cpatch%light_level_beam(idt)     = cpatch%light_level_beam(isc)
+      cpatch%light_level_diff(idt)     = cpatch%light_level_diff(isc)
+      cpatch%lambda_light(idt)         = cpatch%lambda_light(isc)
+      cpatch%beamext_level(idt)        = cpatch%beamext_level(isc)
+      cpatch%diffext_level(idt)        = cpatch%diffext_level(isc)
+      cpatch%norm_par_beam(idt)        = cpatch%norm_par_beam(isc)
+      cpatch%norm_par_diff(idt)        = cpatch%norm_par_diff(isc)
+      cpatch%gbh(idt)                  = cpatch%gbh(isc)
+      cpatch%gbw(idt)                  = cpatch%gbw(isc)
+      cpatch%A_open(idt)               = cpatch%A_open(isc)
+      cpatch%A_closed(idt)             = cpatch%A_closed(isc)
+      cpatch%Psi_closed(idt)           = cpatch%Psi_closed(isc)
+      cpatch%gsw_open(idt)             = cpatch%gsw_open(isc)
+      cpatch%gsw_closed(idt)           = cpatch%gsw_closed(isc)
+      cpatch%fsw(idt)                  = cpatch%fsw(isc)
+      cpatch%fs_open(idt)              = cpatch%fs_open(isc)
+      cpatch%water_supply(idt)         = cpatch%water_supply(isc)
+      cpatch%stomatal_conductance(idt) = cpatch%stomatal_conductance(isc)
+      cpatch%leaf_maintenance(idt)     = cpatch%leaf_maintenance(isc)
+      cpatch%root_maintenance(idt)     = cpatch%root_maintenance(isc)
+      cpatch%leaf_drop(idt)            = cpatch%leaf_drop(isc)
+      cpatch%bseeds(idt)               = cpatch%bseeds(isc)
+      cpatch%leaf_respiration(idt)     = cpatch%leaf_respiration(isc)
+      cpatch%root_respiration(idt)     = cpatch%root_respiration(isc)
+      cpatch%hcapveg(idt)              = cpatch%hcapveg(isc)
+      cpatch%mort_rate(:,idt)          = cpatch%mort_rate(:,isc)
 
-      cpatch%gpp(idt)                 = cpatch%gpp(isc)
-      cpatch%paw_avg(idt)             = cpatch%paw_avg(isc)
+      cpatch%gpp(idt)                  = cpatch%gpp(isc)
+      cpatch%paw_avg(idt)              = cpatch%paw_avg(isc)
 
-      cpatch%turnover_amp(idt)        = cpatch%turnover_amp(isc)     
-      cpatch%llspan(idt)              = cpatch%llspan(isc)     
-      cpatch%vm_bar(idt)              = cpatch%vm_bar(isc)  
-      cpatch%sla(idt)                 = cpatch%sla(isc)  
+      cpatch%turnover_amp(idt)         = cpatch%turnover_amp(isc)     
+      cpatch%llspan(idt)               = cpatch%llspan(isc)     
+      cpatch%vm_bar(idt)               = cpatch%vm_bar(isc)  
+      cpatch%sla(idt)                  = cpatch%sla(isc)  
 
-      cpatch%old_stoma_vector(:,idt) = cpatch%old_stoma_vector(:,isc)
+      cpatch%old_stoma_vector(:,idt)   = cpatch%old_stoma_vector(:,isc)
 
       osdt => cpatch%old_stoma_data(idt)
       ossc => cpatch%old_stoma_data(isc)
@@ -931,6 +932,9 @@ module fuse_fiss_utils
          cpatch%dmean_fs_open         (idt) = cpatch%dmean_fs_open         (isc)
          cpatch%dmean_fsw             (idt) = cpatch%dmean_fsw             (isc)
          cpatch%dmean_fsn             (idt) = cpatch%dmean_fsn             (isc)
+         cpatch%dmean_psi_open        (idt) = cpatch%dmean_psi_open        (isc)
+         cpatch%dmean_psi_closed      (idt) = cpatch%dmean_psi_closed      (isc)
+         cpatch%dmean_water_supply    (idt) = cpatch%dmean_water_supply    (isc)
          cpatch%dmean_lambda_light    (idt) = cpatch%dmean_lambda_light    (isc)
          cpatch%dmean_light_level     (idt) = cpatch%dmean_light_level     (isc)
          cpatch%dmean_light_level_beam(idt) = cpatch%dmean_light_level_beam(isc)
@@ -948,6 +952,9 @@ module fuse_fiss_utils
          cpatch%mmean_fs_open           (idt) = cpatch%mmean_fs_open           (isc)
          cpatch%mmean_fsw               (idt) = cpatch%mmean_fsw               (isc)
          cpatch%mmean_fsn               (idt) = cpatch%mmean_fsn               (isc)
+         cpatch%mmean_psi_open          (idt) = cpatch%mmean_psi_open          (isc)
+         cpatch%mmean_psi_closed        (idt) = cpatch%mmean_psi_closed        (isc)
+         cpatch%mmean_water_supply      (idt) = cpatch%mmean_water_supply      (isc)
          cpatch%mmean_leaf_maintenance  (idt) = cpatch%mmean_leaf_maintenance  (isc)
          cpatch%mmean_root_maintenance  (idt) = cpatch%mmean_root_maintenance  (isc)
          cpatch%mmean_leaf_drop         (idt) = cpatch%mmean_leaf_drop         (isc)
@@ -1012,13 +1019,28 @@ module fuse_fiss_utils
       integer                      :: imon              ! Month for cb loop
       integer                      :: imty              ! Mortality type
       real                         :: newni             ! Inverse of new nplants
+      real                         :: newlaii           ! Inverse of new LAI
       real                         :: cb_act            !
       real                         :: cb_max            !
       real                         :: root_depth        !
       !------------------------------------------------------------------------------------!
 
-      newni = 1.0 / newn
-     
+
+      !------------------------------------------------------------------------------------!
+      !    Find the scaling factor for variables that are not "extensive".                 !
+      !  - If the unit is X/plant, then we scale by nplant.                                !
+      !  - If the unit is X/m2_leaf, then we scale by LAI.                                 !
+      !  - If the unit is X/m2_gnd, then we add, since they are "extensive".               !
+      !------------------------------------------------------------------------------------!
+      newni   = 1.0 / newn
+      if (cpatch%lai(recc) + cpatch%lai(donc) > 0.0) then
+         newlaii = 1.0 / (cpatch%lai(recc) + cpatch%lai(donc))
+      else
+         newlaii = 0.0
+      end if
+      !------------------------------------------------------------------------------------!
+
+
 
       !----- Conserve carbon by calculating bdead first. ----------------------------------!
       cpatch%bdead(recc) = ( cpatch%nplant(recc) * cpatch%bdead(recc)                      &
@@ -1056,17 +1078,16 @@ module fuse_fiss_utils
 
 
       !------------------------------------------------------------------------------------!
-      !    Bleaf and LAI must be zero if phenology status is 2.  This is probably done     !
-      ! correctly throughout the code, but being safe here.                                !
+      !    Bleaf must be zero if phenology status is 2.  This is probably done correctly   !
+      ! throughout the code, but being safe here.                                          !
       !------------------------------------------------------------------------------------!
       if (cpatch%phenology_status(recc) < 2) then
          cpatch%bleaf(recc)  = ( cpatch%nplant(recc) * cpatch%bleaf(recc)                  &
                                + cpatch%nplant(donc) * cpatch%bleaf(donc) ) *newni
-         cpatch%lai(recc)    = cpatch%lai(recc) + cpatch%lai(donc)
       else
          cpatch%bleaf(recc)      = 0.
-         cpatch%lai(recc)        = 0.
       end if
+      !------------------------------------------------------------------------------------!
 
       cpatch%wpa(recc)    = cpatch%wpa(recc)  + cpatch%wpa(donc)
       cpatch%wai(recc)    = cpatch%wai(recc)  + cpatch%wai(donc)
@@ -1240,15 +1261,37 @@ module fuse_fiss_utils
                                 ( cpatch%vleaf_respiration(recc)   * cpatch%nplant(recc)   &
                                 + cpatch%vleaf_respiration(donc)   * cpatch%nplant(donc) )
 
-      !------ Psi_open is in kg/m2/s, so we add them. -------------------------------------!
-      cpatch%Psi_open(recc)   = cpatch%Psi_open(recc)   + cpatch%Psi_open(donc)
-      cpatch%Psi_closed(recc) = cpatch%Psi_closed(recc) + cpatch%Psi_closed(donc)
+
+
+
+      !------------------------------------------------------------------------------------!
+      !    Water demand and supply are in kg/m2_gnd/s, so we add them.                     !
+      !------------------------------------------------------------------------------------!
+      cpatch%psi_open(recc)     = cpatch%psi_open(recc)     + cpatch%psi_open(donc)
+      cpatch%psi_closed(recc)   = cpatch%psi_closed(recc)   + cpatch%psi_closed(donc)
+      cpatch%water_supply(recc) = cpatch%water_supply(recc) + cpatch%water_supply(donc)
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !    Carbon demand is in kg_C/m2_leaf/s, so we scale them by LAI.  FSW and FSN are   !
+      ! really related to leaves, so we scale them by LAI.                                 !
+      !------------------------------------------------------------------------------------!
+      cpatch%A_open(recc)       = ( cpatch%A_open(recc)   * cpatch%lai(recc)               &
+                                  + cpatch%A_open(donc)   * cpatch%lai(donc) ) * newlaii
+      cpatch%A_closed(recc)     = ( cpatch%A_closed(recc) * cpatch%lai(recc)               &
+                                  + cpatch%A_closed(donc) * cpatch%lai(donc) ) * newlaii
+      cpatch%fsw(recc)          = ( cpatch%fsw(recc)      * cpatch%lai(recc)               &
+                                  + cpatch%fsw(donc)      * cpatch%lai(donc) ) * newlaii
+      cpatch%fsn(recc)          = ( cpatch%fsn(recc)      * cpatch%lai(recc)               &
+                                  + cpatch%fsn(donc)      * cpatch%lai(donc) ) * newlaii
+      cpatch%fs_open(recc)      = cpatch%fsw(recc) * cpatch%fsn(recc)
       !------------------------------------------------------------------------------------!
 
 
 
       !------------------------------------------------------------------------------------!
-      !    Merging biomass and basal area.  Contrary to the patch/site/polygon levels,     !
+      !    Merge biomass and basal area.  Contrary to the patch/site/polygon levels,       !
       ! these variables are "intensive" (or per plant) at the cohort level, so we must     !
       ! average them.                                                                      !
       !------------------------------------------------------------------------------------!
@@ -1276,19 +1319,13 @@ module fuse_fiss_utils
       ! so they should be added, not scaled.                                               !
       !------------------------------------------------------------------------------------!
       cpatch%monthly_dndt(recc) = cpatch%monthly_dndt(recc) + cpatch%monthly_dndt(donc)
-          
-      cpatch%fsw(recc) = ( cpatch%fsw(recc) * cpatch%nplant(recc)                          &
-                         + cpatch%fsw(donc) * cpatch%nplant(donc) ) * newni
-
-      cpatch%fsn(recc) = ( cpatch%fsn(recc) * cpatch%nplant(recc)                          &
-                         + cpatch%fsn(donc) * cpatch%nplant(donc) ) * newni
       !------------------------------------------------------------------------------------!
 
 
 
       !------------------------------------------------------------------------------------!
-      !     Updating the carbon fluxes. They are fluxes per unit of area, so they should   !
-      ! be added, not scaled.                                                              !
+      !     Update the carbon fluxes. They are fluxes per unit of area, so they should be  !
+      ! added, not scaled.                                                                 !
       !------------------------------------------------------------------------------------!
       cpatch%gpp(recc) = cpatch%gpp(recc) + cpatch%gpp(donc)
 
@@ -1349,18 +1386,6 @@ module fuse_fiss_utils
                                                  * cpatch%nplant(recc)                     &
                                                  + cpatch%dmean_lambda_light(donc)         &
                                                  * cpatch%nplant(donc) ) * newni
-         cpatch%dmean_fs_open           (recc) = ( cpatch%dmean_fs_open(recc)              &
-                                                 * cpatch%nplant(recc)                     &
-                                                 + cpatch%dmean_fs_open(donc)              &
-                                                 * cpatch%nplant(donc) ) * newni
-         cpatch%dmean_fsw               (recc) = ( cpatch%dmean_fsw(recc)                  &
-                                                 * cpatch%nplant(recc)                     &
-                                                 + cpatch%dmean_fsw(donc)                  &
-                                                 * cpatch%nplant(donc) ) * newni
-         cpatch%dmean_fsn               (recc) = ( cpatch%dmean_fsn(recc)                  &
-                                                 * cpatch%nplant(recc)                     &
-                                                 + cpatch%dmean_fsn(donc)                  &
-                                                 * cpatch%nplant(donc) ) * newni
          cpatch%dmean_gpp               (recc) = ( cpatch%dmean_gpp(recc)                  &
                                                  * cpatch%nplant(recc)                     &
                                                  + cpatch%dmean_gpp(donc)                  &
@@ -1373,14 +1398,33 @@ module fuse_fiss_utils
                                                  * cpatch%nplant(recc)                     &
                                                  + cpatch%dmean_root_resp(donc)            &
                                                  * cpatch%nplant(donc) ) * newni
+         !----- The following variables depend on LAI more than nplant. -------------------!
+         cpatch%dmean_fs_open           (recc) = ( cpatch%dmean_fs_open(recc)              &
+                                                 * cpatch%lai(recc)                        &
+                                                 + cpatch%dmean_fs_open(donc)              &
+                                                 * cpatch%lai(donc) ) * newlaii
+         cpatch%dmean_fsw               (recc) = ( cpatch%dmean_fsw(recc)                  &
+                                                 * cpatch%lai(recc)                        &
+                                                 + cpatch%dmean_fsw(donc)                  &
+                                                 * cpatch%lai(donc) ) * newlaii
+         cpatch%dmean_fsn               (recc) = ( cpatch%dmean_fsn(recc)                  &
+                                                 * cpatch%lai(recc)                        &
+                                                 + cpatch%dmean_fsn(donc)                  &
+                                                 * cpatch%lai(donc) ) * newlaii
 
          !----- The following variables are "extensive", add them. ------------------------!
-         cpatch%dmean_par_v             (recc) = cpatch%dmean_par_v (recc)                 &
-                                               + cpatch%dmean_par_v (donc)
-         cpatch%dmean_par_v_beam        (recc) = cpatch%dmean_par_v_beam (recc)            &
-                                               + cpatch%dmean_par_v_beam (donc)
-         cpatch%dmean_par_v_diff        (recc) = cpatch%dmean_par_v_diff (recc)            &
-                                               + cpatch%dmean_par_v_diff (donc)
+         cpatch%dmean_par_v             (recc) = cpatch%dmean_par_v       (recc)           &
+                                               + cpatch%dmean_par_v       (donc)
+         cpatch%dmean_par_v_beam        (recc) = cpatch%dmean_par_v_beam  (recc)           &
+                                               + cpatch%dmean_par_v_beam  (donc)
+         cpatch%dmean_par_v_diff        (recc) = cpatch%dmean_par_v_diff  (recc)           &
+                                               + cpatch%dmean_par_v_diff  (donc)
+         cpatch%dmean_psi_open          (recc) = cpatch%dmean_psi_open    (recc)           &
+                                               + cpatch%dmean_psi_open    (donc)
+         cpatch%dmean_psi_closed        (recc) = cpatch%dmean_psi_closed  (recc)           &
+                                               + cpatch%dmean_psi_closed  (donc)
+         cpatch%dmean_water_supply      (recc) = cpatch%dmean_water_supply(recc)           &
+                                               + cpatch%dmean_water_supply(donc)
       end if
       if (imoutput > 0) then
          cpatch%mmean_light_level     (recc) = ( cpatch%mmean_light_level(recc)            &
@@ -1414,18 +1458,6 @@ module fuse_fiss_utils
          cpatch%mmean_lambda_light    (recc) = ( cpatch%mmean_lambda_light(recc)           &
                                                * cpatch%nplant(recc)                       &
                                                + cpatch%mmean_lambda_light(donc)           &
-                                               * cpatch%nplant(donc) ) * newni
-         cpatch%mmean_fs_open         (recc) = ( cpatch%mmean_fs_open(recc)                &
-                                               * cpatch%nplant(recc)                       &
-                                               + cpatch%mmean_fs_open(donc)                &
-                                               * cpatch%nplant(donc) ) * newni
-         cpatch%mmean_fsw             (recc) = ( cpatch%mmean_fsw(recc)                    &
-                                               * cpatch%nplant(recc)                       &
-                                               + cpatch%mmean_fsw(donc)                    &
-                                               * cpatch%nplant(donc) ) * newni
-         cpatch%mmean_fsn             (recc) = ( cpatch%mmean_fsn(recc)                    &
-                                               * cpatch%nplant(recc)                       &
-                                               + cpatch%mmean_fsn(donc)                    &
                                                * cpatch%nplant(donc) ) * newni
          cpatch%mmean_leaf_maintenance(recc) = ( cpatch%mmean_leaf_maintenance(recc)       &
                                                * cpatch%nplant(recc)                       &
@@ -1481,20 +1513,50 @@ module fuse_fiss_utils
                                               * newni
          end do
 
+         !----- The following variables depend on LAI more than nplant. -------------------!
+         cpatch%mmean_fs_open           (recc) = ( cpatch%mmean_fs_open(recc)              &
+                                                 * cpatch%lai(recc)                        &
+                                                 + cpatch%mmean_fs_open(donc)              &
+                                                 * cpatch%lai(donc) ) * newlaii
+         cpatch%mmean_fsw               (recc) = ( cpatch%mmean_fsw(recc)                  &
+                                                 * cpatch%lai(recc)                        &
+                                                 + cpatch%mmean_fsw(donc)                  &
+                                                 * cpatch%lai(donc) ) * newlaii
+         cpatch%mmean_fsn               (recc) = ( cpatch%mmean_fsn(recc)                  &
+                                                 * cpatch%lai(recc)                        &
+                                                 + cpatch%mmean_fsn(donc)                  &
+                                                 * cpatch%lai(donc) ) * newlaii
+
          !----- The following variables are "extensive", add them. ------------------------!
-         cpatch%mmean_par_v           (recc) = cpatch%mmean_par_v (recc)                   &
-                                             + cpatch%mmean_par_v (donc)
-         cpatch%mmean_par_v_beam      (recc) = cpatch%mmean_par_v_beam (recc)              &
-                                             + cpatch%mmean_par_v_beam (donc)
-         cpatch%mmean_par_v_diff      (recc) = cpatch%mmean_par_v_diff (recc)              &
-                                             + cpatch%mmean_par_v_diff (donc)
-         
+         cpatch%mmean_par_v             (recc) = cpatch%mmean_par_v       (recc)           &
+                                               + cpatch%mmean_par_v       (donc)
+         cpatch%mmean_par_v_beam        (recc) = cpatch%mmean_par_v_beam  (recc)           &
+                                               + cpatch%mmean_par_v_beam  (donc)
+         cpatch%mmean_par_v_diff        (recc) = cpatch%mmean_par_v_diff  (recc)           &
+                                               + cpatch%mmean_par_v_diff  (donc)
+         cpatch%mmean_psi_open          (recc) = cpatch%mmean_psi_open    (recc)           &
+                                               + cpatch%mmean_psi_open    (donc)
+         cpatch%mmean_psi_closed        (recc) = cpatch%mmean_psi_closed  (recc)           &
+                                               + cpatch%mmean_psi_closed  (donc)
+         cpatch%mmean_water_supply      (recc) = cpatch%mmean_water_supply(recc)           &
+                                               + cpatch%mmean_water_supply(donc)
       end if
 
 
 
-      !----- Last, but not the least, we update nplant ------------------------------------!
+      !------------------------------------------------------------------------------------!
+      !     Lastly, we update nplant and LAI.                                              !
+      !------------------------------------------------------------------------------------!
       cpatch%nplant(recc) = newn
+      !------------------------------------------------------------------------------------!
+      !    LAI must be zero if phenology status is 2.  This is probably done correctly     !
+      ! throughout the code, but being safe here.                                          !
+      !------------------------------------------------------------------------------------!
+      if (cpatch%phenology_status(recc) < 2) then
+         cpatch%lai(recc) = cpatch%lai(recc) + cpatch%lai(donc)
+      else
+         cpatch%lai(recc) = 0.
+      end if
 
       return
    end subroutine fuse_2_cohorts
@@ -1733,7 +1795,6 @@ module fuse_fiss_utils
                   end if          ! if (.not. fuse_table(donp)) then
 
                   npatches_new = count(fuse_table)
-                  if (npatches_new <= abs(maxpatch)) exit max_patch
                end do          ! do donp = csite%npatches,2,-1
 
                !---------------------------------------------------------------------------!

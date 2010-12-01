@@ -46,7 +46,6 @@ subroutine heun_timestep(cgrid)
    real                                   :: storage_decay
    real                                   :: leaf_flux
    real                                   :: veg_tai
-   real                                   :: sum_lai_rbi
    real                                   :: wcurr_loss2atm
    real                                   :: ecurr_loss2atm
    real                                   :: co2curr_loss2atm
@@ -133,7 +132,7 @@ subroutine heun_timestep(cgrid)
 
             !----- Get photosynthesis, stomatal conductance, and transpiration. -----------!
             call canopy_photosynthesis(csite,cmet,nzg,ipa,ed_ktrans,cpoly%lsl(isi)         &
-                                      ,sum_lai_rbi,cpoly%leaf_aging_factor(:,isi)          &
+                                      ,cpoly%leaf_aging_factor(:,isi)                      &
                                       ,cpoly%green_leaf_factor(:,isi))
 
             !----- Compute root and heterotrophic respiration. ----------------------------!

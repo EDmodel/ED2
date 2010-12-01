@@ -3,7 +3,7 @@
 !     This subroutine will control the photosynthesis scheme (Farquar and Leuning).  This  !
 ! is called every step, but not every sub-step.                                            !
 !------------------------------------------------------------------------------------------!
-subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ed_ktrans,lsl,sum_lai_rbi              &
+subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ed_ktrans,lsl                          &
                                 ,leaf_aging_factor,green_leaf_factor)
    use ed_state_vars  , only : sitetype          & ! structure
                              , patchtype         ! ! structure
@@ -21,7 +21,8 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ed_ktrans,lsl,sum_lai_rbi   
                              , wdns              & ! intent(in)
                              , kgCday_2_umols    ! ! intent(in)
    use met_driver_coms, only : met_driv_state    ! ! structure
-   use physiology_coms, only : print_photo_debug ! ! intent(in)
+   use physiology_coms, only : print_photo_debug & ! intent(in)
+                             , new_fsw_method    ! ! intent(in)
    use farq_leuning   , only : lphysiol_full     ! ! sub-routine
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
@@ -33,7 +34,6 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ed_ktrans,lsl,sum_lai_rbi   
    real   , dimension(n_pft) , intent(in)  :: leaf_aging_factor ! 
    real   , dimension(n_pft) , intent(in)  :: green_leaf_factor ! 
    integer, dimension(mzg)   , intent(out) :: ed_ktrans         ! 
-   real                      , intent(out) :: sum_lai_rbi       ! 
    !----- Local variables -----------------------------------------------------------------!
    type(patchtype)           , pointer     :: cpatch             ! Current site
    integer                                 :: ico                ! Current cohort #
@@ -48,8 +48,8 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ed_ktrans,lsl,sum_lai_rbi   
    real   , dimension(mzg)                 :: available_liquid_water
    real                                    :: leaf_par
    real                                    :: leaf_resp
-   real                                    :: d_rsw_open
-   real                                    :: d_rsw_closed
+   real                                    :: d_gsw_open
+   real                                    :: d_gsw_closed
    real                                    :: d_lsfc_shv_open
    real                                    :: d_lsfc_shv_closed
    real                                    :: d_lsfc_co2_open
@@ -60,8 +60,6 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ed_ktrans,lsl,sum_lai_rbi   
    real                                    :: swp
    real                                    :: vm
    real                                    :: compp
-   real                                    :: water_demand
-   real                                    :: water_supply
    real                                    :: broot_tot
    real                                    :: broot_loc
    real                                    :: pss_available_water
@@ -152,11 +150,11 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ed_ktrans,lsl,sum_lai_rbi   
              , leaf_aging_factor(ipft)     & ! Ageing parameter to scale VM     [      ---]
              , cpatch%llspan(tuco)         & ! Leaf life span                   [       yr]
              , cpatch%vm_bar(tuco)         & ! Average Vm function              [µmol/m²/s]
-             , cpatch%rbw(tuco)            & ! Aerodyn. resist. of water vapour [      s/m]
+             , cpatch%gbw(tuco)            & ! Aerodyn. condct. of water vapour [  kg/m²/s]
              , csite%A_o_max(ipft,ipa)     & ! Photosynthesis rate     (open)   [µmol/m²/s]
              , csite%A_c_max(ipft,ipa)     & ! Photosynthesis rate     (closed) [µmol/m²/s]
-             , d_rsw_open                  & ! Stom. resist. of water  (open)   [      s/m]
-             , d_rsw_closed                & ! Stom. resist. of water  (closed) [      s/m]
+             , d_gsw_open                  & ! Stom. condct. of water  (open)   [  kg/m²/s]
+             , d_gsw_closed                & ! Stom. condct. of water  (closed) [  kg/m²/s]
              , d_lsfc_shv_open             & ! Leaf sfc. sp. humidity  (open)   [    kg/kg]
              , d_lsfc_shv_closed           & ! Leaf sfc. sp. humidity  (closed) [    kg/kg]
              , d_lsfc_co2_open             & ! Leaf sfc. CO2 mix. rat. (open)   [ µmol/mol]
@@ -184,8 +182,6 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ed_ktrans,lsl,sum_lai_rbi   
    !---------------------------------------------------------------------------------------!
    !    Initialize some variables.                                                         !
    !---------------------------------------------------------------------------------------!
-   !----- LAI/rb, summed over all cohorts.  Used in the Euler scheme. ---------------------!
-   sum_lai_rbi = 0.0
    !----- Total root biomass (in kgC/m2) and patch sum available water. -------------------!
    pss_available_water = 0.0
    broot_tot           = 0.0
@@ -206,9 +202,6 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ed_ktrans,lsl,sum_lai_rbi   
 
             !----- Alias for PFT ----------------------------------------------------------!
             ipft = cpatch%pft(ico)
-
-            !----- Updating total LAI/RB --------------------------------------------------!
-            sum_lai_rbi = sum_lai_rbi + cpatch%lai(ico) / cpatch%rbw(ico)
 
             !------------------------------------------------------------------------------!
             !    Scale photosynthetically active radiation per unit of leaf.               !
@@ -236,11 +229,11 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ed_ktrans,lsl,sum_lai_rbi   
              , leaf_aging_factor(ipft)     & ! Ageing parameter to scale VM     [      ---]
              , cpatch%llspan(ico)          & ! Leaf life span                   [       yr]
              , cpatch%vm_bar(ico)          & ! Average Vm function              [µmol/m²/s]
-             , cpatch%rbw(ico)            & ! Aerodyn. resist. of water vapour [      s/m]
+             , cpatch%gbw(ico)             & ! Aerodyn. condct. of water vapour [  kg/m²/s]
              , cpatch%A_open(ico)          & ! Photosynthesis rate     (open)   [µmol/m²/s]
              , cpatch%A_closed(ico)        & ! Photosynthesis rate     (closed) [µmol/m²/s]
-             , cpatch%rsw_open(ico)        & ! Stom. resist. of water  (open)   [      s/m]
-             , cpatch%rsw_closed(ico)      & ! Stom. resist. of water  (closed) [      s/m]
+             , cpatch%gsw_open(ico)        & ! Stom. condct. of water  (open)   [  kg/m²/s]
+             , cpatch%gsw_closed(ico)      & ! Stom. condct. of water  (closed) [  kg/m²/s]
              , cpatch%lsfc_shv_open(ico)   & ! Leaf sfc. sp. humidity  (open)   [    kg/kg] 
              , cpatch%lsfc_shv_closed(ico) & ! Leaf sfc. sp. humidity  (closed) [    kg/kg]
              , cpatch%lsfc_co2_open(ico)   & ! Leaf sfc. CO2 mix. rat. (open)   [ µmol/mol]
@@ -261,27 +254,39 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ed_ktrans,lsl,sum_lai_rbi   
             cpatch%today_leaf_resp(ico)  = cpatch%today_leaf_resp(ico)                     &
                                          + cpatch%leaf_respiration(ico)
 
-            !----- Demand for water [kg/m2/s].  Psi_open is from last time step. ----------!
-            water_demand = cpatch%Psi_open(ico)
-
-            !----- Supply of water. -------------------------------------------------------!
-            water_supply = water_conductance(ipft)                                         &
-                         * available_liquid_water(cpatch%krdepth(ico)) * wdnsi             &
-                         * q(ipft) * cpatch%balive(ico)                                    &
-                         / (1.0 + q(ipft) + cpatch%hite(ico) * qsw(ipft) )                 &
-                         * cpatch%nplant(ico)
-
-            root_depth_indices(cpatch%krdepth(ico)) = .true.
-
+            !----- Root biomass [kg/m2]. --------------------------------------------------!
             broot_loc = q(ipft) * cpatch%balive(ico)                                       &
                       / (1.0 + q(ipft) + cpatch%hite(ico) * qsw(ipft) )                    &
                       * cpatch%nplant(ico)
+
+            !----- Supply of water. -------------------------------------------------------!
+            cpatch%water_supply(ico) = water_conductance(ipft)                             &
+                                     * available_liquid_water(cpatch%krdepth(ico))         &
+                                     * broot_loc
+
+            root_depth_indices(cpatch%krdepth(ico)) = .true.
             broot_tot = broot_tot + broot_loc
             pss_available_water = pss_available_water                                      &
                                 + available_liquid_water(cpatch%krdepth(ico)) * broot_loc
 
-            !----- Weighting between open/closed stomata. ---------------------------------!
-            cpatch%fsw(ico) = water_supply / max(1.0e-30,water_supply + water_demand)
+            !------------------------------------------------------------------------------!
+            !     Determine the fraction of open stomata due to water limitation.          !
+            ! This is a function of the ratio between the potential water demand           !
+            ! (cpatch%psi_open, which is the average over the last time step), and the     !
+            ! supply (cpatch%water_supply).                                                !
+            !------------------------------------------------------------------------------!
+            if (new_fsw_method) then
+               if (cpatch%water_supply(ico) > 1.e-20) then
+                  cpatch%fsw(ico) = 0.5 * ( 1. - tanh( 2. * (cpatch%psi_open(ico)          &
+                                                            /cpatch%water_supply(ico)-2.)))
+               else
+                  cpatch%fsw(ico) = 0.0
+               end if
+            else
+               cpatch%fsw(ico) = cpatch%water_supply(ico)                                  &
+                               / max( 1.0e-20                                              &
+                                    , cpatch%water_supply(ico) + cpatch%psi_open(ico))
+            end if
 
 
             !------------------------------------------------------------------------------!
@@ -294,11 +299,10 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ed_ktrans,lsl,sum_lai_rbi   
                cpatch%fs_open(ico) = cpatch%fsw(ico) * cpatch%fsn(ico)
             end if
 
-            !----- Net stomatal resistance. -----------------------------------------------!
-            cpatch%stomatal_resistance(ico) = 1.0                                          &
-                                            / ( cpatch%fs_open(ico)/cpatch%rsw_open(ico)   &
-                                              + (1.0 - cpatch%fs_open(ico))                &
-                                                / cpatch%rsw_closed(ico) )
+            !----- Net stomatal conductance. ----------------------------------------------!
+            cpatch%stomatal_conductance(ico) =  cpatch%fs_open(ico) *cpatch%gsw_open(ico)  &
+                                             + (1.0 - cpatch%fs_open(ico))                 &
+                                             * cpatch%gsw_closed(ico)
 
             !----- GPP, averaged over frqstate. -------------------------------------------!
             cpatch%gpp(ico)       = cpatch%lai(ico)                                        &
@@ -327,19 +331,20 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ed_ktrans,lsl,sum_lai_rbi   
 
       else
          !----- If the cohort wasn't solved, we must assign some zeroes. ------------------!
-         cpatch%A_open(ico)              = 0.0
-         cpatch%A_closed(ico)            = 0.0
-         cpatch%Psi_open(ico)            = 0.0
-         cpatch%Psi_closed(ico)          = 0.0
-         cpatch%rsw_open(ico)            = 0.0
-         cpatch%rsw_closed(ico)          = 0.0
-         cpatch%rbh(ico)                 = 0.0
-         cpatch%rbw(ico)                 = 0.0
-         cpatch%stomatal_resistance(ico) = 0.0
-         cpatch%gpp(ico)                 = 0.0
-         cpatch%leaf_respiration(ico)    = 0.0
-         vm                              = 0.0
-         limit_flag                      = 0
+         cpatch%A_open(ico)               = 0.0
+         cpatch%A_closed(ico)             = 0.0
+         cpatch%psi_open(ico)             = 0.0
+         cpatch%psi_closed(ico)           = 0.0
+         cpatch%water_supply(ico)         = 0.0
+         cpatch%gsw_open(ico)             = 0.0
+         cpatch%gsw_closed(ico)           = 0.0
+         cpatch%gbh(ico)                  = 0.0
+         cpatch%gbw(ico)                  = 0.0
+         cpatch%stomatal_conductance(ico) = 0.0
+         cpatch%gpp(ico)                  = 0.0
+         cpatch%leaf_respiration(ico)     = 0.0
+         vm                               = 0.0
+         limit_flag                       = 0
       end if
       
       !------------------------------------------------------------------------------------!
@@ -445,13 +450,13 @@ subroutine print_photo_details(cmet,csite,ipa,ico,limit_flag,vm,compp)
    integer                                 :: jco
    logical                                 :: isthere
    real                                    :: leaf_resp
-   real                                    :: stom_resist
+   real                                    :: stom_condct
    real                                    :: par_area
    real                                    :: parv
    real                                    :: util_parv
    !----- Local constants. ----------------------------------------------------------------!
-   character(len=10), parameter :: hfmt='(53(a,1x))'
-   character(len=48), parameter :: bfmt='(3(i13,1x),1(es13.6,1x),2(i13,1x),47(es13.6,1x))'
+   character(len=10), parameter :: hfmt='(54(a,1x))'
+   character(len=48), parameter :: bfmt='(3(i13,1x),1(es13.6,1x),2(i13,1x),48(es13.6,1x))'
    !----- Locally saved variables. --------------------------------------------------------!
    logical                   , save        :: first_time=.true.
    !---------------------------------------------------------------------------------------!
@@ -461,7 +466,7 @@ subroutine print_photo_details(cmet,csite,ipa,ico,limit_flag,vm,compp)
    cpatch      => csite%patch(ipa)
    ipft        =  cpatch%pft(ico)
    leaf_resp   =  cpatch%leaf_respiration(ico)
-   stom_resist =  cpatch%stomatal_resistance(ico)
+   stom_condct =  cpatch%stomatal_conductance(ico)
    !---------------------------------------------------------------------------------------!
 
    if (cpatch%solvable(ico)) then
@@ -518,12 +523,13 @@ subroutine print_photo_details(cmet,csite,ipa,ico,limit_flag,vm,compp)
                                , '      CAN_CO2', 'LSFC_CO2_OPEN', 'LSFC_CO2_CLOS'         &
                                , 'LINT_CO2_OPEN', 'LINT_CO2_CLOS', '        COMPP'         &
                                , '     PAR_AREA', '         PARV', '    UTIL_PARV'         &
-                               , '         GPP' , '    LEAF_RESP', '          RBH'         &
-                               , '          RBW', '  STOM_RESIST', '       A_OPEN'         &
-                               , '       A_CLOS', '     RSW_OPEN', '     RSW_CLOS'         &
-                               , '     PSI_OPEN', '     PSI_CLOS', '          FSW'         &
-                               , '          FSN', '      FS_OPEN', '     ATM_WIND'         &
-                               , '     VEG_WIND', '           VM'
+                               , '          GPP', '    LEAF_RESP', '          GBH'         &
+                               , '          GBW', '  STOM_CONDCT', '       A_OPEN'         &
+                               , '       A_CLOS', '     GSW_OPEN', '     GSW_CLOS'         &
+                               , '     PSI_OPEN', '     PSI_CLOS', '   H2O_SUPPLY'         &
+                               , '          FSW', '          FSN', '      FS_OPEN'         &
+                               , '     ATM_WIND', '     VEG_WIND', '           VM'
+                              
       close (unit=57,status='keep')
    end if
    !---------------------------------------------------------------------------------------!
@@ -547,15 +553,14 @@ subroutine print_photo_details(cmet,csite,ipa,ico,limit_flag,vm,compp)
    , csite%can_co2(ipa)         , cpatch%lsfc_co2_open(ico)  , cpatch%lsfc_co2_closed(ico) &
    , cpatch%lint_co2_open(ico)  , cpatch%lint_co2_closed(ico), compp                       &
    , par_area                   , parv                       , util_parv                   &
-   , cpatch%gpp(ico)            , leaf_resp                  , cpatch%rbh(ico)             &
-   , cpatch%rbw(ico)            , stom_resist                , cpatch%A_open(ico)          &
-   , cpatch%A_closed(ico)       , cpatch%rsw_open(ico)       , cpatch%rsw_closed(ico)      &
-   , cpatch%Psi_open(ico)       , cpatch%Psi_closed(ico)     , cpatch%fsw(ico)             &
-   , cpatch%fsn(ico)            , cpatch%fs_open(ico)        , cmet%vels                   &
-   , cpatch%veg_wind(ico)       , vm
-      
-      
-                   
+   , cpatch%gpp(ico)            , leaf_resp                  , cpatch%gbh(ico)             &
+   , cpatch%gbw(ico)            , stom_condct                , cpatch%A_open(ico)          &
+   , cpatch%A_closed(ico)       , cpatch%gsw_open(ico)       , cpatch%gsw_closed(ico)      &
+   , cpatch%psi_open(ico)       , cpatch%psi_closed(ico)     , cpatch%water_supply(ico)    &
+   , cpatch%fsw(ico)            , cpatch%fsn(ico)            , cpatch%fs_open(ico)         &
+   , cmet%vels                  , cpatch%veg_wind(ico)       , vm
+   
+
    close(unit=57,status='keep')
    !---------------------------------------------------------------------------------------!
 

@@ -64,7 +64,7 @@ module farq_leuning
    !---------------------------------------------------------------------------------------!
    subroutine lphysiol_full(can_prss,can_rhos,can_shv,can_co2,ipft,leaf_par,veg_temp       &
                            ,lint_shv,green_leaf_factor,leaf_aging_factor,llspan,vm_bar     &
-                           ,rbw,A_open,A_closed,rsw_open,rsw_closed,lsfc_shv_open          &
+                           ,gbw,A_open,A_closed,gsw_open,gsw_closed,lsfc_shv_open          &
                            ,lsfc_shv_closed,lsfc_co2_open,lsfc_co2_closed,lint_co2_open    &
                            ,lint_co2_closed,leaf_resp,vmout,comppout,limit_flag            &
                            ,old_st_data)
@@ -120,11 +120,11 @@ module farq_leuning
       real(kind=4), intent(in)    :: leaf_aging_factor ! Ageing parameter       [      ---]
       real(kind=4), intent(in)    :: llspan            ! Leaf life span         [       yr]
       real(kind=4), intent(in)    :: vm_bar            ! Average Vm function    [µmol/m²/s]
-      real(kind=4), intent(in)    :: rbw               ! Aerodyn. res. of H2O   [      s/m]
+      real(kind=4), intent(in)    :: gbw               ! B.lyr. cnd. of H2O     [  kg/m²/s]
       real(kind=4), intent(out)   :: A_open            ! Photosyn. rate (op.)   [µmol/m²/s]
       real(kind=4), intent(out)   :: A_closed          ! Photosyn. rate (cl.)   [µmol/m²/s]
-      real(kind=4), intent(out)   :: rsw_open          ! St. res. of H2O  (op.) [      s/m]
-      real(kind=4), intent(out)   :: rsw_closed        ! St. res. of H2O  (cl.) [      s/m]
+      real(kind=4), intent(out)   :: gsw_open          ! St. cnd. of H2O  (op.) [  kg/m²/s]
+      real(kind=4), intent(out)   :: gsw_closed        ! St. cnd. of H2O  (cl.) [  kg/m²/s]
       real(kind=4), intent(out)   :: lsfc_shv_open     ! Leaf sfc. sp.hum.(op.) [    kg/kg] 
       real(kind=4), intent(out)   :: lsfc_shv_closed   ! Leaf sfc. sp.hum.(cl.) [    kg/kg]
       real(kind=4), intent(out)   :: lsfc_co2_open     ! Leaf sfc. CO2    (op.) [ µmol/mol]
@@ -199,11 +199,11 @@ module farq_leuning
       !------------------------------------------------------------------------------------!
       met%lint_shv    = epi8 * dble(lint_shv)
       !------------------------------------------------------------------------------------!
-      !  6. Find the conductivities for water and carbon.  The input for water is in m/s,  !
-      !     and here we convert to mol/m²/s.  The convertion coefficient from water to     !
-      !     carbon dioxide comes from M09's equation B14.                                  !
+      !  6. Find the conductivities for water and carbon.  The input for water is in       !
+      !     kg/m²/s, and here we convert to mol/m²/s.  The convertion coefficient from     !
+      !     water to carbon dioxide comes from M09's equation B14.                         !
       !------------------------------------------------------------------------------------!
-      met%blyr_cond_h2o = (met%can_rhos * met%can_shv * mmh2oi8) / dble(rbw)
+      met%blyr_cond_h2o = dble(gbw)  * mmh2oi8
       met%blyr_cond_co2 = gbw_2_gbc8 * met%blyr_cond_h2o
       !------------------------------------------------------------------------------------!
       !  7. Find the compensation point (Gamma) for this temperature.  I am not sure about !
@@ -256,28 +256,26 @@ module farq_leuning
       ! back to the standard ED units                                                      !
       !------------------------------------------------------------------------------------!
       !----- Carbon demand, convert them to [µmol/m²/s]. ----------------------------------!
-      A_closed       = sngloff(stclosed%co2_demand * mol_2_umol8, tiny_offset)
-      A_open         = sngloff(stopen%co2_demand   * mol_2_umol8, tiny_offset)
-      !----- Stomatal resistance, convert the conductances to [s/m]. ----------------------!
-      rsw_closed     = sngloff( met%can_rhos * stclosed%lsfc_shv * mmh2oi8                 &
-                              / stclosed%stom_cond_h2o, tiny_offset)
-      rsw_open       = sngloff( met%can_rhos * stopen%lsfc_shv * mmh2oi8                   &
-                              / stopen%stom_cond_h2o  , tiny_offset)
+      A_closed       = sngloff(stclosed%co2_demand    * mol_2_umol8 , tiny_offset)
+      A_open         = sngloff(stopen%co2_demand      * mol_2_umol8 , tiny_offset)
+      !----- Stomatal resistance, convert the conductances to [kg/m²/s]. ------------------!
+      gsw_closed     = sngloff(stclosed%stom_cond_h2o * mmh2o8      , tiny_offset)
+      gsw_open       = sngloff(stopen%stom_cond_h2o   * mmh2o8      , tiny_offset)
       !----- Leaf surface specific humidity, convert them to [kg/kg]. ---------------------!
-      lsfc_shv_closed = sngloff(stclosed%lsfc_shv * ep8, tiny_offset)
-      lsfc_shv_open   = sngloff(stopen%lsfc_shv   * ep8, tiny_offset)
+      lsfc_shv_closed = sngloff(stclosed%lsfc_shv     * ep8         , tiny_offset)
+      lsfc_shv_open   = sngloff(stopen%lsfc_shv       * ep8         , tiny_offset)
       !----- Leaf surface CO2 concentration, convert them to [µmol/mol]. ------------------!
-      lsfc_co2_closed = sngloff(stclosed%lsfc_co2 * mol_2_umol8, tiny_offset)
-      lsfc_co2_open   = sngloff(stopen%lsfc_co2   * mol_2_umol8, tiny_offset)
+      lsfc_co2_closed = sngloff(stclosed%lsfc_co2     * mol_2_umol8 , tiny_offset)
+      lsfc_co2_open   = sngloff(stopen%lsfc_co2       * mol_2_umol8 , tiny_offset)
       !----- Intercellular carbon dioxide concentration, convert them to [µmol/mol]. ------!
-      lint_co2_closed = sngloff(stclosed%lint_co2 * mol_2_umol8, tiny_offset)
-      lint_co2_open   = sngloff(stopen%lint_co2   * mol_2_umol8, tiny_offset)
+      lint_co2_closed = sngloff(stclosed%lint_co2     * mol_2_umol8 , tiny_offset)
+      lint_co2_open   = sngloff(stopen%lint_co2       * mol_2_umol8 , tiny_offset)
       !----- Leaf respiration [µmol/m²/s]. ------------------------------------------------!
-      leaf_resp       = sngloff(aparms%leaf_resp * mol_2_umol8, tiny_offset)
+      leaf_resp       = sngloff(aparms%leaf_resp      * mol_2_umol8 , tiny_offset)
       !----- Maximum Rubisco capacity to perform the carboxylase function [µmol/m²/s]. ----!
-      vmout           = sngloff(aparms%vm * mol_2_umol8, tiny_offset)
+      vmout           = sngloff(aparms%vm             * mol_2_umol8 , tiny_offset)
       !----- Gross photosynthesis compensation point, convert it to [µmol/mol]. -----------!
-      comppout        = sngloff(met%compp * mol_2_umol8, tiny_offset)
+      comppout        = sngloff(met%compp             * mol_2_umol8 , tiny_offset)
       !------------------------------------------------------------------------------------!
       return
    end subroutine lphysiol_full

@@ -625,7 +625,8 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
                                     , t3ple8               & ! intent(in)
                                     , tsupercool8          & ! intent(in)
                                     , cice8                & ! intent(in)
-                                    , cliq8                ! ! intent(in)
+                                    , cliq8                & ! intent(in)
+                                    , epi8                 ! ! intent(in)
    use soil_coms             , only : soil8                & ! intent(in)
                                     , dslzi8               & ! intent(in)
                                     , dewmax               ! ! intent(in)
@@ -670,12 +671,10 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
    real(kind=8)                     :: hflxac           ! Atm->canopy sensible heat flux
    real(kind=8)                     :: eflxac           ! Atm->canopy Eq. Pot. temp flux
    real(kind=8)                     :: c2               ! Coefficient (????)
-   real                             :: c3lai            ! Coefficient (????)
-   real(kind=8)                     :: c3tai            ! Coefficient (????)
+   real(kind=8)                     :: wflxvc_try       ! Intended flux leaf sfc -> canopy
+   real(kind=8)                     :: c3lai            ! Term for psi_open/psi_closed
    real(kind=8)                     :: hflxvc           ! Leaf->canopy heat flux
    real(kind=8)                     :: rasgnd           ! 
-   real(kind=8)                     :: rbhi             ! 
-   real(kind=8)                     :: rbwi             ! 
    real(kind=8)                     :: rd               !
    real(kind=8)                     :: sigmaw           !
    real(kind=8)                     :: wflxvc           !
@@ -1048,22 +1047,17 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
          ! leaves.  Evaporation of water/ice settled over the vegetation surface, or dew/  !
          ! frost formation must account the branches and stems as well.                    !
          !---------------------------------------------------------------------------------!
-         !----- Transpiration "flux" ------------------------------------------------------!
-         flux_area = initp%lai(ico)
-         c3lai  = sngloff( flux_area * initp%can_rhos                                      &
-                         * (initp%lint_shv(ico) - initp%can_shv)                           &
-                         , tiny_offset)
          !----- Evaporation/condensation "flux" -------------------------------------------!
-         flux_area = effarea_water * initp%tai(ico)
-         c3tai  = flux_area * initp%can_rhos                                               &
-                * (initp%lint_shv(ico) - initp%can_shv)
-         rbhi    = 1.d0 / initp%rbh(ico)
-         rbwi    = 1.d0 / initp%rbw(ico)
+         wflxvc_try = effarea_water * initp%tai(ico) * initp%gbw(ico)                      &
+                    * (initp%lint_shv(ico) - initp%can_shv) * epi8
+         !---------------------------------------------------------------------------------!
+
+
 
          !---------------------------------------------------------------------------------!
          !    Computing the evapotranspiration or dew/frost deposition.                    !
          !---------------------------------------------------------------------------------!
-         if (c3tai >= 0.d0) then  
+         if (wflxvc_try >= 0.d0) then  
             !------------------------------------------------------------------------------!
             !    Probably evapotranspiration, as long as the canopy air is not saturated   !
             ! or the user doesn't mind that super-saturation occur.                        !
@@ -1071,48 +1065,73 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
             if (supersat_ok .or. initp%can_rhv < 1.d0) then
                !---------------------------------------------------------------------------!
                !     Evaporation, energy is scaled by liquid/ice partition (no phase       !
-               ! bias).                                                                    !
+               ! bias).  We scale by the relative area of leaves that is actually covered  !
+               ! with water.                                                               !
                !---------------------------------------------------------------------------!
-               wflxvc  = c3tai * sigmaw * rbwi
+               wflxvc  = wflxvc_try * sigmaw
                qwflxvc = wflxvc * (alvi8 - initp%veg_fliq(ico) * alli8)
-               !----- Transpiration, consider the leaf area rather than TAI. --------------!
+
+               !---------------------------------------------------------------------------!
+               !     Transpiration, consider the one-sided leaf area rather than TAI.      !
+               ! Compute the water demand from both open closed and open stomata, but      !
+               ! first make sure that there is some water available for transpiration...   !
+               !---------------------------------------------------------------------------!
                if (initp%available_liquid_water(kroot) > 0.d0 ) then
-                  cpatch%Psi_open(ico)   = c3lai / (cpatch%rbw(ico)+cpatch%rsw_open(ico)  )
-                  cpatch%Psi_closed(ico) = c3lai / (cpatch%rbw(ico)+cpatch%rsw_closed(ico))
-                  transp = dble(cpatch%fs_open(ico)) * dble(cpatch%Psi_open(ico))          &
-                         + (1.0d0-dble(cpatch%fs_open(ico))) * dble(cpatch%Psi_closed(ico))
+                  c3lai = initp%lai(ico) * (initp%lint_shv(ico) - initp%can_shv) * epi8    &
+                        * initp%gbw(ico)
+
+                  dinitp%psi_open(ico)   = c3lai * initp%gsw_open(ico)                     &
+                                         / (initp%gbw(ico) + initp%gsw_open(ico))
+                  dinitp%psi_closed(ico) = c3lai * initp%gsw_closed(ico)                   &
+                                         / (initp%gbw(ico) + initp%gsw_closed(ico))
+
+                  transp = initp%fs_open(ico) * dinitp%psi_open(ico)                       &
+                         + (1.0d0 - initp%fs_open(ico)) * dinitp%psi_closed(ico)
                else
-                  cpatch%Psi_open(ico) = 0.
-                  cpatch%Psi_closed(ico) = 0.
-                  transp = 0.0d0
+                  dinitp%psi_open(ico)   = 0.d0
+                  dinitp%psi_closed(ico) = 0.d0
+                  transp                 = 0.d0
                end if
+               !---------------------------------------------------------------------------! 
+               !    Only liquid water is transpired, thus this is always the condensation  !
+               ! latent heat.                                                              !
+               !---------------------------------------------------------------------------! 
                qtransp = transp * alvl8
-           else
-              !----- Canopy is already saturated, no evapotranspiration is allowed. -------!
-              wflxvc                 = 0.d0
-              qwflxvc                = 0.d0
-              transp                 = 0.d0
-              qtransp                = 0.d0
-              cpatch%Psi_open(ico)   = 0.0
-              cpatch%Psi_closed(ico) = 0.0
-           end if
+               !---------------------------------------------------------------------------! 
+
+            else
+               !----- Canopy is already saturated, no evapotranspiration is allowed. ------!
+               wflxvc                 = 0.d0
+               qwflxvc                = 0.d0
+               transp                 = 0.d0
+               qtransp                = 0.d0
+               dinitp%psi_open(ico)   = 0.d0
+               dinitp%psi_closed(ico) = 0.d0
+               !---------------------------------------------------------------------------!
+            end if
+            !------------------------------------------------------------------------------!
 
          else
             !------------------------------------------------------------------------------!
             !     Dew/frost formation. The deposition will conserve the liquid/ice         !
             ! partition (or use the default if there is no water).                         !
             !------------------------------------------------------------------------------!
-            wflxvc                 = c3tai * rbwi
+            wflxvc                 = wflxvc_try
             qwflxvc                = wflxvc * (alvi8 - initp%veg_fliq(ico)*alli8)
             transp                 = 0.0d0
             qtransp                = 0.0d0
-            cpatch%Psi_open(ico)   = 0.0
-            cpatch%Psi_closed(ico) = 0.0
+            dinitp%psi_open  (ico) = 0.0d0
+            dinitp%psi_closed(ico) = 0.0d0
+            !------------------------------------------------------------------------------!
          end if
+         !---------------------------------------------------------------------------------!
+
 
 
          !----- We need to extract water from the soil equal to the transpiration. --------!
          initp%extracted_water(kroot) = initp%extracted_water(kroot) + transp
+         !---------------------------------------------------------------------------------!
+
 
 
          !---------------------------------------------------------------------------------!
@@ -1121,8 +1140,10 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
          ! factor (which to make it scalable with the cilinder.                            !
          !---------------------------------------------------------------------------------!
          flux_area = effarea_heat * initp%lai(ico) + pi18 * initp%wai(ico)
-         hflxvc    = flux_area * cp8 * initp%can_rhos * rbhi                               &
-                   * (initp%veg_temp(ico) - initp%can_temp)
+         hflxvc    = flux_area    * initp%gbh(ico) * (initp%veg_temp(ico) - initp%can_temp)
+         !---------------------------------------------------------------------------------!
+
+
 
          !---------------------------------------------------------------------------------!
          !     Calculate interception by leaves.                                           !
@@ -1140,7 +1161,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
                dthroughfall  = dintercepted_max * initp%tai(ico) * taii
                intercepted   = 0.d0
                qintercepted  = 0.d0
-               
+
                if (wflxvc < 0.d0) then
                   !------------------------------------------------------------------------!
                   ! Case 1a: If dew or frost is forming over the leaves, we won't let them !
@@ -1236,6 +1257,8 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
          !---------------------------------------------------------------------------------!
          dinitp%veg_energy(ico) = 0.d0
          dinitp%veg_water(ico)  = 0.d0
+         dinitp%psi_open(ico)   = 0.d0
+         dinitp%psi_closed(ico) = 0.d0
 
          !---------------------------------------------------------------------------------!
          !     Allow the complete bypass of precipitation if there are very few leaves.    !
