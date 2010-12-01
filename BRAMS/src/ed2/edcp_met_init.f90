@@ -175,11 +175,11 @@ subroutine leaf2ed_soil_moist_energy(cgrid,ifm)
 
 
             ntext = csite%ntext_soil(nzg,ipa)
-            nls   = csite%nlev_sfcwater(ipa)
-            nlsw1 = max(nls,1)
-            call ed_grndvap(nls,ntext,csite%soil_water(nzg,ipa),csite%soil_tempk(nzg,ipa)  &
-                           ,csite%soil_fracliq(nzg,ipa),csite%sfcwater_tempk(nlsw1,ipa)    &
-                           ,csite%sfcwater_fracliq(nlsw1,ipa),csite%can_prss(ipa)          &
+            ksn   = csite%nlev_sfcwater(ipa)
+            ksnw1 = max(ksn,1)
+            call ed_grndvap(ksn,ntext,csite%soil_water(nzg,ipa),csite%soil_tempk(nzg,ipa)  &
+                           ,csite%soil_fracliq(nzg,ipa),csite%sfcwater_tempk(ksnw1,ipa)    &
+                           ,csite%sfcwater_fracliq(ksnw1,ipa),csite%can_prss(ipa)          &
                            ,csite%can_shv(ipa),csite%ground_shv(ipa)                       &
                            ,csite%ground_ssh(ipa),csite%ground_temp(ipa)                   &
                            ,csite%ground_fliq(ipa))

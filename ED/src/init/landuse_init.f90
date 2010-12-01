@@ -307,7 +307,6 @@ subroutine landuse_init
                clutime%landuse(16) = lu_area_i * clutime%landuse(16)
                clutime%landuse(18) = lu_area_i * clutime%landuse(18)
             end do
-            close(unit=12,status='keep')
 
             !----- Padding disturbances with zero after last available lu year. -----------!
             do yd_this = (yd_last+1),iyearz
@@ -372,9 +371,15 @@ subroutine landuse_init
                cpoly%clutimes(1,isi)%landuse_year            = iyeara
                cpoly%clutimes(1,isi)%landuse(1:num_lu_trans) = 0.0
             end do
-
          end if
          !---------------------------------------------------------------------------------!
+
+
+
+         !----- Close the land use file, outside the if statement. ------------------------!
+         close(unit=12,status='keep')
+         !---------------------------------------------------------------------------------!
+
 
          cpoly%plantation(:) = 0
          call read_plantation_fractions(cpoly,cgrid%lon(ipy),cgrid%lat(ipy),igr)

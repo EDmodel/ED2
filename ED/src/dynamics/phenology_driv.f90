@@ -537,6 +537,8 @@ subroutine phenology_thresholds(daylight,soil_temp,soil_water,soil_class,sum_chd
    real                                   :: gdd_threshold
    integer                                :: k1
    integer                                :: k2
+   integer                                :: topsoil
+   integer                                :: nsoil
    !---------------------------------------------------------------------------------------!
 
    !----- Initialize variables. -----------------------------------------------------------!
@@ -571,12 +573,16 @@ subroutine phenology_thresholds(daylight,soil_temp,soil_water,soil_class,sum_chd
    ! represent different rooting depths.                                                   !
    !---------------------------------------------------------------------------------------!  
    theta(1:nzg) = 0.0
+   topsoil      = soil_class(nzg)
    do k1 = lsl, nzg
       do k2 = k1,nzg-1
+         nsoil     = soil_class(k2)
          theta(k1) = theta(k1)                                                             &
-                   + soil_water(k2) * (slz(k2+1)-slz(k2)) / soil(soil_class(k2))%slmsts
+                   + (soil_water(k2)     - soil(nsoil)%soilwp) * (slz(k2+1)-slz(k2))       &
+                   / (soil(nsoil)%slmsts - soil(nsoil)%soilwp)
       end do
-      theta(k1) = theta(k1) - soil_water(nzg) * slz(nzg) / soil(soil_class(nzg))%slmsts
+      theta(k1)    = theta(k1) - (soil_water(nzg)      - soil(topsoil)%soilwp) * slz(nzg)  &
+                               / (soil(topsoil)%slmsts - soil(topsoil)%soilwp)
       theta(k1) = - theta(k1) / slz(k1)
    end do
 

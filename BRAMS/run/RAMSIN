@@ -851,7 +851,7 @@
    !                    LU_RESCALE_FILE is a valid file.  If you don't want to use this,   !
    !                    leave it empty (NL%LU_RESCALE_FILE = ''  ).  In the future this    !
    !                    option will be extended to all IED_INIT_MODE options except 0.     !
-   !  ED_INPUTS_DIR - input directory for chd and dgd (not sure for what this is used).    !
+   !  THSUMS_DATABASE - input directory for chd and dgd (not sure for what this is used).  !
    !---------------------------------------------------------------------------------------!
    VEG_DATABASE      = '/n/Moorcroft_Lab/Lab/data/ed2_data/oge2OLD/OGE2_',
    SOIL_DATABASE     = '/n/Moorcroft_Lab/Lab/data/ed2_data/faoOLD/FAO_',

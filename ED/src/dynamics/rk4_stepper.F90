@@ -647,10 +647,7 @@ module rk4_stepper
       !------------------------------------------------------------------------------------!
       !   Check whether the canopy air equivalent potential temperature is off.            !
       !------------------------------------------------------------------------------------!
-      if ( y%can_shv > rk4max_can_shv .or.                                                 &
-           y%can_shv < rk4min_can_shv .or.                                                 &
-           ( y%can_shv > 5.d-1 * rk4max_can_shv .and. y%can_rhv > rk4max_can_rhv) .or.     &
-           ( y%can_temp > ttripoli8             .and. y%can_rhv < rk4min_can_shv) ) then
+      if ( y%can_shv > rk4max_can_shv .or. y%can_shv < rk4min_can_shv  ) then
          reject_step = .true.
          if(record_err) integ_err(3,2) = integ_err(3,2) + 1_8
          if (print_problems) then

@@ -40,8 +40,9 @@ Module consts_coms
      , b_sqrthalfpi => sqrthalfpi , b_fdns       => fdns       , b_fdnsi      => fdnsi     &
      , b_cv         => cv         , b_cpocv      => cpocv      , b_rocv       => rocv      &
      , b_hr_min     => hr_min     , b_th_diff    => th_diff    , b_th_diffi   => th_diffi  &
-     , b_kin_visc   => kin_visc   , b_th_expan   => th_expan   , b_gr_coeff   => gr_coeff  &
-     , b_mmh2oi     => mmh2oi     , b_lnexp_min  => lnexp_min  , b_lnexp_max  => lnexp_max
+     , b_kin_visc   => kin_visc   , b_kin_visci  => kin_visci  , b_th_expan   => th_expan  &
+     , b_gr_coeff   => gr_coeff   , b_mmh2oi     => mmh2oi     , b_lnexp_min  => lnexp_min &
+     , b_lnexp_max  => lnexp_max
 
    implicit none
 
@@ -94,10 +95,10 @@ Module consts_coms
    real, parameter :: fdnsi      = b_fdnsi      , cv         = b_cv
    real, parameter :: rocv       = b_rocv       , cpocv      = b_cpocv
    real, parameter :: hr_min     = b_hr_min     , th_diff    = b_th_diff
-   real, parameter :: th_diffi   = b_thdiffi    , kin_visc   = b_kin_visc
+   real, parameter :: th_diffi   = b_th_diffi   , kin_visc   = b_kin_visc
    real, parameter :: th_expan   = b_th_expan   , gr_coeff   = b_gr_coeff
    real, parameter :: mmh2oi     = b_mmh2o      , lnexp_min  = b_lnexp_min
-   real, parameter :: lnexp_max  = b_lnexp_max
+   real, parameter :: lnexp_max  = b_lnexp_max  , kin_visci  = b_kin_visci
    !---------------------------------------------------------------------------------------!
 
 #else
@@ -205,15 +206,16 @@ Module consts_coms
    !                                 10.11 (MU08).                                         !
    ! These terms could be easily made function of temperature in the future if needed be.  !!
    !---------------------------------------------------------------------------------------!
-   real, parameter :: th_diff  = 2.060e-5     ! Air thermal diffusivity         [     m²/s]
-   real, parameter :: th_diffi = 1./th_diff   ! 1/ air thermal diffusivity      [     s/m²]
-   real, parameter :: kin_visc = 1.516e-5     ! Kinematic viscosity             [     m²/s]
-   real, parameter :: th_expan = 3.43e-3      ! Air thermal expansion coeff.    [      1/K]
+   real, parameter :: th_diff   = 2.060e-5     ! Air thermal diffusivity        [     m²/s]
+   real, parameter :: th_diffi  = 1./th_diff   ! 1/ air thermal diffusivity     [     s/m²]
+   real, parameter :: kin_visc  = 1.516e-5     ! Kinematic viscosity            [     m²/s]
+   real, parameter :: kin_visci = 1./kin_visc  ! 1/Kinematic viscosity          [     s/m²]
+   real, parameter :: th_expan  = 3.43e-3      ! Air thermal expansion coeff.   [      1/K]
    !---------------------------------------------------------------------------------------!
    !    Grashof coefficient [1/(K m³)].  This is the coefficient a*g/(nu²) in MU08's       !
    ! equation 10.8, in the equation that defines the Grashof number.                       !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: gr_coeff = th_expan * grav  * th_diffi * th_diffi
+   real, parameter :: gr_coeff = th_expan * grav  * kin_visci * kin_visci
    !---------------------------------------------------------------------------------------!
 
 
@@ -475,6 +477,7 @@ Module consts_coms
    real(kind=8), parameter :: th_diff8        = dble(th_diff       )
    real(kind=8), parameter :: th_diffi8       = dble(th_diffi      )
    real(kind=8), parameter :: kin_visc8       = dble(kin_visc      )
+   real(kind=8), parameter :: kin_visci8      = dble(kin_visci     )
    real(kind=8), parameter :: th_expan8       = dble(th_expan      )
    real(kind=8), parameter :: gr_coeff8       = dble(gr_coeff      )
    real(kind=8), parameter :: Watts_2_Ein8    = dble(Watts_2_Ein   )

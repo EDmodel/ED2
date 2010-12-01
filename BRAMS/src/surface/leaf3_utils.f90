@@ -332,26 +332,29 @@ end subroutine sfclmcv
 ! layer if no temporary surface water/snow exists, or the top temporary surface water/snow !
 ! layer if it exists.                                                                      !
 !------------------------------------------------------------------------------------------!
-subroutine leaf_grndvap(soil_energy,soil_water,soil_text,sfcw_energy_int,sfcwater_nlev     &
-                       ,can_rvap,can_prss,ground_rsat,ground_rvap,ground_temp,ground_fliq)
+subroutine leaf_grndvap(topsoil_energy,topsoil_water,topsoil_text,sfcw_energy_int          &
+                       ,sfcwater_nlev,can_rvap,can_prss,ground_rsat,ground_rvap            &
+                       ,ground_temp,ground_fliq)
 
    use leaf_coms  , only : slcpd       & ! intent(in)
                          , slpots      & ! intent(in)
                          , slmsts      & ! intent(in)
+                         , soilcp      & ! intent(in)
                          , slbs        & ! intent(in)
                          , sfldcap     ! ! intent(in)
    use rconstants , only : gorh2o      & ! intent(in)
                          , pi1         & ! intent(in)
-                         , wdns        ! ! intent(in)
+                         , wdns        & ! intent(in)
+                         , lnexp_min   ! ! intent(in)
    use therm_lib  , only : rslif       & ! function
                          , qwtk        & ! function
                          , qtk         ! ! function
 
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
-   real, intent(in)  :: soil_energy      ! Soil internal energy                 [     J/m設
-   real, intent(in)  :: soil_water       ! Soil water content                   [m訛h2o/m設
-   real, intent(in)  :: soil_text        ! Soil texture class                   [      ---]
+   real, intent(in)  :: topsoil_energy   ! Top soil internal energy             [     J/m設
+   real, intent(in)  :: topsoil_water    ! Top soil water content               [m訛h2o/m設
+   real, intent(in)  :: topsoil_text     ! Top soil texture class               [      ---]
    real, intent(in)  :: sfcw_energy_int  ! Soil internal energy                 [     J/kg]
    real, intent(in)  :: sfcwater_nlev    ! # active levels of surface water     [      ---]
    real, intent(in)  :: can_rvap         ! Canopy vapour mixing ratio           [kg_vap/kg]
@@ -379,38 +382,59 @@ subroutine leaf_grndvap(soil_energy,soil_water,soil_text,sfcw_energy_int,sfcwate
    !    Ground_rsat is the saturation mixing ratio of the top soil/snow surface and is     !
    ! used for dew formation and snow evaporation.  
    !---------------------------------------------------------------------------------------!
-
-   if (ksn > 0 .and. sfcw_energy_int > 0.) then
-      
+   select case (ksn)
+   case (0)
       !------------------------------------------------------------------------------------!
-      !    With snowcover, ground_rvap is assumed to be the same as rsat.                  !
+      !      Without snowcover or water ponding, ground_shv is the effective specific      !
+      ! humidity of soil and is used for soil evaporation.  This value is a combination of !
+      ! the canopy air specific humidity, the saturation specific humidity at the soil     !
+      ! temperature.  When the soil tends to dry air soil moisture, ground_shv tends to    !
+      ! the canopy air space specific humidity, whereas it tends to the saturation value   !
+      ! when the soil moisture is near or above field capacity.  These tendencies will be  !
+      ! determined by the alpha and beta parameters.                                       !
+      !------------------------------------------------------------------------------------!
+      nsoil = nint(topsoil_text)
+      call qwtk(topsoil_energy,topsoil_water*wdns,slcpd(nsoil),ground_temp,ground_fliq)
+      !----- Compute the saturation mixing ratio at ground temperature. -------------------!
+      ground_rsat = rslif(can_prss,ground_temp)
+      !----- Determine alpha. -------------------------------------------------------------!
+      slpotvn  = slpots(nsoil) * (slmsts(nsoil) / topsoil_water) ** slbs(nsoil)
+      lnalpha  = gorh2o * slpotvn / ground_temp
+      if (lnalpha > lnexp_min) then
+         alpha = exp(lnalpha)
+      else
+         alpha = 0.0
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Determine Beta, following NP89.  However, because we want evaporation to be    !
+      ! shut down when the soil approaches the dry air soil moisture, we offset both the   !
+      ! soil moisture and field capacity to the soil moisture above dry air soil.  This is !
+      ! necessary to avoid evaporation to be large just slightly above the dry air soil,   !
+      ! which was happening especially for those clay-rich soil types.                     !
+      !------------------------------------------------------------------------------------!
+      smterm     = (topsoil_water - soilcp(nsoil)) / (sfldcap(nsoil) - soilcp(nsoil))
+      beta       = .5 * (1. - cos (min(1.,smterm) * pi1))
+      !----- Use the expression from LP92 to determine the specific humidity. -------------!
+      ground_rvap = ground_rsat * alpha * beta + (1. - beta) * can_rvap
+      !------------------------------------------------------------------------------------!
+
+   case default
+      !------------------------------------------------------------------------------------!
+      !    If a temporary layer exists, we use the top layer as the surface.  Since this   !
+      ! is "pure" water or snow, we let it evaporate freely.  We can understand  this as   !
+      ! the limit of alpha and beta tending to one.                                        !
       !------------------------------------------------------------------------------------!
       call qtk(sfcw_energy_int,ground_temp,ground_fliq)
+      !----- Compute the saturation specific humidity at ground temperature. --------------!
       ground_rsat = rslif(can_prss,ground_temp)
+      !----- The ground specific humidity in this case is just the saturation value. ------!
       ground_rvap = ground_rsat
-   else
-
       !------------------------------------------------------------------------------------!
-      !    Without snowcover, ground_rvap is the effective saturation mixing ratio of soil !
-      ! and is used for soil evaporation.  First, compute the "alpha" term or soil         !
-      ! "relative humidity" and the "beta" term.                                           !
-      !------------------------------------------------------------------------------------!
-
-      nsoil = nint(soil_text)
-
-      call qwtk(soil_energy,soil_water*wdns,slcpd(nsoil),ground_temp,ground_fliq)
-      ground_rsat = rslif(can_prss,ground_temp)
-
-      slpotvn     = slpots(nsoil) * (slmsts(nsoil) / soil_water) ** slbs(nsoil)
-      lnalpha     = gorh2o * slpotvn / surface_tempk
-      if (lnalpha > -38.) then
-         alpha    = exp(lnalpha)
-      else
-         alpha    = 0.0
-      end if
-      beta        = .5 * (1. - cos (min(1.,soil_water / sfldcap(nsoil)) * pi1))
-      ground_rvap = ground_rsat * alpha * beta + (1. - beta) * can_rvap
-   end if
+   end select
 
    return
 end subroutine leaf_grndvap

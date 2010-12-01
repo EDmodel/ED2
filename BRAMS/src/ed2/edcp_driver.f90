@@ -165,8 +165,8 @@ subroutine ed_coup_driver()
    ! STEP 11. Initialize ed fields that depend on the atmosphere.                          !
    !---------------------------------------------------------------------------------------!
    if (trim(runtype) /= 'HISTORY') then
-      if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] ed_init_coup_atm...'
-      call ed_init_coup_atm()
+      if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] ed_init_atm...'
+      call ed_init_atm()
    end if
 
    !---------------------------------------------------------------------------------------!

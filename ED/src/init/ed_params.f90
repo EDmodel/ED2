@@ -516,6 +516,12 @@ subroutine init_can_air_params()
                              , nflat_lami            & ! intent(out)
                              , mflat_turb            & ! intent(out)
                              , mflat_lami            & ! intent(out)
+                             , beta_r1               & ! intent(out)
+                             , beta_r2               & ! intent(out)
+                             , beta_re0              & ! intent(out)
+                             , beta_g1               & ! intent(out)
+                             , beta_g2               & ! intent(out)
+                             , beta_gr0              & ! intent(out)
                              , aflat_turb8           & ! intent(out)
                              , aflat_lami8           & ! intent(out)
                              , bflat_turb8           & ! intent(out)
@@ -523,7 +529,13 @@ subroutine init_can_air_params()
                              , nflat_turb8           & ! intent(out)
                              , nflat_lami8           & ! intent(out)
                              , mflat_turb8           & ! intent(out)
-                             , mflat_lami8           ! ! intent(out)
+                             , mflat_lami8           & ! intent(out)
+                             , beta_r18              & ! intent(out)
+                             , beta_r28              & ! intent(out)
+                             , beta_re08             & ! intent(out)
+                             , beta_g18              & ! intent(out)
+                             , beta_g28              & ! intent(out)
+                             , beta_gr08             ! ! intent(out)
    implicit none
    !---------------------------------------------------------------------------------------!
    !    Minimum leaf water content to be considered.  Values smaller than this will be     !
@@ -546,8 +558,8 @@ subroutine init_can_air_params()
    !      Variables to define the vegetation aerodynamic resistance.  They are currently   !
    ! not PFT dependent.                                                                    !
    !---------------------------------------------------------------------------------------!
-   rb_slope =  25.0
-   rb_inter =   0.0
+   rb_slope =   0.0
+   rb_inter =   1.e9
 
    !---------------------------------------------------------------------------------------!
    ! veg_height_min       - This is the minimum vegetation height allowed [m].  Vegetation !
@@ -658,6 +670,19 @@ subroutine init_can_air_params()
    mflat_turb = 0.250    ! m (free   convection), turbulent flow
    mflat_lami = onethird ! m (free   convection), laminar   flow
    !---------------------------------------------------------------------------------------!
+   !     Both free and forced convection tend to underestimate the Nusselt number under    !
+   ! different conditions.  Based on M08 review on the subject, I wrote the following      !
+   ! functional form to expand the Nusselt number by a factor beta:                        !
+   ! - beta_forced = R1 + R2 * tanh[log(Re/Re0)]                                           !
+   ! - beta_free   = G1 + G2 * tanh[log(Gr/Gr0)]                                           !
+   !---------------------------------------------------------------------------------------!
+   beta_r1  =   7./4.
+   beta_r2  =   3./4.
+   beta_re0 =   2000.
+   beta_g1  =   3./2.
+   beta_g2  =  -1./2.
+   beta_gr0 = 100000.
+   !---------------------------------------------------------------------------------------!
 
 
 
@@ -700,6 +725,12 @@ subroutine init_can_air_params()
    nflat_lami8           = dble(nflat_lami          )
    mflat_turb8           = dble(mflat_turb          )
    mflat_lami8           = dble(mflat_lami          )
+   beta_r18              = dble(beta_r1             )
+   beta_r28              = dble(beta_r2             )
+   beta_re08             = dble(beta_re0            )
+   beta_g18              = dble(beta_g1             )
+   beta_g28              = dble(beta_g2             )
+   beta_gr08             = dble(beta_gr0            )
 
    return
 end subroutine init_can_air_params
@@ -721,6 +752,7 @@ subroutine init_pft_photo_params()
                              , Vm_high_temp         & ! intent(out)
                              , Vm0                  & ! intent(out)
                              , stomatal_slope       & ! intent(out)
+                             , leaf_width           & ! intent(out)
                              , cuticular_cond       & ! intent(out)
                              , quantum_efficiency   & ! intent(out)
                              , photosyn_pathway     & ! intent(out)
@@ -730,6 +762,11 @@ subroutine init_pft_photo_params()
                              , yr_sec               ! ! intent(in)
    implicit none
 
+   !----- Local variables. ----------------------------------------------------------------!
+   logical, parameter  :: vm0_16    = .true.
+   logical, parameter  :: stsl_3ted = .true.
+   logical, parameter  :: lwidth_10 = .true.
+   !---------------------------------------------------------------------------------------!
 
    D0(1:15)                  = 0.01      ! same for all PFTs
 
@@ -765,37 +802,71 @@ subroutine init_pft_photo_params()
    Vm_high_temp(14)          = 100.0      ! C4
    Vm_high_temp(15)          = 100.0      ! C4
 
-   !------ Based on the new photosynthesis solver, Vm should be about 1.6 higher. ---------!
-   Vm0(1)                    = 12.5   * 1.60
-   Vm0(2)                    = 18.8   * 1.60
-   Vm0(3)                    = 12.5   * 1.60
-   Vm0(4)                    = 6.25   * 1.60
-   Vm0(5)                    = 18.3   * 1.60
-   Vm0(6)                    = 15.625 * 0.7264
-   Vm0(7)                    = 15.625 * 0.7264
-   Vm0(8)                    = 6.25   * 0.7264
-   Vm0(9)                    = 18.25  * 1.1171
-   Vm0(10)                   = 15.625 * 1.1171
-   Vm0(11)                   = 6.25   * 1.1171
-   Vm0(12:13)                = 18.3   * 1.60
-   Vm0(14:15)                = 12.5   * 1.60
+   !------ Vm0 is the maximum photosynthesis capacity in µmol/m2/s. -----------------------!
+   if (vm0_16) then
+      Vm0(1)                    = 20.0
+      Vm0(2)                    = 30.0
+      Vm0(3)                    = 20.0
+      Vm0(4)                    = 10.0
+      Vm0(5)                    = 29.3
+      Vm0(6)                    = 25.0
+      Vm0(7)                    = 25.0
+      Vm0(8)                    = 10.0
+      Vm0(9)                    = 29.2
+      Vm0(10)                   = 25.0
+      Vm0(11)                   = 10.0
+      Vm0(12:13)                = 29.3
+      Vm0(14:15)                = 20.0
+   else
+      Vm0(1)                    = 12.5
+      Vm0(2)                    = 18.8
+      Vm0(3)                    = 12.5
+      Vm0(4)                    = 6.25
+      Vm0(5)                    = 18.3
+      Vm0(6)                    = 15.625 * 0.7264
+      Vm0(7)                    = 15.625 * 0.7264
+      Vm0(8)                    = 6.25   * 0.7264
+      Vm0(9)                    = 18.25  * 1.1171
+      Vm0(10)                   = 15.625 * 1.1171
+      Vm0(11)                   = 6.25   * 1.1171
+      Vm0(12:13)                = 18.3
+      Vm0(14:15)                = 12.5
+   end if
 
-   !------ These numbers were reverted back to the original IBIS values. ------------------!
-   stomatal_slope(1)         = 10.0      ! 10.0
-   stomatal_slope(2)         =  8.0      ! 8.0
-   stomatal_slope(3)         =  8.0      ! 8.0
-   stomatal_slope(4)         =  8.0      ! 8.0
-   stomatal_slope(5)         =  8.0 
-   stomatal_slope(6)         =  6.3949
-   stomatal_slope(7)         =  6.3949
-   stomatal_slope(8)         =  6.3949
-   stomatal_slope(9)         =  6.3949
-   stomatal_slope(10)        =  6.3949
-   stomatal_slope(11)        =  6.3949
-   stomatal_slope(12)        =  6.3949
-   stomatal_slope(13)        =  6.3949
-   stomatal_slope(14)        = 10.0 
-   stomatal_slope(15)        = 10.0 
+   !----- Define the stomatal slope (aka the M factor). -----------------------------------!
+   if (stsl_3ted) then
+      stomatal_slope(1)         =  4.0
+      stomatal_slope(2)         = 24.0
+      stomatal_slope(3)         = 24.0
+      stomatal_slope(4)         = 24.0
+      stomatal_slope(5)         = 24.0
+      stomatal_slope(6)         = 15.4
+      stomatal_slope(7)         = 15.4
+      stomatal_slope(8)         = 15.4
+      stomatal_slope(9)         = 19.2
+      stomatal_slope(10)        = 19.2
+      stomatal_slope(11)        = 19.2
+      stomatal_slope(12)        = 24.0
+      stomatal_slope(13)        = 24.0
+      stomatal_slope(14)        =  4.0
+      stomatal_slope(15)        =  4.0
+   else
+      stomatal_slope(1)         = 10.0
+      stomatal_slope(2)         =  8.0
+      stomatal_slope(3)         =  8.0
+      stomatal_slope(4)         =  8.0
+      stomatal_slope(5)         =  8.0
+      stomatal_slope(6)         =  6.3949
+      stomatal_slope(7)         =  6.3949
+      stomatal_slope(8)         =  6.3949
+      stomatal_slope(9)         =  6.3949
+      stomatal_slope(10)        =  6.3949
+      stomatal_slope(11)        =  6.3949
+      stomatal_slope(12)        =  8.0
+      stomatal_slope(13)        =  8.0
+      stomatal_slope(14)        = 10.0
+      stomatal_slope(15)        = 10.0
+   end if
 
    cuticular_cond(1)         = 10000.0    ! 10000.0
    cuticular_cond(2)         = 10000.0    ! 10000.0
@@ -843,6 +914,23 @@ subroutine init_pft_photo_params()
    photosyn_pathway(6:13)    = 3
    photosyn_pathway(14:15)   = 4
 
+   !----- Leaf width [m].  This controls the boundary layer conductance. ------------------!
+   if (lwidth_10) then
+      !----- Alternative values. ----------------------------------------------------------!
+      leaf_width(1)     = 0.05
+      leaf_width(2:4)   = 0.10
+      leaf_width(5:11)  = 0.05
+      leaf_width(12:13) = 0.05
+      leaf_width(14:15) = 0.05
+   else
+      !----- Standard ED-2.1 values. ------------------------------------------------------!
+      leaf_width(1)     = 0.20
+      leaf_width(2:4)   = 0.20
+      leaf_width(5:11)  = 0.05
+      leaf_width(12:13) = 0.05
+      leaf_width(14:15) = 0.20
+   end if
+   !---------------------------------------------------------------------------------------!
 
    return
 end subroutine init_pft_photo_params
@@ -1465,7 +1553,6 @@ subroutine init_pft_leaf_params()
    use rk4_coms       , only : ibranch_thermo       ! ! intent(in)
    use pft_coms       , only : phenology            & ! intent(out)
                              , clumping_factor      & ! intent(out)
-                             , leaf_width           & ! intent(out)
                              , crown_depth_fraction & ! intent(out)
                              , c_grn_leaf_dry       & ! intent(out)
                              , c_ngrn_biom_dry      & ! intent(out)
@@ -1508,11 +1595,6 @@ subroutine init_pft_leaf_params()
    clumping_factor(9:11)  = 8.400d-1
    clumping_factor(12:13) = 8.400d-1
    clumping_factor(14:15) = 1.000d0
-
-   leaf_width(1:4)   = 0.20
-   leaf_width(5:11)  = 0.05
-   leaf_width(12:13) = 0.05
-   leaf_width(14:15) = 0.20
 
    !---------------------------------------------------------------------------------------!
    !      The following parameters are second sources found in Gu et al. (2007)            !
@@ -1993,9 +2075,9 @@ subroutine init_physiology_params()
    !     Parameters that control debugging output.                                         !
    !---------------------------------------------------------------------------------------!
    !----- I should print detailed debug information. --------------------------------------!
-   print_photo_debug = .true.
+   print_photo_debug = .false.
    !----- File name prefix for the detailed information in case of debugging. -------------!
-   photo_prefix      = 'photo_state_cohort_'
+   photo_prefix      = 'photo_state_'
    !---------------------------------------------------------------------------------------!
 
 
@@ -2004,7 +2086,7 @@ subroutine init_physiology_params()
    !     Parameters that define which equation to determine the FSW, the original          !
    ! (.false.) or the new (.true.).                                                        !
    !---------------------------------------------------------------------------------------!
-   new_fsw_method = .false.
+   new_fsw_method = .true.
    !---------------------------------------------------------------------------------------!
 
    return
@@ -2479,7 +2561,7 @@ subroutine init_rk4_params()
    rk4eps2     = rk4eps**2           ! square of the accuracy
    hmin        = 1.d-7               ! The minimum step size.
    print_diags = .false.             ! Flag to print the diagnostic check.
-   checkbudget = .true.              ! Flag to check CO2, water, and energy budgets every 
+   checkbudget = .false.             ! Flag to check CO2, water, and energy budgets every 
                                      !     time step and stop the run in case any of these 
                                      !     budgets don't close.
    !---------------------------------------------------------------------------------------!
@@ -2509,7 +2591,7 @@ subroutine init_rk4_params()
    errmax_fout    = 'error_max_count.txt'    ! File with the maximum error count 
    sanity_fout    = 'sanity_check_count.txt' ! File with the sanity check count
    thbnds_fout    = 'thermo_bounds.txt'      ! File with the thermodynamic boundaries.
-   detail_pref    = 'thermo_state_patch_'    ! Prefix for the detailed thermodynamic file
+   detail_pref    = 'thermo_state_'          ! Prefix for the detailed thermodynamic file
    !---------------------------------------------------------------------------------------!
 
 
@@ -2520,7 +2602,7 @@ subroutine init_rk4_params()
    ! nominal heat capacity, the laziest way to turn this off is by setting hcapveg_ref to  !
    ! a small number.  Don't set it to zero, otherwise you may have FPE issues.             !
    !---------------------------------------------------------------------------------------!
-   hcapveg_ref         = 3.0d3 ! 3.0d-1   ! Reference heat capacity value          [J/m³/K]
+   hcapveg_ref         = 3.0d3            ! Reference heat capacity value          [J/m³/K]
    min_height          = 1.5d0            ! Minimum vegetation height              [     m]
    !---------------------------------------------------------------------------------------!
 

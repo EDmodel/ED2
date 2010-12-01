@@ -747,15 +747,42 @@ subroutine integrate_ed_daily_output_flux(cgrid)
 
    !---------------------------------------------------------------------------------------!
 
-   cgrid%Nbiomass_uptake   = 0.
-   cgrid%Cleaf_litter_flux = 0.
-   cgrid%Croot_litter_flux = 0.
-   cgrid%Nleaf_litter_flux = 0.
-   cgrid%Nroot_litter_flux = 0.
-   cgrid%Ngross_min        = 0.
-   cgrid%Nnet_min          = 0.
 
+   !---------------------------------------------------------------------------------------!
+   !    WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   !
+   !---------------------------------------------------------------------------------------!
+   !     Please, don't initialise polygon-level (cgrid) variables outside polyloop.        !
+   ! This works in off-line runs, but it causes memory leaks (and crashes) in the coupled  !
+   ! runs over the ocean, where cgrid%npolygons can be 0 if one of the sub-domains falls   !
+   ! entirely over the ocean.  Thanks!                                                     !
+   !---------------------------------------------------------------------------------------!
+   ! cgrid%blah = 0. !<<--- This is a bad way of doing, look inside the loop for the safe
+   !                 !      way of initialising the variable.
+   !---------------------------------------------------------------------------------------!
    polyloop: do ipy=1,cgrid%npolygons
+
+      !------------------------------------------------------------------------------------!
+      !     This is the right and safe place to initialise polygon-level (cgrid) vari-     !
+      ! ables, so in case npolygons is zero this will not cause memory leaks.  I know,     !
+      ! this never happens in off-line runs, but it is quite common in coupled runs...     !
+      ! Whenever one of the nodes receives a sub-domain where all the points are over the  !
+      ! ocean, ED will not assign any polygon in that sub-domain, which means that that    !
+      ! node will have 0 polygons, and the variables cannot be allocated.  If you try to   !
+      ! access the polygon level variable outside the loop, then the model crashes due to  !
+      ! segmentation violation (a bad thing), whereas by putting the variables here both   !
+      ! the off-line model and the coupled runs will work, because this loop will be skip- !
+      ! ped when there is no polygon.                                                      !
+      !------------------------------------------------------------------------------------!
+      cgrid%Nbiomass_uptake  (ipy) = 0.
+      cgrid%Cleaf_litter_flux(ipy) = 0.
+      cgrid%Croot_litter_flux(ipy) = 0.
+      cgrid%Nleaf_litter_flux(ipy) = 0.
+      cgrid%Nroot_litter_flux(ipy) = 0.
+      cgrid%Ngross_min       (ipy) = 0.
+      cgrid%Nnet_min         (ipy) = 0.
+      !------------------------------------------------------------------------------------!
+
+
       cpoly => cgrid%polygon(ipy)
       poly_area_i=1./sum(cpoly%area)
 
@@ -1233,7 +1260,7 @@ subroutine normalize_ed_daily_output_vars(cgrid)
    !---------------------------------------------------------------------------------------!
 
 
-   !----- Computing the normalization factors. This is done once. -------------------------!
+   !----- Compute the normalization factors. This is done once. ---------------------------!
    if (find_factors) then
       dtlsm_o_daysec  = dtlsm/day_sec
       frqsum_o_daysec = frqsum/day_sec
@@ -2435,6 +2462,9 @@ subroutine zero_ed_monthly_output_vars(cgrid)
 
    !----- The loop is necessary for coupled runs (when npolygons may be 0) ----------------!
    do ipy=1,cgrid%npolygons
+      cgrid%mmean_fs_open            (ipy) = 0.
+      cgrid%mmean_fsw                (ipy) = 0.
+      cgrid%mmean_fsn                (ipy) = 0.
       cgrid%mmean_gpp                (ipy) = 0.
       cgrid%mmean_evap               (ipy) = 0.
       cgrid%mmean_transp             (ipy) = 0.

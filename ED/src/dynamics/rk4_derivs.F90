@@ -1282,7 +1282,6 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
    dinitp%can_shv     = (wflxgc - dewgndflx + wflxvc_tot + transp_tot +  wflxac) * wcapcani
    dinitp%can_co2     = (cflxgc + cflxvc_tot + cflxac)                           * ccapcani
 
-
    !---------------------------------------------------------------------------------------!
    !     Integrate diagnostic variables - These are not activated unless fast file-type    !
    ! outputs are selected. This will speed up the integrator.                              !
@@ -1291,12 +1290,12 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
 
 
       dinitp%avg_carbon_ac     = cflxac                      ! Carbon flx,  Atmo->Canopy
+      dinitp%avg_sensible_ac   = hflxac                      ! Sens. heat,  Atmo->Canopy
+      dinitp%avg_vapor_ac      = wflxac                      ! Lat.  heat,  Atmo->Canopy
 
       dinitp%avg_sensible_vc   = hflxvc_tot                  ! Sens. heat,  Leaf->Canopy
       dinitp%avg_vapor_vc      = wflxvc_tot                  ! Lat.  heat,  Leaf->Canopy
       dinitp%avg_sensible_gc   = hflxgc                      ! Sens. heat,  Grnd->Canopy
-      dinitp%avg_sensible_ac   = hflxac                      ! Sens. heat,  Atmo->Canopy
-      dinitp%avg_vapor_ac      = wflxac                      ! Lat.  heat,  Atmo->Canopy
       dinitp%avg_transp        = transp_tot                  ! Transpiration
       dinitp%avg_evap          = wflxgc-dewgndflx+wflxvc_tot ! Evaporation GrndLeaf->CAS
       dinitp%avg_vapor_gc      = wflxgc                      ! Lat.  heat,  Grnd->Canopy

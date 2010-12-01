@@ -103,7 +103,6 @@ subroutine simple_lake_model(time,dtlongest)
    real                     :: hcapcan, wcapcan, ccapcan, rdi
    real                     :: sflux_u,sflux_v,sflux_w,sflux_t,sflux_r,sflux_c
    real                     :: timefac_sst
-   real                     :: fm
    !----- Local constants -----------------------------------------------------------------!
    real, parameter          :: d0=0.
    real, parameter          :: z0fac_water = .016 / grav
@@ -357,7 +356,7 @@ subroutine simple_lake_model(time,dtlongest)
             call ed_stars(atm_theta,atm_theiv,atm_shv,atm_co2                              &
                          ,can_theta,can_theiv,can_shv,can_co2                              &
                          ,geoht,d0,vels,water_rough                                        &
-                         ,ustar,tstar,estar,qstar,cstar,zeta,ribulk,fm)
+                         ,ustar,tstar,estar,qstar,cstar,zeta,ribulk)
 
             
             sflux_w  = sflux_w + vertical_vel_flux(zeta,tstar,ustar)

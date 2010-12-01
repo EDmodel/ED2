@@ -495,9 +495,7 @@ module rk4_driver
 
 
       !------------------------------------------------------------------------------------!
-      ! paw_avg - 10-day average of plant available water.                              !
-      !     I don't think this is currently used, but it may be turned on for drought-     !
-      ! -related  phenology.                                                               !
+      ! paw_avg - 10-day average of plant available water.                                 !
       !------------------------------------------------------------------------------------!
       cpatch => csite%patch(ipa)
       do ico = 1,cpatch%ncohorts

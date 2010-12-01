@@ -123,7 +123,28 @@ module canopy_air_coms
    real(kind=8)            :: mflat_turb8 ! m (free   convection), turbulent flow
    real(kind=8)            :: mflat_lami8 ! m (free   convection), laminar   flow
 
+   real(kind=8)            :: beta_lami8  ! Correction term for Nusselt #, laminar flow
+   real(kind=8)            :: beta_turb8  ! Correction term for Nusselt #, turbulent flow
 
+   !---------------------------------------------------------------------------------------!
+   !     Both free and forced convection tend to underestimate the Nusselt number under    !
+   ! different conditions.  Based on M08 review on the subject, I wrote the following      !
+   ! functional form to expand the Nusselt number by a factor beta:                        !
+   ! - beta_forced = R1 + R2 * tanh[log(Re/Re0)]                                           !
+   ! - beta_free   = G1 + G2 * tanh[log(Gr/Gr0)]                                           !
+   !---------------------------------------------------------------------------------------!
+   real                    :: beta_r1
+   real                    :: beta_r2
+   real                    :: beta_re0
+   real                    :: beta_g1
+   real                    :: beta_g2
+   real                    :: beta_gr0
+   real(kind=8)            :: beta_r18
+   real(kind=8)            :: beta_r28
+   real(kind=8)            :: beta_re08
+   real(kind=8)            :: beta_g18
+   real(kind=8)            :: beta_g28
+   real(kind=8)            :: beta_gr08
    !=======================================================================================!
    !=======================================================================================!
 

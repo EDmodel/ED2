@@ -134,15 +134,16 @@ Module rconstants
    !                                 10.11 (MU08).                                         !
    ! These terms could be easily made function of temperature in the future if needed be.  !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: th_diff  = 2.060e-5     ! Air thermal diffusivity         [     m²/s]
-   real, parameter :: th_diffi = 1./th_diff   ! 1/ air thermal diffusivity      [     s/m²]
-   real, parameter :: kin_visc = 1.516e-5     ! Kinematic viscosity             [     m²/s]
-   real, parameter :: th_expan = 3.43e-3      ! Air thermal expansion coeff.    [      1/K]
+   real, parameter :: th_diff   = 2.060e-5    ! Air thermal diffusivity         [     m²/s]
+   real, parameter :: th_diffi  = 1./th_diff  ! 1/ air thermal diffusivity      [     s/m²]
+   real, parameter :: kin_visc  = 1.516e-5    ! Kinematic viscosity             [     m²/s]
+   real, parameter :: kin_visci = 1./kin_visc ! 1/Kinematic viscosity          [     s/m²]
+   real, parameter :: th_expan  = 3.43e-3     ! Air thermal expansion coeff.    [      1/K]
    !---------------------------------------------------------------------------------------!
    !    Grashof coefficient [1/(K m³)].  This is the coefficient a*g/(nu²) in MU08's       !
    ! equation 10.8, in the equation that defines the Grashof number.                       !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: gr_coeff = th_expan * grav * th_diffi * th_diffi
+   real, parameter :: gr_coeff = th_expan * grav * kin_visci * kin_visci
    !---------------------------------------------------------------------------------------!
 
 
