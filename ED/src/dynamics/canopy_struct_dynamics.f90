@@ -232,7 +232,7 @@ module canopy_struct_dynamics
       !              it is very similar to LEAF-3, and to option 0, except that option 0   !
       !              computes rasveg differently.                                          !
       !------------------------------------------------------------------------------------!
-      case (-1)
+      case (-2,-1)
          h        = csite%veg_height(ipa) * (1. - csite%snowfac(ipa)) ! Vegetation height
          d0       = vh2dh * h                                         ! 0-plane displacement
          zref     = cmet%geoht
@@ -295,7 +295,12 @@ module canopy_struct_dynamics
                   hite  = cpatch%hite(ico)
 
                   !----- Calculate the wind speed at height z. ----------------------------!
-                  cpatch%veg_wind(ico) = max(ustmin,uh * exp ( -0.5 * laicum))
+                  select case (icanturb)
+                  case (-2)
+                     cpatch%veg_wind(ico) = uh
+                  case (-1)
+                     cpatch%veg_wind(ico) = max(ustmin,uh * exp ( -0.5 * laicum))
+                  end select
 
                   !------------------------------------------------------------------------!
                   !    Find the aerodynamic conductances for heat and water at the leaf    !
@@ -957,7 +962,7 @@ module canopy_struct_dynamics
       ! LEAF-3 Case: This approach is very similar to older implementations of ED-2, and   !
       !              it is very similar to LEAF-3.                                         !
       !------------------------------------------------------------------------------------!
-      case (-1) 
+      case (-2,-1) 
          !----- Vegetation height. --------------------------------------------------------!
          h        = dble(csite%veg_height(ipa)) * (1.d0 - dble(csite%snowfac(ipa)))
          !----- 0-plane displacement height. ----------------------------------------------!
@@ -1018,7 +1023,12 @@ module canopy_struct_dynamics
                   ipft  = cpatch%pft(ico)
 
                   !----- Calculate the wind speed at height z. ----------------------------!
-                  initp%veg_wind(ico) = max(ustmin8,uh * exp ( - 5.d-1 * laicum))
+                  select case (icanturb)
+                  case (-2)
+                     initp%veg_wind(ico) = uh
+                  case (-1)
+                     initp%veg_wind(ico) = max(ustmin8,uh * exp ( - 5.d-1 * laicum))
+                  end select
 
 
                   !------------------------------------------------------------------------!

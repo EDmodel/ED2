@@ -958,6 +958,7 @@ subroutine ed_opspec_misc
                                     , ied_init_mode                & ! intent(in)
                                     , integration_scheme           ! ! intent(in)
    use canopy_air_coms       , only : icanturb                     & ! intent(in)
+                                    , i_blyr_condct                & ! intent(in)
                                     , isfclyrm                     ! ! intent(in)
    use soil_coms             , only : isoilflg                     & ! intent(in)
                                     , nslcon                       & ! intent(in)
@@ -974,6 +975,7 @@ subroutine ed_opspec_misc
                                     , maxcohort                    ! ! intent(in)
    use grid_coms             , only : ngrids                       ! ! intent(in)
    use physiology_coms       , only : istoma_scheme                & ! intent(in)
+                                    , h2o_plant_lim                & ! intent(in)
                                     , n_plant_lim                  ! ! intent(in)
    use decomp_coms           , only : n_decomp_lim                 ! ! intent(in)
    use disturb_coms          , only : include_fire                 & ! intent(in)
@@ -1263,6 +1265,14 @@ end do
       ifaterr = ifaterr +1
    end if
 
+   if (h2o_plant_lim < 0 .or. h2o_plant_lim > 2) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid H2O_PLANT_LIM, it must be between 0 and 2. Yours is set to'   &
+                    ,h2o_plant_lim,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+
    if (n_plant_lim < 0 .or. n_plant_lim > 1) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
                     'Invalid N_PLANT_LIM, it must be between 0 and 1. Yours is set to'     &
@@ -1295,32 +1305,22 @@ end do
    end if
 
    select case (icanturb)
-   case (-1)
-      write (unit=*,fmt='(a)') '==========================================================='
-      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
-      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
-      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
-      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
-      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
-      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
-      write (unit=*,fmt='(a)') '==========================================================='
-      write (unit=*,fmt='(a)') '    You have set up the canopy turbulence structure to     '
-      write (unit=*,fmt='(a)') ' -1, which is the old-style ED-2.0.  This is known to have '
-      write (unit=*,fmt='(a)') ' serious issues and it''s currently deprecated.  The only  '
-      write (unit=*,fmt='(a)') ' reason why I''m letting you to run with this option is    '
-      write (unit=*,fmt='(a)') ' because I am a very nice model and I don''t really know   '
-      write (unit=*,fmt='(a)') ' how to say NO!  But don''t expect much from this run, and '
-      write (unit=*,fmt='(a)') ' in case this run crashes, it is going to be all your      '
-      write (unit=*,fmt='(a)') ' fault and I will remind you that!!!                       '
-      write (unit=*,fmt='(a)') '==========================================================='
-   case (0,1,2)
+   case (-2:2)
       continue
    case default
       write (reason,fmt='(a,1x,i4,a)') &
-        'Invalid ICANTURB, it must be between -1 and 2. Yours is set to',icanturb,'...'
+        'Invalid ICANTURB, it must be between -2 and 2. Yours is set to',icanturb,'...'
       call opspec_fatal(reason,'opspec_misc')  
       ifaterr = ifaterr +1
    end select
+
+   if (i_blyr_condct < 0 .or. i_blyr_condct > 2) then
+      write (reason,fmt='(a,1x,i4,a)') &
+            'Invalid I_BLYR_CONDCT, it must be between 0 and 2. Yours is set to'           &
+           ,i_blyr_condct,'...'
+      call opspec_fatal(reason,'opspec_misc')  
+      ifaterr = ifaterr +1
+   end if
 
    if (isfclyrm < 1 .or. isfclyrm > 4) then
       write (reason,fmt='(a,1x,i4,a)') &

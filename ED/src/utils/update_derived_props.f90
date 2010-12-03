@@ -106,7 +106,7 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
    ! LEAF3-based method, and the default is the ED-2.1 method.                             !
    !---------------------------------------------------------------------------------------!
    select case (icanturb)
-   case (-1)
+   case (-2,-1)
       !------------------------------------------------------------------------------------!
       !    Original LEAF-3-based scheme.                                                   !
       !------------------------------------------------------------------------------------!

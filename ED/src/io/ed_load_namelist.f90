@@ -84,6 +84,7 @@ subroutine copy_nl(copy_type)
                                    , maxpatch                  & ! intent(out)
                                    , maxcohort                 ! ! intent(out)
    use physiology_coms      , only : istoma_scheme             & ! intent(out)
+                                   , h2o_plant_lim             & ! intent(out)
                                    , n_plant_lim               ! ! intent(out)
    use phenology_coms       , only : iphen_scheme              & ! intent(out)
                                    , iphenys1                  & ! intent(out)
@@ -167,7 +168,8 @@ subroutine copy_nl(copy_type)
                                    , nzs                       ! ! intent(out)
    use ed_misc_coms         , only : attach_metadata           ! ! intent(out)
    use canopy_air_coms      , only : icanturb                  & ! intent(out)
-                                   , isfclyrm                  ! ! intent(out)
+                                   , isfclyrm                  & ! intent(out)
+                                   , i_blyr_condct             ! ! intent(out)
    use optimiz_coms         , only : ioptinpt                  ! ! intent(out)
    use canopy_radiation_coms, only : crown_mod                 ! ! intent(out)
    use rk4_coms             , only : ibranch_thermo            & ! intent(out)
@@ -272,6 +274,7 @@ subroutine copy_nl(copy_type)
       repro_scheme              = nl%repro_scheme
       lapse_scheme              = nl%lapse_scheme
       crown_mod                 = nl%crown_mod
+      h2o_plant_lim             = nl%h2o_plant_lim
       n_plant_lim               = nl%n_plant_lim
       n_decomp_lim              = nl%n_decomp_lim
       include_fire              = nl%include_fire
@@ -281,6 +284,7 @@ subroutine copy_nl(copy_type)
       LloydTaylor               = nl%decomp_scheme == 1
       
       icanturb                  = nl%icanturb
+      i_blyr_condct             = nl%i_blyr_condct
       isfclyrm                  = nl%isfclyrm
 
       include_these_pft         = nl%include_these_pft

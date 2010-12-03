@@ -440,6 +440,7 @@ subroutine init_can_air_params()
                              , vonk                  ! ! intent(in)
    use pft_coms       , only : hgt_min               ! ! intent(in)
    use canopy_air_coms, only : icanturb              & ! intent(in)
+                             , i_blyr_condct         & ! intent(in)
                              , isfclyrm              & ! intent(in)
                              , dry_veg_lwater        & ! intent(out)
                              , fullveg_lwater        & ! intent(out)
@@ -570,7 +571,7 @@ subroutine init_can_air_params()
    !                        the canopy air space.                                          !
    !---------------------------------------------------------------------------------------!
    select case (icanturb)
-   case (-1)
+   case (-2,-1)
       veg_height_min        = minval(hgt_min) ! used to be 0.2
       minimum_canopy_depth  = minval(hgt_min) ! used to be 0.2
 
@@ -675,10 +676,25 @@ subroutine init_can_air_params()
    ! functional form to expand the Nusselt number by a factor beta:                        !
    ! - beta_forced = R1 + R2 * tanh[log(Re/Re0)]                                           !
    ! - beta_free   = G1 + G2 * tanh[log(Gr/Gr0)]                                           !
+   !     The values of beta change depending on the boundary layer conductance method.     !
+   ! Currently only the forced convection varies, as we believe that the Reynolds number   !
+   ! is the one that influences the most.                                                  ! 
    !---------------------------------------------------------------------------------------!
-   beta_r1  =   7./4.
-   beta_r2  =   3./4.
-   beta_re0 =   2000.
+   select case (i_blyr_condct)
+   case (0)
+      beta_r1  = 1.
+      beta_r2  = 0.
+      beta_re0 = 2000.
+   case (1)
+      beta_r1  =   7./4.
+      beta_r2  =   3./4.
+      beta_re0 =   2000.
+   case (2)
+      beta_r1  =   11./2.
+      beta_r2  =   9. /2.
+      beta_re0 =   2000.
+   end select
+   !---------------------------------------------------------------------------------------!
    beta_g1  =   3./2.
    beta_g2  =  -1./2.
    beta_gr0 = 100000.
@@ -1937,8 +1953,7 @@ subroutine init_physiology_params()
                              , par_twilight_min8 & ! intent(out)
                              , o2_ref8           & ! intent(out)
                              , print_photo_debug & ! intent(out)
-                             , photo_prefix      & ! intent(out)
-                             , new_fsw_method    ! ! intent(out)
+                             , photo_prefix      ! ! intent(out)
    use consts_coms    , only : umol_2_mol        & ! intent(in)
                              , t00               & ! intent(in)
                              , Watts_2_Ein       ! ! intent(in)
@@ -2078,15 +2093,6 @@ subroutine init_physiology_params()
    print_photo_debug = .false.
    !----- File name prefix for the detailed information in case of debugging. -------------!
    photo_prefix      = 'photo_state_'
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !     Parameters that define which equation to determine the FSW, the original          !
-   ! (.false.) or the new (.true.).                                                        !
-   !---------------------------------------------------------------------------------------!
-   new_fsw_method = .true.
    !---------------------------------------------------------------------------------------!
 
    return
