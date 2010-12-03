@@ -112,6 +112,7 @@ subroutine masterput_ednl(mainnum)
                                    , ibranch_thermo             ! ! intent(in)
    use canopy_air_coms      , only : icanturb                   & ! intent(in)
                                    , isfclyrm                   ! ! intent(in)
+   use mem_edcp             , only : co2_offset                 ! ! intent(in)
    implicit none
    include 'mpif.h'
    !----- Arguments. ----------------------------------------------------------------------!
@@ -255,6 +256,8 @@ subroutine masterput_ednl(mainnum)
    call MPI_Bcast(stgoff,nzgmax,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(zrough,nzgmax,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
   
+
+   call MPI_Bcast(co2_offset,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
   
    return
 end subroutine masterput_ednl
@@ -378,7 +381,7 @@ subroutine nodeget_ednl(master_num)
                                    , ibranch_thermo             ! ! intent(out)
    use canopy_air_coms      , only : icanturb                   & ! intent(out)
                                    , isfclyrm                   ! ! intent(out)
-
+   use mem_edcp             , only : co2_offset                 ! ! intent(out)
 
    implicit none
    include 'mpif.h'
@@ -524,6 +527,8 @@ subroutine nodeget_ednl(master_num)
    call MPI_Bcast(slmstr,nzgmax,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(stgoff,nzgmax,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(zrough,nzgmax,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+  
+   call MPI_Bcast(co2_offset,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
   
    return
 end subroutine nodeget_ednl

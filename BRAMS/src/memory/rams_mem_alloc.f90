@@ -154,8 +154,11 @@ subroutine rams_mem_alloc(proc_type)
    call define_grid_dim_pointer(proc_type,ngrids,maxgrds,nnzp,nnxp,nnyp,mmzp,mmxp,mmyp)
 
    !----- If we are doing time-averaging for output, set flag... --------------------------!
-   imean=0
-   if (avgtim /= 0.) imean=1
+   if (avgtim /= 0.) then
+      imean = 1
+   else
+      imean = 0
+   end if
 
    !----- Allocate universal variable tables. ---------------------------------------------!
    allocate (num_var(maxgrds))
@@ -374,6 +377,14 @@ subroutine rams_mem_alloc(proc_type)
    if (any(idiffk(1:ngrids) == 1) .or. any(idiffk(1:ngrids) == 7) .or.                     &
        any(idiffk(1:ngrids) == 8)) then
       call assign_turb_params()
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
+   !---- Allocate ED variables data type. These never need "mean" type. -------------------!
+   if (isfcl == 5) then
+      write (unit=*,fmt=*) ' [+] ED-2 aux structures allocation on node ',mynum,'...'
+      call alloc_edcp_driver(ngrids,nmxp(1:ngrids),nmyp(1:ngrids))
    end if
    !---------------------------------------------------------------------------------------!
 

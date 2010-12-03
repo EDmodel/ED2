@@ -6,10 +6,6 @@ subroutine ed_coup_driver()
    use grid_coms     , only : ngrids              & ! intent(in)
                             , time                & ! intent(in)
                             , timmax              ! ! intent(in)
-   use mem_edcp      , only : wgrid_g             & ! intent(inout)
-                            , ed_fluxp_g          & ! intent(inout)
-                            , ed_fluxf_g          & ! intent(inout)
-                            , ed_precip_g         ! ! intent(inout)
    use ed_state_vars , only : allocate_edglobals  & ! subroutine
                             , filltab_alltypes    & ! subroutine
                             , edgrid_g            ! ! subroutine
@@ -142,11 +138,7 @@ subroutine ed_coup_driver()
    !---------------------------------------------------------------------------------------!
    ! STEP 9: Initialize the flux arrays that pass to the atmosphere.                       !
    !---------------------------------------------------------------------------------------!
-   if (mynum == 1) write (unit=*,fmt='(a)') ' [+] Allocating Transfer Arrays...'
-   allocate(wgrid_g(ngrids))
-   allocate(ed_fluxp_g(ngrids))
-   allocate(ed_fluxf_g(ngrids))
-   allocate(ed_precip_g(ngrids))
+   if (mynum == 1) write (unit=*,fmt='(a)') ' [+] Initialise flux arrays...'
    do ifm=1,ngrids
       call newgrid(ifm)
       call initialize_ed2leaf(ifm)
@@ -236,6 +228,7 @@ subroutine ed_coup_driver()
    !---------------------------------------------------------------------------------------!
    ! STEP 18:  Output initial state.                                                       !
    !---------------------------------------------------------------------------------------!
+   if (ioutput  > 0) call h5_output('HIST')
    if (ioutput  > 0) call h5_output('INST')
    if (iyoutput > 0) call h5_output('YEAR')
 
@@ -424,5 +417,81 @@ subroutine set_polygon_coordinates_edcp()
 
    return
 end subroutine set_polygon_coordinates_edcp
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This sub-routine allocates and initialises the coupled ED-BRAMS structures.  This is !
+! now called from "rams_mem_alloc" sub-routine, because we will load a few variables from  !
+! the history file in case this is a history run.                                          !
+!------------------------------------------------------------------------------------------!
+subroutine alloc_edcp_driver(ngrds,nmxp,nmyp)
+   use mem_edcp     , only : ed_fluxf_g        & ! intent(inout)
+                           , ed_fluxp_g        & ! intent(inout)
+                           , wgrid_g           & ! intent(inout)
+                           , ed_precip_g       & ! intent(inout)
+                           , ed_precipm_g      & ! intent(inout)
+                           , alloc_edprecip    & ! sub-routine
+                           , zero_edprecip     & ! sub-routine
+                           , filltab_ed_precip & ! sub-routine
+                           , alloc_edflux      & ! sub-routine
+                           , zero_edflux       ! ! sub-routine
+
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                  , intent(in) :: ngrds
+   integer, dimension(ngrds), intent(in) :: nmxp
+   integer, dimension(ngrds), intent(in) :: nmyp
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                               :: ng
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Allocate the actual structures. -------------------------------------------------!
+   allocate(wgrid_g     (ngrds))
+   allocate(ed_fluxp_g  (ngrds))
+   allocate(ed_fluxf_g  (ngrds))
+   allocate(ed_precip_g (ngrds))
+   allocate(ed_precipm_g(ngrds))
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Allocate the flux arrays from terrestrial and water bodies.  These arrays are    !
+   ! the same size as the leaf arrays.                                                     !
+   !---------------------------------------------------------------------------------------!
+   do ng = 1, ngrds
+      call alloc_edflux  (ed_fluxf_g  (ng), nmxp(ng), nmyp(ng))
+      call alloc_edflux  (ed_fluxp_g  (ng), nmxp(ng), nmyp(ng))
+      call alloc_edflux  (wgrid_g     (ng), nmxp(ng), nmyp(ng))
+      call alloc_edprecip(ed_precip_g (ng), nmxp(ng), nmyp(ng))
+      call alloc_edprecip(ed_precipm_g(ng),        1,        1)
+      !----- Assign zeroes to the newly allocated matrices. -------------------------------!
+      call zero_edflux  (ed_fluxf_g  (ng))
+      call zero_edflux  (ed_fluxp_g  (ng))
+      call zero_edflux  (wgrid_g     (ng))
+      call zero_edprecip(ed_precip_g (ng))
+      call zero_edprecip(ed_precipm_g(ng))
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !      Fill the variable tables, and do not bother making average arrays.  We don't  !
+      ! need it.                                                                           !
+      !------------------------------------------------------------------------------------!
+      call filltab_ed_precip(ed_precip_g(ng),ed_precipm_g(ng),0,nmxp(ng),nmyp(ng),ng)
+      !------------------------------------------------------------------------------------!
+   end do
+   !---------------------------------------------------------------------------------------!
+
+   return
+end subroutine alloc_edcp_driver
 !==========================================================================================!
 !==========================================================================================!

@@ -98,6 +98,8 @@ subroutine read_ednl(iunit)
    use rk4_coms             , only : rk4_tolerance             & ! intent(out)
                                    , ibranch_thermo            ! ! intent(out)
    use canopy_radiation_coms, only : crown_mod                 ! ! intent(out)
+   !----- Coupled ED-BRAMS modules. -------------------------------------------------------!
+   use mem_edcp             , only : co2_offset                ! ! intent(out)
    !----- BRAMS modules. ------------------------------------------------------------------!
    use mem_grid             , only : expnme                    & ! intent(in)
                                    , runtype                   & ! intent(in)
@@ -150,9 +152,9 @@ subroutine read_ednl(iunit)
    logical             :: fexists
    logical             :: op
    !----- Namelist. -----------------------------------------------------------------------!
-   namelist /ED2_INFO/  dtlsm,ifoutput,idoutput,imoutput,iyoutput,itoutput,isoutput        &
-                       ,attach_metadata,outfast,outstate,ffilout,sfilout,ied_init_mode     &
-                       ,edres,sfilin,veg_database,soil_database,lu_database                &
+   namelist /ED2_INFO/  dtlsm,co2_offset,ifoutput,idoutput,imoutput,iyoutput,itoutput      &
+                       ,isoutput,attach_metadata,outfast,outstate,ffilout,sfilout          &
+                       ,ied_init_mode,edres,sfilin,veg_database,soil_database,lu_database  &
                        ,plantation_file,lu_rescale_file,thsums_database,soilstate_db       &
                        ,soildepth_db,isoilstateinit,isoildepthflg,isoilbc                  &
                        ,integration_scheme,rk4_tolerance,ibranch_thermo,istoma_scheme      &
@@ -179,6 +181,7 @@ subroutine read_ednl(iunit)
       write (unit=*,fmt='(a)') '**(ERROR)** reading section ED2_INFO of namelist file. '
       write (unit=*,fmt='(a)') ' Compare values read with file contents:' 
       write (unit=*,fmt=*) 'dtlsm=',dtlsm
+      write (unit=*,fmt=*) 'co2_offset=',co2_offset
       write (unit=*,fmt=*) 'ifoutput=',ifoutput
       write (unit=*,fmt=*) 'idoutput=',idoutput
       write (unit=*,fmt=*) 'imoutput=',imoutput

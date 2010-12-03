@@ -743,6 +743,15 @@
                       ! avoid problems...
  
 !-------------------------------------------------------------------------!
+! CO2 offset.  This is for the case in which plants were grown using a    !
+!    different CO2 concentration and BRAMS, and you don't want the plants !
+!    to be shocked by the sudden change in CO2.  Otherwise, just make     !
+!    this number zero. (positive values will make CO2 higher for plants,  !
+!    and negative number will make it lower.                              !
+!-------------------------------------------------------------------------!
+   CO2_OFFSET = 0.,
+
+!-------------------------------------------------------------------------!
 ! ED2 File output                                                         !
 !-------------------------------------------------------------------------!
  

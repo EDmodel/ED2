@@ -80,10 +80,10 @@ edcp_init.o: node_mod.mod rpara.mod soil_coms.mod
 edcp_load_namelist.o: canopy_air_coms.mod canopy_radiation_coms.mod
 edcp_load_namelist.o: decomp_coms.mod disturb_coms.mod ed_max_dims.mod
 edcp_load_namelist.o: ed_misc_coms.mod grid_coms.mod grid_dims.mod io_params.mod
-edcp_load_namelist.o: mem_grid.mod mem_leaf.mod mem_polygons.mod mem_radiate.mod
-edcp_load_namelist.o: met_driver_coms.mod optimiz_coms.mod pft_coms.mod
-edcp_load_namelist.o: phenology_coms.mod physiology_coms.mod rk4_coms.mod
-edcp_load_namelist.o: soil_coms.mod
+edcp_load_namelist.o: mem_edcp.mod mem_grid.mod mem_leaf.mod mem_polygons.mod
+edcp_load_namelist.o: mem_radiate.mod met_driver_coms.mod optimiz_coms.mod
+edcp_load_namelist.o: pft_coms.mod phenology_coms.mod physiology_coms.mod
+edcp_load_namelist.o: rk4_coms.mod soil_coms.mod
 edcp_met.o: ed_max_dims.mod ed_misc_coms.mod ed_node_coms.mod ed_state_vars.mod
 edcp_met.o: leaf_coms.mod mem_basic.mod mem_cuparm.mod mem_edcp.mod mem_grid.mod
 edcp_met.o: mem_leaf.mod mem_micro.mod mem_radiate.mod mem_turb.mod
@@ -99,9 +99,9 @@ edcp_model.o: growth_balive.mod io_params.mod mem_edcp.mod mem_grid.mod
 edcp_model.o: mem_polygons.mod rk4_coms.mod rk4_driver.mod
 edcp_mpiutils.o: canopy_air_coms.mod canopy_radiation_coms.mod decomp_coms.mod
 edcp_mpiutils.o: disturb_coms.mod ed_max_dims.mod ed_misc_coms.mod grid_coms.mod
-edcp_mpiutils.o: mem_polygons.mod met_driver_coms.mod optimiz_coms.mod
-edcp_mpiutils.o: pft_coms.mod phenology_coms.mod physiology_coms.mod
-edcp_mpiutils.o: rk4_coms.mod soil_coms.mod
+edcp_mpiutils.o: mem_edcp.mod mem_polygons.mod met_driver_coms.mod
+edcp_mpiutils.o: optimiz_coms.mod pft_coms.mod phenology_coms.mod
+edcp_mpiutils.o: physiology_coms.mod rk4_coms.mod soil_coms.mod
 edcp_para_init.o: ed_node_coms.mod ed_work_vars.mod io_params.mod mem_grid.mod
 edcp_para_init.o: mem_leaf.mod mem_polygons.mod node_mod.mod soil_coms.mod
 edcp_water.o: canopy_air_coms.mod canopy_struct_dynamics.mod consts_coms.mod
@@ -109,6 +109,7 @@ edcp_water.o: io_params.mod leaf_coms.mod mem_basic.mod mem_cuparm.mod
 edcp_water.o: mem_edcp.mod mem_grid.mod mem_leaf.mod mem_micro.mod
 edcp_water.o: mem_radiate.mod met_driver_coms.mod node_mod.mod rk4_coms.mod
 edcp_water.o: therm_lib.mod
+mem_edcp.o: var_tables.mod
 cond_read.o: mem_grid.mod mem_varinit.mod
 cond_update.o: an_header.mod grid_struct.mod mem_basic.mod mem_grid.mod
 cond_update.o: mem_varinit.mod rconstants.mod var_tables.mod
