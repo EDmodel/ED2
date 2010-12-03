@@ -175,6 +175,7 @@ subroutine ed_model()
    
    
    if (ifoutput /= 0) call h5_output('INST')
+   if (isoutput /= 0) call h5_output('HIST')
    if (writing_year ) call h5_output('YEAR')
 
    !         Start the timesteps
