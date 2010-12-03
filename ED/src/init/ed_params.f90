@@ -779,9 +779,9 @@ subroutine init_pft_photo_params()
    implicit none
 
    !----- Local variables. ----------------------------------------------------------------!
-   logical, parameter  :: vm0_16    = .true.
-   logical, parameter  :: stsl_3ted = .true.
-   logical, parameter  :: lwidth_10 = .true.
+   logical, parameter  :: vm0_16    = .false.
+   logical, parameter  :: stsl_3ted = .false.
+   logical, parameter  :: lwidth_10 = .false.
    !---------------------------------------------------------------------------------------!
 
    D0(1:15)                  = 0.01      ! same for all PFTs
