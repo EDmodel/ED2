@@ -99,3 +99,4 @@ rm -fv twostream_rad.o            twostream_rad.mod
 rm -fv update_derived_props.o     update_derived_props.mod
 rm -fv utils_c.o                  utils_c.mod 
 rm -fv utils_f.o                  utils_f.mod 
+rm -fv vegetation_dynamics.o      vegetation_dynamics.mod

@@ -1978,6 +1978,7 @@ module canopy_struct_dynamics
                                 , csm      & ! intent(in)
                                 , csh      & ! intent(in)
                                 , dl79     & ! intent(in)
+                                , ustmin   & ! intent(in)
                                 , psim     ! ! function
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
@@ -2058,6 +2059,13 @@ module canopy_struct_dynamics
       end select
       !------------------------------------------------------------------------------------!
 
+
+
+      !----- Impose the minimum wind to be more than 0.1 m/s. -----------------------------!
+      reduced_wind = max(reduced_wind, ustmin)
+      !------------------------------------------------------------------------------------!
+
+
       return
    end function reduced_wind
    !=======================================================================================!
@@ -2080,6 +2088,7 @@ module canopy_struct_dynamics
                                 , csm8      & ! intent(in)
                                 , csh8      & ! intent(in)
                                 , dl798     & ! intent(in)
+                                , ustmin8   & ! intent(in)
                                 , psim8     ! ! function
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
@@ -2159,6 +2168,12 @@ module canopy_struct_dynamics
                        * (lnhoz0 - psim8(zetah,stable) + psim8(zeta0,stable))
 
       end select
+      !------------------------------------------------------------------------------------!
+
+
+
+      !----- Impose the minimum wind to be more than 0.1 m/s. -----------------------------!
+      reduced_wind8 = max(reduced_wind8,ustmin8)
       !------------------------------------------------------------------------------------!
 
       return

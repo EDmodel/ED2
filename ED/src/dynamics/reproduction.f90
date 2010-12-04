@@ -345,6 +345,9 @@ subroutine reproduction(cgrid, month)
                call split_cohorts(cpatch, cpoly%green_leaf_factor(:,isi),cpoly%lsl(isi))
             end if
 
+            !----- Sort the cohorts by height. --------------------------------------------!
+            call sort_cohorts(cpatch)
+
             !----- Update the number of cohorts (this is redundant...). -------------------!
             csite%cohort_count(ipa) = cpatch%ncohorts
 

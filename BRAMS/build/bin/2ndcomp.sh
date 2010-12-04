@@ -342,3 +342,4 @@ rm -fv soil_respiration.o         soil_respiration.mod
 rm -fv structural_growth.o        structural_growth.mod
 rm -fv twostream_rad.o            twostream_rad.mod
 rm -fv update_derived_props.o     update_derived_props.mod
+rm -fv vegetation_dynamics.o      vegetation_dynamics.mod
