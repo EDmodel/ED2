@@ -128,6 +128,7 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
       select case (ied_init_mode)
       case (-1) !------ True bare ground simulation (absolute desert). --------------------!
          mypfts = 0
+         return
       case ( 0) !------ Nearly bare ground simulation (start with a few seedlings). -------!
 
          !---------------------------------------------------------------------------------!

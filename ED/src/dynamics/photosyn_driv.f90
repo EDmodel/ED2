@@ -287,6 +287,9 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ed_ktrans,lsl               
                                / max( 1.0e-20                                              &
                                     , cpatch%water_supply(ico) + cpatch%psi_open(ico))
             end if
+            ! cpatch%fsw(ico) = 1.0
+            !------------------------------------------------------------------------------!
+
 
 
             !------------------------------------------------------------------------------!
@@ -444,9 +447,11 @@ subroutine print_photo_details(cmet,csite,ipa,ico,limit_flag,vm,compp)
    real                      , intent(in)  :: vm              ! Maximum Rubisco capacity
    real                      , intent(in)  :: compp           ! GPP compensation point
    !----- Local variables. ----------------------------------------------------------------!
+   type(patchtype)           , pointer     :: jpatch          ! Current site
    type(patchtype)           , pointer     :: cpatch          ! Current site
    character(len=str_len)                  :: photo_fout      ! File with the cohort info
    integer                                 :: ipft
+   integer                                 :: jpa
    integer                                 :: jco
    logical                                 :: isthere
    real                                    :: leaf_resp
@@ -455,8 +460,8 @@ subroutine print_photo_details(cmet,csite,ipa,ico,limit_flag,vm,compp)
    real                                    :: parv
    real                                    :: util_parv
    !----- Local constants. ----------------------------------------------------------------!
-   character(len=10), parameter :: hfmt='(54(a,1x))'
-   character(len=48), parameter :: bfmt='(3(i13,1x),1(es13.6,1x),2(i13,1x),48(es13.6,1x))'
+   character(len=10), parameter :: hfmt='(55(a,1x))'
+   character(len=48), parameter :: bfmt='(3(i13,1x),1(es13.6,1x),2(i13,1x),49(es13.6,1x))'
    !----- Locally saved variables. --------------------------------------------------------!
    logical                   , save        :: first_time=.true.
    !---------------------------------------------------------------------------------------!
@@ -474,6 +479,7 @@ subroutine print_photo_details(cmet,csite,ipa,ico,limit_flag,vm,compp)
       parv       = par_area / cpatch%lai(ico)
       util_parv  = quantum_efficiency(ipft) * parv
    else
+      par_area  = 0.0
       parv      = 0.0
       util_parv = 0.0
    end if
@@ -482,14 +488,18 @@ subroutine print_photo_details(cmet,csite,ipa,ico,limit_flag,vm,compp)
    !     First time here.  Delete all files.                                               !
    !---------------------------------------------------------------------------------------!
    if (first_time) then
-      do jco = 1, cpatch%ncohorts
-         write (photo_fout,fmt='(a,i4.4,a)') trim(photo_prefix),jco,'.txt'
-         inquire(file=trim(photo_fout),exist=isthere)
-         if (isthere) then
-            !---- Open the file to delete when closing. -----------------------------------!
-            open (unit=57,file=trim(photo_fout),status='old',action='write')
-            close(unit=57,status='delete')
-         end if
+      do jpa = 1, csite%npatches
+         jpatch => csite%patch(jpa)
+         do jco = 1, jpatch%ncohorts
+            write (photo_fout,fmt='(a,2(a,i4.4),a)')                                       &
+                  trim(photo_prefix),'patch_',jpa,'_cohort_',jco,'.txt'
+            inquire(file=trim(photo_fout),exist=isthere)
+            if (isthere) then
+               !---- Open the file to delete when closing. --------------------------------!
+               open (unit=57,file=trim(photo_fout),status='old',action='write')
+               close(unit=57,status='delete')
+            end if
+         end do
       end do
       first_time = .false.
    end if
@@ -499,7 +509,8 @@ subroutine print_photo_details(cmet,csite,ipa,ico,limit_flag,vm,compp)
 
 
    !----- Create the file name. -----------------------------------------------------------!
-   write (photo_fout,fmt='(a,i4.4,a)') trim(photo_prefix),ico,'.txt'
+   write (photo_fout,fmt='(a,2(a,i4.4),a)') trim(photo_prefix),'patch_',ipa                &
+                                                              ,'_cohort_',ico,'.txt'
    !---------------------------------------------------------------------------------------!
 
 
@@ -528,7 +539,8 @@ subroutine print_photo_details(cmet,csite,ipa,ico,limit_flag,vm,compp)
                                , '       A_CLOS', '     GSW_OPEN', '     GSW_CLOS'         &
                                , '     PSI_OPEN', '     PSI_CLOS', '   H2O_SUPPLY'         &
                                , '          FSW', '          FSN', '      FS_OPEN'         &
-                               , '     ATM_WIND', '     VEG_WIND', '           VM'
+                               , '     ATM_WIND', '     VEG_WIND', '        USTAR'         &
+                               , '           VM'
                               
       close (unit=57,status='keep')
    end if
@@ -558,7 +570,8 @@ subroutine print_photo_details(cmet,csite,ipa,ico,limit_flag,vm,compp)
    , cpatch%A_closed(ico)       , cpatch%gsw_open(ico)       , cpatch%gsw_closed(ico)      &
    , cpatch%psi_open(ico)       , cpatch%psi_closed(ico)     , cpatch%water_supply(ico)    &
    , cpatch%fsw(ico)            , cpatch%fsn(ico)            , cpatch%fs_open(ico)         &
-   , cmet%vels                  , cpatch%veg_wind(ico)       , vm
+   , cmet%vels                  , cpatch%veg_wind(ico)       , csite%ustar(ipa)            &
+   , vm
    
 
    close(unit=57,status='keep')

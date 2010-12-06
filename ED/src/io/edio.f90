@@ -186,9 +186,32 @@ subroutine avg_ed_daily_output_pool()
    gridloop: do igr=1,ngrids
       cgrid => edgrid_g(igr)
 
+      !------------------------------------------------------------------------------------!
+      !   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! !
+      !------------------------------------------------------------------------------------!
+      !     Please, don't initialise polygon-level (cgrid) variables outside polyloop.     !
+      ! This works in off-line runs, but it causes memory leaks (and crashes) in the       !
+      ! coupled runs over the ocean, where cgrid%npolygons can be 0 if one of the sub-     !
+      ! domains falls entirely over the ocean.  Thanks!                                    !
+      !------------------------------------------------------------------------------------!
+      ! cgrid%blah = 0. !<<--- This is a bad way of doing, look inside the loop for the
+      !                 !      safe way of initialising the variable.
+      !------------------------------------------------------------------------------------!
       polygonloop: do ipy=1,cgrid%npolygons
          cpoly => cgrid%polygon(ipy)
-         
+
+         !---------------------------------------------------------------------------------!
+         !     This is the right and safe place to initialise polygon-level (cgrid) vari-  !
+         ! ables, so in case npolygons is zero this will not cause memory leaks.  I know,  !
+         ! this never happens in off-line runs, but it is quite common in coupled runs...  !
+         ! Whenever one of the nodes receives a sub-domain where all the points are over   !
+         ! the ocean, ED will not assign any polygon in that sub-domain, which means that  !
+         ! that node will have 0 polygons, and the variables cannot be allocated.  If you  !
+         ! try to access the polygon level variable outside the loop, then the model       !
+         ! crashes due to segmentation violation (a bad thing), whereas by putting the     !
+         ! variables here both the off-line model and the coupled runs will work, because  !
+         ! this loop will be skipped when there is no polygon.                             !
+         !---------------------------------------------------------------------------------!
          !----- Zero variables. -----------------------------------------------------------!
          cgrid%Cleaf (ipy)  = 0.0
          cgrid%Croot (ipy)  = 0.0
@@ -210,7 +233,8 @@ subroutine avg_ed_daily_output_pool()
                !---------------------------------------------------------------------------!
                !     Here we must include a loop through all cohorts, because this may be  !
                ! an empty patch and vector operations cannot be done if the patchtype      !
-               ! structure is not allocated.                                               !
+               ! structure is not allocated.  This actually happens in both off-line and   !
+               ! coupled runs, especially over deserts...                                  !
                !---------------------------------------------------------------------------!
                cohortloop: do ico = 1,cpatch%ncohorts
                   ipft = cpatch%pft(ico)
@@ -319,10 +343,15 @@ subroutine spatial_averages
       cgrid => edgrid_g(igr)
 
       !------------------------------------------------------------------------------------!
-      !    WARNING! cgrid variables should never be initialized outside the                !
-      !             "do ipy=1,cgrid%npolygons" loop. npolygons is often 0 for some nodes   !
-      !             on coupled runs (sudomains entirely over ocean), and initializing here !
-      !             will cause either a crash or even worse, a memory leak.                !
+      !   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! !
+      !------------------------------------------------------------------------------------!
+      !     Please, don't initialise polygon-level (cgrid) variables outside polyloop.     !
+      ! This works in off-line runs, but it causes memory leaks (and crashes) in the       !
+      ! coupled runs over the ocean, where cgrid%npolygons can be 0 if one of the sub-     !
+      ! domains falls entirely over the ocean.  Thanks!                                    !
+      !------------------------------------------------------------------------------------!
+      ! cgrid%blah = 0. !<<--- This is a bad way of doing, look inside the loop for the
+      !                 !      safe way of initialising the variable.
       !------------------------------------------------------------------------------------!
       polyloop: do ipy=1,cgrid%npolygons
          cpoly => cgrid%polygon(ipy)
@@ -333,7 +362,16 @@ subroutine spatial_averages
          poly_avg_soil_hcap = 0.0
 
          !---------------------------------------------------------------------------------!
-         !    Here is the safe place to initialize cgrid-level variables.                  !
+         !     This is the right and safe place to initialise polygon-level (cgrid) vari-  !
+         ! ables, so in case npolygons is zero this will not cause memory leaks.  I know,  !
+         ! this never happens in off-line runs, but it is quite common in coupled runs...  !
+         ! Whenever one of the nodes receives a sub-domain where all the points are over   !
+         ! the ocean, ED will not assign any polygon in that sub-domain, which means that  !
+         ! that node will have 0 polygons, and the variables cannot be allocated.  If you  !
+         ! try to access the polygon level variable outside the loop, then the model       !
+         ! crashes due to segmentation violation (a bad thing), whereas by putting the     !
+         ! variables here both the off-line model and the coupled runs will work, because  !
+         ! this loop will be skipped when there is no polygon.                             !
          !---------------------------------------------------------------------------------!
          cgrid%avg_lai_ebalvars(:,:,ipy) = 0.0
          cgrid%avg_balive          (ipy) = 0.0

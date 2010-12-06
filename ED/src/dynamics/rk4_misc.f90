@@ -460,6 +460,10 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
                                     , rk4min_veg_lwater     & ! intent(in)
                                     , rk4min_veg_temp       & ! intent(in)
                                     , rk4max_veg_temp       & ! intent(in)
+                                    , rk4min_soil_temp      & ! intent(in)
+                                    , rk4max_soil_temp      & ! intent(in)
+                                    , rk4min_sfcw_temp      & ! intent(in)
+                                    , rk4max_sfcw_temp      & ! intent(in)
                                     , rk4water_stab_thresh  & ! intent(in)
                                     , tiny_offset           & ! intent(in)
                                     , force_idealgas        & ! intent(in)
@@ -507,6 +511,7 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
    integer                          :: kclosest
    logical                          :: ok_shv
    logical                          :: ok_theta
+   logical                          :: ok_ground
    real(kind=8)                     :: soilhcap
    real(kind=8)                     :: int_sfcw_energy
    real(kind=8)                     :: int_virt_energy
@@ -702,11 +707,22 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
    !     Compute the ground temperature and specific humidity.                             !
    !---------------------------------------------------------------------------------------!
    k = max(1,ksn)
-   call ed_grndvap8(ksn,csite%ntext_soil(nzg,ipa),initp%soil_water(nzg)                    &
-                   ,initp%soil_tempk(nzg),initp%soil_fracliq(nzg),initp%sfcwater_tempk(k)  &
-                   ,initp%sfcwater_fracliq(k),initp%can_prss,initp%can_shv                 &
-                   ,initp%ground_shv,initp%ground_ssh,initp%ground_temp                    &
-                   ,initp%ground_fliq)
+   if (ksn == 0) then
+      k = 1
+      ok_ground = initp%soil_tempk(nzg) >= rk4min_soil_temp .and.                          &
+                  initp%soil_tempk(nzg) <= rk4max_soil_temp
+   else
+      k = ksn
+      ok_ground = initp%sfcwater_tempk(ksn) >= rk4min_sfcw_temp .and.                      &
+                  initp%sfcwater_tempk(ksn) <= rk4max_sfcw_temp
+   end if
+   if (ok_ground) then
+      call ed_grndvap8(ksn,csite%ntext_soil(nzg,ipa),initp%soil_water(nzg)                 &
+                      ,initp%soil_tempk(nzg),initp%soil_fracliq(nzg)                       &
+                      ,initp%sfcwater_tempk(k),initp%sfcwater_fracliq(k),initp%can_prss    &
+                      ,initp%can_shv,initp%ground_shv,initp%ground_ssh,initp%ground_temp   &
+                      ,initp%ground_fliq)
+   end if
    !---------------------------------------------------------------------------------------!
 
 
@@ -2731,7 +2747,7 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
    !---------------------------------------------------------------------------------------!
    if (first_time) then
       do jpa = 1, csite%npatches
-         write (detail_fout,fmt='(a,i4.4,a)') trim(detail_pref),jpa,'.txt'
+         write (detail_fout,fmt='(2a,i4.4,a)') trim(detail_pref),'patch_',jpa,'.txt'
          inquire(file=trim(detail_fout),exist=isthere)
          if (isthere) then
             !---- Open the file to delete when closing. -----------------------------------!
@@ -2801,7 +2817,7 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
 
 
    !----- Create the file name. -----------------------------------------------------------!
-   write (detail_fout,fmt='(a,i4.4,a)') trim(detail_pref),ipa,'.txt'
+   write (detail_fout,fmt='(2a,i4.4,a)') trim(detail_pref),'patch_',ipa,'.txt'
    !---------------------------------------------------------------------------------------!
 
 
