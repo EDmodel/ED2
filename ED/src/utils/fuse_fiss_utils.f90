@@ -29,28 +29,28 @@ module fuse_fiss_utils
       !----- No need to sort an empty patch or a patch with a single cohort. --------------!
       if (cpatch%ncohorts < 2) return
 
-      !----- Assigning a scratch patch ----------------------------------------------------!
+      !----- Assign a scratch patch. ------------------------------------------------------!
       nullify(temppatch)
       allocate(temppatch)
       call allocate_patchtype(temppatch,cpatch%ncohorts)
       
-      iico = 1
-      !---- Loop until all cohorts were sorted --------------------------------------------!
-      do while(iico <= cpatch%ncohorts)
+      iico = 0
+      !---- Loop until all cohorts were sorted. -------------------------------------------!
+      do while(iico < cpatch%ncohorts)
+         iico = iico + 1
       
-         !----- Finding the tallest cohort ------------------------------------------------!
+         !----- Find the tallest cohort. --------------------------------------------------!
          tallid = maxloc(cpatch%hite,dim=1)
          
-         !----- Copying to the scratch structure ------------------------------------------!
+         !----- Copy to the scratch structure. --------------------------------------------!
          call copy_patchtype(cpatch,temppatch,tallid,tallid,iico,iico)
          
-         !----- Putting a non-sense height so this will never "win" again. ----------------!
+         !----- Put a non-sense height so this will never "win" again. --------------------!
          cpatch%hite(tallid) = -huge(1.)
 
-         iico = iico + 1
       end do
 
-      !------ Copying the scratch patch to the regular one and deallocating it ------------!
+      !------ Copy the scratch patch to the regular one and deallocate it. ----------------!
       call copy_patchtype(temppatch,cpatch,1,cpatch%ncohorts,1,cpatch%ncohorts)
       call deallocate_patchtype(temppatch)
       deallocate(temppatch)
@@ -151,6 +151,7 @@ module fuse_fiss_utils
       call deallocate_patchtype(cpatch)
       call allocate_patchtype(cpatch,count(remain_table))
       call copy_patchtype(temppatch,cpatch,1,cpatch%ncohorts,1,cpatch%ncohorts)
+      call sort_cohorts(cpatch)
      
       !----- Deallocate the temporary patch -----------------------------------------------!     
       call deallocate_patchtype(temppatch)
