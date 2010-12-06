@@ -791,7 +791,7 @@ subroutine heun_stepper(x,h,csite,ipa,reject_step,reject_result)
    !---------------------------------------------------------------------------------------!
    !       Estimate the derivative of canopy pressure.                                     !
    !---------------------------------------------------------------------------------------!
-   dpdt          = (integration_buff%ak7%can_prss - integration_buff%y%can_prss) / combh
+   dpdt          = (integration_buff%ak3%can_prss - integration_buff%y%can_prss) / combh
    integration_buff%dydx%can_prss = dpdt * heun_b21
    !---------------------------------------------------------------------------------------!
 
@@ -852,7 +852,7 @@ subroutine heun_stepper(x,h,csite,ipa,reject_step,reject_result)
    !---------------------------------------------------------------------------------------!
    !       Estimate the derivative of canopy pressure.                                     !
    !---------------------------------------------------------------------------------------!
-   dpdt          = (integration_buff%ak7%can_prss - integration_buff%y%can_prss) / combh
+   dpdt          = (integration_buff%ak3%can_prss - integration_buff%y%can_prss) / combh
    integration_buff%dydx%can_prss = integration_buff%dydx%can_prss + dpdt * heun_c1
    integration_buff%ak2%can_prss  =                                  dpdt * heun_c2
    !---------------------------------------------------------------------------------------!

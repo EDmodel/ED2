@@ -347,5 +347,6 @@ OBJ_MODEL =                         \
 	stable_cohorts.o            \
 	structural_growth.o         \
 	twostream_rad.o             \
-	update_derived_props.o
+	update_derived_props.o      \
+	vegetation_dynamics.o
 

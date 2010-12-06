@@ -44,6 +44,8 @@ subroutine copy_atm2lsm(ifm,init)
                                    , wdnsi         & ! intent(in)
                                    , tsupercool    ! ! intent(in)
    use ed_node_coms         , only : mynum         ! ! intent(in)
+   use mem_edcp             , only : co2_offset    & ! intent(in)
+                                   , atm_co2_min   ! ! intent(in)
    use therm_lib            , only : thetaeiv      & ! intent(in)
                                    , rehuil        & ! intent(in)
                                    , ptrh2rvapil   ! ! intent(in)
@@ -308,7 +310,7 @@ subroutine copy_atm2lsm(ifm,init)
       
       cgrid%met(ipy)%atm_theta    = theta_mean(ix,iy)
       cgrid%met(ipy)%atm_tmp      = cpi * cgrid%met(ipy)%atm_theta * cgrid%met(ipy)%exner
-      cgrid%met(ipy)%atm_co2      = co2p_mean(ix,iy)
+      cgrid%met(ipy)%atm_co2      = max(atm_co2_min,co2p_mean(ix,iy) + co2_offset)
 
 
       !------------------------------------------------------------------------------------!
@@ -896,13 +898,7 @@ subroutine initialize_ed2leaf(ifm)
    use mem_edcp     , only : ed_fluxf_g     & ! structure
                            , ed_fluxp_g     & ! structure
                            , wgrid_g        & ! structure
-                           , ed_precip_g    & ! structure
-                           , alloc_edprecip & ! structure
-                           , zero_edprecip  & ! structure
-                           , alloc_edflux   & ! structure
-                           , zero_edflux    & ! structure
-                           , alloc_wgrid    & ! structure
-                           , zero_wgrid     ! ! structure
+                           , ed_precip_g    ! ! structure
    use node_mod     , only : mxp            & ! intent(in)
                            , myp            & ! intent(in)
                            , ia             & ! intent(in)
@@ -967,21 +963,6 @@ subroutine initialize_ed2leaf(ifm)
    allocate (rv_mean    (mxp,myp))
    allocate (rtp_mean   (mxp,myp))
    allocate (geoht      (mxp,myp))
-
-   !---------------------------------------------------------------------------------------!
-   !      Allocate the flux arrays from terrestrial and water bodies.  These arrays are    !
-   ! the same size as the leaf arrays, and 2 greater than the work arrays.                 !
-   !---------------------------------------------------------------------------------------!
-   call alloc_edflux  (ed_fluxf_g(ifm) ,mxp,myp)
-   call alloc_edflux  (ed_fluxp_g(ifm) ,mxp,myp)
-   call alloc_wgrid   (wgrid_g(ifm)    ,mxp,myp)
-   call alloc_edprecip(ed_precip_g(ifm),mxp,myp)
-   !----- Assign zeroes to the newly allocated matrices. ----------------------------------!
-   call zero_edflux  (ed_fluxf_g(ifm))
-   call zero_edflux  (ed_fluxp_g(ifm))
-   call zero_wgrid   (wgrid_g(ifm))
-   call zero_edprecip(ed_precip_g(ifm))
-   !---------------------------------------------------------------------------------------!
 
 
 
@@ -1578,6 +1559,8 @@ subroutine copy_avgvars_to_leaf(ifm)
                             , sitetype     & ! structure
                             , patchtype    ! ! structure
    use mem_leaf      , only : leaf_g       ! ! intent(inout)
+   use mem_edcp      , only : co2_offset   & ! intent(in)
+                            , atm_co2_min  ! ! intent(in)
    use mem_grid      , only : nzg          & ! intent(in)
                             , nzs          ! ! intent(in)
    use rconstants    , only : t3ple        & ! intent(in)
@@ -1657,7 +1640,8 @@ subroutine copy_avgvars_to_leaf(ifm)
       !------------------------------------------------------------------------------------!
       leaf_g(ifm)%can_theta(ix,iy,2)   = cgrid%avg_can_theta(ipy)
       leaf_g(ifm)%can_theiv(ix,iy,2)   = cgrid%avg_can_theiv(ipy)
-      leaf_g(ifm)%can_co2(ix,iy,2)     = cgrid%avg_can_co2(ipy)
+      leaf_g(ifm)%can_co2(ix,iy,2)     = max( atm_co2_min                                  &
+                                            , cgrid%avg_can_co2(ipy) - co2_offset)
       leaf_g(ifm)%can_prss(ix,iy,2)    = cgrid%avg_can_prss(ipy)
       !----- ED uses specific humidity, converting it to mixing ratio. --------------------!
       leaf_g(ifm)%can_rvap(ix,iy,2)    = cgrid%avg_can_shv(ipy)                           &

@@ -7,7 +7,6 @@ subroutine fatal_error(reason,subr,file)
 !------------------------------------------------------------------------------------------!
    use ed_node_coms   , only : nnodetot       & ! intent(in)
                              , mynum          ! ! intent(in)
-   use canopy_air_coms, only : icanturb       ! ! intent(in)
    implicit none
    character(len=*), intent(in) :: reason
    character(len=*), intent(in) :: subr,file
@@ -36,23 +35,6 @@ subroutine fatal_error(reason,subr,file)
    !---------------------------------------------------------------------------------------!
    !     Remind the user of deprecated ED2IN choices...                                    !
    !---------------------------------------------------------------------------------------!
-   if (icanturb == -1) then
-      write(unit=*,fmt='(a)') ' '
-      write(unit=*,fmt='(a)') '------------------------------------------------------------'
-      write(unit=*,fmt='(a)') '     I TOLD YOU NOT TO RUN WITH THE old ED-2.0 canopy       '
-      write(unit=*,fmt='(a)') ' turbulence structure.  It''s always like that, I warn,     '
-      write(unit=*,fmt='(a)') ' I try to convince it is a very bad idea to run me with     '
-      write(unit=*,fmt='(a)') ' deprecated options, for what?  In the end, they never      '
-      write(unit=*,fmt='(a)') ' listen to me, instead they ignore my advices and keep      '
-      write(unit=*,fmt='(a)') ' insisting on these bad options.  Oh well, but at           '
-      write(unit=*,fmt='(a)') ' least this time I can say that I told you, I told you,     '
-      write(unit=*,fmt='(a)') ' I told you, I told you, I told you...  But hey, look,      '
-      write(unit=*,fmt='(a)') ' don''t take this message personally, I''m still a nice     '
-      write(unit=*,fmt='(a)') ' model and I promise I will try my best to please you with  '
-      write(unit=*,fmt='(a)') ' good and exciting results should you use another ICANTURB  '
-      write(unit=*,fmt='(a)') ' like 0 or 2 (1 is not that good either).                   '
-      write(unit=*,fmt='(a)') '------------------------------------------------------------'
-   end if
    if (nnodetot > 1) call MPI_Abort(MPI_COMM_WORLD, 1)
    stop 'fatal_error'
 end subroutine fatal_error
@@ -101,7 +83,7 @@ subroutine warning(reason,subr,file)
    use ed_node_coms, only: nnodetot,mynum
    implicit none
    character(len=*), intent(in) :: reason
-   character(len=*), intent(in), optional   :: subr,file
+   character(len=*), intent(in) :: subr,file
 
    include 'mpif.h'
   
@@ -118,9 +100,9 @@ subroutine warning(reason,subr,file)
       write(unit=*,fmt='(a)')         ' On the master node:'
    end if
    ! Although it is optional, it should always be present 
-   if (present(file)) write(unit=*,fmt='(a,1x,a)')    '    ---> File:       ',trim(file)
-   if (present(subr)) write(unit=*,fmt='(a,1x,a)')    '    ---> Subroutine: ',trim(subr)
-   write (unit=*,fmt='(a,1x,a)')                      '    ---> Reason:     ',trim(reason)
+   write(unit=*,fmt='(a,1x,a)')    '    ---> File:       ',trim(file)
+   write(unit=*,fmt='(a,1x,a)')    '    ---> Subroutine: ',trim(subr)
+   write (unit=*,fmt='(a,1x,a)')   '    ---> Reason:     ',trim(reason)
    write(unit=*,fmt='(a)') '------------------------------------------------------------------'
    write(unit=*,fmt='(a)') '------------------------------------------------------------------'
  end subroutine warning

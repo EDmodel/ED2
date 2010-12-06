@@ -743,6 +743,15 @@
                       ! avoid problems...
  
 !-------------------------------------------------------------------------!
+! CO2 offset.  This is for the case in which plants were grown using a    !
+!    different CO2 concentration and BRAMS, and you don't want the plants !
+!    to be shocked by the sudden change in CO2.  Otherwise, just make     !
+!    this number zero. (positive values will make CO2 higher for plants,  !
+!    and negative number will make it lower.                              !
+!-------------------------------------------------------------------------!
+   CO2_OFFSET = 0.,
+
+!-------------------------------------------------------------------------!
 ! ED2 File output                                                         !
 !-------------------------------------------------------------------------!
  
@@ -938,8 +947,21 @@
                               ! 1 -- Lloyd and Taylor (1994) model 
                               !      [[1 requires parameters to be set in xml]]
 
-   N_PLANT_LIM     = 0,       ! Determines whether (1) or not (0) plants can
-                              ! be limited by nitrogen
+   H2O_PLANT_LIM   = 1,       ! Determines whether plant photosynthesis can be limited 
+                              ! by water
+                              !
+                              ! 0 -- No water limitation
+                              !      FSW = 1           
+                              ! 1 -- Original ED-1.0/ED-2.0 method
+                              !      FSW = 1/ (1 + D/S)
+                              ! 2 -- Alternative method:
+                              !      FSW = ½ - ½ * tanh[2*(D/S - 2)]
+
+   N_PLANT_LIM     = 0,       ! Determines whether plant photosynthesis can be 
+                              ! limited by nitrogen
+                              !
+                              ! 0 -- No nitrogen limitation
+                              ! 1 -- Nitrogen limitation model
 
    N_DECOMP_LIM    = 0,       ! Determines whether (1) or not (0) decomposition
                               ! can be limited by nitrogen
@@ -961,10 +983,12 @@
                               ! abandonment, and harvesting.
 
    ICANTURB        = 2,       ! Canopy turbulence scheme
-                              ! -1. (very deprecated) This is the original ED-2.0 
-                              !     scheme, added here for backward compability.  
-                              !     THIS SHOULD BE AVOIDED, since it gives strange 
-                              !     results. 
+                              ! -2. This method scales the wind at the top of the canopy
+                              !     but it will assume constant winds throughout all 
+                              !     cohorts in the understorey.
+                              ! -1. This is the original ED-2.0 scheme, which scales the
+                              !     canopy winds by LAI and has a simplified roughness
+                              !     scheme.
                               !  0. is the default scheme
                               !  1. will rescale reference wind-speed if it
                               !     the reference height is (inapropriately)
@@ -974,6 +998,14 @@
                               !     instability.  This method will not work 
                               !     when zref<h
 
+   I_BLYR_CONDCT   = 0,       !  0. The Nusselt number for forced convection is estimated
+                              !     using the average winds, with no corrections
+                              !  1. The actual Nusselt number for forced convection is 
+                              !     multiplied by 2.5 as the Reynolds number gets close or
+                              !     greater than 10,000.
+                              !  2. The actual Nusselt number for forced convection is 
+                              !     multiplied by 10. as the Reynolds number gets close or
+                              !     greater than 10,000.
 
    !--------------------------------------------------------------------!
    ! PLANT FUNCTIONAL TYPES (PFTs):                                     !

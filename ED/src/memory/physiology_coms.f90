@@ -39,6 +39,11 @@ module physiology_coms
    !----- This flag controls whether the plants should be limited by nitrogen. ------------!
    integer                :: n_plant_lim
    !---------------------------------------------------------------------------------------!
+   !     This parameter will decide whether the fraction of open stomata should be         !
+   ! calculated through the original method or the new empirical relation.                 !
+   !---------------------------------------------------------------------------------------!
+   integer               :: h2o_plant_lim
+   !---------------------------------------------------------------------------------------!
 
 
 
@@ -63,12 +68,6 @@ module physiology_coms
    !---------------------------------------------------------------------------------------!
 
 
-
-   !---------------------------------------------------------------------------------------!
-   !     This parameter will decide whether the fraction of open stomata should be         !
-   ! calculated through the original method or the new empirical relation.                 !
-   !---------------------------------------------------------------------------------------!
-   logical      :: new_fsw_method
 
 
    !---------------------------------------------------------------------------------------!

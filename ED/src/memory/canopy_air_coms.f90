@@ -13,23 +13,35 @@ module canopy_air_coms
    !=======================================================================================!
    !     Parameter that will be read in the namelist.                                      !
    !---------------------------------------------------------------------------------------!
-   integer :: icanturb ! Which canopy turbulence we will use?
-                       ! -1. is the original ED-2.0 scheme
-                       !  0. is the default scheme
-                       !  1. will rescale reference wind-speed if it
-                       !     the reference height is (inapropriately)
-                       !     below the canopy
-                       !  2. (recommended) uses the method of Massman 
-                       !     1997 and the bulk Richardson number of 
-                       !     instability.  This method will not work 
-                       !     when zref<h
-   integer :: isfclyrm ! Surface layer model (used to compute ustar, tstar,...)
-                       !  1 - Louis, 1979: Boundary-Layer Meteor., 17, 187-202.
-                       !      This is the ED-2.0 default, also used in (B)RAMS
-                       !  2 - Oncley and Dudhia, 1995: Mon. Wea. Rev., 123, 3344-3357.
-                       !      This is used in MM5 and WRF.
-                       !  3 - Beljaars and Holtslag, 1991: J. Appl. Meteor., 30, 328-341.
-                       !  4 - BH91, using OD95 to find zeta.
+   integer :: icanturb      ! Which canopy turbulence we will use?
+                            ! -1. is the original ED-2.0 scheme
+                            !  0. is the default scheme
+                            !  1. will rescale reference wind-speed if it
+                            !     the reference height is (inapropriately)
+                            !     below the canopy
+                            !  2. (recommended) uses the method of Massman 
+                            !     1997 and the bulk Richardson number of 
+                            !     instability.  This method will not work 
+                            !     when zref<h
+
+   integer :: isfclyrm      ! Surface layer model (used to compute ustar, tstar,...)
+                            !  1 - Louis, 1979: Boundary-Layer Meteor., 17, 187-202.
+                            !      This is the ED-2.0 default, also used in (B)RAMS
+                            !  2 - Oncley and Dudhia, 1995: Mon. Wea. Rev., 123, 3344-3357.
+                            !      This is used in MM5 and WRF.
+                            !  3 - Beljaars and Holtslag, 1991: J. Appl. Meteor., 30, 
+                            !      328-341.
+                            !  4 - BH91, using OD95 to find zeta.
+
+   integer :: i_blyr_condct ! Methods to estimate the leaf boundary layer conductance:
+                            !  0. The Nusselt number for forced convection is estimated
+                            !     using the average winds, with no corrections
+                            !  1. The actual Nusselt number for forced convection is 
+                            !     multiplied by 2.5 as the Reynolds number gets close or
+                            !     greater than 10,000.
+                            !  2. The actual Nusselt number for forced convection is 
+                            !     multiplied by 10. as the Reynolds number gets close or
+                            !     greater than 10,000.
    !---------------------------------------------------------------------------------------!
 
    !=======================================================================================!

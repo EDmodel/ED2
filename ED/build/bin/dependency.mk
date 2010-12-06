@@ -41,8 +41,6 @@ lsm_hyd.o: grid_coms.mod hydrology_coms.mod hydrology_constants.mod pft_coms.mod
 lsm_hyd.o: soil_coms.mod therm_lib.mod
 mortality.o: disturb_coms.mod ed_max_dims.mod ed_misc_coms.mod ed_state_vars.mod
 mortality.o: pft_coms.mod
-old_farq_leuning.o: c34constants.mod consts_coms.mod pft_coms.mod
-old_farq_leuning.o: phenology_coms.mod physiology_coms.mod therm_lib.mod
 phenology_aux.o: consts_coms.mod ed_max_dims.mod ed_state_vars.mod pft_coms.mod
 phenology_aux.o: phenology_coms.mod
 phenology_driv.o: allometry.mod consts_coms.mod decomp_coms.mod ed_max_dims.mod
@@ -194,7 +192,7 @@ ed_filelist.o: ed_max_dims.mod
 ed_grid.o: consts_coms.mod ed_max_dims.mod ed_node_coms.mod grid_coms.mod
 ed_therm_lib.o: allometry.mod consts_coms.mod ed_state_vars.mod pft_coms.mod
 ed_therm_lib.o: rk4_coms.mod soil_coms.mod therm_lib.mod therm_lib8.mod
-fatal_error.o: canopy_air_coms.mod ed_node_coms.mod
+fatal_error.o: ed_node_coms.mod
 fuse_fiss_utils.o: allometry.mod consts_coms.mod decomp_coms.mod
 fuse_fiss_utils.o: disturb_coms.mod ed_max_dims.mod ed_misc_coms.mod
 fuse_fiss_utils.o: ed_node_coms.mod ed_state_vars.mod fusion_fission_coms.mod
@@ -235,7 +233,7 @@ ed_therm_lib.mod: ed_therm_lib.o
 ed_var_tables.mod: ed_var_tables.o
 ed_work_vars.mod: ed_work_vars.o
 ename_coms.mod: ename_coms.o
-farq_leuning.mod: old_farq_leuning.o
+farq_leuning.mod: farq_leuning.o
 fuse_fiss_utils.mod: fuse_fiss_utils.o
 fusion_fission_coms.mod: fusion_fission_coms.o
 grid_coms.mod: grid_coms.o

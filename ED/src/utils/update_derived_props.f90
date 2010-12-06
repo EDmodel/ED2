@@ -106,7 +106,7 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
    ! LEAF3-based method, and the default is the ED-2.1 method.                             !
    !---------------------------------------------------------------------------------------!
    select case (icanturb)
-   case (-1)
+   case (-2,-1)
       !------------------------------------------------------------------------------------!
       !    Original LEAF-3-based scheme.                                                   !
       !------------------------------------------------------------------------------------!
@@ -643,5 +643,91 @@ subroutine update_workload(cgrid)
 
    return
 end subroutine update_workload
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This sub-routine updates the model time.  It was moved to here to reduce the number  !
+! of routines that must be written twice (off-line and coupled model).                     !
+!------------------------------------------------------------------------------------------!
+subroutine update_model_time_dm(ctime,dtlong)
+
+   use ed_misc_coms, only : simtime ! ! variable type
+   use consts_coms , only : day_sec ! ! intent(in)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   type(simtime)         , intent(inout) :: ctime  ! Current time
+   real                  , intent(in)    :: dtlong ! Model time step
+   !----- Local variables. ----------------------------------------------------------------!
+   integer               , dimension(12) :: daymax
+   !----- External functions. -------------------------------------------------------------!
+   logical               , external      :: isleap ! This function check for leap years
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Assume that the year is not leap. -----------------------------------------------!
+   daymax=(/31,28,31,30,31,30,31,31,30,31,30,31/)
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Update the time. ----------------------------------------------------------------!
+   ctime%time = ctime%time + dtlong
+   !---------------------------------------------------------------------------------------!
+
+
+   if (ctime%time >= day_sec)then
+
+      !----- If time is greater than one day, update the day. -----------------------------!
+      ctime%time = ctime%time - day_sec
+      ctime%date = ctime%date + 1
+
+      !----- If the year is leap, correct February's number of days. ----------------------!
+      if (isleap(ctime%year)) daymax(2) = 29
+
+      !----- If we have reached the end of the month, update the month. -------------------!
+      if (ctime%date > daymax(ctime%month)) then
+         ctime%date  = 1
+         ctime%month = ctime%month + 1
+
+         !------ If we have reached the end of the year, update the year. -----------------!
+         if (ctime%month == 13) then
+            ctime%month = 1
+            ctime%year = ctime%year + 1
+         end if
+      end if
+
+   elseif (ctime%time < 0.0) then
+      !----- Time is negative, go back one day. -------------------------------------------!
+      ctime%time = ctime%time + day_sec
+      ctime%date = ctime%date - 1
+
+      !----- Day is zero, which means we must go to the previous month. -------------------!
+      if (ctime%date == 0) then
+         ctime%month = ctime%month - 1
+
+         !----- Month is zero, which means that we must go to the previous year. ----------!
+         if (ctime%month == 0) then
+            ctime%month = 12
+            ctime%year = ctime%year - 1
+         end if
+
+         !---------------------------------------------------------------------------------!
+         !     Fix the month in case it it a leap year, and make the day the last of the   !
+         ! previous month.                                                                 !
+         !---------------------------------------------------------------------------------!
+         if (isleap(ctime%year)) daymax(2) = 29
+         ctime%date = daymax(ctime%month)
+      end if
+   end if
+
+   return
+end subroutine update_model_time_dm
 !==========================================================================================!
 !==========================================================================================!

@@ -411,8 +411,21 @@
                               ! 1 -- Lloyd and Taylor (1994) model
                               !      [[requires parameters to be set in xml]]
 
-   NL%N_PLANT_LIM     = 0     ! Determines whether (1) or not (0) plants can
-                              !    be limited by nitrogen
+   NL%H2O_PLANT_LIM   = 1     ! Determines whether plant photosynthesis can be limited 
+                              ! by water
+                              !
+                              ! 0 -- No water limitation
+                              !      FSW = 1           
+                              ! 1 -- Original ED-1.0/ED-2.0 method
+                              !      FSW = 1/ (1 + D/S)
+                              ! 2 -- Alternative method:
+                              !      FSW = ½ - ½ * tanh[2*(D/S - 2)]
+
+   NL%N_PLANT_LIM     = 0     ! Determines whether plant photosynthesis can be 
+                              ! limited by nitrogen
+                              !
+                              ! 0 -- No nitrogen limitation
+                              ! 1 -- Nitrogen limitation model
 
    NL%N_DECOMP_LIM    = 0     ! Determines whether (1) or not (0) decomposition
                               !    can be limited by nitrogen
@@ -436,10 +449,12 @@
 
 
    NL%ICANTURB        = 2     ! Canopy turbulence scheme
-                              ! -1. (very deprecated) This is the original ED-2.0 
-                              !     scheme, added here for backward compability.  
-                              !     THIS SHOULD BE AVOIDED, since it gives strange 
-                              !     results. 
+                              ! -2. This method scales the wind at the top of the canopy
+                              !     but it will assume constant winds throughout all 
+                              !     cohorts in the understorey.
+                              ! -1. This is the original ED-2.0 scheme, which scales the
+                              !     canopy winds by LAI and has a simplified roughness
+                              !     scheme.
                               !  0. is the default scheme
                               !  1. will rescale reference wind-speed if it
                               !     the reference height is (inapropriately)
@@ -448,6 +463,16 @@
                               !     1997 and the bulk Richardson number of 
                               !     instability.  This method will not work 
                               !     when zref<h
+
+   NL%I_BLYR_CONDCT   = 0     ! Methods to estimate the leaf boundary layer conductance:
+                              !  0. The Nusselt number for forced convection is estimated
+                              !     using the average winds, with no corrections
+                              !  1. The actual Nusselt number for forced convection is 
+                              !     multiplied by 2.5 as the Reynolds number gets close or
+                              !     greater than 10,000.
+                              !  2. The actual Nusselt number for forced convection is 
+                              !     multiplied by 10. as the Reynolds number gets close or
+                              !     greater than 10,000.
 
 
    NL%ISFCLYRM        = 3     ! Surface layer model (used to compute ustar, tstar,...)

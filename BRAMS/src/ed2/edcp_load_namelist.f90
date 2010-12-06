@@ -39,6 +39,7 @@ subroutine read_ednl(iunit)
                                    , maxpatch                  & ! intent(out)
                                    , maxcohort                 ! ! intent(out)
    use physiology_coms      , only : istoma_scheme             & ! intent(out)
+                                   , h2o_plant_lim             & ! intent(out)
                                    , n_plant_lim               ! ! intent(out)
    use phenology_coms       , only : iphen_scheme              & ! intent(out)
                                    , repro_scheme              & ! intent(out)
@@ -91,13 +92,16 @@ subroutine read_ednl(iunit)
                                    , event_file                & ! intent(out)
                                    , attach_metadata           ! ! intent(out)
    use canopy_air_coms      , only : icanturb                  & ! intent(out)
-                                   , isfclyrm                  ! ! intent(out)
+                                   , isfclyrm                  & ! intent(out)
+                                   , i_blyr_condct             ! ! intent(out)
    use grid_coms            , only : timmax                    & ! intent(out)
                                    , time                      ! ! intent(out)
    use optimiz_coms         , only : ioptinpt                  ! ! intent(out)
    use rk4_coms             , only : rk4_tolerance             & ! intent(out)
                                    , ibranch_thermo            ! ! intent(out)
    use canopy_radiation_coms, only : crown_mod                 ! ! intent(out)
+   !----- Coupled ED-BRAMS modules. -------------------------------------------------------!
+   use mem_edcp             , only : co2_offset                ! ! intent(out)
    !----- BRAMS modules. ------------------------------------------------------------------!
    use mem_grid             , only : expnme                    & ! intent(in)
                                    , runtype                   & ! intent(in)
@@ -150,18 +154,19 @@ subroutine read_ednl(iunit)
    logical             :: fexists
    logical             :: op
    !----- Namelist. -----------------------------------------------------------------------!
-   namelist /ED2_INFO/  dtlsm,ifoutput,idoutput,imoutput,iyoutput,itoutput,isoutput        &
-                       ,attach_metadata,outfast,outstate,ffilout,sfilout,ied_init_mode     &
-                       ,edres,sfilin,veg_database,soil_database,lu_database                &
+   namelist /ED2_INFO/  dtlsm,co2_offset,ifoutput,idoutput,imoutput,iyoutput,itoutput      &
+                       ,isoutput,attach_metadata,outfast,outstate,ffilout,sfilout          &
+                       ,ied_init_mode,edres,sfilin,veg_database,soil_database,lu_database  &
                        ,plantation_file,lu_rescale_file,thsums_database,soilstate_db       &
                        ,soildepth_db,isoilstateinit,isoildepthflg,isoilbc                  &
                        ,integration_scheme,rk4_tolerance,ibranch_thermo,istoma_scheme      &
                        ,iphen_scheme,repro_scheme,lapse_scheme,crown_mod,decomp_scheme     &
-                       ,n_plant_lim,n_decomp_lim,include_fire,ianth_disturb,icanturb       &
-                       ,include_these_pft,agri_stock,plantation_stock,pft_1st_check        &
-                       ,maxpatch,maxcohort,treefall_disturbance_rate,runoff_time           &
-                       ,iprintpolys,npvars,printvars,pfmtstr,ipmin,ipmax,iphenys1,iphenysf &
-                       ,iphenyf1,iphenyff,iedcnfgf,event_file,phenpath
+                       ,h2o_plant_lim,n_plant_lim,n_decomp_lim,include_fire,ianth_disturb  &
+                       ,icanturb,i_blyr_condct,include_these_pft,agri_stock                &
+                       ,plantation_stock,pft_1st_check,maxpatch,maxcohort                  &
+                       ,treefall_disturbance_rate,runoff_time,iprintpolys,npvars,printvars &
+                       ,pfmtstr,ipmin,ipmax,iphenys1,iphenysf,iphenyf1,iphenyff,iedcnfgf   &
+                       ,event_file,phenpath
 
    !----- Initialise some database variables with a non-sense path. -----------------------!
    soil_database   (:) = undef_path
@@ -179,6 +184,7 @@ subroutine read_ednl(iunit)
       write (unit=*,fmt='(a)') '**(ERROR)** reading section ED2_INFO of namelist file. '
       write (unit=*,fmt='(a)') ' Compare values read with file contents:' 
       write (unit=*,fmt=*) 'dtlsm=',dtlsm
+      write (unit=*,fmt=*) 'co2_offset=',co2_offset
       write (unit=*,fmt=*) 'ifoutput=',ifoutput
       write (unit=*,fmt=*) 'idoutput=',idoutput
       write (unit=*,fmt=*) 'imoutput=',imoutput
@@ -213,11 +219,13 @@ subroutine read_ednl(iunit)
       write (unit=*,fmt=*) 'lapse_scheme=',lapse_scheme
       write (unit=*,fmt=*) 'crown_mod=',crown_mod
       write (unit=*,fmt=*) 'decomp_scheme=',decomp_scheme
+      write (unit=*,fmt=*) 'h2o_plant_lim=',h2o_plant_lim
       write (unit=*,fmt=*) 'n_plant_lim=',n_plant_lim
       write (unit=*,fmt=*) 'n_decomp_lim=',n_decomp_lim
       write (unit=*,fmt=*) 'include_fire=',include_fire
       write (unit=*,fmt=*) 'ianth_disturb=',ianth_disturb
       write (unit=*,fmt=*) 'icanturb=',icanturb
+      write (unit=*,fmt=*) 'i_blyr_condct=',i_blyr_condct
       write (unit=*,fmt=*) 'include_these_pft=',include_these_pft
       write (unit=*,fmt=*) 'agri_stock=',agri_stock
       write (unit=*,fmt=*) 'plantation_stock=',plantation_stock

@@ -135,12 +135,14 @@ module ename_coms
       integer                                           :: repro_scheme
       integer                                           :: lapse_scheme
       integer                                           :: crown_mod
+      integer                                           :: h2o_plant_lim
       integer                                           :: n_plant_lim
       integer                                           :: n_decomp_lim
       integer                                           :: decomp_scheme
       integer                                           :: include_fire
       integer                                           :: ianth_disturb
       integer                                           :: icanturb
+      integer                                           :: i_blyr_condct
       integer                                           :: isfclyrm
       integer               , dimension(n_pft)          :: include_these_pft
       integer                                           :: agri_stock
@@ -323,12 +325,14 @@ module ename_coms
       enl%repro_scheme              = undef_integer
       enl%lapse_scheme              = undef_integer
       enl%crown_mod                 = undef_integer
+      enl%h2o_plant_lim             = undef_integer
       enl%n_plant_lim               = undef_integer
       enl%n_decomp_lim              = undef_integer
       enl%decomp_scheme             = undef_integer
       enl%include_fire              = undef_integer
       enl%ianth_disturb             = undef_integer
       enl%icanturb                  = undef_integer
+      enl%i_blyr_condct             = undef_integer
       enl%isfclyrm                  = undef_integer
 
       enl%include_these_pft         = (/(undef_integer,i=1,n_pft)/) 

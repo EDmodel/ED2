@@ -22,7 +22,7 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ed_ktrans,lsl               
                              , kgCday_2_umols    ! ! intent(in)
    use met_driver_coms, only : met_driv_state    ! ! structure
    use physiology_coms, only : print_photo_debug & ! intent(in)
-                             , new_fsw_method    ! ! intent(in)
+                             , h2o_plant_lim     ! ! intent(in)
    use farq_leuning   , only : lphysiol_full     ! ! sub-routine
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
@@ -275,19 +275,30 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ed_ktrans,lsl               
             ! (cpatch%psi_open, which is the average over the last time step), and the     !
             ! supply (cpatch%water_supply).                                                !
             !------------------------------------------------------------------------------!
-            if (new_fsw_method) then
+            select case (h2o_plant_lim)
+            case (0)
+               !---- No water limitation, fsw is always 1.0. ------------------------------!
+               cpatch%fsw(ico) = 1.0
+
+            case (1)
+               !---- Original ED-1.0 scheme. ----------------------------------------------!
+               cpatch%fsw(ico) = cpatch%water_supply(ico)                                  &
+                               / max( 1.0e-20                                              &
+                                    , cpatch%water_supply(ico) + cpatch%psi_open(ico))
+            case (2)
+               !---------------------------------------------------------------------------!
+               !    New method to determine the fraction of open stomata, this function    !
+               ! allows almost 100% of the stomata to remain open when demand is equal     !
+               ! to supply, about 50% when demand is twice the supply, and almost 0% and   !
+               ! demand becomes larger than three times the supply.                        !
+               !---------------------------------------------------------------------------!
                if (cpatch%water_supply(ico) > 1.e-20) then
                   cpatch%fsw(ico) = 0.5 * ( 1. - tanh( 2. * (cpatch%psi_open(ico)          &
                                                             /cpatch%water_supply(ico)-2.)))
                else
                   cpatch%fsw(ico) = 0.0
                end if
-            else
-               cpatch%fsw(ico) = cpatch%water_supply(ico)                                  &
-                               / max( 1.0e-20                                              &
-                                    , cpatch%water_supply(ico) + cpatch%psi_open(ico))
-            end if
-            ! cpatch%fsw(ico) = 1.0
+            end select
             !------------------------------------------------------------------------------!
 
 

@@ -498,5 +498,10 @@ utils_f.o: $(ED_UTILS)/utils_f.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
+vegetation_dynamics.o : $(ED_DYNAMICS)/vegetation_dynamics.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
 
 include dependency.mk
