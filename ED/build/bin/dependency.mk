@@ -5,10 +5,9 @@ ed_driver.o: fuse_fiss_utils.mod grid_coms.mod soil_coms.mod
 ed_met_driver.o: canopy_air_coms.mod consts_coms.mod ed_max_dims.mod
 ed_met_driver.o: ed_misc_coms.mod ed_state_vars.mod grid_coms.mod hdf5_utils.mod
 ed_met_driver.o: mem_polygons.mod met_driver_coms.mod therm_lib.mod
-ed_model.o: consts_coms.mod disturb_coms.mod disturbance_utils.mod
-ed_model.o: ed_misc_coms.mod ed_node_coms.mod ed_state_vars.mod
-ed_model.o: fuse_fiss_utils.mod grid_coms.mod growth_balive.mod mem_polygons.mod
-ed_model.o: rk4_coms.mod rk4_driver.mod
+ed_model.o: consts_coms.mod disturb_coms.mod ed_misc_coms.mod ed_node_coms.mod
+ed_model.o: ed_state_vars.mod grid_coms.mod mem_polygons.mod rk4_coms.mod
+ed_model.o: rk4_driver.mod
 canopy_struct_dynamics.o: allometry.mod canopy_air_coms.mod consts_coms.mod
 canopy_struct_dynamics.o: ed_state_vars.mod met_driver_coms.mod pft_coms.mod
 canopy_struct_dynamics.o: physiology_coms.mod rk4_coms.mod soil_coms.mod
@@ -78,6 +77,9 @@ structural_growth.o: ed_max_dims.mod ed_misc_coms.mod ed_state_vars.mod
 structural_growth.o: ed_therm_lib.mod pft_coms.mod
 twostream_rad.o: canopy_radiation_coms.mod consts_coms.mod ed_max_dims.mod
 twostream_rad.o: pft_coms.mod
+vegetation_dynamics.o: consts_coms.mod disturb_coms.mod disturbance_utils.mod
+vegetation_dynamics.o: ed_misc_coms.mod ed_state_vars.mod fuse_fiss_utils.mod
+vegetation_dynamics.o: grid_coms.mod growth_balive.mod mem_polygons.mod
 ed_init.o: consts_coms.mod ed_misc_coms.mod ed_node_coms.mod ed_state_vars.mod
 ed_init.o: ed_work_vars.mod grid_coms.mod phenology_coms.mod
 ed_init.o: phenology_startup.mod rk4_coms.mod soil_coms.mod

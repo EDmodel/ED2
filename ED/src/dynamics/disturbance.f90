@@ -83,6 +83,7 @@ module disturbance_utils
       !------------------------------------------------------------------------------------!
 
       !----- Allocating the temporary site that will host the original patches. -----------!
+      nullify(tsite)
       allocate(tsite)
 
       polyloop: do ipy = 1,cgrid%npolygons
@@ -895,7 +896,7 @@ module disturbance_utils
       !------------------------------------------------------------------------------------!
       cpatch => csite%patch(cp)
       npatch => csite%patch(np)
-    
+      nullify(tpatch)
       allocate(tpatch)
 
       !----- Mask: flag to decide whether the cohort survived or not. ---------------------!
@@ -1230,6 +1231,7 @@ module disturbance_utils
       !------------------------------------------------------------------------------------!
       nc = cpatch%ncohorts + 1
       if (cpatch%ncohorts > 0) then
+         nullify(tpatch)
          allocate(tpatch)
          call allocate_patchtype(tpatch,cpatch%ncohorts)
          call copy_patchtype(cpatch,tpatch,1,cpatch%ncohorts,1,cpatch%ncohorts)

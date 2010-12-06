@@ -173,6 +173,7 @@ subroutine apply_forestry(cpoly, isi, year)
    !    Conditions were met, making a new patch.  The following routines extends the       !
    ! allocation of the current site by one patch, and preserves the original patches       !
    !---------------------------------------------------------------------------------------!
+   nullify(tempsite)
    allocate(tempsite)
    allocate(mask(csite%npatches))
    call allocate_sitetype(tempsite,csite%npatches)
