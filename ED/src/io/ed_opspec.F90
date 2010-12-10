@@ -976,7 +976,9 @@ subroutine ed_opspec_misc
    use grid_coms             , only : ngrids                       ! ! intent(in)
    use physiology_coms       , only : istoma_scheme                & ! intent(in)
                                     , h2o_plant_lim                & ! intent(in)
-                                    , n_plant_lim                  ! ! intent(in)
+                                    , n_plant_lim                  & ! intent(in)
+                                    , vmfact                       & ! intent(in)
+                                    , mfact                        ! ! intent(in)
    use decomp_coms           , only : n_decomp_lim                 ! ! intent(in)
    use disturb_coms          , only : include_fire                 & ! intent(in)
                                     , ianth_disturb                & ! intent(in)
@@ -1273,7 +1275,23 @@ end do
       ifaterr = ifaterr +1
    end if
 
-   if (n_plant_lim < 0 .or. n_plant_lim > 1) then
+   if (vmfact < 0 .or. vmfact > 100) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid VMFACT, it must be between 0 and 100. Yours is set to'   &
+                    ,vmfact,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+   
+   if (mfact < 0 .or. mfact > 100) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid MFACT, it must be between 0 and 100. Yours is set to'   &
+                    ,mfact,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+   
+      if (n_plant_lim < 0 .or. n_plant_lim > 1) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
                     'Invalid N_PLANT_LIM, it must be between 0 and 1. Yours is set to'     &
                     ,n_plant_lim,'...'

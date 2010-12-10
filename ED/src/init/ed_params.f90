@@ -776,6 +776,8 @@ subroutine init_pft_photo_params()
    use consts_coms    , only : t00                  & ! intent(in)
                              , umol_2_mol           & ! intent(in)
                              , yr_sec               ! ! intent(in)
+   use physiology_coms  , only, vmfact              & ! intent(in)
+                                 mfact              ! ! intent(in)
    implicit none
 
    !----- Local variables. ----------------------------------------------------------------!
@@ -834,11 +836,11 @@ subroutine init_pft_photo_params()
       Vm0(12:13)                = 29.3
       Vm0(14:15)                = 20.0
    else
-      Vm0(1)                    = 12.5
-      Vm0(2)                    = 18.8
-      Vm0(3)                    = 12.5
-      Vm0(4)                    = 6.25
-      Vm0(5)                    = 18.3
+      Vm0(1)                    = 12.5   * vmfact
+      Vm0(2)                    = 18.8   * vmfact
+      Vm0(3)                    = 12.5   * vmfact
+      Vm0(4)                    = 6.25   * vmfact
+      Vm0(5)                    = 18.3   * vmfact
       Vm0(6)                    = 15.625 * 0.7264
       Vm0(7)                    = 15.625 * 0.7264
       Vm0(8)                    = 6.25   * 0.7264
@@ -867,11 +869,11 @@ subroutine init_pft_photo_params()
       stomatal_slope(14)        =  4.0
       stomatal_slope(15)        =  4.0
    else
-      stomatal_slope(1)         = 10.0
-      stomatal_slope(2)         =  8.0
-      stomatal_slope(3)         =  8.0
-      stomatal_slope(4)         =  8.0
-      stomatal_slope(5)         =  8.0
+      stomatal_slope(1)         = 10.0   * mfact
+      stomatal_slope(2)         =  8.0   * mfact
+      stomatal_slope(3)         =  8.0   * mfact
+      stomatal_slope(4)         =  8.0   * mfact
+      stomatal_slope(5)         =  8.0   * mfact
       stomatal_slope(6)         =  6.3949
       stomatal_slope(7)         =  6.3949
       stomatal_slope(8)         =  6.3949

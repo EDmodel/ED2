@@ -85,7 +85,9 @@ subroutine copy_nl(copy_type)
                                    , maxcohort                 ! ! intent(out)
    use physiology_coms      , only : istoma_scheme             & ! intent(out)
                                    , h2o_plant_lim             & ! intent(out)
-                                   , n_plant_lim               ! ! intent(out)
+                                   , n_plant_lim               & ! intent(out)
+                                   , vmfact                    & ! intent(out)
+                                   , mfact                     ! ! intent(out)
    use phenology_coms       , only : iphen_scheme              & ! intent(out)
                                    , iphenys1                  & ! intent(out)
                                    , iphenysf                  & ! intent(out)
@@ -275,6 +277,8 @@ subroutine copy_nl(copy_type)
       lapse_scheme              = nl%lapse_scheme
       crown_mod                 = nl%crown_mod
       h2o_plant_lim             = nl%h2o_plant_lim
+      vmfact                    = nl%vmfact
+      mfact                     = nl%mfact
       n_plant_lim               = nl%n_plant_lim
       n_decomp_lim              = nl%n_decomp_lim
       include_fire              = nl%include_fire
