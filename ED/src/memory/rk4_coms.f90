@@ -429,6 +429,9 @@ module rk4_coms
                                   !    within on DTLSM time step, and not bother
                                   !    forcing the canopy air space to respect the
                                   !    ideal gas                                   [   T|F]
+   logical      :: leaf_intercept ! This flag is to turn on and on the leaf interception.  
+                                  !    Except for developer tests, this variable should be 
+                                  !    always true.  
    logical      :: debug          ! Verbose output for debug                       [   T|F]
    real(kind=8) :: toocold        ! Minimum temperature for saturation spec. hum.  [     K]
    real(kind=8) :: toohot         ! Maximum temperature for saturation spec. hum.  [     K]

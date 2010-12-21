@@ -11,7 +11,8 @@ subroutine leaf_derivs(initp,dinitp,csite,ipa)
   
    use rk4_coms               , only : rk4site            & ! intent(in)
                                      , rk4patchtype       ! ! structure
-   use ed_state_vars          , only : sitetype,polygontype           ! ! structure
+   use ed_state_vars          , only : sitetype           & ! structure
+                                     , polygontype        ! ! structure
    use consts_coms            , only : cp8                & ! intent(in)
                                      , cpi8               ! ! intent(in)
    use grid_coms              , only : nzg                & ! intent(in)
@@ -601,7 +602,8 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
                                     , checkbudget          & ! intent(in)
                                     , print_detailed       & ! intent(in)
                                     , check_maxleaf        & ! intent(in)
-                                    , supersat_ok          ! ! intent(in)
+                                    , supersat_ok          & ! intent(in)
+                                    , leaf_intercept       ! ! intent(in)
    use ed_state_vars         , only : sitetype             & ! Structure
                                     , patchtype            & ! Structure
                                     , polygontype
@@ -783,10 +785,17 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
       ! all of the water.                                                                  !
       !------------------------------------------------------------------------------------!
       if (rk4site%pcpg > 0.d0) then
-         !----- Scale interception by canopy openess (MCD 01-12-09). ----------------------!
-         intercepted_max  = rk4site%pcpg  * can_frac
-         qintercepted_max = rk4site%qpcpg * can_frac
-         dintercepted_max = rk4site%dpcpg * can_frac
+         if (leaf_intercept) then
+            !----- Scale interception by canopy openess (MCD 01-12-09). -------------------!
+            intercepted_max  = rk4site%pcpg  * can_frac
+            qintercepted_max = rk4site%qpcpg * can_frac
+            dintercepted_max = rk4site%dpcpg * can_frac
+         else
+            !----- No interception (developer only). --------------------------------------!
+            intercepted_max  = 0.d0
+            qintercepted_max = 0.d0
+            dintercepted_max = 0.d0
+         end if
 
          !---------------------------------------------------------------------------------!
          !    The first guess for through fall is the rainfall minus the maximum           !

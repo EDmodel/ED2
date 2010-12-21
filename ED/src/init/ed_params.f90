@@ -13,7 +13,8 @@ subroutine load_ed_ecosystem_params()
                           , include_pft_ag      & ! intent(out)
                           , C2B                 & ! intent(out)
                           , frost_mort          & ! intent(out)
-                          , grass_pft           ! ! intent(out)
+                          , grass_pft           & ! intent(out)
+                          , pft_name16          ! ! intent(out)
    use disturb_coms, only : ianth_disturb       ! ! intent(in)
 
    implicit none
@@ -39,26 +40,43 @@ subroutine load_ed_ecosystem_params()
    ! that you assign values for all PFT-dependent variables.  Below is a summary table of  !
    ! the main characteristics of the currently available PFTs.                             !
    !---------------------------------------------------------------------------------------!
-   !  PFT | Name                                | Grass   | Tropical | agriculture?        !
-   !------+-------------------------------------+---------+----------+---------------------!
-   !    1 | C4 grass                            |     yes |      yes |                 yes !
-   !    2 | Early tropical                      |      no |      yes |                  no !
-   !    3 | Mid tropical                        |      no |      yes |                  no !
-   !    4 | Late tropical                       |      no |      yes |                  no !
-   !    5 | C3 grass                            |     yes |       no |                 yes !
-   !    6 | Northern pines                      |      no |       no |                  no !
-   !    7 | Southern pines                      |      no |       no |                  no !
-   !    8 | Late conifers                       |      no |       no |                  no !
-   !    9 | Early temperate deciduous           |      no |       no |                  no !
-   !   10 | Mid temperate deciduous             |      no |       no |                  no !
-   !   11 | Late temperate deciduous            |      no |       no |                  no !
-   !   12 | C3 pasture                          |     yes |       no |                 yes !
-   !   13 | C3 crop (e.g.,wheat, rice, soybean) |     yes |       no |                 yes !
-   !   14 | C4 pasture                          |     yes |      yes |                 yes !
-   !   15 | C4 crop (e.g.,corn/maize)           |     yes |      yes |                 yes !
-   !------+-------------------------------------+---------+----------+---------------------!
+   !  PFT | Name                                       | Grass   | Tropical | agriculture? !
+   !------+--------------------------------------------+---------+----------+--------------!
+   !    1 | C4 grass                                   |     yes |      yes |          yes !
+   !    2 | Early tropical                             |      no |      yes |           no !
+   !    3 | Mid tropical                               |      no |      yes |           no !
+   !    4 | Late tropical                              |      no |      yes |           no !
+   !    5 | C3 grass                                   |     yes |       no |          yes !
+   !    6 | Northern pines                             |      no |       no |           no !
+   !    7 | Southern pines                             |      no |       no |           no !
+   !    8 | Late conifers                              |      no |       no |           no !
+   !    9 | Early temperate deciduous                  |      no |       no |           no !
+   !   10 | Mid temperate deciduous                    |      no |       no |           no !
+   !   11 | Late temperate deciduous                   |      no |       no |           no !
+   !   12 | C3 pasture                                 |     yes |       no |          yes !
+   !   13 | C3 crop (e.g.,wheat, rice, soybean)        |     yes |       no |          yes !
+   !   14 | C4 pasture                                 |     yes |      yes |          yes !
+   !   15 | C4 crop (e.g.,corn/maize)                  |     yes |      yes |          yes !
+   !------+--------------------------------------------+---------+----------+--------------!
 
-   !----- Defining the grass PFTs ---------------------------------------------------------!
+   !----- Name the PFTs (no spaces, please). ----------------------------------------------!
+   pft_name16( 1) = 'C4_grass        '
+   pft_name16( 2) = 'Early_tropical  '
+   pft_name16( 3) = 'Mid_tropical    '
+   pft_name16( 4) = 'Late_tropical   '
+   pft_name16( 5) = 'C3_grass        '
+   pft_name16( 6) = 'North_pine      '
+   pft_name16( 7) = 'South_pine      '
+   pft_name16( 8) = 'Late_conifer    '
+   pft_name16( 9) = 'Early_hardwood  '
+   pft_name16(10) = 'Mid_hardwood    '
+   pft_name16(11) = 'Late_hardwood   '
+   pft_name16(12) = 'C3_pasture      '
+   pft_name16(13) = 'C3_crop         '
+   pft_name16(14) = 'C4_pasture      '
+   pft_name16(15) = 'C4_crop         '
+
+   !----- Define the grass PFTs -----------------------------------------------------------!
    grass_pft=huge(1)
    grass_pft(1)=1
    grass_pft(2)=5
@@ -538,6 +556,9 @@ subroutine init_can_air_params()
                              , beta_g28              & ! intent(out)
                              , beta_gr08             ! ! intent(out)
    implicit none
+
+
+
    !---------------------------------------------------------------------------------------!
    !    Minimum leaf water content to be considered.  Values smaller than this will be     !
    ! flushed to zero.  This value is in kg/[m2 plant], so it will be always scaled by      !
@@ -570,15 +591,8 @@ subroutine init_can_air_params()
    !                        is used to calculate the heat and moisture storage capacity in !
    !                        the canopy air space.                                          !
    !---------------------------------------------------------------------------------------!
-   select case (icanturb)
-   case (-2,-1)
-      veg_height_min        = minval(hgt_min) ! used to be 0.2
-      minimum_canopy_depth  = minval(hgt_min) ! used to be 0.2
-
-   case default
-      veg_height_min        = 1.0             ! alternative: minval(hgt_min) 
-      minimum_canopy_depth  = 5.0             ! alternative: minval(hgt_min) 
-   end select
+   veg_height_min        = 1.0             ! alternative: minval(hgt_min) 
+   minimum_canopy_depth  = 5.0             ! alternative: minval(hgt_min) 
 
    !----- This is the dimensionless exponential wind atenuation factor. -------------------!
    exar  = 2.5
@@ -589,22 +603,13 @@ subroutine init_can_air_params()
 
    !---------------------------------------------------------------------------------------!
    !      Parameters for surface layer models.                                             !
-   !     For the time being we keep the old values of ustmin and ubmin when the user wants !
-   ! to run using Louis (1979).  This should be tested because often the value of u* is    !
-   ! forced to 0.10m/s, which means that the model is not being applied.                   !
    !---------------------------------------------------------------------------------------!
-   select case (isfclyrm)
-   case (1)
-      !----- This is the minimum ustar under stable and unstable conditions. --------------!
-      ustmin    = 0.10 ! 0.10
-      !----- This is the minimum wind scale under stable and unstable conditions. ---------!
-      ubmin     = 0.65 ! 0.65
-   case default
-      !----- This is the minimum ustar under stable and unstable conditions. --------------!
-      ustmin    = 0.10
-      !----- This is the minimum wind scale under stable and unstable conditions. ---------!
-      ubmin     = 0.65
-   end select
+   !----- This is the minimum ustar under stable and unstable conditions. -----------------!
+   ustmin    = 0.10
+   !----- This is the minimum wind scale under stable and unstable conditions. ------------!
+   ubmin     = 0.65
+   !---------------------------------------------------------------------------------------!
+
    !----- Louis (1979) model. -------------------------------------------------------------!
    bl79        = 5.0    ! b prime parameter
    csm         = 7.5    ! C* for momentum (eqn. 20, not co2 char. scale)
@@ -1297,7 +1302,7 @@ subroutine init_pft_alloc_params()
 
    !----- Specific leaf area [m² leaf / kg C] ---------------------------------------------!
 ![KIM] - new tropical parameters
-   SLA(1:4)   = 10.0**((2.4-0.46*log10(12.0/leaf_turnover_rate(1:4)))) * C2B * 0.1
+   SLA(1:4)   = 10.0**(2.4-0.46*log10(12.0/leaf_turnover_rate(1:4))) * C2B * 0.1
 !   SLA(1:4) = 10.0**(1.6923-0.3305*log10(12.0/leaf_turnover_rate(1:4)))
    SLA(5)     = 22.0
    SLA(6)     =  6.0
@@ -1697,7 +1702,8 @@ end subroutine init_pft_repro_params
 !------------------------------------------------------------------------------------------!
 subroutine init_pft_derived_params()
    use decomp_coms , only : f_labile             ! ! intent(in)
-   use ed_max_dims , only : n_pft                ! ! intent(in)
+   use ed_max_dims , only : n_pft                & ! intent(in)
+                          , str_len              ! ! intent(in)
    use consts_coms , only : onesixth             ! ! intent(in)
    use pft_coms    , only : init_density         & ! intent(in)
                           , c2n_leaf             & ! intent(in)
@@ -1708,6 +1714,8 @@ subroutine init_pft_derived_params()
                           , hgt_ref              & ! intent(in)
                           , q                    & ! intent(in)
                           , qsw                  & ! intent(in)
+                          , sla                  & ! intent(in)
+                          , pft_name16           & ! intent(in)
                           , max_dbh              & ! intent(out)
                           , min_recruit_size     & ! intent(out)
                           , min_cohort_size      & ! intent(out)
@@ -1719,18 +1727,20 @@ subroutine init_pft_derived_params()
                           , dbh2bd               ! ! function
    implicit none
    !----- Local variables. ----------------------------------------------------------------!
-   integer            :: ipft
-   real               :: dbh
-   real               :: huge_dbh
-   real               :: huge_height
-   real               :: balive_min
-   real               :: bleaf_min
-   real               :: bdead_min
-   real               :: balive_max
-   real               :: bleaf_max
-   real               :: bdead_max
-   real               :: min_plant_dens
-   logical, parameter :: print_zero_table = .false.
+   integer                           :: ipft
+   real                              :: dbh
+   real                              :: huge_dbh
+   real                              :: huge_height
+   real                              :: balive_min
+   real                              :: bleaf_min
+   real                              :: bdead_min
+   real                              :: balive_max
+   real                              :: bleaf_max
+   real                              :: bdead_max
+   real                              :: min_plant_dens
+   real                              :: min_rec_lai
+   logical               , parameter :: print_zero_table = .false.
+   character(len=str_len), parameter :: zero_table_fn    = 'minimum.size.txt'
    !---------------------------------------------------------------------------------------!
 
    !----- Maximum DBH. --------------------------------------------------------------------!
@@ -1747,12 +1757,15 @@ subroutine init_pft_derived_params()
    ! significantly less biomass.                                                           !
    !---------------------------------------------------------------------------------------!
    if (print_zero_table) then
-      write (unit=61,fmt='(13(a,1x))') '  PFT','     HGT_MIN','         DBH'               &
+      open  (unit=61,file=trim(zero_table_fn),status='replace',action='write')
+      write (unit=61,fmt='(16(a,1x))')                '  PFT',        'NAME            '   &
+                                              ,'     HGT_MIN','         DBH'               &
                                               ,'   BLEAF_MIN','   BDEAD_MIN'               &
                                               ,'  BALIVE_MIN','   BLEAF_MAX'               &
                                               ,'   BDEAD_MAX','  BALIVE_MAX'               &
                                               ,'   INIT_DENS','MIN_REC_SIZE'               &
-                                              ,'MIN_COH_SIZE',' NEGL_NPLANT'
+                                              ,'MIN_COH_SIZE',' NEGL_NPLANT'               &
+                                              ,'         SLA',' MIN_REC_LAI'
    end if
    min_plant_dens = onesixth * minval(init_density)
    do ipft = 1,n_pft
@@ -1802,16 +1815,24 @@ subroutine init_pft_derived_params()
                              + (1.0 - f_labile(ipft)) / c2n_stem(ipft))                    &
                              + bdead_min/c2n_stem(ipft))
       if (print_zero_table) then
-         write (unit=61,fmt='(i5,1x,12(es12.5,1x))') ipft,hgt_min(ipft),dbh,bleaf_min      &
-                                                    ,bdead_min,balive_min,bleaf_max        &
-                                                    ,bdead_max,balive_max                  &
+         min_rec_lai = min_plant_dens * sla(ipft) * bleaf_min
+         write (unit=61,fmt='(i5,1x,a16,1x,14(es12.5,1x))')                                &
+                                                     ipft,pft_name16(ipft),hgt_min(ipft)   &
+                                                    ,dbh,bleaf_min,bdead_min,balive_min    &
+                                                    ,bleaf_max,bdead_max,balive_max        &
                                                     ,init_density(ipft)                    &
                                                     ,min_recruit_size(ipft)                &
                                                     ,min_cohort_size(ipft)                 &
-                                                    ,negligible_nplant(ipft)
+                                                    ,negligible_nplant(ipft)               &
+                                                    ,sla(ipft),min_rec_lai
       end if
    end do
 
+   if (print_zero_table) then
+      close (unit=61,status='keep')
+   end if
+
+   return
 end subroutine init_pft_derived_params
 !==========================================================================================!
 !==========================================================================================!
@@ -2535,6 +2556,7 @@ subroutine init_rk4_params()
                              , rk4min_sfcw_moist      & ! intent(out)
                              , rk4min_virt_moist      & ! intent(out)
                              , check_maxleaf          & ! intent(out)
+                             , leaf_intercept         & ! intent(out)
                              , force_idealgas         & ! intent(out)
                              , supersat_ok            & ! intent(out)
                              , record_err             & ! intent(out)
@@ -2713,6 +2735,14 @@ subroutine init_rk4_params()
    force_idealgas = .false.
    !---------------------------------------------------------------------------------------!
 
+
+
+   !---------------------------------------------------------------------------------------!
+   !     This flag is to turn on and on the leaf interception.  Except for developer       !
+   ! tests, this variable should be always true.                                           !
+   !---------------------------------------------------------------------------------------!
+   leaf_intercept = .true.
+   !---------------------------------------------------------------------------------------!
 
    return
 end subroutine init_rk4_params
