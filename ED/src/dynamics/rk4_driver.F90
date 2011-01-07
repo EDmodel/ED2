@@ -160,7 +160,7 @@ module rk4_driver
                !---------------------------------------------------------------------------!
                !     Calculate the canopy geometry, and the scalar transport coefficients. !
                !---------------------------------------------------------------------------!
-               call canopy_turbulence8(csite,integration_buff%initp,ipa,.true.)
+               call canopy_turbulence8(csite,integration_buff%initp,ipa)
 
 
 
@@ -250,10 +250,7 @@ module rk4_driver
                                  , tbeg                 & ! intent(inout)
                                  , tend                 & ! intent(inout)
                                  , dtrk4                & ! intent(inout)
-                                 , dtrk4i               & ! intent(inout)
-                                 , ibranch_thermo       & ! intent(in)
-                                 , effarea_water        & ! intent(out)
-                                 , effarea_heat         ! ! intent(out)
+                                 , dtrk4i               ! ! intent(inout)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype)        , target      :: csite
@@ -273,29 +270,13 @@ module rk4_driver
       logical                  , save       :: first_time=.true.
       !------------------------------------------------------------------------------------!
 
-      !----- Assigning some constants which will remain the same throughout the run. ------!
+      !----- Assign some constants which will remain the same throughout the run. ---------!
       if (first_time) then
          first_time = .false.
          tbeg   = 0.d0
          tend   = dble(dtlsm)
          dtrk4  = tend - tbeg
          dtrk4i = 1.d0/dtrk4
-         
-         !---------------------------------------------------------------------------------!
-         !    The area factor for heat and water exchange between canopy and vegetation is !
-         ! applied only on LAI, and it depends on how we are considering the branches and  !
-         ! twigs.  If their area isn't explicitly defined, we add a 0.2 factor to the      !
-         ! area because WPA will be 0.  Otherwise, we don't add anything to the LAI, and   !
-         ! let WPA to do the job.                                                          !
-         !---------------------------------------------------------------------------------!
-         select case (ibranch_thermo)
-         case (0)
-            effarea_water = 1.2d0
-            effarea_heat  = 2.2d0
-         case default
-            effarea_water = 1.0d0
-            effarea_heat  = 2.0d0
-         end select
       end if
 
       !------------------------------------------------------------------------------------!
@@ -395,8 +376,8 @@ module rk4_driver
       integer                         :: ksn
       integer                         :: nsoil
       integer                         :: nlsw1
-      real(kind=8)                    :: available_water
       real(kind=8)                    :: tmp_energy
+      real(kind=8)                    :: available_water
       !----- Local contants ---------------------------------------------------------------!
       real        , parameter         :: tendays_sec=10.*day_sec
       !----- External function ------------------------------------------------------------!
@@ -574,15 +555,12 @@ module rk4_driver
          if (initp%solvable(ico)) then
             !------------------------------------------------------------------------------!
             !    The cohort was solved, update internal energy and water, and re-calculate !
-            ! temperature and leaf intercellular specific humidity.  Note that energy may  !
-            ! need to be scaled back.                                                      !
+            ! temperature and leaf intercellular specific humidity.  The vegetation dry    !
+            ! heat capacity is constant within one time step, so it does not need to be    !
+            ! updated.                                                                     !
             !------------------------------------------------------------------------------!
-            cpatch%veg_water(ico)  = sngloff(initp%veg_water(ico),tiny_offset)
-            tmp_energy             = initp%veg_energy(ico)                                 &
-                                   + (dble(cpatch%hcapveg(ico))-initp%hcapveg(ico))        &
-                                   * initp%veg_temp(ico)
-
-            cpatch%veg_energy(ico) = sngloff(tmp_energy,tiny_offset)
+            cpatch%veg_water(ico)  = sngloff(initp%veg_water(ico) , tiny_offset)
+            cpatch%veg_energy(ico) = sngloff(initp%veg_energy(ico), tiny_offset)
             call qwtk(cpatch%veg_energy(ico),cpatch%veg_water(ico),cpatch%hcapveg(ico)     &
                      ,cpatch%veg_temp(ico),cpatch%veg_fliq(ico))
             !------------------------------------------------------------------------------!
@@ -594,7 +572,18 @@ module rk4_driver
             cpatch%lint_shv(ico) = cpatch%lint_shv(ico) / (1. + cpatch%lint_shv(ico))
             !----- Convert the wind. ------------------------------------------------------!
             cpatch%veg_wind(ico) = sngloff(initp%veg_wind(ico),tiny_offset)
-            
+            !------------------------------------------------------------------------------!
+
+
+            !------------------------------------------------------------------------------!
+            !     Copy the conductances.                                                   !
+            !------------------------------------------------------------------------------!
+            cpatch%gbh       (ico) = sngloff(initp%gbh       (ico), tiny_offset)
+            cpatch%gbw       (ico) = sngloff(initp%gbw       (ico), tiny_offset)
+            !------------------------------------------------------------------------------!
+
+
+
             !------------------------------------------------------------------------------!
             !     Divide the values of water demand by the time step to obtain the average !
             ! value over the past DTLSM period.                                            !

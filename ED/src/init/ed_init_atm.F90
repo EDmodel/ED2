@@ -184,7 +184,7 @@ subroutine ed_init_atm()
                   cpatch%lint_shv(ico) = cpatch%lint_shv(ico) / (1. + cpatch%lint_shv(ico))
                end do cohortloop1
                !----- Initialise vegetation wind and turbulence parameters. ---------------!
-               call canopy_turbulence(cpoly,isi,ipa,rasveg,canwcap,canccap,canhcap,.true.)
+               call canopy_turbulence(cpoly,isi,ipa,rasveg,canwcap,canccap,canhcap)
             end do patchloop1
          end do siteloop1
       end do polyloop1

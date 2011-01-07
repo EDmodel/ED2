@@ -481,8 +481,6 @@ recursive subroutine read_ed_xml_config(filename)
         if(texist) rlong_min = real(rval) 
         call getConfigREAL  ('veg_temp_min','radiation',i,rval,texist)
         if(texist) rk4min_veg_temp = rval ! This is double precision. 
-        call getConfigREAL  ('lai_min','radiation',i,rval,texist)
-        if(texist) lai_min = real(rval)       
         call getConfigREAL  ('mubar','radiation',i,rval,texist)
         if(texist) mubar = rval
         call getConfigREAL  ('visible_fraction','radiation',i,rval,texist)

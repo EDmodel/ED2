@@ -128,7 +128,7 @@ subroutine euler_timestep(cgrid)
             ! ness scale, the characteristic scales (stars) and canopy resistance and      !
             ! capacities.                                                                  !
             !------------------------------------------------------------------------------!
-            call canopy_turbulence8(csite,integration_buff%initp,ipa,.true.)
+            call canopy_turbulence8(csite,integration_buff%initp,ipa)
 
             !----- Get photosynthesis, stomatal conductance, and transpiration. -----------!
             call canopy_photosynthesis(csite,cmet,nzg,ipa,ed_ktrans,cpoly%lsl(isi)         &
@@ -218,10 +218,7 @@ subroutine integrate_patch_euler(csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa   
                               , tbeg                 & ! intent(inout)
                               , tend                 & ! intent(inout)
                               , dtrk4                & ! intent(inout)
-                              , dtrk4i               & ! intent(inout)
-                              , ibranch_thermo       & ! intent(in)
-                              , effarea_water        & ! intent(out)
-                              , effarea_heat         ! ! intent(out)
+                              , dtrk4i               ! ! intent(inout)
    use rk4_driver      , only : initp2modelp         ! ! subroutine
 
    implicit none
@@ -255,22 +252,6 @@ subroutine integrate_patch_euler(csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa   
       tend   = dble(dtlsm)
       dtrk4  = tend - tbeg
       dtrk4i = 1.d0/dtrk4
-      
-      !------------------------------------------------------------------------------------!
-      !    The area factor for heat and water exchange between canopy and vegetation is    !
-      ! applied only on LAI, and it depends on how we are considering the branches and     !
-      ! twigs.  If their area isn't explicitly defined, we add a 0.2 factor to the area    !
-      ! because WPA will be 0.  Otherwise, we don't add anything to the LAI, and let WPA   !
-      ! to do the job.                                                                     !
-      !------------------------------------------------------------------------------------!
-      select case (ibranch_thermo)
-      case (0)
-         effarea_water = 1.2d0
-         effarea_heat  = 2.2d0
-      case default
-         effarea_water = 1.0d0
-         effarea_heat  = 2.0d0
-      end select
    end if
 
    !---------------------------------------------------------------------------------------!

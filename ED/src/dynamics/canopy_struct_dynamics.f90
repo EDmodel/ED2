@@ -67,7 +67,7 @@ module canopy_struct_dynamics
    ! AND FOR WATER SITES IN COUPLED SIMULATIONS.  THE DOUBLE-PRECISIION VERSION, WHICH IS  !
    ! USED BY THE INTEGRATORS FOR MOST CASES IN ED, IS DEFINED BELOW.                       !
    !---------------------------------------------------------------------------------------!
-   subroutine canopy_turbulence(cpoly,isi,ipa,rasveg,canwcap,canccap,canhcap,get_flow_geom)
+   subroutine canopy_turbulence(cpoly,isi,ipa,rasveg,canwcap,canccap,canhcap)
       use ed_state_vars  , only : polygontype          & ! structure
                                 , sitetype             & ! structure
                                 , patchtype            ! ! structure
@@ -106,7 +106,6 @@ module canopy_struct_dynamics
       real                , intent(out) :: canwcap       ! Canopy water capacity
       real                , intent(out) :: canccap       ! Canopy carbon capacity
       real                , intent(out) :: canhcap       ! Canopy heat capacity
-      logical             , intent(in)  :: get_flow_geom ! Flag to get the flow geometry
       !----- Pointers ---------------------------------------------------------------------!
       type(sitetype)      , pointer    :: csite
       type(patchtype)     , pointer    :: cpatch
@@ -284,52 +283,49 @@ module canopy_struct_dynamics
          ! structure of the vegetation and its attenuation effects and the heat and water  !
          ! capacities.                                                                     !
          !---------------------------------------------------------------------------------!
-         if(get_flow_geom) then
+         laicum = 0.0
+         uh = reduced_wind(csite%ustar(ipa),csite%zeta(ipa),csite%ribulk(ipa),zref,d0   &
+                          ,cpatch%hite(1),csite%rough(ipa))
+         do ico=1,cpatch%ncohorts
+            if (cpatch%solvable(ico)) then
+               ipft  = cpatch%pft(ico)
+               hite  = cpatch%hite(ico)
 
-            laicum = 0.0
-            uh = reduced_wind(csite%ustar(ipa),csite%zeta(ipa),csite%ribulk(ipa),zref,d0   &
-                             ,cpatch%hite(1),csite%rough(ipa))
-            do ico=1,cpatch%ncohorts
-               if (cpatch%solvable(ico)) then
-                  ipft  = cpatch%pft(ico)
-                  hite  = cpatch%hite(ico)
+               !----- Calculate the wind speed at height z. ----------------------------!
+               select case (icanturb)
+               case (-2)
+                  cpatch%veg_wind(ico) = uh
+               case (-1)
+                  cpatch%veg_wind(ico) = max(ustmin,uh * exp ( -0.5 * laicum))
+               end select
 
-                  !----- Calculate the wind speed at height z. ----------------------------!
-                  select case (icanturb)
-                  case (-2)
-                     cpatch%veg_wind(ico) = uh
-                  case (-1)
-                     cpatch%veg_wind(ico) = max(ustmin,uh * exp ( -0.5 * laicum))
-                  end select
+               !------------------------------------------------------------------------!
+               !    Find the aerodynamic conductances for heat and water at the leaf    !
+               ! boundary layer.                                                        !
+               !------------------------------------------------------------------------!
+               call aerodynamic_conductances(ipft,cpatch%veg_wind(ico)                  &
+                                            ,cpatch%veg_temp(ico),csite%can_temp(ipa)   &
+                                            ,csite%can_shv(ipa),csite%can_rhos(ipa)     &
+                                            ,gbhmos_min,cpatch%gbh(ico),cpatch%gbw(ico))
+               !------------------------------------------------------------------------!
 
-                  !------------------------------------------------------------------------!
-                  !    Find the aerodynamic conductances for heat and water at the leaf    !
-                  ! boundary layer.                                                        !
-                  !------------------------------------------------------------------------!
-                  call aerodynamic_conductances(ipft,cpatch%veg_wind(ico)                  &
-                                               ,cpatch%veg_temp(ico),csite%can_temp(ipa)   &
-                                               ,csite%can_shv(ipa),csite%can_rhos(ipa)     &
-                                               ,gbhmos_min,cpatch%gbh(ico),cpatch%gbw(ico))
-                  !------------------------------------------------------------------------!
+               laicum = laicum      + cpatch%lai(ico)
+            else
+               cpatch%gbh(ico)      = 0.0
+               cpatch%gbw(ico)      = 0.0
+               cpatch%veg_wind(ico) = cmet%vels
+            end if
+         end do
 
-                  laicum = laicum      + cpatch%lai(ico)
-               else
-                  cpatch%gbh(ico)      = 0.0
-                  cpatch%gbw(ico)      = 0.0
-                  cpatch%veg_wind(ico) = cmet%vels
-               end if
-            end do
-
-            !------------------------------------------------------------------------------!
-            !    Calculate the heat and mass storage capacity of the canopy and inter-     !
-            ! facial air spaces.  This is a tough call, because the reference height is    !
-            ! allowed to be abnormally low in this case, and it is possible that it is     !
-            ! even lower than the top of the canopy.  So... we will set the top of the     !
-            ! interfacial layer as the "reference elevation plus the top of the canopy".   !
-            ! An alternative could be to make a conditional like in case(1).               !
-            !------------------------------------------------------------------------------!
-            call can_whcap(csite,ipa,canwcap,canccap,canhcap)
-         end if
+         !---------------------------------------------------------------------------------!
+         !    Calculate the heat and mass storage capacity of the canopy and interfacial   !
+         ! air spaces.  This is a tough call, because the reference height is allowed to   !
+         ! be abnormally low in this case, and it is possible that it is even lower than   !
+         ! the top of the canopy.  So... we will set the top of the interfacial layer as   !
+         ! the "reference elevation plus the top of the canopy".  An alternative could     !
+         ! be to make a conditional like in case(1).                                       !
+         !---------------------------------------------------------------------------------!
+         call can_whcap(csite,ipa,canwcap,canccap,canhcap)
       !------------------------------------------------------------------------------------!
 
 
@@ -398,44 +394,41 @@ module canopy_struct_dynamics
          ! structure of the vegetation and its attenuation effects and the heat and water  !
          ! capacities.                                                                     !
          !---------------------------------------------------------------------------------!
-         if(get_flow_geom) then
+         !----- Top of canopy wind speed. -------------------------------------------------!
+         uh = reduced_wind(csite%ustar(ipa),csite%zeta(ipa),csite%ribulk(ipa),zref,d0      &
+                          ,cpatch%hite(1),csite%rough(ipa))
 
-            !----- Top of canopy wind speed. ----------------------------------------------!
-            uh = reduced_wind(csite%ustar(ipa),csite%zeta(ipa),csite%ribulk(ipa),zref,d0   &
-                             ,cpatch%hite(1),csite%rough(ipa))
+         do ico=1,cpatch%ncohorts
 
-            do ico=1,cpatch%ncohorts
+            ipft  = cpatch%pft(ico)
+            hite  = cpatch%hite(ico)
 
-               ipft  = cpatch%pft(ico)
-               hite  = cpatch%hite(ico)
+            !----- Estimate the height center of the crown. -------------------------------!
+            z = 0.5 * (hite + h2trunkh(cpatch%hite(ico)))
 
-               !----- Estimate the height center of the crown. ----------------------------!
-               z = 0.5 * (hite + h2trunkh(cpatch%hite(ico)))
-
-               !----- Calculate the wind speed at height z. -------------------------------!
-               cpatch%veg_wind(ico) = max(ustmin,uh * exp(-exar * (1.0 - z/h)))
-
-               !---------------------------------------------------------------------------!
-               !    Find the aerodynamic conductances for heat and water at the leaf       !
-               ! boundary layer.                                                           !
-               !---------------------------------------------------------------------------!
-               call aerodynamic_conductances(ipft,cpatch%veg_wind(ico)                     &
-                                            ,cpatch%veg_temp(ico),csite%can_temp(ipa)      &
-                                            ,csite%can_shv(ipa),csite%can_rhos(ipa)        &
-                                            ,gbhmos_min,cpatch%gbh(ico),cpatch%gbw(ico))
-               !---------------------------------------------------------------------------!
-            end do
+            !----- Calculate the wind speed at height z. ----------------------------------!
+            cpatch%veg_wind(ico) = max(ustmin,uh * exp(-exar * (1.0 - z/h)))
 
             !------------------------------------------------------------------------------!
-            !    Calculate the heat and mass storage capacity of the canopy and inter-     !
-            ! facial air spaces.  This is a tough call, because the reference height is    !
-            ! allowed to be abnormally low in this case, and it is possible that it is     !
-            ! even lower than the top of the canopy.  So... we will set the top of the     !
-            ! interfacial layer as the "reference elevation plus the top of the canopy".   !
-            ! An alternative could be to make a conditional like in case(1).               !
+            !    Find the aerodynamic conductances for heat and water at the leaf boundary !
+            ! layer.                                                                       !
             !------------------------------------------------------------------------------!
-            call can_whcap(csite,ipa,canwcap,canccap,canhcap)
-         end if
+            call aerodynamic_conductances(ipft,cpatch%veg_wind(ico),cpatch%veg_temp(ico)   &
+                                         ,csite%can_temp(ipa),csite%can_shv(ipa)           &
+                                         ,csite%can_rhos(ipa),gbhmos_min,cpatch%gbh(ico)   &
+                                         ,cpatch%gbw(ico))
+            !------------------------------------------------------------------------------!
+         end do
+
+         !---------------------------------------------------------------------------------!
+         !    Calculate the heat and mass storage capacity of the canopy and interfacial   !
+         ! air spaces.  This is a tough call, because the reference height is allowed to   !
+         ! be abnormally low in this case, and it is possible that it is even lower than   !
+         ! the top of the canopy.  So... we will set the top of the interfacial layer as   !
+         ! the "reference elevation plus the top of the canopy".  An alternative could be  !
+         ! to make a conditional like in case(1).                                          !
+         !---------------------------------------------------------------------------------!
+         call can_whcap(csite,ipa,canwcap,canccap,canhcap)
       !------------------------------------------------------------------------------------!
 
 
@@ -474,9 +467,9 @@ module canopy_struct_dynamics
 
             !----- Assume a new reference elevation at the canopy top. --------------------!
             zref = h
-            if (get_flow_geom) then
-               call can_whcap(csite,ipa,canwcap,canccap,canhcap)
-            end if
+            
+            !----- Find the heat, water, and carbon capacities of the canopy air space. ---!
+            call can_whcap(csite,ipa,canwcap,canccap,canhcap)
 
          else         
 
@@ -487,9 +480,8 @@ module canopy_struct_dynamics
                cmet%vels = cmet%vels_unstab
             end if
 
-            if(get_flow_geom) then
-               call can_whcap(csite,ipa,canwcap,canccap,canhcap)
-            end if
+            !----- Find the heat, water, and carbon capacities of the canopy air space. ---!
+            call can_whcap(csite,ipa,canwcap,canccap,canhcap)
 
          end if
          
@@ -516,32 +508,29 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          !     Calculate the leaf level aerodynamic resistance.                            !
          !---------------------------------------------------------------------------------!
-         if(get_flow_geom) then
+         !----- Top of canopy wind speed. -------------------------------------------------!
+         uh = reduced_wind(csite%ustar(ipa),csite%zeta(ipa),csite%ribulk(ipa),zref,d0      &
+                          ,cpatch%hite(1),csite%rough(ipa))
 
-            !----- Top of canopy wind speed. ----------------------------------------------!
-            uh = reduced_wind(csite%ustar(ipa),csite%zeta(ipa),csite%ribulk(ipa),zref,d0   &
-                             ,cpatch%hite(1),csite%rough(ipa))
+         do ico=1,cpatch%ncohorts
+            ipft  = cpatch%pft(ico)
+            hite  = cpatch%hite(ico)
+            !----- Estimate the height center of the crown. -------------------------------!
+            z = hite * (1.0 - 0.5 * crown_depth_fraction(ipft))
 
-            do ico=1,cpatch%ncohorts
-               ipft  = cpatch%pft(ico)
-               hite  = cpatch%hite(ico)
-               !----- Estimate the height center of the crown. ----------------------------!
-               z = hite * (1.0 - 0.5 * crown_depth_fraction(ipft))
+            !----- Calculate the wind speed at height z. ----------------------------------!
+            cpatch%veg_wind(ico) = max(ustmin,uh * exp(- exar * (1.0 - z/h)))
 
-               !----- Calculate the wind speed at height z. -------------------------------!
-               cpatch%veg_wind(ico) = max(ustmin,uh * exp(- exar * (1.0 - z/h)))
-
-               !---------------------------------------------------------------------------!
-               !    Find the aerodynamic conductances for heat and water at the leaf       !
-               ! boundary layer.                                                           !
-               !---------------------------------------------------------------------------!
-               call aerodynamic_conductances(ipft,cpatch%veg_wind(ico)                     &
-                                            ,cpatch%veg_temp(ico),csite%can_temp(ipa)      &
-                                            ,csite%can_shv(ipa),csite%can_rhos(ipa)        &
-                                            ,gbhmos_min,cpatch%gbh(ico),cpatch%gbw(ico))
-               !---------------------------------------------------------------------------!
-            end do
-         end if
+            !------------------------------------------------------------------------------!
+            !    Find the aerodynamic conductances for heat and water at the leaf boundary !
+            ! layer.                                                                       !
+            !------------------------------------------------------------------------------!
+            call aerodynamic_conductances(ipft,cpatch%veg_wind(ico),cpatch%veg_temp(ico)   &
+                                         ,csite%can_temp(ipa),csite%can_shv(ipa)           &
+                                         ,csite%can_rhos(ipa),gbhmos_min,cpatch%gbh(ico)   &
+                                         ,cpatch%gbw(ico))
+            !------------------------------------------------------------------------------!
+         end do
       !------------------------------------------------------------------------------------!
 
 
@@ -595,91 +584,82 @@ module canopy_struct_dynamics
          zcan = ceiling(h/dz)
          idz  = 0.5 * dz     ! lowest element center
 
-         if (get_flow_geom) then
-            
-            !------------------------------------------------------------------------------!
-            !    Only go through the double loop once per step, do not go through it       !
-            ! during all of the derivative steps.  This loop is only to get the displace-  !
-            ! ment height and attenuation which has not changed.                           !
-            !------------------------------------------------------------------------------!
-            zetac = 0.0  ! Cumulative zeta
+         zetac = 0.0  ! Cumulative zeta
 
-            if (ibranch_thermo /= 0 .and. (sum(cpatch%wai)+sum(cpatch%lai)) == 0.) then
-               call fatal_error('Your plants must have some TAI, M97','canopy_turbulence'  &
-                               ,'canopy_struct_dynamics.f90')
-            end if
-
-            !------------------------------------------------------------------------------!
-            !     Loop through the canopy at equal increments.  At each increment,         !
-            ! determine the frontal area drag surface, and the drag force zeta.            !
-            !------------------------------------------------------------------------------!
-            do k = 1, zcan
-               
-               !---------------------------------------------------------------------------!
-               !    Determine the combined leaf area from all cohort crowns residing in    !
-               ! this layer.                                                               !
-               !---------------------------------------------------------------------------!
-               layertai = 0.0
-               z = real(k-1) * dz + idz  ! elevation of discrete layer
-               do ico=1,cpatch%ncohorts
-                  !----- Some aliases. ----------------------------------------------------!
-                  ipft  = cpatch%pft(ico)
-                  hite  = cpatch%hite(ico)
-
-                  crowndepth = max(dz,crown_depth_fraction(ipft)*hite)
-
-                  if ( (z < hite .and. z >= (hite-crowndepth)) .or.                        &
-                       (k == 1 .and. hite < dz) ) then
-                     select case (ibranch_thermo)
-                     case (0)
-                        !------------------------------------------------------------------!
-                        !     Although we are not solving branches, assume that at full    !
-                        ! leaf-out, there is sheltering of branches.  When leaves are not  !
-                        ! at full out, then the stems and branches start to become visible !
-                        ! to the fluid flow.  Assume that when leaves are gone, then the   !
-                        ! branches contribute about 50% of the drag surface, everything in !
-                        ! between is a linear combination.                                 !
-                        !------------------------------------------------------------------!
-                        layertai=layertai + (cpatch%lai(ico) + cpatch%nplant(ico) * 0.5)   &
-                                          * (dz/crowndepth) 
-                     case default
-                        !------------------------------------------------------------------!
-                        !    Use LAI and WAI to define the frontal area of drag surface.   !
-                        !------------------------------------------------------------------!
-                        layertai = layertai + (cpatch%lai(ico) + cpatch%wai(ico))          &
-                                            * (dz /crowndepth)
-                     end select
-
-                  end if
-               end do
-               
-               
-
-               a_front  = layertai/dz ! Frontal area of drag surface
-               zetac    = zetac + 0.5 * a_front * (Cd0 / Pm) * dz
-               zeta(k)  = zetac       ! Use a centered drag
-               zetac    = zetac + 0.5 * a_front * (Cd0 / Pm) * dz
-            end do
-            
-            !----- The following constains the ratio of ustar over u. ---------------------!
-            ustarouh = (c1_m97 - c2_m97 * exp(-c3_m97*zeta(zcan)))
-            
-            !----- Eta, coefficient of attenuation. ---------------------------------------!
-            eta = 0.5 * zeta(zcan) / (ustarouh*ustarouh)
-            
-            !------------------------------------------------------------------------------!
-            !     Displacement height.  Notice that if Pm and Cd0 are uniform, we can      !
-            ! estimate zeta(h) without a loop, if this routine is taking to long, we can   !
-            ! merge the loops.                                                             !
-            !------------------------------------------------------------------------------!
-            d0 = h
-            do k=1,zcan
-               d0 = d0 - dz*exp(-2.0*eta*(1.0-zeta(k)/zeta(zcan)))
-            end do
-
-            !----- Calculate the roughness lengths zo,zt,zr. ------------------------------!
-            csite%rough(ipa) = max((h-d0)*exp(-vonk/ustarouh),soil_rough)
+         if (ibranch_thermo /= 0 .and. (sum(cpatch%wai)+sum(cpatch%lai)) == 0.) then
+            call fatal_error('Your plants must have some TAI, M97','canopy_turbulence'     &
+                            ,'canopy_struct_dynamics.f90')
          end if
+
+         !---------------------------------------------------------------------------------!
+         !     Loop through the canopy at equal increments.  At each increment, determine  !
+         ! the frontal area drag surface, and the drag force zeta.                         !
+         !---------------------------------------------------------------------------------!
+         do k = 1, zcan
+            
+            !------------------------------------------------------------------------------!
+            !    Determine the combined leaf area from all cohort crowns residing in this  !
+            ! layer.                                                                       !
+            !------------------------------------------------------------------------------!
+            layertai = 0.0
+            z = real(k-1) * dz + idz  ! elevation of discrete layer
+            do ico=1,cpatch%ncohorts
+               !----- Some aliases. -------------------------------------------------------!
+               ipft  = cpatch%pft(ico)
+               hite  = cpatch%hite(ico)
+
+               crowndepth = max(dz,crown_depth_fraction(ipft)*hite)
+
+               if ( (z < hite .and. z >= (hite-crowndepth)) .or. (k == 1 .and. hite < dz)) &
+               then
+                  select case (ibranch_thermo)
+                  case (0)
+                     !---------------------------------------------------------------------!
+                     !     Although we are not solving branches, assume that at full leaf- !
+                     ! -out, there is sheltering of branches.  When leaves are not at full !
+                     ! out, then the stems and branches start to become visible to the     !
+                     ! fluid flow.  Assume that when leaves are gone, then the branches    !
+                     ! contribute about 50% of the drag surface, everything in between is  !
+                     ! a linear combination.                                               !
+                     !---------------------------------------------------------------------!
+                     layertai = layertai + (cpatch%lai(ico) + cpatch%nplant(ico) * 0.5)    &
+                                         * (dz/crowndepth) 
+                  case default
+                     !---------------------------------------------------------------------!
+                     !    Use LAI and WAI to define the frontal area of drag surface.      !
+                     !---------------------------------------------------------------------!
+                     layertai = layertai + (cpatch%lai(ico) + cpatch%wai(ico))             &
+                                         * (dz /crowndepth)
+                  end select
+               end if
+            end do
+            
+            
+
+            a_front  = layertai/dz ! Frontal area of drag surface
+            zetac    = zetac + 0.5 * a_front * (Cd0 / Pm) * dz
+            zeta(k)  = zetac       ! Use a centered drag
+            zetac    = zetac + 0.5 * a_front * (Cd0 / Pm) * dz
+         end do
+         
+         !----- The following constains the ratio of ustar over u. ------------------------!
+         ustarouh = (c1_m97 - c2_m97 * exp(-c3_m97*zeta(zcan)))
+         
+         !----- Eta, coefficient of attenuation. ------------------------------------------!
+         eta = 0.5 * zeta(zcan) / (ustarouh*ustarouh)
+         
+         !---------------------------------------------------------------------------------!
+         !     Displacement height.  Notice that if Pm and Cd0 are uniform, we can esti-   !
+         ! mate zeta(h) without a loop, if this routine is taking to long, we can merge    !
+         ! the loops.                                                                      !
+         !---------------------------------------------------------------------------------!
+         d0 = h
+         do k=1,zcan
+            d0 = d0 - dz*exp(-2.0*eta*(1.0-zeta(k)/zeta(zcan)))
+         end do
+
+         !----- Calculate the roughness lengths zo,zt,zr. ---------------------------------!
+         csite%rough(ipa) = max((h-d0)*exp(-vonk/ustarouh),soil_rough)
          
          !----- Finding the characteristic scales (a.k.a. stars). -------------------------!
          call ed_stars(cmet%atm_theta,cmet%atm_theiv,cmet%atm_shv,cmet%atm_co2             &
@@ -688,57 +668,54 @@ module canopy_struct_dynamics
                       ,csite%ustar(ipa),csite%tstar(ipa),estar,csite%qstar(ipa)            &
                       ,csite%cstar(ipa),csite%zeta(ipa),csite%ribulk(ipa))
 
-         if(get_flow_geom) then
-            
-            !----- Calculate the diffusivity at the canopy top. ---------------------------!
-            K_top = vonk * csite%ustar(ipa) * (h-d0)
+         !----- Calculate the diffusivity at the canopy top. ------------------------------!
+         K_top = vonk * csite%ustar(ipa) * (h-d0)
 
-            rasveg = 0.
+         rasveg = 0.
 
-            !----- Numerically integrate the inverse diffusivity. -------------------------!
-            do k=1,zcan
-               Kdiff  = K_top * exp(-eta * (1.0-zeta(k)/zeta(zcan))) + kvwake
-               rasveg = rasveg + dz / Kdiff
-            end do
+         !----- Numerically integrate the inverse diffusivity. ----------------------------!
+         do k=1,zcan
+            Kdiff  = K_top * exp(-eta * (1.0-zeta(k)/zeta(zcan))) + kvwake
+            rasveg = rasveg + dz / Kdiff
+         end do
 
-            !------------------------------------------------------------------------------!
-            !     Calculate the leaf level aerodynamic resistance.                         !
-            !------------------------------------------------------------------------------!
+         !---------------------------------------------------------------------------------!
+         !     Calculate the leaf level aerodynamic resistance.                            !
+         !---------------------------------------------------------------------------------!
 
-            !----- Top of canopy wind speed. ----------------------------------------------!
-            uh = reduced_wind(csite%ustar(ipa),csite%zeta(ipa),csite%ribulk(ipa),zref,d0   &
-                             ,cpatch%hite(1),csite%rough(ipa))
+         !----- Top of canopy wind speed. -------------------------------------------------!
+         uh = reduced_wind(csite%ustar(ipa),csite%zeta(ipa),csite%ribulk(ipa),zref,d0      &
+                          ,cpatch%hite(1),csite%rough(ipa))
 
-            do ico=1,cpatch%ncohorts
-               ipft = cpatch%pft(ico)
-               hite = cpatch%hite(ico)
+         do ico=1,cpatch%ncohorts
+            ipft = cpatch%pft(ico)
+            hite = cpatch%hite(ico)
 
-               !----- Estimate the height center of the crown. ----------------------------!
-               z = hite * (1. - 0.5 * crown_depth_fraction(ipft))
+            !----- Estimate the height center of the crown. -------------------------------!
+            z = hite * (1. - 0.5 * crown_depth_fraction(ipft))
 
-               !----- Determine the zeta index. -------------------------------------------!
-               k = ceiling(z/dz)
+            !----- Determine the zeta index. ----------------------------------------------!
+            k = ceiling(z/dz)
 
-               !----- Calculate the wind speed at height z. -------------------------------!
-               cpatch%veg_wind(ico) = max(ustmin, uh*exp(-eta * (1. - zeta(k)/zeta(zcan))))
-
-               !---------------------------------------------------------------------------!
-               !    Find the aerodynamic conductances for heat and water at the leaf       !
-               ! boundary layer.                                                           !
-               !---------------------------------------------------------------------------!
-               call aerodynamic_conductances(ipft,cpatch%veg_wind(ico)                     &
-                                            ,cpatch%veg_temp(ico),csite%can_temp(ipa)      &
-                                            ,csite%can_shv(ipa),csite%can_rhos(ipa)        &
-                                            ,gbhmos_min,cpatch%gbh(ico),cpatch%gbw(ico))
-               !---------------------------------------------------------------------------!
-            end do
+            !----- Calculate the wind speed at height z. ----------------------------------!
+            cpatch%veg_wind(ico) = max(ustmin, uh*exp(-eta * (1. - zeta(k)/zeta(zcan))))
 
             !------------------------------------------------------------------------------!
-            ! Calculate the heat and mass storage capacity of the canopy and interfacial   !
-            ! air spaces.                                                                  !
+            !    Find the aerodynamic conductances for heat and water at the leaf boundary !
+            ! layer.                                                                       !
             !------------------------------------------------------------------------------!
-            call can_whcap(csite,ipa,canwcap,canccap,canhcap)
-         end if
+            call aerodynamic_conductances(ipft,cpatch%veg_wind(ico),cpatch%veg_temp(ico)   &
+                                         ,csite%can_temp(ipa),csite%can_shv(ipa)           &
+                                         ,csite%can_rhos(ipa),gbhmos_min,cpatch%gbh(ico)   &
+                                         ,cpatch%gbw(ico))
+            !------------------------------------------------------------------------------!
+         end do
+
+         !---------------------------------------------------------------------------------!
+         !    Calculate the heat and mass storage capacity of the canopy and interfacial   !
+         ! air spaces.                                                                     !
+         !---------------------------------------------------------------------------------!
+         call can_whcap(csite,ipa,canwcap,canccap,canhcap)
 
       end select
 
@@ -805,7 +782,7 @@ module canopy_struct_dynamics
    ! SCHEME.  THE SINGLE-PRECISIION VERSION, WHICH IS USED BY THE EULER INTEGRATION IS     !
    ! DEFINED ABOVE.                                                                        !
    !---------------------------------------------------------------------------------------!
-   subroutine canopy_turbulence8(csite,initp,ipa,get_flow_geom)
+   subroutine canopy_turbulence8(csite,initp,ipa)
       use ed_state_vars  , only : polygontype          & ! structure
                                 , sitetype             & ! structure
                                 , patchtype            ! ! structure
@@ -843,7 +820,6 @@ module canopy_struct_dynamics
       type(patchtype)    , pointer    :: cpatch
       type(rk4patchtype) , target     :: initp
       integer            , intent(in) :: ipa           ! Patch loop
-      logical            , intent(in) :: get_flow_geom
       !----- Local variables --------------------------------------------------------------!
       integer        :: ico        ! Cohort loop
       integer        :: ipft       ! PFT alias
@@ -1012,70 +988,61 @@ module canopy_struct_dynamics
          ! structure of the vegetation and its attenuation effects and the heat and water  !
          ! capacities.                                                                     !
          !---------------------------------------------------------------------------------!
-         if (get_flow_geom) then
+         !----- Top of canopy wind speed. -------------------------------------------------!
+         uh = reduced_wind8(initp%ustar,initp%zeta,initp%ribulk,zref,d0                    &
+                           ,dble(cpatch%hite(1)),initp%rough)
+         laicum = 0.d0
+         do ico=1,cpatch%ncohorts
+            if (initp%solvable(ico)) then
+               ipft  = cpatch%pft(ico)
 
-            !----- Top of canopy wind speed. ----------------------------------------------!
-            uh = reduced_wind8(initp%ustar,initp%zeta,initp%ribulk,zref,d0                 &
-                              ,dble(cpatch%hite(1)),initp%rough)
-            laicum = 0.d0
-            do ico=1,cpatch%ncohorts
-               if (initp%solvable(ico)) then
-                  ipft  = cpatch%pft(ico)
-
-                  !----- Calculate the wind speed at height z. ----------------------------!
-                  select case (icanturb)
-                  case (-2)
-                     initp%veg_wind(ico) = uh
-                  case (-1)
-                     initp%veg_wind(ico) = max(ustmin8,uh * exp ( - 5.d-1 * laicum))
-                  end select
+               !----- Calculate the wind speed at height z. -------------------------------!
+               select case (icanturb)
+               case (-2)
+                  initp%veg_wind(ico) = uh
+               case (-1)
+                  initp%veg_wind(ico) = max(ustmin8,uh * exp ( - 5.d-1 * laicum))
+               end select
 
 
-                  !------------------------------------------------------------------------!
-                  !    Find the aerodynamic conductances for heat and water at the leaf    !
-                  ! boundary layer.                                                        !
-                  !------------------------------------------------------------------------!
-                  call aerodynamic_conductances8(ipft                                      &
-                                                ,initp%veg_wind(ico)                       &
-                                                ,initp%veg_temp(ico)                       &
-                                                ,initp%can_temp                            &
-                                                ,initp%can_shv                             &
-                                                ,initp%can_rhos                            &
-                                                ,gbhmos_min                                &
-                                                ,initp%gbh         (ico)                   &
-                                                ,initp%gbw         (ico)                   &
-                                                ,initp%veg_reynolds(ico)                   &
-                                                ,initp%veg_grashof (ico)                   &
-                                                ,initp%veg_nussfree(ico)                   &
-                                                ,initp%veg_nussforc(ico) )
-                  cpatch%gbh(ico) = sngloff(initp%gbh(ico),tiny_offset)
-                  cpatch%gbw(ico) = sngloff(initp%gbw(ico),tiny_offset)
-                  !------------------------------------------------------------------------!
+               !---------------------------------------------------------------------------!
+               !    Find the aerodynamic conductances for heat and water at the leaf       !
+               ! boundary layer.                                                           !
+               !---------------------------------------------------------------------------!
+               call aerodynamic_conductances8(ipft,initp%veg_wind(ico),initp%veg_temp(ico) &
+                                             ,initp%can_temp,initp%can_shv,initp%can_rhos  &
+                                             ,gbhmos_min,initp%gbh(ico),initp%gbw(ico)     &
+                                             ,initp%veg_reynolds(ico)                      &
+                                             ,initp%veg_grashof(ico)                       &
+                                             ,initp%veg_nussfree(ico)                      &
+                                             ,initp%veg_nussforc(ico) )
+               cpatch%gbh(ico) = sngloff(initp%gbh(ico),tiny_offset)
+               cpatch%gbw(ico) = sngloff(initp%gbw(ico),tiny_offset)
+               !---------------------------------------------------------------------------!
 
-                  laicum = laicum + initp%lai(ico)
-               else
-                  initp%veg_wind    (ico) = vels_ref
-                  initp%veg_reynolds(ico) = 0.d0
-                  initp%veg_grashof (ico) = 0.d0
-                  initp%veg_nussfree(ico) = 0.d0
-                  initp%veg_nussforc(ico) = 0.d0
-                  initp%gbh(ico)          = 0.d0
-                  initp%gbw(ico)          = 0.d0
-                  cpatch%gbh(ico)         = 0.0
-                  cpatch%gbw(ico)         = 0.0
-               end if
-            end do
+               laicum = laicum + initp%lai(ico)
+            else
+               initp%veg_wind    (ico) = vels_ref
+               initp%veg_reynolds(ico) = 0.d0
+               initp%veg_grashof (ico) = 0.d0
+               initp%veg_nussfree(ico) = 0.d0
+               initp%veg_nussforc(ico) = 0.d0
+               initp%gbh(ico)          = 0.d0
+               initp%gbw(ico)          = 0.d0
+               cpatch%gbh(ico)         = 0.0
+               cpatch%gbw(ico)         = 0.0
+            end if
+         end do
 
-            !------------------------------------------------------------------------------!
-            !    Calculate the heat and mass storage capacity of the canopy and inter-     !
-            ! facial air spaces.  This is a tough call, because the reference height is    !
-            ! allowed to be abnormally low in this case, and it is possible that it is     !
-            ! even lower than the top of the canopy.  So... we will set the top of the     !
-            ! interfacial layer as the "reference elevation plus the top of the canopy".   !
-            ! An alternative could be to make a conditional like in case(1).               !
-            !------------------------------------------------------------------------------!
-            call can_whcap8(csite,ipa,initp%can_rhos,initp%can_temp,initp%can_depth)
-         end if
+         !---------------------------------------------------------------------------------!
+         !    Calculate the heat and mass storage capacity of the canopy and interfacial   !
+         ! air spaces.  This is a tough call, because the reference height is allowed to   !
+         ! be abnormally low in this case, and it is possible that it is even lower than   !
+         ! the top of the canopy.  So... we will set the top of the interfacial layer as   !
+         ! the "reference elevation plus the top of the canopy".  An alternative could be  !
+         ! to make a conditional like in case(1).                                          !
+         !---------------------------------------------------------------------------------!
+         call can_whcap8(csite,ipa,initp%can_rhos,initp%can_temp,initp%can_depth)
       !------------------------------------------------------------------------------------!
 
       !------------------------------------------------------------------------------------!
@@ -1134,56 +1101,45 @@ module canopy_struct_dynamics
          ! structure of the vegetation and its attenuation effects and the heat and water  !
          ! capacities.                                                                     !
          !---------------------------------------------------------------------------------!
-         if(get_flow_geom) then
+         !----- Top of canopy wind speed. -------------------------------------------------!
+         uh = reduced_wind8(initp%ustar,initp%zeta,initp%ribulk,zref,d0                    &
+                          ,dble(cpatch%hite(1)),initp%rough)
+         
+         do ico=1,cpatch%ncohorts
 
-            !----- Top of canopy wind speed. ----------------------------------------------!
-            uh = reduced_wind8(initp%ustar,initp%zeta,initp%ribulk,zref,d0                 &
-                             ,dble(cpatch%hite(1)),initp%rough)
-            
-            do ico=1,cpatch%ncohorts
+            ipft  = cpatch%pft(ico)
+            hite8 = dble(cpatch%hite(ico))
 
-               ipft  = cpatch%pft(ico)
-               hite8 = dble(cpatch%hite(ico))
+            !----- Estimate the height center of the crown. -------------------------------!
+            !z = hite8 * (1.d0 - 5.d-1 * dble(crown_depth_fraction(ipft)))
+            z = 5.d-1 * (hite8 + dble(h2trunkh(cpatch%hite(ico))))
 
-               !----- Estimate the height center of the crown. ----------------------------!
-               !z = hite8 * (1.d0 - 5.d-1 * dble(crown_depth_fraction(ipft)))
-               z = 5.d-1 * (hite8 + dble(h2trunkh(cpatch%hite(ico))))
-
-               !----- Calculate the wind speed at height z. -------------------------------!
-               initp%veg_wind(ico) = max(ustmin8,uh * exp(-exar8 * (1.d0 - z/h)))
-
-               !---------------------------------------------------------------------------!
-               !    Find the aerodynamic conductances for heat and water at the leaf       !
-               ! boundary layer.                                                           !
-               !---------------------------------------------------------------------------!
-               call aerodynamic_conductances8(ipft                                         &
-                                             ,initp%veg_wind(ico)                          &
-                                             ,initp%veg_temp(ico)                          &
-                                             ,initp%can_temp                               &
-                                             ,initp%can_shv                                &
-                                             ,initp%can_rhos                               &
-                                             ,gbhmos_min                                   &
-                                             ,initp%gbh         (ico)                      &
-                                             ,initp%gbw         (ico)                      &
-                                             ,initp%veg_reynolds(ico)                      &
-                                             ,initp%veg_grashof (ico)                      &
-                                             ,initp%veg_nussfree(ico)                      &
-                                             ,initp%veg_nussforc(ico) )
-               cpatch%gbh(ico) = sngloff(initp%gbh(ico),tiny_offset)
-               cpatch%gbw(ico) = sngloff(initp%gbw(ico),tiny_offset)
-               !------------------------------------------------------------------------!
-            end do
+            !----- Calculate the wind speed at height z. ----------------------------------!
+            initp%veg_wind(ico) = max(ustmin8,uh * exp(-exar8 * (1.d0 - z/h)))
 
             !------------------------------------------------------------------------------!
-            !    Calculate the heat and mass storage capacity of the canopy and inter-     !
-            ! facial air spaces.  This is a tough call, because the reference height is    !
-            ! allowed to be abnormally low in this case, and it is possible that it is     !
-            ! even lower than the top of the canopy.  So... we will set the top of the     !
-            ! interfacial layer as the "reference elevation plus the top of the canopy".   !
-            ! An alternative could be to make a conditional like in case(1).               !
+            !    Find the aerodynamic conductances for heat and water at the leaf boundary !
+            ! layer.                                                                       !
             !------------------------------------------------------------------------------!
-            call can_whcap8(csite,ipa,initp%can_rhos,initp%can_temp,initp%can_depth)
-         end if
+            call aerodynamic_conductances8(ipft,initp%veg_wind(ico),initp%veg_temp(ico)    &
+                                          ,initp%can_temp,initp%can_shv,initp%can_rhos     &
+                                          ,gbhmos_min,initp%gbh(ico),initp%gbw(ico)        &
+                                          ,initp%veg_reynolds(ico),initp%veg_grashof(ico)  &
+                                          ,initp%veg_nussfree(ico),initp%veg_nussforc(ico))
+            cpatch%gbh(ico) = sngloff(initp%gbh(ico),tiny_offset)
+            cpatch%gbw(ico) = sngloff(initp%gbw(ico),tiny_offset)
+            !------------------------------------------------------------------------------!
+         end do
+
+         !---------------------------------------------------------------------------------!
+         !    Calculate the heat and mass storage capacity of the canopy and interfacial   !
+         ! air spaces.  This is a tough call, because the reference height is allowed to   !
+         ! be abnormally low in this case, and it is possible that it is even lower than   !
+         ! the top of the canopy.  So... we will set the top of the interfacial layer as   !
+         ! the "reference elevation plus the top of the canopy".  An alternative could be  !
+         ! to make a conditional like in case(1).                                          !
+         !---------------------------------------------------------------------------------!
+         call can_whcap8(csite,ipa,initp%can_rhos,initp%can_temp,initp%can_depth)
       !------------------------------------------------------------------------------------!
 
 
@@ -1215,16 +1171,16 @@ module canopy_struct_dynamics
             vels_ref = rk4site%vels / exp(-exar8 *(1.d0 - zref/h))
             !----- Assume a new reference elevation at the canopy top. --------------------!
             zref = h
-            if (get_flow_geom) then
-               call can_whcap8(csite,ipa,initp%can_rhos,initp%can_temp,initp%can_depth)
-            end if 
+            !----- Find the heat, water, and carbon capacities of the canopy air space. ---!
+            call can_whcap8(csite,ipa,initp%can_rhos,initp%can_temp,initp%can_depth)
 
          else
+            !----- First, find the wind speed at the canopy top. --------------------------!
             vels_ref = rk4site%vels
+            !----- Assume a new reference elevation at the canopy top. --------------------!
             zref     = rk4site%geoht
-            if (get_flow_geom) then
-               call can_whcap8(csite,ipa,initp%can_rhos,initp%can_temp,initp%can_depth)
-            end if
+            !----- Find the heat, water, and carbon capacities of the canopy air space. ---!
+            call can_whcap8(csite,ipa,initp%can_rhos,initp%can_temp,initp%can_depth)
          end if
          
          !---------------------------------------------------------------------------------!
@@ -1250,43 +1206,32 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          !     Calculate the leaf level aerodynamic resistance.                            !
          !---------------------------------------------------------------------------------!
-         if(get_flow_geom) then
+         !----- Top of canopy wind speed. -------------------------------------------------!
+         uh = reduced_wind8(initp%ustar,initp%zeta,initp%ribulk,zref,d0                    &
+                          ,dble(cpatch%hite(1)),initp%rough)
 
-            !----- Top of canopy wind speed. ----------------------------------------------!
-            uh = reduced_wind8(initp%ustar,initp%zeta,initp%ribulk,zref,d0                 &
-                             ,dble(cpatch%hite(1)),initp%rough)
+         do ico=1,cpatch%ncohorts
+            ipft  = cpatch%pft(ico)
+            hite8 = dble(cpatch%hite(ico))
+            !----- Estimate the height center of the crown. -------------------------------!
+            z = hite8 * (1.d0-5.d-1*dble(crown_depth_fraction(ipft)))
 
-            do ico=1,cpatch%ncohorts
-               ipft  = cpatch%pft(ico)
-               hite8 = dble(cpatch%hite(ico))
-               !----- Estimate the height center of the crown. ----------------------------!
-               z = hite8 * (1.d0-5.d-1*dble(crown_depth_fraction(ipft)))
+            !----- Calculate the wind speed at height z. ----------------------------------!
+            initp%veg_wind(ico) = max(ustmin8,uh * exp(-exar8 * (1.d0 - z/h)))
 
-               !----- Calculate the wind speed at height z. -------------------------------!
-               initp%veg_wind(ico) = max(ustmin8,uh * exp(-exar8 * (1.d0 - z/h)))
-
-               !---------------------------------------------------------------------------!
-               !    Find the aerodynamic conductances for heat and water at the leaf       !
-               ! boundary layer.                                                           !
-               !---------------------------------------------------------------------------!
-               call aerodynamic_conductances8(ipft                                         &
-                                             ,initp%veg_wind(ico)                          &
-                                             ,initp%veg_temp(ico)                          &
-                                             ,initp%can_temp                               &
-                                             ,initp%can_shv                                &
-                                             ,initp%can_rhos                               &
-                                             ,gbhmos_min                                   &
-                                             ,initp%gbh         (ico)                      &
-                                             ,initp%gbw         (ico)                      &
-                                             ,initp%veg_reynolds(ico)                      &
-                                             ,initp%veg_grashof (ico)                      &
-                                             ,initp%veg_nussfree(ico)                      &
-                                             ,initp%veg_nussforc(ico) )
-               cpatch%gbh(ico) = sngloff(initp%gbh(ico),tiny_offset)
-               cpatch%gbw(ico) = sngloff(initp%gbw(ico),tiny_offset)
-               !------------------------------------------------------------------------!
-            end do
-         end if
+            !------------------------------------------------------------------------------!
+            !    Find the aerodynamic conductances for heat and water at the leaf boundary !
+            ! layer.                                                                       !
+            !------------------------------------------------------------------------------!
+            call aerodynamic_conductances8(ipft,initp%veg_wind(ico),initp%veg_temp(ico)    &
+                                          ,initp%can_temp,initp%can_shv,initp%can_rhos     &
+                                          ,gbhmos_min,initp%gbh(ico),initp%gbw(ico)        &
+                                          ,initp%veg_reynolds(ico),initp%veg_grashof(ico)  &
+                                          ,initp%veg_nussfree(ico),initp%veg_nussforc(ico))
+            cpatch%gbh(ico) = sngloff(initp%gbh(ico),tiny_offset)
+            cpatch%gbw(ico) = sngloff(initp%gbw(ico),tiny_offset)
+            !------------------------------------------------------------------------------!
+         end do
       !------------------------------------------------------------------------------------!
 
 
@@ -1335,95 +1280,83 @@ module canopy_struct_dynamics
          zcan = ceiling(h/dz8)
          idz  = 5.d-1 * dz8     ! lowest element center
 
-         if (get_flow_geom) then
-            
-            !------------------------------------------------------------------------------!
-            !    Only go through the double loop once per step, do not go through it       !
-            ! during all of the derivative steps.  This loop is only to get the displace-  !
-            ! ment height and attenuation which has not changed.                           !
-            !------------------------------------------------------------------------------!
-            zetac = 0.d0  ! Cumulative zeta
+         zetac = 0.d0  ! Cumulative zeta
 
-            if( ibranch_thermo /= 0 .and. (sum(initp%wai)+sum(initp%lai)) == 0. ) then
-               call fatal_error('Your plants must have some TAI, M97','canopy_turbulence'  &
-                               ,'canopy_struct_dynamics.f90')
-            end if
-
-            
-            !------------------------------------------------------------------------------!
-            !     Loop through the canopy at equal increments.  At each increment,         !
-            ! determine the frontal area drag surface, and the drag force zeta.            !
-            !------------------------------------------------------------------------------!
-            do k = 1, zcan
-               
-               !---------------------------------------------------------------------------!
-               !    Determine the combined leaf area from all cohort crowns residing in    !
-               ! this layer.                                                               !
-               !---------------------------------------------------------------------------!
-               layertai = 0.d0
-               z = dble(k-1) * dz8 + idz  ! elevation of discrete layer
-               do ico=1,cpatch%ncohorts
-                  !----- Some aliases. ----------------------------------------------------!
-                  ipft  = cpatch%pft(ico)
-                  hite8 = dble(cpatch%hite(ico))
-
-                  crowndepth = max(dz8,dble(crown_depth_fraction(ipft))*hite8)
-
-                  if ( (z < hite8 .and. z >= (hite8-crowndepth)) .or.                      &
-                       (k == 1 .and. hite8 < dz8) ) then
-                     select case (ibranch_thermo)
-                     case (0)
-                        !------------------------------------------------------------------!
-                        !     Although we are not solving branches, assume that at full    !
-                        ! leaf-out, there is sheltering of branches.  When leaves are not  !
-                        ! at full out, then the stems and branches start to become visible !
-                        ! to the fluid flow.  Assume that when leaves are gone, then the   !
-                        ! branches contribute about 50% of the drag surface, everything in !
-                        ! between is a linear combination.                                 !
-                        !------------------------------------------------------------------!
-                        layertai=layertai + (cpatch%lai(ico) + cpatch%nplant(ico) * 0.5)   &
-                                          * (dz8/crowndepth) 
-                     case default
-                        !------------------------------------------------------------------!
-                        !    Use LAI and WAI to define the frontal area of drag surface.   !
-                        !------------------------------------------------------------------!
-                        layertai = layertai + (initp%lai(ico) + initp%wai(ico))            &
-                                            * (dz8 /crowndepth)
-                     end select
-
-                  end if
-               end do
-               
-               
-
-               a_front  = layertai/dz8 ! Frontal area of drag surface
-               zetac    = zetac + 5.d-1 * a_front * (Cd08 / Pm8) * dz8
-               zeta(k)  = zetac       ! Use a centered drag
-               zetac    = zetac + 5.d-1 * a_front * (Cd08 / Pm8) *dz8
-            end do
-            
-            !----- The following constains the ratio of ustar over u. ---------------------!
-            ustarouh = (c1_m978 - c2_m978 * exp(-c3_m978*zeta(zcan)))
-            
-            !----- Eta, coefficient of attenuation. ---------------------------------------!
-            eta = 5.d-1 * zeta(zcan) / (ustarouh*ustarouh)
-            
-            !------------------------------------------------------------------------------!
-            !     Displacement height.  Notice that if Pm and Cd0 are uniform, we can      !
-            ! estimate zeta(h) without a loop, if this routine is taking to long, we can   !
-            ! merge the loops.                                                             !
-            !------------------------------------------------------------------------------!
-            d0 = h
-            do k=1,zcan
-               d0 = d0 - dz8*exp(-2.d0*eta*(1.d0-zeta(k)/zeta(zcan)))
-            end do
-
-            !----- Calculate the roughness lengths zo,zt,zr. ------------------------------!
-            initp%rough = max((h-d0)*exp(-vonk8/ustarouh),dble(soil_rough))
+         if (ibranch_thermo /= 0 .and. (sum(initp%wai)+sum(initp%lai)) == 0. ) then
+            call fatal_error('Your plants must have some TAI, M97','canopy_turbulence'     &
+                            ,'canopy_struct_dynamics.f90')
          end if
 
-
          
+         !---------------------------------------------------------------------------------!
+         !     Loop through the canopy at equal increments.  At each increment, determine  !
+         ! the frontal area drag surface, and the drag force zeta.                         !
+         !---------------------------------------------------------------------------------!
+         do k = 1, zcan
+            
+            !------------------------------------------------------------------------------!
+            !    Determine the combined leaf area from all cohort crowns residing in this  !
+            ! layer.                                                                       !
+            !------------------------------------------------------------------------------!
+            layertai = 0.d0
+            z = dble(k-1) * dz8 + idz  ! elevation of discrete layer
+            do ico=1,cpatch%ncohorts
+               !----- Some aliases. -------------------------------------------------------!
+               ipft  = cpatch%pft(ico)
+               hite8 = dble(cpatch%hite(ico))
+
+               crowndepth = max(dz8,dble(crown_depth_fraction(ipft))*hite8)
+
+               if ( (z < hite8 .and. z >= (hite8-crowndepth)) .or.                         &
+                    (k == 1 .and. hite8 < dz8) ) then
+                  select case (ibranch_thermo)
+                  case (0)
+                     !---------------------------------------------------------------------!
+                     !     Although we are not solving branches, assume that at full leaf- !
+                     ! -out, there is sheltering of branches.  When leaves are not at full !
+                     ! out, then the stems and branches start to become visible to the     !
+                     ! fluid flow.  Assume that when leaves are gone, then the branches    !
+                     ! contribute about 50% of the drag surface, everything in between is  !
+                     ! a linear combination.                                               !
+                     !---------------------------------------------------------------------!
+                     layertai=layertai + (cpatch%lai(ico) + cpatch%nplant(ico) * 0.5)      &
+                                       * (dz8/crowndepth) 
+                  case default
+                     !---------------------------------------------------------------------!
+                     !    Use LAI and WAI to define the frontal area of drag surface.      !
+                     !---------------------------------------------------------------------!
+                     layertai = layertai + (initp%lai(ico) + initp%wai(ico))               &
+                                         * (dz8 /crowndepth)
+                  end select
+
+               end if
+            end do
+
+            a_front  = layertai/dz8 ! Frontal area of drag surface
+            zetac    = zetac + 5.d-1 * a_front * (Cd08 / Pm8) * dz8
+            zeta(k)  = zetac       ! Use a centered drag
+            zetac    = zetac + 5.d-1 * a_front * (Cd08 / Pm8) *dz8
+         end do
+         
+         !----- The following constains the ratio of ustar over u. ------------------------!
+         ustarouh = (c1_m978 - c2_m978 * exp(-c3_m978*zeta(zcan)))
+         
+         !----- Eta, coefficient of attenuation. ------------------------------------------!
+         eta = 5.d-1 * zeta(zcan) / (ustarouh*ustarouh)
+         
+         !---------------------------------------------------------------------------------!
+         !     Displacement height.  Notice that if Pm and Cd0 are uniform, we can esti-   !
+         ! mate zeta(h) without a loop, if this routine is taking to long, we can merge    !
+         ! the loops.                                                                      !
+         !---------------------------------------------------------------------------------!
+         d0 = h
+         do k=1,zcan
+            d0 = d0 - dz8*exp(-2.d0*eta*(1.d0-zeta(k)/zeta(zcan)))
+         end do
+
+         !----- Calculate the roughness lengths zo,zt,zr. ---------------------------------!
+         initp%rough = max((h-d0)*exp(-vonk8/ustarouh),dble(soil_rough))
+
 
          !----- Calculate ustar, tstar, qstar, and cstar. ---------------------------------!
          call ed_stars8(rk4site%atm_theta,rk4site%atm_theiv,rk4site%atm_shv                &
@@ -1432,69 +1365,58 @@ module canopy_struct_dynamics
                        ,initp%ustar,initp%tstar,initp%estar,initp%qstar,initp%cstar        &
                        ,initp%zeta,initp%ribulk)
 
-         if(get_flow_geom) then
-            
-            !----- Calculate the diffusivity at the canopy top. ---------------------------!
-            K_top = vonk8 * initp%ustar * (h-d0)
+         !----- Calculate the diffusivity at the canopy top. ------------------------------!
+         K_top = vonk8 * initp%ustar * (h-d0)
 
-            initp%rasveg=0.d0
+         initp%rasveg=0.d0
 
-            !----- Numerically integrate the inverse diffusivity. -------------------------!
-            do k=1,zcan
-               Kdiff        = K_top * exp(-eta * (1.d0-zeta(k)/zeta(zcan))) + kvwake8
-               initp%rasveg = initp%rasveg + dz8 / Kdiff
-            end do
+         !----- Numerically integrate the inverse diffusivity. ----------------------------!
+         do k=1,zcan
+            Kdiff        = K_top * exp(-eta * (1.d0-zeta(k)/zeta(zcan))) + kvwake8
+            initp%rasveg = initp%rasveg + dz8 / Kdiff
+         end do
 
-            !------------------------------------------------------------------------------!
-            !     Calculate the leaf level aerodynamic resistance.                         !
-            !------------------------------------------------------------------------------!
+         !---------------------------------------------------------------------------------!
+         !     Calculate the leaf level aerodynamic resistance.                            !
+         !---------------------------------------------------------------------------------!
 
-            !----- Top of canopy wind speed. ----------------------------------------------!
-            uh = reduced_wind8(initp%ustar,initp%zeta,initp%ribulk,zref,d0                 &
-                             ,dble(cpatch%hite(1)),initp%rough)
+         !----- Top of canopy wind speed. -------------------------------------------------!
+         uh = reduced_wind8(initp%ustar,initp%zeta,initp%ribulk,zref,d0                    &
+                          ,dble(cpatch%hite(1)),initp%rough)
 
-            do ico=1,cpatch%ncohorts
-               ipft = cpatch%pft(ico)
-               hite8 = dble(cpatch%hite(ico))
+         do ico=1,cpatch%ncohorts
+            ipft = cpatch%pft(ico)
+            hite8 = dble(cpatch%hite(ico))
 
-               !----- Estimate the height center of the crown. ----------------------------!
-               z = hite8 * (1.d0 - 5.d-1 * dble(crown_depth_fraction(ipft)))
+            !----- Estimate the height center of the crown. -------------------------------!
+            z = hite8 * (1.d0 - 5.d-1 * dble(crown_depth_fraction(ipft)))
 
-               !----- Determine the zeta index. -------------------------------------------!
-               k = ceiling(z/dz8)
+            !----- Determine the zeta index. ----------------------------------------------!
+            k = ceiling(z/dz8)
 
-               !----- Calculate the wind speed at height z. -------------------------------!
-               initp%veg_wind(ico) = max(ustmin8                                           &
-                                        ,uh * exp(-eta * (1.d0 - zeta(k)/zeta(zcan) )))
-
-               !---------------------------------------------------------------------------!
-               !    Find the aerodynamic conductances for heat and water at the leaf       !
-               ! boundary layer.                                                           !
-               !---------------------------------------------------------------------------!
-               call aerodynamic_conductances8(ipft                                         &
-                                             ,initp%veg_wind(ico)                          &
-                                             ,initp%veg_temp(ico)                          &
-                                             ,initp%can_temp                               &
-                                             ,initp%can_shv                                &
-                                             ,initp%can_rhos                               &
-                                             ,gbhmos_min                                   &
-                                             ,initp%gbh         (ico)                      &
-                                             ,initp%gbw         (ico)                      &
-                                             ,initp%veg_reynolds(ico)                      &
-                                             ,initp%veg_grashof (ico)                      &
-                                             ,initp%veg_nussfree(ico)                      &
-                                             ,initp%veg_nussforc(ico) )
-               cpatch%gbh(ico) = sngloff(initp%gbh(ico),tiny_offset)
-               cpatch%gbw(ico) = sngloff(initp%gbw(ico),tiny_offset)
-               !------------------------------------------------------------------------!
-            end do
+            !----- Calculate the wind speed at height z. ----------------------------------!
+            initp%veg_wind(ico) = max(ustmin8                                              &
+                                     ,uh * exp(-eta * (1.d0 - zeta(k)/zeta(zcan) )))
 
             !------------------------------------------------------------------------------!
-            ! Calculate the heat and mass storage capacity of the canopy and interfacial   !
-            ! air spaces.                                                                  !
+            !    Find the aerodynamic conductances for heat and water at the leaf boundary !
+            ! layer.                                                                       !
             !------------------------------------------------------------------------------!
-            call can_whcap8(csite,ipa,initp%can_rhos,initp%can_temp,initp%can_depth)
-         end if
+            call aerodynamic_conductances8(ipft,initp%veg_wind(ico),initp%veg_temp(ico)    &
+                                          ,initp%can_temp,initp%can_shv,initp%can_rhos     &
+                                          ,gbhmos_min,initp%gbh(ico),initp%gbw(ico)        &
+                                          ,initp%veg_reynolds(ico),initp%veg_grashof(ico)  &
+                                          ,initp%veg_nussfree(ico),initp%veg_nussforc(ico))
+            cpatch%gbh(ico) = sngloff(initp%gbh(ico),tiny_offset)
+            cpatch%gbw(ico) = sngloff(initp%gbw(ico),tiny_offset)
+            !------------------------------------------------------------------------------!
+         end do
+
+         !---------------------------------------------------------------------------------!
+         ! Calculate the heat and mass storage capacity of the canopy and interfacial air  !
+         ! spaces.                                                                         !
+         !---------------------------------------------------------------------------------!
+         call can_whcap8(csite,ipa,initp%can_rhos,initp%can_temp,initp%can_depth)
 
       end select
 
@@ -2453,22 +2375,17 @@ module canopy_struct_dynamics
 
 
 
+
       !------------------------------------------------------------------------------------!
-      !     The total conductance [m/s] is given by the sum of conductances, as they       !
-      ! happen in "parallel".                                                              !
+      !     The heat conductance for the thermodynamic budget is the sum of conductances,  !
+      ! because we assume both forms of convection happen parallelly.  The conversion from !
+      ! heat to water conductance (in m/s) can be found in L95, page 1198, after equation  !
+      ! E5.  For the ED purposes, the output variables are converted to the units of       !
+      ! entropy and water fluxes [J/K/m²/s and kg/m²/s, respectively].                     !
       !------------------------------------------------------------------------------------!
       gbh_mos = max(gbhmos_min, free_gbh_mos + forced_gbh_mos)
-      !------------------------------------------------------------------------------------!
-
-
-
-      !------------------------------------------------------------------------------------!
-      !     The conductances for the photosynthesis model and thermodynamic budget are     !
-      ! scaled for entropy and water mass, respectively.  The conversion from heat to      !
-      ! water (in m/s) is found in L95, page 1198, after equation E5.                      !
-      !------------------------------------------------------------------------------------!
-      gbh =             gbh_mos * can_rhos * cp
-      gbw = gbh_2_gbw * gbh_mos * can_rhos * can_shv
+      gbh     =             gbh_mos * can_rhos * cp
+      gbw     = gbh_2_gbw * gbh_mos * can_rhos
       !------------------------------------------------------------------------------------!
 
       return
@@ -2594,21 +2511,15 @@ module canopy_struct_dynamics
 
 
       !------------------------------------------------------------------------------------!
-      !     The total conductance [m/s] is given by the sum of conductances, as they       !
-      ! happen in "parallel".                                                              !
+      !     The heat conductance for the thermodynamic budget is the sum of conductances,  !
+      ! because we assume both forms of convection happen parallelly.  The conversion from !
+      ! heat to water conductance (in m/s) can be found in L95, page 1198, after equation  !
+      ! E5.  For the ED purposes, the output variables are converted to the units of       !
+      ! entropy and water fluxes [J/K/m²/s and kg/m²/s, respectively].                     !
       !------------------------------------------------------------------------------------!
       gbh_mos = max(gbhmos_min, free_gbh_mos + forced_gbh_mos)
-      !------------------------------------------------------------------------------------!
-
-
-
-      !------------------------------------------------------------------------------------!
-      !     The conductances for the photosynthesis model and thermodynamic budget are     !
-      ! scaled for entropy and water mass, respectively.  The conversion from heat to      !
-      ! water (in m/s) is found in L95, page 1198, after equation E5.                      !
-      !------------------------------------------------------------------------------------!
-      gbh =              gbh_mos * can_rhos * cp8
-      gbw = gbh_2_gbw8 * gbh_mos * can_rhos * can_shv
+      gbh     =              gbh_mos * can_rhos * cp8
+      gbw     = gbh_2_gbw8 * gbh_mos * can_rhos
       !------------------------------------------------------------------------------------!
 
       return

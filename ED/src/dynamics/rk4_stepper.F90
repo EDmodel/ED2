@@ -305,15 +305,17 @@ module rk4_stepper
       call copy_rk4_patch(y, ak7, cpatch)
       call inc_rk4_patch(ak7, dydx, rk4_b21*h, cpatch)
       combh = rk4_b21*h
-      ! call adjust_veg_properties (ak7,combh,csite,ipa)
-      ! call adjust_sfcw_properties(nzg,nzs,ak7, csite,ipa)
       call update_diagnostic_vars(ak7, csite,ipa)
       call rk4_sanity_check(ak7, reject_step, csite, ipa,dydx,h,print_diags)
       if (reject_step) return
+      !------------------------------------------------------------------------------------!
+
 
       !------ Estimate the derivative of canopy pressure. ---------------------------------!
       dpdt          = (ak7%can_prss - y%can_prss) / combh
       dydx%can_prss = dpdt * rk4_b21
+      !------------------------------------------------------------------------------------!
+
 
       !------ Get the new derivative evaluation. ------------------------------------------!
       call leaf_derivs(ak7, ak2, csite, ipa)
@@ -328,16 +330,18 @@ module rk4_stepper
       call inc_rk4_patch(ak7, dydx, rk4_b31*h, cpatch)
       call inc_rk4_patch(ak7,  ak2, rk4_b32*h, cpatch)
       combh = (rk4_b31+rk4_b32)*h
-      ! call adjust_veg_properties(ak7,combh,csite,ipa)
-      ! call adjust_sfcw_properties(nzg,nzs,ak7, csite,ipa)
       call update_diagnostic_vars(ak7, csite,ipa)
       call rk4_sanity_check(ak7,reject_step,csite,ipa,dydx,h,print_diags)
       if (reject_step) return
+      !------------------------------------------------------------------------------------!
+
 
       !------ Estimate the derivative of canopy pressure. ---------------------------------!
       dpdt          = (ak7%can_prss - y%can_prss) / combh
       dydx%can_prss = dydx%can_prss + dpdt * rk4_b31
       ak2%can_prss  =                 dpdt * rk4_b32
+      !------------------------------------------------------------------------------------!
+
 
       !------ Get the new derivative evaluation. ------------------------------------------!
       call leaf_derivs(ak7, ak3, csite,ipa)
@@ -353,17 +357,19 @@ module rk4_stepper
       call inc_rk4_patch(ak7,  ak2, rk4_b42*h, cpatch)
       call inc_rk4_patch(ak7,  ak3, rk4_b43*h, cpatch)
       combh = (rk4_b41+rk4_b42+rk4_b43)*h
-      ! call adjust_veg_properties(ak7,combh,csite,ipa)
-      ! call adjust_sfcw_properties(nzg,nzs,ak7, csite,ipa)
       call update_diagnostic_vars(ak7, csite,ipa)
       call rk4_sanity_check(ak7, reject_step, csite,ipa,dydx,h,print_diags)
       if (reject_step) return
+      !------------------------------------------------------------------------------------!
+
 
       !------ Estimate the derivative of canopy pressure. ---------------------------------!
       dpdt          = (ak7%can_prss - y%can_prss) / combh
       dydx%can_prss = dydx%can_prss + dpdt * rk4_b41
       ak2%can_prss  = ak2%can_prss  + dpdt * rk4_b42
       ak3%can_prss  =                 dpdt * rk4_b43
+      !------------------------------------------------------------------------------------!
+
 
       !------ Get the new derivative evaluation. ------------------------------------------!
       call leaf_derivs(ak7, ak4, csite, ipa)
@@ -380,11 +386,11 @@ module rk4_stepper
       call inc_rk4_patch(ak7,  ak3, rk4_b53*h, cpatch)
       call inc_rk4_patch(ak7,  ak4, rk4_b54*h, cpatch)
       combh = (rk4_b51+rk4_b52+rk4_b53+rk4_b54)*h
-      ! call adjust_veg_properties(ak7,combh,csite,ipa)
-      ! call adjust_sfcw_properties(nzg,nzs,ak7, csite,ipa)
       call update_diagnostic_vars(ak7, csite,ipa)
       call rk4_sanity_check(ak7,reject_step,csite,ipa,dydx,h,print_diags)
       if (reject_step) return
+      !------------------------------------------------------------------------------------!
+
 
       !------ Estimate the derivative of canopy pressure. ---------------------------------!
       dpdt          = (ak7%can_prss - y%can_prss) / combh
@@ -392,6 +398,8 @@ module rk4_stepper
       ak2%can_prss  = ak2%can_prss  + dpdt * rk4_b52
       ak3%can_prss  = ak3%can_prss  + dpdt * rk4_b53
       ak4%can_prss  =                 dpdt * rk4_b54
+      !------------------------------------------------------------------------------------!
+
 
       !------ Get the new derivative evaluation. ------------------------------------------!
       call leaf_derivs(ak7, ak5, csite, ipa)
@@ -409,11 +417,11 @@ module rk4_stepper
       call inc_rk4_patch(ak7,  ak4, rk4_b64*h, cpatch)
       call inc_rk4_patch(ak7,  ak5, rk4_b65*h, cpatch)
       combh = (rk4_b61+rk4_b62+rk4_b63+rk4_b64+rk4_b65)*h
-      ! call adjust_veg_properties(ak7,combh,csite,ipa)
-      ! call adjust_sfcw_properties(nzg,nzs,ak7, csite,ipa)
       call update_diagnostic_vars(ak7, csite,ipa)
       call rk4_sanity_check(ak7, reject_step, csite,ipa,dydx,h,print_diags)
       if(reject_step)return
+      !------------------------------------------------------------------------------------!
+
 
       !------ Estimate the derivative of canopy pressure. ---------------------------------!
       dpdt          = (ak7%can_prss - y%can_prss) / combh
@@ -422,6 +430,8 @@ module rk4_stepper
       ak3%can_prss  = ak3%can_prss  + dpdt * rk4_b63
       ak4%can_prss  = ak4%can_prss  + dpdt * rk4_b64
       ak5%can_prss  =                 dpdt * rk4_b65
+      !------------------------------------------------------------------------------------!
+
 
       !------ Get the new derivative evaluation. ------------------------------------------!
       call leaf_derivs(ak7, ak6, csite,ipa)
@@ -450,6 +460,8 @@ module rk4_stepper
       call rk4_sanity_check(yout, reject_result, csite,ipa,dydx,h,print_diags)
       !------------------------------------------------------------------------------------!
       if(reject_result)return
+      !------------------------------------------------------------------------------------!
+
 
       !------ Estimate the derivative of canopy pressure. ---------------------------------!
       dpdt          = (ak7%can_prss - y%can_prss) / combh
@@ -568,6 +580,7 @@ module rk4_stepper
       integer                          :: k
       integer                          :: ksn
       real(kind=8)                     :: h
+      real(kind=8)                     :: rk4min_veg_water
       integer                          :: ipa
       integer                          :: ico
       logical                          :: cflag7
@@ -782,8 +795,11 @@ module rk4_stepper
       cohortloop: do ico = 1,cpatch%ncohorts
          if (.not. y%solvable(ico)) cycle cohortloop
 
+         !----- Find the minimum leaf surface water. --------------------------------------!
+         rk4min_veg_water = rk4min_veg_lwater * y%tai(ico)
+
          !----- Check leaf surface water. -------------------------------------------------!
-         if (y%veg_water(ico) < rk4min_veg_lwater * y%tai(ico)) then
+         if (y%veg_water(ico) < rk4min_veg_water) then
             reject_step = .true.
             if(record_err) cflag7 = .true.
             if (print_problems) then
@@ -796,15 +812,16 @@ module rk4_stepper
                write(unit=*,fmt='(a,1x,es12.4)') ' WAI:          ',y%wai(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' WPA:          ',y%wpa(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' TAI:          ',y%tai(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' NPLANT:       ',y%nplant(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' CROWN_AREA:   ',y%crown_area(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' HCAPVEG:      ',y%hcapveg(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' VEG_TEMP:     ',y%veg_temp(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' VEG_FRACLIQ:  ',y%veg_fliq(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' VEG_ENERGY:   ',y%veg_energy(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' VEG_WATER:    ',y%veg_water(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' VEG_LWATER:   ', y%veg_water(ico)       &
-                                                                  / y%tai(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' VEG_WIND:     ',y%veg_wind(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' LINT_SHV:     ',y%lint_shv(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' MIN_VEG_WATER:',rk4min_veg_water
                write(unit=*,fmt='(a,1x,es12.4)') ' GBH:          ',y%gbh(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' GBW:          ',y%gbw(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' REYNOLDS:     ',y%veg_reynolds(ico)
@@ -833,13 +850,14 @@ module rk4_stepper
                write(unit=*,fmt='(a,1x,es12.4)') ' WAI:          ',y%wai(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' WPA:          ',y%wpa(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' TAI:          ',y%tai(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' NPLANT:       ',y%nplant(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' CROWN_AREA:   ',y%crown_area(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' HCAPVEG:      ',y%hcapveg(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' VEG_TEMP:     ',y%veg_temp(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' VEG_FRACLIQ:  ',y%veg_fliq(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' VEG_ENERGY:   ',y%veg_energy(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' VEG_WATER:    ',y%veg_water(ico)
-               write(unit=*,fmt='(a,1x,es12.4)') ' VEG_LWATER:   ', y%veg_water(ico)       &
-                                                                  / y%tai(ico)
+               write(unit=*,fmt='(a,1x,es12.4)') ' MIN_VEG_WATER:',rk4min_veg_water
                write(unit=*,fmt='(a,1x,es12.4)') ' GBH:          ',y%gbh(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' GBW:          ',y%gbw(ico)
                write(unit=*,fmt='(a,1x,es12.4)') ' VEG_WIND:     ',y%veg_wind(ico)

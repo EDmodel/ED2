@@ -11,7 +11,8 @@ subroutine leaf_derivs(initp,dinitp,csite,ipa)
   
    use rk4_coms               , only : rk4site            & ! intent(in)
                                      , rk4patchtype       ! ! structure
-   use ed_state_vars          , only : sitetype,polygontype           ! ! structure
+   use ed_state_vars          , only : sitetype           & ! structure
+                                     , polygontype        ! ! structure
    use consts_coms            , only : cp8                & ! intent(in)
                                      , cpi8               ! ! intent(in)
    use grid_coms              , only : nzg                & ! intent(in)
@@ -601,7 +602,8 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
                                     , checkbudget          & ! intent(in)
                                     , print_detailed       & ! intent(in)
                                     , check_maxleaf        & ! intent(in)
-                                    , supersat_ok          ! ! intent(in)
+                                    , supersat_ok          & ! intent(in)
+                                    , leaf_intercept       ! ! intent(in)
    use ed_state_vars         , only : sitetype             & ! Structure
                                     , patchtype            & ! Structure
                                     , polygontype
@@ -712,7 +714,6 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
    real(kind=8)                     :: water_demand     !
    real(kind=8)                     :: water_supply     !
    real(kind=8)                     :: flux_area        ! Area between canopy and plant
-   real(kind=8)                     :: crown_area       ! Crown area.
    !----- Functions -----------------------------------------------------------------------!
    real        , external           :: sngloff
    !---------------------------------------------------------------------------------------!
@@ -745,11 +746,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
    can_frac = 1.d0
    do ico = 1,cpatch%ncohorts
       if (initp%solvable(ico)) then
-         !----- The crown area is scaled by the plant density and scaled by phenology. ----!
-         crown_area = min(1.d0, initp%nplant(ico)                                          &
-                              * dble(dbh2ca(cpatch%dbh(ico),cpatch%pft(ico)))              &
-                              * rk4site%green_leaf_factor(cpatch%pft(ico)))
-         can_frac = can_frac * (1.d0 - crown_area) 
+         can_frac = can_frac * (1.d0 - initp%crown_area(ico)) 
       end if
    end do
    can_frac = max(0.d0,min(1.d0 - can_frac,1.d0))
@@ -783,10 +780,17 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
       ! all of the water.                                                                  !
       !------------------------------------------------------------------------------------!
       if (rk4site%pcpg > 0.d0) then
-         !----- Scale interception by canopy openess (MCD 01-12-09). ----------------------!
-         intercepted_max  = rk4site%pcpg  * can_frac
-         qintercepted_max = rk4site%qpcpg * can_frac
-         dintercepted_max = rk4site%dpcpg * can_frac
+         if (leaf_intercept) then
+            !----- Scale interception by canopy openess (MCD 01-12-09). -------------------!
+            intercepted_max  = rk4site%pcpg  * can_frac
+            qintercepted_max = rk4site%qpcpg * can_frac
+            dintercepted_max = rk4site%dpcpg * can_frac
+         else
+            !----- No interception (developer only). --------------------------------------!
+            intercepted_max  = 0.d0
+            qintercepted_max = 0.d0
+            dintercepted_max = 0.d0
+         end if
 
          !---------------------------------------------------------------------------------!
          !    The first guess for through fall is the rainfall minus the maximum           !
@@ -994,17 +998,17 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
    !---------------------------------------------------------------------------------------!
   
    cohortloop: do ico = 1,cpatch%ncohorts
-      
+
       cflxgc = cflxgc + initp%root_resp(ico)
-      
+
       !------------------------------------------------------------------------------------!
       !    Calculate 'decay' term of storage.                                              !
       !------------------------------------------------------------------------------------!
       storage_decay = initp%growth_resp(ico) + initp%storage_resp(ico)                     &
                     + initp%vleaf_resp(ico)
       cflxvc_tot    = cflxvc_tot + storage_decay
-      
-      
+
+
       !------------------------------------------------------------------------------------!
       !     Check whether this this cohort hasn't been flagged as non-solvable, i.e., it   !
       ! has leaves, belongs to a patch that is not too sparse, an it is not buried in      !
@@ -1027,13 +1031,13 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
          cflxvc_tot = cflxvc_tot - leaf_flux
 
          !---------------------------------------------------------------------------------!
-         !     Defining the minimum leaf water to be considered, and the maximum amount    !
+         !     Define the minimum leaf water to be considered, and the maximum amount      !
          ! possible. Here we use TAI because the intercepted area should be proportional   !
          ! to the projected area.                                                          !
          !---------------------------------------------------------------------------------!
-         min_leaf_water = rk4dry_veg_lwater*initp%tai(ico)
-         max_leaf_water = rk4fullveg_lwater*initp%tai(ico)
-         
+         min_leaf_water = rk4dry_veg_lwater * initp%tai(ico)
+         max_leaf_water = rk4fullveg_lwater * initp%tai(ico)
+
          !------ Calculate fraction of leaves covered with water. -------------------------!
          if(initp%veg_water(ico) > min_leaf_water)then
             sigmaw = min(1.d0, (initp%veg_water(ico)/max_leaf_water)**twothirds8)
@@ -1049,7 +1053,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
          !---------------------------------------------------------------------------------!
          !----- Evaporation/condensation "flux" -------------------------------------------!
          wflxvc_try = effarea_water * initp%tai(ico) * initp%gbw(ico)                      &
-                    * (initp%lint_shv(ico) - initp%can_shv) * epi8
+                    * (initp%lint_shv(ico) - initp%can_shv)
          !---------------------------------------------------------------------------------!
 
 
@@ -1077,7 +1081,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
                ! first make sure that there is some water available for transpiration...   !
                !---------------------------------------------------------------------------!
                if (initp%available_liquid_water(kroot) > 0.d0 ) then
-                  c3lai = initp%lai(ico) * (initp%lint_shv(ico) - initp%can_shv) * epi8    &
+                  c3lai = initp%lai(ico) * (initp%lint_shv(ico) - initp%can_shv)           &
                         * initp%gbw(ico)
 
                   dinitp%psi_open(ico)   = c3lai * initp%gsw_open(ico)                     &
@@ -1214,18 +1218,34 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
          end if
 
 
-         dinitp%veg_water(ico) = - wflxvc + intercepted - wshed
 
          !---------------------------------------------------------------------------------!
-         !     Find the energy balance for this cohort.                                    !
+         !     Find the water energy balance for this cohort.                              !
          !---------------------------------------------------------------------------------!
-         dinitp%veg_energy(ico) = dble(cpatch%rshort_v(ico)) & ! Absorbed SW radiation
-                                + dble(cpatch%rlong_v(ico))  & ! Net thermal radiation
-                                - hflxvc                     & ! Sensible heat flux
-                                - qwflxvc                    & ! Evaporative
-                                - qtransp                    & ! Transpiration.
-                                + qintercepted               & ! Intercepted water energy
-                                - qwshed                     ! ! Water shedding
+         dinitp%veg_water(ico)  = intercepted          & ! Intercepted water 
+                                - wflxvc               & ! Evaporation
+                                - wshed                ! ! Water shedding
+         dinitp%veg_energy(ico) = initp%rshort_v(ico)  & ! Absorbed SW radiation
+                                + initp%rlong_v(ico)   & ! Net thermal radiation
+                                - hflxvc               & ! Sensible heat flux
+                                - qwflxvc              & ! Evaporation
+                                - qwshed               & ! Water shedding
+                                - qtransp              & ! Transpiration
+                                + qintercepted         ! ! Intercepted water energy
+
+
+
+         !---------------------------------------------------------------------------------!
+         !    If the detailed output is tracked, then we save the fluxes for this cohort.  !
+         !---------------------------------------------------------------------------------!
+         if (print_detailed) then
+            dinitp%cfx_hflxvc      (ico)  = hflxvc
+            dinitp%cfx_qwflxvc     (ico)  = qwflxvc
+            dinitp%cfx_qwshed      (ico)  = qwshed
+            dinitp%cfx_qtransp     (ico)  = qtransp
+            dinitp%cfx_qintercepted(ico)  = qintercepted
+         end if
+         !---------------------------------------------------------------------------------!
 
          !----- Add the contribution of this cohort to total heat and evapotranspiration. -!
          wflxvc_tot   = wflxvc_tot   + wflxvc
@@ -1259,6 +1279,18 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
          dinitp%veg_water(ico)  = 0.d0
          dinitp%psi_open(ico)   = 0.d0
          dinitp%psi_closed(ico) = 0.d0
+
+         !---------------------------------------------------------------------------------!
+         !    If the detailed output is tracked, then we save the fluxes for this cohort.  !
+         !---------------------------------------------------------------------------------!
+         if (print_detailed) then
+            dinitp%cfx_hflxvc      (ico)  = 0.d0
+            dinitp%cfx_qwflxvc     (ico)  = 0.d0
+            dinitp%cfx_qwshed      (ico)  = 0.d0
+            dinitp%cfx_qtransp     (ico)  = 0.d0
+            dinitp%cfx_qintercepted(ico)  = 0.d0
+         end if
+         !---------------------------------------------------------------------------------!
 
          !---------------------------------------------------------------------------------!
          !     Allow the complete bypass of precipitation if there are very few leaves.    !

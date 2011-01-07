@@ -118,6 +118,7 @@ module rk4_coms
       real(kind=8), pointer, dimension(:) :: wai          ! Wood area index     [    m²/m²]
       real(kind=8), pointer, dimension(:) :: wpa          ! Wood projected area [    m²/m²]
       real(kind=8), pointer, dimension(:) :: tai          ! Tree area index     [    m²/m²]
+      real(kind=8), pointer, dimension(:) :: crown_area   ! Crown area          [    m²/m²]
       real(kind=8), pointer, dimension(:) :: gbh          ! Leaf b.lyr. condct. [ J/K/m²/s]
       real(kind=8), pointer, dimension(:) :: gbw          ! Leaf b.lyr. condct. [  kg/m²/s]
       real(kind=8), pointer, dimension(:) :: gsw_open     ! Sto. condct. (op.)  [ J/K/m²/s]
@@ -132,6 +133,8 @@ module rk4_coms
       real(kind=8), pointer, dimension(:) :: growth_resp  ! Growth respiration  [µmol/m²/s]
       real(kind=8), pointer, dimension(:) :: storage_resp ! Storage respiration [µmol/m²/s]
       real(kind=8), pointer, dimension(:) :: vleaf_resp   ! Virtual leaf resp.  [µmol/m²/s]
+      real(kind=8), pointer, dimension(:) :: rshort_v     ! Net absorbed SWRad. [   J/m²/s]
+      real(kind=8), pointer, dimension(:) :: rlong_v      ! Net absorbed LWRad. [   J/m²/s]
       !------------------------------------------------------------------------------------!
 
       !------------------------------------------------------------------------------------!
@@ -202,6 +205,12 @@ module rk4_coms
       real(kind=8),pointer,dimension(:) :: flx_sensible_gg   ! Soil heat flux between layers
       real(kind=8)                      :: flx_drainage      ! Drainage at the bottom.
       real(kind=8)                      :: flx_drainage_heat ! Drainage at the bottom.
+      !----- Cohort-level fluxes. ---------------------------------------------------------!
+      real(kind=8),pointer,dimension(:) :: cfx_hflxvc        ! Sensible heat
+      real(kind=8),pointer,dimension(:) :: cfx_qwflxvc       ! Latent heat - Evaporation
+      real(kind=8),pointer,dimension(:) :: cfx_qwshed        ! Int. en. of shed water
+      real(kind=8),pointer,dimension(:) :: cfx_qtransp       ! Latent heat - Transpiration
+      real(kind=8),pointer,dimension(:) :: cfx_qintercepted  ! Int. en. of intercept. H2O
       !----- Full budget variables --------------------------------------------------------!
       real(kind=8) :: co2budget_storage
       real(kind=8) :: co2budget_loss2atm
@@ -429,6 +438,9 @@ module rk4_coms
                                   !    within on DTLSM time step, and not bother
                                   !    forcing the canopy air space to respect the
                                   !    ideal gas                                   [   T|F]
+   logical      :: leaf_intercept ! This flag is to turn on and on the leaf interception.  
+                                  !    Except for developer tests, this variable should be 
+                                  !    always true.  
    logical      :: debug          ! Verbose output for debug                       [   T|F]
    real(kind=8) :: toocold        ! Minimum temperature for saturation spec. hum.  [     K]
    real(kind=8) :: toohot         ! Maximum temperature for saturation spec. hum.  [     K]
@@ -632,12 +644,14 @@ module rk4_coms
       allocate(y%soilair99(nzg))
       allocate(y%soilair01(nzg))
       allocate(y%soil_liq(nzg))
+      allocate(y%soil_restz(nzg))
 
       allocate(y%sfcwater_energy(nzs))
       allocate(y%sfcwater_mass(nzs))
       allocate(y%sfcwater_depth(nzs))
       allocate(y%sfcwater_fracliq(nzs))
       allocate(y%sfcwater_tempk(nzs))
+      allocate(y%sfcwater_restz(nzs))
 
       !------------------------------------------------------------------------------------!
       !     Diagnostics - for now we will always allocate the diagnostics, even if they    !
@@ -682,12 +696,14 @@ module rk4_coms
       nullify(y%soilair99)
       nullify(y%soilair01)
       nullify(y%soil_liq)
+      nullify(y%soil_restz)
 
       nullify(y%sfcwater_energy)
       nullify(y%sfcwater_mass)
       nullify(y%sfcwater_depth)
       nullify(y%sfcwater_fracliq)
       nullify(y%sfcwater_tempk)
+      nullify(y%sfcwater_restz)
 
       !------------------------------------------------------------------------------------!
       !     Diagnostics - for now we will always allocate the diagnostics, even if they    !
@@ -840,12 +856,14 @@ module rk4_coms
       if(associated(y%soilair99             ))   y%soilair99(:)                   = 0.d0
       if(associated(y%soilair01             ))   y%soilair01(:)                   = 0.d0
       if(associated(y%soil_liq              ))   y%soil_liq(:)                    = 0.d0
+      if(associated(y%soil_restz            ))   y%soil_restz(:)                  = 0.d0
      
       if(associated(y%sfcwater_depth        ))   y%sfcwater_depth(:)              = 0.d0
       if(associated(y%sfcwater_mass         ))   y%sfcwater_mass(:)               = 0.d0
       if(associated(y%sfcwater_energy       ))   y%sfcwater_energy(:)             = 0.d0
       if(associated(y%sfcwater_tempk        ))   y%sfcwater_tempk(:)              = 0.d0
       if(associated(y%sfcwater_fracliq      ))   y%sfcwater_fracliq(:)            = 0.d0
+      if(associated(y%sfcwater_restz        ))   y%sfcwater_restz(:)              = 0.d0
 
       if(associated(y%avg_smoist_gg         ))   y%avg_smoist_gg(:)               = 0.d0
       if(associated(y%avg_smoist_gc         ))   y%avg_smoist_gc(:)               = 0.d0
@@ -857,6 +875,295 @@ module rk4_coms
 
       return
    end subroutine zero_rk4_patch
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !    This subroutine will perform the temporary patch deallocation.                     !
+   !---------------------------------------------------------------------------------------!
+   subroutine deallocate_rk4_patch(y)
+      implicit none
+      !----- Argument ---------------------------------------------------------------------!
+      type(rk4patchtype), target :: y
+      !------------------------------------------------------------------------------------!
+
+      if (associated(y%soil_energy))             deallocate(y%soil_energy)
+      if (associated(y%soil_water))              deallocate(y%soil_water)
+      if (associated(y%soil_fracliq))            deallocate(y%soil_fracliq)
+      if (associated(y%soil_tempk))              deallocate(y%soil_tempk)
+      if (associated(y%available_liquid_water))  deallocate(y%available_liquid_water)
+      if (associated(y%extracted_water))         deallocate(y%extracted_water)
+      if (associated(y%psiplusz))                deallocate(y%psiplusz)
+      if (associated(y%soilair99))               deallocate(y%soilair99)
+      if (associated(y%soilair01))               deallocate(y%soilair01)
+      if (associated(y%soil_liq))                deallocate(y%soil_liq)
+      if (associated(y%soil_restz))              deallocate(y%soil_restz)
+
+      if (associated(y%sfcwater_energy))         deallocate(y%sfcwater_energy)
+      if (associated(y%sfcwater_mass))           deallocate(y%sfcwater_mass)
+      if (associated(y%sfcwater_depth))          deallocate(y%sfcwater_depth)
+      if (associated(y%sfcwater_fracliq))        deallocate(y%sfcwater_fracliq)
+      if (associated(y%sfcwater_tempk))          deallocate(y%sfcwater_tempk)
+      if (associated(y%sfcwater_restz))          deallocate(y%sfcwater_restz)
+
+      ! Diagnostics
+      if (associated(y%avg_smoist_gg))           deallocate(y%avg_smoist_gg)
+      if (associated(y%avg_smoist_gc))           deallocate(y%avg_smoist_gc)
+      if (associated(y%avg_sensible_gg))         deallocate(y%avg_sensible_gg)
+      if (associated(y%flx_smoist_gg))           deallocate(y%flx_smoist_gg)
+      if (associated(y%flx_smoist_gc))           deallocate(y%flx_smoist_gc)
+      if (associated(y%flx_sensible_gg))         deallocate(y%flx_sensible_gg)
+
+      return
+   end subroutine deallocate_rk4_patch
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !    This subroutine will allocate the cohorts of the temporary patch.                  !
+   !---------------------------------------------------------------------------------------!
+
+   subroutine allocate_rk4_coh(maxcohort,y)
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      type(rk4patchtype) , target     :: y
+      integer            , intent(in) :: maxcohort
+      !------------------------------------------------------------------------------------!
+      
+      call nullify_rk4_cohort(y)
+
+      allocate(y%veg_energy      (maxcohort))
+      allocate(y%veg_water       (maxcohort))
+      allocate(y%veg_temp        (maxcohort))
+      allocate(y%veg_fliq        (maxcohort))
+      allocate(y%hcapveg         (maxcohort))
+      allocate(y%veg_wind        (maxcohort))
+      allocate(y%veg_reynolds    (maxcohort))
+      allocate(y%veg_grashof     (maxcohort))
+      allocate(y%veg_nussfree    (maxcohort))
+      allocate(y%veg_nussforc    (maxcohort))
+      allocate(y%lint_shv        (maxcohort))
+      allocate(y%nplant          (maxcohort))
+      allocate(y%lai             (maxcohort))
+      allocate(y%wai             (maxcohort))
+      allocate(y%wpa             (maxcohort))
+      allocate(y%tai             (maxcohort))
+      allocate(y%crown_area      (maxcohort))
+      allocate(y%gbh             (maxcohort))
+      allocate(y%gbw             (maxcohort))
+      allocate(y%gsw_open        (maxcohort))
+      allocate(y%gsw_closed      (maxcohort))
+      allocate(y%psi_open        (maxcohort))
+      allocate(y%psi_closed      (maxcohort))
+      allocate(y%fs_open         (maxcohort))
+      allocate(y%solvable        (maxcohort))
+      allocate(y%gpp             (maxcohort))
+      allocate(y%leaf_resp       (maxcohort))
+      allocate(y%root_resp       (maxcohort))
+      allocate(y%growth_resp     (maxcohort))
+      allocate(y%storage_resp    (maxcohort))
+      allocate(y%vleaf_resp      (maxcohort))
+      allocate(y%rshort_v        (maxcohort))
+      allocate(y%rlong_v         (maxcohort))
+      allocate(y%cfx_hflxvc      (maxcohort))  
+      allocate(y%cfx_qwflxvc     (maxcohort))  
+      allocate(y%cfx_qwshed      (maxcohort))  
+      allocate(y%cfx_qtransp     (maxcohort))  
+      allocate(y%cfx_qintercepted(maxcohort))  
+
+      call zero_rk4_cohort(y)
+
+      return
+   end subroutine allocate_rk4_coh
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !    This subroutine will nullify the cohort pointers for a safe allocation.            !
+   !---------------------------------------------------------------------------------------!
+   subroutine nullify_rk4_cohort(y)
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      type(rk4patchtype), target :: y
+      !------------------------------------------------------------------------------------!
+          
+      nullify(y%veg_energy      )
+      nullify(y%veg_water       )
+      nullify(y%veg_temp        )
+      nullify(y%veg_fliq        )
+      nullify(y%hcapveg         )
+      nullify(y%veg_wind        )
+      nullify(y%veg_reynolds    )
+      nullify(y%veg_grashof     )
+      nullify(y%veg_nussfree    )
+      nullify(y%veg_nussforc    )
+      nullify(y%lint_shv        )
+      nullify(y%nplant          )
+      nullify(y%lai             )
+      nullify(y%wai             )
+      nullify(y%wpa             )
+      nullify(y%tai             )
+      nullify(y%crown_area      )
+      nullify(y%gbh             )
+      nullify(y%gbw             )
+      nullify(y%gsw_open        )
+      nullify(y%gsw_closed      )
+      nullify(y%psi_open        )
+      nullify(y%psi_closed      )
+      nullify(y%fs_open         )
+      nullify(y%solvable        )
+      nullify(y%gpp             )
+      nullify(y%leaf_resp       )
+      nullify(y%root_resp       )
+      nullify(y%growth_resp     )
+      nullify(y%storage_resp    )
+      nullify(y%vleaf_resp      )
+      nullify(y%rshort_v        )
+      nullify(y%rlong_v         )
+      nullify(y%cfx_hflxvc      )
+      nullify(y%cfx_qwflxvc     )
+      nullify(y%cfx_qwshed      )
+      nullify(y%cfx_qtransp     )
+      nullify(y%cfx_qintercepted)
+
+      return
+   end subroutine nullify_rk4_cohort
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !    This subroutine will initialize the cohort variables with zeroes.                  !
+   !---------------------------------------------------------------------------------------!
+   subroutine zero_rk4_cohort(y)
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      type(rk4patchtype), target :: y
+      !------------------------------------------------------------------------------------!
+
+      if(associated(y%veg_energy      )) y%veg_energy       = 0.d0
+      if(associated(y%veg_water       )) y%veg_water        = 0.d0
+      if(associated(y%veg_temp        )) y%veg_temp         = 0.d0
+      if(associated(y%veg_fliq        )) y%veg_fliq         = 0.d0
+      if(associated(y%hcapveg         )) y%hcapveg          = 0.d0
+      if(associated(y%veg_wind        )) y%veg_wind         = 0.d0
+      if(associated(y%veg_reynolds    )) y%veg_reynolds     = 0.d0
+      if(associated(y%veg_grashof     )) y%veg_grashof      = 0.d0
+      if(associated(y%veg_nussfree    )) y%veg_nussfree     = 0.d0
+      if(associated(y%veg_nussforc    )) y%veg_nussforc     = 0.d0
+      if(associated(y%lint_shv        )) y%lint_shv         = 0.d0
+      if(associated(y%nplant          )) y%nplant           = 0.d0
+      if(associated(y%lai             )) y%lai              = 0.d0
+      if(associated(y%wai             )) y%wai              = 0.d0
+      if(associated(y%wpa             )) y%wpa              = 0.d0
+      if(associated(y%tai             )) y%tai              = 0.d0
+      if(associated(y%crown_area      )) y%crown_area       = 0.d0
+      if(associated(y%gbh             )) y%gbh              = 0.d0
+      if(associated(y%gbw             )) y%gbw              = 0.d0
+      if(associated(y%gsw_open        )) y%gsw_open         = 0.d0
+      if(associated(y%gsw_closed      )) y%gsw_closed       = 0.d0
+      if(associated(y%psi_open        )) y%psi_open         = 0.d0
+      if(associated(y%psi_closed      )) y%psi_closed       = 0.d0
+      if(associated(y%fs_open         )) y%fs_open          = 0.d0
+      if(associated(y%solvable        )) y%solvable         = .false.
+      if(associated(y%gpp             )) y%gpp              = 0.d0
+      if(associated(y%leaf_resp       )) y%leaf_resp        = 0.d0
+      if(associated(y%root_resp       )) y%root_resp        = 0.d0
+      if(associated(y%growth_resp     )) y%growth_resp      = 0.d0
+      if(associated(y%storage_resp    )) y%storage_resp     = 0.d0
+      if(associated(y%vleaf_resp      )) y%vleaf_resp       = 0.d0
+      if(associated(y%rshort_v        )) y%rshort_v         = 0.d0
+      if(associated(y%rlong_v         )) y%rlong_v          = 0.d0
+      if(associated(y%cfx_hflxvc      )) y%cfx_hflxvc       = 0.d0
+      if(associated(y%cfx_qwflxvc     )) y%cfx_qwflxvc      = 0.d0
+      if(associated(y%cfx_qwshed      )) y%cfx_qwshed       = 0.d0
+      if(associated(y%cfx_qtransp     )) y%cfx_qtransp      = 0.d0
+      if(associated(y%cfx_qintercepted)) y%cfx_qintercepted = 0.d0
+
+      return
+   end subroutine zero_rk4_cohort
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !    This subroutine will deallocate the cohorts of the temporary patch.                !
+   !---------------------------------------------------------------------------------------!
+   subroutine deallocate_rk4_coh(y)
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      type(rk4patchtype), target :: y
+      !------------------------------------------------------------------------------------!
+
+      if(associated(y%veg_energy      )) deallocate(y%veg_energy      )
+      if(associated(y%veg_water       )) deallocate(y%veg_water       )
+      if(associated(y%veg_temp        )) deallocate(y%veg_temp        )
+      if(associated(y%veg_fliq        )) deallocate(y%veg_fliq        )
+      if(associated(y%hcapveg         )) deallocate(y%hcapveg         )
+      if(associated(y%veg_wind        )) deallocate(y%veg_wind        )
+      if(associated(y%veg_reynolds    )) deallocate(y%veg_reynolds    )
+      if(associated(y%veg_grashof     )) deallocate(y%veg_grashof     )
+      if(associated(y%veg_nussfree    )) deallocate(y%veg_nussfree    )
+      if(associated(y%veg_nussforc    )) deallocate(y%veg_nussforc    )
+      if(associated(y%lint_shv        )) deallocate(y%lint_shv        )
+      if(associated(y%nplant          )) deallocate(y%nplant          )
+      if(associated(y%lai             )) deallocate(y%lai             )
+      if(associated(y%wai             )) deallocate(y%wai             )
+      if(associated(y%wpa             )) deallocate(y%wpa             )
+      if(associated(y%tai             )) deallocate(y%tai             )
+      if(associated(y%crown_area      )) deallocate(y%crown_area      )
+      if(associated(y%gbh             )) deallocate(y%gbh             )
+      if(associated(y%gbw             )) deallocate(y%gbw             )
+      if(associated(y%gsw_open        )) deallocate(y%gsw_open        )
+      if(associated(y%gsw_closed      )) deallocate(y%gsw_closed      )
+      if(associated(y%psi_open        )) deallocate(y%psi_open        )
+      if(associated(y%psi_closed      )) deallocate(y%psi_closed      )
+      if(associated(y%fs_open         )) deallocate(y%fs_open         )
+      if(associated(y%solvable        )) deallocate(y%solvable        )
+      if(associated(y%gpp             )) deallocate(y%gpp             )
+      if(associated(y%leaf_resp       )) deallocate(y%leaf_resp       )
+      if(associated(y%root_resp       )) deallocate(y%root_resp       )
+      if(associated(y%growth_resp     )) deallocate(y%growth_resp     )
+      if(associated(y%storage_resp    )) deallocate(y%storage_resp    )
+      if(associated(y%vleaf_resp      )) deallocate(y%vleaf_resp      )
+      if(associated(y%rshort_v        )) deallocate(y%rshort_v        )
+      if(associated(y%rlong_v         )) deallocate(y%rlong_v         )
+      if(associated(y%cfx_hflxvc      )) deallocate(y%cfx_hflxvc      )
+      if(associated(y%cfx_qwflxvc     )) deallocate(y%cfx_qwflxvc     )
+      if(associated(y%cfx_qwshed      )) deallocate(y%cfx_qwshed      )
+      if(associated(y%cfx_qtransp     )) deallocate(y%cfx_qtransp     )
+      if(associated(y%cfx_qintercepted)) deallocate(y%cfx_qintercepted)
+
+      return
+   end subroutine deallocate_rk4_coh
    !=======================================================================================!
    !=======================================================================================!
 
@@ -900,9 +1207,16 @@ module rk4_coms
       y%flx_drainage                   = 0.d0
       y%flx_drainage_heat              = 0.d0
 
-      if(associated(y%flx_smoist_gg         ))   y%flx_smoist_gg(:)               = 0.d0
-      if(associated(y%flx_smoist_gc         ))   y%flx_smoist_gc(:)               = 0.d0
-      if(associated(y%flx_sensible_gg       ))   y%flx_sensible_gg(:)             = 0.d0
+      !----- Reset soil fluxes only when they are allocated. ------------------------------!
+      if(associated(y%flx_smoist_gg   )) y%flx_smoist_gg    (:) = 0.d0
+      if(associated(y%flx_smoist_gc   )) y%flx_smoist_gc    (:) = 0.d0
+      if(associated(y%flx_sensible_gg )) y%flx_sensible_gg  (:) = 0.d0
+      !----- Reset cohort-level energy fluxes when they are allocated. --------------------!
+      if(associated(y%cfx_hflxvc      )) y%cfx_hflxvc       (:) = 0.d0
+      if(associated(y%cfx_qwflxvc     )) y%cfx_qwflxvc      (:) = 0.d0
+      if(associated(y%cfx_qwshed      )) y%cfx_qwshed       (:) = 0.d0
+      if(associated(y%cfx_qtransp     )) y%cfx_qtransp      (:) = 0.d0
+      if(associated(y%cfx_qintercepted)) y%cfx_qintercepted (:) = 0.d0
 
       return
    end subroutine reset_rk4_fluxes
@@ -955,261 +1269,26 @@ module rk4_coms
       y%flx_drainage      = y%flx_drainage      * hdidi
       y%flx_drainage_heat = y%flx_drainage_heat * hdidi
 
-      if(associated(y%flx_smoist_gg  )) y%flx_smoist_gg  (:) = y%flx_smoist_gg  (:) * hdidi
-      if(associated(y%flx_smoist_gc  )) y%flx_smoist_gc  (:) = y%flx_smoist_gc  (:) * hdidi
-      if(associated(y%flx_sensible_gg)) y%flx_sensible_gg(:) = y%flx_sensible_gg(:) * hdidi
+      if(associated(y%flx_smoist_gg   )) y%flx_smoist_gg    (:) = y%flx_smoist_gg   (:)    &
+                                                                * hdidi
+      if(associated(y%flx_smoist_gc   )) y%flx_smoist_gc    (:) = y%flx_smoist_gc   (:)    &
+                                                                * hdidi
+      if(associated(y%flx_sensible_gg )) y%flx_sensible_gg  (:) = y%flx_sensible_gg (:)    &
+                                                                * hdidi
+      !----- Cohort-level energy fluxes. --------------------------------------------------!
+      if(associated(y%cfx_hflxvc      )) y%cfx_hflxvc       (:) = y%cfx_hflxvc      (:)    &
+                                                                * hdidi
+      if(associated(y%cfx_qwflxvc     )) y%cfx_qwflxvc      (:) = y%cfx_qwflxvc     (:)    &
+                                                                * hdidi
+      if(associated(y%cfx_qwshed      )) y%cfx_qwshed       (:) = y%cfx_qwshed      (:)    &
+                                                                * hdidi
+      if(associated(y%cfx_qtransp     )) y%cfx_qtransp      (:) = y%cfx_qtransp     (:)    &
+                                                                * hdidi
+      if(associated(y%cfx_qintercepted)) y%cfx_qintercepted (:) = y%cfx_qintercepted(:)    &
+                                                                * hdidi
 
       return
    end subroutine norm_rk4_fluxes
-   !=======================================================================================!
-   !=======================================================================================!
-
-
-
-
-
-
-   !=======================================================================================!
-   !=======================================================================================!
-   !    This subroutine will perform the temporary patch deallocation.                     !
-   !---------------------------------------------------------------------------------------!
-   subroutine deallocate_rk4_patch(y)
-      implicit none
-      !----- Argument ---------------------------------------------------------------------!
-      type(rk4patchtype), target :: y
-      !------------------------------------------------------------------------------------!
-
-      if (associated(y%soil_energy))             deallocate(y%soil_energy)
-      if (associated(y%soil_water))              deallocate(y%soil_water)
-      if (associated(y%soil_fracliq))            deallocate(y%soil_fracliq)
-      if (associated(y%soil_tempk))              deallocate(y%soil_tempk)
-      if (associated(y%available_liquid_water))  deallocate(y%available_liquid_water)
-      if (associated(y%extracted_water))         deallocate(y%extracted_water)
-      if (associated(y%psiplusz))                deallocate(y%psiplusz)
-      if (associated(y%soilair99))               deallocate(y%soilair99)
-      if (associated(y%soilair01))               deallocate(y%soilair01)
-      if (associated(y%soil_liq))                deallocate(y%soil_liq)
-
-      if (associated(y%sfcwater_energy))         deallocate(y%sfcwater_energy)
-      if (associated(y%sfcwater_mass))           deallocate(y%sfcwater_mass)
-      if (associated(y%sfcwater_depth))          deallocate(y%sfcwater_depth)
-      if (associated(y%sfcwater_fracliq))        deallocate(y%sfcwater_fracliq)
-      if (associated(y%sfcwater_tempk))          deallocate(y%sfcwater_tempk)
-      
-      ! Diagnostics
-      if (associated(y%avg_smoist_gg))           deallocate(y%avg_smoist_gg)
-      if (associated(y%avg_smoist_gc))           deallocate(y%avg_smoist_gc)
-      if (associated(y%avg_sensible_gg))         deallocate(y%avg_sensible_gg)
-      if (associated(y%flx_smoist_gg))           deallocate(y%flx_smoist_gg)
-      if (associated(y%flx_smoist_gc))           deallocate(y%flx_smoist_gc)
-      if (associated(y%flx_sensible_gg))         deallocate(y%flx_sensible_gg)
-
-      return
-   end subroutine deallocate_rk4_patch
-   !=======================================================================================!
-   !=======================================================================================!
-
-
-
-
-
-
-   !=======================================================================================!
-   !=======================================================================================!
-   !    This subroutine will allocate the cohorts of the temporary patch.                  !
-   !---------------------------------------------------------------------------------------!
-
-   subroutine allocate_rk4_coh(maxcohort,y)
-      implicit none
-      !----- Arguments --------------------------------------------------------------------!
-      type(rk4patchtype) , target     :: y
-      integer            , intent(in) :: maxcohort
-      !------------------------------------------------------------------------------------!
-      
-      call nullify_rk4_cohort(y)
-
-      allocate(y%veg_energy   (maxcohort))
-      allocate(y%veg_water    (maxcohort))
-      allocate(y%veg_temp     (maxcohort))
-      allocate(y%veg_fliq     (maxcohort))
-      allocate(y%hcapveg      (maxcohort))
-      allocate(y%veg_wind     (maxcohort))
-      allocate(y%veg_reynolds (maxcohort))
-      allocate(y%veg_grashof  (maxcohort))
-      allocate(y%veg_nussfree (maxcohort))
-      allocate(y%veg_nussforc (maxcohort))
-      allocate(y%lint_shv     (maxcohort))
-      allocate(y%nplant       (maxcohort))
-      allocate(y%lai          (maxcohort))
-      allocate(y%wai          (maxcohort))
-      allocate(y%wpa          (maxcohort))
-      allocate(y%tai          (maxcohort))
-      allocate(y%gbh          (maxcohort))
-      allocate(y%gbw          (maxcohort))
-      allocate(y%psi_open     (maxcohort))
-      allocate(y%psi_closed   (maxcohort))
-      allocate(y%gsw_open     (maxcohort))
-      allocate(y%gsw_closed   (maxcohort))
-      allocate(y%fs_open      (maxcohort))
-      allocate(y%solvable     (maxcohort))
-      allocate(y%gpp          (maxcohort))
-      allocate(y%leaf_resp    (maxcohort))
-      allocate(y%root_resp    (maxcohort))
-      allocate(y%growth_resp  (maxcohort))
-      allocate(y%storage_resp (maxcohort))
-      allocate(y%vleaf_resp   (maxcohort))
-
-      call zero_rk4_cohort(y)
-
-      return
-   end subroutine allocate_rk4_coh
-   !=======================================================================================!
-   !=======================================================================================!
-
-
-
-
-
-
-   !=======================================================================================!
-   !=======================================================================================!
-   !    This subroutine will nullify the cohort pointers for a safe allocation.            !
-   !---------------------------------------------------------------------------------------!
-   subroutine nullify_rk4_cohort(y)
-      implicit none
-      !----- Arguments --------------------------------------------------------------------!
-      type(rk4patchtype), target :: y
-      !------------------------------------------------------------------------------------!
-          
-      nullify(y%veg_energy   )
-      nullify(y%veg_water    )
-      nullify(y%veg_temp     )
-      nullify(y%veg_fliq     )
-      nullify(y%hcapveg      )
-      nullify(y%veg_wind     )
-      nullify(y%veg_reynolds )
-      nullify(y%veg_grashof  )
-      nullify(y%veg_nussfree )
-      nullify(y%veg_nussforc )
-      nullify(y%lint_shv     )
-      nullify(y%nplant       )
-      nullify(y%lai          )
-      nullify(y%wai          )
-      nullify(y%wpa          )
-      nullify(y%tai          )
-      nullify(y%gbh          )
-      nullify(y%gbw          )
-      nullify(y%gsw_open     )
-      nullify(y%gsw_closed   )
-      nullify(y%psi_open     )
-      nullify(y%psi_closed   )
-      nullify(y%fs_open      )
-      nullify(y%solvable     )
-      nullify(y%gpp          )
-      nullify(y%leaf_resp    )
-      nullify(y%root_resp    )
-      nullify(y%growth_resp  )
-      nullify(y%storage_resp )
-      nullify(y%vleaf_resp   )
-
-      return
-   end subroutine nullify_rk4_cohort
-   !=======================================================================================!
-   !=======================================================================================!
-
-
-
-
-
-
-   !=======================================================================================!
-   !=======================================================================================!
-   !    This subroutine will initialize the cohort variables with zeroes.                  !
-   !---------------------------------------------------------------------------------------!
-   subroutine zero_rk4_cohort(y)
-      implicit none
-      !----- Arguments --------------------------------------------------------------------!
-      type(rk4patchtype), target :: y
-      !------------------------------------------------------------------------------------!
-
-      if(associated(y%veg_energy    ))  y%veg_energy    = 0.d0
-      if(associated(y%veg_water     ))  y%veg_water     = 0.d0
-      if(associated(y%veg_temp      ))  y%veg_temp      = 0.d0
-      if(associated(y%veg_fliq      ))  y%veg_fliq      = 0.d0
-      if(associated(y%hcapveg       ))  y%hcapveg       = 0.d0
-      if(associated(y%nplant        ))  y%nplant        = 0.d0
-      if(associated(y%lai           ))  y%lai           = 0.d0
-      if(associated(y%wai           ))  y%wai           = 0.d0
-      if(associated(y%wpa           ))  y%wpa           = 0.d0
-      if(associated(y%tai           ))  y%tai           = 0.d0
-      if(associated(y%gbh           ))  y%gbh           = 0.d0
-      if(associated(y%gbw           ))  y%gbw           = 0.d0
-      if(associated(y%psi_open      ))  y%psi_open      = 0.d0
-      if(associated(y%psi_closed    ))  y%psi_closed    = 0.d0
-      if(associated(y%gsw_open      ))  y%gsw_open      = 0.d0
-      if(associated(y%gsw_closed    ))  y%gsw_closed    = 0.d0
-      if(associated(y%fs_open       ))  y%fs_open       = 0.d0
-      if(associated(y%solvable      ))  y%solvable      = .false.
-      if(associated(y%gpp           ))  y%gpp           = 0.d0
-      if(associated(y%leaf_resp     ))  y%leaf_resp     = 0.d0
-      if(associated(y%root_resp     ))  y%root_resp     = 0.d0
-      if(associated(y%growth_resp   ))  y%growth_resp   = 0.d0
-      if(associated(y%storage_resp  ))  y%storage_resp  = 0.d0
-      if(associated(y%vleaf_resp    ))  y%vleaf_resp    = 0.d0
-
-      return
-   end subroutine zero_rk4_cohort
-   !=======================================================================================!
-   !=======================================================================================!
-
-
-
-
-
-
-   !=======================================================================================!
-   !=======================================================================================!
-   !    This subroutine will deallocate the cohorts of the temporary patch.                !
-   !---------------------------------------------------------------------------------------!
-   subroutine deallocate_rk4_coh(y)
-      implicit none
-      !----- Arguments --------------------------------------------------------------------!
-      type(rk4patchtype), target :: y
-      !------------------------------------------------------------------------------------!
-
-      if(associated(y%veg_energy    ))  deallocate(y%veg_energy  )
-      if(associated(y%veg_water     ))  deallocate(y%veg_water   )
-      if(associated(y%veg_temp      ))  deallocate(y%veg_temp    )
-      if(associated(y%veg_fliq      ))  deallocate(y%veg_fliq    )
-      if(associated(y%hcapveg       ))  deallocate(y%hcapveg     )
-      if(associated(y%veg_wind      ))  deallocate(y%veg_wind    )
-      if(associated(y%veg_reynolds  ))  deallocate(y%veg_reynolds)
-      if(associated(y%veg_grashof   ))  deallocate(y%veg_grashof )
-      if(associated(y%veg_nussfree  ))  deallocate(y%veg_nussfree)
-      if(associated(y%veg_nussforc  ))  deallocate(y%veg_nussforc)
-      if(associated(y%lint_shv      ))  deallocate(y%lint_shv    )
-      if(associated(y%nplant        ))  deallocate(y%nplant      )
-      if(associated(y%lai           ))  deallocate(y%lai         )
-      if(associated(y%wai           ))  deallocate(y%wai         )
-      if(associated(y%wpa           ))  deallocate(y%wpa         )
-      if(associated(y%tai           ))  deallocate(y%tai         )
-      if(associated(y%gbh           ))  deallocate(y%gbh         )
-      if(associated(y%gbw           ))  deallocate(y%gbw         )
-      if(associated(y%psi_open      ))  deallocate(y%psi_open    )
-      if(associated(y%psi_closed    ))  deallocate(y%psi_closed  )
-      if(associated(y%gsw_open      ))  deallocate(y%gsw_open    )
-      if(associated(y%gsw_closed    ))  deallocate(y%gsw_closed  )
-      if(associated(y%fs_open       ))  deallocate(y%fs_open     )
-      if(associated(y%solvable      ))  deallocate(y%solvable    )
-      if(associated(y%gpp           ))  deallocate(y%gpp         )
-      if(associated(y%leaf_resp     ))  deallocate(y%leaf_resp   )
-      if(associated(y%root_resp     ))  deallocate(y%root_resp   )
-      if(associated(y%growth_resp   ))  deallocate(y%growth_resp )
-      if(associated(y%storage_resp  ))  deallocate(y%storage_resp)
-      if(associated(y%vleaf_resp    ))  deallocate(y%vleaf_resp  )
-
-      return
-   end subroutine deallocate_rk4_coh
    !=======================================================================================!
    !=======================================================================================!
 

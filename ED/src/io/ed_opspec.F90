@@ -898,19 +898,19 @@ subroutine ed_opspec_times
       ifaterr=ifaterr+1
    end if
 
-   if (mod(hr_sec,dtlsm) /= 0.0) then
-      write(reason,fmt='(a,1x,f8.2,1x,a,1x,es14.7)')  &
-          'DTLSM must be a divisor of ',hr_sec,' sec. Yours is set to ',dtlsm
-      call opspec_fatal(reason,'opspec_times')  
-      ifaterr=ifaterr+1
-   end if
+   !if (mod(hr_sec,dtlsm) /= 0.0) then
+   !   write(reason,fmt='(a,1x,f8.2,1x,a,1x,es14.7)')  &
+   !       'DTLSM must be a divisor of ',hr_sec,' sec. Yours is set to ',dtlsm
+   !   call opspec_fatal(reason,'opspec_times')  
+   !   ifaterr=ifaterr+1
+   !end if
 
-   if (mod(hr_sec,radfrq) /= 0.0) then
-      write(reason,fmt='(a,1x,f8.2,1x,a,1x,es14.7)')  &
-          'RADFRQ must be a divisor of ',hr_sec,' sec. Yours is set to ',radfrq
-      call opspec_fatal(reason,'opspec_times')  
-      ifaterr=ifaterr+1
-   end if
+   !if (mod(hr_sec,radfrq) /= 0.0) then
+   !   write(reason,fmt='(a,1x,f8.2,1x,a,1x,es14.7)')  &
+   !       'RADFRQ must be a divisor of ',hr_sec,' sec. Yours is set to ',radfrq
+   !   call opspec_fatal(reason,'opspec_times')  
+   !   ifaterr=ifaterr+1
+   !end if
 
    ! Not sure if this is really necessary. If not, please remove it...
    if (mod(radfrq,dtlsm) /= 0.0) then
@@ -1349,9 +1349,9 @@ end do
       ifaterr = ifaterr +1
    end select
 
-   if (i_blyr_condct < 0 .or. i_blyr_condct > 2) then
+   if (i_blyr_condct < -1 .or. i_blyr_condct > 2) then
       write (reason,fmt='(a,1x,i4,a)') &
-            'Invalid I_BLYR_CONDCT, it must be between 0 and 2. Yours is set to'           &
+            'Invalid I_BLYR_CONDCT, it must be between -1 and 2. Yours is set to'          &
            ,i_blyr_condct,'...'
       call opspec_fatal(reason,'opspec_misc')  
       ifaterr = ifaterr +1
