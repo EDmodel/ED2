@@ -1982,6 +1982,7 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
      call hdf_getslab_r(cpatch%rlong_v_incid,'RLONG_V_INCID ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%gbh,'GBH ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%gbw,'GBW ',dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%llspan,'LLSPAN ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%A_open,'A_OPEN ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%A_closed,'A_CLOSED ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%Psi_closed,'PSI_CLOSED ',dsetrank,iparallel,.true.)

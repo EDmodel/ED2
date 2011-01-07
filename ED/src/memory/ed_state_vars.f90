@@ -7685,7 +7685,7 @@ contains
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_leaf_maintenance(1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'AVG_LEAF_MAINTENANCE :11:hist:anal') 
-       call metadata_edio(nvar,igr,'Polygon Average Leaf maintenance cost','[kgC/m2/yr]','ipoly') 
+       call metadata_edio(nvar,igr,'Polygon Average Leaf maintenance cost','[kgC/m2/day]','ipoly') 
     endif
 
     if (associated(cgrid%avg_root_maintenance)) then
@@ -11402,7 +11402,14 @@ contains
          var_len,var_len_global,max_ptrs,'GBW :41:hist:anal') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
-
+    
+    if (associated(cpatch%llspan)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%llspan(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'LLSPAN :41:hist:anal') 
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
+    
     if (associated(cpatch%A_open)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%A_open(1),nvar,igr,init,cpatch%coglob_id, &

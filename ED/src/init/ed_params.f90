@@ -776,15 +776,15 @@ subroutine init_pft_photo_params()
    use consts_coms    , only : t00                  & ! intent(in)
                              , umol_2_mol           & ! intent(in)
                              , yr_sec               ! ! intent(in)
-   use physiology_coms  , only, vmfact              & ! intent(in)
-                                 mfact              ! ! intent(in)
+   use physiology_coms , only: vmfact               & ! intent(in)
+                             , mfact                ! ! intent(in)
    implicit none
 
    !----- Local variables. ----------------------------------------------------------------!
    logical, parameter  :: vm0_16    = .false.
    logical, parameter  :: stsl_3ted = .false.
    logical, parameter  :: lwidth_10 = .false.
-   !---------------------------------------------------------------------------------------!
+     !---------------------------------------------------------------------------------------!
 
    D0(1:15)                  = 0.01      ! same for all PFTs
 
@@ -885,7 +885,7 @@ subroutine init_pft_photo_params()
       stomatal_slope(14)        = 10.0
       stomatal_slope(15)        = 10.0
    end if
-
+ 
    cuticular_cond(1)         = 10000.0    ! 10000.0
    cuticular_cond(2)         = 10000.0    ! 10000.0
    cuticular_cond(3)         = 10000.0    ! 10000.0
@@ -901,6 +901,8 @@ subroutine init_pft_photo_params()
    cuticular_cond(13)        = 20000.0    ! 10000.0
    cuticular_cond(14)        = 20000.0    ! 10000.0
    cuticular_cond(15)        = 20000.0    ! 10000.0
+   
+   
 
    quantum_efficiency(1)     = 0.06
    quantum_efficiency(2)     = 0.08
@@ -2389,10 +2391,12 @@ subroutine init_phen_coms
                             , vm_slop                  & ! intent(out)
                             , vm_amp                   & ! intent(out)
                             , vm_min                   & ! intent(out)
-                            , max_phenology_dist       ! ! intent(out)
-
+                            , max_phenology_dist       & ! intent(out)
+                            , radint                   & ! intent(out)
+                            , radslp                   ! ! intent(out)
    implicit none
 
+ 
    retained_carbon_fraction = 0.5
    theta_crit               = 0.2
    dl_tr                    = 655.0
@@ -2403,13 +2407,13 @@ subroutine init_phen_coms
    phen_b                   = 638.0
    phen_c                   = -0.01
 
-   rad_turnover_int         = -11.3868
-   rad_turnover_slope       = 0.0824
+   rad_turnover_int         = dble(radint)  !-11.3868
+   rad_turnover_slope       = dble(radslp)  !0.0824
 
-   vm_tran                  = 9.0
-   vm_slop                  = 10.0
-   vm_amp                   = 20.0
-   vm_min                   = 15.0
+   vm_tran                  = 5.0
+   vm_slop                  = 4.0
+   vm_amp                   = 55.0
+   vm_min                   = 11.0
 
    !---------------------------------------------------------------------------------------!
    !     This variable is the maximum distance between the coordinates of a prescribed     !

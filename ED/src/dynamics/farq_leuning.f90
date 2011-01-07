@@ -118,7 +118,7 @@ module farq_leuning
       real(kind=4), intent(in)    :: lint_shv          ! Leaf interc. sp. hum.  [    kg/kg]
       real(kind=4), intent(in)    :: green_leaf_factor ! Frac. of on-allom. gr. [      ---]
       real(kind=4), intent(in)    :: leaf_aging_factor ! Ageing parameter       [      ---]
-      real(kind=4), intent(in)    :: llspan            ! Leaf life span         [       yr]
+      real(kind=4), intent(in)    :: llspan            ! Leaf life span         [     mnth]
       real(kind=4), intent(in)    :: vm_bar            ! Average Vm function    [µmol/m²/s]
       real(kind=4), intent(in)    :: gbw               ! B.lyr. cnd. of H2O     [  kg/m²/s]
       real(kind=4), intent(out)   :: A_open            ! Photosyn. rate (op.)   [µmol/m²/s]

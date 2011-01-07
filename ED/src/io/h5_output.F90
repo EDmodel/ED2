@@ -1,6 +1,6 @@
 ! =========================================================
 !
-! Create H5 output files from the var table
+! Create H5 output files from the var tablef
 
 ! =========================================================
 subroutine h5_output(vtype)

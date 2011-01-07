@@ -94,7 +94,9 @@ subroutine copy_nl(copy_type)
                                    , iphenyf1                  & ! intent(out)
                                    , iphenyff                  & ! intent(out)
                                    , phenpath                  & ! intent(out)
-                                   , repro_scheme              ! ! intent(out)
+                                   , repro_scheme              & ! intent(out)
+                                   , radint                    & ! intent(out)
+                                   , radslp                    ! ! intent(out)
    use decomp_coms          , only : n_decomp_lim              & ! intent(out)
                                    , LloydTaylor               ! ! intent(out)
    use disturb_coms         , only : include_fire              & ! intent(out)
@@ -279,6 +281,8 @@ subroutine copy_nl(copy_type)
       h2o_plant_lim             = nl%h2o_plant_lim
       vmfact                    = nl%vmfact
       mfact                     = nl%mfact
+      radint                    = nl%radint
+      radslp                    = nl%radslp
       n_plant_lim               = nl%n_plant_lim
       n_decomp_lim              = nl%n_decomp_lim
       include_fire              = nl%include_fire

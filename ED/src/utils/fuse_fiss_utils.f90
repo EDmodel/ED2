@@ -1630,6 +1630,7 @@ module fuse_fiss_utils
       integer                            :: tot_ncohorts    ! Total # of cohorts
       !------------------------------------------------------------------------------------!
 
+
       !----- Return if maxpatch is 0, this is a flag for no patch fusion. -----------------!
       if (maxpatch == 0) return
       
@@ -1753,6 +1754,7 @@ module fuse_fiss_utils
                                  end do
                               end do fuseloop
                            end if
+                           
 
                            !----- Create a mapping of the patches that fuse together. -----!
                            if (fuse_flag) then
@@ -1796,6 +1798,7 @@ module fuse_fiss_utils
                   end if          ! if (.not. fuse_table(donp)) then
 
                   npatches_new = count(fuse_table)
+                  if (npatches_new <= abs(maxpatch)) exit max_patch
                end do          ! do donp = csite%npatches,2,-1
 
                !---------------------------------------------------------------------------!

@@ -13,6 +13,10 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
                            , sla                 ! ! intent(in)
    use ed_misc_coms , only : imoutput            & ! intent(in)
                            , idoutput            ! ! intent(in)
+   use phenology_coms , only : vm_tran           & ! intent(in)
+                             , vm_slop           & ! intent(in)
+                             , vm_amp            & ! intent(in)
+                             , vm_min            ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    type(patchtype), target     :: cpatch     ! Current patch
@@ -285,7 +289,8 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
    ! specific leaf area (SLA) must be assigned with the default values.  These numbers     !
    ! will change only if the PFT uses a light-controlled phenology.                        !
    !---------------------------------------------------------------------------------------!
-   cpatch%vm_bar(ico) = Vm0(cpatch%pft(ico))
+   !cpatch%vm_bar(ico) = Vm0(cpatch%pft(ico))
+   cpatch%vm_bar(ico)= vm_amp / (1.0 + (cpatch%llspan(ico)/vm_tran)**vm_slop) + vm_min
    cpatch%sla(ico) = sla(cpatch%pft(ico))
    !---------------------------------------------------------------------------------------!
 
@@ -600,7 +605,7 @@ subroutine init_ed_site_vars(cpoly, lat)
   cpoly%primary_harvest_memory(:) = 0.0
   cpoly%secondary_harvest_memory(:) = 0.0
   
-  cpoly%rad_avg(:) = 0.0
+  cpoly%rad_avg(:) = 200.0
   
   
   return

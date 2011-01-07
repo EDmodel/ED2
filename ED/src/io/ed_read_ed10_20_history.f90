@@ -369,6 +369,7 @@ subroutine read_ed10_ed20_history_file
 
             end do count_patches
             
+            
             !------------------------------------------------------------------------------!
             !      Here we determine the number of patches.  Unless there are no patches,  !
             ! (this may happen if the file used was all water.  In that case, then we      !
@@ -472,7 +473,6 @@ subroutine read_ed10_ed20_history_file
          end select
          
          close(unit=12,status='keep')
-
 
          !---------------------------------------------------------------------------------!
          !    Open the cohort file and read in all cohorts.                                !
@@ -615,6 +615,7 @@ subroutine read_ed10_ed20_history_file
 
          !----- Find the total number of cohorts. -----------------------------------------!
          ncohorts = max(ic-1,0)
+         
          
          close (unit=12,status='keep')
 
