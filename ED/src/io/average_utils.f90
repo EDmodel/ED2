@@ -1218,8 +1218,6 @@ subroutine normalize_ed_daily_output_vars(cgrid)
                                    , ddbhi         & ! intent(in)
                                    , dagei         ! ! intent(in)
    use pft_coms             , only : init_density  ! ! intent(in)
-   use canopy_radiation_coms, only : lai_min       & ! intent(in)
-                                   , tai_min       ! ! intent(in)
    use therm_lib            , only : qwtk          & ! subroutine
                                    , idealdenssh   ! ! function
    implicit none
@@ -2096,8 +2094,6 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
                                    , day_sec       & ! intent(in)
                                    , yr_day        ! ! intent(in)
    use pft_coms             , only : init_density  ! ! intent(in)
-   use canopy_radiation_coms, only : lai_min       & ! intent(in)
-                                   , tai_min       ! ! intent(in)
    use therm_lib            , only : idealdenssh   & ! function
                                    , qwtk          ! ! function
    use allometry            , only : ed_biomass    ! ! function

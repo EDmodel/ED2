@@ -434,6 +434,19 @@ subroutine inc_rk4_patch(rkp, inc, fac, cpatch)
          rkp%flx_smoist_gc(k)    = rkp%flx_smoist_gc(k)    + fac * inc%avg_smoist_gc(k)  
       end do
 
+      do ico = 1,cpatch%ncohorts
+         rkp%cfx_hflxvc      (ico)  =       rkp%cfx_hflxvc      (ico)                      &
+                                    + fac * inc%cfx_hflxvc      (ico)
+         rkp%cfx_qwflxvc     (ico)  =       rkp%cfx_qwflxvc     (ico)                      &
+                                    + fac * inc%cfx_qwflxvc     (ico)
+         rkp%cfx_qwshed      (ico)  =       rkp%cfx_qwshed      (ico)                      &
+                                    + fac * inc%cfx_qwshed      (ico)
+         rkp%cfx_qtransp     (ico)  =       rkp%cfx_qtransp     (ico)                      &
+                                    + fac * inc%cfx_qtransp     (ico)
+         rkp%cfx_qintercepted(ico)  =       rkp%cfx_qintercepted(ico)                      &
+                                    + fac * inc%cfx_qintercepted(ico)
+      end do
+
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -619,22 +632,19 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
    !    Scale for leaf water and energy. In case the plants have few or no leaves, or the  !
    ! plant is buried in snow, we assign huge values for typical scale, thus preventing     !
    ! unecessary small steps.                                                               !
-   !    Also, if the cohort is tiny and has almost no water, make the scale less strict.   !
+   !    Also, if the cohort has almost no water, make the scale less strict.               !
    !---------------------------------------------------------------------------------------!
    do ico = 1,cpatch%ncohorts
-      if (.not. y%solvable(ico)) then
-         yscal%solvable(ico)   = .false.
+      yscal%solvable(ico) = y%solvable(ico)
+      if (y%solvable(ico)) then
+         yscal%veg_energy(ico) = abs(y%veg_energy(ico)) + abs(dy%veg_energy(ico) * htry)
+         yscal%veg_temp(ico)   = abs(y%veg_temp(ico))
+         yscal%veg_water(ico)  = max(abs(y%veg_water(ico)) + abs(dy%veg_water(ico) * htry) &
+                                    ,rk4dry_veg_lwater * y%tai(ico))
+      else
          yscal%veg_water(ico)  = huge_offset
          yscal%veg_energy(ico) = huge_offset
-      elseif (y%veg_water(ico) > rk4dry_veg_lwater*y%tai(ico)) then
-         yscal%solvable(ico)   = .true.
-         yscal%veg_water(ico)  = abs(y%veg_water(ico) ) + abs(dy%veg_water(ico)  * htry)
-         yscal%veg_energy(ico) = abs(y%veg_energy(ico)) + abs(dy%veg_energy(ico) * htry)
-      else
-         yscal%solvable(ico)   = .true.
-         yscal%veg_water(ico)  = rk4dry_veg_lwater*y%tai(ico)
-         yscal%veg_energy(ico) = max(yscal%veg_water(ico)*qliqt38                          &
-                                    ,abs(y%veg_energy(ico)) + abs(dy%veg_energy(ico)*htry))
+         yscal%veg_temp(ico)   = huge_offset
       end if
    end do
 
@@ -776,20 +786,15 @@ subroutine get_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
    real(kind=8)                     :: erreneMAX        ! Scratch error variable
    real(kind=8)                     :: scal_err_prss    ! Scaling factor for CAS pressure
    integer                          :: k                ! Counter
-   !----- Local constants. ----------------------------------------------------------------!
-   real(kind=8)      , parameter    :: rk4eps_prss = 1.d-5
    !---------------------------------------------------------------------------------------!
 
    !----- Initialiee the error with an optimistic number... -------------------------------!
    errmax = 0.d0
 
 
-   !----- Compute the scaling factor, which should never be less than 1. ------------------!
-   scal_err_prss = max(1.d0, rk4eps / rk4eps_prss)
-
 
    !---------------------------------------------------------------------------------------!
-   !    We know check each variable error, and keep track of the worst guess, which will   !
+   !    We now check each variable error, and keep track of the worst guess, which will    !
    ! be our worst guess in the end.                                                        !
    !---------------------------------------------------------------------------------------!
 
@@ -826,20 +831,20 @@ subroutine get_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
    !     Get the worst error only amongst the cohorts in which leaf properties were        !
    ! computed.                                                                             !
    !---------------------------------------------------------------------------------------!
+   errh2oMAX  = 0.d0
+   erreneMAX  = 0.d0
    do ico = 1,cpatch%ncohorts
-      errh2oMAX = 0.d0
-      erreneMAX = 0.d0
       if (yscal%solvable(ico)) then
-         errh2o     = abs(yerr%veg_water(ico)  / yscal%veg_water(ico))
+         errh2o     = abs(yerr%veg_water (ico) / yscal%veg_water (ico))
          errene     = abs(yerr%veg_energy(ico) / yscal%veg_energy(ico))
          errmax     = max(errmax,errh2o,errene)
-         errh2oMAX  = max(errh2oMAX,errh2o)
-         erreneMAX  = max(erreneMAX,errene)
+         errh2oMAX  = max(errh2oMAX ,errh2o )
+         erreneMAX  = max(erreneMAX ,errene )
       end if
    end do
    if(cpatch%ncohorts > 0 .and. record_err) then
-      if (errh2oMAX > rk4eps) integ_err(7,1) = integ_err(7,1) + 1_8
-      if (erreneMAX > rk4eps) integ_err(8,1) = integ_err(8,1) + 1_8
+      if (errh2oMAX  > rk4eps) integ_err(7,1) = integ_err(7,1) + 1_8
+      if (erreneMAX  > rk4eps) integ_err(8,1) = integ_err(8,1) + 1_8
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -1043,23 +1048,23 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
    end do
 
    do k=1,cpatch%ncohorts
-      targetp%veg_water   (k) = sourcep%veg_water   (k)
       targetp%veg_energy  (k) = sourcep%veg_energy  (k)
+      targetp%veg_water   (k) = sourcep%veg_water   (k)
       targetp%veg_temp    (k) = sourcep%veg_temp    (k)
       targetp%veg_fliq    (k) = sourcep%veg_fliq    (k)
       targetp%hcapveg     (k) = sourcep%hcapveg     (k)
       targetp%veg_wind    (k) = sourcep%veg_wind    (k)
       targetp%veg_reynolds(k) = sourcep%veg_reynolds(k)
       targetp%veg_grashof (k) = sourcep%veg_grashof (k)
-      targetp%veg_nussforc(k) = sourcep%veg_nussforc(k)
       targetp%veg_nussfree(k) = sourcep%veg_nussfree(k)
+      targetp%veg_nussforc(k) = sourcep%veg_nussforc(k)
       targetp%lint_shv    (k) = sourcep%lint_shv    (k)
       targetp%nplant      (k) = sourcep%nplant      (k)
       targetp%lai         (k) = sourcep%lai         (k)
       targetp%wai         (k) = sourcep%wai         (k)
       targetp%wpa         (k) = sourcep%wpa         (k)
       targetp%tai         (k) = sourcep%tai         (k)
-      targetp%solvable    (k) = sourcep%solvable    (k)
+      targetp%crown_area  (k) = sourcep%crown_area  (k)
       targetp%gbh         (k) = sourcep%gbh         (k)
       targetp%gbw         (k) = sourcep%gbw         (k)
       targetp%gsw_open    (k) = sourcep%gsw_open    (k)
@@ -1067,12 +1072,15 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
       targetp%psi_open    (k) = sourcep%psi_open    (k)
       targetp%psi_closed  (k) = sourcep%psi_closed  (k)
       targetp%fs_open     (k) = sourcep%fs_open     (k)
+      targetp%solvable    (k) = sourcep%solvable    (k)
       targetp%gpp         (k) = sourcep%gpp         (k)
       targetp%leaf_resp   (k) = sourcep%leaf_resp   (k)
       targetp%root_resp   (k) = sourcep%root_resp   (k)
       targetp%growth_resp (k) = sourcep%growth_resp (k)
       targetp%storage_resp(k) = sourcep%storage_resp(k)
       targetp%vleaf_resp  (k) = sourcep%vleaf_resp  (k)
+      targetp%rshort_v    (k) = sourcep%rshort_v    (k)
+      targetp%rlong_v     (k) = sourcep%rlong_v     (k)
    end do
 
    if (checkbudget) then
@@ -1140,6 +1148,14 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
          targetp%flx_sensible_gg(k) = sourcep%flx_sensible_gg(k)
          targetp%flx_smoist_gg(k)   = sourcep%flx_smoist_gg(k)  
          targetp%flx_smoist_gc(k)   = sourcep%flx_smoist_gc(k)  
+      end do
+      
+      do k=1,cpatch%ncohorts
+         targetp%cfx_hflxvc      (k) = sourcep%cfx_hflxvc      (k)
+         targetp%cfx_qwflxvc     (k) = sourcep%cfx_qwflxvc     (k)
+         targetp%cfx_qwshed      (k) = sourcep%cfx_qwshed      (k)
+         targetp%cfx_qtransp     (k) = sourcep%cfx_qtransp     (k)
+         targetp%cfx_qintercepted(k) = sourcep%cfx_qintercepted(k)
       end do
    end if
 

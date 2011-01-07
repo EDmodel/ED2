@@ -79,17 +79,6 @@ module canopy_radiation_coms
    real(kind=8), dimension(n_pft) :: emis_v
    !---------------------------------------------------------------------------------------!
 
-
-
-   !---------------------------------------------------------------------------------------!
-   !    The following values are used to decide whether the radiation should be called or  !
-   ! not.  For a simple test, I am currently using TAI rather than LAI, but I'm aware that !
-   ! branches and twigs probably should be treated differently.                            !
-   !---------------------------------------------------------------------------------------!
-   real :: lai_min       !----- Minimum LAI used in the radiative transfer scheme. --------!
-   real :: tai_min       !----- Minimum TAI used in the radiative transfer scheme. --------!
-   real :: patch_lai_min !----- Minimum patch-level LAI for a stable ecosystem. -----------!
-
    !---------------------------------------------------------------------------------------!
    ! Fraction of bleaf_max below which we skip photosynthesis, radiation and heat balance. !
    !---------------------------------------------------------------------------------------!

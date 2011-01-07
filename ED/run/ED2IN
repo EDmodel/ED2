@@ -448,7 +448,7 @@
                               ! abandonment, and harvesting.
 
 
-   NL%ICANTURB        = 2     ! Canopy turbulence scheme
+   NL%ICANTURB        = -1    ! Canopy turbulence scheme
                               ! -2. This method scales the wind at the top of the canopy
                               !     but it will assume constant winds throughout all 
                               !     cohorts in the understorey.
@@ -464,7 +464,10 @@
                               !     instability.  This method will not work 
                               !     when zref<h
 
-   NL%I_BLYR_CONDCT   = 0     ! Methods to estimate the leaf boundary layer conductance:
+   NL%I_BLYR_CONDCT   = 2     ! Methods to estimate the leaf boundary layer conductance:
+                              ! -1. Original ED-2.0 method.  The Nusselt number for forced 
+                              !     convection is estimated using the average winds.  A
+                              !     minimum conductance of 1/(25 * patch LAI) is imposed.
                               !  0. The Nusselt number for forced convection is estimated
                               !     using the average winds, with no corrections
                               !  1. The actual Nusselt number for forced convection is 

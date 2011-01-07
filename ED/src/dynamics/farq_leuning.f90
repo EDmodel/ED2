@@ -886,59 +886,67 @@ module farq_leuning
       fun = funa
       !------------------------------------------------------------------------------------!
 
+      if (fun == 0.d0) then 
+         !----- We have actually hit the jackpot, the answer is ciz. ----------------------!
+         ci        = ciz
+         converged = .true.
+      end if
 
 
       !------------------------------------------------------------------------------------!
-      !     Enter Newton's method loop:                                                    !
+      !     Enter Newton's method loop in case we haven't found the answer.                !
       !------------------------------------------------------------------------------------!
-      newloop: do itn = 1,maxfpofl/6
-         !---------------------------------------------------------------------------------!
-         !    In case the derivative is bad, we give up on Newton's and go with Regula     !
-         ! Falsi.                                                                          !
-         !---------------------------------------------------------------------------------!
-         if (abs(deriv) < tolerfl8) exit newloop
-         !---------------------------------------------------------------------------------!
+      if (.not. converged) then
+         newloop: do itn = 1,maxfpofl/6
+            !------------------------------------------------------------------------------!
+            !    In case the derivative is bad, we give up on Newton's and go with Regula  !
+            ! Falsi.                                                                       !
+            !------------------------------------------------------------------------------!
+            if (abs(deriv) < tolerfl8) exit newloop
+            !------------------------------------------------------------------------------!
 
 
-         !----- Copy the previous guess. --------------------------------------------------!
-         cia   = ciz
-         funa  = fun
-         !---------------------------------------------------------------------------------!
+            !----- Copy the previous guess. -----------------------------------------------!
+            cia   = ciz
+            funa  = fun
+            !------------------------------------------------------------------------------!
 
 
-         !----- Update guess. -------------------------------------------------------------!
-         ciz      = cia - fun/deriv
-         !---------------------------------------------------------------------------------!
+            !----- Update guess. ----------------------------------------------------------!
+            ciz      = cia - fun/deriv
+            !------------------------------------------------------------------------------!
 
 
-         !---------------------------------------------------------------------------------!
-         !     Check whether the method converged.                                         !
-         !---------------------------------------------------------------------------------!
-         converged = 2.d0 * abs(cia-ciz) < tolerfl8 * (abs(cia)+abs(ciz))
-         !---------------------------------------------------------------------------------!
+            !------------------------------------------------------------------------------!
+            !     Check whether the method converged.                                      !
+            !------------------------------------------------------------------------------!
+            converged = 2.d0 * abs(cia-ciz) < tolerfl8 * (abs(cia)+abs(ciz))
+            !------------------------------------------------------------------------------!
 
  
-         !---------------------------------------------------------------------------------!
-         !    At this point we perform several tests on the current status of the guess.   !
-         !---------------------------------------------------------------------------------!
-         if (ciz < cimin .or. ciz > cimax) then
-            !----- This guess went off-bounds, we give up on Newton's. --------------------!
-            exit newloop
-         elseif (converged) then
-            !----- Converged, find the root as the mid-point. -----------------------------!
-            ci  = 5.d-1 * (cia+ciz)
-            exit newloop
-         else
-            !----- Not there yet, update the function evaluation and the derivative. ------!
-            call iter_solver_step(.true.,ciz,fun,deriv)
-            if (fun == 0.d0) then 
-               !----- We have actually hit the jackpot, the answer is ciz. ----------------!
-               ci = ciz
+            !------------------------------------------------------------------------------!
+            !    At this point we test the current status of the guess.                    !
+            !------------------------------------------------------------------------------!
+            if (ciz < cimin .or. ciz > cimax) then
+               !----- This guess went off-bounds, we give up on Newton's. -----------------!
                exit newloop
+            elseif (converged) then
+               !----- Converged, find the root as the mid-point. --------------------------!
+               ci  = 5.d-1 * (cia+ciz)
+               exit newloop
+            else
+               !----- Not there yet, update the function evaluation and the derivative. ---!
+               call iter_solver_step(.true.,ciz,fun,deriv)
+               if (fun == 0.d0) then 
+                  !----- We have actually hit the jackpot, the answer is ciz. -------------!
+                  ci        = ciz
+                  converged = .true.
+                  exit newloop
+               end if
             end if
-         end if
-         !---------------------------------------------------------------------------------!
-      end do newloop
+            !------------------------------------------------------------------------------!
+         end do newloop
+      end if
       !------------------------------------------------------------------------------------!
 
 
@@ -991,12 +999,12 @@ module farq_leuning
             zgssloop: do
                itb = itb + 1
                if (hitmin .and. hitmax) then
-                   !-----------------------------------------------------------------------!
-                   !     We searched through the entire range of ci, and we couldn't find  !
-                   ! any pair of roots of the opposite sign, it's likely that there is no  !
-                   ! solution, so we give up.                                              !
-                   !-----------------------------------------------------------------------!
-                   return
+                  !------------------------------------------------------------------------!
+                  !     We searched through the entire range of ci, and we couldn't find   !
+                  ! any pair of roots of the opposite sign, it's likely that there is no   !
+                  ! solution, so we give up.                                               !
+                  !------------------------------------------------------------------------!
+                  return
                end if
 
                ciz = cia + dble((-1)**itb * (itb+3)/2) * delta
@@ -1047,7 +1055,11 @@ module farq_leuning
 
 
             !------ Define the new interval based on the intermediate value theorem. ------!
-            if (fun*funa < 0.d0 ) then
+            if (fun == 0.d0) then
+               !----- We have actually hit the jackpot, the answer is ciz. ----------------!
+               converged = .true.
+               exit fpoloop
+            elseif (fun*funa < 0.d0 ) then
                ciz = ci
                funz  = fun
                !----- If we are updating zside again, modify aside (Illinois method) ------!

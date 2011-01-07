@@ -35,14 +35,14 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
                                     , find_derived_thbounds  & ! sub-routine
                                     , reset_rk4_fluxes       ! ! sub-routine
    use ed_max_dims           , only : n_pft                  ! ! intent(in)
-   use canopy_radiation_coms , only : tai_min                ! ! intent(in)
    use therm_lib8            , only : qwtk8                  & ! subroutine
                                     , thetaeiv8              & ! function
                                     , idealdenssh8           & ! function
                                     , rehuil8                & ! function
                                     , rslif8                 & ! function
                                     , reducedpress8          ! ! function
-   use allometry             , only : dbh2bl                 ! ! function
+   use allometry             , only : dbh2bl                 & ! function
+                                    , dbh2ca                 ! ! function
    use soil_coms             , only : soil8                  ! ! intent(in)
    use ed_therm_lib          , only : ed_grndvap8            ! ! subroutine
    use canopy_struct_dynamics, only : can_whcap8            & ! subroutine
@@ -55,8 +55,8 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    integer               , intent(in) :: ipa
    !----- Local variables -----------------------------------------------------------------!
    type(patchtype)       , pointer    :: cpatch
+   real(kind=4)                       :: crown_area_tmp
    real(kind=8)                       :: hvegpat_min
-   real(kind=8)                       :: hcap_scale
    real(kind=8)                       :: rsat
    real(kind=8)                       :: sum_sfcw_mass
    integer                            :: ico
@@ -219,42 +219,39 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
       if (targetp%solvable(ico)) any_solvable = .true.
    end do
 
-   if ((sourcesite%lai(ipa)+sourcesite%wai(ipa)) > tai_min) then
-      hvegpat_min = hcapveg_ref * max(dble(cpatch%hite(1)),min_height)
-      hcap_scale  = max(1.d0,hvegpat_min / sourcesite%hcapveg(ipa))
-   else
-      hcap_scale  = 1.d0
-   end if
-
    do ico = 1,cpatch%ncohorts
       ipft=cpatch%pft(ico)
+
+      !----- Copy the plant density. ------------------------------------------------------!
+      targetp%nplant(ico)     = dble(cpatch%nplant(ico))
+
       !----- Copy the leaf area index and total (leaf+branch+twig) area index. ------------!
-      targetp%lai(ico)    = dble(cpatch%lai(ico))
-      targetp%wai(ico)    = dble(cpatch%wai(ico))
-      targetp%wpa(ico)    = dble(cpatch%wpa(ico))
-      targetp%tai(ico)    = targetp%lai(ico) + dble(cpatch%wai(ico))
+      targetp%lai(ico)        = dble(cpatch%lai(ico))
+      targetp%wai(ico)        = dble(cpatch%wai(ico))
+      targetp%wpa(ico)        = dble(cpatch%wpa(ico))
+      targetp%tai(ico)        = targetp%lai(ico) + targetp%wai(ico)
+
+      !----- Find the crown area. ---------------------------------------------------------!
+      crown_area_tmp          = dbh2ca(cpatch%dbh(ico),ipft)
+      targetp%crown_area(ico) = min( 1.d0                                                  &
+                                   , targetp%nplant(ico) * dble(crown_area_tmp)            &
+                                   * rk4site%green_leaf_factor(ipft) )
 
       !------------------------------------------------------------------------------------!
-      !    If the cohort is too small, we give some extra heat capacity, so the model can  !
-      ! run in a stable range inside the integrator.  At the end this extra heat capacity  !
-      ! will be removed.                                                                   !
+      !     Check whether this is considered a "safe" one or not.  In case it is, we       !
+      ! copy the water, energy, and heat capacity, then find the temperature and liquid    !
+      ! water.  Otherwise, just fill them with some safe values, but the cohort will not   !
+      ! be really solved.                                                                  !
       !------------------------------------------------------------------------------------!
-      targetp%hcapveg(ico) = dble(cpatch%hcapveg(ico)) * hcap_scale
-
-      !------------------------------------------------------------------------------------!
-      !     Check whether this is considered a "safe" one or not.  In case it is, we copy  !
-      ! the water, temperature, and liquid fraction, and scale energy and heat capacity    !
-      ! as needed.  Otherwise, just fill with some safe values, but the cohort won't be    !
-      ! really solved.                                                                     !
-      !------------------------------------------------------------------------------------!
-      targetp%veg_water(ico)     = dble(cpatch%veg_water(ico))
       if (targetp%solvable(ico)) then
-         targetp%veg_energy(ico)    = dble(cpatch%veg_energy(ico))                         &
-                                    + (targetp%hcapveg(ico)-dble(cpatch%hcapveg(ico)))     &
-                                    * dble(cpatch%veg_temp(ico))
+         targetp%veg_water(ico)  = dble(cpatch%veg_water(ico)) 
+         targetp%hcapveg(ico)    = dble(cpatch%hcapveg(ico))
+         targetp%veg_energy(ico) = dble(cpatch%veg_energy(ico))
          call qwtk8(targetp%veg_energy(ico),targetp%veg_water(ico),targetp%hcapveg(ico)    &
                    ,targetp%veg_temp(ico),targetp%veg_fliq(ico))
       else
+         targetp%hcapveg(ico)    = dble(cpatch%hcapveg(ico))
+         targetp%veg_water(ico)  = dble(cpatch%veg_water(ico))
          targetp%veg_fliq(ico)   = dble(cpatch%veg_fliq(ico))
          targetp%veg_temp(ico)   = dble(cpatch%veg_temp(ico))
          targetp%veg_energy(ico) = targetp%hcapveg(ico) * targetp%veg_temp(ico)
@@ -277,6 +274,13 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
 
 
 
+      !------ Copy the net absorbed radiation (short wave and long wave). -----------------!
+      targetp%rshort_v   (ico) = dble(cpatch%rshort_v (ico))
+      targetp%rlong_v    (ico) = dble(cpatch%rlong_v  (ico))
+      !------------------------------------------------------------------------------------!
+
+
+
       !------------------------------------------------------------------------------------!
       !     Initialise psi_open and psi_closed with zeroes, they will be averaged over the !
       ! course of one Runge-Kutta time step.                                               !
@@ -290,7 +294,7 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
 
 
    !----- Initialise the characteristic properties, and the heat capacities. --------------!
-   call canopy_turbulence8(sourcesite,targetp,ipa,.true.)
+   call canopy_turbulence8(sourcesite,targetp,ipa)
    call can_whcap8(sourcesite,ipa,targetp%can_rhos,targetp%can_temp,targetp%can_depth)
    !---------------------------------------------------------------------------------------!
 
@@ -341,7 +345,6 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    end if
 
    if (print_detailed) call reset_rk4_fluxes(targetp)
-
    return
 end subroutine copy_patch_init
 !==========================================================================================!
@@ -380,9 +383,7 @@ subroutine copy_patch_init_carbon(sourcesite,ipa,targetp)
    !---------------------------------------------------------------------------------------!
    cpatch => sourcesite%patch(ipa)
    do ico = 1,cpatch%ncohorts
-      !----- Copy the plant density. ------------------------------------------------------!
-      targetp%nplant(ico) = dble(cpatch%nplant(ico))
-
+  
       !----- Copy the variables that are already in µmol/m²/s. ----------------------------!
       targetp%gpp         (ico) = dble(cpatch%gpp                (ico))
       targetp%leaf_resp   (ico) = dble(cpatch%leaf_respiration   (ico))
@@ -512,13 +513,15 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
    logical                          :: ok_shv
    logical                          :: ok_theta
    logical                          :: ok_ground
+   logical                          :: ok_sfcw
+   logical                          :: ok_veg
    real(kind=8)                     :: soilhcap
    real(kind=8)                     :: int_sfcw_energy
    real(kind=8)                     :: int_virt_energy
-   real(kind=8)                     :: rk4min_leaf_water
    real(kind=8)                     :: energy_tot
    real(kind=8)                     :: wmass_tot
    real(kind=8)                     :: hcapdry_tot
+   real(kind=8)                     :: rk4min_veg_water
    !---------------------------------------------------------------------------------------!
 
    !----- First, we update the canopy air equivalent potential temperature. ---------------!
@@ -591,6 +594,7 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
    ! cause surface mass may indeed become too negative during the integration process and  !
    ! if it happens, we want the step to be rejected.                                       !
    !---------------------------------------------------------------------------------------!
+   ok_sfcw = .true.
    ksn = initp%nlev_sfcwater
    sfcwloop: do k=1,ksn
       if (initp%sfcwater_mass(k) < rk4min_sfcw_mass) then 
@@ -598,6 +602,7 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
          !     Surface water mass doesn't make sense.  Skip because the step is going to   !
          ! be rejected and we may not be able to compute the temperature.                  !
          !---------------------------------------------------------------------------------!
+         ok_sfcw = .false.
          cycle sfcwloop
       elseif (initp%flag_sfcwater == 1) then
          !---------------------------------------------------------------------------------!
@@ -730,26 +735,27 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
    !---------------------------------------------------------------------------------------!
    !     Loop over cohorts to update the vegetation temperature and liquid fraction.       !
    !---------------------------------------------------------------------------------------!
+   ok_veg = .true.
    cpatch => csite%patch(ipa)
    cohortloop: do ico=1,cpatch%ncohorts
       !----- Checking whether this is a prognostic cohort... ------------------------------!
       if (initp%solvable(ico)) then
-         !---------------------------------------------------------------------------------!
-         !     We compute the minimum leaf water, and decide whether we can compute the    !
-         ! temperature and liquid water fraction.                                          !
-         !---------------------------------------------------------------------------------!
-         rk4min_leaf_water = rk4min_veg_lwater * initp%tai(ico)
+
+         !----- Find the minimum leaf water for this cohort. ------------------------------!
+         rk4min_veg_water = rk4min_veg_lwater * initp%tai(ico)
 
          !---------------------------------------------------------------------------------!
          !     Update leaf temperature and liquid fraction only if leaf water makes sense. !
          !---------------------------------------------------------------------------------!
-         if (initp%veg_water(ico) < rk4min_leaf_water) then
+         if (initp%veg_water(ico) < rk4min_veg_water) then
+            ok_veg = .false.
             cycle cohortloop
          else
             call qwtk8(initp%veg_energy(ico),initp%veg_water(ico),initp%hcapveg(ico)       &
                       ,initp%veg_temp(ico),initp%veg_fliq(ico))
             if (initp%veg_temp(ico) < rk4min_veg_temp .or.                                 &
                 initp%veg_temp(ico) > rk4max_veg_temp) then
+               ok_veg = .false.
                cycle cohortloop
             else
                !---------------------------------------------------------------------------!
@@ -787,8 +793,10 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
 
 
    !----- Compute canopy turbulence properties. -------------------------------------------!
-   call canopy_turbulence8(csite,initp,ipa,.true.)
-   call can_whcap8(csite,ipa,initp%can_rhos,initp%can_temp,initp%can_depth)
+   if (ok_veg .and. ok_shv .and. ok_theta) then
+      call canopy_turbulence8(csite,initp,ipa)
+      call can_whcap8(csite,ipa,initp%can_rhos,initp%can_temp,initp%can_depth)
+   end if
    !---------------------------------------------------------------------------------------!
 
 
@@ -1945,6 +1953,8 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
                                    , rk4site            & ! intent(in)
                                    , rk4eps             & ! intent(in)
                                    , rk4min_veg_lwater  & ! intent(in)
+                                   , rk4min_veg_temp    & ! intent(in)
+                                   , rk4max_veg_temp    & ! intent(in)
                                    , hcapcani           & ! intent(in)
                                    , wcapcani           & ! intent(in)
                                    , rk4dry_veg_lwater  & ! intent(in)
@@ -1977,8 +1987,8 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
    integer                             :: ico
    integer                             :: ksn
    real(kind=8)                        :: rk4min_leaf_water
-   real(kind=8)                        :: rk4dry_leaf_water
-   real(kind=8)                        :: rk4wet_leaf_water
+   real(kind=8)                        :: min_leaf_water
+   real(kind=8)                        :: max_leaf_water
    real(kind=8)                        :: veg_wshed
    real(kind=8)                        :: veg_qwshed
    real(kind=8)                        :: veg_dwshed
@@ -2015,11 +2025,14 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
       !----- Checking whether this is a prognostic cohort... ------------------------------!
       if (initp%solvable(ico)) then
          !---------------------------------------------------------------------------------!
-         !   Now we find the TAI-dependent bounds.                                         !
+         !   Now we find the maximum leaf water possible.                                  !
          !---------------------------------------------------------------------------------!
          rk4min_leaf_water = rk4min_veg_lwater * initp%tai(ico)
-         rk4dry_leaf_water = rk4dry_veg_lwater * initp%tai(ico)
-         rk4wet_leaf_water = rk4fullveg_lwater * initp%tai(ico)
+         min_leaf_water    = rk4dry_veg_lwater * initp%tai(ico)
+         max_leaf_water    = rk4fullveg_lwater * initp%tai(ico)
+         !---------------------------------------------------------------------------------!
+
+
 
          !---------------------------------------------------------------------------------!
          !    Here we check the bounds for this cohort, and decide what to do in case it   !
@@ -2032,50 +2045,83 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
             cycle cohortloop
 
 
-         elseif (initp%veg_water(ico) > rk4wet_leaf_water) then
+         else
+
             !------------------------------------------------------------------------------!
-            !    Too much water over these leaves, we shall shed the excess to the ground. !
+            !    In case water is to be removed or added, we will need to update the       !
+            ! vegetation energy.  We want to preserve the temperature, though, because     !
+            ! this is happens as loss of internal energy (shedding) or latent heat (fast   !
+            ! dew/boiling).                                                                !
+            !---------------------- -------------------------------------------------------!
+            call qwtk8(initp%veg_energy(ico),initp%veg_water(ico),initp%hcapveg(ico)       &
+                      ,initp%veg_temp(ico),initp%veg_fliq(ico))
             !------------------------------------------------------------------------------!
-            veg_wshed  = (initp%veg_water(ico)-rk4wet_leaf_water)
-            veg_qwshed = veg_wshed                                                         &
-                       * (initp%veg_fliq(ico) * cliq8 * (initp%veg_temp(ico)-tsupercool8)  &
-                         + (1.d0-initp%veg_fliq(ico)) * cice8 * initp%veg_temp(ico))
-            veg_dwshed = veg_wshed                                                         &
-                       * (initp%veg_fliq(ico)*wdnsi8 + (1.d0-initp%veg_fliq(ico))*fdnsi8)
-            
-            !----- Add the contribution of this cohort to the total shedding. -------------!
-            veg_wshed_tot  = veg_wshed_tot  + veg_wshed
-            veg_qwshed_tot = veg_qwshed_tot + veg_qwshed
-            veg_dwshed_tot = veg_dwshed_tot + veg_dwshed
 
-            !----- Update water mass and energy. ------------------------------------------!
-            initp%veg_water(ico)  = initp%veg_water(ico)  - veg_wshed
-            initp%veg_energy(ico) = initp%veg_energy(ico) - veg_qwshed
+            if (initp%veg_temp(ico)  < rk4min_veg_temp .or.                                &
+                initp%veg_temp(ico)  > rk4max_veg_temp) then
+
+               cycle cohortloop
+
+            elseif (initp%veg_water(ico) > max_leaf_water) then
+
+               !---------------------------------------------------------------------------!
+               !    Too much water over these leaves, we shall shed the excess to the      !
+               ! ground.                                                                   !
+               !---------------------------------------------------------------------------!
+               veg_wshed  = (initp%veg_water(ico) - max_leaf_water)
+               veg_qwshed = veg_wshed                                                      &
+                          * ( initp%veg_fliq(ico) * cliq8                                  &
+                            * (initp%veg_temp(ico)-tsupercool8)  &
+                            + (1.d0-initp%veg_fliq(ico)) * cice8 * initp%veg_temp(ico))
+               veg_dwshed = veg_wshed                                                      &
+                          * ( initp%veg_fliq(ico) * wdnsi8                                 &
+                            + (1.d0-initp%veg_fliq(ico))*fdnsi8)
+
+               !----- Add the contribution of this cohort to the total shedding. ----------!
+               veg_wshed_tot  = veg_wshed_tot  + veg_wshed
+               veg_qwshed_tot = veg_qwshed_tot + veg_qwshed
+               veg_dwshed_tot = veg_dwshed_tot + veg_dwshed
+
+               !----- Update water mass and energy. ---------------------------------------!
+               initp%veg_water(ico)  = initp%veg_water(ico)  - veg_wshed
+               initp%veg_energy(ico) = initp%veg_energy(ico) - veg_qwshed
+
+               !----- Update fluxes if needed be. -----------------------------------------!
+               if (print_detailed) then
+                  initp%cfx_qwshed(ico) = initp%cfx_qwshed(ico) + veg_qwshed * hdidi
+               end if
 
 
 
-         elseif (initp%veg_water(ico) < rk4dry_leaf_water) then
-            !------------------------------------------------------------------------------!
-            !    If veg_water is tiny and positive, exchange moisture with the air by      !
-            ! donating the total amount as "boiling" (fast evaporation or sublimation).    !
-            ! In case the total is tiny but negative, exchange moisture with the air,      !
-            ! "stealing" moisture as fast "dew/frost" condensation.                        !
-            !------------------------------------------------------------------------------!
-            veg_boil  = max(0.d0,  initp%veg_water(ico))
-            veg_dew   = max(0.d0,- initp%veg_water(ico))
-            veg_qboil = veg_boil * (alvi8 - initp%veg_fliq(ico) * alli8)
-            veg_qdew  = veg_dew  * (alvi8 - initp%veg_fliq(ico) * alli8)
+            elseif (initp%veg_water(ico) < min_leaf_water) then
+               !---------------------------------------------------------------------------!
+               !    If veg_water is tiny and positive, exchange moisture with the air by   !
+               ! donating the total amount as "boiling" (fast evaporation or sublimation). !
+               ! In case the total is tiny but negative, exchange moisture with the air,   !
+               ! "stealing" moisture as fast "dew/frost" condensation.                     !
+               !---------------------------------------------------------------------------!
+               veg_boil  = max(0.d0,  initp%veg_water(ico))
+               veg_dew   = max(0.d0,- initp%veg_water(ico))
+               veg_qboil = veg_boil * (alvi8 - initp%veg_fliq(ico) * alli8)
+               veg_qdew  = veg_dew  * (alvi8 - initp%veg_fliq(ico) * alli8)
 
 
-            !----- Add the contribution of this cohort to the total boiling. --------------!
-            veg_boil_tot  = veg_boil_tot  + veg_boil
-            veg_dew_tot   = veg_dew_tot   + veg_dew
-            veg_qboil_tot = veg_qboil_tot + veg_qboil
-            veg_qdew_tot  = veg_qdew_tot  + veg_qdew
+               !----- Add the contribution of this cohort to the total boiling. -----------!
+               veg_boil_tot  = veg_boil_tot  + veg_boil
+               veg_dew_tot   = veg_dew_tot   + veg_dew
+               veg_qboil_tot = veg_qboil_tot + veg_qboil
+               veg_qdew_tot  = veg_qdew_tot  + veg_qdew
 
-            !----- Updating state variables -----------------------------------------------!
-            initp%veg_water(ico)  = 0.d0
-            initp%veg_energy(ico) = initp%veg_energy(ico)  + veg_qdew - veg_qboil
+               !----- Update cohort state variables. --------------------------------------!
+               initp%veg_water(ico)  = 0.d0
+               initp%veg_energy(ico) = initp%veg_energy(ico)  + veg_qdew - veg_qboil
+
+               !----- Update fluxes if needed be. -----------------------------------------!
+               if (print_detailed) then
+                  initp%cfx_qwflxvc(ico) = initp%cfx_qwflxvc(ico)                          &
+                                         + (veg_qboil - veg_qdew) * hdidi
+               end if
+            end if
          end if
       end if
    end do cohortloop
@@ -2117,11 +2163,6 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
       !------------------------------------------------------------------------------------!
 
    end select
-
-
-   if (ksn > 0) then
-   else
-   end if
 
    !----- Update the canopy air specific humidity. ----------------------------------------!
    initp%can_shv  = initp%can_shv + (veg_boil_tot - veg_dew_tot)  * wcapcani
@@ -2718,25 +2759,32 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
    real(kind=8)          , intent(in) :: hdid
    !----- Local variables -----------------------------------------------------------------!
    type(patchtype)       , pointer    :: cpatch
+   type(patchtype)       , pointer    :: jpatch
    character(len=str_len)             :: detail_fout
    integer                            :: k
    integer                            :: jpa
    integer                            :: nsoil
    integer                            :: ico
+   integer                            :: jco
+   integer                            :: issolved
    logical                            :: isthere
    real(kind=8)                       :: sum_veg_energy
    real(kind=8)                       :: sum_veg_water
    real(kind=8)                       :: sum_hcapveg
    real(kind=8)                       :: sum_gpp
+   real(kind=8)                       :: sum_tai
    real(kind=8)                       :: sum_plresp
    real(kind=8)                       :: soil_rh
+   real(kind=8)                       :: qintercepted
    real(kind=8)                       :: avg_veg_temp
    real(kind=8)                       :: avg_veg_fliq
    real(kind=8)                       :: sfc_temp
    real(kind=8)                       :: elapsec
    !----- Local constants. ----------------------------------------------------------------!
-   character(len=10), parameter :: hfmt='(63(a,1x))'
-   character(len=48), parameter :: bfmt='(3(i13,1x),2(es13.6,1x),3(i13,1x),55(es13.6,1x))'
+   character(len=10), parameter :: phfmt='(64(a,1x))'
+   character(len=48), parameter :: pbfmt='(3(i13,1x),3(es13.6,1x),3(i13,1x),55(es13.6,1x))'
+   character(len=10), parameter :: chfmt='(40(a,1x))'
+   character(len=48), parameter :: cbfmt='(3(i13,1x),2(es13.6,1x),2(i13,1x),33(es13.6,1x))'
    !----- Locally saved variables. --------------------------------------------------------!
    logical          , save      :: first_time=.true.
    !---------------------------------------------------------------------------------------!
@@ -2747,13 +2795,34 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
    !---------------------------------------------------------------------------------------!
    if (first_time) then
       do jpa = 1, csite%npatches
-         write (detail_fout,fmt='(2a,i4.4,a)') trim(detail_pref),'patch_',jpa,'.txt'
+         !---------------------------------------------------------------------------------!
+         ! Patch level files.                                                              !
+         !---------------------------------------------------------------------------------!
+         write (detail_fout,fmt='(2a,i4.4,a)') trim(detail_pref),'prk4_patch_',jpa,'.txt'
          inquire(file=trim(detail_fout),exist=isthere)
          if (isthere) then
             !---- Open the file to delete when closing. -----------------------------------!
             open (unit=83,file=trim(detail_fout),status='old',action='write')
             close(unit=83,status='delete')
          end if
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         ! Cohort level files.                                                             !
+         !---------------------------------------------------------------------------------!
+         jpatch => csite%patch(jpa)
+         do jco = 1, jpatch%ncohorts
+            write (detail_fout,fmt='(a,2(a,i4.4),a)')                                      &
+                  trim(detail_pref),'crk4_patch_',jpa,'_cohort_',jco,'.txt'
+            inquire(file=trim(detail_fout),exist=isthere)
+            if (isthere) then
+               !---- Open the file to delete when closing. --------------------------------!
+               open (unit=84,file=trim(detail_fout),status='old',action='write')
+               close(unit=84,status='delete')
+            end if
+         end do
+         !---------------------------------------------------------------------------------!
       end do
       first_time = .false.
    end if
@@ -2769,10 +2838,12 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
    sum_hcapveg    = 0.d0
    sum_gpp        = 0.d0
    sum_plresp     = 0.d0
+   sum_tai        = 0.d0
    soil_rh        = initp%rh-initp%cwd_rh
    cpatch => csite%patch(ipa)
    do ico=1,cpatch%ncohorts
       if (initp%solvable(ico)) then
+         !----- Integrate vegetation properties using m2gnd rather than plant. ------------!
          sum_veg_energy = sum_veg_energy + initp%veg_energy(ico)
          sum_veg_water  = sum_veg_water  + initp%veg_water(ico)
          sum_hcapveg    = sum_hcapveg    + initp%hcapveg(ico)
@@ -2783,6 +2854,9 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
                                          + initp%storage_resp(ico)                         &
                                          + initp%vleaf_resp(ico)
       end if
+
+      !----- TAI.  We integrate all cohorts, including those that we skip. ----------------!
+      sum_tai = sum_tai + initp%tai(ico)
    end do
    !---------------------------------------------------------------------------------------!
 
@@ -2817,7 +2891,7 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
 
 
    !----- Create the file name. -----------------------------------------------------------!
-   write (detail_fout,fmt='(2a,i4.4,a)') trim(detail_pref),'patch_',ipa,'.txt'
+   write (detail_fout,fmt='(2a,i4.4,a)') trim(detail_pref),'prk4_patch_',ipa,'.txt'
    !---------------------------------------------------------------------------------------!
 
 
@@ -2829,27 +2903,28 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
    inquire(file=trim(detail_fout),exist=isthere)
    if (.not. isthere) then
       open  (unit=83,file=trim(detail_fout),status='replace',action='write')
-      write (unit=83,fmt=hfmt)   '         YEAR', '        MONTH', '          DAY'         &
-                               , '         TIME', '         HDID', '          KSN'         &
-                               , 'FLAG.SFCWATER', '  FLAG.WFLXGC', '     ATM.PRSS'         &
-                               , '     ATM.TEMP', '      ATM.SHV', '      ATM.CO2'         &
-                               , '     ATM.VELS', '    ATM.PRATE', '   ATM.HEIGHT'         &
-                               , '     ATM.RHOS', '   ATM.RELHUM', '    ATM.THETA'         &
-                               , '    ATM.THEIV', '   MET.RSHORT', '    MET.RLONG'         &
-                               , '     CAN.PRSS', '     CAN.TEMP', '      CAN.SHV'         &
-                               , '      CAN.CO2', '    CAN.DEPTH', '     CAN.RHOS'         &
-                               , '   CAN.RELHUM', '    CAN.THETA', '    CAN.THEIV'         &
-                               , '     SFC.TEMP', '      SFC.SHV', '     VEG.TEMP'         &
-                               , '    VEG.WATER', '    SOIL.TEMP', '   SOIL.WATER'         &
-                               , '       SOILCP', '       SOILWP', '       SOILFC'         &
-                               , '       SLMSTS', '        USTAR', '        TSTAR'         &
-                               , '        QSTAR', '        CSTAR', '         ZETA'         &
-                               , '      RI_BULK', '       NETRAD', '       WFLXVC'         &
-                               , '       DEWGND', '       WFLXGC', '       WFLXAC'         &
-                               , '       TRANSP', '        WSHED', '    INTERCEPT'         &
-                               , '  THROUGHFALL', '       HFLXGC', '       HFLXVC'         &
-                               , '       HFLXAC', '       CFLXAC', '        CWDRH'         &
-                               , '       SOILRH', '          GPP', '       PLRESP'
+      write (unit=83,fmt=phfmt)  '         YEAR', '        MONTH', '          DAY'         &
+                               , '         TIME', '         HDID', '          TAI'         &
+                               , '          KSN', 'FLAG.SFCWATER', '  FLAG.WFLXGC'         &
+                               , '     ATM.PRSS', '     ATM.TEMP', '      ATM.SHV'         &
+                               , '      ATM.CO2', '     ATM.VELS', '    ATM.PRATE'         &
+                               , '   ATM.HEIGHT', '     ATM.RHOS', '   ATM.RELHUM'         &
+                               , '    ATM.THETA', '    ATM.THEIV', '   MET.RSHORT'         &
+                               , '    MET.RLONG', '     CAN.PRSS', '     CAN.TEMP'         &
+                               , '      CAN.SHV', '      CAN.CO2', '    CAN.DEPTH'         &
+                               , '     CAN.RHOS', '   CAN.RELHUM', '    CAN.THETA'         &
+                               , '    CAN.THEIV', '     SFC.TEMP', '      SFC.SHV'         &
+                               , '     VEG.TEMP', '    VEG.WATER', '    SOIL.TEMP'         &
+                               , '   SOIL.WATER', '       SOILCP', '       SOILWP'         &
+                               , '       SOILFC', '       SLMSTS', '        USTAR'         &
+                               , '        TSTAR', '        QSTAR', '        CSTAR'         &
+                               , '         ZETA', '      RI_BULK', '       NETRAD'         &
+                               , '       WFLXVC', '       DEWGND', '       WFLXGC'         &
+                               , '       WFLXAC', '       TRANSP', '        WSHED'         &
+                               , '    INTERCEPT', '  THROUGHFALL', '       HFLXGC'         &
+                               , '       HFLXVC', '       HFLXAC', '       CFLXAC'         &
+                               , '        CWDRH', '       SOILRH', '          GPP'         &
+                               , '       PLRESP'
                                
       close (unit=83,status='keep')
    end if
@@ -2861,30 +2936,109 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
    !     Re-open the file at the last line, and include the current status.                !
    !---------------------------------------------------------------------------------------!
    open (unit=83,file=trim(detail_fout),status='old',action='write',position='append')
-   write(unit=83,fmt=bfmt)                                                                 &
+   write(unit=83,fmt=pbfmt)                                                                &
                      current_time%year     , current_time%month    , current_time%date     &
-                   , elapsec               , hdid                  , initp%nlev_sfcwater   &
-                   , initp%flag_sfcwater   , initp%flag_wflxgc     , rk4site%atm_prss      &
-                   , rk4site%atm_tmp       , rk4site%atm_shv       , rk4site%atm_co2       &
-                   , rk4site%vels          , rk4site%pcpg          , rk4site%geoht         &
-                   , rk4site%atm_rhos      , rk4site%atm_rhv       , rk4site%atm_theta     &
-                   , rk4site%atm_theiv     , rk4site%rshort        , rk4site%rlong         &
-                   , initp%can_prss        , initp%can_temp        , initp%can_shv         &
-                   , initp%can_co2         , initp%can_depth       , initp%can_rhos        &
-                   , initp%can_rhv         , initp%can_theta       , initp%can_theiv       &
-                   , initp%ground_temp     , initp%ground_shv      , avg_veg_temp          &
-                   , sum_veg_water         , initp%soil_tempk(nzg) , initp%soil_water(nzg) &
-                   , soil8(nsoil)%soilcp   , soil8(nsoil)%soilwp   , soil8(nsoil)%sfldcap  &
-                   , soil8(nsoil)%slmsts   , initp%ustar           , initp%tstar           &
-                   , initp%qstar           , initp%cstar           , initp%zeta            &
-                   , initp%ribulk          , fluxp%flx_netrad      , fluxp%flx_vapor_vc    &
-                   , fluxp%flx_dew_cg      , fluxp%flx_vapor_gc    , fluxp%flx_vapor_ac    &
-                   , fluxp%flx_transp      , fluxp%flx_wshed_vg    , fluxp%flx_intercepted &
-                   , fluxp%flx_throughfall , fluxp%flx_sensible_gc , fluxp%flx_sensible_vc &
-                   , fluxp%flx_sensible_ac , fluxp%flx_carbon_ac   , initp%cwd_rh          &
-                   , soil_rh               , sum_gpp               , sum_plresp
+                   , elapsec               , hdid                  , sum_tai               &
+                   , initp%nlev_sfcwater   , initp%flag_sfcwater   , initp%flag_wflxgc     &
+                   , rk4site%atm_prss      , rk4site%atm_tmp       , rk4site%atm_shv       &
+                   , rk4site%atm_co2       , rk4site%vels          , rk4site%pcpg          &
+                   , rk4site%geoht         , rk4site%atm_rhos      , rk4site%atm_rhv       &
+                   , rk4site%atm_theta     , rk4site%atm_theiv     , rk4site%rshort        &
+                   , rk4site%rlong         , initp%can_prss        , initp%can_temp        &
+                   , initp%can_shv         , initp%can_co2         , initp%can_depth       &
+                   , initp%can_rhos        , initp%can_rhv         , initp%can_theta       &
+                   , initp%can_theiv       , initp%ground_temp     , initp%ground_shv      &
+                   , avg_veg_temp          , sum_veg_water         , initp%soil_tempk(nzg) &
+                   , initp%soil_water(nzg) , soil8(nsoil)%soilcp   , soil8(nsoil)%soilwp   &
+                   , soil8(nsoil)%sfldcap  , soil8(nsoil)%slmsts   , initp%ustar           &
+                   , initp%tstar           , initp%qstar           , initp%cstar           &
+                   , initp%zeta            , initp%ribulk          , fluxp%flx_netrad      &
+                   , fluxp%flx_vapor_vc    , fluxp%flx_dew_cg      , fluxp%flx_vapor_gc    &
+                   , fluxp%flx_vapor_ac    , fluxp%flx_transp      , fluxp%flx_wshed_vg    &
+                   , fluxp%flx_intercepted , fluxp%flx_throughfall , fluxp%flx_sensible_gc &
+                   , fluxp%flx_sensible_vc , fluxp%flx_sensible_ac , fluxp%flx_carbon_ac   &
+                   , initp%cwd_rh          , soil_rh               , sum_gpp               &
+                   , sum_plresp
                    
    close(unit=83,status='keep')
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Now it is time to check and output the cohort-level files.                        !
+   !---------------------------------------------------------------------------------------!
+   do ico=1, cpatch%ncohorts
+
+      !----- Find the integer version of "solvable". --------------------------------------!
+      if (initp%solvable(ico)) then
+         issolved = 1
+      else
+         issolved = 0
+      end if
+
+      !----- Copy intercepted water. ------------------------------------------------------!
+      qintercepted = fluxp%cfx_qintercepted(ico)
+
+      !----- Create the file name. --------------------------------------------------------!
+      write (detail_fout,fmt='(a,2(a,i4.4),a)')                                            &
+                                trim(detail_pref),'crk4_patch_',ipa,'_cohort_',ico,'.txt'
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !    Check whether the file exists or not.  In case it doesn't, create it and add    !
+      ! the header.                                                                        !
+      !------------------------------------------------------------------------------------!
+      inquire(file=trim(detail_fout),exist=isthere)
+      if (.not. isthere) then
+         open  (unit=84,file=trim(detail_fout),status='replace',action='write')
+         write (unit=84,fmt=chfmt)                                                         &
+                                 '         YEAR', '        MONTH', '          DAY'         &
+                               , '         TIME', '         HDID', '          PFT'         &
+                               , '     SOLVABLE', '       NPLANT', '       HEIGHT'         &
+                               , '          TAI', '   CROWN_AREA', '   VEG_ENERGY'         &
+                               , '    VEG_WATER', '     VEG_HCAP', '     VEG_TEMP'         &
+                               , '     VEG_FLIQ', '     VEG_WIND', '      FS_OPEN'         &
+                               , '     REYNOLDS', '      GRASHOF', ' NUSSELT_FREE'         &
+                               , ' NUSSELT_FORC', '     LINT_SHV', '          GBH'         &
+                               , '          GBW', '     GSW_OPEN', '     GSW_CLOS'         &
+                               , '          GPP', '    LEAF_RESP', '    ROOT_RESP'         &
+                               , '  GROWTH_RESP', ' STORAGE_RESP', '   VLEAF_RESP'         &
+                               , '     RSHORT_V', '      RLONG_V', '       HFLXVC'         &
+                               , '      QWFLXVC', '       QWSHED', '      QTRANSP'         &
+                               , ' QINTERCEPTED'
+
+         close (unit=84,status='keep')
+      end if
+      !------------------------------------------------------------------------------------!
+      
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Re-open the file at the last line, and include the current status.             !
+      !------------------------------------------------------------------------------------!
+      open (unit=84,file=trim(detail_fout),status='old',action='write',position='append')
+      write(unit=84,fmt=cbfmt)                                                             &
+                 current_time%year      , current_time%month     , current_time%date       &
+               , elapsec                , hdid                   , cpatch%pft(ico)         &
+               , issolved               , initp%nplant(ico)      , cpatch%hite(ico)        &
+               , initp%tai(ico)         , initp%crown_area(ico)  , initp%veg_energy(ico)   &
+               , initp%veg_water(ico)   , initp%hcapveg(ico)     , initp%veg_temp(ico)     &
+               , initp%veg_fliq(ico)    , initp%veg_wind(ico)    , initp%fs_open(ico)      &
+               , initp%veg_reynolds(ico), initp%veg_grashof(ico) , initp%veg_nussfree(ico) &
+               , initp%veg_nussforc(ico), initp%lint_shv(ico)    , initp%gbh(ico)          &
+               , initp%gbw(ico)         , initp%gsw_open(ico)    , initp%gsw_closed(ico)   &
+               , initp%gpp(ico)         , initp%leaf_resp(ico)   , initp%root_resp(ico)    &
+               , initp%growth_resp(ico) , initp%storage_resp(ico), initp%vleaf_resp(ico)   &
+               , initp%rshort_v(ico)    , initp%rlong_v(ico)     , fluxp%cfx_hflxvc(ico)   &
+               , fluxp%cfx_qwflxvc(ico) , fluxp%cfx_qwshed(ico)  , fluxp%cfx_qtransp(ico)  &
+               , qintercepted
+      close(unit=84,status='keep')
+      !---------------------------------------------------------------------------------------!
+   end do
    !---------------------------------------------------------------------------------------!
    return
 end subroutine print_rk4_state
