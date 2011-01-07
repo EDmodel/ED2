@@ -2561,8 +2561,7 @@ subroutine init_rk4_params()
                              , toocold                & ! intent(out)
                              , toohot                 & ! intent(out)
                              , lai_to_cover           & ! intent(out)
-                             , hcapveg_ref            & ! intent(out)
-                             , min_height             & ! intent(out)
+                             , patch_hcapveg_min      & ! intent(out)
                              , rk4min_veg_temp        & ! intent(out)
                              , rk4water_stab_thresh   & ! intent(out)
                              , rk4tiny_sfcw_mass      & ! intent(out)
@@ -2660,14 +2659,13 @@ subroutine init_rk4_params()
 
 
    !---------------------------------------------------------------------------------------!
-   !    These two parameter will scale the cohort heat capacity inside the RK4 integrator, !
-   ! to avoid having patches with heat capacity that is way too small to be computational- !
-   ! ly stable and solvable in a fast way.  If you don't want this and want to use the     !
-   ! nominal heat capacity, the laziest way to turn this off is by setting hcapveg_ref to  !
-   ! a small number.  Don't set it to zero, otherwise you may have FPE issues.             !
+   !    This parameter defines the minimum patch-level heat capacity.  If the actual heat  !
+   ! capacity is less than this value, then the heat capacity of this cohort is scaled in  !
+   ! such way that the total patch-level heat capacity is equal to patch_hcapveg_min and   !
+   ! the cohort-level is linearly proportional to the biomass.  In case you don't want any !
+   ! correction, set this number to zero.                                                  !
    !---------------------------------------------------------------------------------------!
-   hcapveg_ref         = 3.0d3            ! Reference heat capacity value          [J/m³/K]
-   min_height          = 1.5d0            ! Minimum vegetation height              [     m]
+   patch_hcapveg_min   = 6.0d2               ! Minimum patch-level heat capacity   [J/m²/K]
    !---------------------------------------------------------------------------------------!
 
 
@@ -2708,7 +2706,7 @@ subroutine init_rk4_params()
    !     Minimum water mass at the leaf surface.  This is given in kg/m²leaf rather than   !
    ! kg/m²ground, so we scale it with LAI.                                                 !
    !---------------------------------------------------------------------------------------!
-   rk4min_veg_lwater = -5.0000d-5 ! Minimum leaf water mass     [kg/m²leaf]
+   rk4min_veg_lwater = -5.0000d-4 ! Minimum leaf water mass     [kg/m²leaf]
    !---------------------------------------------------------------------------------------!
 
 

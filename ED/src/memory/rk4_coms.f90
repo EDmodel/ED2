@@ -449,15 +449,13 @@ module rk4_coms
                                   !     reach the soil/litter layer unimpeded.
    !---------------------------------------------------------------------------------------!
 
-
-
    !---------------------------------------------------------------------------------------!
-   !    These two parameter will scale the cohort heat capacity inside the RK4 integrator, !
-   ! to avoid having patches with heat capacity that is way too small to be computational- !
-   ! ly stable and solvable in a fast way.                                                 !
+   !    This parameter defines the minimum patch-level heat capacity.  If the actual heat  !
+   ! capacity is less than this value, then the heat capacity of this cohort is scaled in  !
+   ! such way that the total patch-level heat capacity is equal to patch_hcapveg_min and   !
+   ! the cohort-level is linearly proportional to the biomass.                             !
    !---------------------------------------------------------------------------------------!
-   real(kind=8) :: hcapveg_ref         ! Reference value                          [ J/m³/K]
-   real(kind=8) :: min_height          ! Minimum vegetation height                [      m]
+   real(kind=8) :: patch_hcapveg_min         ! Minimum patch-level heat capacity   [J/m²/K]
    !---------------------------------------------------------------------------------------!
 
 
