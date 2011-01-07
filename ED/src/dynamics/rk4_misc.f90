@@ -56,7 +56,7 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    !----- Local variables -----------------------------------------------------------------!
    type(patchtype)       , pointer    :: cpatch
    real(kind=4)                       :: crown_area_tmp
-   real(kind=8)                       :: hvegpat_min
+   real(kind=8)                       :: hcapveg_scal
    real(kind=8)                       :: rsat
    real(kind=8)                       :: sum_sfcw_mass
    integer                            :: ico

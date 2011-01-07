@@ -100,6 +100,8 @@ module farq_leuning
       use therm_lib8     , only : rslif8                   ! ! function
       use consts_coms    , only : mmh2oi8                  & ! intent(in)
                                 , mmh2o8                   & ! intent(in)
+                                , mmdryi8                  & ! intent(in)
+                                , mmdry8                   & ! intent(in)
                                 , ep8                      & ! intent(in)
                                 , epi8                     & ! intent(in)
                                 , t008                     & ! intent(in)
@@ -203,7 +205,7 @@ module farq_leuning
       !     kg/m²/s, and here we convert to mol/m²/s.  The convertion coefficient from     !
       !     water to carbon dioxide comes from M09's equation B14.                         !
       !------------------------------------------------------------------------------------!
-      met%blyr_cond_h2o = dble(gbw)  * mmh2oi8
+      met%blyr_cond_h2o = dble(gbw)  * mmdryi8
       met%blyr_cond_co2 = gbw_2_gbc8 * met%blyr_cond_h2o
       !------------------------------------------------------------------------------------!
       !  7. Find the compensation point (Gamma) for this temperature.  I am not sure about !
@@ -259,8 +261,8 @@ module farq_leuning
       A_closed       = sngloff(stclosed%co2_demand    * mol_2_umol8 , tiny_offset)
       A_open         = sngloff(stopen%co2_demand      * mol_2_umol8 , tiny_offset)
       !----- Stomatal resistance, convert the conductances to [kg/m²/s]. ------------------!
-      gsw_closed     = sngloff(stclosed%stom_cond_h2o * mmh2o8      , tiny_offset)
-      gsw_open       = sngloff(stopen%stom_cond_h2o   * mmh2o8      , tiny_offset)
+      gsw_closed     = sngloff(stclosed%stom_cond_h2o * mmdry8      , tiny_offset)
+      gsw_open       = sngloff(stopen%stom_cond_h2o   * mmdry8      , tiny_offset)
       !----- Leaf surface specific humidity, convert them to [kg/kg]. ---------------------!
       lsfc_shv_closed = sngloff(stclosed%lsfc_shv     * ep8         , tiny_offset)
       lsfc_shv_open   = sngloff(stopen%lsfc_shv       * ep8         , tiny_offset)

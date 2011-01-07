@@ -690,19 +690,24 @@ subroutine init_can_air_params()
       beta_r1  = 1.
       beta_r2  = 0.
       beta_re0 = 2000.
+      beta_g1  = 1.
+      beta_g2  = 0.
+      beta_gr0 = 100000.
    case (1)
       beta_r1  =   7./4.
       beta_r2  =   3./4.
       beta_re0 =   2000.
+      beta_g1  =   3./2.
+      beta_g2  =  -1./2.
+      beta_gr0 = 100000.
    case (2)
       beta_r1  =   11./2.
       beta_r2  =   9. /2.
       beta_re0 =   2000.
+      beta_g1  =   3./2.
+      beta_g2  =  -1./2.
+      beta_gr0 = 100000.
    end select
-   !---------------------------------------------------------------------------------------!
-   beta_g1  =   3./2.
-   beta_g2  =  -1./2.
-   beta_gr0 = 100000.
    !---------------------------------------------------------------------------------------!
 
 
@@ -2139,7 +2144,7 @@ subroutine init_physiology_params()
    !     Parameters that control debugging output.                                         !
    !---------------------------------------------------------------------------------------!
    !----- I should print detailed debug information. --------------------------------------!
-   print_photo_debug = .false.
+   print_photo_debug = .true.
    !----- File name prefix for the detailed information in case of debugging. -------------!
    photo_prefix      = 'photo_state_'
    !---------------------------------------------------------------------------------------!

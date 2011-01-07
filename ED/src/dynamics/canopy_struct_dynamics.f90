@@ -2381,11 +2381,11 @@ module canopy_struct_dynamics
       ! because we assume both forms of convection happen parallelly.  The conversion from !
       ! heat to water conductance (in m/s) can be found in L95, page 1198, after equation  !
       ! E5.  For the ED purposes, the output variables are converted to the units of       !
-      ! entropy and water fluxes [J/K/m²/s and kg_H2O/m²/s, respectively].                 !
+      ! entropy and water fluxes [J/K/m²/s and kg/m²/s, respectively].                     !
       !------------------------------------------------------------------------------------!
       gbh_mos = max(gbhmos_min, free_gbh_mos + forced_gbh_mos)
       gbh     =             gbh_mos * can_rhos * cp
-      gbw     = gbh_2_gbw * gbh_mos * can_rhos * can_shv
+      gbw     = gbh_2_gbw * gbh_mos * can_rhos
       !------------------------------------------------------------------------------------!
 
       return
@@ -2515,11 +2515,11 @@ module canopy_struct_dynamics
       ! because we assume both forms of convection happen parallelly.  The conversion from !
       ! heat to water conductance (in m/s) can be found in L95, page 1198, after equation  !
       ! E5.  For the ED purposes, the output variables are converted to the units of       !
-      ! entropy and water fluxes [J/K/m²/s and kg_H2O/m²/s, respectively].                 !
+      ! entropy and water fluxes [J/K/m²/s and kg/m²/s, respectively].                     !
       !------------------------------------------------------------------------------------!
       gbh_mos = max(gbhmos_min, free_gbh_mos + forced_gbh_mos)
       gbh     =              gbh_mos * can_rhos * cp8
-      gbw     = gbh_2_gbw8 * gbh_mos * can_rhos * can_shv
+      gbw     = gbh_2_gbw8 * gbh_mos * can_rhos
       !------------------------------------------------------------------------------------!
 
       return
