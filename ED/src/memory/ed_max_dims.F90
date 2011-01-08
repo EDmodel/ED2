@@ -108,8 +108,10 @@ module ed_max_dims
    ! 13 - c3 crop (e.g.,wheat, rice, soybean)                                              !
    ! 14 - c4 pasture                                                                       !
    ! 15 - c4 crop (e.g.,corn/maize)                                                        !
+   ! 16 - Subtropical C3 grass                                                             !
+   ! 17 - Araucaria                                                                        !
    !---------------------------------------------------------------------------------------!
-   integer, parameter :: n_pft = 15
+   integer, parameter :: n_pft = 17
 
 
    !---------------------------------------------------------------------------------------!
