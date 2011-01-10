@@ -1007,17 +1007,19 @@
                               !     multiplied by 10. as the Reynolds number gets close or
                               !     greater than 10,000.
 
-   !--------------------------------------------------------------------!
-   ! PLANT FUNCTIONAL TYPES (PFTs):                                     !
-   !--------------------------------------------------------------------!
-   ! 1 - C4 grass                    |  7 - southern pines              ! 
-   ! 2 - early tropical              |  8 - late conifers               ! 
-   ! 3 - mid tropical                |  9 - early temperate deciduous   ! 
-   ! 4 - late tropical               | 10 - mid temperate deciduous     ! 
-   ! 5 - C3 grass                    | 11 - late temperate deciduous    ! 
-   ! 6 - northern pines              |                                  !
-   !--------------------------------------------------------------------!
-   INCLUDE_THESE_PFT = 1,2,3,4,5,7,    ! List of PFTs to be included 
+   !---------------------------------------------------------------------!
+   ! PLANT FUNCTIONAL TYPES (PFTs):                                      !
+   !---------------------------------------------------------------------!
+   ! 1 - C4 grass                     |  9 - early temperate deciduous   !
+   ! 2 - early tropical               | 10 - mid temperate deciduous     !
+   ! 3 - mid tropical                 | 11 - late temperate deciduous    !
+   ! 4 - late tropical                | 12:15 - agricultural PFTs        !
+   ! 5 - temperate C3 grass           | 16 - Subtropical C3 grass        !
+   ! 6 - northern pines               |      (C4 grass with C3 photo).   !
+   ! 7 - southern pines               | 17 - "Araucaria" (non-optimised  !
+   ! 8 - late conifers                |      Southern Pines).            !
+   !---------------------------------------------------------------------!
+   INCLUDE_THESE_PFT = 1,2,3,4,16,17,    ! List of PFTs to be included 
    
    ! The STOCK variables set up land use PFTs (used only when ianth_disturb=1)
    AGRI_STOCK        = 1,              ! PFT assigned for agriculture 
