@@ -2148,7 +2148,7 @@ subroutine init_physiology_params()
    !     Parameters that control debugging output.                                         !
    !---------------------------------------------------------------------------------------!
    !----- I should print detailed debug information. --------------------------------------!
-   print_photo_debug = .true.
+   print_photo_debug = .false.
    !----- File name prefix for the detailed information in case of debugging. -------------!
    photo_prefix      = 'photo_state_'
    !---------------------------------------------------------------------------------------!
@@ -2653,7 +2653,7 @@ subroutine init_rk4_params()
    !     Variables used to keep track on the error.                                        !
    !---------------------------------------------------------------------------------------!
    record_err     = .false.                  ! Compute and keep track of the errors.
-   print_detailed = .true.                  ! Print detailed information about the thermo-
+   print_detailed = .false.                  ! Print detailed information about the thermo-
                                              !    dynamic state.  This will create one file
                                              !    for each patch, so it is not recommended 
                                              !    for simulations that span over one month.
