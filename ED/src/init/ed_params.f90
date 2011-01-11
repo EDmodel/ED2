@@ -898,7 +898,7 @@ subroutine init_pft_photo_params()
       stomatal_slope(15)        = 24.0
       stomatal_slope(15)        = 15.4
    else
-      stomatal_slope(1)         = 10.0
+      stomatal_slope(1)         =  4.0
       stomatal_slope(2)         =  8.0
       stomatal_slope(3)         =  8.0
       stomatal_slope(4)         =  8.0
@@ -976,7 +976,7 @@ subroutine init_pft_photo_params()
       leaf_width(5:11)  = 0.05
       leaf_width(12:13) = 0.05
       leaf_width(14:15) = 0.05
-      leaf_width(16:17) = 0.05
+      leaf_width(16:17) = 0.03
    else
       !----- Standard ED-2.1 values. ------------------------------------------------------!
       leaf_width(1)     = 0.20
@@ -985,7 +985,7 @@ subroutine init_pft_photo_params()
       leaf_width(12:13) = 0.05
       leaf_width(14:15) = 0.20
       leaf_width(16)    = 0.20
-      leaf_width(17)    = 0.05
+      leaf_width(17)    = 0.03
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -1331,7 +1331,8 @@ subroutine init_pft_alloc_params()
    is_tropical(5:11)  = .false.
    is_tropical(12:13) = .false.
    is_tropical(14:15) = .true.
-   is_tropical(16:17) = .true.
+   is_tropical(16)    = .true.
+   is_tropical(17)    = .false.
 
    !---------------------------------------------------------------------------------------! 
    !    This flag should be used to define whether the plant is tree or grass              !
@@ -1362,8 +1363,8 @@ subroutine init_pft_alloc_params()
    rho(12:13) = 0.53
    rho(14:15) = 0.53
    rho(16)    = 0.53
-   rho(17)    = 0.59
-!   rho(17)    = 0.48
+   rho(17)    = 0.00   ! Currently not used
+!   rho(17)    = 0.59  ! 0.48
    !---------------------------------------------------------------------------------------!
 
    !----- Specific leaf area [m² leaf / kg C] ---------------------------------------------!
@@ -1475,7 +1476,8 @@ subroutine init_pft_alloc_params()
    hgt_ref(1:5)   = 0.0
    hgt_ref(6:11)  = 1.3
    hgt_ref(12:15) = 0.0
-   hgt_ref(16:17) = 0.0
+   hgt_ref(16)    = 0.0
+   hgt_ref(17)    = 0.4
 
    !----- Fraction of structural stem that is assumed to be above ground. -----------------!
    agf_bs = 0.7
@@ -1494,7 +1496,8 @@ subroutine init_pft_alloc_params()
    b1Ht(11)    = 23.3874
    b1Ht(12:13) = 0.4778
    b1Ht(14:15) = 0.0
-   b1Ht(16:17) = 0.0
+   b1Ht(16)    = 0.0
+   b1Ht(17)    = 38.0
    !----- DBH-height allometry slope [1/cm]. ----------------------------------------------!
    b2Ht(1:4)   = 0.0
    b2Ht(5)     = -0.75
@@ -1506,7 +1509,8 @@ subroutine init_pft_alloc_params()
    b2Ht(11)    = -0.05404
    b2Ht(12:13) = -0.75
    b2Ht(14:15) = 0.0
-   b2Ht(16:17) = 0.0
+   b2Ht(16)    = 0.0
+   b2Ht(17)    = -0.03
    !----- DBH-leaf allometry intercept [kg leaf biomass / plant * cm^(-b2Bl)]. ------------!
    b1Bl(1:4)   = 0.0
    b1Bl(5)     = 0.08
@@ -1518,7 +1522,8 @@ subroutine init_pft_alloc_params()
    b1Bl(11)    = 0.017
    b1Bl(12:13) = 0.08
    b1Bl(14:15) = 0.0
-   b1Bl(16:17) = 0.0
+   b1Bl(16)    = 0.0
+   b1Bl(17)    = 0.024
    !-----  DBH-leaf allometry slope [dimensionless]. --------------------------------------!
    b2Bl(1:4)   = 0.0
    b2Bl(5)     = 1.0
@@ -1530,7 +1535,8 @@ subroutine init_pft_alloc_params()
    b2Bl(11)    = 1.731
    b2Bl(12:13) = 1.0
    b2Bl(14:15) = 0.0
-   b2Bl(16:17) = 0.0
+   b2Bl(16)    = 0.0
+   b2Bl(17)     = 1.899
    !----- DBH-stem allometry intercept [kg stem biomass / plant * cm^(-b2Bs)] -------------!
    b1Bs(1:4)   = 0.0 
    b1Bs(5)     = 1.0e-5
@@ -1542,7 +1548,8 @@ subroutine init_pft_alloc_params()
    b1Bs(11)    = 0.235
    b1Bs(12:13) = 1.0e-5
    b1Bs(14:15) = 0.0 
-   b1Bs(16:17) = 0.0 
+   b1Bs(16)    = 0.0 
+   b1Bs(17)    = 0.147
    !----- DBH-stem allometry slope [dimensionless]. ---------------------------------------!
    b2Bs(1:4)   = 0.0
    b2Bs(5)     = 1.0
@@ -1554,7 +1561,8 @@ subroutine init_pft_alloc_params()
    b2Bs(11)    = 2.2518
    b2Bs(12:13) = 1.0
    b2Bs(14:15) = 0.0
-   b2Bs(16:17) = 0.0
+   b2Bs(16)    = 0.0
+   b2Bs(17)    = 2.238
 
    !---------------------------------------------------------------------------------------!
    !    Defining the branching parameters, following Järvelä (2004)                        !
@@ -1861,18 +1869,33 @@ subroutine init_pft_derived_params()
    real                              :: bleaf_max
    real                              :: bdead_max
    real                              :: min_plant_dens
-   logical               , parameter :: print_zero_table = .false.
+   real                              :: hgt_max
+   logical               , parameter :: print_zero_table = .true.
    character(len=str_len), parameter :: zero_table_fn    = 'minimum.size.txt'
    !---------------------------------------------------------------------------------------!
 
    !----- Maximum DBH. --------------------------------------------------------------------!
-   max_dbh(1)     = 0.498
-   max_dbh(2:4)   = 68.31
-   max_dbh(5)     = 0.498
-   max_dbh(6:11)  = log(1.0-(0.999*b1Ht(6:11)-hgt_ref(6:11))/b1Ht(6:11))/b2Ht(6:11)
-   max_dbh(12:15) = 0.498
-   max_dbh(16)    = 0.498
-   max_dbh(17)    = 68.31
+   do ipft=1,n_pft
+      !----- Decide how to find the maximum DBH PFT. --------------------------------------!
+      select case (ipft)
+      case (1,14:16)
+         hgt_max = 1.50
+      case (2:4)
+         hgt_max = 35.0
+      case (6:11)
+         hgt_max = 0.999 * b1Ht(ipft)
+      case (5,12:13)
+         hgt_max = 0.95  * b1Ht(ipft)
+      case (17)
+         hgt_max = min(35.0, 0.95  * b1Ht(ipft))
+      case default
+         write(unit=*,fmt='(a,1x,i6)') ' Unexpected PFT type:',ipft
+         call fatal_error('No maximum height defined for this PFT!'                        &
+                         ,'init_pft_derived_params','ed_params.f90')
+      end select
+      
+      max_dbh(ipft) = h2dbh(hgt_max,ipft)
+   end do
 
 
    !---------------------------------------------------------------------------------------!
@@ -2258,7 +2281,7 @@ subroutine init_physiology_params()
    !     Parameters that control debugging output.                                         !
    !---------------------------------------------------------------------------------------!
    !----- I should print detailed debug information. --------------------------------------!
-   print_photo_debug = .true.
+   print_photo_debug = .false.
    !----- File name prefix for the detailed information in case of debugging. -------------!
    photo_prefix      = 'photo_state_'
    !---------------------------------------------------------------------------------------!
@@ -2675,7 +2698,6 @@ subroutine init_rk4_params()
                              , toocold                & ! intent(out)
                              , toohot                 & ! intent(out)
                              , lai_to_cover           & ! intent(out)
-                             , patch_hcapveg_min      & ! intent(out)
                              , rk4min_veg_temp        & ! intent(out)
                              , rk4water_stab_thresh   & ! intent(out)
                              , rk4tiny_sfcw_mass      & ! intent(out)
@@ -2704,7 +2726,6 @@ subroutine init_rk4_params()
                              , rk4min_virt_moist      & ! intent(out)
                              , effarea_water          & ! intent(out)
                              , effarea_heat           & ! intent(out)
-                             , check_maxleaf          & ! intent(out)
                              , leaf_intercept         & ! intent(out)
                              , force_idealgas         & ! intent(out)
                              , supersat_ok            & ! intent(out)
@@ -2760,7 +2781,7 @@ subroutine init_rk4_params()
    !     Variables used to keep track on the error.                                        !
    !---------------------------------------------------------------------------------------!
    record_err     = .false.                  ! Compute and keep track of the errors.
-   print_detailed = .true.                  ! Print detailed information about the thermo-
+   print_detailed = .false.                  ! Print detailed information about the thermo-
                                              !    dynamic state.  This will create one file
                                              !    for each patch, so it is not recommended 
                                              !    for simulations that span over one month.
@@ -2769,17 +2790,6 @@ subroutine init_rk4_params()
    sanity_fout    = 'sanity_check_count.txt' ! File with the sanity check count
    thbnds_fout    = 'thermo_bounds.txt'      ! File with the thermodynamic boundaries.
    detail_pref    = 'thermo_state_'          ! Prefix for the detailed thermodynamic file
-   !---------------------------------------------------------------------------------------!
-
-
-   !---------------------------------------------------------------------------------------!
-   !    This parameter defines the minimum patch-level heat capacity.  If the actual heat  !
-   ! capacity is less than this value, then the heat capacity of this cohort is scaled in  !
-   ! such way that the total patch-level heat capacity is equal to patch_hcapveg_min and   !
-   ! the cohort-level is linearly proportional to the biomass.  In case you don't want any !
-   ! correction, set this number to zero.                                                  !
-   !---------------------------------------------------------------------------------------!
-   patch_hcapveg_min   = 6.0d2               ! Minimum patch-level heat capacity   [J/m²/K]
    !---------------------------------------------------------------------------------------!
 
 
@@ -2820,7 +2830,7 @@ subroutine init_rk4_params()
    !     Minimum water mass at the leaf surface.  This is given in kg/m²leaf rather than   !
    ! kg/m²ground, so we scale it with LAI.                                                 !
    !---------------------------------------------------------------------------------------!
-   rk4min_veg_lwater = -5.0000d-4 ! Minimum leaf water mass     [kg/m²leaf]
+   rk4min_veg_lwater = -rk4dry_veg_lwater         ! Minimum leaf water mass     [kg/m²leaf]
    !---------------------------------------------------------------------------------------!
 
 
@@ -2849,21 +2859,6 @@ subroutine init_rk4_params()
       effarea_water = 1.0d0
       effarea_heat  = 2.0d0
    end select
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !     The integrator will check whether the leaves are at their maximum holding         !
-   ! capacity before letting water to be intercepted and dew/frost to remain at the leaf   !
-   ! surfaces.  If FALSE, the amount of water will be adjusted outside the derivative      !
-   ! calculation.  Some tests have shown that not solving this inside the integrator can   !
-   ! speed up the simulation between 20% in the tropics to well above 100% in some         !
-   ! temperate polygons. However, some may think that it is more appropriate to leave the  !
-   ! check in the integrator, so we leave this flag so one can switch between one and the  !
-   ! other and decide based on their own needs.                                            !
-   !---------------------------------------------------------------------------------------!
-   check_maxleaf = .true.
    !---------------------------------------------------------------------------------------!
 
 

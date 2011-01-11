@@ -601,7 +601,6 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
                                     , rk4fullveg_lwater    & ! intent(in)
                                     , checkbudget          & ! intent(in)
                                     , print_detailed       & ! intent(in)
-                                    , check_maxleaf        & ! intent(in)
                                     , supersat_ok          & ! intent(in)
                                     , leaf_intercept       ! ! intent(in)
    use ed_state_vars         , only : sitetype             & ! Structure
@@ -1150,72 +1149,19 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
 
 
          !---------------------------------------------------------------------------------!
-         !     Calculate interception by leaves.                                           !
+         !     Calculate interception by leaves by scaling the intercepted water by the    !
+         ! TAI of each cohort.  If this causes excess of water/ice over the leaf surface,  !
+         ! no problem, the water will shed at adjust_veg_properties.                       !
          !---------------------------------------------------------------------------------!
-         if (check_maxleaf) then
-            !------ We check whether the leaves can take any more water. ------------------!
-            if (initp%veg_water(ico) >= max_leaf_water) then
-
-               !---------------------------------------------------------------------------!
-               ! Case 1: Leaves have no space for rain.  All rain/snow falls with the same !
-               !         density it fell.                                                  !
-               !---------------------------------------------------------------------------!
-               throughfall   = intercepted_max  * initp%tai(ico) * taii
-               qthroughfall  = qintercepted_max * initp%tai(ico) * taii
-               dthroughfall  = dintercepted_max * initp%tai(ico) * taii
-               intercepted   = 0.d0
-               qintercepted  = 0.d0
-
-               if (wflxvc < 0.d0) then
-                  !------------------------------------------------------------------------!
-                  ! Case 1a: If dew or frost is forming over the leaves, we won't let them !
-                  !          stay on the leaves either. They will shed with dew or frost   !
-                  !          density.  The energy that leaves the leaves is not the latent !
-                  !          heat of condensation/sublimation, but the internal energy of  !
-                  !          liquid/frozen water that falls.                               !
-                  !------------------------------------------------------------------------!
-                  wshed   = - wflxvc
-                  qwshed  = wshed                                                          &
-                          * (initp%veg_fliq(ico)*cliq8 * (initp%veg_temp(ico)-tsupercool8) &
-                            + (1.d0-initp%veg_fliq(ico)) * cice8 * initp%veg_temp(ico))
-                  dwshed  = wshed  * ( initp%veg_fliq(ico)        * wdnsi8                 &
-                                     + (1.d0-initp%veg_fliq(ico)) * fdnsi8 )
-               else
-                  !---- Evaporation, water shedding is zero. ------------------------------!
-                  wshed   = 0.d0
-                  qwshed  = 0.d0
-                  dwshed  = 0.d0
-               end if
-            else
-               !---------------------------------------------------------------------------!
-               ! Case 2: Leaves have space for rain.  Rainfall and its internal energy     !
-               !         accumulate on the leaves.                                         !
-               !---------------------------------------------------------------------------!
-               wshed        = 0.d0
-               qwshed       = 0.d0
-               dwshed       = 0.d0
-               throughfall  = 0.d0
-               qthroughfall = 0.d0
-               dthroughfall = 0.d0
-               intercepted  = intercepted_max  * initp%tai(ico) * taii
-               qintercepted = qintercepted_max * initp%tai(ico) * taii
-            end if
-
-         else
-            !------------------------------------------------------------------------------!
-            !     Calculate interception by leaves by scaling the intercepted water by the !
-            ! TAI of each cohort.  If this causes excess of water/ice over the leaf        !
-            ! surface, no problem, the water will shed at adjust_veg_properties.           !
-            !------------------------------------------------------------------------------!
-            wshed        = 0.d0
-            qwshed       = 0.d0
-            dwshed       = 0.d0
-            intercepted  = intercepted_max  * initp%tai(ico) * taii
-            qintercepted = qintercepted_max * initp%tai(ico) * taii
-            throughfall  = 0.d0
-            qthroughfall = 0.d0
-            dthroughfall = 0.d0
-         end if
+         wshed        = 0.d0
+         qwshed       = 0.d0
+         dwshed       = 0.d0
+         intercepted  = intercepted_max  * initp%tai(ico) * taii
+         qintercepted = qintercepted_max * initp%tai(ico) * taii
+         throughfall  = 0.d0
+         qthroughfall = 0.d0
+         dthroughfall = 0.d0
+         !---------------------------------------------------------------------------------!
 
 
 

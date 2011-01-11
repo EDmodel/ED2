@@ -20,7 +20,6 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
                                     , rocp8                  ! ! intent(in)
    use rk4_coms              , only : rk4patchtype           & ! structure
                                     , rk4site                & ! structure
-                                    , patch_hcapveg_min      & ! intent(in)
                                     , rk4eps                 & ! intent(in)
                                     , any_solvable           & ! intent(out)
                                     , zoveg                  & ! intent(out)
@@ -55,7 +54,6 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    !----- Local variables -----------------------------------------------------------------!
    type(patchtype)       , pointer    :: cpatch
    real(kind=4)                       :: crown_area_tmp
-   real(kind=8)                       :: hcap_scale
    real(kind=8)                       :: rsat
    real(kind=8)                       :: sum_sfcw_mass
    integer                            :: ico
@@ -218,12 +216,6 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
       if (targetp%solvable(ico)) any_solvable = .true.
    end do
 
-   if (any_solvable) then
-      hcap_scale  = max(1.d0, patch_hcapveg_min / sourcesite%hcapveg(ipa))
-   else
-      hcap_scale  = 1.d0
-   end if
-
    do ico = 1,cpatch%ncohorts
       ipft=cpatch%pft(ico)
 
@@ -245,38 +237,29 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
 
 
 
-      !----- Copy the leaf surface water. -------------------------------------------------!
-      targetp%veg_water(ico)  = dble(cpatch%veg_water(ico)) 
       !------------------------------------------------------------------------------------!
-
-
-
-      !------------------------------------------------------------------------------------!
-      !    If the cohort is too small, we give some extra heat capacity, so the model can  !
-      ! run in a stable range inside the integrator.  At the end this extra heat capacity  !
-      ! will be removed.                                                                   !
-      !------------------------------------------------------------------------------------!
-      targetp%hcapveg(ico) = dble(cpatch%hcapveg(ico)) * hcap_scale
-      !------------------------------------------------------------------------------------!
-
-
-
-      !------------------------------------------------------------------------------------!
-      !     Check whether this is considered a "safe" one or not.  In case it is, we scale !
-      ! energy as needed then compute the temperature and the fraction of leaf water.      !
-      ! Otherwise, just fill with some safe values, but the cohort won't be really solved. !
+      !     Check whether this is considered a "safe" one or not.  In case it is, we copy  !
+      ! the water, heat capacity, and energy then compute the temperature and the fraction !
+      ! of leaf water.  Otherwise, just fill with some safe values, but the cohort won't   !
+      ! be really solved.                                                                  !
       !------------------------------------------------------------------------------------!
       if (targetp%solvable(ico)) then
-         targetp%veg_energy(ico)    = dble(cpatch%veg_energy(ico))                         &
-                                    + (targetp%hcapveg(ico)-dble(cpatch%hcapveg(ico)))     &
-                                    * dble(cpatch%veg_temp(ico))
+         targetp%veg_energy(ico) = dble(cpatch%veg_energy(ico))
+         targetp%veg_water (ico) = dble(cpatch%veg_water (ico))
+         targetp%hcapveg   (ico) = dble(cpatch%hcapveg   (ico))
          call qwtk8(targetp%veg_energy(ico),targetp%veg_water(ico),targetp%hcapveg(ico)    &
                    ,targetp%veg_temp(ico),targetp%veg_fliq(ico))
       else
-         targetp%veg_fliq(ico)   = dble(cpatch%veg_fliq(ico))
-         targetp%veg_temp(ico)   = dble(cpatch%veg_temp(ico))
+         targetp%veg_fliq  (ico) = dble(cpatch%veg_fliq  (ico))
+         targetp%veg_temp  (ico) = dble(cpatch%veg_temp  (ico))
+         targetp%veg_water (ico) = dble(cpatch%veg_water (ico))
+         targetp%hcapveg   (ico) = dble(cpatch%hcapveg   (ico))
          targetp%veg_energy(ico) = targetp%hcapveg(ico) * targetp%veg_temp(ico)
       end if
+      !------------------------------------------------------------------------------------!
+
+
+
 
       !------------------------------------------------------------------------------------!
       !     Compute the leaf intercellular specific humidity, assumed to be at saturation. !

@@ -554,16 +554,13 @@ module rk4_driver
 
          if (initp%solvable(ico)) then
             !------------------------------------------------------------------------------!
-            !    The cohort was solved, update water internal energy, scale back           !
-            ! vegetation energy, and re-calculate the temperature and leaf intercellular   !
-            ! specific humidity.  The vegetation dry heat capacity is constant within one  !
-            ! time step, so it does not need to be updated.                                !
+            !    The cohort was solved, update water and internal energy, and re-calculate !
+            ! the temperature and leaf intercellular specific humidity.  The vegetation    !
+            ! dry heat capacity is constant within one time step, so it does not need to   !
+            ! be updated.                                                                  !
             !------------------------------------------------------------------------------!
             cpatch%veg_water(ico)  = sngloff(initp%veg_water(ico) , tiny_offset)
-            tmp_energy             = initp%veg_energy(ico)                                 &
-                                   + (dble(cpatch%hcapveg(ico))-initp%hcapveg(ico))        &
-                                   * initp%veg_temp(ico)
-            cpatch%veg_energy(ico) = sngloff(tmp_energy, tiny_offset)
+            cpatch%veg_energy(ico) = sngloff(initp%veg_energy(ico), tiny_offset)
             call qwtk(cpatch%veg_energy(ico),cpatch%veg_water(ico),cpatch%hcapveg(ico)     &
                      ,cpatch%veg_temp(ico),cpatch%veg_fliq(ico))
             !------------------------------------------------------------------------------!

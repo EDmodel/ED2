@@ -425,12 +425,6 @@ module rk4_coms
                                   !     supersat_ok is .false., but in this case
                                   !     only mixing with free atmosphere can cause
                                   !     the super-saturation).
-   logical      :: check_maxleaf  ! The integrator will check whether the leaves are
-                                  !    at their maximum holding capacity before let-
-                                  !    ting water to be intercepted and dew/frost
-                                  !    to remain at the leaf surfaces.  If FALSE, 
-                                  !    the amount of water will be adjusted outside
-                                  !    the derivative calculation.                 [   T|F]
    logical      :: force_idealgas ! The integrator will adjust pressure every time 
                                   !    step, including the internal ones, to make 
                                   !    sure the ideal gas is respected.  If set to
@@ -447,15 +441,6 @@ module rk4_coms
    real(kind=8) :: lai_to_cover   ! Canopies with LAI less than this number are assumed to
                                   !     be open, ie, some fraction of the rain-drops can 
                                   !     reach the soil/litter layer unimpeded.
-   !---------------------------------------------------------------------------------------!
-
-   !---------------------------------------------------------------------------------------!
-   !    This parameter defines the minimum patch-level heat capacity.  If the actual heat  !
-   ! capacity is less than this value, then the heat capacity of this cohort is scaled in  !
-   ! such way that the total patch-level heat capacity is equal to patch_hcapveg_min and   !
-   ! the cohort-level is linearly proportional to the biomass.                             !
-   !---------------------------------------------------------------------------------------!
-   real(kind=8) :: patch_hcapveg_min         ! Minimum patch-level heat capacity   [J/m²/K]
    !---------------------------------------------------------------------------------------!
 
 
