@@ -533,13 +533,19 @@ module rk4_coms
 
 
    !---------------------------------------------------------------------------------------!
-   !     These two variables are assigned in rk4_driver.f90, together with the time vari-  !
-   ! ables.  This is because their number will be different depending on whether branches  !
-   ! and twigs area are explicitly computed or just estimated as 20% of LAI for heat and   !
-   ! water exchange between the vegetation and the canopy air.                             !
+   !     These variables are assigned in ed_params.f90.  Heat area should be 2.0 for all   !
+   ! PFTs (two sides of the leaves exchange heat), and the evaporation area should be 1.0  !
+   ! for all PFTs (only one side of the leaf is usually covered by water).  The transpir-  !
+   ! ation area should be 1.0 for hypostomatous leaves, and 2.0 for symmetrical (pines)    !
+   ! and amphistomatous (araucarias) leaves.  Sometimes heat and evaporation are multi-    !
+   ! plied  by 1.2 and 2.2 to account for branches and twigs.  This is not recommended,    !
+   ! though, because branches and twigs do not contribute to heat storage when             !
+   ! ibranch_thermo is set to zero, and they are otherwise accounted through the wood area !
+   ! index.                                                                                !
    !---------------------------------------------------------------------------------------!
-   real(kind=8) :: effarea_water ! Evaporation area: related to LAI
-   real(kind=8) :: effarea_heat  ! Heat area: related to 2*LAI
+   real(kind=8)                   :: effarea_heat   ! Heat area: related to 2*LAI
+   real(kind=8)                   :: effarea_evap   ! Evaporation area: related to LAI
+   real(kind=8), dimension(n_pft) :: effarea_transp ! Evaporation area: related to LAI
    !---------------------------------------------------------------------------------------!
 
 

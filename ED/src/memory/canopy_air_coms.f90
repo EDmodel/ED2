@@ -54,6 +54,8 @@ module canopy_air_coms
    real         :: covr
    !----- Minimum Ustar [m/s]. ------------------------------------------------------------!
    real         :: ustmin
+   !----- Minimum speed for conductances [m/s]. -------------------------------------------!
+   real         :: ugbmin
    !----- Minimum speed for stars [m/s]. --------------------------------------------------!
    real         :: ubmin
    !----- Some parameters that were used in ED-2.0, added here for some tests. ------------!
@@ -63,6 +65,7 @@ module canopy_air_coms
    !----- Double precision version of some of these variables (for Runge-Kutta). ----------!
    real(kind=8) :: exar8
    real(kind=8) :: ustmin8
+   real(kind=8) :: ugbmin8
    real(kind=8) :: ubmin8
    real(kind=8) :: ez8
    real(kind=8) :: vh2dh8

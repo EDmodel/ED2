@@ -587,8 +587,9 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
                                     , toocold              & ! intent(in)
                                     , toohot               & ! intent(in)
                                     , lai_to_cover         & ! intent(in)
-                                    , effarea_water        & ! intent(in)
                                     , effarea_heat         & ! intent(in)
+                                    , effarea_evap         & ! intent(in)
+                                    , effarea_transp       & ! intent(in)
                                     , zoveg                & ! intent(in)
                                     , zveg                 & ! intent(in)
                                     , wcapcan              & ! intent(in)
@@ -1051,7 +1052,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
          ! frost formation must account the branches and stems as well.                    !
          !---------------------------------------------------------------------------------!
          !----- Evaporation/condensation "flux" -------------------------------------------!
-         wflxvc_try = effarea_water * initp%tai(ico) * initp%gbw(ico)                      &
+         wflxvc_try = effarea_evap * initp%tai(ico) * initp%gbw(ico)                       &
                     * (initp%lint_shv(ico) - initp%can_shv)
          !---------------------------------------------------------------------------------!
 
@@ -1080,8 +1081,8 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
                ! first make sure that there is some water available for transpiration...   !
                !---------------------------------------------------------------------------!
                if (initp%available_liquid_water(kroot) > 0.d0 ) then
-                  c3lai = initp%lai(ico) * (initp%lint_shv(ico) - initp%can_shv)           &
-                        * initp%gbw(ico)
+                  c3lai = effarea_transp(ipft) * initp%lai(ico)                            &
+                        * (initp%lint_shv(ico) - initp%can_shv) * initp%gbw(ico)
 
                   dinitp%psi_open(ico)   = c3lai * initp%gsw_open(ico)                     &
                                          / (initp%gbw(ico) + initp%gsw_open(ico))

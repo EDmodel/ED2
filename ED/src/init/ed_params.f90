@@ -475,12 +475,14 @@ subroutine init_can_air_params()
                              , exar                  & ! intent(out)
                              , covr                  & ! intent(out)
                              , ustmin                & ! intent(out)
+                             , ugbmin                & ! intent(out)
                              , ubmin                 & ! intent(out)
                              , exar8                 & ! intent(out)
                              , ez                    & ! intent(out)
                              , vh2vr                 & ! intent(out)
                              , vh2dh                 & ! intent(out)
                              , ustmin8               & ! intent(out)
+                             , ugbmin8               & ! intent(out)
                              , ubmin8                & ! intent(out)
                              , ez8                   & ! intent(out)
                              , vh2dh8                & ! intent(out)
@@ -617,6 +619,8 @@ subroutine init_can_air_params()
    !---------------------------------------------------------------------------------------!
    !----- This is the minimum ustar under stable and unstable conditions. -----------------!
    ustmin    = 0.10
+   !----- This is the minimum wind speed for boundary layer conductivity. -----------------!
+   ugbmin    = 0.25
    !----- This is the minimum wind scale under stable and unstable conditions. ------------!
    ubmin     = 0.65
    !---------------------------------------------------------------------------------------!
@@ -727,6 +731,7 @@ subroutine init_can_air_params()
    minimum_canopy_depth8 = dble(minimum_canopy_depth)
    exar8                 = dble(exar                )
    ubmin8                = dble(ubmin               )
+   ugbmin8               = dble(ugbmin              )
    ustmin8               = dble(ustmin              )
    ez8                   = dble(ez                  )
    vh2dh8                = dble(vh2dh               )
@@ -858,7 +863,7 @@ subroutine init_pft_photo_params()
       Vm0(11)                   = 10.0
       Vm0(12:13)                = 29.3
       Vm0(14:15)                = 20.0
-      Vm0(16)                   = 29.3
+      Vm0(16)                   = 35.0
       Vm0(17)                   = 25.0
    else
       Vm0(1)                    = 12.5
@@ -874,7 +879,7 @@ subroutine init_pft_photo_params()
       Vm0(11)                   = 6.25   * 1.1171
       Vm0(12:13)                = 18.3
       Vm0(14:15)                = 12.5
-      Vm0(16)                   = 18.3
+      Vm0(16)                   = 21.875
       Vm0(17)                   = 15.625
    end if
 
@@ -2071,10 +2076,10 @@ subroutine init_disturb_params
    ! moisture equal to soilcp + (slmsts-soilcp) * fire_smoist_threshold [m3_H2O/m3_gnd]    !
    ! would have.                                                                           !
    !---------------------------------------------------------------------------------------!
-   fire_smoist_threshold = 0.20
+   fire_smoist_threshold = 0.06
 
    !----- Maximum depth that will be considered in the average soil -----------------------!
-   fire_smoist_depth     = -0.75
+   fire_smoist_depth     = -1.0
 
    !----- Dimensionless parameter controlling speed of fire spread. -----------------------!
    fire_parameter = 1.0
@@ -2724,8 +2729,9 @@ subroutine init_rk4_params()
                              , rk4max_sfcw_temp       & ! intent(out)
                              , rk4min_sfcw_moist      & ! intent(out)
                              , rk4min_virt_moist      & ! intent(out)
-                             , effarea_water          & ! intent(out)
                              , effarea_heat           & ! intent(out)
+                             , effarea_evap           & ! intent(out)
+                             , effarea_transp          & ! intent(out)
                              , leaf_intercept         & ! intent(out)
                              , force_idealgas         & ! intent(out)
                              , supersat_ok            & ! intent(out)
@@ -2845,20 +2851,26 @@ subroutine init_rk4_params()
    rk4min_virt_moist =  -5.0000d-4 ! Minimum water allowed at virtual pool.
    !---------------------------------------------------------------------------------------!
 
+
+
    !---------------------------------------------------------------------------------------!
-   !    The area factor for heat and water exchange between canopy and vegetation is       !
-   ! applied only on LAI, and it depends on how we are considering the branches and twigs. !
-   ! area because WPA will be 0.  Otherwise, we don't add anything to the LAI, and let WPA !
-   ! to do the job.                                                                        !
+   !     These variables are assigned in ed_params.f90.  Heat area should be 2.0 for all   !
+   ! PFTs (two sides of the leaves exchange heat), and the evaporation area should be 1.0  !
+   ! for all PFTs (only one side of the leaf is usually covered by water).  The transpir-  !
+   ! ation area should be 1.0 for hypostomatous leaves, and 2.0 for symmetrical (pines)    !
+   ! and amphistomatous (araucarias) leaves.  Sometimes heat and evaporation are multi-    !
+   ! plied  by 1.2 and 2.2 to account for branches and twigs.  This is not recommended,    !
+   ! though, because branches and twigs do not contribute to heat storage when             !
+   ! ibranch_thermo is set to zero, and they are otherwise accounted through the wood area !
+   ! index.                                                                                !
    !---------------------------------------------------------------------------------------!
-   select case (ibranch_thermo)
-   case (0)
-      effarea_water = 1.0d0
-      effarea_heat  = 2.0d0
-   case default
-      effarea_water = 1.0d0
-      effarea_heat  = 2.0d0
-   end select
+   effarea_heat   = 2.d0 ! Heat area: related to 2*LAI
+   effarea_evap   = 1.d0 ! Evaporation area: related to LAI
+   !----- Transpiration.  Adjust them to 1 or 2 according to the type of leaf. ------------!
+   effarea_transp(1:5)  = 1.d0 ! Hypostomatous
+   effarea_transp(6:8)  = 2.d0 ! Symmetrical
+   effarea_transp(9:16) = 1.d0 ! Hypostomatous
+   effarea_transp(17)   = 2.d0 ! Amphistomatous
    !---------------------------------------------------------------------------------------!
 
 

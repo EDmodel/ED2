@@ -68,7 +68,8 @@ module farq_leuning
                            ,lsfc_shv_closed,lsfc_co2_open,lsfc_co2_closed,lint_co2_open    &
                            ,lint_co2_closed,leaf_resp,vmout,comppout,limit_flag            &
                            ,old_st_data)
-      use rk4_coms       , only : tiny_offset              ! ! intent(in)
+      use rk4_coms       , only : tiny_offset              & ! intent(in)
+                                , effarea_transp           ! ! intent(in)
       use c34constants   , only : stoma_data               & ! structure
                                 , thispft                  & ! intent(out)
                                 , met                      & ! intent(out)
@@ -203,9 +204,11 @@ module farq_leuning
       !------------------------------------------------------------------------------------!
       !  6. Find the conductivities for water and carbon.  The input for water is in       !
       !     kg/m²/s, and here we convert to mol/m²/s.  The convertion coefficient from     !
-      !     water to carbon dioxide comes from M09's equation B14.                         !
+      !     water to carbon dioxide comes from M09's equation B14.  Here we multiply by    !
+      !     the effective area for transpiration, depending on whether the leaves of this  !
+      !     plant functional type are hypo-stomatous, symmetrical, or amphistomatous.      !
       !------------------------------------------------------------------------------------!
-      met%blyr_cond_h2o = dble(gbw)  * mmdryi8
+      met%blyr_cond_h2o = dble(gbw)  * mmdryi8 * effarea_transp(ipft)
       met%blyr_cond_co2 = gbw_2_gbc8 * met%blyr_cond_h2o
       !------------------------------------------------------------------------------------!
       !  7. Find the compensation point (Gamma) for this temperature.  I am not sure about !
@@ -261,8 +264,10 @@ module farq_leuning
       A_closed       = sngloff(stclosed%co2_demand    * mol_2_umol8 , tiny_offset)
       A_open         = sngloff(stopen%co2_demand      * mol_2_umol8 , tiny_offset)
       !----- Stomatal resistance, convert the conductances to [kg/m²/s]. ------------------!
-      gsw_closed     = sngloff(stclosed%stom_cond_h2o * mmdry8      , tiny_offset)
-      gsw_open       = sngloff(stopen%stom_cond_h2o   * mmdry8      , tiny_offset)
+      gsw_closed     = sngloff(stclosed%stom_cond_h2o * mmdry8 / effarea_transp(ipft)      &
+                              , tiny_offset)
+      gsw_open       = sngloff(stopen%stom_cond_h2o   * mmdry8 / effarea_transp(ipft)      &
+                              , tiny_offset)
       !----- Leaf surface specific humidity, convert them to [kg/kg]. ---------------------!
       lsfc_shv_closed = sngloff(stclosed%lsfc_shv     * ep8         , tiny_offset)
       lsfc_shv_open   = sngloff(stopen%lsfc_shv       * ep8         , tiny_offset)
