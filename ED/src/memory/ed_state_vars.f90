@@ -9415,6 +9415,13 @@ contains
          var_len,var_len_global,max_ptrs,'GREEN_LEAF_FACTOR :24:hist') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
+    
+    if (associated(cpoly%rad_avg)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpoly%rad_avg(1),nvar,igr,init,cpoly%siglob_id, &
+         var_len,var_len_global,max_ptrs,'RAD_AVG :21:hist') 
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
         
     if (associated(cpoly%leaf_aging_factor)) then
        nvar=nvar+1
@@ -11645,13 +11652,6 @@ contains
        nvar=nvar+1
          call vtable_edio_r(cpatch%turnover_amp(1),nvar,igr,init,cpatch%coglob_id, &
          var_len,var_len_global,max_ptrs,'TURNOVER_AMP :41:hist') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-    endif
-
-    if (associated(cpatch%llspan)) then
-       nvar=nvar+1
-         call vtable_edio_r(cpatch%llspan(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'LLSPAN :41:hist') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 

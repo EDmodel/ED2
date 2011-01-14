@@ -87,7 +87,8 @@ subroutine copy_nl(copy_type)
                                    , h2o_plant_lim             & ! intent(out)
                                    , n_plant_lim               & ! intent(out)
                                    , vmfact                    & ! intent(out)
-                                   , mfact                     ! ! intent(out)
+                                   , mfact                     & ! intent(out)
+                                   , kfact                     ! ! intent(out)
    use phenology_coms       , only : iphen_scheme              & ! intent(out)
                                    , iphenys1                  & ! intent(out)
                                    , iphenysf                  & ! intent(out)
@@ -281,6 +282,7 @@ subroutine copy_nl(copy_type)
       h2o_plant_lim             = nl%h2o_plant_lim
       vmfact                    = nl%vmfact
       mfact                     = nl%mfact
+      kfact                     = nl%kfact
       radint                    = nl%radint
       radslp                    = nl%radslp
       n_plant_lim               = nl%n_plant_lim

@@ -798,9 +798,9 @@ subroutine init_pft_photo_params()
                              , umol_2_mol           & ! intent(in)
                              , yr_sec               ! ! intent(in)
    use physiology_coms , only: vmfact               & ! intent(in)
-                             , mfact                ! ! intent(in)
+                             , mfact                & ! intent(in)
+                             , kfact                ! ! intent(in)
    implicit none
-
    !----- Local variables. ----------------------------------------------------------------!
    logical, parameter  :: vm0_16    = .false.
    logical, parameter  :: stsl_3ted = .false.
@@ -959,7 +959,9 @@ subroutine init_pft_photo_params()
    !     The KW parameter. Medvigy et al. (2009) and Moorcroft et al. (2001) give the      !
    ! number in m²/yr/kg_C_root.  Here we must define it in m²/s/kg_C_root.                 !
    !---------------------------------------------------------------------------------------!
-   water_conductance(1:17) = 150. / yr_sec
+   water_conductance(1) = 150. / yr_sec   
+   water_conductance(2:4) = 150. / yr_sec *kfact
+   water_conductance(5:17) = 150. / yr_sec
    !---------------------------------------------------------------------------------------!
 
 
@@ -990,7 +992,6 @@ subroutine init_pft_photo_params()
       leaf_width(17)    = 0.05
    end if
    !---------------------------------------------------------------------------------------!
-
    return
 end subroutine init_pft_photo_params
 !==========================================================================================!
@@ -2867,7 +2868,7 @@ subroutine init_rk4_params()
    ! check in the integrator, so we leave this flag so one can switch between one and the  !
    ! other and decide based on their own needs.                                            !
    !---------------------------------------------------------------------------------------!
-   check_maxleaf = .true.
+   check_maxleaf = .false.
    !---------------------------------------------------------------------------------------!
 
 

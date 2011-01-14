@@ -93,7 +93,7 @@ subroutine ed_masterput_nl(par_run)
    use mem_polygons,    only: n_poi,n_ed_region,grid_type,grid_res,poi_lat,poi_lon         &
                              ,ed_reg_latmin,ed_reg_latmax,ed_reg_lonmin,ed_reg_lonmax      &
                              ,edres,maxpatch,maxcohort
-   use physiology_coms, only: istoma_scheme, h2o_plant_lim, n_plant_lim, vmfact, mfact
+   use physiology_coms, only: istoma_scheme, h2o_plant_lim, n_plant_lim, vmfact, mfact, kfact
    use phenology_coms , only: iphen_scheme,iphenys1,iphenysf,iphenyf1,iphenyff,phenpath    &
                              ,repro_scheme, radint, radslp
    use decomp_coms,     only: n_decomp_lim
@@ -236,6 +236,7 @@ subroutine ed_masterput_nl(par_run)
    call MPI_Bcast(h2o_plant_lim,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(vmfact,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(mfact,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(kfact,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(n_plant_lim,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(n_decomp_lim,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(include_fire,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
@@ -866,7 +867,7 @@ subroutine ed_nodeget_nl
    use mem_polygons,    only: n_poi,n_ed_region,grid_type,grid_res,poi_lat,poi_lon         &
                              ,ed_reg_latmin,ed_reg_latmax,ed_reg_lonmin,ed_reg_lonmax      &
                              ,edres,maxpatch,maxcohort
-   use physiology_coms, only: istoma_scheme, h2o_plant_lim, n_plant_lim, vmfact, mfact
+   use physiology_coms, only: istoma_scheme, h2o_plant_lim, n_plant_lim, vmfact, mfact, kfact
    use phenology_coms , only: iphen_scheme,iphenys1,iphenysf,iphenyf1,iphenyff,phenpath    &
                              ,repro_scheme, radint, radslp
    use decomp_coms,     only: n_decomp_lim
@@ -1017,6 +1018,7 @@ subroutine ed_nodeget_nl
    call MPI_Bcast(h2o_plant_lim,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(vmfact,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(mfact,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(kfact,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(n_plant_lim,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(n_decomp_lim,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(include_fire,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)

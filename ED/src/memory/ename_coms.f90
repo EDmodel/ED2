@@ -138,6 +138,7 @@ module ename_coms
       integer                                           :: h2o_plant_lim
       real                                              :: vmfact
       real                                              :: mfact
+      real                                              :: kfact
       integer                                           :: n_plant_lim
       integer                                           :: n_decomp_lim
       integer                                           :: decomp_scheme
@@ -332,6 +333,7 @@ module ename_coms
       enl%h2o_plant_lim             = undef_integer
       enl%vmfact                    = undef_real
       enl%mfact                     = undef_real
+      enl%kfact                     = undef_real
       enl%n_plant_lim               = undef_integer
       enl%n_decomp_lim              = undef_integer
       enl%decomp_scheme             = undef_integer

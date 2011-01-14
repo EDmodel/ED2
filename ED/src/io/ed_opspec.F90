@@ -978,7 +978,8 @@ subroutine ed_opspec_misc
                                     , h2o_plant_lim                & ! intent(in)
                                     , n_plant_lim                  & ! intent(in)
                                     , vmfact                       & ! intent(in)
-                                    , mfact                        ! ! intent(in)
+                                    , mfact                        & ! intent(in)
+                                    , kfact                        ! ! intent(in)
    use decomp_coms           , only : n_decomp_lim                 ! ! intent(in)
    use disturb_coms          , only : include_fire                 & ! intent(in)
                                     , ianth_disturb                & ! intent(in)
@@ -1296,6 +1297,14 @@ end do
       write (reason,fmt='(a,1x,i4,a)')                                                     &
                     'Invalid VMFACT, it must be between 0 and 100. Yours is set to'   &
                     ,vmfact,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+   
+  if (kfact < 0. .or. kfact > 100.) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid KFACT, it must be between 0 and 100. Yours is set to'   &
+                    ,kfact,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if

@@ -46,10 +46,11 @@ module physiology_coms
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
-   !     These parameter will decide scaling factors for stomatal slope and Vm0            !
+   !     These parameter will decide scaling factors for stomatal slope and Vm0 and Kw     !
    !---------------------------------------------------------------------------------------!
    real(kind=4)               :: vmfact
    real(kind=4)               :: mfact   
+   real(kind=4)               :: kfact
    !---------------------------------------------------------------------------------------!
 
 

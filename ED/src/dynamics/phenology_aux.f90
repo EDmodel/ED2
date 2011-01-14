@@ -227,7 +227,7 @@ subroutine update_turnover(cpoly, isi)
 
          ipft = cpatch%pft(ico)
          
- !        write(unit=*,fmt='(a,1x,es12.5)') 'Rad_avg is       =', cpoly%rad_avg
+         !write(unit=*,fmt='(a,1x,es12.5)') 'Rad_avg is       =', cpoly%rad_avg
          
          !----- Update turnover mulitplier. -----------------------------------------------!
          if (cpoly%rad_avg(isi) < radcrit) then
@@ -238,7 +238,7 @@ subroutine update_turnover(cpoly, isi)
                                 ,rad_turnover_int+rad_turnover_slope*cpoly%rad_avg(isi)))
          end if
          
-   !               write(unit=*,fmt='(a,1x,es12.5)') 'New Turnover is       =', turnover0
+         !         write(unit=*,fmt='(a,1x,es12.5)') 'New Turnover is       =', turnover0
                   
          cpatch%turnover_amp(ico) = (1.0 - tfact10) * cpatch%turnover_amp(ico)             &
                                   +        tfact10  * turnover0
@@ -255,9 +255,9 @@ subroutine update_turnover(cpoly, isi)
             llspan0       = 9999.
          end if
          
-   !               write(unit=*,fmt='(a,1x,es12.5)') 'llspan0 is       =', llspan0
+         !         write(unit=*,fmt='(a,1x,es12.5)') 'llspan0 is       =', llspan0
          cpatch%llspan(ico) = (1.0 - tfact60) * cpatch%llspan(ico) + tfact60 * llspan0
-   !               write(unit=*,fmt='(a,1x,es12.5)') 'llspan(ico) is       =', cpatch%llspan(ico)         
+         !         write(unit=*,fmt='(a,1x,es12.5)') 'llspan(ico) is       =', cpatch%llspan(ico)         
 
          !----- Update vm_bar. ------------------------------------------------------------!
          vm0               = vm_amp / (1.0 + (cpatch%llspan(ico)/vm_tran)**vm_slop) + vm_min
