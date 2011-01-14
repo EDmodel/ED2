@@ -425,12 +425,6 @@ module rk4_coms
                                   !     supersat_ok is .false., but in this case
                                   !     only mixing with free atmosphere can cause
                                   !     the super-saturation).
-   logical      :: check_maxleaf  ! The integrator will check whether the leaves are
-                                  !    at their maximum holding capacity before let-
-                                  !    ting water to be intercepted and dew/frost
-                                  !    to remain at the leaf surfaces.  If FALSE, 
-                                  !    the amount of water will be adjusted outside
-                                  !    the derivative calculation.                 [   T|F]
    logical      :: force_idealgas ! The integrator will adjust pressure every time 
                                   !    step, including the internal ones, to make 
                                   !    sure the ideal gas is respected.  If set to
@@ -447,15 +441,6 @@ module rk4_coms
    real(kind=8) :: lai_to_cover   ! Canopies with LAI less than this number are assumed to
                                   !     be open, ie, some fraction of the rain-drops can 
                                   !     reach the soil/litter layer unimpeded.
-   !---------------------------------------------------------------------------------------!
-
-   !---------------------------------------------------------------------------------------!
-   !    This parameter defines the minimum patch-level heat capacity.  If the actual heat  !
-   ! capacity is less than this value, then the heat capacity of this cohort is scaled in  !
-   ! such way that the total patch-level heat capacity is equal to patch_hcapveg_min and   !
-   ! the cohort-level is linearly proportional to the biomass.                             !
-   !---------------------------------------------------------------------------------------!
-   real(kind=8) :: patch_hcapveg_min         ! Minimum patch-level heat capacity   [J/m²/K]
    !---------------------------------------------------------------------------------------!
 
 
@@ -548,13 +533,19 @@ module rk4_coms
 
 
    !---------------------------------------------------------------------------------------!
-   !     These two variables are assigned in rk4_driver.f90, together with the time vari-  !
-   ! ables.  This is because their number will be different depending on whether branches  !
-   ! and twigs area are explicitly computed or just estimated as 20% of LAI for heat and   !
-   ! water exchange between the vegetation and the canopy air.                             !
+   !     These variables are assigned in ed_params.f90.  Heat area should be 2.0 for all   !
+   ! PFTs (two sides of the leaves exchange heat), and the evaporation area should be 1.0  !
+   ! for all PFTs (only one side of the leaf is usually covered by water).  The transpir-  !
+   ! ation area should be 1.0 for hypostomatous leaves, and 2.0 for symmetrical (pines)    !
+   ! and amphistomatous (araucarias) leaves.  Sometimes heat and evaporation are multi-    !
+   ! plied  by 1.2 and 2.2 to account for branches and twigs.  This is not recommended,    !
+   ! though, because branches and twigs do not contribute to heat storage when             !
+   ! ibranch_thermo is set to zero, and they are otherwise accounted through the wood area !
+   ! index.                                                                                !
    !---------------------------------------------------------------------------------------!
-   real(kind=8) :: effarea_water ! Evaporation area: related to LAI
-   real(kind=8) :: effarea_heat  ! Heat area: related to 2*LAI
+   real(kind=8)                   :: effarea_heat   ! Heat area: related to 2*LAI
+   real(kind=8)                   :: effarea_evap   ! Evaporation area: related to LAI
+   real(kind=8), dimension(n_pft) :: effarea_transp ! Evaporation area: related to LAI
    !---------------------------------------------------------------------------------------!
 
 

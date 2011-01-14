@@ -77,6 +77,7 @@ module canopy_struct_dynamics
                                 , leaf_width           ! ! intent(in)
       use canopy_air_coms, only : icanturb             & ! intent(in), can. turb. scheme
                                 , ustmin               & ! intent(in)
+                                , ugbmin               & ! intent(in)
                                 , ubmin                & ! intent(in)
                                 , exar                 & ! intent(in)
                                 , vh2dh                & ! intent(in)
@@ -296,7 +297,7 @@ module canopy_struct_dynamics
                case (-2)
                   cpatch%veg_wind(ico) = uh
                case (-1)
-                  cpatch%veg_wind(ico) = max(ustmin,uh * exp ( -0.5 * laicum))
+                  cpatch%veg_wind(ico) = max(ugbmin,uh * exp ( -0.5 * laicum))
                end select
 
                !------------------------------------------------------------------------!
@@ -407,7 +408,7 @@ module canopy_struct_dynamics
             z = 0.5 * (hite + h2trunkh(cpatch%hite(ico)))
 
             !----- Calculate the wind speed at height z. ----------------------------------!
-            cpatch%veg_wind(ico) = max(ustmin,uh * exp(-exar * (1.0 - z/h)))
+            cpatch%veg_wind(ico) = max(ugbmin,uh * exp(-exar * (1.0 - z/h)))
 
             !------------------------------------------------------------------------------!
             !    Find the aerodynamic conductances for heat and water at the leaf boundary !
@@ -519,7 +520,7 @@ module canopy_struct_dynamics
             z = hite * (1.0 - 0.5 * crown_depth_fraction(ipft))
 
             !----- Calculate the wind speed at height z. ----------------------------------!
-            cpatch%veg_wind(ico) = max(ustmin,uh * exp(- exar * (1.0 - z/h)))
+            cpatch%veg_wind(ico) = max(ugbmin,uh * exp(- exar * (1.0 - z/h)))
 
             !------------------------------------------------------------------------------!
             !    Find the aerodynamic conductances for heat and water at the leaf boundary !
@@ -698,7 +699,7 @@ module canopy_struct_dynamics
             k = ceiling(z/dz)
 
             !----- Calculate the wind speed at height z. ----------------------------------!
-            cpatch%veg_wind(ico) = max(ustmin, uh*exp(-eta * (1. - zeta(k)/zeta(zcan))))
+            cpatch%veg_wind(ico) = max(ugbmin, uh*exp(-eta * (1. - zeta(k)/zeta(zcan))))
 
             !------------------------------------------------------------------------------!
             !    Find the aerodynamic conductances for heat and water at the leaf boundary !
@@ -795,6 +796,7 @@ module canopy_struct_dynamics
                                 , leaf_width           ! ! intent(in)
       use canopy_air_coms, only : icanturb             & ! intent(in), can. turb. scheme
                                 , ustmin8              & ! intent(in)
+                                , ugbmin8              & ! intent(in)
                                 , ubmin8               & ! intent(in)
                                 , exar8                & ! intent(in)
                                 , vh2dh8               & ! intent(in)
@@ -1001,7 +1003,7 @@ module canopy_struct_dynamics
                case (-2)
                   initp%veg_wind(ico) = uh
                case (-1)
-                  initp%veg_wind(ico) = max(ustmin8,uh * exp ( - 5.d-1 * laicum))
+                  initp%veg_wind(ico) = max(ugbmin8,uh * exp ( - 5.d-1 * laicum))
                end select
 
 
@@ -1115,7 +1117,7 @@ module canopy_struct_dynamics
             z = 5.d-1 * (hite8 + dble(h2trunkh(cpatch%hite(ico))))
 
             !----- Calculate the wind speed at height z. ----------------------------------!
-            initp%veg_wind(ico) = max(ustmin8,uh * exp(-exar8 * (1.d0 - z/h)))
+            initp%veg_wind(ico) = max(ugbmin8,uh * exp(-exar8 * (1.d0 - z/h)))
 
             !------------------------------------------------------------------------------!
             !    Find the aerodynamic conductances for heat and water at the leaf boundary !
@@ -1217,7 +1219,7 @@ module canopy_struct_dynamics
             z = hite8 * (1.d0-5.d-1*dble(crown_depth_fraction(ipft)))
 
             !----- Calculate the wind speed at height z. ----------------------------------!
-            initp%veg_wind(ico) = max(ustmin8,uh * exp(-exar8 * (1.d0 - z/h)))
+            initp%veg_wind(ico) = max(ugbmin8,uh * exp(-exar8 * (1.d0 - z/h)))
 
             !------------------------------------------------------------------------------!
             !    Find the aerodynamic conductances for heat and water at the leaf boundary !
@@ -1395,7 +1397,7 @@ module canopy_struct_dynamics
             k = ceiling(z/dz8)
 
             !----- Calculate the wind speed at height z. ----------------------------------!
-            initp%veg_wind(ico) = max(ustmin8                                              &
+            initp%veg_wind(ico) = max(ugbmin8                                              &
                                      ,uh * exp(-eta * (1.d0 - zeta(k)/zeta(zcan) )))
 
             !------------------------------------------------------------------------------!
@@ -1900,7 +1902,7 @@ module canopy_struct_dynamics
                                 , csm      & ! intent(in)
                                 , csh      & ! intent(in)
                                 , dl79     & ! intent(in)
-                                , ustmin   & ! intent(in)
+                                , ugbmin   & ! intent(in)
                                 , psim     ! ! function
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
@@ -1983,8 +1985,8 @@ module canopy_struct_dynamics
 
 
 
-      !----- Impose the minimum wind to be more than 0.1 m/s. -----------------------------!
-      reduced_wind = max(reduced_wind, ustmin)
+      !----- Impose the minimum wind to be more than the minimum. -------------------------!
+      reduced_wind = max(reduced_wind, ugbmin)
       !------------------------------------------------------------------------------------!
 
 
@@ -2010,7 +2012,7 @@ module canopy_struct_dynamics
                                 , csm8      & ! intent(in)
                                 , csh8      & ! intent(in)
                                 , dl798     & ! intent(in)
-                                , ustmin8   & ! intent(in)
+                                , ugbmin8   & ! intent(in)
                                 , psim8     ! ! function
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
@@ -2095,7 +2097,7 @@ module canopy_struct_dynamics
 
 
       !----- Impose the minimum wind to be more than 0.1 m/s. -----------------------------!
-      reduced_wind8 = max(reduced_wind8,ustmin8)
+      reduced_wind8 = max(reduced_wind8,ugbmin8)
       !------------------------------------------------------------------------------------!
 
       return
