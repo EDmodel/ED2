@@ -2007,6 +2007,10 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
    real(kind=8)                        :: veg_qdew_tot
    real(kind=8)                        :: veg_boil_tot
    real(kind=8)                        :: veg_qboil_tot
+   real(kind=8)                        :: old_veg_energy
+   real(kind=8)                        :: old_veg_water
+   real(kind=8)                        :: old_veg_temp
+   real(kind=8)                        :: old_veg_fliq
    real(kind=8)                        :: hdidi
    !---------------------------------------------------------------------------------------!
 
@@ -2059,6 +2063,10 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
             !---------------------- -------------------------------------------------------!
             call qwtk8(initp%veg_energy(ico),initp%veg_water(ico),initp%hcapveg(ico)       &
                       ,initp%veg_temp(ico),initp%veg_fliq(ico))
+            old_veg_energy = initp%veg_energy(ico)
+            old_veg_water  = initp%veg_water (ico)
+            old_veg_temp   = initp%veg_temp  (ico)
+            old_veg_fliq   = initp%veg_fliq  (ico)
             !------------------------------------------------------------------------------!
 
             if (initp%veg_temp(ico)  < rk4min_veg_temp .or.                                &
@@ -2072,10 +2080,10 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
                !    Too much water over these leaves, we shall shed the excess to the      !
                ! ground.                                                                   !
                !---------------------------------------------------------------------------!
-               veg_wshed  = (initp%veg_water(ico) - max_leaf_water)
+               veg_wshed  = initp%veg_water(ico) - max_leaf_water
                veg_qwshed = veg_wshed                                                      &
                           * ( initp%veg_fliq(ico) * cliq8                                  &
-                            * (initp%veg_temp(ico)-tsupercool8)  &
+                            * (initp%veg_temp(ico)-tsupercool8)                            &
                             + (1.d0-initp%veg_fliq(ico)) * cice8 * initp%veg_temp(ico))
                veg_dwshed = veg_wshed                                                      &
                           * ( initp%veg_fliq(ico) * wdnsi8                                 &
@@ -2094,8 +2102,7 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
                if (print_detailed) then
                   initp%cfx_qwshed(ico) = initp%cfx_qwshed(ico) + veg_qwshed * hdidi
                end if
-
-
+ 
 
             elseif (initp%veg_water(ico) < min_leaf_water) then
                !---------------------------------------------------------------------------!
@@ -2125,7 +2132,7 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
                   initp%cfx_qwflxvc(ico) = initp%cfx_qwflxvc(ico)                          &
                                          + (veg_qboil - veg_qdew) * hdidi
                end if
-            end if
+           end if
          end if
       end if
    end do cohortloop

@@ -375,7 +375,8 @@ subroutine init_can_rad_params()
                                     , leaf_trans_nir              & ! intent(out)
                                     , blfac_min                   & ! intent(out)
                                     , rshort_twilight_min         & ! intent(out)
-                                    , cosz_min                    ! ! intent(out)
+                                    , cosz_min                    & ! intent(out)
+                                    , cosz_min8                   ! ! intent(out)
    use ed_max_dims              , only : n_pft                    ! ! intent(out)
    use pft_coms              , only : phenology                   ! ! intent(out)
 
@@ -440,7 +441,8 @@ subroutine init_can_rad_params()
    ! day time hours only.                                                                  !
    !---------------------------------------------------------------------------------------!
    rshort_twilight_min = 0.5
-   cosz_min            = 0.0009
+   cosz_min            = 0.03
+   cosz_min8           = dble(cosz_min)
    !---------------------------------------------------------------------------------------!
 
    return
@@ -800,13 +802,14 @@ subroutine init_pft_photo_params()
                              , photosyn_pathway     & ! intent(out)
                              , water_conductance    ! ! intent(out)
    use consts_coms    , only : t00                  & ! intent(in)
+                             , twothirds            & ! intent(in)
                              , umol_2_mol           & ! intent(in)
                              , yr_sec               ! ! intent(in)
    implicit none
 
    !----- Local variables. ----------------------------------------------------------------!
-   logical, parameter  :: vm0_16    = .false.
-   logical, parameter  :: stsl_3ted = .false.
+   logical, parameter  :: vm0_16    = .true.
+   logical, parameter  :: stsl_3ted = .true.
    logical, parameter  :: lwidth_10 = .false.
    !---------------------------------------------------------------------------------------!
 
@@ -850,21 +853,21 @@ subroutine init_pft_photo_params()
 
    !------ Vm0 is the maximum photosynthesis capacity in µmol/m2/s. -----------------------!
    if (vm0_16) then
-      Vm0(1)                    = 20.0
-      Vm0(2)                    = 30.0
-      Vm0(3)                    = 20.0
-      Vm0(4)                    = 10.0
-      Vm0(5)                    = 29.3
-      Vm0(6)                    = 25.0
-      Vm0(7)                    = 25.0
-      Vm0(8)                    = 10.0
-      Vm0(9)                    = 29.2
-      Vm0(10)                   = 25.0
-      Vm0(11)                   = 10.0
-      Vm0(12:13)                = 29.3
-      Vm0(14:15)                = 20.0
-      Vm0(16)                   = 35.0
-      Vm0(17)                   = 25.0
+      Vm0(1)                    = 40.00
+      Vm0(2)                    = 60.00
+      Vm0(3)                    = 40.00
+      Vm0(4)                    = 20.00
+      Vm0(5)                    = 58.56
+      Vm0(6)                    = 36.32
+      Vm0(7)                    = 36.32
+      Vm0(8)                    = 14.53
+      Vm0(9)                    = 65.24
+      Vm0(10)                   = 55.86
+      Vm0(11)                   = 22.34
+      Vm0(12:13)                = 58.56
+      Vm0(14:15)                = 40.00
+      Vm0(16)                   = 70.00
+      Vm0(17)                   = 50.00
    else
       Vm0(1)                    = 12.5
       Vm0(2)                    = 18.8
@@ -885,23 +888,23 @@ subroutine init_pft_photo_params()
 
    !----- Define the stomatal slope (aka the M factor). -----------------------------------!
    if (stsl_3ted) then
-      stomatal_slope(1)         =  4.0
+      stomatal_slope(1)         = 12.0
       stomatal_slope(2)         = 24.0
       stomatal_slope(3)         = 24.0
       stomatal_slope(4)         = 24.0
       stomatal_slope(5)         = 24.0
-      stomatal_slope(6)         = 15.4
-      stomatal_slope(7)         = 15.4
-      stomatal_slope(8)         = 15.4
+      stomatal_slope(6)         = 19.2
+      stomatal_slope(7)         = 19.2
+      stomatal_slope(8)         = 19.2
       stomatal_slope(9)         = 19.2
       stomatal_slope(10)        = 19.2
       stomatal_slope(11)        = 19.2
-      stomatal_slope(12)        = 24.0
-      stomatal_slope(13)        = 24.0
-      stomatal_slope(14)        =  4.0
-      stomatal_slope(15)        =  4.0
-      stomatal_slope(15)        = 24.0
-      stomatal_slope(15)        = 15.4
+      stomatal_slope(12)        = 19.2
+      stomatal_slope(13)        = 19.2
+      stomatal_slope(14)        = 12.0
+      stomatal_slope(15)        = 12.0
+      stomatal_slope(16)        = 24.0
+      stomatal_slope(17)        = 19.2
    else
       stomatal_slope(1)         =  4.0
       stomatal_slope(2)         =  8.0
@@ -919,7 +922,7 @@ subroutine init_pft_photo_params()
       stomatal_slope(14)        = 10.0
       stomatal_slope(15)        = 10.0
       stomatal_slope(16)        =  8.0
-      stomatal_slope(17)        =  6.3949
+      stomatal_slope(17)        =  6.4
    end if
 
    cuticular_cond(1)         = 10000.0    ! 10000.0
@@ -938,7 +941,7 @@ subroutine init_pft_photo_params()
    cuticular_cond(14)        = 10000.0    ! 10000.0
    cuticular_cond(15)        = 10000.0    ! 10000.0
    cuticular_cond(16)        = 10000.0
-   cuticular_cond(17)        = 1000.0 
+   cuticular_cond(17)        = 2000.0 
 
    quantum_efficiency(1)     = 0.06
    quantum_efficiency(2)     = 0.08
@@ -962,7 +965,7 @@ subroutine init_pft_photo_params()
    !     The KW parameter. Medvigy et al. (2009) and Moorcroft et al. (2001) give the      !
    ! number in m²/yr/kg_C_root.  Here we must define it in m²/s/kg_C_root.                 !
    !---------------------------------------------------------------------------------------!
-   water_conductance(1:17) = 150. / yr_sec
+   water_conductance(1:17) = 450. / yr_sec
    !---------------------------------------------------------------------------------------!
 
 
@@ -981,7 +984,7 @@ subroutine init_pft_photo_params()
       leaf_width(5:11)  = 0.05
       leaf_width(12:13) = 0.05
       leaf_width(14:15) = 0.05
-      leaf_width(16:17) = 0.03
+      leaf_width(16:17) = 0.05
    else
       !----- Standard ED-2.1 values. ------------------------------------------------------!
       leaf_width(1)     = 0.20
@@ -990,7 +993,7 @@ subroutine init_pft_photo_params()
       leaf_width(12:13) = 0.05
       leaf_width(14:15) = 0.20
       leaf_width(16)    = 0.20
-      leaf_width(17)    = 0.03
+      leaf_width(17)    = 0.05
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -1118,19 +1121,19 @@ subroutine init_pft_resp_params()
    dark_respiration_factor(2)     = 0.02
    dark_respiration_factor(3)     = 0.02
    dark_respiration_factor(4)     = 0.02
-   dark_respiration_factor(5)     = 0.04
+   dark_respiration_factor(5)     = 0.02
    dark_respiration_factor(6)     = 0.02
    dark_respiration_factor(7)     = 0.02
    dark_respiration_factor(8)     = 0.02
    dark_respiration_factor(9)     = 0.02
    dark_respiration_factor(10)    = 0.02
    dark_respiration_factor(11)    = 0.02
-   dark_respiration_factor(12)    = 0.04
-   dark_respiration_factor(13)    = 0.04
+   dark_respiration_factor(12)    = 0.02
+   dark_respiration_factor(13)    = 0.02
    dark_respiration_factor(14)    = 0.04
    dark_respiration_factor(15)    = 0.04
-   dark_respiration_factor(16)    = 0.04
-   dark_respiration_factor(17)    = 0.02
+   dark_respiration_factor(16)    = 0.02
+   dark_respiration_factor(17)    = 0.03
 
    storage_turnover_rate(1)       = 0.0
    storage_turnover_rate(2)       = 0.0
@@ -2786,8 +2789,8 @@ subroutine init_rk4_params()
    !---------------------------------------------------------------------------------------!
    !     Variables used to keep track on the error.                                        !
    !---------------------------------------------------------------------------------------!
-   record_err     = .false.                  ! Compute and keep track of the errors.
-   print_detailed = .false.                  ! Print detailed information about the thermo-
+   record_err     = .true.                   ! Compute and keep track of the errors.
+   print_detailed = .false.                   ! Print detailed information about the thermo-
                                              !    dynamic state.  This will create one file
                                              !    for each patch, so it is not recommended 
                                              !    for simulations that span over one month.

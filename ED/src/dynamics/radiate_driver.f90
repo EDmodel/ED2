@@ -12,7 +12,8 @@ subroutine radiate_driver(cgrid)
                                     , sitetype              & ! structure
                                     , patchtype             ! ! structure
    use canopy_radiation_coms , only : visible_fraction_dir  & ! intent(in)
-                                    , visible_fraction_dif  ! ! intent(in)
+                                    , visible_fraction_dif  & ! intent(in)
+                                    , cosz_min              ! ! intent(in)
    use consts_coms           , only : pio180                ! ! intent(in)
    implicit none
    !----- Argument. -----------------------------------------------------------------------!
@@ -145,6 +146,7 @@ subroutine sfcrad_ed(cosz, cosaoi, csite, maxcohort, rshort_tot,rshort_diffuse)
                                    , patchtype            ! ! structure
    use canopy_radiation_coms, only : crown_mod            & ! intent(in)
                                    , rshort_twilight_min  & ! intent(in)
+                                   , cosz_min             & ! intent(in)
                                    , visible_fraction_dir & ! intent(in)
                                    , visible_fraction_dif ! ! intent(in)
    use grid_coms            , only : nzg                  & ! intent(in)

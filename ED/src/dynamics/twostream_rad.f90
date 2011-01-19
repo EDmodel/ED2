@@ -20,7 +20,8 @@ subroutine sw_twostream_clump(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area       
                                    , leaf_scatter_nir        & ! intent(in)
                                    , leaf_scatter_vis        & ! intent(in)
                                    , visible_fraction_dir    & ! intent(in)
-                                   , visible_fraction_dif    ! ! intent(in)
+                                   , visible_fraction_dif    & ! intent(in)
+                                   , cosz_min8               ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    integer, dimension(ncoh)     , intent(in)    :: pft
@@ -74,8 +75,8 @@ subroutine sw_twostream_clump(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area       
    
    !----- Convert input variable to double precision. -------------------------------------!
    alb    = dble(salb)
-   cosz   = max(3.d-2,dble(scosz))
-   cosaoi = max(3.d-2,dble(scosaoi))
+   cosz   = max(cosz_min8,dble(scosz))
+   cosaoi = max(cosz_min8,dble(scosaoi))
 
    !----- Calculate factors common for NIR, PAR. ------------------------------------------!
    ncoh2      = 2*ncoh
