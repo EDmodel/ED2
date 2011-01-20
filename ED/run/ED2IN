@@ -392,6 +392,10 @@
                               !  2 -- the cold-deciduous and new drought-deciduous;
                               !  3 -- the cold-deciduous, new drought-deciduous 
                               !       and light phenology (not fully tested);
+
+   !----- Radiation intercept and slope, for the light phenology case. --------------------!
+   NL%RADINT          = -11.3868 ! Intercept
+   NL%RADSLP          = 0.0824   ! Slope
   
    NL%REPRO_SCHEME    = 1     ! This specifies the reproduction scheme:
                               !  0 -- reproduction off (useful for short runs)
@@ -420,6 +424,15 @@
                               !      FSW = 1/ (1 + D/S)
                               ! 2 -- Alternative method:
                               !      FSW = ½ - ½ * tanh[2*(D/S - 2)]
+
+   !---------------------------------------------------------------------------------------!
+   !    These are factors that multiply some of the ED-2.1 default parameters.  Setting    !
+   ! them to 1.0 will make them the default.  These are applied for all PFTs.              !
+   !---------------------------------------------------------------------------------------!
+   NL%VMFACT          = myvmfact  ! Factor for changing Vm0 from the default
+   NL%MFACT           = mymfact   ! Factor for changing stomatal slope (M)
+   NL%KFACT           = mykfact   ! Factor for changing the water conductance (Kw)
+   NL%GAMFACT         = mygamfact ! Factor for changing the dark respiration factor (gamma)
 
    NL%N_PLANT_LIM     = 0     ! Determines whether plant photosynthesis can be 
                               ! limited by nitrogen
@@ -464,10 +477,12 @@
                               !     instability.  This method will not work 
                               !     when zref<h
 
-   NL%I_BLYR_CONDCT   = 2     ! Methods to estimate the leaf boundary layer conductance:
+   NL%I_BLYR_CONDCT   = 0     ! Methods to estimate the leaf boundary layer conductance:
                               ! -1. Original ED-2.0 method.  The Nusselt number for forced 
                               !     convection is estimated using the average winds.  A
-                              !     minimum conductance of 1/(25 * patch LAI) is imposed.
+                              !     minimum conductance of 1/(25 * patch LAI) and a minimum
+                              !     patch-level heat capacity of 
+                              !     3000 * (height of the tallest cohort) are imposed
                               !  0. The Nusselt number for forced convection is estimated
                               !     using the average winds, with no corrections
                               !  1. The actual Nusselt number for forced convection is 

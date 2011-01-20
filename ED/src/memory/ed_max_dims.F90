@@ -82,7 +82,7 @@ module ed_max_dims
    integer, parameter :: ed_maxatm = 625
 
    !----- Maximum file name length. -------------------------------------------------------!
-   integer, parameter :: str_len=256
+   integer, parameter :: str_len=300
    
    !----- Maximum variables string length. ------------------------------------------------!
    integer, parameter :: str_len_short=32

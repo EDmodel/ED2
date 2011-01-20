@@ -589,15 +589,16 @@ subroutine update_rad_avg(cgrid)
 
    tfact = radfrq/tendays_sec
 
+
+         
    polyloop: do ipy = 1,cgrid%npolygons
       cpoly => cgrid%polygon(ipy)
-
       siteloop: do isi = 1,cpoly%nsites
          cpoly%rad_avg(isi) = cpoly%rad_avg(isi) * (1.0 - tfact)                           &
                             + cpoly%met(isi)%rshort * tfact
       end do siteloop
    end do polyloop
-   
+
    return
 end subroutine update_rad_avg
 !==========================================================================================!

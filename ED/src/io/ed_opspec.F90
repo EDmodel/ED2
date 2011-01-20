@@ -976,12 +976,18 @@ subroutine ed_opspec_misc
    use grid_coms             , only : ngrids                       ! ! intent(in)
    use physiology_coms       , only : istoma_scheme                & ! intent(in)
                                     , h2o_plant_lim                & ! intent(in)
-                                    , n_plant_lim                  ! ! intent(in)
+                                    , n_plant_lim                  & ! intent(in)
+                                    , vmfact                       & ! intent(in)
+                                    , mfact                        & ! intent(in)
+                                    , kfact                        & ! intent(in)
+                                    , gamfact                      ! ! intent(in)
    use decomp_coms           , only : n_decomp_lim                 ! ! intent(in)
    use disturb_coms          , only : include_fire                 & ! intent(in)
                                     , ianth_disturb                & ! intent(in)
                                     , treefall_disturbance_rate    ! ! intent(in)
-   use phenology_coms        , only : iphen_scheme                 ! ! intent(in)
+   use phenology_coms        , only : iphen_scheme                 & ! intent(in)
+                                    , radint                       & ! intent(in)
+                                    , radslp                       ! ! intent(in)
    use pft_coms              , only : include_these_pft            & ! intent(in)
                                     , pft_1st_check                & ! intent(in)
                                     , agri_stock                   & ! intent(in)
@@ -1265,6 +1271,21 @@ end do
       ifaterr = ifaterr +1
    end if
 
+   if (radint < -100.0 .or. radint > 100.0) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid RADINT, it must be between -100 and 100. Yours is set to'    &
+                    ,radint,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+ 
+    if (radslp < 0.0 .or. radslp > 1.0) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid RADSLP, it must be between 0 and 1. Yours is set to'    &
+                    ,radslp,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if  
    if (h2o_plant_lim < 0 .or. h2o_plant_lim > 2) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
                     'Invalid H2O_PLANT_LIM, it must be between 0 and 2. Yours is set to'   &
@@ -1273,6 +1294,38 @@ end do
       ifaterr = ifaterr +1
    end if
 
+   if (vmfact < 0. .or. vmfact > 100.) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid VMFACT, it must be between 0 and 100. Yours is set to'        &
+                    ,vmfact,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+   
+  if (kfact < 0. .or. kfact > 100.) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid KFACT, it must be between 0 and 100. Yours is set to'         &
+                    ,kfact,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+   
+   if (mfact < 0. .or. mfact > 100.) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid MFACT, it must be between 0 and 100. Yours is set to'         &
+                    ,mfact,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+   
+   if (gamfact < 0. .or. gamfact > 100.) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid GAMFACT, it must be between 0 and 100. Yours is set to'       &
+                    ,gamfact,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+   
    if (n_plant_lim < 0 .or. n_plant_lim > 1) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
                     'Invalid N_PLANT_LIM, it must be between 0 and 1. Yours is set to'     &

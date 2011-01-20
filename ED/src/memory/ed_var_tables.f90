@@ -57,7 +57,7 @@
 !                                                                                          !
 !------------------------------------------------------------------------------------------!
 module ed_var_tables
-  
+   use ed_max_dims, only : str_len
    !---------------------------------------------------------------------------------------!
    !    Define data type for main variable table                                           !
    !---------------------------------------------------------------------------------------!
@@ -86,7 +86,7 @@ module ed_var_tables
    type var_table_vector
       real   , pointer            :: var_rp
       integer, pointer            :: var_ip
-      character (len=256),pointer :: var_cp
+      character (len=str_len),pointer :: var_cp
       real(kind=8),pointer        :: var_dp
       integer                     :: globid
       integer                     :: varlen
@@ -554,10 +554,10 @@ module ed_var_tables
        max_ptrs,  &    ! The maximum possible number of pointers
        ! necessary for this variable
        tabstr)        ! The string describing the variables usage
-    
+    use ed_max_dims, only : str_len
     implicit none
     
-    character (len=256),target :: var
+    character (len=str_len),target :: var
     
     integer :: init
     integer :: var_len,var_len_global,max_ptrs,glob_id,iptr,igr

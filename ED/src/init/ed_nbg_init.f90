@@ -34,10 +34,10 @@ subroutine near_bare_ground_init(cgrid)
          csite%area               (1) = 1.0
          csite%fast_soil_C        (1) = 0.2
          csite%slow_soil_C        (1) = 0.01
-         csite%structural_soil_C  (1) = 10.0
-         csite%structural_soil_L  (1) = csite%structural_soil_C (1)
-         csite%mineralized_soil_N (1) = 1.0
-         csite%fast_soil_N        (1) = 1.0
+         csite%structural_soil_C  (1) = 0.0 ! 10.0
+         csite%structural_soil_L  (1) = 0.0 ! csite%structural_soil_C (1)
+         csite%mineralized_soil_N (1) = 0.0 ! 1.0
+         csite%fast_soil_N        (1) = 0.0 ! 1.0
          csite%sum_dgd            (1) = 0.0
          csite%sum_chd            (1) = 0.0
          csite%plantation         (1) = 0

@@ -136,6 +136,10 @@ module ename_coms
       integer                                           :: lapse_scheme
       integer                                           :: crown_mod
       integer                                           :: h2o_plant_lim
+      real                                              :: vmfact
+      real                                              :: mfact
+      real                                              :: kfact
+      real                                              :: gamfact
       integer                                           :: n_plant_lim
       integer                                           :: n_decomp_lim
       integer                                           :: decomp_scheme
@@ -171,6 +175,8 @@ module ename_coms
       integer                                           :: iphenysf
       integer                                           :: iphenyf1
       integer                                           :: iphenyff
+      real                                              :: radint
+      real                                              :: radslp
 
       !------ XML, phenology, and prescribed event files. ---------------------------------!
       character(len=str_len)                            :: iedcnfgf
@@ -326,6 +332,10 @@ module ename_coms
       enl%lapse_scheme              = undef_integer
       enl%crown_mod                 = undef_integer
       enl%h2o_plant_lim             = undef_integer
+      enl%vmfact                    = undef_real
+      enl%mfact                     = undef_real
+      enl%kfact                     = undef_real
+      enl%gamfact                   = undef_real
       enl%n_plant_lim               = undef_integer
       enl%n_decomp_lim              = undef_integer
       enl%decomp_scheme             = undef_integer
@@ -360,6 +370,8 @@ module ename_coms
       enl%iphenysf                  = undef_integer
       enl%iphenyf1                  = undef_integer
       enl%iphenyff                  = undef_integer
+      enl%radint                    = undef_real
+      enl%radslp                    = undef_real
 
       enl%iedcnfgf                  = undef_path
       enl%phenpath                  = undef_path

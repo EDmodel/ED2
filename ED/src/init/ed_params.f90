@@ -805,11 +805,11 @@ subroutine init_pft_photo_params()
                              , twothirds            & ! intent(in)
                              , umol_2_mol           & ! intent(in)
                              , yr_sec               ! ! intent(in)
+   use physiology_coms , only: vmfact               & ! intent(in)
+                             , mfact                & ! intent(in)
+                             , kfact                ! ! intent(in)
    implicit none
-
    !----- Local variables. ----------------------------------------------------------------!
-   logical, parameter  :: vm0_16    = .true.
-   logical, parameter  :: stsl_3ted = .true.
    logical, parameter  :: lwidth_10 = .false.
    !---------------------------------------------------------------------------------------!
 
@@ -852,79 +852,41 @@ subroutine init_pft_photo_params()
    Vm_high_temp(17)          =  45.0      ! C3
 
    !------ Vm0 is the maximum photosynthesis capacity in µmol/m2/s. -----------------------!
-   if (vm0_16) then
-      Vm0(1)                    = 40.00
-      Vm0(2)                    = 60.00
-      Vm0(3)                    = 40.00
-      Vm0(4)                    = 20.00
-      Vm0(5)                    = 58.56
-      Vm0(6)                    = 36.32
-      Vm0(7)                    = 36.32
-      Vm0(8)                    = 14.53
-      Vm0(9)                    = 65.24
-      Vm0(10)                   = 55.86
-      Vm0(11)                   = 22.34
-      Vm0(12:13)                = 58.56
-      Vm0(14:15)                = 40.00
-      Vm0(16)                   = 70.00
-      Vm0(17)                   = 50.00
-   else
-      Vm0(1)                    = 12.5
-      Vm0(2)                    = 18.8
-      Vm0(3)                    = 12.5
-      Vm0(4)                    = 6.25
-      Vm0(5)                    = 18.3
-      Vm0(6)                    = 15.625 * 0.7264
-      Vm0(7)                    = 15.625 * 0.7264
-      Vm0(8)                    = 6.25   * 0.7264
-      Vm0(9)                    = 18.25  * 1.1171
-      Vm0(10)                   = 15.625 * 1.1171
-      Vm0(11)                   = 6.25   * 1.1171
-      Vm0(12:13)                = 18.3
-      Vm0(14:15)                = 12.5
-      Vm0(16)                   = 21.875
-      Vm0(17)                   = 15.625
-   end if
+   Vm0(1)                    = 12.5            * vmfact
+   Vm0(2)                    = 18.8            * vmfact
+   Vm0(3)                    = 12.5            * vmfact
+   Vm0(4)                    = 6.25            * vmfact
+   Vm0(5)                    = 18.3            * vmfact
+   Vm0(6)                    = 15.625 * 0.7264 * vmfact
+   Vm0(7)                    = 15.625 * 0.7264 * vmfact
+   Vm0(8)                    = 6.25   * 0.7264 * vmfact
+   Vm0(9)                    = 18.25  * 1.1171 * vmfact
+   Vm0(10)                   = 15.625 * 1.1171 * vmfact
+   Vm0(11)                   = 6.25   * 1.1171 * vmfact
+   Vm0(12:13)                = 18.3            * vmfact
+   Vm0(14:15)                = 12.5            * vmfact
+   Vm0(16)                   = 21.875          * vmfact
+   Vm0(17)                   = 15.625          * vmfact
 
    !----- Define the stomatal slope (aka the M factor). -----------------------------------!
-   if (stsl_3ted) then
-      stomatal_slope(1)         = 12.0
-      stomatal_slope(2)         = 24.0
-      stomatal_slope(3)         = 24.0
-      stomatal_slope(4)         = 24.0
-      stomatal_slope(5)         = 24.0
-      stomatal_slope(6)         = 19.2
-      stomatal_slope(7)         = 19.2
-      stomatal_slope(8)         = 19.2
-      stomatal_slope(9)         = 19.2
-      stomatal_slope(10)        = 19.2
-      stomatal_slope(11)        = 19.2
-      stomatal_slope(12)        = 19.2
-      stomatal_slope(13)        = 19.2
-      stomatal_slope(14)        = 12.0
-      stomatal_slope(15)        = 12.0
-      stomatal_slope(16)        = 24.0
-      stomatal_slope(17)        = 19.2
-   else
-      stomatal_slope(1)         =  4.0
-      stomatal_slope(2)         =  8.0
-      stomatal_slope(3)         =  8.0
-      stomatal_slope(4)         =  8.0
-      stomatal_slope(5)         =  8.0
-      stomatal_slope(6)         =  6.3949
-      stomatal_slope(7)         =  6.3949
-      stomatal_slope(8)         =  6.3949
-      stomatal_slope(9)         =  6.3949
-      stomatal_slope(10)        =  6.3949
-      stomatal_slope(11)        =  6.3949
-      stomatal_slope(12)        =  8.0
-      stomatal_slope(13)        =  8.0
-      stomatal_slope(14)        = 10.0
-      stomatal_slope(15)        = 10.0
-      stomatal_slope(16)        =  8.0
-      stomatal_slope(17)        =  6.4
-   end if
-
+   stomatal_slope(1)         = 10.0    * mfact
+   stomatal_slope(2)         =  8.0    * mfact
+   stomatal_slope(3)         =  8.0    * mfact
+   stomatal_slope(4)         =  8.0    * mfact
+   stomatal_slope(5)         =  8.0    * mfact
+   stomatal_slope(6)         =  6.3949 * mfact
+   stomatal_slope(7)         =  6.3949 * mfact
+   stomatal_slope(8)         =  6.3949 * mfact
+   stomatal_slope(9)         =  6.3949 * mfact
+   stomatal_slope(10)        =  6.3949 * mfact
+   stomatal_slope(11)        =  6.3949 * mfact
+   stomatal_slope(12)        =  8.0    * mfact
+   stomatal_slope(13)        =  8.0    * mfact
+   stomatal_slope(14)        = 10.0    * mfact
+   stomatal_slope(15)        = 10.0    * mfact
+   stomatal_slope(16)        =  8.0    * mfact
+   stomatal_slope(17)        =  6.4    * mfact
+ 
    cuticular_cond(1)         = 10000.0    ! 10000.0
    cuticular_cond(2)         = 10000.0    ! 10000.0
    cuticular_cond(3)         = 10000.0    ! 10000.0
@@ -965,7 +927,7 @@ subroutine init_pft_photo_params()
    !     The KW parameter. Medvigy et al. (2009) and Moorcroft et al. (2001) give the      !
    ! number in m²/yr/kg_C_root.  Here we must define it in m²/s/kg_C_root.                 !
    !---------------------------------------------------------------------------------------!
-   water_conductance(1:17) = 450. / yr_sec
+   water_conductance(1:17) = 150. / yr_sec * kfact
    !---------------------------------------------------------------------------------------!
 
 
@@ -996,7 +958,6 @@ subroutine init_pft_photo_params()
       leaf_width(17)    = 0.05
    end if
    !---------------------------------------------------------------------------------------!
-
    return
 end subroutine init_pft_photo_params
 !==========================================================================================!
@@ -1052,13 +1013,14 @@ end subroutine init_decomp_params
 !==========================================================================================!
 subroutine init_pft_resp_params()
 
-   use pft_coms   , only : growth_resp_factor        & ! intent(out)
-                         , leaf_turnover_rate        & ! intent(out)
-                         , root_turnover_rate        & ! intent(out)
-                         , dark_respiration_factor   & ! intent(out)
-                         , storage_turnover_rate     & ! intent(out)
-                         , root_respiration_factor   ! ! intent(out)
-   use decomp_coms, only : f_labile                  ! ! intent(out)
+   use physiology_coms, only : gamfact                   ! ! intent(in)
+   use pft_coms       , only : growth_resp_factor        & ! intent(out)
+                             , leaf_turnover_rate        & ! intent(out)
+                             , root_turnover_rate        & ! intent(out)
+                             , dark_respiration_factor   & ! intent(out)
+                             , storage_turnover_rate     & ! intent(out)
+                             , root_respiration_factor   ! ! intent(out)
+   use decomp_coms    , only : f_labile                  ! ! intent(out)
 
    implicit none
 
@@ -1117,23 +1079,23 @@ subroutine init_pft_resp_params()
    root_turnover_rate(16)         = 2.0
    root_turnover_rate(17)         = 0.333
 
-   dark_respiration_factor(1)     = 0.04
-   dark_respiration_factor(2)     = 0.02
-   dark_respiration_factor(3)     = 0.02
-   dark_respiration_factor(4)     = 0.02
-   dark_respiration_factor(5)     = 0.02
-   dark_respiration_factor(6)     = 0.02
-   dark_respiration_factor(7)     = 0.02
-   dark_respiration_factor(8)     = 0.02
-   dark_respiration_factor(9)     = 0.02
-   dark_respiration_factor(10)    = 0.02
-   dark_respiration_factor(11)    = 0.02
-   dark_respiration_factor(12)    = 0.02
-   dark_respiration_factor(13)    = 0.02
-   dark_respiration_factor(14)    = 0.04
-   dark_respiration_factor(15)    = 0.04
-   dark_respiration_factor(16)    = 0.02
-   dark_respiration_factor(17)    = 0.03
+   dark_respiration_factor(1)     = 0.04 * gamfact
+   dark_respiration_factor(2)     = 0.02 * gamfact
+   dark_respiration_factor(3)     = 0.02 * gamfact
+   dark_respiration_factor(4)     = 0.02 * gamfact
+   dark_respiration_factor(5)     = 0.02 * gamfact
+   dark_respiration_factor(6)     = 0.02 * gamfact
+   dark_respiration_factor(7)     = 0.02 * gamfact
+   dark_respiration_factor(8)     = 0.02 * gamfact
+   dark_respiration_factor(9)     = 0.02 * gamfact
+   dark_respiration_factor(10)    = 0.02 * gamfact
+   dark_respiration_factor(11)    = 0.02 * gamfact
+   dark_respiration_factor(12)    = 0.02 * gamfact
+   dark_respiration_factor(13)    = 0.02 * gamfact
+   dark_respiration_factor(14)    = 0.04 * gamfact
+   dark_respiration_factor(15)    = 0.04 * gamfact
+   dark_respiration_factor(16)    = 0.02 * gamfact
+   dark_respiration_factor(17)    = 0.03 * gamfact
 
    storage_turnover_rate(1)       = 0.0
    storage_turnover_rate(2)       = 0.0
@@ -2586,10 +2548,12 @@ subroutine init_phen_coms
                             , vm_slop                  & ! intent(out)
                             , vm_amp                   & ! intent(out)
                             , vm_min                   & ! intent(out)
-                            , max_phenology_dist       ! ! intent(out)
-
+                            , max_phenology_dist       & ! intent(out)
+                            , radint                   & ! intent(out)
+                            , radslp                   ! ! intent(out)
    implicit none
 
+ 
    retained_carbon_fraction = 0.5
    theta_crit               = 0.2
    dl_tr                    = 655.0
@@ -2600,12 +2564,12 @@ subroutine init_phen_coms
    phen_b                   = 638.0
    phen_c                   = -0.01
 
-   rad_turnover_int         = -11.3868
-   rad_turnover_slope       = 0.0824
+   rad_turnover_int         = dble(radint)  !-11.3868
+   rad_turnover_slope       = dble(radslp)  !0.0824
 
-   vm_tran                  = 9.0
-   vm_slop                  = 10.0
-   vm_amp                   = 20.0
+   vm_tran                  = 7.5
+   vm_slop                  = 7.0
+   vm_amp                   = 51.0
    vm_min                   = 15.0
 
    !---------------------------------------------------------------------------------------!
@@ -2706,6 +2670,8 @@ subroutine init_rk4_params()
                              , toocold                & ! intent(out)
                              , toohot                 & ! intent(out)
                              , lai_to_cover           & ! intent(out)
+                             , hcapveg_ref            & ! intent(out)
+                             , min_height             & ! intent(out)
                              , rk4min_veg_temp        & ! intent(out)
                              , rk4water_stab_thresh   & ! intent(out)
                              , rk4tiny_sfcw_mass      & ! intent(out)
@@ -2787,10 +2753,22 @@ subroutine init_rk4_params()
 
 
    !---------------------------------------------------------------------------------------!
+   !    These two parameter will scale the cohort heat capacity inside the RK4 integrator, !
+   ! to avoid having patches with heat capacity that is way too small to be computational- !
+   ! ly stable and solvable in a fast way.  If you don't want this and want to use the     !
+   ! nominal heat capacity, the laziest way to turn this off is by setting hcapveg_ref to  !
+   ! a small number.  Don't set it to zero, otherwise you may have FPE issues.             !
+   !---------------------------------------------------------------------------------------!
+   hcapveg_ref         = 3.0d3            ! Reference heat capacity value          [J/m³/K]
+   min_height          = 1.5d0            ! Minimum vegetation height              [     m]
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
    !     Variables used to keep track on the error.                                        !
    !---------------------------------------------------------------------------------------!
-   record_err     = .true.                   ! Compute and keep track of the errors.
-   print_detailed = .false.                   ! Print detailed information about the thermo-
+   record_err     = .false.                  ! Compute and keep track of the errors.
+   print_detailed = .false.                  ! Print detailed information about the thermo-
                                              !    dynamic state.  This will create one file
                                              !    for each patch, so it is not recommended 
                                              !    for simulations that span over one month.
@@ -2853,7 +2831,6 @@ subroutine init_rk4_params()
    rk4min_sfcw_moist =  -5.0000d-4 ! Minimum water mass allowed.
    rk4min_virt_moist =  -5.0000d-4 ! Minimum water allowed at virtual pool.
    !---------------------------------------------------------------------------------------!
-
 
 
    !---------------------------------------------------------------------------------------!

@@ -41,6 +41,8 @@ Module phenology_coms
   character(len=str_len) :: phenpath
 
   ! Light-controlled
+  real :: radint
+  real :: radslp
   real :: rad_turnover_int
   real :: rad_turnover_slope  
 

@@ -21,6 +21,8 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    use rk4_coms              , only : rk4patchtype           & ! structure
                                     , rk4site                & ! structure
                                     , rk4eps                 & ! intent(in)
+                                    , hcapveg_ref            & ! intent(in)
+                                    , min_height             & ! intent(in)
                                     , any_solvable           & ! intent(out)
                                     , zoveg                  & ! intent(out)
                                     , zveg                   & ! intent(out)
@@ -43,8 +45,9 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
                                     , dbh2ca                 ! ! function
    use soil_coms             , only : soil8                  ! ! intent(in)
    use ed_therm_lib          , only : ed_grndvap8            ! ! subroutine
-   use canopy_struct_dynamics, only : can_whcap8            & ! subroutine
-                                    , canopy_turbulence8    ! ! subroutine
+   use canopy_air_coms       , only : i_blyr_condct          ! ! intent(in)
+   use canopy_struct_dynamics, only : can_whcap8             & ! subroutine
+                                    , canopy_turbulence8     ! ! subroutine
    implicit none
 
    !----- Arguments -----------------------------------------------------------------------!
@@ -56,6 +59,8 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    real(kind=4)                       :: crown_area_tmp
    real(kind=8)                       :: rsat
    real(kind=8)                       :: sum_sfcw_mass
+   real(kind=8)                       :: hvegpat_min
+   real(kind=8)                       :: hcap_scale
    integer                            :: ico
    integer                            :: ipft
    integer                            :: k
@@ -216,6 +221,26 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
       if (targetp%solvable(ico)) any_solvable = .true.
    end do
 
+
+   !---------------------------------------------------------------------------------------!
+   !   Define the scale to increase the heat capacity.  This is done only for the old      !
+   ! ED-2.1 boundary layer conductance.                                                    !
+   !---------------------------------------------------------------------------------------!
+   select case (i_blyr_condct)
+   case (-1)
+      if (any_solvable) then
+         hvegpat_min = hcapveg_ref * max(dble(cpatch%hite(1)),min_height)
+         hcap_scale  = max(1.d0,hvegpat_min / sourcesite%hcapveg(ipa))
+      else
+         hcap_scale  = 1.d0
+      end if
+   case default
+      hcap_scale  = 1.d0
+   end select
+   !---------------------------------------------------------------------------------------!
+
+
+
    do ico = 1,cpatch%ncohorts
       ipft=cpatch%pft(ico)
 
@@ -244,9 +269,18 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
       ! be really solved.                                                                  !
       !------------------------------------------------------------------------------------!
       if (targetp%solvable(ico)) then
-         targetp%veg_energy(ico) = dble(cpatch%veg_energy(ico))
-         targetp%veg_water (ico) = dble(cpatch%veg_water (ico))
-         targetp%hcapveg   (ico) = dble(cpatch%hcapveg   (ico))
+         if (hcap_scale == 1.d0) then
+            targetp%veg_energy(ico) = dble(cpatch%veg_energy(ico))
+            targetp%veg_water (ico) = dble(cpatch%veg_water (ico))
+            targetp%hcapveg   (ico) = dble(cpatch%hcapveg   (ico))
+         else
+            targetp%hcapveg   (ico) = dble(cpatch%hcapveg(ico)) * hcap_scale
+            targetp%veg_water (ico) = dble(cpatch%veg_water(ico))
+            targetp%veg_energy(ico) = dble(cpatch%veg_energy(ico))                         &
+                                    + (targetp%hcapveg(ico)-dble(cpatch%hcapveg(ico)))     &
+                                    * dble(cpatch%veg_temp(ico))
+         end if
+
          call qwtk8(targetp%veg_energy(ico),targetp%veg_water(ico),targetp%hcapveg(ico)    &
                    ,targetp%veg_temp(ico),targetp%veg_fliq(ico))
       else

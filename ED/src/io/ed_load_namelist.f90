@@ -85,14 +85,20 @@ subroutine copy_nl(copy_type)
                                    , maxcohort                 ! ! intent(out)
    use physiology_coms      , only : istoma_scheme             & ! intent(out)
                                    , h2o_plant_lim             & ! intent(out)
-                                   , n_plant_lim               ! ! intent(out)
+                                   , n_plant_lim               & ! intent(out)
+                                   , vmfact                    & ! intent(out)
+                                   , mfact                     & ! intent(out)
+                                   , kfact                     & ! intent(out)
+                                   , gamfact                   ! ! intent(out)
    use phenology_coms       , only : iphen_scheme              & ! intent(out)
                                    , iphenys1                  & ! intent(out)
                                    , iphenysf                  & ! intent(out)
                                    , iphenyf1                  & ! intent(out)
                                    , iphenyff                  & ! intent(out)
                                    , phenpath                  & ! intent(out)
-                                   , repro_scheme              ! ! intent(out)
+                                   , repro_scheme              & ! intent(out)
+                                   , radint                    & ! intent(out)
+                                   , radslp                    ! ! intent(out)
    use decomp_coms          , only : n_decomp_lim              & ! intent(out)
                                    , LloydTaylor               ! ! intent(out)
    use disturb_coms         , only : include_fire              & ! intent(out)
@@ -275,6 +281,12 @@ subroutine copy_nl(copy_type)
       lapse_scheme              = nl%lapse_scheme
       crown_mod                 = nl%crown_mod
       h2o_plant_lim             = nl%h2o_plant_lim
+      vmfact                    = nl%vmfact
+      mfact                     = nl%mfact
+      kfact                     = nl%kfact
+      gamfact                   = nl%gamfact
+      radint                    = nl%radint
+      radslp                    = nl%radslp
       n_plant_lim               = nl%n_plant_lim
       n_decomp_lim              = nl%n_decomp_lim
       include_fire              = nl%include_fire

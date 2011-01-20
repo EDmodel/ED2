@@ -1176,6 +1176,8 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
 !   call hdf_getslab_r(cpoly%removed_biomass,'REMOVED_BIOMASS ',dsetrank,iparallel,.true.) 
 !   call hdf_getslab_r(cpoly%harvested_biomass,'HARVESTED_BIOMASS ', &
 !        dsetrank,iparallel,.true.) 
+   call hdf_getslab_r(cpoly%rad_avg,'RAD_AVG ',dsetrank,iparallel,.true.)
+   
    call hdf_getslab_i(cpoly%plantation,'PLANTATION_SI ',dsetrank,iparallel,.true.) 
    call hdf_getslab_i(cpoly%agri_stocking_pft,'AGRI_STOCKING_PFT ', &
         dsetrank,iparallel,.true.)

@@ -3,7 +3,7 @@ module ed_state_vars
   use grid_coms, only: nzg,nzs,ngrids
   use c34constants, only : stoma_data,n_stoma_atts
   use ed_max_dims, only: max_site,n_pft,n_dbh,n_age,n_mort,n_dist_types      &
-                       ,maxmach,maxgrds
+                       ,maxmach,maxgrds, str_len
   use disturb_coms, only : lutime,num_lu_trans,max_lu_years
   use met_driver_coms, only: met_driv_data,met_driv_state
   use fusion_fission_coms, only: ff_ndbh
@@ -553,7 +553,7 @@ module ed_state_vars
      integer , pointer,dimension(:) :: cohort_count
 
      ! Patch name (only used when restarting from ED1)
-     character(len=256), pointer,dimension(:) :: pname
+     character(len=str_len), pointer,dimension(:) :: pname
      
      ! Number of surface water layers
      integer,pointer,dimension(:) :: nlev_sfcwater
@@ -7685,7 +7685,7 @@ contains
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_leaf_maintenance(1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'AVG_LEAF_MAINTENANCE :11:hist:anal') 
-       call metadata_edio(nvar,igr,'Polygon Average Leaf maintenance cost','[kgC/m2/yr]','ipoly') 
+       call metadata_edio(nvar,igr,'Polygon Average Leaf maintenance cost','[kgC/m2/day]','ipoly') 
     endif
 
     if (associated(cgrid%avg_root_maintenance)) then
@@ -9413,6 +9413,13 @@ contains
        nvar=nvar+1
          call vtable_edio_r(cpoly%green_leaf_factor(1,1),nvar,igr,init,cpoly%siglob_id, &
          var_len,var_len_global,max_ptrs,'GREEN_LEAF_FACTOR :24:hist') 
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
+    
+    if (associated(cpoly%rad_avg)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpoly%rad_avg(1),nvar,igr,init,cpoly%siglob_id, &
+         var_len,var_len_global,max_ptrs,'RAD_AVG :21:hist') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
         
@@ -11402,7 +11409,14 @@ contains
          var_len,var_len_global,max_ptrs,'GBW :41:hist:anal') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
-
+    
+    if (associated(cpatch%llspan)) then
+       nvar=nvar+1
+         call vtable_edio_r(cpatch%llspan(1),nvar,igr,init,cpatch%coglob_id, &
+         var_len,var_len_global,max_ptrs,'LLSPAN :41:hist:anal') 
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
+    
     if (associated(cpatch%A_open)) then
        nvar=nvar+1
          call vtable_edio_r(cpatch%A_open(1),nvar,igr,init,cpatch%coglob_id, &
@@ -11638,13 +11652,6 @@ contains
        nvar=nvar+1
          call vtable_edio_r(cpatch%turnover_amp(1),nvar,igr,init,cpatch%coglob_id, &
          var_len,var_len_global,max_ptrs,'TURNOVER_AMP :41:hist') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-    endif
-
-    if (associated(cpatch%llspan)) then
-       nvar=nvar+1
-         call vtable_edio_r(cpatch%llspan(1),nvar,igr,init,cpatch%coglob_id, &
-         var_len,var_len_global,max_ptrs,'LLSPAN :41:hist') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 

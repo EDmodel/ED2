@@ -10,7 +10,7 @@ subroutine read_site_file(cgrid,igr)
    use ed_misc_coms, only: ied_init_mode,sfilin, vary_elev, vary_rad, vary_hyd
    use mem_polygons, only: edres
    use ed_state_vars, only: edtype,polygontype,sitetype,allocate_polygontype
-   use ed_max_dims, only: max_site,n_pft
+   use ed_max_dims, only: max_site,n_pft,str_len
 
    implicit none
    integer :: igr
@@ -18,7 +18,7 @@ subroutine read_site_file(cgrid,igr)
    logical :: no_lapse = .false.
    logical :: no_hyd   = .false.
 
-   character(len=256) :: site_name,pss_name,css_name
+   character(len=str_len) :: site_name,pss_name,css_name
   
    type(edtype) :: cgrid
    type(polygontype),pointer :: cpoly

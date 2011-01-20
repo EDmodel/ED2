@@ -446,6 +446,17 @@ module rk4_coms
 
 
    !---------------------------------------------------------------------------------------!
+   !    These two parameter will scale the cohort heat capacity inside the RK4 integrator. !
+   ! These are used only when the biophysics is set to be the same as in ED-2.1, and       !
+   ! should not be used in standard simulations.                                           !
+   !---------------------------------------------------------------------------------------!
+   real(kind=8) :: hcapveg_ref         ! Reference value                          [ J/m³/K]
+   real(kind=8) :: min_height          ! Minimum vegetation height                [      m]
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
    !    The following variables are the bounds of what we could consider barely reasonable !
    ! during the integration process. If values go beyond these limits, reject the step     !
    ! right away.  These numbers are filled in init_rk4_params (ed_params.f90).  Most of    !
