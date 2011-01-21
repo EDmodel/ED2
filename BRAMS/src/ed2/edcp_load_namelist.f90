@@ -40,14 +40,20 @@ subroutine read_ednl(iunit)
                                    , maxcohort                 ! ! intent(out)
    use physiology_coms      , only : istoma_scheme             & ! intent(out)
                                    , h2o_plant_lim             & ! intent(out)
-                                   , n_plant_lim               ! ! intent(out)
+                                   , n_plant_lim               & ! intent(out)
+                                   , vmfact                    & ! intent(out)
+                                   , mfact                     & ! intent(out)
+                                   , kfact                     & ! intent(out)
+                                   , gamfact                   ! ! intent(out)
    use phenology_coms       , only : iphen_scheme              & ! intent(out)
                                    , repro_scheme              & ! intent(out)
                                    , iphenys1                  & ! intent(out)
                                    , iphenysf                  & ! intent(out)
                                    , iphenyf1                  & ! intent(out)
                                    , iphenyff                  & ! intent(out)
-                                   , phenpath                  ! ! intent(out)
+                                   , phenpath                  & ! intent(out)
+                                   , radint                    & ! intent(out)
+                                   , radslp                    ! ! intent(out)
    use decomp_coms          , only : n_decomp_lim              & ! intent(out)
                                    , LloydTaylor               ! ! intent(out)
    use disturb_coms         , only : include_fire              & ! intent(out)
@@ -160,13 +166,13 @@ subroutine read_ednl(iunit)
                        ,plantation_file,lu_rescale_file,thsums_database,soilstate_db       &
                        ,soildepth_db,isoilstateinit,isoildepthflg,isoilbc                  &
                        ,integration_scheme,rk4_tolerance,ibranch_thermo,istoma_scheme      &
-                       ,iphen_scheme,repro_scheme,lapse_scheme,crown_mod,decomp_scheme     &
-                       ,h2o_plant_lim,n_plant_lim,n_decomp_lim,include_fire,ianth_disturb  &
-                       ,icanturb,i_blyr_condct,include_these_pft,agri_stock                &
-                       ,plantation_stock,pft_1st_check,maxpatch,maxcohort                  &
-                       ,treefall_disturbance_rate,runoff_time,iprintpolys,npvars,printvars &
-                       ,pfmtstr,ipmin,ipmax,iphenys1,iphenysf,iphenyf1,iphenyff,iedcnfgf   &
-                       ,event_file,phenpath
+                       ,iphen_scheme,radint,radslp,repro_scheme,lapse_scheme,crown_mod     &
+                       ,decomp_scheme,h2o_plant_lim,vmfact,mfact,kfact,gamfact             &
+                       ,n_plant_lim,n_decomp_lim,include_fire,ianth_disturb,icanturb       &
+                       ,i_blyr_condct,include_these_pft,agri_stock,plantation_stock        &
+                       ,pft_1st_check,maxpatch,maxcohort,treefall_disturbance_rate         &
+                       ,runoff_time,iprintpolys,npvars,printvars,pfmtstr,ipmin,ipmax       &
+                       ,iphenys1,iphenysf,iphenyf1,iphenyff,iedcnfgf,event_file,phenpath
 
    !----- Initialise some database variables with a non-sense path. -----------------------!
    soil_database   (:) = undef_path
@@ -215,11 +221,17 @@ subroutine read_ednl(iunit)
       write (unit=*,fmt=*) 'ibranch_thermo=',ibranch_thermo
       write (unit=*,fmt=*) 'istoma_scheme=',istoma_scheme
       write (unit=*,fmt=*) 'iphen_scheme=',iphen_scheme
+      write (unit=*,fmt=*) 'radint=',radint
+      write (unit=*,fmt=*) 'radslp=',radslp
       write (unit=*,fmt=*) 'repro_scheme=',repro_scheme
       write (unit=*,fmt=*) 'lapse_scheme=',lapse_scheme
       write (unit=*,fmt=*) 'crown_mod=',crown_mod
       write (unit=*,fmt=*) 'decomp_scheme=',decomp_scheme
       write (unit=*,fmt=*) 'h2o_plant_lim=',h2o_plant_lim
+      write (unit=*,fmt=*) 'vmfact=',vmfact
+      write (unit=*,fmt=*) 'mfact=',mfact
+      write (unit=*,fmt=*) 'kfact=',kfact
+      write (unit=*,fmt=*) 'gamfact=',gamfact
       write (unit=*,fmt=*) 'n_plant_lim=',n_plant_lim
       write (unit=*,fmt=*) 'n_decomp_lim=',n_decomp_lim
       write (unit=*,fmt=*) 'include_fire=',include_fire

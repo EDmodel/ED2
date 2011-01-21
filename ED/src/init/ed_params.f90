@@ -1669,6 +1669,10 @@ subroutine init_pft_leaf_params()
    implicit none
 
    select case (iphen_scheme)
+   case (-1)
+      phenology(1:8)   = 0
+      phenology(9:11)  = 2
+      phenology(12:17) = 0
    case (0,1)
       phenology(1)     = 1
       phenology(2:4)   = 1

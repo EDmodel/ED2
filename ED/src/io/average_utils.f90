@@ -991,6 +991,9 @@ subroutine integrate_ed_daily_output_flux(cgrid)
       cgrid%dmean_sensible_ac(ipy) = cgrid%dmean_sensible_ac(ipy)                          &
                                    + cgrid%avg_sensible_ac(ipy)
 
+      !------ Integrate the NEE with the conventional NEE sign (< 0 = uptake). ------------!
+      cgrid%dmean_nee     (ipy) = cgrid%dmean_nee(ipy)      - cgrid%avg_carbon_ac(ipy)
+
       cgrid%dmean_pcpg    (ipy) = cgrid%dmean_pcpg    (ipy) + cgrid%avg_pcpg    (ipy)
       cgrid%dmean_evap    (ipy) = cgrid%dmean_evap    (ipy) + cgrid%avg_evap    (ipy)
       cgrid%dmean_transp  (ipy) = cgrid%dmean_transp  (ipy) + cgrid%avg_transp  (ipy)
@@ -1349,6 +1352,8 @@ subroutine normalize_ed_daily_output_vars(cgrid)
       ! point in umol/m2/s.  We just multiply by one year in seconds and convert to kgC,   !
       ! so the units will be kgC/m2/yr.                                                    !
       !------------------------------------------------------------------------------------!
+      cgrid%dmean_nee        (ipy)  = cgrid%dmean_nee(ipy)                                 &
+                                    * umols_2_kgCyr * frqsum_o_daysec
       cgrid%dmean_plresp     (ipy)  = cgrid%dmean_plresp    (ipy)                          &
                                     * umols_2_kgCyr * frqsum_o_daysec
       cgrid%dmean_nep        (ipy)  = cgrid%dmean_nep       (ipy)                          &
@@ -1715,6 +1720,7 @@ subroutine zero_ed_daily_output_vars(cgrid)
       cgrid%dmean_sensible_gc    (ipy) = 0.
       cgrid%dmean_sensible_ac    (ipy) = 0.
  
+      cgrid%dmean_nee            (ipy) = 0.
       cgrid%dmean_plresp         (ipy) = 0.
       cgrid%dmean_rh             (ipy) = 0.
       cgrid%dmean_leaf_resp      (ipy) = 0.
@@ -1868,6 +1874,8 @@ subroutine integrate_ed_monthly_output_vars(cgrid)
                                       + cgrid%dmean_sensible_gc   (ipy)
       cgrid%mmean_sensible_vc   (ipy) = cgrid%mmean_sensible_vc   (ipy)                    &
                                       + cgrid%dmean_sensible_vc   (ipy)
+      cgrid%mmean_nee           (ipy) = cgrid%mmean_nee           (ipy)                    &
+                                      + cgrid%dmean_nee           (ipy)
       cgrid%mmean_nep           (ipy) = cgrid%mmean_nep           (ipy)                    &
                                       + cgrid%dmean_nep           (ipy)
       cgrid%mmean_plresp        (ipy) = cgrid%mmean_plresp        (ipy)                    &
@@ -2152,6 +2160,7 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
       cgrid%mmean_sensible_ac    (ipy) = cgrid%mmean_sensible_ac    (ipy) * ndaysi
       cgrid%mmean_sensible_gc    (ipy) = cgrid%mmean_sensible_gc    (ipy) * ndaysi
       cgrid%mmean_sensible_vc    (ipy) = cgrid%mmean_sensible_vc    (ipy) * ndaysi
+      cgrid%mmean_nee            (ipy) = cgrid%mmean_nee            (ipy) * ndaysi
       cgrid%mmean_nep            (ipy) = cgrid%mmean_nep            (ipy) * ndaysi
       cgrid%mmean_plresp         (ipy) = cgrid%mmean_plresp         (ipy) * ndaysi
       cgrid%mmean_rh             (ipy) = cgrid%mmean_rh             (ipy) * ndaysi
@@ -2470,6 +2479,7 @@ subroutine zero_ed_monthly_output_vars(cgrid)
       cgrid%mmean_sensible_ac        (ipy) = 0.
       cgrid%mmean_sensible_gc        (ipy) = 0.
       cgrid%mmean_sensible_vc        (ipy) = 0.
+      cgrid%mmean_nee                (ipy) = 0.
       cgrid%mmean_nep                (ipy) = 0.
       cgrid%mmean_plresp             (ipy) = 0.
       cgrid%mmean_rh                 (ipy) = 0.

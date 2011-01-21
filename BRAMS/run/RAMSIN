@@ -919,13 +919,44 @@
                               ! the full, exact calculation each time.  Set to 1 
                               ! to do the 'small perturbation' scheme.
 
-   IPHEN_SCHEME    = 2,       !This specifies the phenology scheme:
-                              !  0 -- the cold-deciuous (Botta et al.) 
-                              !       and old drought-deciduous (same with ED2.0);
-                              !  1 -- the Harvard Forest observations
-                              !  2 -- the cold-deciduous and new drought-deciduous;
-                              !  3 -- the cold-deciduous, new drought-deciduous 
-                              !       and light phenology (not fully tested);
+   !---------------------------------------------------------------------------------------!
+   !     The following variable controls the phenology scheme.  Even within each scheme,   !
+   ! the actual phenology will be different depending on the PFT.                          !
+   !                                                                                       !
+   ! -1: grasses   - evergreen;                                                            !
+   !     tropical  - evergreen;                                                            !
+   !     conifers  - evergreen;                                                            !
+   !     hardwoods - cold-deciduous (Botta et al.);                                        !
+   !                                                                                       !
+   !  0: grasses   - drought-deciduous (old scheme);                                       !
+   !     tropical  - drought-deciduous (old scheme);                                       !
+   !     conifers  - evergreen;                                                            !
+   !     hardwoods - cold-deciduous;                                                       !
+   !                                                                                       !
+   !  1: prescribed phenology                                                              !
+   !                                                                                       !
+   !  2: grasses   - drought-deciduous (new scheme);                                       !
+   !     tropical  - drought-deciduous (new scheme);                                       !
+   !     conifers  - evergreen;                                                            !
+   !     hardwoods - cold-deciduous;                                                       !
+   !                                                                                       !
+   !  3: grasses   - drought-deciduous (new scheme);                                       !
+   !     tropical  - drought-deciduous (light phenology);                                  !
+   !     conifers  - evergreen;                                                            !
+   !     hardwoods - cold-deciduous;                                                       !
+   !                                                                                       !
+   !  Old scheme: plants shed their leaves once instantaneous amount of available water    !
+   !              becomes less than a critical value.                                      !
+   !  New scheme: plants shed their leaves once a 10-day running average of available      !
+   !              water becomes less than a critical value.                                !
+   !---------------------------------------------------------------------------------------!
+   IPHEN_SCHEME    = 2,
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Radiation intercept and slope, for the light phenology case. --------------------!
+   RADINT          = -11.3868, ! Intercept
+   RADSLP          = 0.0824,   ! Slope
   
    REPRO_SCHEME    = 1,       ! This specifies the reproduction scheme:
                               !  0 -- reproduction off (useful for short runs)
@@ -956,6 +987,16 @@
                               !      FSW = 1/ (1 + D/S)
                               ! 2 -- Alternative method:
                               !      FSW = ½ - ½ * tanh[2*(D/S - 2)]
+
+   !---------------------------------------------------------------------------------------!
+   !    These are factors that multiply some of the ED-2.1 default parameters.  Setting    !
+   ! them to 1.0 will make them the default.  These are applied for all PFTs.              !
+   !---------------------------------------------------------------------------------------!
+   VMFACT          = 1.,    ! Factor for changing Vm0 from the default
+   MFACT           = 1.,    ! Factor for changing stomatal slope (M)
+   KFACT           = 1.,    ! Factor for changing the water conductance (Kw)
+   GAMFACT         = 1.,    ! Factor for changing the dark respiration factor (gamma)
+   !---------------------------------------------------------------------------------------!
 
    N_PLANT_LIM     = 0,       ! Determines whether plant photosynthesis can be 
                               ! limited by nitrogen

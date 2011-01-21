@@ -1189,6 +1189,8 @@ module ed_state_vars
      ! ------------------------------------------
      ! Fast time flux diagnostic variables == Polygon Level
      !-------------------------------------------
+
+     real,pointer,dimension(:)   :: avg_carbon_ac  ! Vegetation to Canopy carbon dioxide flux
      
      !----- Moisture ----------------------------
      !                                              | Description
@@ -1464,6 +1466,7 @@ module ed_state_vars
      ! Diagnostic variables
      !-------------------------------------------
      
+     real,pointer,dimension(:)   :: avg_carbon_ac  ! Vegetation to Canopy carbon dioxide flux
      !----- Moisture Flux ----------------------------
 
      real,pointer,dimension(:)   :: avg_vapor_vc    ! Vegetation to canopy air latent heat flux
@@ -1647,6 +1650,7 @@ module ed_state_vars
      real, pointer, dimension(:)   :: dmean_sensible_vc    ! [      W/m2]
      real, pointer, dimension(:)   :: dmean_sensible_gc    ! [      W/m2]
      real, pointer, dimension(:)   :: dmean_sensible_ac    ! [      W/m2]
+     real, pointer, dimension(:)   :: dmean_nee            ! [ kgC/m²/yr]
      real, pointer, dimension(:)   :: dmean_gpp            ! [ kgC/m²/yr]
      real, pointer, dimension(:)   :: dmean_nep            ! [ kgC/m²/yr]
      real, pointer, dimension(:)   :: dmean_plresp         ! [ kgC/m²/yr]
@@ -1723,23 +1727,24 @@ module ed_state_vars
      real, pointer, dimension(:)   :: mmean_pcpg           ! [   kg/m²/s]
      real, pointer, dimension(:)   :: mmean_runoff         ! [   kg/m²/s]
      real, pointer, dimension(:)   :: mmean_drainage       ! [   kg/m²/s]
-     real, pointer, dimension(:)   :: mmean_evap           ! [   kg/m2/s]
-     real, pointer, dimension(:)   :: mmean_transp         ! [   kg/m2/s]
+     real, pointer, dimension(:)   :: mmean_evap           ! [   kg/m²/s]
+     real, pointer, dimension(:)   :: mmean_transp         ! [   kg/m²/s]
      real, pointer, dimension(:)   :: mmean_vapor_vc       ! [   kg/m²/s]
      real, pointer, dimension(:)   :: mmean_vapor_gc       ! [   kg/m²/s]
-     real, pointer, dimension(:)   :: mmean_vapor_ac       ! [   kg/m2/s]
-     real, pointer, dimension(:)   :: mmean_sensible_vc    ! [      W/m2]
-     real, pointer, dimension(:)   :: mmean_sensible_gc    ! [      W/m2]
-     real, pointer, dimension(:)   :: mmean_sensible_ac    ! [      W/m2]
-     real, pointer, dimension(:)   :: mmean_gpp            ! [ kgC/m2/yr]
-     real, pointer, dimension(:)   :: mmean_nep            ! [ kgC/m2/yr]
-     real, pointer, dimension(:)   :: mmean_plresp         ! [ kgC/m2/yr]
-     real, pointer, dimension(:)   :: mmean_rh             ! [ kgC/m2/yr]
-     real, pointer, dimension(:)   :: mmean_leaf_resp      ! [ kgC/m2/yr]
-     real, pointer, dimension(:)   :: mmean_root_resp      ! [ kgC/m2/yr]
-     real, pointer, dimension(:)   :: mmean_growth_resp    ! [ kgC/m2/yr]
-     real, pointer, dimension(:)   :: mmean_storage_resp   ! [ kgC/m2/yr]
-     real, pointer, dimension(:)   :: mmean_vleaf_resp     ! [ kgC/m2/yr]
+     real, pointer, dimension(:)   :: mmean_vapor_ac       ! [   kg/m²/s]
+     real, pointer, dimension(:)   :: mmean_sensible_vc    ! [      W/m²]
+     real, pointer, dimension(:)   :: mmean_sensible_gc    ! [      W/m²]
+     real, pointer, dimension(:)   :: mmean_sensible_ac    ! [      W/m²]
+     real, pointer, dimension(:)   :: mmean_nee            ! [ kgC/m²/yr]
+     real, pointer, dimension(:)   :: mmean_gpp            ! [ kgC/m²/yr]
+     real, pointer, dimension(:)   :: mmean_nep            ! [ kgC/m²/yr]
+     real, pointer, dimension(:)   :: mmean_plresp         ! [ kgC/m²/yr]
+     real, pointer, dimension(:)   :: mmean_rh             ! [ kgC/m²/yr]
+     real, pointer, dimension(:)   :: mmean_leaf_resp      ! [ kgC/m²/yr]
+     real, pointer, dimension(:)   :: mmean_root_resp      ! [ kgC/m²/yr]
+     real, pointer, dimension(:)   :: mmean_growth_resp    ! [ kgC/m²/yr]
+     real, pointer, dimension(:)   :: mmean_storage_resp   ! [ kgC/m²/yr]
+     real, pointer, dimension(:)   :: mmean_vleaf_resp     ! [ kgC/m²/yr]
      real, pointer, dimension(:,:) :: mmean_soil_temp      !(nzg,npolygons)
      real, pointer, dimension(:,:) :: mmean_soil_water     !(nzg,npolygons)
      real, pointer, dimension(:)   :: mmean_fs_open
@@ -2015,6 +2020,7 @@ contains
        allocate(cgrid%avg_drainage_heat  (npolygons))
        allocate(cgrid%aux           (npolygons))
        allocate(cgrid%aux_s         (nzg,npolygons))
+       allocate(cgrid%avg_carbon_ac    (npolygons))
        allocate(cgrid%avg_sensible_vc  (npolygons))
        allocate(cgrid%avg_qwshed_vg    (npolygons))
        allocate(cgrid%avg_qintercepted (npolygons))
@@ -2156,6 +2162,7 @@ contains
           allocate(cgrid%dmean_vapor_ac       (             npolygons))
           allocate(cgrid%dmean_vapor_gc       (             npolygons))
           allocate(cgrid%dmean_vapor_vc       (             npolygons))
+          allocate(cgrid%dmean_nee            (             npolygons))
           allocate(cgrid%dmean_gpp            (             npolygons))
           allocate(cgrid%dmean_evap           (             npolygons))
           allocate(cgrid%dmean_transp         (             npolygons))
@@ -2215,6 +2222,7 @@ contains
           allocate(cgrid%mmean_sensible_ac    (             npolygons))
           allocate(cgrid%mmean_sensible_gc    (             npolygons))
           allocate(cgrid%mmean_sensible_vc    (             npolygons))
+          allocate(cgrid%mmean_nee            (             npolygons))
           allocate(cgrid%mmean_gpp            (             npolygons))
           allocate(cgrid%mmean_nep            (             npolygons))
           allocate(cgrid%mmean_plresp         (             npolygons))
@@ -2396,6 +2404,7 @@ contains
     allocate(cpoly%avg_drainage_heat  (nsites))
     allocate(cpoly%aux           (nsites))
     allocate(cpoly%aux_s         (nzg,nsites))
+    allocate(cpoly%avg_carbon_ac    (nsites))
     allocate(cpoly%avg_sensible_vc  (nsites))
     allocate(cpoly%avg_qwshed_vg    (nsites))
     allocate(cpoly%avg_qintercepted (nsites))
@@ -2989,6 +2998,7 @@ contains
        nullify(cgrid%avg_drainage_heat       )
        nullify(cgrid%aux                     )
        nullify(cgrid%aux_s                   )
+       nullify(cgrid%avg_carbon_ac           )
        nullify(cgrid%avg_sensible_vc         )
        nullify(cgrid%avg_qwshed_vg           )
        nullify(cgrid%avg_qintercepted        )
@@ -3116,6 +3126,7 @@ contains
        nullify(cgrid%dmean_vapor_ac          )
        nullify(cgrid%dmean_vapor_gc          )
        nullify(cgrid%dmean_vapor_vc          )
+       nullify(cgrid%dmean_nee               )
        nullify(cgrid%dmean_gpp               )
        nullify(cgrid%dmean_evap              )
        nullify(cgrid%dmean_transp            )
@@ -3159,6 +3170,7 @@ contains
        nullify(cgrid%lai_pft                 )
        nullify(cgrid%wpa_pft                 )
        nullify(cgrid%wai_pft                 )
+       nullify(cgrid%mmean_nee               )
        nullify(cgrid%mmean_gpp               )
        nullify(cgrid%mmean_evap              )
        nullify(cgrid%mmean_transp            )
@@ -3335,6 +3347,7 @@ contains
     nullify(cpoly%avg_drainage_heat  )
     nullify(cpoly%aux           )
     nullify(cpoly%aux_s         )
+    nullify(cpoly%avg_carbon_ac    )
     nullify(cpoly%avg_sensible_vc  )
     nullify(cpoly%avg_qwshed_vg    )
     nullify(cpoly%avg_qintercepted )
@@ -3884,6 +3897,7 @@ contains
        if(associated(cgrid%avg_drainage_heat       )) deallocate(cgrid%avg_drainage_heat       )
        if(associated(cgrid%aux                     )) deallocate(cgrid%aux                     )
        if(associated(cgrid%aux_s                   )) deallocate(cgrid%aux_s                   )
+       if(associated(cgrid%avg_carbon_ac           )) deallocate(cgrid%avg_carbon_ac           )
        if(associated(cgrid%avg_sensible_vc         )) deallocate(cgrid%avg_sensible_vc         )
        if(associated(cgrid%avg_qwshed_vg           )) deallocate(cgrid%avg_qwshed_vg           )
        if(associated(cgrid%avg_qintercepted        )) deallocate(cgrid%avg_qintercepted        )
@@ -4024,6 +4038,7 @@ contains
        if(associated(cgrid%dmean_vapor_ac          )) deallocate(cgrid%dmean_vapor_ac          )
        if(associated(cgrid%dmean_vapor_gc          )) deallocate(cgrid%dmean_vapor_gc          )
        if(associated(cgrid%dmean_vapor_vc          )) deallocate(cgrid%dmean_vapor_vc          )
+       if(associated(cgrid%dmean_nee               )) deallocate(cgrid%dmean_nee               )
        if(associated(cgrid%dmean_gpp               )) deallocate(cgrid%dmean_gpp               )
        if(associated(cgrid%dmean_evap              )) deallocate(cgrid%dmean_evap              )
        if(associated(cgrid%dmean_transp            )) deallocate(cgrid%dmean_transp            )
@@ -4077,6 +4092,7 @@ contains
        if(associated(cgrid%mmean_sensible_vc       )) deallocate(cgrid%mmean_sensible_vc       )
        if(associated(cgrid%mmean_sensible_gc       )) deallocate(cgrid%mmean_sensible_gc       )
        if(associated(cgrid%mmean_sensible_ac       )) deallocate(cgrid%mmean_sensible_ac       )
+       if(associated(cgrid%mmean_nee               )) deallocate(cgrid%mmean_nee               )
        if(associated(cgrid%mmean_nep               )) deallocate(cgrid%mmean_nep               )
        if(associated(cgrid%mmean_soil_temp         )) deallocate(cgrid%mmean_soil_temp         )
        if(associated(cgrid%mmean_soil_water        )) deallocate(cgrid%mmean_soil_water        )
@@ -4247,6 +4263,7 @@ contains
     if(associated(cpoly%avg_drainage_heat           )) deallocate(cpoly%avg_drainage_heat           )
     if(associated(cpoly%aux                         )) deallocate(cpoly%aux                         )
     if(associated(cpoly%aux_s                       )) deallocate(cpoly%aux_s                       )
+    if(associated(cpoly%avg_carbon_ac               )) deallocate(cpoly%avg_carbon_ac               )
     if(associated(cpoly%avg_sensible_vc             )) deallocate(cpoly%avg_sensible_vc             )
     if(associated(cpoly%avg_qwshed_vg               )) deallocate(cpoly%avg_qwshed_vg               )
     if(associated(cpoly%avg_qintercepted            )) deallocate(cpoly%avg_qintercepted            )
@@ -4847,6 +4864,7 @@ contains
     if(associated(cgrid%avg_drainage_heat       )) cgrid%avg_drainage_heat        = large_real
     if(associated(cgrid%aux                     )) cgrid%aux                      = large_real
     if(associated(cgrid%aux_s                   )) cgrid%aux_s                    = large_real
+    if(associated(cgrid%avg_carbon_ac           )) cgrid%avg_carbon_ac            = large_real
     if(associated(cgrid%avg_sensible_vc         )) cgrid%avg_sensible_vc          = large_real
     if(associated(cgrid%avg_qwshed_vg           )) cgrid%avg_qwshed_vg            = large_real
     if(associated(cgrid%avg_qintercepted        )) cgrid%avg_qintercepted         = large_real
@@ -4961,6 +4979,7 @@ contains
 
     if(associated(cgrid%runoff                  )) cgrid%runoff                   = large_real
     
+    if(associated(cgrid%dmean_nee               )) cgrid%dmean_nee                = large_real
     if(associated(cgrid%dmean_gpp               )) cgrid%dmean_gpp                = large_real
     if(associated(cgrid%dmean_evap              )) cgrid%dmean_evap               = large_real
     if(associated(cgrid%dmean_transp            )) cgrid%dmean_transp             = large_real
@@ -5010,6 +5029,7 @@ contains
     if(associated(cgrid%lai_pft                 )) cgrid%lai_pft                  = large_real
     if(associated(cgrid%wpa_pft                 )) cgrid%wpa_pft                  = large_real
     if(associated(cgrid%wai_pft                 )) cgrid%wai_pft                  = large_real
+    if(associated(cgrid%mmean_nee               )) cgrid%mmean_nee                = large_real
     if(associated(cgrid%mmean_gpp               )) cgrid%mmean_gpp                = large_real
     if(associated(cgrid%mmean_evap              )) cgrid%mmean_evap               = large_real
     if(associated(cgrid%mmean_transp            )) cgrid%mmean_transp             = large_real
@@ -5206,6 +5226,7 @@ contains
     if(associated(cpoly%avg_drainage_heat           )) cpoly%avg_drainage_heat           = large_real
     if(associated(cpoly%aux                         )) cpoly%aux                         = large_real
     if(associated(cpoly%aux_s                       )) cpoly%aux_s                       = large_real
+    if(associated(cpoly%avg_carbon_ac               )) cpoly%avg_carbon_ac               = large_real
     if(associated(cpoly%avg_sensible_vc             )) cpoly%avg_sensible_vc             = large_real
     if(associated(cpoly%avg_qwshed_vg               )) cpoly%avg_qwshed_vg               = large_real
     if(associated(cpoly%avg_qintercepted            )) cpoly%avg_qintercepted            = large_real
@@ -7502,6 +7523,13 @@ contains
        call metadata_edio(nvar,igr,'Soil layer discretized, auxillary variable, see rk4_derivs.f90','[user-defined]','ipoly-nzg') 
     endif
     
+    if (associated(cgrid%avg_carbon_ac)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%avg_carbon_ac(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'AVG_CARBON_AC :11:hist:anal') 
+       call metadata_edio(nvar,igr,'Polygon averaged vegetation to canopy air  CO2 flux','[umol/m2/s]','ipoly') 
+    endif
+    
     if (associated(cgrid%avg_sensible_vc)) then
        nvar=nvar+1
        call vtable_edio_r(cgrid%avg_sensible_vc(1),nvar,igr,init,cgrid%pyglob_id, &
@@ -8285,6 +8313,13 @@ contains
        call metadata_edio(nvar,igr,'Polygon Average Daily Integrated Gross Primary Productivity','[kgC/m2/yr]','ipoly') 
     endif
     
+    if(associated(cgrid%dmean_nee)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%dmean_nee(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'DMEAN_NEE :11:hist:dail') 
+       call metadata_edio(nvar,igr,'Polygon Average Daily Integrated Net Ecosystem Exchange','[kgC/m2/yr]','ipoly') 
+    endif
+    
     
     if(associated(cgrid%dmean_pcpg)) then
        nvar=nvar+1
@@ -8629,6 +8664,13 @@ contains
        nvar=nvar+1
        call vtable_edio_r(cgrid%mmean_gpp(1),nvar,igr,init,cgrid%pyglob_id, &
             var_len,var_len_global,max_ptrs,'MMEAN_GPP :11:hist:mont') 
+       call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+    endif
+    
+    if(associated(cgrid%mmean_nee)) then
+       nvar=nvar+1
+       call vtable_edio_r(cgrid%mmean_nee(1),nvar,igr,init,cgrid%pyglob_id, &
+            var_len,var_len_global,max_ptrs,'MMEAN_NEE :11:hist:mont') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
     
@@ -10549,7 +10591,7 @@ contains
     if (associated(csite%avg_carbon_ac)) then
        nvar=nvar+1
          call vtable_edio_r(csite%avg_carbon_ac(1),nvar,igr,init,csite%paglob_id, &
-         var_len,var_len_global,max_ptrs,'AVG_CARBON_AC :31:hist') 
+         var_len,var_len_global,max_ptrs,'AVG_CARBON_AC_PA :31:hist') 
        call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
     endif
 

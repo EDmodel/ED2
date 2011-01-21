@@ -397,14 +397,14 @@ module farq_leuning
                                 , co2lim           & ! intent(inout)
                                 , lightlim         & ! intent(inout)
                                 , copy_solution    ! ! intent(in)
-      use physiology_coms, only : par_twilight_min & ! intent(in)
-                                , c34smax_gsw8     ! ! intent(in)
+      use physiology_coms, only : c34smax_gsw8     ! ! intent(in)
       implicit none
       !------ Arguments. ------------------------------------------------------------------!
-      integer     , intent(in ) :: ipft        ! Plant functional type            [    ---]
-      integer     , intent(out) :: limit_flag  ! Flag with limiting property      [    ---]
+      integer     , intent(in ) :: ipft             ! Plant functional type      [     ---]
+      integer     , intent(out) :: limit_flag       ! Flag with limiting case    [     ---]
       !------ Local variables. ------------------------------------------------------------!
-      logical                   :: success     ! The solver successfully run.     [    T|F]
+      logical                   :: success          ! The solver succeeded.      [     T|F]
+      real(kind=8)              :: par_twilight_min ! Minimum daytime radiation  [mol/m2/s]
       !------------------------------------------------------------------------------------!
 
 
@@ -420,19 +420,6 @@ module farq_leuning
       if (.not. success) then
          call fatal_error ('Solution failed for closed case'                               &
                           ,'photosynthesis_exact_solver','farq_leuning.f90')
-      end if
-      !------------------------------------------------------------------------------------!
-
-
-      !------------------------------------------------------------------------------------!
-      !    Check whether this is night time.  In case it is, no photosynthesis should      !
-      ! happen, we copy the closed case stomata values to the open case.  Limit_flag       !
-      ! becomes 0, which is the flag for night time limitation.                            !
-      !------------------------------------------------------------------------------------!
-      if (met%par < par_twilight_min) then
-         call copy_solution(stclosed,stopen)
-         limit_flag = 0
-         return
       end if
       !------------------------------------------------------------------------------------!
 
@@ -455,6 +442,17 @@ module farq_leuning
       !------------------------------------------------------------------------------------!
       !----- Update the CO2 demand function parameters for light limitation. --------------!
       call set_co2_demand_params('LIGHT')
+      !------------------------------------------------------------------------------------!
+      !    First we check whether it is at least dawn or dusk.  In case it is not, no      !
+      ! photosynthesis should happen, so we copy the closed case stomata values to the     !
+      ! open case.  Limit_flag becomes 0, which is the flag for night time limitation.     !
+      !------------------------------------------------------------------------------------!
+      par_twilight_min = find_twilight_min()
+      if (met%par < par_twilight_min) then
+         call copy_solution(stclosed,stopen)
+         limit_flag = 0
+         return
+      end if
       !----- Choose the appropriate solver depending on the kind of photosynthesis. -------!
       select case(thispft%photo_pathway)
       case (3)
@@ -1672,6 +1670,40 @@ module farq_leuning
 
       return
    end function arrhenius
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     Find the minimum amount of radiation for which we will consider daytime.  This    !
+   ! cannot be a constant because it depends on the PFT and the environmental conditions.  !
+   !---------------------------------------------------------------------------------------!
+   real(kind=8) function find_twilight_min()
+      use c34constants   , only : thispft           & ! intent(in)
+                                , aparms            & ! intent(in)
+                                , met               ! ! intent(in)
+      use physiology_coms, only : gsw_2_gsc8
+      implicit none
+      !----- Local variables. -------------------------------------------------------------!
+      real(kind=8) :: restot    ! Total resistance                               [ m2s/mol]
+      !------------------------------------------------------------------------------------!
+
+      restot = (gsw_2_gsc8 * thispft%b + met%blyr_cond_co2)                                &
+             / (gsw_2_gsc8 * thispft%b * met%blyr_cond_co2)
+
+
+      find_twilight_min = ( (aparms%nu *(aparms%tau / met%can_co2 - 1.d0)                  &
+                          - 2.d0 * aparms%tau / restot)                                    &
+                          * (2.d0 * met%can_co2 / (aparms%tau - 2.d0 * met%can_co2)))      &
+                        / thispft%alpha
+
+      return
+   end function find_twilight_min
    !=======================================================================================!
    !=======================================================================================!
 end module farq_leuning

@@ -1263,9 +1263,9 @@ end do
       ifaterr = ifaterr +1
    end if
 
-   if (iphen_scheme < 0 .or. iphen_scheme > 3) then
+   if (iphen_scheme < -1 .or. iphen_scheme > 3) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-                    'Invalid IPHEN_SCHEME, it must be between 0 and 3. Yours is set to'    &
+                    'Invalid IPHEN_SCHEME, it must be between -1 and 3. Yours is set to'   &
                     ,iphen_scheme,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
