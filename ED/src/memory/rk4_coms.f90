@@ -306,6 +306,9 @@ module rk4_coms
                                                !    Runge-Kutta (a double precision vari-
                                                !    able), rk4tol is the one given at the 
                                                !    namelist (a single precision variable).
+
+   integer                   :: ipercol        ! This flag controls which percolation 
+                                               !    scheme we should use
    !=======================================================================================!
    !=======================================================================================!
 
@@ -411,8 +414,6 @@ module rk4_coms
                                   !     accross months, as the patches change.
    logical      :: print_thbnd    ! Flag to keep track of which variable is causing the
                                   !     most errors in the integrator.
-   logical      :: newsnow        ! Flag to decide whether we use the new snow percolation
-                                  !     scheme or not. 
    !---------------------------------------------------------------------------------------!
 
 

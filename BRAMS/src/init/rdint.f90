@@ -845,7 +845,8 @@ subroutine ReadNamelist(fileName)
        slmstr, &
        slz, &
        stgoff, &
-       zrough
+       zrough, &
+       betapower
   use mem_oda, only: frqoda, &
        if_oda, &
        oda_sfc_tel, &
@@ -1107,10 +1108,11 @@ subroutine ReadNamelist(fileName)
        radfrq, lonrad, npatch, nvegpat, isfcl,dtleaf,istar,ico2,          &
        co2con, nvgcon, pctlcon, nslcon, drtcon, zrough, albedo, seatmp,   &
        dthcon, soil_moist, soil_moist_fail, usdata_in, usmodel_in, slz,   &
-       slmstr, stgoff, if_urban_canopy, idiffk, ibruvais, ibotflx,        &
-       ihorgrad, csx, csz, xkhkm, zkhkm, nna, nnb, nnc, akmin, akmax,     &
-       hgtmin, hgtmax, level, icloud, irain, ipris, isnow, iaggr, igraup, &
-       ihail, cparm, rparm, pparm, sparm, aparm, gparm, hparm, gnu
+       slmstr, stgoff, betapower, if_urban_canopy, idiffk, ibruvais,      &
+       ibotflx, ihorgrad, csx, csz, xkhkm, zkhkm, nna, nnb, nnc, akmin,   &
+       akmax, hgtmin, hgtmax, level, icloud, irain, ipris, isnow, iaggr,  &
+       igraup, ihail, cparm, rparm, pparm, sparm, aparm, gparm, hparm,    &
+       gnu
 
   namelist /MODEL_SOUND/ &
        ipsflg, itsflg, irtsflg, iusflg, hs, ps, ts, rts, us, vs, co2s
@@ -1710,6 +1712,7 @@ subroutine ReadNamelist(fileName)
      write (*, *) "slz=",slz
      write (*, *) "slmstr=",slmstr
      write (*, *) "stgoff=",stgoff
+     write (*, *) "betapower=",betapower
      write (*, *) "if_urban_canopy=",if_urban_canopy
      write (*, *) "idiffk=",idiffk
      write (*, *) "ibruvais=",ibruvais

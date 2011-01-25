@@ -61,6 +61,7 @@ subroutine copy_nl(copy_type)
                                    , soilstate_db              & ! intent(out)
                                    , soildepth_db              & ! intent(out)
                                    , runoff_time               & ! intent(out)
+                                   , betapower                 & ! intent(out)
                                    , slz                       & ! intent(out)
                                    , veg_database              ! ! intent(out)
    use met_driver_coms      , only : ed_met_driver_db          & ! intent(out)
@@ -89,7 +90,8 @@ subroutine copy_nl(copy_type)
                                    , vmfact                    & ! intent(out)
                                    , mfact                     & ! intent(out)
                                    , kfact                     & ! intent(out)
-                                   , gamfact                   ! ! intent(out)
+                                   , gamfact                   & ! intent(out)
+                                   , lwfact                    ! ! intent(out)
    use phenology_coms       , only : iphen_scheme              & ! intent(out)
                                    , iphenys1                  & ! intent(out)
                                    , iphenysf                  & ! intent(out)
@@ -179,6 +181,7 @@ subroutine copy_nl(copy_type)
    use optimiz_coms         , only : ioptinpt                  ! ! intent(out)
    use canopy_radiation_coms, only : crown_mod                 ! ! intent(out)
    use rk4_coms             , only : ibranch_thermo            & ! intent(out)
+                                   , ipercol                   & ! intent(out)
                                    , rk4_tolerance             ! ! intent(out)
    use ed_para_coms         , only : loadmeth                  ! ! intent(out)
    use consts_coms          , only : hr_sec                    & ! intent(in)
@@ -285,6 +288,7 @@ subroutine copy_nl(copy_type)
       mfact                     = nl%mfact
       kfact                     = nl%kfact
       gamfact                   = nl%gamfact
+      lwfact                    = nl%lwfact
       radint                    = nl%radint
       radslp                    = nl%radslp
       n_plant_lim               = nl%n_plant_lim
@@ -298,6 +302,7 @@ subroutine copy_nl(copy_type)
       icanturb                  = nl%icanturb
       i_blyr_condct             = nl%i_blyr_condct
       isfclyrm                  = nl%isfclyrm
+      ipercol                   = nl%ipercol
 
       include_these_pft         = nl%include_these_pft
       agri_stock                = nl%agri_stock
@@ -306,6 +311,7 @@ subroutine copy_nl(copy_type)
       
       treefall_disturbance_rate = nl%treefall_disturbance_rate
       runoff_time               = nl%runoff_time
+      betapower                 = nl%betapower
 
       !----- Print control parameters. ----------------------------------------------------!
       iprintpolys               = nl%iprintpolys

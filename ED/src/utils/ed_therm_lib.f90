@@ -228,7 +228,8 @@ module ed_therm_lib
                         ,sfcwater_fliq,can_prss,can_shv,ground_shv,ground_ssh              &
                         ,ground_temp,ground_fliq)
 
-      use soil_coms   , only : soil      ! ! intent(in)
+      use soil_coms   , only : soil      & ! intent(in)
+                             , betapower ! ! intent(in)
       use consts_coms , only : pi1       & ! intent(in)
                              , wdns      & ! intent(in)
                              , gorh2o    & ! intent(in)
@@ -299,7 +300,7 @@ module ed_therm_lib
          !---------------------------------------------------------------------------------!
          smterm     = (topsoil_water - soil(nsoil)%soilcp)                                 &
                     / (soil(nsoil)%sfldcap - soil(nsoil)%soilcp)
-         beta       = .5 * (1. - cos (min(1.,smterm) * pi1))
+         beta       = (.5 * (1. - cos (min(1.,smterm) * pi1))) ** betapower
          !----- Use the expression from LP92 to determine the specific humidity. ----------!
          ground_shv = ground_ssh * alpha * beta + (1. - beta) * can_shv
          !---------------------------------------------------------------------------------!
@@ -349,7 +350,8 @@ module ed_therm_lib
    subroutine ed_grndvap8(ksn,nsoil,topsoil_water,topsoil_temp,topsoil_fliq,sfcwater_temp  &
                          ,sfcwater_fliq,can_prss,can_shv,ground_shv,ground_ssh             &
                          ,ground_temp,ground_fliq)
-      use soil_coms   , only : soil8      ! ! intent(in)
+      use soil_coms   , only : soil8      & ! intent(in)
+                             , betapower8 ! ! intent(in)
       use consts_coms , only : pi18       & ! intent(in)
                              , wdns8      & ! intent(in)
                              , gorh2o8    & ! intent(in)
@@ -421,7 +423,7 @@ module ed_therm_lib
          !---------------------------------------------------------------------------------!
          smterm     = (topsoil_water - soil8(nsoil)%soilcp)                                &
                     / (soil8(nsoil)%sfldcap - soil8(nsoil)%soilcp)
-         beta       = 5.d-1 * (1.d0 - cos (min(1.d0,smterm) * pi18))
+         beta       = (5.d-1 * (1.d0 - cos (min(1.d0,smterm) * pi18))) ** betapower8
          !----- Use the expression from LP92 to determine the specific humidity. ----------!
          ground_shv = ground_ssh * alpha * beta + (1.d0 - beta) * can_shv
          !---------------------------------------------------------------------------------!

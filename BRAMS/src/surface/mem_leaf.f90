@@ -127,17 +127,19 @@ Module mem_leaf
    !---------------------------------------------------------------------------------------!
    !     Other variables.                                                                  !
    !---------------------------------------------------------------------------------------!
-   integer                 :: nslcon  ! Soil texture if constant for entire domain
-   integer                 :: nvgcon  ! Vegetation class if constant for entire domain
-   integer                 :: nvegpat ! Number of vegetation types
-   integer                 :: isfcl   ! Surface model (1. LEAF3, 2. LEAF-Hydro, 5. ED2)
-   integer                 :: istar   ! Which surface layer model should I use?
-                                      !    1. Louis (1979), 2. Oncley and Dudhia (1995).
-                                      !    3. Beljaars and Holtslag (1991)
-                                      !    4. BH91, using OD95 to find zeta.
-   real                    :: dtleaf  ! LEAF-3 target time step.  It will be either this
-                                      !    or the actual BRAMS time step (whichever is 
-                                      !    lower).
+   integer                 :: nslcon    ! Soil texture if constant for entire domain
+   integer                 :: nvgcon    ! Vegetation class if constant for entire domain
+   integer                 :: nvegpat   ! Number of vegetation types
+   integer                 :: isfcl     ! Surface model (1. LEAF3, 2. LEAF-Hydro, 5. ED2)
+   integer                 :: istar     ! Which surface layer model should I use?
+                                        !    1. Louis (1979), 2. Oncley and Dudhia (1995).
+                                        !    3. Beljaars and Holtslag (1991)
+                                        !    4. BH91, using OD95 to find zeta.
+   real                    :: dtleaf    ! LEAF-3 target time step.  It will be either this
+                                        !    or the actual BRAMS time step (whichever is 
+                                        !    lower).
+   real                    :: betapower ! Power for the beta parameter that controls 
+                                        !    ground evaporation.
 
    real, dimension(nzgmax) :: stgoff  ! Initial soil temperature offset
    real, dimension(nzgmax) :: slmstr  ! Initial soil moisture if constant for entire domain

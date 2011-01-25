@@ -865,9 +865,9 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,csite,ipa)
                             , rk4min_virt_water     & ! intent(in)
                             , rk4water_stab_thresh  & ! intent(in)
                             , rk4tiny_sfcw_mass     & ! intent(in)
-                            , rk4tiny_sfcw_depth     & ! intent(in)
+                            , rk4tiny_sfcw_depth    & ! intent(in)
                             , rk4snowmin            & ! intent(in)
-                            , newsnow               & ! intent(in)
+                            , ipercol               & ! intent(in)
                             , rk4eps2               ! ! intent(in)
    use ed_state_vars , only : sitetype              & ! structure
                             , patchtype             ! ! structure
@@ -1141,7 +1141,15 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,csite,ipa)
       !     Determine a first guess for the amount of mass that can be lost from this      !
       ! layer through percolation (wmass_perc).                                            !
       !------------------------------------------------------------------------------------!
-      if (newsnow) then
+      select case (ipercol)
+      case (0)
+         !---------------------------------------------------------------------------------!
+         !     Original method, from LEAF-3.  Shed liquid in excess of a 1:9               !
+         ! liquid-to-ice ratio through percolation.                                        !
+         !---------------------------------------------------------------------------------!
+         wmass_perc  = max(0.d0, wmass_try * (fliq_try - 1.d-1) / 9.d-1)
+         !---------------------------------------------------------------------------------!
+      case (1)
          !---------------------------------------------------------------------------------!
          !    Alternative "free" water calculation.                                        !
          !    Anderson (1976), NOAA Tech Report NWS 19.                                    !
@@ -1150,14 +1158,7 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,csite,ipa)
          Cr          = max(Crmin, Crmin + (Crmax - Crmin) * (ge - gi) / ge)
          wmass_perc  = max(0.d0,wmass_try * (fliq_try - Cr / (1.d0 + Cr)))
          !---------------------------------------------------------------------------------!
-      else
-         !---------------------------------------------------------------------------------!
-         !     Original method, from LEAF-3.  Shed liquid in excess of a 1:9               !
-         ! liquid-to-ice ratio through percolation.                                        !
-         !---------------------------------------------------------------------------------!
-         wmass_perc  = max(0.d0, wmass_try * (fliq_try - 1.d-1) / 9.d-1)
-         !---------------------------------------------------------------------------------!
-      end if
+      end select
       !------------------------------------------------------------------------------------!
 
 

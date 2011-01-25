@@ -53,6 +53,7 @@ module physiology_coms
    real(kind=4)               :: mfact   
    real(kind=4)               :: kfact
    real(kind=4)               :: gamfact
+   real(kind=4)               :: lwfact
    !---------------------------------------------------------------------------------------!
 
 

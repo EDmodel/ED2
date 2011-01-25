@@ -969,6 +969,11 @@ subroutine opspec3
         ifaterr=ifaterr+1
      end select
   endif
+  
+  if (betapower < 0.0 .or. betapower > 10.0) then
+     print *, 'FATAL - BETAPOWER must be between 0.0 and 10.0'
+     ifaterr = ifaterr + 1
+  end if
 
 ![MLO - Some extra checks for mass and Medvidy's fix on Exner tendency
 ! Complete Exner tendency and vertical coordinate.

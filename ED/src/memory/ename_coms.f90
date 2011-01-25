@@ -140,6 +140,7 @@ module ename_coms
       real                                              :: mfact
       real                                              :: kfact
       real                                              :: gamfact
+      real                                              :: lwfact
       integer                                           :: n_plant_lim
       integer                                           :: n_decomp_lim
       integer                                           :: decomp_scheme
@@ -148,12 +149,14 @@ module ename_coms
       integer                                           :: icanturb
       integer                                           :: i_blyr_condct
       integer                                           :: isfclyrm
+      integer                                           :: ipercol
       integer               , dimension(n_pft)          :: include_these_pft
       integer                                           :: agri_stock
       integer                                           :: plantation_stock
       integer                                           :: pft_1st_check
       real                                              :: treefall_disturbance_rate
       real                                              :: runoff_time
+      real                                              :: betapower
 
       !----- Options for printing polygon vectors/arrays to standard output. --------------!
       integer                                           :: iprintpolys
@@ -336,6 +339,7 @@ module ename_coms
       enl%mfact                     = undef_real
       enl%kfact                     = undef_real
       enl%gamfact                   = undef_real
+      enl%lwfact                    = undef_real
       enl%n_plant_lim               = undef_integer
       enl%n_decomp_lim              = undef_integer
       enl%decomp_scheme             = undef_integer
@@ -344,6 +348,7 @@ module ename_coms
       enl%icanturb                  = undef_integer
       enl%i_blyr_condct             = undef_integer
       enl%isfclyrm                  = undef_integer
+      enl%ipercol                   = undef_integer
 
       enl%include_these_pft         = (/(undef_integer,i=1,n_pft)/) 
       enl%agri_stock                = undef_integer
@@ -352,6 +357,7 @@ module ename_coms
 
       enl%treefall_disturbance_rate = undef_real
       enl%runoff_time               = undef_real
+      enl%betapower                 = undef_real
 
       enl%iprintpolys               = undef_integer
       enl%npvars                    = undef_integer

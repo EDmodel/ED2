@@ -968,6 +968,7 @@ subroutine ed_opspec_misc
                                     , isoildepthflg                & ! intent(in)
                                     , isoilbc                      & ! intent(in)
                                     , zrough                       & ! intent(in)
+                                    , betapower                    & ! intent(in)
                                     , runoff_time                  ! ! intent(in)
    use mem_polygons          , only : n_poi                        & ! intent(in)
                                     , n_ed_region                  & ! intent(in)
@@ -980,7 +981,8 @@ subroutine ed_opspec_misc
                                     , vmfact                       & ! intent(in)
                                     , mfact                        & ! intent(in)
                                     , kfact                        & ! intent(in)
-                                    , gamfact                      ! ! intent(in)
+                                    , gamfact                      & ! intent(in)
+                                    , lwfact                       ! ! intent(in)
    use decomp_coms           , only : n_decomp_lim                 ! ! intent(in)
    use disturb_coms          , only : include_fire                 & ! intent(in)
                                     , ianth_disturb                & ! intent(in)
@@ -994,6 +996,7 @@ subroutine ed_opspec_misc
                                     , plantation_stock             ! ! intent(in)
    use canopy_radiation_coms , only : crown_mod                    ! ! intent(in)
    use rk4_coms              , only : ibranch_thermo               & ! intent(in)
+                                    , ipercol                      & ! intent(in)
                                     , rk4_tolerance                ! ! intent(in)
 
 #if defined(COUPLED)
@@ -1326,6 +1329,14 @@ end do
       ifaterr = ifaterr +1
    end if
    
+   if (lwfact < 0. .or. lwfact > 100.) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid LWFACT, it must be between 0 and 100. Yours is set to'        &
+                    ,lwfact,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+   
    if (n_plant_lim < 0 .or. n_plant_lim > 1) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
                     'Invalid N_PLANT_LIM, it must be between 0 and 1. Yours is set to'     &
@@ -1378,6 +1389,13 @@ end do
    if (isfclyrm < 1 .or. isfclyrm > 4) then
       write (reason,fmt='(a,1x,i4,a)') &
         'Invalid ISFCLYRM, it must be between 1 and 4. Yours is set to',isfclyrm,'...'
+      call opspec_fatal(reason,'opspec_misc')  
+      ifaterr = ifaterr +1
+   end if
+
+   if (ipercol < 0 .or. ipercol > 1) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+        'Invalid IPERCOL, it must be either 0 or 1. Yours is set to',ipercol,'...'
       call opspec_fatal(reason,'opspec_misc')  
       ifaterr = ifaterr +1
    end if
@@ -1486,6 +1504,14 @@ end do
    if (runoff_time < 0.0) then
       write (reason,fmt='(a,1x,es14.7,a)')                                                 &
             'Invalid RUNOFF_TIME, it can''t be negative. Yours is set to',runoff_time,'...'
+      call opspec_fatal(reason,'opspec_misc')  
+      ifaterr = ifaterr +1
+   end if
+    
+   if (betapower < 0.0 .or. betapower > 10.0) then
+      write (reason,fmt='(a,1x,es14.7,a)')                                                 &
+            'Invalid BETAPOWER, it must be between 0.0 and 10.0. Yours is set to'          &
+           ,betapower,'...'
       call opspec_fatal(reason,'opspec_misc')  
       ifaterr = ifaterr +1
    end if

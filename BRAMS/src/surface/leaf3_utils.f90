@@ -349,6 +349,7 @@ subroutine leaf_grndvap(topsoil_energy,topsoil_water,topsoil_text,sfcw_energy_in
    use therm_lib  , only : rslif       & ! function
                          , qwtk        & ! function
                          , qtk         ! ! function
+   use mem_leaf   , only : betapower   ! ! intent(in)
 
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
@@ -417,7 +418,7 @@ subroutine leaf_grndvap(topsoil_energy,topsoil_water,topsoil_text,sfcw_energy_in
       ! which was happening especially for those clay-rich soil types.                     !
       !------------------------------------------------------------------------------------!
       smterm     = (topsoil_water - soilcp(nsoil)) / (sfldcap(nsoil) - soilcp(nsoil))
-      beta       = .5 * (1. - cos (min(1.,smterm) * pi1))
+      beta       = (.5 * (1. - cos (min(1.,smterm) * pi1))) ** betapower
       !----- Use the expression from LP92 to determine the specific humidity. -------------!
       ground_rvap = ground_rsat * alpha * beta + (1. - beta) * can_rvap
       !------------------------------------------------------------------------------------!

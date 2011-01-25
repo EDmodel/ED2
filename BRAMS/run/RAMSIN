@@ -646,6 +646,11 @@
                0.60,  0.60,  0.60,  0.60,  0.60,  0.60,  0.60,       ! Initial soil moisture
    STGOFF  =   0.00,  0.00,  0.00,  0.00,  0.00,  0.00,  0.00, 
                0.00,  0.00,  0.00,  0.00,  0.00,  0.00,  0.00,      !  from lowest atmospheric level
+
+   BETAPOWER = 1., ! Power to be applied to the beta term that
+                   !     controls the ground evaporation.
+
+
 !--------------------------------------------------------------------------
 
 !----- Urban canopy parameterization --------------------------------
@@ -996,6 +1001,7 @@
    MFACT           = 1.,    ! Factor for changing stomatal slope (M)
    KFACT           = 1.,    ! Factor for changing the water conductance (Kw)
    GAMFACT         = 1.,    ! Factor for changing the dark respiration factor (gamma)
+   LWFACT          = 1.,    ! Factor for changing the leaf width (w)
    !---------------------------------------------------------------------------------------!
 
    N_PLANT_LIM     = 0,       ! Determines whether plant photosynthesis can be 
@@ -1047,6 +1053,12 @@
                               !  2. The actual Nusselt number for forced convection is 
                               !     multiplied by 10. as the Reynolds number gets close or
                               !     greater than 10,000.
+
+   IPERCOL         = 1,       ! Percolation scheme:
+                              !  0 - Original method, from LEAF-3.  Shed liquid in excess 
+                              !      of a 1:9 liquid-to-ice ratio through percolation.
+                              !  1 - Alternative "free" water calculation.  
+                              !      Anderson (1976), NOAA Tech Report NWS 19.
 
    !---------------------------------------------------------------------!
    ! PLANT FUNCTIONAL TYPES (PFTs):                                      !

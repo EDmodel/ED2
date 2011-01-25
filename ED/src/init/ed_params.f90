@@ -807,10 +807,9 @@ subroutine init_pft_photo_params()
                              , yr_sec               ! ! intent(in)
    use physiology_coms , only: vmfact               & ! intent(in)
                              , mfact                & ! intent(in)
-                             , kfact                ! ! intent(in)
+                             , kfact                & ! intent(in)
+                             , lwfact               ! ! intent(in)
    implicit none
-   !----- Local variables. ----------------------------------------------------------------!
-   logical, parameter  :: lwidth_10 = .false.
    !---------------------------------------------------------------------------------------!
 
    D0(1:17)                  = 0.01      ! same for all PFTs
@@ -869,7 +868,7 @@ subroutine init_pft_photo_params()
    Vm0(17)                   = 15.625          * vmfact
 
    !----- Define the stomatal slope (aka the M factor). -----------------------------------!
-   stomatal_slope(1)         = 10.0    * mfact
+   stomatal_slope(1)         =  4.0    * mfact
    stomatal_slope(2)         =  8.0    * mfact
    stomatal_slope(3)         =  8.0    * mfact
    stomatal_slope(4)         =  8.0    * mfact
@@ -939,24 +938,23 @@ subroutine init_pft_photo_params()
    photosyn_pathway(16:17)   = 3
 
    !----- Leaf width [m].  This controls the boundary layer conductance. ------------------!
-   if (lwidth_10) then
-      !----- Alternative values. ----------------------------------------------------------!
-      leaf_width(1)     = 0.05
-      leaf_width(2:4)   = 0.10
-      leaf_width(5:11)  = 0.05
-      leaf_width(12:13) = 0.05
-      leaf_width(14:15) = 0.05
-      leaf_width(16:17) = 0.05
-   else
-      !----- Standard ED-2.1 values. ------------------------------------------------------!
-      leaf_width(1)     = 0.20
-      leaf_width(2:4)   = 0.20
-      leaf_width(5:11)  = 0.05
-      leaf_width(12:13) = 0.05
-      leaf_width(14:15) = 0.20
-      leaf_width(16)    = 0.20
-      leaf_width(17)    = 0.05
-   end if
+   leaf_width( 1)    = 0.20 * lwfact
+   leaf_width( 2)    = 0.20 * lwfact
+   leaf_width( 3)    = 0.20 * lwfact
+   leaf_width( 4)    = 0.20 * lwfact
+   leaf_width( 5)    = 0.05 * lwfact
+   leaf_width( 6)    = 0.05 * lwfact
+   leaf_width( 7)    = 0.05 * lwfact
+   leaf_width( 8)    = 0.05 * lwfact
+   leaf_width( 9)    = 0.05 * lwfact
+   leaf_width(10)    = 0.05 * lwfact
+   leaf_width(11)    = 0.05 * lwfact
+   leaf_width(12)    = 0.05 * lwfact
+   leaf_width(13)    = 0.05 * lwfact
+   leaf_width(14)    = 0.20 * lwfact
+   leaf_width(15)    = 0.20 * lwfact
+   leaf_width(16)    = 0.20 * lwfact
+   leaf_width(17)    = 0.05 * lwfact
    !---------------------------------------------------------------------------------------!
    return
 end subroutine init_pft_photo_params
@@ -2323,6 +2321,7 @@ subroutine init_soil_coms
                              , slxclay               & ! intent(in)
                              , slxsand               & ! intent(in)
                              , soil                  & ! intent(in)
+                             , betapower             & ! intent(in)
                              , soil_class            & ! type
                              , soil8                 & ! intent(out)
                              , water_stab_thresh     & ! intent(out)
@@ -2331,7 +2330,8 @@ subroutine init_soil_coms
                              , soil_rough            & ! intent(out)
                              , snow_rough            & ! intent(out)
                              , tiny_sfcwater_mass    & ! intent(out)
-                             , infiltration_method   ! ! intent(out)
+                             , infiltration_method   & ! intent(out)
+                             , betapower8            ! ! intent(out)
                              
    use grid_coms      , only : ngrids                ! ! intent(in)
    use consts_coms    , only : grav                  & ! intent(in)
@@ -2522,7 +2522,8 @@ subroutine init_soil_coms
       soil8(nsoil)%xrobulk   = dble(soil(nsoil)%xrobulk  )
       soil8(nsoil)%slden     = dble(soil(nsoil)%slden    )
    end do
-
+   betapower8 = dble(betapower)
+   
    return
 end subroutine init_soil_coms
 !==========================================================================================!
@@ -2669,7 +2670,6 @@ subroutine init_rk4_params()
                              , hmin                   & ! intent(out)
                              , print_diags            & ! intent(out)
                              , checkbudget            & ! intent(out)
-                             , newsnow                & ! intent(out)
                              , debug                  & ! intent(out)
                              , toocold                & ! intent(out)
                              , toohot                 & ! intent(out)
@@ -2869,15 +2869,6 @@ subroutine init_rk4_params()
    ! sphere will not stop, but that is unlikely.                                           !
    !---------------------------------------------------------------------------------------!
    supersat_ok = .false.
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !     This flag is used to control the method used to define water percolation through  !
-   ! snow layers.                                                                          !
-   !---------------------------------------------------------------------------------------!
-   newsnow = .true.
    !---------------------------------------------------------------------------------------!
 
 

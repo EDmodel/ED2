@@ -192,8 +192,17 @@ subroutine structural_growth(cgrid, month)
                if(update_month == 0) update_month = 12
                cpatch%cb(update_month,ico)     = cpatch%cb(13,ico)
                cpatch%cb_max(update_month,ico) = cpatch%cb_max(13,ico)
+
+               !----- If monthly files are written, save the current carbon balance. ------!
+               if (associated(cpatch%mmean_cb)) then
+                  cpatch%mmean_cb(ico)         = cpatch%cb(13,ico)
+               end if
+
+               !----- Reset the current month integrator. ---------------------------------!
                cpatch%cb(13,ico)               = 0.0
                cpatch%cb_max(13,ico)           = 0.0
+
+               !----- Compute the relative carbon balance. --------------------------------!
                cb_act = 0.0
                cb_max = 0.0
                do imonth = 1,12
@@ -205,6 +214,8 @@ subroutine structural_growth(cgrid, month)
                else
                   cpatch%cbr_bar(ico) = 0.0
                end if
+               !---------------------------------------------------------------------------!
+
 
                !----- Update interesting output quantities. -------------------------------!
                call update_vital_rates(cpatch,ico,ilu,dbh_in,bdead_in,balive_in,hite_in    &
