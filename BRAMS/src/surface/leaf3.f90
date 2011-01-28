@@ -445,18 +445,18 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz,leaf,basic,turb,radiate,grid,cu
                   !------------------------------------------------------------------------!
                   !     For water patches, update temperature and moisture of "canopy"     !
                   ! from divergence of fluxes with water surface and atmosphere.           !
-                  ! rdi = rho * ustar/5 is the viscous sublayer conductivity from Garratt  !
+                  ! gd = rho * ustar/5 is the viscous sublayer conductivity from Garratt   !
                   ! (1992), but multiplied by density.                                     !
                   !------------------------------------------------------------------------!
                   rho_ustar = leaf%ustar(i,j,1) * can_rhos
-                  rdi       = .2 * rho_ustar
+                  ggnd      = .2 * rho_ustar * ggfact
                   dtllowcc  = dtll / (can_depth * can_rhos)
                   dtllohcc  = dtll / (can_depth * can_rhos * cp * can_temp)
                   dtlloccc  = mmdry * dtllowcc
 
                   !----- Compute the fluxes from water body to canopy. --------------------!
-                  hflxgc  = rdi * cp * (leaf%ground_temp(i,j,ip) - can_temp)
-                  wflxgc  = rdi * (leaf%ground_rsat(i,j,ip) - leaf%can_rvap(i,j,ip))
+                  hflxgc  = ggnd * cp * (leaf%ground_temp(i,j,ip) - can_temp)
+                  wflxgc  = ggnd * (leaf%ground_rsat(i,j,ip) - leaf%can_rvap(i,j,ip))
                   qwflxgc = wflxgc * alvl
                   cflxgc  = 0. !----- No water carbon emission model available...
 
@@ -832,8 +832,8 @@ subroutine leaftw(mzg,mzs,np,soil_water, soil_energy,soil_text,sfcwater_mass    
 
    !---------------------------------------------------------------------------------------!
    !      Evaluate any exchanges of heat and moisture to or from vegetation, apply moist-  !
-   ! ure and heat changes to vegetation, and evaluate the resistance parameter rd between  !
-   ! canopy air and the top soil or snow surface.                                          !
+   ! ure and heat changes to vegetation, and evaluate the resistance parameter rgnd        !
+   ! between canopy air and the top soil or snow surface.                                  !
    !---------------------------------------------------------------------------------------!
    call leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mass,ustar       &
                    ,tstar,rstar,cstar,soil_rough,veg_rough,veg_height,veg_lai,veg_tai      &
@@ -1277,9 +1277,9 @@ subroutine leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mas
 
 
    !---------------------------------------------------------------------------------------!
-   !     Compute ground-canopy resistance rd.  Assume zognd not affected by snow.  Assume  !
-   ! (zoveg,zdisp) decrease linearly with snow depth, attaining the values (zognd,0) when  !
-   ! vegetation is fully buried in snow.                                                   !
+   !     Compute ground-canopy resistance rgnd.  Assume zognd not affected by snow.        !
+   ! Assume (zoveg,zdisp) decrease linearly with snow depth, attaining the values          !
+   ! (zognd,0) when vegetation is fully buried in snow.                                    !
    !---------------------------------------------------------------------------------------!
 
    zognd = soil_rough
@@ -1305,21 +1305,21 @@ subroutine leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mas
       aux         = exp(exar * (1. - (zdisp + zoveg) / zveg))
       rasveg      = factv * zveg / (exar * (zveg - zdisp)) * (exp(exar) - aux)
       c2          = max(0.,min(1., 1.1 * veg_tai / covr))
-      rd          = rasgnd * (1. - c2) + rasveg * c2
+      rgnd        = rasgnd * (1. - c2) + rasveg * c2
       wshed_tot   = 0.
       qwshed_tot  = 0.
       transp_tot  = 0.
    else
       !------------------------------------------------------------------------------------!
       !     If the TAI is very small or if snow mostly covers the vegetation, bypass       !
-      ! vegetation computations.  Set heat and moisture flux resistance rd between the     !
+      ! vegetation computations.  Set heat and moisture flux resistance rgnd between the   !
       ! "canopy" and snow or soil surface to its bare soil value.  Set shed precipitation  !
       ! heat and moisture to unintercepted values.                                         !
       !------------------------------------------------------------------------------------!
       wshed_tot  = pcpgl
       qwshed_tot = qpcpgl
       transp_tot = 0.
-      rd         = rasgnd
+      rgnd       = rasgnd
    end if
 
    !---------------------------------------------------------------------------------------!
@@ -1328,10 +1328,10 @@ subroutine leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mas
    ! and dewgnd is the mass of dew that forms on the snow/soil surface this timestep; both !
    ! are defined as always positive or zero.                                               !
    !---------------------------------------------------------------------------------------!
-   rdi = can_rhos / rd
+   ggnd = can_rhos / rgnd
 
-   hflxgc     = cp * rdi * (ground_temp - can_temp)
-   wflx       =      rdi * (ground_rsat - can_rvap)
+   hflxgc     = cp * ggnd * (ground_temp - can_temp)
+   wflx       =      ggnd * (ground_rsat - can_rvap)
    
    if (wflx >= 0.) then
       dewgndflx = 0.
@@ -1341,7 +1341,7 @@ subroutine leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mas
    dewgnd_tot = dewgndflx * dtll
 
    if (ksn == 0) then
-      wflxgc = max(0.,rdi * (ground_rvap - can_rvap))
+      wflxgc = max(0.,ggnd * (ground_rvap - can_rvap))
    else
       wflxgc = max(0.,min(wflx,sfcwater_mass(ksn)/dtll))
    end if

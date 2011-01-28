@@ -82,7 +82,7 @@ subroutine ed_masterput_nl(par_run)
                              ,unitfast,unitstate,event_file,itimeh,iyearh,imonthh,idateh
 
    use ed_misc_coms   , only: attach_metadata
-   use canopy_air_coms, only: icanturb, i_blyr_condct, isfclyrm
+   use canopy_air_coms, only: icanturb, i_blyr_condct, isfclyrm, ustmin, ggfact
    use grid_coms,       only: nzg,nzs,ngrids,nnxp,nnyp,deltax,deltay,polelat,polelon       &
                              ,centlat,centlon,time,timmax,nstratx,nstraty
    use soil_coms,       only: isoilflg,nslcon,slxclay,slxsand,slz,slmstr,stgoff,veg_database,soil_database &
@@ -95,7 +95,7 @@ subroutine ed_masterput_nl(par_run)
                              ,ed_reg_latmin,ed_reg_latmax,ed_reg_lonmin,ed_reg_lonmax      &
                              ,edres,maxpatch,maxcohort
    use physiology_coms, only: istoma_scheme, h2o_plant_lim, n_plant_lim, vmfact, mfact     &
-                            , kfact, gamfact, lwfact
+                            , kfact, gamfact, lwfact, thioff, icomppt
    use phenology_coms , only: iphen_scheme,iphenys1,iphenysf,iphenyf1,iphenyff,phenpath    &
                              ,repro_scheme, radint, radslp
    use decomp_coms,     only: n_decomp_lim
@@ -241,6 +241,8 @@ subroutine ed_masterput_nl(par_run)
    call MPI_Bcast(kfact,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(gamfact,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(lwfact,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(thioff,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(icomppt,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(n_plant_lim,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(n_decomp_lim,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(include_fire,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
@@ -258,6 +260,8 @@ subroutine ed_masterput_nl(par_run)
    call MPI_Bcast(treefall_disturbance_rate,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(runoff_time,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(betapower,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(ustmin,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(ggfact,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(iprintpolys,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    do n=1,maxpvars
@@ -875,7 +879,7 @@ subroutine ed_nodeget_nl
                              ,ed_reg_latmin,ed_reg_latmax,ed_reg_lonmin,ed_reg_lonmax      &
                              ,edres,maxpatch,maxcohort
    use physiology_coms, only: istoma_scheme, h2o_plant_lim, n_plant_lim, vmfact, mfact     &
-                            , kfact, gamfact, lwfact
+                            , kfact, gamfact, lwfact, thioff, icomppt
    use phenology_coms , only: iphen_scheme,iphenys1,iphenysf,iphenyf1,iphenyff,phenpath    &
                              ,repro_scheme, radint, radslp
    use decomp_coms,     only: n_decomp_lim
@@ -883,7 +887,7 @@ subroutine ed_nodeget_nl
                              ,lu_database,plantation_file,lu_rescale_file
    use optimiz_coms,    only: ioptinpt
    use ed_misc_coms,    only: attach_metadata
-   use canopy_air_coms, only: icanturb, i_blyr_condct, isfclyrm
+   use canopy_air_coms, only: icanturb, i_blyr_condct, isfclyrm, ustmin, ggfact
    use pft_coms,        only: include_these_pft,agri_stock,plantation_stock,pft_1st_check
    use canopy_radiation_coms, only: crown_mod
    use rk4_coms,        only: rk4_tolerance, ibranch_thermo, ipercol
@@ -1029,6 +1033,8 @@ subroutine ed_nodeget_nl
    call MPI_Bcast(kfact,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(gamfact,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(lwfact,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(thioff,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(icomppt,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(n_plant_lim,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(n_decomp_lim,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(include_fire,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
@@ -1046,6 +1052,8 @@ subroutine ed_nodeget_nl
    call MPI_Bcast(treefall_disturbance_rate,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(runoff_time,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(betapower,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(ustmin,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(ggfact,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(iprintpolys,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    do n=1,maxpvars

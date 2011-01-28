@@ -42,6 +42,10 @@ module canopy_air_coms
                             !  2. The actual Nusselt number for forced convection is 
                             !     multiplied by 10. as the Reynolds number gets close or
                             !     greater than 10,000.
+   !----- Minimum Ustar [m/s]. ------------------------------------------------------------!
+   real         :: ustmin
+   !----- Factor to be applied to the ground->canopy conductance. -------------------------!
+   real         :: ggfact
    !---------------------------------------------------------------------------------------!
 
    !=======================================================================================!
@@ -52,8 +56,6 @@ module canopy_air_coms
    real         :: exar
    !----- Scaling factor of Tree Area Index, for computing wtveg [dimensionless]. ---------!
    real         :: covr
-   !----- Minimum Ustar [m/s]. ------------------------------------------------------------!
-   real         :: ustmin
    !----- Minimum speed for conductances [m/s]. -------------------------------------------!
    real         :: ugbmin
    !----- Minimum speed for stars [m/s]. --------------------------------------------------!
@@ -69,6 +71,7 @@ module canopy_air_coms
    real(kind=8) :: ubmin8
    real(kind=8) :: ez8
    real(kind=8) :: vh2dh8
+   real(kind=8) :: ggfact8
    !=======================================================================================!
    !=======================================================================================!
 

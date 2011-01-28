@@ -575,6 +575,8 @@
                              !  4 - The parametrisation of Beljaars and Holtslag, but using
                              !      z/L estimation as in Oncley and Dudhia. 
 
+   USTMIN   = 0.10,          ! Minimum u* (m/s)
+   
 
    ICO2    = 1,              ! CO2 prognostic level
                              !  0 - Do not solve it (CO2CON(1) will be used as a time
@@ -647,9 +649,10 @@
    STGOFF  =   0.00,  0.00,  0.00,  0.00,  0.00,  0.00,  0.00, 
                0.00,  0.00,  0.00,  0.00,  0.00,  0.00,  0.00,      !  from lowest atmospheric level
 
-   BETAPOWER = 1., ! Power to be applied to the beta term that
-                   !     controls the ground evaporation.
-
+   BETAPOWER = 1.,               ! Power to be applied to the beta term that
+                                 !     controls the ground evaporation.
+   GGFACT   = 1.0,               ! Factor to multiply the ground to canopy 
+                                 !     conductance
 
 !--------------------------------------------------------------------------
 
@@ -1002,7 +1005,12 @@
    KFACT           = 1.,    ! Factor for changing the water conductance (Kw)
    GAMFACT         = 1.,    ! Factor for changing the dark respiration factor (gamma)
    LWFACT          = 1.,    ! Factor for changing the leaf width (w)
+   THIOFF          = 0.,    ! Offset to be added to the Vm_high_temp
    !---------------------------------------------------------------------------------------!
+
+   ICOMPPT         = 0,       ! Which compensation point should I use 
+                              ! 0 -- original ED-2.1
+                              ! other options coming soon
 
    N_PLANT_LIM     = 0,       ! Determines whether plant photosynthesis can be 
                               ! limited by nitrogen

@@ -141,6 +141,8 @@ module ename_coms
       real                                              :: kfact
       real                                              :: gamfact
       real                                              :: lwfact
+      real                                              :: thioff
+      integer                                           :: icomppt
       integer                                           :: n_plant_lim
       integer                                           :: n_decomp_lim
       integer                                           :: decomp_scheme
@@ -157,6 +159,8 @@ module ename_coms
       real                                              :: treefall_disturbance_rate
       real                                              :: runoff_time
       real                                              :: betapower
+      real                                              :: ustmin
+      real                                              :: ggfact
 
       !----- Options for printing polygon vectors/arrays to standard output. --------------!
       integer                                           :: iprintpolys
@@ -340,6 +344,8 @@ module ename_coms
       enl%kfact                     = undef_real
       enl%gamfact                   = undef_real
       enl%lwfact                    = undef_real
+      enl%thioff                    = undef_real
+      enl%icomppt                   = undef_integer
       enl%n_plant_lim               = undef_integer
       enl%n_decomp_lim              = undef_integer
       enl%decomp_scheme             = undef_integer
@@ -358,6 +364,8 @@ module ename_coms
       enl%treefall_disturbance_rate = undef_real
       enl%runoff_time               = undef_real
       enl%betapower                 = undef_real
+      enl%ustmin                    = undef_real
+      enl%ggfact                    = undef_real
 
       enl%iprintpolys               = undef_integer
       enl%npvars                    = undef_integer

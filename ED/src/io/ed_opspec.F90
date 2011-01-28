@@ -959,7 +959,9 @@ subroutine ed_opspec_misc
                                     , integration_scheme           ! ! intent(in)
    use canopy_air_coms       , only : icanturb                     & ! intent(in)
                                     , i_blyr_condct                & ! intent(in)
-                                    , isfclyrm                     ! ! intent(in)
+                                    , isfclyrm                     & ! intent(in)
+                                    , ustmin                       & ! intent(in)
+                                    , ggfact                       ! ! intent(in)
    use soil_coms             , only : isoilflg                     & ! intent(in)
                                     , nslcon                       & ! intent(in)
                                     , slxclay                      & ! intent(in)
@@ -982,7 +984,9 @@ subroutine ed_opspec_misc
                                     , mfact                        & ! intent(in)
                                     , kfact                        & ! intent(in)
                                     , gamfact                      & ! intent(in)
-                                    , lwfact                       ! ! intent(in)
+                                    , lwfact                       & ! intent(in)
+                                    , thioff                       & ! intent(in)
+                                    , icomppt                      ! ! intent(in)
    use decomp_coms           , only : n_decomp_lim                 ! ! intent(in)
    use disturb_coms          , only : include_fire                 & ! intent(in)
                                     , ianth_disturb                & ! intent(in)
@@ -1275,16 +1279,16 @@ end do
    end if
 
    if (radint < -100.0 .or. radint > 100.0) then
-      write (reason,fmt='(a,1x,i4,a)')                                                     &
-                    'Invalid RADINT, it must be between -100 and 100. Yours is set to'    &
+      write (reason,fmt='(a,1x,es12.5,a)')                                                 &
+                    'Invalid RADINT, it must be between -100 and 100. Yours is set to'     &
                     ,radint,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
  
     if (radslp < 0.0 .or. radslp > 1.0) then
-      write (reason,fmt='(a,1x,i4,a)')                                                     &
-                    'Invalid RADSLP, it must be between 0 and 1. Yours is set to'    &
+      write (reason,fmt='(a,1x,es12.5,a)')                                                 &
+                    'Invalid RADSLP, it must be between 0 and 1. Yours is set to'          &
                     ,radslp,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
@@ -1298,7 +1302,7 @@ end do
    end if
 
    if (vmfact < 0. .or. vmfact > 100.) then
-      write (reason,fmt='(a,1x,i4,a)')                                                     &
+      write (reason,fmt='(a,1x,es12.5,a)')                                                 &
                     'Invalid VMFACT, it must be between 0 and 100. Yours is set to'        &
                     ,vmfact,'...'
       call opspec_fatal(reason,'opspec_misc')
@@ -1306,7 +1310,7 @@ end do
    end if
    
   if (kfact < 0. .or. kfact > 100.) then
-      write (reason,fmt='(a,1x,i4,a)')                                                     &
+      write (reason,fmt='(a,1x,es12.5,a)')                                                 &
                     'Invalid KFACT, it must be between 0 and 100. Yours is set to'         &
                     ,kfact,'...'
       call opspec_fatal(reason,'opspec_misc')
@@ -1314,7 +1318,7 @@ end do
    end if
    
    if (mfact < 0. .or. mfact > 100.) then
-      write (reason,fmt='(a,1x,i4,a)')                                                     &
+      write (reason,fmt='(a,1x,es12.5,a)')                                                 &
                     'Invalid MFACT, it must be between 0 and 100. Yours is set to'         &
                     ,mfact,'...'
       call opspec_fatal(reason,'opspec_misc')
@@ -1322,7 +1326,7 @@ end do
    end if
    
    if (gamfact < 0. .or. gamfact > 100.) then
-      write (reason,fmt='(a,1x,i4,a)')                                                     &
+      write (reason,fmt='(a,1x,es12.5,a)')                                                 &
                     'Invalid GAMFACT, it must be between 0 and 100. Yours is set to'       &
                     ,gamfact,'...'
       call opspec_fatal(reason,'opspec_misc')
@@ -1330,13 +1334,29 @@ end do
    end if
    
    if (lwfact < 0. .or. lwfact > 100.) then
-      write (reason,fmt='(a,1x,i4,a)')                                                     &
+      write (reason,fmt='(a,1x,es12.5,a)')                                                 &
                     'Invalid LWFACT, it must be between 0 and 100. Yours is set to'        &
                     ,lwfact,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
-   
+    
+   if (thioff < -20. .or. thioff > 20.) then
+      write (reason,fmt='(a,1x,es12.5,a)')                                                 &
+                    'Invalid THIOFF, it must be between -20 and 20. Yours is set to'       &
+                    ,lwfact,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+    
+   if (icomppt < 0 .or. icomppt > 0) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid ICOMPPT, it must be between 0 and 0. Yours is set to'         &
+                    ,icomppt,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+  
    if (n_plant_lim < 0 .or. n_plant_lim > 1) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
                     'Invalid N_PLANT_LIM, it must be between 0 and 1. Yours is set to'     &
@@ -1512,6 +1532,22 @@ end do
       write (reason,fmt='(a,1x,es14.7,a)')                                                 &
             'Invalid BETAPOWER, it must be between 0.0 and 10.0. Yours is set to'          &
            ,betapower,'...'
+      call opspec_fatal(reason,'opspec_misc')  
+      ifaterr = ifaterr +1
+   end if
+    
+   if (ustmin < 0.0001 .or. ustmin > 1.0) then
+      write (reason,fmt='(a,1x,es14.7,a)')                                                 &
+            'Invalid USTMIN, it must be between 0.0001 and 1.0. Yours is set to'           &
+           ,ustmin,'...'
+      call opspec_fatal(reason,'opspec_misc')  
+      ifaterr = ifaterr +1
+   end if
+    
+   if (ggfact < 0.0 .or. ggfact > 100.0) then
+      write (reason,fmt='(a,1x,es14.7,a)')                                                 &
+            'Invalid GGFACT, it must be between 0.0 and 100.0. Yours is set to'            &
+           ,ggfact,'...'
       call opspec_fatal(reason,'opspec_misc')  
       ifaterr = ifaterr +1
    end if

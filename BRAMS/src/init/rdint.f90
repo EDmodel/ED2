@@ -847,6 +847,8 @@ subroutine ReadNamelist(fileName)
        stgoff, &
        zrough, &
        betapower
+  use leaf_coms, only: ustmin,    & 
+       ggfact
   use mem_oda, only: frqoda, &
        if_oda, &
        oda_sfc_tel, &
@@ -1105,14 +1107,14 @@ subroutine ReadNamelist(fileName)
   namelist /MODEL_OPTIONS/ &
        naddsc, icorflg, iexev,imassflx, ibnd, jbnd, cphas, lsflg, nfpt,   &
        distim,iswrtyp, ilwrtyp,icumfdbk,                                  &
-       radfrq, lonrad, npatch, nvegpat, isfcl,dtleaf,istar,ico2,          &
+       radfrq, lonrad, npatch, nvegpat, isfcl,dtleaf,istar,ustmin,ico2,   &
        co2con, nvgcon, pctlcon, nslcon, drtcon, zrough, albedo, seatmp,   &
        dthcon, soil_moist, soil_moist_fail, usdata_in, usmodel_in, slz,   &
-       slmstr, stgoff, betapower, if_urban_canopy, idiffk, ibruvais,      &
-       ibotflx, ihorgrad, csx, csz, xkhkm, zkhkm, nna, nnb, nnc, akmin,   &
-       akmax, hgtmin, hgtmax, level, icloud, irain, ipris, isnow, iaggr,  &
-       igraup, ihail, cparm, rparm, pparm, sparm, aparm, gparm, hparm,    &
-       gnu
+       slmstr, stgoff, betapower, ggfact, if_urban_canopy, idiffk,        &
+       ibruvais, ibotflx, ihorgrad, csx, csz, xkhkm, zkhkm, nna, nnb,     &
+       nnc, akmin, akmax, hgtmin, hgtmax, level, icloud, irain, ipris,    &
+       isnow, iaggr, igraup, ihail, cparm, rparm, pparm, sparm, aparm,    &
+       gparm, hparm, gnu
 
   namelist /MODEL_SOUND/ &
        ipsflg, itsflg, irtsflg, iusflg, hs, ps, ts, rts, us, vs, co2s
@@ -1695,6 +1697,7 @@ subroutine ReadNamelist(fileName)
      write (*, *) "isfcl=",isfcl
      write (*, *) "dtleaf=",dtleaf
      write (*, *) "istar=",istar
+     write (*, *) "ustmin=",ustmin
      write (*, *) "ico2=",ico2
      write (*, *) "co2con=",co2con
      write (*, *) "nvgcon=",nvgcon
@@ -1713,6 +1716,7 @@ subroutine ReadNamelist(fileName)
      write (*, *) "slmstr=",slmstr
      write (*, *) "stgoff=",stgoff
      write (*, *) "betapower=",betapower
+     write (*, *) "ggfact=",ggfact
      write (*, *) "if_urban_canopy=",if_urban_canopy
      write (*, *) "idiffk=",idiffk
      write (*, *) "ibruvais=",ibruvais

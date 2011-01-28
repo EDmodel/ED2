@@ -583,6 +583,9 @@ subroutine opspec3
   use mem_cuparm
   use mem_turb
   use mem_leaf
+  use leaf_coms, only :  &
+          ustmin,        & ! intent(in)
+          ggfact         ! ! intent(in)
   use therm_lib , only:  &
           level          ! ! intent(in)
   use grell_coms, only:  &
@@ -972,6 +975,16 @@ subroutine opspec3
   
   if (betapower < 0.0 .or. betapower > 10.0) then
      print *, 'FATAL - BETAPOWER must be between 0.0 and 10.0'
+     ifaterr = ifaterr + 1
+  end if
+  
+  if (ustmin < 1.e-4 .or. ustmin > 1.0) then
+     print *, 'FATAL - USTMIN must be between 0.0001 and 1.0'
+     ifaterr = ifaterr + 1
+  end if
+  
+  if (ggfact < 0.0 .or. ggfact > 100.0) then
+     print *, 'FATAL - GGFACT must be between 0.0 and 100.0'
      ifaterr = ifaterr + 1
   end if
 

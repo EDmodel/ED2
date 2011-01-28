@@ -904,7 +904,7 @@ module canopy_struct_dynamics
          !      The surface resistance inside vegetated canopies is inconsequential, so    !
          ! just give it a nominal zero value.                                              !
          !---------------------------------------------------------------------------------!
-         initp%rasveg = 0.0  
+         initp%rasveg = 0.d0  
 
 
          !---------------------------------------------------------------------------------!

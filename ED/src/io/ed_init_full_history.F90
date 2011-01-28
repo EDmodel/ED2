@@ -3,7 +3,7 @@
 subroutine init_full_history_restart()
 
 
-  use ed_max_dims, only: n_pft
+  use ed_max_dims, only: n_pft,str_len
   use pft_coms, only: SLA, q, qsw, hgt_min, include_pft, phenology
   use ed_misc_coms, only: sfilin, ied_init_mode,current_time
   use mem_polygons, only: grid_res,edres
@@ -21,9 +21,9 @@ subroutine init_full_history_restart()
 
   implicit none
   
-  character(len=1)  :: vnam
-  character(len=3)  :: cgr
-  character(len=128) :: hnamel
+  character(len=1)       :: vnam
+  character(len=3)       :: cgr
+  character(len=str_len) :: hnamel
   type(edtype),pointer      :: cgrid
   type(polygontype),pointer :: cpoly
   type(sitetype),pointer    :: csite

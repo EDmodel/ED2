@@ -129,6 +129,8 @@ subroutine masterput_nl(master_num)
    use turb_coms          , only : nna                         & ! intent(in)
                                  , nnb                         & ! intent(in)
                                  , nnc                         ! ! intent(in)
+   use leaf_coms          , only : ustmin                      & ! intent(in)
+                                 , ggfact                      ! ! intent(in)
    implicit none
    !----- External variable declaration ---------------------------------------------------!
    include 'interface.h'
@@ -280,6 +282,8 @@ subroutine masterput_nl(master_num)
    call MPI_Bcast(STGOFF,NZGMAX,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(SLMSTR,NZGMAX,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(BETAPOWER,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(USTMIN,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(GGFACT,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(IDIFFK,MAXGRDS,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(IBRUVAIS,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(IBOTFLX,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
@@ -920,6 +924,8 @@ subroutine nodeget_nl
    use turb_coms          , only : nna                         & ! intent(out)
                                  , nnb                         & ! intent(out)
                                  , nnc                         ! ! intent(out)
+   use leaf_coms          , only : ustmin                      & ! intent(out)
+                                 , ggfact                      ! ! intent(out)
    implicit none
    !----- External variable declaration ---------------------------------------------------!
    include 'interface.h'
@@ -1066,6 +1072,8 @@ subroutine nodeget_nl
    call MPI_Bcast(STGOFF,NZGMAX,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(SLMSTR,NZGMAX,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(BETAPOWER,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(USTMIN,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(GGFACT,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(IDIFFK,MAXGRDS,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(IBRUVAIS,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(IBOTFLX,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)

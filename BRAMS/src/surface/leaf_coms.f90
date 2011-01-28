@@ -24,6 +24,11 @@ module leaf_coms
                        , alvl      & ! intent(in)
                        , twothirds ! ! intent(in)
 
+   !----- Parameters that are initialised from RAMSIN. ------------------------------------! 
+   real    :: ustmin               ! Minimum ustar                               [     m/s]
+   real    :: ggfact               ! Factor to multiply the ground->canopy conductance.
+   !---------------------------------------------------------------------------------------!
+
    integer :: niter_leaf   ! ! number of leaf timesteps
 
    real    :: dtll         & ! leaf timestep
@@ -68,8 +73,8 @@ module leaf_coms
             , timefac_sst  & ! time interpolation factor for SST                 [     ---]
             
             , rb           & ! vegetation aerodynamic resistance
-            , rd           & ! canopy to ground aerodynamic resistance
-            , rdi          & ! canopy to ground aerodynamic conductance
+            , rgnd         & ! canopy to ground aerodynamic resistance
+            , ggnd         & ! canopy to ground aerodynamic conductance
             , rho_ustar    & ! canopy density time friction velocity
             , rshort_g     & ! net SW radiation absorbed by grnd
             , rshort_v     & ! net SW radiation absorbed by veg
@@ -196,7 +201,6 @@ module leaf_coms
    !     Speed-related minimum values we will consider.                                    !
    !---------------------------------------------------------------------------------------!
    real, parameter :: ubmin    = 0.65  ! Minimum velocity                        [     m/s]
-   real, parameter :: ustmin   = 0.10  ! Minimum ustar                           [     m/s]
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!

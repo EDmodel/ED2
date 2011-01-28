@@ -426,6 +426,21 @@ module farq_leuning
 
 
       !------------------------------------------------------------------------------------!
+      !    First we check whether it is at least dawn or dusk.  In case it is not, no      !
+      ! photosynthesis should happen, so we copy the closed case stomata values to the     !
+      ! open case.  Limit_flag becomes 0, which is the flag for night time limitation.     !
+      !------------------------------------------------------------------------------------!
+      par_twilight_min = find_twilight_min()
+      if (met%par < par_twilight_min) then
+         call copy_solution(stclosed,stopen)
+         limit_flag = 0
+         return
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
       !    There is enough light to be considered at least dawn or dusk, so we go with     !
       ! photosynthesis.  The closed stomata is already solved, so now we must solve the    !
       ! open stomata case only.                                                            !
@@ -442,17 +457,6 @@ module farq_leuning
       !------------------------------------------------------------------------------------!
       !----- Update the CO2 demand function parameters for light limitation. --------------!
       call set_co2_demand_params('LIGHT')
-      !------------------------------------------------------------------------------------!
-      !    First we check whether it is at least dawn or dusk.  In case it is not, no      !
-      ! photosynthesis should happen, so we copy the closed case stomata values to the     !
-      ! open case.  Limit_flag becomes 0, which is the flag for night time limitation.     !
-      !------------------------------------------------------------------------------------!
-      par_twilight_min = find_twilight_min()
-      if (met%par < par_twilight_min) then
-         call copy_solution(stclosed,stopen)
-         limit_flag = 0
-         return
-      end if
       !----- Choose the appropriate solver depending on the kind of photosynthesis. -------!
       select case(thispft%photo_pathway)
       case (3)
@@ -1689,17 +1693,9 @@ module farq_leuning
                                 , met               ! ! intent(in)
       use physiology_coms, only : gsw_2_gsc8
       implicit none
-      !----- Local variables. -------------------------------------------------------------!
-      real(kind=8) :: restot    ! Total resistance                               [ m2s/mol]
-      !------------------------------------------------------------------------------------!
-
-      restot = (gsw_2_gsc8 * thispft%b + met%blyr_cond_co2)                                &
-             / (gsw_2_gsc8 * thispft%b * met%blyr_cond_co2)
-
-
-      find_twilight_min = ( (aparms%nu *(aparms%tau / met%can_co2 - 1.d0)                  &
-                          - 2.d0 * aparms%tau / restot)                                    &
-                          * (2.d0 * met%can_co2 / (aparms%tau - 2.d0 * met%can_co2)))      &
+      
+      find_twilight_min = ( thispft%gamma * aparms%vm * (met%can_co2 + 2.d0 * met%compp)   &
+                                                      / (met%can_co2 -        met%compp) ) &
                         / thispft%alpha
 
       return
