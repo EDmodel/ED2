@@ -93,7 +93,8 @@ subroutine copy_nl(copy_type)
                                    , gamfact                   & ! intent(out)
                                    , lwfact                    & ! intent(out)
                                    , thioff                    & ! intent(out)
-                                   , icomppt                   ! ! intent(out)
+                                   , icomppt                   & ! intent(out)
+                                   , quantum_efficiency_T      ! ! intent(out)
    use phenology_coms       , only : iphen_scheme              & ! intent(out)
                                    , iphenys1                  & ! intent(out)
                                    , iphenysf                  & ! intent(out)
@@ -295,6 +296,7 @@ subroutine copy_nl(copy_type)
       lwfact                    = nl%lwfact
       thioff                    = nl%thioff
       icomppt                   = nl%icomppt
+      quantum_efficiency_T      = nl%quantum_efficiency_T
       radint                    = nl%radint
       radslp                    = nl%radslp
       n_plant_lim               = nl%n_plant_lim

@@ -153,16 +153,18 @@ module allometry
    !=======================================================================================!
    !    Canopy Area allometry from Dietze and Clark (2008).                                !
    !---------------------------------------------------------------------------------------!
-   real function dbh2ca(dbh,ipft)
+   real function dbh2ca(dbh,sla,ipft)
       use pft_coms, only : is_tropical,is_grass
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       real   , intent(in) :: dbh
+      real   , intent(in) :: sla
       integer, intent(in) :: ipft
       !----- Internal variables -----------------------------------------------------------!
-      real :: hite ! Only testing...
+      real                :: loclai ! The maximum local LAI for a given DBH
       !------------------------------------------------------------------------------------!
       if (dbh < tiny(1.0)) then
+         loclai = 0.0
          dbh2ca = 0.0
       !----- Based on Poorter et al. (2006) -----------------------------------------------!
       !elseif(is_tropical(ipft) .or. is_grass(ipft)) then
@@ -170,8 +172,13 @@ module allometry
       !   dbh2ca = 0.156766*hite**1.888
       !----- Based on Dietze and Clark (2008). --------------------------------------------!
       else
+         loclai = sla * dbh2bl(dbh,ipft)
          dbh2ca = 2.490154*dbh**0.8068806
       end if
+      
+      !----- Local LAI / Crown area should never be less than one. ------------------------!
+      dbh2ca = min (loclai, dbh2ca)
+
       return
    end function dbh2ca
    !=======================================================================================!
@@ -510,7 +517,7 @@ module allometry
                 + conijn_b(pft) * errorfun(conijn_c(pft)*C2B*bwood + conijn_d(pft))
          end if
          wai = nplant * bwood * swa
-         wpa = wai * dbh2ca(dbh,pft)
+         wpa = wai * dbh2ca(dbh,sla,pft)
          !---------------------------------------------------------------------------------!
 
 

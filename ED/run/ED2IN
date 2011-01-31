@@ -452,7 +452,6 @@
                               !      FSW = 1/ (1 + D/S)
                               ! 2 -- Alternative method:
                               !      FSW = ½ - ½ * tanh[2*(D/S - 2)]
-
    !---------------------------------------------------------------------------------------!
    !    These are factors that multiply some of the ED-2.1 default parameters.  Setting    !
    ! them to 1.0 will make them the default.  These are applied for all PFTs.              !
@@ -469,7 +468,13 @@
                               ! 0 -- original ED-2.1
                               ! other options coming soon
 
-]   NL%N_PLANT_LIM     = 0     ! Determines whether plant photosynthesis can be 
+   NL%QUANTUM_EFFICIENCY_T = 0 ! Which quantum efficiency should I use
+                              ! 0 ---- original ED-2.1
+                              ! 1 ---- Temperature dependent quantum efficiency
+                                       after Ehlringer and Ollebjorkman 1977
+
+   NL%N_PLANT_LIM     = 0     ! Determines whether plant photosynthesis can be 
+
                               ! limited by nitrogen
                               !
                               ! 0 -- No nitrogen limitation
@@ -542,13 +547,14 @@
                               !      stable layers that works better during night time.
                               !  4 - The parameterization of Beljaars and Holtslag, but 
                               !      using z/L estimation as in Oncley and Dudhia. 
+                              !  5 - The parametrisation of Oncley and Dudhia, but using 
+                              !      z/L estimation as in Beljaars and Holtslag
 
    NL%IPERCOL         = 1     ! Percolation scheme:
                               !  0 - Original method, from LEAF-3.  Shed liquid in excess 
                               !      of a 1:9 liquid-to-ice ratio through percolation.
                               !  1 - Alternative "free" water calculation.  
                               !      Anderson (1976), NOAA Tech Report NWS 19.
-
 
 
    !---------------------------------------------------------------------!

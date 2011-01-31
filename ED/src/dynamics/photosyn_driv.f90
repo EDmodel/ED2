@@ -446,8 +446,12 @@ subroutine print_photo_details(cmet,csite,ipa,ico,limit_flag,vm,compp)
    use physiology_coms, only : photo_prefix       ! ! intent(in)
    use ed_misc_coms   , only : current_time       ! ! intent(in)
    use consts_coms    , only : Watts_2_Ein        & ! intent(in)
-                             , mol_2_umol         ! ! intent(in)
-   use pft_coms       , only : quantum_efficiency ! ! intent(in)
+                             , mol_2_umol         & ! intent(in)
+                             , t008               ! ! intent(in)
+   use pft_coms       , only : quantum_efficiency & ! intent(in)
+                             , photosyn_pathway   ! ! intent(in)
+   use physiology_coms, only : quantum_efficiency_T ! ! intent(in)
+   
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    type(sitetype)            , target      :: csite           ! Current site
@@ -470,6 +474,7 @@ subroutine print_photo_details(cmet,csite,ipa,ico,limit_flag,vm,compp)
    real                                    :: par_area
    real                                    :: parv
    real                                    :: util_parv
+   real                                    :: alpha
    !----- Local constants. ----------------------------------------------------------------!
    character(len=10), parameter :: hfmt='(55(a,1x))'
    character(len=48), parameter :: bfmt='(3(i13,1x),1(es13.6,1x),2(i13,1x),49(es13.6,1x))'
@@ -488,7 +493,25 @@ subroutine print_photo_details(cmet,csite,ipa,ico,limit_flag,vm,compp)
    if (cpatch%solvable(ico)) then
       par_area   = cpatch%par_v(ico) * Watts_2_Ein * mol_2_umol
       parv       = par_area / cpatch%lai(ico)
-      util_parv  = quantum_efficiency(ipft) * parv
+      
+      
+      !------------------------------------------------------------------------------------!
+      !    Is alpha (quantum efficiency) temperature dependent?  If so, calculate after    !
+      !    Ehlringer and Ollebjorkman 1977, if not use default value from ed_params                                                   !
+      !------------------------------------------------------------------------------------!
+      select case(quantum_efficiency_T)
+      case(1)
+           select case (photosyn_pathway(ipft))
+           case (4)
+               alpha         = dble(quantum_efficiency(ipft))       
+           case (3)       
+               alpha         = dble(-0.0016*(dble(cpatch%veg_temp(ico))-t008)+0.1040)
+           end select
+      case default
+            alpha         = dble(quantum_efficiency(ipft))      
+      end select
+      
+      util_parv  = alpha * parv
    else
       par_area  = 0.0
       parv      = 0.0

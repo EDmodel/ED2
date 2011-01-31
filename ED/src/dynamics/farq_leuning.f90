@@ -97,7 +97,8 @@ module farq_leuning
                                 , c34smax_lint_co28        & ! intent(in)
                                 , gbh_2_gbw8               & ! intent(in)
                                 , gbw_2_gbc8               & ! intent(in)
-                                , o2_ref8                  ! ! intent(in)
+                                , o2_ref8                  & ! intent(in)
+                                , quantum_efficiency_T     ! ! intent(in)
       use therm_lib8     , only : rslif8                   ! ! function
       use consts_coms    , only : mmh2oi8                  & ! intent(in)
                                 , mmh2o8                   & ! intent(in)
@@ -158,9 +159,25 @@ module farq_leuning
       thispft%b             = dble(cuticular_cond(ipft)) * umol_2_mol8
       thispft%gamma         = dble(dark_respiration_factor(ipft))
       thispft%m             = dble(stomatal_slope(ipft))
-      thispft%alpha         = dble(quantum_efficiency(ipft))
       thispft%vm_low_temp   = dble(vm_low_temp(ipft))  + t008
       thispft%vm_high_temp  = dble(vm_high_temp(ipft)) + t008
+      
+      !------------------------------------------------------------------------------------!
+      !    Is alpha (quantum efficiency) temperature dependent?  If so, calculate after    !
+      !    Ehlringer and Ollebjorkman 1977, if not use default value from ed_params                                                   !
+      !------------------------------------------------------------------------------------!
+      select case(quantum_efficiency_T)
+      case(1)
+           select case (thispft%photo_pathway)
+           case (4)
+               thispft%alpha         = dble(quantum_efficiency(ipft))       
+           case (3)       
+               thispft%alpha         = dble(-0.0016*(dble(veg_temp)-t008)+0.1040)
+           end select
+      case default
+            thispft%alpha         = dble(quantum_efficiency(ipft))      
+      end select
+      
       !------------------------------------------------------------------------------------!
       !     Find Vm0 for photosynthesis and respiration, depending on whether this PFT     !
       ! has a light-controlled phenology or not.  Convert the resulting Vm into mol/m²/s.  !
@@ -424,12 +441,14 @@ module farq_leuning
       !------------------------------------------------------------------------------------!
 
 
+
       !------------------------------------------------------------------------------------!
       !    First we check whether it is at least dawn or dusk.  In case it is not, no      !
       ! photosynthesis should happen, so we copy the closed case stomata values to the     !
       ! open case.  Limit_flag becomes 0, which is the flag for night time limitation.     !
       !------------------------------------------------------------------------------------!
       par_twilight_min = find_twilight_min()
+
       if (met%par < par_twilight_min) then
          call copy_solution(stclosed,stopen)
          limit_flag = 0
@@ -1684,6 +1703,8 @@ module farq_leuning
    end function arrhenius
    !=======================================================================================!
    !=======================================================================================!
+
+
 
 
 

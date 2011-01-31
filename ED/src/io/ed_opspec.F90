@@ -986,7 +986,8 @@ subroutine ed_opspec_misc
                                     , gamfact                      & ! intent(in)
                                     , lwfact                       & ! intent(in)
                                     , thioff                       & ! intent(in)
-                                    , icomppt                      ! ! intent(in)
+                                    , icomppt                      & ! intent(in)
+                                    , quantum_efficiency_T         ! ! intent(in)
    use decomp_coms           , only : n_decomp_lim                 ! ! intent(in)
    use disturb_coms          , only : include_fire                 & ! intent(in)
                                     , ianth_disturb                & ! intent(in)
@@ -1357,6 +1358,14 @@ end do
       ifaterr = ifaterr +1
    end if
   
+   if (quantum_efficiency_T < 0 .or. quantum_efficiency_T > 1) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid QUANTUM_EFFICIENCY_T, it must be either 0 or 1. Yours is set to'         &
+                    ,quantum_efficiency_T,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+
    if (n_plant_lim < 0 .or. n_plant_lim > 1) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
                     'Invalid N_PLANT_LIM, it must be between 0 and 1. Yours is set to'     &
@@ -1406,9 +1415,16 @@ end do
       ifaterr = ifaterr +1
    end if
 
-   if (isfclyrm < 1 .or. isfclyrm > 4) then
+   if (isfclyrm < 1 .or. isfclyrm > 5) then
       write (reason,fmt='(a,1x,i4,a)') &
-        'Invalid ISFCLYRM, it must be between 1 and 4. Yours is set to',isfclyrm,'...'
+        'Invalid ISFCLYRM, it must be between 1 and 5. Yours is set to',isfclyrm,'...'
+      call opspec_fatal(reason,'opspec_misc')  
+      ifaterr = ifaterr +1
+   end if
+
+   if (ipercol < 0 .or. ipercol > 1) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+        'Invalid IPERCOL, it must be either 0 or 1. Yours is set to',ipercol,'...'
       call opspec_fatal(reason,'opspec_misc')  
       ifaterr = ifaterr +1
    end if

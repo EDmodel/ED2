@@ -294,7 +294,8 @@ subroutine sfcrad_ed(cosz, cosaoi, csite, maxcohort, rshort_tot,rshort_diffuse)
             case (1)
                !----- Crown area allom from Dietze and Clark (2008). ----------------------!
                crown_area              = cpatch%nplant(ico)                                &
-                                       * dbh2ca(cpatch%dbh(ico),cpatch%pft(ico))
+                                       * dbh2ca(cpatch%dbh(ico),cpatch%sla(ico)            &
+                                               ,cpatch%pft(ico))
                CA_array(cohort_count)  = min(1.d0,dble(crown_area))
             end select
          end if

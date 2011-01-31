@@ -635,7 +635,6 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
    use therm_lib8            , only : rslif8               ! ! function
    use ed_misc_coms          , only : dtlsm                & ! intent(in)
                                     , fast_diagnostics     ! ! intent(in)
-   use allometry             , only : dbh2ca               ! ! function
    use canopy_struct_dynamics, only : vertical_vel_flux8   ! ! function
    use pft_coms              , only : water_conductance    & ! intent(in)
                                     , q                    & ! intent(in)
