@@ -54,9 +54,10 @@ radiate_driver.o: grid_coms.mod soil_coms.mod
 reproduction.o: allometry.mod consts_coms.mod decomp_coms.mod ed_max_dims.mod
 reproduction.o: ed_state_vars.mod ed_therm_lib.mod fuse_fiss_utils.mod
 reproduction.o: mem_polygons.mod pft_coms.mod phenology_coms.mod
-rk4_derivs.o: allometry.mod canopy_struct_dynamics.mod consts_coms.mod
-rk4_derivs.o: ed_max_dims.mod ed_misc_coms.mod ed_state_vars.mod grid_coms.mod
-rk4_derivs.o: pft_coms.mod rk4_coms.mod soil_coms.mod therm_lib8.mod
+rk4_derivs.o: allometry.mod canopy_air_coms.mod canopy_struct_dynamics.mod
+rk4_derivs.o: consts_coms.mod ed_max_dims.mod ed_misc_coms.mod ed_state_vars.mod
+rk4_derivs.o: grid_coms.mod pft_coms.mod rk4_coms.mod soil_coms.mod
+rk4_derivs.o: therm_lib8.mod
 rk4_driver.o: canopy_air_coms.mod canopy_struct_dynamics.mod consts_coms.mod
 rk4_driver.o: ed_misc_coms.mod ed_state_vars.mod grid_coms.mod
 rk4_driver.o: met_driver_coms.mod rk4_coms.mod soil_coms.mod therm_lib.mod
@@ -163,6 +164,7 @@ ed_state_vars.o: phenology_coms.mod soil_coms.mod
 ed_var_tables.o: ed_max_dims.mod
 ed_work_vars.o: ed_max_dims.mod
 ename_coms.o: ed_max_dims.mod
+fusion_fission_coms.o: ed_max_dims.mod
 grid_coms.o: ed_max_dims.mod
 hdf5_coms.o: 
 mem_polygons.o: ed_max_dims.mod

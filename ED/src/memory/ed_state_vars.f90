@@ -1,3 +1,8 @@
+!==========================================================================================!
+!==========================================================================================!
+!     This module contains the main variable structures in ED, and several important sub-  !
+! routines for allocation, de-allocation.                                                  !
+!------------------------------------------------------------------------------------------!
 module ed_state_vars
 
   use grid_coms, only: nzg,nzs,ngrids
@@ -5715,192 +5720,307 @@ contains
 
     return
   end subroutine huge_patchtype
-!============================================================================!
-!============================================================================!
+   !=======================================================================================!
+   !=======================================================================================!
 
 
 
 
 
-!============================================================================!
-!============================================================================!
-  subroutine copy_edtype(edin,edout,ipin,ipout)
-  ! =====================================================
-  ! Copying Functions
-  ! =====================================================
 
-    implicit none
-    integer :: ipin,ipout
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This subroutine copies the patches from the input site to the output.   The       !
+   ! number of patches to be copied should be always match between the input and output,   !
+   ! and every single variable, including the cohorts, will be copied.                     !
+   ! IMPORTANT.  This subroutine assumes that the output patches still don't have cohorts  !
+   !             allocated, so this should be never used in a previously allocated patch.  !
+   !---------------------------------------------------------------------------------------!
+   subroutine copy_sitetype(isite,osite,ipaa,ipaz,opaa,opaz)
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(sitetype)  , target     :: isite ! Input  (donor) site
+      type(sitetype)  , target     :: osite ! Output (receptor) site
+      integer         , intent(in) :: ipaa  ! First input  patch index
+      integer         , intent(in) :: ipaz  ! Last  input  patch index
+      integer         , intent(in) :: opaa  ! First output patch index
+      integer         , intent(in) :: opaz  ! Last  output patch index
+      !----- Local variables. -------------------------------------------------------------!
+      type(stoma_data), pointer    :: osdi  ! Old stomate data - input patch
+      type(stoma_data), pointer    :: osdo  ! Old stomate data - output patch
+      integer                      :: ipa   ! Counter for the input  site patches
+      integer                      :: opa   ! Counter for the output site patches
+      integer                      :: k     ! Vertical layer counter
+      integer                      :: ipft  ! PFT counter
+      integer                      :: isto  ! Stomate attribute counter
+      integer                      :: idbh  ! DBH counter
+      !------------------------------------------------------------------------------------!
 
-    type(edtype) :: edin,edout
 
-    edout%lat(ipout)          = edin%lat(ipin)
-    edout%lon(ipout)          = edin%lon(ipin)
-    edout%xatm(ipout)         = edin%xatm(ipin)
-    edout%yatm(ipout)         = edin%yatm(ipin)
-    edout%natm(ipout)         = edin%natm(ipin)
-    edout%ntext_soil(1:nzg,ipout) = edin%ntext_soil(1:nzg,ipin)
-    edout%lsl(ipout)          = edin%lsl(ipin)
-  
-    return
-  end subroutine copy_edtype
-!============================================================================!
-!============================================================================!
+      !------ Check whether this patch copying makes sense. -------------------------------!
+      if (ipaz - ipaa /= opaz - opaa) then
+         write (unit=*,fmt='(a)')       '------------------------------------------------'
+         write (unit=*,fmt='(a)')       ' - Input site:'
+         write (unit=*,fmt='(a,1x,i6)') '   * First patch: ',ipaa
+         write (unit=*,fmt='(a,1x,i6)') '   * Last  patch: ',ipaz
+         write (unit=*,fmt='(a,1x,i6)') '   * Patch count: ',ipaz-ipaa+1
+         write (unit=*,fmt='(a)')       ' - Output site:'
+         write (unit=*,fmt='(a,1x,i6)') '   * First patch: ',opaa
+         write (unit=*,fmt='(a,1x,i6)') '   * Last  patch: ',opaz
+         write (unit=*,fmt='(a,1x,i6)') '   * Patch count: ',opaz-opaa+1
+         write (unit=*,fmt='(a)'      ) '------------------------------------------------'
+         call fatal_error ('Patch count of input and output paths don''t match'            &
+                          ,'copy_sitetype','ed_state_vars.f90')
+      end if
+      !------------------------------------------------------------------------------------!
 
+      ipa = ipaa - 1
+      opaloop: do opa = opaa, opaz
+         ipa = ipa + 1
 
+         osite%paco_id(opa)                     = isite%paco_id(ipa)
+         osite%paco_n(opa)                      = isite%paco_n(ipa)
+         osite%dist_type(opa)                   = isite%dist_type(ipa)
+         osite%age(opa)                         = isite%age(ipa)
+         osite%area(opa)                        = isite%area(ipa)
+         osite%hcapveg(opa)                     = isite%hcapveg(ipa)
+         osite%fast_soil_C(opa)                 = isite%fast_soil_C(ipa)
+         osite%slow_soil_C(opa)                 = isite%slow_soil_C(ipa)
+         osite%structural_soil_C(opa)           = isite%structural_soil_C(ipa)
+         osite%structural_soil_L(opa)           = isite%structural_soil_L(ipa)
+         osite%mineralized_soil_N(opa)          = isite%mineralized_soil_N(ipa)
+         osite%fast_soil_N(opa)                 = isite%fast_soil_N(ipa)
+         osite%sum_dgd(opa)                     = isite%sum_dgd(ipa)
+         osite%sum_chd(opa)                     = isite%sum_chd(ipa)
+         osite%plantation(opa)                  = isite%plantation(ipa)
+         osite%cohort_count(opa)                = isite%cohort_count(ipa)
+         osite%can_theiv(opa)                   = isite%can_theiv(ipa)
+         osite%can_temp(opa)                    = isite%can_temp(ipa)
+         osite%can_shv(opa)                     = isite%can_shv(ipa)
+         osite%can_co2(opa)                     = isite%can_co2(ipa)
+         osite%can_rhos(opa)                    = isite%can_rhos(ipa)
+         osite%can_prss(opa)                    = isite%can_prss(ipa)
+         osite%can_theta(opa)                   = isite%can_theta(ipa)
+         osite%can_depth(opa)                   = isite%can_depth(ipa)
+         osite%lambda_light(opa)                = isite%lambda_light(ipa)
+         osite%lai(opa)                         = isite%lai(ipa)
+         osite%wpa(opa)                         = isite%wpa(ipa)
+         osite%wai(opa)                         = isite%wai(ipa)
+         osite%avg_daily_temp(opa)              = isite%avg_daily_temp(ipa)
+         osite%mean_rh(opa)                     = isite%mean_rh(ipa)
+         osite%mean_nep(opa)                    = isite%mean_nep(ipa)
+         osite%wbudget_loss2atm(opa)            = isite%wbudget_loss2atm(ipa)
+         osite%wbudget_denseffect(opa)          = isite%wbudget_denseffect(ipa)
+         osite%wbudget_precipgain(opa)          = isite%wbudget_precipgain(ipa)
+         osite%wbudget_loss2runoff(opa)         = isite%wbudget_loss2runoff(ipa)
+         osite%wbudget_loss2drainage(opa)       = isite%wbudget_loss2drainage(ipa)
+         osite%wbudget_initialstorage(opa)      = isite%wbudget_initialstorage(ipa)
+         osite%wbudget_residual(opa)            = isite%wbudget_residual(ipa)
+         osite%ebudget_loss2atm(opa)            = isite%ebudget_loss2atm(ipa)
+         osite%ebudget_denseffect(opa)          = isite%ebudget_denseffect(ipa)
+         osite%ebudget_loss2runoff(opa)         = isite%ebudget_loss2runoff(ipa)
+         osite%ebudget_loss2drainage(opa)       = isite%ebudget_loss2drainage(ipa)
+         osite%ebudget_netrad(opa)              = isite%ebudget_netrad(ipa)
+         osite%ebudget_precipgain(opa)          = isite%ebudget_precipgain(ipa)
+         osite%ebudget_initialstorage(opa)      = isite%ebudget_initialstorage(ipa)
+         osite%ebudget_residual(opa)            = isite%ebudget_residual(ipa)
+         osite%co2budget_initialstorage(opa)    = isite%co2budget_initialstorage(ipa)
+         osite%co2budget_residual(opa)          = isite%co2budget_residual(ipa)
+         osite%co2budget_loss2atm(opa)          = isite%co2budget_loss2atm(ipa)
+         osite%co2budget_denseffect(opa)        = isite%co2budget_denseffect(ipa)
+         osite%co2budget_gpp(opa)               = isite%co2budget_gpp(ipa)
+         osite%co2budget_plresp(opa)            = isite%co2budget_plresp(ipa)
+         osite%co2budget_rh(opa)                = isite%co2budget_rh(ipa)
+         osite%today_A_decomp(opa)              = isite%today_A_decomp(ipa)
+         osite%today_Af_decomp(opa)             = isite%today_Af_decomp(ipa)
+         osite%veg_rough(opa)                   = isite%veg_rough(ipa)
+         osite%veg_height(opa)                  = isite%veg_height(ipa)
+         osite%fsc_in(opa)                      = isite%fsc_in(ipa)
+         osite%ssc_in(opa)                      = isite%ssc_in(ipa)
+         osite%ssl_in(opa)                      = isite%ssl_in(ipa)
+         osite%fsn_in(opa)                      = isite%fsn_in(ipa)
+         osite%total_plant_nitrogen_uptake(opa) = isite%total_plant_nitrogen_uptake(ipa)
+         osite%mineralized_N_loss(opa)          = isite%mineralized_N_loss(ipa)
+         osite%mineralized_N_input(opa)         = isite%mineralized_N_input(ipa)
+         osite%rshort_g(opa)                    = isite%rshort_g(ipa)
+         osite%rshort_g_beam(opa)               = isite%rshort_g_beam(ipa)
+         osite%rshort_g_diffuse(opa)            = isite%rshort_g_diffuse(ipa)
+         osite%rlong_g(opa)                     = isite%rlong_g(ipa)
+         osite%rlong_g_surf(opa)                = isite%rlong_g_surf(ipa)
+         osite%rlong_g_incid(opa)               = isite%rlong_g_incid(ipa)
+         osite%rlong_s(opa)                     = isite%rlong_s(ipa)
+         osite%rlong_s_surf(opa)                = isite%rlong_s_surf(ipa)
+         osite%rlong_s_incid(opa)               = isite%rlong_s_incid(ipa)
+         osite%albedt(opa)                      = isite%albedt(ipa)
+         osite%albedo_beam(opa)                 = isite%albedo_beam(ipa)
+         osite%albedo_diffuse(opa)              = isite%albedo_diffuse(ipa)
+         osite%rlongup(opa)                     = isite%rlongup(ipa)
+         osite%rlong_albedo(opa)                = isite%rlong_albedo(ipa)
+         osite%total_snow_depth(opa)            = isite%total_snow_depth(ipa)
+         osite%snowfac(opa)                     = isite%snowfac(ipa)
+         osite%A_decomp(opa)                    = isite%A_decomp(ipa)
+         osite%f_decomp(opa)                    = isite%f_decomp(ipa)
+         osite%rh(opa)                          = isite%rh(ipa)
+         osite%cwd_rh(opa)                      = isite%cwd_rh(ipa)
+         osite%fuse_flag(opa)                   = isite%fuse_flag(ipa)
+         osite%plant_ag_biomass(opa)            = isite%plant_ag_biomass(ipa)
+         osite%mean_wflux(opa)                  = isite%mean_wflux(ipa)
+         osite%mean_latflux(opa)                = isite%mean_latflux(ipa)
+         osite%mean_hflux(opa)                  = isite%mean_hflux(ipa)
+         osite%mean_runoff(opa)                 = isite%mean_runoff(ipa)
+         osite%mean_qrunoff(opa)                = isite%mean_qrunoff(ipa)
+         osite%htry(opa)                        = isite%htry(ipa)
+         osite%avg_rk4step(opa)                 = isite%avg_rk4step(ipa)
+         osite%avg_available_water(opa)         = isite%avg_available_water(ipa)
+         osite%ustar(opa)                       = isite%ustar(ipa)
+         osite%tstar(opa)                       = isite%tstar(ipa)
+         osite%qstar(opa)                       = isite%qstar(ipa)
+         osite%cstar(opa)                       = isite%cstar(ipa)
 
+         osite%zeta(opa)                        = isite%zeta(ipa)
+         osite%ribulk(opa)                      = isite%ribulk(ipa)
 
+         osite%upwp(opa)                        = isite%upwp(ipa)
+         osite%tpwp(opa)                        = isite%tpwp(ipa)
+         osite%qpwp(opa)                        = isite%qpwp(ipa)
+         osite%cpwp(opa)                        = isite%cpwp(ipa)
+         osite%wpwp(opa)                        = isite%wpwp(ipa)
 
-!============================================================================!
-!============================================================================!
-  subroutine copy_polygon(edin,oldsize,water_site)
-  ! =====================================================
-  ! Copying Functions2
-  ! =====================================================
+         osite%avg_carbon_ac(opa)               = isite%avg_carbon_ac(ipa)
+         osite%nlev_sfcwater(opa)               = isite%nlev_sfcwater(ipa)
+         osite%ground_shv(opa)                  = isite%ground_shv(ipa)
+         osite%ground_ssh(opa)                  = isite%ground_ssh(ipa)
+         osite%ground_temp(opa)                 = isite%ground_temp(ipa)
+         osite%ground_fliq(opa)                 = isite%ground_fliq(ipa)
+         osite%rough(opa)                       = isite%rough(ipa)
 
-    implicit none
-!    integer :: ifm,ipin,ipout,newsize,oldsize
+         osite%avg_carbon_ac(opa)               = isite%avg_carbon_ac(ipa)
+         osite%avg_vapor_vc(opa)                = isite%avg_vapor_vc(ipa)
+         osite%avg_dew_cg(opa)                  = isite%avg_dew_cg(ipa)
+         osite%avg_vapor_gc(opa)                = isite%avg_vapor_gc(ipa)
+         osite%avg_wshed_vg(opa)                = isite%avg_wshed_vg(ipa)
+         osite%avg_intercepted(opa)             = isite%avg_intercepted(ipa)
+         osite%avg_throughfall(opa)             = isite%avg_throughfall(ipa)
+         osite%avg_vapor_ac(opa)                = isite%avg_vapor_ac(ipa)
+         osite%avg_transp(opa)                  = isite%avg_transp(ipa)
+         osite%avg_evap(opa)                    = isite%avg_evap(ipa)
+         osite%avg_netrad(opa)                  = isite%avg_netrad(ipa)
+         osite%avg_runoff(opa)                  = isite%avg_runoff(ipa)
+         osite%avg_drainage(opa)                = isite%avg_drainage(ipa)
+         osite%avg_drainage_heat(opa)           = isite%avg_drainage_heat(ipa)
+         osite%aux(opa)                         = isite%aux(ipa)
+         osite%avg_sensible_vc(opa)             = isite%avg_sensible_vc(ipa)
+         osite%avg_qwshed_vg(opa)               = isite%avg_qwshed_vg(ipa)
+         osite%avg_qintercepted(opa)            = isite%avg_qintercepted(ipa)
+         osite%avg_qthroughfall(opa)            = isite%avg_qthroughfall(ipa)
+         osite%avg_sensible_gc(opa)             = isite%avg_sensible_gc(ipa)
+         osite%avg_sensible_ac(opa)             = isite%avg_sensible_ac(ipa)
+         osite%avg_runoff_heat(opa)             = isite%avg_runoff_heat(ipa)
+         osite%avg_veg_energy(opa)              = isite%avg_veg_energy(ipa)
+         osite%avg_veg_temp(opa)                = isite%avg_veg_temp(ipa)
+         osite%avg_veg_fliq(opa)                = isite%avg_veg_fliq(ipa)
+         osite%avg_veg_water(opa)               = isite%avg_veg_water(ipa)
 
-    type(edtype),target :: edin
-    integer :: oldsize,newsize,i
-    integer, dimension(oldsize),intent(IN) :: water_site
-    integer, dimension(oldsize) :: water_site_new
+         !----- Copy the temporary surface water variables. -------------------------------!
+         do k=1,nzs
+            osite%sfcwater_mass(k,opa)          = isite%sfcwater_mass(k,ipa)
+            osite%sfcwater_energy(k,opa)        = isite%sfcwater_energy(k,ipa)
+            osite%sfcwater_depth(k,opa)         = isite%sfcwater_depth(k,ipa)
+            osite%rshort_s(k,opa)               = isite%rshort_s(k,ipa)
+            osite%rshort_s_beam(k,opa)          = isite%rshort_s_beam(k,ipa)
+            osite%rshort_s_diffuse(k,opa)       = isite%rshort_s_diffuse(k,ipa)
+            osite%sfcwater_tempk(k,opa)         = isite%sfcwater_tempk(k,ipa)
+            osite%sfcwater_fracliq(k,opa)       = isite%sfcwater_fracliq(k,ipa)
+         end do
 
-    water_site_new = 0
+         !----- Copy the soil variables. --------------------------------------------------!
+         do k=1,nzg
+            osite%ntext_soil(k,opa)             =  isite%ntext_soil(k,ipa)
+            osite%soil_energy(k,opa)            =  isite%soil_energy(k,ipa)
+            osite%soil_water(k,opa)             =  isite%soil_water(k,ipa)
+            osite%soil_tempk(k,opa)             =  isite%soil_tempk(k,ipa)
+            osite%soil_fracliq(k,opa)           =  isite%soil_fracliq(k,ipa)
+            osite%avg_smoist_gg(k,opa)          =  isite%avg_smoist_gg(k,ipa)
+            osite%avg_smoist_gc(k,opa)          =  isite%avg_smoist_gc(k,ipa)
+            osite%avg_sensible_gg(k,opa)        =  isite%avg_sensible_gg(k,ipa)
+            osite%aux_s(k,opa)                  =  isite%aux_s(k,ipa)
+         end do
+
+        !----- PFT types. -----------------------------------------------------------------!
+        do ipft=1,n_pft
+           osite%repro(ipft,opa)                =  isite%repro(ipft,ipa)
+           osite%A_o_max(ipft,opa)              =  isite%A_o_max(ipft,ipa)
+           osite%A_c_max(ipft,opa)              =  isite%A_c_max(ipft,ipa)
+           
+           do isto=1,n_stoma_atts
+              osite%old_stoma_vector_max(isto,ipft,opa) =                                  &
+                                                 isite%old_stoma_vector_max(isto,ipft,ipa)
+           end do
+
+           do idbh=1,ff_ndbh
+              osite%pft_density_profile(ipft,idbh,opa) =                                   &
+                                                  isite%pft_density_profile(ipft,idbh,ipa)
+           end do
+           
+           !----- This is to copy the old_stoma_data_max structure. -----------------------!
+           osdo => osite%old_stoma_data_max(ipft,opa)
+           osdi => isite%old_stoma_data_max(ipft,ipa)
+          
+           osdo%recalc           = osdi%recalc
+           osdo%T_L              = osdi%T_L
+           osdo%e_A              = osdi%e_A
+           osdo%PAR              = osdi%PAR
+           osdo%rb_factor        = osdi%rb_factor
+           osdo%prss             = osdi%prss
+           osdo%phenology_factor = osdi%phenology_factor
+           osdo%gsw_open         = osdi%gsw_open
+           osdo%ilimit           = osdi%ilimit
+           osdo%T_L_residual     = osdi%T_L_residual
+           osdo%e_a_residual     = osdi%e_a_residual
+           osdo%par_residual     = osdi%par_residual
+           osdo%rb_residual      = osdi%rb_residual
+           osdo%leaf_residual    = osdi%leaf_residual
+           osdo%gsw_residual     = osdi%gsw_residual
+        end do
+
+        !----- DBH types. -----------------------------------------------------------------!
+        do idbh=1,n_dbh
+           osite%co2budget_gpp_dbh(idbh,opa) = isite%co2budget_gpp_dbh(idbh,ipa)
+        end do
+
+        !----- Daily averages. ------------------------------------------------------------!
+        if (idoutput > 0 .or. imoutput > 0) then
+           osite%dmean_rh             (opa) = isite%dmean_rh             (opa)
+           osite%dmean_co2_residual   (opa) = isite%dmean_co2_residual   (opa)
+           osite%dmean_energy_residual(opa) = isite%dmean_energy_residual(opa)
+           osite%dmean_water_residual (opa) = isite%dmean_water_residual (opa)
+           osite%dmean_lambda_light   (opa) = isite%dmean_lambda_light   (opa)
+           osite%dmean_A_decomp       (opa) = isite%dmean_A_decomp       (opa)
+           osite%dmean_Af_decomp      (opa) = isite%dmean_Af_decomp      (opa)
+           osite%dmean_rk4step        (opa) = isite%dmean_rk4step        (opa)
+        end if
     
-    newsize=0
-    do i=1,oldsize
-       if (water_site(i)==0) then
-          newsize=newsize+1
-          water_site_new(newsize)=i
-       endif
-    enddo
+        if (imoutput > 0) then
+           osite%mmean_rh             (opa) = isite%mmean_rh             (ipa)
+           osite%mmean_co2_residual   (opa) = isite%mmean_co2_residual   (ipa)
+           osite%mmean_energy_residual(opa) = isite%mmean_energy_residual(ipa)
+           osite%mmean_water_residual (opa) = isite%mmean_water_residual (ipa)
+           osite%mmean_lambda_light   (opa) = isite%mmean_lambda_light   (ipa)
+           osite%mmean_A_decomp       (opa) = isite%mmean_A_decomp       (ipa)
+           osite%mmean_Af_decomp      (opa) = isite%mmean_Af_decomp      (ipa)
+           osite%mmean_rk4step        (opa) = isite%mmean_rk4step        (ipa)
+        end if
 
-!    edout_real(1:oldsize)     = edin%lat(1:oldsize)
-!    deallocate(edin%lat)
-!    allocate(edin%lat(newsize))
-!    edin%lat(1:newsize)       = edout_real(water_site_new(1:newsize)))
-    
-!    edout_real(1:oldsize)     = edin%lon(1:oldsize)
-!    deallocate(edin%lon)
-!    allocate(edin%lon(newsize))
-!    edin%lon(1:newsize)       = edout_real(water_site_new(1:newsize)))
+       !----- Copy all cohorts. -----------------------------------------------------------!
+       call allocate_patchtype(osite%patch(opa),isite%patch(ipa)%ncohorts)
+       call copy_patchtype(isite%patch(ipa),osite%patch(opa),1,isite%patch(ipa)%ncohorts   &
+                                                            ,1,isite%patch(ipa)%ncohorts )
+    end do opaloop
 
-!    edout_real(1:oldsize)     = edin%xatm(1:oldsize)
-!    deallocate(edin%xatm)
-!    allocate(edin%xatm(newsize))
-!    edin%xatm(1:newsize)       = edout_real(water_site_new(1:newsize)))
-    
-!    edout_real(1:oldsize)     = edin%yatm(1:oldsize)
-!    deallocate(yatm%lat)
-!    allocate(yatm%lat(newsize))
-!    edin%yatm(1:newsize)       = edout_real(water_site_new(1:newsize)))
-    
-!    edout_real(1:oldsize)     = edin%natm(1:oldsize)
-!    deallocate(edin%natm)
-!    allocate(edin%natm(newsize))
-!    edin%natm(1:newsize)       = edout_real(water_site_new(1:newsize)))
-   
-
-    return
-  end subroutine copy_polygon
-!============================================================================!
-!============================================================================!
-
-
-
-
-
-!============================================================================!
-!============================================================================!
-  subroutine copy_polygontype(polyin,polyout,isin,isout)
-  ! =====================================================
-  ! Copying Functions2
-  ! =====================================================
-
-
-    implicit none
-    integer :: isin,isout
-    type(polygontype),pointer :: polyin,polyout
-
-    polyout%patch_count(isout)               = polyin%patch_count(isin)
-    polyout%ntext_soil(1:nzg,isout)          = polyin%ntext_soil(1:nzg,isin)
-    polyout%lsl(isout)                       = polyin%lsl(isin)
-    polyout%area(isout)                      = polyin%area(isin)
-    polyout%moist_f(isout)                   = polyin%moist_f(isin)
-    polyout%sitenum(isout)                   = polyin%sitenum(isin)
-    polyout%elevation(isout)                 = polyin%elevation(isin)
-    polyout%slope(isout)                     = polyin%slope(isin)
-    polyout%aspect(isout)                    = polyin%aspect(isin)
-    polyout%TCI(isout)                       = polyin%TCI(isin)
-    polyout%pptweight(isout)                 = polyin%pptweight(isin)
-
-
-    return
-  end subroutine copy_polygontype
-!============================================================================!
-!============================================================================!
-
-
-
-
-
-!============================================================================!
-!============================================================================!
-  subroutine copy_sitetype(sitein,siteout,ipin,ipout)
-
-    implicit none
-    integer :: ipin,ipout
-    type(sitetype),pointer :: sitein,siteout
-
-    print*,"COPY_SITETYPE_ IS NOT POPULATED YET"
-    stop
-
-    siteout%dist_type(ipout)          = sitein%dist_type(ipin)
-    siteout%age(ipout)                = sitein%age(ipin)
-    siteout%area(ipout)               = sitein%area(ipin)
-    siteout%hcapveg(ipout)            = sitein%hcapveg(ipin)
-    siteout%fast_soil_C(ipout)        = sitein%fast_soil_C(ipin)
-    siteout%slow_soil_C(ipout)        = sitein%slow_soil_C(ipin)
-    siteout%structural_soil_C(ipout)  = sitein%structural_soil_C(ipin)
-    siteout%structural_soil_L(ipout)  = sitein%structural_soil_L(ipin)
-    siteout%mineralized_soil_N(ipout) = sitein%mineralized_soil_N(ipin)
-    siteout%fast_soil_N(ipout)        = sitein%fast_soil_N(ipin)
-    siteout%pname(ipout)              = sitein%pname(ipin)
-    siteout%sum_dgd(ipout)            = sitein%sum_dgd(ipin)
-    siteout%sum_chd(ipout)            = sitein%sum_chd(ipin)
-    siteout%plantation(ipout)         = sitein%plantation(ipin)
-    siteout%cohort_count(ipout)       = sitein%cohort_count(ipin)
-    siteout%can_theiv(ipout)          = sitein%can_theiv(ipin)
-    siteout%can_temp(ipout)           = sitein%can_temp(ipin)
-    siteout%can_shv(ipout)            = sitein%can_shv(ipin)
-    siteout%can_co2(ipout)            = sitein%can_co2(ipin)
-    siteout%can_rhos(ipout)           = sitein%can_rhos(ipin)
-    siteout%can_prss(ipout)           = sitein%can_prss(ipin)
-    siteout%can_theta(ipout)          = sitein%can_theta(ipin)
-    siteout%can_depth(ipout)          = sitein%can_depth(ipin)
-    siteout%lambda_light(ipout)        = sitein%lambda_light(ipin)
-       
-    if (idoutput > 0 .or. imoutput > 0) then
-       siteout%dmean_rh             (ipout) = sitein%dmean_rh             (ipin)
-       siteout%dmean_co2_residual   (ipout) = sitein%dmean_co2_residual   (ipin)
-       siteout%dmean_energy_residual(ipout) = sitein%dmean_energy_residual(ipin)
-       siteout%dmean_water_residual (ipout) = sitein%dmean_water_residual (ipin)
-       siteout%dmean_lambda_light   (ipout) = sitein%dmean_lambda_light   (ipin)
-    end if
-    
-    if (imoutput > 0) then
-       siteout%mmean_rh             (ipout) = sitein%mmean_rh             (ipin)
-       siteout%mmean_co2_residual   (ipout) = sitein%mmean_co2_residual   (ipin)
-       siteout%mmean_energy_residual(ipout) = sitein%mmean_energy_residual(ipin)
-       siteout%mmean_water_residual (ipout) = sitein%mmean_water_residual (ipin)
-       siteout%mmean_lambda_light   (ipout) = sitein%mmean_lambda_light   (ipin)
-    end if
-  
     return
   end subroutine copy_sitetype
-!============================================================================!
-!============================================================================!
+!==========================================================================================!
+!==========================================================================================!
 
 
 

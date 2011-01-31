@@ -467,6 +467,8 @@ subroutine init_can_air_params()
    use canopy_air_coms, only : icanturb              & ! intent(in)
                              , i_blyr_condct         & ! intent(in)
                              , isfclyrm              & ! intent(in)
+                             , ustmin                & ! intent(in)
+                             , ggfact                & ! intent(in)
                              , dry_veg_lwater        & ! intent(out)
                              , fullveg_lwater        & ! intent(out)
                              , rb_inter              & ! intent(out)
@@ -476,7 +478,6 @@ subroutine init_can_air_params()
                              , minimum_canopy_depth8 & ! intent(out)
                              , exar                  & ! intent(out)
                              , covr                  & ! intent(out)
-                             , ustmin                & ! intent(out)
                              , ugbmin                & ! intent(out)
                              , ubmin                 & ! intent(out)
                              , exar8                 & ! intent(out)
@@ -486,6 +487,7 @@ subroutine init_can_air_params()
                              , ustmin8               & ! intent(out)
                              , ugbmin8               & ! intent(out)
                              , ubmin8                & ! intent(out)
+                             , ggfact8               & ! intent(out)
                              , ez8                   & ! intent(out)
                              , vh2dh8                & ! intent(out)
                              , bl79                  & ! intent(out)
@@ -619,8 +621,6 @@ subroutine init_can_air_params()
    !---------------------------------------------------------------------------------------!
    !      Parameters for surface layer models.                                             !
    !---------------------------------------------------------------------------------------!
-   !----- This is the minimum ustar under stable and unstable conditions. -----------------!
-   ustmin    = 0.10
    !----- This is the minimum wind speed for boundary layer conductivity. -----------------!
    ugbmin    = 0.25
    !----- This is the minimum wind scale under stable and unstable conditions. ------------!
@@ -735,6 +735,7 @@ subroutine init_can_air_params()
    ubmin8                = dble(ubmin               )
    ugbmin8               = dble(ugbmin              )
    ustmin8               = dble(ustmin              )
+   ggfact8               = dble(ggfact              )
    ez8                   = dble(ez                  )
    vh2dh8                = dble(vh2dh               )
    bl798                 = dble(bl79                )
@@ -808,47 +809,48 @@ subroutine init_pft_photo_params()
    use physiology_coms , only: vmfact               & ! intent(in)
                              , mfact                & ! intent(in)
                              , kfact                & ! intent(in)
-                             , lwfact               ! ! intent(in)
+                             , lwfact               & ! intent(in)
+                             , thioff               ! ! intent(in)
    implicit none
    !---------------------------------------------------------------------------------------!
 
-   D0(1:17)                  = 0.01      ! same for all PFTs
+   D0(1:17)                  = 0.01            ! same for all PFTs
 
-   Vm_low_temp(1)            = 5.0       ! c4 grass
-   Vm_low_temp(2)            = 5.0       ! early tropical
-   Vm_low_temp(3)            = 5.0       ! mid tropical
-   Vm_low_temp(4)            = 5.0       ! late tropical
-   Vm_low_temp(5)            = 4.7137    ! c3 grass
-   Vm_low_temp(6)            = 4.7137    ! northern pines ! 5.0
-   Vm_low_temp(7)            = 4.7137    ! southern pines ! 5.0
-   Vm_low_temp(8)            = 4.7137    ! late conifers  ! 5.0
-   Vm_low_temp(9)            = 4.7137    ! early hardwoods
-   Vm_low_temp(10)           = 4.7137    ! mid hardwoods
-   Vm_low_temp(11)           = 4.7137    ! late hardwoods
-   Vm_low_temp(12)           = 4.7137    ! c3 pasture
-   Vm_low_temp(13)           = 4.7137    ! c3 crop
-   Vm_low_temp(14)           = 5.0       ! c4 pasture
-   Vm_low_temp(15)           = 5.0       ! c4 crop
-   Vm_low_temp(16)           = 5.0       ! subtropical C3 grass
-   Vm_low_temp(17)           = 5.0       ! Araucaria
+   Vm_low_temp(1)            = 5.0             ! c4 grass
+   Vm_low_temp(2)            = 5.0             ! early tropical
+   Vm_low_temp(3)            = 5.0             ! mid tropical
+   Vm_low_temp(4)            = 5.0             ! late tropical
+   Vm_low_temp(5)            = 4.7137          ! c3 grass
+   Vm_low_temp(6)            = 4.7137          ! northern pines ! 5.0
+   Vm_low_temp(7)            = 4.7137          ! southern pines ! 5.0
+   Vm_low_temp(8)            = 4.7137          ! late conifers  ! 5.0
+   Vm_low_temp(9)            = 4.7137          ! early hardwoods
+   Vm_low_temp(10)           = 4.7137          ! mid hardwoods
+   Vm_low_temp(11)           = 4.7137          ! late hardwoods
+   Vm_low_temp(12)           = 4.7137          ! c3 pasture
+   Vm_low_temp(13)           = 4.7137          ! c3 crop
+   Vm_low_temp(14)           = 5.0             ! c4 pasture
+   Vm_low_temp(15)           = 5.0             ! c4 crop
+   Vm_low_temp(16)           = 5.0             ! subtropical C3 grass
+   Vm_low_temp(17)           = 5.0             ! Araucaria
 
-   Vm_high_temp(1)           = 100.0      ! C4
-   Vm_high_temp(2)           =  45.0      ! C3
-   Vm_high_temp(3)           =  45.0      ! C3
-   Vm_high_temp(4)           =  45.0      ! C3
-   Vm_high_temp(5)           =  45.0      ! C3
-   Vm_high_temp(6)           =  45.0      ! C3
-   Vm_high_temp(7)           =  45.0      ! C3
-   Vm_high_temp(8)           =  45.0      ! C3
-   Vm_high_temp(9)           =  45.0      ! C3
-   Vm_high_temp(10)          =  45.0      ! C3
-   Vm_high_temp(11)          =  45.0      ! C3
-   Vm_high_temp(12)          =  45.0      ! C3
-   Vm_high_temp(13)          =  45.0      ! C3
-   Vm_high_temp(14)          = 100.0      ! C4
-   Vm_high_temp(15)          = 100.0      ! C4
-   Vm_high_temp(16)          =  45.0      ! C3
-   Vm_high_temp(17)          =  45.0      ! C3
+   Vm_high_temp(1)           = 100.0  + thioff ! C4
+   Vm_high_temp(2)           =  45.0  + thioff ! C3
+   Vm_high_temp(3)           =  45.0  + thioff ! C3
+   Vm_high_temp(4)           =  45.0  + thioff ! C3
+   Vm_high_temp(5)           =  45.0  + thioff ! C3
+   Vm_high_temp(6)           =  45.0  + thioff ! C3
+   Vm_high_temp(7)           =  45.0  + thioff ! C3
+   Vm_high_temp(8)           =  45.0  + thioff ! C3
+   Vm_high_temp(9)           =  45.0  + thioff ! C3
+   Vm_high_temp(10)          =  45.0  + thioff ! C3
+   Vm_high_temp(11)          =  45.0  + thioff ! C3
+   Vm_high_temp(12)          =  45.0  + thioff ! C3
+   Vm_high_temp(13)          =  45.0  + thioff ! C3
+   Vm_high_temp(14)          = 100.0  + thioff ! C4
+   Vm_high_temp(15)          = 100.0  + thioff ! C4
+   Vm_high_temp(16)          =  45.0  + thioff ! C3
+   Vm_high_temp(17)          =  45.0  + thioff ! C3
 
    !------ Vm0 is the maximum photosynthesis capacity in µmol/m2/s. -----------------------!
    Vm0(1)                    = 12.5            * vmfact
@@ -868,7 +870,7 @@ subroutine init_pft_photo_params()
    Vm0(17)                   = 15.625          * vmfact
 
    !----- Define the stomatal slope (aka the M factor). -----------------------------------!
-   stomatal_slope(1)         =  4.0    * mfact
+   stomatal_slope(1)         =  6.4    * mfact
    stomatal_slope(2)         =  8.0    * mfact
    stomatal_slope(3)         =  8.0    * mfact
    stomatal_slope(4)         =  8.0    * mfact
@@ -2602,21 +2604,23 @@ end subroutine init_phen_coms
 !     This subroutine assigns the fusion and splitting parameters.                         !
 !------------------------------------------------------------------------------------------!
 subroutine init_ff_coms
-   use fusion_fission_coms, only : min_dbh_class     & ! intent(out)
-                                 , maxffdbh          & ! intent(out)
-                                 , dffdbhi           & ! intent(out)
-                                 , min_hgt_class     & ! intent(out)
-                                 , fusetol           & ! intent(out)
-                                 , fusetol_h         & ! intent(out)
-                                 , lai_fuse_tol      & ! intent(out)
-                                 , lai_tol           & ! intent(out)
-                                 , ntol              & ! intent(out)
-                                 , profile_tol       & ! intent(out)
-                                 , max_patch_age     & ! intent(out)
-                                 , ff_ndbh           & ! intent(out)
-                                 , coh_tolerance_max & ! intent(out)
-                                 , pat_tolerance_max & ! intent(out)
-                                 , fuse_relax        ! ! intent(out)
+   use fusion_fission_coms, only : min_dbh_class      & ! intent(out)
+                                 , maxffdbh           & ! intent(out)
+                                 , dffdbhi            & ! intent(out)
+                                 , min_hgt_class      & ! intent(out)
+                                 , fusetol            & ! intent(out)
+                                 , fusetol_h          & ! intent(out)
+                                 , lai_fuse_tol       & ! intent(out)
+                                 , lai_tol            & ! intent(out)
+                                 , ntol               & ! intent(out)
+                                 , profile_tol        & ! intent(out)
+                                 , max_patch_age      & ! intent(out)
+                                 , ff_ndbh            & ! intent(out)
+                                 , coh_tolerance_max  & ! intent(out)
+                                 , pat_tolerance_max  & ! intent(out)
+                                 , fuse_relax         & ! intent(out)
+                                 , print_fuse_details & ! intent(out)
+                                 , fuse_prefix        ! ! intent(out)
 
    implicit none
 
@@ -2635,6 +2639,11 @@ subroutine init_ff_coms
    pat_tolerance_max = 100.0
    fuse_relax        = .false.
    dffdbhi           = real(ff_ndbh)/maxffdbh
+
+   !----- The following flag switches detailed debugging on. ------------------------------!
+   print_fuse_details = .true.
+   fuse_prefix        = 'patch_fusion_'
+   !---------------------------------------------------------------------------------------!
 
    return
 end subroutine init_ff_coms
@@ -2772,7 +2781,7 @@ subroutine init_rk4_params()
    !     Variables used to keep track on the error.                                        !
    !---------------------------------------------------------------------------------------!
    record_err     = .false.                  ! Compute and keep track of the errors.
-   print_detailed = .false.                  ! Print detailed information about the thermo-
+   print_detailed = .false.                   ! Print detailed information about the thermo-
                                              !    dynamic state.  This will create one file
                                              !    for each patch, so it is not recommended 
                                              !    for simulations that span over one month.

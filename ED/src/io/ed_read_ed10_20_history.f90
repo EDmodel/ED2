@@ -45,7 +45,8 @@ subroutine read_ed10_ed20_history_file
                              , dbh2bl              & ! function
                              , ed_biomass          & ! function
                              , area_indices        ! ! subroutine
-   use fuse_fiss_utils, only : sort_cohorts        ! ! intent(in)
+   use fuse_fiss_utils, only : sort_cohorts        & ! subroutine
+                             , sort_patches        ! ! subroutine
    use disturb_coms   , only : min_new_patch_area  ! ! intent(in)
    implicit none
 
@@ -783,12 +784,15 @@ subroutine read_ed10_ed20_history_file
                   call init_ed_cohort_vars(cpatch,ico,cpoly%lsl(isi))
                end do
 
+               !----- Make sure that cohorts are organised from tallest to shortest. ------!
                call sort_cohorts(cpatch)
             end do
 
             !----- Initialise the patch-level variables. ----------------------------------!
             call init_ed_patch_vars(csite,1,csite%npatches,cpoly%lsl(isi))
-            
+
+            !----- Make sure that patches are organised from oldest to youngest. ----------!
+            call sort_patches(csite)
          end do
 
          !----- Initialise site-level variables. ------------------------------------------!

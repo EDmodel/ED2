@@ -640,7 +640,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
    use pft_coms              , only : water_conductance    & ! intent(in)
                                     , q                    & ! intent(in)
                                     , qsw                  ! ! intent(in)
-                                       
+   use canopy_air_coms       , only : ggfact8              ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(sitetype)     , target      :: csite            ! Current site
@@ -677,7 +677,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
    real(kind=8)                     :: c3lai            ! Term for psi_open/psi_closed
    real(kind=8)                     :: hflxvc           ! Leaf->canopy heat flux
    real(kind=8)                     :: rasgnd           ! 
-   real(kind=8)                     :: rd               !
+   real(kind=8)                     :: rgnd             !
    real(kind=8)                     :: sigmaw           !
    real(kind=8)                     :: wflxvc           !
    real(kind=8)                     :: cflxgc           !
@@ -696,7 +696,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
    real(kind=8)                     :: wflxvc_tot       !
    real(kind=8)                     :: qwflxvc_tot      !
    real(kind=8)                     :: rho_ustar        !
-   real(kind=8)                     :: rdi              !
+   real(kind=8)                     :: ggnd             !
    real(kind=8)                     :: storage_decay    !
    real(kind=8)                     :: leaf_flux        !
    real(kind=8)                     :: min_leaf_water   !
@@ -766,8 +766,8 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
       ! and moisture fluxes from vegetation to canopy, and flux resistance from soil or    !
       ! snow to canopy.                                                                    !
       !------------------------------------------------------------------------------------!
-      c2 = max(0.d0,min(1.d0, 5.09d-1 * (dble(csite%lai(ipa))+dble(csite%wai(ipa))) ) )
-      rd = rasgnd * (1.d0 - c2) + initp%rasveg * c2
+      c2   = max(0.d0,min(1.d0, 5.09d-1 * (dble(csite%lai(ipa))+dble(csite%wai(ipa))) ) )
+      rgnd = rasgnd * (1.d0 - c2) + initp%rasveg * c2
 
       taii = 0.d0
       do ico = 1,cpatch%ncohorts
@@ -813,11 +813,11 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
    else
       !------------------------------------------------------------------------------------!
       !     If the TAI is very small or total patch vegetation heat capacity is too        !
-      ! small, bypass vegetation computations.  Set heat and moisture flux resistance rd   !
+      ! small, bypass vegetation computations.  Set heat and moisture flux resistance rgnd !
       ! between the "canopy" and snow or soil surface to its bare soil value. Set through- !
       ! fall precipitation heat and moisture to unintercepted values.                      !
       !------------------------------------------------------------------------------------!
-      rd               = rasgnd
+      rgnd             = rasgnd
       intercepted_max  = 0.d0
       qintercepted_max = 0.d0
       dintercepted_max = 0.d0
@@ -845,7 +845,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
    end if
  
    !----- Assign conductivity coefficient -------------------------------------------------!
-   rdi = initp%can_rhos / rd
+   ggnd = ggfact8 * initp%can_rhos / rgnd
   
    !---------------------------------------------------------------------------------------!
    !     Compute sensible heat and moisture fluxes between the ground and the canopy air   !
@@ -860,8 +860,8 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
    !     Both are defined as positive quantities.  Sensible heat is defined by only one    !
    ! variable, hflxgc [J/m2/s], which can be either positive or negative.                  !
    !---------------------------------------------------------------------------------------!
-   hflxgc = cp8 * (initp%ground_temp - initp%can_temp) * rdi
-   wflx   =       (initp%ground_ssh  - initp%can_shv ) * rdi
+   hflxgc = cp8 * (initp%ground_temp - initp%can_temp) * ggnd
+   wflx   =       (initp%ground_ssh  - initp%can_shv ) * ggnd
    !---------------------------------------------------------------------------------------!
 
 
@@ -951,7 +951,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
       ! humidity at the soil temperature only, it depends on the canopy specific humidity  !
       ! itself and the soil moisture.                                                      !
       !------------------------------------------------------------------------------------!
-      wflxgc = max( 0.d0, (initp%ground_shv - initp%can_shv) * rdi)
+      wflxgc = max( 0.d0, (initp%ground_shv - initp%can_shv) * ggnd)
       !----- Adjusting the flux accordingly to the surface fraction (no phase bias). ------!
       qwflxgc = wflxgc * ( alvi8 - initp%ground_fliq * alli8)
       !----- Set condensation fluxes to zero. ---------------------------------------------!

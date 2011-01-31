@@ -91,7 +91,9 @@ subroutine copy_nl(copy_type)
                                    , mfact                     & ! intent(out)
                                    , kfact                     & ! intent(out)
                                    , gamfact                   & ! intent(out)
-                                   , lwfact                    ! ! intent(out)
+                                   , lwfact                    & ! intent(out)
+                                   , thioff                    & ! intent(out)
+                                   , icomppt                   ! ! intent(out)
    use phenology_coms       , only : iphen_scheme              & ! intent(out)
                                    , iphenys1                  & ! intent(out)
                                    , iphenysf                  & ! intent(out)
@@ -177,7 +179,9 @@ subroutine copy_nl(copy_type)
    use ed_misc_coms         , only : attach_metadata           ! ! intent(out)
    use canopy_air_coms      , only : icanturb                  & ! intent(out)
                                    , isfclyrm                  & ! intent(out)
-                                   , i_blyr_condct             ! ! intent(out)
+                                   , i_blyr_condct             & ! intent(out)
+                                   , ustmin                    & ! intent(out)
+                                   , ggfact                    ! ! intent(out)
    use optimiz_coms         , only : ioptinpt                  ! ! intent(out)
    use canopy_radiation_coms, only : crown_mod                 ! ! intent(out)
    use rk4_coms             , only : ibranch_thermo            & ! intent(out)
@@ -289,6 +293,8 @@ subroutine copy_nl(copy_type)
       kfact                     = nl%kfact
       gamfact                   = nl%gamfact
       lwfact                    = nl%lwfact
+      thioff                    = nl%thioff
+      icomppt                   = nl%icomppt
       radint                    = nl%radint
       radslp                    = nl%radslp
       n_plant_lim               = nl%n_plant_lim
@@ -312,6 +318,8 @@ subroutine copy_nl(copy_type)
       treefall_disturbance_rate = nl%treefall_disturbance_rate
       runoff_time               = nl%runoff_time
       betapower                 = nl%betapower
+      ustmin                    = nl%ustmin
+      ggfact                    = nl%ggfact
 
       !----- Print control parameters. ----------------------------------------------------!
       iprintpolys               = nl%iprintpolys
