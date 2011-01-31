@@ -50,6 +50,7 @@ module soil_coms
    integer                                    :: isoilstateinit ! Soil state initial cond. 
    integer                                    :: isoildepthflg  ! Soil depth initial cond. 
    real                                       :: runoff_time    ! Default runoff time scale.
+   real                                       :: betapower      ! Power for gnd evaporation
    !---------------------------------------------------------------------------------------!
 
 
@@ -64,6 +65,14 @@ module soil_coms
    real    :: tiny_sfcwater_mass  ! Minimum mass allowed in temporary layers     [   kg/m2]
    real    :: snowmin             ! Minimum snow mass needed to create a new lyr [   kg/m2]
    integer :: infiltration_method ! Infiltration scheme (used in rk4_derivs)     [     0|1]
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     The following variables are assigned in ed_params.f90 based on namelist           !
+   ! variables.                                                                            !
+   !---------------------------------------------------------------------------------------!
+   real(kind=8) :: betapower8 ! Power for ground evaporation
    !---------------------------------------------------------------------------------------!
 
 

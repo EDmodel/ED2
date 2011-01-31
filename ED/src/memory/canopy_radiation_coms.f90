@@ -100,8 +100,9 @@ module canopy_radiation_coms
    !     The following variables control whether to call things that should be called      !
    ! when there is still some light.                                                       !
    !---------------------------------------------------------------------------------------!
-   real    :: rshort_twilight_min
-   real    :: cosz_min
+   real(kind=4)    :: rshort_twilight_min
+   real(kind=4)    :: cosz_min
+   real(kind=8)    :: cosz_min8
    !---------------------------------------------------------------------------------------!
 end module canopy_radiation_coms
 !==========================================================================================!

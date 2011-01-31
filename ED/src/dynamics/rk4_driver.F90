@@ -354,6 +354,7 @@ module rk4_driver
                                       , nzs                  ! ! intent(in)
       use therm_lib            , only : qwtk                 & ! subroutine
                                       , rslif                ! ! function
+      use canopy_air_coms      , only : i_blyr_condct        ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(rk4patchtype), target      :: initp
@@ -553,16 +554,35 @@ module rk4_driver
       do ico = 1,cpatch%ncohorts
 
          if (initp%solvable(ico)) then
-            !------------------------------------------------------------------------------!
-            !    The cohort was solved, update water and internal energy, and re-calculate !
-            ! the temperature and leaf intercellular specific humidity.  The vegetation    !
-            ! dry heat capacity is constant within one time step, so it does not need to   !
-            ! be updated.                                                                  !
-            !------------------------------------------------------------------------------!
-            cpatch%veg_water(ico)  = sngloff(initp%veg_water(ico) , tiny_offset)
-            cpatch%veg_energy(ico) = sngloff(initp%veg_energy(ico), tiny_offset)
-            call qwtk(cpatch%veg_energy(ico),cpatch%veg_water(ico),cpatch%hcapveg(ico)     &
-                     ,cpatch%veg_temp(ico),cpatch%veg_fliq(ico))
+            select case (i_blyr_condct)
+            case (-1)
+               !---------------------------------------------------------------------------!
+               !    The cohort was solved, update internal energy and water, and re-       !
+               ! calculate temperature.  Note that energy may need to be scaled back.      !
+               !---------------------------------------------------------------------------!
+               cpatch%veg_water(ico)  = sngloff(initp%veg_water(ico),tiny_offset)
+               tmp_energy             = initp%veg_energy(ico)                              &
+                                      + (dble(cpatch%hcapveg(ico))-initp%hcapveg(ico))     &
+                                      * initp%veg_temp(ico)
+
+               cpatch%veg_energy(ico) = sngloff(tmp_energy,tiny_offset)
+               call qwtk(cpatch%veg_energy(ico),cpatch%veg_water(ico),cpatch%hcapveg(ico)  &
+                        ,cpatch%veg_temp(ico),cpatch%veg_fliq(ico))
+
+            case default
+               !---------------------------------------------------------------------------!
+               !    The cohort was solved, update water and internal energy, and re-       !
+               ! calculate the temperature and leaf intercellular specific humidity.  The  !
+               ! vegetation dry heat capacity is constant within one time step, so it does !
+               ! not need to be updated.                                                   !
+               !---------------------------------------------------------------------------!
+               cpatch%veg_water(ico)  = sngloff(initp%veg_water(ico) , tiny_offset)
+               cpatch%veg_energy(ico) = sngloff(initp%veg_energy(ico), tiny_offset)
+               call qwtk(cpatch%veg_energy(ico),cpatch%veg_water(ico),cpatch%hcapveg(ico)  &
+                        ,cpatch%veg_temp(ico),cpatch%veg_fliq(ico))
+
+            end select
+
             !------------------------------------------------------------------------------!
             !     The intercellular specific humidity is always assumed to be at           !
             ! saturation for a given temperature.  Find the saturation mixing ratio, then  !

@@ -306,6 +306,9 @@ module rk4_coms
                                                !    Runge-Kutta (a double precision vari-
                                                !    able), rk4tol is the one given at the 
                                                !    namelist (a single precision variable).
+
+   integer                   :: ipercol        ! This flag controls which percolation 
+                                               !    scheme we should use
    !=======================================================================================!
    !=======================================================================================!
 
@@ -411,8 +414,6 @@ module rk4_coms
                                   !     accross months, as the patches change.
    logical      :: print_thbnd    ! Flag to keep track of which variable is causing the
                                   !     most errors in the integrator.
-   logical      :: newsnow        ! Flag to decide whether we use the new snow percolation
-                                  !     scheme or not. 
    !---------------------------------------------------------------------------------------!
 
 
@@ -441,6 +442,17 @@ module rk4_coms
    real(kind=8) :: lai_to_cover   ! Canopies with LAI less than this number are assumed to
                                   !     be open, ie, some fraction of the rain-drops can 
                                   !     reach the soil/litter layer unimpeded.
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !    These two parameter will scale the cohort heat capacity inside the RK4 integrator. !
+   ! These are used only when the biophysics is set to be the same as in ED-2.1, and       !
+   ! should not be used in standard simulations.                                           !
+   !---------------------------------------------------------------------------------------!
+   real(kind=8) :: hcapveg_ref         ! Reference value                          [ J/m³/K]
+   real(kind=8) :: min_height          ! Minimum vegetation height                [      m]
    !---------------------------------------------------------------------------------------!
 
 

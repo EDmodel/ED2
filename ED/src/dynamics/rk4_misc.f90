@@ -21,6 +21,8 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    use rk4_coms              , only : rk4patchtype           & ! structure
                                     , rk4site                & ! structure
                                     , rk4eps                 & ! intent(in)
+                                    , hcapveg_ref            & ! intent(in)
+                                    , min_height             & ! intent(in)
                                     , any_solvable           & ! intent(out)
                                     , zoveg                  & ! intent(out)
                                     , zveg                   & ! intent(out)
@@ -43,8 +45,9 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
                                     , dbh2ca                 ! ! function
    use soil_coms             , only : soil8                  ! ! intent(in)
    use ed_therm_lib          , only : ed_grndvap8            ! ! subroutine
-   use canopy_struct_dynamics, only : can_whcap8            & ! subroutine
-                                    , canopy_turbulence8    ! ! subroutine
+   use canopy_air_coms       , only : i_blyr_condct          ! ! intent(in)
+   use canopy_struct_dynamics, only : can_whcap8             & ! subroutine
+                                    , canopy_turbulence8     ! ! subroutine
    implicit none
 
    !----- Arguments -----------------------------------------------------------------------!
@@ -56,6 +59,8 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    real(kind=4)                       :: crown_area_tmp
    real(kind=8)                       :: rsat
    real(kind=8)                       :: sum_sfcw_mass
+   real(kind=8)                       :: hvegpat_min
+   real(kind=8)                       :: hcap_scale
    integer                            :: ico
    integer                            :: ipft
    integer                            :: k
@@ -216,6 +221,26 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
       if (targetp%solvable(ico)) any_solvable = .true.
    end do
 
+
+   !---------------------------------------------------------------------------------------!
+   !   Define the scale to increase the heat capacity.  This is done only for the old      !
+   ! ED-2.1 boundary layer conductance.                                                    !
+   !---------------------------------------------------------------------------------------!
+   select case (i_blyr_condct)
+   case (-1)
+      if (any_solvable) then
+         hvegpat_min = hcapveg_ref * max(dble(cpatch%hite(1)),min_height)
+         hcap_scale  = max(1.d0,hvegpat_min / sourcesite%hcapveg(ipa))
+      else
+         hcap_scale  = 1.d0
+      end if
+   case default
+      hcap_scale  = 1.d0
+   end select
+   !---------------------------------------------------------------------------------------!
+
+
+
    do ico = 1,cpatch%ncohorts
       ipft=cpatch%pft(ico)
 
@@ -244,9 +269,18 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
       ! be really solved.                                                                  !
       !------------------------------------------------------------------------------------!
       if (targetp%solvable(ico)) then
-         targetp%veg_energy(ico) = dble(cpatch%veg_energy(ico))
-         targetp%veg_water (ico) = dble(cpatch%veg_water (ico))
-         targetp%hcapveg   (ico) = dble(cpatch%hcapveg   (ico))
+         if (hcap_scale == 1.d0) then
+            targetp%veg_energy(ico) = dble(cpatch%veg_energy(ico))
+            targetp%veg_water (ico) = dble(cpatch%veg_water (ico))
+            targetp%hcapveg   (ico) = dble(cpatch%hcapveg   (ico))
+         else
+            targetp%hcapveg   (ico) = dble(cpatch%hcapveg(ico)) * hcap_scale
+            targetp%veg_water (ico) = dble(cpatch%veg_water(ico))
+            targetp%veg_energy(ico) = dble(cpatch%veg_energy(ico))                         &
+                                    + (targetp%hcapveg(ico)-dble(cpatch%hcapveg(ico)))     &
+                                    * dble(cpatch%veg_temp(ico))
+         end if
+
          call qwtk8(targetp%veg_energy(ico),targetp%veg_water(ico),targetp%hcapveg(ico)    &
                    ,targetp%veg_temp(ico),targetp%veg_fliq(ico))
       else
@@ -831,9 +865,9 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,csite,ipa)
                             , rk4min_virt_water     & ! intent(in)
                             , rk4water_stab_thresh  & ! intent(in)
                             , rk4tiny_sfcw_mass     & ! intent(in)
-                            , rk4tiny_sfcw_depth     & ! intent(in)
+                            , rk4tiny_sfcw_depth    & ! intent(in)
                             , rk4snowmin            & ! intent(in)
-                            , newsnow               & ! intent(in)
+                            , ipercol               & ! intent(in)
                             , rk4eps2               ! ! intent(in)
    use ed_state_vars , only : sitetype              & ! structure
                             , patchtype             ! ! structure
@@ -1107,7 +1141,15 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,csite,ipa)
       !     Determine a first guess for the amount of mass that can be lost from this      !
       ! layer through percolation (wmass_perc).                                            !
       !------------------------------------------------------------------------------------!
-      if (newsnow) then
+      select case (ipercol)
+      case (0)
+         !---------------------------------------------------------------------------------!
+         !     Original method, from LEAF-3.  Shed liquid in excess of a 1:9               !
+         ! liquid-to-ice ratio through percolation.                                        !
+         !---------------------------------------------------------------------------------!
+         wmass_perc  = max(0.d0, wmass_try * (fliq_try - 1.d-1) / 9.d-1)
+         !---------------------------------------------------------------------------------!
+      case (1)
          !---------------------------------------------------------------------------------!
          !    Alternative "free" water calculation.                                        !
          !    Anderson (1976), NOAA Tech Report NWS 19.                                    !
@@ -1116,14 +1158,7 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,csite,ipa)
          Cr          = max(Crmin, Crmin + (Crmax - Crmin) * (ge - gi) / ge)
          wmass_perc  = max(0.d0,wmass_try * (fliq_try - Cr / (1.d0 + Cr)))
          !---------------------------------------------------------------------------------!
-      else
-         !---------------------------------------------------------------------------------!
-         !     Original method, from LEAF-3.  Shed liquid in excess of a 1:9               !
-         ! liquid-to-ice ratio through percolation.                                        !
-         !---------------------------------------------------------------------------------!
-         wmass_perc  = max(0.d0, wmass_try * (fliq_try - 1.d-1) / 9.d-1)
-         !---------------------------------------------------------------------------------!
-      end if
+      end select
       !------------------------------------------------------------------------------------!
 
 
@@ -2007,6 +2042,10 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
    real(kind=8)                        :: veg_qdew_tot
    real(kind=8)                        :: veg_boil_tot
    real(kind=8)                        :: veg_qboil_tot
+   real(kind=8)                        :: old_veg_energy
+   real(kind=8)                        :: old_veg_water
+   real(kind=8)                        :: old_veg_temp
+   real(kind=8)                        :: old_veg_fliq
    real(kind=8)                        :: hdidi
    !---------------------------------------------------------------------------------------!
 
@@ -2059,6 +2098,10 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
             !---------------------- -------------------------------------------------------!
             call qwtk8(initp%veg_energy(ico),initp%veg_water(ico),initp%hcapveg(ico)       &
                       ,initp%veg_temp(ico),initp%veg_fliq(ico))
+            old_veg_energy = initp%veg_energy(ico)
+            old_veg_water  = initp%veg_water (ico)
+            old_veg_temp   = initp%veg_temp  (ico)
+            old_veg_fliq   = initp%veg_fliq  (ico)
             !------------------------------------------------------------------------------!
 
             if (initp%veg_temp(ico)  < rk4min_veg_temp .or.                                &
@@ -2072,10 +2115,10 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
                !    Too much water over these leaves, we shall shed the excess to the      !
                ! ground.                                                                   !
                !---------------------------------------------------------------------------!
-               veg_wshed  = (initp%veg_water(ico) - max_leaf_water)
+               veg_wshed  = initp%veg_water(ico) - max_leaf_water
                veg_qwshed = veg_wshed                                                      &
                           * ( initp%veg_fliq(ico) * cliq8                                  &
-                            * (initp%veg_temp(ico)-tsupercool8)  &
+                            * (initp%veg_temp(ico)-tsupercool8)                            &
                             + (1.d0-initp%veg_fliq(ico)) * cice8 * initp%veg_temp(ico))
                veg_dwshed = veg_wshed                                                      &
                           * ( initp%veg_fliq(ico) * wdnsi8                                 &
@@ -2094,8 +2137,7 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
                if (print_detailed) then
                   initp%cfx_qwshed(ico) = initp%cfx_qwshed(ico) + veg_qwshed * hdidi
                end if
-
-
+ 
 
             elseif (initp%veg_water(ico) < min_leaf_water) then
                !---------------------------------------------------------------------------!
@@ -2125,7 +2167,7 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
                   initp%cfx_qwflxvc(ico) = initp%cfx_qwflxvc(ico)                          &
                                          + (veg_qboil - veg_qdew) * hdidi
                end if
-            end if
+           end if
          end if
       end if
    end do cohortloop

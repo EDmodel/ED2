@@ -375,7 +375,8 @@ subroutine init_can_rad_params()
                                     , leaf_trans_nir              & ! intent(out)
                                     , blfac_min                   & ! intent(out)
                                     , rshort_twilight_min         & ! intent(out)
-                                    , cosz_min                    ! ! intent(out)
+                                    , cosz_min                    & ! intent(out)
+                                    , cosz_min8                   ! ! intent(out)
    use ed_max_dims              , only : n_pft                    ! ! intent(out)
    use pft_coms              , only : phenology                   ! ! intent(out)
 
@@ -440,7 +441,8 @@ subroutine init_can_rad_params()
    ! day time hours only.                                                                  !
    !---------------------------------------------------------------------------------------!
    rshort_twilight_min = 0.5
-   cosz_min            = 0.0009
+   cosz_min            = 0.03
+   cosz_min8           = dble(cosz_min)
    !---------------------------------------------------------------------------------------!
 
    return
@@ -800,17 +802,15 @@ subroutine init_pft_photo_params()
                              , photosyn_pathway     & ! intent(out)
                              , water_conductance    ! ! intent(out)
    use consts_coms    , only : t00                  & ! intent(in)
+                             , twothirds            & ! intent(in)
                              , umol_2_mol           & ! intent(in)
                              , yr_sec               ! ! intent(in)
    use physiology_coms , only: vmfact               & ! intent(in)
                              , mfact                & ! intent(in)
-                             , kfact                ! ! intent(in)
+                             , kfact                & ! intent(in)
+                             , lwfact               ! ! intent(in)
    implicit none
-   !----- Local variables. ----------------------------------------------------------------!
-   logical, parameter  :: vm0_16    = .false.
-   logical, parameter  :: stsl_3ted = .false.
-   logical, parameter  :: lwidth_10 = .false.
-     !---------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
 
    D0(1:17)                  = 0.01      ! same for all PFTs
 
@@ -851,78 +851,40 @@ subroutine init_pft_photo_params()
    Vm_high_temp(17)          =  45.0      ! C3
 
    !------ Vm0 is the maximum photosynthesis capacity in µmol/m2/s. -----------------------!
-   if (vm0_16) then
-      Vm0(1)                    = 20.0
-      Vm0(2)                    = 30.0
-      Vm0(3)                    = 20.0
-      Vm0(4)                    = 10.0
-      Vm0(5)                    = 29.3
-      Vm0(6)                    = 25.0
-      Vm0(7)                    = 25.0
-      Vm0(8)                    = 10.0
-      Vm0(9)                    = 29.2
-      Vm0(10)                   = 25.0
-      Vm0(11)                   = 10.0
-      Vm0(12:13)                = 29.3
-      Vm0(14:15)                = 20.0
-      Vm0(16)                   = 35.0
-      Vm0(17)                   = 25.0
-   else
-      Vm0(1)                    = 12.5   * vmfact
-      Vm0(2)                    = 18.8   * vmfact
-      Vm0(3)                    = 12.5   * vmfact
-      Vm0(4)                    = 6.25   * vmfact
-      Vm0(5)                    = 18.3   * vmfact
-      Vm0(6)                    = 15.625 * 0.7264
-      Vm0(7)                    = 15.625 * 0.7264
-      Vm0(8)                    = 6.25   * 0.7264
-      Vm0(9)                    = 18.25  * 1.1171
-      Vm0(10)                   = 15.625 * 1.1171
-      Vm0(11)                   = 6.25   * 1.1171
-      Vm0(12:13)                = 18.3
-      Vm0(14:15)                = 12.5
-      Vm0(16)                   = 21.875
-      Vm0(17)                   = 15.625
-   end if
+   Vm0(1)                    = 12.5            * vmfact
+   Vm0(2)                    = 18.8            * vmfact
+   Vm0(3)                    = 12.5            * vmfact
+   Vm0(4)                    = 6.25            * vmfact
+   Vm0(5)                    = 18.3            * vmfact
+   Vm0(6)                    = 15.625 * 0.7264 * vmfact
+   Vm0(7)                    = 15.625 * 0.7264 * vmfact
+   Vm0(8)                    = 6.25   * 0.7264 * vmfact
+   Vm0(9)                    = 18.25  * 1.1171 * vmfact
+   Vm0(10)                   = 15.625 * 1.1171 * vmfact
+   Vm0(11)                   = 6.25   * 1.1171 * vmfact
+   Vm0(12:13)                = 18.3            * vmfact
+   Vm0(14:15)                = 12.5            * vmfact
+   Vm0(16)                   = 21.875          * vmfact
+   Vm0(17)                   = 15.625          * vmfact
 
    !----- Define the stomatal slope (aka the M factor). -----------------------------------!
-   if (stsl_3ted) then
-      stomatal_slope(1)         =  4.0
-      stomatal_slope(2)         = 24.0
-      stomatal_slope(3)         = 24.0
-      stomatal_slope(4)         = 24.0
-      stomatal_slope(5)         = 24.0
-      stomatal_slope(6)         = 15.4
-      stomatal_slope(7)         = 15.4
-      stomatal_slope(8)         = 15.4
-      stomatal_slope(9)         = 19.2
-      stomatal_slope(10)        = 19.2
-      stomatal_slope(11)        = 19.2
-      stomatal_slope(12)        = 24.0
-      stomatal_slope(13)        = 24.0
-      stomatal_slope(14)        =  4.0
-      stomatal_slope(15)        =  4.0
-      stomatal_slope(15)        = 24.0
-      stomatal_slope(15)        = 15.4
-   else
-      stomatal_slope(1)         = 10.0   * mfact
-      stomatal_slope(2)         =  8.0   * mfact
-      stomatal_slope(3)         =  8.0   * mfact
-      stomatal_slope(4)         =  8.0   * mfact
-      stomatal_slope(5)         =  8.0   * mfact
-      stomatal_slope(6)         =  6.3949
-      stomatal_slope(7)         =  6.3949
-      stomatal_slope(8)         =  6.3949
-      stomatal_slope(9)         =  6.3949
-      stomatal_slope(10)        =  6.3949
-      stomatal_slope(11)        =  6.3949
-      stomatal_slope(12)        =  8.0
-      stomatal_slope(13)        =  8.0
-      stomatal_slope(14)        = 10.0
-      stomatal_slope(15)        = 10.0
-      stomatal_slope(16)        =  8.0
-      stomatal_slope(17)        =  6.3949
-   end if
+   stomatal_slope(1)         =  4.0    * mfact
+   stomatal_slope(2)         =  8.0    * mfact
+   stomatal_slope(3)         =  8.0    * mfact
+   stomatal_slope(4)         =  8.0    * mfact
+   stomatal_slope(5)         =  8.0    * mfact
+   stomatal_slope(6)         =  6.3949 * mfact
+   stomatal_slope(7)         =  6.3949 * mfact
+   stomatal_slope(8)         =  6.3949 * mfact
+   stomatal_slope(9)         =  6.3949 * mfact
+   stomatal_slope(10)        =  6.3949 * mfact
+   stomatal_slope(11)        =  6.3949 * mfact
+   stomatal_slope(12)        =  8.0    * mfact
+   stomatal_slope(13)        =  8.0    * mfact
+   stomatal_slope(14)        = 10.0    * mfact
+   stomatal_slope(15)        = 10.0    * mfact
+   stomatal_slope(16)        =  8.0    * mfact
+   stomatal_slope(17)        =  6.4    * mfact
  
    cuticular_cond(1)         = 10000.0    ! 10000.0
    cuticular_cond(2)         = 10000.0    ! 10000.0
@@ -940,7 +902,7 @@ subroutine init_pft_photo_params()
    cuticular_cond(14)        = 10000.0    ! 10000.0
    cuticular_cond(15)        = 10000.0    ! 10000.0
    cuticular_cond(16)        = 10000.0
-   cuticular_cond(17)        = 1000.0 
+   cuticular_cond(17)        = 2000.0 
 
    quantum_efficiency(1)     = 0.06
    quantum_efficiency(2)     = 0.08
@@ -964,9 +926,7 @@ subroutine init_pft_photo_params()
    !     The KW parameter. Medvigy et al. (2009) and Moorcroft et al. (2001) give the      !
    ! number in m²/yr/kg_C_root.  Here we must define it in m²/s/kg_C_root.                 !
    !---------------------------------------------------------------------------------------!
-   water_conductance(1) = 150. / yr_sec   
-   water_conductance(2:4) = 150. / yr_sec *kfact
-   water_conductance(5:17) = 150. / yr_sec
+   water_conductance(1:17) = 150. / yr_sec * kfact
    !---------------------------------------------------------------------------------------!
 
 
@@ -978,24 +938,23 @@ subroutine init_pft_photo_params()
    photosyn_pathway(16:17)   = 3
 
    !----- Leaf width [m].  This controls the boundary layer conductance. ------------------!
-   if (lwidth_10) then
-      !----- Alternative values. ----------------------------------------------------------!
-      leaf_width(1)     = 0.05
-      leaf_width(2:4)   = 0.10
-      leaf_width(5:11)  = 0.05
-      leaf_width(12:13) = 0.05
-      leaf_width(14:15) = 0.05
-      leaf_width(16:17) = 0.03
-   else
-      !----- Standard ED-2.1 values. ------------------------------------------------------!
-      leaf_width(1)     = 0.20
-      leaf_width(2:4)   = 0.20
-      leaf_width(5:11)  = 0.05
-      leaf_width(12:13) = 0.05
-      leaf_width(14:15) = 0.20
-      leaf_width(16)    = 0.20
-      leaf_width(17)    = 0.03
-   end if
+   leaf_width( 1)    = 0.20 * lwfact
+   leaf_width( 2)    = 0.20 * lwfact
+   leaf_width( 3)    = 0.20 * lwfact
+   leaf_width( 4)    = 0.20 * lwfact
+   leaf_width( 5)    = 0.05 * lwfact
+   leaf_width( 6)    = 0.05 * lwfact
+   leaf_width( 7)    = 0.05 * lwfact
+   leaf_width( 8)    = 0.05 * lwfact
+   leaf_width( 9)    = 0.05 * lwfact
+   leaf_width(10)    = 0.05 * lwfact
+   leaf_width(11)    = 0.05 * lwfact
+   leaf_width(12)    = 0.05 * lwfact
+   leaf_width(13)    = 0.05 * lwfact
+   leaf_width(14)    = 0.20 * lwfact
+   leaf_width(15)    = 0.20 * lwfact
+   leaf_width(16)    = 0.20 * lwfact
+   leaf_width(17)    = 0.05 * lwfact
    !---------------------------------------------------------------------------------------!
    return
 end subroutine init_pft_photo_params
@@ -1052,13 +1011,14 @@ end subroutine init_decomp_params
 !==========================================================================================!
 subroutine init_pft_resp_params()
 
-   use pft_coms   , only : growth_resp_factor        & ! intent(out)
-                         , leaf_turnover_rate        & ! intent(out)
-                         , root_turnover_rate        & ! intent(out)
-                         , dark_respiration_factor   & ! intent(out)
-                         , storage_turnover_rate     & ! intent(out)
-                         , root_respiration_factor   ! ! intent(out)
-   use decomp_coms, only : f_labile                  ! ! intent(out)
+   use physiology_coms, only : gamfact                   ! ! intent(in)
+   use pft_coms       , only : growth_resp_factor        & ! intent(out)
+                             , leaf_turnover_rate        & ! intent(out)
+                             , root_turnover_rate        & ! intent(out)
+                             , dark_respiration_factor   & ! intent(out)
+                             , storage_turnover_rate     & ! intent(out)
+                             , root_respiration_factor   ! ! intent(out)
+   use decomp_coms    , only : f_labile                  ! ! intent(out)
 
    implicit none
 
@@ -1117,23 +1077,23 @@ subroutine init_pft_resp_params()
    root_turnover_rate(16)         = 2.0
    root_turnover_rate(17)         = 0.333
 
-   dark_respiration_factor(1)     = 0.04
-   dark_respiration_factor(2)     = 0.02
-   dark_respiration_factor(3)     = 0.02
-   dark_respiration_factor(4)     = 0.02
-   dark_respiration_factor(5)     = 0.04
-   dark_respiration_factor(6)     = 0.02
-   dark_respiration_factor(7)     = 0.02
-   dark_respiration_factor(8)     = 0.02
-   dark_respiration_factor(9)     = 0.02
-   dark_respiration_factor(10)    = 0.02
-   dark_respiration_factor(11)    = 0.02
-   dark_respiration_factor(12)    = 0.04
-   dark_respiration_factor(13)    = 0.04
-   dark_respiration_factor(14)    = 0.04
-   dark_respiration_factor(15)    = 0.04
-   dark_respiration_factor(16)    = 0.04
-   dark_respiration_factor(17)    = 0.02
+   dark_respiration_factor(1)     = 0.04 * gamfact
+   dark_respiration_factor(2)     = 0.02 * gamfact
+   dark_respiration_factor(3)     = 0.02 * gamfact
+   dark_respiration_factor(4)     = 0.02 * gamfact
+   dark_respiration_factor(5)     = 0.02 * gamfact
+   dark_respiration_factor(6)     = 0.02 * gamfact
+   dark_respiration_factor(7)     = 0.02 * gamfact
+   dark_respiration_factor(8)     = 0.02 * gamfact
+   dark_respiration_factor(9)     = 0.02 * gamfact
+   dark_respiration_factor(10)    = 0.02 * gamfact
+   dark_respiration_factor(11)    = 0.02 * gamfact
+   dark_respiration_factor(12)    = 0.02 * gamfact
+   dark_respiration_factor(13)    = 0.02 * gamfact
+   dark_respiration_factor(14)    = 0.04 * gamfact
+   dark_respiration_factor(15)    = 0.04 * gamfact
+   dark_respiration_factor(16)    = 0.02 * gamfact
+   dark_respiration_factor(17)    = 0.03 * gamfact
 
    storage_turnover_rate(1)       = 0.0
    storage_turnover_rate(2)       = 0.0
@@ -1707,6 +1667,10 @@ subroutine init_pft_leaf_params()
    implicit none
 
    select case (iphen_scheme)
+   case (-1)
+      phenology(1:8)   = 0
+      phenology(9:11)  = 2
+      phenology(12:17) = 0
    case (0,1)
       phenology(1)     = 1
       phenology(2:4)   = 1
@@ -2357,6 +2321,7 @@ subroutine init_soil_coms
                              , slxclay               & ! intent(in)
                              , slxsand               & ! intent(in)
                              , soil                  & ! intent(in)
+                             , betapower             & ! intent(in)
                              , soil_class            & ! type
                              , soil8                 & ! intent(out)
                              , water_stab_thresh     & ! intent(out)
@@ -2365,7 +2330,8 @@ subroutine init_soil_coms
                              , soil_rough            & ! intent(out)
                              , snow_rough            & ! intent(out)
                              , tiny_sfcwater_mass    & ! intent(out)
-                             , infiltration_method   ! ! intent(out)
+                             , infiltration_method   & ! intent(out)
+                             , betapower8            ! ! intent(out)
                              
    use grid_coms      , only : ngrids                ! ! intent(in)
    use consts_coms    , only : grav                  & ! intent(in)
@@ -2556,7 +2522,8 @@ subroutine init_soil_coms
       soil8(nsoil)%xrobulk   = dble(soil(nsoil)%xrobulk  )
       soil8(nsoil)%slden     = dble(soil(nsoil)%slden    )
    end do
-
+   betapower8 = dble(betapower)
+   
    return
 end subroutine init_soil_coms
 !==========================================================================================!
@@ -2703,11 +2670,12 @@ subroutine init_rk4_params()
                              , hmin                   & ! intent(out)
                              , print_diags            & ! intent(out)
                              , checkbudget            & ! intent(out)
-                             , newsnow                & ! intent(out)
                              , debug                  & ! intent(out)
                              , toocold                & ! intent(out)
                              , toohot                 & ! intent(out)
                              , lai_to_cover           & ! intent(out)
+                             , hcapveg_ref            & ! intent(out)
+                             , min_height             & ! intent(out)
                              , rk4min_veg_temp        & ! intent(out)
                              , rk4water_stab_thresh   & ! intent(out)
                              , rk4tiny_sfcw_mass      & ! intent(out)
@@ -2785,6 +2753,18 @@ subroutine init_rk4_params()
    lai_to_cover  = 1.5d0    ! Canopies with LAI less than this number  are assumed to be 
                             !     open, ie, some fraction of the rain-drops can reach
                             !    the soil/litter layer unimpeded.
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !    These two parameter will scale the cohort heat capacity inside the RK4 integrator, !
+   ! to avoid having patches with heat capacity that is way too small to be computational- !
+   ! ly stable and solvable in a fast way.  If you don't want this and want to use the     !
+   ! nominal heat capacity, the laziest way to turn this off is by setting hcapveg_ref to  !
+   ! a small number.  Don't set it to zero, otherwise you may have FPE issues.             !
+   !---------------------------------------------------------------------------------------!
+   hcapveg_ref         = 3.0d3            ! Reference heat capacity value          [J/m³/K]
+   min_height          = 1.5d0            ! Minimum vegetation height              [     m]
    !---------------------------------------------------------------------------------------!
 
 
@@ -2889,15 +2869,6 @@ subroutine init_rk4_params()
    ! sphere will not stop, but that is unlikely.                                           !
    !---------------------------------------------------------------------------------------!
    supersat_ok = .false.
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !     This flag is used to control the method used to define water percolation through  !
-   ! snow layers.                                                                          !
-   !---------------------------------------------------------------------------------------!
-   newsnow = .true.
    !---------------------------------------------------------------------------------------!
 
 

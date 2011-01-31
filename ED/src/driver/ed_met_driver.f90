@@ -287,6 +287,7 @@ end subroutine init_met_drivers
 !------------------------------------------------------------------------------------------!
 subroutine read_met_drivers_init
 
+   use ed_max_dims       , only : str_len        ! ! intent(in)
    use ed_state_vars     , only : edgrid_g       & ! structure
                                 , edtype         & ! structure
                                 , polygontype    ! ! structure
@@ -310,24 +311,24 @@ subroutine read_met_drivers_init
    use consts_coms       , only : day_sec        ! ! intent(in)
    implicit none
    !----- Local variables -----------------------------------------------------------------!
-   type(edtype)      , pointer :: cgrid
-   character(len=256)          :: infile
-   integer                     :: igr
-   integer                     :: year_use
-   integer                     :: iformat
-   integer                     :: iv
-   integer                     :: offset
-   integer                     :: m2
-   integer                     :: y2
-   integer                     :: year_use_2
-   integer                     :: nyears
-   integer                     :: ncyc
-   integer                     :: nfullcyc
-   integer                     :: i1stfull
-   integer                     :: iyear
-   integer, dimension(8)       :: seedtime
-   real                        :: runif
-   logical                     :: exans
+   type(edtype)          , pointer :: cgrid
+   character(len=str_len)          :: infile
+   integer                         :: igr
+   integer                         :: year_use
+   integer                         :: iformat
+   integer                         :: iv
+   integer                         :: offset
+   integer                         :: m2
+   integer                         :: y2
+   integer                         :: year_use_2
+   integer                         :: nyears
+   integer                         :: ncyc
+   integer                         :: nfullcyc
+   integer                         :: i1stfull
+   integer                         :: iyear
+   integer, dimension(8)           :: seedtime
+   real                            :: runif
+   logical                         :: exans
    !----- Local constants -----------------------------------------------------------------!
    character(len=3), dimension(12), parameter :: mname = (/ 'JAN', 'FEB', 'MAR', 'APR'     &
                                                           , 'MAY', 'JUN', 'JUL', 'AUG'     &

@@ -385,13 +385,45 @@
                               ! to do the 'small perturbation' scheme.
 
 
-   NL%IPHEN_SCHEME    = 2     ! This specifies the phenology scheme:
-                              !  0 -- the cold-deciuous (Botta et al.)
-                              !       and old drought-deciduous (same with ED2.0);
-                              !  1 -- presecribed phenology based on observations
-                              !  2 -- the cold-deciduous and new drought-deciduous;
-                              !  3 -- the cold-deciduous, new drought-deciduous 
-                              !       and light phenology (not fully tested);
+   !---------------------------------------------------------------------------------------!
+   !     The following variable controls the phenology scheme.  Even within each scheme,   !
+   ! the actual phenology will be different depending on the PFT.                          !
+   !                                                                                       !
+   ! -1: grasses   - evergreen;                                                            !
+   !     tropical  - evergreen;                                                            !
+   !     conifers  - evergreen;                                                            !
+   !     hardwoods - cold-deciduous (Botta et al.);                                        !
+   !                                                                                       !
+   !  0: grasses   - drought-deciduous (old scheme);                                       !
+   !     tropical  - drought-deciduous (old scheme);                                       !
+   !     conifers  - evergreen;                                                            !
+   !     hardwoods - cold-deciduous;                                                       !
+   !                                                                                       !
+   !  1: prescribed phenology                                                              !
+   !                                                                                       !
+   !  2: grasses   - drought-deciduous (new scheme);                                       !
+   !     tropical  - drought-deciduous (new scheme);                                       !
+   !     conifers  - evergreen;                                                            !
+   !     hardwoods - cold-deciduous;                                                       !
+   !                                                                                       !
+   !  3: grasses   - drought-deciduous (new scheme);                                       !
+   !     tropical  - drought-deciduous (light phenology);                                  !
+   !     conifers  - evergreen;                                                            !
+   !     hardwoods - cold-deciduous;                                                       !
+   !                                                                                       !
+   !  Old scheme: plants shed their leaves once instantaneous amount of available water    !
+   !              becomes less than a critical value.                                      !
+   !  New scheme: plants shed their leaves once a 10-day running average of available      !
+   !              water becomes less than a critical value.                                !
+   !---------------------------------------------------------------------------------------!
+   NL%IPHEN_SCHEME    = 2
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Radiation intercept and slope, for the light phenology case. --------------------!
+   NL%RADINT          = -11.3868 ! Intercept
+   NL%RADSLP          = 0.0824   ! Slope
   
    NL%REPRO_SCHEME    = 1     ! This specifies the reproduction scheme:
                               !  0 -- reproduction off (useful for short runs)
@@ -420,6 +452,17 @@
                               !      FSW = 1/ (1 + D/S)
                               ! 2 -- Alternative method:
                               !      FSW = ½ - ½ * tanh[2*(D/S - 2)]
+
+   !---------------------------------------------------------------------------------------!
+   !    These are factors that multiply some of the ED-2.1 default parameters.  Setting    !
+   ! them to 1.0 will make them the default.  These are applied for all PFTs.              !
+   !---------------------------------------------------------------------------------------!
+   NL%VMFACT          = 1.    ! Factor for changing Vm0 from the default
+   NL%MFACT           = 1.    ! Factor for changing stomatal slope (M)
+   NL%KFACT           = 1.    ! Factor for changing the water conductance (Kw)
+   NL%GAMFACT         = 1.    ! Factor for changing the dark respiration factor (gamma)
+   NL%LWFACT          = 1.    ! Factor for changing the leaf width factor (w)
+   !---------------------------------------------------------------------------------------!
 
    NL%N_PLANT_LIM     = 0     ! Determines whether plant photosynthesis can be 
                               ! limited by nitrogen
@@ -464,10 +507,12 @@
                               !     instability.  This method will not work 
                               !     when zref<h
 
-   NL%I_BLYR_CONDCT   = 2     ! Methods to estimate the leaf boundary layer conductance:
+   NL%I_BLYR_CONDCT   = 0     ! Methods to estimate the leaf boundary layer conductance:
                               ! -1. Original ED-2.0 method.  The Nusselt number for forced 
                               !     convection is estimated using the average winds.  A
-                              !     minimum conductance of 1/(25 * patch LAI) is imposed.
+                              !     minimum conductance of 1/(25 * patch LAI) and a minimum
+                              !     patch-level heat capacity of 
+                              !     3000 * (height of the tallest cohort) are imposed
                               !  0. The Nusselt number for forced convection is estimated
                               !     using the average winds, with no corrections
                               !  1. The actual Nusselt number for forced convection is 
@@ -492,6 +537,12 @@
                               !      stable layers that works better during night time.
                               !  4 - The parameterization of Beljaars and Holtslag, but 
                               !      using z/L estimation as in Oncley and Dudhia. 
+
+   NL%IPERCOL         = 1     ! Percolation scheme:
+                              !  0 - Original method, from LEAF-3.  Shed liquid in excess 
+                              !      of a 1:9 liquid-to-ice ratio through percolation.
+                              !  1 - Alternative "free" water calculation.  
+                              !      Anderson (1976), NOAA Tech Report NWS 19.
 
 
 
@@ -557,6 +608,9 @@
                                          ! this water to disappear.  If you want no runoff
                                          ! set runoff_time = 0 (not recommended for long 
                                          ! runs).
+
+   NL%BETAPOWER      = 1.                ! Power to be applied to the beta term that
+                                         !     controls the ground evaporation.
 !------------------------------------------------------------------------------------------!
 
 

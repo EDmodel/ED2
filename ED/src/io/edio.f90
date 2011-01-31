@@ -419,16 +419,17 @@ subroutine spatial_averages
 
 
             !----- Average fast time flux dynamics over sites. ----------------------------!
-            cpoly%avg_vapor_vc(isi) = sum(csite%avg_vapor_vc * csite%area ) * site_area_i
-            cpoly%avg_dew_cg(isi)   = sum(csite%avg_dew_cg   * csite%area ) * site_area_i
-            cpoly%avg_vapor_gc(isi) = sum(csite%avg_vapor_gc * csite%area ) * site_area_i
-            cpoly%avg_wshed_vg(isi) = sum(csite%avg_wshed_vg * csite%area ) * site_area_i
-            cpoly%avg_vapor_ac(isi) = sum(csite%avg_vapor_ac * csite%area ) * site_area_i
-            cpoly%avg_transp(isi)   = sum(csite%avg_transp   * csite%area ) * site_area_i
-            cpoly%avg_evap(isi)     = sum(csite%avg_evap     * csite%area ) * site_area_i
-            cpoly%aux(isi)          = sum(csite%aux          * csite%area ) * site_area_i
-            cpoly%avg_drainage(isi) = sum(csite%avg_drainage * csite%area ) * site_area_i
-            cpoly%avg_runoff(isi)   = sum(csite%avg_runoff   * csite%area ) * site_area_i
+            cpoly%avg_carbon_ac(isi) = sum(csite%avg_carbon_ac * csite%area ) * site_area_i
+            cpoly%avg_vapor_vc(isi)  = sum(csite%avg_vapor_vc  * csite%area ) * site_area_i
+            cpoly%avg_dew_cg(isi)    = sum(csite%avg_dew_cg    * csite%area ) * site_area_i
+            cpoly%avg_vapor_gc(isi)  = sum(csite%avg_vapor_gc  * csite%area ) * site_area_i
+            cpoly%avg_wshed_vg(isi)  = sum(csite%avg_wshed_vg  * csite%area ) * site_area_i
+            cpoly%avg_vapor_ac(isi)  = sum(csite%avg_vapor_ac  * csite%area ) * site_area_i
+            cpoly%avg_transp(isi)    = sum(csite%avg_transp    * csite%area ) * site_area_i
+            cpoly%avg_evap(isi)      = sum(csite%avg_evap      * csite%area ) * site_area_i
+            cpoly%aux(isi)           = sum(csite%aux           * csite%area ) * site_area_i
+            cpoly%avg_drainage(isi)  = sum(csite%avg_drainage  * csite%area ) * site_area_i
+            cpoly%avg_runoff(isi)    = sum(csite%avg_runoff    * csite%area ) * site_area_i
             cpoly%avg_drainage_heat(isi) = sum(csite%avg_drainage_heat * csite%area )      &
                                          * site_area_i
             cpoly%avg_runoff_heat(isi)   = sum(csite%avg_runoff_heat   * csite%area )      &
@@ -897,6 +898,7 @@ subroutine spatial_averages
          cgrid%wpa(ipy)  = sum(cpoly%wpa  * cpoly%area ) * poly_area_i
          cgrid%wai(ipy)  = sum(cpoly%wai  * cpoly%area ) * poly_area_i
          !----- Average fast time flux dynamics over polygons. ----------------------------!
+         cgrid%avg_carbon_ac(ipy)    = sum(cpoly%avg_carbon_ac    *cpoly%area)*poly_area_i
          cgrid%avg_vapor_vc(ipy)     = sum(cpoly%avg_vapor_vc     *cpoly%area)*poly_area_i
          cgrid%avg_dew_cg(ipy)       = sum(cpoly%avg_dew_cg       *cpoly%area)*poly_area_i
          cgrid%avg_vapor_gc(ipy)     = sum(cpoly%avg_vapor_gc     *cpoly%area)*poly_area_i
