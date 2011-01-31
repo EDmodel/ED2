@@ -303,7 +303,7 @@ module canopy_air_coms
       !------------------------------------------------------------------------------------!
       if (stable) then
          select case (isfclyrm)
-         case (2) !----- Oncley and Dudhia (1995). ----------------------------------------!
+         case (2,5) !----- Oncley and Dudhia (1995). --------------------------------------!
             psim = - bbeta * zeta 
          case (3,4) !----- Beljaars and Holtslag (1991). ----------------------------------!
             psim = abh91 * zeta                                                            &
@@ -340,7 +340,7 @@ module canopy_air_coms
       !------------------------------------------------------------------------------------!
       if (stable) then
          select case (isfclyrm)
-         case (2) !----- Oncley and Dudhia (1995). ----------------------------------------!
+         case (2,5) !----- Oncley and Dudhia (1995). --------------------------------------!
             psih = - bbeta * zeta 
          case (3,4) !----- Beljaars and Holtslag (1991). ----------------------------------!
             psih = 1.0 - (1.0 + ate * zeta)**fbh91                                         &
@@ -376,7 +376,7 @@ module canopy_air_coms
       !------------------------------------------------------------------------------------!
       if (stable) then
          select case (isfclyrm)
-         case (2) !----- Oncley and Dudhia (1995). ----------------------------------------!
+         case (2,5) !----- Oncley and Dudhia (1995). --------------------------------------!
             psim8 = - bbeta8 * zeta 
          case (3,4) !----- Beljaars and Holtslag (1991). ----------------------------------!
             psim8 = abh918 * zeta                                                          &
@@ -414,7 +414,7 @@ module canopy_air_coms
       !------------------------------------------------------------------------------------!
       if (stable) then
          select case (isfclyrm)
-         case (2) !----- Oncley and Dudhia (1995). ----------------------------------------!
+         case (2,5) !----- Oncley and Dudhia (1995). --------------------------------------!
             psih8 = - bbeta8 * zeta 
          case (3,4) !----- Beljaars and Holtslag (1991). ----------------------------------!
             psih8 = 1.d0 - (1.d0 + ate8 * zeta)**fbh918                                    &
@@ -450,7 +450,7 @@ module canopy_air_coms
       !------------------------------------------------------------------------------------!
       if (stable) then
          select case (isfclyrm)
-         case (2) !----- Oncley and Dudhia (1995). ----------------------------------------!
+         case (2,5) !----- Oncley and Dudhia (1995). --------------------------------------!
             dpsimdzeta = - bbeta 
          case (3,4) !----- Beljaars and Holtslag (1991). ----------------------------------!
             dpsimdzeta = abh91 + bbh91 * (1.0 - dbh91 * zeta + cbh91)                      &
@@ -486,7 +486,7 @@ module canopy_air_coms
       !------------------------------------------------------------------------------------!
       if (stable) then
          select case (isfclyrm)
-         case (2) !----- Oncley and Dudhia (1995). ----------------------------------------!
+         case (2,5) !----- Oncley and Dudhia (1995). --------------------------------------!
             dpsihdzeta = - bbeta
          case (3,4) !----- Beljaars and Holtslag (1991). ----------------------------------!
             dpsihdzeta = - atetf * (1.0 + ate * zeta)**fm1                                 &
@@ -524,7 +524,7 @@ module canopy_air_coms
       !------------------------------------------------------------------------------------!
       if (stable) then
          select case (isfclyrm)
-         case (2) !----- Oncley and Dudhia (1995). ----------------------------------------!
+         case (2,5) !----- Oncley and Dudhia (1995). --------------------------------------!
             dpsimdzeta8 = - bbeta8
          case (3,4) !----- Beljaars and Holtslag (1991). ----------------------------------!
             dpsimdzeta8 = abh918                                                           &
@@ -561,7 +561,7 @@ module canopy_air_coms
       !------------------------------------------------------------------------------------!
       if (stable) then
          select case (isfclyrm)
-         case (2) !----- Oncley and Dudhia (1995). ----------------------------------------!
+         case (2,5) !----- Oncley and Dudhia (1995). --------------------------------------!
             dpsihdzeta8 = - bbeta8
          case (3,4) !----- Beljaars and Holtslag (1991). ----------------------------------!
             dpsihdzeta8 = - atetf8 * (1.d0 + ate8 * zeta)**fm18                            &

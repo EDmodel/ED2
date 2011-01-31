@@ -254,7 +254,7 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
       targetp%tai(ico)        = targetp%lai(ico) + targetp%wai(ico)
 
       !----- Find the crown area. ---------------------------------------------------------!
-      crown_area_tmp          = dbh2ca(cpatch%dbh(ico),ipft)
+      crown_area_tmp          = dbh2ca(cpatch%dbh(ico),cpatch%sla(ico),ipft)
       targetp%crown_area(ico) = min( 1.d0                                                  &
                                    , targetp%nplant(ico) * dble(crown_area_tmp)            &
                                    * rk4site%green_leaf_factor(ipft) )

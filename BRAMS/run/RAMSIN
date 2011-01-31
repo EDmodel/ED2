@@ -574,6 +574,8 @@
                              !      works better during night time.
                              !  4 - The parametrisation of Beljaars and Holtslag, but using
                              !      z/L estimation as in Oncley and Dudhia. 
+                             !  5 - The parametrisation of Oncley and Dudhia, but using 
+                             !      z/L estimation as in Beljaars and Holtslag
 
    USTMIN   = 0.10,          ! Minimum u* (m/s)
    

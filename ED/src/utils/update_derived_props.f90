@@ -121,7 +121,8 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
       ! storey.                                                                            !
       !------------------------------------------------------------------------------------!
       if (opencan_frac > 0.0) then
-         weight                 = min(1.0, cpatch%nplant(ico)*dbh2ca(cpatch%dbh(ico),ipft))
+         weight                 = min(1.0, cpatch%nplant(ico)                              &
+                                         * dbh2ca(cpatch%dbh(ico),cpatch%sla(ico),ipft))
          norm_fac               = norm_fac + weight
          csite%veg_height(ipa)  = csite%veg_height(ipa) + cpatch%hite(ico) * weight
          opencan_frac           = opencan_frac * (1.0 - weight)

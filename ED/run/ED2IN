@@ -542,6 +542,8 @@
                               !      stable layers that works better during night time.
                               !  4 - The parameterization of Beljaars and Holtslag, but 
                               !      using z/L estimation as in Oncley and Dudhia. 
+                              !  5 - The parametrisation of Oncley and Dudhia, but using 
+                              !      z/L estimation as in Beljaars and Holtslag
 
    NL%IPERCOL         = 1     ! Percolation scheme:
                               !  0 - Original method, from LEAF-3.  Shed liquid in excess 

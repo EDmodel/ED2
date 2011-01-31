@@ -330,7 +330,7 @@ module leaf_coms
       !------------------------------------------------------------------------------------!
       if (stable) then
          select case (istar)
-         case (2) !----- Oncley and Dudhia (1995). ----------------------------------------!
+         case (2,5) !----- Oncley and Dudhia (1995). --------------------------------------!
             psim = - bbeta * zeta 
          case (3,4) !----- Beljaars and Holtslag (1991). ----------------------------------!
             psim = abh91 * zeta                                                            &
@@ -369,7 +369,7 @@ module leaf_coms
 
       if (stable) then
          select case (istar)
-         case (2) !----- Oncley and Dudhia (1995). ----------------------------------------!
+         case (2,5) !----- Oncley and Dudhia (1995). --------------------------------------!
             psih = - bbeta * zeta 
          case (3,4) !----- Beljaars and Holtslag (1991). ----------------------------------!
             psih = 1.0 - (1.0 + ate * zeta)**fbh91                                         &
@@ -406,7 +406,7 @@ module leaf_coms
 
       if (stable) then
          select case (istar)
-         case (2) !----- Oncley and Dudhia (1995). ----------------------------------------!
+         case (2,5) !----- Oncley and Dudhia (1995). --------------------------------------!
             dpsimdzeta = - bbeta 
          case (3,4) !----- Beljaars and Holtslag (1991). ----------------------------------!
             dpsimdzeta = abh91 + bbh91 * (1.0 - dbh91 * zeta + cbh91)                      &
@@ -445,7 +445,7 @@ module leaf_coms
 
       if (stable) then
          select case (istar)
-         case (2) !----- Oncley and Dudhia (1995). ----------------------------------------!
+         case (2,5) !----- Oncley and Dudhia (1995). --------------------------------------!
             dpsihdzeta = - bbeta
          case (3,4) !----- Beljaars and Holtslag (1991). ----------------------------------!
             dpsihdzeta = - atetf * (1.0 + ate * zeta)**fm1                                 &
