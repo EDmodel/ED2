@@ -21,6 +21,7 @@ module leaf_coms
    use grid_dims
    use rconstants, only: grav      & ! intent(in)
                        , vonk      & ! intent(in)
+                       , alvl      & ! intent(in)
                        , twothirds ! ! intent(in)
 
    integer :: niter_leaf   ! ! number of leaf timesteps
@@ -167,6 +168,10 @@ module leaf_coms
    real, parameter :: min_waterrough = .0001       ! Minimum water roughness height
    real, parameter :: waterrough     = .0001       ! Water roughness height
    real, parameter :: snowrough      = .001        ! Snow roughness height
+   !---------------------------------------------------------------------------------------!
+
+   !----- Maximum transpiration allowed. --------------------------------------------------!
+   real, parameter :: transp_max     = 400. / alvl
    !---------------------------------------------------------------------------------------!
 
 

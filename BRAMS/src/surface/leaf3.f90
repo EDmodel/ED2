@@ -749,9 +749,11 @@ subroutine leaftw(mzg,mzs,np,soil_water, soil_energy,soil_text,sfcwater_mass    
    real                                   :: wtold
    real                                   :: wdiff
    real                                   :: watermid
-   real                                   :: availwat
-   real                                   :: wg
+   real                                   :: available_water
+   real   , dimension(mzg)                :: available_layer
+   real                                   :: extracted_water
    real                                   :: wloss
+   real                                   :: qwloss
    real                                   :: soilcond
    real                                   :: waterfrac
    !----- Locally saved variables. --------------------------------------------------------!
@@ -797,6 +799,24 @@ subroutine leaftw(mzg,mzs,np,soil_water, soil_energy,soil_text,sfcwater_mass    
    nveg = nint(leaf_class)
    ksn = nint(sfcwater_nlev)
 
+
+   !---------------------------------------------------------------------------------------!
+   !    Remove water from all layers up to the root depth for transpiration.  Bottom       !
+   ! k-index in root zone is kroot(nveg).  Limit soil moisture to values above soilwp.     !
+   ! The available water profile is given in kg/m2.                                        !
+   !---------------------------------------------------------------------------------------!
+   nsl    = nint(soil_text(mzg))
+   ktrans = kroot(nveg)
+   available_layer(:)   = 0.
+   available_water      = 0.
+   do k = mzg,ktrans,-1
+      nsoil              = nint(soil_text(k))
+      available_layer(k) = dslz(k) * wdns                                                  &
+                         * max(0.0, fracliq(k) * (soil_water(k)-soilwp(nsoil)))
+      available_water    = available_water + available_layer(k)
+   end do
+
+
    !---------------------------------------------------------------------------------------!
    !      Evaluate any exchanges of heat and moisture to or from vegetation, apply moist-  !
    ! ure and heat changes to vegetation, and evaluate the resistance parameter rd between  !
@@ -806,8 +826,8 @@ subroutine leaftw(mzg,mzs,np,soil_water, soil_energy,soil_text,sfcwater_mass    
                    ,tstar,rstar,cstar,soil_rough,veg_rough,veg_height,veg_lai,veg_tai      &
                    ,veg_water,veg_hcap,veg_energy,leaf_class,veg_fracarea,stom_resist      &
                    ,can_prss,can_theiv,can_theta,can_rvap,can_co2,sensible,evap,transp,gpp &
-                   ,plresp,resphet,ground_rsat,ground_rvap,ground_temp,ground_fliq,rshort  &
-                   ,i,j,ip)
+                   ,plresp,resphet,ground_rsat,ground_rvap,ground_temp,ground_fliq         &
+                   ,available_water,rshort,i,j,ip)
 
    !----- Compute soil and effective snow heat resistance times layer depth (rfactor). ----!
    do k = 1,mzg
@@ -1056,29 +1076,18 @@ subroutine leaftw(mzg,mzs,np,soil_water, soil_energy,soil_text,sfcwater_mass    
    enddo
 
    !---------------------------------------------------------------------------------------!
-   !    Remove water only from moistest level in root zone for transpiration. Bottom       !
-   ! k-index in root zone is kroot(nveg).  Limit soil moisture to values above soilwp.     !
-   ! More sophisticated use of root profile function and water extractibility function,    !
-   ! and improved minimum value are being considered. Units of wloss are m3/m3, of transp  !
-   ! are kg/m2/s.                                                                          !
+   !     Update soil moisture by extracting the water lost due to transpiration.           !
    !---------------------------------------------------------------------------------------!
-   wg  = 0.
-   nsl = nint(soil_text(mzg))
-   ktrans = mzg
-   do k = kroot(nveg),mzg
-      nsoil = nint(soil_text(k))
-      availwat = (soil_water(k)-soilwp(nsoil))* fracliq(k)
-      if (wg < availwat) then
-         wg = availwat
-         ktrans = k
-         nsl = nsoil
-      end if
-   end do
-
-   wloss = min(transp_tot * dslzidt(ktrans) * wdnsi, wg, soil_water(ktrans) - soilwp(nsl))
-   soil_water(ktrans)  = soil_water(ktrans)  - wloss
-   soil_energy(ktrans) = soil_energy(ktrans)                                               &
-                       - wloss * cliqvlme * (tempk(ktrans) - tsupercool)
+   extracted_water = transp_tot * dtll
+   if (extracted_water > 0. .and. available_water > 0.) then
+      do k = ktrans,mzg
+         wloss  = wdnsi * dslzi(k) * extracted_water * available_layer(k) / available_water
+         qwloss = wloss * cliqvlme * (tempk(k) - tsupercool)
+         
+         soil_water(k)  = soil_water(k)  - wloss
+         soil_energy(k) = soil_energy(k) - qwloss
+      end do
+   end if
 
    !---------------------------------------------------------------------------------------!
    ! Compute ground vap mxrat for availability on next timestep; put into ground_rsat.     !
@@ -1117,7 +1126,7 @@ subroutine leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mas
                       ,veg_tai,veg_water,veg_hcap,veg_energy,leaf_class,veg_fracarea       &
                       ,stom_resist,can_prss,can_theiv,can_theta,can_rvap,can_co2,sensible  &
                       ,evap,transp,gpp,plresp,resphet,ground_rsat,ground_rvap,ground_temp  &
-                      ,ground_fliq,rshort,i,j,ip)
+                      ,ground_fliq,available_water,rshort,i,j,ip)
    use leaf_coms
    use rconstants
    use therm_lib , only : eslif          & ! function
@@ -1151,6 +1160,7 @@ subroutine leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mas
    real                , intent(in)    :: ground_rvap
    real                , intent(in)    :: ground_temp
    real                , intent(in)    :: ground_fliq
+   real                , intent(in)    :: available_water
    real                , intent(in)    :: rshort
    real                , intent(inout) :: veg_water
    real                , intent(inout) :: veg_hcap
@@ -1210,6 +1220,8 @@ subroutine leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mas
    real                                :: dewgndflx
    real                                :: qdewgndflx
    real                                :: transp_test
+   real                                :: transp_wilt
+   real                                :: transp_wilti
    real                                :: rc
    real                                :: rc_inf
    real                                :: wshed_loc
@@ -1374,13 +1386,22 @@ subroutine leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mas
       rc     = 1. / (1. / rc + .0011 * dtll * (1. / rc_inf - 1. / rc))
 
       !------------------------------------------------------------------------------------!
-      !    Limit maximum transpiration to be <= 400 w m-2 by increasing rc if              !
-      ! necessary.                                                                         !
+      !    Transpiration can only happen if there is water.                                !
       !------------------------------------------------------------------------------------!
-      transp_test = alvl * can_rhos * veg_lai * (rsatveg - can_rvap) / (rb + rc)
-      if (transp_test > 400.) then
-         rc = (rb + rc) * transp_test * .0025 - rb
-      endif
+      if (available_water > 0.) then
+         !---------------------------------------------------------------------------------!
+         !    Limit maximum transpiration to be <= transp_max and less than the maximum    !
+         ! water available by increasing rc if necessary.                                  !
+         !---------------------------------------------------------------------------------!
+         transp_test  = can_rhos * veg_lai * (rsatveg - can_rvap) / (rb + rc)
+         transp_wilt  = min(available_water / dtll, transp_max)
+         transp_wilti = 1./ transp_wilt
+         if (transp_test > transp_wilt) then
+            rc          = (rb + rc) * transp_test * transp_wilti - rb
+         end if
+      else
+         transp_test = 0.
+      end if
       stom_resist = rc
 
       !----- Flux of heat and moisture from vegetation to canopy. -------------------------!
@@ -1396,7 +1417,11 @@ subroutine leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mas
          !----- Flow will go towards the canopy, allow evaporation and transpiration. -----!
          sigmaw     = min(1.,(veg_water / (.2 * stai)) ** .66667)
          wflxvc     = min(c3 * 2. * stai * sigmaw / rb,veg_water/dtll)
-         transp_loc = max(0.,c3 * slai * (1.-sigmaw) / (rb + rc))
+         if (transp_test > 0.) then
+            transp_loc = max(0.,c3 * slai * (1.-sigmaw) / (rb + rc))
+         else
+            transp_loc = 0.
+         end if
       else
          !----- Flow is towards the leaf, dew/frost formation and no transpiration. -------!
          wflxvc     = max(c3 * 2. * stai / rb,min(0.,(toodry-can_rvap)/ dtllowcc))

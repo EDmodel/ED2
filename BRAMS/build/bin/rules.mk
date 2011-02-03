@@ -289,6 +289,16 @@ harr_radinit.o : $(RADIATE)/harr_radinit.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90) 
 
+hdf5_coms.o : $(MEMORY)/hdf5_coms.F90
+	cp -f $< $(<F:.F90=.F90)
+	$(FPP_COMMAND) $(HDF5_INCS) $(<F:.F90=.F90)
+	rm -f $(<F:.F90=.F90)
+
+hdf5_utils.o : $(UTILS_LIB)/hdf5_utils.F90
+	cp -f $< $(<F:.F90=.F90)
+	$(FPP_COMMAND) $(HDF5_INCS) $(<F:.F90=.F90)
+	rm -f $(<F:.F90=.F90)
+
 hemi2.o : $(NESTING)/hemi2.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
@@ -1523,16 +1533,6 @@ h5_output.o : $(ED_IO)/h5_output.F90
 	cp -f $< $(<F:.F90=.F90)
 	$(FPP_COMMAND) $(HDF5_INCS) $(<F:.F90=.F90)
 	rm -f $(<F:.F90=.F90)
-
-hdf5_coms.o : $(ED_MEMORY)/hdf5_coms.F90
-	cp -f $< $(<F:.F90=.F90)
-	$(FPP_COMMAND) $(HDF5_INCS) $(<F:.F90=.F90)
-	rm -f $(<F:.F90=.F90)
-
-hdf5_utils.o : $(ED_UTILS)/hdf5_utils.f90
-	cp -f $< $(<F:.f90=.f90)
-	$(F90_COMMAND) $(HDF5_INCS) $(<F:.f90=.f90)
-	rm -f $(<F:.f90=.f90)
 
 heun_driver.o: $(ED_DYNAMICS)/heun_driver.f90
 	cp -f $< $(<F:.f90=.f90)
