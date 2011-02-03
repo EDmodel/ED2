@@ -72,9 +72,11 @@ module leaf_coms
             , qstar        & ! specific humidity characteristic friction scale   [   kg/kg]
             , timefac_sst  & ! time interpolation factor for SST                 [     ---]
             
-            , rb           & ! vegetation aerodynamic resistance
-            , rgnd         & ! canopy to ground aerodynamic resistance
-            , ggnd         & ! canopy to ground aerodynamic conductance
+            , gbh          & ! leaf boundary layer heat conductance              [     m/s]
+            , gbw          & ! leaf boundary layer water conductance             [     m/s]
+            , ggnet        & ! net ground heat/water conductance                 [     m/s]
+            , ggbare       & ! heat/water conductance, bare ground               [     m/s]
+            , ggveg        & ! heat/water conductance,  vegetated ground         [     m/s]
             , rho_ustar    & ! canopy density time friction velocity
             , rshort_g     & ! net SW radiation absorbed by grnd
             , rshort_v     & ! net SW radiation absorbed by veg

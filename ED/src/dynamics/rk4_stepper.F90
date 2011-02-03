@@ -453,9 +453,9 @@ module rk4_stepper
       ! will run the full adjustment, to make sure that the step will be rejected          !
       ! especially if there are issues with the top soil properties.                       !
       !------------------------------------------------------------------------------------!
-      call adjust_veg_properties    (yout,combh,csite,ipa)
-      call adjust_topsoil_properties(yout,combh,csite,ipa)
-      call adjust_sfcw_properties   (nzg,nzs,yout, csite,ipa)
+      !call adjust_veg_properties    (yout,combh,csite,ipa)
+      !call adjust_topsoil_properties(yout,combh,csite,ipa)
+      !call adjust_sfcw_properties   (nzg,nzs,yout, csite,ipa)
       call update_diagnostic_vars   (yout, csite,ipa)
       call rk4_sanity_check(yout, reject_result, csite,ipa,dydx,h,print_diags)
       !------------------------------------------------------------------------------------!

@@ -39,6 +39,7 @@ subroutine leaf_stars(theta_atm,theiv_atm,shv_atm,rvap_atm,co2_atm              
                         , tprandtl   & ! intent(in)
                         , z0moz0h    & ! intent(in)
                         , z0hoz0m    & ! intent(in)
+                        , ggbare     & ! intent(out)
                         , psim       & ! function
                         , psih       & ! function
                         , zoobukhov  ! ! function
@@ -256,6 +257,14 @@ subroutine leaf_stars(theta_atm,theiv_atm,shv_atm,rvap_atm,co2_atm              
       d_vel = .5 * uref
       ustar = sqrt(d_vel * delz / dtll)
    end if
+   !---------------------------------------------------------------------------------------!
+
+   !---------------------------------------------------------------------------------------!
+   !    Compute the ground conductance.  This equation is similar to the original, except  !
+   ! that we don't assume the ratio between the gradient and the characteristic scale to   !
+   ! be 0.2; instead we use the actual ratio that is computed here.                        !
+   !---------------------------------------------------------------------------------------!
+   ggbare = c3 * ustar
    !---------------------------------------------------------------------------------------!
    return
 end subroutine leaf_stars

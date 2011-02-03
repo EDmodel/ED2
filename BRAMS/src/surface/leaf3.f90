@@ -448,15 +448,23 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz,leaf,basic,turb,radiate,grid,cu
                   ! gd = rho * ustar/5 is the viscous sublayer conductivity from Garratt   !
                   ! (1992), but multiplied by density.                                     !
                   !------------------------------------------------------------------------!
-                  rho_ustar = leaf%ustar(i,j,1) * can_rhos
-                  ggnd      = .2 * rho_ustar * ggfact
                   dtllowcc  = dtll / (can_depth * can_rhos)
                   dtllohcc  = dtll / (can_depth * can_rhos * cp * can_temp)
                   dtlloccc  = mmdry * dtllowcc
+                  
+                  !------------------------------------------------------------------------!
+                  !    For water patches, the net conductance is the same as the bare      !
+                  ! ground.                                                                !
+                  !------------------------------------------------------------------------!
+                  ggveg   = 0.0
+                  ggnet   = ggnd * ggfact
+                  !------------------------------------------------------------------------!
 
                   !----- Compute the fluxes from water body to canopy. --------------------!
-                  hflxgc  = ggnd * cp * (leaf%ground_temp(i,j,ip) - can_temp)
-                  wflxgc  = ggnd * (leaf%ground_rsat(i,j,ip) - leaf%can_rvap(i,j,ip))
+                  hflxgc  = ggnet * cp * can_rhos                                          &
+                          * (leaf%ground_temp(i,j,ip) - can_temp)
+                  wflxgc  = ggnet      * can_rhos                                          &
+                          * (leaf%ground_rsat(i,j,ip) - leaf%can_rvap(i,j,ip))
                   qwflxgc = wflxgc * alvl
                   cflxgc  = 0. !----- No water carbon emission model available...
 
@@ -1202,7 +1210,7 @@ subroutine leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mas
    integer                             :: j
    integer                             :: ip
    real                                :: aux
-   real                                :: c2
+   real                                :: opencanf
    real                                :: c3
    real                                :: c4
    real                                :: dsm
@@ -1215,8 +1223,6 @@ subroutine leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mas
    real                                :: fswp
    real                                :: fvpd
    real                                :: qwtot
-   real                                :: rasgnd
-   real                                :: rasveg
    real                                :: rleaf
    real                                :: rsatveg
    real                                :: sigmaw 
@@ -1287,13 +1293,6 @@ subroutine leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mas
    zdisp = veg_height * (1.-snowfac)
    zveg = zdisp / 0.63
 
-   !---------------------------------------------------------------------------------------!
-   ! The following value of ground-canopy resistance for the nonvegetated (bare soil or    !
-   ! water) surface is from John Garratt.  It is 5/ustar and replaces the one from old     !
-   ! LEAF.                                                                                 !
-   !---------------------------------------------------------------------------------------!
-   rasgnd = 5. / ustar
-
    if (veg_tai >= .1 .and. snowfac < .9) then
 
       !------------------------------------------------------------------------------------!
@@ -1303,9 +1302,13 @@ subroutine leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mas
       !------------------------------------------------------------------------------------!
       factv       = log(geoht / zoveg) / (vonk * vonk * vels)
       aux         = exp(exar * (1. - (zdisp + zoveg) / zveg))
-      rasveg      = factv * zveg / (exar * (zveg - zdisp)) * (exp(exar) - aux)
-      c2          = max(0.,min(1., 1.1 * veg_tai / covr))
-      rgnd        = rasgnd * (1. - c2) + rasveg * c2
+      ggveg       = (exar * (zveg - zdisp)) / (factv * zveg  * (exp(exar) - aux))
+      opencanf    = max(0.,min(1., 1.0 - 1.1 * veg_tai / covr))
+      !------------------------------------------------------------------------------------!
+      !    The net ground conductance is computed based on the weighted average of the     !
+      ! bare ground and vegetated ground _resistances_.                                    !
+      !------------------------------------------------------------------------------------!
+      ggnet       = ggfact * ggbare * ggveg / (opencanf * ggveg + (1. - opencanf) * ggbare)
       wshed_tot   = 0.
       qwshed_tot  = 0.
       transp_tot  = 0.
@@ -1319,7 +1322,8 @@ subroutine leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mas
       wshed_tot  = pcpgl
       qwshed_tot = qpcpgl
       transp_tot = 0.
-      rgnd       = rasgnd
+      ggveg      = 0.0
+      ggnet      = ggfact * ggbare
    end if
 
    !---------------------------------------------------------------------------------------!
@@ -1328,10 +1332,8 @@ subroutine leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mas
    ! and dewgnd is the mass of dew that forms on the snow/soil surface this timestep; both !
    ! are defined as always positive or zero.                                               !
    !---------------------------------------------------------------------------------------!
-   ggnd = can_rhos / rgnd
-
-   hflxgc     = cp * ggnd * (ground_temp - can_temp)
-   wflx       =      ggnd * (ground_rsat - can_rvap)
+   hflxgc     = cp * can_rhos * ggnet * (ground_temp - can_temp)
+   wflx       =      can_rhos * ggnet * (ground_rsat - can_rvap)
    
    if (wflx >= 0.) then
       dewgndflx = 0.
@@ -1341,7 +1343,7 @@ subroutine leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mas
    dewgnd_tot = dewgndflx * dtll
 
    if (ksn == 0) then
-      wflxgc = max(0.,ggnd * (ground_rvap - can_rvap))
+      wflxgc = max(0.,can_rhos * ggnet * (ground_rvap - can_rvap))
    else
       wflxgc = max(0.,min(wflx,sfcwater_mass(ksn)/dtll))
    end if

@@ -1389,11 +1389,11 @@ end do
    end if
 
    select case (icanturb)
-   case (-2:2)
+   case (-2:3)
       continue
    case default
       write (reason,fmt='(a,1x,i4,a)') &
-        'Invalid ICANTURB, it must be between -2 and 2. Yours is set to',icanturb,'...'
+        'Invalid ICANTURB, it must be between -2 and 3. Yours is set to',icanturb,'...'
       call opspec_fatal(reason,'opspec_misc')  
       ifaterr = ifaterr +1
    end select

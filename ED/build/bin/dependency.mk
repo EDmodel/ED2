@@ -54,9 +54,9 @@ radiate_driver.o: grid_coms.mod soil_coms.mod
 reproduction.o: allometry.mod consts_coms.mod decomp_coms.mod ed_max_dims.mod
 reproduction.o: ed_state_vars.mod ed_therm_lib.mod fuse_fiss_utils.mod
 reproduction.o: mem_polygons.mod pft_coms.mod phenology_coms.mod
-rk4_derivs.o: canopy_air_coms.mod canopy_struct_dynamics.mod consts_coms.mod
-rk4_derivs.o: ed_max_dims.mod ed_misc_coms.mod ed_state_vars.mod grid_coms.mod
-rk4_derivs.o: pft_coms.mod rk4_coms.mod soil_coms.mod therm_lib8.mod
+rk4_derivs.o: canopy_struct_dynamics.mod consts_coms.mod ed_max_dims.mod
+rk4_derivs.o: ed_misc_coms.mod ed_state_vars.mod grid_coms.mod pft_coms.mod
+rk4_derivs.o: rk4_coms.mod soil_coms.mod therm_lib8.mod
 rk4_driver.o: canopy_air_coms.mod canopy_struct_dynamics.mod consts_coms.mod
 rk4_driver.o: ed_misc_coms.mod ed_state_vars.mod grid_coms.mod
 rk4_driver.o: met_driver_coms.mod rk4_coms.mod soil_coms.mod therm_lib.mod

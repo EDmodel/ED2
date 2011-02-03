@@ -2382,6 +2382,14 @@ module fuse_fiss_utils
                                      ( csite%can_depth(donp)          * csite%area(donp)   &
                                      + csite%can_depth(recp)          * csite%area(recp) )
 
+      csite%ggbare(recp)             = newareai *                                          &
+                                     ( csite%ggbare(donp)             * csite%area(donp)   &
+                                     + csite%ggbare(recp)             * csite%area(recp) )
+
+      csite%ggnet(recp)              = newareai *                                          &
+                                     ( csite%ggnet(donp)              * csite%area(donp)   &
+                                     + csite%ggnet(recp)              * csite%area(recp) )
+
       csite%hcapveg(recp)            = newareai *                                          &
                                      ( csite%hcapveg(donp)            * csite%area(donp)   &
                                      + csite%hcapveg(recp)            * csite%area(recp) )
@@ -2932,6 +2940,8 @@ module fuse_fiss_utils
       ! + csite%disp_height(recp)                                                          !
       ! + csite%lai(recp)                                                                  !
       ! + csite%veg_rough(recp)                                                            !
+      ! + csite%opencan_frac(recp)                                                         !
+      ! + csite%ggnet(recp)                                                                !
       !------------------------------------------------------------------------------------!
       call update_patch_derived_props(csite,lsl, prss,recp)
       !------------------------------------------------------------------------------------!

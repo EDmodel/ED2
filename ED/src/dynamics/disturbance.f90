@@ -694,6 +694,8 @@ module disturbance_utils
       csite%can_prss                   (np) = 0.0
       csite%can_shv                    (np) = 0.0
       csite%can_co2                    (np) = 0.0
+      csite%ggbare                     (np) = 0.0
+      csite%ggveg                      (np) = 0.0
       csite%soil_energy          (1:nzg,np) = 0.0
       csite%soil_water           (1:nzg,np) = 0.0
       csite%sfcwater_mass        (1:nzs,np) = 0.0
@@ -791,6 +793,12 @@ module disturbance_utils
                                             * area_fac
       csite%can_depth                  (np) = csite%can_depth                  (np)        &
                                             + csite%can_depth                  (cp)        &
+                                            * area_fac
+      csite%ggbare                     (np) = csite%ggbare                     (np)        &
+                                            + csite%ggbare                     (cp)        &
+                                            * area_fac
+      csite%ggveg                      (np) = csite%ggveg                      (np)        &
+                                            + csite%ggveg                      (cp)        &
                                             * area_fac
       csite%rough                      (np) = csite%rough                      (np)        &
                                             + csite%rough                      (cp)        &

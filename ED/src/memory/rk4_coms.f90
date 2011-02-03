@@ -35,9 +35,24 @@ module rk4_coms
       real(kind=8)                        :: can_rhos     ! Canopy air density   [   kg/m³]
       real(kind=8)                        :: can_prss     ! Pressure             [      Pa]
       real(kind=8)                        :: can_exner    ! Exner function       [  J/kg/K]
+      !------------------------------------------------------------------------------------!
 
-      !----- Ground -> flux type. ---------------------------------------------------------!
+
+
+      !----- Fraction of open canopy. -----------------------------------------------------!
+      real(kind=8)                        :: opencan_frac ! Frac. of open canopy [     ---]
+      !------------------------------------------------------------------------------------!
+
+
+
+      !----- Ground -> Canopy flux type. --------------------------------------------------!
+      real(kind=8)                        :: ggbare       ! Cond. of bare ground [     m/s]
+      real(kind=8)                        :: ggveg        ! Cond. of veg. ground [     m/s]
+      real(kind=8)                        :: ggnet        ! Net ground  conduct. [     m/s]
       integer                             :: flag_wflxgc  ! Flag for water flux.
+      !------------------------------------------------------------------------------------!
+
+
 
       !----- Soil variables. --------------------------------------------------------------!
       real(kind=8), dimension(:), pointer :: soil_energy  ! Internal energy       [   J/m³]
@@ -51,6 +66,9 @@ module rk4_coms
       real(kind=8), dimension(:), pointer :: soil_liq     ! Liquid fraction       [  kg/m²]
       real(kind=8), dimension(:), pointer :: available_liquid_water !             [  kg/m²]
       real(kind=8), dimension(:), pointer :: extracted_water        !             [  kg/m²]
+      !------------------------------------------------------------------------------------!
+
+
 
       !----- Temporary surface water variables. -------------------------------------------!
       integer                             :: nlev_sfcwater    ! # of layers       [   ----]
@@ -61,6 +79,9 @@ module rk4_coms
       real(kind=8), dimension(:), pointer :: sfcwater_tempk   ! Temperature       [      K]
       real(kind=8), dimension(:), pointer :: sfcwater_fracliq ! Liquid fraction   [   ----]
       real(kind=8), dimension(:), pointer :: sfcwater_restz   ! Resistance term   [   ----]
+      !------------------------------------------------------------------------------------!
+
+
 
       !----- Virtual layer variables. -----------------------------------------------------!
       real(kind=8)                        :: virtual_water    ! Mass              [  kg/m²]
@@ -68,6 +89,9 @@ module rk4_coms
       real(kind=8)                        :: virtual_depth    ! Depth             [      m]
       real(kind=8)                        :: virtual_tempk    ! Temperature       [      K]
       real(kind=8)                        :: virtual_fracliq  ! Liquid fraction   [      K]
+      !------------------------------------------------------------------------------------!
+
+
 
       !----- Surface variables. -----------------------------------------------------------!
       real(kind=8)                        :: ground_shv   ! Ground sp. humidity   [  kg/kg]
@@ -75,6 +99,9 @@ module rk4_coms
       real(kind=8)                        :: ground_temp  ! Ground temperature    [      K]
       real(kind=8)                        :: ground_fliq  ! Ground liquid frac.   [    ---]
       real(kind=8)                        :: rough        ! Roughness             [      m]
+      !------------------------------------------------------------------------------------!
+
+
 
       !----- Characteristic scale. --------------------------------------------------------!
       real(kind=8)                        :: ustar  ! Momentum                    [    m/s]
@@ -84,6 +111,9 @@ module rk4_coms
       real(kind=8)                        :: estar  ! Eq. potential temperature   [      K]
       real(kind=8)                        :: zeta   ! z / Obukhov length          [    ---]
       real(kind=8)                        :: ribulk ! Bulk Richardson number      [    ---]
+      !------------------------------------------------------------------------------------!
+
+
 
       !----- Vertical fluxes. -------------------------------------------------------------!
       real(kind=8)                        :: upwp 
@@ -91,16 +121,24 @@ module rk4_coms
       real(kind=8)                        :: cpwp
       real(kind=8)                        :: tpwp
       real(kind=8)                        :: wpwp
+      !------------------------------------------------------------------------------------!
 
-      
+
+
       !----- Resistance variables. --------------------------------------------------------!
       real(kind=8)                        :: rasveg
       real(kind=8)                        :: root_res_fac
-      
+      !------------------------------------------------------------------------------------!
+
+
+
       !----- Heterotrophic respiration.[µmol/m²/s] ----------------------------------------!
       real(kind=8)                        :: cwd_rh
       real(kind=8)                        :: rh
-      
+      !------------------------------------------------------------------------------------!
+
+
+
       !----- Leaf (cohort-level) variables. -----------------------------------------------!
       real(kind=8), pointer, dimension(:) :: veg_energy   ! Internal energy     [     J/m²]
       real(kind=8), pointer, dimension(:) :: veg_water    ! Surface water mass  [    kg/m²]
@@ -136,6 +174,8 @@ module rk4_coms
       real(kind=8), pointer, dimension(:) :: rshort_v     ! Net absorbed SWRad. [   J/m²/s]
       real(kind=8), pointer, dimension(:) :: rlong_v      ! Net absorbed LWRad. [   J/m²/s]
       !------------------------------------------------------------------------------------!
+
+
 
       !------------------------------------------------------------------------------------!
       !     Fast time flux diagnostic variables.  These variables may be turned off under  !
@@ -763,6 +803,10 @@ module rk4_coms
       y%can_rhos                       = 0.d0
       y%can_prss                       = 0.d0
       y%can_exner                      = 0.d0
+      y%opencan_frac                   = 0.d0
+      y%ggbare                         = 0.d0
+      y%ggveg                          = 0.d0
+      y%ggnet                          = 0.d0
       y%flag_wflxgc                    = -1
       y%virtual_water                  = 0.d0
       y%virtual_energy                 = 0.d0
