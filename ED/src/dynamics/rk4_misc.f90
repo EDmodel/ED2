@@ -2184,21 +2184,10 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
       initp%virtual_depth        = initp%virtual_depth        + veg_dwshed_tot
       !------------------------------------------------------------------------------------!
 
-   case (1)
+   case default
       !------------------------------------------------------------------------------------!
-      !     There is a temporary water but it is not stable, shed the water into the       !
-      ! temporary surface water, but send the energy to the top soil layer, because they   !
-      ! will be brought to thermal equilibrium.                                            !
-      !------------------------------------------------------------------------------------!
-      initp%sfcwater_mass (ksn)  = initp%sfcwater_mass(ksn)   + veg_wshed_tot
-      initp%soil_energy   (nzg)  = initp%soil_energy  (nzg)   + veg_qwshed_tot*dslzi8(nzg)
-      initp%sfcwater_depth(ksn)  = initp%sfcwater_depth(ksn)  + veg_dwshed_tot
-      !------------------------------------------------------------------------------------!
-
-   case (2)
-      !------------------------------------------------------------------------------------!
-      !     There is a temporary water, and it is stable, shed both the mass and energy    !
-      ! into the temporary surface water.                                                  !
+      !     There is a temporary water, shed the excess water to the temporary surface     !
+      ! water layer.                                                                       !
       !------------------------------------------------------------------------------------!
       initp%sfcwater_mass(ksn)   = initp%sfcwater_mass(ksn)   + veg_wshed_tot
       initp%sfcwater_energy(ksn) = initp%sfcwater_energy(ksn) + veg_qwshed_tot

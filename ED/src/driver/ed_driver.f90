@@ -366,7 +366,9 @@ subroutine exterminate_patches_except(keeppa)
    integer                                :: ipy
    integer                                :: isi
    integer                                :: ipa
+   integer                                :: keepact
    !---------------------------------------------------------------------------------------!
+
 
    gridloop: do ifm=1,ngrids
       cgrid => edgrid_g(ifm)
@@ -376,9 +378,11 @@ subroutine exterminate_patches_except(keeppa)
 
          siteloop: do isi=1,cpoly%nsites
             csite => cpoly%site(isi)
+            
+            keepact = min(keeppa,csite%npatches)
 
             patchloop: do ipa=1,csite%npatches
-               if (ipa == keeppa) then
+               if (ipa == keepact) then
                   csite%area(ipa) = 1.0
                else
                   csite%area(ipa) = 0.0
