@@ -1490,6 +1490,7 @@ module farq_leuning
                                 , aparms            & ! intent(in)
                                 , met               ! ! intent(in)
       use physiology_coms, only : gsw_2_gsc8        & ! intent(in)
+                                , gbw_2_gbc8               & ! intent(in)
                                 , c34smin_lint_co28 & ! intent(in)
                                 , c34smax_lint_co28 & ! intent(in)
                                 , c34smax_gsw8      ! ! intent(in)
@@ -1504,6 +1505,13 @@ module farq_leuning
       real(kind=8)               :: aquad   ! Quadratic coefficient             [      ---]
       real(kind=8)               :: bquad   ! Linear coefficient                [  mol/mol]
       real(kind=8)               :: cquad   ! Intercept                         [mol²/mol²]
+      real(kind=8)               :: ciAo    ! Ci at singularity where Aopen=0   [  mol/mol]
+      real(kind=8)               :: cigbw   ! Ci at singularity where gbc(ca-ci)=Ao
+      real(kind=8)               :: ciQ     ! Ci at singularity where qi-qs=-D0 [  mol/mol]
+      real(kind=8)               :: xtmp    ! variable for ciQ equation
+      real(kind=8)               :: ytmp    ! variable for ciQ
+      real(kind=8)               :: ztmp    ! variable for ciQ
+      real(kind=8)               :: wtmp    ! variable for ciQ
       real(kind=8)               :: discr   ! The discriminant of the quad. eq. [mol²/mol²]
       real(kind=8)               :: ciroot1 ! 1st root for the quadratic eqn.   [  mol/mol]
       real(kind=8)               :: ciroot2 ! 2nd root for the quadratic eqn.   [  mol/mol]
@@ -1586,7 +1594,7 @@ module farq_leuning
          end if
          !---------------------------------------------------------------------------------!
 
-
+         
          !---------------------------------------------------------------------------------!
          !     Choose the best root for this guess.                                        !
          !---------------------------------------------------------------------------------!
@@ -1624,16 +1632,115 @@ module farq_leuning
       end do
       !------------------------------------------------------------------------------------!
 
+      !   Check to make sure that there are no singularities within bounds              !
+      cimin = minval(cibnds)
+      cimax = maxval(cibnds)
+      
+      ! Aopen =0
+      ciAo = (aparms%tau * aparms%nu + aparms%sigma) / ( -aparms%xi * aparms%nu -      &
+                    aparms%rho)
+            
+      ! gbc (ca -ci) - Aopen =0
+               !----- 3. Define the coefficients for the quadratic equation. ----------!
+         aquad = met%blyr_cond_co2 * aparms%xi
+         bquad = aparms%xi * (aparms%nu - met%blyr_cond_co2 * met%can_co2 ) +          &
+                      met%blyr_cond_co2  * aparms%tau + aparms%rho
+         cquad = aparms%tau * (aparms%nu - met%blyr_cond_co2 * met%can_co2 ) +         &
+                      aparms%sigma
+         !----- 4. Decide whether this is a true quadratic case or not. ---------------!
+         if (aquad /= 0.d0) then
+            !--------------------------------------------------------------------------!
+            !     This is a true quadratic case, the first step is to find the         !
+            ! discriminant.                                                            !
+            !--------------------------------------------------------------------------!
+            discr = bquad * bquad - 4.d0 * aquad * cquad
+            if (discr == 0.d0) then
+               !---------------------------------------------------------------------------!
+               !      Discriminant is zero, both roots are the same.  We save only one,    !
+               ! and make the other negative, which will make the guess discarded.         !
+               !---------------------------------------------------------------------------!
+               ciroot1      = - bquad / (2.d0 * aquad)
+               ciroot2      = - discard
+            elseif (discr > 0.d0) then
+               ciroot1 = (- bquad + sqrt(discr)) / (2.d0 * aquad)
+               ciroot2 = (- bquad - sqrt(discr)) / (2.d0 * aquad)
+            else
+               !----- Discriminant is negative.  Impossible to solve. ---------------------!
+               ciroot1      = - discard
+               ciroot2      = - discard
+            end if
+         else
+            !------------------------------------------------------------------------------!
+            !    This is a linear case, the xi term is zero.  There is only one number     !
+            ! that works for this case.                                                    !
+            !------------------------------------------------------------------------------!
+            ciroot1      = - cquad / bquad
+            ciroot2      = - discard
+            !----- Not used, just for the debugging process. ------------------------------!
+            discr        = bquad * bquad
+         end if
+
+      cigbw=max(ciroot1, ciroot2)
+
+            
+      ! qi-qs = -D0
+      xtmp = met%blyr_cond_h2o * ( met%can_shv - met%lint_shv - thispft.d0)/thispft.d0
+      ytmp = met%blyr_cond_co2 + xtmp * gbw_2_gbc8
+      ztmp = xtmp * gbw_2_gbc8 * met%blyr_cond_co2
+      wtmp = ztmp * met%can_co2 - ytmp * aparms%nu
+      
+               !----- 3. Define the coefficients for the quadratic equation. ----------!
+         aquad = ztmp * aparms%xi
+         bquad = ytmp * aparms%rho - aparms%xi * wtmp + ztmp * aparms%tau
+         cquad = - aparms%tau * wtmp + ytmp * aparms%sigma
+         
+         !----- 4. Decide whether this is a true quadratic case or not. ---------------!
+         if (aquad /= 0.d0) then
+            !--------------------------------------------------------------------------!
+            !     This is a true quadratic case, the first step is to find the         !
+            ! discriminant.                                                            !
+            !--------------------------------------------------------------------------!
+            discr = bquad * bquad - 4.d0 * aquad * cquad
+            if (discr == 0.d0) then
+               !---------------------------------------------------------------------------!
+               !      Discriminant is zero, both roots are the same.  We save only one,    !
+               ! and make the other negative, which will make the guess discarded.         !
+               !---------------------------------------------------------------------------!
+               ciroot1      = - bquad / (2.d0 * aquad)
+               ciroot2      = -discard
+            elseif (discr > 0.d0) then
+               ciroot1 = (- bquad + sqrt(discr)) / (2.d0 * aquad)
+               ciroot2 = (- bquad - sqrt(discr)) / (2.d0 * aquad)
+            else
+               !----- Discriminant is negative.  Impossible to solve. ---------------------!
+               ciroot1      = -discard
+               ciroot2      = -discard
+            end if
+         else
+            !------------------------------------------------------------------------------!
+            !    This is a linear case, the xi term is zero.  There is only one number     !
+            ! that works for this case.                                                    !
+            !------------------------------------------------------------------------------!
+            ciroot1      = - cquad / bquad
+            ciroot2      = -discard
+            !----- Not used, just for the debugging process. ------------------------------!
+            discr        = bquad * bquad
+         end if
+
+      ciQ=max(ciroot1, ciroot2)
 
 
-
+      !  Make sure that there is no singularity within Cimin and Cimax
+      
+      cimax=min(cimax, ciQ, cigbw)
+      cimin=max(cimin, ciAo)
+      
       !------------------------------------------------------------------------------------!
       !    In the last part we make sure that the two guesses are positively defined, and  !
       ! in case both of them were non-positive, this means that a solution is impossible   !
       ! in this case.                                                                      !
       !------------------------------------------------------------------------------------!
-      cimin = minval(cibnds)
-      cimax = maxval(cibnds)
+
       if (cimin <= 0.d0 .and. cimax <= c34smin_lint_co28) then
          cimin = c34smin_lint_co28
          cimax = c34smin_lint_co28
