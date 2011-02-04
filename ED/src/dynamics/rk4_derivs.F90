@@ -111,43 +111,47 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
    integer             , intent(in) :: mzg              ! Number of ground layers
    integer             , intent(in) :: mzs              ! Number of snow/ponding layers
    !----- Local variables -----------------------------------------------------------------!
-   integer                          :: k, k1, k2        ! Level counters
-   integer                          :: ksn              ! # of temporary water/snow layers
-   integer                          :: nsoil            ! Short for csite%soil_text(k,ipa)
-   real(kind=8)                     :: wgpfrac          ! Fractional soil moisture
-   real(kind=8)                     :: soilcond         ! Soil conductivity
-   real(kind=8)                     :: snden            ! Snow/water density
-   real(kind=8)                     :: hflxgc           ! Ground -> canopy heat flux
-   real(kind=8)                     :: wflxgc           ! Ground -> canopy water flux
-   real(kind=8)                     :: qwflxgc          ! Ground -> canopy latent heat flux
-   real(kind=8)                     :: dewgnd           ! Dew/frost flux to ground
-   real(kind=8)                     :: qdewgnd          ! Dew/frost heat flux to ground
-   real(kind=8)                     :: ddewgnd          ! Dew/frost density flux to ground
+   integer                          :: k, k1, k2     ! Level counters
+   integer                          :: ksn           ! # of temporary water/snow layers
+   integer                          :: nsoil         ! Short for csite%soil_text(k,ipa)
+   real(kind=8)                     :: wgpfrac       ! Fractional soil moisture
+   real(kind=8)                     :: soilcond      ! Soil conductivity
+   real(kind=8)                     :: snden         ! Snow/water density
+   real(kind=8)                     :: hflxgc        ! Ground -> canopy heat flux
+   real(kind=8)                     :: wflxgc        ! Ground -> canopy water flux
+   real(kind=8)                     :: qwflxgc       ! Ground -> canopy latent heat flux
+   real(kind=8)                     :: dewgnd        ! Dew/frost flux to ground
+   real(kind=8)                     :: qdewgnd       ! Dew/frost heat flux to ground
+   real(kind=8)                     :: ddewgnd       ! Dew/frost density flux to ground
+   real(kind=8)                     :: wshed_tot     ! Water shedding flux
+   real(kind=8)                     :: qwshed_tot    ! Energy flux due to water shedding
+   real(kind=8)                     :: dwshed_tot       ! Density flux due to water shedding
    real(kind=8)                     :: throughfall_tot  ! Water shedding flux
    real(kind=8)                     :: qthroughfall_tot ! Energy flux due to water shedding
    real(kind=8)                     :: dthroughfall_tot ! Density flux due to water shedding
-   real(kind=8)                     :: wshed_tot        ! Water shedding flux
-   real(kind=8)                     :: qwshed_tot       ! Energy flux due to water shedding
-   real(kind=8)                     :: dwshed_tot       ! Density flux due to water shedding
-   real(kind=8)                     :: wgpmid           ! Soil in between layers
-   real(kind=8)                     :: wloss            ! Water loss due to transpiration
-   real(kind=8)                     :: qwloss           ! Energy loss due to transpiration
-   real(kind=8)                     :: dqwt             ! Energy adjustment aux. variable
-   real(kind=8)                     :: qwgoal           ! Goal energy for thin snow layers.
-   real(kind=8)                     :: wprevious        ! Previous water content
-   real(kind=8)                     :: infilt           ! Surface infiltration rate
-   real(kind=8)                     :: qinfilt          ! Surface infiltration heat rate
-   real(kind=8)                     :: snowdens         ! Snow density (kg/m2)
-   real(kind=8)                     :: soilhcap         ! Soil heat capacity
-   real(kind=8)                     :: surface_water    ! Temp. variable. Availible liquid 
-                                                        !   water on the soil sfc. (kg/m2)
-   real(kind=8)                     :: freezeCor        ! Correction to conductivity for 
-                                                        !    partially frozen soil.
-   real(kind=8), dimension(nzgmax+nzsmax)   :: rfactor  ! 
-   real(kind=8), dimension(nzgmax+nzsmax+1) :: hfluxgsc ! Surface -> canopy heat flux
-   real(kind=8), dimension(mzg+mzs+1)       :: w_flux   ! Water flux (aux. variable)
-   real(kind=8), dimension(mzg+mzs+1)       :: qw_flux  ! Heat flux (aux. variable)
-   real(kind=8), dimension(mzs+1)           :: d_flux   ! Density flux
+   real(kind=8)                     :: wgpmid        ! Soil in between layers
+   real(kind=8)                     :: wloss         ! Water loss due to transpiration
+   real(kind=8)                     :: qwloss        ! Energy loss due to transpiration
+   real(kind=8)                     :: dqwt          ! Energy adjustment aux. variable
+   real(kind=8)                     :: fracliq       ! Fraction of liquid water
+   real(kind=8)                     :: tempk         ! Temperature
+   real(kind=8)                     :: qwgoal        ! Goal energy for thin snow layers.
+   real(kind=8)                     :: wprevious     ! Previous water content
+   real(kind=8)                     :: infilt        ! Surface infiltration rate
+   real(kind=8)                     :: qinfilt       ! Surface infiltration heat rate
+   real(kind=8)                     :: snowdens      ! Snow density (kg/m2)
+   real(kind=8)                     :: soilhcap      ! Soil heat capacity
+   real(kind=8)                     :: int_sfcw_u    ! Intensive sfc. water internal en.
+   real(kind=8)                     :: surface_water ! Temp. variable. Availible liquid 
+                                                     !   water on the soil surface (kg/m2)
+   real(kind=8)                     :: freezeCor     ! Correction to conductivity for 
+                                                     !    partially frozen soil.
+   real(kind=8), dimension(nzgmax+nzsmax)   :: rfactor       ! 
+   real(kind=8), dimension(nzgmax+nzsmax+1) :: hfluxgsc      ! Surface -> canopy heat flux
+   real(kind=8), dimension(mzg+mzs+1)       :: w_flux        ! Water flux (aux. variable)
+   real(kind=8), dimension(mzg+mzs+1)       :: qw_flux       ! Heat flux (aux. variable)
+   real(kind=8), dimension(mzs+1)           :: d_flux        ! Density flux
+   real(kind=8)                     :: psiplusz_bl   ! Water potential of boundary layer
    !----- Constants -----------------------------------------------------------------------!
    real(kind=8), parameter  :: freezeCoef = 7.d0 ! Exponent in the frozen soil hydraulic 
                                                  !    conductivity correction.

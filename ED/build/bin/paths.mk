@@ -4,6 +4,7 @@
 
 #
 
+
 ED_ROOT=/n/home03/nlevine/Test_EDBRAMS2/ED/
 # MCD: ED_ROOT=/n/Moorcroft_Lab/Users/mcd/EDBRAMS/ED
 # KIM: ED_ROOT=/n/Moorcroft_Lab/Users/kim/ed-code/EDBRAMS/ED
