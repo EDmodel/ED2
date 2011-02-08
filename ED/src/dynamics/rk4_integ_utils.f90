@@ -560,13 +560,19 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
 
    case(1)
       !------------------------------------------------------------------------------------!
-      !    Low stability threshold, we skip energy check, which is done as a combined      !
-      ! layer with the top soil.                                                           !
+      !    Low stability threshold, there can't be more than one layer, and the energy     !
+      ! will be solved together with the top soil layer.  Therefore, we skip energy check, !
+      ! but attribute the scale for mass and depth.                                        !
       !------------------------------------------------------------------------------------!
-      do k=1,nzs
-         yscal%sfcwater_mass(k)   = 1.d-2 * rk4water_stab_thresh
+      yscal%sfcwater_mass  (1) = abs(y%sfcwater_mass   (1)       )                         &
+                               + abs(dy%sfcwater_mass  (1) * htry)
+      yscal%sfcwater_depth (1) = abs(y%sfcwater_depth  (1)       )                         &
+                               + abs(dy%sfcwater_energy(1) * htry)
+      yscal%sfcwater_energy(1) = huge_offset
+      do k=2,nzs
+         yscal%sfcwater_mass  (k) = huge_offset
          yscal%sfcwater_energy(k) = huge_offset
-         yscal%sfcwater_depth(k)  = yscal%sfcwater_mass(k) * wdnsi8
+         yscal%sfcwater_depth (k) = huge_offset
       end do
       !------------------------------------------------------------------------------------!
 
@@ -590,23 +596,17 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
       meanscale_sfcw_energy = 0.d0
       meanscale_sfcw_depth  = 0.d0
       do k=1,y%nlev_sfcwater
-         meanscale_sfcw_mass   = meanscale_sfcw_mass   + abs(y%sfcwater_mass (k)         ) &
-                                                       + abs(dy%sfcwater_mass(k)   * htry)
-         meanscale_sfcw_energy = meanscale_sfcw_energy + abs(y%sfcwater_energy (k)       ) &
-                                                       + abs(dy%sfcwater_energy(k) * htry)
-         meanscale_sfcw_depth  = meanscale_sfcw_depth  + abs(y%sfcwater_depth  (k)       ) &
-                                                       + abs(dy%sfcwater_energy(k) * htry)
+         yscal%sfcwater_mass  (k) = abs(y%sfcwater_mass   (k)       )                      &
+                                  + abs(dy%sfcwater_mass  (k) * htry)
+         yscal%sfcwater_energy(k) = abs(y%sfcwater_energy (k)       )                      &
+                                  + abs(dy%sfcwater_energy(k) * htry)
+         yscal%sfcwater_depth (k) = abs(y%sfcwater_depth  (k)       )                      &
+                                  + abs(dy%sfcwater_energy(k) * htry)
       end do
-
-      !----- Add precipitation because this will become part of the layer if it exists. ---!
-      meanscale_sfcw_mass   = meanscale_sfcw_mass   / real(y%nlev_sfcwater)
-      meanscale_sfcw_energy = meanscale_sfcw_energy / real(y%nlev_sfcwater)
-      meanscale_sfcw_depth  = meanscale_sfcw_depth  / real(y%nlev_sfcwater)
-
-      do k=1,nzs
-         yscal%sfcwater_mass(k)   = meanscale_sfcw_mass
-         yscal%sfcwater_energy(k) = meanscale_sfcw_energy
-         yscal%sfcwater_depth(k)  = meanscale_sfcw_depth
+      do k=y%nlev_sfcwater+1,nzs
+         yscal%sfcwater_mass  (k) = huge_offset
+         yscal%sfcwater_energy(k) = huge_offset
+         yscal%sfcwater_depth (k) = huge_offset
       end do
 
 
@@ -995,6 +995,11 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
    targetp%can_rvap        = sourcep%can_rvap
    targetp%can_rhv         = sourcep%can_rhv
    targetp%can_ssh         = sourcep%can_ssh
+   targetp%opencan_frac    = sourcep%opencan_frac
+
+   targetp%ggbare          = sourcep%ggbare
+   targetp%ggveg           = sourcep%ggveg
+   targetp%ggnet           = sourcep%ggnet
 
    targetp%flag_wflxgc     = sourcep%flag_wflxgc
 

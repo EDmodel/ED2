@@ -548,6 +548,14 @@ module ed_state_vars
      ! Canopy depth (m)
      real , pointer,dimension(:) :: can_depth
 
+     ! Fraction of canopy that is open (---)
+     real , pointer,dimension(:) :: opencan_frac
+     
+     ! Ground to canopy conductances
+     real , pointer, dimension(:) :: ggbare
+     real , pointer, dimension(:) :: ggveg
+     real , pointer, dimension(:) :: ggnet
+
      ! Mean light extinction coefficient, its diurnal and monthly cycle.
      real , pointer, dimension(:) :: lambda_light
      real , pointer, dimension(:) :: dmean_lambda_light
@@ -2535,6 +2543,10 @@ contains
     allocate(csite%can_prss(npatches))
     allocate(csite%can_theta(npatches))
     allocate(csite%can_depth(npatches))
+    allocate(csite%opencan_frac(npatches))
+    allocate(csite%ggbare(npatches))
+    allocate(csite%ggveg(npatches))
+    allocate(csite%ggnet(npatches))
     allocate(csite%lambda_light(npatches))
     allocate(csite%cohort_count(npatches))
     allocate(csite%pname(npatches))
@@ -3460,6 +3472,10 @@ contains
     nullify(csite%can_prss)
     nullify(csite%can_theta)
     nullify(csite%can_depth)
+    nullify(csite%opencan_frac)
+    nullify(csite%ggbare)
+    nullify(csite%ggveg)
+    nullify(csite%ggnet)
     nullify(csite%lambda_light)
     nullify(csite%dmean_lambda_light)
     nullify(csite%mmean_lambda_light)
@@ -4375,6 +4391,10 @@ contains
     if(associated(csite%can_prss                     )) deallocate(csite%can_prss                     )
     if(associated(csite%can_theta                    )) deallocate(csite%can_theta                    )
     if(associated(csite%can_depth                    )) deallocate(csite%can_depth                    )
+    if(associated(csite%opencan_frac                 )) deallocate(csite%opencan_frac                 )
+    if(associated(csite%ggbare                       )) deallocate(csite%ggbare                       )
+    if(associated(csite%ggveg                        )) deallocate(csite%ggveg                        )
+    if(associated(csite%ggnet                        )) deallocate(csite%ggnet                        )
     if(associated(csite%lambda_light                 )) deallocate(csite%lambda_light                 )
     if(associated(csite%dmean_lambda_light           )) deallocate(csite%dmean_lambda_light           )
     if(associated(csite%mmean_lambda_light           )) deallocate(csite%mmean_lambda_light           )
@@ -5334,6 +5354,10 @@ contains
     if(associated(csite%can_prss                     )) csite%can_prss                     = large_real
     if(associated(csite%can_theta                    )) csite%can_theta                    = large_real
     if(associated(csite%can_depth                    )) csite%can_depth                    = large_real
+    if(associated(csite%opencan_frac                 )) csite%opencan_frac                 = large_real
+    if(associated(csite%ggbare                       )) csite%ggbare                       = large_real
+    if(associated(csite%ggveg                        )) csite%ggveg                        = large_real
+    if(associated(csite%ggnet                        )) csite%ggnet                        = large_real
     if(associated(csite%lambda_light                 )) csite%lambda_light                 = large_real
     if(associated(csite%dmean_lambda_light           )) csite%dmean_lambda_light           = large_real
     if(associated(csite%mmean_lambda_light           )) csite%mmean_lambda_light           = large_real
@@ -5801,7 +5825,10 @@ contains
          osite%can_rhos(opa)                    = isite%can_rhos(ipa)
          osite%can_prss(opa)                    = isite%can_prss(ipa)
          osite%can_theta(opa)                   = isite%can_theta(ipa)
-         osite%can_depth(opa)                   = isite%can_depth(ipa)
+         osite%opencan_frac(opa)                = isite%opencan_frac(ipa)
+         osite%ggbare(opa)                      = isite%ggbare(ipa)
+         osite%ggveg(opa)                       = isite%ggveg(ipa)
+         osite%ggnet(opa)                       = isite%ggnet(ipa)
          osite%lambda_light(opa)                = isite%lambda_light(ipa)
          osite%lai(opa)                         = isite%lai(ipa)
          osite%wpa(opa)                         = isite%wpa(ipa)
@@ -5867,8 +5894,8 @@ contains
          osite%mean_wflux(opa)                  = isite%mean_wflux(ipa)
          osite%mean_latflux(opa)                = isite%mean_latflux(ipa)
          osite%mean_hflux(opa)                  = isite%mean_hflux(ipa)
-         osite%mean_runoff(opa)                 = isite%mean_runoff(ipa)
          osite%runoff(opa)                      = isite%runoff(ipa)
+         osite%mean_runoff(opa)                 = isite%mean_runoff(ipa)
          osite%mean_qrunoff(opa)                = isite%mean_qrunoff(ipa)
          osite%htry(opa)                        = isite%htry(ipa)
          osite%avg_rk4step(opa)                 = isite%avg_rk4step(ipa)
@@ -6086,7 +6113,11 @@ contains
     siteout%can_prss(1:inc)             = pack(sitein%can_prss,logmask)
     siteout%can_theta(1:inc)            = pack(sitein%can_theta,logmask)
     siteout%can_depth(1:inc)            = pack(sitein%can_depth,logmask)
-    siteout%lambda_light(1:inc)          = pack(sitein%lambda_light,logmask)
+    siteout%opencan_frac(1:inc)         = pack(sitein%opencan_frac,logmask)
+    siteout%ggbare(1:inc)               = pack(sitein%ggbare,logmask)
+    siteout%ggveg(1:inc)                = pack(sitein%ggveg,logmask)
+    siteout%ggnet(1:inc)                = pack(sitein%ggnet,logmask)
+    siteout%lambda_light(1:inc)         = pack(sitein%lambda_light,logmask)
     siteout%lai(1:inc)                  = pack(sitein%lai,logmask)
     siteout%wpa(1:inc)                  = pack(sitein%wpa,logmask)
     siteout%wai(1:inc)                  = pack(sitein%wai,logmask)
@@ -6151,8 +6182,8 @@ contains
     siteout%mean_wflux(1:inc)           = pack(sitein%mean_wflux,logmask)
     siteout%mean_latflux(1:inc)         = pack(sitein%mean_latflux,logmask)
     siteout%mean_hflux(1:inc)           = pack(sitein%mean_hflux,logmask)
-    siteout%mean_runoff(1:inc)          = pack(sitein%mean_runoff,logmask)
     siteout%runoff(1:inc)               = pack(sitein%runoff,logmask)
+    siteout%mean_runoff(1:inc)          = pack(sitein%mean_runoff,logmask)
     siteout%mean_qrunoff(1:inc)         = pack(sitein%mean_qrunoff,logmask)
     siteout%htry(1:inc)                 = pack(sitein%htry,logmask)
     siteout%avg_rk4step(1:inc)          = pack(sitein%avg_rk4step,logmask)
@@ -9904,6 +9935,34 @@ contains
        call metadata_edio(nvar,igr,'Canopy depth','[m]','NA') 
     endif
    
+    if (associated(csite%opencan_frac)) then
+       nvar=nvar+1
+         call vtable_edio_r(csite%opencan_frac(1),nvar,igr,init,csite%paglob_id, &
+         var_len,var_len_global,max_ptrs,'OPENCAN_FRAC :31:hist')
+         call metadata_edio(nvar,igr,'Fraction of open canopy','[m]','NA') 
+    endif
+   
+    if (associated(csite%ggbare)) then
+       nvar=nvar+1
+         call vtable_edio_r(csite%ggbare(1),nvar,igr,init,csite%paglob_id, &
+         var_len,var_len_global,max_ptrs,'GGBARE :31:hist')
+         call metadata_edio(nvar,igr,'Bare ground conductance','[m]','NA') 
+    endif
+
+    if (associated(csite%ggveg)) then
+       nvar=nvar+1
+         call vtable_edio_r(csite%ggveg(1),nvar,igr,init,csite%paglob_id, &
+         var_len,var_len_global,max_ptrs,'GGVEG :31:hist')
+         call metadata_edio(nvar,igr,'Vegetated ground conductance','[m]','NA') 
+    endif
+
+    if (associated(csite%ggnet)) then
+       nvar=nvar+1
+         call vtable_edio_r(csite%ggnet(1),nvar,igr,init,csite%paglob_id, &
+         var_len,var_len_global,max_ptrs,'GGVEG :31:hist')
+         call metadata_edio(nvar,igr,'Net ground conductance','[m]','NA') 
+    endif
+
     if (associated(csite%lambda_light)) then
        nvar=nvar+1
          call vtable_edio_r(csite%lambda_light(1),nvar,igr,init,csite%paglob_id, &

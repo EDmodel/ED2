@@ -1357,7 +1357,7 @@ end do
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
-  
+
    if (quantum_efficiency_T < 0 .or. quantum_efficiency_T > 1) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
                     'Invalid QUANTUM_EFFICIENCY_T, it must be either 0 or 1. Yours is set to'         &
@@ -1398,11 +1398,11 @@ end do
    end if
 
    select case (icanturb)
-   case (-2:2)
+   case (-2:3)
       continue
    case default
       write (reason,fmt='(a,1x,i4,a)') &
-        'Invalid ICANTURB, it must be between -2 and 2. Yours is set to',icanturb,'...'
+        'Invalid ICANTURB, it must be between -2 and 3. Yours is set to',icanturb,'...'
       call opspec_fatal(reason,'opspec_misc')  
       ifaterr = ifaterr +1
    end select
@@ -1418,13 +1418,6 @@ end do
    if (isfclyrm < 1 .or. isfclyrm > 5) then
       write (reason,fmt='(a,1x,i4,a)') &
         'Invalid ISFCLYRM, it must be between 1 and 5. Yours is set to',isfclyrm,'...'
-      call opspec_fatal(reason,'opspec_misc')  
-      ifaterr = ifaterr +1
-   end if
-
-   if (ipercol < 0 .or. ipercol > 1) then
-      write (reason,fmt='(a,1x,i4,a)')                                                     &
-        'Invalid IPERCOL, it must be either 0 or 1. Yours is set to',ipercol,'...'
       call opspec_fatal(reason,'opspec_misc')  
       ifaterr = ifaterr +1
    end if

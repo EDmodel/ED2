@@ -56,10 +56,6 @@ module rk4_driver
       real                                    :: old_can_co2
       real                                    :: old_can_rhos
       real                                    :: old_can_temp
-      !----- Locally saved variables. -----------------------------------------------------!
-      logical                   , save        :: first_time=.true.
-      !----- Local constants. -------------------------------------------------------------!
-      logical                   , parameter   :: print_dbg_fields = .false.
       !----- Functions --------------------------------------------------------------------!
       real                      , external    :: walltime
       !------------------------------------------------------------------------------------!
@@ -77,26 +73,6 @@ module rk4_driver
 
             patchloop: do ipa = 1,csite%npatches
                cpatch => csite%patch(ipa)
-
-               if (print_dbg_fields) then
-                  iun = 30+ipa
-                  if (first_time) then
-                     write (unit=iun,fmt='(19(a,1x))') 'YEAR','MONTH','  DAY','  TIME'     &
-                          ,'  VEG.HEIGHT','   CAN.DEPTH','       SPEED','       PRESS'     &
-                          ,'    ATM.TEMP','    CAN.TEMP','   SFCW.TEMP','    SOIL.TMP'     &
-                          ,'    ATM.SHV ','     CAN.SHV','   SFCW.MASS','  SOIL.MOIST'     &
-                          ,'    ATM.CO2 ','     CAN.CO2','    CAN.DENS'
-                  end if
-                  write (unit=iun,fmt='(i4.4,2(4x,i2.2),1x,f6.0,15(1x,es12.5))')           &
-                     current_time%year,current_time%month,current_time%date                &
-                    ,current_time%time,csite%veg_height(ipa),csite%can_depth(ipa)          &
-                    ,cpoly%met(isi)%vels,cpoly%met(isi)%prss,cpoly%met(isi)%atm_tmp        &
-                    ,csite%can_temp(ipa),csite%sfcwater_tempk(1,ipa)                       &
-                    ,csite%soil_tempk(nzg,ipa),cpoly%met(isi)%atm_shv,csite%can_shv(ipa)   &
-                    ,csite%sfcwater_mass(1,ipa),csite%soil_water(nzg,ipa)                  &
-                    ,cpoly%met(isi)%atm_co2,csite%can_co2(ipa),csite%can_rhos(ipa)
-                   
-               end if
 
                
                !----- Reset all buffers to zero, as a safety measure. ---------------------!
@@ -138,6 +114,17 @@ module rk4_driver
                else
                   cmet%vels = cmet%vels_unstab
                end if
+               !---------------------------------------------------------------------------!
+
+
+
+               !---------------------------------------------------------------------------!
+               !    Update roughness and canopy depth.                                     !
+               !---------------------------------------------------------------------------!
+               call update_patch_derived_props(csite,cpoly%lsl(isi),cmet%prss,ipa)
+               !---------------------------------------------------------------------------!
+
+
 
                !---------------------------------------------------------------------------!
                !    Copy the meteorological variables to the rk4site structure.            !
@@ -209,9 +196,6 @@ module rk4_driver
          end do siteloop
 
       end do polygonloop
-
-      first_time = .false.
-
 
       !----- De-allocate scratch variables. -----------------------------------------------!
       deallocate (ed_ktrans)
@@ -399,6 +383,11 @@ module rk4_driver
       csite%can_co2(ipa)      = sngloff(initp%can_co2       ,tiny_offset)
       csite%can_rhos(ipa)     = sngloff(initp%can_rhos      ,tiny_offset)
       csite%can_depth(ipa)    = sngloff(initp%can_depth     ,tiny_offset)
+      csite%opencan_frac(ipa) = sngloff(initp%opencan_frac  ,tiny_offset)
+
+      csite%ggbare(ipa)       = sngloff(initp%ggbare        ,tiny_offset)
+      csite%ggveg (ipa)       = sngloff(initp%ggveg         ,tiny_offset)
+      csite%ggnet (ipa)       = sngloff(initp%ggnet         ,tiny_offset)
 
       csite%ustar (ipa)   = sngloff(initp%ustar   ,tiny_offset)
       csite%tstar (ipa)   = sngloff(initp%tstar   ,tiny_offset)
@@ -511,8 +500,8 @@ module rk4_driver
       
 
       !------------------------------------------------------------------------------------!
-      !    Surface water energy is computed in J/m² inside the integrator. Converting it   !
-      ! back to J/kg in the layers that surface water/snow still exists.                   !
+      !    Surface water energy is computed in J/m² inside the integrator. Convert it back !
+      ! to J/kg in the layers that surface water/snow still exists.                        !
       !------------------------------------------------------------------------------------!
       csite%nlev_sfcwater(ipa)    = initp%nlev_sfcwater
       csite%total_snow_depth(ipa) = 0.

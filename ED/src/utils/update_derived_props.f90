@@ -73,9 +73,20 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
    type(patchtype) , pointer    :: cpatch
    real                         :: norm_fac
    real                         :: weight
-   real                         :: opencan_frac
    integer                      :: ico
+   integer                      :: k
+   integer                      :: ksn
    integer                      :: ipft
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Find the total snow depth. ------------------------------------------------------!
+   ksn = csite%nlev_sfcwater(ipa)
+   csite%total_snow_depth(ipa) = 0.
+   do k=1,ksn
+      csite%total_snow_depth(ipa) = csite%total_snow_depth(ipa)                            &
+                                  + csite%sfcwater_depth(k,ipa)
+   end do
    !---------------------------------------------------------------------------------------!
 
 
@@ -86,8 +97,10 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
    csite%wpa(ipa)              = 0.0
    csite%wai(ipa)              = 0.0
    norm_fac                    = 0.0
-   opencan_frac                = 1.0
+   csite%opencan_frac(ipa)     = 1.0
    csite%plant_ag_biomass(ipa) = 0.0
+   !---------------------------------------------------------------------------------------!
+
 
    cpatch => csite%patch(ipa)
 
@@ -118,14 +131,18 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
       !     Compute average vegetation height, weighting using crown area.  We add the     !
       ! cohorts only until when the canopy is closed, this way we will not bias the        !
       ! vegetation height or the canopy depth towards the cohorts that live in the under-  !
-      ! storey.                                                                            !
+      ! storey.  Also, we must take into account the depth of the temporary surface water  !
+      ! or snow, because this will make the plants "shorter".                              !
       !------------------------------------------------------------------------------------!
-      if (opencan_frac > 0.0) then
-         weight                 = min(1.0, cpatch%nplant(ico)                              &
-                                         * dbh2ca(cpatch%dbh(ico),cpatch%sla(ico),ipft))
-         norm_fac               = norm_fac + weight
-         csite%veg_height(ipa)  = csite%veg_height(ipa) + cpatch%hite(ico) * weight
-         opencan_frac           = opencan_frac * (1.0 - weight)
+      if (csite%opencan_frac(ipa) > 0.0 .and.                                              &
+          cpatch%hite(ico) > csite%total_snow_depth(ipa)) then
+         weight                  = min(1.0, cpatch%nplant(ico)                              &
+                                          * dbh2ca(cpatch%dbh(ico),cpatch%sla(ico),ipft))
+         norm_fac                = norm_fac + weight
+         csite%veg_height(ipa)   = csite%veg_height(ipa)                                   &
+                                 + (cpatch%hite(ico) - csite%total_snow_depth(ipa))        &
+                                 * weight
+         csite%opencan_frac(ipa) = csite%opencan_frac(ipa) * (1.0 - weight)
       end if
       !------------------------------------------------------------------------------------!
 
@@ -153,6 +170,8 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
    !----- Update the canopy depth, and impose the minimum if needed be. -------------------!
    csite%can_depth(ipa) = max(csite%veg_height(ipa), minimum_canopy_depth)
    !---------------------------------------------------------------------------------------!
+
+
 
 
    !----- Find the PFT-dependent size distribution of this patch. -------------------------!

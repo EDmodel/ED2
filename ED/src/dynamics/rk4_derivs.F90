@@ -471,17 +471,19 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
    nsoil = csite%ntext_soil(rk4site%lsl,ipa)
    if (nsoil /= 13) then
       select case(isoilbc)
-      case (0) !-----  Bedrock no flux across -----------!
+      case (0) 
+         !----- Bedrock, no flux across. --------------------------------------------------!
          w_flux(rk4site%lsl)     = 0.d0
          qw_flux(rk4site%lsl)    = 0.d0
          dinitp%avg_drainage     = 0.d0
          dinitp%avg_drainage_heat= 0.d0
          
-      case (1) !---------------------------------------------------------------------------!
-               !Free drainage, water movement of bottom soil layer is only under gravity,--!
-               !i.e. the soil water content of boundary layer is equal to that of bottom --!
-               !soil layer.                                                              --!
-               !---------------------------------------------------------------------------!
+      case (1) 
+         !---------------------------------------------------------------------------------!
+         !     Free drainage, water movement of bottom soil layer is only under gravity,   !
+         ! i.e. the soil water content of boundary layer is equal to that of bottom soil   !
+         ! layer.                                                                          !
+         !---------------------------------------------------------------------------------!
          wgpmid      = initp%soil_water(rk4site%lsl)
          freezeCor   = initp%soil_fracliq(rk4site%lsl)
          if (freezeCor < 1.d0) freezeCor = 1.d1**(-freezeCoef*(1.d0-freezeCor))
@@ -539,11 +541,12 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
          dinitp%avg_drainage      = - w_flux(rk4site%lsl) * wdns8
          dinitp%avg_drainage_heat = - qw_flux(rk4site%lsl)
 
-      case (3) !---------------------------------------------------------------------------!
-               ! Free drainage, water movement of bottom soil layer is under gravity and   !
-               ! moisture potential difference. The soil water content of boundary layer   !
-               ! is equal to field capacity.                                               !
-               !---------------------------------------------------------------------------!
+      case (3) 
+         !---------------------------------------------------------------------------------!
+         !     Free drainage, water movement of bottom soil layer is under gravity and     !
+         ! moisture potential difference.  The soil water content of boundary layer is     !
+         ! equal to field capacity.                                                        !
+         !---------------------------------------------------------------------------------!
          wgpmid      = initp%soil_water(rk4site%lsl)
          freezeCor   = initp%soil_fracliq(rk4site%lsl)
          if (freezeCor < 1.d0) freezeCor = 1.d1**(-freezeCoef*(1.d0-freezeCor))
@@ -556,7 +559,8 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
                                  *  (wgpmid/soil8(nsoil)%slmsts)                               &
                                  ** (2.d0 * soil8(nsoil)%slbs + 3.d0)                          &
                                  * ( initp%psiplusz(rk4site%lsl) - psiplusz_bl) * freezeCor
-         else !-- prevent bottom soil layer sucking water from the boundary layer ---!
+         else 
+            !----- Prevent bottom soil layer sucking water from the boundary layer. -------!
              w_flux(rk4site%lsl) = 0.d0
          end if
 
@@ -698,7 +702,6 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
    use pft_coms              , only : water_conductance    & ! intent(in)
                                     , q                    & ! intent(in)
                                     , qsw                  ! ! intent(in)
-   use canopy_air_coms       , only : ggfact8              ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(sitetype)     , target      :: csite            ! Current site
@@ -724,17 +727,15 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
    integer                          :: k                ! Soil layer counter
    integer                          :: ipft             ! Shortcut for PFT type
    integer                          :: kroot            ! Level in which the root bottom is
-   real(kind=8)                     :: can_frac         ! total fractional canopy coverage
+   real(kind=8)                     :: closedcan_frac   ! total fractional canopy coverage
    real(kind=8)                     :: transp           ! Cohort transpiration
    real(kind=8)                     :: cflxac           ! Atm->canopy carbon flux
    real(kind=8)                     :: wflxac           ! Atm->canopy water flux
    real(kind=8)                     :: hflxac           ! Atm->canopy sensible heat flux
    real(kind=8)                     :: eflxac           ! Atm->canopy Eq. Pot. temp flux
-   real(kind=8)                     :: c2               ! Coefficient (????)
    real(kind=8)                     :: wflxvc_try       ! Intended flux leaf sfc -> canopy
    real(kind=8)                     :: c3lai            ! Term for psi_open/psi_closed
    real(kind=8)                     :: hflxvc           ! Leaf->canopy heat flux
-   real(kind=8)                     :: rasgnd           ! 
    real(kind=8)                     :: rgnd             !
    real(kind=8)                     :: sigmaw           !
    real(kind=8)                     :: wflxvc           !
@@ -754,7 +755,6 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
    real(kind=8)                     :: wflxvc_tot       !
    real(kind=8)                     :: qwflxvc_tot      !
    real(kind=8)                     :: rho_ustar        !
-   real(kind=8)                     :: ggnd             !
    real(kind=8)                     :: storage_decay    !
    real(kind=8)                     :: leaf_flux        !
    real(kind=8)                     :: min_leaf_water   !
@@ -787,27 +787,12 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
    cflxac    = rho_ustar      * initp%cstar * mmdryi8                ! CO2 flux [umol/m2/s]
    !---------------------------------------------------------------------------------------!
 
-   !---------------------------------------------------------------------------------------!
-   !     The following value of ground-canopy resistance for the nonvegetated (bare soil   !
-   ! or water) surface is from John Garratt.  It is 5/ustar and replaces the one from old  !
-   ! leaf.                                                                                 !
-   !---------------------------------------------------------------------------------------!
-   rasgnd = 5.d0 / initp%ustar
-   !---------------------------------------------------------------------------------------!
-
 
 
    !---------------------------------------------------------------------------------------!
-   !     Calculate fraction of open canopy.                                                !
+   !     Calculate fraction of closed canopy.                                              !
    !---------------------------------------------------------------------------------------!
-   cpatch => csite%patch(ipa)
-   can_frac = 1.d0
-   do ico = 1,cpatch%ncohorts
-      if (initp%solvable(ico)) then
-         can_frac = can_frac * (1.d0 - initp%crown_area(ico)) 
-      end if
-   end do
-   can_frac = max(0.d0,min(1.d0 - can_frac,1.d0))
+   closedcan_frac = max(0.d0,min(1.d0,initp%opencan_frac))
    !---------------------------------------------------------------------------------------!
 
 
@@ -819,15 +804,8 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
    ! amount of water that a cohort can hold.                                               !
    !---------------------------------------------------------------------------------------!
    if (any_solvable) then
-      !------------------------------------------------------------------------------------!
-      !     If vegetation is sufficiently abundant and not covered by snow, compute heat   !
-      ! and moisture fluxes from vegetation to canopy, and flux resistance from soil or    !
-      ! snow to canopy.                                                                    !
-      !------------------------------------------------------------------------------------!
-      c2   = max(0.d0,min(1.d0, 5.09d-1 * (dble(csite%lai(ipa))+dble(csite%wai(ipa))) ) )
-      rgnd = rasgnd * (1.d0 - c2) + initp%rasveg * c2
-
       taii = 0.d0
+      cpatch => csite%patch(ipa)
       do ico = 1,cpatch%ncohorts
          taii = taii + initp%tai(ico)
       end do
@@ -840,9 +818,9 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
       if (rk4site%pcpg > 0.d0) then
          if (leaf_intercept) then
             !----- Scale interception by canopy openess (MCD 01-12-09). -------------------!
-            intercepted_max  = rk4site%pcpg  * can_frac
-            qintercepted_max = rk4site%qpcpg * can_frac
-            dintercepted_max = rk4site%dpcpg * can_frac
+            intercepted_max  = rk4site%pcpg  * closedcan_frac
+            qintercepted_max = rk4site%qpcpg * closedcan_frac
+            dintercepted_max = rk4site%dpcpg * closedcan_frac
          else
             !----- No interception (developer only). --------------------------------------!
             intercepted_max  = 0.d0
@@ -871,11 +849,9 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
    else
       !------------------------------------------------------------------------------------!
       !     If the TAI is very small or total patch vegetation heat capacity is too        !
-      ! small, bypass vegetation computations.  Set heat and moisture flux resistance rgnd !
-      ! between the "canopy" and snow or soil surface to its bare soil value. Set through- !
-      ! fall precipitation heat and moisture to unintercepted values.                      !
+      ! small, bypass vegetation computations.  Set throughfall precipitation heat and     !
+      ! moisture to unintercepted values.                                                  !
       !------------------------------------------------------------------------------------!
-      rgnd             = rasgnd
       intercepted_max  = 0.d0
       qintercepted_max = 0.d0
       dintercepted_max = 0.d0
@@ -901,10 +877,6 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
          taii = 1.d0/taii
       end if
    end if
- 
-   !----- Assign conductivity coefficient -------------------------------------------------!
-   ggnd = ggfact8 * initp%can_rhos / rgnd
-  
    !---------------------------------------------------------------------------------------!
    !     Compute sensible heat and moisture fluxes between the ground and the canopy air   !
    ! space.  The ground may be either the top soil layer or the temporary surface water    !
@@ -918,8 +890,8 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
    !     Both are defined as positive quantities.  Sensible heat is defined by only one    !
    ! variable, hflxgc [J/m2/s], which can be either positive or negative.                  !
    !---------------------------------------------------------------------------------------!
-   hflxgc = cp8 * (initp%ground_temp - initp%can_temp) * ggnd
-   wflx   =       (initp%ground_ssh  - initp%can_shv ) * ggnd
+   hflxgc = initp%ggnet * initp%can_rhos * cp8 * (initp%ground_temp - initp%can_temp)
+   wflx   = initp%ggnet * initp%can_rhos       * (initp%ground_ssh  - initp%can_shv )
    !---------------------------------------------------------------------------------------!
 
 
@@ -1009,7 +981,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
       ! humidity at the soil temperature only, it depends on the canopy specific humidity  !
       ! itself and the soil moisture.                                                      !
       !------------------------------------------------------------------------------------!
-      wflxgc = max( 0.d0, (initp%ground_shv - initp%can_shv) * ggnd)
+      wflxgc = max(0.d0, initp%ggnet * initp%can_rhos * (initp%ground_shv - initp%can_shv))
       !----- Adjusting the flux accordingly to the surface fraction (no phase bias). ------!
       qwflxgc = wflxgc * ( alvi8 - initp%ground_fliq * alli8)
       !----- Set condensation fluxes to zero. ---------------------------------------------!

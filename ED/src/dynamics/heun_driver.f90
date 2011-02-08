@@ -103,6 +103,17 @@ subroutine heun_timestep(cgrid)
             else
                cmet%vels = cmet%vels_unstab
             end if
+            !------------------------------------------------------------------------------!
+
+
+
+            !------------------------------------------------------------------------------!
+            !    Update roughness and canopy depth.                                        !
+            !------------------------------------------------------------------------------!
+            call update_patch_derived_props(csite,cpoly%lsl(isi),cmet%prss,ipa)
+            !------------------------------------------------------------------------------!
+
+
 
             !------------------------------------------------------------------------------!
             !    Copy the meteorological variables to the rk4site structure.               !
@@ -550,7 +561,7 @@ subroutine heun_integ(h1,csite,ipa,nsteps)
             !----- i.   Final update of leaf properties to avoid negative water. ----------!
             call adjust_veg_properties(integration_buff%ytemp,h,csite,ipa)
             !----- ii.  Final update of top soil properties to avoid off-bounds moisture. -!
-            ! call adjust_topsoil_properties(integration_buff%ytemp,h,csite,ipa)
+            call adjust_topsoil_properties(integration_buff%ytemp,h,csite,ipa)
             !----- iii.  Make snow layers stable and positively defined. ------------------!
             call adjust_sfcw_properties(nzg,nzs,integration_buff%ytemp,csite,ipa)
             !----- iv. Update the diagnostic variables. -----------------------------------!
@@ -760,9 +771,6 @@ subroutine heun_stepper(x,h,csite,ipa,reject_step,reject_result)
    !----- yeuler is the temporary array with the Euler step with no correction. -----------!
    call copy_rk4_patch(integration_buff%y,integration_buff%ak3,cpatch)
    call inc_rk4_patch (integration_buff%ak3,integration_buff%dydx, heun_b21*h, cpatch)
-   combh = heun_b21*h
-   call adjust_veg_properties (integration_buff%ak3,combh,csite,ipa)
-   call adjust_sfcw_properties(nzg,nzs,integration_buff%ak3,csite,ipa)
    call update_diagnostic_vars(integration_buff%ak3      ,csite,ipa)
    !---------------------------------------------------------------------------------------!
 
@@ -803,16 +811,12 @@ subroutine heun_stepper(x,h,csite,ipa,reject_step,reject_result)
    call copy_rk4_patch(integration_buff%y,integration_buff%ytemp, cpatch)
    call inc_rk4_patch(integration_buff%ytemp,integration_buff%dydx, heun_c1*h, cpatch)
    call inc_rk4_patch(integration_buff%ytemp,integration_buff%ak2 , heun_c2*h, cpatch)
-   combh = (heun_c1+heun_c2) * h ! Which should be h
 
    !---------------------------------------------------------------------------------------!
    !      Update the diagnostic properties and make final adjustments.  This time we will  !
    ! run the full adjustment, to make sure that the step will be rejected especially if    !
    ! there are issues with the top soil properties.                                        !
    !---------------------------------------------------------------------------------------!
-   call adjust_veg_properties    (integration_buff%ytemp,combh  ,csite,ipa)
-   call adjust_topsoil_properties(integration_buff%ytemp,combh  ,csite,ipa)
-   call adjust_sfcw_properties   (nzg,nzs,integration_buff%ytemp,csite,ipa)
    call update_diagnostic_vars   (integration_buff%ytemp        ,csite,ipa)
    !---------------------------------------------------------------------------------------!
 
