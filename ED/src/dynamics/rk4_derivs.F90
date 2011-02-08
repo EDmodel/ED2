@@ -111,43 +111,47 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
    integer             , intent(in) :: mzg              ! Number of ground layers
    integer             , intent(in) :: mzs              ! Number of snow/ponding layers
    !----- Local variables -----------------------------------------------------------------!
-   integer                          :: k, k1, k2        ! Level counters
-   integer                          :: ksn              ! # of temporary water/snow layers
-   integer                          :: nsoil            ! Short for csite%soil_text(k,ipa)
-   real(kind=8)                     :: wgpfrac          ! Fractional soil moisture
-   real(kind=8)                     :: soilcond         ! Soil conductivity
-   real(kind=8)                     :: snden            ! Snow/water density
-   real(kind=8)                     :: hflxgc           ! Ground -> canopy heat flux
-   real(kind=8)                     :: wflxgc           ! Ground -> canopy water flux
-   real(kind=8)                     :: qwflxgc          ! Ground -> canopy latent heat flux
-   real(kind=8)                     :: dewgnd           ! Dew/frost flux to ground
-   real(kind=8)                     :: qdewgnd          ! Dew/frost heat flux to ground
-   real(kind=8)                     :: ddewgnd          ! Dew/frost density flux to ground
+   integer                          :: k, k1, k2     ! Level counters
+   integer                          :: ksn           ! # of temporary water/snow layers
+   integer                          :: nsoil         ! Short for csite%soil_text(k,ipa)
+   real(kind=8)                     :: wgpfrac       ! Fractional soil moisture
+   real(kind=8)                     :: soilcond      ! Soil conductivity
+   real(kind=8)                     :: snden         ! Snow/water density
+   real(kind=8)                     :: hflxgc        ! Ground -> canopy heat flux
+   real(kind=8)                     :: wflxgc        ! Ground -> canopy water flux
+   real(kind=8)                     :: qwflxgc       ! Ground -> canopy latent heat flux
+   real(kind=8)                     :: dewgnd        ! Dew/frost flux to ground
+   real(kind=8)                     :: qdewgnd       ! Dew/frost heat flux to ground
+   real(kind=8)                     :: ddewgnd       ! Dew/frost density flux to ground
+   real(kind=8)                     :: wshed_tot     ! Water shedding flux
+   real(kind=8)                     :: qwshed_tot    ! Energy flux due to water shedding
+   real(kind=8)                     :: dwshed_tot       ! Density flux due to water shedding
    real(kind=8)                     :: throughfall_tot  ! Water shedding flux
    real(kind=8)                     :: qthroughfall_tot ! Energy flux due to water shedding
    real(kind=8)                     :: dthroughfall_tot ! Density flux due to water shedding
-   real(kind=8)                     :: wshed_tot        ! Water shedding flux
-   real(kind=8)                     :: qwshed_tot       ! Energy flux due to water shedding
-   real(kind=8)                     :: dwshed_tot       ! Density flux due to water shedding
-   real(kind=8)                     :: wgpmid           ! Soil in between layers
-   real(kind=8)                     :: wloss            ! Water loss due to transpiration
-   real(kind=8)                     :: qwloss           ! Energy loss due to transpiration
-   real(kind=8)                     :: dqwt             ! Energy adjustment aux. variable
-   real(kind=8)                     :: qwgoal           ! Goal energy for thin snow layers.
-   real(kind=8)                     :: wprevious        ! Previous water content
-   real(kind=8)                     :: infilt           ! Surface infiltration rate
-   real(kind=8)                     :: qinfilt          ! Surface infiltration heat rate
-   real(kind=8)                     :: snowdens         ! Snow density (kg/m2)
-   real(kind=8)                     :: soilhcap         ! Soil heat capacity
-   real(kind=8)                     :: surface_water    ! Temp. variable. Availible liquid 
-                                                        !   water on the soil sfc. (kg/m2)
-   real(kind=8)                     :: freezeCor        ! Correction to conductivity for 
-                                                        !    partially frozen soil.
-   real(kind=8), dimension(nzgmax+nzsmax)   :: rfactor  ! 
-   real(kind=8), dimension(nzgmax+nzsmax+1) :: hfluxgsc ! Surface -> canopy heat flux
-   real(kind=8), dimension(mzg+mzs+1)       :: w_flux   ! Water flux (aux. variable)
-   real(kind=8), dimension(mzg+mzs+1)       :: qw_flux  ! Heat flux (aux. variable)
-   real(kind=8), dimension(mzs+1)           :: d_flux   ! Density flux
+   real(kind=8)                     :: wgpmid        ! Soil in between layers
+   real(kind=8)                     :: wloss         ! Water loss due to transpiration
+   real(kind=8)                     :: qwloss        ! Energy loss due to transpiration
+   real(kind=8)                     :: dqwt          ! Energy adjustment aux. variable
+   real(kind=8)                     :: fracliq       ! Fraction of liquid water
+   real(kind=8)                     :: tempk         ! Temperature
+   real(kind=8)                     :: qwgoal        ! Goal energy for thin snow layers.
+   real(kind=8)                     :: wprevious     ! Previous water content
+   real(kind=8)                     :: infilt        ! Surface infiltration rate
+   real(kind=8)                     :: qinfilt       ! Surface infiltration heat rate
+   real(kind=8)                     :: snowdens      ! Snow density (kg/m2)
+   real(kind=8)                     :: soilhcap      ! Soil heat capacity
+   real(kind=8)                     :: int_sfcw_u    ! Intensive sfc. water internal en.
+   real(kind=8)                     :: surface_water ! Temp. variable. Availible liquid 
+                                                     !   water on the soil surface (kg/m2)
+   real(kind=8)                     :: freezeCor     ! Correction to conductivity for 
+                                                     !    partially frozen soil.
+   real(kind=8), dimension(nzgmax+nzsmax)   :: rfactor       ! 
+   real(kind=8), dimension(nzgmax+nzsmax+1) :: hfluxgsc      ! Surface -> canopy heat flux
+   real(kind=8), dimension(mzg+mzs+1)       :: w_flux        ! Water flux (aux. variable)
+   real(kind=8), dimension(mzg+mzs+1)       :: qw_flux       ! Heat flux (aux. variable)
+   real(kind=8), dimension(mzs+1)           :: d_flux        ! Density flux
+   real(kind=8)                     :: psiplusz_bl   ! Water potential of boundary layer
    !----- Constants -----------------------------------------------------------------------!
    real(kind=8), parameter  :: freezeCoef = 7.d0 ! Exponent in the frozen soil hydraulic 
                                                  !    conductivity correction.
@@ -467,48 +471,58 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
    nsoil = csite%ntext_soil(rk4site%lsl,ipa)
    if (nsoil /= 13) then
       select case(isoilbc)
-      case (0) !----- Bedrock, no flux accross it. ----------------------------------------!
-         w_flux(rk4site%lsl)       = 0.d0
-         qw_flux(rk4site%lsl)      = 0.d0
-         dinitp%avg_drainage       = 0.d0
-         dinitp%avg_drainage_heat  = 0.d0
-
-      case (1) !----- Free drainage -------------------------------------------------------!
+      case (0) 
+         !----- Bedrock, no flux across. --------------------------------------------------!
+         w_flux(rk4site%lsl)     = 0.d0
+         qw_flux(rk4site%lsl)    = 0.d0
+         dinitp%avg_drainage     = 0.d0
+         dinitp%avg_drainage_heat= 0.d0
+         
+      case (1) 
+         !---------------------------------------------------------------------------------!
+         !     Free drainage, water movement of bottom soil layer is only under gravity,   !
+         ! i.e. the soil water content of boundary layer is equal to that of bottom soil   !
+         ! layer.                                                                          !
+         !---------------------------------------------------------------------------------!
          wgpmid      = initp%soil_water(rk4site%lsl)
          freezeCor   = initp%soil_fracliq(rk4site%lsl)
          if (freezeCor < 1.d0) freezeCor = 1.d1**(-freezeCoef*(1.d0-freezeCor))
-         w_flux(rk4site%lsl) =  dslzti8(rk4site%lsl) * slcons18(rk4site%lsl,nsoil)         &
-                             *  (wgpmid/soil8(nsoil)%slmsts)                               &
-                             ** (2.d0 * soil8(nsoil)%slbs + 3.d0)                          &
-                             *  freezeCor
 
-         !-----  Make it kg/s instead of m3. ----------------------------------------------!
-         dinitp%avg_drainage      = - w_flux(rk4site%lsl) * wdns8
-         dinitp%avg_drainage_heat = - qw_flux(rk4site%lsl)  
+         w_flux(rk4site%lsl) =  dslzti8(rk4site%lsl) * slcons18(rk4site%lsl,nsoil)         &
+                              *  (wgpmid/soil8(nsoil)%slmsts)                              &
+                              ** (2.d0 * soil8(nsoil)%slbs + 3.d0)                         &
+                              * (slz8(rk4site%lsl+1)-slz8(rk4site%lsl)) * freezeCor
 
          !---------------------------------------------------------------------------------!
          !      Limit water transfers to prevent over-saturation and over-depletion.       !
          !---------------------------------------------------------------------------------!
          if (w_flux(rk4site%lsl) > 0.d0) then
-            if (initp%soilair99(rk4site%lsl) <= 0.d0) w_flux(rk4site%lsl) = 0.d0
+            if (initp%soilair99(rk4site%lsl) <= 0.d0) then
+                w_flux(rk4site%lsl) = 0.d0
+            end if
          else
-            if (initp%soilair01(rk4site%lsl) <= 0.d0) w_flux(rk4site%lsl) = 0.d0
+            if (initp%soilair01(rk4site%lsl) <= 0.d0) then
+                w_flux(rk4site%lsl) = 0.d0
+            end if
          end if
+
          !----- Only liquid water is allowed to flow, find qw_flux (W/m2) accordingly -----!
          qw_flux(rk4site%lsl) = w_flux(rk4site%lsl)                                        &
                               * cliqvlme8 * (initp%soil_tempk(rk4site%lsl) - tsupercool8)
+
+         !-----  Make it kg/s instead of m3. ----------------------------------------------!
+         dinitp%avg_drainage      = - w_flux(rk4site%lsl) * wdns8
+         dinitp%avg_drainage_heat = - qw_flux(rk4site%lsl)
+
       case (2) !----- Half drainage. ------------------------------------------------------!
          wgpmid      = initp%soil_water(rk4site%lsl)
          freezeCor   = initp%soil_fracliq(rk4site%lsl)
          if (freezeCor < 1.d0) freezeCor = 1.d1**(-freezeCoef*(1.d0-freezeCor))
-         w_flux(rk4site%lsl) =  dslzti8(rk4site%lsl) * slcons18(rk4site%lsl,nsoil)         &
-                             *  (wgpmid/soil8(nsoil)%slmsts)                               &
-                             ** (2.d0 * soil8(nsoil)%slbs + 3.d0)                          &
-                             *  freezeCor * 5.d-1
 
-         !-----  Make it kg/s instead of m3. ----------------------------------------------!
-         dinitp%avg_drainage      = - w_flux(rk4site%lsl) * wdns8
-         dinitp%avg_drainage_heat = - qw_flux(rk4site%lsl)  
+         w_flux(rk4site%lsl) =  dslzti8(rk4site%lsl) * slcons18(rk4site%lsl,nsoil)         &
+                              *  (wgpmid/soil8(nsoil)%slmsts)                              &
+                              ** (2.d0 * soil8(nsoil)%slbs + 3.d0)                         &
+                              * (slz8(rk4site%lsl+1)-slz8(rk4site%lsl)) * freezeCor * 5.d-1
 
          !---------------------------------------------------------------------------------!
          !      Limit water transfers to prevent over-saturation and over-depletion.       !
@@ -518,9 +532,58 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
          else
             if (initp%soilair01(rk4site%lsl) <= 0.d0) w_flux(rk4site%lsl) = 0.d0
          end if
+
          !----- Only liquid water is allowed to flow, find qw_flux (W/m2) accordingly -----!
          qw_flux(rk4site%lsl) = w_flux(rk4site%lsl)                                        &
                               * cliqvlme8 * (initp%soil_tempk(rk4site%lsl) - tsupercool8)
+
+         !-----  Make it kg/s instead of m3. ----------------------------------------------!
+         dinitp%avg_drainage      = - w_flux(rk4site%lsl) * wdns8
+         dinitp%avg_drainage_heat = - qw_flux(rk4site%lsl)
+
+      case (3) 
+         !---------------------------------------------------------------------------------!
+         !     Free drainage, water movement of bottom soil layer is under gravity and     !
+         ! moisture potential difference.  The soil water content of boundary layer is     !
+         ! equal to field capacity.                                                        !
+         !---------------------------------------------------------------------------------!
+         wgpmid      = initp%soil_water(rk4site%lsl)
+         freezeCor   = initp%soil_fracliq(rk4site%lsl)
+         if (freezeCor < 1.d0) freezeCor = 1.d1**(-freezeCoef*(1.d0-freezeCor))
+
+         psiplusz_bl = slz8(rk4site%lsl) + soil8(nsoil)%slpots                             &
+                     * (soil8(nsoil)%slmsts / soil8(nsoil)%sfldcap) ** soil8(nsoil)%slbs
+
+         if (psiplusz_bl <= initp%psiplusz(rk4site%lsl)) then
+             w_flux(rk4site%lsl) =  dslzti8(rk4site%lsl) * slcons18(rk4site%lsl,nsoil)         &
+                                 *  (wgpmid/soil8(nsoil)%slmsts)                               &
+                                 ** (2.d0 * soil8(nsoil)%slbs + 3.d0)                          &
+                                 * ( initp%psiplusz(rk4site%lsl) - psiplusz_bl) * freezeCor
+         else 
+            !----- Prevent bottom soil layer sucking water from the boundary layer. -------!
+             w_flux(rk4site%lsl) = 0.d0
+         end if
+
+         !---------------------------------------------------------------------------------!
+         !      Limit water transfers to prevent over-saturation and over-depletion.       !
+         !---------------------------------------------------------------------------------!
+         if (w_flux(rk4site%lsl) > 0.d0) then
+            if (initp%soilair99(rk4site%lsl) <= 0.d0) then
+                w_flux(rk4site%lsl) = 0.d0
+            end if
+         else
+            if (initp%soilair01(rk4site%lsl) <= 0.d0) then
+                w_flux(rk4site%lsl) = 0.d0
+            end if
+         end if
+
+         !----- Only liquid water is allowed to flow, find qw_flux (W/m2) accordingly -----!
+         qw_flux(rk4site%lsl) = w_flux(rk4site%lsl)                                        &
+                              * cliqvlme8 * (initp%soil_tempk(rk4site%lsl) - tsupercool8)
+
+         !-----  Make it kg/s instead of m3. ----------------------------------------------!
+         dinitp%avg_drainage      = - w_flux(rk4site%lsl) * wdns8
+         dinitp%avg_drainage_heat = - qw_flux(rk4site%lsl)
       end select
    else
       !----- Bedrock, no flux accross it. -------------------------------------------------!
@@ -814,7 +877,6 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
          taii = 1.d0/taii
       end if
    end if
-
    !---------------------------------------------------------------------------------------!
    !     Compute sensible heat and moisture fluxes between the ground and the canopy air   !
    ! space.  The ground may be either the top soil layer or the temporary surface water    !

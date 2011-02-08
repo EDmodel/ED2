@@ -2129,7 +2129,7 @@ subroutine init_physiology_params()
    !---------------------------------------------------------------------------------------!
    !     Bounds for internal carbon and water stomatal conductance.                        !
    !---------------------------------------------------------------------------------------!
-   c34smin_lint_co2 = 10.   * umol_2_mol ! Minimum carbon dioxide concentration [  mol/mol]
+   c34smin_lint_co2 = 0.5   * umol_2_mol ! Minimum carbon dioxide concentration [  mol/mol]
    c34smax_lint_co2 = 1200. * umol_2_mol ! Maximum carbon dioxide concentration [  mol/mol]
    c34smax_gsw      = 1.e+2              ! Max. stomatal conductance (water)    [ mol/m²/s]
    !---------------------------------------------------------------------------------------!
@@ -2641,7 +2641,7 @@ subroutine init_ff_coms
    dffdbhi           = real(ff_ndbh)/maxffdbh
 
    !----- The following flag switches detailed debugging on. ------------------------------!
-   print_fuse_details = .true.
+   print_fuse_details = .false.
    fuse_prefix        = 'patch_fusion_'
    !---------------------------------------------------------------------------------------!
 

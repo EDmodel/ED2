@@ -988,6 +988,18 @@ subroutine opspec3
      ifaterr = ifaterr + 1
   end if
 
+  if (isoilbc < 0 .or. isoilbc > 3) then
+     write (unit=*,fmt='(a,1x,i4,a)')                                                      &
+       'Invalid ISOILBC, it must be between 0 and 3. Yours is set to',isoilbc,'...'
+     ifaterr = ifaterr +1
+  end if
+    
+  if (runoff_time < 0.0) then
+     write (unit=*,fmt='(a,1x,es14.7,a)')                                                  &
+           'Invalid RUNOFF_TIME, it can''t be negative. Yours is set to',runoff_time,'...'
+     ifaterr = ifaterr +1
+  end if
+
 ![MLO - Some extra checks for mass and Medvidy's fix on Exner tendency
 ! Complete Exner tendency and vertical coordinate.
   if (iexev == 2 .and. if_adap /= 0) then 

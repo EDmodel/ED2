@@ -97,7 +97,8 @@ module farq_leuning
                                 , c34smax_lint_co28        & ! intent(in)
                                 , gbh_2_gbw8               & ! intent(in)
                                 , gbw_2_gbc8               & ! intent(in)
-                                , o2_ref8                  ! ! intent(in)
+                                , o2_ref8                  & ! intent(in)
+                                , quantum_efficiency_T     ! ! intent(in)
       use therm_lib8     , only : rslif8                   ! ! function
       use consts_coms    , only : mmh2oi8                  & ! intent(in)
                                 , mmh2o8                   & ! intent(in)
@@ -158,9 +159,25 @@ module farq_leuning
       thispft%b             = dble(cuticular_cond(ipft)) * umol_2_mol8
       thispft%gamma         = dble(dark_respiration_factor(ipft))
       thispft%m             = dble(stomatal_slope(ipft))
-      thispft%alpha         = dble(quantum_efficiency(ipft))
       thispft%vm_low_temp   = dble(vm_low_temp(ipft))  + t008
       thispft%vm_high_temp  = dble(vm_high_temp(ipft)) + t008
+      
+      !------------------------------------------------------------------------------------!
+      !    Is alpha (quantum efficiency) temperature dependent?  If so, calculate after    !
+      !    Ehlringer and Ollebjorkman 1977, if not use default value from ed_params                                                   !
+      !------------------------------------------------------------------------------------!
+      select case(quantum_efficiency_T)
+      case(1)
+           select case (thispft%photo_pathway)
+           case (4)
+               thispft%alpha         = dble(quantum_efficiency(ipft))       
+           case (3)       
+               thispft%alpha         = dble(-0.0016*(dble(veg_temp)-t008)+0.1040)
+           end select
+      case default
+            thispft%alpha         = dble(quantum_efficiency(ipft))      
+      end select
+      
       !------------------------------------------------------------------------------------!
       !     Find Vm0 for photosynthesis and respiration, depending on whether this PFT     !
       ! has a light-controlled phenology or not.  Convert the resulting Vm into mol/m²/s.  !
@@ -431,14 +448,13 @@ module farq_leuning
       ! open case.  Limit_flag becomes 0, which is the flag for night time limitation.     !
       !------------------------------------------------------------------------------------!
       par_twilight_min = find_twilight_min()
+
       if (met%par < par_twilight_min) then
          call copy_solution(stclosed,stopen)
          limit_flag = 0
          return
       end if
       !------------------------------------------------------------------------------------!
-
-
 
       !------------------------------------------------------------------------------------!
       !    There is enough light to be considered at least dawn or dusk, so we go with     !
@@ -457,6 +473,17 @@ module farq_leuning
       !------------------------------------------------------------------------------------!
       !----- Update the CO2 demand function parameters for light limitation. --------------!
       call set_co2_demand_params('LIGHT')
+      !------------------------------------------------------------------------------------!
+      !    First we check whether it is at least dawn or dusk.  In case it is not, no      !
+      ! photosynthesis should happen, so we copy the closed case stomata values to the     !
+      ! open case.  Limit_flag becomes 0, which is the flag for night time limitation.     !
+      !------------------------------------------------------------------------------------!
+      par_twilight_min = find_twilight_min()
+      if (met%par < par_twilight_min) then
+         call copy_solution(stclosed,stopen)
+         limit_flag = 0
+         return
+      end if
       !----- Choose the appropriate solver depending on the kind of photosynthesis. -------!
       select case(thispft%photo_pathway)
       case (3)
@@ -1453,16 +1480,17 @@ module farq_leuning
    !=======================================================================================!
    !=======================================================================================!
    !     This sub-routine computes the minimum and maximum intercellular carbon dioxide    !
-   ! concentration that we should seek the solution.  This must be done based on the       !
-   ! conductance, otherwise the conductance could go negative and not only this is         !
-   ! unrealistic, but it also makes the stepper function to reach infinity, which breaks   !
-   ! the assumption of continuous function.                                                !
+   ! concentration that we should seek the solution.  Both the function from which we seek !
+   ! the root and the stomatal conductance function have singularities, so we don't want   !
+   ! the intercellular carbon dioxide to cross these singularities because the root-find-  !
+   ! ing method assumes continuity.                                                        !
    !---------------------------------------------------------------------------------------!
    subroutine find_lint_co2_bounds(cimin,cimax,bounded)
       use c34constants   , only : thispft           & ! intent(in)
                                 , aparms            & ! intent(in)
                                 , met               ! ! intent(in)
       use physiology_coms, only : gsw_2_gsc8        & ! intent(in)
+                                , gbw_2_gbc8               & ! intent(in)
                                 , c34smin_lint_co28 & ! intent(in)
                                 , c34smax_lint_co28 & ! intent(in)
                                 , c34smax_gsw8      ! ! intent(in)
@@ -1477,6 +1505,13 @@ module farq_leuning
       real(kind=8)               :: aquad   ! Quadratic coefficient             [      ---]
       real(kind=8)               :: bquad   ! Linear coefficient                [  mol/mol]
       real(kind=8)               :: cquad   ! Intercept                         [mol²/mol²]
+      real(kind=8)               :: ciAo    ! Ci at singularity where Aopen=0   [  mol/mol]
+      real(kind=8)               :: cigsw   ! Ci at sing. where gbc(ca-ci)=Ao   [  mol/mol]
+      real(kind=8)               :: ciQ     ! Ci at singularity where qi-qs=-D0 [  mol/mol]
+      real(kind=8)               :: xtmp    ! variable for ciQ equation
+      real(kind=8)               :: ytmp    ! variable for ciQ
+      real(kind=8)               :: ztmp    ! variable for ciQ
+      real(kind=8)               :: wtmp    ! variable for ciQ
       real(kind=8)               :: discr   ! The discriminant of the quad. eq. [mol²/mol²]
       real(kind=8)               :: ciroot1 ! 1st root for the quadratic eqn.   [  mol/mol]
       real(kind=8)               :: ciroot2 ! 2nd root for the quadratic eqn.   [  mol/mol]
@@ -1489,125 +1524,154 @@ module farq_leuning
 
 
       !------------------------------------------------------------------------------------!
-      !     The loop is to make sure we solve for two cases, the low and the high water    !
-      ! stomatal conductance bounds.                                                       !
+      ! First case: This check will find when Aopen goes to 0., which causes a singularity !
+      ! in the function of which we are looking for a root.                                !
       !------------------------------------------------------------------------------------!
-      do ibnd=1,2
-         !---------------------------------------------------------------------------------!
-         !  1.  Define the conductance edge.                                               !
-         !---------------------------------------------------------------------------------!
-         select case (ibnd)
-         case (1)
-            !------------------------------------------------------------------------------!
-            !  A. The low conductance case.  It doesn't make sense for the conductivitiy   !
-            !     of the open stomata case to be lower than when stomata are closed.       !
-            !     Therefore, the minimum gsw allowed is defined by the cuticular conduct-  !
-            !     ance.                                                                    !
-            !------------------------------------------------------------------------------!
-            gsw = thispft%b
-         case (2)
-            !------------------------------------------------------------------------------!
-            !  B. The high conductance case.  It doesn't make sense for the conductivitiy  !
-            !     to be several orders of magnitude higher for the open stomata case than  !
-            !     compared to the closed case, the maximum gsw allowed is defined by the   !
-            !     cuticular conductance times 20,000, which is roughly what used to be in  !
-            !     the old solver.                                                          !
-            !------------------------------------------------------------------------------!
-            gsw = c34smax_gsw8
-         end select
+      ciAo = - (aparms%tau * aparms%nu + aparms%sigma)                                     &
+           / (aparms%xi  * aparms%nu + aparms%rho  )
+      !------------------------------------------------------------------------------------!
 
-         !----- 2. Define the total resistance. -------------------------------------------!
-         restot = (gsw_2_gsc8 * gsw + met%blyr_cond_co2)                                   &
-                / (gsw_2_gsc8 * gsw * met%blyr_cond_co2)
-         !----- 3. Define the coefficients for the quadratic equation. --------------------!
-         aquad = aparms%xi
-         bquad = aparms%tau - aparms%xi * met%can_co2 + aparms%xi * restot * aparms%nu     &
-               + restot * aparms%rho
-         cquad = restot * aparms%sigma + restot * aparms%nu * aparms%tau                   &
-               - aparms%tau * met%can_co2
-         !----- 4. Decide whether this is a true quadratic case or not. -------------------!
-         if (aquad /= 0.d0) then
+
+
+      !------------------------------------------------------------------------------------!
+      ! Second case: This check finds which ci causes the terms [gbc (ca -ci) - Aopen] to  !
+      ! be 0.   This will cause a singularity in the gsw function.                         !
+      !------------------------------------------------------------------------------------!
+      !----- 1. Define the coefficients for the quadratic equation. -----------------------!
+      aquad = met%blyr_cond_co2 * aparms%xi
+      bquad = aparms%xi * (aparms%nu - met%blyr_cond_co2 * met%can_co2 )                   &
+            + met%blyr_cond_co2 * aparms%tau + aparms%rho
+      cquad = aparms%tau * (aparms%nu - met%blyr_cond_co2 * met%can_co2 ) + aparms%sigma
+      !----- 2. Decide whether this is a true quadratic case or not. ----------------------!
+      if (aquad /= 0.d0) then
+         !---------------------------------------------------------------------------------!
+         !     This is a true quadratic case, the first step is to find the discriminant.  !
+         !---------------------------------------------------------------------------------!
+         discr = bquad * bquad - 4.d0 * aquad * cquad
+         if (discr == 0.d0) then
             !------------------------------------------------------------------------------!
-            !     This is a true quadratic case, the first step is to find the             !
-            ! discriminant.                                                                !
+            !      Discriminant is zero, both roots are the same.  We save only one, and   !
+            ! make the other negative, which will make the guess discarded.                !
             !------------------------------------------------------------------------------!
-            discr = bquad * bquad - 4.d0 * aquad * cquad
-            if (discr == 0.d0) then
-               !---------------------------------------------------------------------------!
-               !      Discriminant is zero, both roots are the same.  We save only one,    !
-               ! and make the other negative, which will make the guess discarded.         !
-               !---------------------------------------------------------------------------!
-               ciroot1      = - bquad / (2.d0 * aquad)
-               ciroot2      = discard
-            elseif (discr > 0.d0) then
-               ciroot1 = (- bquad + sqrt(discr)) / (2.d0 * aquad)
-               ciroot2 = (- bquad - sqrt(discr)) / (2.d0 * aquad)
-            else
-               !----- Discriminant is negative.  Impossible to solve. ---------------------!
-               ciroot1      = discard
-               ciroot2      = discard
-            end if
+            ciroot1      = - bquad / (2.d0 * aquad)
+            ciroot2      = - discard
+         elseif (discr > 0.d0) then
+            ciroot1 = (- bquad + sqrt(discr)) / (2.d0 * aquad)
+            ciroot2 = (- bquad - sqrt(discr)) / (2.d0 * aquad)
          else
-            !------------------------------------------------------------------------------!
-            !    This is a linear case, the xi term is zero.  There is only one number     !
-            ! that works for this case.                                                    !
-            !------------------------------------------------------------------------------!
-            ciroot1      = - cquad / bquad
-            ciroot2      = discard
-            !----- Not used, just for the debugging process. ------------------------------!
-            discr        = bquad * bquad
+            !----- Discriminant is negative.  Impossible to solve. ------------------------!
+            ciroot1      = - discard
+            ciroot2      = - discard
          end if
+      else
          !---------------------------------------------------------------------------------!
+         !    This is a linear case, the xi term is zero.  There is only one number that   !
+         ! works for this case.                                                            !
+         !---------------------------------------------------------------------------------!
+         ciroot1      = - cquad / bquad
+         ciroot2      = - discard
+         !----- Not used, just for the debugging process. ---------------------------------!
+         discr        = bquad * bquad
+      end if
+      !------------------------------------------------------------------------------------!
+      !     Save the largest of the values.  In case both were discarded, we switch it to  !
+      ! the positive discard so this will never be chosen.                                 !
+      !------------------------------------------------------------------------------------!
+      cigsw=max(ciroot1, ciroot2)
+      if (cigsw == -discard) cigsw = discard
+      !------------------------------------------------------------------------------------!
 
 
+
+
+      !------------------------------------------------------------------------------------!
+      ! Third case: This will find the intercellular CO2 mixing ratio that causes the      !
+      ! qi-qs term to be equal to -D0, which also creates a singularity in the stomatal    !
+      ! conductance.                                                                       !
+      !------------------------------------------------------------------------------------!
+      !----- 1. Find some auxiliary variables. --------------------------------------------!
+      xtmp = met%blyr_cond_h2o * ( met%can_shv - met%lint_shv - thispft.d0)/thispft.d0
+      ytmp = met%blyr_cond_co2 + xtmp * gbw_2_gbc8
+      ztmp = xtmp * gbw_2_gbc8 * met%blyr_cond_co2
+      wtmp = ztmp * met%can_co2 - ytmp * aparms%nu
+
+      !----- 2. Define the coefficients for the quadratic equation. -----------------------!
+      aquad = ztmp * aparms%xi
+      bquad = ytmp * aparms%rho - aparms%xi * wtmp + ztmp * aparms%tau
+      cquad = - aparms%tau * wtmp + ytmp * aparms%sigma
+
+      !----- 3. Decide whether this is a true quadratic case or not. ----------------------!
+      if (aquad /= 0.d0) then
          !---------------------------------------------------------------------------------!
-         !     Choose the best root for this guess.                                        !
+         !     This is a true quadratic case, the first step is to find the discriminant.  !
          !---------------------------------------------------------------------------------!
-         !----- Flag the answers as reasonable or not. ------------------------------------!
-         ok1 = ciroot1 >= c34smin_lint_co28 .and. ciroot1 <= c34smax_lint_co28
-         ok2 = ciroot2 >= c34smin_lint_co28 .and. ciroot2 <= c34smax_lint_co28
-         if (ok1 .and. ok2) then
-            select case (ibnd)
-            case (1)
-               cibnds(ibnd) = max(ciroot1,ciroot2)
-            case (2)
-               cibnds(ibnd) = min(ciroot1,ciroot2)
-            end select
-         elseif (ok1) then
-            cibnds(ibnd) = ciroot1
-         elseif (ok2) then
-            cibnds(ibnd) = ciroot2
-         elseif (ciroot1 == discard .and. ciroot2 == discard) then
-            cimin   = discard
-            cimax   = discard
-            bounded = .false.
-            return
-         elseif (ciroot1 == discard) then
-            cibnds(ibnd) = ciroot2
-         elseif (ciroot2 == discard) then
-            cibnds(ibnd) = ciroot1
+         discr = bquad * bquad - 4.d0 * aquad * cquad
+         if (discr == 0.d0) then
+            !------------------------------------------------------------------------------!
+            !      Discriminant is zero, both roots are the same.  We save only one, and   !
+            ! make the other negative, which will make the guess discarded.                !
+            !------------------------------------------------------------------------------!
+            ciroot1 = - bquad / (2.d0 * aquad)
+            ciroot2 = -discard
+         elseif (discr > 0.d0) then
+            ciroot1 = (- bquad + sqrt(discr)) / (2.d0 * aquad)
+            ciroot2 = (- bquad - sqrt(discr)) / (2.d0 * aquad)
          else
-            select case (ibnd)
-            case (1)
-               cibnds(ibnd) = max(ciroot1,ciroot2)
-            case (2)
-               cibnds(ibnd) = min(ciroot1,ciroot2)
-            end select
+            !----- Discriminant is negative.  Impossible to solve. ------------------------!
+            ciroot1      = -discard
+            ciroot2      = -discard
          end if
-      end do
+      else
+         !---------------------------------------------------------------------------------!
+         !    This is a linear case, the xi term is zero.  There is only one number        !
+         ! that works for this case.                                                       !
+         !---------------------------------------------------------------------------------!
+         ciroot1 = - cquad / bquad
+         ciroot2 = -discard
+         !----- Not used, just for the debugging process. ---------------------------------!
+         discr = bquad * bquad
+      end if
+      !------------------------------------------------------------------------------------!
+      !     Save the largest of the values.  In case both were discarded, we switch it to  !
+      ! the positive discard so this will never be chosen.                                 !
+      !------------------------------------------------------------------------------------!
+      ciQ=max(ciroot1, ciroot2)
+      if (ciQ == -discard) ciQ = discard
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Make sure that there is no singularity within Cimin and Cimax.  From previous  !
+      ! tests, we know that cimin is the one associated with the case in which Aopen goes  !
+      ! to zero, and the maximum is the minimum between gsw case, q case, and the canopy   !
+      ! air CO2.                                                                           !
+      !------------------------------------------------------------------------------------!
+      ciroot1 = max(c34smin_lint_co28,ciAo)
+      ciroot2 = min(ciQ, cigsw,met%can_co2)
       !------------------------------------------------------------------------------------!
 
 
 
+      !------------------------------------------------------------------------------------!
+      !     The actual bounds are slightly squeezed so the edges will not be at the the    !
+      ! singularities.                                                                     !
+      !------------------------------------------------------------------------------------!
+      cimin = ciroot1 + 1.d-3 * (ciroot2 - ciroot1)
+      cimax = ciroot2 - 1.d-3 * (ciroot2 - ciroot1)
+      !------------------------------------------------------------------------------------!
+
+
 
       !------------------------------------------------------------------------------------!
-      !    In the last part we make sure that the two guesses are positively defined, and  !
-      ! in case both of them were non-positive, this means that a solution is impossible   !
-      ! in this case.                                                                      !
+      !    In the last part we make sure that the two guesses are positively defined and   !
+      ! make sense.  If both bounds are non-positive, or if the minimum ci is greater than !
+      ! the maximum cimax, the bounds make no sense, and the solution is not bounded.      !
       !------------------------------------------------------------------------------------!
-      cimin = minval(cibnds)
-      cimax = maxval(cibnds)
-      if (cimin <= 0.d0 .and. cimax <= c34smin_lint_co28) then
+      if (cimin > cimax) then
+         cimin = c34smin_lint_co28
+         cimax = c34smin_lint_co28
+         bounded = .false.
+      elseif (cimin <= 0.d0 .and. cimax <= c34smin_lint_co28) then
          cimin = c34smin_lint_co28
          cimax = c34smin_lint_co28
          bounded = .false.
@@ -1617,11 +1681,7 @@ module farq_leuning
       else
          bounded = .true.
       end if
-      !------------------------------------------------------------------------------------!
-      !     Final adjustment, do not allow the carbon dioxide content with open stomata to !
-      ! be greater than the canopy air CO2 concentration.                                  !
-      !------------------------------------------------------------------------------------!
-      if (cimax > met%can_co2) cimax = met%can_co2
+
       return
    end subroutine find_lint_co2_bounds
    !=======================================================================================!

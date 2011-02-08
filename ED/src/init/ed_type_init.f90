@@ -345,6 +345,7 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
   csite%sfcwater_fracliq(1:nzs,ip1:ip2)  = 0.0
   csite%total_snow_depth(ip1:ip2)        = 0.0
   csite%snowfac(ip1:ip2)                 = 0.0
+  csite%runoff(ip1:ip2)                  = 0.0
 
   csite%rshort_s(:,ip1:ip2) = 0.0
   csite%rshort_s_beam(:,ip1:ip2) = 0.0

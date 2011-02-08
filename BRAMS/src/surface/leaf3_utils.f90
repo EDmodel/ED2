@@ -464,7 +464,7 @@ subroutine leaf_bcond(m2,m3,mzg,mzs,npat,jdim,soil_water,sfcwater_mass,soil_ener
                      ,sfcwater_energy,soil_text,sfcwater_depth,ustar,tstar,rstar,cstar     &
                      ,zeta,ribulk,veg_albedo,veg_fracarea,veg_lai,veg_tai,veg_rough        &
                      ,veg_height,patch_area,patch_rough,patch_wetind,leaf_class,soil_rough &
-                     ,sfcwater_nlev,stom_resist,ground_rsat,ground_rvap,ground_temp        &
+                     ,sfcwater_nlev,stom_condct,ground_rsat,ground_rvap,ground_temp        &
                      ,ground_fliq,veg_water,veg_hcap,veg_energy,can_prss,can_theiv         &
                      ,can_theta,can_rvap,can_co2,sensible_gc,sensible_vc,evap_gc,evap_vc   &
                      ,transp,gpp,plresp,resphet,veg_ndvip,veg_ndvic,veg_ndvif)
@@ -480,7 +480,7 @@ subroutine leaf_bcond(m2,m3,mzg,mzs,npat,jdim,soil_water,sfcwater_mass,soil_ener
    real, dimension(m2,m3,npat)    , intent(inout) :: veg_lai,veg_tai,veg_rough,veg_height
    real, dimension(m2,m3,npat)    , intent(inout) :: patch_area,patch_rough,patch_wetind
    real, dimension(m2,m3,npat)    , intent(inout) :: leaf_class,soil_rough,sfcwater_nlev
-   real, dimension(m2,m3,npat)    , intent(inout) :: stom_resist,ground_rsat,ground_rvap
+   real, dimension(m2,m3,npat)    , intent(inout) :: stom_condct,ground_rsat,ground_rvap
    real, dimension(m2,m3,npat)    , intent(inout) :: ground_temp,ground_fliq
    real, dimension(m2,m3,npat)    , intent(inout) :: veg_water,veg_energy,veg_hcap
    real, dimension(m2,m3,npat)    , intent(inout) :: can_prss,can_theiv,can_theta
@@ -512,7 +512,7 @@ subroutine leaf_bcond(m2,m3,mzg,mzs,npat,jdim,soil_water,sfcwater_mass,soil_ener
          leaf_class     (1,j,ipat) = leaf_class       (2,j,ipat)
          soil_rough     (1,j,ipat) = soil_rough       (2,j,ipat)
          sfcwater_nlev  (1,j,ipat) = sfcwater_nlev    (2,j,ipat)
-         stom_resist    (1,j,ipat) = stom_resist      (2,j,ipat)
+         stom_condct    (1,j,ipat) = stom_condct      (2,j,ipat)
          ground_rsat    (1,j,ipat) = ground_rsat      (2,j,ipat)
          ground_rvap    (1,j,ipat) = ground_rvap      (2,j,ipat)
          ground_temp    (1,j,ipat) = ground_temp      (2,j,ipat)
@@ -555,7 +555,7 @@ subroutine leaf_bcond(m2,m3,mzg,mzs,npat,jdim,soil_water,sfcwater_mass,soil_ener
          leaf_class    (m2,j,ipat) = leaf_class    (m2-1,j,ipat)
          soil_rough    (m2,j,ipat) = soil_rough    (m2-1,j,ipat)
          sfcwater_nlev (m2,j,ipat) = sfcwater_nlev (m2-1,j,ipat)
-         stom_resist   (m2,j,ipat) = stom_resist   (m2-1,j,ipat)
+         stom_condct   (m2,j,ipat) = stom_condct   (m2-1,j,ipat)
          ground_rsat   (m2,j,ipat) = ground_rsat   (m2-1,j,ipat)
          ground_rvap   (m2,j,ipat) = ground_rvap   (m2-1,j,ipat)
          ground_temp   (m2,j,ipat) = ground_temp   (m2-1,j,ipat)
@@ -622,7 +622,7 @@ subroutine leaf_bcond(m2,m3,mzg,mzs,npat,jdim,soil_water,sfcwater_mass,soil_ener
             leaf_class     (i,1,ipat) = leaf_class       (i,2,ipat)
             soil_rough     (i,1,ipat) = soil_rough       (i,2,ipat)
             sfcwater_nlev  (i,1,ipat) = sfcwater_nlev    (i,2,ipat)
-            stom_resist    (i,1,ipat) = stom_resist      (i,2,ipat)
+            stom_condct    (i,1,ipat) = stom_condct      (i,2,ipat)
             ground_rsat    (i,1,ipat) = ground_rsat      (i,2,ipat)
             ground_rvap    (i,1,ipat) = ground_rvap      (i,2,ipat)
             ground_temp    (i,1,ipat) = ground_temp      (i,2,ipat)
@@ -665,7 +665,7 @@ subroutine leaf_bcond(m2,m3,mzg,mzs,npat,jdim,soil_water,sfcwater_mass,soil_ener
             leaf_class    (i,m3,ipat) = leaf_class    (i,m3-1,ipat)
             soil_rough    (i,m3,ipat) = soil_rough    (i,m3-1,ipat)
             sfcwater_nlev (i,m3,ipat) = sfcwater_nlev (i,m3-1,ipat)
-            stom_resist   (i,m3,ipat) = stom_resist   (i,m3-1,ipat)
+            stom_condct   (i,m3,ipat) = stom_condct   (i,m3-1,ipat)
             ground_rsat   (i,m3,ipat) = ground_rsat   (i,m3-1,ipat)
             ground_rvap   (i,m3,ipat) = ground_rvap   (i,m3-1,ipat)
             ground_temp   (i,m3,ipat) = ground_temp   (i,m3-1,ipat)
@@ -1083,7 +1083,7 @@ subroutine vegndvi(ifm,patch_area,leaf_class,veg_fracarea,veg_lai,veg_tai,veg_ro
    real                            , parameter   :: ccc=-2.9657
    real                            , parameter   :: bz=.91
    real                            , parameter   :: hz=.0075
-   real                            , parameter   :: extinc_veg=.5
+   real                            , parameter   :: extinc_veg=0.75
    !----- Locally saved variables. --------------------------------------------------------!
    logical                         , save        :: nvcall = .true.
    real, dimension(nvtyp+nvtyp_teb), save        :: dfpardsr
@@ -1449,5 +1449,228 @@ subroutine sfcrad(mzg,mzs,ip,soil_energy,soil_water,soil_text,sfcwater_energy   
 
    return
 end subroutine sfcrad
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!    This function determines the wind at a given height, given that the stars are al-     !
+! ready known, as well as the Richardson number and the zetas.                             !
+!------------------------------------------------------------------------------------------!
+real(kind=4) function leaf_reduced_wind(ustar,zeta,rib,zref,d0,height,rough)
+   use rconstants     , only : vonk     ! ! intent(in)
+   use leaf_coms      , only : bl79     & ! intent(in)
+                             , csm      & ! intent(in)
+                             , csh      & ! intent(in)
+                             , dl79     & ! intent(in)
+                             , ugbmin   & ! intent(in)
+                             , psim     ! ! function
+   use mem_leaf       , only : istar    ! ! intent(in)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   real(kind=4), intent(in) :: ustar     ! Friction velocity                      [    m/s]
+   real(kind=4), intent(in) :: zeta      ! Normalised height                      [    ---]
+   real(kind=4), intent(in) :: rib       ! Bulk Richardson number                 [    ---]
+   real(kind=4), intent(in) :: zref      ! Reference height                       [      m]
+   real(kind=4), intent(in) :: d0        ! Displacement height                    [      m]
+   real(kind=4), intent(in) :: height    ! Height to determine the red. wind      [      m]
+   real(kind=4), intent(in) :: rough     ! Roughness scale                        [      m]
+   !----- Local variables. ----------------------------------------------------------------!
+   logical                  :: stable    ! Canopy air space is stable             [    T|F]
+   real(kind=4)             :: zetah     ! Zeta for h=height                      [    ---]
+   real(kind=4)             :: zeta0     ! Zeta for h=rough                       [    ---]
+   real(kind=4)             :: hoz0      ! ((h-d0)/z0)                            [    ---]
+   real(kind=4)             :: lnhoz0    ! ln ((h-d0)/z0)                         [    ---]
+   real(kind=4)             :: a2        ! Drag coeff. in neutral conditions
+   real(kind=4)             :: fm        ! Stability parameter for momentum
+   real(kind=4)             :: c2        ! Part of the c coefficient.
+   real(kind=4)             :: cm        ! c coefficient times |Rib|^1/2
+   real(kind=4)             :: ee        ! (z/z0)^1/3 -1. for eqn. 20 (L79)
+   !----- External functions. -------------------------------------------------------------!
+   real(kind=4), external   :: cbrt      ! Cubic root
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Define whether the layer is stable or not. --------------------------------------!
+   stable    = rib >= 0.
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Find the log for the log-height interpolation of wind. --------------------------!
+   hoz0      = height/rough
+   lnhoz0    = log(hoz0)
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     The wind at a given height is found by using the same definition of wind speed at !
+   ! a given height.                                                                       !
+   !---------------------------------------------------------------------------------------!
+   select case (istar)
+   case (1) !---- Louis (1979) method. ----------------------------------------------------!
+
+      !----- Compute the a-square factor and the coefficient to find theta*. --------------!
+      a2   = vonk * vonk / (lnhoz0 * lnhoz0)
+
+      if (stable) then
+         !----- Stable case ---------------------------------------------------------------!
+         fm = 1.0 / (1.0 + (2.0 * bl79 * rib / sqrt(1.0 + dl79 * rib)))
+
+      else
+         !---------------------------------------------------------------------------------!
+         !     Unstable case.  The only difference from the original method is that we no  !
+         ! longer assume z >> z0, so the "c" coefficient uses the full z/z0 term.          !
+         !---------------------------------------------------------------------------------!
+         ee = cbrt(hoz0) - 1.
+         c2 = bl79 * a2 * ee * sqrt(ee * abs(rib))
+         cm = csm * c2
+         fm = (1.0 - 2.0 * bl79 * rib / (1.0 + 2.0 * cm))
+      end if
+      
+      !----- Find the wind. ---------------------------------------------------------------!
+      leaf_reduced_wind = (ustar/vonk) * (lnhoz0/sqrt(fm))
+
+   case default  !----- Other methods. ----------------------------------------------------!
+
+      !----- Determine zeta for the sought height and for roughness height. ---------------!
+      zetah = zeta * height / zref
+      zeta0 = zeta * rough  / zref
+      !------------------------------------------------------------------------------------!
+
+      leaf_reduced_wind = (ustar/vonk) * (lnhoz0 - psim(zetah,stable) + psim(zeta0,stable))
+
+   end select
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Impose the wind to be more than the minimum. ------------------------------------!
+   leaf_reduced_wind = max(leaf_reduced_wind, ugbmin)
+   !---------------------------------------------------------------------------------------!
+
+
+   return
+end function leaf_reduced_wind
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This sub-routine computes the aerodynamic conductance between leaf and canopy air    !
+! space for both heat and water vapour, based on:                                          !
+!                                                                                          !
+! L95 - Leuning, R., F. M. Kelliher, D. G. G. de Pury, E. D. Schulze, 1995: Leaf           !
+!       nitrogen, photosynthesis, conductance and transpiration: scaling from leaves to    !
+!       canopies.  Plant, Cell and Environ., 18, 1183-1200.                                !
+! M08 - Monteith, J. L., M. H. Unsworth, 2008. Principles of Environmental Physics,        !
+!       3rd. edition, Academic Press, Amsterdam, 418pp.  (Mostly Chapter 10).              !
+!                                                                                          !
+! Notice that the units are somewhat different from L95.                                   !
+! - gbh is in J/(K m2 s), and                                                              !
+! - gbw is in kg_H2O/m2/s.                                                                 !
+!------------------------------------------------------------------------------------------!
+subroutine leaf_aerodynamic_conductances(iveg,veg_wind,veg_temp,can_temp,can_shv,can_rhos)
+   use leaf_coms , only : leaf_width & ! intent(in)
+                        , aflat_turb & ! intent(in)
+                        , aflat_lami & ! intent(in)
+                        , nflat_turb & ! intent(in)
+                        , nflat_lami & ! intent(in)
+                        , bflat_turb & ! intent(in)
+                        , bflat_lami & ! intent(in)
+                        , mflat_turb & ! intent(in)
+                        , mflat_lami & ! intent(in)
+                        , gbh_2_gbw  & ! intent(in)
+                        , gbh        & ! intent(in)
+                        , gbw        ! ! intent(in)
+   use rconstants, only : gr_coeff   & ! intent(in)
+                        , th_diffi   & ! intent(in)
+                        , th_diff    & ! intent(in)
+                        , cp         ! ! intent(in)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                      :: iveg            ! Vegetation class           [      ---]
+   real(kind=4)   , intent(in)  :: veg_wind        ! Wind at cohort height      [      m/s]
+   real(kind=4)   , intent(in)  :: veg_temp        ! Leaf temperature           [        K]
+   real(kind=4)   , intent(in)  :: can_temp        ! Canopy air temperature     [        K]
+   real(kind=4)   , intent(in)  :: can_shv         ! Canopy air spec. hum.      [    kg/kg]
+   real(kind=4)   , intent(in)  :: can_rhos        ! Canopy air density         [    kg/m³]
+   !----- Local variables. ----------------------------------------------------------------!
+   real(kind=4)                 :: lwidth          ! Leaf width                 [        m]
+   real(kind=4)                 :: grashof         ! Grashof number             [      ---]
+   real(kind=4)                 :: reynolds        ! Reynolds number            [      ---]
+   real(kind=4)                 :: nusselt_lami    ! Nusselt number (laminar)   [      ---]
+   real(kind=4)                 :: nusselt_turb    ! Nusselt number (turb.)     [      ---]
+   real(kind=4)                 :: nusselt         ! Nusselt number             [      ---]
+   real(kind=4)                 :: forced_gbh_mos  ! Forced convection cond.    [      m/s]
+   real(kind=4)                 :: free_gbh_mos    ! Free convection cond.      [      m/s]
+   real(kind=4)                 :: gbh_mos         ! Total convection cond.     [      m/s]
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Save the leaf width of this PFT. ------------------------------------------------!
+   lwidth = leaf_width(iveg)
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Find the conductance, in m/s, associated with forced convection.                  !
+   !---------------------------------------------------------------------------------------!
+   !----- 1. Compute the Reynolds number. -------------------------------------------------!
+   reynolds        = veg_wind * lwidth * th_diffi
+   !----- 2. Compute the Nusselt number for both the laminar and turbulent case. ----------!
+   nusselt_lami    = aflat_lami * reynolds ** nflat_lami
+   nusselt_turb    = aflat_turb * reynolds ** nflat_turb
+   !----- 4. The right Nusselt number is the largest. -------------------------------------!
+   nusselt         = max(nusselt_lami,nusselt_turb)
+   !----- 5. The conductance is given by MU08 - equation 10.4 -----------------------------!
+   forced_gbh_mos  = th_diff * nusselt / lwidth
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Find the conductance, in m/s,  associated with free convection.                   !
+   !---------------------------------------------------------------------------------------!
+   !----- 1. Find the Grashof number. -----------------------------------------------------!
+   grashof         = gr_coeff  * abs(veg_temp - can_temp) * lwidth * lwidth * lwidth
+   !----- 2. Compute the Nusselt number for both the laminar and turbulent case. ----------!
+   nusselt_lami    = bflat_lami * grashof ** mflat_lami
+   nusselt_turb    = bflat_turb * grashof ** mflat_turb
+   !----- 4. The right Nusselt number is the largest. -------------------------------------!
+   nusselt         = max(nusselt_lami,nusselt_turb)
+   !----- 5. The conductance is given by MU08 - equation 10.4 -----------------------------!
+   free_gbh_mos    = th_diff * nusselt / lwidth
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     The heat conductance for the thermodynamic budget is the sum of conductances,     !
+   ! because we assume both forms of convection happen parallelly.  The conversion from    !
+   ! heat to water conductance (in m/s) can be found in L95, page 1198, after equation E5. !
+   ! For the ED purposes, the output variables are converted to the units of entropy and   !
+   ! water fluxes [J/K/m²/s and kg/m²/s, respectively].                                    !
+   !---------------------------------------------------------------------------------------!
+   gbh_mos = free_gbh_mos + forced_gbh_mos
+   gbh     =             gbh_mos * can_rhos * cp
+   gbw     = gbh_2_gbw * gbh_mos * can_rhos
+   !---------------------------------------------------------------------------------------!
+
+   return
+end subroutine leaf_aerodynamic_conductances
 !==========================================================================================!
 !==========================================================================================!

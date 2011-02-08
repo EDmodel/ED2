@@ -268,8 +268,8 @@ elseif (vnam == 'soil_rough'     ) then
         vnam2 = '[soil rough (m)]         '
 elseif (vnam == 'sfcwater_nlev'  ) then
         vnam2 = '[sfcwater_nlev]          '
-elseif (vnam == 'stom_resist'    ) then
-        vnam2 = '[stom_resist (s/m)]      '
+elseif (vnam == 'stom_condct'    ) then
+        vnam2 = '[stom_condct (kg/m2/s)]  '
 elseif (vnam == 'ground_rsat'    ) then
         vnam2 = '[ground_rsat (g/kg)]     '
 elseif (vnam == 'ground_rvap'    ) then
@@ -447,9 +447,9 @@ do k = k1,k2
                call plin(nc,j,ipat,3,1.               &
                   ,leaf%sfcwater_nlev(i1:i2,j,ipat)      &
                   ,leaf%patch_area(i1:i2,j,ipat))
-            elseif (vnam == 'stom_resist'    ) then
+            elseif (vnam == 'stom_condct'    ) then
                call plin(nc,j,ipat,3,1.               &
-                  ,leaf%stom_resist(i1:i2,j,ipat)        &
+                  ,leaf%stom_condct(i1:i2,j,ipat)        &
                   ,leaf%patch_area(i1:i2,j,ipat))
             elseif (vnam == 'ground_rsat'    ) then
                call plin(nc,j,ipat,3,1.e3             &

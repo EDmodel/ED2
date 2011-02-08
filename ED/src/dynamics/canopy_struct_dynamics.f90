@@ -2387,7 +2387,7 @@ module canopy_struct_dynamics
 
 
 
-      !----- Impose the minimum wind to be more than the minimum. -------------------------!
+      !----- Impose the wind to be more than the minimum. ---------------------------------!
       reduced_wind = max(reduced_wind, ugbmin)
       !------------------------------------------------------------------------------------!
 
@@ -2498,7 +2498,7 @@ module canopy_struct_dynamics
 
 
 
-      !----- Impose the minimum wind to be more than 0.1 m/s. -----------------------------!
+      !----- Impose the wind to be more than the minimum. ---------------------------------!
       reduced_wind8 = max(reduced_wind8,ugbmin8)
       !------------------------------------------------------------------------------------!
 

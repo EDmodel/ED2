@@ -144,35 +144,42 @@ subroutine odeint(h1,csite,ipa,nsteps)
 
                !----- Compute runoff for output -------------------------------------------!
                if (fast_diagnostics) then
+                  ! There is no need to divide wfreeb and qwfree  by time step, which will
+                  ! be done in subroutine normalize_averaged_vars.
                   csite%runoff(ipa) = csite%runoff(ipa)                                    &
-                                    + sngloff(wfreeb * dtrk4i,tiny_offset)
+                                    + sngloff(wfreeb,tiny_offset)
                   csite%avg_runoff(ipa) = csite%avg_runoff(ipa)                            &
-                                        + sngloff(wfreeb * dtrk4i,tiny_offset)
+                                        + sngloff(wfreeb,tiny_offset)
                   csite%avg_runoff_heat(ipa) = csite%avg_runoff_heat(ipa)                  &
-                                             + sngloff(qwfree * dtrk4i,tiny_offset)
+                                             + sngloff(qwfree,tiny_offset)
                end if
                if (checkbudget) then
-                  integration_buff%y%wbudget_loss2runoff = wfreeb
-                  integration_buff%y%ebudget_loss2runoff = qwfree
+                  !To make sure that the previous values of wbudget_loss2runoff and ebudget_loss2runoff
+                  ! are accumulated to the next time step.
+                  integration_buff%y%wbudget_loss2runoff = wfreeb                      &
+                                 + integration_buff%y%wbudget_loss2runoff
+                  integration_buff%y%ebudget_loss2runoff = qwfree                      &
+                                 + integration_buff%y%ebudget_loss2runoff
                   integration_buff%y%wbudget_storage =                                     &
                      integration_buff%y%wbudget_storage - wfreeb
                   integration_buff%y%ebudget_storage =                                     &
                      integration_buff%y%ebudget_storage - qwfree
+
                end if
 
             else
-               csite%runoff(ipa)                          = 0.0
-               csite%avg_runoff(ipa)                      = 0.0
-               csite%avg_runoff_heat(ipa)                 = 0.0
-               integration_buff%initp%wbudget_loss2runoff = 0.d0
-               integration_buff%initp%ebudget_loss2runoff = 0.d0
+               csite%runoff(ipa)                          = csite%runoff(ipa) + 0.0
+               csite%avg_runoff(ipa)                      = csite%avg_runoff(ipa) + 0.0
+               csite%avg_runoff_heat(ipa)                 = csite%avg_runoff_heat(ipa) + 0.0
+               integration_buff%initp%wbudget_loss2runoff = integration_buff%initp%wbudget_loss2runoff + 0.d0
+               integration_buff%initp%ebudget_loss2runoff = integration_buff%initp%ebudget_loss2runoff + 0.d0
             end if
          else
-            csite%runoff(ipa)                          = 0.0
-            csite%avg_runoff(ipa)                      = 0.0
-            csite%avg_runoff_heat(ipa)                 = 0.0
-            integration_buff%initp%wbudget_loss2runoff = 0.d0
-            integration_buff%initp%ebudget_loss2runoff = 0.d0
+            csite%runoff(ipa)                          = csite%runoff(ipa) + 0.0
+            csite%avg_runoff(ipa)                      = csite%avg_runoff(ipa) + 0.0
+            csite%avg_runoff_heat(ipa)                 = csite%avg_runoff_heat(ipa) + 0.0
+            integration_buff%initp%wbudget_loss2runoff = integration_buff%initp%wbudget_loss2runoff + 0.d0
+            integration_buff%initp%ebudget_loss2runoff = integration_buff%initp%ebudget_loss2runoff + 0.d0
          end if
 
          !------ Copy the temporary patch to the next intermediate step -------------------!

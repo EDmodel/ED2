@@ -80,10 +80,10 @@ edcp_init.o: node_mod.mod rpara.mod soil_coms.mod
 edcp_load_namelist.o: canopy_air_coms.mod canopy_radiation_coms.mod
 edcp_load_namelist.o: decomp_coms.mod disturb_coms.mod ed_max_dims.mod
 edcp_load_namelist.o: ed_misc_coms.mod grid_coms.mod grid_dims.mod io_params.mod
-edcp_load_namelist.o: mem_edcp.mod mem_grid.mod mem_leaf.mod mem_polygons.mod
-edcp_load_namelist.o: mem_radiate.mod met_driver_coms.mod optimiz_coms.mod
-edcp_load_namelist.o: pft_coms.mod phenology_coms.mod physiology_coms.mod
-edcp_load_namelist.o: rk4_coms.mod soil_coms.mod
+edcp_load_namelist.o: leaf_coms.mod mem_edcp.mod mem_grid.mod mem_leaf.mod
+edcp_load_namelist.o: mem_polygons.mod mem_radiate.mod met_driver_coms.mod
+edcp_load_namelist.o: optimiz_coms.mod pft_coms.mod phenology_coms.mod
+edcp_load_namelist.o: physiology_coms.mod rk4_coms.mod soil_coms.mod
 edcp_met.o: ed_max_dims.mod ed_misc_coms.mod ed_node_coms.mod ed_state_vars.mod
 edcp_met.o: leaf_coms.mod mem_basic.mod mem_cuparm.mod mem_edcp.mod mem_grid.mod
 edcp_met.o: mem_leaf.mod mem_micro.mod mem_radiate.mod mem_turb.mod
@@ -133,9 +133,9 @@ adap_init.o: mem_leaf.mod
 gridset.o: grid_dims.mod mem_grid.mod rconstants.mod
 rams_grid.o: mem_grid.mod node_mod.mod rconstants.mod
 rdint.o: catt_start.mod domain_decomp.mod emission_source_map.mod grell_coms.mod
-rdint.o: grid_dims.mod io_params.mod isan_coms.mod mem_basic.mod mem_cuparm.mod
-rdint.o: mem_emiss.mod mem_gaspart.mod mem_grid.mod mem_leaf.mod mem_mass.mod
-rdint.o: mem_micro.mod mem_oda.mod mem_radiate.mod mem_scalar.mod
+rdint.o: grid_dims.mod io_params.mod isan_coms.mod leaf_coms.mod mem_basic.mod
+rdint.o: mem_cuparm.mod mem_emiss.mod mem_gaspart.mod mem_grid.mod mem_leaf.mod
+rdint.o: mem_mass.mod mem_micro.mod mem_oda.mod mem_radiate.mod mem_scalar.mod
 rdint.o: mem_scratch.mod mem_soil_moisture.mod mem_teb.mod mem_teb_common.mod
 rdint.o: mem_turb.mod mem_varinit.mod micphys.mod node_mod.mod plume_utils.mod
 rdint.o: ref_sounding.mod teb_spm_start.mod teb_vars_const.mod therm_lib.mod
@@ -150,9 +150,9 @@ inithis.o: mem_basic.mod mem_cuparm.mod mem_grid.mod mem_leaf.mod
 inithis.o: mem_scratch.mod rconstants.mod ref_sounding.mod therm_lib.mod
 inithis.o: var_tables.mod
 io_params.o: grid_dims.mod
-opspec.o: catt_start.mod grell_coms.mod io_params.mod mem_basic.mod
-opspec.o: mem_cuparm.mod mem_emiss.mod mem_grid.mod mem_leaf.mod mem_mass.mod
-opspec.o: mem_radiate.mod mem_turb.mod mem_varinit.mod micphys.mod
+opspec.o: catt_start.mod grell_coms.mod io_params.mod leaf_coms.mod
+opspec.o: mem_basic.mod mem_cuparm.mod mem_emiss.mod mem_grid.mod mem_leaf.mod
+opspec.o: mem_mass.mod mem_radiate.mod mem_turb.mod mem_varinit.mod micphys.mod
 opspec.o: teb_spm_start.mod therm_lib.mod
 rams_read_header.o: an_header.mod
 ranlavg.o: io_params.mod mem_basic.mod mem_grid.mod mem_scratch.mod mem_turb.mod
@@ -270,10 +270,10 @@ mpass_full.o: grid_dims.mod io_params.mod mem_aerad.mod mem_cuparm.mod
 mpass_full.o: mem_grid.mod mem_scratch.mod mem_varinit.mod node_mod.mod
 mpass_full.o: rpara.mod var_tables.mod
 mpass_init.o: catt_start.mod cyclic_mod.mod emission_source_map.mod
-mpass_init.o: grell_coms.mod grid_dims.mod mem_all.mod mem_cuparm.mod
-mpass_init.o: mem_emiss.mod mem_grid.mod mem_mass.mod micphys.mod node_mod.mod
-mpass_init.o: plume_utils.mod ref_sounding.mod rpara.mod teb_spm_start.mod
-mpass_init.o: teb_vars_const.mod therm_lib.mod turb_coms.mod
+mpass_init.o: grell_coms.mod grid_dims.mod leaf_coms.mod mem_all.mod
+mpass_init.o: mem_cuparm.mod mem_emiss.mod mem_grid.mod mem_mass.mod micphys.mod
+mpass_init.o: node_mod.mod plume_utils.mod ref_sounding.mod rpara.mod
+mpass_init.o: teb_spm_start.mod teb_vars_const.mod therm_lib.mod turb_coms.mod
 mpass_lbc.o: grid_dims.mod mem_aerad.mod mem_cuparm.mod mem_grid.mod
 mpass_lbc.o: mem_scratch.mod node_mod.mod var_tables.mod
 mpass_nest.o: grid_dims.mod mem_basic.mod mem_grid.mod mem_nestb.mod
@@ -445,9 +445,9 @@ radiate_driver.o: grid_coms.mod soil_coms.mod
 reproduction.o: allometry.mod consts_coms.mod decomp_coms.mod ed_max_dims.mod
 reproduction.o: ed_state_vars.mod ed_therm_lib.mod fuse_fiss_utils.mod
 reproduction.o: mem_polygons.mod pft_coms.mod phenology_coms.mod
-rk4_derivs.o: allometry.mod canopy_struct_dynamics.mod consts_coms.mod
-rk4_derivs.o: ed_max_dims.mod ed_misc_coms.mod ed_state_vars.mod grid_coms.mod
-rk4_derivs.o: pft_coms.mod rk4_coms.mod soil_coms.mod therm_lib8.mod
+rk4_derivs.o: canopy_struct_dynamics.mod consts_coms.mod ed_max_dims.mod
+rk4_derivs.o: ed_misc_coms.mod ed_state_vars.mod grid_coms.mod pft_coms.mod
+rk4_derivs.o: rk4_coms.mod soil_coms.mod therm_lib8.mod
 rk4_driver.o: canopy_air_coms.mod canopy_struct_dynamics.mod consts_coms.mod
 rk4_driver.o: ed_misc_coms.mod ed_state_vars.mod grid_coms.mod
 rk4_driver.o: met_driver_coms.mod rk4_coms.mod soil_coms.mod therm_lib.mod
@@ -455,7 +455,7 @@ rk4_integ_utils.o: canopy_air_coms.mod consts_coms.mod ed_max_dims.mod
 rk4_integ_utils.o: ed_misc_coms.mod ed_state_vars.mod grid_coms.mod
 rk4_integ_utils.o: hydrology_coms.mod rk4_coms.mod rk4_stepper.mod soil_coms.mod
 rk4_integ_utils.o: therm_lib8.mod
-rk4_misc.o: allometry.mod canopy_radiation_coms.mod canopy_struct_dynamics.mod
+rk4_misc.o: allometry.mod canopy_air_coms.mod canopy_struct_dynamics.mod
 rk4_misc.o: consts_coms.mod ed_max_dims.mod ed_misc_coms.mod ed_state_vars.mod
 rk4_misc.o: ed_therm_lib.mod grid_coms.mod rk4_coms.mod soil_coms.mod
 rk4_misc.o: therm_lib8.mod
@@ -467,7 +467,7 @@ structural_growth.o: allometry.mod consts_coms.mod decomp_coms.mod
 structural_growth.o: ed_max_dims.mod ed_misc_coms.mod ed_state_vars.mod
 structural_growth.o: ed_therm_lib.mod pft_coms.mod
 twostream_rad.o: canopy_radiation_coms.mod consts_coms.mod ed_max_dims.mod
-twostream_rad.o: pft_coms.mod
+twostream_rad.o: pft_coms.mod rk4_coms.mod
 vegetation_dynamics.o: consts_coms.mod disturb_coms.mod disturbance_utils.mod
 vegetation_dynamics.o: ed_misc_coms.mod ed_state_vars.mod fuse_fiss_utils.mod
 vegetation_dynamics.o: grid_coms.mod growth_balive.mod mem_polygons.mod
@@ -488,8 +488,8 @@ ed_params.o: hydrology_coms.mod met_driver_coms.mod pft_coms.mod
 ed_params.o: phenology_coms.mod physiology_coms.mod rk4_coms.mod soil_coms.mod
 ed_type_init.o: allometry.mod canopy_air_coms.mod consts_coms.mod
 ed_type_init.o: ed_max_dims.mod ed_misc_coms.mod ed_state_vars.mod
-ed_type_init.o: ed_therm_lib.mod grid_coms.mod pft_coms.mod soil_coms.mod
-ed_type_init.o: therm_lib.mod
+ed_type_init.o: ed_therm_lib.mod grid_coms.mod pft_coms.mod phenology_coms.mod
+ed_type_init.o: soil_coms.mod therm_lib.mod
 init_hydro_sites.o: ed_max_dims.mod ed_misc_coms.mod ed_state_vars.mod
 init_hydro_sites.o: grid_coms.mod mem_polygons.mod soil_coms.mod
 landuse_init.o: consts_coms.mod disturb_coms.mod ed_max_dims.mod
@@ -551,8 +551,10 @@ ed_state_vars.o: c34constants.mod disturb_coms.mod ed_max_dims.mod
 ed_state_vars.o: ed_misc_coms.mod ed_node_coms.mod ed_var_tables.mod
 ed_state_vars.o: fusion_fission_coms.mod grid_coms.mod met_driver_coms.mod
 ed_state_vars.o: phenology_coms.mod soil_coms.mod
+ed_var_tables.o: ed_max_dims.mod
 ed_work_vars.o: ed_max_dims.mod
 ename_coms.o: ed_max_dims.mod
+fusion_fission_coms.o: ed_max_dims.mod
 grid_coms.o: ed_max_dims.mod
 hdf5_coms.o: 
 mem_polygons.o: ed_max_dims.mod
@@ -597,7 +599,7 @@ invmondays.o: ed_misc_coms.mod
 lapse.o: consts_coms.mod ed_state_vars.mod met_driver_coms.mod
 numutils.o: consts_coms.mod therm_lib.mod
 stable_cohorts.o: allometry.mod canopy_radiation_coms.mod ed_state_vars.mod
-stable_cohorts.o: rk4_coms.mod
+stable_cohorts.o: pft_coms.mod
 therm_lib.o: consts_coms.mod
 therm_lib8.o: consts_coms.mod therm_lib.mod
 update_derived_props.o: allometry.mod canopy_air_coms.mod consts_coms.mod
