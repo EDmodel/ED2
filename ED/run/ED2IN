@@ -34,13 +34,13 @@
 ! Main time step parameters                                                                !
 !------------------------------------------------------------------------------------------!
 
-   NL%DTLSM  = 600.      ! Basic time step [s].  In the Euler scheme, this
+   NL%DTLSM  = 240.      ! Basic time step [s].  In the Euler scheme, this
                          ! is the length of the Euler time step.  Recommended
                          ! values are between 60-180.  In the Runge Kutta
                          ! scheme, this is the time between photosynthesis
                          ! updates.  Recommended value is 900.
 
-   NL%RADFRQ  = 600.     ! Frequency at which to update radiation. [s]
+   NL%RADFRQ  = 240.     ! Frequency at which to update radiation. [s]
 !------------------------------------------------------------------------------------------!
 
 
@@ -79,11 +79,11 @@
    NL%DELTAX   = 60000.           ! X and Y grid spacing scale
    NL%DELTAY   = 60000.           ! in metres (dimension 1)
                                   !
-   NL%POLELAT  = -2.85            ! Latitude of pole point   (dimension 1)
-   NL%POLELON  = -54.94           ! Longitude of pole point  (dimension 1)
+   NL%POLELAT  = -2.8567         ! Latitude of pole point   (dimension 1)
+   NL%POLELON  = -54.959         ! Longitude of pole point  (dimension 1)
                                   !
-   NL%CENTLAT  = -2.85            ! Latitude of central point  (n_ed_regions)
-   NL%CENTLON  = -54.94           ! Longitude of central point (n_ed_regions)
+   NL%CENTLAT  = -2.8567         ! Latitude of central point  (n_ed_regions)
+   NL%CENTLON  = -54.959         ! Longitude of central point (n_ed_regions)
    !---------------------------------------------------------------------------------------!
 
 
@@ -102,8 +102,8 @@
    NL%N_POI    =    1   ! Number of POIs.  This can be zero provided that N_ED_REGION
                         ! is not.
                 
-   NL%POI_LAT  = -2.85  ! list of the latitudes of the POIs (degrees north)
-   NL%POI_LON  = -54.94 ! list of the longitudes of the POIs (degrees east)
+   NL%POI_LAT  = -2.8567  ! list of the latitudes of the POIs (degrees north)
+   NL%POI_LON  = -54.959  ! list of the longitudes of the POIs (degrees east)
    !---------------------------------------------------------------------------------------!
 
 
@@ -140,7 +140,7 @@
    NL%ITOUTPUT  =  0            ! Instantaneous fluxes (site average)
                                 ! single annual file, no patch/cohort, for optimization or 
                                 !     flux tower comparision 
-   NL%ISOUTPUT  =  0            ! History files
+   NL%ISOUTPUT  =  3            ! History files
                                 ! 0 - no file;
                                 ! 1 - save ascii (deprecated);
                                 ! 2 - save RAMS-vfm file (deprecated);
@@ -177,7 +177,7 @@
 
    NL%ICLOBBER  = 1             ! 0 = stop if files exist, 1 = overwite files
    NL%FRQFAST   = 21600.        ! Time interval between analysis/history files
-   NL%FRQSTATE  = 12.           ! Time interval between history files
+   NL%FRQSTATE  = 1.            ! Time interval between history files
 !------------------------------------------------------------------------------------------!
 
 
@@ -258,15 +258,15 @@
 !  Soil/Surface water variables                                                            !
 !------------------------------------------------------------------------------------------!
 
-   NL%NZG = 14          ! Number of soil layers
+   NL%NZG = 16          ! Number of soil layers
    NL%NZS = 4           ! Maximum number of snowcover layers
 
-   NL%ISOILFLG = 1,1    ! Options are: 1. Read from LAT/LON
+   NL%ISOILFLG = 2      ! Options are: 1. Read from LAT/LON
                         !              2. Constant default soil
                         ! This variable must be defined for all grids. The order is
                         ! all ED regions first followed by ED POIs. 
    
-   NL%NSLCON   = 8      ! Default soil type if ISOILFLG = 2 (choices below:)
+   NL%NSLCON   = 11     ! Default soil type if ISOILFLG = 2 (choices below:)
    !-----------------------------------------------------------------------!
    ! ED Soil classes:                                                      !
    !-----------------------------------------------------------------------!
@@ -281,18 +281,18 @@
    ! and slxclay and slxsand are defined between 0 and 1, with the sum of these variables  !
    ! not exceeding 1.  Otherwise, the default ED parameters will be used.                  !
    !---------------------------------------------------------------------------------------!
-   NL%SLXCLAY = -1.0
-   NL%SLXSAND = -1.0
+   NL%SLXCLAY = 0.90
+   NL%SLXSAND = 0.02
 
    !----- Depth (m) of bottom of soil model grid levels -----------------------------------!
-   NL%SLZ     = -4.50, -3.50, -2.75, -2.00, -1.50, -1.10, -0.80, 
-                -0.60, -0.45, -0.30, -0.20, -0.12, -0.06, -0.02
+   NL%SLZ     =   -8.00, -6.50, -5.50, -4.50, -3.50, -2.80, -2.20, -1.70,
+                  -1.20, -0.80, -0.50, -0.30, -0.20, -0.12, -0.06, -0.02
    !----- Initial soil moisture (fraction of saturation) ----------------------------------!
-   NL%SLMSTR  =  0.60,  0.60,  0.60,  0.60,  0.60,  0.60,  0.60,
-                 0.60,  0.60,  0.60,  0.60,  0.60,  0.60,  0.60
+   NL%SLMSTR  =    0.60,  0.60,  0.60,  0.60,  0.60,  0.60,  0.60,  0.60,
+                   0.60,  0.60,  0.60,  0.60,  0.60,  0.60,  0.60,  0.60
    !----- Initial soil temperature offset (with respect to the atmospheric temperature). --!
-   NL%STGOFF  =   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0, 
-                  0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0
+   NL%STGOFF  =    0.00,  0.00,  0.00,  0.00,  0.00,  0.00,  0.00,  0.00, 
+                   0.00,  0.00,  0.00,  0.00,  0.00,  0.00,  0.00,  0.00
 !------------------------------------------------------------------------------------------!
 
 
@@ -332,7 +332,7 @@
    !---------------------------------------------------------------------------------------!
 
    !----- File containing information for meteorological drivers --------------------------!
-   NL%ED_MET_DRIVER_DB = '/n/moorcroft_data/nlevine/southam_shef_driver/SHEF_NCEP_DRIVER_DS340'
+   NL%ED_MET_DRIVER_DB = '/n/moorcroft_scratch/nlevine/data/ed2_data/site_met_driver/Santarem_KM67/Santarem_KM67_HEADER'
 
    !---------------------------------------------------------------------------------------!
    ! SOILSTATE_DB - Soil state (temperature and moisture) database, used only when         !
@@ -348,7 +348,7 @@
    NL%ISOILDEPTHFLG  = 0  ! 0 -- use NZG, SLZ for each grid cell
                           ! 1 -- read file to get soil depth for each grid cell
 
-   NL%ISOILBC        = 1  ! Soil boundary condition at lowest soil level
+   NL%ISOILBC        = 3  ! Soil boundary condition at lowest soil level
                           ! 0 - Bedrock;
                           ! 1 - Free drainage with soil water content in of the boundary
                           !     layer equal to that of the bottom layer.
@@ -369,7 +369,7 @@
                               !  1  --  Fourth-order Runge Kutta
                               !  2  --  Heun's method (second-order Runge-Kutta)
 
-   NL%RK4_TOLERANCE  = 0.01   ! This is the relative tolerance for Runge-Kutta or Heun's
+   NL%RK4_TOLERANCE  = 0.001  ! This is the relative tolerance for Runge-Kutta or Heun's
                               !   integration.  Larger numbers will make runs go faster, 
                               !   at the expense of being less accurate.  Currently the 
                               !   valid range is between 1.e-7 and 1.e-1, but recommended
@@ -436,7 +436,7 @@
                               !  0 -- lapse rates off
                               !  1 -- phenomenological, global
 
-   NL%CROWN_MOD       = 0     ! Specifies how tree crowns are represent in the 
+   NL%CROWN_MOD       = 1     ! Specifies how tree crowns are represent in the 
                               ! canopy radiation model
                               !  0  - ED1 default (continuous horizontal)
                               !  1  - finite radius mixing model (Dietze et al 2008)
@@ -459,10 +459,10 @@
    !    These are factors that multiply some of the ED-2.1 default parameters.  Setting    !
    ! them to 1.0 will make them the default.  These are applied for all PFTs.              !
    !---------------------------------------------------------------------------------------!
-   NL%VMFACT          = 1.    ! Factor for changing Vm0 from the default
+   NL%VMFACT          = 2.    ! Factor for changing Vm0 from the default
    NL%MFACT           = 1.    ! Factor for changing stomatal slope (M)
-   NL%KFACT           = 1.    ! Factor for changing the water conductance (Kw)
-   NL%GAMFACT         = 1.    ! Factor for changing the dark respiration factor (gamma)
+   NL%KFACT           = 2.    ! Factor for changing the water conductance (Kw)
+   NL%GAMFACT         = 0.50  ! Factor for changing the dark respiration factor (gamma)
    NL%LWFACT          = 1.    ! Factor for changing the leaf width factor (w)
    NL%THIOFF          = 0.    ! Offset to be added to the Vm_high_temp
    !---------------------------------------------------------------------------------------!
@@ -515,7 +515,7 @@
                               !    threshold. 
                              
 
-   NL%IANTH_DISTURB   = 1     ! Flag specifying whether (1) or not (0) to include
+   NL%IANTH_DISTURB   = 0     ! Flag specifying whether (1) or not (0) to include
                               ! anthropogenic disturbances such as agriculture, 
                               ! abandonment, and harvesting.
 
@@ -566,7 +566,7 @@
                               !  2 - Oncley and Dudhia (1995) model, based on MM5.
                               !      It uses a empirical relation between bulk Richardson
                               !      number and z/L, then computes the flux functions
-                              !  3 - (recommended) Beljaars and Holtslag (1991) model.  
+                              !  3 - Beljaars and Holtslag (1991) model.  
                               !      Similar to 2, but it finds z/L using a root-finding 
                               !      method, and it has a different set of equations for 
                               !      stable layers that works better during night time.
@@ -575,7 +575,7 @@
                               !  5 - The parametrisation of Oncley and Dudhia, but using 
                               !      z/L estimation as in Beljaars and Holtslag
 
-   NL%IPERCOL         = 1     ! Percolation scheme:
+   NL%IPERCOL         = 0     ! Percolation scheme:
                               !  0 - Original method, from LEAF-3.  Shed liquid in excess 
                               !      of a 1:9 liquid-to-ice ratio through percolation.
                               !  1 - Alternative "free" water calculation.  
@@ -594,7 +594,7 @@
    ! 7 - southern pines               | 17 - "Araucaria" (non-optimised  !
    ! 8 - late conifers                |      Southern Pines).            !
    !---------------------------------------------------------------------!
-   NL%INCLUDE_THESE_PFT = 1,2,3,4 ! List of PFTs to be included
+   NL%INCLUDE_THESE_PFT = 2,3,4 ! List of PFTs to be included
    NL%AGRI_STOCK        = 1       ! Agriculture PFT (used only if ianth_disturb=1)
    NL%PLANTATION_STOCK  = 3       ! Plantation PFT  (used only if ianth_disturb=1)
 
@@ -648,7 +648,7 @@
    NL%BETAPOWER      = 1.                ! Power to be applied to the beta term that
                                          !     controls the ground evaporation.
 
-   NL%USTMIN         = 0.10              ! Minimum u* (m/s)
+   NL%USTMIN         = 0.01              ! Minimum u* (m/s)
    
    NL%GGFACT         = 1.0               ! Factor to multiply the ground to canopy 
                                          !     conductance
@@ -703,10 +703,10 @@
                              ! 2. Randomly pick the years, choosing a different 
                              !    sequence each time the model is run.
 
-   NL%METCYC1         = 1969 ! First year of met data
-   NL%METCYCF         = 2008 ! Last year of met data
+   NL%METCYC1         = 2002 ! First year of met data
+   NL%METCYCF         = 2004 ! Last year of met data
    
-   NL%INITIAL_CO2     = 290. ! Initial value for CO2 in case no CO2 is provided at the 
+   NL%INITIAL_CO2     = 278. ! Initial value for CO2 in case no CO2 is provided at the 
                              ! meteorological driver dataset
 
 

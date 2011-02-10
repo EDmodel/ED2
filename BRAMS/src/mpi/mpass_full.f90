@@ -78,6 +78,7 @@ subroutine master_sendinit()
                !----- This will create a unique ID for this package -----------------------!
                mpiid = mpiid + 1
 
+
                !---------------------------------------------------------------------------!
                !     We will always send scratch%scr2, which is a scratch variable enough  !
                ! large to receive any subdomain. Here all we do is to copy the right       !
