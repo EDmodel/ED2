@@ -1,8 +1,11 @@
 Module consts_coms
 
-! Making the constants to match when running a coupled run.
 
 #if defined(COUPLED)
+   !---------------------------------------------------------------------------------------!
+   !    This is done only when compiling the ED-BRAMS coupled code.  This will make sure   !
+   ! that all constants are defined in the same way in both models.                        !
+   !---------------------------------------------------------------------------------------!
    use rconstants, only:                                                                   &
        b_pi1        => pi1        , b_twopi      => twopi      , b_pio180     => pio180    &
      , b_pi4        => pi4        , b_pio4       => pio4       , b_srtwo      => srtwo     &
@@ -34,7 +37,12 @@ Module consts_coms
      , b_rdryi      => rdryi      , b_eta3ple    => eta3ple    , b_cimcp      => cimcp     &
      , b_clmcp      => clmcp      , b_p00k       => p00k       , b_p00ki      => p00ki     &
      , b_halfpi     => halfpi     , b_yr_sec     => yr_sec     , b_sqrttwopi  => sqrttwopi &
-     , b_sqrthalfpi => sqrthalfpi , b_fdns       => fdns       , b_fdnsi      => fdnsi
+     , b_sqrthalfpi => sqrthalfpi , b_fdns       => fdns       , b_fdnsi      => fdnsi     &
+     , b_cv         => cv         , b_cpocv      => cpocv      , b_rocv       => rocv      &
+     , b_hr_min     => hr_min     , b_th_diff    => th_diff    , b_th_diffi   => th_diffi  &
+     , b_kin_visc   => kin_visc   , b_kin_visci  => kin_visci  , b_th_expan   => th_expan  &
+     , b_gr_coeff   => gr_coeff   , b_mmh2oi     => mmh2oi     , b_lnexp_min  => lnexp_min &
+     , b_lnexp_max  => lnexp_max
 
    implicit none
 
@@ -84,7 +92,15 @@ Module consts_coms
    real, parameter :: p00ki      = b_p00ki      , halfpi     = b_halfpi
    real, parameter :: yr_sec     = b_yr_sec     , sqrthalfpi = b_sqrthalfpi
    real, parameter :: sqrttwopi  = b_sqrttwopi  , fdns       = b_fdns
-   real, parameter :: fdnsi      = b_fdnsi
+   real, parameter :: fdnsi      = b_fdnsi      , cv         = b_cv
+   real, parameter :: rocv       = b_rocv       , cpocv      = b_cpocv
+   real, parameter :: hr_min     = b_hr_min     , th_diff    = b_th_diff
+   real, parameter :: th_diffi   = b_th_diffi   , kin_visc   = b_kin_visc
+   real, parameter :: th_expan   = b_th_expan   , gr_coeff   = b_gr_coeff
+   real, parameter :: mmh2oi     = b_mmh2o      , lnexp_min  = b_lnexp_min
+   real, parameter :: lnexp_max  = b_lnexp_max  , kin_visci  = b_kin_visci
+   !---------------------------------------------------------------------------------------!
+
 #else
    implicit none
 
@@ -142,6 +158,7 @@ Module consts_coms
    real, parameter :: mmdry1000   = 1000.*mmdry    ! Mean dry air molar mass    [   kg/mol]
    real, parameter :: mmcod1em6   = mmcod * 1.e-6  ! Convert ppm to kgCO2/kgair [     ----]
    real, parameter :: mmdryi      = 1./mmdry       ! 1./mmdry                   [   mol/kg]
+   real, parameter :: mmh2oi      = 1./mmh2o       ! 1./mmh2o                   [   mol/kg]
    real, parameter :: mmco2i      = 1./mmco2       ! 1./mmco2                   [   mol/kg]
    !---------------------------------------------------------------------------------------!
 
@@ -154,6 +171,7 @@ Module consts_coms
    real, parameter :: day_hr  = 24.              ! # of hours in a day          [   hr/day]
    real, parameter :: hr_sec  = 3600.            ! # of seconds in an hour      [     s/hr]
    real, parameter :: min_sec = 60.              ! # of seconds in a minute     [    s/min]
+   real, parameter :: hr_min  = 60.              ! # of minutes in an hour      [   min/hr]
    real, parameter :: yr_sec  = yr_day * day_sec ! # of seconds in a year       [     s/yr]
    !---------------------------------------------------------------------------------------!
 
@@ -175,13 +193,44 @@ Module consts_coms
 
 
    !---------------------------------------------------------------------------------------!
+   ! Reference for this block:                                                             !
+   ! MU08 - Monteith, J. L., M. H. Unsworth, 2008. Principles of Environmental Physics,    !
+   !        third edition, Academic Press, Amsterdam, 418pp.  (Chapters 3 and 10).         !
+   !                                                                                       !
+   !     Air diffusion properties. These properties are temperature-dependent in reality,  !
+   ! but for simplicity we assume them constants, using the value at 20°C.                 !
+   !                                                                                       !
+   ! Thermal diffusivity - Straight from Table 15.1 of MU08                                !
+   ! Kinematic viscosity - Computed from equation on page 32 of MU08;                      !
+   ! Thermal expansion coefficient - determined by inverting the coefficient at equation   !
+   !                                 10.11 (MU08).                                         !
+   ! These terms could be easily made function of temperature in the future if needed be.  !!
+   !---------------------------------------------------------------------------------------!
+   real, parameter :: th_diff   = 2.060e-5     ! Air thermal diffusivity        [     m²/s]
+   real, parameter :: th_diffi  = 1./th_diff   ! 1/ air thermal diffusivity     [     s/m²]
+   real, parameter :: kin_visc  = 1.516e-5     ! Kinematic viscosity            [     m²/s]
+   real, parameter :: kin_visci = 1./kin_visc  ! 1/Kinematic viscosity          [     s/m²]
+   real, parameter :: th_expan  = 3.43e-3      ! Air thermal expansion coeff.   [      1/K]
+   !---------------------------------------------------------------------------------------!
+   !    Grashof coefficient [1/(K m³)].  This is the coefficient a*g/(nu²) in MU08's       !
+   ! equation 10.8, in the equation that defines the Grashof number.                       !
+   !---------------------------------------------------------------------------------------!
+   real, parameter :: gr_coeff = th_expan * grav  * kin_visci * kin_visci
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
    ! Dry air properties                                                                    !
    !---------------------------------------------------------------------------------------!
    real, parameter :: rdry   = rmol/mmdry ! Gas constant for dry air (Ra)       [   J/kg/K]
    real, parameter :: rdryi  = mmdry/rmol ! 1./Gas constant for dry air (Ra)    [   kg K/J]
-   real, parameter :: cp     = 1004.      ! Specific heat at constant pressure  [   J/kg/K]
-   real, parameter :: cpog   = cp /grav   ! cp/g                                [      m/K]
+   real, parameter :: cp     = 3.5*rdry   ! Specific heat at constant pressure  [   J/kg/K]
+   real, parameter :: cv     = 2.5 * rdry ! Specific heat at constant volume    [   J/kg/K]
    real, parameter :: rocp   = rdry / cp  ! Ra/cp                               [     ----]
+   real, parameter :: rocv   = rdry / cv  ! Ra/cv                               [     ----]
+   real, parameter :: cpocv  = cp / cv       ! Cp/Cv                            [     ----]
+   real, parameter :: cpog   = cp /grav   ! cp/g                                [      m/K]
    real, parameter :: cpor   = cp / rdry  ! Cp/Ra                               [     ----]
    real, parameter :: cpi    = 1. / cp    ! 1/Cp                                [   kg K/J]
    real, parameter :: cpi4   = 4. * cpi   ! 4/Cp                                [   kg K/J]
@@ -297,12 +346,26 @@ Module consts_coms
    real, parameter :: htripolii = 1./htripoli ! 1./htripoli                     [     kg/J]
    !---------------------------------------------------------------------------------------!
 
+
+
+   !---------------------------------------------------------------------------------------!
+   !     These are the lower and upper bounds in which we compute exponentials.  This is   !
+   ! to avoid overflows and/or underflows when we compute exponentials.                    !
+   !---------------------------------------------------------------------------------------!
+   real, parameter :: lnexp_min = -38.
+   real, parameter :: lnexp_max =  38.
+   !---------------------------------------------------------------------------------------!
+
 #endif
 
    !---------------------------------------------------------------------------------------!
    ! Unit conversion, it must be defined locally even for coupled runs.                    !
    !---------------------------------------------------------------------------------------!
+   real, parameter :: mol_2_umol     = 1.e6                 ! mol         => µmol
+   real, parameter :: umol_2_mol     = 1.e-6                ! µmol        => mol
    real, parameter :: umol_2_kgC     = 1.20107e-8           ! µmol(CO2)   => kg(C)
+   real, parameter :: Watts_2_Ein    = 4.6e-6               ! W/m2        => mol/m²/s
+   real, parameter :: Ein_2_Watts    = 1./Watts_2_Ein       ! mol/m²/s    => W/m2
    real, parameter :: kgC_2_umol     = 1. / umol_2_kgC      ! kg(C)       => µmol(CO2)
    real, parameter :: kgom2_2_tonoha = 10.                  ! kg(C)/m²    => ton(C)/ha
    real, parameter :: tonoha_2_kgom2 = 0.1                  ! ton(C)/ha   => kg(C)/m²
@@ -343,6 +406,7 @@ Module consts_coms
    real(kind=8), parameter :: mmdry10008      = dble(mmdry1000     )
    real(kind=8), parameter :: mmcod1em68      = dble(mmcod1em6     )
    real(kind=8), parameter :: mmdryi8         = dble(mmdryi        )
+   real(kind=8), parameter :: mmh2oi8         = dble(mmh2oi        )
    real(kind=8), parameter :: mmco2i8         = dble(mmco2i        )
    real(kind=8), parameter :: yr_day8         = dble(yr_day        )
    real(kind=8), parameter :: day_sec8        = dble(day_sec       )
@@ -360,8 +424,11 @@ Module consts_coms
    real(kind=8), parameter :: rdry8           = dble(rdry          )
    real(kind=8), parameter :: rdryi8          = dble(rdryi         )
    real(kind=8), parameter :: cp8             = dble(cp            )
+   real(kind=8), parameter :: cv8             = dble(cv            )
    real(kind=8), parameter :: cpog8           = dble(cpog          )
    real(kind=8), parameter :: rocp8           = dble(rocp          )
+   real(kind=8), parameter :: rocv8           = dble(rocv          )
+   real(kind=8), parameter :: cpocv8          = dble(cpocv         )
    real(kind=8), parameter :: cpor8           = dble(cpor          )
    real(kind=8), parameter :: cpi8            = dble(cpi           )
    real(kind=8), parameter :: cpi48           = dble(cpi4          )
@@ -407,6 +474,18 @@ Module consts_coms
    real(kind=8), parameter :: umol_2_kgC8     = dble(umol_2_kgC    )
    real(kind=8), parameter :: kgom2_2_tonoha8 = dble(kgom2_2_tonoha)
    real(kind=8), parameter :: tonoha_2_kgom28 = dble(tonoha_2_kgom2)
+   real(kind=8), parameter :: th_diff8        = dble(th_diff       )
+   real(kind=8), parameter :: th_diffi8       = dble(th_diffi      )
+   real(kind=8), parameter :: kin_visc8       = dble(kin_visc      )
+   real(kind=8), parameter :: kin_visci8      = dble(kin_visci     )
+   real(kind=8), parameter :: th_expan8       = dble(th_expan      )
+   real(kind=8), parameter :: gr_coeff8       = dble(gr_coeff      )
+   real(kind=8), parameter :: Watts_2_Ein8    = dble(Watts_2_Ein   )
+   real(kind=8), parameter :: Ein_2_Watts8    = dble(Ein_2_Watts   )
+   real(kind=8), parameter :: mol_2_umol8     = dble(mol_2_umol    )
+   real(kind=8), parameter :: umol_2_mol8     = dble(umol_2_mol    )
+   real(kind=8), parameter :: lnexp_min8      = dble(lnexp_min     )
+   real(kind=8), parameter :: lnexp_max8      = dble(lnexp_max     )
    !---------------------------------------------------------------------------------------!
 
 

@@ -3,7 +3,7 @@
 subroutine init_full_history_restart()
 
 
-  use ed_max_dims, only: n_pft
+  use ed_max_dims, only: n_pft,str_len
   use pft_coms, only: SLA, q, qsw, hgt_min, include_pft, phenology
   use ed_misc_coms, only: sfilin, ied_init_mode,current_time
   use mem_polygons, only: grid_res,edres
@@ -21,9 +21,9 @@ subroutine init_full_history_restart()
 
   implicit none
   
-  character(len=1)  :: vnam
-  character(len=3)  :: cgr
-  character(len=128) :: hnamel
+  character(len=1)       :: vnam
+  character(len=3)       :: cgr
+  character(len=str_len) :: hnamel
   type(edtype),pointer      :: cgrid
   type(polygontype),pointer :: cpoly
   type(sitetype),pointer    :: csite
@@ -1176,6 +1176,8 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
 !   call hdf_getslab_r(cpoly%removed_biomass,'REMOVED_BIOMASS ',dsetrank,iparallel,.true.) 
 !   call hdf_getslab_r(cpoly%harvested_biomass,'HARVESTED_BIOMASS ', &
 !        dsetrank,iparallel,.true.) 
+   call hdf_getslab_r(cpoly%rad_avg,'RAD_AVG ',dsetrank,iparallel,.true.)
+   
    call hdf_getslab_i(cpoly%plantation,'PLANTATION_SI ',dsetrank,iparallel,.true.) 
    call hdf_getslab_i(cpoly%agri_stocking_pft,'AGRI_STOCKING_PFT ', &
         dsetrank,iparallel,.true.)
@@ -1434,8 +1436,10 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    call hdf_getslab_r(csite%wpa,'WPA_PA ',dsetrank,iparallel,.false.)
    call hdf_getslab_r(csite%wai,'WAI_PA ',dsetrank,iparallel,.false.)
    call hdf_getslab_i(csite%nlev_sfcwater,'NLEV_SFCWATER ',dsetrank,iparallel,.true.)
-   call hdf_getslab_r(csite%ground_shv,'GROUND_SHV ',dsetrank,iparallel,.true.)
-   call hdf_getslab_r(csite%surface_ssh,'SURFACE_SSH ',dsetrank,iparallel,.true.)
+   call hdf_getslab_r(csite%ground_shv ,'GROUND_SHV ',dsetrank,iparallel,.false.)
+   call hdf_getslab_r(csite%ground_ssh ,'GROUND_SSH ',dsetrank,iparallel,.false.)
+   call hdf_getslab_r(csite%ground_temp,'GROUND_TEMP ',dsetrank,iparallel,.false.)
+   call hdf_getslab_r(csite%ground_temp,'GROUND_FLIQ ',dsetrank,iparallel,.false.)
    call hdf_getslab_r(csite%rough,'ROUGH ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%avg_daily_temp,'AVG_DAILY_TEMP ',dsetrank,iparallel,.true.)  
    call hdf_getslab_r(csite%mean_rh,'MEAN_RH ',dsetrank,iparallel,.true.)
@@ -1830,7 +1834,15 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
      call hdf_getslab_r(cpatch%veg_energy,'VEG_ENERGY ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%hcapveg,'HCAPVEG ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%veg_fliq,'VEG_FLIQ ',dsetrank,iparallel,.true.)
-     
+     call hdf_getslab_r(cpatch%veg_wind,'VEG_WIND ',dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%lsfc_co2_open,'LSFC_CO2_OPEN ',dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%lsfc_co2_closed,'LSFC_CO2_CLOSED ',dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%lsfc_shv_open,'LSFC_SHV_OPEN ',dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%lsfc_shv_closed,'LSFC_SHV_CLOSED ',dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%lint_shv,'LINT_SHV ',dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%lint_co2_open,'LINT_CO2_OPEN ',dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%lint_co2_closed,'LINT_CO2_CLOSED ',dsetrank,iparallel,.true.)
+    
      call hdf_getslab_r(cpatch%mean_gpp,'MEAN_GPP ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%mean_leaf_resp,'MEAN_LEAF_RESP ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%mean_root_resp,'MEAN_ROOT_RESP ',dsetrank,iparallel,.true.)
@@ -1875,6 +1887,18 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
      call hdf_getslab_r(cpatch%dmean_fsn,'DMEAN_FSN_CO ',dsetrank,iparallel,.false.)
      if (associated(cpatch%mmean_fsn       )) &
      call hdf_getslab_r(cpatch%mmean_fsn,'MMEAN_FSN_CO ',dsetrank,iparallel,.false.) 
+     if (associated(cpatch%dmean_psi_open   )) &
+     call hdf_getslab_r(cpatch%dmean_psi_open,'DMEAN_PSI_OPEN_CO ',dsetrank,iparallel,.false.) 
+     if (associated(cpatch%dmean_psi_closed )) &
+     call hdf_getslab_r(cpatch%dmean_psi_closed,'DMEAN_PSI_CLOSED_CO ',dsetrank,iparallel,.false.) 
+     if (associated(cpatch%mmean_psi_open   )) &
+     call hdf_getslab_r(cpatch%mmean_psi_open,'MMEAN_PSI_OPEN_CO ',dsetrank,iparallel,.false.) 
+     if (associated(cpatch%mmean_psi_closed )) &
+     call hdf_getslab_r(cpatch%mmean_psi_closed,'MMEAN_PSI_CLOSED_CO ',dsetrank,iparallel,.false.) 
+     if (associated(cpatch%dmean_water_supply )) &
+     call hdf_getslab_r(cpatch%dmean_water_supply,'DMEAN_WATER_SUPPLY_CO ',dsetrank,iparallel,.false.) 
+     if (associated(cpatch%mmean_water_supply )) &
+     call hdf_getslab_r(cpatch%mmean_water_supply,'MMEAN_WATER_SUPPLY_CO ',dsetrank,iparallel,.false.) 
      if (associated(cpatch%mmean_leaf_maintenance )) &
      call hdf_getslab_r(cpatch%mmean_leaf_maintenance,'MMEAN_LEAF_MAINTENANCE ',dsetrank,iparallel,.false.)   
      if (associated(cpatch%mmean_root_maintenance )) &
@@ -1958,15 +1982,17 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
      call hdf_getslab_r(cpatch%rlong_v,'RLONG_V ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%rlong_v_surf,'RLONG_V_SURF ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%rlong_v_incid,'RLONG_V_INCID ',dsetrank,iparallel,.true.)
-     call hdf_getslab_r(cpatch%rb,'RB ',dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%gbh,'GBH ',dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%gbw,'GBW ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%A_open,'A_OPEN ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%A_closed,'A_CLOSED ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%Psi_closed,'PSI_CLOSED ',dsetrank,iparallel,.true.)
-     call hdf_getslab_r(cpatch%rsw_open,'RSW_OPEN ',dsetrank,iparallel,.true.)
-     call hdf_getslab_r(cpatch%rsw_closed,'RSW_CLOSED ',dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%gsw_open,'GSW_OPEN ',dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%gsw_closed,'GSW_CLOSED ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%fsw,'FSW ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%fs_open,'FS_OPEN ',dsetrank,iparallel,.true.)
-     call hdf_getslab_r(cpatch%stomatal_resistance,'STOMATAL_RESISTANCE ',dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%water_supply,'WATER_SUPPLY ',dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%stomatal_conductance,'STOMATAL_CONDUCTANCE ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%leaf_maintenance,'LEAF_MAINTENANCE ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%root_maintenance,'ROOT_MAINTENANCE ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%leaf_drop,'LEAF_DROP ',dsetrank,iparallel,.true.)

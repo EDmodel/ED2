@@ -1,6 +1,6 @@
 ! =========================================================
 !
-! Create H5 output files from the var table
+! Create H5 output files from the var tablef
 
 ! =========================================================
 subroutine h5_output(vtype)
@@ -39,7 +39,7 @@ subroutine h5_output(vtype)
   use hdf5
 #endif
   use ed_node_coms,only:mynum,nnodetot,recvnum,sendnum
-  use ed_max_dims, only : n_pft,n_dist_types,n_dbh,maxgrds
+  use ed_max_dims, only : n_pft,n_dist_types,n_dbh,maxgrds, str_len
   use ed_state_vars,only: edgrid_g,edtype,polygontype,sitetype,patchtype,gdpy
 
   implicit none
@@ -51,13 +51,13 @@ subroutine h5_output(vtype)
 
   character*(*) vtype
 
-  character(len=128) :: anamel
-  character(len=3)  :: cgrid
-  character(len=40) :: subaname
-  character(len=64) :: varn
-  character(len=1)  :: vnam
-  character(len=64) :: c0
-  character(len=64),dimension(3) :: metadata
+  character(len=str_len)              :: anamel
+  character(len=3)                    :: cgrid
+  character(len=40)                   :: subaname
+  character(len=64)                   :: varn
+  character(len=1)                    :: vnam
+  character(len=64)                   :: c0
+  character(len=64)     ,dimension(3) :: metadata
   logical exans
 
   !  HDF specific data types

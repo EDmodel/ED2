@@ -54,7 +54,6 @@ Module node_mod
 
   type lbc_buffs
      character, pointer, dimension(:):: lbc_send_buff,lbc_recv_buff
-  !   real, pointer :: lbc_send_buff(:),lbc_recv_buff(:)
      integer :: nsend,nrecv
   end type lbc_buffs
 

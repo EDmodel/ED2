@@ -193,17 +193,16 @@ subroutine leaf_stars(theta_atm,theiv_atm,shv_atm,rvap_atm,co2_atm              
 
       !------------------------------------------------------------------------------------!
 
-   case (3)
+   case (3,5)
       !------------------------------------------------------------------------------------!
-      !      Here we use the model proposed by BH91, which is almost the same as the OD95  !
-      ! method, with the two following (important) differences.                            !
-      ! 1. Zeta (z/L) is actually found using the iterative method.                        !
-      ! 2. Stable functions are computed in a more generic way.  BH91 claim that the       !
-      !    oft-used approximation (-beta*zeta) can cause poor ventilation of the stable    !
-      !    layer, leading to decoupling between the atmosphere and the canopy air space    !
-      !    and excessive cooling.                                                          !
-      ! 3. Here we distinguish the fluxes between roughness for momentum and for heat, as  !
-      !    BH91 did.                                                                       !
+      ! 3. Here we use the model proposed by BH91, which is almost the same as the OD95    !
+      !    method, with the two following (important) differences.                         !
+      !    a. Zeta (z/L) is actually found using the iterative method.                     !
+      !    b. Stable functions are computed in a more generic way.  BH91 claim that the    !
+      !       oft-used approximation (-beta*zeta) can cause poor ventilation of the stable !
+      !       layer, leading to decoupling between the atmosphere and the canopy air space !
+      !       and excessive cooling.                                                       !
+      ! 5. Similar as 3, but we compute the stable functions the same way as OD95.         !
       !------------------------------------------------------------------------------------!
 
       !----- Make sure that the bulk Richardson number is not above ribmax. ---------------!
@@ -233,11 +232,11 @@ subroutine leaf_stars(theta_atm,theiv_atm,shv_atm,rvap_atm,co2_atm              
    end select
 
    !----- Finding all stars. --------------------------------------------------------------!
-   tstar = c3 * (theta_atm    - theta_can   )
-   estar = c3 * (theiv_atm    - theiv_can   )
-   qstar = c3 * (shv_atm      - shv_can     )
-   rstar = c3 * (rvap_atm     - rvap_can    )
-   cstar = c3 * (co2_atm      - co2_can     )
+   tstar = c3 *    (theta_atm - theta_can)
+   estar = c3 * log(theiv_atm / theiv_can)
+   qstar = c3 *    (shv_atm   - shv_can  )
+   rstar = c3 *    (rvap_atm  - rvap_can )
+   cstar = c3 *    (co2_atm   - co2_can  )
 
    return
 
@@ -332,40 +331,46 @@ end subroutine sfclmcv
 ! layer if no temporary surface water/snow exists, or the top temporary surface water/snow !
 ! layer if it exists.                                                                      !
 !------------------------------------------------------------------------------------------!
-subroutine leaf_grndvap(soil_energy,soil_water,soil_text,sfcw_energy_int,sfcwater_nlev     &
-                       ,can_rvap,can_prss,ground_rsat,ground_rvap,ground_temp,ground_fliq)
+subroutine leaf_grndvap(topsoil_energy,topsoil_water,topsoil_text,sfcw_energy_int          &
+                       ,sfcwater_nlev,can_rvap,can_prss,ground_rsat,ground_rvap            &
+                       ,ground_temp,ground_fliq)
 
    use leaf_coms  , only : slcpd       & ! intent(in)
                          , slpots      & ! intent(in)
                          , slmsts      & ! intent(in)
+                         , soilcp      & ! intent(in)
                          , slbs        & ! intent(in)
                          , sfldcap     ! ! intent(in)
    use rconstants , only : gorh2o      & ! intent(in)
                          , pi1         & ! intent(in)
-                         , wdns        ! ! intent(in)
+                         , wdns        & ! intent(in)
+                         , lnexp_min   ! ! intent(in)
    use therm_lib  , only : rslif       & ! function
                          , qwtk        & ! function
                          , qtk         ! ! function
+   use mem_leaf   , only : betapower   ! ! intent(in)
 
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
-   real, intent(in)  :: soil_energy
-   real, intent(in)  :: soil_water
-   real, intent(in)  :: soil_text
-   real, intent(in)  :: sfcw_energy_int
-   real, intent(in)  :: sfcwater_nlev
-   real, intent(in)  :: can_rvap
-   real, intent(in)  :: can_prss
-   real, intent(out) :: ground_rsat
-   real, intent(out) :: ground_rvap
-   real, intent(out) :: ground_temp
-   real, intent(out) :: ground_fliq
+   real, intent(in)  :: topsoil_energy   ! Top soil internal energy             [     J/m³]
+   real, intent(in)  :: topsoil_water    ! Top soil water content               [m³_h2o/m³]
+   real, intent(in)  :: topsoil_text     ! Top soil texture class               [      ---]
+   real, intent(in)  :: sfcw_energy_int  ! Soil internal energy                 [     J/kg]
+   real, intent(in)  :: sfcwater_nlev    ! # active levels of surface water     [      ---]
+   real, intent(in)  :: can_rvap         ! Canopy vapour mixing ratio           [kg_vap/kg]
+   real, intent(in)  :: can_prss         ! Canopy pressure                      [       Pa]
+   real, intent(out) :: ground_rsat      ! Surface (saturation) mixing ratio    [kg_vap/kg]
+   real, intent(out) :: ground_rvap      ! Ground equilibrium mixing ratio      [kg_vap/kg]
+   real, intent(out) :: ground_temp      ! Surface temperature                  [        K]
+   real, intent(out) :: ground_fliq      ! Fraction of sfc H2O in liquid phase  [      ---]
    !----- Local variables. ----------------------------------------------------------------!
-   integer           :: ksn
-   integer           :: nsoil
-   real              :: slpotvn
-   real              :: alpha
-   real              :: beta
+   integer           :: ksn              ! # active levels of surface water
+   integer           :: nsoil            ! Soil texture class                   [      ---]
+   real              :: slpotvn          ! soil water potential                 [        m]
+   real              :: alpha            ! "alpha" term in Lee and Pielke (1993)
+   real              :: beta             ! "beta" term in Lee and Pielke (1993)
+   real              :: lnalpha          ! ln(alpha)
+   real              :: smterm           ! soil moisture term                   [     ----]
    !---------------------------------------------------------------------------------------!
 
 
@@ -377,33 +382,59 @@ subroutine leaf_grndvap(soil_energy,soil_water,soil_text,sfcw_energy_int,sfcwate
    !    Ground_rsat is the saturation mixing ratio of the top soil/snow surface and is     !
    ! used for dew formation and snow evaporation.  
    !---------------------------------------------------------------------------------------!
-
-   if (ksn > 0 .and. sfcw_energy_int > 0.) then
-      
+   select case (ksn)
+   case (0)
       !------------------------------------------------------------------------------------!
-      !    With snowcover, ground_rvap is assumed to be the same as rsat.                  !
+      !      Without snowcover or water ponding, ground_shv is the effective specific      !
+      ! humidity of soil and is used for soil evaporation.  This value is a combination of !
+      ! the canopy air specific humidity, the saturation specific humidity at the soil     !
+      ! temperature.  When the soil tends to dry air soil moisture, ground_shv tends to    !
+      ! the canopy air space specific humidity, whereas it tends to the saturation value   !
+      ! when the soil moisture is near or above field capacity.  These tendencies will be  !
+      ! determined by the alpha and beta parameters.                                       !
+      !------------------------------------------------------------------------------------!
+      nsoil = nint(topsoil_text)
+      call qwtk(topsoil_energy,topsoil_water*wdns,slcpd(nsoil),ground_temp,ground_fliq)
+      !----- Compute the saturation mixing ratio at ground temperature. -------------------!
+      ground_rsat = rslif(can_prss,ground_temp)
+      !----- Determine alpha. -------------------------------------------------------------!
+      slpotvn  = slpots(nsoil) * (slmsts(nsoil) / topsoil_water) ** slbs(nsoil)
+      lnalpha  = gorh2o * slpotvn / ground_temp
+      if (lnalpha > lnexp_min) then
+         alpha = exp(lnalpha)
+      else
+         alpha = 0.0
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Determine Beta, following NP89.  However, because we want evaporation to be    !
+      ! shut down when the soil approaches the dry air soil moisture, we offset both the   !
+      ! soil moisture and field capacity to the soil moisture above dry air soil.  This is !
+      ! necessary to avoid evaporation to be large just slightly above the dry air soil,   !
+      ! which was happening especially for those clay-rich soil types.                     !
+      !------------------------------------------------------------------------------------!
+      smterm     = (topsoil_water - soilcp(nsoil)) / (sfldcap(nsoil) - soilcp(nsoil))
+      beta       = (.5 * (1. - cos (min(1.,smterm) * pi1))) ** betapower
+      !----- Use the expression from LP92 to determine the specific humidity. -------------!
+      ground_rvap = ground_rsat * alpha * beta + (1. - beta) * can_rvap
+      !------------------------------------------------------------------------------------!
+
+   case default
+      !------------------------------------------------------------------------------------!
+      !    If a temporary layer exists, we use the top layer as the surface.  Since this   !
+      ! is "pure" water or snow, we let it evaporate freely.  We can understand  this as   !
+      ! the limit of alpha and beta tending to one.                                        !
       !------------------------------------------------------------------------------------!
       call qtk(sfcw_energy_int,ground_temp,ground_fliq)
+      !----- Compute the saturation specific humidity at ground temperature. --------------!
       ground_rsat = rslif(can_prss,ground_temp)
+      !----- The ground specific humidity in this case is just the saturation value. ------!
       ground_rvap = ground_rsat
-   else
-
       !------------------------------------------------------------------------------------!
-      !    Without snowcover, ground_rvap is the effective saturation mixing ratio of soil !
-      ! and is used for soil evaporation.  First, compute the "alpha" term or soil         !
-      ! "relative humidity" and the "beta" term.                                           !
-      !------------------------------------------------------------------------------------!
-
-      nsoil = nint(soil_text)
-
-      call qwtk(soil_energy,soil_water*wdns,slcpd(nsoil),ground_temp,ground_fliq)
-      ground_rsat = rslif(can_prss,ground_temp)
-
-      slpotvn     = slpots(nsoil) * (slmsts(nsoil) / soil_water) ** slbs(nsoil)
-      alpha       = exp(gorh2o * slpotvn / ground_temp)
-      beta        = .25 * (1. - cos (min(1.,soil_water / sfldcap(nsoil)) * pi1)) ** 2
-      ground_rvap = ground_rsat * alpha * beta + (1. - beta) * can_rvap
-   end if
+   end select
 
    return
 end subroutine leaf_grndvap
@@ -426,8 +457,8 @@ subroutine leaf_bcond(m2,m3,mzg,mzs,npat,jdim,soil_water,sfcwater_mass,soil_ener
                      ,veg_height,patch_area,patch_rough,patch_wetind,leaf_class,soil_rough &
                      ,sfcwater_nlev,stom_resist,ground_rsat,ground_rvap,ground_temp        &
                      ,ground_fliq,veg_water,veg_hcap,veg_energy,can_prss,can_theiv         &
-                     ,can_theta,can_rvap,can_co2,sensible,evap,transp,gpp,plresp,resphet   &
-                     ,veg_ndvip,veg_ndvic,veg_ndvif)
+                     ,can_theta,can_rvap,can_co2,sensible_gc,sensible_vc,evap_gc,evap_vc   &
+                     ,transp,gpp,plresp,resphet,veg_ndvip,veg_ndvic,veg_ndvif)
 
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
@@ -445,7 +476,8 @@ subroutine leaf_bcond(m2,m3,mzg,mzs,npat,jdim,soil_water,sfcwater_mass,soil_ener
    real, dimension(m2,m3,npat)    , intent(inout) :: veg_water,veg_energy,veg_hcap
    real, dimension(m2,m3,npat)    , intent(inout) :: can_prss,can_theiv,can_theta
    real, dimension(m2,m3,npat)    , intent(inout) :: can_rvap,can_co2
-   real, dimension(m2,m3,npat)    , intent(inout) :: sensible,evap,transp
+   real, dimension(m2,m3,npat)    , intent(inout) :: sensible_gc,sensible_vc
+   real, dimension(m2,m3,npat)    , intent(inout) :: evap_gc,evap_vc,transp
    real, dimension(m2,m3,npat)    , intent(inout) :: gpp,plresp,resphet
    real, dimension(m2,m3,npat)    , intent(inout) :: veg_ndvip,veg_ndvic,veg_ndvif
    !----- Local variables. ----------------------------------------------------------------!
@@ -484,8 +516,10 @@ subroutine leaf_bcond(m2,m3,mzg,mzs,npat,jdim,soil_water,sfcwater_mass,soil_ener
          can_theta      (1,j,ipat) = can_theta        (2,j,ipat)
          can_rvap       (1,j,ipat) = can_rvap         (2,j,ipat)
          can_co2        (1,j,ipat) = can_co2          (2,j,ipat)
-         sensible       (1,j,ipat) = sensible         (2,j,ipat)
-         evap           (1,j,ipat) = evap             (2,j,ipat)
+         sensible_gc    (1,j,ipat) = sensible_gc      (2,j,ipat)
+         sensible_vc    (1,j,ipat) = sensible_vc      (2,j,ipat)
+         evap_gc        (1,j,ipat) = evap_gc          (2,j,ipat)
+         evap_vc        (1,j,ipat) = evap_vc          (2,j,ipat)
          transp         (1,j,ipat) = transp           (2,j,ipat)
          gpp            (1,j,ipat) = gpp              (2,j,ipat)
          plresp         (1,j,ipat) = plresp           (2,j,ipat)
@@ -525,8 +559,10 @@ subroutine leaf_bcond(m2,m3,mzg,mzs,npat,jdim,soil_water,sfcwater_mass,soil_ener
          can_theta     (m2,j,ipat) = can_theta     (m2-1,j,ipat)
          can_rvap      (m2,j,ipat) = can_rvap      (m2-1,j,ipat)
          can_co2       (m2,j,ipat) = can_co2       (m2-1,j,ipat)
-         sensible      (m2,j,ipat) = sensible      (m2-1,j,ipat)
-         evap          (m2,j,ipat) = evap          (m2-1,j,ipat)
+         sensible_gc   (m2,j,ipat) = sensible_gc   (m2-1,j,ipat)
+         sensible_vc   (m2,j,ipat) = sensible_vc   (m2-1,j,ipat)
+         evap_gc       (m2,j,ipat) = evap_gc       (m2-1,j,ipat)
+         evap_vc       (m2,j,ipat) = evap_vc       (m2-1,j,ipat)
          transp        (m2,j,ipat) = transp        (m2-1,j,ipat)
          gpp           (m2,j,ipat) = gpp           (m2-1,j,ipat)
          plresp        (m2,j,ipat) = plresp        (m2-1,j,ipat)
@@ -590,8 +626,10 @@ subroutine leaf_bcond(m2,m3,mzg,mzs,npat,jdim,soil_water,sfcwater_mass,soil_ener
             can_theta      (i,1,ipat) = can_theta        (i,2,ipat)
             can_rvap       (i,1,ipat) = can_rvap         (i,2,ipat)
             can_co2        (i,1,ipat) = can_co2          (i,2,ipat)
-            sensible       (i,1,ipat) = sensible         (i,2,ipat)
-            evap           (i,1,ipat) = evap             (i,2,ipat)
+            sensible_gc    (i,1,ipat) = sensible_gc      (i,2,ipat)
+            sensible_vc    (i,1,ipat) = sensible_vc      (i,2,ipat)
+            evap_gc        (i,1,ipat) = evap_gc          (i,2,ipat)
+            evap_vc        (i,1,ipat) = evap_vc          (i,2,ipat)
             transp         (i,1,ipat) = transp           (i,2,ipat)
             gpp            (i,1,ipat) = gpp              (i,2,ipat)
             plresp         (i,1,ipat) = plresp           (i,2,ipat)
@@ -631,8 +669,10 @@ subroutine leaf_bcond(m2,m3,mzg,mzs,npat,jdim,soil_water,sfcwater_mass,soil_ener
             can_theta     (i,m3,ipat) = can_theta     (i,m3-1,ipat)
             can_rvap      (i,m3,ipat) = can_rvap      (i,m3-1,ipat)
             can_co2       (i,m3,ipat) = can_co2       (i,m3-1,ipat)
-            sensible      (i,m3,ipat) = can_co2       (i,m3-1,ipat)
-            evap          (i,m3,ipat) = can_co2       (i,m3-1,ipat)
+            sensible_gc   (i,m3,ipat) = sensible_gc   (i,m3-1,ipat)
+            sensible_vc   (i,m3,ipat) = sensible_vc   (i,m3-1,ipat)
+            evap_gc       (i,m3,ipat) = evap_gc       (i,m3-1,ipat)
+            evap_vc       (i,m3,ipat) = evap_vc       (i,m3-1,ipat)
             transp        (i,m3,ipat) = can_co2       (i,m3-1,ipat)
             gpp           (i,m3,ipat) = gpp           (i,m3-1,ipat)
             plresp        (i,m3,ipat) = plresp        (i,m3-1,ipat)
@@ -1202,7 +1242,7 @@ subroutine sfcrad(mzg,mzs,ip,soil_energy,soil_water,soil_text,sfcwater_energy   
    !     First we update the canopy air properties.                                        !
    !---------------------------------------------------------------------------------------!
    can_exner    = cp  * (p00i * can_prss) ** rocp
-   can_lntheiv  = log(can_theiv)
+   can_lntheta  = log(can_theta)
    can_temp     = cpi * can_theta * can_exner
    can_shv      = can_rvap / (can_rvap + 1.)
    can_rhos     = idealdenssh(can_prss,can_temp,can_shv)

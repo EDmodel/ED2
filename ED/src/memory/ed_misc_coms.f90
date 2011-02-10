@@ -100,10 +100,6 @@ Module ed_misc_coms
   ! XML event file
   character(len=str_len) :: event_file
 
-  ! integrator error statistics
-  integer(kind=8),dimension(1:50,1:2):: integ_err
-  logical,parameter :: record_err = .false.
-
   integer :: burnin          !! number of years to ignore demography when starting a run
 
   integer :: outputMonth     !! month to output annual files

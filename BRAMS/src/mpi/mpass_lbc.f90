@@ -26,8 +26,9 @@ subroutine node_sendlbc()
 
   use var_tables
   use mem_scratch
-  use mem_cuparm, only: nclouds
-  use grid_dims, only: maxgrds
+  use mem_cuparm, only : nclouds
+  use grid_dims , only : maxgrds
+  use mem_aerad , only : nwave    ! ! intent(in)
 
   implicit none
 
@@ -89,19 +90,44 @@ subroutine node_sendlbc()
            if ( vtab_r(nv,ngrid)%impt1 == 1) then
               select case (vtab_r(nv,ngrid)%idim_type)
               case (2) !---- (X,Y) --------------------------------------------------------!
-                 call mkstbuff(1,mxp,myp,1,vtab_r(nv,ngrid)%var_p,scratch%vt3dp            &
+                 call mkstbuff(1,mxp,myp,1,vtab_r(nv,ngrid)%var_p,scratch%vt4dc            &
                               ,i1-i0,i2-i0,j1-j0,j2-j0,mtp)
-                 call MPI_Pack(scratch%vt3dp,mtp,MPI_REAL,node_buffs(nm)%lbc_send_buff     &
+                 call MPI_Pack(scratch%vt4dc,mtp,MPI_REAL,node_buffs(nm)%lbc_send_buff     &
                               ,node_buffs(nm)%nsend*f_ndmd_size,ipos,MPI_COMM_WORLD,ierr)
               case (3) !---- (Z,X,Y) ------------------------------------------------------!
-                 call mkstbuff(mzp,mxp,myp,1,vtab_r(nv,ngrid)%var_p,scratch%vt3dp          &
+                 call mkstbuff(mzp,mxp,myp,1,vtab_r(nv,ngrid)%var_p,scratch%vt4dc          &
                               ,i1-i0,i2-i0,j1-j0,j2-j0,mtp)
-                 call MPI_Pack(scratch%vt3dp,mtp,MPI_REAL,node_buffs(nm)%lbc_send_buff     &
+                 call MPI_Pack(scratch%vt4dc,mtp,MPI_REAL,node_buffs(nm)%lbc_send_buff     &
+                              ,node_buffs(nm)%nsend*f_ndmd_size,ipos,MPI_COMM_WORLD,ierr)
+              case (4) !---- (G,X,Y,P) ----------------------------------------------------!
+                 call mkstbuff(nzg,mxp,myp,npatch,vtab_r(nv,ngrid)%var_p,scratch%vt4dc     &
+                              ,i1-i0,i2-i0,j1-j0,j2-j0,mtp)
+                 call MPI_Pack(scratch%vt4dc,mtp,MPI_REAL,node_buffs(nm)%lbc_send_buff     &
+                              ,node_buffs(nm)%nsend*f_ndmd_size,ipos,MPI_COMM_WORLD,ierr)
+              case (5) !---- (S,X,Y,P) ----------------------------------------------------!
+                 call mkstbuff(nzs,mxp,myp,npatch,vtab_r(nv,ngrid)%var_p,scratch%vt4dc     &
+                              ,i1-i0,i2-i0,j1-j0,j2-j0,mtp)
+                 call MPI_Pack(scratch%vt4dc,mtp,MPI_REAL,node_buffs(nm)%lbc_send_buff     &
+                              ,node_buffs(nm)%nsend*f_ndmd_size,ipos,MPI_COMM_WORLD,ierr)
+              case (6) !---- (X,Y,P) ------------------------------------------------------!
+                 call mkstbuff(1,mxp,myp,npatch,vtab_r(nv,ngrid)%var_p,scratch%vt4dc       &
+                              ,i1-i0,i2-i0,j1-j0,j2-j0,mtp)
+                 call MPI_Pack(scratch%vt4dc,mtp,MPI_REAL,node_buffs(nm)%lbc_send_buff     &
+                              ,node_buffs(nm)%nsend*f_ndmd_size,ipos,MPI_COMM_WORLD,ierr)
+              case (7) !---- (X,Y,W) ------------------------------------------------------!
+                 call mkstbuff(1,mxp,myp,nwave,vtab_r(nv,ngrid)%var_p,scratch%vt4dc        &
+                              ,i1-i0,i2-i0,j1-j0,j2-j0,mtp)
+                 call MPI_Pack(scratch%vt4dc,mtp,MPI_REAL,node_buffs(nm)%lbc_send_buff     &
+                              ,node_buffs(nm)%nsend*f_ndmd_size,ipos,MPI_COMM_WORLD,ierr)
+              case (8) !---- (Z,X,Y,C) ----------------------------------------------------!
+                 call mkstbuff(mzp,mxp,myp,nclouds,vtab_r(nv,ngrid)%var_p,scratch%vt4dc    &
+                              ,i1-i0,i2-i0,j1-j0,j2-j0,mtp)
+                 call MPI_Pack(scratch%vt4dc,mtp,MPI_REAL,node_buffs(nm)%lbc_send_buff     &
                               ,node_buffs(nm)%nsend*f_ndmd_size,ipos,MPI_COMM_WORLD,ierr)
               case (9) !---- (X,Y,C) ------------------------------------------------------!
-                 call mkstbuff(1,mxp,myp,nclouds,vtab_r(nv,ngrid)%var_p,scratch%vt3dp      &
+                 call mkstbuff(1,mxp,myp,nclouds,vtab_r(nv,ngrid)%var_p,scratch%vt4dc      &
                               ,i1-i0,i2-i0,j1-j0,j2-j0,mtp)
-                 call MPI_Pack(scratch%vt3dp,mtp,MPI_REAL,node_buffs(nm)%lbc_send_buff     &
+                 call MPI_Pack(scratch%vt4dc,mtp,MPI_REAL,node_buffs(nm)%lbc_send_buff     &
                               ,node_buffs(nm)%nsend*f_ndmd_size,ipos,MPI_COMM_WORLD,ierr)
               case default
                  write(unit=*,fmt='(a)')       ' Invalid data type set to mpt1!!!'
@@ -135,7 +161,8 @@ subroutine node_getlbc()
 
   use var_tables
   use mem_scratch
-  use mem_cuparm, only: nclouds
+  use mem_cuparm, only : nclouds  ! ! intent(in)
+  use mem_aerad , only : nwave    ! ! intent(in)
 
   implicit none
 
@@ -201,23 +228,58 @@ subroutine node_getlbc()
               case (2) !---- (X,Y) --------------------------------------------------------!
                  mtp= nptsxy
                  call MPI_Unpack(node_buffs(nm)%lbc_recv_buff                              &
-                                ,node_buffs(nm)%nrecv*f_ndmd_size,ipos,scratch%vt3dp,mtp   &
+                                ,node_buffs(nm)%nrecv*f_ndmd_size,ipos,scratch%vt4dc,mtp   &
                                 ,MPI_REAL,MPI_COMM_WORLD,ierr)
-                 call exstbuff(1,mxp,myp,1,vtab_r(nv,ngrid)%var_p,scratch%vt3dp            &
+                 call exstbuff(1,mxp,myp,1,vtab_r(nv,ngrid)%var_p,scratch%vt4dc            &
                               ,i1-i0,i2-i0,j1-j0,j2-j0,mtc)
               case (3) !---- (Z,X,Y) ------------------------------------------------------!
-                 mtp = nnzp(ngrid) * nptsxy
+                 mtp = mzp * nptsxy
                  call MPI_Unpack(node_buffs(nm)%lbc_recv_buff                              &
-                                ,node_buffs(nm)%nrecv*f_ndmd_size,ipos,scratch%vt3dp,mtp   &
+                                ,node_buffs(nm)%nrecv*f_ndmd_size,ipos,scratch%vt4dc,mtp   &
                                 ,MPI_REAL,MPI_COMM_WORLD,ierr)
-                 call exstbuff(mzp,mxp,myp,1,vtab_r(nv,ngrid)%var_p,scratch%vt3dp          &
+                 call exstbuff(mzp,mxp,myp,1,vtab_r(nv,ngrid)%var_p,scratch%vt4dc          &
+                              ,i1-i0,i2-i0,j1-j0,j2-j0,mtc)
+              case (4) !---- (G,X,Y,P) ----------------------------------------------------!
+                 mtp = nzg * nptsxy * npatch
+                 call MPI_Unpack(node_buffs(nm)%lbc_recv_buff                              &
+                                ,node_buffs(nm)%nrecv*f_ndmd_size,ipos,scratch%vt4dc,mtp   &
+                                ,MPI_REAL,MPI_COMM_WORLD,ierr)
+                 call exstbuff(nzg,mxp,myp,npatch,vtab_r(nv,ngrid)%var_p,scratch%vt4dc     &
+                              ,i1-i0,i2-i0,j1-j0,j2-j0,mtc)
+              case (5) !---- (S,X,Y,P) ----------------------------------------------------!
+                 mtp = nzs * nptsxy * npatch
+                 call MPI_Unpack(node_buffs(nm)%lbc_recv_buff                              &
+                                ,node_buffs(nm)%nrecv*f_ndmd_size,ipos,scratch%vt4dc,mtp   &
+                                ,MPI_REAL,MPI_COMM_WORLD,ierr)
+                 call exstbuff(nzs,mxp,myp,npatch,vtab_r(nv,ngrid)%var_p,scratch%vt4dc     &
+                              ,i1-i0,i2-i0,j1-j0,j2-j0,mtc)
+              case (6) !---- (X,Y,C) ------------------------------------------------------!
+                 mtp= nptsxy * npatch
+                 call MPI_Unpack(node_buffs(nm)%lbc_recv_buff                              &
+                                ,node_buffs(nm)%nrecv*f_ndmd_size,ipos,scratch%vt4dc,mtp   &
+                                ,MPI_REAL,MPI_COMM_WORLD,ierr)
+                 call exstbuff(1,mxp,myp,npatch,vtab_r(nv,ngrid)%var_p,scratch%vt4dc       &
+                              ,i1-i0,i2-i0,j1-j0,j2-j0,mtc)
+              case (7) !---- (X,Y,W) ------------------------------------------------------!
+                 mtp= nptsxy * nwave
+                 call MPI_Unpack(node_buffs(nm)%lbc_recv_buff                              &
+                                ,node_buffs(nm)%nrecv*f_ndmd_size,ipos,scratch%vt4dc,mtp   &
+                                ,MPI_REAL,MPI_COMM_WORLD,ierr)
+                 call exstbuff(1,mxp,myp,nwave,vtab_r(nv,ngrid)%var_p,scratch%vt4dc        &
+                              ,i1-i0,i2-i0,j1-j0,j2-j0,mtc)
+              case (8) !---- (Z,X,Y,C) ----------------------------------------------------!
+                 mtp= mzp * nptsxy * nclouds
+                 call MPI_Unpack(node_buffs(nm)%lbc_recv_buff                              &
+                                ,node_buffs(nm)%nrecv*f_ndmd_size,ipos,scratch%vt4dc,mtp   &
+                                ,MPI_REAL,MPI_COMM_WORLD,ierr)
+                 call exstbuff(mzp,mxp,myp,nclouds,vtab_r(nv,ngrid)%var_p,scratch%vt4dc    &
                               ,i1-i0,i2-i0,j1-j0,j2-j0,mtc)
               case (9) !---- (X,Y,C) ------------------------------------------------------!
                  mtp= nptsxy * nclouds
                  call MPI_Unpack(node_buffs(nm)%lbc_recv_buff                              &
-                                ,node_buffs(nm)%nrecv*f_ndmd_size,ipos,scratch%vt3dp,mtp   &
+                                ,node_buffs(nm)%nrecv*f_ndmd_size,ipos,scratch%vt4dc,mtp   &
                                 ,MPI_REAL,MPI_COMM_WORLD,ierr)
-                 call exstbuff(1,mxp,myp,nclouds,vtab_r(nv,ngrid)%var_p,scratch%vt3dp      &
+                 call exstbuff(1,mxp,myp,nclouds,vtab_r(nv,ngrid)%var_p,scratch%vt4dc      &
                               ,i1-i0,i2-i0,j1-j0,j2-j0,mtc)
               case default
                  write(unit=*,fmt='(a)')       ' Invalid data type set to mpt1!!!'

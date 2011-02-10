@@ -67,7 +67,6 @@ Module rconstants
    real, parameter :: mmo2        = 0.0319988      ! Mean O2 molar mass         [   kg/mol]
    real, parameter :: mmo3        = 0.0479982      ! Mean ozone molar mass      [   kg/mol]
    real, parameter :: mmh2o       = 0.01801505     ! Mean water molar mass      [   kg/mol]
-   real, parameter :: mmco        = 0.0280101      ! Mean CO molar mass         [   kg/mol]
    real, parameter :: mmco2       = 0.0440095      ! Mean CO2 molar mass        [   kg/mol]
    real, parameter :: mmdrycgs    = mmdry * 1.e3   ! Mean dry air molar mass    [    g/mol]
    real, parameter :: mmo2cgs     = mmo2  * 1.e3   ! Mean O2 molar mass         [    g/mol]
@@ -122,20 +121,21 @@ Module rconstants
    !---------------------------------------------------------------------------------------!
    ! Dry air properties                                                                    !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: rdry   = rmol/mmdry  ! Gas constant for dry air (Ra)      [   J/kg/K]
-   real, parameter :: rdryi  = mmdry/rmol  ! 1./Gas constant for dry air (Ra)   [   kg K/J]
-   real, parameter :: cp     = 1004.       ! Specific heat at constant pressure [   J/kg/K]
-   real, parameter :: cv     = 717.        ! Specific heat at constant volume   [   J/kg/K]
-   real, parameter :: cpog   = cp /grav    ! cp/g                               [      m/K]
-   real, parameter :: rocp   = rdry / cp   ! Ra/cp                              [     ----]
-   real, parameter :: cpor   = cp / rdry   ! Cp/Ra                              [     ----]
-   real, parameter :: rocv   = rdry / cv   ! Ra/Cv                              [     ----]
-   real, parameter :: gocp   = grav / cp   ! g/Cp, dry adiabatic lapse rate     [      K/m]
-   real, parameter :: gordry = grav / rdry ! g/Ra                               [      K/m]
-   real, parameter :: cpi    = 1. / cp     ! 1/Cp                               [   kg K/J]
-   real, parameter :: cpi4   = 4. * cpi    ! 4/Cp                               [   kg K/J]
-   real, parameter :: p00k   = 26.870941   ! p0 ** (Ra/Cp)                      [ Pa^0.286]
-   real, parameter :: p00ki  = 1. / p00k   ! p0 ** (-Ra/Cp)                     [Pa^-0.286]
+   real, parameter :: rdry   = rmol/mmdry    ! Gas constant for dry air (Ra)    [   J/kg/K]
+   real, parameter :: rdryi  = mmdry/rmol    ! 1./Gas constant for dry air (Ra) [   kg K/J]
+   real, parameter :: cp     = 3.5 * rdry    ! Specific heat at constant press. [   J/kg/K]
+   real, parameter :: cv     = 2.5 * rdry    ! Specific heat at constant volume [   J/kg/K]
+   real, parameter :: cpog   = cp /grav      ! cp/g                             [      m/K]
+   real, parameter :: rocp   = rdry / cp     ! Ra/cp                            [     ----]
+   real, parameter :: rocv   = rdry / cv     ! Ra/Cv                            [     ----]
+   real, parameter :: cpocv  = cp / cv       ! Cp/Cv                            [     ----]
+   real, parameter :: cpor   = cp / rdry     ! Cp/Ra                            [     ----]
+   real, parameter :: gocp   = grav / cp     ! g/Cp, dry adiabatic lapse rate   [      K/m]
+   real, parameter :: gordry = grav / rdry   ! g/Ra                             [      K/m]
+   real, parameter :: cpi    = 1. / cp       ! 1/Cp                             [   kg K/J]
+   real, parameter :: cpi4   = 4. * cpi      ! 4/Cp                             [   kg K/J]
+   real, parameter :: p00k   = 26.8269579527 ! p0 ** (Ra/Cp)                    [   Pa^2/7]
+   real, parameter :: p00ki  = 1. / p00k     ! p0 ** (-Ra/Cp)                   [  Pa^-2/7]
    !---------------------------------------------------------------------------------------!
 
 
@@ -321,8 +321,11 @@ Module rconstants
    real(kind=8), parameter :: rdry8           = dble(rdry          )
    real(kind=8), parameter :: rdryi8          = dble(rdryi         )
    real(kind=8), parameter :: cp8             = dble(cp            )
+   real(kind=8), parameter :: cv8             = dble(cv            )
    real(kind=8), parameter :: cpog8           = dble(cpog          )
    real(kind=8), parameter :: rocp8           = dble(rocp          )
+   real(kind=8), parameter :: rocv8           = dble(rocv          )
+   real(kind=8), parameter :: cpocv8          = dble(cpocv         )
    real(kind=8), parameter :: cpor8           = dble(cpor          )
    real(kind=8), parameter :: cpi8            = dble(cpi           )
    real(kind=8), parameter :: cpi48           = dble(cpi4          )

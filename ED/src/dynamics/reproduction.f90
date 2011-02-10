@@ -233,6 +233,7 @@ subroutine reproduction(cgrid, month)
             ! of recruits.                                                                 !
             !------------------------------------------------------------------------------!
             if (ncohorts_new > cpatch%ncohorts) then
+               nullify(temppatch)
                allocate(temppatch)
                call allocate_patchtype(temppatch,cpatch%ncohorts)
 
@@ -334,7 +335,7 @@ subroutine reproduction(cgrid, month)
          
          
          !---------------------------------------------------------------------------------!
-         !   Now that recruitment has occured, re-sort, terminate, fuse, and split.        !
+         !   Now that recruitment has occured, terminate, fuse, split, and re-sort.        !
          !---------------------------------------------------------------------------------!
          update_patch_loop: do ipa = 1,csite%npatches
             cpatch => csite%patch(ipa)
@@ -344,6 +345,9 @@ subroutine reproduction(cgrid, month)
                call fuse_cohorts(csite,ipa, cpoly%green_leaf_factor(:,isi),cpoly%lsl(isi))                         
                call split_cohorts(cpatch, cpoly%green_leaf_factor(:,isi),cpoly%lsl(isi))
             end if
+
+            !----- Sort the cohorts by height. --------------------------------------------!
+            call sort_cohorts(cpatch)
 
             !----- Update the number of cohorts (this is redundant...). -------------------!
             csite%cohort_count(ipa) = cpatch%ncohorts

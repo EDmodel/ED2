@@ -54,7 +54,8 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
    use ed_state_vars       , only : sitetype                   & ! structure
                                   , patchtype                  ! ! structure
    use canopy_air_coms     , only : icanturb                   ! ! intent(in)
-   use allometry           , only : ed_biomass                 ! ! function
+   use allometry           , only : ed_biomass                 & ! function
+                                  , dbh2ca                     ! ! function
    use fuse_fiss_utils     , only : patch_pft_size_profile     ! ! subroutine
    use canopy_air_coms     , only : veg_height_min             & ! intent(in)
                                   , minimum_canopy_depth       & ! intent(in)
@@ -70,8 +71,11 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
    real            , intent(in) :: prss
    !----- Local variables -----------------------------------------------------------------!
    type(patchtype) , pointer    :: cpatch
-   real                         :: norm_fac, weight
+   real                         :: norm_fac
+   real                         :: weight
+   real                         :: opencan_frac
    integer                      :: ico
+   integer                      :: ipft
    !---------------------------------------------------------------------------------------!
 
 
@@ -82,16 +86,23 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
    csite%wpa(ipa)              = 0.0
    csite%wai(ipa)              = 0.0
    norm_fac                    = 0.0
+   opencan_frac                = 1.0
    csite%plant_ag_biomass(ipa) = 0.0
 
    cpatch => csite%patch(ipa)
 
-   !----- Loop over cohorts. --------------------------------------------------------------!
+   !----- Loop over cohorts and integrate the patch-level properties. ---------------------!
    do ico = 1,cpatch%ncohorts
+
+      ipft = cpatch%pft(ico)
+
       !----- Update the patch-level area indices. -----------------------------------------!
       csite%lai(ipa)  = csite%lai(ipa)  + cpatch%lai(ico)
       csite%wpa(ipa)  = csite%wpa(ipa)  + cpatch%wpa(ico)
       csite%wai(ipa)  = csite%wai(ipa)  + cpatch%wai(ico)
+      !------------------------------------------------------------------------------------!
+
+
 
       !----- Compute the patch-level above-ground biomass
       csite%plant_ag_biomass(ipa) = csite%plant_ag_biomass(ipa)                            &
@@ -99,70 +110,59 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
                                               ,cpatch%bleaf(ico),cpatch%pft(ico)           &
                                               ,cpatch%hite(ico),cpatch%bstorage(ico))      &
                                   * cpatch%nplant(ico)           
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Compute average vegetation height, weighting using crown area.  We add the     !
+      ! cohorts only until when the canopy is closed, this way we will not bias the        !
+      ! vegetation height or the canopy depth towards the cohorts that live in the under-  !
+      ! storey.                                                                            !
+      !------------------------------------------------------------------------------------!
+      if (opencan_frac > 0.0) then
+         weight                 = min(1.0, cpatch%nplant(ico)                              &
+                                         * dbh2ca(cpatch%dbh(ico),cpatch%sla(ico),ipft))
+         norm_fac               = norm_fac + weight
+         csite%veg_height(ipa)  = csite%veg_height(ipa) + cpatch%hite(ico) * weight
+         opencan_frac           = opencan_frac * (1.0 - weight)
+      end if
+      !------------------------------------------------------------------------------------!
+
    end do
-
    !---------------------------------------------------------------------------------------!
-   !    Compute vegetation height.  This may be done in two different ways, one is the     !
-   ! LEAF3-based method, and the default is the ED-2.1 method.                             !
+
+
+
+   !----- Normalise the vegetation height, making sure that it is above the minimum. ------!
+   if (norm_fac > tiny(1.0)) then
+      csite%veg_height(ipa)  = max(veg_height_min,csite%veg_height(ipa) / norm_fac)
+   else
+      csite%veg_height(ipa)  = veg_height_min
+   end if
    !---------------------------------------------------------------------------------------!
-   select case (icanturb)
-   case (-1)
-      !------------------------------------------------------------------------------------!
-      !    Original LEAF-3-based scheme.                                                   !
-      !------------------------------------------------------------------------------------!
-      do ico=1,cpatch%ncohorts
-         !----- Compute average vegetation height, weighting using structural biomass. ----!
-         weight                 = cpatch%nplant(ico) * cpatch%bdead(ico)
-         norm_fac               = norm_fac + weight
-         csite%veg_height(ipa)  = csite%veg_height(ipa) + cpatch%hite(ico) * weight
-      end do
-
-      if (norm_fac > tiny(1.0)) then
-         csite%veg_height(ipa)  = max(veg_height_min,csite%veg_height(ipa) / norm_fac)
-      else
-         csite%veg_height(ipa)  = veg_height_min
-      end if
-
-      !----- Finding the patch roughness due to vegetation. -------------------------------!
-      csite%veg_rough(ipa) = max(veg_height_min,vh2dh * csite%veg_height(ipa)) * ez
-
-      !----- Updating the canopy depth.  Before we wouldn't distinguish between -----------!
-      csite%can_depth(ipa) = csite%veg_height(ipa)
-      !------------------------------------------------------------------------------------!
 
 
 
-   case default
-      !------------------------------------------------------------------------------------!
-      !      ED-2.1 method.                                                                !
-      !------------------------------------------------------------------------------------!
-      do ico=1,cpatch%ncohorts
-         !----- Compute average vegetation height, weighting using basal area. ------------!
-         weight                 = cpatch%nplant(ico) * cpatch%dbh(ico) * cpatch%dbh(ico)
-         norm_fac               = norm_fac + weight
-         csite%veg_height(ipa)  = csite%veg_height(ipa) + cpatch%hite(ico) * weight
-      end do
+   !----- Find the patch roughness due to vegetation. -------------------------------------!
+   csite%veg_rough(ipa) = vh2vr * csite%veg_height(ipa)
+   !---------------------------------------------------------------------------------------!
 
-      if (norm_fac > tiny(1.0)) then
-         csite%veg_height(ipa)  = max(veg_height_min,csite%veg_height(ipa) / norm_fac)
-      else
-         csite%veg_height(ipa)  = veg_height_min
-      end if
 
-      !----- Finding the patch roughness due to vegetation. -------------------------------!
-      csite%veg_rough(ipa) = vh2vr * csite%veg_height(ipa)
 
-      !----- Updating the canopy depth . --------------------------------------------------!
-      csite%can_depth(ipa) = max(csite%veg_height(ipa), minimum_canopy_depth)
-      !------------------------------------------------------------------------------------!
+   !----- Update the canopy depth, and impose the minimum if needed be. -------------------!
+   csite%can_depth(ipa) = max(csite%veg_height(ipa), minimum_canopy_depth)
+   !---------------------------------------------------------------------------------------!
 
-   end select
 
    !----- Find the PFT-dependent size distribution of this patch. -------------------------!
    call patch_pft_size_profile(csite,ipa)
+   !---------------------------------------------------------------------------------------!
 
-   !----- Updating the cohort count (may be redundant as well...) -------------------------!
+
+   !----- Update the cohort count (may be redundant as well...) ---------------------------!
    csite%cohort_count(ipa) = cpatch%ncohorts
+   !---------------------------------------------------------------------------------------!
 
    return
 end subroutine update_patch_derived_props
@@ -182,10 +182,16 @@ end subroutine update_patch_derived_props
 subroutine update_patch_thermo_props(csite,ipaa,ipaz)
   
    use ed_state_vars, only : sitetype      ! ! structure
-   use therm_lib    , only : idealdenssh   ! ! function
+   use therm_lib    , only : idealdenssh   & ! function
+                           , qwtk          & ! function
+                           , qtk           ! ! function
    use consts_coms  , only : p00i          & ! intent(in)
                            , rocp          & ! intent(in)
-                           , t00           ! ! intent(in)
+                           , t00           & ! intent(in)
+                           , wdns          ! ! intent(in)
+   use grid_coms    , only : nzg           & ! intent(in)
+                           , nzs           ! ! intent(in)
+   use soil_coms    , only : soil          ! ! intent(in)
    implicit none
 
    !----- Arguments -----------------------------------------------------------------------!
@@ -194,6 +200,10 @@ subroutine update_patch_thermo_props(csite,ipaa,ipaz)
    integer         , intent(in) :: ipaz
    !----- Local variables. ----------------------------------------------------------------!
    integer                      :: ipa
+   integer                      :: nsoil
+   integer                      :: ksn
+   integer                      :: k
+   real                         :: soilhcap
    !---------------------------------------------------------------------------------------!
 
 
@@ -213,6 +223,30 @@ subroutine update_patch_thermo_props(csite,ipaa,ipaz)
       csite%can_temp(ipa)     = csite%can_theta(ipa) * (p00i * csite%can_prss(ipa)) ** rocp
       csite%can_rhos(ipa)     = idealdenssh(csite%can_prss(ipa),csite%can_temp(ipa)        &
                                            ,csite%can_shv(ipa))
+
+      !----- Update soil temperature and liquid water fraction. ---------------------------!
+      do k = 1, nzg
+         nsoil    = csite%ntext_soil(k,ipa)
+         soilhcap = soil(nsoil)%slcpd
+         call qwtk(csite%soil_energy(k,ipa),csite%soil_water(k,ipa)*wdns,soilhcap          &
+                  ,csite%soil_tempk(k,ipa),csite%soil_fracliq(k,ipa))
+      end do
+
+      !----- Update temporary surface water temperature and liquid water fraction. --------!
+      ksn = csite%nlev_sfcwater(ipa)
+      do k = 1, ksn
+         call qtk(csite%sfcwater_energy(k,ipa),csite%sfcwater_tempk(k,ipa)                 &
+                 ,csite%sfcwater_fracliq(k,ipa))
+      end do
+      do k = ksn+1,nzs
+         if (k == 1) then
+            csite%sfcwater_tempk  (k,ipa) = csite%soil_tempk  (nzg,ipa)
+            csite%sfcwater_fracliq(k,ipa) = csite%soil_fracliq(nzg,ipa)
+         else
+            csite%sfcwater_tempk  (k,ipa) = csite%sfcwater_tempk  (k-1,ipa)
+            csite%sfcwater_fracliq(k,ipa) = csite%sfcwater_fracliq(k-1,ipa)
+         end if
+      end do
    end do
 
    return
@@ -375,8 +409,6 @@ subroutine read_soil_moist_temp(cgrid,igr)
    integer                        :: ipa            !
    logical                        :: l1             !
    real                           :: glat           !
-   real                           :: surface_temp   !
-   real                           :: surface_fliq   !
    real                           :: glon           !
    real                           :: soil_tempaux   !
    real                           :: tmp1           !
@@ -477,7 +509,7 @@ subroutine read_soil_moist_temp(cgrid,igr)
                         end do
 
 
-                       !----- Initial condition is with no snow/pond. ----------------------!
+                       !----- Initial condition is with no snow/pond. ---------------------!
                        csite%nlev_sfcwater(ipa)    = 0
                        csite%total_snow_depth(ipa) = 0.
                         do k=1,nzs
@@ -498,14 +530,19 @@ subroutine read_soil_moist_temp(cgrid,igr)
                            csite%soil_fracliq(1:4,ipa) =   1.0
                         endif
                         
-                        nls = 1
-                        call ed_grndvap(nls,csite%ntext_soil(nzg,ipa)                      &
-                                       ,csite%soil_water(nzg,ipa)                          &
-                                       ,csite%soil_energy(nzg,ipa)                         &
-                                       ,csite%sfcwater_energy(nlsw1,ipa)                   &
-                                       ,csite%can_prss(ipa),csite%can_shv(ipa)             &
-                                       ,csite%ground_shv(ipa),csite%surface_ssh(ipa)       &
-                                       ,surface_temp,surface_fliq)
+                        !----- Compute the ground specific humidity. ----------------------!
+                        ntext = csite%ntext_soil(k,ipa)
+                        nls   = csite%nlev_sfcwater(ipa)
+                        nlsw1 = max(1,nls)
+                        call ed_grndvap(nls,ntext,csite%soil_water(nzg,ipa)                &
+                                       ,csite%soil_tempk(nzg,ipa)                          &
+                                       ,csite%soil_fracliq(nzg,ipa)                        &
+                                       ,csite%sfcwater_tempk(nlsw1,ipa)                    &
+                                       ,csite%sfcwater_fracliq(nlsw1,ipa)                  &
+                                       ,csite%can_prss(ipa)                                &
+                                       ,csite%can_shv(ipa),csite%ground_shv(ipa)           &
+                                       ,csite%ground_ssh(ipa),csite%ground_temp(ipa)       &
+                                       ,csite%ground_fliq(ipa))
 
                      end do patchloop
                   end do siteloop
@@ -553,15 +590,16 @@ subroutine update_rad_avg(cgrid)
 
    tfact = radfrq/tendays_sec
 
+
+         
    polyloop: do ipy = 1,cgrid%npolygons
       cpoly => cgrid%polygon(ipy)
-
       siteloop: do isi = 1,cpoly%nsites
          cpoly%rad_avg(isi) = cpoly%rad_avg(isi) * (1.0 - tfact)                           &
                             + cpoly%met(isi)%rshort * tfact
       end do siteloop
    end do polyloop
-   
+
    return
 end subroutine update_rad_avg
 !==========================================================================================!
@@ -606,5 +644,91 @@ subroutine update_workload(cgrid)
 
    return
 end subroutine update_workload
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This sub-routine updates the model time.  It was moved to here to reduce the number  !
+! of routines that must be written twice (off-line and coupled model).                     !
+!------------------------------------------------------------------------------------------!
+subroutine update_model_time_dm(ctime,dtlong)
+
+   use ed_misc_coms, only : simtime ! ! variable type
+   use consts_coms , only : day_sec ! ! intent(in)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   type(simtime)         , intent(inout) :: ctime  ! Current time
+   real                  , intent(in)    :: dtlong ! Model time step
+   !----- Local variables. ----------------------------------------------------------------!
+   integer               , dimension(12) :: daymax
+   !----- External functions. -------------------------------------------------------------!
+   logical               , external      :: isleap ! This function check for leap years
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Assume that the year is not leap. -----------------------------------------------!
+   daymax=(/31,28,31,30,31,30,31,31,30,31,30,31/)
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Update the time. ----------------------------------------------------------------!
+   ctime%time = ctime%time + dtlong
+   !---------------------------------------------------------------------------------------!
+
+
+   if (ctime%time >= day_sec)then
+
+      !----- If time is greater than one day, update the day. -----------------------------!
+      ctime%time = ctime%time - day_sec
+      ctime%date = ctime%date + 1
+
+      !----- If the year is leap, correct February's number of days. ----------------------!
+      if (isleap(ctime%year)) daymax(2) = 29
+
+      !----- If we have reached the end of the month, update the month. -------------------!
+      if (ctime%date > daymax(ctime%month)) then
+         ctime%date  = 1
+         ctime%month = ctime%month + 1
+
+         !------ If we have reached the end of the year, update the year. -----------------!
+         if (ctime%month == 13) then
+            ctime%month = 1
+            ctime%year = ctime%year + 1
+         end if
+      end if
+
+   elseif (ctime%time < 0.0) then
+      !----- Time is negative, go back one day. -------------------------------------------!
+      ctime%time = ctime%time + day_sec
+      ctime%date = ctime%date - 1
+
+      !----- Day is zero, which means we must go to the previous month. -------------------!
+      if (ctime%date == 0) then
+         ctime%month = ctime%month - 1
+
+         !----- Month is zero, which means that we must go to the previous year. ----------!
+         if (ctime%month == 0) then
+            ctime%month = 12
+            ctime%year = ctime%year - 1
+         end if
+
+         !---------------------------------------------------------------------------------!
+         !     Fix the month in case it it a leap year, and make the day the last of the   !
+         ! previous month.                                                                 !
+         !---------------------------------------------------------------------------------!
+         if (isleap(ctime%year)) daymax(2) = 29
+         ctime%date = daymax(ctime%month)
+      end if
+   end if
+
+   return
+end subroutine update_model_time_dm
 !==========================================================================================!
 !==========================================================================================!

@@ -287,6 +287,7 @@ end subroutine init_met_drivers
 !------------------------------------------------------------------------------------------!
 subroutine read_met_drivers_init
 
+   use ed_max_dims       , only : str_len        ! ! intent(in)
    use ed_state_vars     , only : edgrid_g       & ! structure
                                 , edtype         & ! structure
                                 , polygontype    ! ! structure
@@ -304,29 +305,30 @@ subroutine read_met_drivers_init
    use mem_polygons      , only : grid_type      ! ! intent(in)
    use ed_misc_coms      , only : current_time   & ! intent(in)
                                 , iyeara         & ! intent(in)
-                                , iyearz         ! ! intent(in)
+                                , iyearz         & ! intent(in)
+                                , imonthz        ! ! intent(in)
    use grid_coms         , only : ngrids         ! ! intent(in)
    use consts_coms       , only : day_sec        ! ! intent(in)
    implicit none
    !----- Local variables -----------------------------------------------------------------!
-   type(edtype)      , pointer :: cgrid
-   character(len=256)          :: infile
-   integer                     :: igr
-   integer                     :: year_use
-   integer                     :: iformat
-   integer                     :: iv
-   integer                     :: offset
-   integer                     :: m2
-   integer                     :: y2
-   integer                     :: year_use_2
-   integer                     :: nyears
-   integer                     :: ncyc
-   integer                     :: nfullcyc
-   integer                     :: i1stfull
-   integer                     :: iyear
-   integer, dimension(8)       :: seedtime
-   real                        :: runif
-   logical                     :: exans
+   type(edtype)          , pointer :: cgrid
+   character(len=str_len)          :: infile
+   integer                         :: igr
+   integer                         :: year_use
+   integer                         :: iformat
+   integer                         :: iv
+   integer                         :: offset
+   integer                         :: m2
+   integer                         :: y2
+   integer                         :: year_use_2
+   integer                         :: nyears
+   integer                         :: ncyc
+   integer                         :: nfullcyc
+   integer                         :: i1stfull
+   integer                         :: iyear
+   integer, dimension(8)           :: seedtime
+   real                            :: runif
+   logical                         :: exans
    !----- Local constants -----------------------------------------------------------------!
    character(len=3), dimension(12), parameter :: mname = (/ 'JAN', 'FEB', 'MAR', 'APR'     &
                                                           , 'MAY', 'JUN', 'JUL', 'AUG'     &
@@ -348,9 +350,17 @@ subroutine read_met_drivers_init
    if (first_time) then
       first_time = .false.
 
-      !------ Defining the number of years we have meteorological information available. --!
+      !------------------------------------------------------------------------------------!
+      !     Define the number of years we have meteorological information available.  In   !
+      ! case the simulation is supposed to end in December, we must add an extra year, be- !
+      ! cause the meteorological forcing may need to access the following month.           !
+      !------------------------------------------------------------------------------------!
       ncyc   = metcycf - metcyc1 + 1
-      nyears = iyearz  - iyeara  + 1
+      if (imonthz == 12) then
+         nyears = iyearz  - iyeara  + 2
+      else
+         nyears = iyearz  - iyeara  + 1
+      end if
 
       !------ Allocating the sequence of years. -------------------------------------------!
       allocate(metyears(nyears))      

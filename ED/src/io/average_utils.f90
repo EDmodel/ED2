@@ -179,6 +179,7 @@ subroutine normalize_averaged_vars(cgrid,frqsum,dtlsm)
             csite%avg_vapor_gc(ipa)     = csite%avg_vapor_gc(ipa)      * frqsumi
             csite%avg_wshed_vg(ipa)     = csite%avg_wshed_vg(ipa)      * frqsumi
             csite%avg_intercepted(ipa)  = csite%avg_intercepted(ipa)   * frqsumi
+            csite%avg_throughfall(ipa)  = csite%avg_throughfall(ipa)   * frqsumi
             csite%avg_vapor_ac(ipa)     = csite%avg_vapor_ac(ipa)      * frqsumi
             csite%avg_transp(ipa)       = csite%avg_transp(ipa)        * frqsumi
             csite%avg_evap(ipa)         = csite%avg_evap(ipa)          * frqsumi
@@ -187,6 +188,7 @@ subroutine normalize_averaged_vars(cgrid,frqsum,dtlsm)
             csite%avg_sensible_vc(ipa)  = csite%avg_sensible_vc(ipa)   * frqsumi
             csite%avg_qwshed_vg(ipa)    = csite%avg_qwshed_vg(ipa)     * frqsumi
             csite%avg_qintercepted(ipa) = csite%avg_qintercepted(ipa)  * frqsumi
+            csite%avg_qthroughfall(ipa) = csite%avg_qthroughfall(ipa)  * frqsumi
             csite%avg_sensible_gc(ipa)  = csite%avg_sensible_gc(ipa)   * frqsumi
             csite%avg_sensible_ac(ipa)  = csite%avg_sensible_ac(ipa)   * frqsumi
             csite%avg_carbon_ac(ipa)    = csite%avg_carbon_ac(ipa)     * frqsumi
@@ -369,6 +371,7 @@ subroutine reset_averaged_vars(cgrid)
             csite%avg_vapor_gc(ipa)         = 0.0
             csite%avg_wshed_vg(ipa)         = 0.0
             csite%avg_intercepted(ipa)      = 0.0
+            csite%avg_throughfall(ipa)      = 0.0
             csite%avg_vapor_ac(ipa)         = 0.0
             csite%avg_transp(ipa)           = 0.0
             csite%avg_evap(ipa)             = 0.0
@@ -382,6 +385,7 @@ subroutine reset_averaged_vars(cgrid)
             csite%avg_sensible_vc(ipa)      = 0.0
             csite%avg_qwshed_vg(ipa)        = 0.0
             csite%avg_qintercepted(ipa)     = 0.0
+            csite%avg_qthroughfall(ipa)     = 0.0
             csite%avg_sensible_gc(ipa)      = 0.0
             csite%avg_sensible_ac(ipa)      = 0.0
             csite%avg_sensible_gg(:,ipa)    = 0.0
@@ -405,14 +409,14 @@ subroutine reset_averaged_vars(cgrid)
          end do
 
 
-      enddo
+      end do
 
       cpoly%avg_soil_temp(:,:)      = 0.0
       cpoly%avg_soil_water(:,:)     = 0.0
       cpoly%avg_soil_energy(:,:)    = 0.0
       cpoly%avg_soil_fracliq(:,:)   = 0.0
 
-   enddo
+   end do
 
 
    return
@@ -436,17 +440,18 @@ end subroutine reset_averaged_vars
 ! each time step in case daily or monthly averages were requested.                         !
 !------------------------------------------------------------------------------------------!
 subroutine integrate_ed_daily_output_state(cgrid)
-   use ed_state_vars        , only : edtype        & ! structure
-                                   , polygontype   & ! structure
-                                   , sitetype      & ! structure
-                                   , patchtype     ! ! structure
-   use grid_coms            , only : nzg           ! ! intent(in)
-   use ed_max_dims          , only : n_dbh         & ! intent(in)
-                                   , n_pft         & ! intent(in)
-                                   , n_dist_types  & ! intent(in)
-                                   , n_mort        ! ! intent(in)
-   use ed_misc_coms         , only : dtlsm         ! ! intent(in)
-   use pft_coms             , only : sla
+   use ed_state_vars        , only : edtype              & ! structure
+                                   , polygontype         & ! structure
+                                   , sitetype            & ! structure
+                                   , patchtype           ! ! structure
+   use grid_coms            , only : nzg                 ! ! intent(in)
+   use ed_max_dims          , only : n_dbh               & ! intent(in)
+                                   , n_pft               & ! intent(in)
+                                   , n_dist_types        & ! intent(in)
+                                   , n_mort              ! ! intent(in)
+   use ed_misc_coms         , only : dtlsm               ! ! intent(in)
+   use pft_coms             , only : sla                 ! ! intent(in)
+   use canopy_radiation_coms, only : rshort_twilight_min ! ! intent(in)
    implicit none
    !----- Argument ------------------------------------------------------------------------!
    type(edtype)      , target  :: cgrid
@@ -459,11 +464,11 @@ subroutine integrate_ed_daily_output_state(cgrid)
    real                        :: forest_site,forest_site_i, forest_poly
    real                        :: poly_lai,site_lai,patch_lai,patch_lai_i
    real                        :: poly_lma,site_lma,patch_lma
-   real                        :: sss_fsn, sss_fsw, pss_fsn, pss_fsw
    real                        :: sss_can_theta, sss_can_theiv, sss_can_shv
    real                        :: sss_can_co2, sss_can_prss
    real                        :: pss_veg_water, pss_veg_energy, pss_veg_hcap
    real                        :: sss_veg_water, sss_veg_energy, sss_veg_hcap
+   real                        :: rshort_tot
    !---------------------------------------------------------------------------------------!
 
    polyloop: do ipy=1,cgrid%npolygons
@@ -474,8 +479,6 @@ subroutine integrate_ed_daily_output_state(cgrid)
       !----- Initialize auxiliary variables to add sitetype variables. --------------------!
       site_lma         = 0.
       site_lai         = 0.
-      sss_fsn          = 0.
-      sss_fsw          = 0.
       sss_veg_energy   = 0.
       sss_veg_water    = 0.
       sss_veg_hcap     = 0.
@@ -488,12 +491,23 @@ subroutine integrate_ed_daily_output_state(cgrid)
 
       
       siteloop: do isi=1, cpoly%nsites
-      
-         !----- Including this time step if it is day time. -------------------------------!
-!         if (cpoly%met(isi)%rshort > 0.5) then
-         if (cgrid%cosz(ipy) > 0.03) then
+
+
+         !---------------------------------------------------------------------------------!
+         !     Determine if there was any beam radiation, and compute the total (I think   !
+         ! rshort is always the total, but not sure.  This is the same test done in the    !
+         ! radiation driver.                                                               !
+         !---------------------------------------------------------------------------------!
+         if (cpoly%cosaoi(isi) <= 0.0) then
+            rshort_tot = cpoly%met(isi)%rshort_diffuse
+         else
+            rshort_tot = cpoly%met(isi)%rshort
+         end if
+         !----- Include this time step only if it is still day time. ----------------------!
+         if (rshort_tot > rshort_twilight_min) then
             cpoly%daylight(isi) = cpoly%daylight(isi) + dtlsm
          end if
+         !---------------------------------------------------------------------------------!
 
          csite => cpoly%site(isi)
          
@@ -510,8 +524,6 @@ subroutine integrate_ed_daily_output_state(cgrid)
          forest_poly           = forest_poly + forest_site
 
          !----- Initialize auxiliary variables to add patchtype variables. ----------------!
-         pss_fsn          = 0.
-         pss_fsw          = 0.
          patch_lai        = 0.
          patch_lma        = 0.
          pss_veg_energy   = 0.
@@ -530,31 +542,36 @@ subroutine integrate_ed_daily_output_state(cgrid)
                patch_lai = patch_lai + csite%area(ipa)*sum(cpatch%lai,cpatch%solvable)
                patch_lma = patch_lma + csite%area(ipa)*sum(cpatch%lai/sla(cpatch%pft)      &
                                                           ,cpatch%solvable)
-               pss_fsn = pss_fsn + csite%area(ipa)                                         &
-                       * (sum(cpatch%fsn * cpatch%lai,cpatch%solvable) * patch_lai_i)
-               pss_fsw = pss_fsw + csite%area(ipa)                                         &
-                       * (sum(cpatch%fsw * cpatch%lai,cpatch%solvable) * patch_lai_i)
             end if
 
             do ico=1,cpatch%ncohorts
                if (cpatch%solvable(ico)) then
-                  cpatch%dmean_fs_open(ico) = cpatch%dmean_fs_open(ico)                    &
-                                            + cpatch%fs_open(ico)
-                  cpatch%dmean_fsw(ico)     = cpatch%dmean_fsw(ico)     + cpatch%fsw(ico)
-                  cpatch%dmean_fsn(ico)     = cpatch%dmean_fsn(ico)     + cpatch%fsn(ico)
+                  cpatch%dmean_par_v       (ico) = cpatch%dmean_par_v       (ico)          &
+                                                 + cpatch%par_v             (ico)
+                  cpatch%dmean_par_v_beam  (ico) = cpatch%dmean_par_v_beam  (ico)          &
+                                                 + cpatch%par_v_beam        (ico)
+                  cpatch%dmean_par_v_diff  (ico) = cpatch%dmean_par_v_diff  (ico)          &
+                                                 + cpatch%par_v_diffuse     (ico)
 
-                  cpatch%dmean_par_v      (ico) = cpatch%dmean_par_v      (ico)            &
-                                                + cpatch%par_v (ico)
-                  cpatch%dmean_par_v_beam (ico) = cpatch%dmean_par_v_beam (ico)            &
-                                                + cpatch%par_v_beam (ico)
-                  cpatch%dmean_par_v_diff (ico) = cpatch%dmean_par_v_diff (ico)            &
-                                                + cpatch%par_v_diffuse (ico)
-
-                  !----- Integrate light level only if it is day time. --------------------!
-                  !if (cpoly%met(isi)%rshort > 0.5) then
-                  if (cgrid%cosz(ipy) > 0.03) then
-                     cpatch%dmean_light_level(ico)  = cpatch%dmean_light_level(ico)        &
-                                                    + cpatch%light_level(ico)
+                  !------------------------------------------------------------------------!
+                  !    Integrate the photosynthesis-related variables and the light level  !
+                  ! only if it is day time.                                                !
+                  !------------------------------------------------------------------------!
+                  if (rshort_tot > rshort_twilight_min) then
+                     cpatch%dmean_fs_open     (ico) = cpatch%dmean_fs_open     (ico)       &
+                                                    + cpatch%fs_open           (ico)
+                     cpatch%dmean_fsw         (ico) = cpatch%dmean_fsw         (ico)       &
+                                                    + cpatch%fsw               (ico)
+                     cpatch%dmean_fsn         (ico) = cpatch%dmean_fsn         (ico)       &
+                                                    + cpatch%fsn               (ico)
+                     cpatch%dmean_psi_open    (ico) = cpatch%dmean_psi_open    (ico)       &
+                                                    + cpatch%psi_open          (ico)
+                     cpatch%dmean_psi_closed  (ico) = cpatch%dmean_psi_closed  (ico)       &
+                                                    + cpatch%psi_closed        (ico)
+                     cpatch%dmean_water_supply(ico) = cpatch%dmean_water_supply(ico)       &
+                                                    + cpatch%water_supply      (ico)
+                     cpatch%dmean_light_level(ico)  = cpatch%dmean_light_level (ico)       &
+                                                    + cpatch%light_level       (ico)
                      cpatch%dmean_light_level_beam(ico) =                                  &
                                                cpatch%dmean_light_level_beam(ico)          &
                                              + cpatch%light_level_beam(ico)
@@ -575,8 +592,8 @@ subroutine integrate_ed_daily_output_state(cgrid)
 
                end if
             end do
-            !if (cpoly%met(isi)%rshort > 0.5) then
-            if (cgrid%cosz(ipy) > 0.03) then
+
+            if (rshort_tot > rshort_twilight_min) then
                csite%dmean_lambda_light(ipa) = csite%dmean_lambda_light(ipa)               &
                                              + csite%lambda_light(ipa)
             end if
@@ -589,10 +606,8 @@ subroutine integrate_ed_daily_output_state(cgrid)
          ! type level.                                                                     !
          !---------------------------------------------------------------------------------!
 
-         site_lai = site_lai + patch_lai * cpoly%area(isi)
-         site_lma = site_lma + patch_lma * cpoly%area(isi)
-         sss_fsn          = sss_fsn        + (pss_fsn       *site_area_i) * cpoly%area(isi)
-         sss_fsw          = sss_fsw        + (pss_fsw       *site_area_i) * cpoly%area(isi)
+         site_lai         = site_lai       + patch_lai * cpoly%area(isi)
+         site_lma         = site_lma       + patch_lma * cpoly%area(isi)
          sss_veg_energy   = sss_veg_energy + (pss_veg_energy*site_area_i) * cpoly%area(isi)
          sss_veg_water    = sss_veg_water  + (pss_veg_water *site_area_i) * cpoly%area(isi)
          sss_veg_hcap     = sss_veg_hcap   + (pss_veg_hcap  *site_area_i) * cpoly%area(isi)
@@ -732,15 +747,42 @@ subroutine integrate_ed_daily_output_flux(cgrid)
 
    !---------------------------------------------------------------------------------------!
 
-   cgrid%Nbiomass_uptake   = 0.
-   cgrid%Cleaf_litter_flux = 0.
-   cgrid%Croot_litter_flux = 0.
-   cgrid%Nleaf_litter_flux = 0.
-   cgrid%Nroot_litter_flux = 0.
-   cgrid%Ngross_min        = 0.
-   cgrid%Nnet_min          = 0.
 
+   !---------------------------------------------------------------------------------------!
+   !    WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   !
+   !---------------------------------------------------------------------------------------!
+   !     Please, don't initialise polygon-level (cgrid) variables outside polyloop.        !
+   ! This works in off-line runs, but it causes memory leaks (and crashes) in the coupled  !
+   ! runs over the ocean, where cgrid%npolygons can be 0 if one of the sub-domains falls   !
+   ! entirely over the ocean.  Thanks!                                                     !
+   !---------------------------------------------------------------------------------------!
+   ! cgrid%blah = 0. !<<--- This is a bad way of doing, look inside the loop for the safe
+   !                 !      way of initialising the variable.
+   !---------------------------------------------------------------------------------------!
    polyloop: do ipy=1,cgrid%npolygons
+
+      !------------------------------------------------------------------------------------!
+      !     This is the right and safe place to initialise polygon-level (cgrid) vari-     !
+      ! ables, so in case npolygons is zero this will not cause memory leaks.  I know,     !
+      ! this never happens in off-line runs, but it is quite common in coupled runs...     !
+      ! Whenever one of the nodes receives a sub-domain where all the points are over the  !
+      ! ocean, ED will not assign any polygon in that sub-domain, which means that that    !
+      ! node will have 0 polygons, and the variables cannot be allocated.  If you try to   !
+      ! access the polygon level variable outside the loop, then the model crashes due to  !
+      ! segmentation violation (a bad thing), whereas by putting the variables here both   !
+      ! the off-line model and the coupled runs will work, because this loop will be skip- !
+      ! ped when there is no polygon.                                                      !
+      !------------------------------------------------------------------------------------!
+      cgrid%Nbiomass_uptake  (ipy) = 0.
+      cgrid%Cleaf_litter_flux(ipy) = 0.
+      cgrid%Croot_litter_flux(ipy) = 0.
+      cgrid%Nleaf_litter_flux(ipy) = 0.
+      cgrid%Nroot_litter_flux(ipy) = 0.
+      cgrid%Ngross_min       (ipy) = 0.
+      cgrid%Nnet_min         (ipy) = 0.
+      !------------------------------------------------------------------------------------!
+
+
       cpoly => cgrid%polygon(ipy)
       poly_area_i=1./sum(cpoly%area)
 
@@ -948,6 +990,9 @@ subroutine integrate_ed_daily_output_flux(cgrid)
                                    + cgrid%avg_sensible_gc(ipy)
       cgrid%dmean_sensible_ac(ipy) = cgrid%dmean_sensible_ac(ipy)                          &
                                    + cgrid%avg_sensible_ac(ipy)
+
+      !------ Integrate the NEE with the conventional NEE sign (< 0 = uptake). ------------!
+      cgrid%dmean_nee     (ipy) = cgrid%dmean_nee(ipy)      - cgrid%avg_carbon_ac(ipy)
 
       cgrid%dmean_pcpg    (ipy) = cgrid%dmean_pcpg    (ipy) + cgrid%avg_pcpg    (ipy)
       cgrid%dmean_evap    (ipy) = cgrid%dmean_evap    (ipy) + cgrid%avg_evap    (ipy)
@@ -1176,8 +1221,6 @@ subroutine normalize_ed_daily_output_vars(cgrid)
                                    , ddbhi         & ! intent(in)
                                    , dagei         ! ! intent(in)
    use pft_coms             , only : init_density  ! ! intent(in)
-   use canopy_radiation_coms, only : lai_min       & ! intent(in)
-                                   , tai_min       ! ! intent(in)
    use therm_lib            , only : qwtk          & ! subroutine
                                    , idealdenssh   ! ! function
    implicit none
@@ -1210,6 +1253,7 @@ subroutine normalize_ed_daily_output_vars(cgrid)
    real                                            :: pss_growth_resp , sss_growth_resp
    real                                            :: sss_rh
    real                                            :: veg_fliq
+   real                                            :: dtlsm_o_daylight
    !----- Locally saved variables. --------------------------------------------------------!
    logical                            , save       :: find_factors    = .true.
    real                               , save       :: dtlsm_o_daysec  = 1.e34
@@ -1217,7 +1261,7 @@ subroutine normalize_ed_daily_output_vars(cgrid)
    !---------------------------------------------------------------------------------------!
 
 
-   !----- Computing the normalization factors. This is done once. -------------------------!
+   !----- Compute the normalization factors. This is done once. ---------------------------!
    if (find_factors) then
       dtlsm_o_daysec  = dtlsm/day_sec
       frqsum_o_daysec = frqsum/day_sec
@@ -1241,13 +1285,11 @@ subroutine normalize_ed_daily_output_vars(cgrid)
    polyloop: do ipy=1,cgrid%npolygons
       cpoly => cgrid%polygon(ipy)
 
+
       !------------------------------------------------------------------------------------!
       !    State variables, updated every time step, so these are normalized by            !
       ! dtlsm/day_sec.                                                                     !
       !------------------------------------------------------------------------------------!
-      cgrid%dmean_fs_open(ipy)      = cgrid%dmean_fs_open(ipy)      * dtlsm_o_daysec
-      cgrid%dmean_fsw(ipy)          = cgrid%dmean_fsw(ipy)          * dtlsm_o_daysec
-      cgrid%dmean_fsn(ipy)          = cgrid%dmean_fsn(ipy)          * dtlsm_o_daysec
       cgrid%dmean_veg_energy(ipy)   = cgrid%dmean_veg_energy(ipy)   * dtlsm_o_daysec
       cgrid%dmean_veg_hcap(ipy)     = cgrid%dmean_veg_hcap(ipy)     * dtlsm_o_daysec
       cgrid%dmean_veg_water(ipy)    = cgrid%dmean_veg_water(ipy)    * dtlsm_o_daysec
@@ -1310,6 +1352,8 @@ subroutine normalize_ed_daily_output_vars(cgrid)
       ! point in umol/m2/s.  We just multiply by one year in seconds and convert to kgC,   !
       ! so the units will be kgC/m2/yr.                                                    !
       !------------------------------------------------------------------------------------!
+      cgrid%dmean_nee        (ipy)  = cgrid%dmean_nee(ipy)                                 &
+                                    * umols_2_kgCyr * frqsum_o_daysec
       cgrid%dmean_plresp     (ipy)  = cgrid%dmean_plresp    (ipy)                          &
                                     * umols_2_kgCyr * frqsum_o_daysec
       cgrid%dmean_nep        (ipy)  = cgrid%dmean_nep       (ipy)                          &
@@ -1334,6 +1378,12 @@ subroutine normalize_ed_daily_output_vars(cgrid)
 
       siteloop: do isi=1,cpoly%nsites
          csite => cpoly%site(isi)
+
+         !---------------------------------------------------------------------------------!
+         !     Find the average day length.                                                !
+         !---------------------------------------------------------------------------------!
+         dtlsm_o_daylight = dtlsm / cpoly%daylight(isi)
+         !---------------------------------------------------------------------------------!
 
          cpoly%dmean_co2_residual(isi)    = cpoly%dmean_co2_residual(isi)                  &
                                           * umols_2_kgCyr * frqsum_o_daysec
@@ -1379,36 +1429,58 @@ subroutine normalize_ed_daily_output_vars(cgrid)
                !---------------------------------------------------------------------------!
                !     These variables must be scaled.  They are updated every time step.    !
                !---------------------------------------------------------------------------!
-               cpatch%dmean_fs_open   (ico) = cpatch%dmean_fs_open(ico)    * dtlsm_o_daysec
-               cpatch%dmean_fsw       (ico) = cpatch%dmean_fsw    (ico)    * dtlsm_o_daysec
-               cpatch%dmean_fsn       (ico) = cpatch%dmean_fsn    (ico)    * dtlsm_o_daysec
-               cpatch%dmean_par_v     (ico) = cpatch%dmean_par_v     (ico) * dtlsm_o_daysec
-               cpatch%dmean_par_v_beam(ico) = cpatch%dmean_par_v_beam(ico) * dtlsm_o_daysec
-               cpatch%dmean_par_v_diff(ico) = cpatch%dmean_par_v_diff(ico) * dtlsm_o_daysec
+               cpatch%dmean_par_v       (ico) = cpatch%dmean_par_v       (ico)             &
+                                              * dtlsm_o_daysec
+               cpatch%dmean_par_v_beam  (ico) = cpatch%dmean_par_v_beam  (ico)             &
+                                              * dtlsm_o_daysec
+               cpatch%dmean_par_v_diff  (ico) = cpatch%dmean_par_v_diff  (ico)             &
+                                              * dtlsm_o_daysec
+               !---------------------------------------------------------------------------!
+
+
 
                !---------------------------------------------------------------------------!
-               !     The light level is averaged over the length of day light only.  We    !
+               !     The light level, the fraction of open stomates, and the water demand  !
+               ! and supply variables are averaged over the length of day light only.  We  !
                ! find this variable only if there is any day light (this is to avoid       !
                ! problems with polar nights).                                              !
                !---------------------------------------------------------------------------!
                if (cpoly%daylight(isi) >= dtlsm) then
-                  cpatch%dmean_light_level(ico)       = cpatch%dmean_light_level(ico)      &
-                                                      * dtlsm / cpoly%daylight(isi)
-                  cpatch%dmean_light_level_beam(ico)  = cpatch%dmean_light_level_beam(ico) &
-                                                      * dtlsm / cpoly%daylight(isi)
-                  cpatch%dmean_light_level_diff(ico)  = cpatch%dmean_light_level_diff(ico) &
-                                                      * dtlsm / cpoly%daylight(isi)
-                  cpatch%dmean_beamext_level(ico)     = cpatch%dmean_beamext_level(ico)    &
-                                                      * dtlsm / cpoly%daylight(isi)
-                  cpatch%dmean_diffext_level(ico)     = cpatch%dmean_diffext_level(ico)    &
-                                                      * dtlsm / cpoly%daylight(isi)
-                  cpatch%dmean_norm_par_beam(ico)     = cpatch%dmean_norm_par_beam(ico)    &
-                                                      * dtlsm / cpoly%daylight(isi)
-                  cpatch%dmean_norm_par_diff(ico)     = cpatch%dmean_norm_par_diff(ico)    &
-                                                      * dtlsm / cpoly%daylight(isi)
-                  cpatch%dmean_lambda_light(ico)      = cpatch%dmean_lambda_light(ico)     &
-                                                      * dtlsm / cpoly%daylight(isi)
+                  cpatch%dmean_fs_open         (ico) = cpatch%dmean_fs_open         (ico)  &
+                                                     * dtlsm_o_daylight
+                  cpatch%dmean_fsw             (ico) = cpatch%dmean_fsw             (ico)  &
+                                                     * dtlsm_o_daylight
+                  cpatch%dmean_fsn             (ico) = cpatch%dmean_fsn             (ico)  &
+                                                     * dtlsm_o_daylight
+                  cpatch%dmean_psi_open        (ico) = cpatch%dmean_psi_open        (ico)  &
+                                                     * dtlsm_o_daylight
+                  cpatch%dmean_psi_closed      (ico) = cpatch%dmean_psi_closed      (ico)  &
+                                                     * dtlsm_o_daylight
+                  cpatch%dmean_water_supply    (ico) = cpatch%dmean_water_supply    (ico)  &
+                                                     * dtlsm_o_daylight
+                  cpatch%dmean_light_level     (ico) = cpatch%dmean_light_level     (ico)  &
+                                                     * dtlsm_o_daylight
+                  cpatch%dmean_light_level_beam(ico) = cpatch%dmean_light_level_beam(ico)  &
+                                                     * dtlsm_o_daylight
+                  cpatch%dmean_light_level_diff(ico) = cpatch%dmean_light_level_diff(ico)  &
+                                                     * dtlsm_o_daylight
+                  cpatch%dmean_beamext_level   (ico) = cpatch%dmean_beamext_level   (ico)  &
+                                                     * dtlsm_o_daylight
+                  cpatch%dmean_diffext_level   (ico) = cpatch%dmean_diffext_level   (ico)  &
+                                                     * dtlsm_o_daylight
+                  cpatch%dmean_norm_par_beam   (ico) = cpatch%dmean_norm_par_beam   (ico)  &
+                                                     * dtlsm_o_daylight
+                  cpatch%dmean_norm_par_diff   (ico) = cpatch%dmean_norm_par_diff   (ico)  &
+                                                     * dtlsm_o_daylight
+                  cpatch%dmean_lambda_light    (ico) = cpatch%dmean_lambda_light    (ico)  &
+                                                     * dtlsm_o_daylight
                else
+                  cpatch%dmean_fs_open         (ico) = 0.
+                  cpatch%dmean_fsw             (ico) = 0.
+                  cpatch%dmean_fsn             (ico) = 0.
+                  cpatch%dmean_psi_open        (ico) = 0.
+                  cpatch%dmean_psi_closed      (ico) = 0.
+                  cpatch%dmean_water_supply    (ico) = 0.
                   cpatch%dmean_light_level     (ico) = 0.
                   cpatch%dmean_light_level_beam(ico) = 0.
                   cpatch%dmean_light_level_diff(ico) = 0.
@@ -1648,6 +1720,7 @@ subroutine zero_ed_daily_output_vars(cgrid)
       cgrid%dmean_sensible_gc    (ipy) = 0.
       cgrid%dmean_sensible_ac    (ipy) = 0.
  
+      cgrid%dmean_nee            (ipy) = 0.
       cgrid%dmean_plresp         (ipy) = 0.
       cgrid%dmean_rh             (ipy) = 0.
       cgrid%dmean_leaf_resp      (ipy) = 0.
@@ -1719,6 +1792,9 @@ subroutine zero_ed_daily_output_vars(cgrid)
                cpatch%dmean_fs_open(ico)          = 0.
                cpatch%dmean_fsw(ico)              = 0.
                cpatch%dmean_fsn(ico)              = 0.
+               cpatch%dmean_psi_open(ico)         = 0.
+               cpatch%dmean_psi_closed(ico)       = 0.
+               cpatch%dmean_water_supply(ico)     = 0.
                cpatch%dmean_light_level(ico)      = 0.
                cpatch%dmean_light_level_beam(ico) = 0.
                cpatch%dmean_light_level_diff(ico) = 0.
@@ -1798,6 +1874,8 @@ subroutine integrate_ed_monthly_output_vars(cgrid)
                                       + cgrid%dmean_sensible_gc   (ipy)
       cgrid%mmean_sensible_vc   (ipy) = cgrid%mmean_sensible_vc   (ipy)                    &
                                       + cgrid%dmean_sensible_vc   (ipy)
+      cgrid%mmean_nee           (ipy) = cgrid%mmean_nee           (ipy)                    &
+                                      + cgrid%dmean_nee           (ipy)
       cgrid%mmean_nep           (ipy) = cgrid%mmean_nep           (ipy)                    &
                                       + cgrid%dmean_nep           (ipy)
       cgrid%mmean_plresp        (ipy) = cgrid%mmean_plresp        (ipy)                    &
@@ -1915,18 +1993,24 @@ subroutine integrate_ed_monthly_output_vars(cgrid)
 
             cpatch => csite%patch(ipa)
             cohort_loop: do ico=1,cpatch%ncohorts
-               cpatch%mmean_fs_open   (ico)    = cpatch%mmean_fs_open(ico)                 &
-                                               + cpatch%dmean_fs_open(ico)
-               cpatch%mmean_fsw       (ico)    = cpatch%mmean_fsw(ico)                     &
-                                               + cpatch%dmean_fsw(ico)
-               cpatch%mmean_fsn       (ico)    = cpatch%mmean_fsn(ico)                     &
-                                               + cpatch%dmean_fsn(ico)
-               cpatch%mmean_par_v     (ico)    = cpatch%mmean_par_v(ico)                   &
-                                               + cpatch%dmean_par_v(ico)
-               cpatch%mmean_par_v_beam(ico)    = cpatch%mmean_par_v_beam(ico)              &
-                                               + cpatch%dmean_par_v_beam(ico)
-               cpatch%mmean_par_v_diff(ico)    = cpatch%mmean_par_v_diff(ico)              &
-                                               + cpatch%dmean_par_v_diff(ico)
+               cpatch%mmean_fs_open     (ico) = cpatch%mmean_fs_open     (ico)             &
+                                              + cpatch%dmean_fs_open     (ico)
+               cpatch%mmean_fsw         (ico) = cpatch%mmean_fsw         (ico)             &
+                                              + cpatch%dmean_fsw         (ico)
+               cpatch%mmean_fsn         (ico) = cpatch%mmean_fsn         (ico)             &
+                                              + cpatch%dmean_fsn         (ico)
+               cpatch%mmean_psi_open    (ico) = cpatch%mmean_psi_open    (ico)             &
+                                              + cpatch%dmean_psi_open    (ico)
+               cpatch%mmean_psi_closed  (ico) = cpatch%mmean_psi_closed  (ico)             &
+                                              + cpatch%dmean_psi_closed  (ico)
+               cpatch%mmean_water_supply(ico) = cpatch%mmean_water_supply(ico)             &
+                                              + cpatch%dmean_water_supply(ico)
+               cpatch%mmean_par_v       (ico) = cpatch%mmean_par_v       (ico)             &
+                                              + cpatch%dmean_par_v       (ico)
+               cpatch%mmean_par_v_beam  (ico) = cpatch%mmean_par_v_beam  (ico)             &
+                                              + cpatch%dmean_par_v_beam  (ico)
+               cpatch%mmean_par_v_diff  (ico) = cpatch%mmean_par_v_diff  (ico)             &
+                                              + cpatch%dmean_par_v_diff  (ico)
 
                !---------------------------------------------------------------------------!
                !     The following variables are all converted to kgC/plant/yr.            !
@@ -2018,8 +2102,6 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
                                    , day_sec       & ! intent(in)
                                    , yr_day        ! ! intent(in)
    use pft_coms             , only : init_density  ! ! intent(in)
-   use canopy_radiation_coms, only : lai_min       & ! intent(in)
-                                   , tai_min       ! ! intent(in)
    use therm_lib            , only : idealdenssh   & ! function
                                    , qwtk          ! ! function
    use allometry            , only : ed_biomass    ! ! function
@@ -2078,6 +2160,7 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
       cgrid%mmean_sensible_ac    (ipy) = cgrid%mmean_sensible_ac    (ipy) * ndaysi
       cgrid%mmean_sensible_gc    (ipy) = cgrid%mmean_sensible_gc    (ipy) * ndaysi
       cgrid%mmean_sensible_vc    (ipy) = cgrid%mmean_sensible_vc    (ipy) * ndaysi
+      cgrid%mmean_nee            (ipy) = cgrid%mmean_nee            (ipy) * ndaysi
       cgrid%mmean_nep            (ipy) = cgrid%mmean_nep            (ipy) * ndaysi
       cgrid%mmean_plresp         (ipy) = cgrid%mmean_plresp         (ipy) * ndaysi
       cgrid%mmean_rh             (ipy) = cgrid%mmean_rh             (ipy) * ndaysi
@@ -2239,7 +2322,7 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
 
             cpatch => csite%patch(ipa)
             cohortloop: do ico = 1, cpatch%ncohorts
-               !----- Finding the carbon fluxes. ------------------------------------------!
+               !----- Find the carbon fluxes. ---------------------------------------------!
                cpatch%mmean_gpp         (ico) = cpatch%mmean_gpp         (ico) * ndaysi
                cpatch%mmean_leaf_resp   (ico) = cpatch%mmean_leaf_resp   (ico) * ndaysi
                cpatch%mmean_root_resp   (ico) = cpatch%mmean_root_resp   (ico) * ndaysi
@@ -2249,6 +2332,9 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
                cpatch%mmean_fsw         (ico) = cpatch%mmean_fsw         (ico) * ndaysi
                cpatch%mmean_fsn         (ico) = cpatch%mmean_fsn         (ico) * ndaysi
                cpatch%mmean_fs_open     (ico) = cpatch%mmean_fs_open     (ico) * ndaysi
+               cpatch%mmean_psi_open    (ico) = cpatch%mmean_psi_open    (ico) * ndaysi
+               cpatch%mmean_psi_closed  (ico) = cpatch%mmean_psi_closed  (ico) * ndaysi
+               cpatch%mmean_water_supply(ico) = cpatch%mmean_water_supply(ico) * ndaysi
                cpatch%mmean_par_v       (ico) = cpatch%mmean_par_v       (ico) * ndaysi
                cpatch%mmean_par_v_beam  (ico) = cpatch%mmean_par_v_beam  (ico) * ndaysi
                cpatch%mmean_par_v_diff  (ico) = cpatch%mmean_par_v_diff  (ico) * ndaysi
@@ -2257,10 +2343,10 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
                cpatch%mmean_root_maintenance (ico) = cpatch%mmean_root_maintenance(ico)    &
                                                    * ndaysi
                cpatch%mmean_leaf_drop   (ico) = cpatch%mmean_leaf_drop   (ico) * ndaysi
-               !----- Mean carbon balance is re-scaled so it will be in kgC/plant/yr
-               cpatch%mmean_cb          (ico) = cpatch%cb(lmon,ico) * ndaysi * yr_day
+               !----- Mean carbon balance is re-scaled so it will be in kgC/plant/yr. -----!
+               cpatch%mmean_cb          (ico) = cpatch%mmean_cb(ico) * ndaysi * yr_day
 
-               !----- Finding the mortality rates. ----------------------------------------!
+               !----- Find the mortality rates. -------------------------------------------!
                do imt=1,n_mort
                   cpatch%mmean_mort_rate(imt,ico) = cpatch%mmean_mort_rate(imt,ico)*ndaysi
                end do
@@ -2283,7 +2369,7 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
                cpatch%mmean_lambda_light(ico)      = cpatch%mmean_lambda_light(ico)        &
                                                    * ndaysi
 
-               !----- Defining to which PFT this cohort belongs. --------------------------!
+               !----- Define to which PFT this cohort belongs. ----------------------------!
                ipft = cpatch%pft(ico)
 
                !----- Computing the total seed mass of this cohort. -----------------------!
@@ -2293,10 +2379,10 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
                                          + cohort_seeds * csite%area(ipa)
 
                if (forest) then
-                  !----- Defining to which size (DBH) class this cohort belongs. ----------!
+                  !----- Define to which size (DBH) class this cohort belongs. ------------!
                   idbh = max(1,min(n_dbh,ceiling(cpatch%dbh(ico)*ddbhi)))
 
-                  !----- Incrementing the plant density. ----------------------------------!
+                  !----- Increment the plant density. -------------------------------------!
                   pss_pldens(ipft,idbh) = pss_pldens(ipft,idbh)                            &
                                              + cpatch%nplant(ico) * csite%area(ipa)
                   pss_bseeds(ipft,idbh) = pss_bseeds(ipft,idbh)                            &
@@ -2381,6 +2467,9 @@ subroutine zero_ed_monthly_output_vars(cgrid)
 
    !----- The loop is necessary for coupled runs (when npolygons may be 0) ----------------!
    do ipy=1,cgrid%npolygons
+      cgrid%mmean_fs_open            (ipy) = 0.
+      cgrid%mmean_fsw                (ipy) = 0.
+      cgrid%mmean_fsn                (ipy) = 0.
       cgrid%mmean_gpp                (ipy) = 0.
       cgrid%mmean_evap               (ipy) = 0.
       cgrid%mmean_transp             (ipy) = 0.
@@ -2390,6 +2479,7 @@ subroutine zero_ed_monthly_output_vars(cgrid)
       cgrid%mmean_sensible_ac        (ipy) = 0.
       cgrid%mmean_sensible_gc        (ipy) = 0.
       cgrid%mmean_sensible_vc        (ipy) = 0.
+      cgrid%mmean_nee                (ipy) = 0.
       cgrid%mmean_nep                (ipy) = 0.
       cgrid%mmean_plresp             (ipy) = 0.
       cgrid%mmean_rh                 (ipy) = 0.
@@ -2464,6 +2554,9 @@ subroutine zero_ed_monthly_output_vars(cgrid)
                cpatch%mmean_fs_open           (ico) = 0.
                cpatch%mmean_fsw               (ico) = 0.
                cpatch%mmean_fsn               (ico) = 0.
+               cpatch%mmean_psi_open          (ico) = 0.
+               cpatch%mmean_psi_closed        (ico) = 0.
+               cpatch%mmean_water_supply      (ico) = 0.
                cpatch%mmean_leaf_maintenance  (ico) = 0.
                cpatch%mmean_root_maintenance  (ico) = 0.
                cpatch%mmean_leaf_drop         (ico) = 0.

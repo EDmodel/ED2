@@ -97,12 +97,14 @@ Module mem_leaf
       !------------------------------------------------------------------------------------!
       !     Surface fluxes, dimensioned by (nxp,nyp,npatch).                               !
       !------------------------------------------------------------------------------------!
-      real, dimension(:,:,:), pointer :: gpp      & ! Gross primary production  [µmol/m²/s]
-                                       , resphet  & ! Heterotrophic respiration [µmol/m²/s]
-                                       , plresp   & ! Plant respiration         [µmol/m²/s]
-                                       , evap     & ! Evaporation               [     W/m²]
-                                       , transp   & ! Transpiration             [     W/m²]
-                                       , sensible ! ! Sensible heat flux        [     W/m²]
+      real, dimension(:,:,:), pointer :: gpp         & ! Gross primary prod.    [µmol/m²/s]
+                                       , resphet     & ! Heterotrophic resp.    [µmol/m²/s]
+                                       , plresp      & ! Plant respiration      [µmol/m²/s]
+                                       , evap_gc     & ! Evaporation (Gnd->Can) [     W/m²]
+                                       , evap_vc     & ! Evaporation (Veg->Can) [     W/m²]
+                                       , transp      & ! Transpiration          [     W/m²]
+                                       , sensible_gc & ! Sens. heat (Gnd->Can)  [     W/m²]
+                                       , sensible_vc ! ! Sens. heat (Veg->Can)  [     W/m²]
 
       !------------------------------------------------------------------------------------!
       !     Miscellaneous properties, dimensioned by (nxp,nyp,npatch).                     !
@@ -125,17 +127,19 @@ Module mem_leaf
    !---------------------------------------------------------------------------------------!
    !     Other variables.                                                                  !
    !---------------------------------------------------------------------------------------!
-   integer                 :: nslcon  ! Soil texture if constant for entire domain
-   integer                 :: nvgcon  ! Vegetation class if constant for entire domain
-   integer                 :: nvegpat ! Number of vegetation types
-   integer                 :: isfcl   ! Surface model (1. LEAF3, 2. LEAF-Hydro, 5. ED2)
-   integer                 :: istar   ! Which surface layer model should I use?
-                                      !    1. Louis (1979), 2. Oncley and Dudhia (1995).
-                                      !    3. Beljaars and Holtslag (1991)
-                                      !    4. BH91, using OD95 to find zeta.
-   real                    :: dtleaf  ! LEAF-3 target time step.  It will be either this
-                                      !    or the actual BRAMS time step (whichever is 
-                                      !    lower).
+   integer                 :: nslcon    ! Soil texture if constant for entire domain
+   integer                 :: nvgcon    ! Vegetation class if constant for entire domain
+   integer                 :: nvegpat   ! Number of vegetation types
+   integer                 :: isfcl     ! Surface model (1. LEAF3, 2. LEAF-Hydro, 5. ED2)
+   integer                 :: istar     ! Which surface layer model should I use?
+                                        !    1. Louis (1979), 2. Oncley and Dudhia (1995).
+                                        !    3. Beljaars and Holtslag (1991)
+                                        !    4. BH91, using OD95 to find zeta.
+   real                    :: dtleaf    ! LEAF-3 target time step.  It will be either this
+                                        !    or the actual BRAMS time step (whichever is 
+                                        !    lower).
+   real                    :: betapower ! Power for the beta parameter that controls 
+                                        !    ground evaporation.
 
    real, dimension(nzgmax) :: stgoff  ! Initial soil temperature offset
    real, dimension(nzgmax) :: slmstr  ! Initial soil moisture if constant for entire domain
@@ -231,9 +235,11 @@ Module mem_leaf
       allocate (leaf%gpp              (    nx,ny,np))
       allocate (leaf%resphet          (    nx,ny,np))
       allocate (leaf%plresp           (    nx,ny,np))
-      allocate (leaf%evap             (    nx,ny,np))
+      allocate (leaf%evap_gc          (    nx,ny,np))
+      allocate (leaf%evap_vc          (    nx,ny,np))
       allocate (leaf%transp           (    nx,ny,np))
-      allocate (leaf%sensible         (    nx,ny,np))
+      allocate (leaf%sensible_gc      (    nx,ny,np))
+      allocate (leaf%sensible_vc      (    nx,ny,np))
 
       allocate (leaf%R_aer            (    nx,ny,np))
 
@@ -321,9 +327,11 @@ Module mem_leaf
       if (associated(leaf%gpp              ))  nullify(leaf%gpp              )
       if (associated(leaf%resphet          ))  nullify(leaf%resphet          )
       if (associated(leaf%plresp           ))  nullify(leaf%plresp           )
-      if (associated(leaf%evap             ))  nullify(leaf%evap             )
+      if (associated(leaf%evap_gc          ))  nullify(leaf%evap_gc          )
+      if (associated(leaf%evap_vc          ))  nullify(leaf%evap_vc          )
       if (associated(leaf%transp           ))  nullify(leaf%transp           )
-      if (associated(leaf%sensible         ))  nullify(leaf%sensible         )
+      if (associated(leaf%sensible_gc      ))  nullify(leaf%sensible_gc      )
+      if (associated(leaf%sensible_vc      ))  nullify(leaf%sensible_vc      )
 
       if (associated(leaf%R_aer            ))  nullify(leaf%R_aer            )
       if (associated(leaf%G_URBAN          ))  nullify(leaf%G_URBAN          )
@@ -408,9 +416,11 @@ Module mem_leaf
       if (associated(leaf%gpp              ))  deallocate(leaf%gpp              )
       if (associated(leaf%resphet          ))  deallocate(leaf%resphet          )
       if (associated(leaf%plresp           ))  deallocate(leaf%plresp           )
-      if (associated(leaf%evap             ))  deallocate(leaf%evap             )
+      if (associated(leaf%evap_vc          ))  deallocate(leaf%evap_vc          )
+      if (associated(leaf%evap_gc          ))  deallocate(leaf%evap_gc          )
       if (associated(leaf%transp           ))  deallocate(leaf%transp           )
-      if (associated(leaf%sensible         ))  deallocate(leaf%sensible         )
+      if (associated(leaf%sensible_gc      ))  deallocate(leaf%sensible_gc      )
+      if (associated(leaf%sensible_vc      ))  deallocate(leaf%sensible_vc      )
 
       if (associated(leaf%R_aer            ))  deallocate(leaf%R_aer            )
       if (associated(leaf%G_URBAN          ))  deallocate(leaf%G_URBAN          )
@@ -470,15 +480,15 @@ Module mem_leaf
 
       if (associated(leaf%soil_water))                                                     &
          call vtables2(leaf%soil_water(1,1,1,1),leafm%soil_water(1,1,1,1),ng,npts,imean    &
-                      ,'SOIL_WATER :4:hist:anal:mpti:mpt3'//trim(str_recycle))
+                      ,'SOIL_WATER :4:hist:anal:mpti:mpt1:mpt3'//trim(str_recycle))
 
       if (associated(leaf%soil_energy))                                                    &
          call vtables2(leaf%soil_energy(1,1,1,1),leafm%soil_energy(1,1,1,1),ng,npts,imean  &
-                      ,'SOIL_ENERGY :4:hist:anal:mpti:mpt3'//trim(str_recycle))
+                      ,'SOIL_ENERGY :4:hist:anal:mpti:mpt1:mpt3'//trim(str_recycle))
 
       if (associated(leaf%soil_text))                                                      &
          call vtables2(leaf%soil_text(1,1,1,1),leafm%soil_text(1,1,1,1),ng,npts,imean      &
-                      ,'SOIL_TEXT :4:hist:anal:mpti:mpt3'//trim(str_recycle))
+                      ,'SOIL_TEXT :4:hist:anal:mpti:mpt1:mpt3'//trim(str_recycle))
 
 
       !------------------------------------------------------------------------------------!
@@ -489,17 +499,17 @@ Module mem_leaf
       if (associated(leaf%sfcwater_mass))                                                  &
          call vtables2(leaf%sfcwater_mass(1,1,1,1),leafm%sfcwater_mass(1,1,1,1)            &
                       ,ng,npts,imean                                                       &
-                      ,'SFCWATER_MASS :5:hist:anal:mpti:mpt3'//trim(str_recycle))
+                      ,'SFCWATER_MASS :5:hist:anal:mpti:mpt1:mpt3'//trim(str_recycle))
 
       if (associated(leaf%sfcwater_energy))                                                &
          call vtables2(leaf%sfcwater_energy(1,1,1,1),leafm%sfcwater_energy(1,1,1,1)        &
                       ,ng,npts,imean                                                       &
-                      ,'SFCWATER_ENERGY :5:hist:anal:mpti:mpt3'//trim(str_recycle))
+                      ,'SFCWATER_ENERGY :5:hist:anal:mpti:mpt1:mpt3'//trim(str_recycle))
 
       if (associated(leaf%sfcwater_depth))                                                 &
          call vtables2(leaf%sfcwater_depth(1,1,1,1),leafm%sfcwater_depth(1,1,1,1)          &
                       ,ng,npts,imean                                                       &
-                      ,'SFCWATER_DEPTH :5:hist:anal:mpti:mpt3'//trim(str_recycle))
+                      ,'SFCWATER_DEPTH :5:hist:anal:mpti:mpt1:mpt3'//trim(str_recycle))
 
       !------------------------------------------------------------------------------------!
       !     3-D variables, dimensioned by nx*ny*np.                                        !
@@ -508,79 +518,79 @@ Module mem_leaf
 
       if (associated(leaf%soil_rough))                                                     &
          call vtables2(leaf%soil_rough(1,1,1),leafm%soil_rough(1,1,1),ng,npts,imean        &
-                      ,'SOIL_ROUGH :6:hist:anal:mpti:mpt3'//trim(str_recycle))
+                      ,'SOIL_ROUGH :6:hist:anal:mpti:mpt1:mpt3'//trim(str_recycle))
 
       if (associated(leaf%sfcwater_nlev))                                                  &
          call vtables2(leaf%sfcwater_nlev(1,1,1),leafm%sfcwater_nlev(1,1,1),ng,npts,imean  &
-                      ,'SFCWATER_NLEV :6:hist:anal:mpti:mpt3'//trim(str_recycle))
+                      ,'SFCWATER_NLEV :6:hist:anal:mpti:mpt1:mpt3'//trim(str_recycle))
 
       if (associated(leaf%ground_rsat))                                                    &
          call vtables2(leaf%ground_rsat(1,1,1),leafm%ground_rsat(1,1,1),ng,npts,imean      &
-                      ,'GROUND_RSAT :6:hist:anal:mpti:mpt3'//trim(str_recycle))
+                      ,'GROUND_RSAT :6:hist:anal:mpti:mpt1:mpt3'//trim(str_recycle))
 
       if (associated(leaf%ground_rvap))                                                    &
          call vtables2(leaf%ground_rvap(1,1,1),leafm%ground_rvap(1,1,1),ng,npts,imean      &
-                      ,'GROUND_RVAP :6:hist:anal:mpti:mpt3'//trim(str_recycle))
+                      ,'GROUND_RVAP :6:hist:anal:mpti:mpt1:mpt3'//trim(str_recycle))
 
       if (associated(leaf%ground_temp))                                                    &
          call vtables2(leaf%ground_temp(1,1,1),leafm%ground_temp(1,1,1),ng,npts,imean      &
-                      ,'GROUND_TEMP :6:hist:anal:mpti:mpt3'//trim(str_recycle))
+                      ,'GROUND_TEMP :6:hist:anal:mpti:mpt1:mpt3'//trim(str_recycle))
 
       if (associated(leaf%ground_fliq))                                                    &
          call vtables2(leaf%ground_fliq(1,1,1),leafm%ground_fliq(1,1,1),ng,npts,imean      &
-                      ,'GROUND_FLIQ :6:hist:anal:mpti:mpt3'//trim(str_recycle))
+                      ,'GROUND_FLIQ :6:hist:anal:mpti:mpt1:mpt3'//trim(str_recycle))
 
       if (associated(leaf%veg_fracarea))                                                   &
          call vtables2(leaf%veg_fracarea(1,1,1),leafm%veg_fracarea(1,1,1),ng,npts,imean    &
-                      ,'VEG_FRACAREA :6:hist:anal:mpti:mpt3'//trim(str_recycle))
+                      ,'VEG_FRACAREA :6:hist:anal:mpti:mpt1:mpt3'//trim(str_recycle))
 
       if (associated(leaf%veg_lai))                                                        &
          call vtables2(leaf%veg_lai(1,1,1),leafm%veg_lai(1,1,1),ng,npts,imean              &
-                      ,'VEG_LAI :6:hist:anal:mpti:mpt3'//trim(str_recycle))
+                      ,'VEG_LAI :6:hist:anal:mpti:mpt1:mpt3'//trim(str_recycle))
 
       if (associated(leaf%veg_agb))                                                        &
          call vtables2(leaf%veg_agb(1,1,1),leafm%veg_agb(1,1,1),ng,npts,imean              &
-                      ,'VEG_AGB :6:hist:anal:mpti:mpt3'//trim(str_recycle))
+                      ,'VEG_AGB :6:hist:anal:mpti:mpt1:mpt3'//trim(str_recycle))
 
       if (associated(leaf%veg_rough))                                                      &
          call vtables2(leaf%veg_rough(1,1,1),leafm%veg_rough(1,1,1),ng,npts,imean          &
-                      ,'VEG_ROUGH :6:hist:anal:mpti:mpt3'//trim(str_recycle))
+                      ,'VEG_ROUGH :6:hist:anal:mpti:mpt1:mpt3'//trim(str_recycle))
 
       if (associated(leaf%veg_height))                                                     &
          call vtables2(leaf%veg_height(1,1,1),leafm%veg_height(1,1,1),ng,npts,imean        &
-                      ,'VEG_HEIGHT :6:hist:anal:mpti:mpt3'//trim(str_recycle))
+                      ,'VEG_HEIGHT :6:hist:anal:mpti:mpt1:mpt3'//trim(str_recycle))
 
       if (associated(leaf%veg_albedo))                                                     &
          call vtables2(leaf%veg_albedo(1,1,1),leafm%veg_albedo(1,1,1),ng,npts,imean        &
-                      ,'VEG_ALBEDO :6:hist:anal:mpti:mpt3'//trim(str_recycle))
+                      ,'VEG_ALBEDO :6:hist:anal:mpti:mpt1:mpt3'//trim(str_recycle))
 
       if (associated(leaf%veg_tai))                                                        &
          call vtables2(leaf%veg_tai(1,1,1),leafm%veg_tai(1,1,1),ng,npts,imean              &
-                      ,'VEG_TAI :6:hist:anal:mpti:mpt3'//trim(str_recycle))
+                      ,'VEG_TAI :6:hist:anal:mpti:mpt1:mpt3'//trim(str_recycle))
 
       if (associated(leaf%veg_water))                                                      &
          call vtables2(leaf%veg_water(1,1,1),leafm%veg_water(1,1,1),ng,npts,imean          &
-                      ,'VEG_WATER :6:hist:anal:mpti:mpt3'//trim(str_recycle))
+                      ,'VEG_WATER :6:hist:anal:mpti:mpt1:mpt3'//trim(str_recycle))
 
       if (associated(leaf%veg_hcap))                                                       &
          call vtables2(leaf%veg_hcap(1,1,1),leafm%veg_hcap(1,1,1),ng,npts,imean            &
-                      ,'VEG_HCAP :6:hist:anal:mpti:mpt3'//trim(str_recycle))
+                      ,'VEG_HCAP :6:hist:anal:mpti:mpt1:mpt3'//trim(str_recycle))
 
       if (associated(leaf%veg_energy))                                                     &
          call vtables2(leaf%veg_energy(1,1,1),leafm%veg_energy(1,1,1),ng,npts,imean        &
-                      ,'VEG_ENERGY :6:hist:anal:mpti:mpt3'//trim(str_recycle))
+                      ,'VEG_ENERGY :6:hist:anal:mpti:mpt1:mpt3'//trim(str_recycle))
 
       if (associated(leaf%veg_ndvip))                                                      &
          call vtables2(leaf%veg_ndvip(1,1,1),leafm%veg_ndvip(1,1,1),ng,npts,imean          &
-                      ,'VEG_NDVIP :6:hist:mpti')
+                      ,'VEG_NDVIP :6:hist:mpt1:mpti:mpt3')
 
       if (associated(leaf%veg_ndvic))                                                      &
          call vtables2(leaf%veg_ndvic(1,1,1),leafm%veg_ndvic(1,1,1),ng,npts,imean          &
-                      ,'VEG_NDVIC :6:hist:anal:mpti:mpt3'//trim(str_recycle))
+                      ,'VEG_NDVIC :6:hist:anal:mpti:mpt1:mpt3'//trim(str_recycle))
 
       if (associated(leaf%veg_ndvif))                                                      &
          call vtables2(leaf%veg_ndvif(1,1,1),leafm%veg_ndvif(1,1,1),ng,npts,imean          &
-                      ,'VEG_NDVIF :6:hist:mpti')
+                      ,'VEG_NDVIF :6:hist:mpti:mpt1:mpt3')
 
       if (associated(leaf%leaf_class))                                                     &
          call vtables2(leaf%leaf_class(1,1,1),leafm%leaf_class(1,1,1),ng,npts,imean        &
@@ -588,99 +598,107 @@ Module mem_leaf
 
       if (associated(leaf%stom_resist))                                                    &
          call vtables2(leaf%stom_resist(1,1,1),leafm%stom_resist(1,1,1),ng,npts,imean      &
-                      ,'STOM_RESIST :6:hist:anal:mpti:mpt3'//trim(str_recycle))
+                      ,'STOM_RESIST :6:hist:anal:mpti:mpt1:mpt3'//trim(str_recycle))
 
       if (associated(leaf%can_rvap))                                                       &
          call vtables2(leaf%can_rvap(1,1,1),leafm%can_rvap(1,1,1),ng,npts,imean            &
-                      ,'CAN_RVAP :6:hist:anal:mpti:mpt3'//trim(str_recycle))
+                      ,'CAN_RVAP :6:hist:anal:mpti:mpt1:mpt3'//trim(str_recycle))
 
       if (associated(leaf%can_theta))                                                      &
          call vtables2(leaf%can_theta(1,1,1),leafm%can_theta(1,1,1),ng,npts,imean          &
-                      ,'CAN_THETA :6:hist:anal:mpti:mpt3'//trim(str_recycle))
+                      ,'CAN_THETA :6:hist:anal:mpti:mpt1:mpt3'//trim(str_recycle))
 
       if (associated(leaf%can_theiv))                                                      &
          call vtables2(leaf%can_theiv(1,1,1),leafm%can_theta(1,1,1),ng,npts,imean          &
-                      ,'CAN_THEIV :6:hist:anal:mpti:mpt3'//trim(str_recycle))
+                      ,'CAN_THEIV :6:hist:anal:mpti:mpt1:mpt3'//trim(str_recycle))
 
       if (associated(leaf%can_prss))                                                       &
          call vtables2(leaf%can_prss(1,1,1),leafm%can_prss(1,1,1),ng,npts,imean            &
-                      ,'CAN_PRSS :6:hist:anal:mpti:mpt3'//trim(str_recycle))
+                      ,'CAN_PRSS :6:hist:anal:mpti:mpt1:mpt3'//trim(str_recycle))
 
       if (associated(leaf%can_co2))                                                        &
          call vtables2(leaf%can_co2(1,1,1),leafm%can_co2(1,1,1),ng,npts,imean              &
-                      ,'CAN_CO2 :6:hist:anal:mpti:mpt3'//trim(str_recycle))
+                      ,'CAN_CO2 :6:hist:anal:mpti:mpt1:mpt3'//trim(str_recycle))
 
       if (associated(leaf%ustar))                                                          &
          call vtables2(leaf%ustar(1,1,1),leafm%ustar(1,1,1),ng,npts,imean                  &
-                      ,'USTAR :6:hist:anal:mpti:mpt3'//trim(str_recycle))
+                      ,'USTAR :6:hist:anal:mpti:mpt1:mpt3'//trim(str_recycle))
 
       if (associated(leaf%tstar))                                                          &
          call vtables2(leaf%tstar(1,1,1),leafm%tstar(1,1,1),ng,npts,imean                  &
-                      ,'TSTAR :6:hist:anal:mpti:mpt3'//trim(str_recycle))
+                      ,'TSTAR :6:hist:anal:mpti:mpt1:mpt3'//trim(str_recycle))
 
       if (associated(leaf%estar))                                                          &
          call vtables2(leaf%estar(1,1,1),leafm%estar(1,1,1),ng,npts,imean                  &
-                      ,'ESTAR :6:hist:anal:mpti:mpt3'//trim(str_recycle))
+                      ,'ESTAR :6:hist:anal:mpti:mpt1:mpt3'//trim(str_recycle))
 
       if (associated(leaf%rstar))                                                          &
          call vtables2(leaf%rstar(1,1,1),leafm%rstar(1,1,1),ng,npts,imean                  &
-                      ,'RSTAR :6:hist:anal:mpti:mpt3'//trim(str_recycle))
+                      ,'RSTAR :6:hist:anal:mpti:mpt1:mpt3'//trim(str_recycle))
 
       if (associated(leaf%cstar))                                                          &
          call vtables2(leaf%cstar(1,1,1),leafm%cstar(1,1,1),ng,npts,imean                  &
-                      ,'CSTAR :6:hist:anal:mpti:mpt3'//trim(str_recycle))
+                      ,'CSTAR :6:hist:anal:mpti:mpt1:mpt3'//trim(str_recycle))
 
       if (associated(leaf%zeta))                                                           &
          call vtables2(leaf%zeta(1,1,1),leafm%zeta(1,1,1),ng,npts,imean                    &
-                      ,'ZETA :6:hist:anal:mpti:mpt3'//trim(str_recycle))
+                      ,'ZETA :6:hist:anal:mpti:mpt1:mpt3'//trim(str_recycle))
 
       if (associated(leaf%ribulk))                                                         &
          call vtables2(leaf%ribulk(1,1,1),leafm%ribulk(1,1,1),ng,npts,imean                &
-                      ,'RIBULK :6:hist:anal:mpti:mpt3'//trim(str_recycle))
+                      ,'RIBULK :6:hist:anal:mpti:mpt1:mpt3'//trim(str_recycle))
     
       if (associated(leaf%patch_area))                                                     &
          call vtables2(leaf%patch_area(1,1,1),leafm%patch_area(1,1,1),ng,npts,imean        &
-                      ,'PATCH_AREA :6:hist:anal:mpti:mpt3'//trim(str_recycle))
+                      ,'PATCH_AREA :6:hist:anal:mpti:mpt1:mpt3'//trim(str_recycle))
 
       if (associated(leaf%patch_rough))                                                    &
          call vtables2(leaf%patch_rough(1,1,1),leafm%patch_rough(1,1,1),ng,npts,imean      &
-                      ,'PATCH_ROUGH :6:hist:anal:mpti:mpt3'//trim(str_recycle))
+                      ,'PATCH_ROUGH :6:hist:anal:mpti:mpt1:mpt3'//trim(str_recycle))
 
       if (associated(leaf%patch_wetind))                                                   &
          call vtables2(leaf%patch_wetind(1,1,1),leafm%patch_wetind(1,1,1),ng,npts,imean    &
-                      ,'PATCH_WETIND :6:hist:anal:mpti:mpt3'//trim(str_recycle))
+                      ,'PATCH_WETIND :6:hist:anal:mpti:mpt1:mpt3'//trim(str_recycle))
 
       if (associated(leaf%gpp))                                                            &
          call vtables2(leaf%gpp(1,1,1),leafm%gpp(1,1,1),ng,npts,imean                      &
-                      ,'GPP :6:hist:anal:mpti:mpt3')
+                      ,'GPP :6:hist:anal:mpti:mpt1:mpt3')
 
       if (associated(leaf%resphet ))                                                       &
          call vtables2(leaf%resphet(1,1,1),leafm%resphet(1,1,1),ng,npts,imean              &
-                      ,'RESPHET :6:hist:anal:mpti:mpt3')
+                      ,'RESPHET :6:hist:anal:mpti:mpt1:mpt3')
 
       if (associated(leaf%plresp))                                                         &
          call vtables2(leaf%plresp(1,1,1),leafm%plresp(1,1,1),ng,npts,imean                &
-                      ,'PLRESP :6:hist:anal:mpti:mpt3')
+                      ,'PLRESP :6:hist:anal:mpti:mpt1:mpt3')
 
-      if (associated(leaf%evap))                                                           &
-         call vtables2(leaf%evap(1,1,1),leafm%evap(1,1,1),ng,npts,imean                    &
-                      ,'EVAP :6:hist:anal:mpti:mpt3')
+      if (associated(leaf%evap_gc))                                                        &
+         call vtables2(leaf%evap_gc(1,1,1),leafm%evap_gc(1,1,1),ng,npts,imean              &
+                      ,'EVAP_GC :6:hist:anal:mpti:mpt1:mpt3')
+
+      if (associated(leaf%evap_vc))                                                        &
+         call vtables2(leaf%evap_vc(1,1,1),leafm%evap_vc(1,1,1),ng,npts,imean              &
+                      ,'EVAP_VC :6:hist:anal:mpti:mpt1:mpt3')
 
       if (associated(leaf%transp))                                                         &
          call vtables2(leaf%transp(1,1,1),leafm%transp(1,1,1),ng,npts,imean                &
-                      ,'TRANSP :6:hist:anal:mpti:mpt3')
+                      ,'TRANSP :6:hist:anal:mpti:mpt1:mpt3')
 
-      if (associated(leaf%sensible))                                                       &
-         call vtables2(leaf%sensible(1,1,1),leafm%sensible(1,1,1),ng,npts,imean            &
-                      ,'SENSIBLE :6:hist:anal:mpti:mpt3')
+      if (associated(leaf%sensible_gc))                                                    &
+         call vtables2(leaf%sensible_gc(1,1,1),leafm%sensible_gc(1,1,1),ng,npts,imean      &
+                      ,'SENSIBLE_GC :6:hist:anal:mpti:mpt1:mpt3')
+
+      if (associated(leaf%sensible_vc))                                                    &
+         call vtables2(leaf%sensible_vc(1,1,1),leafm%sensible_vc(1,1,1),ng,npts,imean      &
+                      ,'SENSIBLE_VC :6:hist:anal:mpti:mpt1:mpt3')
 
       if (associated(leaf%R_aer))                                                          &
          call vtables2(leaf%R_aer(1,1,1),leafm%R_aer(1,1,1),ng,npts,imean                  &
-                      ,'R_AER :6:hist:mpti')
+                      ,'R_AER :6:hist:mpti:mpt1:mpt3')
 
       if (associated(leaf%G_URBAN))                                                        &
          call vtables2(leaf%G_URBAN(1,1,1),leafm%G_URBAN(1,1,1),ng,npts,imean              &
-                      ,'G_URBAN :6:hist:anal:mpti:mpt3'//trim(str_recycle))
+                      ,'G_URBAN :6:hist:anal:mpti:mpt1:mpt3'//trim(str_recycle))
 
 
       !------------------------------------------------------------------------------------!
@@ -690,19 +708,19 @@ Module mem_leaf
 
       if (associated(leaf%snow_mass))                                                      &
          call vtables2(leaf%snow_mass(1,1),leafm%snow_mass(1,1),ng,npts,imean              &
-                      ,'SNOW_MASS :2:mpti')
+                      ,'SNOW_MASS :2:mpti:mpt1:mpt3')
 
       if (associated(leaf%snow_depth))                                                     &
          call vtables2(leaf%snow_depth(1,1),leafm%snow_depth(1,1),ng,npts,imean            &
-                      ,'SNOW_DEPTH :2:mpti')
+                      ,'SNOW_DEPTH :2:mpti:mpt1:mpt3')
 
       if (associated(leaf%seatp))                                                          &
          call vtables2(leaf%seatp(1,1),leafm%seatp(1,1),ng,npts,imean                      &
-                      ,'SEATP :2:mpti')
+                      ,'SEATP :2:mpti:mpt1:mpt3')
 
       if (associated(leaf%seatf))                                                          &
          call vtables2(leaf%seatf(1,1),leafm%seatf(1,1),ng,npts,imean                      &
-                      ,'SEATF :2:mpti')
+                      ,'SEATF :2:mpti:mpt1:mpt3')
 
       return
    end subroutine filltab_leaf

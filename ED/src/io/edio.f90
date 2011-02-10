@@ -186,9 +186,32 @@ subroutine avg_ed_daily_output_pool()
    gridloop: do igr=1,ngrids
       cgrid => edgrid_g(igr)
 
+      !------------------------------------------------------------------------------------!
+      !   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! !
+      !------------------------------------------------------------------------------------!
+      !     Please, don't initialise polygon-level (cgrid) variables outside polyloop.     !
+      ! This works in off-line runs, but it causes memory leaks (and crashes) in the       !
+      ! coupled runs over the ocean, where cgrid%npolygons can be 0 if one of the sub-     !
+      ! domains falls entirely over the ocean.  Thanks!                                    !
+      !------------------------------------------------------------------------------------!
+      ! cgrid%blah = 0. !<<--- This is a bad way of doing, look inside the loop for the
+      !                 !      safe way of initialising the variable.
+      !------------------------------------------------------------------------------------!
       polygonloop: do ipy=1,cgrid%npolygons
          cpoly => cgrid%polygon(ipy)
-         
+
+         !---------------------------------------------------------------------------------!
+         !     This is the right and safe place to initialise polygon-level (cgrid) vari-  !
+         ! ables, so in case npolygons is zero this will not cause memory leaks.  I know,  !
+         ! this never happens in off-line runs, but it is quite common in coupled runs...  !
+         ! Whenever one of the nodes receives a sub-domain where all the points are over   !
+         ! the ocean, ED will not assign any polygon in that sub-domain, which means that  !
+         ! that node will have 0 polygons, and the variables cannot be allocated.  If you  !
+         ! try to access the polygon level variable outside the loop, then the model       !
+         ! crashes due to segmentation violation (a bad thing), whereas by putting the     !
+         ! variables here both the off-line model and the coupled runs will work, because  !
+         ! this loop will be skipped when there is no polygon.                             !
+         !---------------------------------------------------------------------------------!
          !----- Zero variables. -----------------------------------------------------------!
          cgrid%Cleaf (ipy)  = 0.0
          cgrid%Croot (ipy)  = 0.0
@@ -210,7 +233,8 @@ subroutine avg_ed_daily_output_pool()
                !---------------------------------------------------------------------------!
                !     Here we must include a loop through all cohorts, because this may be  !
                ! an empty patch and vector operations cannot be done if the patchtype      !
-               ! structure is not allocated.                                               !
+               ! structure is not allocated.  This actually happens in both off-line and   !
+               ! coupled runs, especially over deserts...                                  !
                !---------------------------------------------------------------------------!
                cohortloop: do ico = 1,cpatch%ncohorts
                   ipft = cpatch%pft(ico)
@@ -261,30 +285,30 @@ end subroutine avg_ed_daily_output_pool
 !------------------------------------------------------------------------------------------!
 subroutine spatial_averages
 
-   use ed_state_vars         , only : edtype            & ! structure
-                                    , polygontype       & ! structure
-                                    , sitetype          & ! structure
-                                    , patchtype         & ! structure
-                                    , edgrid_g          ! ! structure
-   use grid_coms             , only : ngrids            & ! intent(in)
-                                    , nzg               & ! intent(in)
-                                    , nzs               ! ! intent(in)
-   use consts_coms           , only : alvl              & ! intent(in)
-                                    , cpi               & ! intent(in)
-                                    , wdns              & ! intent(in)
-                                    , p00i              & ! intent(in)
-                                    , rocp              & ! intent(in)
-                                    , umol_2_kgC        & ! intent(in)
-                                    , day_sec           ! ! intent(in)
-   use ed_misc_coms          , only : frqsum            ! ! intent(in)
-   use therm_lib             , only : qwtk              & ! subroutine
-                                    , qtk               & ! subroutine
-                                    , idealdenssh       ! ! function
-   use soil_coms             , only : min_sfcwater_mass & ! intent(in)
-                                    , soil              & ! intent(in)
-                                    , dslz              ! ! intent(in)
-   use c34constants          , only : n_stoma_atts
-   use ed_max_dims           , only : n_pft
+   use ed_state_vars         , only : edtype             & ! structure
+                                    , polygontype        & ! structure
+                                    , sitetype           & ! structure
+                                    , patchtype          & ! structure
+                                    , edgrid_g           ! ! structure
+   use grid_coms             , only : ngrids             & ! intent(in)
+                                    , nzg                & ! intent(in)
+                                    , nzs                ! ! intent(in)
+   use consts_coms           , only : alvl               & ! intent(in)
+                                    , cpi                & ! intent(in)
+                                    , wdns               & ! intent(in)
+                                    , p00i               & ! intent(in)
+                                    , rocp               & ! intent(in)
+                                    , umol_2_kgC         & ! intent(in)
+                                    , day_sec            ! ! intent(in)
+   use ed_misc_coms          , only : frqsum             ! ! intent(in)
+   use therm_lib             , only : qwtk               & ! subroutine
+                                    , qtk                & ! subroutine
+                                    , idealdenssh        ! ! function
+   use soil_coms             , only : tiny_sfcwater_mass & ! intent(in)
+                                    , soil               & ! intent(in)
+                                    , dslz               ! ! intent(in)
+   use c34constants          , only : n_stoma_atts       ! ! intent(in)
+   use ed_max_dims           , only : n_pft              ! ! intent(in)
    implicit none
    !----- Local variables -----------------------------------------------------------------!
    type(edtype)         , pointer :: cgrid
@@ -319,10 +343,15 @@ subroutine spatial_averages
       cgrid => edgrid_g(igr)
 
       !------------------------------------------------------------------------------------!
-      !    WARNING! cgrid variables should never be initialized outside the                !
-      !             "do ipy=1,cgrid%npolygons" loop. npolygons is often 0 for some nodes   !
-      !             on coupled runs (sudomains entirely over ocean), and initializing here !
-      !             will cause either a crash or even worse, a memory leak.                !
+      !   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! !
+      !------------------------------------------------------------------------------------!
+      !     Please, don't initialise polygon-level (cgrid) variables outside polyloop.     !
+      ! This works in off-line runs, but it causes memory leaks (and crashes) in the       !
+      ! coupled runs over the ocean, where cgrid%npolygons can be 0 if one of the sub-     !
+      ! domains falls entirely over the ocean.  Thanks!                                    !
+      !------------------------------------------------------------------------------------!
+      ! cgrid%blah = 0. !<<--- This is a bad way of doing, look inside the loop for the
+      !                 !      safe way of initialising the variable.
       !------------------------------------------------------------------------------------!
       polyloop: do ipy=1,cgrid%npolygons
          cpoly => cgrid%polygon(ipy)
@@ -333,7 +362,16 @@ subroutine spatial_averages
          poly_avg_soil_hcap = 0.0
 
          !---------------------------------------------------------------------------------!
-         !    Here is the safe place to initialize cgrid-level variables.                  !
+         !     This is the right and safe place to initialise polygon-level (cgrid) vari-  !
+         ! ables, so in case npolygons is zero this will not cause memory leaks.  I know,  !
+         ! this never happens in off-line runs, but it is quite common in coupled runs...  !
+         ! Whenever one of the nodes receives a sub-domain where all the points are over   !
+         ! the ocean, ED will not assign any polygon in that sub-domain, which means that  !
+         ! that node will have 0 polygons, and the variables cannot be allocated.  If you  !
+         ! try to access the polygon level variable outside the loop, then the model       !
+         ! crashes due to segmentation violation (a bad thing), whereas by putting the     !
+         ! variables here both the off-line model and the coupled runs will work, because  !
+         ! this loop will be skipped when there is no polygon.                             !
          !---------------------------------------------------------------------------------!
          cgrid%avg_lai_ebalvars(:,:,ipy) = 0.0
          cgrid%avg_balive          (ipy) = 0.0
@@ -381,16 +419,17 @@ subroutine spatial_averages
 
 
             !----- Average fast time flux dynamics over sites. ----------------------------!
-            cpoly%avg_vapor_vc(isi) = sum(csite%avg_vapor_vc * csite%area ) * site_area_i
-            cpoly%avg_dew_cg(isi)   = sum(csite%avg_dew_cg   * csite%area ) * site_area_i
-            cpoly%avg_vapor_gc(isi) = sum(csite%avg_vapor_gc * csite%area ) * site_area_i
-            cpoly%avg_wshed_vg(isi) = sum(csite%avg_wshed_vg * csite%area ) * site_area_i
-            cpoly%avg_vapor_ac(isi) = sum(csite%avg_vapor_ac * csite%area ) * site_area_i
-            cpoly%avg_transp(isi)   = sum(csite%avg_transp   * csite%area ) * site_area_i
-            cpoly%avg_evap(isi)     = sum(csite%avg_evap     * csite%area ) * site_area_i
-            cpoly%aux(isi)          = sum(csite%aux          * csite%area ) * site_area_i
-            cpoly%avg_drainage(isi) = sum(csite%avg_drainage * csite%area ) * site_area_i
-            cpoly%avg_runoff(isi)   = sum(csite%avg_runoff   * csite%area ) * site_area_i
+            cpoly%avg_carbon_ac(isi) = sum(csite%avg_carbon_ac * csite%area ) * site_area_i
+            cpoly%avg_vapor_vc(isi)  = sum(csite%avg_vapor_vc  * csite%area ) * site_area_i
+            cpoly%avg_dew_cg(isi)    = sum(csite%avg_dew_cg    * csite%area ) * site_area_i
+            cpoly%avg_vapor_gc(isi)  = sum(csite%avg_vapor_gc  * csite%area ) * site_area_i
+            cpoly%avg_wshed_vg(isi)  = sum(csite%avg_wshed_vg  * csite%area ) * site_area_i
+            cpoly%avg_vapor_ac(isi)  = sum(csite%avg_vapor_ac  * csite%area ) * site_area_i
+            cpoly%avg_transp(isi)    = sum(csite%avg_transp    * csite%area ) * site_area_i
+            cpoly%avg_evap(isi)      = sum(csite%avg_evap      * csite%area ) * site_area_i
+            cpoly%aux(isi)           = sum(csite%aux           * csite%area ) * site_area_i
+            cpoly%avg_drainage(isi)  = sum(csite%avg_drainage  * csite%area ) * site_area_i
+            cpoly%avg_runoff(isi)    = sum(csite%avg_runoff    * csite%area ) * site_area_i
             cpoly%avg_drainage_heat(isi) = sum(csite%avg_drainage_heat * csite%area )      &
                                          * site_area_i
             cpoly%avg_runoff_heat(isi)   = sum(csite%avg_runoff_heat   * csite%area )      &
@@ -398,6 +437,10 @@ subroutine spatial_averages
             cpoly%avg_intercepted(isi)   = sum(csite%avg_intercepted    * csite%area )     &
                                          * site_area_i
             cpoly%avg_qintercepted(isi)  = sum(csite%avg_qintercepted   * csite%area )     &
+                                         * site_area_i
+            cpoly%avg_throughfall(isi)   = sum(csite%avg_throughfall    * csite%area )     &
+                                         * site_area_i
+            cpoly%avg_qthroughfall(isi)  = sum(csite%avg_qthroughfall   * csite%area )     &
                                          * site_area_i
             cpoly%avg_sensible_vc(isi)   = sum(csite%avg_sensible_vc    * csite%area )     &
                                          * site_area_i
@@ -425,28 +468,27 @@ subroutine spatial_averages
                                            * site_area_i
             !------------------------------------------------------------------------------!
             !------------------------------------------------------------------------------!
-            !     Finding average soil properties.  The average soil temperature and       !
-            ! liquid fraction is not directly computed, since the total mass and therefore !
-            ! the total heat capacity (dry + water/ice) is different from each patch.      !
+            !     Find average soil properties.  The average soil temperature and liquid   !
+            ! fraction is not directly computed, since the total mass and therefore the    !
+            ! total heat capacity (dry + water/ice) is different from each patch.          !
             !------------------------------------------------------------------------------!
             cpoly%avg_soil_wetness(isi)     = 0.0
+            cpoly%avg_sensible_gg(:,isi) = matmul(csite%avg_sensible_gg,csite%area)        &
+                                         * site_area_i
+            cpoly%avg_smoist_gg(:,isi)   = matmul(csite%avg_smoist_gg  ,csite%area)        &
+                                         * site_area_i
+            cpoly%avg_smoist_gc(:,isi)   = matmul(csite%avg_smoist_gc  ,csite%area)        &
+                                         * site_area_i
+            cpoly%aux_s(:,isi)           = matmul(csite%aux_s          ,csite%area)        &
+                                         * site_area_i
+            cpoly%avg_soil_energy(:,isi) = matmul(csite%soil_energy    ,csite%area)        &
+                                         * site_area_i
+            cpoly%avg_soil_water(:,isi)  = matmul(csite%soil_water     ,csite%area)        &
+                                         * site_area_i
+
             do k=cpoly%lsl(isi),nzg
-               cpoly%avg_sensible_gg(k,isi) = sum(csite%avg_sensible_gg(k,:) * csite%area) &
-                                            * site_area_i
-               cpoly%avg_smoist_gg(k,isi)   = sum(csite%avg_smoist_gg(k,:)   * csite%area) &
-                                            * site_area_i
-               cpoly%avg_smoist_gc(k,isi)   = sum(csite%avg_smoist_gc(k,:)   * csite%area) &
-                                            * site_area_i
-               cpoly%aux_s(k,isi)           = sum(csite%aux_s(k,:)           * csite%area) &
-                                            * site_area_i
-
-               cpoly%avg_soil_energy(k,isi) = sum(csite%soil_energy(k,:)     * csite%area) &
-                                            * site_area_i
-               cpoly%avg_soil_water(k,isi)  = sum(csite%soil_water(k,:)      * csite%area) &
-                                            * site_area_i
-
                !---------------------------------------------------------------------------!
-               !    Finding the mean heat capacity. This shouldn't matter in the current   !
+               !    Find the mean heat capacity. This shouldn't matter in the current     !
                ! version as all patches within the same site have the same soil texture.   !
                ! Since heat capacity is given in J/m3/K, it's safe to average it even if   !
                ! soil texture changed.                                                     !
@@ -518,7 +560,7 @@ subroutine spatial_averages
             ! the mean temperature and liquid fraction.  Otherwise, make them with zero/   !
             ! default values.                                                              !
             !------------------------------------------------------------------------------!
-            if (cpoly%avg_sfcw_mass(isi) > min_sfcwater_mass) then
+            if (cpoly%avg_sfcw_mass(isi) > tiny_sfcwater_mass) then
                cpoly%avg_sfcw_energy(isi) = cpoly%avg_sfcw_energy(isi)                     &
                                           / cpoly%avg_sfcw_mass(isi)
                call qtk(cpoly%avg_sfcw_energy(isi),cpoly%avg_sfcw_tempk(isi)               &
@@ -856,11 +898,13 @@ subroutine spatial_averages
          cgrid%wpa(ipy)  = sum(cpoly%wpa  * cpoly%area ) * poly_area_i
          cgrid%wai(ipy)  = sum(cpoly%wai  * cpoly%area ) * poly_area_i
          !----- Average fast time flux dynamics over polygons. ----------------------------!
+         cgrid%avg_carbon_ac(ipy)    = sum(cpoly%avg_carbon_ac    *cpoly%area)*poly_area_i
          cgrid%avg_vapor_vc(ipy)     = sum(cpoly%avg_vapor_vc     *cpoly%area)*poly_area_i
          cgrid%avg_dew_cg(ipy)       = sum(cpoly%avg_dew_cg       *cpoly%area)*poly_area_i
          cgrid%avg_vapor_gc(ipy)     = sum(cpoly%avg_vapor_gc     *cpoly%area)*poly_area_i
          cgrid%avg_wshed_vg(ipy)     = sum(cpoly%avg_wshed_vg     *cpoly%area)*poly_area_i
          cgrid%avg_intercepted(ipy)  = sum(cpoly%avg_intercepted  *cpoly%area)*poly_area_i
+         cgrid%avg_throughfall(ipy)  = sum(cpoly%avg_throughfall  *cpoly%area)*poly_area_i
          cgrid%avg_fsc(ipy)          = sum(cpoly%avg_fsc          *cpoly%area)*poly_area_i
          cgrid%avg_stsc(ipy)         = sum(cpoly%avg_stsc         *cpoly%area)*poly_area_i
          cgrid%avg_ssc(ipy)          = sum(cpoly%avg_ssc          *cpoly%area)*poly_area_i
@@ -877,6 +921,7 @@ subroutine spatial_averages
          cgrid%avg_sensible_vc(ipy)  = sum(cpoly%avg_sensible_vc  *cpoly%area)*poly_area_i
          cgrid%avg_qwshed_vg(ipy)    = sum(cpoly%avg_qwshed_vg    *cpoly%area)*poly_area_i
          cgrid%avg_qintercepted(ipy) = sum(cpoly%avg_qintercepted *cpoly%area)*poly_area_i
+         cgrid%avg_qthroughfall(ipy) = sum(cpoly%avg_qthroughfall *cpoly%area)*poly_area_i
          cgrid%avg_sensible_gc(ipy)  = sum(cpoly%avg_sensible_gc  *cpoly%area)*poly_area_i
          cgrid%avg_sensible_ac(ipy)  = sum(cpoly%avg_sensible_ac  *cpoly%area)*poly_area_i
 
@@ -904,20 +949,20 @@ subroutine spatial_averages
          !    Similar to the site level, average mass, heat capacity and energy then find  !
          ! the average temperature and liquid water fraction.                              !
          !---------------------------------------------------------------------------------!
-         do k=cgrid%lsl(ipy),nzg
-            cgrid%avg_sensible_gg(k,ipy) = sum(cpoly%avg_sensible_gg(k,:)*cpoly%area)      &
-                                         * poly_area_i
-            cgrid%avg_smoist_gg(k,ipy)   = sum(cpoly%avg_smoist_gg(k,:)  *cpoly%area)      &
-                                         * poly_area_i
-            cgrid%avg_smoist_gc(k,ipy)   = sum(cpoly%avg_smoist_gc(k,:)  *cpoly%area)      &
-                                         * poly_area_i
-            cgrid%aux_s(k,ipy)           = sum(cpoly%aux_s(k,:)          *cpoly%area)      &
-                                         * poly_area_i
-            cgrid%avg_soil_energy(k,ipy) = sum(cpoly%avg_soil_energy(k,:)*cpoly%area)      &
-                                         * poly_area_i
-            cgrid%avg_soil_water(k,ipy)  = sum(cpoly%avg_soil_water(k,:) *cpoly%area)      &
-                                         * poly_area_i
+         cgrid%avg_sensible_gg(:,ipy) = matmul(cpoly%avg_sensible_gg, cpoly%area)          &
+                                      * poly_area_i
+         cgrid%avg_smoist_gg(:,ipy)   = matmul(cpoly%avg_smoist_gg  , cpoly%area)          &
+                                      * poly_area_i
+         cgrid%avg_smoist_gc(:,ipy)   = matmul(cpoly%avg_smoist_gc  , cpoly%area)          &
+                                      * poly_area_i
+         cgrid%aux_s(:,ipy)           = matmul(cpoly%aux_s          , cpoly%area)          &
+                                      * poly_area_i
+         cgrid%avg_soil_energy(:,ipy) = matmul(cpoly%avg_soil_energy, cpoly%area)          &
+                                      * poly_area_i
+         cgrid%avg_soil_water(:,ipy)  = matmul(cpoly%avg_soil_water , cpoly%area)          &
+                                      * poly_area_i
 
+         do k=cgrid%lsl(ipy),nzg
             !------------------------------------------------------------------------------!
             !     Finding the average temperature and liquid fraction.  The polygon-level  !
             ! mean heat capacity was already found during the site loop.                   !
@@ -940,7 +985,7 @@ subroutine spatial_averages
                                          * cpoly%avg_sfcw_mass * cpoly%area) * poly_area_i
 
          !----- Scale energy and find temp and fracliq if there is enogh mass -------------!
-         if (cgrid%avg_sfcw_mass(ipy) > min_sfcwater_mass) then
+         if (cgrid%avg_sfcw_mass(ipy) > tiny_sfcwater_mass) then
             cgrid%avg_sfcw_energy(ipy) = cgrid%avg_sfcw_energy(ipy)                        &
                                        / cgrid%avg_sfcw_mass(ipy)
             call qtk(cgrid%avg_sfcw_energy(ipy),cgrid%avg_sfcw_tempk(ipy)                  &

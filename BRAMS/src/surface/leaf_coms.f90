@@ -24,6 +24,11 @@ module leaf_coms
                        , alvl      & ! intent(in)
                        , twothirds ! ! intent(in)
 
+   !----- Parameters that are initialised from RAMSIN. ------------------------------------! 
+   real    :: ustmin               ! Minimum ustar                               [     m/s]
+   real    :: ggfact               ! Factor to multiply the ground->canopy conductance.
+   !---------------------------------------------------------------------------------------!
+
    integer :: niter_leaf   ! ! number of leaf timesteps
 
    real    :: dtll         & ! leaf timestep
@@ -57,7 +62,7 @@ module leaf_coms
             , vf           & ! product of veg_fracarea and (1-snowfac)           [     ---]
             , can_exner    & ! canopy air Exner function                         [  J/kg/K]
             , can_temp     & ! canopy air temperature                            [       K]
-            , can_lntheiv  & ! canopy air equivalent potential temperature       [     ---]
+            , can_lntheta  & ! log of canopy air potential temperature           [     ---]
             , can_rhos     & ! canopy air density                                [   kg/m³]
             , can_shv      & ! canopy air specific humidity                      [   kg/kg]
             , can_depth    & ! canopy depth                                      [       m]
@@ -68,8 +73,8 @@ module leaf_coms
             , timefac_sst  & ! time interpolation factor for SST                 [     ---]
             
             , rb           & ! vegetation aerodynamic resistance
-            , rd           & ! canopy to ground aerodynamic resistance
-            , rdi          & ! canopy to ground aerodynamic conductance
+            , rgnd         & ! canopy to ground aerodynamic resistance
+            , ggnd         & ! canopy to ground aerodynamic conductance
             , rho_ustar    & ! canopy density time friction velocity
             , rshort_g     & ! net SW radiation absorbed by grnd
             , rshort_v     & ! net SW radiation absorbed by veg
@@ -88,6 +93,7 @@ module leaf_coms
             , qwflxgc      & ! latent heat from ground to canopy                [   J/m²/s]
             , cflxgc       & ! carbon from ground to canopy                     [µmol/m²/s]
             , eflxac       & ! enthalpy flux from atmosphere to canopy          [   J/m²/s]
+            , hflxac       & ! sensible heat flux from atmosphere to canopy     [   J/m²/s]
             , wflxac       & ! water flux from atmosphere to canopy             [  kg/m²/s]
             , cflxac       & ! carbon flux from atmosphere to canopy            [µmol/m²/s]
             , hflxvc       & ! sensible heat from vegetation to canopy          [   J/m²/s]
@@ -194,8 +200,7 @@ module leaf_coms
    !---------------------------------------------------------------------------------------!
    !     Speed-related minimum values we will consider.                                    !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: ubmin    = 0.25  ! Minimum velocity                        [     m/s]
-   real, parameter :: ustmin   = 0.025 ! Minimum ustar                           [     m/s]
+   real, parameter :: ubmin    = 0.65  ! Minimum velocity                        [     m/s]
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
@@ -223,7 +228,7 @@ module leaf_coms
    real, parameter :: atetf       = ate   * fbh91 ! a * e * f
    real, parameter :: z0moz0h     = 1.0           ! z0(M)/z0(h)
    real, parameter :: z0hoz0m     = 1. / z0moz0h  ! z0(M)/z0(h)
-   real, parameter :: ribmaxbh91  = 6.00          ! Maximum bulk Richardson number
+   real, parameter :: ribmaxbh91  = 0.20          ! Maximum bulk Richardson number
    !----- Used by OD95 and BH91. ----------------------------------------------------------!
    real, parameter :: gamm       = 13.0   ! Gamma used by Businger et al. (1971) - momentum.
    real, parameter :: gamh       = 13.0   ! Gamma used by Businger et al. (1971) - heat.
@@ -325,7 +330,7 @@ module leaf_coms
       !------------------------------------------------------------------------------------!
       if (stable) then
          select case (istar)
-         case (2) !----- Oncley and Dudhia (1995). ----------------------------------------!
+         case (2,5) !----- Oncley and Dudhia (1995). --------------------------------------!
             psim = - bbeta * zeta 
          case (3,4) !----- Beljaars and Holtslag (1991). ----------------------------------!
             psim = abh91 * zeta                                                            &
@@ -364,7 +369,7 @@ module leaf_coms
 
       if (stable) then
          select case (istar)
-         case (2) !----- Oncley and Dudhia (1995). ----------------------------------------!
+         case (2,5) !----- Oncley and Dudhia (1995). --------------------------------------!
             psih = - bbeta * zeta 
          case (3,4) !----- Beljaars and Holtslag (1991). ----------------------------------!
             psih = 1.0 - (1.0 + ate * zeta)**fbh91                                         &
@@ -401,7 +406,7 @@ module leaf_coms
 
       if (stable) then
          select case (istar)
-         case (2) !----- Oncley and Dudhia (1995). ----------------------------------------!
+         case (2,5) !----- Oncley and Dudhia (1995). --------------------------------------!
             dpsimdzeta = - bbeta 
          case (3,4) !----- Beljaars and Holtslag (1991). ----------------------------------!
             dpsimdzeta = abh91 + bbh91 * (1.0 - dbh91 * zeta + cbh91)                      &
@@ -440,7 +445,7 @@ module leaf_coms
 
       if (stable) then
          select case (istar)
-         case (2) !----- Oncley and Dudhia (1995). ----------------------------------------!
+         case (2,5) !----- Oncley and Dudhia (1995). --------------------------------------!
             dpsihdzeta = - bbeta
          case (3,4) !----- Beljaars and Holtslag (1991). ----------------------------------!
             dpsihdzeta = - atetf * (1.0 + ate * zeta)**fm1                                 &

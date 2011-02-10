@@ -135,7 +135,7 @@ module pft_coms
    !----- Intercept of the Ball/Berry stomatal conductance relationship [µmol/m2/s]. ------!
    real, dimension(n_pft) :: cuticular_cond
 
-   !----- Efficiency of using PAR to fix CO2 [mol_CO2/Einstein]. --------------------------!
+   !----- Efficiency of using PAR to fix CO2 [ ----]. -------------------------------------!
    real, dimension(n_pft) :: quantum_efficiency
 
    !----- Specifies photosynthetic pathway.  3 corresponds to C3, 4 corresponds to C4. ----!
@@ -267,7 +267,7 @@ module pft_coms
    !----- Supply coefficient for plant nitrogen uptake [m2/kgC_fine_root/day].  -----------!
    real :: plant_N_supply_scale
    !---------------------------------------------------------------------------------------!
-   !    Supply coefficient for plant water uptake [kg_H2O*m2_ground/m3_H2O/kgC_root/sec].  !
+   !    Supply coefficient for plant water uptake [m2_ground/kgC_root/sec].                !
    !---------------------------------------------------------------------------------------!
    real, dimension(n_pft) :: water_conductance  
    !=======================================================================================!
@@ -291,7 +291,7 @@ module pft_coms
    !----- Mass ratio between sapwood and leaves [kg_sapwood]/[kg_leaves]. -----------------!
    real   , dimension(n_pft)    :: qsw
    real   , dimension(n_pft)    :: sapwood_ratio ! AREA ratio
-   real   , dimension(n_pft)    :: hgt_ref     ! ref height for diam/ht allom (Temperate)
+   real   , dimension(n_pft)    :: hgt_ref ! ref height for diam/ht allom (Temperate)
    real   , dimension(n_pft)    :: b1Ht  !  DBH-height allometry intercept (m).  Temperate PFTs only.
    real   , dimension(n_pft)    :: b2Ht  !  DBH-height allometry slope (1/cm).  Temperate PFTs only.
    real   , dimension(n_pft)    :: b1Bs  !  DBH-stem allometry intercept (kg stem biomass / plant * cm^{-b2Bs}).  Temperate PFTs only.
@@ -325,7 +325,7 @@ module pft_coms
    !----- A 0-1 factor indicating degree of clumpiness of leaves and shoots. --------------!
    real(kind=8), dimension(n_pft) :: clumping_factor
 
-   !----- Leaf width [m], which is used to compute the aerodynamic resistance. ------------!
+   !----- Leaf width [m], which is used to compute the leaf boundary layer conductance. ---!
    real, dimension(n_pft) :: leaf_width
 
    !---------------------------------------------------------------------------------------!
@@ -445,6 +445,36 @@ module pft_coms
    ! THE AIM IS TO ELIMINATE THE COHORT.                                                   !
    !---------------------------------------------------------------------------------------! 
    real, dimension(n_pft) :: negligible_nplant
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     The following varible is used to "turn off" the lights for extremely sparse       !
+   ! cohorts, that otherwise can have strange light values due to numeric precision.  This !
+   ! will cause the cohort to starve to death, and it will be quickly eliminated.          !
+   !=======================================================================================!
+   !=======================================================================================!
+   real, dimension(n_pft) :: lai_min
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     The following variable is an identifier for the PFT, for some of the debugging    !
+   ! output.                                                                               !
+   !---------------------------------------------------------------------------------------!
+   character(len=16), dimension(n_pft) :: pft_name16
    !=======================================================================================!
    !=======================================================================================!
 

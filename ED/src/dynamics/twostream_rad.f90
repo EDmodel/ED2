@@ -20,7 +20,8 @@ subroutine sw_twostream_clump(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area       
                                    , leaf_scatter_nir        & ! intent(in)
                                    , leaf_scatter_vis        & ! intent(in)
                                    , visible_fraction_dir    & ! intent(in)
-                                   , visible_fraction_dif    ! ! intent(in)
+                                   , visible_fraction_dif    & ! intent(in)
+                                   , cosz_min8               ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    integer, dimension(ncoh)     , intent(in)    :: pft
@@ -74,8 +75,8 @@ subroutine sw_twostream_clump(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area       
    
    !----- Convert input variable to double precision. -------------------------------------!
    alb    = dble(salb)
-   cosz   = max(3.d-2,dble(scosz))
-   cosaoi = max(3.d-2,dble(scosaoi))
+   cosz   = max(cosz_min8,dble(scosz))
+   cosaoi = max(cosz_min8,dble(scosaoi))
 
    !----- Calculate factors common for NIR, PAR. ------------------------------------------!
    ncoh2      = 2*ncoh
@@ -571,6 +572,7 @@ subroutine lw_twostream(ncoh,semgs,sT_grnd, pft,TAI,canopy_area,T_veg,lw_v_surf,
                                     , mubar           ! ! intent(in)
    use pft_coms              , only : clumping_factor ! ! intent(in)
    use consts_coms           , only : stefan8         ! ! intent(in)
+   use rk4_coms              , only : tiny_offset     ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer                      , intent(in)  :: ncoh        ! # of cohorts
@@ -626,6 +628,12 @@ subroutine lw_twostream(ncoh,semgs,sT_grnd, pft,TAI,canopy_area,T_veg,lw_v_surf,
    real(kind=8)                               :: zetai
    real(kind=8)                               :: exki
    real(kind=8)                               :: d
+   real(kind=8)                               :: lw_v_surf_tmp
+   real(kind=8)                               :: lw_v_incid_tmp
+   !----- Local constants. ----------------------------------------------------------------!
+   real(kind=8), parameter                     :: negligible = 1.d-32
+   !----- External functions. -------------------------------------------------------------!
+   real(kind=4), external                     :: sngloff
    !---------------------------------------------------------------------------------------!
 
 
@@ -781,16 +789,18 @@ subroutine lw_twostream(ncoh,semgs,sT_grnd, pft,TAI,canopy_area,T_veg,lw_v_surf,
    UW_incid(1)      = (1.0d0-emgs) * DW_incid(1)
 
    do il = 1,ncoh
-      lw_v_surf(il)  = sngl(DW_surf(il+1)  - DW_surf(il)  + UW_surf(il)  - UW_surf(il+1) )
-      lw_v_incid(il) = sngl(DW_incid(il+1) - DW_incid(il) + UW_incid(il) - UW_incid(il+1))
+      lw_v_surf_tmp  = DW_surf(il+1)  - DW_surf(il)  + UW_surf(il)  - UW_surf(il+1)
+      lw_v_incid_tmp = DW_incid(il+1) - DW_incid(il) + UW_incid(il) - UW_incid(il+1)
+      lw_v_surf(il)  = sngloff(lw_v_surf_tmp , negligible)
+      lw_v_incid(il) = sngloff(lw_v_incid_tmp, negligible)
    enddo
 
-   downward_lw_below_surf  = sngl(DW_surf(1)      )
-   downward_lw_below_incid = sngl(DW_incid(1)     )
-   upward_lw_below_surf    = sngl(UW_surf(1)      )
-   upward_lw_below_incid   = sngl(UW_incid(1)     )
-   upward_lw_above_surf    = sngl(UW_surf(ncoh+1) )
-   upward_lw_above_incid   = sngl(UW_incid(ncoh+1))
+   downward_lw_below_surf  = sngloff(DW_surf(1)      , negligible)
+   downward_lw_below_incid = sngloff(DW_incid(1)     , negligible)
+   upward_lw_below_surf    = sngloff(UW_surf(1)      , negligible)
+   upward_lw_below_incid   = sngloff(UW_incid(1)     , negligible)
+   upward_lw_above_surf    = sngloff(UW_surf(ncoh+1) , negligible)
+   upward_lw_above_incid   = sngloff(UW_incid(ncoh+1), negligible)
 
    return
 end subroutine lw_twostream

@@ -13,23 +13,39 @@ module canopy_air_coms
    !=======================================================================================!
    !     Parameter that will be read in the namelist.                                      !
    !---------------------------------------------------------------------------------------!
-   integer :: icanturb ! Which canopy turbulence we will use?
-                       ! -1. is the original ED-2.0 scheme
-                       !  0. is the default scheme
-                       !  1. will rescale reference wind-speed if it
-                       !     the reference height is (inapropriately)
-                       !     below the canopy
-                       !  2. (recommended) uses the method of Massman 
-                       !     1997 and the bulk Richardson number of 
-                       !     instability.  This method will not work 
-                       !     when zref<h
-   integer :: isfclyrm ! Surface layer model (used to compute ustar, tstar,...)
-                       !  1 - Louis, 1979: Boundary-Layer Meteor., 17, 187-202.
-                       !      This is the ED-2.0 default, also used in (B)RAMS
-                       !  2 - Oncley and Dudhia, 1995: Mon. Wea. Rev., 123, 3344-3357.
-                       !      This is used in MM5 and WRF.
-                       !  3 - Beljaars and Holtslag, 1991: J. Appl. Meteor., 30, 328-341.
-                       !  4 - BH91, using OD95 to find zeta.
+   integer :: icanturb      ! Which canopy turbulence we will use?
+                            ! -1. is the original ED-2.0 scheme
+                            !  0. is the default scheme
+                            !  1. will rescale reference wind-speed if it
+                            !     the reference height is (inapropriately)
+                            !     below the canopy
+                            !  2. (recommended) uses the method of Massman 
+                            !     1997 and the bulk Richardson number of 
+                            !     instability.  This method will not work 
+                            !     when zref<h
+
+   integer :: isfclyrm      ! Surface layer model (used to compute ustar, tstar,...)
+                            !  1 - Louis, 1979: Boundary-Layer Meteor., 17, 187-202.
+                            !      This is the ED-2.0 default, also used in (B)RAMS
+                            !  2 - Oncley and Dudhia, 1995: Mon. Wea. Rev., 123, 3344-3357.
+                            !      This is used in MM5 and WRF.
+                            !  3 - Beljaars and Holtslag, 1991: J. Appl. Meteor., 30, 
+                            !      328-341.
+                            !  4 - BH91, using OD95 to find zeta.
+
+   integer :: i_blyr_condct ! Methods to estimate the leaf boundary layer conductance:
+                            !  0. The Nusselt number for forced convection is estimated
+                            !     using the average winds, with no corrections
+                            !  1. The actual Nusselt number for forced convection is 
+                            !     multiplied by 2.5 as the Reynolds number gets close or
+                            !     greater than 10,000.
+                            !  2. The actual Nusselt number for forced convection is 
+                            !     multiplied by 10. as the Reynolds number gets close or
+                            !     greater than 10,000.
+   !----- Minimum Ustar [m/s]. ------------------------------------------------------------!
+   real         :: ustmin
+   !----- Factor to be applied to the ground->canopy conductance. -------------------------!
+   real         :: ggfact
    !---------------------------------------------------------------------------------------!
 
    !=======================================================================================!
@@ -40,8 +56,8 @@ module canopy_air_coms
    real         :: exar
    !----- Scaling factor of Tree Area Index, for computing wtveg [dimensionless]. ---------!
    real         :: covr
-   !----- Minimum Ustar [m/s]. ------------------------------------------------------------!
-   real         :: ustmin
+   !----- Minimum speed for conductances [m/s]. -------------------------------------------!
+   real         :: ugbmin
    !----- Minimum speed for stars [m/s]. --------------------------------------------------!
    real         :: ubmin
    !----- Some parameters that were used in ED-2.0, added here for some tests. ------------!
@@ -51,9 +67,11 @@ module canopy_air_coms
    !----- Double precision version of some of these variables (for Runge-Kutta). ----------!
    real(kind=8) :: exar8
    real(kind=8) :: ustmin8
+   real(kind=8) :: ugbmin8
    real(kind=8) :: ubmin8
    real(kind=8) :: ez8
    real(kind=8) :: vh2dh8
+   real(kind=8) :: ggfact8
    !=======================================================================================!
    !=======================================================================================!
 
@@ -86,6 +104,65 @@ module canopy_air_coms
    real(kind=8), parameter :: c2_m978 = dble(c2_m97)
    real(kind=8), parameter :: c3_m978 = dble(c3_m97)
    real(kind=8), parameter :: kvwake8 = dble(kvwake)
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !      Parameters for the aerodynamic resistance between the leaf and the canopy air    !
+   ! space.  These are the A, B, n, and m parameters that define the Nusselt number for    !
+   ! forced and free convection, at equations 10.7 and 10.9:                               !
+   !                                                                                       !
+   ! M08 - Monteith, J. L., M. H. Unsworth, 2008. Principles of Environmental Physics,     !
+   !       3rd. edition, Academic Press, Amsterdam, 418pp.  (Mostly Chapter 10).           !
+   !---------------------------------------------------------------------------------------!
+   real                    :: aflat_turb  ! A (forced convection), turbulent flow
+   real                    :: aflat_lami  ! A (forced convection), laminar   flow
+   real                    :: nflat_turb  ! n (forced convection), turbulent flow
+   real                    :: nflat_lami  ! n (forced convection), laminar   flow
+
+   real                    :: bflat_turb  ! B (free   convection), turbulent flow
+   real                    :: bflat_lami  ! B (free   convection), laminar   flow
+   real                    :: mflat_turb  ! m (free   convection), turbulent flow
+   real                    :: mflat_lami  ! m (free   convection), laminar   flow
+
+   real(kind=8)            :: aflat_turb8 ! A (forced convection), turbulent flow
+   real(kind=8)            :: aflat_lami8 ! A (forced convection), laminar   flow
+   real(kind=8)            :: nflat_turb8 ! n (forced convection), turbulent flow
+   real(kind=8)            :: nflat_lami8 ! n (forced convection), laminar   flow
+
+   real(kind=8)            :: bflat_turb8 ! B (free   convection), turbulent flow
+   real(kind=8)            :: bflat_lami8 ! B (free   convection), laminar   flow
+   real(kind=8)            :: mflat_turb8 ! m (free   convection), turbulent flow
+   real(kind=8)            :: mflat_lami8 ! m (free   convection), laminar   flow
+
+   real(kind=8)            :: beta_lami8  ! Correction term for Nusselt #, laminar flow
+   real(kind=8)            :: beta_turb8  ! Correction term for Nusselt #, turbulent flow
+
+   !---------------------------------------------------------------------------------------!
+   !     Both free and forced convection tend to underestimate the Nusselt number under    !
+   ! different conditions.  Based on M08 review on the subject, I wrote the following      !
+   ! functional form to expand the Nusselt number by a factor beta:                        !
+   ! - beta_forced = R1 + R2 * tanh[log(Re/Re0)]                                           !
+   ! - beta_free   = G1 + G2 * tanh[log(Gr/Gr0)]                                           !
+   !---------------------------------------------------------------------------------------!
+   real                    :: beta_r1
+   real                    :: beta_r2
+   real                    :: beta_re0
+   real                    :: beta_g1
+   real                    :: beta_g2
+   real                    :: beta_gr0
+   real(kind=8)            :: beta_r18
+   real(kind=8)            :: beta_r28
+   real(kind=8)            :: beta_re08
+   real(kind=8)            :: beta_g18
+   real(kind=8)            :: beta_g28
+   real(kind=8)            :: beta_gr08
    !=======================================================================================!
    !=======================================================================================!
 
@@ -226,7 +303,7 @@ module canopy_air_coms
       !------------------------------------------------------------------------------------!
       if (stable) then
          select case (isfclyrm)
-         case (2) !----- Oncley and Dudhia (1995). ----------------------------------------!
+         case (2,5) !----- Oncley and Dudhia (1995). --------------------------------------!
             psim = - bbeta * zeta 
          case (3,4) !----- Beljaars and Holtslag (1991). ----------------------------------!
             psim = abh91 * zeta                                                            &
@@ -263,7 +340,7 @@ module canopy_air_coms
       !------------------------------------------------------------------------------------!
       if (stable) then
          select case (isfclyrm)
-         case (2) !----- Oncley and Dudhia (1995). ----------------------------------------!
+         case (2,5) !----- Oncley and Dudhia (1995). --------------------------------------!
             psih = - bbeta * zeta 
          case (3,4) !----- Beljaars and Holtslag (1991). ----------------------------------!
             psih = 1.0 - (1.0 + ate * zeta)**fbh91                                         &
@@ -299,7 +376,7 @@ module canopy_air_coms
       !------------------------------------------------------------------------------------!
       if (stable) then
          select case (isfclyrm)
-         case (2) !----- Oncley and Dudhia (1995). ----------------------------------------!
+         case (2,5) !----- Oncley and Dudhia (1995). --------------------------------------!
             psim8 = - bbeta8 * zeta 
          case (3,4) !----- Beljaars and Holtslag (1991). ----------------------------------!
             psim8 = abh918 * zeta                                                          &
@@ -337,7 +414,7 @@ module canopy_air_coms
       !------------------------------------------------------------------------------------!
       if (stable) then
          select case (isfclyrm)
-         case (2) !----- Oncley and Dudhia (1995). ----------------------------------------!
+         case (2,5) !----- Oncley and Dudhia (1995). --------------------------------------!
             psih8 = - bbeta8 * zeta 
          case (3,4) !----- Beljaars and Holtslag (1991). ----------------------------------!
             psih8 = 1.d0 - (1.d0 + ate8 * zeta)**fbh918                                    &
@@ -373,7 +450,7 @@ module canopy_air_coms
       !------------------------------------------------------------------------------------!
       if (stable) then
          select case (isfclyrm)
-         case (2) !----- Oncley and Dudhia (1995). ----------------------------------------!
+         case (2,5) !----- Oncley and Dudhia (1995). --------------------------------------!
             dpsimdzeta = - bbeta 
          case (3,4) !----- Beljaars and Holtslag (1991). ----------------------------------!
             dpsimdzeta = abh91 + bbh91 * (1.0 - dbh91 * zeta + cbh91)                      &
@@ -409,7 +486,7 @@ module canopy_air_coms
       !------------------------------------------------------------------------------------!
       if (stable) then
          select case (isfclyrm)
-         case (2) !----- Oncley and Dudhia (1995). ----------------------------------------!
+         case (2,5) !----- Oncley and Dudhia (1995). --------------------------------------!
             dpsihdzeta = - bbeta
          case (3,4) !----- Beljaars and Holtslag (1991). ----------------------------------!
             dpsihdzeta = - atetf * (1.0 + ate * zeta)**fm1                                 &
@@ -447,7 +524,7 @@ module canopy_air_coms
       !------------------------------------------------------------------------------------!
       if (stable) then
          select case (isfclyrm)
-         case (2) !----- Oncley and Dudhia (1995). ----------------------------------------!
+         case (2,5) !----- Oncley and Dudhia (1995). --------------------------------------!
             dpsimdzeta8 = - bbeta8
          case (3,4) !----- Beljaars and Holtslag (1991). ----------------------------------!
             dpsimdzeta8 = abh918                                                           &
@@ -484,7 +561,7 @@ module canopy_air_coms
       !------------------------------------------------------------------------------------!
       if (stable) then
          select case (isfclyrm)
-         case (2) !----- Oncley and Dudhia (1995). ----------------------------------------!
+         case (2,5) !----- Oncley and Dudhia (1995). --------------------------------------!
             dpsihdzeta8 = - bbeta8
          case (3,4) !----- Beljaars and Holtslag (1991). ----------------------------------!
             dpsihdzeta8 = - atetf8 * (1.d0 + ate8 * zeta)**fm18                            &

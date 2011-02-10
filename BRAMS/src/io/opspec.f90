@@ -583,6 +583,9 @@ subroutine opspec3
   use mem_cuparm
   use mem_turb
   use mem_leaf
+  use leaf_coms, only :  &
+          ustmin,        & ! intent(in)
+          ggfact         ! ! intent(in)
   use therm_lib , only:  &
           level          ! ! intent(in)
   use grell_coms, only:  &
@@ -969,6 +972,21 @@ subroutine opspec3
         ifaterr=ifaterr+1
      end select
   endif
+  
+  if (betapower < 0.0 .or. betapower > 10.0) then
+     print *, 'FATAL - BETAPOWER must be between 0.0 and 10.0'
+     ifaterr = ifaterr + 1
+  end if
+  
+  if (ustmin < 1.e-4 .or. ustmin > 1.0) then
+     print *, 'FATAL - USTMIN must be between 0.0001 and 1.0'
+     ifaterr = ifaterr + 1
+  end if
+  
+  if (ggfact < 0.0 .or. ggfact > 100.0) then
+     print *, 'FATAL - GGFACT must be between 0.0 and 100.0'
+     ifaterr = ifaterr + 1
+  end if
 
 ![MLO - Some extra checks for mass and Medvidy's fix on Exner tendency
 ! Complete Exner tendency and vertical coordinate.
@@ -1041,8 +1059,8 @@ subroutine opspec3
   end select
   
   ! Check whether the surface layer exchange scheme the user chose is okay. 
-  if (isfcl /= 0 .and. (istar < 1 .or. istar > 4)) then
-     print *, 'fatal - ISTAR must be between 1 and 4, and yours is set to ',istar,'...'
+  if (isfcl /= 0 .and. (istar < 1 .or. istar > 5)) then
+     print *, 'fatal - ISTAR must be between 1 and 5, and yours is set to ',istar,'...'
      ifaterr=ifaterr+1
   end if
 

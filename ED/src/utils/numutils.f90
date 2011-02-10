@@ -1672,7 +1672,6 @@ real function sngloff(x,off)
    else
       sngloff = sngl(x)
    end if
-
    return
 end function sngloff
 !==========================================================================================!

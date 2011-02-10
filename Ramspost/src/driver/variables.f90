@@ -2917,6 +2917,56 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
       cdname='Heterotrophic respiration'
       cdunits='umol/m2/s'
 
+   case ('hflxgc_p','hflxgc')
+
+      irecind = 1
+      irecsize = nnxp(ngrd) * nnyp(ngrd) * npat
+      select case (trim(cvar))
+      case ('hflxgc')
+         ierr = RAMS_getvar('PATCH_AREA',idim_type,ngrd,a(irecind),b,flnm)
+         ierr_getvar = ierr_getvar + ierr
+         irecind = irecind + irecsize
+      end select
+
+      ierr = RAMS_getvar('SENSIBLE_GC',idim_type,ngrd,a(irecind),b,flnm)
+      ierr_getvar = ierr_getvar + ierr
+
+      select case (trim(cvar))
+      case ('hflxgc_p')
+         ivar_type = 7
+      case ('hflxgc')
+         ivar_type = 2
+         call RAMS_comp_patchsum(nnxp(ngrd),nnyp(ngrd),1,npat,a)
+      end select
+
+      cdname='Sensible heat (gnd -> can)'
+      cdunits='W/m2'
+
+   case ('hflxvc_p','hflxvc')
+
+      irecind = 1
+      irecsize = nnxp(ngrd) * nnyp(ngrd) * npat
+      select case (trim(cvar))
+      case ('hflxvc')
+         ierr = RAMS_getvar('PATCH_AREA',idim_type,ngrd,a(irecind),b,flnm)
+         ierr_getvar = ierr_getvar + ierr
+         irecind = irecind + irecsize
+      end select
+
+      ierr = RAMS_getvar('SENSIBLE_VC',idim_type,ngrd,a(irecind),b,flnm)
+      ierr_getvar = ierr_getvar + ierr
+
+      select case (trim(cvar))
+      case ('hflxvc_p')
+         ivar_type = 7
+      case ('hflxvc')
+         ivar_type = 2
+         call RAMS_comp_patchsum(nnxp(ngrd),nnyp(ngrd),1,npat,a)
+      end select
+
+      cdname='Sensible heat (veg -> can)'
+      cdunits='W/m2'
+
    case ('h_p','h')
 
       irecind = 1
@@ -2928,8 +2978,13 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
          irecind = irecind + irecsize
       end select
 
-      ierr = RAMS_getvar('SENSIBLE',idim_type,ngrd,a(irecind),b,flnm)
+      ierr = RAMS_getvar('SENSIBLE_GC',idim_type,ngrd,a(irecind),b,flnm)
       ierr_getvar = ierr_getvar + ierr
+
+      ierr = RAMS_getvar('SENSIBLE_VC',idim_type,ngrd,scr%c,b,flnm)
+      ierr_getvar = ierr_getvar + ierr
+
+      call accum(nnxp(ngrd)*nnyp(ngrd)*npat,a(irecind),scr%c)
 
       select case (trim(cvar))
       case ('h_p')
@@ -2940,6 +2995,56 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
       end select
 
       cdname='Sensible heat flux'
+      cdunits='W/m2'
+
+   case ('qwflxgc_p','qwflxgc')
+
+      irecind = 1
+      irecsize = nnxp(ngrd) * nnyp(ngrd) * npat
+      select case (trim(cvar))
+      case ('qwflxgc')
+         ierr = RAMS_getvar('PATCH_AREA',idim_type,ngrd,a(irecind),b,flnm)
+         ierr_getvar = ierr_getvar + ierr
+         irecind = irecind + irecsize
+      end select
+
+      ierr = RAMS_getvar('EVAP_GC',idim_type,ngrd,a(irecind),b,flnm)
+      ierr_getvar = ierr_getvar + ierr
+
+      select case (trim(cvar))
+      case ('qwflxgc_p')
+         ivar_type = 7
+      case ('qwflxgc')
+         ivar_type = 2
+         call RAMS_comp_patchsum(nnxp(ngrd),nnyp(ngrd),1,npat,a)
+      end select
+
+      cdname='Latent heat (gnd->can)'
+      cdunits='W/m2'
+
+   case ('qwflxvc_p','qwflxvc')
+
+      irecind = 1
+      irecsize = nnxp(ngrd) * nnyp(ngrd) * npat
+      select case (trim(cvar))
+      case ('qwflxvc')
+         ierr = RAMS_getvar('PATCH_AREA',idim_type,ngrd,a(irecind),b,flnm)
+         ierr_getvar = ierr_getvar + ierr
+         irecind = irecind + irecsize
+      end select
+
+      ierr = RAMS_getvar('EVAP_VC',idim_type,ngrd,a(irecind),b,flnm)
+      ierr_getvar = ierr_getvar + ierr
+
+      select case (trim(cvar))
+      case ('qwflxvc_p')
+         ivar_type = 7
+      case ('qwflxvc')
+         ivar_type = 2
+         call RAMS_comp_patchsum(nnxp(ngrd),nnyp(ngrd),1,npat,a)
+      end select
+
+      cdname='Latent heat (veg->can)'
       cdunits='W/m2'
 
    case ('evap_p','evap')
@@ -2953,8 +3058,13 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
          irecind = irecind + irecsize
       end select
 
-      ierr = RAMS_getvar('EVAP',idim_type,ngrd,a(irecind),b,flnm)
+      ierr = RAMS_getvar('EVAP_GC',idim_type,ngrd,a(irecind),b,flnm)
       ierr_getvar = ierr_getvar + ierr
+
+      ierr = RAMS_getvar('EVAP_VC',idim_type,ngrd,scr%c,b,flnm)
+      ierr_getvar = ierr_getvar + ierr
+
+      call accum(nnxp(ngrd)*nnyp(ngrd)*npat,a(irecind),scr%c)
 
       select case (trim(cvar))
       case ('evap_p')

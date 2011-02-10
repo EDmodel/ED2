@@ -61,6 +61,7 @@ subroutine copy_nl(copy_type)
                                    , soilstate_db              & ! intent(out)
                                    , soildepth_db              & ! intent(out)
                                    , runoff_time               & ! intent(out)
+                                   , betapower                 & ! intent(out)
                                    , slz                       & ! intent(out)
                                    , veg_database              ! ! intent(out)
    use met_driver_coms      , only : ed_met_driver_db          & ! intent(out)
@@ -84,14 +85,24 @@ subroutine copy_nl(copy_type)
                                    , maxpatch                  & ! intent(out)
                                    , maxcohort                 ! ! intent(out)
    use physiology_coms      , only : istoma_scheme             & ! intent(out)
-                                   , n_plant_lim               ! ! intent(out)
+                                   , h2o_plant_lim             & ! intent(out)
+                                   , n_plant_lim               & ! intent(out)
+                                   , vmfact                    & ! intent(out)
+                                   , mfact                     & ! intent(out)
+                                   , kfact                     & ! intent(out)
+                                   , gamfact                   & ! intent(out)
+                                   , lwfact                    & ! intent(out)
+                                   , thioff                    & ! intent(out)
+                                   , icomppt                   ! ! intent(out)
    use phenology_coms       , only : iphen_scheme              & ! intent(out)
                                    , iphenys1                  & ! intent(out)
                                    , iphenysf                  & ! intent(out)
                                    , iphenyf1                  & ! intent(out)
                                    , iphenyff                  & ! intent(out)
                                    , phenpath                  & ! intent(out)
-                                   , repro_scheme              ! ! intent(out)
+                                   , repro_scheme              & ! intent(out)
+                                   , radint                    & ! intent(out)
+                                   , radslp                    ! ! intent(out)
    use decomp_coms          , only : n_decomp_lim              & ! intent(out)
                                    , LloydTaylor               ! ! intent(out)
    use disturb_coms         , only : include_fire              & ! intent(out)
@@ -167,10 +178,14 @@ subroutine copy_nl(copy_type)
                                    , nzs                       ! ! intent(out)
    use ed_misc_coms         , only : attach_metadata           ! ! intent(out)
    use canopy_air_coms      , only : icanturb                  & ! intent(out)
-                                   , isfclyrm                  ! ! intent(out)
+                                   , isfclyrm                  & ! intent(out)
+                                   , i_blyr_condct             & ! intent(out)
+                                   , ustmin                    & ! intent(out)
+                                   , ggfact                    ! ! intent(out)
    use optimiz_coms         , only : ioptinpt                  ! ! intent(out)
    use canopy_radiation_coms, only : crown_mod                 ! ! intent(out)
    use rk4_coms             , only : ibranch_thermo            & ! intent(out)
+                                   , ipercol                   & ! intent(out)
                                    , rk4_tolerance             ! ! intent(out)
    use ed_para_coms         , only : loadmeth                  ! ! intent(out)
    use consts_coms          , only : hr_sec                    & ! intent(in)
@@ -272,6 +287,16 @@ subroutine copy_nl(copy_type)
       repro_scheme              = nl%repro_scheme
       lapse_scheme              = nl%lapse_scheme
       crown_mod                 = nl%crown_mod
+      h2o_plant_lim             = nl%h2o_plant_lim
+      vmfact                    = nl%vmfact
+      mfact                     = nl%mfact
+      kfact                     = nl%kfact
+      gamfact                   = nl%gamfact
+      lwfact                    = nl%lwfact
+      thioff                    = nl%thioff
+      icomppt                   = nl%icomppt
+      radint                    = nl%radint
+      radslp                    = nl%radslp
       n_plant_lim               = nl%n_plant_lim
       n_decomp_lim              = nl%n_decomp_lim
       include_fire              = nl%include_fire
@@ -281,7 +306,9 @@ subroutine copy_nl(copy_type)
       LloydTaylor               = nl%decomp_scheme == 1
       
       icanturb                  = nl%icanturb
+      i_blyr_condct             = nl%i_blyr_condct
       isfclyrm                  = nl%isfclyrm
+      ipercol                   = nl%ipercol
 
       include_these_pft         = nl%include_these_pft
       agri_stock                = nl%agri_stock
@@ -290,6 +317,9 @@ subroutine copy_nl(copy_type)
       
       treefall_disturbance_rate = nl%treefall_disturbance_rate
       runoff_time               = nl%runoff_time
+      betapower                 = nl%betapower
+      ustmin                    = nl%ustmin
+      ggfact                    = nl%ggfact
 
       !----- Print control parameters. ----------------------------------------------------!
       iprintpolys               = nl%iprintpolys

@@ -7,7 +7,7 @@
 ! close to the n*pi/2.                                                                     !
 !------------------------------------------------------------------------------------------!
 real function dist_gc(slons,slonf,slats,slatf)
-   use consts_coms, only : erad    & ! intent(in)
+   use rconstants , only : erad    & ! intent(in)
                          , pio1808 ! ! intent(in)
    implicit none
    !----- Local variables. ----------------------------------------------------------------!

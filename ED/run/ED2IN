@@ -388,13 +388,45 @@
                               ! to do the 'small perturbation' scheme.
 
 
-   NL%IPHEN_SCHEME    = 2     ! This specifies the phenology scheme:
-                              !  0 -- the cold-deciuous (Botta et al.)
-                              !       and old drought-deciduous (same with ED2.0);
-                              !  1 -- presecribed phenology based on observations
-                              !  2 -- the cold-deciduous and new drought-deciduous;
-                              !  3 -- the cold-deciduous, new drought-deciduous 
-                              !       and light phenology (not fully tested);
+   !---------------------------------------------------------------------------------------!
+   !     The following variable controls the phenology scheme.  Even within each scheme,   !
+   ! the actual phenology will be different depending on the PFT.                          !
+   !                                                                                       !
+   ! -1: grasses   - evergreen;                                                            !
+   !     tropical  - evergreen;                                                            !
+   !     conifers  - evergreen;                                                            !
+   !     hardwoods - cold-deciduous (Botta et al.);                                        !
+   !                                                                                       !
+   !  0: grasses   - drought-deciduous (old scheme);                                       !
+   !     tropical  - drought-deciduous (old scheme);                                       !
+   !     conifers  - evergreen;                                                            !
+   !     hardwoods - cold-deciduous;                                                       !
+   !                                                                                       !
+   !  1: prescribed phenology                                                              !
+   !                                                                                       !
+   !  2: grasses   - drought-deciduous (new scheme);                                       !
+   !     tropical  - drought-deciduous (new scheme);                                       !
+   !     conifers  - evergreen;                                                            !
+   !     hardwoods - cold-deciduous;                                                       !
+   !                                                                                       !
+   !  3: grasses   - drought-deciduous (new scheme);                                       !
+   !     tropical  - drought-deciduous (light phenology);                                  !
+   !     conifers  - evergreen;                                                            !
+   !     hardwoods - cold-deciduous;                                                       !
+   !                                                                                       !
+   !  Old scheme: plants shed their leaves once instantaneous amount of available water    !
+   !              becomes less than a critical value.                                      !
+   !  New scheme: plants shed their leaves once a 10-day running average of available      !
+   !              water becomes less than a critical value.                                !
+   !---------------------------------------------------------------------------------------!
+   NL%IPHEN_SCHEME    = 2
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Radiation intercept and slope, for the light phenology case. --------------------!
+   NL%RADINT          = -11.3868 ! Intercept
+   NL%RADSLP          = 0.0824   ! Slope
   
    NL%REPRO_SCHEME    = 1     ! This specifies the reproduction scheme:
                               !  0 -- reproduction off (useful for short runs)
@@ -414,8 +446,37 @@
                               ! 1 -- Lloyd and Taylor (1994) model
                               !      [[requires parameters to be set in xml]]
 
-   NL%N_PLANT_LIM     = 0     ! Determines whether (1) or not (0) plants can
-                              !    be limited by nitrogen
+   NL%H2O_PLANT_LIM   = 1     ! Determines whether plant photosynthesis can be limited 
+                              ! by water
+                              !
+                              ! 0 -- No water limitation
+                              !      FSW = 1           
+                              ! 1 -- Original ED-1.0/ED-2.0 method
+                              !      FSW = 1/ (1 + D/S)
+                              ! 2 -- Alternative method:
+                              !      FSW = ½ - ½ * tanh[2*(D/S - 2)]
+
+   !---------------------------------------------------------------------------------------!
+   !    These are factors that multiply some of the ED-2.1 default parameters.  Setting    !
+   ! them to 1.0 will make them the default.  These are applied for all PFTs.              !
+   !---------------------------------------------------------------------------------------!
+   NL%VMFACT          = 1.    ! Factor for changing Vm0 from the default
+   NL%MFACT           = 1.    ! Factor for changing stomatal slope (M)
+   NL%KFACT           = 1.    ! Factor for changing the water conductance (Kw)
+   NL%GAMFACT         = 1.    ! Factor for changing the dark respiration factor (gamma)
+   NL%LWFACT          = 1.    ! Factor for changing the leaf width factor (w)
+   NL%THIOFF          = 0.    ! Offset to be added to the Vm_high_temp
+   !---------------------------------------------------------------------------------------!
+
+   NL%ICOMPPT         = 0     ! Which compensation point should I use 
+                              ! 0 -- original ED-2.1
+                              ! other options coming soon
+
+   NL%N_PLANT_LIM     = 0     ! Determines whether plant photosynthesis can be 
+                              ! limited by nitrogen
+                              !
+                              ! 0 -- No nitrogen limitation
+                              ! 1 -- Nitrogen limitation model
 
    NL%N_DECOMP_LIM    = 0     ! Determines whether (1) or not (0) decomposition
                               !    can be limited by nitrogen
@@ -438,11 +499,13 @@
                               ! abandonment, and harvesting.
 
 
-   NL%ICANTURB        = 2     ! Canopy turbulence scheme
-                              ! -1. (very deprecated) This is the original ED-2.0 
-                              !     scheme, added here for backward compability.  
-                              !     THIS SHOULD BE AVOIDED, since it gives strange 
-                              !     results. 
+   NL%ICANTURB        = myicanturb    ! Canopy turbulence scheme
+                              ! -2. This method scales the wind at the top of the canopy
+                              !     but it will assume constant winds throughout all 
+                              !     cohorts in the understorey.
+                              ! -1. This is the original ED-2.0 scheme, which scales the
+                              !     canopy winds by LAI and has a simplified roughness
+                              !     scheme.
                               !  0. is the default scheme
                               !  1. will rescale reference wind-speed if it
                               !     the reference height is (inapropriately)
@@ -451,6 +514,21 @@
                               !     1997 and the bulk Richardson number of 
                               !     instability.  This method will not work 
                               !     when zref<h
+
+   NL%I_BLYR_CONDCT   = 0     ! Methods to estimate the leaf boundary layer conductance:
+                              ! -1. Original ED-2.0 method.  The Nusselt number for forced 
+                              !     convection is estimated using the average winds.  A
+                              !     minimum conductance of 1/(25 * patch LAI) and a minimum
+                              !     patch-level heat capacity of 
+                              !     3000 * (height of the tallest cohort) are imposed
+                              !  0. The Nusselt number for forced convection is estimated
+                              !     using the average winds, with no corrections
+                              !  1. The actual Nusselt number for forced convection is 
+                              !     multiplied by 2.5 as the Reynolds number gets close or
+                              !     greater than 10,000.
+                              !  2. The actual Nusselt number for forced convection is 
+                              !     multiplied by 10. as the Reynolds number gets close or
+                              !     greater than 10,000.
 
 
    NL%ISFCLYRM        = 3     ! Surface layer model (used to compute ustar, tstar,...)
@@ -467,18 +545,29 @@
                               !      stable layers that works better during night time.
                               !  4 - The parameterization of Beljaars and Holtslag, but 
                               !      using z/L estimation as in Oncley and Dudhia. 
+                              !  5 - The parametrisation of Oncley and Dudhia, but using 
+                              !      z/L estimation as in Beljaars and Holtslag
+
+   NL%IPERCOL         = 1     ! Percolation scheme:
+                              !  0 - Original method, from LEAF-3.  Shed liquid in excess 
+                              !      of a 1:9 liquid-to-ice ratio through percolation.
+                              !  1 - Alternative "free" water calculation.  
+                              !      Anderson (1976), NOAA Tech Report NWS 19.
 
 
-   !--------------------------------------------------------------------!
-   ! PLANT FUNCTIONAL TYPES (PFTs):                                     !
-   !--------------------------------------------------------------------!
-   ! 1 - C4 grass                    |  7 - southern pines              !
-   ! 2 - early tropical              |  8 - late conifers               !
-   ! 3 - mid tropical                |  9 - early temperate deciduous   !
-   ! 4 - late tropical               | 10 - mid temperate deciduous     !
-   ! 5 - C3 grass                    | 11 - late temperate deciduous    !
-   ! 6 - northern pines              |                                  !
-   !--------------------------------------------------------------------!
+
+   !---------------------------------------------------------------------!
+   ! PLANT FUNCTIONAL TYPES (PFTs):                                      !
+   !---------------------------------------------------------------------!
+   ! 1 - C4 grass                     |  9 - early temperate deciduous   !
+   ! 2 - early tropical               | 10 - mid temperate deciduous     !
+   ! 3 - mid tropical                 | 11 - late temperate deciduous    !
+   ! 4 - late tropical                | 12:15 - agricultural PFTs        !
+   ! 5 - temperate C3 grass           | 16 - Subtropical C3 grass        !
+   ! 6 - northern pines               |      (C4 grass with C3 photo).   !
+   ! 7 - southern pines               | 17 - "Araucaria" (non-optimised  !
+   ! 8 - late conifers                |      Southern Pines).            !
+   !---------------------------------------------------------------------!
    NL%INCLUDE_THESE_PFT = 1,2,3,4 ! List of PFTs to be included
    NL%AGRI_STOCK        = 1       ! Agriculture PFT (used only if ianth_disturb=1)
    NL%PLANTATION_STOCK  = 3       ! Plantation PFT  (used only if ianth_disturb=1)
@@ -529,6 +618,14 @@
                                          ! this water to disappear.  If you want no runoff
                                          ! set runoff_time = 0 (not recommended for long 
                                          ! runs).
+
+   NL%BETAPOWER      = 1.                ! Power to be applied to the beta term that
+                                         !     controls the ground evaporation.
+
+   NL%USTMIN         = 0.10              ! Minimum u* (m/s)
+   
+   NL%GGFACT         = 1.0               ! Factor to multiply the ground to canopy 
+                                         !     conductance
 !------------------------------------------------------------------------------------------!
 
 

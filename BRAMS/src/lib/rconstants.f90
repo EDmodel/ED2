@@ -78,6 +78,7 @@ Module rconstants
    real, parameter :: mmdry1000   = 1000.*mmdry    ! Mean dry air molar mass    [   kg/mol]
    real, parameter :: mmcod1em6   = mmcod * 1.e-6  ! Convert ppm to kgCO2/kgair [     ----]
    real, parameter :: mmdryi      = 1./mmdry       ! 1./mmdry                   [   mol/kg]
+   real, parameter :: mmh2oi      = 1./mmh2o       ! 1./mmdry                   [   mol/kg]
    real, parameter :: mmco2i      = 1./mmco2       ! 1./mmco2                   [   mol/kg]
    !---------------------------------------------------------------------------------------!
 
@@ -89,6 +90,7 @@ Module rconstants
    real, parameter :: day_sec = 86400.           ! # of seconds in a day        [    s/day]
    real, parameter :: day_hr  = 24.              ! # of hours in a day          [   hr/day]
    real, parameter :: hr_sec  = 3600.            ! # of seconds in an hour      [     s/hr]
+   real, parameter :: hr_min  = 60.              ! # of minutes in an hour      [   min/hr]
    real, parameter :: min_sec = 60.              ! # of seconds in a minute     [    s/min]
    real, parameter :: yr_sec  = yr_day * day_sec ! # of seconds in a year       [     s/yr]
    !---------------------------------------------------------------------------------------!
@@ -119,22 +121,51 @@ Module rconstants
 
 
    !---------------------------------------------------------------------------------------!
+   ! Reference for this block:                                                             !
+   ! MU08 - Monteith, J. L., M. H. Unsworth, 2008. Principles of Environmental Physics,    !
+   !        third edition, Academic Press, Amsterdam, 418pp.  (Chapters 3 and 10).         !
+   !                                                                                       !
+   !     Air diffusion properties. These properties are temperature-dependent in reality,  !
+   ! but for simplicity we assume them constants, using the value at 20°C.                 !
+   !                                                                                       !
+   ! Thermal diffusivity - Straight from Table 15.1 of MU08                                !
+   ! Kinematic viscosity - Computed from equation on page 32 of MU08;                      !
+   ! Thermal expansion coefficient - determined by inverting the coefficient at equation   !
+   !                                 10.11 (MU08).                                         !
+   ! These terms could be easily made function of temperature in the future if needed be.  !
+   !---------------------------------------------------------------------------------------!
+   real, parameter :: th_diff   = 2.060e-5    ! Air thermal diffusivity         [     m²/s]
+   real, parameter :: th_diffi  = 1./th_diff  ! 1/ air thermal diffusivity      [     s/m²]
+   real, parameter :: kin_visc  = 1.516e-5    ! Kinematic viscosity             [     m²/s]
+   real, parameter :: kin_visci = 1./kin_visc ! 1/Kinematic viscosity          [     s/m²]
+   real, parameter :: th_expan  = 3.43e-3     ! Air thermal expansion coeff.    [      1/K]
+   !---------------------------------------------------------------------------------------!
+   !    Grashof coefficient [1/(K m³)].  This is the coefficient a*g/(nu²) in MU08's       !
+   ! equation 10.8, in the equation that defines the Grashof number.                       !
+   !---------------------------------------------------------------------------------------!
+   real, parameter :: gr_coeff = th_expan * grav * kin_visci * kin_visci
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
    ! Dry air properties                                                                    !
    !---------------------------------------------------------------------------------------!
-   real, parameter :: rdry   = rmol/mmdry  ! Gas constant for dry air (Ra)      [   J/kg/K]
-   real, parameter :: rdryi  = mmdry/rmol  ! 1./Gas constant for dry air (Ra)   [   kg K/J]
-   real, parameter :: cp     = 1004.       ! Specific heat at constant pressure [   J/kg/K]
-   real, parameter :: cv     = 717.        ! Specific heat at constant volume   [   J/kg/K]
-   real, parameter :: cpog   = cp /grav    ! cp/g                               [      m/K]
-   real, parameter :: rocp   = rdry / cp   ! Ra/cp                              [     ----]
-   real, parameter :: cpor   = cp / rdry   ! Cp/Ra                              [     ----]
-   real, parameter :: rocv   = rdry / cv   ! Ra/Cv                              [     ----]
-   real, parameter :: gocp   = grav / cp   ! g/Cp, dry adiabatic lapse rate     [      K/m]
-   real, parameter :: gordry = grav / rdry ! g/Ra                               [      K/m]
-   real, parameter :: cpi    = 1. / cp     ! 1/Cp                               [   kg K/J]
-   real, parameter :: cpi4   = 4. * cpi    ! 4/Cp                               [   kg K/J]
-   real, parameter :: p00k   = 26.870941   ! p0 ** (Ra/Cp)                      [ Pa^0.286]
-   real, parameter :: p00ki  = 1. / p00k   ! p0 ** (-Ra/Cp)                     [Pa^-0.286]
+   real, parameter :: rdry   = rmol/mmdry    ! Gas constant for dry air (Ra)    [   J/kg/K]
+   real, parameter :: rdryi  = mmdry/rmol    ! 1./Gas constant for dry air (Ra) [   kg K/J]
+   real, parameter :: cp     = 3.5 * rdry    ! Specific heat at constant press. [   J/kg/K]
+   real, parameter :: cv     = 2.5 * rdry    ! Specific heat at constant volume [   J/kg/K]
+   real, parameter :: cpog   = cp /grav      ! cp/g                             [      m/K]
+   real, parameter :: rocp   = rdry / cp     ! Ra/cp                            [     ----]
+   real, parameter :: rocv   = rdry / cv     ! Ra/Cv                            [     ----]
+   real, parameter :: cpocv  = cp / cv       ! Cp/Cv                            [     ----]
+   real, parameter :: cpor   = cp / rdry     ! Cp/Ra                            [     ----]
+   real, parameter :: gocp   = grav / cp     ! g/Cp, dry adiabatic lapse rate   [      K/m]
+   real, parameter :: gordry = grav / rdry   ! g/Ra                             [      K/m]
+   real, parameter :: cpi    = 1. / cp       ! 1/Cp                             [   kg K/J]
+   real, parameter :: cpi4   = 4. * cpi      ! 4/Cp                             [   kg K/J]
+   real, parameter :: p00k   = 26.8269579527 ! p0 ** (Ra/Cp)                    [   Pa^2/7]
+   real, parameter :: p00ki  = 1. / p00k     ! p0 ** (-Ra/Cp)                   [  Pa^-2/7]
    !---------------------------------------------------------------------------------------!
 
 
@@ -272,6 +303,16 @@ Module rconstants
 
 
    !---------------------------------------------------------------------------------------!
+   !     These are the lower and upper bounds in which we compute exponentials.  This is   !
+   ! to avoid overflows and/or underflows when we compute exponentials.                    !
+   !---------------------------------------------------------------------------------------!
+   real, parameter :: lnexp_min = -38.
+   real, parameter :: lnexp_max =  38.
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
    !    Double precision version of all constants used in Runge-Kutta.                     !
    !---------------------------------------------------------------------------------------!
    real(kind=8), parameter :: pi18            = dble(pi1           )
@@ -303,6 +344,7 @@ Module rconstants
    real(kind=8), parameter :: mmdry10008      = dble(mmdry1000     )
    real(kind=8), parameter :: mmcod1em68      = dble(mmcod1em6     )
    real(kind=8), parameter :: mmdryi8         = dble(mmdryi        )
+   real(kind=8), parameter :: mmh2oi8         = dble(mmh2oi        )
    real(kind=8), parameter :: mmco2i8         = dble(mmco2i        )
    real(kind=8), parameter :: yr_day8         = dble(yr_day        )
    real(kind=8), parameter :: day_sec8        = dble(day_sec       )
@@ -320,8 +362,11 @@ Module rconstants
    real(kind=8), parameter :: rdry8           = dble(rdry          )
    real(kind=8), parameter :: rdryi8          = dble(rdryi         )
    real(kind=8), parameter :: cp8             = dble(cp            )
+   real(kind=8), parameter :: cv8             = dble(cv            )
    real(kind=8), parameter :: cpog8           = dble(cpog          )
    real(kind=8), parameter :: rocp8           = dble(rocp          )
+   real(kind=8), parameter :: rocv8           = dble(rocv          )
+   real(kind=8), parameter :: cpocv8          = dble(cpocv         )
    real(kind=8), parameter :: cpor8           = dble(cpor          )
    real(kind=8), parameter :: cpi8            = dble(cpi           )
    real(kind=8), parameter :: cpi48           = dble(cpi4          )
@@ -370,6 +415,13 @@ Module rconstants
    real(kind=8), parameter :: ltscalemax8     = dble(ltscalemax    )
    real(kind=8), parameter :: abswltlmin8     = dble(abswltlmin    )
    real(kind=8), parameter :: lturbmin8       = dble(lturbmin      )
+   real(kind=8), parameter :: th_diff8        = dble(th_diff       )
+   real(kind=8), parameter :: th_diffi8       = dble(th_diffi      )
+   real(kind=8), parameter :: kin_visc8       = dble(kin_visc      )
+   real(kind=8), parameter :: th_expan8       = dble(th_expan      )
+   real(kind=8), parameter :: gr_coeff8       = dble(gr_coeff      )
+   real(kind=8), parameter :: lnexp_min8      = dble(lnexp_min     )
+   real(kind=8), parameter :: lnexp_max8      = dble(lnexp_max     )
    !---------------------------------------------------------------------------------------!
 
 

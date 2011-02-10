@@ -1349,9 +1349,17 @@ module therm_lib
       !----- Arguments --------------------------------------------------------------------!
       real, intent(in)           :: temp     ! Temperature                          [    K]
       real, intent(in)           :: rvap     ! Vapour mixing ratio                  [kg/kg]
-      real, intent(in)           :: rtot     ! Total mixing ratio                   [kg/kg]
+      real, intent(in), optional :: rtot     ! Total mixing ratio                   [kg/kg]
+      !----- Local variable ---------------------------------------------------------------!
+      real                       :: rtothere ! Internal rtot, to deal with optional [kg/kg]
 
-      virtt = temp * (1. + epi * rvap) / (1. + rtot)
+      if (present(rtot)) then
+        rtothere = rtot
+      else
+        rtothere = rvap
+      end if
+
+      virtt = temp * (1. + epi * rvap) / (1. + rtothere)
 
       return
    end function virtt
@@ -1383,7 +1391,7 @@ module therm_lib
       if (present(rtot)) then
         tvir = virtt(temp,rvap,rtot)
       else
-        tvir = virtt(temp,rvap,rvap)
+        tvir = virtt(temp,rvap)
       end if
 
       idealdens = pres / (rdry * tvir)
@@ -1574,13 +1582,46 @@ module therm_lib
       ! internal energy of supercooled water.                                              !
       !------------------------------------------------------------------------------------!
       if (tequ <= t3ple) then
-         hpqz2temp = cpi * (enthalpy - qvpr * (cimcp * tequ + alvi   ) - grav * zref)
+         hpqz2temp = cpi * (enthalpy - qvpr * (cimcp * tequ + alvi   )  - grav * zref)
       else
-         hpqz2temp = cpi * (enthalpy - qvpr * (clmcp * tequ + eta3ple) - grav * zref)
+         hpqz2temp = cpi * (enthalpy - qvpr * (clmcp * tequ + eta3ple)  - grav * zref)
       end if
 
       return
    end function hpqz2temp
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This function finds the temperature given the potential temperature, density, and !
+   ! specific humidity.  This comes from a combination of the definition of potential      !
+   ! temperature and the ideal gas law, to eliminate pressure, when pressure is also       !
+   ! unknown.                                                                              !
+   !---------------------------------------------------------------------------------------!
+   real(kind=4) function thrhsh2temp(theta,dens,qvpr)
+      use rconstants , only : cpocv  & ! intent(in)
+                            , p00i   & ! intent(in)
+                            , rdry   & ! intent(in)
+                            , epim1  & ! intent(in)
+                            , rocv   ! ! intent(in)
+      implicit none
+      !----- Arguments --------------------------------------------------------------------!
+      real(kind=4), intent(in) :: theta    ! Potential temperature                 [     K]
+      real(kind=4), intent(in) :: dens     ! Density                               [    Pa]
+      real(kind=4), intent(in) :: qvpr     ! Specific humidity                     [ kg/kg]
+      !------------------------------------------------------------------------------------!
+
+      thrhsh2temp = theta ** cpocv                                                         &
+                  * (p00i * dens * rdry * (1. + epim1 * qvpr)) ** rocv
+
+      return
+   end function thrhsh2temp
    !=======================================================================================!
    !=======================================================================================!
 

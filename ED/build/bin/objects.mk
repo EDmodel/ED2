@@ -108,4 +108,5 @@ OBJ_MODEL =                        \
 	twostream_rad.o            \
 	update_derived_props.o     \
 	utils_c.o                  \
-	utils_f.o
+	utils_f.o                  \
+	vegetation_dynamics.o
