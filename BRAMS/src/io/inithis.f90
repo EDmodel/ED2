@@ -456,7 +456,7 @@ subroutine sfcinit_hstart()
                leaf_g(ifm)%patch_rough(i,j,ipat) = max(zrough,grid_g(ifm)%topzo(i,j))
                leaf_g(ifm)%veg_rough(i,j,ipat)   = .13 * veg_ht(nveg)
                leaf_g(ifm)%veg_height(i,j,ipat)  = veg_ht(nveg)
-               leaf_g(ifm)%stom_resist(i,j,ipat) = 1.e6
+               leaf_g(ifm)%stom_condct(i,j,ipat) = 1.e-6
 
                !----- Checking for temporary surface water/snow layers --------------------! 
                do k = 1,nzs

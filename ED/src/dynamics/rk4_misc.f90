@@ -203,16 +203,6 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    ! be too small.                                                                         !
    !---------------------------------------------------------------------------------------!
    cpatch => sourcesite%patch(ipa)
-   sourcesite%hcapveg(ipa) = 0.
-   sourcesite%lai(ipa)     = 0.
-   sourcesite%wpa(ipa)     = 0.
-   sourcesite%wai(ipa)     = 0.
-   do ico=1,cpatch%ncohorts
-      sourcesite%hcapveg(ipa) = sourcesite%hcapveg(ipa) + cpatch%hcapveg(ico)
-      sourcesite%lai(ipa)     = sourcesite%lai(ipa)     + cpatch%lai(ico)
-      sourcesite%wpa(ipa)     = sourcesite%wpa(ipa)     + cpatch%wpa(ico)
-      sourcesite%wai(ipa)     = sourcesite%wai(ipa)     + cpatch%wai(ico)
-   end do
    
    any_solvable = .false.
    do ico=1, cpatch%ncohorts
@@ -240,7 +230,11 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    !---------------------------------------------------------------------------------------!
 
 
-
+   !---------------------------------------------------------------------------------------!
+   !     Loop over cohorts.  We also use this loop to compute the fraction of open canopy, !
+   ! which is initialised with 1. in case this is an empty patch.                          !
+   !---------------------------------------------------------------------------------------!
+   targetp%opencan_frac = 1.d0
    do ico = 1,cpatch%ncohorts
       ipft=cpatch%pft(ico)
 
@@ -326,7 +320,10 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
       targetp%psi_open(ico)   = 0.d0
       targetp%psi_closed(ico) = 0.d0
       !------------------------------------------------------------------------------------!
+      
+      targetp%opencan_frac = targetp%opencan_frac * (1.d0 - targetp%crown_area(ico))
    end do
+   targetp%opencan_frac = max(0.d0,min(1.d0,targetp%opencan_frac))
    !---------------------------------------------------------------------------------------!
 
 
@@ -1331,7 +1328,7 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,csite,ipa)
       !---- Check whether there is enough snow for a new layer. ---------------------------!
       nlayers   = ksnnew
       newlayers = 1
-      do k = 1,nzs
+      do k = 1,ksnnew
          !---------------------------------------------------------------------------------!
          !     Check whether the layer as is meet the minimum requirements to stand as a   !
          ! new layer by itself.                                                            !
@@ -2187,21 +2184,10 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
       initp%virtual_depth        = initp%virtual_depth        + veg_dwshed_tot
       !------------------------------------------------------------------------------------!
 
-   case (1)
+   case default
       !------------------------------------------------------------------------------------!
-      !     There is a temporary water but it is not stable, shed the water into the       !
-      ! temporary surface water, but send the energy to the top soil layer, because they   !
-      ! will be brought to thermal equilibrium.                                            !
-      !------------------------------------------------------------------------------------!
-      initp%sfcwater_mass (ksn)  = initp%sfcwater_mass(ksn)   + veg_wshed_tot
-      initp%soil_energy   (nzg)  = initp%soil_energy  (nzg)   + veg_qwshed_tot*dslzi8(nzg)
-      initp%sfcwater_depth(ksn)  = initp%sfcwater_depth(ksn)  + veg_dwshed_tot
-      !------------------------------------------------------------------------------------!
-
-   case (2)
-      !------------------------------------------------------------------------------------!
-      !     There is a temporary water, and it is stable, shed both the mass and energy    !
-      ! into the temporary surface water.                                                  !
+      !     There is a temporary water, shed the excess water to the temporary surface     !
+      ! water layer.                                                                       !
       !------------------------------------------------------------------------------------!
       initp%sfcwater_mass(ksn)   = initp%sfcwater_mass(ksn)   + veg_wshed_tot
       initp%sfcwater_energy(ksn) = initp%sfcwater_energy(ksn) + veg_qwshed_tot
@@ -2527,11 +2513,11 @@ subroutine print_csiteipa(csite, ipa)
 
    write (unit=*,fmt='(80a)') ('-',k=1,80)
 
-   write (unit=*,fmt='(5(a12,1x))')  '   CAN_THEIV','    CAN_TEMP','     CAN_SHV'          &
-                                    ,'    CAN_PRSS','     CAN_CO2'
-   write (unit=*,fmt='(5(es12.4,1x))') csite%can_theiv(ipa),csite%can_temp(ipa)            &
+   write (unit=*,fmt='(6(a12,1x))')  '   CAN_THEIV','    CAN_TEMP','     CAN_SHV'          &
+                                    ,'    CAN_PRSS','     CAN_CO2','       GGNET'
+   write (unit=*,fmt='(6(es12.4,1x))') csite%can_theiv(ipa),csite%can_temp(ipa)            &
                                       ,csite%can_shv(ipa)  ,csite%can_prss(ipa)            &
-                                      ,csite%can_co2(ipa)
+                                      ,csite%can_co2(ipa)  ,csite%ggnet   (ipa)
 
    write (unit=*,fmt='(80a)') ('-',k=1,80)
 
@@ -2696,13 +2682,13 @@ subroutine print_rk4patch(y,csite,ipa)
    write (unit=*,fmt='(a)'  ) ' '
    write (unit=*,fmt='(80a)') ('-',k=1,80)
 
-   write (unit=*,fmt='(7(a12,1x))')   '  VEG_HEIGHT','   VEG_ROUGH','   PATCH_LAI'         &
+   write (unit=*,fmt='(8(a12,1x))')   '  VEG_HEIGHT','   VEG_ROUGH','   PATCH_LAI'         &
                                      ,'    CAN_RHOS','   CAN_DEPTH','     CAN_CO2'         &
-                                     ,'    CAN_PRSS'
+                                     ,'    CAN_PRSS','       GGNET'
                                      
-   write (unit=*,fmt='(7(es12.4,1x))') csite%veg_height(ipa),csite%veg_rough(ipa)          &
+   write (unit=*,fmt='(8(es12.4,1x))') csite%veg_height(ipa),csite%veg_rough(ipa)          &
                                       ,csite%lai(ipa),y%can_rhos,y%can_depth,y%can_co2     &
-                                      ,y%can_prss
+                                      ,y%can_prss,y%ggnet
    write (unit=*,fmt='(80a)') ('-',k=1,80)
    write (unit=*,fmt='(7(a12,1x))')  '   CAN_THEIV','   CAN_THETA','    CAN_TEMP'          &
                                     ,'     CAN_SHV','     CAN_SSH','    CAN_RVAP'          &
@@ -2827,8 +2813,8 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
    real(kind=8)                       :: sfc_temp
    real(kind=8)                       :: elapsec
    !----- Local constants. ----------------------------------------------------------------!
-   character(len=10), parameter :: phfmt='(64(a,1x))'
-   character(len=48), parameter :: pbfmt='(3(i13,1x),3(es13.6,1x),3(i13,1x),55(es13.6,1x))'
+   character(len=10), parameter :: phfmt='(68(a,1x))'
+   character(len=48), parameter :: pbfmt='(3(i13,1x),3(es13.6,1x),3(i13,1x),59(es13.6,1x))'
    character(len=10), parameter :: chfmt='(40(a,1x))'
    character(len=48), parameter :: cbfmt='(3(i13,1x),2(es13.6,1x),2(i13,1x),33(es13.6,1x))'
    !----- Locally saved variables. --------------------------------------------------------!
@@ -2960,17 +2946,19 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
                                , '      CAN.SHV', '      CAN.CO2', '    CAN.DEPTH'         &
                                , '     CAN.RHOS', '   CAN.RELHUM', '    CAN.THETA'         &
                                , '    CAN.THEIV', '     SFC.TEMP', '      SFC.SHV'         &
-                               , '     VEG.TEMP', '    VEG.WATER', '    SOIL.TEMP'         &
-                               , '   SOIL.WATER', '       SOILCP', '       SOILWP'         &
-                               , '       SOILFC', '       SLMSTS', '        USTAR'         &
-                               , '        TSTAR', '        QSTAR', '        CSTAR'         &
-                               , '         ZETA', '      RI_BULK', '       NETRAD'         &
-                               , '       WFLXVC', '       DEWGND', '       WFLXGC'         &
-                               , '       WFLXAC', '       TRANSP', '        WSHED'         &
-                               , '    INTERCEPT', '  THROUGHFALL', '       HFLXGC'         &
-                               , '       HFLXVC', '       HFLXAC', '       CFLXAC'         &
-                               , '        CWDRH', '       SOILRH', '          GPP'         &
-                               , '       PLRESP'
+                               , '     VEG.TEMP', '    VEG.WATER', '       GGBARE'         &
+                               , '        GGVEG', '        GGNET', '      OPENCAN'         &
+                               , '    SOIL.TEMP', '   SOIL.WATER', '       SOILCP'         &
+                               , '       SOILWP', '       SOILFC', '       SLMSTS'         &
+                               , '        USTAR', '        TSTAR', '        QSTAR'         &
+                               , '        CSTAR', '         ZETA', '      RI_BULK'         &
+                               , '       NETRAD', '       WFLXVC', '       DEWGND'         &
+                               , '       WFLXGC', '       WFLXAC', '       TRANSP'         &
+                               , '        WSHED', '    INTERCEPT', '  THROUGHFALL'         &
+                               , '       HFLXGC', '       HFLXVC', '       HFLXAC'         &
+                               , '       CFLXAC', '        CWDRH', '       SOILRH'         &
+                               , '          GPP', '       PLRESP'
+                               
                                
       close (unit=83,status='keep')
    end if
@@ -2994,18 +2982,18 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
                    , initp%can_shv         , initp%can_co2         , initp%can_depth       &
                    , initp%can_rhos        , initp%can_rhv         , initp%can_theta       &
                    , initp%can_theiv       , initp%ground_temp     , initp%ground_shv      &
-                   , avg_veg_temp          , sum_veg_water         , initp%soil_tempk(nzg) &
-                   , initp%soil_water(nzg) , soil8(nsoil)%soilcp   , soil8(nsoil)%soilwp   &
-                   , soil8(nsoil)%sfldcap  , soil8(nsoil)%slmsts   , initp%ustar           &
-                   , initp%tstar           , initp%qstar           , initp%cstar           &
-                   , initp%zeta            , initp%ribulk          , fluxp%flx_netrad      &
-                   , fluxp%flx_vapor_vc    , fluxp%flx_dew_cg      , fluxp%flx_vapor_gc    &
-                   , fluxp%flx_vapor_ac    , fluxp%flx_transp      , fluxp%flx_wshed_vg    &
-                   , fluxp%flx_intercepted , fluxp%flx_throughfall , fluxp%flx_sensible_gc &
-                   , fluxp%flx_sensible_vc , fluxp%flx_sensible_ac , fluxp%flx_carbon_ac   &
-                   , initp%cwd_rh          , soil_rh               , sum_gpp               &
-                   , sum_plresp
-                   
+                   , avg_veg_temp          , sum_veg_water         , initp%ggbare          &
+                   , initp%ggveg           , initp%ggnet           , initp%opencan_frac    &
+                   , initp%soil_tempk(nzg) , initp%soil_water(nzg) , soil8(nsoil)%soilcp   &
+                   , soil8(nsoil)%soilwp   , soil8(nsoil)%sfldcap  , soil8(nsoil)%slmsts   &
+                   , initp%ustar           , initp%tstar           , initp%qstar           &
+                   , initp%cstar           , initp%zeta            , initp%ribulk          &
+                   , fluxp%flx_netrad      , fluxp%flx_vapor_vc    , fluxp%flx_dew_cg      &
+                   , fluxp%flx_vapor_gc    , fluxp%flx_vapor_ac    , fluxp%flx_transp      &
+                   , fluxp%flx_wshed_vg    , fluxp%flx_intercepted , fluxp%flx_throughfall &
+                   , fluxp%flx_sensible_gc , fluxp%flx_sensible_vc , fluxp%flx_sensible_ac &
+                   , fluxp%flx_carbon_ac   , initp%cwd_rh          , soil_rh               &
+                   , sum_gpp               , sum_plresp
    close(unit=83,status='keep')
    !---------------------------------------------------------------------------------------!
 

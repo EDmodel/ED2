@@ -64,7 +64,7 @@ subroutine sfclyr(mzp,mxp,myp,ia,iz,ja,jz,ibcon)
                   , leaf_g(ng)%veg_height          , leaf_g(ng)%patch_area                 &
                   , leaf_g(ng)%patch_rough         , leaf_g(ng)%patch_wetind               &
                   , leaf_g(ng)%leaf_class          , leaf_g(ng)%soil_rough                 &
-                  , leaf_g(ng)%sfcwater_nlev       , leaf_g(ng)%stom_resist                &
+                  , leaf_g(ng)%sfcwater_nlev       , leaf_g(ng)%stom_condct                &
                   , leaf_g(ng)%ground_rsat         , leaf_g(ng)%ground_rvap                &
                   , leaf_g(ng)%ground_temp         , leaf_g(ng)%ground_fliq                &
                   , leaf_g(ng)%veg_water           , leaf_g(ng)%veg_hcap                   &
@@ -130,7 +130,7 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz,leaf,basic,turb,radiate,grid,cu
    real                                :: dvelu,dvelv,velnew,sflux_uv,cosine1,sine1
    real                                :: psup1,psup2,depe,alt2,deze,dpdz,exn1st,airt
    real                                :: zh_town,zle_town,zsfu_town,zsfv_town
-   real                                :: sfcw_energy_int
+   real                                :: sfcw_energy_int,summer_rough
    !----- Saved variables -----------------------------------------------------------------!
    real                  , save        :: emis_town, alb_town, ts_town,g_urban
    logical               , save        :: firsttime = .true. 
@@ -405,10 +405,13 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz,leaf,basic,turb,radiate,grid,cu
                                                 , min_waterrough)
 
                elseif (isfcl >= 1 .and. leaf%patch_area(i,j,ip) >= tiny_parea) then
-                  leaf%patch_rough(i,j,ip) = max( grid%topzo(i,j)                          &
-                                                , leaf%soil_rough(i,j,ip)                  &
-                                                , leaf%veg_rough(i,j,ip))                  &
-                                           * (1. - snowfac) + snowrough * snowfac
+                  summer_rough = max( grid%topzo(i,j)                                      &
+                                    , leaf%veg_rough(i,j,ip) * leaf%veg_fracarea(i,j,ip)   &
+                                    + leaf%soil_rough(i,j,ip)                              &
+                                    * (1.0 - leaf%veg_fracarea(i,j,ip)))
+               
+                  leaf%patch_rough(i,j,ip) = summer_rough * (1. - snowfac)                 &
+                                           + snowrough * snowfac
                end if
 
                !---------------------------------------------------------------------------!
@@ -448,15 +451,23 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz,leaf,basic,turb,radiate,grid,cu
                   ! gd = rho * ustar/5 is the viscous sublayer conductivity from Garratt   !
                   ! (1992), but multiplied by density.                                     !
                   !------------------------------------------------------------------------!
-                  rho_ustar = leaf%ustar(i,j,1) * can_rhos
-                  ggnd      = .2 * rho_ustar * ggfact
                   dtllowcc  = dtll / (can_depth * can_rhos)
                   dtllohcc  = dtll / (can_depth * can_rhos * cp * can_temp)
                   dtlloccc  = mmdry * dtllowcc
+                  
+                  !------------------------------------------------------------------------!
+                  !    For water patches, the net conductance is the same as the bare      !
+                  ! ground.                                                                !
+                  !------------------------------------------------------------------------!
+                  ggveg   = 0.0
+                  ggnet   = ggbare * ggfact
+                  !------------------------------------------------------------------------!
 
                   !----- Compute the fluxes from water body to canopy. --------------------!
-                  hflxgc  = ggnd * cp * (leaf%ground_temp(i,j,ip) - can_temp)
-                  wflxgc  = ggnd * (leaf%ground_rsat(i,j,ip) - leaf%can_rvap(i,j,ip))
+                  hflxgc  = ggnet * cp * can_rhos                                          &
+                          * (leaf%ground_temp(i,j,ip) - can_temp)
+                  wflxgc  = ggnet      * can_rhos                                          &
+                          * (leaf%ground_rsat(i,j,ip) - leaf%can_rvap(i,j,ip))
                   qwflxgc = wflxgc * alvl
                   cflxgc  = 0. !----- No water carbon emission model available...
 
@@ -573,13 +584,14 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz,leaf,basic,turb,radiate,grid,cu
                           , leaf%soil_text      (:,i,j,ip), leaf%sfcwater_mass  (:,i,j,ip) &
                           , leaf%sfcwater_depth (:,i,j,ip), leaf%ustar            (i,j,ip) &
                           , leaf%tstar            (i,j,ip), leaf%rstar            (i,j,ip) &
-                          , leaf%cstar            (i,j,ip), leaf%veg_albedo       (i,j,ip) &
+                          , leaf%cstar            (i,j,ip), leaf%zeta             (i,j,ip) &
+                          , leaf%ribulk           (i,j,ip), leaf%veg_albedo       (i,j,ip) &
                           , leaf%veg_fracarea     (i,j,ip), leaf%veg_lai          (i,j,ip) &
                           , leaf%veg_tai          (i,j,ip), leaf%veg_rough        (i,j,ip) &
                           , leaf%veg_height       (i,j,ip), leaf%patch_area       (i,j,ip) &
                           , leaf%patch_rough      (i,j,ip), leaf%patch_wetind     (i,j,ip) &
                           , leaf%leaf_class       (i,j,ip), leaf%soil_rough       (i,j,ip) &
-                          , leaf%sfcwater_nlev    (i,j,ip), leaf%stom_resist      (i,j,ip) &
+                          , leaf%sfcwater_nlev    (i,j,ip), leaf%stom_condct      (i,j,ip) &
                           , leaf%ground_rsat      (i,j,ip), leaf%ground_rvap      (i,j,ip) &
                           , leaf%ground_temp      (i,j,ip), leaf%ground_fliq      (i,j,ip) &
                           , leaf%veg_water        (i,j,ip), leaf%veg_hcap         (i,j,ip) &
@@ -597,7 +609,7 @@ subroutine leaf3(m1,m2,m3,mzg,mzs,np,ia,iz,ja,jz,leaf,basic,turb,radiate,grid,cu
                   end if
 
                   !------------------------------------------------------------------------!
-                  !    Converting the surface water internal energy back to an intensive   !
+                  !    Convert the surface water internal energy back to an intensive      !
                   ! variable.                                                              !
                   !------------------------------------------------------------------------!
                   ksn = nint(leaf%sfcwater_nlev(i,j,ip))
@@ -651,13 +663,13 @@ end subroutine leaf3
 !==========================================================================================!
 !==========================================================================================!
 subroutine leaftw(mzg,mzs,np,soil_water, soil_energy,soil_text,sfcwater_mass               &
-                 ,sfcwater_depth,ustar,tstar,rstar,cstar,veg_albedo,veg_fracarea,veg_lai   &
-                 ,veg_tai,veg_rough,veg_height,patch_area,patch_rough,patch_wetind         &
-                 ,leaf_class,soil_rough,sfcwater_nlev,stom_resist,ground_rsat,ground_rvap  &
-                 ,ground_temp,ground_fliq,veg_water,veg_hcap,veg_energy,can_prss,can_theiv &
-                 ,can_theta,can_rvap,can_co2,sensible_gc,sensible_vc,evap_gc,evap_vc       &
-                 ,transp,gpp,plresp,resphet,veg_ndvip,veg_ndvic,veg_ndvif,rshort,cosz,ip   &
-                 ,i,j)
+                 ,sfcwater_depth,ustar,tstar,rstar,cstar,zeta,ribulk,veg_albedo            &
+                 ,veg_fracarea,veg_lai,veg_tai,veg_rough,veg_height,patch_area,patch_rough &
+                 ,patch_wetind,leaf_class,soil_rough,sfcwater_nlev,stom_condct,ground_rsat &
+                 ,ground_rvap,ground_temp,ground_fliq,veg_water,veg_hcap,veg_energy        &
+                 ,can_prss,can_theiv,can_theta,can_rvap,can_co2,sensible_gc,sensible_vc    &
+                 ,evap_gc,evap_vc,transp,gpp,plresp,resphet,veg_ndvip,veg_ndvic,veg_ndvif  &
+                 ,rshort,cosz,ip,i,j)
 
    use leaf_coms
    use mem_leaf
@@ -682,6 +694,8 @@ subroutine leaftw(mzg,mzs,np,soil_water, soil_energy,soil_text,sfcwater_mass    
    real                   , intent(in)    :: tstar
    real                   , intent(in)    :: rstar
    real                   , intent(in)    :: cstar
+   real                   , intent(in)    :: zeta
+   real                   , intent(in)    :: ribulk
    real                   , intent(in)    :: veg_albedo
    real                   , intent(in)    :: veg_fracarea
    real                   , intent(in)    :: veg_lai
@@ -694,7 +708,7 @@ subroutine leaftw(mzg,mzs,np,soil_water, soil_energy,soil_text,sfcwater_mass    
    real                   , intent(in)    :: leaf_class
    real                   , intent(in)    :: soil_rough
    real                   , intent(inout) :: sfcwater_nlev
-   real                   , intent(inout) :: stom_resist
+   real                   , intent(inout) :: stom_condct
    real                   , intent(inout) :: ground_rsat
    real                   , intent(inout) :: ground_rvap
    real                   , intent(inout) :: ground_temp
@@ -736,6 +750,8 @@ subroutine leaftw(mzg,mzs,np,soil_water, soil_energy,soil_text,sfcwater_mass    
    integer                                :: i
    integer                                :: j
    real                                   :: sfcw_energy_int
+   real                                   :: sfcw_temp
+   real                                   :: sfcw_fliq
    real                                   :: stretch
    real                                   :: thik
    real                                   :: pf
@@ -769,6 +785,7 @@ subroutine leaftw(mzg,mzs,np,soil_water, soil_energy,soil_text,sfcwater_mass    
    real                                   :: qwloss
    real                                   :: soilcond
    real                                   :: waterfrac
+   real                                   :: psiplusz_bl
    !----- Locally saved variables. --------------------------------------------------------!
    logical                , save          :: ncall=.true.
    real, dimension(20)    , save          :: thicknet
@@ -788,6 +805,11 @@ subroutine leaftw(mzg,mzs,np,soil_water, soil_energy,soil_text,sfcwater_mass    
       dslzti  (k) = 1. / dslzt(k)
       dslztidt(k) = dslzti(k) * dtll
    end do
+
+   !----- These must be defined for free drainage bc (RGK) --------------------------------!
+   dslzt    (1) = 2.0*slz(1) - slzt(1)
+   dslzti   (1) = 1./dslzt(1)
+   dslztidt (1) = dslzti(1) * dtll
 
    !----- Initialize snow thickness scaling array. ----------------------------------------!
    if (ncall) then
@@ -836,11 +858,12 @@ subroutine leaftw(mzg,mzs,np,soil_water, soil_energy,soil_text,sfcwater_mass    
    ! between canopy air and the top soil or snow surface.                                  !
    !---------------------------------------------------------------------------------------!
    call leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mass,ustar       &
-                   ,tstar,rstar,cstar,soil_rough,veg_rough,veg_height,veg_lai,veg_tai      &
-                   ,veg_water,veg_hcap,veg_energy,leaf_class,veg_fracarea,stom_resist      &
-                   ,can_prss,can_theiv,can_theta,can_rvap,can_co2,sensible_gc,sensible_vc  &
-                   ,evap_gc,evap_vc,transp,gpp,plresp,resphet,ground_rsat,ground_rvap      &
-                   ,ground_temp,ground_fliq,available_water,rshort,i,j,ip)
+                   ,tstar,rstar,cstar,zeta,ribulk,soil_rough,veg_rough,patch_rough         &
+                   ,veg_height,veg_lai,veg_tai,veg_water,veg_hcap,veg_energy,leaf_class    &
+                   ,veg_fracarea,stom_condct,can_prss,can_theiv,can_theta,can_rvap,can_co2 &
+                   ,sensible_gc,sensible_vc,evap_gc,evap_vc,transp,gpp,plresp,resphet      &
+                   ,ground_rsat,ground_rvap,ground_temp,ground_fliq,available_water,rshort &
+                   ,i,j,ip)
 
    !----- Compute soil and effective snow heat resistance times layer depth (rfactor). ----!
    do k = 1,mzg
@@ -926,6 +949,20 @@ subroutine leaftw(mzg,mzs,np,soil_water, soil_energy,soil_text,sfcwater_mass    
       do k = ksnnew,1,-1
          qw = sfcw_energy_ext(k) + qwfree
          w  = sfcwater_mass(k)   + wfree
+
+         !---------------------------------------------------------------------------------!
+         !     If this is the top layer and there is water, get rid of some water through  !
+         ! runoff.                                                                         !
+         !---------------------------------------------------------------------------------!
+         if (runoff_time > 0.0 .and. w > 0. .and. k == ksnnew) then
+            call qtk(qw/w,tempk(k+mzg),fracliq(k+mzg))
+            wloss  = max(0.,min(1.0,dtll/runoff_time) * w * (fracliq(k+mzg) - 0.1) / 0.9)
+            qwloss = wloss * cliq * (tempk(k+mzg) - tsupercool8)
+            qw = qw - qwloss
+            w  = w  - wloss
+         end if
+         !---------------------------------------------------------------------------------!
+
 
          !---------------------------------------------------------------------------------!
          !     If (only) snow layer is too thin for computational stability, bring it to   !
@@ -1041,6 +1078,7 @@ subroutine leaftw(mzg,mzs,np,soil_water, soil_energy,soil_text,sfcwater_mass    
       end if
    end if
 
+
    !---------------------------------------------------------------------------------------!
    !     Compute gravitational potential plus moisture potential z + psi [m], liquid water !
    ! content [m], and half the remaining water capacity [m].                               !
@@ -1056,11 +1094,76 @@ subroutine leaftw(mzg,mzs,np,soil_water, soil_energy,soil_text,sfcwater_mass    
    !     Find amount of water transferred between soil layers (wflux) [m] modulated by the !
    ! liquid water fraction.                                                                !
    !---------------------------------------------------------------------------------------!
-   wflux(1) = 0.
-   wflux(mzg+1) = 0.
-   qwflux(1) = 0.
+   wflux(mzg+1)  = 0.
    qwflux(mzg+1) = 0.
 
+   !----- Boundary condition at the lowest soil level -------------------------------------!
+   nsoil = nint(soil_text(1))
+   select case (isoilbc)
+   case (0)
+      !----- Bedrock, no flux across. -----------------------------------------------------!
+      wflux(1)  = 0.
+      qwflux(1) = 0.
+   case (1)
+      !------------------------------------------------------------------------------------!
+      !     Free drainage, water movement of bottom soil layer is only under gravity, i.e. !
+      ! the soil water content of boundary layer is equal to that of bottom soil layer.    !
+      !------------------------------------------------------------------------------------!
+      watermid = soil_water(1)
+      wflux(1) = dslztidt(1) * slcons1(1,nsoil)                                            &
+               * (watermid / slmsts(nsoil)) ** (2. * slbs(nsoil) + 3.)                     &
+               * (slz(2) - slz(1)) * fracliq(1)
+      !------------------------------------------------------------------------------------!
+      !     Limit water transfers to prevent over-saturation and over-depletion. Compute q !
+      ! transfers between soil layers (qwflux) [J/m2].                                     !
+      !------------------------------------------------------------------------------------!
+      if (wflux(1) > 0.) then
+         wflux(1) = min(wflux(1),half_soilair(1))
+      else
+         wflux(1) = - min(-wflux(1),soil_liq(1))
+      end if
+      qwflux(1) = wflux(1) * cliqvlme * (tempk(1) - tsupercool)
+      !------------------------------------------------------------------------------------!
+   case (2)
+      !------------------------------------------------------------------------------------!
+      !     Half drainage, water movement of bottom soil layer is only under gravity, i.e. !
+      ! the soil water content of boundary layer is equal to that of bottom soil layer.    !
+      !------------------------------------------------------------------------------------!
+      watermid = soil_water(1)
+      wflux(1) = dslztidt(1) * slcons1(1,nsoil)                                            &
+               * (watermid / slmsts(nsoil)) ** (2. * slbs(nsoil) + 3.)                     &
+               * (slz(2) - slz(1)) * fracliq(1) * 0.5
+      !------------------------------------------------------------------------------------!
+      !     Limit water transfers to prevent over-saturation and over-depletion. Compute q !
+      ! transfers between soil layers (qwflux) [J/m2].                                     !
+      !------------------------------------------------------------------------------------!
+      if (wflux(1) > 0.) then
+         wflux(1) = min(wflux(1),half_soilair(1))
+      else
+         wflux(1) = - min(-wflux(1),soil_liq(1))
+      end if
+      qwflux(1) = wflux(1) * cliqvlme * (tempk(1) - tsupercool)
+      !------------------------------------------------------------------------------------!
+   case (3)
+      !------------------------------------------------------------------------------------!
+      !     Free drainage, water movement of bottom soil layer is under gravity and moist- !
+      ! ure potential difference. The soil water content of boundary layer is equal to     !
+      ! field capacity.                                                                    !
+      !------------------------------------------------------------------------------------!
+      watermid = soil_water(1)
+      psiplusz_bl = slz(1)                                                                 &
+                  + slpots(nsoil) * (slmsts(nsoil) / sfldcap(nsoil)) ** slbs(nsoil)
+
+      if (psiplusz_bl <= psiplusz(1)) then
+          wflux(1) =  dslztidt(1) * slcons1(1,nsoil)                                       &
+                   * (watermid/slmsts(nsoil)) ** (2.0 * slbs(nsoil) + 3.0)                 &
+                   * (psiplusz(1) - psiplusz_bl) * fracliq(1)
+      else
+          !----- Prevent bottom soil layer sucking water from the boundary layer. ---------!
+          wflux(1) = 0.0
+      end if
+   end select
+      
    do k = 2,mzg
       nsoil    = nint(soil_text(k))
       watermid = 0.5 * (soil_water(k) + soil_water(k-1))
@@ -1102,15 +1205,16 @@ subroutine leaftw(mzg,mzs,np,soil_water, soil_energy,soil_text,sfcwater_mass    
       end do
    end if
 
+
    !---------------------------------------------------------------------------------------!
    ! Compute ground vap mxrat for availability on next timestep; put into ground_rsat.     !
    !---------------------------------------------------------------------------------------!
-   newlayers = nint(sfcwater_nlev)
-   if (newlayers == 0) then
+   ksn = nint(sfcwater_nlev)
+   if (ksn == 0) then
       sfcw_energy_int = 0.
    else
-      if (sfcwater_mass(newlayers) > min_sfcwater_mass) then
-         sfcw_energy_int = sfcw_energy_ext(newlayers) / sfcwater_mass(newlayers)
+      if (sfcwater_mass(ksn) > min_sfcwater_mass) then
+         sfcw_energy_int = sfcw_energy_ext(ksn) / sfcwater_mass(ksn)
       else 
          sfcw_energy_int = 0.
       end if
@@ -1135,12 +1239,12 @@ end subroutine leaftw
 ! carbon exchanges with the canopy air space and vegetation.                               !
 !------------------------------------------------------------------------------------------!
 subroutine leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mass          &
-                      ,ustar,tstar,rstar,cstar,soil_rough,veg_rough,veg_height,veg_lai     &
-                      ,veg_tai,veg_water,veg_hcap,veg_energy,leaf_class,veg_fracarea       &
-                      ,stom_resist,can_prss,can_theiv,can_theta,can_rvap,can_co2           &
-                      ,sensible_gc,sensible_vc,evap_gc,evap_vc,transp,gpp,plresp,resphet   &
-                      ,ground_rsat,ground_rvap,ground_temp,ground_fliq,available_water     &
-                      ,rshort,i,j,ip)
+                      ,ustar,tstar,rstar,cstar,zeta,ribulk,soil_rough,veg_rough            &
+                      ,patch_rough,veg_height,veg_lai,veg_tai,veg_water,veg_hcap           &
+                      ,veg_energy,leaf_class,veg_fracarea,stom_condct,can_prss,can_theiv   &
+                      ,can_theta,can_rvap,can_co2,sensible_gc,sensible_vc,evap_gc,evap_vc  &
+                      ,transp,gpp,plresp,resphet,ground_rsat,ground_rvap,ground_temp       &
+                      ,ground_fliq,available_water,rshort,i,j,ip)
    use leaf_coms
    use rconstants
    use therm_lib , only : eslif          & ! function
@@ -1163,8 +1267,11 @@ subroutine leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mas
    real                , intent(in)    :: tstar
    real                , intent(in)    :: rstar
    real                , intent(in)    :: cstar
+   real                , intent(in)    :: zeta
+   real                , intent(in)    :: ribulk
    real                , intent(in)    :: soil_rough
    real                , intent(in)    :: veg_rough
+   real                , intent(in)    :: patch_rough
    real                , intent(in)    :: veg_height
    real                , intent(in)    :: veg_lai
    real                , intent(in)    :: veg_tai
@@ -1179,7 +1286,7 @@ subroutine leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mas
    real                , intent(inout) :: veg_water
    real                , intent(inout) :: veg_hcap
    real                , intent(inout) :: veg_energy
-   real                , intent(inout) :: stom_resist
+   real                , intent(inout) :: stom_condct
    real                , intent(inout) :: can_prss
    real                , intent(inout) :: can_theiv
    real                , intent(inout) :: can_theta
@@ -1202,11 +1309,7 @@ subroutine leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mas
    integer                             :: j
    integer                             :: ip
    real                                :: aux
-   real                                :: c2
-   real                                :: c3
-   real                                :: c4
    real                                :: dsm
-   real                                :: es
    real                                :: fac
    real                                :: factv
    real                                :: fthi
@@ -1215,10 +1318,10 @@ subroutine leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mas
    real                                :: fswp
    real                                :: fvpd
    real                                :: qwtot
-   real                                :: rasgnd
-   real                                :: rasveg
-   real                                :: rleaf
-   real                                :: rsatveg
+   real                                :: lsfc_rvap
+   real                                :: lint_rvap
+   real                                :: lsfc_pvap
+   real                                :: lint_pvap
    real                                :: sigmaw 
    real                                :: slai
    real                                :: stai
@@ -1237,9 +1340,8 @@ subroutine leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mas
    real                                :: qdewgndflx
    real                                :: transp_test
    real                                :: transp_wilt
-   real                                :: transp_wilti
-   real                                :: rc
-   real                                :: rc_inf
+   real                                :: gsw_wilt
+   real                                :: gsw_inf
    real                                :: wshed_loc
    real                                :: qwshed_loc
    real                                :: old_veg_water
@@ -1255,6 +1357,8 @@ subroutine leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mas
    character(len=13)     , parameter   :: fmtf='(a,1x,es12.5)'
    character(len=3)      , parameter   :: fmtc='(a)'
    character(len=9)      , parameter   :: fmtl='(a,1x,l1)'
+   !----- External functions. -------------------------------------------------------------!
+   real                  , external    :: leaf_reduced_wind
    !---------------------------------------------------------------------------------------!
 
 
@@ -1287,13 +1391,6 @@ subroutine leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mas
    zdisp = veg_height * (1.-snowfac)
    zveg = zdisp / 0.63
 
-   !---------------------------------------------------------------------------------------!
-   ! The following value of ground-canopy resistance for the nonvegetated (bare soil or    !
-   ! water) surface is from John Garratt.  It is 5/ustar and replaces the one from old     !
-   ! LEAF.                                                                                 !
-   !---------------------------------------------------------------------------------------!
-   rasgnd = 5. / ustar
-
    if (veg_tai >= .1 .and. snowfac < .9) then
 
       !------------------------------------------------------------------------------------!
@@ -1303,9 +1400,11 @@ subroutine leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mas
       !------------------------------------------------------------------------------------!
       factv       = log(geoht / zoveg) / (vonk * vonk * vels)
       aux         = exp(exar * (1. - (zdisp + zoveg) / zveg))
-      rasveg      = factv * zveg / (exar * (zveg - zdisp)) * (exp(exar) - aux)
-      c2          = max(0.,min(1., 1.1 * veg_tai / covr))
-      rgnd        = rasgnd * (1. - c2) + rasveg * c2
+      ggveg       = (exar * (zveg - zdisp)) / (factv * zveg  * (exp(exar) - aux))
+      !------------------------------------------------------------------------------------!
+      !    The net ground conductance is computed based on the weighted average of the     !
+      ! bare ground and vegetated ground _resistances_.                                    !
+      !------------------------------------------------------------------------------------!
       wshed_tot   = 0.
       qwshed_tot  = 0.
       transp_tot  = 0.
@@ -1319,8 +1418,9 @@ subroutine leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mas
       wshed_tot  = pcpgl
       qwshed_tot = qpcpgl
       transp_tot = 0.
-      rgnd       = rasgnd
+      ggveg      = 0.0
    end if
+   ggnet = ggfact * ggbare
 
    !---------------------------------------------------------------------------------------!
    !     Compute sensible heat and moisture fluxes between top soil or snow surface and    !
@@ -1328,10 +1428,8 @@ subroutine leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mas
    ! and dewgnd is the mass of dew that forms on the snow/soil surface this timestep; both !
    ! are defined as always positive or zero.                                               !
    !---------------------------------------------------------------------------------------!
-   ggnd = can_rhos / rgnd
-
-   hflxgc     = cp * ggnd * (ground_temp - can_temp)
-   wflx       =      ggnd * (ground_rsat - can_rvap)
+   hflxgc     = cp * can_rhos * ggnet * (ground_temp - can_temp)
+   wflx       =      can_rhos * ggnet * (ground_rsat - can_rvap)
    
    if (wflx >= 0.) then
       dewgndflx = 0.
@@ -1341,7 +1439,7 @@ subroutine leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mas
    dewgnd_tot = dewgndflx * dtll
 
    if (ksn == 0) then
-      wflxgc = max(0.,ggnd * (ground_rvap - can_rvap))
+      wflxgc = max(0.,can_rhos * ggnet * (ground_rvap - can_rvap))
    else
       wflxgc = max(0.,min(wflx,sfcwater_mass(ksn)/dtll))
    end if
@@ -1355,95 +1453,149 @@ subroutine leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mas
    ! moisture fluxes from vegetation to canopy, and flux resistance from soil or snow to   !
    ! canopy.                                                                               !
    !---------------------------------------------------------------------------------------!
-   if (veg_tai >= .1 .and. snowfac < .9) then
+   if (veg_lai >= .1 .and. snowfac < .9) then
+      !----- Save the vegetation class in an alias. ---------------------------------------!
+      nveg = nint(leaf_class)
+   
+      !------------------------------------------------------------------------------------!
+      !     Find the wind speed at the top of the canopy, using the similarity theory.     !
+      !------------------------------------------------------------------------------------!
+      veg_wind = leaf_reduced_wind(ustar,zeta,ribulk,geoht,0.0,veg_height,patch_rough)
 
 
       !------------------------------------------------------------------------------------!
-      !     Compute veg-canopy resistance rb.  Note that rb and rc are both defined        !
-      ! WITHOUT the LAI factor; the LAI factor is included later in computing  fluxes that !
-      ! involve rb and/or rc.                                                              !
+      !    Find the aerodynamic conductances for heat and water at the leaf boundary       !
+      ! layer.                                                                             !
       !------------------------------------------------------------------------------------!
-      c4 = .01 * sqrt(ustar * c1)
-      rb  = (1. + .5 * veg_tai) / c4
+      call leaf_aerodynamic_conductances(nveg,veg_wind,veg_temp,can_temp,can_rvap,can_rhos)
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the "perceived" leaf area and tree area indices, dependending on snow     !
+      ! cover.                                                                             !
+      !------------------------------------------------------------------------------------!
+      stai = veg_tai * (1. - snowfac)
+      slai = veg_lai * (1. - snowfac)
+      !------------------------------------------------------------------------------------!
+
 
       !----- Soil water potential factor for stomatal control. ----------------------------!
       swp = -200.0
-      nveg = nint(leaf_class)
-
       do k = kroot(nveg),mzg
          nsoil  = nint(soil_text(k))
          slpotv = slpots(nsoil) * (slmsts(nsoil) / soil_water(k)) ** slbs(nsoil)
          if (slpotv > swp) swp = slpotv
       end do
       swp = swp * grav * wdns
-
-      !------------------------------------------------------------------------------------!
-      !      Begin canopy air computations.                                                !
       !------------------------------------------------------------------------------------!
 
-      !----- Calculate the saturation vapor pressure at TVEG. -----------------------------!
-      es      = eslif(veg_temp)
-      rsatveg = rslif(can_prss,veg_temp)
-      
-      !----- Compute mixing ratio at leaf surface using previous rc -----------------------!
-      rc    = stom_resist
-      rleaf = (rb * rsatveg + rc * can_rvap) / (rb + rc)
-      vpd   = max((es - rleaf * can_prss / (ep + rleaf)),0.)
 
-      !----- Evaluate 5 environmental factors and new rc ----------------------------------!
-      ftlo = 1. + exp(-stlo * (veg_temp - btlo))
-      fthi = 1. + exp(-sthi * (veg_temp - bthi))
-      frad = 1. + exp(-srad * (rshort   - brad))
-      fswp = 1. + exp(-sswp * (swp      - bswp))
-      fvpd = 1. + exp(-svpd * (vpd      - bvpd))
+
+      !------------------------------------------------------------------------------------!
+      !     Find the intercellular vapour pressure and mixing ratio; they are both assumed !
+      ! to be the saturation value at the leaf temperature.                                !
+      !------------------------------------------------------------------------------------!
+      lint_pvap = eslif(veg_temp)
+      lint_rvap = rslif(can_prss,veg_temp)
+      !------------------------------------------------------------------------------------!
+
+
+      !----- Compute mixing ratio at leaf surface using previous gsw ----------------------!
+      gsw       = stom_condct
+      lsfc_rvap = (gbw * can_rvap + gsw * lint_rvap) / (gbw + gsw)
+      lsfc_pvap = lsfc_rvap * can_prss / (ep + lsfc_rvap)
+      vpd       = max(lint_pvap - lsfc_pvap,0.)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !      Use a combination of 5 environmental factors that may control stomatal        !
+      ! conductance to estimate the target value for this new time step.                   !
+      !------------------------------------------------------------------------------------!
+      ftlo    = 1. + exp(-stlo * (veg_temp - btlo))
+      fthi    = 1. + exp(-sthi * (veg_temp - bthi))
+      frad    = 1. + exp(-srad * (rshort   - brad))
+      fswp    = 1. + exp(-sswp * (swp      - bswp))
+      fvpd    = 1. + exp(-svpd * (vpd      - bvpd))
+      gsw_inf = can_rhos * gsw_max(nveg) / (ftlo * fthi * frad * fvpd * fswp) / slai
+      !------------------------------------------------------------------------------------!
 
       !----- 15-minute response time for stomatal conductance (must have dtll <= 900.). ---!
-      rc_inf = ftlo * fthi * frad * fvpd * fswp * rcmin(nveg)
-      rc     = 1. / (1. / rc + .0011 * dtll * (1. / rc_inf - 1. / rc))
+      gsw     = gsw + dtll * (gsw_inf - gsw) / 900.
+      !------------------------------------------------------------------------------------!
 
       !------------------------------------------------------------------------------------!
       !    Transpiration can only happen if there is water.                                !
       !------------------------------------------------------------------------------------!
       if (available_water > 0.) then
-         !---------------------------------------------------------------------------------!
-         !    Limit maximum transpiration to be <= transp_max and less than the maximum    !
-         ! water available by increasing rc if necessary.                                  !
-         !---------------------------------------------------------------------------------!
-         transp_test  = can_rhos * veg_lai * (rsatveg - can_rvap) / (rb + rc)
+
+         !----- Find the maximum transpiration allowed. -----------------------------------!
          transp_wilt  = min(available_water / dtll, transp_max)
-         transp_wilti = 1./ transp_wilt
-         if (transp_test > transp_wilt) then
-            rc          = (rb + rc) * transp_test * transp_wilti - rb
+
+         !------ Find the stomatal conductance. -------------------------------------------!
+         if (transp_wilt >= gbw * (lint_rvap - can_rvap)) then
+            !------------------------------------------------------------------------------!
+            !   In this case, wilting would only happen if gsw could be negative, which is !
+            ! physically unrealistic.  No need to worry, use the actual conductance.       !
+            !------------------------------------------------------------------------------!
+            transp_test  = stom_side(nveg) * gbw * gsw * slai * (lint_rvap - can_rvap)     &
+                         / (gbw + gsw)
+         else
+            !------------------------------------------------------------------------------!
+            !    Limit maximum transpiration to be <= transp_max and less than the maximum !
+            ! water available by decreasing stomatal conductance if necessary.             !
+            !------------------------------------------------------------------------------!
+            gsw_wilt     = gbw * transp_wilt / ((lint_rvap - can_rvap) * gbw - transp_wilt)
+            gsw          = min(gsw,gsw_wilt)
+            transp_test  = stom_side(nveg) * gbw * gsw * slai * (lint_rvap - can_rvap)     &
+                         / (gbw + gsw)
          end if
       else
          transp_test = 0.
       end if
-      stom_resist = rc
+      stom_condct = gsw
+      !------------------------------------------------------------------------------------!
 
-      !----- Flux of heat and moisture from vegetation to canopy. -------------------------!
-      stai = veg_tai * (1. - snowfac)
-      slai = veg_lai * (1. - snowfac)
 
       !----- Sensible heat flux from leaf to canopy. --------------------------------------!
-      hflxvc = 2. * stai * cp * can_rhos * (veg_temp - can_temp) / rb
+      hflxvc = 2. * stai * gbh * (veg_temp - can_temp)
 
-      c3     = can_rhos * (rsatveg - can_rvap)
+      !------------------------------------------------------------------------------------!
+      !     Check whether evaporation or condensation should happen.                       !
+      !------------------------------------------------------------------------------------!
+      if (lint_rvap >= can_rvap) then
+         !---------------------------------------------------------------------------------!
+         !     Saturation at leaf temperature is greater than canopy air space mixing      !
+         ! ratio.  If some water is sitting on the leaf surface, let it evaporate.         !
+         ! Evaporation should happen from only one side of the leaf.                       !
+         !---------------------------------------------------------------------------------!
+         !----- Compute the fraction of leaves covered in water. --------------------------!
+         sigmaw = min(1.0, (veg_water / (.2 * stai)) ** twothirds)
+         !----- Find the evaporation rate. ------------------------------------------------!
+         wflxvc = min(stai * gbw * (lint_rvap - can_rvap) * sigmaw,veg_water/dtll)
+         !---------------------------------------------------------------------------------!
 
-      if (c3 >= 0.) then
-         !----- Flow will go towards the canopy, allow evaporation and transpiration. -----!
-         sigmaw     = min(1.,(veg_water / (.2 * stai)) ** .66667)
-         wflxvc     = min(c3 * 2. * stai * sigmaw / rb,veg_water/dtll)
-         if (transp_test > 0.) then
-            transp_loc = max(0.,c3 * slai * (1.-sigmaw) / (rb + rc))
-         else
-            transp_loc = 0.
-         end if
+         !---------------------------------------------------------------------------------!
+         !     Also, if there is available soil water and let it transpire.                !
+         !---------------------------------------------------------------------------------!
+         transp_loc = max(0., transp_test)
       else
-         !----- Flow is towards the leaf, dew/frost formation and no transpiration. -------!
-         wflxvc     = max(c3 * 2. * stai / rb,min(0.,(toodry-can_rvap)/ dtllowcc))
+         !---------------------------------------------------------------------------------!
+         !     Flow is towards the leaf, dew/frost formation on one side of the leaf.  We  !
+         ! don't let the dew formation completely eliminate water from the canopy air      !
+         ! space, and impose 0. transpiration.                                             !
+         !---------------------------------------------------------------------------------!
+         wflxvc     = max( stai * gbw * (lint_rvap - can_rvap)                             &
+                         , min(0.,(toodry-can_rvap)/ dtllowcc) )
          transp_loc = 0.
       end if
       transp_tot = transp_tot + transp_loc
+      !------------------------------------------------------------------------------------!
+
+
+
 
       !------------------------------------------------------------------------------------!
       !     Update vegetation moisture from precipitation, vapor flux with canopy,         !

@@ -357,7 +357,7 @@ subroutine sfcinit_nofile_user(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,so
                               ,sfcwater_depth,ustar,tstar,rstar,cstar,zeta,ribulk          &
                               ,veg_fracarea,veg_agb,veg_lai,veg_tai,veg_rough,veg_height   &
                               ,veg_albedo,patch_area,patch_rough,patch_wetind,leaf_class   &
-                              ,soil_rough,sfcwater_nlev,stom_resist,ground_rsat            &
+                              ,soil_rough,sfcwater_nlev,stom_condct,ground_rsat            &
                               ,ground_rvap,ground_temp,ground_fliq,veg_water,veg_hcap      &
                               ,veg_energy,can_prss,can_theiv,can_theta,can_rvap,can_co2    &
                               ,sensible_gc,sensible_vc,evap_gc,evap_vc,transp,gpp,plresp   &
@@ -387,7 +387,7 @@ subroutine sfcinit_nofile_user(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,so
    real, dimension(    n2,n3,npat), intent(inout) :: veg_rough,veg_height,veg_albedo
    real, dimension(    n2,n3,npat), intent(inout) :: patch_area,patch_rough,patch_wetind
    real, dimension(    n2,n3,npat), intent(inout) :: leaf_class
-   real, dimension(    n2,n3,npat), intent(inout) :: soil_rough,sfcwater_nlev,stom_resist
+   real, dimension(    n2,n3,npat), intent(inout) :: soil_rough,sfcwater_nlev,stom_condct
    real, dimension(    n2,n3,npat), intent(inout) :: ground_rsat,ground_rvap
    real, dimension(    n2,n3,npat), intent(inout) :: ground_temp,ground_fliq
    real, dimension(    n2,n3,npat), intent(inout) :: veg_water,veg_energy,veg_hcap
@@ -472,7 +472,7 @@ subroutine sfcinit_nofile_user(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,so
 
    !            veg_height(i,j,ipat)  = 
    !            veg_albedo(i,j,ipat)  = 
-   !            stom_resist(i,j,ipat) = 
+   !            stom_condct(i,j,ipat) = 
 
    !            veg_hcap  (i,j,ipat) = 
    !            veg_water (i,j,ipat) = 

@@ -143,6 +143,7 @@ module ename_coms
       real                                              :: lwfact
       real                                              :: thioff
       integer                                           :: icomppt
+      integer                                           :: quantum_efficiency_T
       integer                                           :: n_plant_lim
       integer                                           :: n_decomp_lim
       integer                                           :: decomp_scheme
@@ -346,6 +347,7 @@ module ename_coms
       enl%lwfact                    = undef_real
       enl%thioff                    = undef_real
       enl%icomppt                   = undef_integer
+      enl%quantum_efficiency_T      = undef_integer
       enl%n_plant_lim               = undef_integer
       enl%n_decomp_lim              = undef_integer
       enl%decomp_scheme             = undef_integer

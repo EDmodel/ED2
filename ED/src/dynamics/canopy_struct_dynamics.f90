@@ -67,7 +67,7 @@ module canopy_struct_dynamics
    ! AND FOR WATER SITES IN COUPLED SIMULATIONS.  THE DOUBLE-PRECISIION VERSION, WHICH IS  !
    ! USED BY THE INTEGRATORS FOR MOST CASES IN ED, IS DEFINED BELOW.                       !
    !---------------------------------------------------------------------------------------!
-   subroutine canopy_turbulence(cpoly,isi,ipa,rasveg,canwcap,canccap,canhcap)
+   subroutine canopy_turbulence(cpoly,isi,ipa,canwcap,canccap,canhcap)
       use ed_state_vars  , only : polygontype          & ! structure
                                 , sitetype             & ! structure
                                 , patchtype            ! ! structure
@@ -89,7 +89,8 @@ module canopy_struct_dynamics
                                 , c3_m97               & ! intent(in)
                                 , kvwake               & ! intent(in)
                                 , rb_inter             & ! intent(in)
-                                , rb_slope             ! ! intent(in)
+                                , rb_slope             & ! intent(in)
+                                , ggfact               ! ! intent(in)
       use consts_coms    , only : vonk                 & ! intent(in)
                                 , cp                   & ! intent(in)
                                 , cpi                  & ! intent(in)
@@ -97,13 +98,13 @@ module canopy_struct_dynamics
                                 , sqrt2o2              ! ! intent(in)
       use soil_coms      , only : snow_rough           & ! intent(in)
                                 , soil_rough           ! ! intent(in)
-      use allometry      , only : h2trunkh             ! ! function
+      use allometry      , only : h2trunkh             & ! function
+                                , dbh2ca               ! ! function
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(polygontype)   , target      :: cpoly
       integer             , intent(in)  :: isi           ! Site loop
       integer             , intent(in)  :: ipa           ! Patch loop
-      real                , intent(out) :: rasveg        ! Vegetation resistance
       real                , intent(out) :: canwcap       ! Canopy water capacity
       real                , intent(out) :: canccap       ! Canopy carbon capacity
       real                , intent(out) :: canhcap       ! Canopy heat capacity
@@ -117,6 +118,7 @@ module canopy_struct_dynamics
       integer        :: k            ! Elevation index
       integer        :: zcan         ! Index of canopy top elevation
       logical        :: stable       ! Stable canopy air space
+      real           :: rasveg       ! Resistance of vegetated ground           [      s/m]
       real           :: atm_thetav   ! Free atmosphere virtual potential temp.  [        K]
       real           :: can_thetav   ! Free atmosphere virtual potential temp.  [        K]
       real           :: sigma_e      ! Vortex penetration depth                 [        m]
@@ -126,6 +128,7 @@ module canopy_struct_dynamics
       real           :: a_front      ! Frontal area / vol. flow exposed to drag [    m2/m3]
       real           :: zetac        ! Cumulative zeta function                 [      ---]
       real           :: K_top        ! Diffusivity at canopy top z=h            [     m2/s]
+      real           :: crown_area   ! Crown area index                         [    m2/m2]
       real           :: crowndepth   ! Depth of vegetation leafy crown          [        m]
       real           :: h            ! Canopy height                            [        m]
       real           :: layertai     ! Total leaf area of that discrete layer   [         ]
@@ -194,14 +197,15 @@ module canopy_struct_dynamics
                       ,csite%can_theta(ipa),csite%can_theiv(ipa),csite%can_shv(ipa)        &
                       ,csite%can_co2(ipa),zref,d0,cmet%vels,csite%rough(ipa)               &
                       ,csite%ustar(ipa),csite%tstar(ipa),estar,csite%qstar(ipa)            &
-                      ,csite%cstar(ipa),csite%zeta(ipa),csite%ribulk(ipa))
+                      ,csite%cstar(ipa),csite%zeta(ipa),csite%ribulk(ipa)                  &
+                      ,csite%ggbare(ipa))
 
          !---------------------------------------------------------------------------------!
-         !      The surface resistance inside vegetated canopies is inconsequential, so    !
-         ! just give it a nominal zero value.                                              !
+         !      This is a bare ground cohort, so there is no vegetated ground.  Assign     !
+         ! zero to the conductance, but it shouldn't be used at all.                       !
          !---------------------------------------------------------------------------------!
-         rasveg = 0.0  
-
+         csite%ggveg(ipa) = 0.0
+         csite%ggnet(ipa) = ggfact * csite%ggbare(ipa)
          !---------------------------------------------------------------------------------!
          !     Calculate the heat and mass storage capacity of the canopy.                 !
          !---------------------------------------------------------------------------------!
@@ -230,7 +234,7 @@ module canopy_struct_dynamics
       !------------------------------------------------------------------------------------!
       ! LEAF-3 Case: This approach is very similar to older implementations of ED-2, and   !
       !              it is very similar to LEAF-3, and to option 0, except that option 0   !
-      !              computes rasveg differently.                                          !
+      !              computes the vegetated ground conductance differently.                !
       !------------------------------------------------------------------------------------!
       case (-2,-1)
          h        = csite%veg_height(ipa) * (1. - csite%snowfac(ipa)) ! Vegetation height
@@ -268,14 +272,15 @@ module canopy_struct_dynamics
                       ,csite%can_theta(ipa),csite%can_theiv(ipa),csite%can_shv(ipa)        &
                       ,csite%can_co2(ipa),zref,0.0,cmet%vels,csite%rough(ipa)              &
                       ,csite%ustar(ipa),csite%tstar(ipa),estar,csite%qstar(ipa)            &
-                      ,csite%cstar(ipa),csite%zeta(ipa),csite%ribulk(ipa))
+                      ,csite%cstar(ipa),csite%zeta(ipa),csite%ribulk(ipa)                  &
+                      ,csite%ggbare(ipa))
 
          if (csite%snowfac(ipa) < 0.9) then
             factv  = log(zref / csite%rough(ipa)) / (vonk * vonk * cmet%vels)
             aux    = exp(exar * (1. - (d0 + csite%rough(ipa)) / h))
-            rasveg = factv * h / (exar * (h - d0 )) * (exp(exar) - aux)
+            csite%ggveg(ipa) = (exar * (h - d0 )) / (factv * h * (exp(exar) - aux))
          else 
-            rasveg = 0.
+            csite%ggveg(ipa) = 0.
          end if
 
 
@@ -285,14 +290,14 @@ module canopy_struct_dynamics
          ! capacities.                                                                     !
          !---------------------------------------------------------------------------------!
          laicum = 0.0
-         uh = reduced_wind(csite%ustar(ipa),csite%zeta(ipa),csite%ribulk(ipa),zref,d0   &
+         uh = reduced_wind(csite%ustar(ipa),csite%zeta(ipa),csite%ribulk(ipa),zref,d0      &
                           ,cpatch%hite(1),csite%rough(ipa))
          do ico=1,cpatch%ncohorts
             if (cpatch%solvable(ico)) then
                ipft  = cpatch%pft(ico)
                hite  = cpatch%hite(ico)
 
-               !----- Calculate the wind speed at height z. ----------------------------!
+               !----- Calculate the wind speed at height z. -------------------------------!
                select case (icanturb)
                case (-2)
                   cpatch%veg_wind(ico) = uh
@@ -300,15 +305,15 @@ module canopy_struct_dynamics
                   cpatch%veg_wind(ico) = max(ugbmin,uh * exp ( -0.5 * laicum))
                end select
 
-               !------------------------------------------------------------------------!
-               !    Find the aerodynamic conductances for heat and water at the leaf    !
-               ! boundary layer.                                                        !
-               !------------------------------------------------------------------------!
-               call aerodynamic_conductances(ipft,cpatch%veg_wind(ico)                  &
-                                            ,cpatch%veg_temp(ico),csite%can_temp(ipa)   &
-                                            ,csite%can_shv(ipa),csite%can_rhos(ipa)     &
+               !---------------------------------------------------------------------------!
+               !    Find the aerodynamic conductances for heat and water at the leaf       !
+               ! boundary layer.                                                           !
+               !---------------------------------------------------------------------------!
+               call aerodynamic_conductances(ipft,cpatch%veg_wind(ico)                     &
+                                            ,cpatch%veg_temp(ico),csite%can_temp(ipa)      &
+                                            ,csite%can_shv(ipa),csite%can_rhos(ipa)        &
                                             ,gbhmos_min,cpatch%gbh(ico),cpatch%gbw(ico))
-               !------------------------------------------------------------------------!
+               !---------------------------------------------------------------------------!
 
                laicum = laicum      + cpatch%lai(ico)
             else
@@ -327,6 +332,22 @@ module canopy_struct_dynamics
          ! be to make a conditional like in case(1).                                       !
          !---------------------------------------------------------------------------------!
          call can_whcap(csite,ipa,canwcap,canccap,canhcap)
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !     Find the net ground conductance.  The net conductance is derived from the   !
+         ! net resistance, which is, in turn, the weighted average of the resistances in   !
+         ! bare and vegetated grounds.                                                     !
+         !---------------------------------------------------------------------------------!
+         if (csite%opencan_frac(ipa) > 0.999 .or. csite%snowfac(ipa) >= 0.9) then
+            csite%ggnet(ipa) = ggfact * csite%ggbare(ipa)
+         else
+            csite%ggnet(ipa) = ggfact * csite%ggbare(ipa) * csite%ggveg(ipa)               &
+                             / (       csite%opencan_frac(ipa) *  csite%ggveg(ipa)         &
+                               + (1. - csite%opencan_frac(ipa)) * csite%ggbare(ipa))
+         end if
+         !---------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
 
 
@@ -378,7 +399,8 @@ module canopy_struct_dynamics
                       ,csite%can_theta(ipa),csite%can_theiv(ipa),csite%can_shv(ipa)        &
                       ,csite%can_co2(ipa),zref,0.0,cmet%vels,csite%rough(ipa)              &
                       ,csite%ustar(ipa),csite%tstar(ipa),estar,csite%qstar(ipa)            &
-                      ,csite%cstar(ipa),csite%zeta(ipa),csite%ribulk(ipa))
+                      ,csite%cstar(ipa),csite%zeta(ipa),csite%ribulk(ipa)                  &
+                      ,csite%ggbare(ipa))
 
          K_top = vonk * csite%ustar(ipa) * (h-d0)
 
@@ -387,7 +409,8 @@ module canopy_struct_dynamics
          ! inverse K, from the rough soil surface, to the reference point in the canopy    !
          ! where the state variable is integrated (canopy top ~ h).                        !
          !---------------------------------------------------------------------------------!
-         rasveg = exp(exar) * h / (exar * K_top) * (exp(-exar * surf_rough/h)-exp(-exar))
+         csite%ggveg(ipa) = (exar * K_top)                                                 &
+                          / (exp(exar) * h * (exp(-exar * surf_rough/h)-exp(-exar)))
 
 
          !---------------------------------------------------------------------------------!
@@ -430,6 +453,22 @@ module canopy_struct_dynamics
          ! to make a conditional like in case(1).                                          !
          !---------------------------------------------------------------------------------!
          call can_whcap(csite,ipa,canwcap,canccap,canhcap)
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !     Find the net ground conductance.  The net conductance is derived from the   !
+         ! net resistance, which is, in turn, the weighted average of the resistances in   !
+         ! bare and vegetated grounds.                                                     !
+         !---------------------------------------------------------------------------------!
+         if (csite%opencan_frac(ipa) > 0.999 .or. csite%snowfac(ipa) >= 0.9) then
+            csite%ggnet(ipa) = ggfact * csite%ggbare(ipa)
+         else
+            csite%ggnet(ipa) = ggfact * csite%ggbare(ipa) * csite%ggveg(ipa)               &
+                             / (       csite%opencan_frac(ipa) *  csite%ggveg(ipa)         &
+                               + (1. - csite%opencan_frac(ipa)) * csite%ggbare(ipa))
+         end if
+         !---------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
 
 
@@ -494,7 +533,8 @@ module canopy_struct_dynamics
                       ,csite%can_theta(ipa),csite%can_theiv(ipa),csite%can_shv(ipa)        &
                       ,csite%can_co2(ipa),zref,d0,cmet%vels,csite%rough(ipa)               &
                       ,csite%ustar(ipa),csite%tstar(ipa),estar,csite%qstar(ipa)            &
-                      ,csite%cstar(ipa),csite%zeta(ipa),csite%ribulk(ipa))
+                      ,csite%cstar(ipa),csite%zeta(ipa),csite%ribulk(ipa)                  &
+                      ,csite%ggbare(ipa))
 
          K_top = vonk * csite%ustar(ipa) * (h-d0)
 
@@ -503,8 +543,8 @@ module canopy_struct_dynamics
          ! inverse K, from the rough soil surface, to the reference point in the canopy    !
          ! where the state variable is integrated (canopy top ~ h).                        !
          !---------------------------------------------------------------------------------!
-         rasveg = exp(exar) * h / (exar * K_top)                                           &
-                * (exp(-exar * surf_rough/h)-exp(-exar))
+         csite%ggveg(ipa) = (exar * K_top)                                                 &
+                          / (exp(exar) * h * (exp(-exar * surf_rough/h)-exp(-exar)))
 
          !---------------------------------------------------------------------------------!
          !     Calculate the leaf level aerodynamic resistance.                            !
@@ -532,6 +572,22 @@ module canopy_struct_dynamics
                                          ,cpatch%gbw(ico))
             !------------------------------------------------------------------------------!
          end do
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !     Find the net ground conductance.  The net conductance is derived from the   !
+         ! net resistance, which is, in turn, the weighted average of the resistances in   !
+         ! bare and vegetated grounds.                                                     !
+         !---------------------------------------------------------------------------------!
+         if (csite%opencan_frac(ipa) > 0.999 .or. csite%snowfac(ipa) >= 0.9) then
+            csite%ggnet(ipa) = ggfact * csite%ggbare(ipa)
+         else
+            csite%ggnet(ipa) = ggfact * csite%ggbare(ipa) * csite%ggveg(ipa)               &
+                             / (       csite%opencan_frac(ipa) *  csite%ggveg(ipa)         &
+                               + (1. - csite%opencan_frac(ipa)) * csite%ggbare(ipa))
+         end if
+         !---------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
 
 
@@ -662,12 +718,13 @@ module canopy_struct_dynamics
          !----- Calculate the roughness lengths zo,zt,zr. ---------------------------------!
          csite%rough(ipa) = max((h-d0)*exp(-vonk/ustarouh),soil_rough)
          
-         !----- Finding the characteristic scales (a.k.a. stars). -------------------------!
+         !----- Find the characteristic scales (a.k.a. stars). ----------------------------!
          call ed_stars(cmet%atm_theta,cmet%atm_theiv,cmet%atm_shv,cmet%atm_co2             &
                       ,csite%can_theta(ipa),csite%can_theiv(ipa),csite%can_shv(ipa)        &
                       ,csite%can_co2(ipa),zref,d0,cmet%vels,csite%rough(ipa)               &
                       ,csite%ustar(ipa),csite%tstar(ipa),estar,csite%qstar(ipa)            &
-                      ,csite%cstar(ipa),csite%zeta(ipa),csite%ribulk(ipa))
+                      ,csite%cstar(ipa),csite%zeta(ipa),csite%ribulk(ipa)                  &
+                      ,csite%ggbare(ipa))
 
          !----- Calculate the diffusivity at the canopy top. ------------------------------!
          K_top = vonk * csite%ustar(ipa) * (h-d0)
@@ -679,6 +736,7 @@ module canopy_struct_dynamics
             Kdiff  = K_top * exp(-eta * (1.0-zeta(k)/zeta(zcan))) + kvwake
             rasveg = rasveg + dz / Kdiff
          end do
+         csite%ggveg(ipa) = 1./rasveg
 
          !---------------------------------------------------------------------------------!
          !     Calculate the leaf level aerodynamic resistance.                            !
@@ -717,8 +775,138 @@ module canopy_struct_dynamics
          ! air spaces.                                                                     !
          !---------------------------------------------------------------------------------!
          call can_whcap(csite,ipa,canwcap,canccap,canhcap)
+         !---------------------------------------------------------------------------------!
 
+
+         !---------------------------------------------------------------------------------!
+         !     Find the net ground conductance.  The net conductance is derived from the   !
+         ! net resistance, which is, in turn, the weighted average of the resistances in   !
+         ! bare and vegetated grounds.                                                     !
+         !---------------------------------------------------------------------------------!
+         if (csite%opencan_frac(ipa) > 0.999 .or. csite%snowfac(ipa) >= 0.9) then
+            csite%ggnet(ipa) = ggfact * csite%ggbare(ipa)
+         else
+            csite%ggnet(ipa) = ggfact * csite%ggbare(ipa) * csite%ggveg(ipa)               &
+                             / (       csite%opencan_frac(ipa) *  csite%ggveg(ipa)         &
+                               + (1. - csite%opencan_frac(ipa)) * csite%ggbare(ipa))
+         end if
+         !---------------------------------------------------------------------------------!
+      !------------------------------------------------------------------------------------!
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Use an alternative approach, in which we take into account the fraction of     !
+      ! open canopy to scale the roughness, and we estimate the ground conductance based   !
+      ! solely on one roughness scale.  The cohort wind profile is loosely based on        !
+      ! Leuning et al. (1995), but instead of simply computing the cumulative LAI, we      !
+      ! consider the crown area to determine the reduction factor.                         !
+      !------------------------------------------------------------------------------------!
+      case (3)
+         h        = csite%veg_height(ipa)  ! Vegetation height
+         d0       = vh2dh * h              ! 0-plane displacement
+         zref     = cmet%geoht
+
+         !---------------------------------------------------------------------------------!
+         !     Find the roughness as the average between the bare ground and vegetated     !
+         ! ground.  The weighting factor is the fraction of open canopy.                   !
+         !---------------------------------------------------------------------------------!
+         csite%rough(ipa) = soil_rough * (1.0 - csite%opencan_frac(ipa))                   &
+                          + csite%veg_rough(ipa) * csite%opencan_frac(ipa)
+         !---------------------------------------------------------------------------------!
+
+
+
+         !----- Get the appropriate characteristic wind speed. ----------------------------!
+         if (stable) then
+            cmet%vels = cmet%vels_stab
+         else
+            cmet%vels = cmet%vels_unstab
+         end if
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !     Find ustar for the ABL, assume it is a dynamic shear layer that generates a !
+         ! logarithmic profile of velocity.                                                !
+         !---------------------------------------------------------------------------------!
+         call ed_stars(cmet%atm_theta,cmet%atm_theiv,cmet%atm_shv,cmet%atm_co2             &
+                      ,csite%can_theta(ipa),csite%can_theiv(ipa),csite%can_shv(ipa)        &
+                      ,csite%can_co2(ipa),zref,0.0,cmet%vels,csite%rough(ipa)              &
+                      ,csite%ustar(ipa),csite%tstar(ipa),estar,csite%qstar(ipa)            &
+                      ,csite%cstar(ipa),csite%zeta(ipa),csite%ribulk(ipa)                  &
+                      ,csite%ggnet(ipa))
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !     We don't compute a separate conductance for bare and vegetated grounds.     !
+         ! Since the roughness used by the ed_stars sub-routine already takes into account !
+         ! the roughness which considers both the bare and the vegetated areas, a single   !
+         ! number is obtained.  Here we update the correction factor only, and copy the    !
+         ! value for both bare and vegetated.                                              !
+         !---------------------------------------------------------------------------------!
+         csite%ggbare(ipa) = csite%ggnet(ipa)
+         csite%ggveg (ipa) = csite%ggnet(ipa)
+         csite%ggnet (ipa) = csite%ggnet(ipa) * ggfact
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !     This part of the code finds the wind profile.  We use the similarity theory !
+         ! to find the top cohort, and integrate the winds downwards using a method that   !
+         ! is similar to Leuning et al. (1995), but we use the local LAI and weight the    !
+         ! reduction factor by the crown area.  This should keep the winds stronger for    !
+         ! smaller cohorts when the tall ones aren't too dense, and approach the Leuning   !
+         ! et al. (1995) method when the cohort crown area approaches the patch area.      !
+         !---------------------------------------------------------------------------------!
+         uh = reduced_wind(csite%ustar(ipa),csite%zeta(ipa),csite%ribulk(ipa),zref,d0      &
+                          ,cpatch%hite(1),csite%rough(ipa))
+         !---------------------------------------------------------------------------------!
+         do ico = 1,cpatch%ncohorts
+            if (cpatch%solvable(ico)) then
+               ipft       = cpatch%pft(ico)
+               hite       = cpatch%hite(ico)
+               crown_area = min(1.0, cpatch%nplant(ico)                                    &
+                                   * dbh2ca(cpatch%dbh(ico),cpatch%sla(ico),ipft))
+
+               cpatch%veg_wind(ico) = max(uh,ugbmin)
+               uh = uh * ( crown_area * exp(- cpatch%lai(ico) / crown_area)                &
+                         + 1. - crown_area) 
+
+               !---------------------------------------------------------------------------!
+               !    Find the aerodynamic conductances for heat and water at the leaf       !
+               ! boundary layer.                                                           !
+               !---------------------------------------------------------------------------!
+               call aerodynamic_conductances(ipft,cpatch%veg_wind(ico)                     &
+                                            ,cpatch%veg_temp(ico),csite%can_temp(ipa)      &
+                                            ,csite%can_shv(ipa),csite%can_rhos(ipa)        &
+                                            ,gbhmos_min,cpatch%gbh(ico),cpatch%gbw(ico))
+               !---------------------------------------------------------------------------!
+            else
+               cpatch%gbh(ico)      = 0.0
+               cpatch%gbw(ico)      = 0.0
+               cpatch%veg_wind(ico) = cmet%vels
+            end if
+         end do
+
+         !---------------------------------------------------------------------------------!
+         !    Calculate the heat and mass storage capacity of the canopy and interfacial   !
+         ! air spaces.  This is a tough call, because the reference height is allowed to   !
+         ! be abnormally low in this case, and it is possible that it is even lower than   !
+         ! the top of the canopy.  So... we will set the top of the interfacial layer as   !
+         ! the "reference elevation plus the top of the canopy".  An alternative could     !
+         ! be to make a conditional like in case(1).                                       !
+         !---------------------------------------------------------------------------------!
+         call can_whcap(csite,ipa,canwcap,canccap,canhcap)
+         !---------------------------------------------------------------------------------!
       end select
+      !------------------------------------------------------------------------------------!
+
 
       return
    end subroutine canopy_turbulence
@@ -808,7 +996,8 @@ module canopy_struct_dynamics
                                 , c3_m978              & ! intent(in)
                                 , kvwake8              & ! intent(in)
                                 , rb_inter             & ! intent(in)
-                                , rb_slope             ! ! intent(in)
+                                , rb_slope             & ! intent(in)
+                                , ggfact8              ! ! intent(in)
       use consts_coms    , only : vonk8                & ! intent(in)
                                 , cpi8                 & ! intent(in)
                                 , epim18               & ! intent(in)
@@ -855,6 +1044,7 @@ module canopy_struct_dynamics
       real(kind=8)   :: laicum     ! Cumulative LAI (from top to bottom)        [    m2/m2]
       real(kind=8)   :: gbhmos_min ! Minimum leaf boundary layer heat condct.   [      m/s]
       real(kind=8)   :: hite8      ! Double precision version of height.        [        m]
+      real(kind=8)   :: rasveg     ! Resistance of vegetated ground             [      s/m]
       !----- Saved variables --------------------------------------------------------------!
       real(kind=8), dimension(200), save :: zeta     ! Attenuation factor for sub-canopy K 
                                                      !    and u.  A vector size of 200, 
@@ -898,13 +1088,16 @@ module canopy_struct_dynamics
                        ,rk4site%atm_co2,initp%can_theta ,initp%can_theiv ,initp%can_shv    &
                        ,initp%can_co2,zref,d0,vels_ref,initp%rough                         &
                        ,initp%ustar,initp%tstar,initp%estar,initp%qstar,initp%cstar        &
-                       ,initp%zeta,initp%ribulk)
+                       ,initp%zeta,initp%ribulk,initp%ggbare)
 
          !---------------------------------------------------------------------------------!
-         !      The surface resistance inside vegetated canopies is inconsequential, so    !
-         ! just give it a nominal zero value.                                              !
+         !      This patch is empty, so we can't define a conductance for vegetated        !
+         ! grounds.  Assign it to be zero, and set the net conductance to be the bare      !
+         ! ground.                                                                         !
          !---------------------------------------------------------------------------------!
-         initp%rasveg = 0.d0  
+         initp%ggveg = 0.d0
+         initp%ggnet = ggfact8 * initp%ggbare
+         !---------------------------------------------------------------------------------!
 
 
          !---------------------------------------------------------------------------------!
@@ -974,14 +1167,15 @@ module canopy_struct_dynamics
                        ,rk4site%atm_co2,initp%can_theta ,initp%can_theiv,initp%can_shv     &
                        ,initp%can_co2,zref,0.d0,vels_ref,initp%rough                       &
                        ,initp%ustar,initp%tstar,initp%estar,initp%qstar,initp%cstar        &
-                       ,initp%zeta,initp%ribulk)
+                       ,initp%zeta,initp%ribulk,initp%ggbare)
+         !---------------------------------------------------------------------------------!
 
          if (csite%snowfac(ipa) < 0.9) then
             factv        = log(zref / initp%rough) / (vonk8 * vonk8 * vels_ref)
             aux          = exp(exar8 * (1.d0 - (d0 + initp%rough) / h))
-            initp%rasveg = factv * h / (exar8 * (h - d0)) * (exp(exar8) - aux)
+            initp%ggveg  = (exar8 * (h - d0)) / (factv * h * (exp(exar8) - aux))
          else 
-            initp%rasveg = 0.d0
+            initp%ggveg = 0.d0
          end if
 
 
@@ -1045,6 +1239,22 @@ module canopy_struct_dynamics
          ! to make a conditional like in case(1).                                          !
          !---------------------------------------------------------------------------------!
          call can_whcap8(csite,ipa,initp%can_rhos,initp%can_temp,initp%can_depth)
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !     Find the net ground conductance.  The net conductance is derived from the   !
+         ! net resistance, which is, in turn, the weighted average of the resistances in   !
+         ! bare and vegetated grounds.                                                     !
+         !---------------------------------------------------------------------------------!
+         if (initp%opencan_frac > 9.99d-1 .or. csite%snowfac(ipa) >= 0.9) then
+            initp%ggnet = ggfact8 * initp%ggbare
+         else
+            initp%ggnet = ggfact8 * initp%ggbare * initp%ggveg                             &
+                        / (         initp%opencan_frac  * initp%ggveg                      &
+                          + (1.d0 - initp%opencan_frac) * initp%ggbare )
+         end if
+         !---------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
 
       !------------------------------------------------------------------------------------!
@@ -1085,17 +1295,17 @@ module canopy_struct_dynamics
                        ,rk4site%atm_co2,initp%can_theta,initp%can_theiv,initp%can_shv      &
                        ,initp%can_co2,zref,0.d0,vels_ref,initp%rough                       &
                        ,initp%ustar,initp%tstar,initp%estar,initp%qstar,initp%cstar        &
-                       ,initp%zeta,initp%ribulk)
+                       ,initp%zeta,initp%ribulk,initp%ggbare)
 
          K_top = vonk8 * initp%ustar*(h-d0)
 
          !---------------------------------------------------------------------------------!
-         !     The surface resistance in the sub-canopy layer is the integration of        !
-         ! inverse K, from the rough soil surface, to the reference point in the canopy    !
+         !     The surface conductance in the sub-canopy layer is the integration of       !
+         ! K, from the rough soil surface, to the reference point in the canopy            !
          ! where the state variable is integrated (canopy top ~ h).                        !
          !---------------------------------------------------------------------------------!
-         initp%rasveg = exp(exar8) * h / (exar8 * K_top)                                   &
-                      * (exp(-exar8 * surf_rough/h)-exp(-exar8))
+         initp%ggveg = (exar8 * K_top)                                                     &
+                     / (exp(exar8) * h * (exp(-exar8 * surf_rough/h)-exp(-exar8)))
 
 
          !---------------------------------------------------------------------------------!
@@ -1142,6 +1352,22 @@ module canopy_struct_dynamics
          ! to make a conditional like in case(1).                                          !
          !---------------------------------------------------------------------------------!
          call can_whcap8(csite,ipa,initp%can_rhos,initp%can_temp,initp%can_depth)
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !     Find the net ground conductance.  The net conductance is derived from the   !
+         ! net resistance, which is, in turn, the weighted average of the resistances in   !
+         ! bare and vegetated grounds.                                                     !
+         !---------------------------------------------------------------------------------!
+         if (initp%opencan_frac > 9.99d-1 .or. csite%snowfac(ipa) >= 0.9) then
+            initp%ggnet = ggfact8 * initp%ggbare
+         else
+            initp%ggnet = ggfact8 * initp%ggbare * initp%ggveg                             &
+                        / (         initp%opencan_frac  * initp%ggveg                      &
+                          + (1.d0 - initp%opencan_frac) * initp%ggbare )
+         end if
+         !---------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
 
 
@@ -1193,17 +1419,18 @@ module canopy_struct_dynamics
                        ,rk4site%atm_co2,initp%can_theta,initp%can_theiv,initp%can_shv      &
                        ,initp%can_co2,zref,d0,vels_ref,initp%rough                         &
                        ,initp%ustar,initp%tstar,initp%estar,initp%qstar,initp%cstar        &
-                       ,initp%zeta,initp%ribulk)
+                       ,initp%zeta,initp%ribulk,initp%ggbare)
 
          K_top = vonk8 * initp%ustar * (h-d0)
 
          !---------------------------------------------------------------------------------!
-         !     The surface resistance in the sub-canopy layer is the integration of        !
-         ! inverse K, from the rough soil surface, to the reference point in the canopy    !
-         ! where the state variable is integrated (canopy top ~ h).                        !
+         !     The surface conductance in the sub-canopy layer is the integration of K,    !
+         ! from the rough soil surface, to the reference point in the canopy where the     !
+         ! state variable is integrated (canopy top ~ h).                                  !
          !---------------------------------------------------------------------------------!
-         initp%rasveg = exp(exar8) * h / (exar8 * K_top)                                   &
-                      * (exp(-exar8 * surf_rough/h)-exp(-exar8))
+         initp%ggveg = (exar8 * K_top)                                                     &
+                     / (exp(exar8) * h * (exp(-exar8 * surf_rough/h)-exp(-exar8)))
+         !---------------------------------------------------------------------------------!
 
          !---------------------------------------------------------------------------------!
          !     Calculate the leaf level aerodynamic resistance.                            !
@@ -1234,6 +1461,22 @@ module canopy_struct_dynamics
             cpatch%gbw(ico) = sngloff(initp%gbw(ico),tiny_offset)
             !------------------------------------------------------------------------------!
          end do
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !     Find the net ground conductance.  The net conductance is derived from the   !
+         ! net resistance, which is, in turn, the weighted average of the resistances in   !
+         ! bare and vegetated grounds.                                                     !
+         !---------------------------------------------------------------------------------!
+         if (initp%opencan_frac > 9.99d-1 .or. csite%snowfac(ipa) >= 0.9) then
+            initp%ggnet = ggfact8 * initp%ggbare
+         else
+            initp%ggnet = ggfact8 * initp%ggbare * initp%ggveg                             &
+                        / (         initp%opencan_frac  * initp%ggveg                      &
+                          + (1.d0 - initp%opencan_frac) * initp%ggbare )
+         end if
+         !---------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
 
 
@@ -1365,18 +1608,19 @@ module canopy_struct_dynamics
                        ,rk4site%atm_co2,initp%can_theta ,initp%can_theiv,initp%can_shv     &
                        ,initp%can_co2,zref,d0,vels_ref,initp%rough                         &
                        ,initp%ustar,initp%tstar,initp%estar,initp%qstar,initp%cstar        &
-                       ,initp%zeta,initp%ribulk)
+                       ,initp%zeta,initp%ribulk,initp%ggbare)
 
          !----- Calculate the diffusivity at the canopy top. ------------------------------!
          K_top = vonk8 * initp%ustar * (h-d0)
 
-         initp%rasveg=0.d0
+         rasveg=0.d0
 
          !----- Numerically integrate the inverse diffusivity. ----------------------------!
          do k=1,zcan
-            Kdiff        = K_top * exp(-eta * (1.d0-zeta(k)/zeta(zcan))) + kvwake8
-            initp%rasveg = initp%rasveg + dz8 / Kdiff
+            Kdiff  = K_top * exp(-eta * (1.d0-zeta(k)/zeta(zcan))) + kvwake8
+            rasveg = rasveg + dz8 / Kdiff
          end do
+         initp%ggveg = 1.d0 / rasveg
 
          !---------------------------------------------------------------------------------!
          !     Calculate the leaf level aerodynamic resistance.                            !
@@ -1419,6 +1663,138 @@ module canopy_struct_dynamics
          ! spaces.                                                                         !
          !---------------------------------------------------------------------------------!
          call can_whcap8(csite,ipa,initp%can_rhos,initp%can_temp,initp%can_depth)
+         !---------------------------------------------------------------------------------!
+
+
+         !---------------------------------------------------------------------------------!
+         !     Find the net ground conductance.  The net conductance is derived from the   !
+         ! net resistance, which is, in turn, the weighted average of the resistances in   !
+         ! bare and vegetated grounds.                                                     !
+         !---------------------------------------------------------------------------------!
+         if (initp%opencan_frac > 9.99d-1 .or. csite%snowfac(ipa) >= 0.9) then
+            initp%ggnet = ggfact8 * initp%ggbare
+         else
+            initp%ggnet = ggfact8 * initp%ggbare * initp%ggveg                             &
+                        / (         initp%opencan_frac  * initp%ggveg                      &
+                          + (1.d0 - initp%opencan_frac) * initp%ggbare )
+         end if
+         !---------------------------------------------------------------------------------!
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Use an alternative approach, in which we take into account the fraction of     !
+      ! open canopy to scale the roughness, and we estimate the ground conductance based   !
+      ! solely on one roughness scale.  The cohort wind profile is loosely based on        !
+      ! Leuning et al. (1995), but instead of simply computing the cumulative LAI, we      !
+      ! consider the crown area to determine the reduction factor.                         !
+      !------------------------------------------------------------------------------------!
+      case (3)
+         h        = dble(csite%veg_height(ipa))  ! Vegetation height
+         d0       = vh2dh8 * h                   ! 0-plane displacement
+         zref     = rk4site%geoht
+
+         !---------------------------------------------------------------------------------!
+         !     Find the roughness as the average between the bare ground and vegetated     !
+         ! ground.  The weighting factor is the fraction of open canopy.                   !
+         !---------------------------------------------------------------------------------!
+         initp%rough = dble(soil_rough)           * (1.d0 - initp%opencan_frac)            &
+                     + dble(csite%veg_rough(ipa)) *         initp%opencan_frac
+         !---------------------------------------------------------------------------------!
+
+
+
+         !----- Get the appropriate characteristic wind speed. ----------------------------!
+         vels_ref = max(ubmin8,rk4site%vels)
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !     Find ustar for the ABL, assume it is a dynamic shear layer that generates a !
+         ! logarithmic profile of velocity.                                                !
+         !---------------------------------------------------------------------------------!
+         call ed_stars8(rk4site%atm_theta,rk4site%atm_theiv,rk4site%atm_shv                &
+                       ,rk4site%atm_co2,initp%can_theta ,initp%can_theiv,initp%can_shv     &
+                       ,initp%can_co2,zref,0.d0,vels_ref,initp%rough                       &
+                       ,initp%ustar,initp%tstar,initp%estar,initp%qstar,initp%cstar        &
+                       ,initp%zeta,initp%ribulk,initp%ggnet)
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !     We don't compute a separate conductance for bare and vegetated grounds.     !
+         ! Since the roughness used by the ed_stars sub-routine already takes into account !
+         ! the roughness which considers both the bare and the vegetated areas, a single   !
+         ! number is obtained.  Here we update the correction factor only, and copy the    !
+         ! value for both bare and vegetated.                                              !
+         !---------------------------------------------------------------------------------!
+         initp%ggbare = initp%ggnet
+         initp%ggveg  = initp%ggnet
+         initp%ggnet  = initp%ggnet * ggfact8
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !     This part of the code finds the wind profile.  We use the similarity theory !
+         ! to find the top cohort, and integrate the winds downwards using a method that   !
+         ! is similar to Leuning et al. (1995), but we use the local LAI and weight the    !
+         ! reduction factor by the crown area.  This should keep the winds stronger for    !
+         ! smaller cohorts when the tall ones aren't too dense, and approach the Leuning   !
+         ! et al. (1995) method when the cohort crown area approaches the patch area.      !
+         !---------------------------------------------------------------------------------!
+         uh = reduced_wind8(initp%ustar,initp%zeta,initp%ribulk,zref,d0                    &
+                           ,dble(cpatch%hite(1)),initp%rough)
+         !---------------------------------------------------------------------------------!
+         do ico = 1,cpatch%ncohorts
+            if (initp%solvable(ico)) then
+               ipft = cpatch%pft(ico)
+               
+               initp%veg_wind(ico) = max(ugbmin8,uh)
+               uh = uh * ( initp%crown_area(ico)                                           &
+                         * exp(- initp%lai(ico) / initp%crown_area(ico))                   &
+                         + 1.d0 - initp%crown_area(ico) )
+
+               !---------------------------------------------------------------------------!
+               !    Find the aerodynamic conductances for heat and water at the leaf       !
+               ! boundary layer.                                                           !
+               !---------------------------------------------------------------------------!
+               call aerodynamic_conductances8(ipft,initp%veg_wind(ico),initp%veg_temp(ico) &
+                                             ,initp%can_temp,initp%can_shv,initp%can_rhos  &
+                                             ,gbhmos_min,initp%gbh(ico),initp%gbw(ico)     &
+                                             ,initp%veg_reynolds(ico)                      &
+                                             ,initp%veg_grashof(ico)                       &
+                                             ,initp%veg_nussfree(ico)                      &
+                                             ,initp%veg_nussforc(ico) )
+               cpatch%gbh(ico) = sngloff(initp%gbh(ico),tiny_offset)
+               cpatch%gbw(ico) = sngloff(initp%gbw(ico),tiny_offset)
+               !---------------------------------------------------------------------------!
+            else
+               initp%veg_wind    (ico) = vels_ref
+               initp%veg_reynolds(ico) = 0.d0
+               initp%veg_grashof (ico) = 0.d0
+               initp%veg_nussfree(ico) = 0.d0
+               initp%veg_nussforc(ico) = 0.d0
+               initp%gbh(ico)          = 0.d0
+               initp%gbw(ico)          = 0.d0
+               cpatch%gbh(ico)         = 0.0
+               cpatch%gbw(ico)         = 0.0
+            end if
+         end do
+
+         !---------------------------------------------------------------------------------!
+         !    Calculate the heat and mass storage capacity of the canopy and interfacial   !
+         ! air spaces.  This is a tough call, because the reference height is allowed to   !
+         ! be abnormally low in this case, and it is possible that it is even lower than   !
+         ! the top of the canopy.  So... we will set the top of the interfacial layer as   !
+         ! the "reference elevation plus the top of the canopy".  An alternative could     !
+         ! be to make a conditional like in case(1).                                       !
+         !---------------------------------------------------------------------------------!
+         call can_whcap8(csite,ipa,initp%can_rhos,initp%can_temp,initp%can_depth)
+         !---------------------------------------------------------------------------------!
 
       end select
 
@@ -1462,7 +1838,7 @@ module canopy_struct_dynamics
    !---------------------------------------------------------------------------------------!
    subroutine ed_stars(theta_atm,theiv_atm,shv_atm,co2_atm,theta_can,theiv_can             &
                       ,shv_can,co2_can,zref,d0,uref,rough,ustar,tstar,estar,qstar,cstar    &
-                      ,zeta,rib)
+                      ,zeta,rib,ggbare)
       use consts_coms     , only : grav          & ! intent(in)
                                  , vonk          & ! intent(in)
                                  , epim1         & ! intent(in)
@@ -1502,6 +1878,7 @@ module canopy_struct_dynamics
       real, intent(out) :: cstar        ! CO2 spec. volume friction scale       [  µmol/m³]
       real, intent(out) :: zeta         ! z/(Obukhov length).                   [    -----]
       real, intent(out) :: rib          ! Bulk richardson number.               [    -----]
+      real, intent(out) :: ggbare       ! Ground conductance                    [      m/s]
       !----- Local variables, used by L79. ------------------------------------------------!
       logical           :: stable       ! Stable state
       real              :: zoz0m        ! zref/rough(momentum)
@@ -1650,6 +2027,17 @@ module canopy_struct_dynamics
       tstar = c3 *    (theta_atm - theta_can )
       estar = c3 * log(theiv_atm / theiv_can )
       cstar = c3 *    (co2_atm   - co2_can   )
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !    Compute the bare ground conductance.  This equation is similar to the original, !
+      ! except that we don't assume the ratio between the gradient and the characteristic  !
+      ! scale to be 0.2; instead we use the actual ratio that is computed here.            !
+      !------------------------------------------------------------------------------------!
+      ggbare  = c3 * ustar
+      !------------------------------------------------------------------------------------!
 
       return
    end subroutine ed_stars
@@ -1691,7 +2079,7 @@ module canopy_struct_dynamics
    !---------------------------------------------------------------------------------------!
    subroutine ed_stars8(theta_atm,theiv_atm,shv_atm,co2_atm                                &
                        ,theta_can,theiv_can,shv_can,co2_can                                &
-                       ,zref,d0,uref,rough,ustar,tstar,estar,qstar,cstar,zeta,rib)
+                       ,zref,d0,uref,rough,ustar,tstar,estar,qstar,cstar,zeta,rib,ggbare)
       use consts_coms     , only : grav8         & ! intent(in)
                                  , vonk8         & ! intent(in)
                                  , epim18        & ! intent(in)
@@ -1731,6 +2119,7 @@ module canopy_struct_dynamics
       real(kind=8), intent(out) :: cstar        ! CO2 spec. volume friction scale[  µmol/m³]
       real(kind=8), intent(out) :: zeta         ! z/(Obukhov length)             [      ---]
       real(kind=8), intent(out) :: rib          ! Bulk richardson number.        [      ---]
+      real(kind=8), intent(out) :: ggbare       ! Ground conductance.            [      m/s]
       !----- Local variables, used by L79. ------------------------------------------------!
       logical           :: stable       ! Stable state
       real(kind=8)      :: zoz0m        ! zref/rough(momentum)
@@ -1881,6 +2270,17 @@ module canopy_struct_dynamics
       tstar = c3 *    (theta_atm - theta_can )
       estar = c3 * log(theiv_atm / theiv_can )
       cstar = c3 *    (co2_atm   - co2_can   )
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !    Compute the bare ground conductance.  This equation is similar to the original, !
+      ! except that we don't assume the ratio between the gradient and the characteristic  !
+      ! scale to be 0.2; instead we use the actual ratio that is computed here.            !
+      !------------------------------------------------------------------------------------!
+      ggbare = c3 * ustar
+      !------------------------------------------------------------------------------------!
 
       return
    end subroutine ed_stars8
@@ -1987,7 +2387,7 @@ module canopy_struct_dynamics
 
 
 
-      !----- Impose the minimum wind to be more than the minimum. -------------------------!
+      !----- Impose the wind to be more than the minimum. ---------------------------------!
       reduced_wind = max(reduced_wind, ugbmin)
       !------------------------------------------------------------------------------------!
 
@@ -2098,7 +2498,7 @@ module canopy_struct_dynamics
 
 
 
-      !----- Impose the minimum wind to be more than 0.1 m/s. -----------------------------!
+      !----- Impose the wind to be more than the minimum. ---------------------------------!
       reduced_wind8 = max(reduced_wind8,ugbmin8)
       !------------------------------------------------------------------------------------!
 

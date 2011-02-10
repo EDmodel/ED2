@@ -22,6 +22,7 @@ module leaf_coms
    use rconstants, only: grav      & ! intent(in)
                        , vonk      & ! intent(in)
                        , alvl      & ! intent(in)
+                       , onethird  & ! intent(in)
                        , twothirds ! ! intent(in)
 
    !----- Parameters that are initialised from RAMSIN. ------------------------------------! 
@@ -68,13 +69,17 @@ module leaf_coms
             , can_depth    & ! canopy depth                                      [       m]
             , veg_temp     & ! vegetation temperature                            [       K]
             , veg_fliq     & ! liquid fraction of vegetation surface water       [      --]
+            , veg_wind     & ! wind speed at the vegetation height               [     m/s]
             , estar        & ! theta_Eiv characteristic friction scale           [       K]
             , qstar        & ! specific humidity characteristic friction scale   [   kg/kg]
             , timefac_sst  & ! time interpolation factor for SST                 [     ---]
             
-            , rb           & ! vegetation aerodynamic resistance
-            , rgnd         & ! canopy to ground aerodynamic resistance
-            , ggnd         & ! canopy to ground aerodynamic conductance
+            , gbh          & ! leaf boundary layer heat conductance              [J/K/m2/s]
+            , gbw          & ! leaf boundary layer water conductance             [ kg/m2/s]
+            , gsw          & ! stomatal conductance                              [ kg/m2/s]
+            , ggnet        & ! net ground heat/water conductance                 [     m/s]
+            , ggbare       & ! heat/water conductance, bare ground               [     m/s]
+            , ggveg        & ! heat/water conductance,  vegetated ground         [     m/s]
             , rho_ustar    & ! canopy density time friction velocity
             , rshort_g     & ! net SW radiation absorbed by grnd
             , rshort_v     & ! net SW radiation absorbed by veg
@@ -155,7 +160,7 @@ module leaf_coms
    !----- Plant properties ----------------------------------------------------------------!
    real   , dimension(nvtyp+nvtyp_teb)        :: albv_green,albv_brown,emisv,sr_max,tai_max
    real   , dimension(nvtyp+nvtyp_teb)        :: sai,veg_clump,veg_frac,veg_ht,glai_max
-   real   , dimension(nvtyp+nvtyp_teb)        :: rcmin,dead_frac
+   real   , dimension(nvtyp+nvtyp_teb)        :: gsw_max,dead_frac,leaf_width,stom_side
    integer, dimension(nvtyp+nvtyp_teb)        :: kroot
    real   , dimension(nzgmax,nvtyp+nvtyp_teb) :: root
    !---------------------------------------------------------------------------------------!
@@ -200,6 +205,7 @@ module leaf_coms
    !---------------------------------------------------------------------------------------!
    !     Speed-related minimum values we will consider.                                    !
    !---------------------------------------------------------------------------------------!
+   real, parameter :: ugbmin   = 0.25  ! Minimum leaf-level velocity             [     m/s]
    real, parameter :: ubmin    = 0.65  ! Minimum velocity                        [     m/s]
    !---------------------------------------------------------------------------------------!
 
@@ -262,6 +268,36 @@ module leaf_coms
    real, parameter                   :: bthi =   310.1,  sthi =  -0.124
    real, parameter                   :: bvpd =  4850.0,  svpd =  -0.0051
    real, parameter                   :: bswp = -1.07e6,  sswp =   7.42e-6
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Parameters for the aerodynamic resistance between the leaf and the canopy air    !
+   ! space.  These are the A, B, n, and m parameters that define the Nusselt number for    !
+   ! forced and free convection, at equations 10.7 and 10.9.  The parameters are found at  !
+   ! the appendix A.5(a) and A.5(b).                                                       !
+   !                                                                                       !
+   ! M08 - Monteith, J. L., M. H. Unsworth, 2008. Principles of Environmental Physics,     !
+   !       3rd. edition, Academic Press, Amsterdam, 418pp.  (Mostly Chapter 10).           !
+   !---------------------------------------------------------------------------------------!
+   real(kind=4), parameter :: aflat_turb = 0.600    ! A (forced convection), turbulent flow
+   real(kind=4), parameter :: aflat_lami = 0.032    ! A (forced convection), laminar   flow
+   real(kind=4), parameter :: bflat_turb = 0.500    ! B (free   convection), turbulent flow
+   real(kind=4), parameter :: bflat_lami = 0.130    ! B (free   convection), laminar   flow
+   real(kind=4), parameter :: nflat_turb = 0.500    ! n (forced convection), turbulent flow
+   real(kind=4), parameter :: nflat_lami = 0.800    ! n (forced convection), laminar   flow
+   real(kind=4), parameter :: mflat_turb = 0.250    ! m (free   convection), turbulent flow
+   real(kind=4), parameter :: mflat_lami = onethird ! m (free   convection), laminar   flow
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     This constant was obtained in Leuning et al. (1995) and Collatz et al. (1991)     !
+   ! to convert different conductivities.                                                  !
+   !---------------------------------------------------------------------------------------!
+   real(kind=4), parameter :: gbh_2_gbw  = 1.075    ! heat  to water  - leaf boundary layer
    !---------------------------------------------------------------------------------------!
 
    contains

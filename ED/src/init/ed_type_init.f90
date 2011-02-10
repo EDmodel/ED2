@@ -345,6 +345,7 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
   csite%sfcwater_fracliq(1:nzs,ip1:ip2)  = 0.0
   csite%total_snow_depth(ip1:ip2)        = 0.0
   csite%snowfac(ip1:ip2)                 = 0.0
+  csite%runoff(ip1:ip2)                  = 0.0
 
   csite%rshort_s(:,ip1:ip2) = 0.0
   csite%rshort_s_beam(:,ip1:ip2) = 0.0
@@ -506,10 +507,16 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
   csite%can_theiv   (ip1:ip2) = 0.0
   csite%can_temp    (ip1:ip2) = 0.0
   csite%can_rhos    (ip1:ip2) = 0.0
+  csite%can_depth   (ip1:ip2) = 0.0
+  csite%opencan_frac(ip1:ip2) = 0.0
   csite%ground_shv  (ip1:ip2) = 0.0
   csite%ground_ssh  (ip1:ip2) = 0.0
   csite%ground_temp (ip1:ip2) = 0.0
   csite%ground_fliq (ip1:ip2) = 0.0
+
+  csite%ggbare(ip1:ip2) = 0.0
+  csite%ggveg (ip1:ip2) = 0.0
+  csite%ggnet (ip1:ip2) = 0.0
 
   csite%old_stoma_data_max(:,ip1:ip2)%recalc = 1
   csite%old_stoma_data_max(:,ip1:ip2)%T_L = 0.0

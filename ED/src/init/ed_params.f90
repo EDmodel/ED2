@@ -1760,12 +1760,12 @@ subroutine init_pft_repro_params()
                        , repro_min_h        ! ! intent(out)
    implicit none
 
-   r_fract(1)                = 1.0
+   r_fract(1)                = 0.3
    r_fract(2:4)              = 0.3
-   r_fract(5)                = 1.0
+   r_fract(5)                = 0.3
    r_fract(6:11)             = 0.3
-   r_fract(12:15)            = 1.0
-   r_fract(16)               = 1.0
+   r_fract(12:15)            = 0.3
+   r_fract(16)               = 0.3
    r_fract(17)               = 0.3
 
    seed_rain(1:17)           = 0.01
@@ -2129,7 +2129,7 @@ subroutine init_physiology_params()
    !---------------------------------------------------------------------------------------!
    !     Bounds for internal carbon and water stomatal conductance.                        !
    !---------------------------------------------------------------------------------------!
-   c34smin_lint_co2 = 10.   * umol_2_mol ! Minimum carbon dioxide concentration [  mol/mol]
+   c34smin_lint_co2 = 0.5   * umol_2_mol ! Minimum carbon dioxide concentration [  mol/mol]
    c34smax_lint_co2 = 1200. * umol_2_mol ! Maximum carbon dioxide concentration [  mol/mol]
    c34smax_gsw      = 1.e+2              ! Max. stomatal conductance (water)    [ mol/m²/s]
    !---------------------------------------------------------------------------------------!
@@ -2255,7 +2255,7 @@ subroutine init_physiology_params()
    !     Parameters that control debugging output.                                         !
    !---------------------------------------------------------------------------------------!
    !----- I should print detailed debug information. --------------------------------------!
-   print_photo_debug = .true.
+   print_photo_debug = .false.
    !----- File name prefix for the detailed information in case of debugging. -------------!
    photo_prefix      = 'photo_state_'
    !---------------------------------------------------------------------------------------!
@@ -2641,7 +2641,7 @@ subroutine init_ff_coms
    dffdbhi           = real(ff_ndbh)/maxffdbh
 
    !----- The following flag switches detailed debugging on. ------------------------------!
-   print_fuse_details = .true.
+   print_fuse_details = .false.
    fuse_prefix        = 'patch_fusion_'
    !---------------------------------------------------------------------------------------!
 
@@ -2781,7 +2781,7 @@ subroutine init_rk4_params()
    !     Variables used to keep track on the error.                                        !
    !---------------------------------------------------------------------------------------!
    record_err     = .false.                  ! Compute and keep track of the errors.
-   print_detailed = .true.                   ! Print detailed information about the thermo-
+   print_detailed = .false.                  ! Print detailed information about the thermo-
                                              !    dynamic state.  This will create one file
                                              !    for each patch, so it is not recommended 
                                              !    for simulations that span over one month.

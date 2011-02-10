@@ -103,6 +103,17 @@ subroutine euler_timestep(cgrid)
             else
                cmet%vels = cmet%vels_unstab
             end if
+            !------------------------------------------------------------------------------!
+
+
+
+            !------------------------------------------------------------------------------!
+            !    Update roughness and canopy depth.                                        !
+            !------------------------------------------------------------------------------!
+            call update_patch_derived_props(csite,cpoly%lsl(isi),cmet%prss,ipa)
+            !------------------------------------------------------------------------------!
+
+
 
             !------------------------------------------------------------------------------!
             !    Copy the meteorological variables to the rk4site structure.               !
@@ -450,9 +461,6 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nsteps)
          ! ing, provided that the overshooting is small.                                   !
          !---------------------------------------------------------------------------------!
          call inc_rk4_patch(ytemp,dinitp,h,cpatch)
-         call adjust_veg_properties(ytemp,h,csite,ipa)
-         call adjust_topsoil_properties(ytemp,h,csite,ipa)
-         call adjust_sfcw_properties(nzg,nzs,ytemp,csite,ipa)
          call update_diagnostic_vars(ytemp,csite,ipa)
 
          !----- Perform a sanity check. ---------------------------------------------------!
@@ -537,7 +545,7 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nsteps)
             !----- i.   Final update of leaf properties to avoid negative water. ----------!
             call adjust_veg_properties(ytemp,h,csite,ipa)
             !----- ii.  Final update of top soil properties to avoid off-bounds moisture. -!
-            ! call adjust_topsoil_properties(ytemp,h,csite,ipa)
+            call adjust_topsoil_properties(ytemp,h,csite,ipa)
             !----- ii. Make temporary surface water stable and positively defined. --------!
             call adjust_sfcw_properties(nzg,nzs,ytemp,csite,ipa)
             !----- iii.  Update the diagnostic variables. ---------------------------------!

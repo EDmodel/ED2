@@ -186,7 +186,7 @@ subroutine sw_twostream_clump(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area       
       do j=1,ncoh2
          do i=1,ncoh2
             masmatcp(i,j)=0.0d0
-         enddo
+         end do
          mastervec_beam(j)    = 0.0d0
          masveccp_beam(j)     = 0.0d0
          mastervec_diffuse(j) = 0.0d0
@@ -223,7 +223,7 @@ subroutine sw_twostream_clump(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area       
          masveccp_beam(i)     = mastervec_beam(i)
          mastervec_diffuse(i) = 0.0d0
          masveccp_diffuse(i)  = mastervec_diffuse(i)
-      enddo
+      end do
       masmatcp(ncoh2,ncoh2-1)  = B_bot(1)-alb*G_bot(1)
       masmatcp(ncoh2,ncoh2)    = C_bot(1)-alb*H_bot(1)
       mastervec_beam(ncoh2)    = -A_bot(1)+alb*beam_bot(1)
@@ -359,7 +359,7 @@ subroutine sw_twostream_clump(salb,scosz,scosaoi,ncoh,pft,TAI,canopy_area       
       PAR_diffuse_flip(il)    = max(0.0,PAR_diffuse_flip(il)    )
       SW_abs_beam_flip(il)    = max(0.0,SW_abs_beam_flip(il)    )
       SW_abs_diffuse_flip(il) = max(0.0,SW_abs_diffuse_flip(il) )
-   enddo
+   end do
    
    !----- Copying to the output variables. ------------------------------------------------!
    DW_vislo_beam    = max(0.0,sngl(downward_vis_beam(1)))       * visible_fraction_dir
@@ -793,7 +793,7 @@ subroutine lw_twostream(ncoh,semgs,sT_grnd, pft,TAI,canopy_area,T_veg,lw_v_surf,
       lw_v_incid_tmp = DW_incid(il+1) - DW_incid(il) + UW_incid(il) - UW_incid(il+1)
       lw_v_surf(il)  = sngloff(lw_v_surf_tmp , negligible)
       lw_v_incid(il) = sngloff(lw_v_incid_tmp, negligible)
-   enddo
+   end do
 
    downward_lw_below_surf  = sngloff(DW_surf(1)      , negligible)
    downward_lw_below_incid = sngloff(DW_incid(1)     , negligible)

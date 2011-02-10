@@ -54,4 +54,7 @@ module grid_dims
   ! Parameter defining the maximum number of cloud spectral sizes allowed.
   integer, parameter :: maxclouds = 6
 
+  integer, parameter :: ndim_types = 9
+  
+  integer, dimension(ndim_types), parameter :: number_dims = (/ 1, 2, 3, 4, 4, 3, 3, 4, 3 /)
 end module grid_dims

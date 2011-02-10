@@ -986,7 +986,8 @@ subroutine ed_opspec_misc
                                     , gamfact                      & ! intent(in)
                                     , lwfact                       & ! intent(in)
                                     , thioff                       & ! intent(in)
-                                    , icomppt                      ! ! intent(in)
+                                    , icomppt                      & ! intent(in)
+                                    , quantum_efficiency_T         ! ! intent(in)
    use decomp_coms           , only : n_decomp_lim                 ! ! intent(in)
    use disturb_coms          , only : include_fire                 & ! intent(in)
                                     , ianth_disturb                & ! intent(in)
@@ -1356,7 +1357,15 @@ end do
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
-  
+
+   if (quantum_efficiency_T < 0 .or. quantum_efficiency_T > 1) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid QUANTUM_EFFICIENCY_T, it must be either 0 or 1. Yours is set to'         &
+                    ,quantum_efficiency_T,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+
    if (n_plant_lim < 0 .or. n_plant_lim > 1) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
                     'Invalid N_PLANT_LIM, it must be between 0 and 1. Yours is set to'     &
@@ -1389,11 +1398,11 @@ end do
    end if
 
    select case (icanturb)
-   case (-2:2)
+   case (-2:3)
       continue
    case default
       write (reason,fmt='(a,1x,i4,a)') &
-        'Invalid ICANTURB, it must be between -2 and 2. Yours is set to',icanturb,'...'
+        'Invalid ICANTURB, it must be between -2 and 3. Yours is set to',icanturb,'...'
       call opspec_fatal(reason,'opspec_misc')  
       ifaterr = ifaterr +1
    end select

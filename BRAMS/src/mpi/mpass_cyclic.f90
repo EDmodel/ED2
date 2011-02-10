@@ -324,53 +324,53 @@ subroutine node_sendcyclic(isflag)
                      select case (vtab_r(nv,1)%idim_type)
                      case (2) !----- (X,Y) ------------------------------------------------!
                         call mkcycbuff(1,mmxp(1),mmyp(1),1,vtab_r(nv,1)%var_p              &
-                                      ,scratch%vt4dc,isn,jsn)
-                        call MPI_Pack(scratch%vt4dc,1,MPI_REAL                             & 
+                                      ,scratch%scr1,isn,jsn)
+                        call MPI_Pack(scratch%scr1,1,MPI_REAL                              & 
                                      ,node_buffs_cyc(ndn)%buffsend_cyc,nbuffsend_cyc,ipos  &
                                      ,MPI_COMM_WORLD,ierr)
                      case (3) !----- (Z,X,Y) ----------------------------------------------!
                         call mkcycbuff(mmzp(1),mmxp(1),mmyp(1),1,vtab_r(nv,1)%var_p        &
-                                      ,scratch%vt4dc,isn,jsn)
+                                      ,scratch%scr1,isn,jsn)
 
-                        call MPI_Pack(scratch%vt4dc,mmzp(1),MPI_REAL                       &
+                        call MPI_Pack(scratch%scr1,mmzp(1),MPI_REAL                        &
                                      ,node_buffs_cyc(ndn)%buffsend_cyc(1),nbuffsend_cyc    &
                                      ,ipos,MPI_COMM_WORLD,ierr)
                      case (4) !----- (G,X,Y,P) --------------------------------------------!
                         call mkcycbuff(nzg,mmxp(1),mmyp(1),npatch,vtab_r(nv,1)%var_p       &
-                                      ,scratch%vt4dc,isn,jsn)
+                                      ,scratch%scr1,isn,jsn)
 
-                        call MPI_Pack(scratch%vt4dc,nzg*npatch,MPI_REAL                    &
+                        call MPI_Pack(scratch%scr1,nzg*npatch,MPI_REAL                     &
                                      ,node_buffs_cyc(ndn)%buffsend_cyc(1),nbuffsend_cyc    &
                                      ,ipos,MPI_COMM_WORLD,ierr)
                      case (5) !----- (S,X,Y,P) --------------------------------------------!
                         call mkcycbuff(nzs,mmxp(1),mmyp(1),npatch,vtab_r(nv,1)%var_p       &
-                                      ,scratch%vt4dc,isn,jsn)
+                                      ,scratch%scr1,isn,jsn)
 
-                        call MPI_Pack(scratch%vt4dc,nzs*npatch,MPI_REAL                    &
+                        call MPI_Pack(scratch%scr1,nzs*npatch,MPI_REAL                     &
                                      ,node_buffs_cyc(ndn)%buffsend_cyc(1),nbuffsend_cyc    &
                                      ,ipos,MPI_COMM_WORLD,ierr)
                      case (6) !----- (X,Y,P) ----------------------------------------------!
                         call mkcycbuff(1,mmxp(1),mmyp(1),npatch,vtab_r(nv,1)%var_p         &
-                                      ,scratch%vt4dc,isn,jsn)
-                        call MPI_Pack(scratch%vt4dc,npatch,MPI_REAL                        & 
+                                      ,scratch%scr1,isn,jsn)
+                        call MPI_Pack(scratch%scr1,npatch,MPI_REAL                         &
                                      ,node_buffs_cyc(ndn)%buffsend_cyc,nbuffsend_cyc,ipos  &
                                      ,MPI_COMM_WORLD,ierr)
                      case (7) !----- (X,Y,W) ----------------------------------------------!
                         call mkcycbuff(1,mmxp(1),mmyp(1),nwave,vtab_r(nv,1)%var_p          &
-                                      ,scratch%vt4dc,isn,jsn)
-                        call MPI_Pack(scratch%vt4dc,nwave,MPI_REAL                         & 
+                                      ,scratch%scr1,isn,jsn)
+                        call MPI_Pack(scratch%scr1,nwave,MPI_REAL                          &
                                      ,node_buffs_cyc(ndn)%buffsend_cyc,nbuffsend_cyc,ipos  &
                                      ,MPI_COMM_WORLD,ierr)
                      case (8) !----- (X,Y,C) ----------------------------------------------!
                         call mkcycbuff(mmzp(1),mmxp(1),mmyp(1),nclouds,vtab_r(nv,1)%var_p  &
-                                      ,scratch%vt4dc,isn,jsn)
-                        call MPI_Pack(scratch%vt4dc,mmzp(1)*nclouds,MPI_REAL               & 
+                                      ,scratch%scr1,isn,jsn)
+                        call MPI_Pack(scratch%scr1,mmzp(1)*nclouds,MPI_REAL                &
                                      ,node_buffs_cyc(ndn)%buffsend_cyc,nbuffsend_cyc,ipos  &
                                      ,MPI_COMM_WORLD,ierr)
                      case (9) !----- (X,Y,C) ----------------------------------------------!
                         call mkcycbuff(1,mmxp(1),mmyp(1),nclouds,vtab_r(nv,1)%var_p        &
-                                      ,scratch%vt4dc,isn,jsn)
-                        call MPI_Pack(scratch%vt4dc,nclouds,MPI_REAL                       & 
+                                      ,scratch%scr1,isn,jsn)
+                        call MPI_Pack(scratch%scr1,nclouds,MPI_REAL                        &
                                      ,node_buffs_cyc(ndn)%buffsend_cyc,nbuffsend_cyc,ipos  &
                                      ,MPI_COMM_WORLD,ierr)
                      end select
@@ -378,21 +378,21 @@ subroutine node_sendcyclic(isflag)
                end do
 
             case (4)
-               call mkcycbuff(mmzp(1),mmxp(1),mmyp(1),1,basic_g(1)%pp,scratch%vt4dc        &
+               call mkcycbuff(mmzp(1),mmxp(1),mmyp(1),1,basic_g(1)%pp,scratch%scr1         &
                              ,isn,jsn)
-               call MPI_Pack(scratch%vt4dc,mmzp(1),MPI_REAL                                &
+               call MPI_Pack(scratch%scr1,mmzp(1),MPI_REAL                                 &
                             ,node_buffs_cyc(ndn)%buffsend_cyc                              &
                             ,nbuffsend_cyc,ipos,MPI_COMM_WORLD,ierr)
 
             case (6)
-               call mkcycbuff(mmzp(1),mmxp(1),mmyp(1),1,basic_g(1)%wp,scratch%vt4dc        &
+               call mkcycbuff(mmzp(1),mmxp(1),mmyp(1),1,basic_g(1)%wp,scratch%scr1         &
                              ,isn,jsn)
-               call MPI_Pack(scratch%vt4dc,mmzp(1),MPI_REAL                                &
+               call MPI_Pack(scratch%scr1,mmzp(1),MPI_REAL                                 &
                             ,node_buffs_cyc(ndn)%buffsend_cyc,nbuffsend_cyc,ipos           &
                             ,MPI_COMM_WORLD,ierr)
-               call mkcycbuff(mmzp(1),mmxp(1),mmyp(1),1,basic_g(1)%pp,scratch%vt4dc        &
+               call mkcycbuff(mmzp(1),mmxp(1),mmyp(1),1,basic_g(1)%pp,scratch%scr1         &
                              ,isn,jsn)
-               call MPI_Pack(scratch%vt4dc,mmzp(1),MPI_REAL                                &
+               call MPI_Pack(scratch%scr1,mmzp(1),MPI_REAL                                 &
                             ,node_buffs_cyc(ndn)%buffsend_cyc,nbuffsend_cyc,ipos           &
                             ,MPI_COMM_WORLD,ierr)
             end select
@@ -411,8 +411,8 @@ subroutine node_sendcyclic(isflag)
             isn = ijsendu_cyc(1,icycpts,ndn) - mi0(1)
             jsn = ijsendu_cyc(2,icycpts,ndn) - mj0(1)
 
-            call mkcycbuff(mmzp(1),mmxp(1),mmyp(1),1,basic_g(1)%up,scratch%vt4dc,isn,jsn)
-            call MPI_Pack(scratch%vt4dc,mmzp(1),MPI_REAL,node_buffs_cyc(ndn)%buffsend_cyc  &
+            call mkcycbuff(mmzp(1),mmxp(1),mmyp(1),1,basic_g(1)%up,scratch%scr1,isn,jsn)
+            call MPI_Pack(scratch%scr1,mmzp(1),MPI_REAL,node_buffs_cyc(ndn)%buffsend_cyc   &
                          ,nbuffsend_cyc,ipos,MPI_COMM_WORLD,ierr)
          end do
 
@@ -427,8 +427,8 @@ subroutine node_sendcyclic(isflag)
             isn = ijsendv_cyc(1,icycpts,ndn) - mi0(1)
             jsn = ijsendv_cyc(2,icycpts,ndn) - mj0(1)
 
-            call mkcycbuff(mmzp(1),mmxp(1),mmyp(1),1,basic_g(1)%vp,scratch%vt4dc,isn,jsn)
-            call MPI_Pack(scratch%vt4dc,mmzp(1),MPI_REAL,node_buffs_cyc(ndn)%buffsend_cyc  &
+            call mkcycbuff(mmzp(1),mmxp(1),mmyp(1),1,basic_g(1)%vp,scratch%scr1,isn,jsn)
+            call MPI_Pack(scratch%scr1,mmzp(1),MPI_REAL,node_buffs_cyc(ndn)%buffsend_cyc   &
                          ,nbuffsend_cyc,ipos,MPI_COMM_WORLD,ierr)
          end do
 
@@ -443,8 +443,8 @@ subroutine node_sendcyclic(isflag)
             isn = ijsendu_cyc(1,icycpts,ndn) - mi0(1)
             jsn = ijsendu_cyc(2,icycpts,ndn) - mj0(1)
 
-            call mkcycbuff(mmzp(1),mmxp(1),mmyp(1),1,basic_g(1)%up,scratch%vt4dc,isn,jsn)   
-            call MPI_Pack(scratch%vt4dc,mmzp(1),MPI_REAL,node_buffs_cyc(ndn)%buffsend_cyc  &
+            call mkcycbuff(mmzp(1),mmxp(1),mmyp(1),1,basic_g(1)%up,scratch%scr1,isn,jsn)
+            call MPI_Pack(scratch%scr1,mmzp(1),MPI_REAL,node_buffs_cyc(ndn)%buffsend_cyc   &
                          ,nbuffsend_cyc,ipos,MPI_COMM_WORLD,ierr)
          end do
 
@@ -458,8 +458,8 @@ subroutine node_sendcyclic(isflag)
             isn = ijsendv_cyc(1,icycpts,ndn) - mi0(1)
             jsn = ijsendv_cyc(2,icycpts,ndn) - mj0(1)
 
-            call mkcycbuff(mmzp(1),mmxp(1),mmyp(1),1,basic_g(1)%vp,scratch%vt4dc,isn,jsn)
-            call MPI_Pack(scratch%vt4dc,mmzp(1),MPI_REAL,node_buffs_cyc(ndn)%buffsend_cyc  &
+            call mkcycbuff(mmzp(1),mmxp(1),mmyp(1),1,basic_g(1)%vp,scratch%scr1,isn,jsn)
+            call MPI_Pack(scratch%scr1,mmzp(1),MPI_REAL,node_buffs_cyc(ndn)%buffsend_cyc   &
                          ,nbuffsend_cyc,ipos,MPI_COMM_WORLD,ierr)
          end do
       end select
@@ -548,78 +548,78 @@ subroutine node_getcyclic(isflag)
                      select case (vtab_r(nv,1)%idim_type)
                      case (2) !----- (X,Y) ------------------------------------------------!
                         call MPI_Unpack(node_buffs_cyc(nsn)%buffrecv_cyc,nbuffrecv_cyc     &
-                                       ,ipos,scratch%vt4dc,mtp,MPI_REAL,MPI_COMM_WORLD     &
+                                       ,ipos,scratch%scr2 ,mtp,MPI_REAL,MPI_COMM_WORLD     &
                                        ,ierr)
                         call cyclic_para(mmzp(1),mmxp(1),mmyp(1),1                         &
-                                        ,vtab_r(nv,ngrid)%var_p,scratch%vt4dc,ijr          &
+                                        ,vtab_r(nv,ngrid)%var_p,scratch%scr2 ,ijr          &
                                         ,mi0(1),mj0(1),ivar,mynum)
                      case (3) !----- (Z,X,Y) ----------------------------------------------!
                         call MPI_Unpack(node_buffs_cyc(nsn)%buffrecv_cyc,nbuffrecv_cyc     &
-                                       ,ipos,scratch%vt4dc,mtp,MPI_REAL,MPI_COMM_WORLD     &
+                                       ,ipos,scratch%scr2 ,mtp,MPI_REAL,MPI_COMM_WORLD     &
                                        ,ierr)
                         call cyclic_para(mmzp(1),mmxp(1),mmyp(1),1                         &
-                                        ,vtab_r(nv,ngrid)%var_p,scratch%vt4dc,ijr          &
+                                        ,vtab_r(nv,ngrid)%var_p,scratch%scr2 ,ijr          &
                                         ,mi0(1),mj0(1),ivar,mynum)
                      case (4) !----- (G,X,Y,P) --------------------------------------------!
                         call MPI_Unpack(node_buffs_cyc(nsn)%buffrecv_cyc,nbuffrecv_cyc     &
-                                       ,ipos,scratch%vt4dc,mtp,MPI_REAL,MPI_COMM_WORLD     &
+                                       ,ipos,scratch%scr2 ,mtp,MPI_REAL,MPI_COMM_WORLD     &
                                        ,ierr)
                         call cyclic_para(nzg,mmxp(1),mmyp(1),npatch                        &
-                                        ,vtab_r(nv,ngrid)%var_p,scratch%vt4dc,ijr          &
+                                        ,vtab_r(nv,ngrid)%var_p,scratch%scr2 ,ijr          &
                                         ,mi0(1),mj0(1),ivar,mynum)
                      case (5) !----- (S,X,Y,P) --------------------------------------------!
                         call MPI_Unpack(node_buffs_cyc(nsn)%buffrecv_cyc,nbuffrecv_cyc     &
-                                       ,ipos,scratch%vt4dc,mtp,MPI_REAL,MPI_COMM_WORLD     &
+                                       ,ipos,scratch%scr2 ,mtp,MPI_REAL,MPI_COMM_WORLD     &
                                        ,ierr)
                         call cyclic_para(nzs,mmxp(1),mmyp(1),npatch                        &
-                                        ,vtab_r(nv,ngrid)%var_p,scratch%vt4dc,ijr          &
+                                        ,vtab_r(nv,ngrid)%var_p,scratch%scr2 ,ijr          &
                                         ,mi0(1),mj0(1),ivar,mynum)
                      case (6) !----- (X,Y,P) ----------------------------------------------!
                         call MPI_Unpack(node_buffs_cyc(nsn)%buffrecv_cyc,nbuffrecv_cyc     &
-                                       ,ipos,scratch%vt4dc,mtp,MPI_REAL,MPI_COMM_WORLD     &
+                                       ,ipos,scratch%scr2 ,mtp,MPI_REAL,MPI_COMM_WORLD     &
                                        ,ierr)
                         call cyclic_para(1,mmxp(1),mmyp(1),npatch                          &
-                                        ,vtab_r(nv,ngrid)%var_p,scratch%vt4dc,ijr          &
+                                        ,vtab_r(nv,ngrid)%var_p,scratch%scr2 ,ijr          &
                                         ,mi0(1),mj0(1),ivar,mynum)
                      case (7) !----- (X,Y,W) ----------------------------------------------!
                         call MPI_Unpack(node_buffs_cyc(nsn)%buffrecv_cyc,nbuffrecv_cyc     &
-                                       ,ipos,scratch%vt4dc,mtp,MPI_REAL,MPI_COMM_WORLD     &
+                                       ,ipos,scratch%scr2 ,mtp,MPI_REAL,MPI_COMM_WORLD     &
                                        ,ierr)
                         call cyclic_para(1,mmxp(1),mmyp(1),nwave                           &
-                                        ,vtab_r(nv,ngrid)%var_p,scratch%vt4dc,ijr          &
+                                        ,vtab_r(nv,ngrid)%var_p,scratch%scr2 ,ijr          &
                                         ,mi0(1),mj0(1),ivar,mynum)
                      case (8) !----- (Z,X,Y,C) --------------------------------------------!
                         call MPI_Unpack(node_buffs_cyc(nsn)%buffrecv_cyc,nbuffrecv_cyc     &
-                                       ,ipos,scratch%vt4dc,mtp,MPI_REAL,MPI_COMM_WORLD     &
+                                       ,ipos,scratch%scr2 ,mtp,MPI_REAL,MPI_COMM_WORLD     &
                                        ,ierr)
                         call cyclic_para(mmzp(1),mmxp(1),mmyp(1),nclouds                   &
-                                        ,vtab_r(nv,ngrid)%var_p,scratch%vt4dc,ijr          &
+                                        ,vtab_r(nv,ngrid)%var_p,scratch%scr2 ,ijr          &
                                         ,mi0(1),mj0(1),ivar,mynum)
                      case (9) !----- (X,Y,C) ----------------------------------------------!
                         call MPI_Unpack(node_buffs_cyc(nsn)%buffrecv_cyc,nbuffrecv_cyc     &
-                                       ,ipos,scratch%vt4dc,mtp,MPI_REAL,MPI_COMM_WORLD     &
+                                       ,ipos,scratch%scr2 ,mtp,MPI_REAL,MPI_COMM_WORLD     &
                                        ,ierr)
                         call cyclic_para(1,mmxp(1),mmyp(1),nclouds                         &
-                                        ,vtab_r(nv,ngrid)%var_p,scratch%vt4dc,ijr          &
+                                        ,vtab_r(nv,ngrid)%var_p,scratch%scr2 ,ijr          &
                                         ,mi0(1),mj0(1),ivar,mynum)
                      end select
                   end if
                end do
             case (4)
                call MPI_Unpack(node_buffs_cyc(nsn)%buffrecv_cyc,nbuffrecv_cyc,ipos         &
-                              ,scratch%vt4dc,mtp,MPI_REAL,MPI_COMM_WORLD,ierr)
+                              ,scratch%scr2 ,mtp,MPI_REAL,MPI_COMM_WORLD,ierr)
                call cyclic_para(mmzp(1),mmxp(1),mmyp(1),1                                  &
-                               ,basic_g(1)%pp,scratch%vt4dc,ijr,mi0(1),mj0(1),4,mynum)
+                               ,basic_g(1)%pp,scratch%scr2 ,ijr,mi0(1),mj0(1),4,mynum)
             case (6)
                call MPI_Unpack(node_buffs_cyc(nsn)%buffrecv_cyc,nbuffrecv_cyc,ipos         &
-                              ,scratch%vt4dc,mtp,MPI_REAL,MPI_COMM_WORLD,ierr)
+                              ,scratch%scr2 ,mtp,MPI_REAL,MPI_COMM_WORLD,ierr)
                call cyclic_para(mmzp(1),mmxp(1),mmyp(1),1                                  &
-                               ,basic_g(1)%wp,scratch%vt4dc,ijr,mi0(1),mj0(1),3,mynum)
+                               ,basic_g(1)%wp,scratch%scr2 ,ijr,mi0(1),mj0(1),3,mynum)
 
                call MPI_Unpack(node_buffs_cyc(nsn)%buffrecv_cyc,nbuffrecv_cyc,ipos,        &
-                        scratch%vt4dc,mtp,MPI_REAL,MPI_COMM_WORLD,ierr)
+                        scratch%scr2 ,mtp,MPI_REAL,MPI_COMM_WORLD,ierr)
                call cyclic_para(mmzp(1),mmxp(1),mmyp(1),1                                  &
-                               ,basic_g(1)%pp,scratch%vt4dc,ijr,mi0(1),mj0(1),4,mynum)
+                               ,basic_g(1)%pp,scratch%scr2 ,ijr,mi0(1),mj0(1),4,mynum)
 
             end select
          end do
@@ -633,9 +633,9 @@ subroutine node_getcyclic(isflag)
 
          do ijr = 1,mijrecv
             call MPI_Unpack(node_buffs_cyc(nsn)%buffrecv_cyc,nbuffrecv_cyc,ipos            &
-                           ,scratch%vt4dc,mtp,MPI_REAL,MPI_COMM_WORLD,ierr)
+                           ,scratch%scr2 ,mtp,MPI_REAL,MPI_COMM_WORLD,ierr)
             call cyclic_para(mmzp(1),mmxp(1),mmyp(1),1                                     &
-                            ,basic_g(1)%up,scratch%vt4dc,ijr,mi0(1),mj0(1),1,mynum)
+                            ,basic_g(1)%up,scratch%scr2 ,ijr,mi0(1),mj0(1),1,mynum)
          end do
 
       case (3)
@@ -646,9 +646,9 @@ subroutine node_getcyclic(isflag)
 
          do ijr = 1,mijrecv
             call MPI_Unpack(node_buffs_cyc(nsn)%buffrecv_cyc,nbuffrecv_cyc,ipos            &
-                           ,scratch%vt4dc,mtp,MPI_REAL,MPI_COMM_WORLD,ierr)
+                           ,scratch%scr2 ,mtp,MPI_REAL,MPI_COMM_WORLD,ierr)
             call cyclic_para(mmzp(1),mmxp(1),mmyp(1),1                                     &
-                            ,basic_g(1)%vp,scratch%vt4dc,ijr,mi0(1),mj0(1),2,mynum)
+                            ,basic_g(1)%vp,scratch%scr2 ,ijr,mi0(1),mj0(1),2,mynum)
          end do
          
       case (5)
@@ -659,9 +659,9 @@ subroutine node_getcyclic(isflag)
 
          do ijr = 1,mijrecv
             call MPI_Unpack(node_buffs_cyc(nsn)%buffrecv_cyc,nbuffrecv_cyc,ipos            &
-                           ,scratch%vt4dc,mtp,MPI_REAL,MPI_COMM_WORLD,ierr)
+                           ,scratch%scr2 ,mtp,MPI_REAL,MPI_COMM_WORLD,ierr)
             call cyclic_para(mmzp(1),mmxp(1),mmyp(1),1                                     &
-                            ,basic_g(1)%up,scratch%vt4dc,ijr,mi0(1),mj0(1),1,mynum)
+                            ,basic_g(1)%up,scratch%scr2 ,ijr,mi0(1),mj0(1),1,mynum)
          end do
 
          call MPI_Unpack(node_buffs_cyc(nsn)%buffrecv_cyc,nbuffrecv_cyc,ipos               &
@@ -671,9 +671,9 @@ subroutine node_getcyclic(isflag)
 
          do ijr = 1,mijrecv
             call MPI_Unpack(node_buffs_cyc(nsn)%buffrecv_cyc,nbuffrecv_cyc,ipos            &
-                           ,scratch%vt4dc,mtp,MPI_REAL,MPI_COMM_WORLD,ierr)
+                           ,scratch%scr2 ,mtp,MPI_REAL,MPI_COMM_WORLD,ierr)
             call cyclic_para(mmzp(1),mmxp(1),mmyp(1),1                                     &
-                            ,basic_g(1)%vp,scratch%vt4dc,ijr,mi0(1),mj0(1),2,mynum)
+                            ,basic_g(1)%vp,scratch%scr2 ,ijr,mi0(1),mj0(1),2,mynum)
          end do
       end select
 
