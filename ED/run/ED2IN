@@ -348,7 +348,7 @@
    NL%ISOILDEPTHFLG  = 0  ! 0 -- use NZG, SLZ for each grid cell
                           ! 1 -- read file to get soil depth for each grid cell
 
-   NL%ISOILBC        = 3  ! Soil boundary condition at lowest soil level
+   NL%ISOILBC        = 1  ! Soil boundary condition at lowest soil level
                           ! 0 - Bedrock;
                           ! 1 - Free drainage with soil water content in of the boundary
                           !     layer equal to that of the bottom layer.
@@ -475,22 +475,6 @@
                               ! 0 ---- original ED-2.1
                               ! 1 ---- Temperature dependent quantum efficiency
                               !        after Ehlringer and Ollebjorkman 1977
-
-   !---------------------------------------------------------------------------------------!
-   !    These are factors that multiply some of the ED-2.1 default parameters.  Setting    !
-   ! them to 1.0 will make them the default.  These are applied for all PFTs.              !
-   !---------------------------------------------------------------------------------------!
-   NL%VMFACT          = 1.    ! Factor for changing Vm0 from the default
-   NL%MFACT           = 1.    ! Factor for changing stomatal slope (M)
-   NL%KFACT           = 1.    ! Factor for changing the water conductance (Kw)
-   NL%GAMFACT         = 1.    ! Factor for changing the dark respiration factor (gamma)
-   NL%LWFACT          = 1.    ! Factor for changing the leaf width factor (w)
-   NL%THIOFF          = 0.    ! Offset to be added to the Vm_high_temp
-   !---------------------------------------------------------------------------------------!
-
-   NL%ICOMPPT         = 0     ! Which compensation point should I use 
-                              ! 0 -- original ED-2.1
-                              ! other options coming soon
 
    NL%N_PLANT_LIM     = 0     ! Determines whether plant photosynthesis can be 
 

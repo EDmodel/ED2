@@ -57,4 +57,6 @@ module grid_dims
   integer, parameter :: ndim_types = 9
   
   integer, dimension(ndim_types), parameter :: number_dims = (/ 1, 2, 3, 4, 4, 3, 3, 4, 3 /)
+  
+  integer, parameter :: str_len = 256
 end module grid_dims

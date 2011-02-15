@@ -71,7 +71,9 @@ subroutine rams_node()
        i0, j0,         & ! INTENT(IN)
        mmxp,           & ! INTENT(IN)
        mmyp,           & ! INTENT(IN)
-       mmzp              ! INTENT(IN)
+       mmzp,           & ! INTENT(IN)
+       nsend_buff,     & ! intent(out)
+       nrecv_buff      ! ! intent(out)
   
   use mem_leaf, only: isfcl ! intent(in)
 
@@ -95,6 +97,11 @@ subroutine rams_node()
   integer :: ierr ! For new MPI call style
 
   ipara=1
+  
+  ! Reset the send and receive sizes
+  nsend_buff(:) = 0
+  nrecv_buff(:) = 0
+  
   !          Call routine to initialize input parameters
   !               and namelist settings
   !          -----------------------------------
@@ -415,23 +422,29 @@ subroutine init_fields(init)
    use mem_leaf  , only : isfcl
    use mem_cuparm, only : nclouds
    use mem_aerad , only : nwave
+   use grid_dims , only : ndim_types
 
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
-   logical, intent(in) :: init
+   logical, intent(in)            :: init
    !----- Local variables. ----------------------------------------------------------------!
-   integer             :: ierr
-   integer             :: hugedim
-   integer             :: ng
-   integer             :: nm
-   integer             :: itype
-   integer             :: i1
-   integer             :: j1
-   integer             :: i2
-   integer             :: j2
-   integer             :: memf
-   integer             :: npvar
-   integer             :: nv
+   integer, dimension(ndim_types) :: npvar
+   integer                        :: ierr
+   integer                        :: hugedim
+   integer                        :: ng
+   integer                        :: nm
+   integer                        :: itype
+   integer                        :: i1
+   integer                        :: j1
+   integer                        :: i2
+   integer                        :: j2
+   integer                        :: xlbc
+   integer                        :: ylbc
+   integer                        :: fdzp
+   integer                        :: fdep
+   integer                        :: idim
+   integer                        :: memf
+   integer                        :: nv
    !----- Include modules. ----------------------------------------------------------------!
    include 'interface.h'
    include 'mpif.h'
@@ -480,10 +493,11 @@ subroutine init_fields(init)
 
 
    !----- Find number of lbc variables to be communicated. --------------------------------!
-   npvar=0
+   npvar(:) = 0
    do nv = 1,num_var(1)
       if (vtab_r(nv,1)%impt1 == 1 ) then
-         npvar=npvar+1
+         idim        = vtab_r(nv,1)%idim_type
+         npvar(idim) = npvar(idim) + 1
       end if
    end do
    !---------------------------------------------------------------------------------------!
@@ -500,8 +514,15 @@ subroutine init_fields(init)
          i2         = ipaths(2,itype,ng,nm)
          j1         = ipaths(3,itype,ng,nm)
          j2         = ipaths(4,itype,ng,nm)
-         hugedim    = max(nnzp(ng),nzg,nzs) * max(npatch,nclouds,nwave)
-         memf       = (i2-i1+1) * (j2-j1+1) * hugedim * npvar
+         xlbc       = i2 - i1 + 1
+         ylbc       = j2 - j1 + 1 
+         
+         memf = 0
+         do idim = 2, ndim_types
+            call ze_dims(ng,idim,.false.,fdzp,fdep)
+            memf = memf + fdzp * xlbc * ylbc * fdep * npvar(idim)
+         end do 
+
          nbuff_feed = max(nbuff_feed,memf)
       end do
    end do
@@ -525,8 +546,10 @@ subroutine init_fields(init)
    !---------------------------------------------------------------------------------------!
    if (.not. init) then
       do nm=1,nmachs
-         call dealloc_node_buff(node_buffs   (nm))
+         call dealloc_node_buff(node_buffs_lbc(nm))
          call dealloc_node_buff(node_buffs_st(nm))
+         call dealloc_node_buff(node_buffs_feed(nm))
+         call dealloc_node_buff(node_buffs_nest(nm))
       end do
    end if
    !---------------------------------------------------------------------------------------!
@@ -538,14 +561,16 @@ subroutine init_fields(init)
    ! the buffers.                                                                          !
    !---------------------------------------------------------------------------------------!
    do nm=1,nmachs
-      if (node_buffs(nm)%nsend < nbuff_feed + 5) then
-         call dealloc_node_buff(node_buffs(nm))
-         call alloc_node_buff(node_buffs(nm),nbuff_feed,f_ndmd_size)
-      end if
-
-      if (node_buffs_st(nm)%nsend < nbuff_feed + 5) then
+      if (nsend_buff(nm) > 0 .or. nrecv_buff(nm) > 0) then
+         nbuff_feed = max(nbuff_feed,nsend_buff(nm),nrecv_buff(nm))
+         call dealloc_node_buff(node_buffs_lbc(nm))
+         call alloc_node_buff(node_buffs_lbc(nm),nbuff_feed,f_ndmd_size)
          call dealloc_node_buff(node_buffs_st(nm))
          call alloc_node_buff(node_buffs_st(nm),nbuff_feed,f_ndmd_size)
+         call dealloc_node_buff(node_buffs_feed(nm))
+         call alloc_node_buff(node_buffs_feed(nm),nbuff_feed,f_ndmd_size)
+         call dealloc_node_buff(node_buffs_nest(nm))
+         call alloc_node_buff(node_buffs_nest(nm),nbuff_feed,f_ndmd_size)
       end if
    end do
    !---------------------------------------------------------------------------------------!

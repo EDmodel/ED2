@@ -441,28 +441,44 @@ subroutine anlwrt(restart,vtype)
    use io_params
    use mem_cuparm, only: nclouds
    use mem_aerad , only: nwave
+   use grid_dims , only: str_len
 
    implicit none
 
    !----- External variable declaration ---------------------------------------------------!
    include 'interface.h'
    !----- Arguments -----------------------------------------------------------------------!
-   character(len=*)                            , intent(in) :: restart,vtype
+   character(len=*)                            , intent(in) :: restart
+   character(len=*)                            , intent(in) :: vtype
    !----- Local variables -----------------------------------------------------------------!
    character(len=1)                                         :: vnam
    character(len=2)                                         :: cgrid
    character(len=10)                                        :: c0
    character(len=16)                                        :: varn
    character(len=25)                                        :: subaname
-   character(len=128)                                       :: anamel,anamelh
-   integer                                                  :: ngr,nv,nvcnt,lenl,npointer
-   integer                                                  :: n3d,indwrt,n2d
-   integer                                     , save       :: ioaunt=10,ncall_head=0
-   integer                                     , save       :: nvtota=0,nvtotl=0,nvtot
+   character(len=str_len)                                   :: anamel
+   character(len=str_len)                                   :: anamelh
+   integer                                                  :: ngr
+   integer                                                  :: nv
+   integer                                                  :: nvcnt
+   integer                                                  :: lenl
+   integer                                                  :: npointer
+   integer                                                  :: n3d
+   integer                                                  :: indwrt
+   integer                                                  :: n2d
+   integer                                                  :: nzpts
+   integer                                                  :: nepts
    logical                                                  :: exans
    logical                                                  :: found
    real(kind=8)                                             :: timeold
-   type (head_table), dimension(:), allocatable, save       :: aw_table(:)
+   !----- Locally saved variables. --------------------------------------------------------!
+   type(head_table), dimension(:), allocatable , save       :: aw_table
+   integer                                     , save       :: nvtota = 0
+   integer                                     , save       :: nvtotl = 0
+   integer                                     , save       :: nvtot
+   logical                                     , save       :: callhead_1st = .true.
+   !----- Local constants. ----------------------------------------------------------------!
+   integer                                     , parameter  :: ioaunt = 10
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
@@ -474,7 +490,7 @@ subroutine anlwrt(restart,vtype)
 
    if (ioutput == 0) return
 
-   if (ncall_head == 0) then
+   if (callhead_1st) then
       !----- Find total number of fields to be written. -----------------------------------!
       do ngr=1,ngrids
          do nv = 1,num_var(ngr)
@@ -482,9 +498,9 @@ subroutine anlwrt(restart,vtype)
             if ( vtab_r(nv,ngr)%ilite == 1) nvtotl=nvtotl+1
          end do
       end do
-      nvtot=max(nvtota,nvtotl)
+      nvtot = max(nvtota,nvtotl)
       allocate (aw_table(nvtot))
-      ncall_head=1
+      callhead_1st = .false.
    end if
 
 
@@ -492,7 +508,7 @@ subroutine anlwrt(restart,vtype)
    if(vtype == 'MEAN'.or.vtype == 'BOTH') time=min(time,time-avgtim/2.)
 
 
-   !----- Construct header file name. -----------------------------------------------------!
+   !----- Build header file name. ---------------------------------------------------------!
    select case (vtype)
    case ('INST')
       vnam='A'
@@ -542,12 +558,12 @@ subroutine anlwrt(restart,vtype)
       ! decide between overwriting it or stopping the run.                                 !
       !------------------------------------------------------------------------------------!
       inquire(file=anamel,exist=exans)
-      if(exans.and.iclobber.eq.0) then
-         print*,'!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-         print*,'!!!   trying to open file name :'
-         print*,'!!!       ',anamel
-         print*,'!!!   but it already exists. run is ended.'
-         print*,'!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+      if(exans .and. iclobber == 0) then
+         write(unit=*,fmt='(a)') '============================================='
+         write(unit=*,fmt='(a)') ' Trying to open file name :'
+         write(unit=*,fmt='(a)') ' '//trim(anamel)
+         write(unit=*,fmt='(a)') ' but this file already exists...'
+         write(unit=*,fmt='(a)') '============================================='
          call abort_run('Analysis file already existed and you said I can''t overwrite!'   &
                        ,'anlwrt','rio.f90')
       end if
@@ -566,7 +582,7 @@ subroutine anlwrt(restart,vtype)
          !    Writing instantaneous analysis.                                              !
          !---------------------------------------------------------------------------------!
          if ((vtype == 'INST' .and. vtab_r(nv,ngr)%ianal == 1) .or.                        &
-            (vtype == 'LITE' .and. vtab_r(nv,ngr)%ilite == 1)) then
+             (vtype == 'LITE' .and. vtab_r(nv,ngr)%ilite == 1)) then
 
             varn= vtab_r(nv,ngr)%name
 
@@ -580,76 +596,38 @@ subroutine anlwrt(restart,vtype)
                                 ,scratch%scr1)
               varn='PI'
               !----- Rearrange 3-d variables to (x,y,z) -----------------------------------!
-              call rearrange(nnzp(ngr),nnxp(ngr),nnyp(ngr),scratch%scr1,scratch%scr2)
+              call rearrange(nnzp(ngr),nnxp(ngr),nnyp(ngr),1,scratch%scr1,scratch%scr2)
 
-            !----- Removing density from the coefficient ----------------------------------!
+            !----- Remove density from the coefficient ------------------------------------!
             elseif(varn == 'HKM') then
                !----- Convert to HKM to HKH (note that VKH is HKH for Deardorff) ----------!
                call RAMS_aprep_hkh (nnxyzp(ngr),vtab_r(nv,ngr)%var_p,turb_g(ngr)%vkh       &
                                    ,basic_g(ngr)%dn0,scratch%scr1,idiffk(ngr),xkhkm(ngr))
                varn='HKH'
                !-----  Rearrange 3-d variables to (x,y,z) ---------------------------------!
-               call rearrange(nnzp(ngr),nnxp(ngr),nnyp(ngr),scratch%scr1,scratch%scr2)
+               call rearrange(nnzp(ngr),nnxp(ngr),nnyp(ngr),1,scratch%scr1,scratch%scr2)
 
-            !----- Removing density from the coefficient ----------------------------------!
+            !----- Remove density from the coefficient ------------------------------------!
             elseif(varn == 'VKH') then
                !----- Un-density weight VKH -----------------------------------------------!
                call RAMS_aprep_vkh (nnxyzp(ngr),vtab_r(nv,ngr)%var_p,basic_g(ngr)%dn0      &
                                    ,scratch%scr1)
                !----- Rearrange 3-d variables to (x,y,z) ----------------------------------!
-               call rearrange(nnzp(ngr),nnxp(ngr),nnyp(ngr),scratch%scr1,scratch%scr2)
+               call rearrange(nnzp(ngr),nnxp(ngr),nnyp(ngr),1,scratch%scr1,scratch%scr2)
 
             !------------------------------------------------------------------------------!
             !    Now, the ordinary variables                                               !
             !------------------------------------------------------------------------------!
-            !-----  Rearrange 3-d variables to (x,y,z) ------------------------------------!
-            elseif(vtab_r(nv,ngr)%idim_type == 3) then
-               call rearrange(nnzp(ngr),nnxp(ngr),nnyp(ngr),vtab_r(nv,ngr)%var_p           &
+            else
+               !----- Find the vertical and environmental dimensions. ---------------------!
+               call ze_dims(ngr,vtab_r(nv,ngr)%idim_type,.true.,nzpts,nepts)
+               !----- Arrange the output to the expected output order (X,Y,Z,E). ----------!
+               call rearrange(nzpts,nnxp(ngr),nnyp(ngr),nepts,vtab_r(nv,ngr)%var_p         &
                              ,scratch%scr2)
-
-            !----- Rearrange 4-d leaf%soil variables to (x,y,z,patch) ---------------------!
-            elseif(vtab_r(nv,ngr)%idim_type == 4) then
-               call rearrange_p(nnxp(ngr),nnyp(ngr),nzg,npatch,vtab_r(nv,ngr)%var_p        &
-                               ,scratch%scr2)
-
-            !----- Rearrange 4-d leaf%sfcwater variables to (x,y,z,patch) -----------------!
-            elseif(vtab_r(nv,ngr)%idim_type == 5) then
-               call rearrange_p(nnxp(ngr),nnyp(ngr),nzs,npatch,vtab_r(nv,ngr)%var_p        &
-                               ,scratch%scr2)
-
-            !----- Rearrange 4-d cuparm variables to (x,y,z,cloud) ------------------------!
-            elseif (vtab_r(nv,ngr)%idim_type == 8) then
-               call rearrange_p(nnxp(ngr),nnyp(ngr),nnzp(ngr),nclouds,vtab_r(nv,ngr)%var_p &
-                               ,scratch%scr2)
-
-            !------------------------------------------------------------------------------!
-            !     For types 2, 6, 7, and 9 we don't need to change the order, but I need   !
-            ! to copy to scr2, so I will use a dum function to do that.                    !
-            !------------------------------------------------------------------------------!
-            !----- Copy 2-d (x,y,1) -------------------------------------------------------!
-            elseif (vtab_r(nv,ngr)%idim_type == 2) then
-               call rearrange_dum(nnxp(ngr),nnyp(ngr),1,vtab_r(nv,ngr)%var_p               &
-                                 ,scratch%scr2)
-
-            !----- Copy 3-d (x,y,patch) ---------------------------------------------------!
-            elseif (vtab_r(nv,ngr)%idim_type == 6) then
-               call rearrange_dum(nnxp(ngr),nnyp(ngr),npatch,vtab_r(nv,ngr)%var_p          &
-                                 ,scratch%scr2)
-
-            !----- Copy 3-d (x,y,wave) ----------------------------------------------------!
-            elseif (vtab_r(nv,ngr)%idim_type == 7) then
-               call rearrange_dum(nnxp(ngr),nnyp(ngr),nwave,vtab_r(nv,ngr)%var_p           &
-                                 ,scratch%scr2)
-
-            !----- Copy 3-d (x,y,cloud) ---------------------------------------------------!
-            elseif (vtab_r(nv,ngr)%idim_type == 9) then
-               call rearrange_dum(nnxp(ngr),nnyp(ngr),nclouds,vtab_r(nv,ngr)%var_p         &
-                                 ,scratch%scr2)
             end if
             
             !------------------------------------------------------------------------------!
-            !    Adding the variable to the list and writing the variable to the data      !
-            ! file.                                                                        !
+            !    Add the variable to the list and writing the variable to the data file.   !
             !------------------------------------------------------------------------------!
             nvcnt = nvcnt+1
             aw_table(nvcnt)%string    = varn
@@ -664,7 +642,7 @@ subroutine anlwrt(restart,vtype)
 
 
          !---------------------------------------------------------------------------------!
-         !    Writing instantaneous analysis.                                              !
+         !    Write instantaneous analysis.                                                !
          !---------------------------------------------------------------------------------!
          elseif((vtype == 'MEAN' .and. vtab_r(nv,ngr)%ianal == 1) .or. &
                 (vtype == 'BOTH' .and. vtab_r(nv,ngr)%ilite == 1)) then
@@ -682,9 +660,9 @@ subroutine anlwrt(restart,vtype)
                                 ,scratch%scr1)
               varn='PI'
               !----- Rearrange 3-d variables to (x,y,z) -----------------------------------!
-              call rearrange(nnzp(ngr),nnxp(ngr),nnyp(ngr),scratch%scr1,scratch%scr2)
+              call rearrange(nnzp(ngr),nnxp(ngr),nnyp(ngr),1,scratch%scr1,scratch%scr2)
 
-            !----- Removing density from the coefficient ----------------------------------!
+            !----- Remove density from the coefficient ------------------------------------!
             elseif(varn == 'HKM') then
                !----- Convert to HKM to HKH (note that VKH is HKH for Deardorff) ----------!
                call RAMS_aprep_hkh (nnxyzp(ngr),vtab_r(nv,ngr)%var_m                       &
@@ -692,62 +670,25 @@ subroutine anlwrt(restart,vtype)
                                    ,idiffk(ngr),xkhkm(ngr))
                varn='HKH'
                !-----  Rearrange 3-d variables to (x,y,z) ---------------------------------!
-               call rearrange(nnzp(ngr),nnxp(ngr),nnyp(ngr),scratch%scr1,scratch%scr2)
+               call rearrange(nnzp(ngr),nnxp(ngr),nnyp(ngr),1,scratch%scr1,scratch%scr2)
 
-            !----- Removing density from the coefficient ----------------------------------!
+            !----- Remove density from the coefficient ------------------------------------!
             elseif(varn == 'VKH') then
                !----- Un-density weight VKH -----------------------------------------------!
                call RAMS_aprep_vkh (nnxyzp(ngr),vtab_r(nv,ngr)%var_m                       &
                                    ,basic_g(ngr)%dn0,scratch%scr1)
                !----- Rearrange 3-d variables to (x,y,z) ----------------------------------!
-               call rearrange(nnzp(ngr),nnxp(ngr),nnyp(ngr),scratch%scr1,scratch%scr2)
+               call rearrange(nnzp(ngr),nnxp(ngr),nnyp(ngr),1,scratch%scr1,scratch%scr2)
 
             !------------------------------------------------------------------------------!
             !    Now, the ordinary variables                                               !
             !------------------------------------------------------------------------------!
-            !-----  Rearrange 3-d variables to (x,y,z) ------------------------------------!
-            elseif(vtab_r(nv,ngr)%idim_type == 3) then
-               call rearrange(nnzp(ngr),nnxp(ngr),nnyp(ngr),vtab_r(nv,ngr)%var_m           &
+            else
+               !----- Find the vertical and environmental dimensions. ---------------------!
+               call ze_dims(ngr,vtab_r(nv,ngr)%idim_type,.true.,nzpts,nepts)
+               !----- Arrange the output to the expected output order (X,Y,Z,E). ----------!
+               call rearrange(nzpts,nnxp(ngr),nnyp(ngr),nepts,vtab_r(nv,ngr)%var_m         &
                              ,scratch%scr2)
-
-            !----- Rearrange 4-d leaf%soil variables to (x,y,z,patch) ---------------------!
-            elseif(vtab_r(nv,ngr)%idim_type == 4) then
-               call rearrange_p(nnxp(ngr),nnyp(ngr),nzg,npatch,vtab_r(nv,ngr)%var_m        &
-                               ,scratch%scr2)
-
-            !----- Rearrange 4-d leaf%sfcwater variables to (x,y,z,patch) -----------------!
-            elseif(vtab_r(nv,ngr)%idim_type == 5) then
-               call rearrange_p(nnxp(ngr),nnyp(ngr),nzs,npatch,vtab_r(nv,ngr)%var_m        &
-                               ,scratch%scr2)
-
-            !----- Rearrange 4-d cuparm variables to (x,y,z,cloud) ------------------------!
-            elseif (vtab_r(nv,ngr)%idim_type == 8) then
-               call rearrange_p(nnxp(ngr),nnyp(ngr),nnzp(ngr),nclouds,vtab_r(nv,ngr)%var_m &
-                               ,scratch%scr2)
-
-            !------------------------------------------------------------------------------!
-            !     For types 2, 6, 7, and 9 we don't need to change the order, but I need   !
-            ! to copy to scr2, so I will use a dum function to do that.                    !
-            !------------------------------------------------------------------------------!
-            !----- Copy 2-d (x,y,1) -------------------------------------------------------!
-            elseif (vtab_r(nv,ngr)%idim_type == 2) then
-               call rearrange_dum(nnxp(ngr),nnyp(ngr),1,vtab_r(nv,ngr)%var_m               &
-                                 ,scratch%scr2)
-
-            !----- Copy 3-d (x,y,patch) ---------------------------------------------------!
-            elseif (vtab_r(nv,ngr)%idim_type == 6) then
-               call rearrange_dum(nnxp(ngr),nnyp(ngr),npatch,vtab_r(nv,ngr)%var_m          &
-                                 ,scratch%scr2)
-
-            !----- Copy 3-d (x,y,wave) ----------------------------------------------------!
-            elseif (vtab_r(nv,ngr)%idim_type == 7) then
-               call rearrange_dum(nnxp(ngr),nnyp(ngr),nwave,vtab_r(nv,ngr)%var_m           &
-                                 ,scratch%scr2)
-
-            !----- Copy 3-d (x,y,cloud) ---------------------------------------------------!
-            elseif (vtab_r(nv,ngr)%idim_type == 9) then
-               call rearrange_dum(nnxp(ngr),nnyp(ngr),nclouds,vtab_r(nv,ngr)%var_m         &
-                                 ,scratch%scr2)
             end if
             
             !------------------------------------------------------------------------------!
@@ -808,104 +749,6 @@ subroutine anlwrt(restart,vtype)
 
    return
 end subroutine anlwrt
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-!    This subroutine does nothing actually. It simply copies the data from the original    !
-! place to the buffer for 3D variables.                                                    !
-!------------------------------------------------------------------------------------------!
-subroutine rearrange_dum(n2,n3,n4,mydata,buff)
-   implicit none
-   !----- Arguments -----------------------------------------------------------------------!
-   integer, intent(in)                       :: n2,n3,n4
-   real,    intent(in) , dimension(n2,n3,n4) :: mydata
-   real,    intent(out), dimension(n2,n3,n4) :: buff
-   !----- Local variables -----------------------------------------------------------------!
-   integer                                   :: i,j,k
-   !---------------------------------------------------------------------------------------!
-   do i=1,n2
-      do j=1,n3
-         do k=1,n4
-           buff(i,j,k) = mydata(i,j,k)
-         end do
-      end do
-   end do
-   return
-end subroutine rearrange_dum
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-!    This subroutine does nothing actually. It simply copies the data from the original    !
-! place to the buffer for 4D variables.                                                    !
-!------------------------------------------------------------------------------------------!
-subroutine rearrange_dum4(n2,n3,n4,n5,mydata,buff)
-   implicit none
-   !----- Arguments -----------------------------------------------------------------------!
-   integer, intent(in)                          :: n2,n3,n4,n5
-   real,    intent(in) , dimension(n2,n3,n4,n5) :: mydata
-   real,    intent(out), dimension(n2,n3,n4,n5) :: buff
-   !----- Local variables -----------------------------------------------------------------!
-   integer                                      :: i,j,k,l
-   !---------------------------------------------------------------------------------------!
-   do i=1,n2
-      do j=1,n3
-         do k=1,n4
-            do l=1,n5
-               buff(i,j,k,l) = mydata(i,j,k,l)
-            end do
-         end do
-      end do
-   end do
-   return
-end subroutine rearrange_dum4
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-!    This subroutine moves the vertical dimension from the 1st to the 3rd rank.            !
-!------------------------------------------------------------------------------------------!
-subroutine rearrange_p(n2,n3,n4,n5,mydata,buff)
-   implicit none
-   !----- Arguments -----------------------------------------------------------------------!
-   integer                        , intent(in)  :: n2,n3,n4,n5
-   real   , dimension(n4,n2,n3,n5), intent(in)  :: mydata
-   real   , dimension(n2,n3,n4,n5), intent(out) :: buff
-   !----- Local variables -----------------------------------------------------------------!
-   integer                                      :: i,j,k,l
-   !---------------------------------------------------------------------------------------!
-
-   do l = 1,n5
-      do k = 1,n4
-         do j = 1,n3
-            do i = 1,n2
-               buff(i,j,k,l) = mydata(k,i,j,l)
-            end do
-         end do
-      end do
-   end do
-
-   return
-end subroutine rearrange_p
 !==========================================================================================!
 !==========================================================================================!
 

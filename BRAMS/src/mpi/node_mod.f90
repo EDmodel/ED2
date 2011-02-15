@@ -151,6 +151,8 @@ module node_mod
    !---------------------------------------------------------------------------------------!
    integer, dimension(maxmach)                     :: irecv_req
    integer, dimension(maxmach)                     :: isend_req
+   integer, dimension(maxmach)                     :: nsend_buff
+   integer, dimension(maxmach)                     :: nrecv_buff
    !---------------------------------------------------------------------------------------!
 
 
@@ -160,12 +162,12 @@ module node_mod
    !     This structure contains the buffers that are used for sending/receiving the       !
    ! lateral boundary condition.                                                           !
    !---------------------------------------------------------------------------------------!
-   type lbc_buffs
-      character, dimension(:), pointer :: lbc_send_buff
-      character, dimension(:), pointer :: lbc_recv_buff
+   type pack_buffs
+      character, dimension(:), pointer :: pack_send_buff
+      character, dimension(:), pointer :: pack_recv_buff
       integer                          :: nsend
       integer                          :: nrecv
-   end type lbc_buffs
+   end type pack_buffs
    !---------------------------------------------------------------------------------------!
 
 
@@ -174,8 +176,10 @@ module node_mod
    !---------------------------------------------------------------------------------------!
    !     The buffers.                                                                      !
    !---------------------------------------------------------------------------------------!
-   type(lbc_buffs), dimension(maxmach) :: node_buffs
-   type(lbc_buffs), dimension(maxmach) :: node_buffs_st
+   type(pack_buffs), dimension(maxmach) :: node_buffs_lbc
+   type(pack_buffs), dimension(maxmach) :: node_buffs_feed
+   type(pack_buffs), dimension(maxmach) :: node_buffs_nest
+   type(pack_buffs), dimension(maxmach) :: node_buffs_st
    !---------------------------------------------------------------------------------------!
 
 
@@ -205,22 +209,22 @@ module node_mod
    subroutine alloc_node_buff(this_buff,nbuff,number_size)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      type(lbc_buffs), intent(inout) :: this_buff
-      integer        , intent(in)    :: nbuff
-      integer        , intent(in)    :: number_size
+      type(pack_buffs), intent(inout) :: this_buff
+      integer         , intent(in)    :: nbuff
+      integer         , intent(in)    :: number_size
       !------------------------------------------------------------------------------------!
 
       call nullify_node_buff(this_buff)
 
       !------------------------------------------------------------------------------------!
-      !      Set the buffer size to the maximum needed size plus 5, which is to account    !
-      ! for the 5 integer dimensions that are packed at the beginning of the message.      !
+      !      Set the buffer size to the maximum needed size plus 13, which is to account   !
+      ! for up to 13 integer dimensions that are packed at the beginning of the message.   !
       !------------------------------------------------------------------------------------!
-      this_buff%nsend = nbuff + 5
-      this_buff%nrecv = nbuff + 5
+      this_buff%nsend = nbuff + 100
+      this_buff%nrecv = nbuff + 100
       
-      allocate(this_buff%lbc_send_buff(nbuff*number_size))
-      allocate(this_buff%lbc_recv_buff(nbuff*number_size))
+      allocate(this_buff%pack_send_buff(nbuff*number_size))
+      allocate(this_buff%pack_recv_buff(nbuff*number_size))
 
       return
    end subroutine alloc_node_buff
@@ -240,11 +244,11 @@ module node_mod
    subroutine nullify_node_buff(this_buff)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      type(lbc_buffs), intent(inout) :: this_buff
+      type(pack_buffs), intent(inout) :: this_buff
       !------------------------------------------------------------------------------------!
       
-      nullify(this_buff%lbc_send_buff)
-      nullify(this_buff%lbc_recv_buff)
+      nullify(this_buff%pack_send_buff)
+      nullify(this_buff%pack_recv_buff)
 
       return
    end subroutine nullify_node_buff
@@ -264,13 +268,13 @@ module node_mod
    subroutine dealloc_node_buff(this_buff)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      type(lbc_buffs), intent(inout) :: this_buff
+      type(pack_buffs), intent(inout) :: this_buff
       !------------------------------------------------------------------------------------!
       
       this_buff%nsend = 0
       this_buff%nrecv = 0
-      if (associated(this_buff%lbc_send_buff)) deallocate(this_buff%lbc_send_buff)
-      if (associated(this_buff%lbc_send_buff)) deallocate(this_buff%lbc_recv_buff)
+      if (associated(this_buff%pack_send_buff)) deallocate(this_buff%pack_send_buff)
+      if (associated(this_buff%pack_send_buff)) deallocate(this_buff%pack_recv_buff)
 
       return
    end subroutine dealloc_node_buff

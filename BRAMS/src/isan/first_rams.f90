@@ -152,18 +152,11 @@ print*,'333'
 print*,'444'
 
    ! Write analysis fields to model vars in case need to interpolate from them
-   ! rearrange(nzp,nxp,nyp,a,b) is b(i,j,k)=a(k,i,j)
-   ! unarrange(nzp,nxp,nyp,a,b) is b(k,i,j)=a(i,j,k)
-   call unarrange(nnzp(ngrid),nnxp(ngrid),nnyp(ngrid)  &
-                  ,ui2,is_grids(ngrid)%rr_ug)
-   call unarrange(nnzp(ngrid),nnxp(ngrid),nnyp(ngrid)  &
-                  ,vi2,is_grids(ngrid)%rr_vg)
-   call unarrange(nnzp(ngrid),nnxp(ngrid),nnyp(ngrid)  &
-                  ,ri2,is_grids(ngrid)%rr_rg)
-   call unarrange(nnzp(ngrid),nnxp(ngrid),nnyp(ngrid)  &
-                  ,ti2,is_grids(ngrid)%rr_tg)
-   call unarrange(nnzp(ngrid),nnxp(ngrid),nnyp(ngrid)  &
-                  ,pi2,is_grids(ngrid)%rr_pg)
+   call unarrange(nnzp(ngrid),nnxp(ngrid),nnyp(ngrid),1,ui2,is_grids(ngrid)%rr_ug)
+   call unarrange(nnzp(ngrid),nnxp(ngrid),nnyp(ngrid),1,vi2,is_grids(ngrid)%rr_vg)
+   call unarrange(nnzp(ngrid),nnxp(ngrid),nnyp(ngrid),1,ri2,is_grids(ngrid)%rr_rg)
+   call unarrange(nnzp(ngrid),nnxp(ngrid),nnyp(ngrid),1,ti2,is_grids(ngrid)%rr_tg)
+   call unarrange(nnzp(ngrid),nnxp(ngrid),nnyp(ngrid),1,pi2,is_grids(ngrid)%rr_pg)
    print*,"ngrid,theta(1,1,1)=",ngrid,is_grids(ngrid)%rr_tg
 print*,'555'
 
@@ -241,8 +234,7 @@ else
                    ,ifm,icm,'t',1)
    print*,"....icm,theta(1,1,1)=",icm,is_grids(icm)%rr_tg(1,1,1),is_grids(icm)%rr_dn0(1,1,1)
    print*,"....ifm,theta(1,1,1)=",ifm,is_grids(ifm)%rr_tg(1,1,1),is_grids(ifm)%rr_dn0(1,1,1)
-   call rearrange(nnzp(ifm),nnxp(ifm),nnyp(ifm)  &
-                 ,is_grids(ifm)%rr_tg,ti2)
+   call rearrange(nnzp(ifm),nnxp(ifm),nnyp(ifm),1,is_grids(ifm)%rr_tg,ti2)
    print*,'done with th,ti2(1,1,1)=',ti2(1,1,1)
 
    pltc(1:nnxp(icm),1:nnyp(icm)) = is_grids(icm)%rr_tg(2,1:nnxp(icm),1:nnyp(icm))
@@ -259,8 +251,7 @@ else
    print*,"....ifm,p(1,1,1)max=",maxval(is_grids(ifm)%rr_pg(1:nnzp(ifm),1:nnxp(ifm),1:nnyp(ifm)))
    print*,"....icm,p(1,1,1)min=",minval(is_grids(icm)%rr_pg(1:nnzp(icm),1:nnxp(icm),1:nnyp(icm)))
    print*,"....ifm,p(1,1,1)min=",minval(is_grids(ifm)%rr_pg(1:nnzp(ifm),1:nnxp(ifm),1:nnyp(ifm)))
-   call rearrange(nnzp(ifm),nnxp(ifm),nnyp(ifm)  &
-                 ,is_grids(ifm)%rr_pg,pi2)
+   call rearrange(nnzp(ifm),nnxp(ifm),nnyp(ifm),1,is_grids(ifm)%rr_pg,pi2)
 
 
    call fmint4_isan(is_grids(icm)%rr_rg,  is_grids(ifm)%rr_rg  &
@@ -272,7 +263,7 @@ else
    print*,"....ifm,rr(1,1,1)max=",maxval(is_grids(ifm)%rr_rg(1:nnzp(ifm),1:nnxp(ifm),1:nnyp(ifm)))
    print*,"....icm,rr(1,1,1)min=",minval(is_grids(icm)%rr_rg(1:nnzp(icm),1:nnxp(icm),1:nnyp(icm)))
    print*,"....ifm,rr(1,1,1)min=",minval(is_grids(ifm)%rr_rg(1:nnzp(ifm),1:nnxp(ifm),1:nnyp(ifm)))
-   call rearrange(nnzp(ifm),nnxp(ifm),nnyp(ifm),is_grids(ifm)%rr_rg,ri2)
+   call rearrange(nnzp(ifm),nnxp(ifm),nnyp(ifm),1,is_grids(ifm)%rr_rg,ri2)
 
 
 
@@ -280,15 +271,13 @@ else
    call fmint4_isan(is_grids(icm)%rr_ug,is_grids(ifm)%rr_ug  &
                    ,is_grids(icm)%rr_dn0u,is_grids(ifm)%rr_dn0u &
                    ,ifm,icm,'u',1)
-   call rearrange(nnzp(ifm),nnxp(ifm),nnyp(ifm)  &
-                 ,is_grids(ifm)%rr_ug,ui2)
+   call rearrange(nnzp(ifm),nnxp(ifm),nnyp(ifm),1,is_grids(ifm)%rr_ug,ui2)
 
 
    call fmint4_isan(is_grids(icm)%rr_vg,is_grids(ifm)%rr_vg  &
                    ,is_grids(icm)%rr_dn0v,is_grids(ifm)%rr_dn0v &
                    ,ifm,icm,'v',1)
-   call rearrange(nnzp(ifm),nnxp(ifm),nnyp(ifm)  &
-                 ,is_grids(ngrid)%rr_vg,vi2)
+   call rearrange(nnzp(ifm),nnxp(ifm),nnyp(ifm),1,is_grids(ngrid)%rr_vg,vi2)
 
    call fmdn0_isan(ifm,icm,nnzp(ifm),nnxp(ifm),nnyp(ifm) &
          ,nnzp(icm),nnxp(icm),nnyp(icm),maxiz,maxix,maxiy &

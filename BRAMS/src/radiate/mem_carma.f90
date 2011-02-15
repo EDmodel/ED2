@@ -236,15 +236,15 @@ module mem_carma
 
    !=======================================================================================!
    !=======================================================================================!
-   subroutine filltab_carma(cv,cvm,ng,imean,n1,n2,n3)
+   subroutine filltab_carma(cv,cvm,ng,imean,nmx,nmy,nmwave)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type (carma_v), intent(inout) :: cv
       type (carma_v), intent(inout) :: cvm
       integer       , intent(in)    :: ng
-      integer       , intent(in)    :: n1
-      integer       , intent(in)    :: n2
-      integer       , intent(in)    :: n3
+      integer       , intent(in)    :: nmx
+      integer       , intent(in)    :: nmy
+      integer       , intent(in)    :: nmwave
       integer       , intent(in)    :: imean
       !----- Local variables. -------------------------------------------------------------!
       integer                       :: npts
@@ -252,7 +252,7 @@ module mem_carma
       !------------------------------------------------------------------------------------!
 
       if (associated(cv%aot)) then
-         npts=n1*n2*n3
+         npts=nmx*nmy*nmwave
          write(sname,fmt='(a4)') 'AOT'
          call vtables2(cv%aot(1,1,1),cvm%aot(1,1,1),ng,npts,imean                          &
                       ,sname//' :7:hist:anal:mpti:mpt3')

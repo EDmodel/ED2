@@ -1234,6 +1234,11 @@ varf_update.o : $(FDDA)/varf_update.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90) 
 
+varutils.o : $(UTILS_LIB)/varutils.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90) 
+
 vformat.o    : $(UTILS_LIB)/vformat.f90 
 	 cp -f $< $(<F:.f90=.f90)
 	 $(F90_COMMAND) $(<F:.f90=.f90)
