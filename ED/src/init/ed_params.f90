@@ -1844,7 +1844,7 @@ subroutine init_pft_derived_params()
    real                              :: bdead_max
    real                              :: min_plant_dens
    real                              :: hgt_max
-   logical               , parameter :: print_zero_table = .true.
+   logical               , parameter :: print_zero_table = .false. !.true.
    character(len=str_len), parameter :: zero_table_fn    = 'minimum.size.txt'
    !---------------------------------------------------------------------------------------!
 
@@ -2045,7 +2045,7 @@ subroutine init_disturb_params
    ! moisture equal to soilcp + (slmsts-soilcp) * fire_smoist_threshold [m3_H2O/m3_gnd]    !
    ! would have.                                                                           !
    !---------------------------------------------------------------------------------------!
-   fire_smoist_threshold = 0.06
+   fire_smoist_threshold = 0.20
 
    !----- Maximum depth that will be considered in the average soil -----------------------!
    fire_smoist_depth     = -1.0
