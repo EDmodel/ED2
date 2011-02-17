@@ -773,6 +773,13 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
    !---------------------------------------------------------------------------------------!
 
 
+
+   !----- First step, we assign the pointer for the current patch. ------------------------!
+   cpatch => csite%patch(ipa)
+   !---------------------------------------------------------------------------------------!
+
+
+
    !---------------------------------------------------------------------------------------!
    !    Computing the fluxes from atmosphere to canopy.                                    !
    !---------------------------------------------------------------------------------------!
@@ -801,7 +808,6 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
    !---------------------------------------------------------------------------------------!
    if (any_solvable) then
       taii = 0.d0
-      cpatch => csite%patch(ipa)
       do ico = 1,cpatch%ncohorts
          taii = taii + initp%tai(ico)
       end do

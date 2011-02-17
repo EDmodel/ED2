@@ -128,13 +128,38 @@ subroutine master_getanl(vtype)
    integer                  , parameter  :: ntags=5
    !----- Local variables -----------------------------------------------------------------!
    integer, dimension(ntags)             :: msgtags
-   integer                               :: ierr,nmi,numvars,ng,nummess,nvvv,ibytes
-   integer                               :: msgtyp,ihostnum,nm,il1,ir2,jb1,jt2,mxp,myp,mxyp
-   integer                               :: nv,npts,idim_type,mpiidtags,mpiidvtab
+   integer                               :: ierr
+   integer                               :: nmi
+   integer                               :: numvars
+   integer                               :: ng
+   integer                               :: nummess
+   integer                               :: nvvv
+   integer                               :: ibytes
+   integer                               :: msgtyp
+   integer                               :: ihostnum
+   integer                               :: nm
+   integer                               :: mlon
+   integer                               :: mlat
+   integer                               :: ioff
+   integer                               :: joff
+   integer                               :: iwest
+   integer                               :: ieast
+   integer                               :: jsouth
+   integer                               :: jnorth
+   integer                               :: sdxp
+   integer                               :: sdyp
+   integer                               :: sdxyp
+   integer                               :: fdzp
+   integer                               :: fdep
+   integer                               :: nv
+   integer                               :: npts
+   integer                               :: idim_type
+   integer                               :: mpiidtags
+   integer                               :: mpiidvtab
    !---------------------------------------------------------------------------------------!
 
 
-   !----- Checking the amount of information (messages) to be received --------------------!
+   !----- Check the amount of information (messages) to be received. ----------------------!
    numvars = 0
    do ng = 1, ngrids
       do nv = 1, num_var(ng)
@@ -147,7 +172,7 @@ subroutine master_getanl(vtype)
       enddo
    enddo
 
-   !----- Receiving the information. First the tags, then the actual data. ----------------!
+   !----- Receive the information. First the tags, then the actual data. ------------------!
    machloop: do nmi = 1,nmachs
       mpiidtags = 400000000 + maxvars*maxgrds*(machnum(nmi)-1)
       mpiidvtab = 500000000 + maxvars*maxgrds*(machnum(nmi)-1)
@@ -155,36 +180,64 @@ subroutine master_getanl(vtype)
          mpiidtags = mpiidtags + 1
          mpiidvtab = mpiidvtab + 1
 
-         !----- Getting the tags, and assigning to some scratch variables -----------------!
+         !----- Get the tags, and assigning to some scratch variables. --------------------!
          call MPI_Recv(msgtags,ntags,MPI_INTEGER,machnum(nmi),mpiidtags,MPI_COMM_WORLD     &
                       ,MPI_STATUS_IGNORE,ierr)
+         !---------------------------------------------------------------------------------!
 
+
+
+         !---------------------------------------------------------------------------------!
+         !     Copy the tags to some scalar integers.                                      !
+         !---------------------------------------------------------------------------------!
          nm        = msgtags(1) !----- Number of process for the message received
          ng        = msgtags(2) !----- Number of the Grid
          npts      = msgtags(3) !----- Total number of points for the real array
          idim_type = msgtags(4) !----- Dimension of the real array
          nv        = msgtags(5) !----- Number of the variable in: vtab_r(nv,ng)
+         !---------------------------------------------------------------------------------!
 
-         !----- Calculating the position (plane coordinates) to fit on grid. --------------!
-         il1=nxbegc(nm,ng)
-         ir2=nxendc(nm,ng)
-         jb1=nybegc(nm,ng)
-         jt2=nyendc(nm,ng)
 
-         !----- Checking whether any of the node edge is an actual domain edge ------------!
-         if(iand(ibcflg(nm,ng),1) /= 0) il1 = il1 - 1
-         if(iand(ibcflg(nm,ng),2) /= 0) ir2 = ir2 + 1
-         if(iand(ibcflg(nm,ng),4) /= 0) jb1 = jb1 - 1
-         if(iand(ibcflg(nm,ng),8) /= 0) jt2 = jt2 + 1
+         !----- Find the position (plane coordinates) to fit on grid. ---------------------!
+         mlon   = nxend  (nm,ng) - nxbeg  (nm,ng) + 1
+         mlat   = nyend  (nm,ng) - nybeg  (nm,ng) + 1
+         iwest  = nxbegc (nm,ng)
+         ieast  = nxendc (nm,ng)
+         jsouth = nybegc (nm,ng)
+         jnorth = nyendc (nm,ng)
+         ioff   = ixoff  (nm,ng)
+         joff   = iyoff  (nm,ng)
+         !---------------------------------------------------------------------------------!
 
-         !----- Determining the sub-domain sizes ------------------------------------------!
-         mxp  = nxend(nm,ng) - nxbeg(nm,ng) + 1
-         myp  = nyend(nm,ng) - nybeg(nm,ng) + 1
-         mxyp = mxp * myp
-         
-         !----- Receiving the data; storing first at a temporary place. -------------------!
+
+         !----- Check whether any of the node edge is an actual domain edge. --------------!
+         if(iand(ibcflg(nm,ng),1) /= 0) iwest  = iwest  - 1
+         if(iand(ibcflg(nm,ng),2) /= 0) ieast  = ieast  + 1
+         if(iand(ibcflg(nm,ng),4) /= 0) jsouth = jsouth - 1
+         if(iand(ibcflg(nm,ng),8) /= 0) jnorth = jnorth + 1
+         !---------------------------------------------------------------------------------!
+
+
+         !----- Determine the sub-domain sizes --------------------------------------------!
+         sdxp  = nxend(nm,ng) - nxbeg(nm,ng) + 1
+         sdyp  = nyend(nm,ng) - nybeg(nm,ng) + 1
+         sdxyp = sdxp * sdyp
+         !---------------------------------------------------------------------------------!
+
+
+         !----- Receive the data; storing first at a temporary place. ---------------------!
          call MPI_Recv(scratch%scr1(1),npts,MPI_REAL,nm,mpiidvtab,MPI_COMM_WORLD           &
                       ,MPI_STATUS_IGNORE,ierr)
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !    Define the size of the vertical and "environmental" dimensions depending on  !
+         ! the variable type.                                                              !
+         !---------------------------------------------------------------------------------!
+         call ze_dims(ng,idim_type,.true.,fdzp,fdep)
+         !---------------------------------------------------------------------------------!
 
 
          !---------------------------------------------------------------------------------!
@@ -195,77 +248,12 @@ subroutine master_getanl(vtype)
          select case (trim(vtype))
          !----- Instantaneous variables, use var_p pointer --------------------------------!
          case ('LITE') 
-            select case (idim_type)
-            case (2) !----- 2D variable (nxp,nyp) -----------------------------------------!
-               call ex_2_buff(vtab_r(nv,ng)%var_p,scratch%scr1,nnxp(ng),nnyp(ng),mxp,myp      &
-                             ,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
-
-            case (3) !----- 3D variable (nzp,nxp,nyp) -------------------------------------!
-               call ex_3_buff(vtab_r(nv,ng)%var_p,scratch%scr1,nnzp(ng),nnxp(ng),nnyp(ng)     &
-                             ,mxp,myp,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
-
-            case (4) !----- 4D variable (nzg,nxp,nyp,npatch) ------------------------------!
-               call ex_4_buff(vtab_r(nv,ng)%var_p,scratch%scr1,nzg,nnxp(ng),nnyp(ng)          &
-                             ,npatch,mxp,myp,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
-
-            case (5) !----- 4D variable (nzs,nxp,nyp,npatch) ------------------------------!
-               call ex_4_buff(vtab_r(nv,ng)%var_p,scratch%scr1,nzs,nnxp(ng),nnyp(ng)          &
-                             ,npatch,mxp,myp,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
-
-            case (6) !----- 3D variable (nxp,nyp,npatch) ----------------------------------!
-               call ex_2p_buff(vtab_r(nv,ng)%var_p,scratch%scr1,nnxp(ng),nnyp(ng),npatch      &
-                              ,mxp,myp,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
-
-            case (7) !----- 3D variable (nxp,nyp,nwave) -----------------------------------!
-               call ex_2p_buff(vtab_r(nv,ng)%var_p,scratch%scr1,nnxp(ng),nnyp(ng),nwave       &
-                              ,mxp,myp,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
-
-            case (8) !----- 4D variable (nzp,nxp,nyp,nclouds) -----------------------------!
-               call ex_4_buff(vtab_r(nv,ng)%var_p,scratch%scr1,nnzp(ng),nnxp(ng),nnyp(ng)     &
-                             ,nclouds,mxp,myp,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
-
-            case (9) !----- 3D variable (nxp,nyp,nclouds) ---------------------------------!
-               call ex_2p_buff(vtab_r(nv,ng)%var_p,scratch%scr1,nnxp(ng),nnyp(ng),nclouds     &
-                              ,mxp,myp,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
-            end select
-         !---------------------------------------------------------------------------------!
-
+              call ex_full_buff(vtab_r(nv,ng)%var_p,scratch%scr1,fdzp,nnxp(ng),nnyp(ng)    &
+                               ,fdep,mlon,mlat,ioff,joff,iwest,ieast,jsouth,jnorth)
          !----- Averaged variables, use var_m pointer -------------------------------------!
          case ('MEAN','BOTH') 
-            select case (idim_type)
-            case (2) !----- 2D variable (nxp,nyp) -----------------------------------------!
-               call ex_2_buff(vtab_r(nv,ng)%var_m,scratch%scr1,nnxp(ng),nnyp(ng),mxp,myp      &
-                             ,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
-
-            case (3) !----- 3D variable (nzp,nxp,nyp) -------------------------------------!
-               call ex_3_buff(vtab_r(nv,ng)%var_m,scratch%scr1,nnzp(ng),nnxp(ng),nnyp(ng)     &
-                             ,mxp,myp,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
-
-            case (4) !----- 4D variable (nzg,nxp,nyp,npatch) ------------------------------!
-               call ex_4_buff(vtab_r(nv,ng)%var_m,scratch%scr1,nzg,nnxp(ng),nnyp(ng)          &
-                             ,npatch,mxp,myp,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
-
-            case (5) !----- 4D variable (nzs,nxp,nyp,npatch) ------------------------------!
-               call ex_4_buff(vtab_r(nv,ng)%var_m,scratch%scr1,nzs,nnxp(ng),nnyp(ng)          &
-                             ,npatch,mxp,myp,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
-
-            case (6) !----- 3D variable (nxp,nyp,npatch) ----------------------------------!
-               call ex_2p_buff(vtab_r(nv,ng)%var_m,scratch%scr1,nnxp(ng),nnyp(ng),npatch      &
-                              ,mxp,myp,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
-
-            case (7) !----- 3D variable (nxp,nyp,nwave) -----------------------------------!
-               call ex_2p_buff(vtab_r(nv,ng)%var_m,scratch%scr1,nnxp(ng),nnyp(ng),nwave       &
-                              ,mxp,myp,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
-
-            case (8) !----- 4D variable (nzp,nxp,nyp,nclouds) -----------------------------!
-               call ex_4_buff(vtab_r(nv,ng)%var_m,scratch%scr1,nnzp(ng),nnxp(ng),nnyp(ng)     &
-                             ,nclouds,mxp,myp,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
-
-            case (9) !----- 3D variable (nxp,nyp,nclouds) ---------------------------------!
-               call ex_2p_buff(vtab_r(nv,ng)%var_m,scratch%scr1,nnxp(ng),nnyp(ng),nclouds     &
-                              ,mxp,myp,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
-            end select
-         !---------------------------------------------------------------------------------!
+              call ex_full_buff(vtab_r(nv,ng)%var_m,scratch%scr1,fdzp,nnxp(ng),nnyp(ng)    &
+                               ,fdep,mlon,mlat,ioff,joff,iwest,ieast,jsouth,jnorth)
          end select 
       end do varloop
    end do machloop

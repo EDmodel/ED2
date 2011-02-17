@@ -30,15 +30,15 @@ rams_master.o: io_params.mod mem_cuparm.mod mem_emiss.mod mem_grid.mod
 rams_master.o: mem_leaf.mod mem_mass.mod mem_oda.mod mem_radiate.mod
 rams_master.o: mem_varinit.mod node_mod.mod rpara.mod teb_spm_start.mod
 ref_sounding.o: grid_dims.mod
-rnode.o: advect_kit.mod catt_start.mod dtset.mod io_params.mod mem_aerad.mod
-rnode.o: mem_cuparm.mod mem_grid.mod mem_leaf.mod mem_oda.mod mem_radiate.mod
-rnode.o: node_mod.mod var_tables.mod
+rnode.o: advect_kit.mod catt_start.mod dtset.mod grid_dims.mod io_params.mod
+rnode.o: mem_aerad.mod mem_cuparm.mod mem_grid.mod mem_leaf.mod mem_oda.mod
+rnode.o: mem_radiate.mod node_mod.mod var_tables.mod
 rthrm.o: mem_basic.mod mem_grid.mod mem_micro.mod mem_scratch.mod micphys.mod
 rthrm.o: node_mod.mod rconstants.mod therm_lib.mod
 rtimh.o: advect_kit.mod catt_start.mod emission_source_map.mod mem_all.mod
 rtimh.o: mem_basic.mod mem_cuparm.mod mem_emiss.mod mem_grid.mod mem_leaf.mod
 rtimh.o: mem_mass.mod mem_oda.mod mem_scalar.mod mem_turb.mod mem_varinit.mod
-rtimh.o: node_mod.mod rconstants.mod teb_spm_start.mod therm_lib.mod
+rtimh.o: node_mod.mod teb_spm_start.mod therm_lib.mod
 rtimi.o: mem_basic.mod mem_grid.mod mem_scratch.mod mem_tend.mod node_mod.mod
 rtimi.o: var_tables.mod
 cu_read.o: mem_basic.mod mem_cuparm.mod mem_grid.mod
@@ -159,8 +159,8 @@ ranlavg.o: io_params.mod mem_basic.mod mem_grid.mod mem_scratch.mod mem_turb.mod
 ranlavg.o: node_mod.mod var_tables.mod
 rcio.o: grell_coms.mod leaf_coms.mod mem_all.mod mem_mass.mod therm_lib.mod
 rcio.o: turb_coms.mod
-recycle.o: io_params.mod mem_aerad.mod mem_cuparm.mod mem_grid.mod mem_leaf.mod
-recycle.o: mem_scratch.mod var_tables.mod
+recycle.o: grid_dims.mod io_params.mod mem_aerad.mod mem_cuparm.mod mem_grid.mod
+recycle.o: mem_leaf.mod mem_scratch.mod var_tables.mod
 rhdf5.o: an_header.mod grid_dims.mod  io_params.mod mem_aerad.mod
 rhdf5.o: mem_cuparm.mod mem_grid.mod var_tables.mod
 rio.o: an_header.mod grid_dims.mod io_params.mod mem_aerad.mod mem_basic.mod
@@ -194,6 +194,7 @@ numutils.o: rconstants.mod therm_lib.mod
 polarst.o: rconstants.mod
 therm_lib.o: rconstants.mod
 therm_lib8.o: rconstants.mod therm_lib.mod
+varutils.o: mem_aerad.mod mem_cuparm.mod mem_grid.mod node_mod.mod
 mem_mass.o: grid_dims.mod var_tables.mod
 rexev.o: mem_basic.mod mem_grid.mod mem_mass.mod mem_scratch.mod mem_tend.mod
 rexev.o: rconstants.mod therm_lib.mod
@@ -282,9 +283,10 @@ mpass_oda.o: grid_dims.mod mem_oda.mod node_mod.mod rpara.mod
 mpass_st.o: grid_dims.mod mem_basic.mod mem_grid.mod mem_scratch.mod
 mpass_st.o: node_mod.mod
 node_mod.o: grid_dims.mod
-par_decomp.o: cyclic_mod.mod domain_decomp.mod mem_grid.mod rpara.mod
-para_init.o: mem_basic.mod mem_cuparm.mod mem_grid.mod mem_scratch.mod
-para_init.o: node_mod.mod rpara.mod var_tables.mod
+par_decomp.o: cyclic_mod.mod domain_decomp.mod grid_dims.mod mem_grid.mod
+par_decomp.o: rpara.mod
+para_init.o: grid_dims.mod mem_aerad.mod mem_basic.mod mem_cuparm.mod
+para_init.o: mem_grid.mod mem_scratch.mod node_mod.mod rpara.mod var_tables.mod
 paral.o: grid_dims.mod mem_aerad.mod mem_cuparm.mod mem_grid.mod mem_scratch.mod
 paral.o: node_mod.mod rpara.mod var_tables.mod
 rnest_par.o: mem_grid.mod
@@ -429,8 +431,8 @@ heun_driver.o: rk4_driver.mod rk4_stepper.mod soil_coms.mod
 lsm_hyd.o: consts_coms.mod ed_misc_coms.mod ed_node_coms.mod ed_state_vars.mod
 lsm_hyd.o: grid_coms.mod hydrology_coms.mod hydrology_constants.mod pft_coms.mod
 lsm_hyd.o: soil_coms.mod therm_lib.mod
-mortality.o: disturb_coms.mod ed_max_dims.mod ed_misc_coms.mod ed_state_vars.mod
-mortality.o: pft_coms.mod
+mortality.o: consts_coms.mod disturb_coms.mod ed_max_dims.mod ed_misc_coms.mod
+mortality.o: ed_state_vars.mod pft_coms.mod
 phenology_aux.o: consts_coms.mod ed_max_dims.mod ed_state_vars.mod pft_coms.mod
 phenology_aux.o: phenology_coms.mod
 phenology_driv.o: allometry.mod consts_coms.mod decomp_coms.mod ed_max_dims.mod

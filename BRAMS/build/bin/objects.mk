@@ -256,6 +256,7 @@ OBJ_MODEL =                         \
 	var_tables.o                \
 	varf_read.o                 \
 	varf_update.o               \
+	varutils.o                  \
 	vformat.o                   \
 	vtab_fill.o                 \
 	edcp_driver.o               \

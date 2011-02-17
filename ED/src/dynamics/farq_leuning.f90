@@ -1590,7 +1590,7 @@ module farq_leuning
       ! conductance.                                                                       !
       !------------------------------------------------------------------------------------!
       !----- 1. Find some auxiliary variables. --------------------------------------------!
-      xtmp = met%blyr_cond_h2o * ( met%can_shv - met%lint_shv - thispft.d0)/thispft.d0
+      xtmp = met%blyr_cond_h2o * ( met%can_shv - met%lint_shv - thispft%d0)/thispft%d0
       ytmp = met%blyr_cond_co2 + xtmp * gbw_2_gbc8
       ztmp = xtmp * gbw_2_gbc8 * met%blyr_cond_co2
       wtmp = ztmp * met%can_co2 - ytmp * aparms%nu

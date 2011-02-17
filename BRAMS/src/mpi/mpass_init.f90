@@ -1337,10 +1337,10 @@ subroutine nodeget_grid_dimens()
    zzz=1000
    do nm=1,nmachs
      zzz=zzz+1
-     call MPI_Recv(node_buffs(nm)%nsend,1,MPI_INTEGER,master_num,zzz,MPI_COMM_WORLD        &
+     call MPI_Recv(nsend_buff(nm),1,MPI_INTEGER,master_num,zzz,MPI_COMM_WORLD    &
                   ,MPI_STATUS_IGNORE,ierr)
      zzz=zzz+1
-     call MPI_Recv(node_buffs(nm)%nrecv,1,MPI_INTEGER,master_num,zzz,MPI_COMM_WORLD        &
+     call MPI_Recv(nrecv_buff(nm),1,MPI_INTEGER,master_num,zzz,MPI_COMM_WORLD    &
                   ,MPI_STATUS_IGNORE,ierr)
    end do
    zzz=zzz+1
@@ -1429,6 +1429,14 @@ subroutine nodeget_gridset
 
    return
 end subroutine nodeget_gridset
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
 !==========================================================================================!
 !==========================================================================================!
 !    This subroutine receives information that did not fit in any of the previous calls,   !
