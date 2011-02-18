@@ -2574,10 +2574,10 @@ subroutine init_phen_coms
    rad_turnover_int         = dble(radint)  !-11.3868
    rad_turnover_slope       = dble(radslp)  !0.0824
 
-   vm_tran                  = 7.5
+   vm_tran                  = 8.5
    vm_slop                  = 7.0
-   vm_amp                   = 51.0
-   vm_min                   = 15.0
+   vm_amp                   = 42.0
+   vm_min                   = 18.0
 
    !---------------------------------------------------------------------------------------!
    !     This variable is the maximum distance between the coordinates of a prescribed     !
