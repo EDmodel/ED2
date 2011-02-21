@@ -68,13 +68,12 @@ recursive subroutine read_ed_xml_config(filename)
   use physiology_coms
   use decomp_coms
   use fusion_fission_coms
-  use ed_misc_coms
   use grid_coms, only : ngrids
   use ed_max_dims, only : str_len
 
   use soil_coms  !, only: infiltration_method, dewmax, water_stab_thresh
 !  use ed_data
-  use ed_misc_coms, only: ied_init_mode,ffilout,integration_scheme,ed_inputs_dir,sfilin,sfilout
+  use ed_misc_coms!, only: ied_init_mode,ffilout,integration_scheme,sfilin,sfilout,thsums_database
   use rk4_coms, only : rk4min_veg_temp
   implicit none
   integer(4) :: i,npft,ntag,myPFT,len,ival = 0

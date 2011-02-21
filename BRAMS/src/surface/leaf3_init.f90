@@ -533,6 +533,11 @@ subroutine sfcinit_nofile(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,seatp,s
    else
       timefac_sst = (time - ssttime1(ifm)) / (ssttime2(ifm) - ssttime1(ifm))
    end if
+   if (iupdndvi == 0) then
+      timefac_ndvi = 0.
+   else
+      timefac_ndvi = (time - ndvitime1(ifm)) / (ndvitime2(ifm) - ndvitime1(ifm))
+   end if
 
    jloop: do j = 1,n3
       iloop: do i = 1,n2
@@ -736,16 +741,15 @@ subroutine sfcinit_nofile(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,seatp,s
                sfcwater_nlev(i,j,ipat) = 0.
             end if
 
-
-            call vegndvi(ifm,patch_area  (i,j,ipat) ,leaf_class(i,j,ipat)                  &
-                            ,veg_fracarea(i,j,ipat) ,veg_lai   (i,j,ipat)                  &
-                            ,veg_tai     (i,j,ipat) ,veg_rough (i,j,ipat)                  &
-                            ,veg_height  (i,j,ipat) ,veg_albedo(i,j,ipat)                  &
-                            ,veg_ndvip   (i,j,ipat) ,veg_ndvic (i,j,ipat)                  &
-                            ,veg_ndvif   (i,j,ipat)                                        )
+            call vegndvi(patch_area  (i,j,ipat) ,leaf_class(i,j,ipat)                      &
+                        ,veg_fracarea(i,j,ipat) ,veg_lai   (i,j,ipat)                      &
+                        ,veg_tai     (i,j,ipat) ,veg_rough (i,j,ipat)                      &
+                        ,veg_height  (i,j,ipat) ,veg_albedo(i,j,ipat)                      &
+                        ,veg_ndvip   (i,j,ipat) ,veg_ndvic (i,j,ipat)                      &
+                        ,veg_ndvif   (i,j,ipat)                                            )
 
             call leaf_grndvap( soil_energy(mzg,i,j,ipat) , soil_water     (mzg,i,j,ipat)   &
-                             , soil_text  (mzg,i,j,ipat) , sfcwater_energy(mzs,i,j,ipat)   &
+                             , soil_text  (mzg,i,j,ipat) , sfcwater_energy(  1,i,j,ipat)   &
                              , sfcwater_nlev  (i,j,ipat) , can_rvap           (i,j,ipat)   &
                              , can_prss       (i,j,ipat) , ground_rsat        (i,j,ipat)   &
                              , ground_rvap    (i,j,ipat) , ground_temp        (i,j,ipat)   &

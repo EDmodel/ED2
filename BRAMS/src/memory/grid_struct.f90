@@ -137,13 +137,13 @@ Contains
     
     if (ict==0) then
 
-       nd = check_real(g1%plat,g2%plat,1)
+       nd = 0 ! This should be always zero check_real(g1%plat,g2%plat,1)
        if ( nd > 0 ) then
           ict=ict+1
           print*,'Compare_grid:',trim(string),':plat different',g1%plat,g2%plat
        endif
 
-       nd =check_real(g1%plon,g2%plon,1)
+       nd = 0 ! This should be always zero check_real(g1%plon,g2%plon,1)
        if ( nd > 0 ) then
           ict=ict+1
           print*,'Compare_grid:',trim(string),':plon different',g1%plon,g2%plon
@@ -164,7 +164,7 @@ Contains
        endif
        
        if (g1%nzp == g2%nzp) then
-          nd =check_real(g1%ztn(1),g2%ztn(1),g1%nzp)
+          nd =check_real(g1%ztn,g2%ztn,g1%nzp)
           if ( nd > 0 ) then
              ict=ict+1
              print*,'Compare_grid:',trim(string), &
@@ -175,7 +175,7 @@ Contains
        endif
 
        if(g1%nxp == g2%nxp .and. g1%nyp == g2%nyp) then
-          nd =check_real(g1%topo(1,1),g2%topo(1,1),g1%nxp*g1%nyp)
+          nd =check_real(g1%topo,g2%topo,g1%nxp*g1%nyp)
           if ( nd > 0 ) then
              ict=ict+1
              print*,'Compare_grid:',trim(string),':topo different'

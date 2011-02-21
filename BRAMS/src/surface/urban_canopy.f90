@@ -26,7 +26,7 @@ implicit none
 call urb_tend(mzp,mxp,myp,ia,iz,ja,jz,jdim         &
              ,basic_g(ngrid)%up,basic_g(ngrid)%vp  &
              ,turb_g(ngrid)%cdrag,scratch%scr2     &
-             ,tend%ut,tend%vt,dtlv                 )
+             ,tend_g(ngrid)%ut,tend_g(ngrid)%vt,dtlv )
              
 return
 end

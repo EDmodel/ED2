@@ -182,35 +182,35 @@ contains
     npts=n1*n2*n3
 
     if (associated(oda%uk))  &
-         call vtables2 (oda%uk(1,1,1),odam%uk(1,1,1)  &
+         call vtables2 (oda%uk,odam%uk  &
          ,ng, npts, imean,  &
          'UKODA :3:')
     if (associated(oda%vk))  &
-         call vtables2 (oda%vk(1,1,1),odam%vk(1,1,1)  &
+         call vtables2 (oda%vk,odam%vk  &
          ,ng, npts, imean,  &
          'VKODA :3:')
     if (associated(oda%tk))  &
-         call vtables2 (oda%tk(1,1,1),odam%tk(1,1,1)  &
+         call vtables2 (oda%tk,odam%tk  &
          ,ng, npts, imean,  &
          'TKODA :3:')
     if (associated(oda%rk))  &
-         call vtables2 (oda%rk(1,1,1),odam%rk(1,1,1)  &
+         call vtables2 (oda%rk,odam%rk  &
          ,ng, npts, imean,  &
          'RKODA :3:')
     if (associated(oda%ukv))  &
-         call vtables2 (oda%ukv(1,1,1),odam%ukv(1,1,1)  &
+         call vtables2 (oda%ukv,odam%ukv  &
          ,ng, npts, imean,  &
          'UVODA :3:')
     if (associated(oda%vkv))  &
-         call vtables2 (oda%vkv(1,1,1),odam%vkv(1,1,1)  &
+         call vtables2 (oda%vkv,odam%vkv  &
          ,ng, npts, imean,  &
          'VVODA :3:')
     if (associated(oda%tkv))  &
-         call vtables2 (oda%tkv(1,1,1),odam%tkv(1,1,1)  &
+         call vtables2 (oda%tkv,odam%tkv  &
          ,ng, npts, imean,  &
          'TVODA :3:')
     if (associated(oda%rkv))  &
-         call vtables2 (oda%rkv(1,1,1),odam%rkv(1,1,1)  &
+         call vtables2 (oda%rkv,odam%rkv  &
          ,ng, npts, imean,  &
          'RVODA :3:')
 

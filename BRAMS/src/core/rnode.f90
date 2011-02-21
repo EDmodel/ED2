@@ -578,7 +578,7 @@ subroutine init_fields(init)
 
 
    !---------------------------------------------------------------------------------------!
-   !!     In case the boundary conditions are cyclic, initialise the cyclic structure.     !
+   !      In case the boundary conditions are cyclic, initialise the cyclic structure.     !
    !---------------------------------------------------------------------------------------!
    if (ibnd == 4 .or. jbnd == 4) then
       call node_cycinit(nnzp(1),nnxp(1),nnyp(1),npvar,nmachs,ibnd,jbnd,mynum)

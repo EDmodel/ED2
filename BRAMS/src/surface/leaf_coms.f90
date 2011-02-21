@@ -48,17 +48,17 @@ module leaf_coms
             , atm_shv      & ! specific humidity at top of surface layer         [   kg/kg]
             , atm_co2      & ! CO2 mixing ratio at top of surface layer          [µmol/mol]
             , atm_theiv    & ! atmospheric ice-vapour equivalent potential temp. [       K]
+            , atm_rhos     & ! air density                                       [   kg/m³]
             , geoht        & ! height at top of surface layer                    [       m]
             , atm_exner    & ! "Exner" function at surface (Exner/cp)            [     ---]
             , atm_prss     & ! pressure at surface                               [      Pa]
-            , vels         & ! wind speed at top of surface layer                [       m]
-            , vels_pat     & ! vels with patch-dep. ubmin imposed as minimum     [     m/s]
+            , atm_vels     & ! wind speed at top of surface layer                [       m]
             , pcpgl        & ! precip mass in leaf timestep                      [   kg/m²]
             , qpcpgl       & ! precip energy in leaf timestep                    [    J/m²]
             , dpcpgl       & ! precip depth in leaf timestep                     [       m]
             , pcpgc        & ! precip mass in canopy timestep                    [   kg/m²]
             , qpcpgc       & ! precip energy in canopy timestep                  [    J/m²]
-            
+
             , snowfac      & ! fraction of vegetation height covered by sfcwater [     ---]
             , vf           & ! product of veg_fracarea and (1-snowfac)           [     ---]
             , can_exner    & ! canopy air Exner function                         [  J/kg/K]
@@ -73,6 +73,7 @@ module leaf_coms
             , estar        & ! theta_Eiv characteristic friction scale           [       K]
             , qstar        & ! specific humidity characteristic friction scale   [   kg/kg]
             , timefac_sst  & ! time interpolation factor for SST                 [     ---]
+            , timefac_ndvi & ! time interpolation factor for NDVI or LAI         [     ---]
             
             , gbh          & ! leaf boundary layer heat conductance              [J/K/m2/s]
             , gbw          & ! leaf boundary layer water conductance             [ kg/m2/s]

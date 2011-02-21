@@ -32,7 +32,7 @@ subroutine exevolve(m1,m2,m3,ifm,ia,iz,ja,jz,izu,jzv,jdim,mynum,edt,key)
    use mem_basic,   only: basic_g
    use mem_grid,    only: grid_g, itopo
    use mem_mass,    only: mass_g
-   use mem_tend,    only: tend
+   use mem_tend,    only: tend_g
    use mem_scratch, only: scratch
    use therm_lib,   only: vapour_on
 
@@ -82,12 +82,12 @@ subroutine exevolve(m1,m2,m3,ifm,ia,iz,ja,jz,izu,jzv,jdim,mynum,edt,key)
                   ,basic_g(ifm)%uc                        ,basic_g(ifm)%dn0u               &
                   ,basic_g(ifm)%vc                        ,basic_g(ifm)%dn0v               &
                   ,basic_g(ifm)%dn0                       ,basic_g(ifm)%wc                 &
-                  ,basic_g(ifm)%pc                        ,tend%pt                         )
+                  ,basic_g(ifm)%pc                        ,tend_g(ifm)%pt                  )
       !----- Calculate compression term ---------------------------------------------------!
       call excondiv(m1,m2,m3,ia,iz,ja,jz,izu,jzv,jdim,itopo                                &
                    ,basic_g(ifm)%uc                       ,basic_g(ifm)%vc                 &
                    ,basic_g(ifm)%wc                       ,basic_g(ifm)%pc                 &
-                   ,tend%pt                               ,grid_g(ifm)%dxt                 &
+                   ,tend_g(ifm)%pt                        ,grid_g(ifm)%dxt                 &
                    ,grid_g(ifm)%dyt                       ,grid_g(ifm)%rtgt                &
                    ,grid_g(ifm)%rtgu                      ,grid_g(ifm)%rtgv                &
                    ,grid_g(ifm)%f13t                      ,grid_g(ifm)%f23t                &
@@ -107,7 +107,7 @@ subroutine exevolve(m1,m2,m3,ifm,ia,iz,ja,jz,izu,jzv,jdim,mynum,edt,key)
                        ,basic_g(ifm)%vp                  ,basic_g(ifm)%vc                  &
                        ,basic_g(ifm)%wp                  ,basic_g(ifm)%wc                  &
                        ,basic_g(ifm)%pi0                 ,basic_g(ifm)%pc                  &
-                       ,tend%pt                          ,basic_g(ifm)%theta               &
+                       ,tend_g(ifm)%pt                   ,basic_g(ifm)%theta               &
                        ,scratch%vt3dp                    ,scratch%vt3dq                    &
                        ,basic_g(ifm)%dn0                 ,basic_g(ifm)%dn0u                &
                        ,basic_g(ifm)%dn0v                ,grid_g(ifm)%rtgt                 &
@@ -127,7 +127,7 @@ subroutine exevolve(m1,m2,m3,ifm,ia,iz,ja,jz,izu,jzv,jdim,mynum,edt,key)
                         ,basic_g(ifm)%pi0                ,basic_g(ifm)%pc                  &
                         ,scratch%vt3dp                   ,scratch%vt3dq                    &
                         ,basic_g(ifm)%theta              ,mass_g(ifm)%thvlast              &
-                        ,mass_g(ifm)%lnthvtend           ,tend%pt                          )
+                        ,mass_g(ifm)%lnthvtend           ,tend_g(ifm)%pt                   )
    
    case default
       !------------------------------------------------------------------------------------!
@@ -387,7 +387,7 @@ subroutine fill_thvlast(m1,m2,m3,ia,iz,ja,jz,thvlast,theta,rtp,rv)
    !----- Arguments -----------------------------------------------------------------------!
    integer                      , intent(in)    :: m1, m2, m3, ia, iz, ja, jz
    real    , dimension(m1,m2,m3), intent(in)    :: theta, rtp, rv
-   real    , dimension(m1,m2,m3), intent(out)   :: thvlast
+   real    , dimension(m1,m2,m3), intent(inout) :: thvlast
    !----- Local variables -----------------------------------------------------------------!
    integer                                      :: k, i, j
    !---------------------------------------------------------------------------------------!
@@ -436,7 +436,7 @@ subroutine advect_theta(m1,m2,m3,ia,iz,ja,jz,izu,jzv,jdim,mynum,edt,up,uc,vp,vc,
    real    , dimension(m1,m2,m3) , intent(in)    :: dn0,dn0u,dn0v
    real    , dimension(   m2,m3) , intent(in)    :: rtgt,rtgu,rtgv,fmapt,fmapui,fmapvi
    real    , dimension(   m2,m3) , intent(in)    :: f13t,f23t,dxu,dyv,dxt,dyt
-   real    , dimension(m1,m2,m3) , intent(out)   :: lnthvadv,lnthetav
+   real    , dimension(m1,m2,m3) , intent(inout) :: lnthvadv,lnthetav
    real    , dimension(m1,m2,m3) , intent(inout) :: pt
    !---------------------------------------------------------------------------------------!
 
@@ -468,13 +468,13 @@ subroutine exthvadv(m1,m2,m3,ia,iz,ja,jz,izu,jzv,jdim,mynum,edt,up,uc,vp,vc,wp,w
                           , vctr2   ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
-   integer                      , intent(in)   :: m1,m2,m3,ia,iz,ja,jz,izu,jzv,jdim,mynum
-   real                         , intent(in)   :: edt
-   real    , dimension(m1,m2,m3), intent(in)   :: up,uc,vp,vc,wp,wc,theta,rtp,rv
-   real    , dimension(m1,m2,m3), intent(in)   :: dn0,dn0u,dn0v
-   real    , dimension(   m2,m3), intent(in)   :: rtgt,rtgu,rtgv,fmapt,fmapui,fmapvi
-   real    , dimension(   m2,m3), intent(in)   :: f13t,f23t,dxu,dyv,dxt,dyt
-   real    , dimension(m1,m2,m3), intent(out)  :: lnthvadv,lnthetav
+   integer                      , intent(in)    :: m1,m2,m3,ia,iz,ja,jz,izu,jzv,jdim,mynum
+   real                         , intent(in)    :: edt
+   real    , dimension(m1,m2,m3), intent(in)    :: up,uc,vp,vc,wp,wc,theta,rtp,rv
+   real    , dimension(m1,m2,m3), intent(in)    :: dn0,dn0u,dn0v
+   real    , dimension(   m2,m3), intent(in)    :: rtgt,rtgu,rtgv,fmapt,fmapui,fmapvi
+   real    , dimension(   m2,m3), intent(in)    :: f13t,f23t,dxu,dyv,dxt,dyt
+   real    , dimension(m1,m2,m3), intent(inout) :: lnthvadv,lnthetav
    !----- Local variables -----------------------------------------------------------------!
    integer                                     :: i,j,k,isiz
    !---------------------------------------------------------------------------------------!
@@ -650,7 +650,7 @@ subroutine storage_theta(m1,m2,m3,ifm,ia,iz,ja,jz,izu,jzv,mynum,edt,pi0,pc,rtp,r
    integer                       , intent(in)    :: m1,m2,m3,ifm,ia,iz,ja,jz,izu,jzv,mynum
    real                          , intent(in)    :: edt
    real    , dimension(m1,m2,m3) , intent(in)    :: pi0,pc,rtp,rv,theta,thvlast
-   real    , dimension(m1,m2,m3) , intent(out)   :: lnthvtend
+   real    , dimension(m1,m2,m3) , intent(inout) :: lnthvtend
    real    , dimension(m1,m2,m3) , intent(inout) :: pt
    !---------------------------------------------------------------------------------------!
   
@@ -680,10 +680,10 @@ subroutine prep_lnthvtend(m1,m2,m3,ifm,ia,iz,ja,jz,izu,jzv,edt,theta,thvlast,rtp
    use therm_lib , only : virtt    ! ! Function
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
-   integer                       , intent(in)  :: m1,m2,m3,ifm,ia,iz,ja,jz,izu,jzv
-   real                          , intent(in)  :: edt
-   real    , dimension(m1,m2,m3) , intent(in)  :: theta,rv,rtp,thvlast
-   real    , dimension(m1,m2,m3) , intent(out) :: lnthvtend
+   integer                       , intent(in)    :: m1,m2,m3,ifm,ia,iz,ja,jz,izu,jzv
+   real                          , intent(in)    :: edt
+   real    , dimension(m1,m2,m3) , intent(in)    :: theta,rv,rtp,thvlast
+   real    , dimension(m1,m2,m3) , intent(inout) :: lnthvtend
    !----- Local variables -----------------------------------------------------------------!
    integer                                     :: i,j,k
    real                                        :: edti

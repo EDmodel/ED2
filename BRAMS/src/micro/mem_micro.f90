@@ -333,79 +333,79 @@ module mem_micro
       !------------------------------------------------------------------------------------!
       npts=n1*n2*n3
       if (associated(micro%rcp))                                                           &
-         call vtables2 (micro%rcp(1,1,1),microm%rcp(1,1,1),ng, npts, imean                 &
+         call vtables2 (micro%rcp,microm%rcp,ng, npts, imean                               &
                        ,'RCP :3:hist:anal:mpti:mpt3:mpt1')
 
       if (associated(micro%rrp))                                                           &
-         call vtables2 (micro%rrp(1,1,1),microm%rrp(1,1,1),ng, npts, imean                 &
+         call vtables2 (micro%rrp,microm%rrp,ng, npts, imean                               &
                        ,'RRP :3:hist:anal:mpti:mpt3:mpt1')
 
       if (associated(micro%rpp))                                                           &
-         call vtables2 (micro%rpp(1,1,1),microm%rpp(1,1,1),ng, npts, imean                 &
+         call vtables2 (micro%rpp,microm%rpp,ng, npts, imean                               &
                        ,'RPP :3:hist:anal:mpti:mpt3:mpt1')
 
       if (associated(micro%rsp))                                                           &
-         call vtables2 (micro%rsp(1,1,1),microm%rsp(1,1,1),ng, npts, imean                 &
+         call vtables2 (micro%rsp,microm%rsp,ng, npts, imean                               &
                        ,'RSP :3:hist:anal:mpti:mpt3:mpt1')
 
       if (associated(micro%rap))                                                           &
-         call vtables2 (micro%rap(1,1,1),microm%rap(1,1,1),ng, npts, imean                 &
+         call vtables2 (micro%rap,microm%rap,ng, npts, imean                               &
                        ,'RAP :3:hist:anal:mpti:mpt3:mpt1')
 
       if (associated(micro%rgp))                                                           &
-         call vtables2 (micro%rgp(1,1,1),microm%rgp(1,1,1),ng, npts, imean                 &
+         call vtables2 (micro%rgp,microm%rgp,ng, npts, imean                               &
                        ,'RGP :3:hist:anal:mpti:mpt3:mpt1')
 
       if (associated(micro%rhp))                                                           &
-         call vtables2 (micro%rhp(1,1,1),microm%rhp(1,1,1),ng, npts, imean                 &
+         call vtables2 (micro%rhp,microm%rhp,ng, npts, imean                               &
                        ,'RHP :3:hist:anal:mpti:mpt3:mpt1')
 
       if (associated(micro%ccp))                                                           &
-         call vtables2 (micro%ccp(1,1,1),microm%ccp(1,1,1),ng, npts, imean                 &
+         call vtables2 (micro%ccp,microm%ccp,ng, npts, imean                               &
                        ,'CCP :3:hist:anal:mpti:mpt3:mpt1')
 
       if (associated(micro%crp))                                                           &
-         call vtables2 (micro%crp(1,1,1),microm%crp(1,1,1),ng, npts, imean                 &
+         call vtables2 (micro%crp,microm%crp,ng, npts, imean                               &
                        ,'CRP :3:hist:anal:mpti:mpt3:mpt1')
 
       if (associated(micro%cpp))                                                           &
-         call vtables2 (micro%cpp(1,1,1),microm%cpp(1,1,1),ng, npts, imean                 &
+         call vtables2 (micro%cpp,microm%cpp,ng, npts, imean                               &
                        ,'CPP :3:hist:anal:mpti:mpt3:mpt1')
 
       if (associated(micro%csp))                                                           &
-         call vtables2 (micro%csp(1,1,1),microm%csp(1,1,1),ng, npts, imean                 &
+         call vtables2 (micro%csp,microm%csp,ng, npts, imean                               &
                        ,'CSP :3:hist:anal:mpti:mpt3:mpt1')
 
       if (associated(micro%cap))                                                           &
-         call vtables2 (micro%cap(1,1,1),microm%cap(1,1,1),ng, npts, imean                 &
+         call vtables2 (micro%cap,microm%cap,ng, npts, imean                               &
                        ,'CAP :3:hist:anal:mpti:mpt3:mpt1')
 
       if (associated(micro%cgp))                                                           &
-         call vtables2 (micro%cgp(1,1,1),microm%cgp(1,1,1),ng, npts, imean                 &
+         call vtables2 (micro%cgp,microm%cgp,ng, npts, imean                               &
                        ,'CGP :3:hist:anal:mpti:mpt3:mpt1')
 
       if (associated(micro%chp))                                                           &
-         call vtables2 (micro%chp(1,1,1),microm%chp(1,1,1),ng, npts, imean                 &
+         call vtables2 (micro%chp,microm%chp,ng, npts, imean                               &
                        ,'CHP :3:hist:anal:mpti:mpt3:mpt1')
 
       if (associated(micro%cccnp))                                                         &
-         call vtables2 (micro%cccnp(1,1,1),microm%cccnp(1,1,1),ng, npts, imean             &
+         call vtables2 (micro%cccnp,microm%cccnp,ng, npts, imean                           &
                        ,'CCCNP :3:hist:anal:mpti:mpt3:mpt1')
 
       if (associated(micro%cifnp))                                                         &
-         call vtables2 (micro%cifnp(1,1,1),microm%cifnp(1,1,1),ng, npts, imean             &
+         call vtables2 (micro%cifnp,microm%cifnp,ng, npts, imean                           &
                        ,'CIFNP :3:hist:anal:mpti:mpt3:mpt1')
 
       if (associated(micro%q2))                                                            &
-         call vtables2 (micro%q2(1,1,1),microm%q2(1,1,1),ng, npts, imean                   &
+         call vtables2 (micro%q2,microm%q2,ng, npts, imean                                 &
                        ,'Q2 :3:hist:anal:mpti:mpt3')
 
       if (associated(micro%q6))                                                            &
-         call vtables2 (micro%q6(1,1,1),microm%q6(1,1,1),ng, npts, imean                   &
+         call vtables2 (micro%q6,microm%q6,ng, npts, imean                                 &
                        ,'Q6 :3:hist:anal:mpti:mpt3')
 
       if (associated(micro%q7))                                                            &
-         call vtables2 (micro%q7(1,1,1),microm%q7(1,1,1),ng, npts, imean                   &
+         call vtables2 (micro%q7,microm%q7,ng, npts, imean                                 &
                        ,'Q7 :3:hist:anal:mpti:mpt3')
       !------------------------------------------------------------------------------------!
 
@@ -417,63 +417,63 @@ module mem_micro
       npts=n2*n3
 
       if (associated(micro%accpr))                                                         &
-         call vtables2 (micro%accpr(1,1),microm%accpr(1,1),ng, npts, imean                 &
+         call vtables2 (micro%accpr,microm%accpr,ng, npts, imean                           &
                        ,'ACCPR :2:hist:anal:mpti:mpt3')
 
       if (associated(micro%accpp))                                                         &
-         call vtables2 (micro%accpp(1,1),microm%accpp(1,1),ng, npts, imean                 &
+         call vtables2 (micro%accpp,microm%accpp,ng, npts, imean                           &
                        ,'ACCPP :2:hist:anal:mpti:mpt3')
 
       if (associated(micro%accps))                                                         &
-         call vtables2 (micro%accps(1,1),microm%accps(1,1),ng, npts, imean                 &
+         call vtables2 (micro%accps,microm%accps,ng, npts, imean                           &
                        ,'ACCPS :2:hist:anal:mpti:mpt3')
 
       if (associated(micro%accpa))                                                         &
-         call vtables2 (micro%accpa(1,1),microm%accpa(1,1),ng, npts, imean                 &
+         call vtables2 (micro%accpa,microm%accpa,ng, npts, imean                           &
                        ,'ACCPA :2:hist:anal:mpti:mpt3')
 
       if (associated(micro%accpg))                                                         &
-         call vtables2 (micro%accpg(1,1),microm%accpg(1,1),ng, npts, imean                 &
+         call vtables2 (micro%accpg,microm%accpg,ng, npts, imean                           &
                        ,'ACCPG :2:hist:anal:mpti:mpt3')
 
       if (associated(micro%accph))                                                         &
-         call vtables2 (micro%accph(1,1),microm%accph(1,1),ng, npts, imean                 &
+         call vtables2 (micro%accph,microm%accph,ng, npts, imean                           &
                        ,'ACCPH :2:hist:anal:mpti:mpt3')
 
       if (associated(micro%pcprr))                                                         &
-         call vtables2 (micro%pcprr(1,1),microm%pcprr(1,1),ng, npts, imean                 &
+         call vtables2 (micro%pcprr,microm%pcprr,ng, npts, imean                           &
                        ,'PCPRR :2:anal:mpt3')
 
       if (associated(micro%pcprp))                                                         &
-         call vtables2 (micro%pcprp(1,1),microm%pcprp(1,1),ng, npts, imean                 &
+         call vtables2 (micro%pcprp,microm%pcprp,ng, npts, imean                           &
                        ,'PCPRP :2:anal:mpt3')
 
       if (associated(micro%pcprs))                                                         &
-         call vtables2 (micro%pcprs(1,1),microm%pcprs(1,1),ng, npts, imean                 &
+         call vtables2 (micro%pcprs,microm%pcprs,ng, npts, imean                           &
                        ,'PCPRS :2:anal:mpt3')
 
       if (associated(micro%pcpra))                                                         &
-         call vtables2 (micro%pcpra(1,1),microm%pcpra(1,1),ng, npts, imean                 &
+         call vtables2 (micro%pcpra,microm%pcpra,ng, npts, imean                           &
                        ,'PCPRA :2:anal:mpt3')
 
       if (associated(micro%pcprg))                                                         &
-         call vtables2 (micro%pcprg(1,1),microm%pcprg(1,1),ng, npts, imean                 &
+         call vtables2 (micro%pcprg,microm%pcprg,ng, npts, imean                           &
                        ,'PCPRG :2:anal:mpt3')
 
       if (associated(micro%pcprh))                                                         &
-         call vtables2 (micro%pcprh(1,1),microm%pcprh(1,1),ng, npts, imean                 &
+         call vtables2 (micro%pcprh,microm%pcprh,ng, npts, imean                           &
                        ,'PCPRH :2:anal:mpt3')
 
       if (associated(micro%pcpg))                                                          &
-         call vtables2 (micro%pcpg(1,1),microm%pcpg(1,1),ng, npts, imean                   &
+         call vtables2 (micro%pcpg,microm%pcpg,ng, npts, imean                             &
                        ,'PCPG :2:hist:mpti:mpt3')
 
       if (associated(micro%qpcpg))                                                         &
-         call vtables2 (micro%qpcpg(1,1),microm%qpcpg(1,1),ng, npts, imean                 &
+         call vtables2 (micro%qpcpg,microm%qpcpg,ng, npts, imean                           &
                        ,'QPCPG :2:hist:mpti:mpt3')
 
       if (associated(micro%dpcpg))                                                         &
-         call vtables2 (micro%dpcpg(1,1),microm%dpcpg(1,1),ng, npts, imean                 &
+         call vtables2 (micro%dpcpg,microm%dpcpg,ng, npts, imean                           &
                        ,'DPCPG :2:hist:mpti:mpt3')
       return
    end subroutine filltab_micro

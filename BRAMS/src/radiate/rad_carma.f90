@@ -4726,8 +4726,8 @@ module rad_carma
       integer                                   :: l
       !------------------------------------------------------------------------------------!
 
-      nzz  = m1 - 1
-      aotr = 0.0
+      nzz     = m1 - 1
+      aotr(:) = 0.0
 
       !----- Reverse the vertical and transfer values from CARMA grid to BRAMS grid. ------!
       do k=2,m1

@@ -1348,7 +1348,7 @@ subroutine transfer_ed2leaf(ifm,timel)
          leaf_g(ifm)%ribulk (m2,j,2) = leaf_g(ifm)%ribulk (m2-1,j,2)
       end do
    end if
-  
+
    !----- Southern Boundary ---------------------------------------------------------------!
    if (jdim == 1 .and. iand(ibcon,4) /= 0) then
       do i = ia,iz
@@ -1443,7 +1443,7 @@ subroutine transfer_ed2leaf(ifm,timel)
    end if
 
    !----- Southeastern corner -------------------------------------------------------------!
-   if (iand(ibcon,6) /= 0 .or. (iand(ibcon,1) /= 0 .and. jdim == 0)) then
+   if (iand(ibcon,6) /= 0 .or. (iand(ibcon,2) /= 0 .and. jdim == 0)) then
       ic=m2
       jc=1
       ici=m2-1
@@ -1474,11 +1474,11 @@ subroutine transfer_ed2leaf(ifm,timel)
       leaf_g(ifm)%ribulk (ic,jc,2) = leaf_g(ifm)%ribulk (ici,jci,2)
    end if
   
-   !----- Northeastern corner -------------------------------------------------------------!
-   if (iand(ibcon,9) /= 0 .or. (iand(ibcon,2) /= 0 .and. jdim == 0)) then
-      ic=m2
+   !----- Northwestern corner -------------------------------------------------------------!
+   if (iand(ibcon,9) /= 0 .or. (iand(ibcon,1) /= 0 .and. jdim == 0)) then
+      ic=1
       jc=m3
-      ici=m2-1
+      ici=2
       jci=m3-jdim
 
       radiate_g(ifm)%albedt(ic,jc) = radiate_g(ifm)%albedt(ici,jci)
@@ -1505,12 +1505,12 @@ subroutine transfer_ed2leaf(ifm,timel)
       leaf_g(ifm)%zeta   (ic,jc,2) = leaf_g(ifm)%zeta   (ici,jci,2)
       leaf_g(ifm)%ribulk (ic,jc,2) = leaf_g(ifm)%ribulk (ici,jci,2)
    end if
-  
-   !----- Northwestern corner -------------------------------------------------------------!
+
+   !----- Northeastern corner -------------------------------------------------------------!
    if (iand(ibcon,10) /= 0 .or. (iand(ibcon,2) /= 0 .and. jdim == 0)) then
-      ic=1
+      ic=m2
       jc=m3
-      ici=2
+      ici=m2-1
       jci=m3-jdim
 
       radiate_g(ifm)%albedt(ic,jc) = radiate_g(ifm)%albedt(ici,jci)

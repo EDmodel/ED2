@@ -14,7 +14,7 @@
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine rconv_driver(banneron)
+subroutine rconv_driver()
    use mem_cuparm , only : confrq            & ! How often I should call this cloud
                          , cptime            & ! Time to start calling this cloud
                          , nclouds           & ! Number of clouds to use here 
@@ -47,19 +47,16 @@ subroutine rconv_driver(banneron)
                          , idiffk       ! ! Turbulence closure flag
    
    use mem_scratch, only : scratch      ! ! Scratch structure
-   use mem_tend   , only : tend         ! ! Tendency structure
+   use mem_tend   , only : tend_g       ! ! Tendency structure
    use mem_basic  , only : co2_on       & ! Flag, whether CO2 is prognosed in this run.
                          , basic_g      ! ! Basic variable structure
 
    implicit none
-   !----- Arguments. ----------------------------------------------------------------------!
-   logical, intent(in) :: banneron          ! Flag to print the banner
    !----- Local variables. ----------------------------------------------------------------!
    integer             :: icld              ! Cloud counter
    integer             :: i                 ! x-position 
    integer             :: j                 ! y-position
    integer             :: k                 ! z-position
-   integer             :: n                 ! xyz-position
    integer             :: ifm               ! Grid counter
    integer             :: iun               ! File unit for debugging
    logical             :: cumulus_now       ! Is now a good time to call cumulus? [T|F]
@@ -110,11 +107,11 @@ subroutine rconv_driver(banneron)
 
 
    !---------------------------------------------------------------------------------------!
-   !    Solving the cloud sizes that should be determined by Grell's scheme, if any of     !
-   ! such exists and if this is the time to call Grell's parametrisation.                  !
+   !    Solve the cloud sizes that should be determined by Grell's scheme, if any of such  !
+   ! exists and if this is the time to call Grell's parametrisation.                       !
    !---------------------------------------------------------------------------------------!
    if (grell_1st(ngrid) <= grell_last(ngrid) .and. cumulus_now) then
-      call grell_cupar_driver(banneron,grell_1st(ngrid),grell_last(ngrid))
+      call grell_cupar_driver(grell_1st(ngrid),grell_last(ngrid))
    end if
 
    !---------------------------------------------------------------------------------------!
@@ -139,23 +136,34 @@ subroutine rconv_driver(banneron)
    end if
 
    !---------------------------------------------------------------------------------------!
-   !   Updating the heating and moistening rates, and the convective precipitation.        !
+   !   Update the heating, moistening, and CO2 exchange rates, and the convective          !
+   ! precipitation.                                                                        !
    !---------------------------------------------------------------------------------------!
    do icld=1,nclouds
-      !----- Accumulating the tendencies --------------------------------------------------!
-      call accum(mzp*mxp*myp,tend%tht,cuparm_g(ngrid)%thsrc(:,:,:,icld))
-      call accum(mzp*mxp*myp,tend%rtt,cuparm_g(ngrid)%rtsrc(:,:,:,icld))
-      if (co2_on) then
-         call accum(mzp*mxp*myp,tend%co2t,cuparm_g(ngrid)%co2src(:,:,:,icld))
-      end if
-      !----- Updating total precipitation -------------------------------------------------!
-      call update(mxp*myp,cuparm_g(ngrid)%aconpr,cuparm_g(ngrid)%conprr(:,:,icld),dtlt)
+      do j=ja,jz
+         do i=ia,iz
+            !----- Update the tendencies. -------------------------------------------------!
+            do k=1,mzp
+               tend_g(ngrid)%tht(k,i,j) = tend_g(ngrid)%tht(k,i,j)                         &
+                                        + cuparm_g(ngrid)%thsrc(k,i,j,icld)
+               tend_g(ngrid)%rtt(k,i,j) = tend_g(ngrid)%rtt(k,i,j)                         &
+                                        + cuparm_g(ngrid)%rtsrc(k,i,j,icld)
+               if (co2_on) then
+                  tend_g(ngrid)%co2t(k,i,j) = tend_g(ngrid)%co2t(k,i,j)                    &
+                                            + cuparm_g(ngrid)%co2src(k,i,j,icld)
+               end if
+            end do
+            !----- Update the total precipitation. ----------------------------------------!
+            cuparm_g(ngrid)%aconpr(i,j) = cuparm_g(ngrid)%aconpr(i,j)                      &
+                                        + cuparm_g(ngrid)%conprr(i,j,icld) * dtlt
+            !------------------------------------------------------------------------------!
+         end do
+      end do
    end do
 
    if (print_debug) then
       iun=20+mynum
       do icld=1,nclouds
-         n = 0
          do j=1,myp
             do i=1,mxp
                write(unit=iun,fmt='(a)') '------------------------------------------------'
@@ -165,10 +173,9 @@ subroutine rconv_driver(banneron)
                write(unit=iun,fmt='(4(a,1x))') 'LEVEL','         THP','         THT'       &
                                                       ,'       THSRC'
                do k=1,mzp
-                  n=n+1
                   write (unit=iun,fmt='(i5,(3(1x,es12.5)))')                               &
                        k,basic_g(ngrid)%thp(k,i,j),cuparm_g(ngrid)%thsrc(k,i,j,icld)       &
-                        ,tend%tht(n)
+                        ,tend_g(ngrid)%tht(k,i,j)
                end do
                write(unit=iun,fmt='(a)') '------------------------------------------------'
                write(unit=iun,fmt='(a)') ' '

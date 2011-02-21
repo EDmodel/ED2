@@ -370,11 +370,11 @@ module mem_edcp
       npts = n2 * n3
 
       if (associated(edprec%prev_aconpr )) then
-         call vtables2 (edprec%prev_aconpr(1,1),edprecm%prev_aconpr(1,1),ng,npts,imean     &
+         call vtables2 (edprec%prev_aconpr,edprecm%prev_aconpr,ng,npts,imean               &
                        , 'PREV_ACONPR :2:hist:mpti:mpt3:mpt1')
       end if
       if (associated(edprec%prev_abulkpr )) then
-         call vtables2 (edprec%prev_abulkpr(1,1),edprecm%prev_abulkpr(1,1),ng,npts,imean   &
+         call vtables2 (edprec%prev_abulkpr,edprecm%prev_abulkpr,ng,npts,imean             &
                        , 'PREV_ABULKPR :2:hist:mpti:mpt3:mpt1')
       end if
 

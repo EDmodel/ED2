@@ -45,6 +45,7 @@ OBJ_MODEL =                        \
 	ed_params.o                \
 	ed_para_coms.o             \
 	ed_para_init.o             \
+	ed_print.o                 \
 	ed_read_ed10_20_history.o  \
 	ed_read_ed21_history.o     \
 	ed_state_vars.o            \

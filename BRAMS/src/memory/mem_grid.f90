@@ -503,154 +503,154 @@ contains
 
     npts=n2*n3
     if (associated(grid%topt)) &
-         call vtables2 (grid%topt(1,1),gridm%topt(1,1),ng,npts,imean,  &
+         call vtables2 (grid%topt,gridm%topt,ng,npts,imean,  &
          'TOPT :2:hist:anal:mpti')      
     if (associated(grid%topu)) &
-         call vtables2 (grid%topu(1,1),gridm%topu(1,1),ng, npts, imean,  &
+         call vtables2 (grid%topu,gridm%topu,ng, npts, imean,  &
          'TOPU :2:mpti')      
     if (associated(grid%topv)) &
-         call vtables2 (grid%topv(1,1),gridm%topv(1,1),ng, npts, imean,  &
+         call vtables2 (grid%topv,gridm%topv,ng, npts, imean,  &
          'TOPV :2:mpti')      
     if (associated(grid%topm)) &
-         call vtables2 (grid%topm(1,1),gridm%topm(1,1),ng, npts, imean,  &
+         call vtables2 (grid%topm,gridm%topm,ng, npts, imean,  &
          'TOPM :2:mpti')      
     if (associated(grid%topma)) &
-         call vtables2 (grid%topma(1,1),gridm%topma(1,1),ng, npts, imean,  &
+         call vtables2 (grid%topma,gridm%topma,ng, npts, imean,  &
          'TOPMA :2:hist:anal:mpti')      
     if (associated(grid%topta)) &
-         call vtables2 (grid%topta(1,1),gridm%topta(1,1),ng, npts, imean,  &
+         call vtables2 (grid%topta,gridm%topta,ng, npts, imean,  &
          'TOPTA :2:hist:anal:mpti')      
     if (associated(grid%rtgt)) &
-         call vtables2 (grid%rtgt(1,1),gridm%rtgt(1,1),ng, npts, imean,  &
+         call vtables2 (grid%rtgt,gridm%rtgt,ng, npts, imean,  &
          'RTGT :2:mpti')      
     if (associated(grid%rtgu)) &
-         call vtables2 (grid%rtgu(1,1),gridm%rtgu(1,1),ng, npts, imean,  &
+         call vtables2 (grid%rtgu,gridm%rtgu,ng, npts, imean,  &
          'RTGU :2:mpti')      
     if (associated(grid%rtgv)) &
-         call vtables2 (grid%rtgv(1,1),gridm%rtgv(1,1),ng, npts, imean,  &
+         call vtables2 (grid%rtgv,gridm%rtgv,ng, npts, imean,  &
          'RTGV :2:mpti')      
     if (associated(grid%rtgm)) &
-         call vtables2 (grid%rtgm(1,1),gridm%rtgm(1,1),ng, npts, imean,  &
+         call vtables2 (grid%rtgm,gridm%rtgm,ng, npts, imean,  &
          'RTGM :2:mpti')      
     if (associated(grid%f13t)) &
-         call vtables2 (grid%f13t(1,1),gridm%f13t(1,1),ng, npts, imean,  &
+         call vtables2 (grid%f13t,gridm%f13t,ng, npts, imean,  &
          'F13T :2:mpti')      
     if (associated(grid%f13u)) &
-         call vtables2 (grid%f13u(1,1),gridm%f13u(1,1),ng, npts, imean,  &
+         call vtables2 (grid%f13u,gridm%f13u,ng, npts, imean,  &
          'F13U :2:mpti')      
     if (associated(grid%f13v)) &
-         call vtables2 (grid%f13v(1,1),gridm%f13v(1,1),ng, npts, imean,  &
+         call vtables2 (grid%f13v,gridm%f13v,ng, npts, imean,  &
          'F13V :2:mpti')      
     if (associated(grid%f13m)) &
-         call vtables2 (grid%f13m(1,1),gridm%f13m(1,1),ng, npts, imean,  &
+         call vtables2 (grid%f13m,gridm%f13m,ng, npts, imean,  &
          'F13M :2:mpti')      
     if (associated(grid%f23t)) &
-         call vtables2 (grid%f23t(1,1),gridm%f23t(1,1),ng, npts, imean,  &
+         call vtables2 (grid%f23t,gridm%f23t,ng, npts, imean,  &
          'F23T :2:mpti')      
     if (associated(grid%f23u)) &
-         call vtables2 (grid%f23u(1,1),gridm%f23u(1,1),ng, npts, imean,  &
+         call vtables2 (grid%f23u,gridm%f23u,ng, npts, imean,  &
          'F23U :2:mpti')      
     if (associated(grid%f23v)) &
-         call vtables2 (grid%f23v(1,1),gridm%f23v(1,1),ng, npts, imean,  &
+         call vtables2 (grid%f23v,gridm%f23v,ng, npts, imean,  &
          'F23V :2:mpti')      
     if (associated(grid%f23m)) &
-         call vtables2 (grid%f23m(1,1),gridm%f23m(1,1),ng, npts, imean,  &
+         call vtables2 (grid%f23m,gridm%f23m,ng, npts, imean,  &
          'F23M :2:mpti')      
     if (associated(grid%dxt)) &
-         call vtables2 (grid%dxt(1,1),gridm%dxt(1,1),ng, npts, imean,  &
+         call vtables2 (grid%dxt,gridm%dxt,ng, npts, imean,  &
          'DXT :2:mpti')      
     if (associated(grid%dxu)) &
-         call vtables2 (grid%dxu(1,1),gridm%dxu(1,1),ng, npts, imean,  &
+         call vtables2 (grid%dxu,gridm%dxu,ng, npts, imean,  &
          'DXU :2:mpti')      
     if (associated(grid%dxv)) &
-         call vtables2 (grid%dxv(1,1),gridm%dxv(1,1),ng, npts, imean,  &
+         call vtables2 (grid%dxv,gridm%dxv,ng, npts, imean,  &
          'DXV :2:mpti')      
     if (associated(grid%dxm)) &
-         call vtables2 (grid%dxm(1,1),gridm%dxm(1,1),ng, npts, imean,  &
+         call vtables2 (grid%dxm,gridm%dxm,ng, npts, imean,  &
          'DXM :2:mpti')      
     if (associated(grid%dyt)) &
-         call vtables2 (grid%dyt(1,1),gridm%dyt(1,1),ng, npts, imean,  &
+         call vtables2 (grid%dyt,gridm%dyt,ng, npts, imean,  &
          'DYT :2:mpti')      
     if (associated(grid%dyu)) &
-         call vtables2 (grid%dyu(1,1),gridm%dyu(1,1),ng, npts, imean,  &
+         call vtables2 (grid%dyu,gridm%dyu,ng, npts, imean,  &
          'DYU :2:mpti')      
     if (associated(grid%dyv)) &
-         call vtables2 (grid%dyv(1,1),gridm%dyv(1,1),ng, npts, imean,  &
+         call vtables2 (grid%dyv,gridm%dyv,ng, npts, imean,  &
          'DYV :2:mpti')      
     if (associated(grid%dym)) &
-         call vtables2 (grid%dym(1,1),gridm%dym(1,1),ng, npts, imean,  &
+         call vtables2 (grid%dym,gridm%dym,ng, npts, imean,  &
          'DYM :2:mpti')      
     if (associated(grid%fmapt)) &
-         call vtables2 (grid%fmapt(1,1),gridm%fmapt(1,1),ng, npts, imean,  &
+         call vtables2 (grid%fmapt,gridm%fmapt,ng, npts, imean,  &
          'FMAPT :2:mpti')      
     if (associated(grid%fmapu)) &
-         call vtables2 (grid%fmapu(1,1),gridm%fmapu(1,1),ng, npts, imean,  &
+         call vtables2 (grid%fmapu,gridm%fmapu,ng, npts, imean,  &
          'FMAPU :2:mpti')      
     if (associated(grid%fmapv)) &
-         call vtables2 (grid%fmapv(1,1),gridm%fmapv(1,1),ng, npts, imean,  &
+         call vtables2 (grid%fmapv,gridm%fmapv,ng, npts, imean,  &
          'FMAPV :2:mpti')      
     if (associated(grid%fmapm)) &
-         call vtables2 (grid%fmapm(1,1),gridm%fmapm(1,1),ng, npts, imean,  &
+         call vtables2 (grid%fmapm,gridm%fmapm,ng, npts, imean,  &
          'FMAPM :2:mpti')      
     if (associated(grid%fmapti)) &
-         call vtables2 (grid%fmapti(1,1),gridm%fmapti(1,1),ng, npts, imean,  &
+         call vtables2 (grid%fmapti,gridm%fmapti,ng, npts, imean,  &
          'FMAPTI :2:mpti')      
     if (associated(grid%fmapui)) &
-         call vtables2 (grid%fmapui(1,1),gridm%fmapui(1,1),ng, npts, imean,  &
+         call vtables2 (grid%fmapui,gridm%fmapui,ng, npts, imean,  &
          'FMAPUI :2:mpti')      
     if (associated(grid%fmapvi)) &
-         call vtables2 (grid%fmapvi(1,1),gridm%fmapvi(1,1),ng, npts, imean,  &
+         call vtables2 (grid%fmapvi,gridm%fmapvi,ng, npts, imean,  &
          'FMAPVI :2:mpti')      
     if (associated(grid%fmapmi)) &
-         call vtables2 (grid%fmapmi(1,1),gridm%fmapmi(1,1),ng, npts, imean,  &
+         call vtables2 (grid%fmapmi,gridm%fmapmi,ng, npts, imean,  &
          'FMAPMI :2:mpti')      
     if (associated(grid%glat)) &
-         call vtables2 (grid%glat(1,1),gridm%glat(1,1),ng, npts, imean,  &
+         call vtables2 (grid%glat,gridm%glat,ng, npts, imean,  &
          'GLAT :2:mpti:anal')      
     if (associated(grid%glon)) &
-         call vtables2 (grid%glon(1,1),gridm%glon(1,1),ng, npts, imean,  &
+         call vtables2 (grid%glon,gridm%glon,ng, npts, imean,  &
          'GLON :2:mpti:anal')      
     if (associated(grid%topzo)) &
-         call vtables2 (grid%topzo(1,1),gridm%topzo(1,1),ng, npts, imean,  &
+         call vtables2 (grid%topzo,gridm%topzo,ng, npts, imean,  &
          'TOPZO :2:mpti')      
 
     npts=n2*n3
     if (associated(grid%flpu)) &
-         call vtables2 (grid%flpu(1,1),gridm%flpu(1,1),ng,npts,imean,  &
+         call vtables2 (grid%flpu,gridm%flpu,ng,npts,imean,  &
          'LPU :2:mpti')      
     if (associated(grid%flpv)) &
-         call vtables2 (grid%flpv(1,1),gridm%flpv(1,1),ng,npts,imean,  &
+         call vtables2 (grid%flpv,gridm%flpv,ng,npts,imean,  &
          'LPV :2:mpti')      
     if (associated(grid%flpw)) &
-         call vtables2 (grid%flpw(1,1),gridm%flpw(1,1),ng,npts,imean,  &
+         call vtables2 (grid%flpw,gridm%flpw,ng,npts,imean,  &
          'LPW :2:mpti')
 
     if (associated(grid%fmynum)) &
-         call vtables2 (grid%fmynum(1,1),gridm%fmynum(1,1),ng,npts,imean,  &
+         call vtables2 (grid%fmynum,gridm%fmynum,ng,npts,imean,  &
          'MYNUM :2:mpti:anal')      
 
     npts=n1*n2*n3
     if (associated(grid%aru)) &
-         call vtables2 (grid%aru(1,1,1),gridm%aru(1,1,1),ng,npts,imean,  &
+         call vtables2 (grid%aru,gridm%aru,ng,npts,imean,  &
          'ARU :3:mpti')      
     if (associated(grid%arv)) &
-         call vtables2 (grid%arv(1,1,1),gridm%arv(1,1,1),ng,npts,imean,  &
+         call vtables2 (grid%arv,gridm%arv,ng,npts,imean,  &
          'ARV :3:mpti')      
     if (associated(grid%arw)) &
-         call vtables2 (grid%arw(1,1,1),gridm%arw(1,1,1),ng,npts,imean,  &
+         call vtables2 (grid%arw,gridm%arw,ng,npts,imean,  &
          'ARW :3:mpti')      
 
     if (associated(grid%volu)) &
-         call vtables2 (grid%volu(1,1,1),gridm%volu(1,1,1),ng,npts,imean,  &
+         call vtables2 (grid%volu,gridm%volu,ng,npts,imean,  &
          'VOLU :3:mpti')
     if (associated(grid%volv)) &
-         call vtables2 (grid%volv(1,1,1),gridm%volv(1,1,1),ng,npts,imean,  &
+         call vtables2 (grid%volv,gridm%volv,ng,npts,imean,  &
          'VOLV :3:mpti')
     if (associated(grid%volw)) &
-         call vtables2 (grid%volw(1,1,1),gridm%volw(1,1,1),ng,npts,imean,  &
+         call vtables2 (grid%volw,gridm%volw,ng,npts,imean,  &
          'VOLW :3:mpti')
     if (associated(grid%volt)) &
-         call vtables2 (grid%volt(1,1,1),gridm%volt(1,1,1),ng,npts,imean,  &
+         call vtables2 (grid%volt,gridm%volt,ng,npts,imean,  &
          'VOLT :3:anal:mpti')
   end subroutine filltab_grid
 

@@ -5,66 +5,42 @@
 !    This file contains the driver that will compute the Cumulus based on Grell-Dévényi    !
 ! parameterization, and send the information needed by the other modules.                  !
 !------------------------------------------------------------------------------------------!
-subroutine grell_cupar_driver(banneron,cldd,clds)
+subroutine grell_cupar_driver(cldd,clds)
 
-   use catt_start        , only : &
-           catt                   ! ! intent(in) - flag for CATT. 
-
-   use extras            , only : &
-           extra3d                ! ! intent(inout) - Extra scratch for CATT
-
-   use grell_coms        , only : & ! All variables here are intent(in)
-           cld2prec               & ! Fraction of cloud water lost to precipitation
-          ,closure_type           & ! Flag for closure to be used on dyn. control
-          ,comp_modif_thermo      & ! I will compute the x_* variables        [T|F]
-          ,maxens_cap             & ! Ensemble size on level of capping inversion
-          ,maxens_dyn             & ! Ensemble size on dynamic control
-          ,maxens_eff             & ! Ensemble size on precipitation efficiency
-          ,maxens_lsf             & ! Ensemble size on large scale perturbations
-          ,mgmzp                  & ! Vertical grid size
-          ,prec_cld               ! ! This is a precipitating cloud.          [T|F]
-
-   use io_params         , only : &
-           frqanl                 ! ! intent(in) - Frequency of analysis.
-
-   use mem_basic         , only : &
-           co2_on                 ! ! intent(in) - Flag for CO2 presence.
-
-   use mem_cuparm        , only : &
-           confrq                 & ! intent(in)    - Vector with convective frequency
-          ,cuparm_g               & ! intent(inout) - Structure with convection
-          ,nclouds                ! ! intent(in)    - # of clouds available.
-
-   use mem_grid          , only : & ! All variables are intent(in)
-           dtlongn                & ! Time step vector
-          ,dtlt                   & ! current grid time step
-          ,ngrid                  & ! current grid ID
-          ,time                   ! ! simulation elapsed time
-
-   use mem_scratch       , only : &
-           scratch                ! ! intent(out) - Scratch array, to save old info.
-
-   use mem_scratch_grell , only : &
-           zero_scratch_grell     ! ! Subroutine - Flushes scratch variables to zero.
-
-   use mem_tend          , only : &
-           tend                   ! ! intent(inout) - Tendency structure
-
-   use node_mod          , only : & ! All variables are intent(in)
-           mynum                  & ! This node ID
-          ,mxp                    & ! # of x-points for current grid in this node
-          ,myp                    & ! # of y-points for current grid in this node
-          ,mzp                    & ! # of z-points for current grid in this node
-          ,ia                     & ! westernmost point for current grid in this node
-          ,iz                     & ! easternmost point for current grid in this node
-          ,ja                     & ! southernmost point for current grid in this node
-          ,jz                     ! ! northernmost point for current grid in this node
-
+   use catt_start       , only : catt               ! ! Flag for CATT. 
+   use extras           , only : extra3d            ! ! Extra scratch for CATT
+   use grell_coms       , only : cld2prec           & ! Frac. of cloud water lost to prec.
+                               , closure_type       & ! Closure to be used on dyn. control
+                               , comp_modif_thermo  & ! Flag - compute the x_* variables
+                               , maxens_cap         & ! Ens. size on level of capping inv.
+                               , maxens_dyn         & ! Ens. size on dynamic control
+                               , maxens_eff         & ! Ens. size on precipitation eff.
+                               , maxens_lsf         & ! Ens. size on large scale pert.
+                               , mgmzp              & ! Vertical grid size
+                               , prec_cld           ! ! Flag - precipitating cloud.
+   use io_params        , only : frqanl             ! ! Frequency of analysis.
+   use mem_basic        , only : co2_on             ! ! Flag for CO2 presence.
+   use mem_cuparm       , only : confrq             & ! Vector with convective frequency
+                               , cuparm_g           & ! Structure with convection
+                               , nclouds            ! ! Number of clouds available.
+   use mem_grid         , only : dtlongn            & ! Time step vector
+                               , dtlt               & ! current grid time step
+                               , ngrid              & ! current grid ID
+                               , time               ! ! Simulation elapsed time
+   use mem_scratch      , only : scratch            ! ! Scratch array, to save old info.
+   use mem_scratch_grell, only : zero_scratch_grell ! ! Flushes scratch variables to zero.
+   use mem_tend         , only : tend_g             ! ! Tendency structure
+   use node_mod         , only : mynum              & ! This node ID
+                               , mxp                & ! Number of x-points - current grid
+                               , myp                & ! Number of y-points - current grid
+                               , mzp                & ! Number of z-points - current grid
+                               , ia                 & ! westernmost point  - current grid
+                               , iz                 & ! easternmost point  - current grid
+                               , ja                 & ! southernmost point - current grid
+                               , jz                 ! ! northernmost point - current grid
    implicit none
 
-
    !----- Arguments. ----------------------------------------------------------------------!
-   logical, intent(in)               :: banneron         ! Flag for banner printing.
    integer, intent(in)               :: cldd             ! Deepest Grell cloud.
    integer, intent(in)               :: clds             ! Shallowest Grell cloud.
    !----- Local variables. ----------------------------------------------------------------!
@@ -72,7 +48,7 @@ subroutine grell_cupar_driver(banneron,cldd,clds)
    integer                           :: i,j,k            ! Counters for x, y, and z
    integer                           :: iscl             ! Scalar counter
    real                              :: dti              ! confrq/frqanl
-    !---------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
 
 
 
@@ -84,20 +60,7 @@ subroutine grell_cupar_driver(banneron,cldd,clds)
 
 
    !---------------------------------------------------------------------------------------!
-   ! 1. Flushing a scratch array to zero, and depending on whether CO2 is prognosed, this  !
-   !    will store the large-scale tendency.                                               !
-   !    scratch%vt3dj => large-scale CO2 mixing ratio forcing.                             !
-   !---------------------------------------------------------------------------------------!
-   if (co2_on) then
-      call atob(mzp*mxp*myp,tend%co2t,scratch%vt3dj)
-   else
-      call azero(mzp*mxp*myp,scratch%vt3dj)
-   end if
-   !---------------------------------------------------------------------------------------!
-
-
-   !---------------------------------------------------------------------------------------!
-   ! 2. Setting the time weight.                                                           !
+   ! 1. Set the time weight.                                                               !
    !---------------------------------------------------------------------------------------!
    dti = confrq / frqanl
    !---------------------------------------------------------------------------------------!
@@ -113,36 +76,34 @@ subroutine grell_cupar_driver(banneron,cldd,clds)
 
          ![[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[!
          !---------------------------------------------------------------------------------!
-         ! 3. We now initialise some variables that don't depend on the cloud spectral     !
+         ! 2. We now initialise some variables that don't depend on the cloud spectral     !
          !    size because they must be done only once.                                    !
          !---------------------------------------------------------------------------------!
-         call grell_cupar_initial(banneron,i,j,confrq)
+         call grell_cupar_initial(i,j,confrq)
 
 
          !---------------------------------------------------------------------------------!
-         ! 4. We will now go through the cloud sizes for the first time, in order to solve !
+         ! 3. We will now go through the cloud sizes for the first time, in order to solve !
          !    the static control.                                                          !
          !---------------------------------------------------------------------------------!
          staticloop: do icld = cldd,clds
-            call grell_cupar_static_driver(banneron,i,j,icld)
+            call grell_cupar_static_driver(i,j,icld)
          end do staticloop
 
          !---------------------------------------------------------------------------------!
-         ! 5. We now compute the dynamic control, which will determine the characteristic  !
+         ! 4. We now compute the dynamic control, which will determine the characteristic  !
          !    mass flux for each Grell cumulus cloud.                                      !
          !---------------------------------------------------------------------------------!
-         if (banneron) write (unit=60+mynum,fmt='(2(a,1x,i5,1x))')                         &
-                             '       [~] Calling grell_cupar_dynamic... i=',i,'j=',j
          call grell_cupar_dynamic(cldd,clds,nclouds,dtlt,maxens_cap,maxens_eff,maxens_lsf  &
                                  ,maxens_dyn,mgmzp,closure_type,comp_modif_thermo          &
                                  ,prec_cld,cld2prec,mynum,i,j)
 
          !---------------------------------------------------------------------------------!
-         ! 6. We now go through the cloud sizes again, to compute the feedback to the      !
+         ! 5. We now go through the cloud sizes again, to compute the feedback to the      !
          !    large scale and any other cloud-dependent variable that needs to be          !
-         !    computed.
+         !    computed.                                                                    !
          !---------------------------------------------------------------------------------!
-         call grell_feedback_driver(banneron,i,j,cldd,clds,dti)
+         call grell_feedback_driver(i,j,cldd,clds,dti)
 
       end do iloop
    end do jloop
@@ -165,57 +126,42 @@ end subroutine grell_cupar_driver
 ! grell_cupar_driver to avoid optimisation loss and dependency check and all the problems  !
 ! that may arise from this.                                                                !
 !------------------------------------------------------------------------------------------!
-subroutine grell_cupar_initial(banneron,i,j,confrqd)
-
-   use mem_basic         , only : &
-           co2_on               & ! intent(in) - Flag for CO2 presence.
-          ,co2con               & ! intent(in) - CO2 mixing ratio if constant.
-          ,basic_g              ! ! intent(in) - Basic variables structure
-
-   use mem_grid          , only : & ! All variables are intent(in)
-           deltax                 & ! Current grid resolution in x (m)
-          ,deltay                 & ! Current grid resolution in y (m)
-          ,dtlt                   & ! current grid time step
-          ,grid_g                 & ! grid structure
-          ,ngrid                  & ! current grid ID
-          ,zt                     & ! Vertical thermodynamic levels for current grid
-          ,zm                     ! ! Vertical momentum levels for current grid
-
-   use mem_micro         , only : &
-           micro_g              ! ! intent(in) - microphysics structure
-
-   use mem_scratch       , only : &
-           scratch              & ! intent(out) - Scratch array, to save old info.
-          ,vctr6                & ! intent(out) - Scratch, liquid water mix. ratio.
-          ,vctr7                & ! intent(out) - Scratch, ice mixing ratio.
-          ,vctr8                & ! intent(out) - Scratch, CO2 mixing ratio.
-          ,vctr9                ! ! intent(out) - Scratch, vertical velocity sigma.
-   
-   use mem_scratch_grell , only : &
-           zero_scratch_grell   ! ! Subroutine - Flushes scratch variables to zero.
-
-   use mem_tend          , only : &
-           tend                 ! ! intent(inout) - Tendency structure
-
-   use mem_turb          , only : &
-           turb_g               & ! intent(in) - turbulence structure
-          ,idiffk               ! ! intent(in) - turbulence closure flag
-
-   use micphys           , only : &
-           availcat             ! ! intent(in) - Flag: hydrometeor is available [T|F] 
-
-   use node_mod          , only : &
-           mynum                & ! This node ID
-          ,mxp                  & ! # of x-points for current grid in this node
-          ,myp                  & ! # of y-points for current grid in this node
-         , mzp                  ! ! # of z-points for current grid in this node
-
-   use therm_lib         , only : &
-           level                ! ! intent(in) - Phase complexity level
+subroutine grell_cupar_initial(i,j,confrqd)
+   !----- The following module variables are supposed to be "intent (in)". ----------------!
+   use mem_basic        , only : co2_on             & ! CO2 presence.
+                               , co2con             & ! CO2 mixing ratio if constant.
+                               , basic_g            ! ! Basic variables structure
+   use mem_grid         , only : deltax             & ! Current grid resolution in x (m)
+                               , deltay             & ! Current grid resolution in y (m)
+                               , dtlt               & ! current grid time step
+                               , grid_g             & ! grid structure
+                               , ngrid              & ! current grid ID
+                               , zt                 & ! Vertical thermodynamic levels
+                               , zm                 ! ! Vertical momentum levels
+   use mem_micro        , only : micro_g            ! ! Microphysics structure
+   use mem_turb         , only : turb_g             & ! Turbulence structure
+                               , idiffk             ! ! Turbulence closure flag
+   use micphys          , only : availcat           ! ! Flag: hydrometeor is available
+   use node_mod         , only : mynum              & ! This node ID
+                               , mxp                & ! Number of x-points for current grid
+                               , myp                & ! Number of y-points for current grid
+                               , mzp                ! ! Number of z-points for current grid
+   use therm_lib        , only : level              ! ! Phase complexity level
+   !----- The following module variables are supposed to be "intent (inout)". -------------!
+   use mem_tend         , only : tend_g             ! ! Tendency structure
+   !----- The following module variables are supposed to be "intent (out)". ---------------!
+   use mem_scratch      , only : scratch            & ! Scratch array, to save old info.
+                               , vctr6              & ! Scratch, liquid water mix. ratio.
+                               , vctr7              & ! Scratch, ice mixing ratio.
+                               , vctr8              & ! Scratch, CO2 mixing ratio.
+                               , vctr9              & ! Scratch, vertical velocity sigma.
+                               , vctr18             ! ! Scratch, CO2 tendency.
+   !----- The following module variables are supposed to be sub-routines. -----------------!
+   use mem_scratch_grell, only : zero_scratch_grell ! ! Flushes scratch variables to zero.
+   !---------------------------------------------------------------------------------------!
 
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
-   logical, intent(in)               :: banneron         ! Flag for banner printing.
    integer, intent(in)               :: i                ! X position
    integer, intent(in)               :: j                ! Y position
    real   , intent(in)               :: confrqd          ! Frequency
@@ -225,8 +171,6 @@ subroutine grell_cupar_initial(banneron,i,j,confrqd)
    ! A. Finding the ice and liquid mixing ratio.  Since ice and liquid may not be solved   !
    !    for some user's configuration (level = 1), we must check that first.               !
    !---------------------------------------------------------------------------------------!
-   if (banneron) write (unit=60+mynum,fmt='(2(a,1x,i5,1x))')                               &
-                       '       [~] Maybe calling integ_liq_ice... i=',i,'j=',j
    select case (level)
    !------ No condensed phase, simply set up both to zero. --------------------------------!
    case (0,1)
@@ -253,8 +197,10 @@ subroutine grell_cupar_initial(banneron,i,j,confrqd)
    !---------------------------------------------------------------------------------------!
    if (co2_on) then
       call atob(mzp,basic_g(ngrid)%co2p(:,i,j),vctr8(1:mzp))
+      call atob(mzp,tend_g(ngrid)%co2t(:,i,j),vctr18(1:mzp))
    else
-      call ae0(mzp,vctr8(1:mzp),co2con(1))
+      call ae0  (mzp,vctr8(1:mzp) ,co2con(1))
+      call azero(mzp,vctr18(1:mzp))
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -282,8 +228,6 @@ subroutine grell_cupar_initial(banneron,i,j,confrqd)
    !---------------------------------------------------------------------------------------!
    ! E. Initialise grid-related variables (how many levels, offset, etc.)                  !
    !---------------------------------------------------------------------------------------!
-   if (banneron) write (unit=60+mynum,fmt='(2(a,1x,i5,1x))')                               &
-                       '       [~] Calling initial_grid_grell... i=',i,'j=',j
    call initial_grid_grell(mzp,deltax,deltay,zt(1:mzp),zm(1:mzp)                           &
               , grid_g(ngrid)%flpw             (i,j), grid_g(ngrid)%rtgt             (i,j) &
               , confrqd                             , turb_g(ngrid)%kpbl             (i,j) )
@@ -293,9 +237,8 @@ subroutine grell_cupar_initial(banneron,i,j,confrqd)
    !---------------------------------------------------------------------------------------!
    ! F. Copying the tendencies to the scratch array.                                       !
    !---------------------------------------------------------------------------------------!
-   if (banneron) write (unit=60+mynum,fmt='(2(a,1x,i5,1x))')                               &
-                       '       [~] Calling initial_tend_grell... i=',i,'j=',j
-   call initial_tend_grell(mzp,mxp,myp,i,j,tend%tht,tend%tket,tend%rtt,scratch%vt3dj)
+   call initial_tend_grell(mzp,tend_g(ngrid)%tht(:,i,j),tend_g(ngrid)%tket(:,i,j)          &
+                          ,tend_g(ngrid)%rtt(:,i,j),vctr18(1:mzp))
 
 
    !---------------------------------------------------------------------------------------!
@@ -303,8 +246,6 @@ subroutine grell_cupar_initial(banneron,i,j,confrqd)
    !    the future values in case convection does not happen (previous values plus the     !
    !    large-scale forcing.                                                               !
    !---------------------------------------------------------------------------------------!
-   if (banneron) write (unit=60+mynum,fmt='(2(a,1x,i5,1x))')                               &
-                       '       [~] Calling initial_thermo_grell... i=',i,'j=',j
    call initial_thermo_grell(mzp,dtlt               , basic_g(ngrid)%thp           (:,i,j) &
               , basic_g(ngrid)%theta         (:,i,j), basic_g(ngrid)%rtp           (:,i,j) &
               , vctr8                        (1:mzp), basic_g(ngrid)%pi0           (:,i,j) &
@@ -330,7 +271,7 @@ end subroutine grell_cupar_initial
 ! cloud.  The only reason these steps are here is to avoid nasty problems coming from      !
 ! optimisation loss.                                                                       !
 !------------------------------------------------------------------------------------------!
-subroutine grell_cupar_static_driver(banneron,i,j,icld)
+subroutine grell_cupar_static_driver(i,j,icld)
    use grell_coms        , only: & ! All variables here are intent(in)
            comp_noforc_cldwork   & ! I will compute no forced cloud work     [T/F]
           ,checkmass             & ! I will check mass balance               [T/F]
@@ -381,7 +322,6 @@ subroutine grell_cupar_static_driver(banneron,i,j,icld)
 
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
-   logical, intent(in)               :: banneron         ! Flag for banner printing.
    integer, intent(in)               :: i                ! X position
    integer, intent(in)               :: j                ! Y position
    integer, intent(in)               :: icld             ! Cloud position
@@ -398,8 +338,6 @@ subroutine grell_cupar_static_driver(banneron,i,j,icld)
    ! B. Initialise the remainder Grell's scratch variables that uses wind data.  Because   !
    !    winds are in staggered grids, this requires full grid information.                 !
    !---------------------------------------------------------------------------------------!
-   if (banneron) write (unit=60+mynum,fmt='(3(a,1x,i5,1x))')                               &
-          '       [~] Calling initial_upstream_grell... i=',i,'j=',j,'icld=',icld
    call initial_winds_grell(prec_cld(icld),mzp,mxp,myp,i,j,jdim                            &
                          , cuparm_g(ngrid)%dnmf (:,:,icld), basic_g(ngrid)%up              &
                          , basic_g(ngrid)%vp              , ensemble_e(icld)%prev_dnmf     )
@@ -408,8 +346,6 @@ subroutine grell_cupar_static_driver(banneron,i,j,icld)
    !---------------------------------------------------------------------------------------!
    ! C. Call the subroutine which will deal with the static control.                       !
    !---------------------------------------------------------------------------------------!
-   if (banneron) write (unit=60+mynum,fmt='(3(a,1x,i5,1x))')                      &
-              '       [~] Calling grell_cupar_static... i=',i,'j=',j,'icld=',icld
    call grell_cupar_static(comp_noforc_cldwork,checkmass,iupmethod,maxens_cap,maxens_eff   &
                      , mgmzp,cap_maxs,cap_maxs_increment,wnorm_max,wnorm_increment         &
                      , depth_min(icld),depth_max(icld),edtmax,edtmin,masstol,pmass_left    &
@@ -451,7 +387,7 @@ end subroutine grell_cupar_static_driver
 ! large scale.  This part was taken out from the main driver to avoid optimisation loss    !
 ! and some nasty things that happen with the model when this optimisation is lost.         !
 !------------------------------------------------------------------------------------------!
-subroutine grell_feedback_driver(banneron,i,j,cldd,clds,dti)
+subroutine grell_feedback_driver(i,j,cldd,clds,dti)
 
    use catt_start        , only: &
            catt                  ! ! intent(in) - flag for CATT. 
@@ -507,7 +443,6 @@ subroutine grell_feedback_driver(banneron,i,j,cldd,clds,dti)
 
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
-   logical, intent(in)               :: banneron         ! Flag for banner printing.
    integer, intent(in)               :: i                ! X position
    integer, intent(in)               :: j                ! Y position
    integer, intent(in)               :: cldd             ! Deepest cloud
@@ -524,8 +459,6 @@ subroutine grell_feedback_driver(banneron,i,j,cldd,clds,dti)
    !    vapour mixing ratio, and carbon dioxide mixing ratio.                              !
    !---------------------------------------------------------------------------------------!
    do icld = cldd, clds
-      if (banneron) write (unit=60+mynum,fmt='(3(a,1x,i5,1x))')                            &
-             '       [~] Calling grell_cupar_feedback... i=',i,'j=',j,'icld=',icld
       call grell_cupar_feedback(mgmzp,maxens_cap,maxens_eff,maxens_lsf,maxens_dyn          &
                             , inv_ensdim, max_heat                                         &
                             , ensemble_e(icld)%dnmf_ens     , ensemble_e(icld)%upmf_ens    &
@@ -566,8 +499,6 @@ subroutine grell_feedback_driver(banneron,i,j,cldd,clds,dti)
       ! D. We now compute the other output variables such as mass fluxes and interesting   !
       !    levels.                                                                         !
       !------------------------------------------------------------------------------------!
-      if (banneron) write (unit=60+mynum,fmt='(3(a,1x,i5,1x))')                            &
-               '       [~] Calling grell_cupar_output... i=',i,'j=',j,'icld=',icld
       call grell_cupar_output(mzp,mgmzp,maxens_cap                                         &
                  , grid_g(ngrid)%rtgt            (i,j), zm(1:mzp)                          &
                  , zt(1:mzp)                          , cuparm_g(ngrid)%dnmf    (i,j,icld) &
@@ -611,8 +542,6 @@ subroutine grell_feedback_driver(banneron,i,j,cldd,clds,dti)
       ! F. If the user needs the full mass flux information to drive Lagrangian models,    !
       !    then do it now.                                                                 !
       !------------------------------------------------------------------------------------!
-      if (banneron) write (unit=60+mynum,fmt='(3(a,1x,i5,1x))')                            &
-         '       [~] Maybe calling prep_convflx_to_mass... i=',i,'j=',j,'icld=',icld
       if (imassflx == 1) then
          call prep_convflx_to_mass(mzp,mgmzp,maxens_cap                                    &
                      , cuparm_g(ngrid)%dnmf  (i,j,icld) , cuparm_g(ngrid)%upmf  (i,j,icld) &
@@ -634,8 +563,6 @@ subroutine grell_feedback_driver(banneron,i,j,cldd,clds,dti)
       !    except that I took the statistics out from inside grell_cupar_main and brought  !
       !    trans_conv_mflx inside the i/j loop.                                            !
       !------------------------------------------------------------------------------------!
-      if (banneron) write (unit=60+mynum,fmt='(2(a,1x,i5,1x))')                            &
-          '       [~] Maybe calling grell_massflx_stats... i=',i,'j=',j,'icld=',icld
       if (catt == 1) then
          if (icld == 1) then
             call grell_massflx_stats(mzp,icld,.true.,dti,maxens_dyn,maxens_lsf,maxens_eff  &

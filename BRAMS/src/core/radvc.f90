@@ -49,8 +49,8 @@ if (varn .eq. 'V' .or. varn .eq. 'ALL') then
 
       call vel_advectc(mzp,mxp,myp,ia,iz,ja,jz,izu,jzv  &
          ,basic_g(ngrid)%uc     ,basic_g(ngrid)%vc      &
-         ,basic_g(ngrid)%wc     ,tend%ut                &
-         ,tend%vt               ,tend%wt                &
+         ,basic_g(ngrid)%wc     ,tend_g(ngrid)%ut       &
+         ,tend_g(ngrid)%vt      ,tend_g(ngrid)%wt       &
          ,basic_g(ngrid)%dn0    ,basic_g(ngrid)%dn0u    &
          ,basic_g(ngrid)%dn0v   ,scratch%vt3da          &
          ,scratch%vt3db         ,scratch%vt3dc          &
@@ -69,8 +69,8 @@ if (varn .eq. 'V' .or. varn .eq. 'ALL') then
          ,grid_g(ngrid)%flpu   ,grid_g(ngrid)%flpv    &
          ,grid_g(ngrid)%flpw   ,basic_g(ngrid)%uc     &
          ,basic_g(ngrid)%vc    ,basic_g(ngrid)%wc     &
-         ,tend%ut              ,tend%vt               &
-         ,tend%wt              ,basic_g(ngrid)%dn0    &
+         ,tend_g(ngrid)%ut     ,tend_g(ngrid)%vt      &
+         ,tend_g(ngrid)%wt     ,basic_g(ngrid)%dn0    &
          ,basic_g(ngrid)%dn0u  ,basic_g(ngrid)%dn0v   &
          ,grid_g(ngrid)%aru    ,grid_g(ngrid)%arv     &
          ,grid_g(ngrid)%arw    ,grid_g(ngrid)%volu    &

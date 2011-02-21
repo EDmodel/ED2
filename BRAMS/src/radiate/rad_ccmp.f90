@@ -12,11 +12,11 @@ subroutine shradc(nzp,rvr,rtr,dn0r,dzzr,prd,albedo,solar,cosz,fthr,rshort)
   use rconstants, only: cp
   implicit none                  
 !----- List of arguments ------------------------------------------------------------------------------------------------!
-  integer     , intent(in)                   :: nzp
-  real        , intent(in)                   :: albedo,cosz,solar
-  real        , intent(out)                  :: rshort
-  real        , intent(in)  , dimension(nzp) :: rvr,rtr,dn0r,prd, dzzr
-  real        , intent(out) , dimension(nzp) :: fthr
+  integer     , intent(in)                     :: nzp
+  real        , intent(in)                     :: albedo,cosz,solar
+  real        , intent(out)                    :: rshort
+  real        , intent(in)    , dimension(nzp) :: rvr,rtr,dn0r,prd, dzzr
+  real        , intent(inout) , dimension(nzp) :: fthr
 
 !----- List of parameters -----------------------------------------------------------------------------------------------!
   real(kind=8), parameter                    :: zero=dble(0.),one=dble(1.)
@@ -380,10 +380,10 @@ subroutine lwradc(nzp,rvr,rtr,co2r,dn0r,temprd,prd,dzzr,fthr,rlong)
   use rconstants, only : grav, cp, stefan, ep , volmoll, mmco2i
   implicit none
 !----- List of arguments --------------------------------------------------------------------------------!
-  integer, intent(in)                     :: nzp
-  real,    intent(in)  , dimension(nzp)   :: rvr,rtr,co2r,dn0r,prd,dzzr,temprd
-  real,    intent(out) , dimension(nzp)   :: fthr
-  real,    intent(out)                    :: rlong
+  integer, intent(in)                       :: nzp
+  real,    intent(in)    , dimension(nzp)   :: rvr,rtr,co2r,dn0r,prd,dzzr,temprd
+  real,    intent(inout) , dimension(nzp)   :: fthr
+  real,    intent(out)                      :: rlong
 
 !----- List of constants --------------------------------------------------------------------------------!
   real(kind=8),    parameter                      :: gcgs=dble(grav)*100.
@@ -747,8 +747,8 @@ subroutine shradp(nzp,rvr,dn0r,dzr,sc,pird,cosz,albedo  &
   real   , intent(in)                     :: cosz,albedo,solar
   real   , intent(in)  , dimension(nzp)   :: rvr,dn0r,pird,dzr
   real   , intent(out)                    :: rshort
-  real   , intent(out) , dimension(nzp)   :: fthr
-  real   , intent(out) , dimension(nzp,2) :: sc
+  real   , intent(inout) , dimension(nzp)   :: fthr
+  real   , intent(inout) , dimension(nzp,2) :: sc
   !----- List of constants -----------------------------------------------!
   integer, parameter                      :: iv1=1,iv2=2
   real, parameter                         :: cpcgs=10000.*cp
@@ -821,11 +821,11 @@ subroutine lwradp(nzp,temprd,rvr,co2r,dn0r,dzzr,pird,sc,fthr,rlong)
   !--------------------------------------------------------------------------------------------------------------------!
   use rconstants, only : grav,cp,stefan,p00,cpor
   implicit none
-  integer , intent(in)            :: nzp
-  real    , intent(in)   , dimension(nzp)    :: rvr,co2r,dn0r,temprd,dzzr, pird
-  real    , intent(out)                      :: rlong
-  real    , intent(out)  , dimension(nzp)    :: fthr
-  real    , intent(out)  , dimension(nzp,18) :: sc
+  integer , intent(in)                         :: nzp
+  real    , intent(in)     , dimension(nzp)    :: rvr,co2r,dn0r,temprd,dzzr, pird
+  real    , intent(out)                        :: rlong
+  real    , intent(inout)  , dimension(nzp)    :: fthr
+  real    , intent(inout)  , dimension(nzp,18) :: sc
   !----- List of constants --------------------------------------------------------------------------------------------!
   real    , parameter                         :: p00cgs    =10.    * p00
   real    , parameter                         :: gcgs      =100.   * grav

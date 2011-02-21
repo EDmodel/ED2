@@ -59,7 +59,7 @@ if(icorflg.eq.0) return
 call corlsu(mzp,mxp,myp,i0,j0,ia,izu,ja,jz  &
      ,basic_g(ngrid)%uc   &
      ,basic_g(ngrid)%vc   &
-     ,tend%ut                 &
+     ,tend_g(ngrid)%ut    &
      ,scratch%scr1            &
      ,grid_g(ngrid)%topu    &
      ,grid_g(ngrid)%rtgu    &
@@ -68,7 +68,7 @@ call corlsu(mzp,mxp,myp,i0,j0,ia,izu,ja,jz  &
 call corlsv(mzp,mxp,myp,i0,j0,ia,iz,ja,jzv  &
      ,basic_g(ngrid)%uc   &
      ,basic_g(ngrid)%vc   &
-     ,tend%vt                 &
+     ,tend_g(ngrid)%vt    &
      ,scratch%scr1            &
      ,grid_g(ngrid)%topv    &
      ,grid_g(ngrid)%rtgv    &

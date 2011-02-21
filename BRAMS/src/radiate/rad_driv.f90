@@ -11,7 +11,7 @@
 !   This is the main driver for the radiation effect on the thermodynamic properties.      !
 !------------------------------------------------------------------------------------------!
 subroutine radiate(mzp,mxp,myp,ia,iz,ja,jz,mynum)
-   use mem_tend   ,  only: tend
+   use mem_tend   ,  only: tend_g         ! ! intent(inout)
    use mem_grid   ,  only: ngrid          & ! intent(in)
                           ,time           & ! intent(in)
                           ,dtlt           & ! intent(in)
@@ -91,7 +91,7 @@ subroutine radiate(mzp,mxp,myp,ia,iz,ja,jz,mynum)
    call rad_copy2scratch(mzp,mxp,myp,npatch)
 
    !----- Updating the temperature tendency -----------------------------------------------!
-   call tend_accum(mzp,mxp,myp,ia,iz,ja,jz,tend%tht,radiate_g(ngrid)%fthrd)
+   call tend_accum(mzp,mxp,myp,ia,iz,ja,jz,tend_g(ngrid)%tht,radiate_g(ngrid)%fthrd)
 
    !----- If this is the first time Harrington is called, run initialization. -------------!  
    if ((iswrtyp == 3 .or. ilwrtyp == 3) .and. ncall_i == 0) then
@@ -99,7 +99,6 @@ subroutine radiate(mzp,mxp,myp,ia,iz,ja,jz,mynum)
       !    If first call for this node, initialize several quantities & mclatchy sounding  !
       ! data.                                                                              !
       !------------------------------------------------------------------------------------!
-      write (unit=*,fmt=*) '----> Initializing Harrington on node ',mynum
       call harr_radinit(nnzp(1))
       ncall_i = ncall_i + 1
    end if

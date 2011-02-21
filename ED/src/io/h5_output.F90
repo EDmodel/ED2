@@ -336,24 +336,33 @@ subroutine h5_output(vtype)
 
                  call h5eset_auto_f(1,hdferr)
 
-                 if (vt_info(nv,ngr)%dtype == 'r') then   ! real data type
+                 select case (vt_info(nv,ngr)%dtype)
+                 case ('R','r') !----- Real variable (vector)
                     call h5dcreate_f(file_id,varn,H5T_NATIVE_REAL, filespace, &
                          dset_id,hdferr)
-                 else if (vt_info(nv,ngr)%dtype == 'i') then   ! integer data type
-                    call h5dcreate_f(file_id,varn,H5T_NATIVE_INTEGER, filespace, &
-                         dset_id,hdferr)
-                 else if (vt_info(nv,ngr)%dtype == 'c') then   ! character data type
-                    call h5dcreate_f(file_id,varn,H5T_NATIVE_CHARACTER, filespace, &
-                         dset_id,hdferr)
-                 else if (vt_info(nv,ngr)%dtype == 'd') then   ! character data type
+
+                 case ('D','d') !----- Double precision variable (vector)
                     call h5dcreate_f(file_id,varn,H5T_NATIVE_DOUBLE, filespace, &
                          dset_id,hdferr)
-                 else
+
+                 case ('I','i') !----- Integer variable (vector)
+                    call h5dcreate_f(file_id,varn,H5T_NATIVE_INTEGER, filespace, &
+                         dset_id,hdferr)
+
+                 case ('C','c') !----- Character variable (vector)
+                    call h5dcreate_f(file_id,varn,H5T_NATIVE_CHARACTER, filespace, &
+                         dset_id,hdferr)
+                 case default
                     print*,varn,vt_info(nv,ngr)%dtype
-                    call fatal_error('YOU ARE ATTEMPTING TO WRITE AN UNDEFINED DATATYPE'   &
+                    write(unit=*,fmt='(a)')      '----------------------------------------'
+                    write(unit=*,fmt='(a,1x,a)') ' Variable: ',trim(varn)
+                    write(unit=*,fmt='(a,1x,a)') ' Type:     ',trim(vt_info(nv,ngr)%dtype)
+                    write(unit=*,fmt='(a)')      '----------------------------------------'
+                    call fatal_error('Attempted to write an undefined datatype'    &
                                     ,'h5_output','h5_output.F90')
-                 endif
-                    
+
+                 end select
+
                  if (attach_metadata == 1) then
                     
                     arank = 1
@@ -477,25 +486,40 @@ subroutine h5_output(vtype)
                     end if
 
                     
-                    
-                    if (vt_info(nv,ngr)%dtype .eq. 'r') then   ! real data type
+                    select case (vt_info(nv,ngr)%dtype)
+                    case ('R') !----- Real variable (vector)
                        call h5dwrite_f(dset_id,H5T_NATIVE_REAL,vtvec%var_rp,globdims, &
                             hdferr,file_space_id = filespace, mem_space_id = memspace)
-                    elseif(vt_info(nv,ngr)%dtype .eq. 'i') then ! integer data type
-                       
-                       call h5dwrite_f(dset_id,H5T_NATIVE_INTEGER,vtvec%var_ip,globdims, &
-                            hdferr,file_space_id = filespace, mem_space_id = memspace)
-                       
-                    elseif(vt_info(nv,ngr)%dtype .eq. 'c') then ! character data type
-                       
-                       call h5dwrite_f(dset_id,H5T_NATIVE_CHARACTER,vtvec%var_cp,globdims, &
-                            hdferr,file_space_id = filespace, mem_space_id = memspace)
-                    elseif(vt_info(nv,ngr)%dtype .eq. 'd') then ! character data type
-                       
+
+                    case ('D') !----- Double precision variable (vector)
                        call h5dwrite_f(dset_id,H5T_NATIVE_DOUBLE,vtvec%var_dp,globdims, &
                             hdferr,file_space_id = filespace, mem_space_id = memspace)
 
-                    end if
+                    case ('I') !----- Integer variable (vector)
+                       call h5dwrite_f(dset_id,H5T_NATIVE_INTEGER,vtvec%var_ip,globdims, &
+                            hdferr,file_space_id = filespace, mem_space_id = memspace)
+
+                    case ('C') !----- Character variable (vector)
+                       call h5dwrite_f(dset_id,H5T_NATIVE_CHARACTER,vtvec%var_cp,globdims, &
+                            hdferr,file_space_id = filespace, mem_space_id = memspace)
+
+                    case ('r') !----- Real variable (scalar)
+                       call h5dwrite_f(dset_id,H5T_NATIVE_REAL,vtvec%sca_rp,globdims, &
+                            hdferr,file_space_id = filespace, mem_space_id = memspace)
+
+                    case ('d') !----- Double precision variable (scalar)
+                       call h5dwrite_f(dset_id,H5T_NATIVE_DOUBLE,vtvec%sca_dp,globdims, &
+                            hdferr,file_space_id = filespace, mem_space_id = memspace)
+
+                    case ('i') !----- Integer variable (scalar)
+                       call h5dwrite_f(dset_id,H5T_NATIVE_INTEGER,vtvec%sca_ip,globdims, &
+                            hdferr,file_space_id = filespace, mem_space_id = memspace)
+
+                    case ('c') !----- Character variable (scalar)
+                       call h5dwrite_f(dset_id,H5T_NATIVE_CHARACTER,vtvec%sca_cp,globdims, &
+                            hdferr,file_space_id = filespace, mem_space_id = memspace)
+
+                    end select
                     if (hdferr /= 0) then
                        write (unit=*,fmt=*) 'Variable name:    ',varn
                        write (unit=*,fmt=*) 'Global dimension: ',globdims
@@ -684,7 +708,7 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
       cnt(1:2)    = 1_8
       stride(1:2) = 1_8
       
-   case (11) ! (npolygons) 
+   case (10,11) ! (npolygons) 
       
       ! Vector type,dimensions set
       
@@ -695,7 +719,7 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
       cnt(1)      = 1_8
       stride(1)   = 1_8
       
-   case (12) ! (nzg,npolygons)  
+   case (12,120) ! (nzg,npolygons)  
       
       ! Soil column type
       dsetrank = 2
@@ -862,7 +886,7 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
       cnt(1:3)    = 1_8
       stride(1:3) = 1_8
 
-   case (21) !(nsites)
+   case (20,21) !(nsites)
       
       dsetrank = 1
       chnkdims(1) = int(varlen,8)
@@ -871,7 +895,7 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
       cnt(1)      = 1_8
       stride(1)   = 1_8
 
-   case(22) !(nzg,nsites)
+   case(22,220) !(nzg,nsites)
                
       ! Soil column type
       dsetrank = 2
@@ -988,7 +1012,7 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
       cnt(1:2)    = 1_8
       stride(1:2) = 1_8
      
-   case (31) !(npatches)
+   case (30,31) !(npatches)
       
       dsetrank = 1            
       chnkdims(1) = int(varlen,8)
@@ -997,7 +1021,7 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
       cnt(1)      = 1_8
       stride(1)   = 1_8
       
-   case (32) ! (nzg,npatches)
+   case (32,320) ! (nzg,npatches)
       
       ! Soil column type
       dsetrank = 2
@@ -1110,7 +1134,7 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
       cnt(1:2)    = 1_8
       stride(1:2) = 1_8
               
-   case (41) !(ncohorts)
+   case (40,41) !(ncohorts)
       
       dsetrank = 1
       chnkdims(1) = int(varlen,8)

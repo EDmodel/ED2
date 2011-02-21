@@ -84,9 +84,7 @@ subroutine node_decomp(init)
          call par_est_time(nnxp(ngr),nnyp(ngr),scratch%scr1,basic_g(ngr)%cputime,init)
 
          !----- Decompose the grid taking into account the work numbers. ------------------!
-         nsiz = nnxp(ngr)+nnyp(ngr)
-         call par_decomp(nnxp(ngr),nnyp(ngr),nsiz,nmachs,scratch%scr1                      &
-                        ,ixb(:,ngr),ixe(:,ngr),iyb(:,ngr),iye(:,ngr))
+         call par_decomp(ngr,nnxp(ngr),nnyp(ngr),scratch%scr1)
       end if
    end do
    !---------------------------------------------------------------------------------------!

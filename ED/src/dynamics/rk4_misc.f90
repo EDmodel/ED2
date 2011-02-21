@@ -32,6 +32,8 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
                                     , rk4tiny_sfcw_mass      & ! intent(in)
                                     , checkbudget            & ! intent(in)
                                     , print_detailed         & ! intent(in)
+                                    , rk4min_soil_water      & ! intent(in)
+                                    , rk4max_soil_water      & ! intent(in)
                                     , find_derived_thbounds  & ! sub-routine
                                     , reset_rk4_fluxes       ! ! sub-routine
    use ed_max_dims           , only : n_pft                  ! ! intent(in)
@@ -113,7 +115,15 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    !     Soil properties.                                                                  !
    !---------------------------------------------------------------------------------------!
    do k = rk4site%lsl, nzg
-      targetp%soil_water(k)   = dble(sourcesite%soil_water(k,ipa))
+      !------------------------------------------------------------------------------------!
+      !     Soil water may be slightly off-bounds.  This may happen when the soil moisture !
+      ! is exactly at the bounds, but then it is copied to single precision and then back  !
+      ! to double precision.  Therefore at this time only we must ensure that we bound it, !
+      ! otherwise the model will crash due to the round-off error.                         !            
+      !------------------------------------------------------------------------------------!
+      targetp%soil_water(k)   = min( rk4max_soil_water(k)                                  &
+                                   , max( rk4min_soil_water(k)                             &
+                                        , dble(sourcesite%soil_water(k,ipa)) ) )
       targetp%soil_energy(k)  = dble(sourcesite%soil_energy(k,ipa))
       targetp%soil_tempk(k)   = dble(sourcesite%soil_tempk(k,ipa))
       targetp%soil_fracliq(k) = dble(sourcesite%soil_fracliq(k,ipa))
