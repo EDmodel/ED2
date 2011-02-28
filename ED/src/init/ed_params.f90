@@ -853,7 +853,7 @@ subroutine init_pft_photo_params()
    Vm_high_temp(17)          =  45.0  + thioff ! C3
 
    !------ Vm0 is the maximum photosynthesis capacity in µmol/m2/s. -----------------------!
-   Vm0(1)                    = 10.0           
+   Vm0(1)                    = 12.5            
    Vm0(2)                    = 18.8            * vmfact
    Vm0(3)                    = 12.5            * vmfact
    Vm0(4)                    = 6.25            * vmfact
@@ -867,10 +867,10 @@ subroutine init_pft_photo_params()
    Vm0(12:13)                = 18.3            * vmfact
    Vm0(14:15)                = 12.5            * vmfact
    Vm0(16)                   = 21.875          * vmfact
-   Vm0(17)                   = 15.625 * 0.7264 * vmfact
+   Vm0(17)                   = 15.625          * vmfact
 
    !----- Define the stomatal slope (aka the M factor). -----------------------------------!
-   stomatal_slope(1)         =  4.0
+   stomatal_slope(1)         =  6.0    
    stomatal_slope(2)         =  8.0    * mfact
    stomatal_slope(3)         =  8.0    * mfact
    stomatal_slope(4)         =  8.0    * mfact
@@ -883,10 +883,10 @@ subroutine init_pft_photo_params()
    stomatal_slope(11)        =  6.3949 * mfact
    stomatal_slope(12)        =  8.0    * mfact
    stomatal_slope(13)        =  8.0    * mfact
-   stomatal_slope(14)        =  4.0
-   stomatal_slope(15)        =  4.0
+   stomatal_slope(14)        =  6.0
+   stomatal_slope(15)        =  6.0
    stomatal_slope(16)        =  8.0    * mfact
-   stomatal_slope(17)        =  6.4
+   stomatal_slope(17)        =  6.4    * mfact
  
    cuticular_cond(1)         = 10000.0    ! 10000.0
    cuticular_cond(2)         = 10000.0    ! 10000.0
@@ -1079,7 +1079,7 @@ subroutine init_pft_resp_params()
    root_turnover_rate(16)         = 2.0
    root_turnover_rate(17)         = 0.333
 
-   dark_respiration_factor(1)     = 0.04 * gamfact
+   dark_respiration_factor(1)     = 0.04
    dark_respiration_factor(2)     = 0.02 * gamfact
    dark_respiration_factor(3)     = 0.02 * gamfact
    dark_respiration_factor(4)     = 0.02 * gamfact
@@ -1092,10 +1092,10 @@ subroutine init_pft_resp_params()
    dark_respiration_factor(11)    = 0.02 * gamfact
    dark_respiration_factor(12)    = 0.02 * gamfact
    dark_respiration_factor(13)    = 0.02 * gamfact
-   dark_respiration_factor(14)    = 0.04 * gamfact
-   dark_respiration_factor(15)    = 0.04 * gamfact
+   dark_respiration_factor(14)    = 0.04
+   dark_respiration_factor(15)    = 0.04
    dark_respiration_factor(16)    = 0.02 * gamfact
-   dark_respiration_factor(17)    = 0.03 * gamfact
+   dark_respiration_factor(17)    = 0.02 * gamfact
 
    storage_turnover_rate(1)       = 0.0
    storage_turnover_rate(2)       = 0.0
@@ -1390,7 +1390,7 @@ subroutine init_pft_alloc_params()
    q(11)    = 1.1274
    q(12:15) = 1.0
    q(16)    = 1.0
-   q(17)    = 1.0
+   q(17)    = twothirds
 
    sapwood_ratio(1:17) = 3900.0
 

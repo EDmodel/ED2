@@ -7,14 +7,13 @@
 ! energy to be zero.                                                                       !
 !------------------------------------------------------------------------------------------!
 subroutine leaf3_ocean(mzg,ustar,tstar,rstar,cstar,can_prss,can_rvap,can_co2,sensible_gc   &
-                      ,evap_gc,plresp,can_theta,can_theiv,veg_energy,veg_water,veg_hcap    &
-                      ,ground_temp,ground_rsat,ground_rvap,ground_fliq)
+                      ,evap_gc,plresp,ground_temp,ground_rsat,ground_rvap,ground_fliq)
    use leaf_coms , only : dtll           & ! intent(in)
                         , dtll_factor    & ! intent(in)
                         , ggbare         & ! intent(in)
                         , can_rhos       & ! intent(in)
                         , can_exner      & ! intent(in)
-                        , tempk          & ! intent(in)
+                        , soil_tempk     & ! intent(in)
                         , dtllowcc       & ! intent(out)
                         , dtllohcc       & ! intent(out)
                         , dtlloccc       & ! intent(out)
@@ -58,11 +57,6 @@ subroutine leaf3_ocean(mzg,ustar,tstar,rstar,cstar,can_prss,can_rvap,can_co2,sen
    real   , intent(inout) :: sensible_gc
    real   , intent(inout) :: evap_gc
    real   , intent(inout) :: plresp
-   real   , intent(out)   :: can_theta
-   real   , intent(out)   :: can_theiv
-   real   , intent(out)   :: veg_energy
-   real   , intent(out)   :: veg_water
-   real   , intent(out)   :: veg_hcap
    real   , intent(out)   :: ground_temp
    real   , intent(out)   :: ground_rsat
    real   , intent(out)   :: ground_rvap
@@ -84,10 +78,10 @@ subroutine leaf3_ocean(mzg,ustar,tstar,rstar,cstar,can_prss,can_rvap,can_co2,sen
    !---------------------------------------------------------------------------------------!
    !    Find the ground properties.                                                        !
    !---------------------------------------------------------------------------------------!
-   ground_temp = tempk(mzg)
-   ground_rsat = rslif(can_prss,tempk(mzg))
+   ground_temp = soil_tempk(mzg)
+   ground_rsat = rslif(can_prss,soil_tempk(mzg))
    ground_rvap = ground_rsat
-   if (tempk(mzg) >= t3ple) then
+   if (soil_tempk(mzg) >= t3ple) then
       ground_fliq = 1.
    else
       ground_fliq = 0.
@@ -127,33 +121,6 @@ subroutine leaf3_ocean(mzg,ustar,tstar,rstar,cstar,can_prss,can_rvap,can_co2,sen
    plresp      = plresp      + cflxgc*dtll_factor
    !---------------------------------------------------------------------------------------!
 
-
-   !---------------------------------------------------------------------------------------!
-   !    Update canopy air properties.  This is done inside the loop to ensure that we      !
-   ! leave here with the right canopy air potential temperature.                           !
-   !---------------------------------------------------------------------------------------!
-   can_theta = exp(can_lntheta)
-   can_shv   = can_rvap / (can_rvap + 1.)
-   can_temp  = cpi * can_theta * can_exner
-   can_theiv = thetaeiv(can_theta,can_prss,can_temp,can_rvap,can_rvap,-8)
-   !---------------------------------------------------------------------------------------!
-
-
-   !----- Update the vegetation temperature. ----------------------------------------------!
-   veg_temp = can_temp
-   if (veg_temp > t3ple) then
-      veg_fliq = 1.0
-   elseif (veg_temp < t3ple) then
-      veg_fliq = 0.0
-   else
-      veg_fliq = 0.5
-   end if
-   veg_energy = 0.0
-   veg_water  = 0.0
-   veg_hcap   = 0.0
-   !---------------------------------------------------------------------------------------!
-
-
    return
 end subroutine leaf3_ocean
 !==========================================================================================!
@@ -169,38 +136,52 @@ end subroutine leaf3_ocean
 !      This routine will find the internal energy of the ocean based on the previous and   !
 ! future sea surface temperature.                                                          !
 !------------------------------------------------------------------------------------------!
-subroutine ocean_energy(mzg,m2,m3,mpat,i,j,timefac,pastsst,futuresst,soil_energy)
-   use rconstants, only : cliq       & ! intent(in)
-                        , tsupercool ! ! intent(in)
+subroutine leaf_ocean_diag(ifm,mzg,pastsst,futuresst,soil_energy)
+   use rconstants, only : cliq         & ! intent(in)
+                        , tsupercool   ! ! intent(in)
+   use mem_grid  , only : time         ! ! intent(in)
+   use io_params , only : iupdsst      & ! intent(in)
+                        , ssttime1     & ! intent(in)
+                        , ssttime2     ! ! intent(in)
+   use leaf_coms , only : timefac_sst  & ! intent(out)
+                        , soil_tempk   & ! intent(in)
+                        , soil_fracliq ! ! intent(in)
+   use therm_lib , only : qtk          ! ! sub-routine
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
-   integer                                , intent(in)    :: mzg
-   integer                                , intent(in)    :: m2
-   integer                                , intent(in)    :: m3
-   integer                                , intent(in)    :: mpat
-   integer                                , intent(in)    :: i
-   integer                                , intent(in)    :: j
-   real                                   , intent(in)    :: timefac
-   real        , dimension(m2,m3)         , intent(in)    :: pastsst
-   real        , dimension(m2,m3)         , intent(in)    :: futuresst
-   real        , dimension(mzg,m2,m3,mpat), intent(inout) :: soil_energy
+   integer                     , intent(in)    :: ifm
+   integer                     , intent(in)    :: mzg
+   real                        , intent(in)    :: pastsst
+   real                        , intent(in)    :: futuresst
+   real        , dimension(mzg), intent(inout) :: soil_energy
    !----- Local variables. ----------------------------------------------------------------!
-   integer                                                :: izg
-   integer                                                :: sst
-   integer                                                :: ssq
+   integer                                     :: izg
+   integer                                     :: sst
+   integer                                     :: ssq
    !---------------------------------------------------------------------------------------!
 
 
+
+
+   !----- Find the time interpolation factor for updating SST. ----------------------------!
+   if (iupdsst == 0) then
+      timefac_sst = 0.
+   else
+      timefac_sst = sngl((time - ssttime1(ifm)) / (ssttime2(ifm) - ssttime1(ifm)))
+   endif
+   !---------------------------------------------------------------------------------------!
+
    !----- Find the sea surface temperature. -----------------------------------------------!
-   sst = pastsst(i,j) + timefac * (futuresst(i,j) -pastsst(i,j))
+   sst = pastsst + timefac_sst * (futuresst -pastsst)
    ssq = cliq * (sst - tsupercool)
 
    !----- Find the sea surface internal energy, assuming that it is always liquid. --------!
    do izg=1,mzg
-      soil_energy(izg,i,j,1) = ssq
+      soil_energy(izg) = ssq
+      call qtk(soil_energy(izg),soil_tempk(izg),soil_fracliq(izg))
    end do
 
    return
-end subroutine ocean_energy
+end subroutine leaf_ocean_diag
 !==========================================================================================!
 !==========================================================================================!

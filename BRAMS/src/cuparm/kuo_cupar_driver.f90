@@ -69,11 +69,11 @@ subroutine cu_inv_tend(m1,m2,m3,ia,iz,ja,jz,thsrc,thsrcp,thsrcf,rtsrc,rtsrcp,rts
 
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
-   integer                  , intent(in)  :: m1,m2,m3,ia,iz,ja,jz
-   real, dimension(   m2,m3), intent(in)  :: conprrp,conprrf
-   real, dimension(m1,m2,m3), intent(in)  :: thsrcp,thsrcf,rtsrcp,rtsrcf
-   real, dimension(   m2,m3), intent(out) :: conprr
-   real, dimension(m1,m2,m3), intent(out) :: thsrc,rtsrc
+   integer                  , intent(in)    :: m1,m2,m3,ia,iz,ja,jz
+   real, dimension(   m2,m3), intent(in)    :: conprrp,conprrf
+   real, dimension(m1,m2,m3), intent(in)    :: thsrcp,thsrcf,rtsrcp,rtsrcf
+   real, dimension(   m2,m3), intent(inout) :: conprr
+   real, dimension(m1,m2,m3), intent(inout) :: thsrc,rtsrc
    !----- Local variables -----------------------------------------------------------------!
    integer                                :: k,i,j
    real                                   :: tfact,grwt

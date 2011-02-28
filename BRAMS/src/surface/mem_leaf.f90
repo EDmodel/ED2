@@ -141,6 +141,12 @@ Module mem_leaf
                                           !    0. Bedrock
                                           !    1. Free drainage
                                           !    2. Half drainage
+   integer                 :: ipercol     ! Percolation scheme:
+                                          !    0. Original method, from LEAF-3.  Shed liquid 
+                                          !       in excess of a 1:9 liquid-to-ice ratio 
+                                          !       through percolation.
+                                          !    1. Alternative "free" water calculation.  
+                                          !       Anderson (1976), NOAA Tech Report NWS 19.
    real                    :: runoff_time ! Runoff time scale.
    real                    :: dtleaf      ! LEAF-3 target time step.  It will be either this
                                           !    this or the actual BRAMS time step (which-
@@ -487,7 +493,7 @@ Module mem_leaf
 
       if (associated(leaf%soil_water))                                                     &
          call vtables2(leaf%soil_water,leafm%soil_water,ng,npts,imean                      &
-                      ,'SOIL_WATER :4:hist:anal:mpti:mpt1:mpt3'//trim(str_recycle))
+                      ,'SOIL_WATER :4:hist:anal:mpti:mpt3'//trim(str_recycle))
 
       if (associated(leaf%soil_energy))                                                    &
          call vtables2(leaf%soil_energy,leafm%soil_energy,ng,npts,imean                    &

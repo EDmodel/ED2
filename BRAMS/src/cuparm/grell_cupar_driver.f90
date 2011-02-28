@@ -168,8 +168,8 @@ subroutine grell_cupar_initial(i,j,confrqd)
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
-   ! A. Finding the ice and liquid mixing ratio.  Since ice and liquid may not be solved   !
-   !    for some user's configuration (level = 1), we must check that first.               !
+   ! A. Find the ice and liquid mixing ratio.  Since ice and liquid may not be solved for  !
+   ! some user's configuration (level = 1 and 2), we must check that first.                !
    !---------------------------------------------------------------------------------------!
    select case (level)
    !------ No condensed phase, simply set up both to zero. --------------------------------!
@@ -191,13 +191,16 @@ subroutine grell_cupar_initial(i,j,confrqd)
    end select
    !---------------------------------------------------------------------------------------!
 
+
+
+
    !---------------------------------------------------------------------------------------!
    ! B. Copy CO2 array to scratch variable, if CO2 is actively prognosed.  Otherwise, put  !
    !    the constant CO2 mixing ratio, although it will not be really used.                !
    !---------------------------------------------------------------------------------------!
    if (co2_on) then
-      call atob(mzp,basic_g(ngrid)%co2p(:,i,j),vctr8(1:mzp))
-      call atob(mzp,tend_g(ngrid)%co2t(:,i,j),vctr18(1:mzp))
+      call atob(mzp,basic_g(ngrid)%co2p(:,i,j), vctr8(1:mzp))
+      call atob(mzp,tend_g(ngrid)%co2t(:,i,j) ,vctr18(1:mzp))
    else
       call ae0  (mzp,vctr8(1:mzp) ,co2con(1))
       call azero(mzp,vctr18(1:mzp))
@@ -223,6 +226,8 @@ subroutine grell_cupar_initial(i,j,confrqd)
    ! D. Flushes all scratch variables to zero.                                             !
    !---------------------------------------------------------------------------------------!
    call zero_scratch_grell(3)
+   !---------------------------------------------------------------------------------------!
+
 
 
    !---------------------------------------------------------------------------------------!
@@ -231,20 +236,25 @@ subroutine grell_cupar_initial(i,j,confrqd)
    call initial_grid_grell(mzp,deltax,deltay,zt(1:mzp),zm(1:mzp)                           &
               , grid_g(ngrid)%flpw             (i,j), grid_g(ngrid)%rtgt             (i,j) &
               , confrqd                             , turb_g(ngrid)%kpbl             (i,j) )
+   !---------------------------------------------------------------------------------------!
+
 
 
 
    !---------------------------------------------------------------------------------------!
-   ! F. Copying the tendencies to the scratch array.                                       !
+   ! F. Copy the tendencies to the scratch array.                                          !
    !---------------------------------------------------------------------------------------!
    call initial_tend_grell(mzp,tend_g(ngrid)%tht(:,i,j),tend_g(ngrid)%tket(:,i,j)          &
                           ,tend_g(ngrid)%rtt(:,i,j),vctr18(1:mzp))
+   !---------------------------------------------------------------------------------------!
+
+
 
 
    !---------------------------------------------------------------------------------------!
-   ! G. Initialising pressure, temperature, and mixing ratio with both the past values and !
+   ! G. Initialise pressure, temperature, and mixing ratio with both the past values and   !
    !    the future values in case convection does not happen (previous values plus the     !
-   !    large-scale forcing.                                                               !
+   !    large-scale forcing).                                                              !
    !---------------------------------------------------------------------------------------!
    call initial_thermo_grell(mzp,dtlt               , basic_g(ngrid)%thp           (:,i,j) &
               , basic_g(ngrid)%theta         (:,i,j), basic_g(ngrid)%rtp           (:,i,j) &
@@ -253,6 +263,7 @@ subroutine grell_cupar_initial(i,j,confrqd)
               , basic_g(ngrid)%wp            (:,i,j), basic_g(ngrid)%dn0           (:,i,j) &
               , turb_g(ngrid)%tkep           (:,i,j), vctr6                        (1:mzp) &
               , vctr7                        (1:mzp), vctr9                        (1:mzp))
+   !---------------------------------------------------------------------------------------!
 
 
    return

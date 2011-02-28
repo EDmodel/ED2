@@ -687,7 +687,7 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
    !---------------------------------------------------------------------------------------!
 
    select case (idim_type) 
-   case(90) ! No polygon-site-patch or cohort dimension
+   case(90,92) ! No polygon-site-patch or cohort dimension, or a single-dimension vector
       
       dsetrank = 1
       chnkdims(1) = int(varlen,8)
@@ -695,18 +695,6 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
       globdims(1) = int(var_len_global,8)
       cnt(1)      = 1_8
       stride(1)   = 1_8
-
-   case(92) ! single vector soil info
-      
-      dsetrank = 2
-      globdims(1) = int(nzg,8)
-      chnkdims(1) = int(nzg,8)
-      chnkoffs(1) = 0_8
-      globdims(2) = int(var_len_global,8)
-      chnkdims(2) = int(varlen,8)
-      chnkoffs(2) = int(globid,8)
-      cnt(1:2)    = 1_8
-      stride(1:2) = 1_8
       
    case (10,11) ! (npolygons) 
       

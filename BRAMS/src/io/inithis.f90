@@ -469,8 +469,8 @@ subroutine sfcinit_hstart()
 
                !----- Compute NDVI and LAI. -----------------------------------------------!
                if (ipat >= 2) then
-                  timefac_ndvi = 0.0
-                  call vegndvi(leaf_g(ifm)%patch_area                  (i,j,ipat)          &
+                  call vegndvi(ifm                                                         &
+                              ,leaf_g(ifm)%patch_area                  (i,j,ipat)          &
                               ,leaf_g(ifm)%leaf_class                  (i,j,ipat)          &
                               ,leaf_g(ifm)%veg_fracarea                (i,j,ipat)          &
                               ,leaf_g(ifm)%veg_lai                     (i,j,ipat)          &
@@ -524,16 +524,16 @@ subroutine hi_interp(n1,n2,n3,n4,vn,xm1,xt1,ym1,yt1,zm1,zt1,plat1,plon1,topt1,zt
 
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
-   character(len=*)               , intent(in)  :: vname
-   integer                        , intent(in)  :: n1,n2,n3,n4,ngr1,idim
-   integer                        , intent(in)  :: m1,m2,m3,m4,ngm
-   real                           , intent(in)  :: plat1,plon1,ztop1
-   real   , dimension(n1         ), intent(in)  :: zm1,zt1
-   real   , dimension(   n2      ), intent(in)  :: xm1,xt1
-   real   , dimension(      n3   ), intent(in)  :: ym1,yt1
-   real   , dimension(   n2,n3   ), intent(in)  :: topt1
-   real   , dimension(n1,n2,n3,n4), intent(in)  :: vn
-   real   , dimension(m1,m2,m3,m4), intent(out) :: vm
+   character(len=*)               , intent(in)    :: vname
+   integer                        , intent(in)    :: n1,n2,n3,n4,ngr1,idim
+   integer                        , intent(in)    :: m1,m2,m3,m4,ngm
+   real                           , intent(in)    :: plat1,plon1,ztop1
+   real   , dimension(n1         ), intent(in)    :: zm1,zt1
+   real   , dimension(   n2      ), intent(in)    :: xm1,xt1
+   real   , dimension(      n3   ), intent(in)    :: ym1,yt1
+   real   , dimension(   n2,n3   ), intent(in)    :: topt1
+   real   , dimension(n1,n2,n3,n4), intent(in)    :: vn
+   real   , dimension(m1,m2,m3,m4), intent(inout) :: vm
    !----- Local variables -----------------------------------------------------------------!
    integer                               :: i,j,k,np,ii,jj
    real                                  :: xxm,yym,fixxm,fiyym,topoh,rtgth
@@ -761,10 +761,10 @@ end subroutine hi_avgw
 subroutine patch_land_average(n1,n2,n3,n4,parea,pa1,paa)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
-   integer                     , intent(in)  :: n1,n2,n3,n4
-   real, dimension(   n2,n3,n4), intent(in)  :: parea
-   real, dimension(n1,n2,n3,n4), intent(in)  :: pa1
-   real, dimension(n1,n2,n3   ), intent(out) :: paa
+   integer                     , intent(in)    :: n1,n2,n3,n4
+   real, dimension(   n2,n3,n4), intent(in)    :: parea
+   real, dimension(n1,n2,n3,n4), intent(in)    :: pa1
+   real, dimension(n1,n2,n3   ), intent(inout) :: paa
    !----- Local variables -----------------------------------------------------------------!
    integer                                   :: i,j,k,np
    real                                      :: sw
@@ -813,9 +813,9 @@ subroutine patch_land_unaverage(n1,n2,n3,n4,paa,pa1)
    implicit none
 
    !----- Arguments -----------------------------------------------------------------------!
-   integer                         , intent(in)  :: n1,n2,n3,n4
-   real   , dimension (n1,n2,n3)   , intent(in)  :: paa
-   real   , dimension (n1,n2,n3,n4), intent(out) :: pa1
+   integer                         , intent(in)    :: n1,n2,n3,n4
+   real   , dimension (n1,n2,n3)   , intent(in)    :: paa
+   real   , dimension (n1,n2,n3,n4), intent(inout) :: pa1
    !----- Local variables -----------------------------------------------------------------!
    integer                                       :: i,j,k,np
    real                                          :: sw

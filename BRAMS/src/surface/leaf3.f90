@@ -75,7 +75,12 @@ subroutine leaf3_timestep()
                              , pcpgl             & ! intent(out)
                              , estar             & ! intent(out)
                              , qstar             & ! intent(out)
-                             , tiny_parea        ! ! intent(out)
+                             , tiny_parea        & ! intent(out)
+                             , g_urban           & ! intent(out)
+                             , emis_town         & ! intent(out)
+                             , alb_town          & ! intent(out)
+                             , ts_town           & ! intent(out)
+                             , flush_leaf_coms   ! ! sub-routine
    use mem_basic      , only : basic_g           & ! intent(in)
                              , co2_on            & ! intent(in)
                              , co2con            ! ! intent(in)
@@ -96,28 +101,22 @@ subroutine leaf3_timestep()
                              , alvl              ! ! intent(in)
    implicit none
    !----- Local variables. ----------------------------------------------------------------!
-   integer                              :: i
-   integer                              :: j
-   integer                              :: ip
-   integer                              :: iter_leaf
-   real                                 :: psup1
-   real                                 :: psup2
-   real                                 :: depe
-   real                                 :: alt2
-   real                                 :: deze
-   real                                 :: dpdz
-   real                                 :: exn1st
-   real                                 :: airt
-   real                                 :: zh_town
-   real                                 :: zle_town
-   real                                 :: zsfu_town
-   real                                 :: zsfv_town
-   !----- Locally saved variables. --------------------------------------------------------!
-   real                   , save        :: emis_town
-   real                   , save        :: alb_town
-   real                   , save        :: ts_town
-   real                   , save        :: g_urban
-   logical                , save        :: firsttime = .true. 
+   integer  :: i
+   integer  :: j
+   integer  :: ip
+   integer  :: iter_leaf
+   real     :: psup1
+   real     :: psup2
+   real     :: depe
+   real     :: alt2
+   real     :: deze
+   real     :: dpdz
+   real     :: exn1st
+   real     :: airt
+   real     :: zh_town
+   real     :: zle_town
+   real     :: zsfu_town
+   real     :: zsfv_town
    !---------------------------------------------------------------------------------------!
    
    !------Nothing to do here if the bottom is not at the ground. --------------------------!
@@ -125,34 +124,9 @@ subroutine leaf3_timestep()
    !---------------------------------------------------------------------------------------!
 
 
-   !----- Assign some TEB variables to zero.  These will remain 0 if TEB is not used. -----!
-   if (firsttime) then 
-      g_urban    = 0.
-      emis_town  = 0.
-      alb_town   = 0.
-      ts_town    = 0.
-      firsttime  = .false.
-   end if
-   !---------------------------------------------------------------------------------------!
 
-
-
-   !----- Find the time interpolation factor for updating SST. ----------------------------!
-   if (iupdsst == 0) then
-      timefac_sst = 0.
-   else
-      timefac_sst = sngl((time - ssttime1(ngrid)) / (ssttime2(ngrid) - ssttime1(ngrid)))
-   endif
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !----- Find the time interpolation factor for updating NDVI or LAI. --------------------!
-   if (iupdndvi == 0) then
-      timefac_ndvi = 0.
-   else
-      timefac_ndvi = sngl((time - ndvitime1(ngrid)) / (ndvitime2(ngrid) - ndvitime1(ngrid)))
-   end if
+   !----- This will reset some variables, so we make sure they are properly initialised. --!
+   call flush_leaf_coms('INITIAL')
    !---------------------------------------------------------------------------------------!
 
 
@@ -291,6 +265,15 @@ subroutine leaf3_timestep()
    latloop: do j=ja,jz
       lonloop: do i=ia,iz
 
+
+         !---------------------------------------------------------------------------------!
+         !      This will reset some variables, so we make sure they are properly          !
+         ! initialised for every grid point.                                               !
+         !---------------------------------------------------------------------------------!
+         call flush_leaf_coms('GRID_POINT')
+         !---------------------------------------------------------------------------------!
+
+
          !----- Copy the surface variables to single column values. -----------------------!
          call leaf_atmo1d(mxp,myp,i,j,scratch%vt2da,scratch%vt2db,scratch%vt2dc            &
                          ,scratch%vt2dd,scratch%vt2de,scratch%vt2df,scratch%vt2dg          &
@@ -299,11 +282,6 @@ subroutine leaf3_timestep()
          !---------------------------------------------------------------------------------!
 
 
-
-         !----- Update water internal energy from time-dependent SST. ---------------------!
-         call ocean_energy(nzg,mxp,myp,npatch,i,j,timefac_sst,leaf_g(ngrid)%seatp          &
-                          ,leaf_g(ngrid)%seatf,leaf_g(ngrid)%soil_energy)
-         !---------------------------------------------------------------------------------!
 
 
 
@@ -323,10 +301,25 @@ subroutine leaf3_timestep()
          patloop1: do ip = 1, npatch
 
 
-            !----- Update time-dependent vegetation LAI and fractional coverage -----------!
-            if ( ip >= 2 .and. isfcl >= 1 .and.                                            &
-                 leaf_g(ngrid)%patch_area(i,j,ip) >= tiny_parea ) then
-               call vegndvi( leaf_g(ngrid)%patch_area  (i,j,ip)                            &
+            !------------------------------------------------------------------------------!
+            !      This will reset some variables, so we make sure they are properly       !
+            ! initialised for every grid point.                                            !
+            !------------------------------------------------------------------------------!
+            call flush_leaf_coms('PATCH')
+            !------------------------------------------------------------------------------!
+            
+
+
+            !----- Update time-dependent SST, vegetation LAI and fractional coverage ------!
+            if (ip == 1) then
+               call leaf_ocean_diag(ngrid,nzg                                              &
+                                   ,leaf_g(ngrid)%seatp (i,j)                              &
+                                   ,leaf_g(ngrid)%seatf (i,j)                              &
+                                   ,leaf_g(ngrid)%soil_energy(:,i,j,1))
+            elseif ( ip >= 2 .and. isfcl >= 1 .and.                                        &
+                     leaf_g(ngrid)%patch_area(i,j,ip) >= tiny_parea ) then
+               call vegndvi( ngrid                                                         &
+                           , leaf_g(ngrid)%patch_area  (i,j,ip)                            &
                            , leaf_g(ngrid)%leaf_class  (i,j,ip)                            &
                            , leaf_g(ngrid)%veg_fracarea(i,j,ip)                            &
                            , leaf_g(ngrid)%veg_lai     (i,j,ip)                            &
@@ -346,21 +339,48 @@ subroutine leaf3_timestep()
             !     Initialise various canopy air space and temporary surface water vari-    !
             ! ables.                                                                       !
             !------------------------------------------------------------------------------!
-            call sfcw_int_2_ext(nzs,leaf_g(ngrid)%sfcwater_nlev  (  i,j,ip)                &
-                                   ,leaf_g(ngrid)%sfcwater_energy(:,i,j,ip)                &
-                                   ,leaf_g(ngrid)%sfcwater_mass  (:,i,j,ip)                )
+            call leaf_soilsfcw_diag(ip,nzg,nzs,leaf_g(ngrid)%soil_energy       (:,i,j,ip)  &
+                                              ,leaf_g(ngrid)%soil_water        (:,i,j,ip)  &
+                                              ,leaf_g(ngrid)%soil_text         (:,i,j,ip)  &
+                                              ,leaf_g(ngrid)%sfcwater_nlev     (  i,j,ip)  &
+                                              ,leaf_g(ngrid)%sfcwater_energy   (:,i,j,ip)  &
+                                              ,leaf_g(ngrid)%sfcwater_mass     (:,i,j,ip)  &
+                                              ,leaf_g(ngrid)%sfcwater_depth    (:,i,j,ip)  &
+                                              ,.true.)
 
-            call leaf_can_init(ip  ,leaf_g(ngrid)%can_theta        (i,j,ip)                &
+            call leaf_solve_veg(ip,nzs,leaf_g(ngrid)%leaf_class                (  i,j,ip)  &
+                                      ,leaf_g(ngrid)%veg_height                (  i,j,ip)  &
+                                      ,leaf_g(ngrid)%patch_area                (  i,j,ip)  &
+                                      ,leaf_g(ngrid)%veg_fracarea              (  i,j,ip)  &
+                                      ,leaf_g(ngrid)%veg_tai                   (  i,j,ip)  &
+                                      ,leaf_g(ngrid)%sfcwater_nlev             (  i,j,ip)  &
+                                      ,leaf_g(ngrid)%sfcwater_depth            (:,i,j,ip)  &
+                                      ,.true.)
+
+            call leaf_can_diag(ip  ,leaf_g(ngrid)%can_theta        (i,j,ip)                &
+                                   ,leaf_g(ngrid)%can_theiv        (i,j,ip)                &
                                    ,leaf_g(ngrid)%can_rvap         (i,j,ip)                &
                                    ,leaf_g(ngrid)%leaf_class       (i,j,ip)                &
-                                   ,leaf_g(ngrid)%can_prss         (i,j,ip)                )
+                                   ,leaf_g(ngrid)%can_prss         (i,j,ip)                &
+                                   ,.true.                                                 )
 
-            call leaf_veg_init(ip  ,leaf_g(ngrid)%veg_energy       (i,j,ip)                &
-                                   ,leaf_g(ngrid)%veg_water        (i,j,ip)                &
-                                   ,leaf_g(ngrid)%veg_hcap         (i,j,ip)                &
-                                   ,leaf_g(ngrid)%leaf_class       (i,j,ip)                &
-                                   ,leaf_g(ngrid)%veg_lai          (i,j,ip)                &
-                                   ,leaf_g(ngrid)%patch_area       (i,j,ip)                )
+            call leaf_veg_diag(leaf_g(ngrid)%veg_energy       (i,j,ip)                     &
+                              ,leaf_g(ngrid)%veg_water        (i,j,ip)                     &
+                              ,leaf_g(ngrid)%veg_hcap         (i,j,ip)                     )
+
+            if (ip /= 1 .and. leaf_g(ngrid)%patch_area(i,j,ip) >= tiny_parea) then
+               call leaf_grndvap(leaf_g(ngrid)%soil_energy       (nzg,i,j,ip)              &
+                                ,leaf_g(ngrid)%soil_water        (nzg,i,j,ip)              &
+                                ,leaf_g(ngrid)%soil_text         (nzg,i,j,ip)              &
+                                ,leaf_g(ngrid)%sfcwater_energy   (  1,i,j,ip)              &
+                                ,leaf_g(ngrid)%sfcwater_nlev     (    i,j,ip)              &
+                                ,leaf_g(ngrid)%can_rvap          (    i,j,ip)              &
+                                ,leaf_g(ngrid)%can_prss          (    i,j,ip)              &
+                                ,leaf_g(ngrid)%ground_rsat       (    i,j,ip)              &
+                                ,leaf_g(ngrid)%ground_rvap       (    i,j,ip)              &
+                                ,leaf_g(ngrid)%ground_temp       (    i,j,ip)              &
+                                ,leaf_g(ngrid)%ground_fliq       (    i,j,ip)              )
+            end if
             !------------------------------------------------------------------------------!
 
 
@@ -389,34 +409,19 @@ subroutine leaf3_timestep()
                    (ip == 1     .or. leaf_g(ngrid)%patch_area(i,j,ip) >= tiny_parea) ) then
 
                   call sfcrad(nzg,nzs,ip                                                   &
-                             ,leaf_g(ngrid)%soil_energy      (:,i,j,ip)                    &
                              ,leaf_g(ngrid)%soil_water       (:,i,j,ip)                    &
                              ,leaf_g(ngrid)%soil_text        (:,i,j,ip)                    &
-                             ,leaf_g(ngrid)%sfcwater_energy  (:,i,j,ip)                    &
-                             ,leaf_g(ngrid)%sfcwater_mass    (:,i,j,ip)                    &
                              ,leaf_g(ngrid)%sfcwater_depth   (:,i,j,ip)                    &
                              ,leaf_g(ngrid)%patch_area       (  i,j,ip)                    &
-                             ,leaf_g(ngrid)%leaf_class       (  i,j,ip)                    &
-                             ,leaf_g(ngrid)%veg_height       (  i,j,ip)                    &
                              ,leaf_g(ngrid)%veg_fracarea     (  i,j,ip)                    &
+                             ,leaf_g(ngrid)%leaf_class       (  i,j,ip)                    &
                              ,leaf_g(ngrid)%veg_albedo       (  i,j,ip)                    &
                              ,leaf_g(ngrid)%sfcwater_nlev    (  i,j,ip)                    &
-                             ,leaf_g(ngrid)%veg_energy       (  i,j,ip)                    &
-                             ,leaf_g(ngrid)%veg_water        (  i,j,ip)                    &
-                             ,leaf_g(ngrid)%veg_hcap         (  i,j,ip)                    &
-                             ,leaf_g(ngrid)%can_prss         (  i,j,ip)                    &
-                             ,leaf_g(ngrid)%can_theiv        (  i,j,ip)                    &
-                             ,leaf_g(ngrid)%can_theta        (  i,j,ip)                    &
-                             ,leaf_g(ngrid)%can_rvap         (  i,j,ip)                    &
                              ,radiate_g(ngrid)%rshort        (  i,j   )                    &
                              ,radiate_g(ngrid)%rlong         (  i,j   )                    &
                              ,radiate_g(ngrid)%albedt        (  i,j   )                    &
                              ,radiate_g(ngrid)%rlongup       (  i,j   )                    &
-                             ,radiate_g(ngrid)%cosz          (  i,j   )                    &
-                             ,g_urban                                                      &
-                             ,emis_town                                                    &
-                             ,alb_town                                                     &
-                             ,ts_town                                                      )
+                             ,radiate_g(ngrid)%cosz          (  i,j   )                    )
                end if
                !---------------------------------------------------------------------------!
 
@@ -477,8 +482,7 @@ subroutine leaf3_timestep()
                            ,turb_g(ngrid)%sflux_w       (i,j   )                           &
                            ,turb_g(ngrid)%sflux_t       (i,j   )                           &
                            ,turb_g(ngrid)%sflux_r       (i,j   )                           &
-                           ,turb_g(ngrid)%sflux_c       (i,j   )                           &
-                           ,g_urban                                                        )
+                           ,turb_g(ngrid)%sflux_c       (i,j   )                           )
                !---------------------------------------------------------------------------!
 
 
@@ -487,26 +491,37 @@ subroutine leaf3_timestep()
                select case (ip)
                case (1)
                   !----- Call the solver for ocean (water) patches. -----------------------!
-                  call leaf3_ocean(nzg                                                     &
-                                  ,leaf_g(ngrid)%ustar        (i,j,ip)                     &
-                                  ,leaf_g(ngrid)%tstar        (i,j,ip)                     &
-                                  ,leaf_g(ngrid)%rstar        (i,j,ip)                     &
-                                  ,leaf_g(ngrid)%cstar        (i,j,ip)                     &
-                                  ,leaf_g(ngrid)%can_prss     (i,j,ip)                     &
-                                  ,leaf_g(ngrid)%can_rvap     (i,j,ip)                     &
-                                  ,leaf_g(ngrid)%can_co2      (i,j,ip)                     &
-                                  ,leaf_g(ngrid)%sensible_gc  (i,j,ip)                     &
-                                  ,leaf_g(ngrid)%evap_gc      (i,j,ip)                     &
-                                  ,leaf_g(ngrid)%plresp       (i,j,ip)                     &
-                                  ,leaf_g(ngrid)%can_theta    (i,j,ip)                     &
-                                  ,leaf_g(ngrid)%can_theiv    (i,j,ip)                     &
-                                  ,leaf_g(ngrid)%veg_energy   (i,j,ip)                     &
-                                  ,leaf_g(ngrid)%veg_water    (i,j,ip)                     &
-                                  ,leaf_g(ngrid)%veg_hcap     (i,j,ip)                     &
-                                  ,leaf_g(ngrid)%ground_temp  (i,j,ip)                     &
-                                  ,leaf_g(ngrid)%ground_rsat  (i,j,ip)                     &
-                                  ,leaf_g(ngrid)%ground_rvap  (i,j,ip)                     &
-                                  ,leaf_g(ngrid)%ground_fliq  (i,j,ip)                     )
+                  call leaf3_ocean(nzg,leaf_g(ngrid)%ustar                       (i,j,ip)  &
+                                      ,leaf_g(ngrid)%tstar                       (i,j,ip)  &
+                                      ,leaf_g(ngrid)%rstar                       (i,j,ip)  &
+                                      ,leaf_g(ngrid)%cstar                       (i,j,ip)  &
+                                      ,leaf_g(ngrid)%can_prss                    (i,j,ip)  &
+                                      ,leaf_g(ngrid)%can_rvap                    (i,j,ip)  &
+                                      ,leaf_g(ngrid)%can_co2                     (i,j,ip)  &
+                                      ,leaf_g(ngrid)%sensible_gc                 (i,j,ip)  &
+                                      ,leaf_g(ngrid)%evap_gc                     (i,j,ip)  &
+                                      ,leaf_g(ngrid)%plresp                      (i,j,ip)  &
+                                      ,leaf_g(ngrid)%ground_temp                 (i,j,ip)  &
+                                      ,leaf_g(ngrid)%ground_rsat                 (i,j,ip)  &
+                                      ,leaf_g(ngrid)%ground_rvap                 (i,j,ip)  &
+                                      ,leaf_g(ngrid)%ground_fliq                 (i,j,ip)  )
+
+                  !----- Update some diagnostic variables. --------------------------------!
+                  call flush_leaf_coms('TIMESTEP')
+                  call leaf_ocean_diag(ngrid,nzg                                           &
+                                            ,leaf_g(ngrid)%seatp                    (i,j)  &
+                                            ,leaf_g(ngrid)%seatf                    (i,j)  &
+                                            ,leaf_g(ngrid)%soil_energy          (:,i,j,1)  )
+
+                  call leaf_can_diag(ip  ,leaf_g(ngrid)%can_theta                (i,j,ip)  &
+                                         ,leaf_g(ngrid)%can_theiv                (i,j,ip)  &
+                                         ,leaf_g(ngrid)%can_rvap                 (i,j,ip)  &
+                                         ,leaf_g(ngrid)%leaf_class               (i,j,ip)  &
+                                         ,leaf_g(ngrid)%can_prss                 (i,j,ip)  &
+                                         ,.false.                                          )
+                  call leaf_veg_diag(leaf_g(ngrid)%veg_energy                    (i,j,ip)  &
+                                    ,leaf_g(ngrid)%veg_water                     (i,j,ip)  &
+                                    ,leaf_g(ngrid)%veg_hcap                      (i,j,ip)  )
                case default
 
                   if (teb_spm == 1) then
@@ -591,69 +606,59 @@ subroutine leaf3_timestep()
                      ! soil, vegetation, and canopy                                        !
                      !---------------------------------------------------------------------!
                      if (leaf_g(ngrid)%patch_area(i,j,ip) >= tiny_parea) then
-                        call leaftw(nzg,nzs                                                &
-                                   ,leaf_g(ngrid)%soil_water     (:,i,j,ip)                &
-                                   ,leaf_g(ngrid)%soil_energy    (:,i,j,ip)                &
-                                   ,leaf_g(ngrid)%soil_text      (:,i,j,ip)                &
-                                   ,leaf_g(ngrid)%sfcwater_mass  (:,i,j,ip)                &
-                                   ,leaf_g(ngrid)%sfcwater_depth (:,i,j,ip)                &
-                                   ,leaf_g(ngrid)%ustar            (i,j,ip)                &
-                                   ,leaf_g(ngrid)%tstar            (i,j,ip)                &
-                                   ,leaf_g(ngrid)%rstar            (i,j,ip)                &
-                                   ,leaf_g(ngrid)%cstar            (i,j,ip)                &
-                                   ,leaf_g(ngrid)%zeta             (i,j,ip)                &
-                                   ,leaf_g(ngrid)%ribulk           (i,j,ip)                &
-                                   ,leaf_g(ngrid)%veg_albedo       (i,j,ip)                &
-                                   ,leaf_g(ngrid)%veg_fracarea     (i,j,ip)                &
-                                   ,leaf_g(ngrid)%veg_lai          (i,j,ip)                &
-                                   ,leaf_g(ngrid)%veg_tai          (i,j,ip)                &
-                                   ,leaf_g(ngrid)%veg_rough        (i,j,ip)                &
-                                   ,leaf_g(ngrid)%veg_height       (i,j,ip)                &
-                                   ,leaf_g(ngrid)%patch_area       (i,j,ip)                &
-                                   ,leaf_g(ngrid)%patch_rough      (i,j,ip)                &
-                                   ,leaf_g(ngrid)%patch_wetind     (i,j,ip)                &
-                                   ,leaf_g(ngrid)%leaf_class       (i,j,ip)                &
-                                   ,leaf_g(ngrid)%soil_rough       (i,j,ip)                &
-                                   ,leaf_g(ngrid)%sfcwater_nlev    (i,j,ip)                &
-                                   ,leaf_g(ngrid)%stom_condct      (i,j,ip)                &
-                                   ,leaf_g(ngrid)%ground_rsat      (i,j,ip)                &
-                                   ,leaf_g(ngrid)%ground_rvap      (i,j,ip)                &
-                                   ,leaf_g(ngrid)%ground_temp      (i,j,ip)                &
-                                   ,leaf_g(ngrid)%ground_fliq      (i,j,ip)                &
-                                   ,leaf_g(ngrid)%veg_water        (i,j,ip)                &
-                                   ,leaf_g(ngrid)%veg_hcap         (i,j,ip)                &
-                                   ,leaf_g(ngrid)%veg_energy       (i,j,ip)                &
-                                   ,leaf_g(ngrid)%can_prss         (i,j,ip)                &
-                                   ,leaf_g(ngrid)%can_theiv        (i,j,ip)                &
-                                   ,leaf_g(ngrid)%can_theta        (i,j,ip)                &
-                                   ,leaf_g(ngrid)%can_rvap         (i,j,ip)                &
-                                   ,leaf_g(ngrid)%can_co2          (i,j,ip)                &
-                                   ,leaf_g(ngrid)%sensible_gc      (i,j,ip)                &
-                                   ,leaf_g(ngrid)%sensible_vc      (i,j,ip)                &
-                                   ,leaf_g(ngrid)%evap_gc          (i,j,ip)                &
-                                   ,leaf_g(ngrid)%evap_vc          (i,j,ip)                &
-                                   ,leaf_g(ngrid)%transp           (i,j,ip)                &
-                                   ,leaf_g(ngrid)%gpp              (i,j,ip)                &
-                                   ,leaf_g(ngrid)%plresp           (i,j,ip)                &
-                                   ,leaf_g(ngrid)%resphet          (i,j,ip)                &
-                                   ,leaf_g(ngrid)%veg_ndvip        (i,j,ip)                &
-                                   ,leaf_g(ngrid)%veg_ndvic        (i,j,ip)                &
-                                   ,leaf_g(ngrid)%veg_ndvif        (i,j,ip)                &
-                                   ,radiate_g(ngrid)%rshort        (i,j)                   &
-                                   ,radiate_g(ngrid)%cosz          (i,j)                   &
-                                   ,ip,i,j)
+                        call leaf_prognostic(ngrid,i,j,ip)
                      end if
                      !---------------------------------------------------------------------!
                   end if
                   !------------------------------------------------------------------------!
-                  
 
-                  !----- Update the output surface water intenal energy (intensive). ------!
-                  call sfcw_int_2_ext(nzs,leaf_g(ngrid)%sfcwater_nlev  (  i,j,ip)          &
-                                         ,leaf_g(ngrid)%sfcwater_energy(:,i,j,ip)          &
-                                         ,leaf_g(ngrid)%sfcwater_mass  (:,i,j,ip)          )
+
+
+
                   !------------------------------------------------------------------------!
+                  !     Update all the diagnostic variables.                               !
+                  !------------------------------------------------------------------------!
+                  call flush_leaf_coms('TIMESTEP')
+                  call leaf_soilsfcw_diag(ip,nzg,nzs                                       &
+                                         ,leaf_g(ngrid)%soil_energy         (  :,i,j,ip)   &
+                                         ,leaf_g(ngrid)%soil_water          (  :,i,j,ip)   &
+                                         ,leaf_g(ngrid)%soil_text           (  :,i,j,ip)   &
+                                         ,leaf_g(ngrid)%sfcwater_nlev       (    i,j,ip)   &
+                                         ,leaf_g(ngrid)%sfcwater_energy     (  :,i,j,ip)   &
+                                         ,leaf_g(ngrid)%sfcwater_mass       (  :,i,j,ip)   &
+                                         ,leaf_g(ngrid)%sfcwater_depth      (  :,i,j,ip)   &
+                                         ,.false.)
+                  call leaf_solve_veg(ip,nzs,leaf_g(ngrid)%leaf_class           (i,j,ip)   &
+                                            ,leaf_g(ngrid)%veg_height       (    i,j,ip)   &
+                                            ,leaf_g(ngrid)%patch_area           (i,j,ip)   &
+                                            ,leaf_g(ngrid)%veg_fracarea         (i,j,ip)   &
+                                            ,leaf_g(ngrid)%veg_tai          (    i,j,ip)   &
+                                            ,leaf_g(ngrid)%sfcwater_nlev    (    i,j,ip)   &
+                                            ,leaf_g(ngrid)%sfcwater_depth   (  :,i,j,ip)   &
+                                            ,.false.)
 
+                  call leaf_can_diag(ip  ,leaf_g(ngrid)%can_theta           (    i,j,ip)   &
+                                         ,leaf_g(ngrid)%can_theiv           (    i,j,ip)   &
+                                         ,leaf_g(ngrid)%can_rvap            (    i,j,ip)   &
+                                         ,leaf_g(ngrid)%leaf_class          (    i,j,ip)   &
+                                         ,leaf_g(ngrid)%can_prss            (    i,j,ip)   &
+                                         ,.false.                                          )
+
+                  call leaf_veg_diag(leaf_g(ngrid)%veg_energy               (    i,j,ip)   &
+                                    ,leaf_g(ngrid)%veg_water                (    i,j,ip)   &
+                                    ,leaf_g(ngrid)%veg_hcap                 (    i,j,ip)   )
+
+                  call leaf_grndvap(leaf_g(ngrid)%soil_energy               (nzg,i,j,ip)   &
+                                   ,leaf_g(ngrid)%soil_water                (nzg,i,j,ip)   &
+                                   ,leaf_g(ngrid)%soil_text                 (nzg,i,j,ip)   &
+                                   ,leaf_g(ngrid)%sfcwater_energy           (  1,i,j,ip)   &
+                                   ,leaf_g(ngrid)%sfcwater_nlev             (    i,j,ip)   &
+                                   ,leaf_g(ngrid)%can_rvap                  (    i,j,ip)   &
+                                   ,leaf_g(ngrid)%can_prss                  (    i,j,ip)   &
+                                   ,leaf_g(ngrid)%ground_rsat               (    i,j,ip)   &
+                                   ,leaf_g(ngrid)%ground_rvap               (    i,j,ip)   &
+                                   ,leaf_g(ngrid)%ground_temp               (    i,j,ip)   &
+                                   ,leaf_g(ngrid)%ground_fliq               (    i,j,ip)   )
 
                end select
                !---------------------------------------------------------------------------!
@@ -661,8 +666,6 @@ subroutine leaf3_timestep()
             !------------------------------------------------------------------------------!
          end do patloop1
          !---------------------------------------------------------------------------------!
-
-
 
       end do lonloop
    end do latloop

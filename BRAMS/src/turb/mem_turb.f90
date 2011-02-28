@@ -294,7 +294,7 @@ module mem_turb
 
       if (associated(turb%epsp))                                                           &
          call vtables2(turb%epsp,turbm%epsp,ng,npts,imean                                  &
-           ,          ,'EPSP :3:hist:anal:mpti:mpt3:mpt1')
+                      ,'EPSP :3:hist:anal:mpti:mpt3:mpt1')
 
       if (associated(turb%hkm))                                                            &
          call vtables2(turb%hkm,turbm%hkm,ng,npts,imean                                    &

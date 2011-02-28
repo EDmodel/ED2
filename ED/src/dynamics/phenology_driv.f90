@@ -37,7 +37,7 @@ subroutine phenology_driver(cgrid, doy, month, tfact)
          end do
          
          select case (iphen_scheme)
-         case (0,2)
+         case (-1,0,2)
             !------------------------------------------------------------------------------!
             !     Default predictive scheme (Botta et al.) or the modified drought         !
             ! deciduous phenology for broadleaf PFTs.                                      !
@@ -113,7 +113,7 @@ subroutine phenology_driver_eq_0(cgrid, doy, month, tfact)
          end do
          
          select case (iphen_scheme)
-         case (0,2)
+         case (-1,0,2)
             !------------------------------------------------------------------------------!
             !     Default predictive scheme (Botta et al.) or the modified drought         !
             ! deciduous phenology for broadleaf PFTs.                                      !

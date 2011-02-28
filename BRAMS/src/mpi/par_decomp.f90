@@ -1077,10 +1077,10 @@ subroutine PAR_decomp_input (maxmach, maxgrds, nmachs, ngr, nnxp, nnyp, ixb, ixe
   integer, intent(in)  :: ngr
   integer, intent(in)  :: nnxp(maxgrds)
   integer, intent(in)  :: nnyp(maxgrds)
-  integer, intent(out) :: ixb(maxmach,maxgrds)
-  integer, intent(out) :: ixe(maxmach,maxgrds)
-  integer, intent(out) :: iyb(maxmach,maxgrds)
-  integer, intent(out) :: iye(maxmach,maxgrds)
+  integer, intent(inout) :: ixb(maxmach,maxgrds)
+  integer, intent(inout) :: ixe(maxmach,maxgrds)
+  integer, intent(inout) :: iyb(maxmach,maxgrds)
+  integer, intent(inout) :: iye(maxmach,maxgrds)
   logical, intent(out) :: failed
 
   integer, parameter :: un=48

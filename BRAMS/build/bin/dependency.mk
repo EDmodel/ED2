@@ -258,7 +258,8 @@ mksfc_sst.o: io_params.mod mem_grid.mod mem_leaf.mod mem_mksfc.mod
 mksfc_top.o: io_params.mod mem_grid.mod mem_mksfc.mod
 ndvi_read.o: io_params.mod mem_grid.mod mem_leaf.mod
 nest_geosst.o: io_params.mod leaf_coms.mod mem_basic.mod mem_grid.mod
-nest_geosst.o: mem_leaf.mod mem_mksfc.mod mem_scratch.mod mem_soil_moisture.mod
+nest_geosst.o: mem_leaf.mod mem_mksfc.mod mem_radiate.mod mem_scratch.mod
+nest_geosst.o: mem_soil_moisture.mod
 nest_init_aux.o: mem_basic.mod mem_grid.mod mem_leaf.mod mem_scratch.mod
 sst_read.o: io_params.mod mem_grid.mod mem_leaf.mod
 mpass_cyclic.o: cyclic_mod.mod grid_dims.mod mem_aerad.mod mem_basic.mod
@@ -355,16 +356,14 @@ leaf3_hyd.o: leaf_coms.mod mem_grid.mod mem_leaf.mod rconstants.mod
 leaf3_hyd.o: therm_lib.mod
 leaf3_init.o: io_params.mod leaf_coms.mod mem_grid.mod mem_leaf.mod
 leaf3_init.o: rconstants.mod teb_spm_start.mod therm_lib.mod
-leaf3_ocean.o: leaf_coms.mod rconstants.mod therm_lib.mod
+leaf3_ocean.o: io_params.mod leaf_coms.mod mem_grid.mod rconstants.mod
+leaf3_ocean.o: therm_lib.mod
 leaf3_teb.o: mem_emiss.mod rconstants.mod teb_vars_const.mod therm_lib.mod
-leaf3_temp.o: catt_start.mod leaf_coms.mod mem_all.mod mem_scratch.mod
-leaf3_temp.o: mem_teb.mod mem_teb_common.mod node_mod.mod rconstants.mod
-leaf3_temp.o: teb_spm_start.mod therm_lib.mod
-leaf3_tw.o: catt_start.mod leaf_coms.mod mem_leaf.mod mem_scratch.mod
-leaf3_tw.o: rconstants.mod therm_lib.mod
-leaf3_utils.o: catt_start.mod io_params.mod leaf_coms.mod mem_grid.mod
-leaf3_utils.o: mem_leaf.mod mem_radiate.mod mem_scratch.mod node_mod.mod
-leaf3_utils.o: rconstants.mod teb_spm_start.mod therm_lib.mod
+leaf3_tw.o: catt_start.mod leaf_coms.mod mem_grid.mod mem_leaf.mod
+leaf3_tw.o: mem_radiate.mod mem_scratch.mod rconstants.mod therm_lib.mod
+leaf3_utils.o: catt_start.mod grid_dims.mod io_params.mod leaf_coms.mod
+leaf3_utils.o: mem_grid.mod mem_leaf.mod mem_radiate.mod mem_scratch.mod
+leaf3_utils.o: node_mod.mod rconstants.mod teb_spm_start.mod therm_lib.mod
 leaf_coms.o: grid_dims.mod mem_leaf.mod rconstants.mod therm_lib.mod
 mem_leaf.o: grid_dims.mod io_params.mod var_tables.mod
 ruser.o: catt_start.mod io_params.mod leaf_coms.mod mem_grid.mod mem_leaf.mod

@@ -200,7 +200,7 @@ Contains
       if (associated(radiate%cosz))  &
          call vtables2 (radiate%cosz,radiatem%cosz  &
                     ,ng, npts, imean,  &
-                    'COSZ :2:anal:mpt3')
+                    'COSZ :2:hist:anal:mpti:mpt3')
 
       return
       end subroutine filltab_radiate

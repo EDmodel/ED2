@@ -292,7 +292,6 @@ module ed_var_tables
          iptr                                   =  vt_info(nv,igr)%nptrs
          vt_info(nv,igr)%vt_vector(iptr)%globid =  glob_id
 
-         nullify(vt_info(nv,igr)%vt_vector(iptr)%var_rp)
          vt_info(nv,igr)%vt_vector(iptr)%var_rp => var
          vt_info(nv,igr)%vt_vector(iptr)%varlen =  var_len
       end if
@@ -459,7 +458,6 @@ module ed_var_tables
          iptr                                   =  vt_info(nv,igr)%nptrs
          vt_info(nv,igr)%vt_vector(iptr)%globid =  glob_id
 
-         nullify(vt_info(nv,igr)%vt_vector(iptr)%var_dp)
          vt_info(nv,igr)%vt_vector(iptr)%var_dp => var
          vt_info(nv,igr)%vt_vector(iptr)%varlen =  var_len
       end if
@@ -625,7 +623,6 @@ module ed_var_tables
          iptr                                   =  vt_info(nv,igr)%nptrs
          vt_info(nv,igr)%vt_vector(iptr)%globid =  glob_id
 
-         nullify(vt_info(nv,igr)%vt_vector(iptr)%var_ip)
          vt_info(nv,igr)%vt_vector(iptr)%var_ip => var
          vt_info(nv,igr)%vt_vector(iptr)%varlen =  var_len
       end if
@@ -791,7 +788,6 @@ module ed_var_tables
          iptr                                   =  vt_info(nv,igr)%nptrs
          vt_info(nv,igr)%vt_vector(iptr)%globid =  glob_id
 
-         nullify(vt_info(nv,igr)%vt_vector(iptr)%var_cp)
          vt_info(nv,igr)%vt_vector(iptr)%var_cp => var
          vt_info(nv,igr)%vt_vector(iptr)%varlen =  var_len
       end if
@@ -955,7 +951,6 @@ module ed_var_tables
          iptr                                   =  vt_info(nv,igr)%nptrs
          vt_info(nv,igr)%vt_vector(iptr)%globid =  glob_id
 
-         nullify(vt_info(nv,igr)%vt_vector(iptr)%sca_rp)
          vt_info(nv,igr)%vt_vector(iptr)%sca_rp => var
          vt_info(nv,igr)%vt_vector(iptr)%varlen =  var_len
       end if
@@ -1120,7 +1115,6 @@ module ed_var_tables
          iptr                                   =  vt_info(nv,igr)%nptrs
          vt_info(nv,igr)%vt_vector(iptr)%globid =  glob_id
 
-         nullify(vt_info(nv,igr)%vt_vector(iptr)%sca_dp)
          vt_info(nv,igr)%vt_vector(iptr)%sca_dp => var
          vt_info(nv,igr)%vt_vector(iptr)%varlen =  var_len
       end if
@@ -1284,7 +1278,6 @@ module ed_var_tables
          iptr                                   =  vt_info(nv,igr)%nptrs
          vt_info(nv,igr)%vt_vector(iptr)%globid =  glob_id
 
-         nullify(vt_info(nv,igr)%vt_vector(iptr)%sca_ip)
          vt_info(nv,igr)%vt_vector(iptr)%sca_ip => var
          vt_info(nv,igr)%vt_vector(iptr)%varlen =  var_len
       end if
@@ -1448,7 +1441,6 @@ module ed_var_tables
          iptr                                   =  vt_info(nv,igr)%nptrs
          vt_info(nv,igr)%vt_vector(iptr)%globid =  glob_id
 
-         nullify(vt_info(nv,igr)%vt_vector(iptr)%sca_cp)
          vt_info(nv,igr)%vt_vector(iptr)%sca_cp => var
          vt_info(nv,igr)%vt_vector(iptr)%varlen =  var_len
       end if

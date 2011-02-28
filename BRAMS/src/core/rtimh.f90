@@ -292,7 +292,7 @@ subroutine timestep()
 
 
    !---------------------------------------------------------------------------------------!
-   !  Velocity advection.                                                                  !
+   !  Thermodynamic advection.                                                             !
    !---------------------------------------------------------------------------------------!
    t1 = cputime(w1)
    call advectc('T',mzp,mxp,myp,ia,iz,ja,jz,izu,jzv,mynum)
@@ -315,8 +315,9 @@ subroutine timestep()
 
    !---------------------------------------------------------------------------------------!
    !     Main driver for cumulus parametrisation.  The sub-routine will decide which       !
-   ! closure shall be used.  This must be called after all the other fields have been      !
-   ! updated because the convection scheme uses the tendency.                              !
+   ! closure shall be used.  This must be called after the tendencies of CO2, ice-liquid   !
+   ! potential temperature, mixing ratio, and TKE have been updated because the convection !
+   ! scheme uses the tendency of these variables.                                          !
    !---------------------------------------------------------------------------------------!
    t1 = cputime(w1)
    call rconv_driver()
@@ -352,6 +353,7 @@ subroutine timestep()
    !---------------------------------------------------------------------------------------!
    t1 = cputime(w1)
    call predtr()
+   call mpilbc_driver('fulllbc',1)
    if (acct) call acctimes('accu',24,'PREDTR',t1,w1)
    !---------------------------------------------------------------------------------------!
 

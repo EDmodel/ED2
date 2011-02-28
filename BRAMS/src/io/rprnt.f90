@@ -335,7 +335,7 @@ do k = k1,k2
                      call qtk(leaf%soil_energy(k,i,j,ipat)  &
                         ,tempkk(i+1-i1),fracliqq(i+1-i1))
                   elseif (ipat == 1) then
-                     tempk(i+1-i1) = leaf%soil_energy(k,i,j,ipat)
+                     soil_tempk(i+1-i1) = leaf%soil_energy(k,i,j,ipat)
                   else
                      nsoil = nint(leaf%soil_text(k,i,j,ipat))
                      call qwtk(leaf%soil_energy(k,i,j,ipat)       &
@@ -345,7 +345,7 @@ do k = k1,k2
                enddo
 
                call plin(nc,j,ipat,2,1.               &
-                  ,tempk(1:nc)                        &
+                  ,soil_tempk(1:nc)                   &
                   ,leaf%patch_area(i1:i2,j,ipat))
             elseif (vnam == 'soil_text'      ) then
                call plin(nc,j,ipat,3,1.                  &
@@ -367,7 +367,7 @@ do k = k1,k2
                            ,slcpd(nsoil),tempkk(i+1-i1),fracliqq(i+1-i1))
                enddo
                call plin(nc,j,ipat,2,1.               &
-                  ,tempk(1:nc)                        &
+                  ,sfcwater_tempk(1:nc)               &
                   ,leaf%patch_area(i1:i2,j,ipat))
             elseif (vnam == 'sfcwater_depth' ) then
                call plin(nc,j,ipat,3,1.               &

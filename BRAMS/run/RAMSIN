@@ -662,6 +662,12 @@
                               ! 1 - Free drainage.
                               ! 2 - Half drainage.
 
+   IPERCOL         = 1,       ! Percolation scheme:
+                              !  0 - Original method, from LEAF-3.  Shed liquid in excess 
+                              !      of a 1:9 liquid-to-ice ratio through percolation.
+                              !  1 - Alternative "free" water calculation.  
+                              !      Anderson (1976), NOAA Tech Report NWS 19.
+
    RUNOFF_TIME     = 14400.0, ! the forest could get saturated and 
                               ! develop a sfcwater pool of meters or 
                               ! more.  In many cases, this is not realistic.
@@ -1077,12 +1083,6 @@
                               !  2. The actual Nusselt number for forced convection is 
                               !     multiplied by 10. as the Reynolds number gets close or
                               !     greater than 10,000.
-
-   IPERCOL         = 1,       ! Percolation scheme:
-                              !  0 - Original method, from LEAF-3.  Shed liquid in excess 
-                              !      of a 1:9 liquid-to-ice ratio through percolation.
-                              !  1 - Alternative "free" water calculation.  
-                              !      Anderson (1976), NOAA Tech Report NWS 19.
 
    !---------------------------------------------------------------------!
    ! PLANT FUNCTIONAL TYPES (PFTs):                                      !

@@ -398,15 +398,15 @@ module mem_micro
 
       if (associated(micro%q2))                                                            &
          call vtables2 (micro%q2,microm%q2,ng, npts, imean                                 &
-                       ,'Q2 :3:hist:anal:mpti:mpt3')
+                       ,'Q2 :3:hist:anal:mpti:mpt3:mpt1')
 
       if (associated(micro%q6))                                                            &
          call vtables2 (micro%q6,microm%q6,ng, npts, imean                                 &
-                       ,'Q6 :3:hist:anal:mpti:mpt3')
+                       ,'Q6 :3:hist:anal:mpti:mpt3:mpt1')
 
       if (associated(micro%q7))                                                            &
          call vtables2 (micro%q7,microm%q7,ng, npts, imean                                 &
-                       ,'Q7 :3:hist:anal:mpti:mpt3')
+                       ,'Q7 :3:hist:anal:mpti:mpt3:mpt1')
       !------------------------------------------------------------------------------------!
 
 

@@ -94,12 +94,8 @@ subroutine harr_raddriv(m1,m2,m3,nclouds,ncrad,ifm,if_adap,time,deltat,ia,iz,ja,
    integer                                            :: koff
    integer                                            :: icld
    integer                                            :: i,j,k,ib,ig,kk,ik,krad,mcat
-   logical                                            :: first_with_ed
    real                                               :: area_csky
    !---------------------------------------------------------------------------------------!
-  
-   !----- Check whether this is a coupled run and first call. -----------------------------!
-   first_with_ed= time < dble(deltat) .and. isfcl == 5
 
    !---------------------------------------------------------------------------------------!
    !    Copy surface and vertical-column values from model to radiation memory space.  In  !
@@ -155,17 +151,7 @@ subroutine harr_raddriv(m1,m2,m3,nclouds,ncrad,ifm,if_adap,time,deltat,ia,iz,ja,
            ztl(1) = topt(i,j) + zt(1+koff) * rtgt(i,j)
          end if
          pl(1) = pl(2) + (zml(1) - ztl(3)) / (ztl(2) - ztl(3)) * (pl(2) - pl(3))
-
-         !---------------------------------------------------------------------------------!
-         !    ED doesn't initialise rlongup before the radiation is called.  Using an      !
-         ! extrapolation from the 2nd level instead. This is done only once at the         !
-         ! beginning.                                                                      !
-         !---------------------------------------------------------------------------------!
-         if (first_with_ed) then
-           tl(1) = tl(2)
-         else
-           tl(1) = sqrt(sqrt(rlongup(i,j) / stefan))
-         end if
+         tl(1) = sqrt(sqrt(rlongup(i,j) / stefan))
          dl(1)   = dl(2)
          rl(1)   = rl(2)
          co2l(1) = co2l(2)

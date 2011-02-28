@@ -481,47 +481,116 @@ subroutine sfcinit_nofile(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,seatp,s
                          ,ground_fliq,veg_water,veg_hcap,veg_energy,can_prss,can_theiv     &
                          ,can_theta,can_rvap,can_co2,sensible_gc,sensible_vc,evap_gc       &
                          ,evap_vc,transp,gpp,plresp,resphet,veg_ndvip,veg_ndvic,veg_ndvif  &
-                         ,snow_mass,snow_depth,rvv,prsv,piv,vt2da,vt2db,glat,glon,zot      &
-                         ,flpw,rtgt)
+                         ,snow_mass,snow_depth,cosz,rlongup,albedt,rvv,prsv,piv,vt2da      &
+                         ,vt2db,glat,glon,zot,flpw,rtgt)
    use mem_grid
    use mem_leaf
    use leaf_coms
    use io_params
    use rconstants
-   use therm_lib , only : reducedpress & ! function
-                        , thetaeiv     ! ! function
+   use therm_lib  , only : reducedpress & ! function
+                         , thetaeiv     ! ! function
 
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
-   integer                        , intent(in)    :: n1,n2,n3,mzg,mzs,npat,ifm
-   real, dimension(n1,n2,n3)      , intent(in)    :: theta,pi0,pp,rv,co2p
-   real, dimension(   n2,n3)      , intent(in)    :: seatp,seatf,snow_mass,snow_depth
-   real, dimension(   n2,n3)      , intent(in)    :: flpw,rtgt
-   real, dimension(mzg,n2,n3,npat), intent(inout) :: soil_water,soil_energy,soil_text
-   real, dimension(mzs,n2,n3,npat), intent(inout) :: sfcwater_mass,sfcwater_energy
+   integer                        , intent(in)    :: n1
+   integer                        , intent(in)    :: n2
+   integer                        , intent(in)    :: n3
+   integer                        , intent(in)    :: mzg
+   integer                        , intent(in)    :: mzs
+   integer                        , intent(in)    :: npat
+   integer                        , intent(in)    :: ifm
+   real, dimension(n1,n2,n3)      , intent(in)    :: theta
+   real, dimension(n1,n2,n3)      , intent(in)    :: pi0
+   real, dimension(n1,n2,n3)      , intent(in)    :: pp
+   real, dimension(n1,n2,n3)      , intent(in)    :: rv
+   real, dimension(n1,n2,n3)      , intent(in)    :: co2p
+   real, dimension(   n2,n3)      , intent(in)    :: seatp
+   real, dimension(   n2,n3)      , intent(in)    :: seatf
+   real, dimension(   n2,n3)      , intent(in)    :: snow_mass
+   real, dimension(   n2,n3)      , intent(in)    :: snow_depth
+   real, dimension(   n2,n3)      , intent(in)    :: flpw
+   real, dimension(   n2,n3)      , intent(in)    :: rtgt
+   real, dimension(   n2,n3)      , intent(in)    :: cosz
+   real, dimension(mzg,n2,n3,npat), intent(inout) :: soil_water
+   real, dimension(mzg,n2,n3,npat), intent(inout) :: soil_energy
+   real, dimension(mzg,n2,n3,npat), intent(inout) :: soil_text
+   real, dimension(mzs,n2,n3,npat), intent(inout) :: sfcwater_mass
+   real, dimension(mzs,n2,n3,npat), intent(inout) :: sfcwater_energy
    real, dimension(mzs,n2,n3,npat), intent(inout) :: sfcwater_depth
-   real, dimension(    n2,n3,npat), intent(inout) :: ustar,tstar,rstar,cstar
-   real, dimension(    n2,n3,npat), intent(inout) :: zeta,ribulk
-   real, dimension(    n2,n3,npat), intent(inout) :: veg_fracarea,veg_agb,veg_lai,veg_tai
-   real, dimension(    n2,n3,npat), intent(inout) :: veg_rough,veg_height,veg_albedo
-   real, dimension(    n2,n3,npat), intent(inout) :: patch_area,patch_rough,patch_wetind
+   real, dimension(    n2,n3,npat), intent(inout) :: ustar
+   real, dimension(    n2,n3,npat), intent(inout) :: tstar
+   real, dimension(    n2,n3,npat), intent(inout) :: rstar
+   real, dimension(    n2,n3,npat), intent(inout) :: cstar
+   real, dimension(    n2,n3,npat), intent(inout) :: zeta
+   real, dimension(    n2,n3,npat), intent(inout) :: ribulk
+   real, dimension(    n2,n3,npat), intent(inout) :: veg_fracarea
+   real, dimension(    n2,n3,npat), intent(inout) :: veg_agb
+   real, dimension(    n2,n3,npat), intent(inout) :: veg_lai
+   real, dimension(    n2,n3,npat), intent(inout) :: veg_tai
+   real, dimension(    n2,n3,npat), intent(inout) :: veg_rough
+   real, dimension(    n2,n3,npat), intent(inout) :: veg_height
+   real, dimension(    n2,n3,npat), intent(inout) :: veg_albedo
+   real, dimension(    n2,n3,npat), intent(inout) :: patch_area
+   real, dimension(    n2,n3,npat), intent(inout) :: patch_rough
+   real, dimension(    n2,n3,npat), intent(inout) :: patch_wetind
    real, dimension(    n2,n3,npat), intent(inout) :: leaf_class
-   real, dimension(    n2,n3,npat), intent(inout) :: soil_rough,sfcwater_nlev,stom_condct
-   real, dimension(    n2,n3,npat), intent(inout) :: ground_rsat,ground_rvap
-   real, dimension(    n2,n3,npat), intent(inout) :: ground_temp,ground_fliq
-   real, dimension(    n2,n3,npat), intent(inout) :: veg_water,veg_energy,veg_hcap
-   real, dimension(    n2,n3,npat), intent(inout) :: can_prss,can_theiv,can_theta
-   real, dimension(    n2,n3,npat), intent(inout) :: can_rvap,can_co2
-   real, dimension(    n2,n3,npat), intent(inout) :: sensible_gc,sensible_vc
-   real, dimension(    n2,n3,npat), intent(inout) :: evap_gc,evap_vc,transp
-   real, dimension(    n2,n3,npat), intent(inout) :: gpp,plresp,resphet
-   real, dimension(    n2,n3,npat), intent(inout) :: veg_ndvip,veg_ndvic,veg_ndvif
-   real, dimension(   n2,n3)      , intent(inout) :: rvv,prsv,piv,vt2da,vt2db,glat,glon,zot
+   real, dimension(    n2,n3,npat), intent(inout) :: soil_rough
+   real, dimension(    n2,n3,npat), intent(inout) :: sfcwater_nlev
+   real, dimension(    n2,n3,npat), intent(inout) :: stom_condct
+   real, dimension(    n2,n3,npat), intent(inout) :: ground_rsat
+   real, dimension(    n2,n3,npat), intent(inout) :: ground_rvap
+   real, dimension(    n2,n3,npat), intent(inout) :: ground_temp
+   real, dimension(    n2,n3,npat), intent(inout) :: ground_fliq
+   real, dimension(    n2,n3,npat), intent(inout) :: veg_water
+   real, dimension(    n2,n3,npat), intent(inout) :: veg_energy
+   real, dimension(    n2,n3,npat), intent(inout) :: veg_hcap
+   real, dimension(    n2,n3,npat), intent(inout) :: can_prss
+   real, dimension(    n2,n3,npat), intent(inout) :: can_theiv
+   real, dimension(    n2,n3,npat), intent(inout) :: can_theta
+   real, dimension(    n2,n3,npat), intent(inout) :: can_rvap
+   real, dimension(    n2,n3,npat), intent(inout) :: can_co2
+   real, dimension(    n2,n3,npat), intent(inout) :: sensible_gc
+   real, dimension(    n2,n3,npat), intent(inout) :: sensible_vc
+   real, dimension(    n2,n3,npat), intent(inout) :: evap_gc
+   real, dimension(    n2,n3,npat), intent(inout) :: evap_vc
+   real, dimension(    n2,n3,npat), intent(inout) :: transp
+   real, dimension(    n2,n3,npat), intent(inout) :: gpp
+   real, dimension(    n2,n3,npat), intent(inout) :: plresp
+   real, dimension(    n2,n3,npat), intent(inout) :: resphet
+   real, dimension(    n2,n3,npat), intent(inout) :: veg_ndvip
+   real, dimension(    n2,n3,npat), intent(inout) :: veg_ndvic
+   real, dimension(    n2,n3,npat), intent(inout) :: veg_ndvif
+   real, dimension(   n2,n3)      , intent(out)   :: rlongup
+   real, dimension(   n2,n3)      , intent(out)   :: albedt
+   real, dimension(   n2,n3)      , intent(inout) :: rvv
+   real, dimension(   n2,n3)      , intent(inout) :: prsv
+   real, dimension(   n2,n3)      , intent(inout) :: piv
+   real, dimension(   n2,n3)      , intent(inout) :: vt2da
+   real, dimension(   n2,n3)      , intent(inout) :: vt2db
+   real, dimension(   n2,n3)      , intent(in)    :: glat
+   real, dimension(   n2,n3)      , intent(in)    :: glon
+   real, dimension(   n2,n3)      , intent(inout) :: zot
    !----- Local variables. ----------------------------------------------------------------!
    integer                                        :: k2
-   integer                                        :: i,j,k,ipat,nveg,nsoil
+   integer                                        :: i
+   integer                                        :: j
+   integer                                        :: k
+   integer                                        :: ipat
+   integer                                        :: nveg
+   integer                                        :: nsoil
    real                                           :: tsoil
    !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Set up some scratch variables. --------------------------------------------------!
+   g_urban    = 0.
+   emis_town  = 0.
+   alb_town   = 0.
+   ts_town    = 0.
+   !---------------------------------------------------------------------------------------!
+
 
 
    !---------------------------------------------------------------------------------------!
@@ -539,6 +608,9 @@ subroutine sfcinit_nofile(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,seatp,s
       timefac_ndvi = (time - ndvitime1(ifm)) / (ndvitime2(ifm) - ndvitime1(ifm))
    end if
 
+   albedt(:,:)  = 0.0
+   rlongup(:,:) = 0.0
+
    jloop: do j = 1,n3
       iloop: do i = 1,n2
          k2=nint(flpw(i,j))
@@ -546,6 +618,8 @@ subroutine sfcinit_nofile(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,seatp,s
          prsv(i,j) = piv(i,j) ** cpor * p00
          geoht     = (zt(k2)-zm(k2-1)) * rtgt(i,j)
 
+         atm_theta = theta(k2,i,j)
+         atm_prss  = prsv(i,j)
          atm_shv   = rv(k2,i,j) / (rv(k2,i,j) + 1.)
 
          patch_rough(i,j,1) = waterrough
@@ -554,8 +628,8 @@ subroutine sfcinit_nofile(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,seatp,s
          !     Canopy properties.  Copy conserved variables from lowest atmospheric grid,  !
          ! and compute pressure and temperature.                                           !
          !---------------------------------------------------------------------------------!
-         can_prss(i,j,1)    = reducedpress(prsv(i,j),theta(k2,i,j),atm_shv,geoht           &
-                                          ,theta(k2,i,j),atm_shv,can_depth)
+         can_prss(i,j,1)    = reducedpress(atm_prss,atm_theta,atm_shv,geoht                &
+                                          ,atm_theta,atm_shv,can_depth)
          can_theta(i,j,1)   = theta(k2,i,j)
          can_rvap(i,j,1)    = rv(k2,i,j)
          can_co2(i,j,1)     = co2p(k2,i,j)
@@ -596,7 +670,7 @@ subroutine sfcinit_nofile(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,seatp,s
          !     We now loop over the land patches.  Some properties such as canopy          !
          ! properties are simply copied from the water patch.                              !
          !---------------------------------------------------------------------------------!
-         patchloop: do ipat = 2,npat
+         patchloop1: do ipat = 2,npat
 
             nveg = nint(leaf_class(i,j,ipat))
 
@@ -741,12 +815,12 @@ subroutine sfcinit_nofile(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,seatp,s
                sfcwater_nlev(i,j,ipat) = 0.
             end if
 
-            call vegndvi(patch_area  (i,j,ipat) ,leaf_class(i,j,ipat)                      &
-                        ,veg_fracarea(i,j,ipat) ,veg_lai   (i,j,ipat)                      &
-                        ,veg_tai     (i,j,ipat) ,veg_rough (i,j,ipat)                      &
-                        ,veg_height  (i,j,ipat) ,veg_albedo(i,j,ipat)                      &
-                        ,veg_ndvip   (i,j,ipat) ,veg_ndvic (i,j,ipat)                      &
-                        ,veg_ndvif   (i,j,ipat)                                            )
+            call vegndvi(ifm, patch_area  (i,j,ipat) , leaf_class(i,j,ipat)                &
+                            , veg_fracarea(i,j,ipat) , veg_lai   (i,j,ipat)                &
+                            , veg_tai     (i,j,ipat) , veg_rough (i,j,ipat)                &
+                            , veg_height  (i,j,ipat) , veg_albedo(i,j,ipat)                &
+                            , veg_ndvip   (i,j,ipat) , veg_ndvic (i,j,ipat)                &
+                            , veg_ndvif   (i,j,ipat)                                       )
 
             call leaf_grndvap( soil_energy(mzg,i,j,ipat) , soil_water     (mzg,i,j,ipat)   &
                              , soil_text  (mzg,i,j,ipat) , sfcwater_energy(  1,i,j,ipat)   &
@@ -754,7 +828,56 @@ subroutine sfcinit_nofile(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,seatp,s
                              , can_prss       (i,j,ipat) , ground_rsat        (i,j,ipat)   &
                              , ground_rvap    (i,j,ipat) , ground_temp        (i,j,ipat)   &
                              , ground_fliq    (i,j,ipat) )
-         end do patchloop
+         end do patchloop1
+
+         !---------------------------------------------------------------------------------!
+         !     In this second loop we initialise the radiation, but before we must define  !
+         ! some other variables.                                                           !
+         !---------------------------------------------------------------------------------!
+         patchloop2: do ipat = 1,npatch
+            !------------------------------------------------------------------------------!
+            !     Initialise various canopy air space and temporary surface water vari-    !
+            ! ables.                                                                       !
+            !------------------------------------------------------------------------------!
+            if (ipat == 1) then
+               call leaf_ocean_diag(ifm,mzg,seatp (i,j),seatf (i,j),soil_energy(:,i,j,1))
+            end if
+            call leaf_soilsfcw_diag(ipat,mzg,mzs,soil_energy       (:,i,j,ipat)           &
+                                                ,soil_water        (:,i,j,ipat)           &
+                                                ,soil_text         (:,i,j,ipat)           &
+                                                ,sfcwater_nlev     (  i,j,ipat)           &
+                                                ,sfcwater_energy   (:,i,j,ipat)           &
+                                                ,sfcwater_mass     (:,i,j,ipat)           &
+                                                ,sfcwater_depth    (:,i,j,ipat)           &
+                                              ,.true.                                      )
+
+            call leaf_solve_veg(ipat,mzs,leaf_class                  (i,j,ipat)            &
+                                        ,veg_height                (  i,j,ipat)            &
+                                        ,patch_area                  (i,j,ipat)            &
+                                        ,veg_fracarea                (i,j,ipat)            &
+                                        ,veg_tai                   (  i,j,ipat)            &
+                                        ,sfcwater_nlev               (i,j,ipat)            &
+                                        ,sfcwater_depth            (:,i,j,ipat)            &
+                                        ,.true.                                            )
+
+            call leaf_can_diag(ipat,can_theta        (i,j,ipat)                            &
+                                   ,can_theiv        (i,j,ipat)                            &
+                                   ,can_rvap         (i,j,ipat)                            &
+                                   ,leaf_class       (i,j,ipat)                            &
+                                   ,can_prss         (i,j,ipat)                            &
+                                   ,.true.                                                 )
+
+            call leaf_veg_diag(veg_energy(i,j,ipat),veg_water(i,j,ipat),veg_hcap(i,j,ipat))
+
+            call sfcrad( mzg, mzs, ipat                                                    &
+                                 , soil_water    (:,i,j,ipat) , soil_text     (:,i,j,ipat) &
+                                 , sfcwater_depth(:,i,j,ipat) , patch_area    (  i,j,ipat) &
+                                 , veg_fracarea  (  i,j,ipat) , leaf_class    (  i,j,ipat) &
+                                 , veg_albedo    (  i,j,ipat) , sfcwater_nlev (  i,j,ipat) &
+                                 , 0.                         , 0.                         &
+                                 , albedt        (  i,j     ) , rlongup       (  i,j     ) &
+                                 , cosz          (  i,j     ) )
+         end do patchloop2
       end do iloop
    end do jloop
 

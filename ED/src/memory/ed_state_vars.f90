@@ -7215,9 +7215,15 @@ contains
       call vtable_edio_i_sca(cgrid%npolygons_global,nvar,igr,0,0                           &
                             ,var_len,var_len_global,max_ptrs                               &
                             ,'NPOLYGONS_GLOBAL :90:hist:anal:dail:mont:year')
+      call vtable_edio_i_sca(cgrid%npolygons_global,nvar,igr,1,0                           &
+                            ,var_len,var_len_global,max_ptrs                               &
+                            ,'NPOLYGONS_GLOBAL :90:hist:anal:dail:mont:year')
       
       nvar=nvar+1
       call vtable_edio_i_sca(cgrid%nsites_global,nvar,igr,0,0                              &
+                            ,var_len,var_len_global,max_ptrs                               &
+                            ,'NSITES_GLOBAL :90:hist:anal:dail:mont:year')
+      call vtable_edio_i_sca(cgrid%nsites_global,nvar,igr,1,0                              &
                             ,var_len,var_len_global,max_ptrs                               &
                             ,'NSITES_GLOBAL :90:hist:anal:dail:mont:year')
       
@@ -7225,14 +7231,23 @@ contains
       call vtable_edio_i_sca(cgrid%npatches_global,nvar,igr,0,0                            &
                             ,var_len,var_len_global,max_ptrs                               &
                             ,'NPATCHES_GLOBAL :90:hist:anal:dail:mont:year')
+      call vtable_edio_i_sca(cgrid%npatches_global,nvar,igr,1,0                            &
+                            ,var_len,var_len_global,max_ptrs                               &
+                            ,'NPATCHES_GLOBAL :90:hist:anal:dail:mont:year')
 
       nvar=nvar+1
       call vtable_edio_i_sca(cgrid%ncohorts_global,nvar,igr,0,0                            &
                             ,var_len,var_len_global,max_ptrs                               &
                             ,'NCOHORTS_GLOBAL :90:hist:anal:dail:mont:year')
+      call vtable_edio_i_sca(cgrid%ncohorts_global,nvar,igr,1,0                            &
+                            ,var_len,var_len_global,max_ptrs                               &
+                            ,'NCOHORTS_GLOBAL :90:hist:anal:dail:mont:year')
 
       nvar=nvar+1
       call vtable_edio_i_sca(nzg,nvar,igr,0,0                                              &
+                            ,var_len,var_len_global,max_ptrs                               &
+                            ,'NZG :90:hist:anal:dail:mont:year')
+      call vtable_edio_i_sca(nzg,nvar,igr,1,0                                              &
                             ,var_len,var_len_global,max_ptrs                               &
                             ,'NZG :90:hist:anal:dail:mont:year')
 
@@ -7246,7 +7261,10 @@ contains
 
 
       nvar=nvar+1
-      call vtable_edio_r(nzg,slz(1),nvar,igr,0,0                                           &
+      call vtable_edio_r(nzg,slz,nvar,igr,0,0                                              &
+                        ,var_len,var_len_global,max_ptrs                                   &
+                        ,'SLZ :92:hist:anal:dail:mont:year')
+      call vtable_edio_r(nzg,slz,nvar,igr,1,0                                              &
                         ,var_len,var_len_global,max_ptrs                                   &
                         ,'SLZ :92:hist:anal:dail:mont:year')
       !------------------------------------------------------------------------------------!
