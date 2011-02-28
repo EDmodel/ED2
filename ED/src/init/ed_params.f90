@@ -1390,7 +1390,7 @@ subroutine init_pft_alloc_params()
    q(11)    = 1.1274
    q(12:15) = 1.0
    q(16)    = 1.0
-   q(17)    = twothirds
+   q(17)    = 1.0
 
    sapwood_ratio(1:17) = 3900.0
 
