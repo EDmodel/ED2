@@ -180,73 +180,73 @@ contains
     npts=n1*n2*n3
 
     if (associated(varinit%varup))  &
-         call vtables2 (varinit%varup(1,1,1),varinitm%varup(1,1,1)  &
+         call vtables2 (varinit%varup,varinitm%varup  &
          ,ng, npts, imean,  &
          'VARUP :3:mpti')
     if (associated(varinit%varvp))  &
-         call vtables2 (varinit%varvp(1,1,1),varinitm%varvp(1,1,1)  &
+         call vtables2 (varinit%varvp,varinitm%varvp  &
          ,ng, npts, imean,  &
          'VARVP :3:mpti')
     if (associated(varinit%varpp))  &
-         call vtables2 (varinit%varpp(1,1,1),varinitm%varpp(1,1,1)  &
+         call vtables2 (varinit%varpp,varinitm%varpp  &
          ,ng, npts, imean,  &
          'VARPP :3:mpti')
     if (associated(varinit%vartp))  &
-         call vtables2 (varinit%vartp(1,1,1),varinitm%vartp(1,1,1)  &
+         call vtables2 (varinit%vartp,varinitm%vartp  &
          ,ng, npts, imean,  &
          'VARTP :3:mpti')
     if (associated(varinit%varrp))  &
-         call vtables2 (varinit%varrp(1,1,1),varinitm%varrp(1,1,1)  &
+         call vtables2 (varinit%varrp,varinitm%varrp  &
          ,ng, npts, imean,  &
          'VARRP :3:mpti')
     if (associated(varinit%varop))  &
-         call vtables2 (varinit%varop(1,1,1),varinitm%varop(1,1,1)  &
+         call vtables2 (varinit%varop,varinitm%varop  &
          ,ng, npts, imean,  &
          'VAROP :3:mpti')
     if (associated(varinit%varuf))  &
-         call vtables2 (varinit%varuf(1,1,1),varinitm%varuf(1,1,1)  &
+         call vtables2 (varinit%varuf,varinitm%varuf  &
          ,ng, npts, imean,  &
          'VARUF :3:mpti')
     if (associated(varinit%varvf))  &
-         call vtables2 (varinit%varvf(1,1,1),varinitm%varvf(1,1,1)  &
+         call vtables2 (varinit%varvf,varinitm%varvf  &
          ,ng, npts, imean,  &
          'VARVF :3:mpti')
     if (associated(varinit%varpf))  &
-         call vtables2 (varinit%varpf(1,1,1),varinitm%varpf(1,1,1)  &
+         call vtables2 (varinit%varpf,varinitm%varpf  &
          ,ng, npts, imean,  &
          'VARPF :3:mpti')
     if (associated(varinit%vartf))  &
-         call vtables2 (varinit%vartf(1,1,1),varinitm%vartf(1,1,1)  &
+         call vtables2 (varinit%vartf,varinitm%vartf  &
          ,ng, npts, imean,  &
          'VARTF :3:mpti')
     if (associated(varinit%varrf))  &
-         call vtables2 (varinit%varrf(1,1,1),varinitm%varrf(1,1,1)  &
+         call vtables2 (varinit%varrf,varinitm%varrf  &
          ,ng, npts, imean,  &
          'VARRF :3:mpti')
     if (associated(varinit%varof))  &
-         call vtables2 (varinit%varof(1,1,1),varinitm%varof(1,1,1)  &
+         call vtables2 (varinit%varof,varinitm%varof  &
          ,ng, npts, imean,  &
          'VAROF :3:mpti')
     if (associated(varinit%varwts))  &
-         call vtables2 (varinit%varwts(1,1,1),varinitm%varwts(1,1,1)  &
+         call vtables2 (varinit%varwts,varinitm%varwts  &
          ,ng, npts, imean,  &
          'VARWTS :3:mpti')
 
     if (nud_cond == 1) then               ! Inc. by ALF
        if (associated(varinit%varcph))  &
-            call vtables2 (varinit%varcph(1,1,1),varinitm%varcph(1,1,1)  &
+            call vtables2 (varinit%varcph,varinitm%varcph  &
             ,ng, npts, imean,  &
             'VARCPH :3:mpti')
        if (associated(varinit%varcfh))  &
-            call vtables2 (varinit%varcfh(1,1,1),varinitm%varcfh(1,1,1)  &
+            call vtables2 (varinit%varcfh,varinitm%varcfh  &
             ,ng, npts, imean,  &
             'VARCFH :3:mpti')
        if (associated(varinit%varrph))  &
-            call vtables2 (varinit%varrph(1,1,1),varinitm%varrph(1,1,1)  &
+            call vtables2 (varinit%varrph,varinitm%varrph  &
             ,ng, npts, imean,  &
             'VARRPH :3:mpti')
        if (associated(varinit%varrfh))  &
-            call vtables2 (varinit%varrfh(1,1,1),varinitm%varrfh(1,1,1)  &
+            call vtables2 (varinit%varrfh,varinitm%varrfh  &
             ,ng, npts, imean,  &
             'VARRFH :3:mpti')
     endif

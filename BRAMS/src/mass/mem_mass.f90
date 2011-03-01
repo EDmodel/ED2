@@ -355,67 +355,67 @@ module mem_mass
       npts=n1*n2*n3
 
       if (associated(mass%thvlast)) &
-         call vtables2 (mass%thvlast(1,1,1),massm%thvlast(1,1,1) &
+         call vtables2 (mass%thvlast,massm%thvlast &
                     ,ng, npts, imean, &
                     'THVLAST :3:hist:mpti:mpt3:mpt1')
 
       if (associated(mass%lnthvadv)) &
-         call vtables2 (mass%lnthvadv(1,1,1),massm%lnthvadv(1,1,1) &
+         call vtables2 (mass%lnthvadv,massm%lnthvadv &
                     ,ng, npts, imean, &
                     'LNTHVADV :3:mpti:mpt3:mpt1')
 
       if (associated(mass%lnthetav)) &
-         call vtables2 (mass%lnthetav(1,1,1),massm%lnthetav(1,1,1) &
+         call vtables2 (mass%lnthetav,massm%lnthetav &
                     ,ng, npts, imean, &
                     'LNTHETAV :3:mpti:mpt3:mpt1')
                     
       if (associated(mass%lnthvtend )) &
-         call vtables2 (mass%lnthvtend(1,1,1),massm%lnthvtend(1,1,1) &
+         call vtables2 (mass%lnthvtend,massm%lnthvtend &
                     ,ng, npts, imean, &
                     'LNTHVTEND :3:mpti:mpt3:mpt1')
      
       if (associated(mass%afxu)) &
-         call vtables2 (mass%afxu(1,1,1),massm%afxu(1,1,1) &
+         call vtables2 (mass%afxu,massm%afxu &
                     ,ng, npts, imean, &
                     'AFXU :3:hist:anal:mpti:mpt3')
 
       if (associated(mass%afxv)) &
-         call vtables2 (mass%afxv(1,1,1),massm%afxv(1,1,1) &
+         call vtables2 (mass%afxv,massm%afxv &
                     ,ng, npts, imean, &
                     'AFXV :3:hist:anal:mpti:mpt3')
 
       if (associated(mass%afxw)) &
-         call vtables2 (mass%afxw(1,1,1),massm%afxw(1,1,1) &
+         call vtables2 (mass%afxw,massm%afxw &
                     ,ng, npts, imean, &
                     'AFXW :3:hist:anal:mpti:mpt3')
 
       if (associated(mass%ltscaleb)) &
-         call vtables2 (mass%ltscaleb(1,1,1),massm%ltscaleb(1,1,1) &
+         call vtables2 (mass%ltscaleb,massm%ltscaleb &
                     ,ng, npts, imean, &
                     'TLB :3:hist:anal:mpti:mpt3')
 
       if (associated(mass%sigwb)) &
-         call vtables2 (mass%sigwb(1,1,1),massm%sigwb(1,1,1) &
+         call vtables2 (mass%sigwb,massm%sigwb &
                     ,ng, npts, imean, &
                     'SIGWB :3:hist:anal:mpti:mpt3')
 
       if (associated(mass%tkepb)) &
-         call vtables2 (mass%tkepb(1,1,1),massm%tkepb(1,1,1) &
+         call vtables2 (mass%tkepb,massm%tkepb &
                     ,ng, npts, imean, &
                     'TKEPB :3:hist:anal:mpti:mpt3')
 
       if (associated(mass%afxub)) &
-         call vtables2 (mass%afxub(1,1,1),massm%afxub(1,1,1) &
+         call vtables2 (mass%afxub,massm%afxub &
                     ,ng, npts, imean, &
                     'AFXUB :3:hist:anal:mpti:mpt3')
 
       if (associated(mass%afxvb)) &
-         call vtables2 (mass%afxvb(1,1,1),massm%afxvb(1,1,1) &
+         call vtables2 (mass%afxvb,massm%afxvb &
                     ,ng, npts, imean, &
                     'AFXVB :3:hist:anal:mpti:mpt3')
 
       if (associated(mass%afxwb)) &
-         call vtables2 (mass%afxwb(1,1,1),massm%afxwb(1,1,1) &
+         call vtables2 (mass%afxwb,massm%afxwb &
                     ,ng, npts, imean, &
                     'AFXWB :3:hist:anal:mpti:mpt3')
 
@@ -425,32 +425,32 @@ module mem_mass
       npts=n1*n2*n3*nclds
 
       if (associated(mass%cfxup)) &
-         call vtables2 (mass%cfxup(1,1,1,1),massm%cfxup(1,1,1,1) &
+         call vtables2 (mass%cfxup,massm%cfxup &
                     ,ng, npts, imean, &
                     'CFXUP :8:hist:anal:mpti:mpt3')
 
       if (associated(mass%cfxdn)) &
-         call vtables2 (mass%cfxdn(1,1,1,1),massm%cfxdn(1,1,1,1) &
+         call vtables2 (mass%cfxdn,massm%cfxdn &
                     ,ng, npts, imean, &
                     'CFXDN :8:hist:anal:mpti:mpt3')
 
       if (associated(mass%dfxup)) &
-         call vtables2 (mass%dfxup(1,1,1,1),massm%dfxup(1,1,1,1) &
+         call vtables2 (mass%dfxup,massm%dfxup &
                     ,ng, npts, imean, &
                     'DFXUP :8:hist:anal:mpti:mpt3')
 
       if (associated(mass%efxup)) &
-         call vtables2 (mass%efxup(1,1,1,1),massm%efxup(1,1,1,1) &
+         call vtables2 (mass%efxup,massm%efxup &
                     ,ng, npts, imean, &
                     'EFXUP :8:hist:anal:mpti:mpt3')
 
       if (associated(mass%dfxdn)) &
-         call vtables2 (mass%dfxdn(1,1,1,1),massm%dfxdn(1,1,1,1) &
+         call vtables2 (mass%dfxdn,massm%dfxdn &
                     ,ng, npts, imean, &
                     'DFXDN :8:hist:anal:mpti:mpt3')
 
       if (associated(mass%efxdn)) &
-         call vtables2 (mass%efxdn(1,1,1,1),massm%efxdn(1,1,1,1) &
+         call vtables2 (mass%efxdn,massm%efxdn &
                     ,ng, npts, imean, &
                     'EFXDN :8:hist:anal:mpti:mpt3')
 

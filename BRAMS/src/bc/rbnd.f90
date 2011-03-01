@@ -30,8 +30,8 @@ if (nxtnest(ngrid) .eq. 0) then
       call latnormv(mzp,mxp,myp,ia,iz,ja,jz,ibcon    &
          ,grid_g(ngrid)%flpu   ,grid_g(ngrid)%flpv   &
          ,basic_g(ngrid)%up    ,basic_g(ngrid)%uc    &
-         ,tend%ut              ,basic_g(ngrid)%vp    &
-         ,basic_g(ngrid)%vc    ,tend%vt              &
+         ,tend_g(ngrid)%ut     ,basic_g(ngrid)%vp    &
+         ,basic_g(ngrid)%vc    ,tend_g(ngrid)%vt     &
          ,grid_g(ngrid)%dxt    ,grid_g(ngrid)%dyt    )
 
    endif
@@ -775,14 +775,14 @@ if (if_adap == 0) then
 
    call rayf(4,mzp,mxp,myp,ia,iz,ja,jz,ibcon      &
       ,scratch%vt3da        ,basic_g(ngrid)%th0   &
-      ,tend%tht             ,grid_g(ngrid)%rtgt   &
+      ,tend_g(ngrid)%tht    ,grid_g(ngrid)%rtgt   &
       ,grid_g(ngrid)%topt                         )
 
 else
 
    call rayf_adap(4,mzp,mxp,myp,ia,iz,ja,jz,ibcon  &
       ,grid_g(ngrid)%flpw          ,scratch%vt3da  &
-      ,basic_g(ngrid)%th0         ,tend%tht        )
+      ,basic_g(ngrid)%th0         ,tend_g(ngrid)%tht)
 
 endif
 

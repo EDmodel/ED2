@@ -90,7 +90,7 @@ contains
     npts=n1*n2*n3
 
     if (associated(turb_s_local%hksc))  &
-         call vtables2 (turb_s_local%hksc(1,1,1),turb_s_local%hksc(1,1,1)  &
+         call vtables2 (turb_s_local%hksc,turb_s_local%hksc  &
          ,ng, npts, 0,  &
          'HKSC :3:hist:anal:mpti:mpt3:mpt1')
 

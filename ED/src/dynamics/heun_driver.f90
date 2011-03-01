@@ -403,13 +403,6 @@ subroutine heun_integ(h1,csite,ipa,nsteps)
    cpatch => csite%patch(ipa)
 
    !---------------------------------------------------------------------------------------!
-   !    If top snow layer is too thin for computational stability, have it evolve in       !
-   ! thermal equilibrium with top soil layer.                                              !
-   !---------------------------------------------------------------------------------------!
-   ! call adjust_sfcw_properties(nzg,nzs,integration_buff%initp, csite,ipa)
-   ! call update_diagnostic_vars(integration_buff%initp,csite,ipa)
-
-   !---------------------------------------------------------------------------------------!
    !     Create temporary patches.                                                         !
    !---------------------------------------------------------------------------------------!
    call copy_rk4_patch(integration_buff%initp,integration_buff%y,cpatch)

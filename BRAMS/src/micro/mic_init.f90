@@ -319,15 +319,15 @@ subroutine initqin(n1,n2,n3,q2,q6,q7,pi0,pp,theta,dn0,cccnp,cifnp)
    implicit none
 
    !----- Arguments -----------------------------------------------------------------------!
-   integer,                   intent(in)  :: n1,n2,n3
-   real, dimension(n1,n2,n3), intent(out) :: q2, q6, q7, cifnp, cccnp
-   real, dimension(n1,n2,n3), intent(in)  :: pi0, pp, theta, dn0
+   integer,                   intent(in)    :: n1,n2,n3
+   real, dimension(n1,n2,n3), intent(inout) :: q2, q6, q7, cifnp, cccnp
+   real, dimension(n1,n2,n3), intent(in)    :: pi0, pp, theta, dn0
    !----- Local Variables -----------------------------------------------------------------!
    integer :: i,j,k
    !---------------------------------------------------------------------------------------!
 
 
-   !----- Initialize Q2, Q6, Q7, CCN, IFN. ------------------------------------------------!
+   !----- Initialise Q2, Q6, Q7, CCN, IFN. ------------------------------------------------!
    do j = 1,n3
       do i = 1,n2
          do k = 1,n1

@@ -73,9 +73,13 @@ rm -fv kuo_cupar_driver.o         kuo_cupar_driver.mod
 rm -fv landuse_input.o            landuse_input.mod
 rm -fv leaf_coms.o                leaf_coms.mod
 rm -fv leaf3.o                    leaf3.mod
+rm -fv leaf3_bc.o                 leaf3_bc.mod
+rm -fv leaf3_can.o                leaf3_can.mod
 rm -fv leaf3_hyd.o                leaf3_hyd.mod
 rm -fv leaf3_init.o               leaf3_init.mod
+rm -fv leaf3_ocean.o              leaf3_ocean.mod
 rm -fv leaf3_teb.o                leaf3_teb.mod
+rm -fv leaf3_tw.o                 leaf3_tw.mod
 rm -fv leaf3_utils.o              leaf3_utils.mod
 rm -fv local_proc.o               local_proc.mod
 rm -fv machine_arq.o              machine_arq.mod
@@ -289,6 +293,7 @@ rm -fv ed_node_coms.o             ed_node_coms.mod
 rm -fv ed_opspec.o                ed_opspec.mod
 rm -fv ed_para_coms.o             ed_para_coms.mod
 rm -fv ed_params.o                ed_params.mod
+rm -fv ed_print.o                 ed_print.mod 
 rm -fv ed_read_ed10_20_history.o  ed_read_ed10_20_history.mod
 rm -fv ed_read_ed21_history.o     ed_read_ed21_history.mod
 rm -fv ed_state_vars.o            ed_state_vars.mod

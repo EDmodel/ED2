@@ -318,7 +318,8 @@ module rad_carma
                              , ngrid      & ! intent(in)
                              , nzp        & ! intent(in)
                              , plonn      & ! intent(in)
-                             , time       ! ! intent(in)
+                             , time       & ! intent(in)
+                             , dtlt       ! ! intent(in)
       use mem_radiate , only : lonrad     & ! intent(in)
                              , iswrtyp    & ! intent(in)
                              , ilwrtyp    ! ! intent(in)
@@ -408,15 +409,14 @@ module rad_carma
       real                     , parameter     :: fcui = 1.e-6 ! mg/kg => kg/kg
       !------------------------------------------------------------------------------------!
 
-
-      !----- Copying environment variables to some scratch arrays. ------------------------!
+      !----- Copy environment variables to some scratch arrays. ---------------------------!
       nzz = m1 - 1
       do k = 1,m1
          pird      = (pp(k) + pi0(k)) / cp
          temprd(k) = theta(k) * pird ! air temperature (k)
          rvr(k)    = max(toodry,rv(k))
 
-         !----- Convert the next 7 variables to cgs for the time being. ----------------!
+         !----- Convert the next 7 variables to cgs for the time being. -------------------!
          prd(k)  = pird ** cpor * p00 * 10.  ! pressure
          dn0r(k) = dn0(k) * 1.e-3         ! air density
          dztr(k) = dzt(k) / rtgt * 1.e-2
@@ -427,18 +427,19 @@ module rad_carma
             pmr(k) = 0.
          end if
       end do
+      temprd(1) = sqrt(sqrt(rlongup / stefan))
 
-      !----- Finding the lower boundary condition. ----------------------------------------!
-      temprd(1) = (rlongup / stefan) ** 0.25
+      !----- Find the upper boundary condition. -------------------------------------------!
       temprd(nzp+1) = temprd(nzp)
-      !----- Initialise the surface atmospheric state. ---------------------------------!
+
+      !----- Initialise the surface atmospheric state. ------------------------------------!
       p_surf = 0.5*(prd(1) + prd(2))
       p_top  = prd(m1)
       t_surf = temprd(1)
 
       !------------------------------------------------------------------------------------!
       !      K level on CARMA grid corresponds to k+1 level on BRAMS grid.  Here we        !
-      ! transfer values from BRAMS grid to CARMA grid
+      ! transfer values from BRAMS grid to CARMA grid.                                     !
       !------------------------------------------------------------------------------------!
       do k=1,m1-1
          p(k)    =    prd(k+1)
@@ -4726,8 +4727,8 @@ module rad_carma
       integer                                   :: l
       !------------------------------------------------------------------------------------!
 
-      nzz  = m1 - 1
-      aotr = 0.0
+      nzz     = m1 - 1
+      aotr(:) = 0.0
 
       !----- Reverse the vertical and transfer values from CARMA grid to BRAMS grid. ------!
       do k=2,m1

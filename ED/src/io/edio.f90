@@ -1,143 +1,160 @@
-
- 
-subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,annual_time&
+!==========================================================================================!
+!==========================================================================================!
+!     This is the main driver for file output in ED.                                       !
+!------------------------------------------------------------------------------------------!
+subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,annual_time     &
                     ,writing_dail,writing_mont,history_time,the_end)
-  
-  use ed_state_vars,only:filltab_alltypes,edgrid_g,filltables
 
-  use grid_coms, only: ngrids,nzg  ! INTENT(IN)
+   use ed_state_vars, only : edgrid_g          & ! structure
+                           , filltab_alltypes  & ! subroutine
+                           , filltables        ! ! intent(inout)
+   use grid_coms    , only : ngrids            & ! intent(in)
+                           , nzg               ! ! intent(in)
+   use ed_node_coms , only : mynum             & ! intent(in)
+                           , nnodetot          ! ! intent(in)
+   use ed_misc_coms , only : dtlsm             & ! intent(in)
+                           , current_time      & ! intent(in)
+                           , idoutput          & ! intent(in)
+                           , imoutput          & ! intent(in)
+                           , iyoutput          & ! intent(in)
+                           , isoutput          & ! intent(in)
+                           , ifoutput          & ! intent(in)
+                           , itoutput          & ! intent(in)
+                           , iprintpolys       & ! intent(in)
+                           , frqsum            ! ! intent(in)
 
-  use ed_node_coms,only : mynum,nnodetot
-
-  use ed_misc_coms, only: dtlsm, current_time, &
-       idoutput,    &
-       imoutput,    &
-       iyoutput,    &
-       isoutput,    &
-       ifoutput,    &
-       itoutput,    &
-       iprintpolys, &
-       frqsum
-
-  implicit none
-    
-  logical, intent(in)  :: the_end,analysis_time,dail_analy_time
-  logical, intent(in)  :: writing_dail,writing_mont
-  logical, intent(in) :: mont_analy_time,history_time,new_day,annual_time
-  integer :: ifm
-
-
-  ! If there is any IO, then we need to check if the pointer tables
-  ! need to be rehashed, they will need to be rehashed if their has been 
-  ! a change in the number of cohorts or patches, ie if a monthly event had
-  ! just happened.
-
-  if(analysis_time .or. history_time .or. dail_analy_time .or. mont_analy_time .or. annual_time ) then
-     if(filltables) then
-        
-        ! Rehash the tables
-        call filltab_alltypes
-        ! Reset the rehash flag
-        filltables=.false.
-
-     endif
-  endif
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   logical, intent(in)  :: the_end
+   logical, intent(in)  :: analysis_time
+   logical, intent(in)  :: dail_analy_time
+   logical, intent(in)  :: writing_dail
+   logical, intent(in)  :: writing_mont
+   logical, intent(in)  :: mont_analy_time
+   logical, intent(in)  :: history_time
+   logical, intent(in)  :: new_day
+   logical, intent(in)  :: annual_time
+   !----- Local variables. ----------------------------------------------------------------!
+   integer              :: ifm
+   !---------------------------------------------------------------------------------------!
 
 
 
-  if(analysis_time .or. history_time .or. (new_day .and. (writing_dail .or. writing_mont))) then
-     do ifm=1,ngrids
-        call normalize_averaged_vars(edgrid_g(ifm),frqsum,dtlsm)
-     enddo
+   !---------------------------------------------------------------------------------------!
+   !      If there is any IO, then we need to check whether the pointer tables are up to   !
+   ! date or not.  They must be rehashed if there has been any change in the number of     !
+   ! cohorts or patches (e.g, a cohort or a patch has been terminated or created).         !
+   !---------------------------------------------------------------------------------------!
+   if (analysis_time   .or. history_time    .or.                                           &
+       dail_analy_time .or. mont_analy_time .or. annual_time ) then
 
-     !  Perform averaging and data preparation
-     call spatial_averages
-     
-     if (writing_dail .or. writing_mont) then
-        do ifm=1,ngrids
-           call integrate_ed_daily_output_flux(edgrid_g(ifm))
-        end do
-     end if
-  endif
-  
-  
-  if (analysis_time) then
-     
-    
-     !  Write out analysis fields - mostly polygon averages
-     if (ifoutput.eq.3) then
-        call h5_output('INST')
-     endif
-     if (itoutput.eq.3) then
-        call h5_output('OPTI')
-     endif
-
-     
-     ! If printpolys is on then print this info to
-     ! the screen
-     
-     if (iprintpolys.eq.1) then
-        do ifm=1,ngrids
-           call print_fields(ifm,edgrid_g(ifm))
-        enddo
-     endif
-
-  endif
-
-  ! Daily analysis output and monthly integration
-  if (new_day .and. (writing_dail .or. writing_mont)) then
-
-     call avg_ed_daily_output_pool()
-
-     do ifm=1,ngrids
-        call normalize_ed_daily_output_vars(edgrid_g(ifm))
-        if (writing_mont) call integrate_ed_monthly_output_vars(edgrid_g(ifm))
-     end do
-
-     if (dail_analy_time) call h5_output('DAIL')
-
-     do ifm=1,ngrids
-       call zero_ed_daily_output_vars(edgrid_g(ifm))
-     end do
-
-  end if
-
-  ! Monthly analysis output
-  if (mont_analy_time) then
-
-     do ifm=1,ngrids
-        call normalize_ed_monthly_output_vars(edgrid_g(ifm))
-     end do
-
-     call h5_output('MONT')
-
-     do ifm=1,ngrids
-        call zero_ed_monthly_output_vars(edgrid_g(ifm))
-     end do
-  end if
-
-  if (annual_time) then
-
-     call h5_output('YEAR')
-
-  endif
-
-  ! History files should only be output at a frequency which
-  ! divides by frqanl, thus the integrated fast-time variables
-  ! are valid, but representative of the last frqanl period, not
-  ! the last frqhist period.
-
-
-  if(history_time) then
-
-     if (isoutput /= 0) then
-        call h5_output('HIST')
-     end if
-  endif
+      if (filltables) then
+         
+         !----- Re-hash the tables. -------------------------------------------------------!
+         call filltab_alltypes
+         !----- Reset the rehash flag. ----------------------------------------------------!
+         filltables=.false.
+      end if
+   end if
+   !---------------------------------------------------------------------------------------!
 
 
 
-  return
+   !---------------------------------------------------------------------------------------!
+   !      If this is the time for an output, we shall call routines to prepare the vari-   !
+   ! ables for output.                                                                     !
+   !---------------------------------------------------------------------------------------!
+   if ( analysis_time .or.   history_time .or.                                             &
+       (new_day       .and. (writing_dail .or. writing_mont))) then
+      do ifm=1,ngrids
+         call normalize_averaged_vars(edgrid_g(ifm),frqsum,dtlsm)
+      end do
+
+      !----- Perform averaging and data preparation. --------------------------------------!
+      call spatial_averages
+      
+      if (writing_dail .or. writing_mont) then
+         do ifm=1,ngrids
+            call integrate_ed_daily_output_flux(edgrid_g(ifm))
+         end do
+      end if
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Instantaneous analysis. ---------------------------------------------------------!
+   if (analysis_time) then
+      !----- Write out analysis fields - mostly polygon averages. -------------------------!
+      if (ifoutput == 3) call h5_output('INST')
+      if (itoutput == 3) call h5_output('OPTI')
+
+      !----- If printpolys is on then print this info to the screen. ----------------------!
+      if (iprintpolys == 1) then
+         do ifm=1,ngrids
+            call print_fields(ifm,edgrid_g(ifm))
+         end do
+      end if
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Daily analysis output and monthly integration. ----------------------------------!
+   if (new_day .and. (writing_dail .or. writing_mont)) then
+      call avg_ed_daily_output_pool()
+
+      do ifm=1,ngrids
+         call normalize_ed_daily_output_vars(edgrid_g(ifm))
+         if (writing_mont) call integrate_ed_monthly_output_vars(edgrid_g(ifm))
+      end do
+
+      if (dail_analy_time) call h5_output('DAIL')
+
+      do ifm=1,ngrids
+         call zero_ed_daily_output_vars(edgrid_g(ifm))
+      end do
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !----- Monthly analysis output. --------------------------------------------------------!
+   if (mont_analy_time) then
+      do ifm=1,ngrids
+         call normalize_ed_monthly_output_vars(edgrid_g(ifm))
+      end do
+      call h5_output('MONT')
+
+      do ifm=1,ngrids
+         call zero_ed_monthly_output_vars(edgrid_g(ifm))
+      end do
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Yearly analysis output. ---------------------------------------------------------!
+   if (annual_time) then
+      call h5_output('YEAR')
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      History files should only be output at a frequency which divides by frqanl, thus !
+   ! the integrated fast-time variables are valid, but representative of the last frqanl   !
+   ! period, not the last frqhist period.                                                  !
+   !---------------------------------------------------------------------------------------!
+   if (history_time .and. isoutput /= 0) then
+      call h5_output('HIST')
+   end if
+   !---------------------------------------------------------------------------------------!
+
+   return
 end subroutine ed_output
 !==========================================================================================!
 !==========================================================================================!
@@ -1036,40 +1053,6 @@ subroutine spatial_averages
 
    return
 end subroutine spatial_averages
-
-! ==============================
-
-subroutine get2d(m1,m2,temp2,in_ptr)
-  
-  implicit none
-  integer :: m1,m2,i,j
-  real,dimension(m1,m2) :: temp2
-  real,dimension(m1,m2) :: in_ptr
-  do i = 1,m1
-     do j = 1,m2
-        temp2(i,j) = in_ptr(i,j)
-     enddo
-  enddo
-  return
-end subroutine get2d
-
-! =============================
-
-subroutine get3d(m1,m2,m3,temp3,in_ptr)
-  
-  implicit none
-  integer :: m1,m2,m3,i,j,k
-  real,dimension(m1,m2,m3) :: temp3
-  real,dimension(m1,m2,m3) :: in_ptr
-  do i = 1,m1
-     do j = 1,m2
-        do k = 1,m3
-           temp3(i,j,k) = in_ptr(i,j,k)
-        enddo
-     enddo
-  enddo
-  return
-end subroutine get3d
 !==========================================================================================!
 !==========================================================================================!
 
@@ -1077,332 +1060,3 @@ end subroutine get3d
 
 
 
-
-!==========================================================================================!
-!==========================================================================================!
-subroutine print_fields(ifm,cgrid)
-  
-  !------------------------------------------------------
-  ! PRINT OUT FIELDS OF INTEREST
-  !
-  ! This subroutine prints patch, cohort, polygon or site level
-  ! data, upscales that data to the site level and stores
-  ! the data in its spatial array coordinate.
-  ! The data is then printed to the screen, based on a
-  ! specified window of data.
-  ! Note, this may be printing windows on various nodes,
-  ! or this may be called from a master process.  Be
-  ! conscious of this; as it will dictate what part of the
-  ! domain you are accessing variables from, and whether
-  ! or not the variable of interest is stored in memory
-  ! at that time.  For instance, many variables are stored
-  ! only on the slave nodes, and need not be passed back
-  ! to the master.  Likewise, many slave node data will
-  ! accumulate after each lsm call, until they are passed back
-  ! to the master, where they are normalized. These variables
-  ! will be immediately zeroed on the slaves after being
-  ! sent to the master.
-  ! Dont forget to adjust the number precision on the 
-  ! format string at the end.  The X.Xf
-  !--------------------------------------------------------
-  
-  use ed_node_coms,only: mynum,nnodetot,sendnum,recvnum,master_num,machs
-  use ed_state_vars,only: edtype,polygontype
-  use ed_misc_coms, only: &
-            printvars,  &
-            ipmax,      &
-            ipmin,      &
-            pfmtstr,    &
-            iprintpolys
-  
-  use ed_var_tables,only:vt_info,num_var
-
-
-  implicit none
-
-  include 'mpif.h'
-  integer,dimension(MPI_STATUS_SIZE) :: status
-  integer  :: ifm,nv,np,i,ip
-  integer  :: ping
-  integer  :: npolys
-  integer  :: g_idmin,g_idmax,l_idmin,l_idmax,ierr
-  integer  :: node_idmin,node_idmax
-  integer  :: mast_idmin,mast_idmax
-  integer  :: g_id,g_ln,nm
-  integer  :: ncols,row,maxrows,col
-  integer,parameter :: maxcols = 10
-
-  real,pointer,dimension(:) :: pvar_l
-  real,pointer,dimension(:) :: pvar_g
-  
-  character(len=30)     :: fmtstr
-  character(len=32)     :: pvar_name
-  
-  ! Linked structures
-  type(edtype),target     :: cgrid
-  
-  logical :: pvartrue
-  logical :: ptr_recv
-  logical :: ptr_send
-
-  ping = 8675309
-
-  
-  npolys = ipmax - ipmin + 1
-  
-  ! Adjust the format string according to the chosen
-  ! Variables
-  ! ------------------------------------------------
-
-  ! CHeck the window size
-  ! ---------------------
-  
-  if (ipmax.gt.cgrid%npolygons_global) then
-     print*,"========================================="
-     print*,"You have specified a print index"
-     print*,"greater than the total number of polygons"
-     print*,"You must reduce this number. Stopping"
-     stop
-  end if
-
-
-  ! Allocate the print and scratch vector
-  allocate(pvar_l(npolys))
-
-  if (mynum .eq. nnodetot .or. nnodetot .eq. 1) allocate(pvar_g(npolys))
-
-  
-  ! Loop through the printvar entries from the namelist
-
-  ip = 0
-  
-  count_pvars: do
-
-     ip = ip+1
-     pvar_name = printvars(ip)
-     if (len_trim(pvar_name).eq.32) then
-        
-        exit count_pvars
-     endif
-
-     if (nnodetot /= 1) call MPI_Barrier(MPI_COMM_WORLD,ierr)
-
-     pvartrue = .false.
-     do nv = 1,num_var(ifm)
-
-        if(trim(vt_info(nv,ifm)%name) .eq. trim(pvar_name)) then
-           pvartrue = .true.
-           
-           ! If this is root, then collect the sends, keep reading to find out what it is
-           ! receiving
-           if (nnodetot > 1) then
-              
-              if (mynum == nnodetot) then
-                 
-                 pvar_g = -99.9
-                 ! Loop through the variable table to match the print variable
-                 print*,""
-                 print*," ============ ",trim(pvar_name)," =================="
-                 print*,""
-
-                 do nm = 1,nnodetot-1
-
-                    call MPI_Recv(ptr_recv,1,MPI_LOGICAL,machs(nm),120,MPI_COMM_WORLD,status,ierr)
-
-                    if (ptr_recv) then
-                       call MPI_Recv(mast_idmin,1,MPI_INTEGER,machs(nm),121,MPI_COMM_WORLD,status,ierr)
-                       call MPI_Recv(mast_idmax,1,MPI_INTEGER,machs(nm),122,MPI_COMM_WORLD,status,ierr)
-                       call MPI_Recv(pvar_g(mast_idmin:mast_idmax),mast_idmax-mast_idmin+1,MPI_REAL,&
-                            machs(nm),123,MPI_COMM_WORLD,status,ierr)
-                    end if
-                 enddo
-              endif
-           else
-              
-              ! Loop through the variable table to match the print variable
-              print*,""
-              print*," ============ ",trim(pvar_name)," =================="
-              print*,""
-              pvar_g = -99.9
-           endif
-        
-              
-           ! The namelist print entry has been matched with the var_table
-           ! entry.  Now lets cycle through our machines and determine
-           ! if those machines hold data that should be printed.  If so, 
-           ! then send that data to the master (machine 0).
-
-           ! This is scratch space that all machines will use
-
-           pvar_l =-99.9
-           
-           ! Set the blocking recieve to allow ordering, start with machine 1
-           if (mynum /= 1) call MPI_Recv(ping,1,MPI_INTEGER,recvnum,93,MPI_COMM_WORLD,status,ierr)
-           
-           ! Cycle through this node's pointers for the current variable.  If the index
-           ! falls within the printable range. Save that pointer to a local array.
-           ! Once all the pointers have been cycled, send the local array to the 
-           ! master to populate a global array and print
-           
-           ptr_send = .false.
-           node_idmin = -1
-           node_idmax = -1
-
-           do np = 1,vt_info(nv,ifm)%nptrs
-              g_id = vt_info(nv,ifm)%vt_vector(np)%globid+1
-              g_ln = vt_info(nv,ifm)%vt_vector(np)%varlen
-              
-              ! Determine if any of this segment falls within the 
-              ! range desired for output, globid+1 is the global index
-
-              if (g_id .le. ipmax .and. g_id+g_ln-1 .ge. ipmin ) then
-
-                 ! OK, this segment is good, set the send flag
-                 ptr_send = .true.
-
-                 ! These are the indices of the data in the current segment to use
-                 ! and the indices in the global array they will be sent to
-                 if (g_id >= ipmin) then
-                    l_idmin = 1
-                    g_idmin = g_id - ipmin + 1
-                 else
-                    l_idmin = ipmin - g_id + 1
-                    g_idmin = 1
-                 endif
-
-                 if (g_id+g_ln-1 < ipmax) then
-                    l_idmax = g_ln
-                    g_idmax = g_id + g_ln - ipmin
-                 else
-                    l_idmax = ipmax - g_id + 1
-                    g_idmax = ipmax - ipmin + 1
-                 endif
-                 
-                 ! These should be the same size, if not...
-                 if (l_idmax - l_idmin .ne. g_idmax - g_idmin ) then
-                    print*,"NOT THE SAME LENGTHS"
-                    print*,l_idmax - l_idmin,g_idmax - g_idmin
-                    print*,l_idmax,l_idmin,g_idmax,g_idmin
-                    stop
-                 endif
-
-                 ! Shift the global dataset so that it is applied to the
-                 ! first index
-
-                 call fillvar_l(pvar_l,vt_info(nv,ifm)%vt_vector(np)%var_rp,npolys,g_ln,g_idmin,l_idmin,l_idmax)
-
-                 ! Determine the minimum and maximum indices that will be sent
-                 if (g_idmin < node_idmin .or. node_idmin.eq.-1) node_idmin = g_idmin
-                 if (g_idmax > node_idmax .or. node_idmax.eq.-1) node_idmax = g_idmax
-
-              end if
-              
-           enddo
-           
-           if (nnodetot > 1) then
-              
-              ! The local array for this machine has been created. Send it off to the master
-
-              if (mynum /= nnodetot) then
-
-                 call MPI_Send(ptr_send,1,MPI_LOGICAL,machs(nnodetot),120,MPI_COMM_WORLD,ierr)
-                 if (ptr_send) then
-                    call MPI_Send(node_idmin,1,MPI_INTEGER,machs(nnodetot),121,MPI_COMM_WORLD,ierr)
-                    call MPI_Send(node_idmax,1,MPI_INTEGER,machs(nnodetot),122,MPI_COMM_WORLD,ierr)
-                    call MPI_Send(pvar_l(node_idmin:node_idmax),node_idmax-node_idmin+1, &
-                         MPI_REAL,machs(nnodetot),123,MPI_COMM_WORLD,ierr)
-                 end if
-                 
-              
-                 ! When this node is finished, send the blocking MPI_Send to the next machine
-
-                 call MPI_Send(ping,1,MPI_INTEGER,sendnum,93,MPI_COMM_WORLD,ierr)
-                 
-                 ! If this is root, then just copy the array to the global
-              else
-                            
-                 if (ptr_send) then
-
-                    pvar_g(node_idmin:node_idmax) = pvar_l(node_idmin:node_idmax)
-           
-                 end if
-                 
-              endif
-
-
-              
-           else
-              
-              pvar_g = pvar_l
-              
-           endif
-           
-           
-           ! The data over the desired range of indices have been collected
-           ! if this is the only machine or the root machine, then print it 
-           ! to standard output
-           
-           if (mynum .eq. nnodetot .or. nnodetot .eq. 1) then
-
-              ! Print out a maximum of 10 variables per row...
-
-              maxrows = ceiling(real(npolys)/real(maxcols))
-
-              do row = 1,maxrows
-                 
-                 ncols = min( maxcols,npolys-((row-1)*maxcols)   )
-                 col   = ( (row-1)*maxcols)+1
-                 
-                 write(fmtstr,'(i3)')ncols
-                 fmtstr = '('// trim(fmtstr)  // '(2x,' // trim(pfmtstr(ip)) // '))'
-                 
-                 print(trim(fmtstr)),(pvar_g(i),i=col,col+ncols-1)
-              enddo
-              print*,""
-              print*,""
-              
-           endif
-           
-        endif
-        
-     enddo
-
-     ! Check to see if we matched the variable
-     if(.not.pvartrue) then
-        print*,"The diagnostic variable named:",trim(pvar_name)
-        print*,"does not match any of the var_table variables"
-        print*,"Check you namelist entries, and the variable "
-        print*,"registry and/or remove this"
-        print*,"diagnostic variable."
-        call fatal_error('Bad variable name...','print_fields','edio.f90')
-     endif
-
-  end do count_pvars
-
-  ! Dont proceed until everything is written out
-  ! if this is not done, then there will be other writing
-  ! contaminating the output, and thats icky
-  if (nnodetot /= 1) call MPI_Barrier(MPI_COMM_WORLD,ierr)
-
-  
-  return
-end subroutine print_fields
-
-! =======================================================
-
-subroutine fillvar_l(pvar_l,vt_ptr,npts_out,npts_in,out1,in1,in2)
-  
-  implicit none
-  real,dimension(npts_out)  :: pvar_l
-  real,dimension(npts_in)   :: vt_ptr
-  integer,intent(in)      :: npts_in,npts_out
-  integer,intent(in)      :: out1,in1,in2
-  integer :: i,j
-  
-  j = out1
-  do i = in1,in2     
-     pvar_l(j) = vt_ptr(i)
-     j = j + 1
-  enddo
-  return
-end subroutine fillvar_l

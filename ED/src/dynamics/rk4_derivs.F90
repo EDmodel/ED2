@@ -262,9 +262,7 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
                          ,wshed_tot,qwshed_tot,dwshed_tot)
 
    !---------------------------------------------------------------------------------------!
-   !     Here we check whether it is bedrock or not. I think the reason for this check is  !
-   ! to avoid problems with soil_water never being defined for bedrocks, otherwise simply  !
-   ! assuming soilcond1 and soilcond2 would suffice.                                       !
+   !     Here we check whether it is bedrock or not because slmsts for that is zero.       !
    !---------------------------------------------------------------------------------------!
    do k = rk4site%lsl, mzg
       nsoil = csite%ntext_soil(k,ipa)
@@ -354,12 +352,15 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
    !     New moisture, qw, and depth from dew/frost formation, precipitation, shedding,    !
    ! and percolation.  ksnnew is the layer that receives the new condensate that comes     !
    ! directly from the air above.  If there is no pre-existing snowcover, this is a        !
-   ! temporary "snow" layer.  This weird factor is essentially the one used by default in  !
-   ! RAMS 4.3.0.  I'd rather use a different factor, huh?                                  !
+   ! temporary "snow" layer.                                                               !
    !---------------------------------------------------------------------------------------!
    w_flux(mzg+ksn+1)  = -  dewgnd -  wshed_tot - throughfall_tot
    qw_flux(mzg+ksn+1) = - qdewgnd - qwshed_tot - qthroughfall_tot
    d_flux(ksn+1)      = - ddewgnd - dwshed_tot - dthroughfall_tot
+   !---------------------------------------------------------------------------------------!
+
+
+
 
    !---------------------------------------------------------------------------------------!
    !     Transfer water downward through snow layers by percolation. Here we define:       !

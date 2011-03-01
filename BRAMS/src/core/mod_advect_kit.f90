@@ -233,7 +233,7 @@ contains
 
     ! Modules for data extration
     use mem_tend,    only: &
-         tend                ! %ut (inout); %vt (inout); %wt (inout)
+         tend_g              ! %ut (inout); %vt (inout); %wt (inout)
     use var_tables,  only: &
          num_scalar,       & ! intent(in)
          scalar_tab          ! %var_p (in); %var_t (inout)
@@ -294,16 +294,16 @@ contains
        endif
        
        if (varn .eq. 'V' .or. varn .eq. 'ALL') then
-          ! Initiating tendencies local arrays
+          ! Initialising tendencies local arrays
 
           ijk = 0
           do j = 1, myp
              do i = 1, mxp
                 do k = 1, mzp
                    ijk = ijk + 1
-                   local_ut(k, i, j) = tend%ut(ijk)
-                   local_vt(k, i, j) = tend%vt(ijk)
-                   local_wt(k, i, j) = tend%wt(ijk)
+                   local_ut(k, i, j) = tend_g(ngrid)%ut(k,i,j)
+                   local_vt(k, i, j) = tend_g(ngrid)%vt(k,i,j)
+                   local_wt(k, i, j) = tend_g(ngrid)%wt(k,i,j)
                 enddo
              enddo
           enddo
@@ -413,13 +413,13 @@ contains
                    ijk = ijk + 1
                    ! ALF
                    if (i>=ia .and. i<=izu .and. j>=ja .and. j<=jz) &
-                   tend%ut(ijk) = local_ut(k, i, j)
+                   tend_g(ngrid)%ut(k,i,j) = local_ut(k, i, j)
                    ! ALF
                    if (i>=ia .and. i<=iz .and. j>=ja .and. j<=jzv) &
-                   tend%vt(ijk) = local_vt(k, i, j)
+                   tend_g(ngrid)%vt(k,i,j) = local_vt(k, i, j)
                    ! ALF
                    if (i>=ia .and. i<=iz .and. j>=ja .and. j<=jz) &
-                   tend%wt(ijk) = local_wt(k, i, j)
+                   tend_g(ngrid)%wt(k,i,j) = local_wt(k, i, j)
                 enddo
              enddo
           enddo

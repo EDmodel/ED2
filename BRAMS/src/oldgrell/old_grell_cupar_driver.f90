@@ -8,7 +8,7 @@ subroutine old_grell_cupar_driver(icld)
   use mem_basic         , only: basic_g & ! intent(in)
                               , co2_on  ! ! intent(in)
 
-  use mem_tend          , only: tend
+  use mem_tend          , only: tend_g
 ![MLO - Adding shallow cumulus output
   use mem_cuparm        , only: nnqparm, confrq, cuparm_g,nclouds
 !MLO]
@@ -108,8 +108,8 @@ subroutine old_grell_cupar_driver(icld)
                  ,basic_g(ngrid)%DN0             , sc1_grell_g(ngrid)%rvsta             &
                  ,turb_g(ngrid)%kpbl             , turb_g(ngrid)%tkep  ,tkmin           &
                  ,micro_g(ngrid)%rcp             , grid_g(ngrid)%topt                   &
-                 ,grid_g(ngrid)%RTGT             , tend%THT                             &
-                 ,tend%RTT                       , tend%PT                              &
+                 ,grid_g(ngrid)%RTGT             , tend_g(ngrid)%THT                    &
+                 ,tend_g(ngrid)%RTT              , tend_g(ngrid)%PT                     &
                  ,cuparm_g(ngrid)%THSRC(:,:,:,icld), cuparm_g(ngrid)%RTSRC(:,:,:,icld)  &
                  ,cuparm_g(ngrid)%CONPRR(:,:,icld) , sc1_grell_g(ngrid)%ierr4d          &
                  ,sc1_grell_g(ngrid)%jmin4d      , sc1_grell_g(ngrid)%kdet4d            &
@@ -167,8 +167,8 @@ subroutine old_grell_cupar_driver(icld)
                       ,basic_g(ngrid)%dn0           ,basic_g(ngrid)%rv                    &
                       ,turb_g(ngrid)%kpbl           ,turb_g(ngrid)%tkep,  tkmin           &
                       ,micro_g(ngrid)%rcp           ,grid_g(ngrid)%topt                   &
-                      ,grid_g(ngrid)%rtgt           ,tend%tht                             &
-                      ,tend%rtt                     ,tend%pt                              &
+                      ,grid_g(ngrid)%rtgt           ,tend_g(ngrid)%tht                    &
+                      ,tend_g(ngrid)%rtt            ,tend_g(ngrid)%pt                     &
                       ,cuparm_g(ngrid)%thsrc(:,:,:,icld)                                  &
                       ,cuparm_g(ngrid)%rtsrc(:,:,:,icld)                                  &
                       ,sc1_grell_g(ngrid)%ierr4d    ,sc1_grell_g(ngrid)%jmin4d            &
@@ -230,9 +230,9 @@ subroutine include_shal_effect(m1,m2,m3,ia,iz,ja,jz,dtlt                        
    integer, intent(in)                                           :: ia,iz,ja,jz
    integer, intent(in)                                           :: m1,m2,m3
    real   , intent(in)                                           :: dtlt
-   real   , intent(out) , dimension(m1,m2,m3)                    :: thetasta,rvsta
-   real   , intent(in)  , dimension(m1,m2,m3)                    :: theta,rv,pi0,pp
-   real   , intent(in)  , dimension(m1,m2,m3)                    :: thsrc,rtsrc
+   real   , intent(inout), dimension(m1,m2,m3)                   :: thetasta,rvsta
+   real   , intent(in)   , dimension(m1,m2,m3)                   :: theta,rv,pi0,pp
+   real   , intent(in)   , dimension(m1,m2,m3)                   :: thsrc,rtsrc
    integer                                                       :: i,j,k
    real                                                          :: press,rsat,tempk
    do j=ja,jz

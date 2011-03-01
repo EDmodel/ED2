@@ -171,36 +171,36 @@ Contains
       npts=n1*n2*n3
 
       if (associated(radiate%fthrd))  &
-         call vtables2 (radiate%fthrd(1,1,1),radiatem%fthrd(1,1,1)  &
+         call vtables2 (radiate%fthrd,radiatem%fthrd  &
                     ,ng, npts, imean,  &
                     'FTHRD :3:hist:anal:mpti:mpt3')
 
       if (associated(radiate%fthrd_lw))  &
-         call vtables2 (radiate%fthrd_lw(1,1,1),radiatem%fthrd_lw(1,1,1)  &
+         call vtables2 (radiate%fthrd_lw,radiatem%fthrd_lw  &
                     ,ng, npts, imean,  &
                     'FTHRD_LW :3:hist:anal:mpti:mpt3')
 
       npts=n2*n3
       if (associated(radiate%rshort))  &
-         call vtables2 (radiate%rshort(1,1),radiatem%rshort(1,1)  &
+         call vtables2 (radiate%rshort,radiatem%rshort  &
                     ,ng, npts, imean,  &
                     'RSHORT :2:hist:anal:mpti:mpt3')
       if (associated(radiate%rlong))  &
-         call vtables2 (radiate%rlong(1,1),radiatem%rlong(1,1)  &
+         call vtables2 (radiate%rlong,radiatem%rlong  &
                     ,ng, npts, imean,  &
                     'RLONG :2:hist:anal:mpti:mpt3')
       if (associated(radiate%rlongup))  &
-         call vtables2 (radiate%rlongup(1,1),radiatem%rlongup(1,1)  &
+         call vtables2 (radiate%rlongup,radiatem%rlongup  &
                     ,ng, npts, imean,  &
                     'RLONGUP :2:hist:anal:mpti:mpt3')
       if (associated(radiate%albedt))  &
-         call vtables2 (radiate%albedt(1,1),radiatem%albedt(1,1)  &
+         call vtables2 (radiate%albedt,radiatem%albedt  &
                     ,ng, npts, imean,  &
                     'ALBEDT :2:hist:anal:mpti:mpt3')
       if (associated(radiate%cosz))  &
-         call vtables2 (radiate%cosz(1,1),radiatem%cosz(1,1)  &
+         call vtables2 (radiate%cosz,radiatem%cosz  &
                     ,ng, npts, imean,  &
-                    'COSZ :2:anal:mpt3')
+                    'COSZ :2:hist:anal:mpti:mpt3')
 
       return
       end subroutine filltab_radiate

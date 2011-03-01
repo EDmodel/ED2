@@ -126,6 +126,8 @@ ed_opspec.o: decomp_coms.mod disturb_coms.mod ed_max_dims.mod ed_misc_coms.mod
 ed_opspec.o: ed_para_coms.mod grid_coms.mod mem_polygons.mod met_driver_coms.mod
 ed_opspec.o: pft_coms.mod phenology_coms.mod physiology_coms.mod rk4_coms.mod
 ed_opspec.o: soil_coms.mod
+ed_print.o: ed_max_dims.mod ed_misc_coms.mod ed_node_coms.mod ed_state_vars.mod
+ed_print.o: ed_var_tables.mod
 ed_read_ed10_20_history.o: allometry.mod consts_coms.mod disturb_coms.mod
 ed_read_ed10_20_history.o: ed_max_dims.mod ed_misc_coms.mod ed_state_vars.mod
 ed_read_ed10_20_history.o: fuse_fiss_utils.mod grid_coms.mod mem_polygons.mod
@@ -140,8 +142,8 @@ ed_xml_config.o: grid_coms.mod hydrology_coms.mod met_driver_coms.mod
 ed_xml_config.o: pft_coms.mod phenology_coms.mod physiology_coms.mod
 ed_xml_config.o: rk4_coms.mod soil_coms.mod
 edio.o: c34constants.mod consts_coms.mod ed_max_dims.mod ed_misc_coms.mod
-edio.o: ed_node_coms.mod ed_state_vars.mod ed_var_tables.mod grid_coms.mod
-edio.o: pft_coms.mod soil_coms.mod therm_lib.mod
+edio.o: ed_node_coms.mod ed_state_vars.mod grid_coms.mod pft_coms.mod
+edio.o: soil_coms.mod therm_lib.mod
 h5_output.o: an_header.mod c34constants.mod ed_max_dims.mod ed_misc_coms.mod
 h5_output.o: ed_node_coms.mod ed_state_vars.mod ed_var_tables.mod
 h5_output.o: fusion_fission_coms.mod grid_coms.mod  hdf5_coms.mod

@@ -286,10 +286,10 @@ if (idi .ne. 0 .or. idj .ne. 0) then
 
 !3  Prognostic 3-D atmospheric variables
 
-   call ae1(nnxyzp(ifm),tend%ut,basic_g(ifm)%up)
-   call ae1(nnxyzp(ifm),tend%vt,basic_g(ifm)%vp)
-   call ae1(nnxyzp(ifm),tend%wt,basic_g(ifm)%wp)
-   call ae1(nnxyzp(ifm),tend%pt,basic_g(ifm)%pp)
+   call ae1(nnxyzp(ifm),tend_g(ifm)%ut,basic_g(ifm)%up)
+   call ae1(nnxyzp(ifm),tend_g(ifm)%vt,basic_g(ifm)%vp)
+   call ae1(nnxyzp(ifm),tend_g(ifm)%wt,basic_g(ifm)%wp)
+   call ae1(nnxyzp(ifm),tend_g(ifm)%pt,basic_g(ifm)%pp)
 
 do nf = 1,num_scalar(ifm)
    do nc = 1,num_scalar(icm)
@@ -359,13 +359,13 @@ do nf = 1,num_scalar(ifm)
       enddo
    enddo
 
-   call fmpmove(nnzp(ifm),nnxp(ifm),nnyp(ifm),basic_g(ifm)%up,tend%ut  &
+   call fmpmove(nnzp(ifm),nnxp(ifm),nnyp(ifm),basic_g(ifm)%up,tend_g(ifm)%ut  &
                ,ibeg,iend,ishft,jbeg,jend,jshft)
-   call fmpmove(nnzp(ifm),nnxp(ifm),nnyp(ifm),basic_g(ifm)%vp,tend%vt  &
+   call fmpmove(nnzp(ifm),nnxp(ifm),nnyp(ifm),basic_g(ifm)%vp,tend_g(ifm)%vt  &
                ,ibeg,iend,ishft,jbeg,jend,jshft)
-   call fmpmove(nnzp(ifm),nnxp(ifm),nnyp(ifm),basic_g(ifm)%wp,tend%wt  &
+   call fmpmove(nnzp(ifm),nnxp(ifm),nnyp(ifm),basic_g(ifm)%wp,tend_g(ifm)%wt  &
                ,ibeg,iend,ishft,jbeg,jend,jshft)
-   call fmpmove(nnzp(ifm),nnxp(ifm),nnyp(ifm),basic_g(ifm)%pp,tend%pt  &
+   call fmpmove(nnzp(ifm),nnxp(ifm),nnyp(ifm),basic_g(ifm)%pp,tend_g(ifm)%pt  &
                ,ibeg,iend,ishft,jbeg,jend,jshft)
 
 do nf = 1,num_scalar(ifm)
@@ -379,11 +379,11 @@ do nf = 1,num_scalar(ifm)
       enddo
    enddo
 
-   call ae1(nnxyzp(ifm), tend%ut  , basic_g(ifm)%uc   )
-   call ae1(nnxyzp(ifm), tend%vt  , basic_g(ifm)%vc   )
-   call ae1(nnxyzp(ifm), tend%wt  , basic_g(ifm)%wc   )
-   call ae1(nnxyzp(ifm), tend%pt  , basic_g(ifm)%pc   )
-   call ae1(nnxyzp(ifm), tend%tht , basic_g(ifm)%theta)
+   call ae1(nnxyzp(ifm), tend_g(ifm)%ut  , basic_g(ifm)%uc   )
+   call ae1(nnxyzp(ifm), tend_g(ifm)%vt  , basic_g(ifm)%vc   )
+   call ae1(nnxyzp(ifm), tend_g(ifm)%wt  , basic_g(ifm)%wc   )
+   call ae1(nnxyzp(ifm), tend_g(ifm)%pt  , basic_g(ifm)%pc   )
+   call ae1(nnxyzp(ifm), tend_g(ifm)%tht , basic_g(ifm)%theta)
 
    call fmint3(nnzp(icm),nnxp(icm),nnyp(icm),nnzp(ifm),nnxp(ifm),nnyp(ifm)              &
               ,maxnzp,maxnxp,maxnyp,ifm,icm,nnstbot(ifm),nnsttop(ifm),jdim,1,1,0,'u'    &
@@ -415,15 +415,15 @@ do nf = 1,num_scalar(ifm)
               ,scratch%scr1,scratch%scr2,grid_g(ifm)%topt,scratch%vt2da                 &
               ,scratch%scr1,scratch%scr1,scratch%scr1,0)
 
-   call fmpmove(nnzp(ifm),nnxp(ifm),nnyp(ifm),basic_g(ifm)%uc,tend%ut                   &
+   call fmpmove(nnzp(ifm),nnxp(ifm),nnyp(ifm),basic_g(ifm)%uc,tend_g(ifm)%ut            &
                ,ibeg,iend,ishft,jbeg,jend,jshft)
-   call fmpmove(nnzp(ifm),nnxp(ifm),nnyp(ifm),basic_g(ifm)%vc,tend%vt                   &
+   call fmpmove(nnzp(ifm),nnxp(ifm),nnyp(ifm),basic_g(ifm)%vc,tend_g(ifm)%vt            &
                ,ibeg,iend,ishft,jbeg,jend,jshft)
-   call fmpmove(nnzp(ifm),nnxp(ifm),nnyp(ifm),basic_g(ifm)%wc,tend%wt                   &
+   call fmpmove(nnzp(ifm),nnxp(ifm),nnyp(ifm),basic_g(ifm)%wc,tend_g(ifm)%wt            &
                ,ibeg,iend,ishft,jbeg,jend,jshft)
-   call fmpmove(nnzp(ifm),nnxp(ifm),nnyp(ifm),basic_g(ifm)%pc,tend%pt                   &
+   call fmpmove(nnzp(ifm),nnxp(ifm),nnyp(ifm),basic_g(ifm)%pc,tend_g(ifm)%pt            &
                ,ibeg,iend,ishft,jbeg,jend,jshft)
-   call fmpmove(nnzp(ifm),nnxp(ifm),nnyp(ifm),basic_g(ifm)%theta,tend%tht               &
+   call fmpmove(nnzp(ifm),nnxp(ifm),nnyp(ifm),basic_g(ifm)%theta,tend_g(ifm)%tht        &
                ,ibeg,iend,ishft,jbeg,jend,jshft)
 
    i1 = 2

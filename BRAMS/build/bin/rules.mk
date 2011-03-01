@@ -364,6 +364,16 @@ leaf3.o : $(SURFACE)/leaf3.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90) 
 
+leaf3_bc.o : $(SURFACE)/leaf3_bc.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90) 
+
+leaf3_can.o : $(SURFACE)/leaf3_can.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90) 
+
 leaf3_hyd.o : $(SURFACE)/leaf3_hyd.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
@@ -374,10 +384,20 @@ leaf3_init.o : $(SURFACE)/leaf3_init.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90) 
 
+leaf3_ocean.o : $(SURFACE)/leaf3_ocean.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90) 
+
 leaf3_teb.o : $(SURFACE)/leaf3_teb.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
+
+leaf3_tw.o : $(SURFACE)/leaf3_tw.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90) 
 
 leaf3_utils.o : $(SURFACE)/leaf3_utils.f90
 	cp -f $< $(<F:.f90=.f90)
@@ -1440,6 +1460,11 @@ ed_para_coms.o : $(ED_MPI)/ed_para_coms.f90
 	rm -f $(<F:.f90=.f90) 
 
 ed_params.o : $(ED_INIT)/ed_params.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+ed_print.o : $(ED_IO)/ed_print.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)

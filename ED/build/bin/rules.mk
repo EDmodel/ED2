@@ -178,6 +178,11 @@ ed_para_init.o : $(ED_MPI)/ed_para_init.F90
 	$(FPP_COMMAND) $(HDF5_INCS) $(<F:.F90=.F90)
 	rm -f $(<F:.F90=.F90)
 
+ed_print.o : $(ED_IO)/ed_print.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
 ed_read_ed10_20_history.o : $(ED_IO)/ed_read_ed10_20_history.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)

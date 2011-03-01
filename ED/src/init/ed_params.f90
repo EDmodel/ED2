@@ -853,7 +853,7 @@ subroutine init_pft_photo_params()
    Vm_high_temp(17)          =  45.0  + thioff ! C3
 
    !------ Vm0 is the maximum photosynthesis capacity in µmol/m2/s. -----------------------!
-   Vm0(1)                    = 12.5            * vmfact
+   Vm0(1)                    = 12.5            
    Vm0(2)                    = 18.8            * vmfact
    Vm0(3)                    = 12.5            * vmfact
    Vm0(4)                    = 6.25            * vmfact
@@ -870,7 +870,7 @@ subroutine init_pft_photo_params()
    Vm0(17)                   = 15.625          * vmfact
 
    !----- Define the stomatal slope (aka the M factor). -----------------------------------!
-   stomatal_slope(1)         =  6.4    * mfact
+   stomatal_slope(1)         =  6.0    
    stomatal_slope(2)         =  8.0    * mfact
    stomatal_slope(3)         =  8.0    * mfact
    stomatal_slope(4)         =  8.0    * mfact
@@ -883,8 +883,8 @@ subroutine init_pft_photo_params()
    stomatal_slope(11)        =  6.3949 * mfact
    stomatal_slope(12)        =  8.0    * mfact
    stomatal_slope(13)        =  8.0    * mfact
-   stomatal_slope(14)        = 10.0    * mfact
-   stomatal_slope(15)        = 10.0    * mfact
+   stomatal_slope(14)        =  6.0
+   stomatal_slope(15)        =  6.0
    stomatal_slope(16)        =  8.0    * mfact
    stomatal_slope(17)        =  6.4    * mfact
  
@@ -904,9 +904,9 @@ subroutine init_pft_photo_params()
    cuticular_cond(14)        = 10000.0    ! 10000.0
    cuticular_cond(15)        = 10000.0    ! 10000.0
    cuticular_cond(16)        = 10000.0
-   cuticular_cond(17)        = 2000.0 
+   cuticular_cond(17)        = 1000.0 
 
-   quantum_efficiency(1)     = 0.06
+   quantum_efficiency(1)     = 0.053
    quantum_efficiency(2)     = 0.08
    quantum_efficiency(3)     = 0.08
    quantum_efficiency(4)     = 0.08
@@ -919,8 +919,8 @@ subroutine init_pft_photo_params()
    quantum_efficiency(11)    = 0.08
    quantum_efficiency(12)    = 0.08
    quantum_efficiency(13)    = 0.08
-   quantum_efficiency(14)    = 0.06
-   quantum_efficiency(15)    = 0.06
+   quantum_efficiency(14)    = 0.053
+   quantum_efficiency(15)    = 0.053
    quantum_efficiency(16)    = 0.08
    quantum_efficiency(17)    = 0.08
 
@@ -1079,7 +1079,7 @@ subroutine init_pft_resp_params()
    root_turnover_rate(16)         = 2.0
    root_turnover_rate(17)         = 0.333
 
-   dark_respiration_factor(1)     = 0.04 * gamfact
+   dark_respiration_factor(1)     = 0.04
    dark_respiration_factor(2)     = 0.02 * gamfact
    dark_respiration_factor(3)     = 0.02 * gamfact
    dark_respiration_factor(4)     = 0.02 * gamfact
@@ -1092,10 +1092,10 @@ subroutine init_pft_resp_params()
    dark_respiration_factor(11)    = 0.02 * gamfact
    dark_respiration_factor(12)    = 0.02 * gamfact
    dark_respiration_factor(13)    = 0.02 * gamfact
-   dark_respiration_factor(14)    = 0.04 * gamfact
-   dark_respiration_factor(15)    = 0.04 * gamfact
+   dark_respiration_factor(14)    = 0.04
+   dark_respiration_factor(15)    = 0.04
    dark_respiration_factor(16)    = 0.02 * gamfact
-   dark_respiration_factor(17)    = 0.03 * gamfact
+   dark_respiration_factor(17)    = 0.02 * gamfact
 
    storage_turnover_rate(1)       = 0.0
    storage_turnover_rate(2)       = 0.0
@@ -2121,6 +2121,7 @@ subroutine init_physiology_params()
                              , photo_prefix      ! ! intent(out)
    use consts_coms    , only : umol_2_mol        & ! intent(in)
                              , t00               & ! intent(in)
+                             , mmdoc             & ! intent(in)
                              , Watts_2_Ein       ! ! intent(in)
    implicit none
 
@@ -2197,9 +2198,10 @@ subroutine init_physiology_params()
 
    !---------------------------------------------------------------------------------------!
    !    The following parameter is the k coefficient in Foley et al. (1996) that is used   !
-   ! to determine the CO2-limited photosynthesis for C4 grasses.                           !
+   ! to determine the CO2-limited photosynthesis for C4 grasses.  Notice that Foley et al. !
+   ! (1996) didn't correct for molar mass (the mmdoc term here).                           !
    !---------------------------------------------------------------------------------------!
-   klowco2      = 18000.    ! coefficient for low CO2                            [ mol/mol]
+   klowco2      = 18000. * mmdoc ! coefficient for low CO2                       [ mol/mol]
    !---------------------------------------------------------------------------------------!
 
 

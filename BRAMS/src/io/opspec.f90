@@ -993,7 +993,13 @@ subroutine opspec3
        'Invalid ISOILBC, it must be between 0 and 3. Yours is set to',isoilbc,'...'
      ifaterr = ifaterr +1
   end if
-    
+ 
+  if (ipercol < 0 .or. ipercol > 1) then
+     write (unit=*,fmt='(a,1x,i4,a)')                                                      &
+       'Invalid IPERCOL, it must be between 0 and 1. Yours is set to',ipercol,'...'
+     ifaterr = ifaterr +1
+  end if
+   
   if (runoff_time < 0.0) then
      write (unit=*,fmt='(a,1x,es14.7,a)')                                                  &
            'Invalid RUNOFF_TIME, it can''t be negative. Yours is set to',runoff_time,'...'

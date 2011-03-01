@@ -120,96 +120,96 @@ CONTAINS
     npts=n1*n2*n3
 
     IF (ASSOCIATED(teb%T_ROOF))  &
-         CALL vtables2 (teb%T_ROOF(1,1,1),tebm%T_ROOF(1,1,1)&
+         CALL vtables2 (teb%T_ROOF,tebm%T_ROOF&
          ,ng, npts, imean,  &
          'T_ROOF :3:hist:anal:lite:mpti:mpt3:mpt1')
     IF (ASSOCIATED(teb%T_ROAD))  &
-         CALL vtables2 (teb%T_ROAD(1,1,1),tebm%T_ROAD(1,1,1)&
+         CALL vtables2 (teb%T_ROAD,tebm%T_ROAD&
          ,ng, npts, imean,  &
          'T_ROAD :3:hist:anal:lite:mpti:mpt3:mpt1')
     IF (ASSOCIATED(teb%T_WALL))  &
-         CALL vtables2 (teb%T_WALL(1,1,1),tebm%T_WALL(1,1,1)&
+         CALL vtables2 (teb%T_WALL,tebm%T_WALL&
          ,ng, npts, imean,  &
          'T_WALL :3:hist:anal:lite:mpti:mpt3:mpt1')
 
     npts=n2*n3
 
        IF (ASSOCIATED(teb%T_CANYON))  &
-         CALL vtables2 (teb%T_CANYON(1,1),tebm%T_CANYON(1,1)&
+         CALL vtables2 (teb%T_CANYON,tebm%T_CANYON&
          ,ng, npts, imean,  &
          'T_CANYON :2:hist:anal:lite:mpti:mpt3:mpt1')
 
        IF (ASSOCIATED(teb%R_CANYON))  &
-         CALL vtables2 (teb%R_CANYON(1,1),tebm%R_CANYON(1,1)&
+         CALL vtables2 (teb%R_CANYON,tebm%R_CANYON&
          ,ng, npts, imean,  &
          'R_CANYON :2:hist:anal:lite:mpti:mpt3:mpt1')
 
        IF (ASSOCIATED(teb%TS_ROOF))  &
-         CALL vtables2 (teb%TS_ROOF(1,1),tebm%TS_ROOF(1,1)&
+         CALL vtables2 (teb%TS_ROOF,tebm%TS_ROOF&
          ,ng, npts, imean,  &
          'TS_ROOF :2:hist:anal:lite:mpti:mpt3:mpt1')
 
        IF (ASSOCIATED(teb%TS_ROAD))  &
-         CALL vtables2 (teb%TS_ROAD(1,1),tebm%TS_ROAD(1,1)&
+         CALL vtables2 (teb%TS_ROAD,tebm%TS_ROAD&
          ,ng, npts, imean,  &
          'TS_ROAD :2:hist:anal:lite:mpti:mpt3:mpt1')
 
        IF (ASSOCIATED(teb%TS_WALL))  &
-         CALL vtables2 (teb%TS_WALL(1,1),tebm%TS_WALL(1,1)&
+         CALL vtables2 (teb%TS_WALL,tebm%TS_WALL&
          ,ng, npts, imean,  &
          'TS_WALL :2:hist:anal:lite:mpti:mpt3:mpt1')
 
        IF (ASSOCIATED(teb%TI_ROAD))  &
-         CALL vtables2 (teb%TI_ROAD(1,1),tebm%TI_ROAD(1,1)&
+         CALL vtables2 (teb%TI_ROAD,tebm%TI_ROAD&
          ,ng, npts, imean,  &
          'TI_ROAD :2:hist:anal:lite:mpti:mpt3:mpt1')
 
        IF (ASSOCIATED(teb%WS_ROOF))  &
-         CALL vtables2 (teb%WS_ROOF(1,1),tebm%WS_ROOF(1,1)&
+         CALL vtables2 (teb%WS_ROOF,tebm%WS_ROOF&
          ,ng, npts, imean,  &
          'WS_ROOF :2:hist:anal:lite:mpti:mpt3:mpt1')
 
        IF (ASSOCIATED(teb%WS_ROAD))  &
-         CALL vtables2 (teb%WS_ROAD(1,1),tebm%WS_ROAD(1,1)&
+         CALL vtables2 (teb%WS_ROAD,tebm%WS_ROAD&
          ,ng, npts, imean,  &
          'WS_ROAD :2:hist:anal:lite:mpti:mpt3:mpt1')
 
        IF (ASSOCIATED(teb%TI_BLD))  &
-         CALL vtables2 (teb%TI_BLD(1,1),tebm%TI_BLD(1,1)&
+         CALL vtables2 (teb%TI_BLD,tebm%TI_BLD&
          ,ng, npts, imean,  &
          'TI_BLD :2:hist:anal:lite:mpti:mpt3:mpt1')
        IF (ASSOCIATED(teb%LE_TRAFFIC))  &
-         CALL vtables2 (teb%LE_TRAFFIC(1,1),tebm%LE_TRAFFIC(1,1)&
+         CALL vtables2 (teb%LE_TRAFFIC,tebm%LE_TRAFFIC&
          ,ng, npts, imean,  &
          'LE_TRAFFIC :2:hist:anal:lite:mpti:mpt3:mpt1')
 
        IF (ASSOCIATED(teb%H_TRAFFIC))  &
-         CALL vtables2 (teb%H_TRAFFIC(1,1),tebm%H_TRAFFIC(1,1)&
+         CALL vtables2 (teb%H_TRAFFIC,tebm%H_TRAFFIC&
          ,ng, npts, imean,  &
          'H_TRAFFIC :2:hist:anal:lite:mpti:mpt3:mpt1')
 
        IF (ASSOCIATED(teb%LE_INDUSTRY))  &
-         CALL vtables2 (teb%LE_INDUSTRY(1,1),tebm%LE_INDUSTRY(1,1)&
+         CALL vtables2 (teb%LE_INDUSTRY,tebm%LE_INDUSTRY&
          ,ng, npts, imean,  &
          'LE_INDUSTRY :2:hist:anal:lite:mpti:mpt3:mpt1')
 
        IF (ASSOCIATED(teb%H_INDUSTRY))  &
-         CALL vtables2 (teb%H_INDUSTRY(1,1),tebm%H_INDUSTRY(1,1)&
+         CALL vtables2 (teb%H_INDUSTRY,tebm%H_INDUSTRY&
          ,ng, npts, imean,  &
          'H_INDUSTRY :2:hist:anal:lite:mpti:mpt3:mpt1')
 
        IF (ASSOCIATED(teb%T2M_TOWN))  &
-         CALL vtables2 (teb%T2M_TOWN(1,1),tebm%T2M_TOWN(1,1)&
+         CALL vtables2 (teb%T2M_TOWN,tebm%T2M_TOWN&
          ,ng, npts, imean,  &
          'T2M_TOWN :2:hist:anal:lite:mpti:mpt3:mpt1')
 	 
        IF (ASSOCIATED(teb%R2M_TOWN))  &
-         CALL vtables2 (teb%R2M_TOWN(1,1),tebm%R2M_TOWN(1,1)&
+         CALL vtables2 (teb%R2M_TOWN,tebm%R2M_TOWN&
          ,ng, npts, imean,  &
          'R2M_TOWN :2:hist:anal:lite:mpti:mpt3:mpt1')
 	 
        IF (ASSOCIATED(teb%fuso))  &
-         CALL vtables2 (teb%fuso(1,1),tebm%fuso(1,1)&
+         CALL vtables2 (teb%fuso,tebm%fuso&
          ,ng, npts, imean,  &
          'FUSO :2:hist:anal:lite:mpti:mpt3:mpt1')
 	 

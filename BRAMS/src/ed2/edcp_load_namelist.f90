@@ -108,8 +108,7 @@ subroutine read_ednl(iunit)
                                    , time                      ! ! intent(out)
    use optimiz_coms         , only : ioptinpt                  ! ! intent(out)
    use rk4_coms             , only : rk4_tolerance             & ! intent(out)
-                                   , ibranch_thermo            & ! intent(out)
-                                   , ipercol                   ! ! intent(out)
+                                   , ibranch_thermo            ! ! intent(out)
    use canopy_radiation_coms, only : crown_mod                 ! ! intent(out)
    !----- Coupled ED-BRAMS modules. -------------------------------------------------------!
    use mem_edcp             , only : co2_offset                ! ! intent(out)
@@ -157,6 +156,7 @@ subroutine read_ednl(iunit)
                                    , istar                           & ! intent(in)
                                    , leaf_bpower => betapower        & ! intent(in)
                                    , leaf_isoilbc => isoilbc         & ! intent(in)
+                                   , leaf_ipercol => ipercol         & ! intent(in)
                                    , leaf_runoff_time => runoff_time ! ! intent(in)
    use leaf_coms            , only : leaf_ustmin => ustmin           & ! intent(in)
                                    , leaf_ggfact => ggfact           ! ! intent(in)
@@ -179,7 +179,7 @@ subroutine read_ednl(iunit)
                        ,radslp,repro_scheme,lapse_scheme,crown_mod,decomp_scheme           &
                        ,h2o_plant_lim,vmfact,mfact,kfact,gamfact,lwfact,thioff,icomppt     &
                        ,quantum_efficiency_t,n_plant_lim,n_decomp_lim,include_fire         &
-                       ,ianth_disturb,icanturb,i_blyr_condct,ipercol,include_these_pft     &
+                       ,ianth_disturb,icanturb,i_blyr_condct,include_these_pft             &
                        ,agri_stock,plantation_stock,pft_1st_check,maxpatch,maxcohort       &
                        ,treefall_disturbance_rate,iprintpolys,npvars,printvars,pfmtstr     &
                        ,ipmin,ipmax,iphenys1,iphenysf,iphenyf1,iphenyff,iedcnfgf           &
@@ -252,7 +252,6 @@ subroutine read_ednl(iunit)
       write (unit=*,fmt=*) 'ianth_disturb=',ianth_disturb
       write (unit=*,fmt=*) 'icanturb=',icanturb
       write (unit=*,fmt=*) 'i_blyr_condct=',i_blyr_condct
-      write (unit=*,fmt=*) 'ipercol=',ipercol
       write (unit=*,fmt=*) 'include_these_pft=',include_these_pft
       write (unit=*,fmt=*) 'agri_stock=',agri_stock
       write (unit=*,fmt=*) 'plantation_stock=',plantation_stock
@@ -292,7 +291,8 @@ subroutine read_ednl(iunit)
                        ,iyeara,itimeh,idateh,imonthh,iyearh,radfrq,nnxp,nnyp,deltax        &
                        ,deltay,polelat,polelon,centlat,centlon,nstratx,nstraty,iclobber    &
                        ,nzg,nzs,isoilflg,nslcon,slz,slmstr,stgoff,leaf_zrough,ngrids       &
-                       ,leaf_bpower,leaf_ustmin,leaf_ggfact,leaf_isoilbc,leaf_runoff_time)
+                       ,leaf_bpower,leaf_ustmin,leaf_ggfact,leaf_isoilbc,leaf_ipercol      &
+                       ,leaf_runoff_time)
    !---------------------------------------------------------------------------------------!
    !      The following variables can be defined in the regular ED2IN file for stand-alone !
    ! runs, but they cannot be changed in the coupled simulation (or they are never used    !
@@ -421,7 +421,7 @@ subroutine copy_in_bramsnl(expnme_b,runtype_b,itimez_b,idatez_b,imonthz_b,iyearz
                           ,polelat_b,polelon_b,centlat_b,centlon_b,nstratx_b,nstraty_b     &
                           ,iclobber_b,nzg_b,nzs_b,isoilflg_b,nslcon_b,slz_b,slmstr_b       &
                           ,stgoff_b,zrough_b,ngrids_b,betapower_b,ustmin_b,ggfact_b        &
-                          ,isoilbc_b,runoff_time_b)
+                          ,isoilbc_b,ipercol_b,runoff_time_b)
    use ed_misc_coms   , only : expnme            & ! intent(out)
                              , runtype           & ! intent(out)
                              , itimez            & ! intent(out)
@@ -466,6 +466,7 @@ subroutine copy_in_bramsnl(expnme_b,runtype_b,itimez_b,idatez_b,imonthz_b,iyearz
                              , nzgmax            ! ! intent(out)
    use canopy_air_coms, only : ustmin            & ! intent(out)
                              , ggfact            ! ! intent(out)
+   use rk4_coms       , only : ipercol           ! ! intent(out)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    character(len=64)         , intent(in) :: expnme_b      ! Experiment name
@@ -511,6 +512,7 @@ subroutine copy_in_bramsnl(expnme_b,runtype_b,itimez_b,idatez_b,imonthz_b,iyearz
    real                      , intent(in) :: ustmin_b      ! Minimum u*
    real                      , intent(in) :: ggfact_b      ! Ground conductance factor
    integer                   , intent(in) :: isoilbc_b     ! Bottom soil boundary condition
+   integer                   , intent(in) :: ipercol_b     ! Percolation scheme.
    real                      , intent(in) :: runoff_time_b ! Runoff time scale.
    !---------------------------------------------------------------------------------------!
 
@@ -565,6 +567,7 @@ subroutine copy_in_bramsnl(expnme_b,runtype_b,itimez_b,idatez_b,imonthz_b,iyearz
    ggfact      = ggfact_b
    
    isoilbc     = isoilbc_b
+   ipercol     = ipercol_b
    runoff_time = runoff_time_b
    !---------------------------------------------------------------------------------------!
 

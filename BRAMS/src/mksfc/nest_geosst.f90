@@ -228,155 +228,266 @@ subroutine geonest_file(ifm)
 
   return
 end subroutine geonest_file
+!==========================================================================================!
+!==========================================================================================!
 
-!*************************************************************************
 
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!      This subroutine either initialises or interpolates various LEAF variables (plus a   !
+! couple of radiation variables) for which standard RAMS datasets never exist.             !
+!------------------------------------------------------------------------------------------!
 subroutine geonest_nofile(ngra,ngrb)
 
-  use mem_leaf
-  use mem_basic
-  use mem_scratch
-  use mem_grid
-  use io_params
+   use mem_leaf
+   use mem_basic
+   use mem_scratch
+   use mem_grid
+   use io_params
+   use mem_radiate      , only : radiate_g  & ! intent(inout)
+                               , iswrtyp    & ! intent(in)
+                               , ilwrtyp    ! ! intent(in)
+   use mem_soil_moisture, only : soil_moist !  ! intent(in)
 
-  ! For Soil Moisture Init.
-  use mem_soil_moisture, only : SOIL_MOIST  ! INTENT(IN)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer, intent(in) :: ngra
+   integer, intent(in) :: ngrb
+   !----- Local variables. ----------------------------------------------------------------!
+   integer             :: isiz
+   integer             :: ifm
+   integer             :: icm
+   integer             :: ipat
+   integer             :: i
+   integer             :: j
+   integer             :: k
+   integer             :: indfm
+   integer             :: ivtime
+   integer             :: nc1
+   integer             :: mynum
+   integer             :: ic
+   integer             :: jc
+   integer             :: can_shv
+   integer             :: veg_fliq
+   !---------------------------------------------------------------------------------------!
 
-  implicit none
 
-  integer :: ngra,ngrb
+   isiz = maxnxp * maxnyp
 
-  integer :: isiz,ifm,icm,ipat,i,j,k,indfm,ivtime,nc1,mynum,ic,jc,can_shv,veg_fliq
+   do ifm = ngra,ngrb
+      icm = nxtnest(ifm)
 
-  ! Initialization/interpolation of leaf-2 variables for which standard RAMS
-  ! datasets never exist.
+      !------------------------------------------------------------------------------------!
+      !     Copy CO2 to a scratch array.  This way we can use the same sub-routine even    !
+      ! when CO2 is not allocated.                                                         !
+      !------------------------------------------------------------------------------------!
+      if (co2_on) then
+         call atob(nnzp(ifm)*nnxp(ifm)*nnyp(ifm),basic_g(ifm)%co2p,scratch%vt3do)
+      else
+         call ae0(nnzp(ifm)*nnxp(ifm)*nnyp(ifm),scratch%vt3do,co2con(1))
+      end if
+      !------------------------------------------------------------------------------------!
 
-  isiz = maxnxp * maxnyp
 
-  do ifm = ngra,ngrb
-     icm = nxtnest(ifm)
 
-     if (co2_on) then
-        call atob(nnzp(ifm)*nnxp(ifm)*nnyp(ifm),basic_g(ifm)%co2p,scratch%vt3do)
-     else
-        call ae0(nnzp(ifm)*nnxp(ifm)*nnyp(ifm),scratch%vt3do,co2con(1))
-     end if
 
-     ! First, fill NOFILE LEAF-2 variables with default values in SFCINIT.
+      !------------------------------------------------------------------------------------!
+      !     Find the cosine of the zenith angle, only if radiation will be called.  Then   !
+      ! copy the cosine of the zenith angle to a scratch array; otherwise, fill it with a  !
+      ! dummy value of one in case radiation is off.  This way we can initialise LEAF      !
+      ! using the same sub-routine in both cases.                                          !
+      !------------------------------------------------------------------------------------!
+      if (iswrtyp + ilwrtyp > 0) then
+         call zen(nnxp(ifm),nnyp(ifm),1,nnxp(ifm),1,nnyp(ifm),iswrtyp,ilwrtyp               &
+                 ,grid_g(ifm)%glon,grid_g(ifm)%glat,radiate_g(ifm)%cosz)
+         call atob(nnxp(ifm)*nnyp(ifm),radiate_g(ifm)%cosz,scratch%vt2dq)
+      else
+         call azero(nnxp(ifm)*nnyp(ifm),scratch%vt2dq)
+      end if
+      !------------------------------------------------------------------------------------!
 
-     call sfcinit_nofile(nnzp(ifm),nnxp(ifm),nnyp(ifm),nzg,nzs,npatch,ifm                  &
-          , basic_g(ifm)%theta                    , basic_g(ifm)%pi0                       &
-          , basic_g(ifm)%pp                       , basic_g(ifm)%rv                        &
-          , scratch%vt3do                         , leaf_g(ifm)%seatp                      &
-          , leaf_g(ifm)%seatf                     , leaf_g(ifm)%soil_water                 &
-          , leaf_g(ifm)%soil_energy               , leaf_g(ifm)%soil_text                  &
-          , leaf_g(ifm)%sfcwater_mass             , leaf_g(ifm)%sfcwater_energy            &
-          , leaf_g(ifm)%sfcwater_depth            , leaf_g(ifm)%ustar                      &
-          , leaf_g(ifm)%tstar                     , leaf_g(ifm)%rstar                      &
-          , leaf_g(ifm)%cstar                     , leaf_g(ifm)%zeta                       &
-          , leaf_g(ifm)%ribulk                    , leaf_g(ifm)%veg_fracarea               &
-          , leaf_g(ifm)%veg_agb                   , leaf_g(ifm)%veg_lai                    &
-          , leaf_g(ifm)%veg_tai                   , leaf_g(ifm)%veg_rough                  &
-          , leaf_g(ifm)%veg_height                , leaf_g(ifm)%veg_albedo                 &
-          , leaf_g(ifm)%patch_area                , leaf_g(ifm)%patch_rough                &
-          , leaf_g(ifm)%patch_wetind              , leaf_g(ifm)%leaf_class                 &
-          , leaf_g(ifm)%soil_rough                , leaf_g(ifm)%sfcwater_nlev              &
-          , leaf_g(ifm)%stom_condct               , leaf_g(ifm)%ground_rsat                &
-          , leaf_g(ifm)%ground_rvap               , leaf_g(ifm)%ground_temp                &
-          , leaf_g(ifm)%ground_fliq               , leaf_g(ifm)%veg_water                  &
-          , leaf_g(ifm)%veg_hcap                  , leaf_g(ifm)%veg_energy                 &
-          , leaf_g(ifm)%can_prss                  , leaf_g(ifm)%can_theiv                  &
-          , leaf_g(ifm)%can_theta                 , leaf_g(ifm)%can_rvap                   &
-          , leaf_g(ifm)%can_co2                   , leaf_g(ifm)%sensible_gc                &
-          , leaf_g(ifm)%sensible_vc               , leaf_g(ifm)%evap_gc                    &
-          , leaf_g(ifm)%evap_vc                   , leaf_g(ifm)%transp                     &
-          , leaf_g(ifm)%gpp                       , leaf_g(ifm)%plresp                     &
-          , leaf_g(ifm)%resphet                   , leaf_g(ifm)%veg_ndvip                  &
-          , leaf_g(ifm)%veg_ndvic                 , leaf_g(ifm)%veg_ndvif                  &
-          , leaf_g(ifm)%snow_mass                 , leaf_g(ifm)%snow_depth                 &
-          , scratch%vt2da                         , scratch%vt2db                          &
-          , scratch%vt2dc                         , scratch%vt2dd                          &
-          , scratch%vt2de                         , grid_g(ifm)%glat                       &
-          , grid_g(ifm)%glon                      , grid_g(ifm)%topzo                      &
-          , grid_g(ifm)%flpw                      , grid_g(ifm)%rtgt                       )
 
-     ! Assignment section for NOFILE leaf-2 variables
+      !----- Then, fill NOFILE LEAF variables with default values in sfcinit_nofile. ------!
+      call sfcinit_nofile( nnzp(ifm),nnxp(ifm),nnyp(ifm),nzg,nzs,npatch,ifm                &
+                         , basic_g(ifm)%theta             , basic_g(ifm)%pi0               &
+                         , basic_g(ifm)%pp                , basic_g(ifm)%rv                &
+                         , scratch%vt3do                  , leaf_g(ifm)%seatp              &
+                         , leaf_g(ifm)%seatf              , leaf_g(ifm)%soil_water         &
+                         , leaf_g(ifm)%soil_energy        , leaf_g(ifm)%soil_text          &
+                         , leaf_g(ifm)%sfcwater_mass      , leaf_g(ifm)%sfcwater_energy    &
+                         , leaf_g(ifm)%sfcwater_depth     , leaf_g(ifm)%ustar              &
+                         , leaf_g(ifm)%tstar              , leaf_g(ifm)%rstar              &
+                         , leaf_g(ifm)%cstar              , leaf_g(ifm)%zeta               &
+                         , leaf_g(ifm)%ribulk             , leaf_g(ifm)%veg_fracarea       &
+                         , leaf_g(ifm)%veg_agb            , leaf_g(ifm)%veg_lai            &
+                         , leaf_g(ifm)%veg_tai            , leaf_g(ifm)%veg_rough          &
+                         , leaf_g(ifm)%veg_height         , leaf_g(ifm)%veg_albedo         &
+                         , leaf_g(ifm)%patch_area         , leaf_g(ifm)%patch_rough        &
+                         , leaf_g(ifm)%patch_wetind       , leaf_g(ifm)%leaf_class         &
+                         , leaf_g(ifm)%soil_rough         , leaf_g(ifm)%sfcwater_nlev      &
+                         , leaf_g(ifm)%stom_condct        , leaf_g(ifm)%ground_rsat        &
+                         , leaf_g(ifm)%ground_rvap        , leaf_g(ifm)%ground_temp        &
+                         , leaf_g(ifm)%ground_fliq        , leaf_g(ifm)%veg_water          &
+                         , leaf_g(ifm)%veg_hcap           , leaf_g(ifm)%veg_energy         &
+                         , leaf_g(ifm)%can_prss           , leaf_g(ifm)%can_theiv          &
+                         , leaf_g(ifm)%can_theta          , leaf_g(ifm)%can_rvap           &
+                         , leaf_g(ifm)%can_co2            , leaf_g(ifm)%sensible_gc        &
+                         , leaf_g(ifm)%sensible_vc        , leaf_g(ifm)%evap_gc            &
+                         , leaf_g(ifm)%evap_vc            , leaf_g(ifm)%transp             &
+                         , leaf_g(ifm)%gpp                , leaf_g(ifm)%plresp             &
+                         , leaf_g(ifm)%resphet            , leaf_g(ifm)%veg_ndvip          &
+                         , leaf_g(ifm)%veg_ndvic          , leaf_g(ifm)%veg_ndvif          &
+                         , leaf_g(ifm)%snow_mass          , leaf_g(ifm)%snow_depth         &
+                         , scratch%vt2dq                  , scratch%vt2dr                  &
+                         , scratch%vt2ds                  , scratch%vt2da                  &
+                         , scratch%vt2db                  , scratch%vt2dc                  &
+                         , scratch%vt2dd                  , scratch%vt2de                  &
+                         , grid_g(ifm)%glat               , grid_g(ifm)%glon               &
+                         , grid_g(ifm)%topzo              , grid_g(ifm)%flpw               &
+                         , grid_g(ifm)%rtgt               )
+      !------------------------------------------------------------------------------------!
 
-     if (icm > 0) then
-        if( nofilflg(ifm) == 0) then
-           ! Assign values from coarse grid cells and patches
-           call coarse2fine_driver(icm,ifm)
-        elseif(nofilflg(ifm) == 1) then
 
-           ! Interpolate from coarse grid. 
-           ! We can interpolate water patch directly.
-           !   For land patches, do this by first averaging all
-           !   coarse grid land patches, interpolate, then assign back to all
-           !   fine grid land patches.
-           call patch_interp_driver(icm,ifm)
 
-        end if
 
-     end if
+      !------------------------------------------------------------------------------------!
+      !     In case radiation is on, copy back the albedo and upwelling longwave           !
+      ! radiation.                                                                         !
+      !------------------------------------------------------------------------------------!
+      if (iswrtyp + ilwrtyp > 0) then
+         call atob(nnxp(ifm)*nnyp(ifm),scratch%vt2dr,radiate_g(ifm)%rlongup)
+         call atob(nnxp(ifm)*nnyp(ifm),scratch%vt2ds,radiate_g(ifm)%albedt )
+      end if
+      !------------------------------------------------------------------------------------!
 
-     ! Heterogeneous Soil Moisture Initialization
-     if ((SOIL_MOIST == 'i').or.(SOIL_MOIST == 'I').or.  &
-         (SOIL_MOIST == 'a').or.(SOIL_MOIST == 'A')) then
-        call soil_moisture_init(nnzp(ifm),nnxp(ifm),nnyp(ifm),nzg,npatch,ifm               &
-                             ,leaf_g(ifm)%can_theta         ,leaf_g(ifm)%can_prss          &
-                             ,grid_g(ifm)%glat              ,grid_g(ifm)%glon              &
-                             ,leaf_g(ifm)%soil_water        ,leaf_g(ifm)%soil_energy       &
-                             ,leaf_g(ifm)%soil_text         )
-     end if
 
-     ! Override any of the above variable assignments by user-specified changes
-     ! to subroutine sfcinit_nofile_user.
 
-     call sfcinit_nofile_user(nnzp(ifm),nnxp(ifm),nnyp(ifm),nzg,nzs,npatch,ifm             &
-               , basic_g(ifm)%theta                  , basic_g(ifm)%pi0                    &
-               , basic_g(ifm)%pp                     , basic_g(ifm)%rv                     &
-               , scratch%vt3do                       , leaf_g(ifm)%soil_water              &
-               , leaf_g(ifm)%soil_energy             , leaf_g(ifm)%soil_text               &
-               , leaf_g(ifm)%sfcwater_mass           , leaf_g(ifm)%sfcwater_energy         &
-               , leaf_g(ifm)%sfcwater_depth          , leaf_g(ifm)%ustar                   &
-               , leaf_g(ifm)%tstar                   , leaf_g(ifm)%rstar                   &
-               , leaf_g(ifm)%cstar                   , leaf_g(ifm)%zeta                    &
-               , leaf_g(ifm)%ribulk                  , leaf_g(ifm)%veg_fracarea            &
-               , leaf_g(ifm)%veg_agb                 , leaf_g(ifm)%veg_lai                 &
-               , leaf_g(ifm)%veg_tai                 , leaf_g(ifm)%veg_rough               &
-               , leaf_g(ifm)%veg_height              , leaf_g(ifm)%veg_albedo              &
-               , leaf_g(ifm)%patch_area              , leaf_g(ifm)%patch_rough             &
-               , leaf_g(ifm)%patch_wetind            , leaf_g(ifm)%leaf_class              &
-               , leaf_g(ifm)%soil_rough              , leaf_g(ifm)%sfcwater_nlev           &
-               , leaf_g(ifm)%stom_condct             , leaf_g(ifm)%ground_rsat             &
-               , leaf_g(ifm)%ground_rvap             , leaf_g(ifm)%ground_temp             &
-               , leaf_g(ifm)%ground_fliq             , leaf_g(ifm)%veg_water               &
-               , leaf_g(ifm)%veg_hcap                , leaf_g(ifm)%veg_energy              &
-               , leaf_g(ifm)%can_prss                , leaf_g(ifm)%can_theiv               &
-               , leaf_g(ifm)%can_theta               , leaf_g(ifm)%can_rvap                &
-               , leaf_g(ifm)%can_co2                 , leaf_g(ifm)%sensible_gc             &
-               , leaf_g(ifm)%sensible_vc             , leaf_g(ifm)%evap_gc                 &
-               , leaf_g(ifm)%evap_vc                 , leaf_g(ifm)%transp                  &
-               , leaf_g(ifm)%gpp                     , leaf_g(ifm)%plresp                  &
-               , leaf_g(ifm)%resphet                 , leaf_g(ifm)%veg_ndvip               &
-               , leaf_g(ifm)%veg_ndvic               , leaf_g(ifm)%veg_ndvif               &
-               , leaf_g(ifm)%snow_mass               , leaf_g(ifm)%snow_depth              &
-               , scratch%vt2da                       , scratch%vt2db                       &
-               , scratch%vt2dc                       , scratch%vt2dd                       &
-               , scratch%vt2de                       , grid_g(ifm)%glat                    &
-               , grid_g(ifm)%glon                    , grid_g(ifm)%topzo                   &
-               , grid_g(ifm)%flpw                    , grid_g(ifm)%rtgt                    )
-               
-  end do
+      !------------------------------------------------------------------------------------!
+      !    Find out whether we should interpolate from a coarser grid, or simply copy.     !
+      !------------------------------------------------------------------------------------!
+      if (icm > 0) then
+         select case (nofilflg(ifm))
+         case (0)
+            !----- Assign values from coarse grid cells and patches. ----------------------!
+            call coarse2fine_driver(icm,ifm)
 
-  return
+         case (1)
+
+            !------------------------------------------------------------------------------!
+            !      Interpolate from coarse grid.  We can interpolate water patch directly. !
+            ! For land patches, do this by first averaging all coarse grid land patches,   !
+            ! interpolate, then assign back to all fine grid land patches.                 !
+            !------------------------------------------------------------------------------!
+            call patch_interp_driver(icm,ifm)
+         end select
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Decide whether to run an heterogeneous soil moisture initialisation.           !
+      !------------------------------------------------------------------------------------!
+      select case(trim(soil_moist))
+      case ('i','I','a','A')
+         call soil_moisture_init(nnzp(ifm),nnxp(ifm),nnyp(ifm),nzg,npatch,ifm              &
+                                ,leaf_g(ifm)%can_theta       ,leaf_g(ifm)%can_prss         &
+                                ,grid_g(ifm)%glat            ,grid_g(ifm)%glon             &
+                                ,leaf_g(ifm)%soil_water      ,leaf_g(ifm)%soil_energy      &
+                                ,leaf_g(ifm)%soil_text       )
+      end select
+      !------------------------------------------------------------------------------------!
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     In case radiation is on, copy back the albedo and upwelling longwave           !
+      ! radiation.                                                                         !
+      !------------------------------------------------------------------------------------!
+      ! if (iswrtyp + ilwrtyp > 0) then
+      !    call atob(nnxp(ifm)*nnyp(ifm),radiate_g(ifm)%rlongup,scratch%vt2dr)
+      !    call atob(nnxp(ifm)*nnyp(ifm),radiate_g(ifm)%albedt ,scratch%vt2ds)
+      ! else
+      !    call azero(nnxp(ifm)*nnyp(ifm),scratch%vt2dr)
+      !    call azero(nnxp(ifm)*nnyp(ifm),scratch%vt2ds)
+      ! end if
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !      Override any of the above variable assignments by user-specified changes to   !
+      ! subroutine sfcinit_nofile_user.                                                    !
+      !------------------------------------------------------------------------------------!
+      ! call sfcinit_nofile_user(nnzp(ifm),nnxp(ifm),nnyp(ifm),nzg,nzs,npatch,ifm          &
+      !            , basic_g(ifm)%theta                , basic_g(ifm)%pi0                  &
+      !            , basic_g(ifm)%pp                   , basic_g(ifm)%rv                   &
+      !            , scratch%vt3do                     , leaf_g(ifm)%soil_water            &
+      !            , leaf_g(ifm)%soil_energy           , leaf_g(ifm)%soil_text             &
+      !            , leaf_g(ifm)%sfcwater_mass         , leaf_g(ifm)%sfcwater_energy       &
+      !            , leaf_g(ifm)%sfcwater_depth        , leaf_g(ifm)%ustar                 &
+      !            , leaf_g(ifm)%tstar                 , leaf_g(ifm)%rstar                 &
+      !            , leaf_g(ifm)%cstar                 , leaf_g(ifm)%zeta                  &
+      !            , leaf_g(ifm)%ribulk                , leaf_g(ifm)%veg_fracarea          &
+      !            , leaf_g(ifm)%veg_agb               , leaf_g(ifm)%veg_lai               &
+      !            , leaf_g(ifm)%veg_tai               , leaf_g(ifm)%veg_rough             &
+      !            , leaf_g(ifm)%veg_height            , leaf_g(ifm)%veg_albedo            &
+      !            , leaf_g(ifm)%patch_area            , leaf_g(ifm)%patch_rough           &
+      !            , leaf_g(ifm)%patch_wetind          , leaf_g(ifm)%leaf_class            &
+      !            , leaf_g(ifm)%soil_rough            , leaf_g(ifm)%sfcwater_nlev         &
+      !            , leaf_g(ifm)%stom_condct           , leaf_g(ifm)%ground_rsat           &
+      !            , leaf_g(ifm)%ground_rvap           , leaf_g(ifm)%ground_temp           &
+      !            , leaf_g(ifm)%ground_fliq           , leaf_g(ifm)%veg_water             &
+      !            , leaf_g(ifm)%veg_hcap              , leaf_g(ifm)%veg_energy            &
+      !            , leaf_g(ifm)%can_prss              , leaf_g(ifm)%can_theiv             &
+      !            , leaf_g(ifm)%can_theta             , leaf_g(ifm)%can_rvap              &
+      !            , leaf_g(ifm)%can_co2               , leaf_g(ifm)%sensible_gc           &
+      !            , leaf_g(ifm)%sensible_vc           , leaf_g(ifm)%evap_gc               &
+      !            , leaf_g(ifm)%evap_vc               , leaf_g(ifm)%transp                &
+      !            , leaf_g(ifm)%gpp                   , leaf_g(ifm)%plresp                &
+      !            , leaf_g(ifm)%resphet               , leaf_g(ifm)%veg_ndvip             &
+      !            , leaf_g(ifm)%veg_ndvic             , leaf_g(ifm)%veg_ndvif             &
+      !            , leaf_g(ifm)%snow_mass             , leaf_g(ifm)%snow_depth            &
+      !            , scratch%vt2dq                     , scratch%vt2dr                     &
+      !            , scratch%vt2ds                     , scratch%vt2da                     &
+      !            , scratch%vt2db                     , scratch%vt2dc                     &
+      !            , scratch%vt2dd                     , scratch%vt2de                     &
+      !            , grid_g(ifm)%glat                  , grid_g(ifm)%glon                  &
+      !            , grid_g(ifm)%topzo                 , grid_g(ifm)%flpw                  &
+      !            , grid_g(ifm)%rtgt                  )
+      !------------------------------------------------------------------------------------!
+
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     In case radiation is on, copy back the albedo and upwelling longwave           !
+      ! radiation.                                                                         !
+      !------------------------------------------------------------------------------------!
+      ! if (iswrtyp + ilwrtyp > 0) then
+      !    call atob(nnxp(ifm)*nnyp(ifm),scratch%vt2dr,radiate_g(ifm)%rlongup)
+      !    call atob(nnxp(ifm)*nnyp(ifm),scratch%vt2ds,radiate_g(ifm)%albedt )
+      ! end if
+      !------------------------------------------------------------------------------------!
+   end do
+
+   return
 end subroutine geonest_nofile
+!==========================================================================================!
+!==========================================================================================!
 
 
 
 
-!******************************************************************************
 
+
+!==========================================================================================!
+!==========================================================================================!
 subroutine patch_interp(icm,ifm,nc1,nc2,nc3,nc4,nf1,nf2,nf3,nf4 &
      ,ac,af,pareac,pareaf,avgc,avgf,slabc,slabf)
 

@@ -1056,13 +1056,13 @@ subroutine truhor(m1,m2,m3,ia,iz,ja,jz  &
 
   real, dimension(m1),       INTENT(IN)    :: z
 
-  real, dimension(m1),      INTENT(OUT)    :: vctr1   &
-                                            , vctr2   &
-                                            , vctr3   &
-                                            , dxynu   &
-                                            , dxytem  &
-                                            , zintl   &
-                                            , zintr
+  real, dimension(m1),      INTENT(INOUT)    :: vctr1   &
+                                              , vctr2   &
+                                              , vctr3   &
+                                              , dxynu   &
+                                              , dxytem  &
+                                              , zintl   &
+                                              , zintr
 
   character(len=*),  INTENT(IN) :: dir,gpnt
 
@@ -1259,7 +1259,7 @@ subroutine truhor_opt(m1,m2,m3,ia,iz,ja,jz                   &
 
   real, dimension(m1), INTENT(IN)    :: z
 
-  real, dimension(m1), INTENT(OUT)   :: vctr1   &
+  real, dimension(m1), INTENT(INOUT)   :: vctr1   &
                                       , vctr2   &
                                       , vctr3   &
                                       , zintl   &
@@ -1469,7 +1469,7 @@ subroutine topobnd(m1,m2,m3,i,j,ipm1,jpm1,sid,vc3da,dxy  &
                                          , z       &
                                          , vctr3
 
-  real, dimension(m1), INTENT(OUT)      :: dxynu
+  real, dimension(m1), INTENT(INOUT)      :: dxynu
 
   real, dimension(m1), INTENT(INOUT)    :: zint
 

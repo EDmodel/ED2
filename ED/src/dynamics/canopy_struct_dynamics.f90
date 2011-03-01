@@ -301,6 +301,13 @@ module canopy_struct_dynamics
                select case (icanturb)
                case (-2)
                   cpatch%veg_wind(ico) = uh
+                  ipft       = cpatch%pft(ico)
+                  crown_area = min(1.0, cpatch%nplant(ico)                                 &
+                                      * dbh2ca(cpatch%dbh(ico),cpatch%sla(ico),ipft))
+
+                  cpatch%veg_wind(ico) = max(uh,ugbmin)
+                  uh = uh * ( crown_area * exp(- cpatch%lai(ico) / crown_area)             &
+                            + 1. - crown_area) 
                case (-1)
                   cpatch%veg_wind(ico) = max(ugbmin,uh * exp ( -0.5 * laicum))
                end select
@@ -1195,7 +1202,10 @@ module canopy_struct_dynamics
                !----- Calculate the wind speed at height z. -------------------------------!
                select case (icanturb)
                case (-2)
-                  initp%veg_wind(ico) = uh
+                  initp%veg_wind(ico) = max(uh,ugbmin8)
+                  uh = uh * ( initp%crown_area(ico)                                        &
+                            * exp(- initp%lai(ico) / initp%crown_area(ico))                &
+                            + 1.d0 - initp%crown_area(ico) )
                case (-1)
                   initp%veg_wind(ico) = max(ugbmin8,uh * exp ( - 5.d-1 * laicum))
                end select
