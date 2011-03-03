@@ -160,7 +160,7 @@ module rk4_stepper
             !----- ii.  Final update of top soil properties to avoid off-bounds moisture. -!
             call adjust_topsoil_properties(integration_buff%ytemp,h,csite,ipa)
             !----- iii. Make temporary surface water stable and positively defined. -------!
-            call adjust_sfcw_properties(nzg,nzs,integration_buff%ytemp, csite,ipa)
+            call adjust_sfcw_properties(nzg,nzs,integration_buff%ytemp, h, csite,ipa)
             !----- iv.  Update the diagnostic variables. ----------------------------------!
             call update_diagnostic_vars(integration_buff%ytemp, csite,ipa)
             !------------------------------------------------------------------------------!
