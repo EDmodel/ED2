@@ -36,6 +36,7 @@ rm -fv ed_opspec.o                ed_opspec.mod
 rm -fv ed_params.o                ed_params.mod 
 rm -fv ed_para_coms.o             ed_para_coms.mod 
 rm -fv ed_para_init.o             ed_para_init.mod 
+rm -fv ed_print.o                 ed_print.mod 
 rm -fv ed_read_ed10_20_history.o  ed_read_ed10_20_history.mod
 rm -fv ed_read_ed21_history.o     ed_read_ed21_history.mod
 rm -fv ed_state_vars.o            ed_state_vars.mod 

@@ -83,7 +83,7 @@ real, intent(inout), dimension(m1, m2, m3) :: &
                                               scr2 
                                               
 
-real, intent(out),   dimension(m1, m2, m3) :: &
+real, intent(inout),   dimension(m1, m2, m3) :: &
                                               epsp,  &
                                               vt3di, &
                                               scr1
@@ -368,7 +368,7 @@ real, intent(inout), dimension(m1,m2,m3) :: &
                                             vt3dh, &
                                             scr2
                                             
-real, intent(out), dimension(m1,m2,m3)   :: &
+real, intent(inout), dimension(m1,m2,m3)   :: &
                                             vt3di, &
                                             scr1
 
@@ -531,7 +531,7 @@ real, intent(inout), dimension(m1, m2, m3) :: &
                                               vt3dh, &
                                               scr2
                                               
-real, intent(out), dimension(m1, m2, m3)   :: &
+real, intent(inout), dimension(m1, m2, m3)   :: &
                                               scr1
 
 real, intent(in), dimension(m2, m3)        :: &
@@ -648,7 +648,7 @@ real, intent(in)   , dimension(m1,m2,m3) :: tkep,  &
                                             wp
 
 
-real, intent(out)  , dimension(m1,m2,m3) :: vt3dh, &
+real, intent(inout)  , dimension(m1,m2,m3) :: vt3dh, &
                                             scr1,  &
                                             sigw
                                             
@@ -663,7 +663,7 @@ real, intent(in), dimension(m2,m3) :: rtgt,     &
                                       sflux_w,  &
                                       sflux_t
 
-real, intent(out), dimension(m1)      :: tkep2
+real, intent(inout), dimension(m1)      :: tkep2
 
 real, intent(in), dimension(m2,m3) :: flpw, &
                                       flpu, &

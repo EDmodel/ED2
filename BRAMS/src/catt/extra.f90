@@ -153,7 +153,7 @@ contains
     if (associated(scal2%d2)) then
        npts=n1*n2
        write(sname,'(a2,i3.3)') 'd2', na
-       call vtables2 (scal2%d2(1,1),scalm2%d2(1,1)  &
+       call vtables2 (scal2%d2,scalm2%d2  &
             ,ng, npts, imean,  &
             trim(sname)//' :2:hist:anal:mpti:mpt3') ! Default - Column oriented Proc.
 
@@ -179,7 +179,7 @@ contains
     if (associated(scal3%d3)) then
        npts=n1*n2*n3
        write(sname,'(a2,i3.3)') 'd3', na
-       call vtables2 (scal3%d3(1,1,1),scalm3%d3(1,1,1)  &
+       call vtables2 (scal3%d3,scalm3%d3  &
             ,ng, npts, imean,  &
             sname//' :3:hist:anal:mpti:mpt3') ! Default - Column oriented Proc.
 

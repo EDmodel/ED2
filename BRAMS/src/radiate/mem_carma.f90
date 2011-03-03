@@ -254,7 +254,7 @@ module mem_carma
       if (associated(cv%aot)) then
          npts=nmx*nmy*nmwave
          write(sname,fmt='(a4)') 'AOT'
-         call vtables2(cv%aot(1,1,1),cvm%aot(1,1,1),ng,npts,imean                          &
+         call vtables2(cv%aot,cvm%aot,ng,npts,imean                                        &
                       ,sname//' :7:hist:anal:mpti:mpt3')
       end if
       return

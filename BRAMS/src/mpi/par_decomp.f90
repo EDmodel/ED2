@@ -24,27 +24,27 @@
 ! grid cells.  If this cannot be satisfied with the given input parameters, the subroutine !
 ! stops.                                                                                   !
 !------------------------------------------------------------------------------------------!
-subroutine par_decomp(nxp,nyp,nsiz,nodes,work,ixb,ixe,iyb,iye)
+subroutine par_decomp(ngr,nxp,nyp,work)
    use grid_dims, only : maxmach ! ! intent(in)
+   use rpara    , only : ixb     & ! intent(in)
+                       , ixe     & ! intent(in)
+                       , iyb     & ! intent(in)
+                       , iye     & ! intent(in)
+                       , nmachs  ! ! intent(in)
    implicit none
    !----- Arguments. -----------------------------------------------------------------------!
+   integer                    , intent(in)    :: ngr
    integer                    , intent(in)    :: nxp
    integer                    , intent(in)    :: nyp
-   integer                    , intent(in)    :: nsiz
-   integer                    , intent(in)    :: nodes
    real   , dimension(nxp,nyp), intent(in)    :: work
-   integer, dimension(maxmach), intent(inout) :: ixb
-   integer, dimension(maxmach), intent(inout) :: ixe
-   integer, dimension(maxmach), intent(inout) :: iyb
-   integer, dimension(maxmach), intent(inout) :: iye
    !----- Local variables. ----------------------------------------------------------------!
-   real   , dimension(nsiz)                   :: workrow
-   real   , dimension(nsiz)                   :: workload
-   real   , dimension(nsiz)                   :: workblock
-   real   , dimension(nsiz)                   :: workcol
-   integer, dimension(nsiz)                   :: nblocks
-   integer, dimension(nsiz)                   :: jrows
-   integer, dimension(nsiz)                   :: jrow
+   real   , dimension(nxp+nyp)                :: workrow
+   real   , dimension(nxp+nyp)                :: workload
+   real   , dimension(nxp+nyp)                :: workblock
+   real   , dimension(nxp+nyp)                :: workcol
+   integer, dimension(nxp+nyp)                :: nblocks
+   integer, dimension(nxp+nyp)                :: jrows
+   integer, dimension(nxp+nyp)                :: jrow
    real   , dimension(maxmach)                :: relspeed
    integer                                    :: inode
    integer                                    :: i
@@ -80,13 +80,13 @@ subroutine par_decomp(nxp,nyp,nsiz,nodes,work,ixb,ixe,iyb,iye)
    ! integer value (nslabs) which is limited to allowable values.  Zero out array for      !
    ! accumulating number of columns for each node.                                         !
    !---------------------------------------------------------------------------------------!
-   aslabs = sqrt(real(nodes) * real(nyp) / real(nxp))
-   nslabs = min(nodes,max(1,nint(aslabs)))
+   aslabs = sqrt(real(nmachs) * real(nyp) / real(nxp))
+   nslabs = min(nmachs,max(1,nint(aslabs)))
    !---------------------------------------------------------------------------------------!
 
    totspeed = 0.
-   do inode = 1,nodes
-      ixe(inode) = 0
+   do inode = 1,nmachs
+      ixe(inode,ngr) = 0
       totspeed = totspeed + relspeed(inode)
    enddo
 
@@ -106,8 +106,8 @@ subroutine par_decomp(nxp,nyp,nsiz,nodes,work,ixb,ixe,iyb,iye)
 
 
    !----- Determine number of blocks and the average workload for each slab. --------------!
-   min_blocks = nodes / nslabs
-   nbigslabs  = nodes - min_blocks * nslabs
+   min_blocks = nmachs / nslabs
+   nbigslabs  = nmachs - min_blocks * nslabs
    inode = 0
    do islab = 1,nslabs
       workload(islab) = 0.
@@ -200,22 +200,22 @@ subroutine par_decomp(nxp,nyp,nsiz,nodes,work,ixb,ixe,iyb,iye)
             iblock = iblock + 1
 
             !----- Define the node bound variables here -----------------------------------!
-            inode      = inode + 1
-            iyb(inode) = jrow(islab)
-            ixb(inode) = i
-            iye(inode) = iyb(inode) + jrows(islab) - 1
+            inode          = inode + 1
+            iyb(inode,ngr) = jrow(islab)
+            ixb(inode,ngr) = i
+            iye(inode,ngr) = iyb(inode,ngr) + jrows(islab) - 1
             !------------------------------------------------------------------------------!
 
             worksofar = worksofar + workblock(iblock)
 
          end if
-         ixe(inode) = ixe(inode) + 1
+         ixe(inode,ngr) = ixe(inode,ngr) + 1
       end do
    end do
 
    !----- Defining node variable here. ----------------------------------------------------!
-   do jnode = 1,nodes
-      ixe(jnode) = ixb(jnode) + ixe(jnode) - 1
+   do jnode = 1,nmachs
+      ixe(jnode,ngr) = ixb(jnode,ngr) + ixe(jnode,ngr) - 1
    end do
    !---------------------------------------------------------------------------------------!
 
@@ -225,16 +225,16 @@ subroutine par_decomp(nxp,nyp,nsiz,nodes,work,ixb,ixe,iyb,iye)
    !---------------------------------------------------------------------------------------!
    ! Check to make sure that each subdomain has at least 2 interior rows and columns.      !
    !---------------------------------------------------------------------------------------!
-   do jnode = 1,nodes
-      if (iye(jnode) - iyb(jnode) < 1 .or. ixe(jnode) - ixb(jnode) < 1) then
+   do jnode = 1,nmachs
+      if (iye(jnode,ngr)-iyb(jnode,ngr) < 1 .or. ixe(jnode,ngr)-ixb(jnode,ngr) < 1) then
          write (unit=*,fmt='(a)')       '-------------------------------------------------'
          write (unit=*,fmt='(a,1x,i6)') ' NXP  = ',nxp
          write (unit=*,fmt='(a,1x,i6)') ' NYP  = ',nyp
          write (unit=*,fmt='(a,1x,i6)') ' Node = ',jnode
-         write (unit=*,fmt='(a,1x,i6)') ' IXB  = ',ixb(jnode)
-         write (unit=*,fmt='(a,1x,i6)') ' IXE  = ',ixe(jnode)
-         write (unit=*,fmt='(a,1x,i6)') ' IYB  = ',iyb(jnode)
-         write (unit=*,fmt='(a,1x,i6)') ' IYE  = ',iye(jnode)
+         write (unit=*,fmt='(a,1x,i6)') ' IXB  = ',ixb(jnode,ngr)
+         write (unit=*,fmt='(a,1x,i6)') ' IXE  = ',ixe(jnode,ngr)
+         write (unit=*,fmt='(a,1x,i6)') ' IYB  = ',iyb(jnode,ngr)
+         write (unit=*,fmt='(a,1x,i6)') ' IYE  = ',iye(jnode,ngr)
          call abort_run('Sub-domain would be too small','par_decomp','par_decomp.f90')
       end if
    end do
@@ -1077,10 +1077,10 @@ subroutine PAR_decomp_input (maxmach, maxgrds, nmachs, ngr, nnxp, nnyp, ixb, ixe
   integer, intent(in)  :: ngr
   integer, intent(in)  :: nnxp(maxgrds)
   integer, intent(in)  :: nnyp(maxgrds)
-  integer, intent(out) :: ixb(maxmach,maxgrds)
-  integer, intent(out) :: ixe(maxmach,maxgrds)
-  integer, intent(out) :: iyb(maxmach,maxgrds)
-  integer, intent(out) :: iye(maxmach,maxgrds)
+  integer, intent(inout) :: ixb(maxmach,maxgrds)
+  integer, intent(inout) :: ixe(maxmach,maxgrds)
+  integer, intent(inout) :: iyb(maxmach,maxgrds)
+  integer, intent(inout) :: iye(maxmach,maxgrds)
   logical, intent(out) :: failed
 
   integer, parameter :: un=48

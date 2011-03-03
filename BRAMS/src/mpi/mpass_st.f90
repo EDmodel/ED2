@@ -97,6 +97,9 @@ subroutine node_sendst(isflag)
          j1=ipaths(3,itype,ngrid,nm)
          j2=ipaths(4,itype,ngrid,nm)
 
+         !----- In this case all variables are 3-D, so compute the number of points here. -!
+         mtp = (i2-i1+1) * (j2-j1+1) * mzp
+
          !----- Include the size information in the buffer. -------------------------------!
          ipos = 1
          call MPI_Pack(i1,1,MPI_INTEGER,node_buffs_st(nm)%pack_send_buff                   &
@@ -116,43 +119,43 @@ subroutine node_sendst(isflag)
          select case (isflag)
          case (2)
             !----- Zonal wind. ------------------------------------------------------------!
-            call mkstbuff(mzp,mxp,myp,1,basic_g(ngrid)%up,scratch%scr3                     &
-                         ,i1-i0,i2-i0,j1-j0,j2-j0,mtp)
+            call mk_st_buff(mzp,mxp,myp,1,mtp,basic_g(ngrid)%up,scratch%scr3               &
+                           ,i1-i0,i2-i0,j1-j0,j2-j0)
             call MPI_Pack(scratch%scr3,mtp,MPI_REAL,node_buffs_st(nm)%pack_send_buff       &
                          ,node_buffs_st(nm)%nsend*f_ndmd_size,ipos,MPI_COMM_WORLD,ierr)
 
          case (3)
             !----- Meridional wind. -------------------------------------------------------!
-            call mkstbuff(mzp,mxp,myp,1,basic_g(ngrid)%vp,scratch%scr3                     &
-                         ,i1-i0,i2-i0,j1-j0,j2-j0,mtp)
+            call mk_st_buff(mzp,mxp,myp,1,mtp,basic_g(ngrid)%vp,scratch%scr3               &
+                           ,i1-i0,i2-i0,j1-j0,j2-j0)
             call MPI_Pack(scratch%scr3,mtp,MPI_REAL,node_buffs_st(nm)%pack_send_buff       &
                          ,node_buffs_st(nm)%nsend*f_ndmd_size,ipos,MPI_COMM_WORLD,ierr)
 
          case (4)
             !----- Perturbation of the Exner function. ------------------------------------!
-            call mkstbuff(mzp,mxp,myp,1,basic_g(ngrid)%pp,scratch%scr3                     &
-                         ,i1-i0,i2-i0,j1-j0,j2-j0,mtp)
+            call mk_st_buff(mzp,mxp,myp,1,mtp,basic_g(ngrid)%pp,scratch%scr3               &
+                           ,i1-i0,i2-i0,j1-j0,j2-j0)
             call MPI_Pack(scratch%scr3,mtp,MPI_REAL,node_buffs_st(nm)%pack_send_buff       &
                          ,node_buffs_st(nm)%nsend*f_ndmd_size,ipos,MPI_COMM_WORLD,ierr)
 
          case (5)
             !----- Zonal + Meridional wind speeds. ----------------------------------------!
-            call mkstbuff(mzp,mxp,myp,1,basic_g(ngrid)%up,scratch%scr3                     &
-                         ,i1-i0,i2-i0,j1-j0,j2-j0,mtp)
+            call mk_st_buff(mzp,mxp,myp,1,mtp,basic_g(ngrid)%up,scratch%scr3               &
+                           ,i1-i0,i2-i0,j1-j0,j2-j0)
             call MPI_Pack(scratch%scr3,mtp,MPI_REAL,node_buffs_st(nm)%pack_send_buff       &
                          ,node_buffs_st(nm)%nsend*f_ndmd_size,ipos,MPI_COMM_WORLD,ierr)
-            call mkstbuff(mzp,mxp,myp,1,basic_g(ngrid)%vp,scratch%scr3                     &
-                         ,i1-i0,i2-i0,j1-j0,j2-j0,mtp)
+            call mk_st_buff(mzp,mxp,myp,1,mtp,basic_g(ngrid)%vp,scratch%scr3               &
+                           ,i1-i0,i2-i0,j1-j0,j2-j0)
             call MPI_Pack(scratch%scr3,mtp,MPI_REAL,node_buffs_st(nm)%pack_send_buff       &
                          ,node_buffs_st(nm)%nsend*f_ndmd_size,ipos,MPI_COMM_WORLD,ierr)
          case (6)
             !----- Vertical velocity and perturbation of the Exner function. --------------!
-            call mkstbuff(mzp,mxp,myp,1,basic_g(ngrid)%wp,scratch%scr3                     &
-                         ,i1-i0,i2-i0,j1-j0,j2-j0,mtp)
+            call mk_st_buff(mzp,mxp,myp,1,mtp,basic_g(ngrid)%wp,scratch%scr3               &
+                           ,i1-i0,i2-i0,j1-j0,j2-j0)
             call MPI_Pack(scratch%scr3,mtp,MPI_REAL,node_buffs_st(nm)%pack_send_buff       &
                          ,node_buffs_st(nm)%nsend*f_ndmd_size,ipos,MPI_COMM_WORLD,ierr)
-            call mkstbuff(mzp,mxp,myp,1,basic_g(ngrid)%pp,scratch%scr3                     &
-                         ,i1-i0,i2-i0,j1-j0,j2-j0,mtp)
+            call mk_st_buff(mzp,mxp,myp,1,mtp,basic_g(ngrid)%pp,scratch%scr3               &
+                           ,i1-i0,i2-i0,j1-j0,j2-j0)
             call MPI_Pack(scratch%scr3,mtp,MPI_REAL,node_buffs_st(nm)%pack_send_buff       &
                          ,node_buffs_st(nm)%nsend*f_ndmd_size,ipos,MPI_COMM_WORLD,ierr)
 
@@ -166,6 +169,7 @@ subroutine node_sendst(isflag)
          mpiid = 2000000 + 10*maxgrds*(mchnum-1) + 10*(ngrid-1) + isflag
          call MPI_Isend(node_buffs_st(nm)%pack_send_buff,ipos-1,MPI_PACKED                 &
                        ,ipaths(5,itype,ngrid,nm),mpiid,MPI_COMM_WORLD,isend_req(nm),ierr)
+         !---------------------------------------------------------------------------------!
       end if
    end do
 
@@ -207,7 +211,6 @@ subroutine node_getst(isflag)
    integer                                         :: j1
    integer                                         :: j2
    integer                                         :: mtp
-   integer                                         :: mtc
    integer                                         :: node_src
    integer                                         :: nptsxy
    !---------------------------------------------------------------------------------------!
@@ -288,52 +291,49 @@ subroutine node_getst(isflag)
             call MPI_Unpack(node_buffs_st(nm)%pack_recv_buff                               &
                            ,node_buffs_st(nm)%nrecv*f_ndmd_size,ipos,scratch%scr4,mtp      &
                            ,MPI_REAL,MPI_COMM_WORLD,ierr)
-            call exstbuff(mzp,mxp,myp,1,basic_g(ngrid)%up,scratch%scr4                     &
-                         ,i1-i0,i2-i0,j1-j0,j2-j0,mtc)
+            call ex_st_buff(mzp,mxp,myp,1,mtp,basic_g(ngrid)%up,scratch%scr4               &
+                           ,i1-i0,i2-i0,j1-j0,j2-j0)
 
          case (3)
             call MPI_Unpack(node_buffs_st(nm)%pack_recv_buff                               &
                            ,node_buffs_st(nm)%nrecv*f_ndmd_size,ipos,scratch%scr4,mtp      &
                            ,MPI_REAL,MPI_COMM_WORLD,ierr)
-            call exstbuff(mzp,mxp,myp,1,basic_g(ngrid)%vp,scratch%scr4                     &
-                         ,i1-i0,i2-i0,j1-j0,j2-j0,mtc)
+            call ex_st_buff(mzp,mxp,myp,1,mtp,basic_g(ngrid)%vp,scratch%scr4               &
+                           ,i1-i0,i2-i0,j1-j0,j2-j0)
 
          case (4)
             call MPI_Unpack(node_buffs_st(nm)%pack_recv_buff                               &
                            ,node_buffs_st(nm)%nrecv*f_ndmd_size,ipos,scratch%scr4,mtp      &
                            ,MPI_REAL,MPI_COMM_WORLD,ierr)
-            call exstbuff(mzp,mxp,myp,1,basic_g(ngrid)%pp,scratch%scr4                     &
-                         ,i1-i0,i2-i0,j1-j0,j2-j0,mtc)
+            call ex_st_buff(mzp,mxp,myp,1,mtp,basic_g(ngrid)%pp,scratch%scr4               &
+                           ,i1-i0,i2-i0,j1-j0,j2-j0)
 
          case (5)
             call MPI_Unpack(node_buffs_st(nm)%pack_recv_buff                               &
                            ,node_buffs_st(nm)%nrecv*f_ndmd_size,ipos,scratch%scr4,mtp      &
                            ,MPI_REAL,MPI_COMM_WORLD,ierr)
-            call exstbuff(mzp,mxp,myp,1,basic_g(ngrid)%up,scratch%scr4                     &
-                         ,i1-i0,i2-i0,j1-j0,j2-j0,mtc)
+            call ex_st_buff(mzp,mxp,myp,1,mtp,basic_g(ngrid)%up,scratch%scr4               &
+                           ,i1-i0,i2-i0,j1-j0,j2-j0)
             call MPI_Unpack(node_buffs_st(nm)%pack_recv_buff                               &
                            ,node_buffs_st(nm)%nrecv*f_ndmd_size,ipos,scratch%scr4,mtp      &
                            ,MPI_REAL,MPI_COMM_WORLD,ierr)
-            call exstbuff(mzp,mxp,myp,1,basic_g(ngrid)%vp,scratch%scr4                     &
-                         ,i1-i0,i2-i0,j1-j0,j2-j0,mtc)
+            call ex_st_buff(mzp,mxp,myp,1,mtp,basic_g(ngrid)%vp,scratch%scr4               &
+                           ,i1-i0,i2-i0,j1-j0,j2-j0)
 
          case (6)
             call MPI_Unpack(node_buffs_st(nm)%pack_recv_buff                               &
                            ,node_buffs_st(nm)%nrecv*f_ndmd_size,ipos,scratch%scr4,mtp      &
                            ,MPI_REAL,MPI_COMM_WORLD,ierr)
-            call exstbuff(mzp,mxp,myp,1,basic_g(ngrid)%wp,scratch%scr4                     &
-                         ,i1-i0,i2-i0,j1-j0,j2-j0,mtc)
+            call ex_st_buff(mzp,mxp,myp,1,mtp,basic_g(ngrid)%wp,scratch%scr4               &
+                           ,i1-i0,i2-i0,j1-j0,j2-j0)
             call MPI_Unpack(node_buffs_st(nm)%pack_recv_buff                               &
                            ,node_buffs_st(nm)%nrecv*f_ndmd_size,ipos,scratch%scr4,mtp      &
                            ,MPI_REAL,MPI_COMM_WORLD,ierr)
-            call exstbuff(mzp,mxp,myp,1,basic_g(ngrid)%pp,scratch%scr4                     &
-                         ,i1-i0,i2-i0,j1-j0,j2-j0,mtc)
-
+            call ex_st_buff(mzp,mxp,myp,1,mtp,basic_g(ngrid)%pp,scratch%scr4               &
+                           ,i1-i0,i2-i0,j1-j0,j2-j0)
 
          end select
-
       end if
-
    end do
 
    return
@@ -352,21 +352,22 @@ end subroutine node_getst
 !  X and Y (n2 and n3) are the only dimensions allowed to have sub-domains, and n1 and n4  !
 ! should always match the original dimension.                                              !
 !------------------------------------------------------------------------------------------!
-subroutine mkstbuff(nz,nx,ny,ne,arr,buff,iwest,ieast,jsouth,jnorth,ind)
+subroutine mk_st_buff(nz,nx,ny,ne,nlbc,arr,buff,iwest,ieast,jsouth,jnorth)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer                     , intent(in)    :: nz
    integer                     , intent(in)    :: nx
    integer                     , intent(in)    :: ny
    integer                     , intent(in)    :: ne
+   integer                     , intent(in)    :: nlbc
    integer                     , intent(in)    :: iwest
    integer                     , intent(in)    :: ieast
    integer                     , intent(in)    :: jsouth
    integer                     , intent(in)    :: jnorth
-   integer                     , intent(out)   :: ind
    real, dimension(nz,nx,ny,ne), intent(in)    :: arr
-   real, dimension(*)          , intent(inout) :: buff
+   real, dimension(nlbc)       , intent(inout) :: buff
    !----- Local variables. ----------------------------------------------------------------!
+   integer                                     :: ind
    integer                                     :: i
    integer                                     :: j
    integer                                     :: k
@@ -385,8 +386,27 @@ subroutine mkstbuff(nz,nx,ny,ne,arr,buff,iwest,ieast,jsouth,jnorth,ind)
       end do
    end do
 
+   !----- Sanity check. -------------------------------------------------------------------!
+   if (ind /= nlbc) then
+      write (unit=*,fmt='(a)')       '------------------------------------------------'
+      write (unit=*,fmt='(a)')       ' Mismatch betweeen buffer and ST domain sizes.'
+      write (unit=*,fmt='(a)')       ' '
+      write (unit=*,fmt='(a,1x,i6)') ' - NLBC   = ',nlbc
+      write (unit=*,fmt='(a,1x,i6)') ' - NBUFF  = ',ind
+      write (unit=*,fmt='(a,1x,i6)') ' - IWEST  = ',iwest
+      write (unit=*,fmt='(a,1x,i6)') ' - IEAST  = ',ieast
+      write (unit=*,fmt='(a,1x,i6)') ' - JSOUTH = ',jsouth
+      write (unit=*,fmt='(a,1x,i6)') ' - JNORTH = ',jnorth
+      write (unit=*,fmt='(a,1x,i6)') ' - NZP    = ',nz
+      write (unit=*,fmt='(a,1x,i6)') ' - NEP    = ',ne
+      write (unit=*,fmt='(a)')       ' '
+      write (unit=*,fmt='(a)')       '------------------------------------------------'
+      write (unit=*,fmt='(a)')       ' '
+      call abort_run('Mismatch in the buffer size!','mk_st_buff','mpass_st.f90')
+   end if
+
    return
-end subroutine mkstbuff
+end subroutine mk_st_buff
 !==========================================================================================!
 !==========================================================================================!
 
@@ -401,21 +421,22 @@ end subroutine mkstbuff
 ! Y (n2 and n3) are the only dimensions allowed to have sub-domains, and n1 and n4 can be  !
 ! the third dimension, but they cannot be greater than 1 at the same time.                 !
 !------------------------------------------------------------------------------------------!
-subroutine exstbuff(nz,nx,ny,ne,arr,buff,iwest,ieast,jsouth,jnorth,ind)
+subroutine ex_st_buff(nz,nx,ny,ne,nlbc,arr,buff,iwest,ieast,jsouth,jnorth)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer                     , intent(in)    :: nz
    integer                     , intent(in)    :: nx
    integer                     , intent(in)    :: ny
    integer                     , intent(in)    :: ne
+   integer                     , intent(in)    :: nlbc
    integer                     , intent(in)    :: iwest
    integer                     , intent(in)    :: ieast
    integer                     , intent(in)    :: jsouth
    integer                     , intent(in)    :: jnorth
    real, dimension(nz,nx,ny,ne), intent(inout) :: arr
-   real, dimension(*)          , intent(in)    :: buff
-   integer                     , intent(out)   :: ind
+   real, dimension(nlbc)       , intent(in)    :: buff
    !----- Local variables. ----------------------------------------------------------------!
+   integer                                     :: ind
    integer                                     :: i
    integer                                     :: j
    integer                                     :: k
@@ -423,7 +444,6 @@ subroutine exstbuff(nz,nx,ny,ne,arr,buff,iwest,ieast,jsouth,jnorth,ind)
    !---------------------------------------------------------------------------------------!
 
    ind=0
-
    do l=1,ne
       do j=jsouth,jnorth
          do i=iwest,ieast
@@ -435,7 +455,27 @@ subroutine exstbuff(nz,nx,ny,ne,arr,buff,iwest,ieast,jsouth,jnorth,ind)
       end do
    end do
 
+   !----- Sanity check. -------------------------------------------------------------------!
+   if (ind /= nlbc) then
+      write (unit=*,fmt='(a)')       '------------------------------------------------'
+      write (unit=*,fmt='(a)')       ' Mismatch betweeen buffer and ST domain sizes.'
+      write (unit=*,fmt='(a)')       ' '
+      write (unit=*,fmt='(a,1x,i6)') ' - NLBC   = ',nlbc
+      write (unit=*,fmt='(a,1x,i6)') ' - NBUFF  = ',ind
+      write (unit=*,fmt='(a,1x,i6)') ' - IWEST  = ',iwest
+      write (unit=*,fmt='(a,1x,i6)') ' - IEAST  = ',ieast
+      write (unit=*,fmt='(a,1x,i6)') ' - JSOUTH = ',jsouth
+      write (unit=*,fmt='(a,1x,i6)') ' - JNORTH = ',jnorth
+      write (unit=*,fmt='(a,1x,i6)') ' - NZP    = ',nz
+      write (unit=*,fmt='(a,1x,i6)') ' - NEP    = ',ne
+      write (unit=*,fmt='(a)')       ' '
+      write (unit=*,fmt='(a)')       '------------------------------------------------'
+      write (unit=*,fmt='(a)')       ' '
+      call abort_run('Mismatch in the buffer size!!!','ex_st_buff','mpass_st.f90')
+   end if
+   !---------------------------------------------------------------------------------------!
+
    return
-end subroutine exstbuff
+end subroutine ex_st_buff
 !==========================================================================================!
 !==========================================================================================!

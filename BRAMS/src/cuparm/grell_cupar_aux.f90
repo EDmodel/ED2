@@ -112,7 +112,7 @@ end subroutine initial_grid_grell
 !    This subroutine simply copies the tendencies to scratch arrays. It is done separated- !
 ! ly because it is the only place that we must give i and j information.                   !
 !------------------------------------------------------------------------------------------!
-subroutine initial_tend_grell(m1,m2,m3,i,j,tht,tket,rtt,co2t)
+subroutine initial_tend_grell(m1,tht,tket,rtt,co2t)
    use mem_scratch_grell, only : &
            mkx          & ! intent(in)  - Number of Grell levels.
           ,kgoff        & ! intent(in)  - BRAMS offset related to Grell
@@ -124,14 +124,14 @@ subroutine initial_tend_grell(m1,m2,m3,i,j,tht,tket,rtt,co2t)
    use rconstants, only: day_sec
    implicit none
    !------ I/O variables ------------------------------------------------------------------!
-   integer, intent(in)                      :: m1,m2,m3   ! Grid dimensions
-   integer, intent(in)                      :: i,j        ! Current position
-   real   , intent(in), dimension(m1,m2,m3) :: tht        ! Potential temperature tend.
-   real   , intent(in), dimension(m1,m2,m3) :: tket       ! Turbulent Kinetic Energy tend.
-   real   , intent(in), dimension(m1,m2,m3) :: co2t       ! Total CO2 mixing ratio tend.
-   real   , intent(in), dimension(m1,m2,m3) :: rtt        ! Total H2O mixing ratio tend.
+   integer, intent(in)                :: m1   ! Grid dimensions
+   real   , intent(in), dimension(m1) :: tht  ! Potential temperature tend.
+   real   , intent(in), dimension(m1) :: tket ! Turbulent Kinetic Energy tend.
+   real   , intent(in), dimension(m1) :: co2t ! Total CO2 mixing ratio tend.
+   real   , intent(in), dimension(m1) :: rtt  ! Total H2O mixing ratio tend.
    !------ Local variables ----------------------------------------------------------------!
-   integer                                  :: k,kr       ! Counters
+   integer                            :: k    ! Counter
+   integer                            :: kr   ! Counter
    !---------------------------------------------------------------------------------------!
 
    !----- Here we simply copy the variables, removing the offset --------------------------!
@@ -148,10 +148,10 @@ subroutine initial_tend_grell(m1,m2,m3,i,j,tht,tket,rtt,co2t)
    do k=1,mkx
 
       kr=k+kgoff
-      dthildt(k)      = tht(kr,i,j)
-      dqtotdt(k)      = rtt(kr,i,j)
-      dtkedt(k)       = tket(kr,i,j)
-      dco2dt(k)       = co2t(kr,i,j)
+      dthildt(k)      = tht(kr)
+      dqtotdt(k)      = rtt(kr)
+      dtkedt(k)       = tket(kr)
+      dco2dt(k)       = co2t(kr)
 
       !<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>!
       !><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><!

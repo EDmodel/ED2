@@ -2143,6 +2143,14 @@ subroutine RAMS_varlib(cvar,nx,ny,nz,nsl,npat,ncld,ngrd,flnm,cdname,cdunits,ivar
       cdname='co-sine of zenith angle'
       cdunits=' '
 
+   case ('zen')
+      ivar_type=2
+      ierr= RAMS_getvar('COSZ',idim_type,ngrd,scr%c,b,flnm)
+      call RAMS_comp_zenith(nx,ny,scr%c,a)
+      ierr_getvar = ierr_getvar + ierr
+      cdname='zenith angle'
+      cdunits='deg'
+
    case ('rshort')
       ivar_type=2
       ierr= RAMS_getvar('RSHORT',idim_type,ngrd,a,b,flnm)

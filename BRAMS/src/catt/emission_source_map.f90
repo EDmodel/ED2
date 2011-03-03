@@ -715,10 +715,10 @@ module emission_source_map
 
     ! Coping sclt# information to a local array to call 'sources' and 'sink'
     npts = mzp*mxp*myp
-    sclt1(:,:,:) = reshape(scalar_g(1,ng)%sclt(1:(npts)), (/mzp,mxp,myp/))
-    sclt2(:,:,:) = reshape(scalar_g(2,ng)%sclt(1:(npts)), (/mzp,mxp,myp/))
-    sclt3(:,:,:) = reshape(scalar_g(3,ng)%sclt(1:(npts)), (/mzp,mxp,myp/))
-    sclt4(:,:,:) = reshape(scalar_g(4,ng)%sclt(1:(npts)), (/mzp,mxp,myp/))
+    sclt1(:,:,:) = scalar_g(1,ng)%sclt(:,:,:)
+    sclt2(:,:,:) = scalar_g(2,ng)%sclt(:,:,:)
+    sclt3(:,:,:) = scalar_g(3,ng)%sclt(:,:,:)
+    sclt4(:,:,:) = scalar_g(4,ng)%sclt(:,:,:)
 
     call sources(mzp, ia, iz, ja, jz, time, imonth1, idate1, iyear1, &
          sclt1,             &
@@ -741,10 +741,10 @@ module emission_source_map
          scalar_g(4,ng)%sclp  )
 
     !Returning local values from sclt# to global scalar_g(#,ngrid)%sclt(1:(npts))
-    scalar_g(1,ng)%sclt(1:(npts)) = reshape(sclt1(:,:,:), (/npts/))
-    scalar_g(2,ng)%sclt(1:(npts)) = reshape(sclt2(:,:,:), (/npts/))
-    scalar_g(3,ng)%sclt(1:(npts)) = reshape(sclt3(:,:,:), (/npts/))
-    scalar_g(4,ng)%sclt(1:(npts)) = reshape(sclt4(:,:,:), (/npts/))
+    scalar_g(1,ng)%sclt(:,:,:) = sclt1(:,:,:)
+    scalar_g(2,ng)%sclt(:,:,:) = sclt2(:,:,:)
+    scalar_g(3,ng)%sclt(:,:,:) = sclt3(:,:,:)
+    scalar_g(4,ng)%sclt(:,:,:) = sclt4(:,:,:)
 
   end subroutine burns
 

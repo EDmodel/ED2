@@ -88,7 +88,7 @@ subroutine timestep()
 
    !------ Zero out all tendency arrays. --------------------------------------------------!
    t1 = cputime(w1)
-   call TEND0()          
+   call tend0()          
    if (acct) call acctimes('accu',1,'TEND0',t1,w1)
    !---------------------------------------------------------------------------------------!
 
@@ -148,7 +148,7 @@ subroutine timestep()
    t1 = cputime(w1)
    select case (isfcl)
    case (1,2)
-      call sfclyr(mzp,mxp,myp,ia,iz,ja,jz,ibcon)
+      call leaf3_timestep()
    case (5)
       call ed_timestep()
    end select
@@ -173,7 +173,7 @@ subroutine timestep()
    !  Send boundaries to adjoining nodes.                                                  !
    !---------------------------------------------------------------------------------------!
    t1 = cputime(w1)
-   call mpilbc_driver()
+   call mpilbc_driver('sendlbc',1)
    if (acct) call acctimes('accu',8,'LBC_1st',t1,w1)
    !---------------------------------------------------------------------------------------!
 
@@ -193,19 +193,8 @@ subroutine timestep()
    !  Velocity advection.                                                                  !
    !---------------------------------------------------------------------------------------!
    t1 = cputime(w1)
-   call ADVECTc('V',mzp,mxp,myp,ia,iz,ja,jz,izu,jzv,mynum)
+   call advectc('V',mzp,mxp,myp,ia,iz,ja,jz,izu,jzv,mynum)
    if (acct) call acctimes('accu',10,'ADVECTv',t1,w1)
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   !     Main driver for cumulus parametrisation.  The sub-routine will decide which       !
-   ! closure shall be used.                                                                !
-   !---------------------------------------------------------------------------------------!
-   t1 = cputime(w1)
-   call rconv_driver(.false.)
-   if (acct) call acctimes('accu',11,'CUPARM',t1,w1)
    !---------------------------------------------------------------------------------------!
 
 
@@ -216,7 +205,7 @@ subroutine timestep()
    if (if_urban_canopy == 1) then
       t1 = cputime(w1)
       call urban_canopy()      
-      if (acct) call acctimes('accu',12,'URBAN_CANOPY',t1,w1)
+      if (acct) call acctimes('accu',11,'URBAN_CANOPY',t1,w1)
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -227,7 +216,7 @@ subroutine timestep()
    !---------------------------------------------------------------------------------------!
    t1 = cputime(w1)
    if (nud_type > 0) call datassim()  
-   if (acct) call acctimes('accu',13,'DATASSIM',t1,w1)
+   if (acct) call acctimes('accu',12,'DATASSIM',t1,w1)
    !---------------------------------------------------------------------------------------!
 
 
@@ -238,7 +227,7 @@ subroutine timestep()
    if (if_oda == 1) then
       t1 = cputime(w1)
       call oda_nudge()  
-      if (acct) call acctimes('accu',14,'ODA_NUDGE',t1,w1)
+      if (acct) call acctimes('accu',13,'ODA_NUDGE',t1,w1)
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -250,7 +239,7 @@ subroutine timestep()
    if (nxtnest(ngrid) >= 1) then
       t1 = cputime(w1)
       call nstbdriv()  
-      if (acct) call acctimes('accu',15,'NSTBDRIV',t1,w1)
+      if (acct) call acctimes('accu',14,'NSTBDRIV',t1,w1)
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -261,7 +250,7 @@ subroutine timestep()
    !---------------------------------------------------------------------------------------!
    t1 = cputime(w1)
    call rayft()           
-   if (acct) call acctimes('accu',16,'RAYFT',t1,w1)
+   if (acct) call acctimes('accu',15,'RAYFT',t1,w1)
    !---------------------------------------------------------------------------------------!
 
 
@@ -270,8 +259,8 @@ subroutine timestep()
    !     Get the overlap region between parallel nodes.                                    !
    !---------------------------------------------------------------------------------------!
    t1 = cputime(w1)
-   call mpilbc_driver()
-   if (acct) call acctimes('accu',17,'LBC_2nd',t1,w1)
+   call mpilbc_driver('getlbc',1)
+   if (acct) call acctimes('accu',16,'LBC_2nd',t1,w1)
    !---------------------------------------------------------------------------------------!
 
 
@@ -281,7 +270,8 @@ subroutine timestep()
    !---------------------------------------------------------------------------------------!
    if (iexev == 2) then
       t1 = cputime(w1)
-      if (acct) call acctimes('accu',18,'EXEVOLVE_THA',t1,w1)
+      call exevolve(mzp,mxp,myp,ngrid,ia,iz,ja,jz,izu,jzv,jdim,mynum,dtlt,'THA')
+      if (acct) call acctimes('accu',17,'EXEVOLVE_THA',t1,w1)
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -296,17 +286,17 @@ subroutine timestep()
    else
       call diffuse()
    end if
-   if (acct) call acctimes('accu',19,'DIFFUSE',t1,w1)
+   if (acct) call acctimes('accu',18,'DIFFUSE',t1,w1)
    !---------------------------------------------------------------------------------------!
 
 
 
    !---------------------------------------------------------------------------------------!
-   !  Velocity advection.                                                                  !
+   !  Thermodynamic advection.                                                             !
    !---------------------------------------------------------------------------------------!
    t1 = cputime(w1)
    call advectc('T',mzp,mxp,myp,ia,iz,ja,jz,izu,jzv,mynum)
-   if (acct) call acctimes('accu',20,'ADVECTs',t1,w1)
+   if (acct) call acctimes('accu',19,'ADVECTs',t1,w1)
    !---------------------------------------------------------------------------------------!
 
 
@@ -317,8 +307,21 @@ subroutine timestep()
    if (imassflx == 1) then
      t1 = cputime(w1)
      call prep_advflx_to_mass(mzp,mxp,myp,ia,iz,ja,jz,ngrid)
-     if (acct) call acctimes('accu',21,'ADVEC_TO_MASS',t1,w1)
+     if (acct) call acctimes('accu',20,'ADVEC_TO_MASS',t1,w1)
    end if
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Main driver for cumulus parametrisation.  The sub-routine will decide which       !
+   ! closure shall be used.  This must be called after the tendencies of CO2, ice-liquid   !
+   ! potential temperature, mixing ratio, and TKE have been updated because the convection !
+   ! scheme uses the tendency of these variables.                                          !
+   !---------------------------------------------------------------------------------------!
+   t1 = cputime(w1)
+   call rconv_driver()
+   if (acct) call acctimes('accu',21,'CUPARM',t1,w1)
    !---------------------------------------------------------------------------------------!
 
 
@@ -349,8 +352,8 @@ subroutine timestep()
    !  Update scalars.                                                                      !
    !---------------------------------------------------------------------------------------!
    t1 = cputime(w1)
-   call mpilbc_driver()
    call predtr()
+   call mpilbc_driver('fulllbc',1)
    if (acct) call acctimes('accu',24,'PREDTR',t1,w1)
    !---------------------------------------------------------------------------------------!
 
@@ -603,12 +606,15 @@ end subroutine acctimes
 !==========================================================================================!
 !     This subroutine will update the lateral boundary conditions.                         !
 !------------------------------------------------------------------------------------------!
-subroutine mpilbc_driver()
+subroutine mpilbc_driver(action,istflag)
    use node_mod, only : ipara ! ! intent(in)
    use mem_grid, only : ngrid ! ! intent(in)
    implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   character(len=*), intent(in) :: action
+   integer         , intent(in) :: istflag
    !----- Local variables. ----------------------------------------------------------------!
-   integer :: ist
+   integer                      :: ist
    !---------------------------------------------------------------------------------------!
 
 
@@ -618,31 +624,135 @@ subroutine mpilbc_driver()
    !---------------------------------------------------------------------------------------!
 
 
-
-   !----- Exchange thermodynamic lateral conditions. --------------------------------------!
-   call node_sendlbc()
-   call node_getlbc()
    !---------------------------------------------------------------------------------------!
-
-
-
-   !----- Exchange staggered grid lateral conditions (winds). -----------------------------!
-   do ist = 2,6
-      call node_sendst(ist)
-      call node_getst(ist)
-   end do
+   !     Decide whether to send or receive 
    !---------------------------------------------------------------------------------------!
+   select case(trim(action))
+   case ('sendlbc')
+      !------------------------------------------------------------------------------------!
+      !     Send thermodynamic lateral conditions.                                         !
+      !------------------------------------------------------------------------------------!
+      call node_sendlbc()
+
+      !------------------------------------------------------------------------------------!
+      !     If it is the first grid, check whether we need to exchange cyclic conditions.  !
+      !------------------------------------------------------------------------------------!
+      if (ngrid  ==  1) call node_sendcyclic(1)
+      !------------------------------------------------------------------------------------!
+
+   case ('getlbc')
+      !------------------------------------------------------------------------------------!
+      !     Get thermodynamic lateral conditions.                                          !
+      !------------------------------------------------------------------------------------!
+      call node_getlbc()
+
+      !------------------------------------------------------------------------------------!
+      !     If it is the first grid, check whether we need to exchange cyclic conditions.  !
+      !------------------------------------------------------------------------------------!
+      if (ngrid  ==  1) call node_getcyclic(1)
+      !------------------------------------------------------------------------------------!
+
+   case ('fulllbc')
+      !------------------------------------------------------------------------------------!
+      !     Make a full exchange of the lateral conditions.                                !
+      !------------------------------------------------------------------------------------!
+      call node_sendlbc()
+      call node_getlbc()
 
 
 
-   !----- If it is the first grid, check whether we need to exchange cyclic conditions. ---!
-   if (ngrid  ==  1) then
-      do ist = 1,6
-        call node_sendcyclic(ist)
-        call node_getcyclic (ist)
+      !------------------------------------------------------------------------------------!
+      !     If it is the first grid, check whether we need to exchange cyclic conditions.  !
+      !------------------------------------------------------------------------------------!
+      if (ngrid  ==  1) then
+         call node_sendcyclic(1)
+         call node_getcyclic(1)
+      end if
+      !------------------------------------------------------------------------------------!
+
+   case ('sendst')
+      !------------------------------------------------------------------------------------!
+      !     Send staggered lateral conditions.  Here we also use the flag telling which    !
+      ! field should be exchanged.                                                         !
+      !------------------------------------------------------------------------------------!
+      call node_sendst(istflag)
+
+      !------------------------------------------------------------------------------------!
+      !     If it is the first grid, check whether we need to exchange cyclic conditions.  !
+      !------------------------------------------------------------------------------------!
+      if (ngrid  ==  1) call node_sendcyclic(istflag)
+      !------------------------------------------------------------------------------------!
+
+   case ('getst')
+      !------------------------------------------------------------------------------------!
+      !     Get staggered lateral conditions.  Here we also use the flag telling which     !
+      ! field should be exchanged.                                                         !
+      !------------------------------------------------------------------------------------!
+      call node_getst(istflag)
+
+      !------------------------------------------------------------------------------------!
+      !     If it is the first grid, check whether we need to exchange cyclic conditions.  !
+      !------------------------------------------------------------------------------------!
+      if (ngrid  ==  1) call node_getcyclic(istflag)
+      !------------------------------------------------------------------------------------!
+
+   case ('fullst')
+      !------------------------------------------------------------------------------------!
+      !     Full exchange of staggered lateral conditions.  Here we also use the flag      !
+      ! telling which field should be exchanged.                                           !
+      !------------------------------------------------------------------------------------!
+      call node_sendst(istflag)
+      call node_getst (istflag)
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     If it is the first grid, check whether we need to exchange cyclic conditions.  !
+      !------------------------------------------------------------------------------------!
+      if (ngrid  ==  1) then
+         call node_sendcyclic(istflag)
+         call node_getcyclic(istflag)
+      end if
+      !------------------------------------------------------------------------------------!
+
+   case ('ultimate')
+      !------------------------------------------------------------------------------------!
+      !     This is the "ultimate" exchange of boundary conditions.  Both thermodynamic    !
+      ! and staggered grids are exchanged, and all possible flags are used for the         !
+      ! staggered exchange.  This should be used only for debugging purposes, as it slows  !
+      ! down the run considerably.                                                         !
+      !------------------------------------------------------------------------------------!
+
+
+
+      !---- Exchange thermodynamic lateral conditions. ------------------------------------!
+      call node_sendlbc()
+      call node_getlbc()
+      !------------------------------------------------------------------------------------!
+
+
+
+      !---- Exchange staggered lateral conditions. ----------------------------------------!
+      do ist=2,6
+         call node_sendst(ist)
+         call node_getst (ist)
       end do
-   end if
-   !---------------------------------------------------------------------------------------!
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     If it is the first grid, check whether we need to exchange cyclic conditions.  !
+      !------------------------------------------------------------------------------------!
+      if (ngrid  ==  1) then
+         do ist=1,6
+            call node_sendcyclic(ist)
+            call node_getcyclic(ist)
+         end do 
+      end if
+      !------------------------------------------------------------------------------------!
+   end select
 
    return
 end subroutine mpilbc_driver

@@ -9,7 +9,7 @@
 !------------------------------------------------------------------------------------------!
 subroutine datassim()
 
-   use mem_tend    , only : tend        ! ! intent(inout)
+   use mem_tend    , only : tend_g      ! ! intent(inout)
    use mem_basic   , only : basic_g     & ! intent(in)
                           , co2_on      & ! intent(in)
                           , co2con      ! ! intent(in)
@@ -63,7 +63,7 @@ subroutine datassim()
       call atob(mzp*mxp*myp,basic_g(ngrid)%co2p   ,scratch%vt3do)
       call atob(mzp*mxp*myp,varinit_g(ngrid)%varop,scratch%vt3dp)
       call atob(mzp*mxp*myp,varinit_g(ngrid)%varof,scratch%vt3df)
-      call atob(mzp*mxp*myp,tend%co2t             ,scratch%vt3de)
+      call atob(mzp*mxp*myp,tend_g(ngrid)%co2t    ,scratch%vt3de)
    else
       call azero(mzp*mxp*myp,scratch%vt3de)
       call ae0(mzp*mxp*myp,scratch%vt3do,co2con(1))
@@ -80,14 +80,14 @@ subroutine datassim()
              , varinit_g(ngrid)%vartf  , varinit_g(ngrid)%varrf  , scratch%vt3df           &
              , basic_g(ngrid)%up       , basic_g(ngrid)%vp       , basic_g(ngrid)%theta    &
              , basic_g(ngrid)%rtp      , basic_g(ngrid)%pp       , scratch%vt3do           &
-             , tend%ut                 , tend%vt                 , tend%tht                &
-             , tend%rtt                , tend%pt                 , scratch%vt3de           )
+             , tend_g(ngrid)%ut        , tend_g(ngrid)%vt        , tend_g(ngrid)%tht       &
+             , tend_g(ngrid)%rtt       , tend_g(ngrid)%pt        , scratch%vt3de           )
 
    !---------------------------------------------------------------------------------------!
    !     If CO2 is solved, then we copy back the tendency.                                 !
    !---------------------------------------------------------------------------------------!
    if (co2_on) then
-      call atob(mzp*mxp*myp,scratch%vt3de,tend%co2t)
+      call atob(mzp*mxp*myp,scratch%vt3de,tend_g(ngrid)%co2t)
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -98,7 +98,7 @@ subroutine datassim()
       call nudge_cond(mzp,mxp,myp,iwest,ieast,jsouth,jnorth                                &
                      ,varinit_g(ngrid)%varwts,varinit_g(ngrid)%varrph                      &
                      ,varinit_g(ngrid)%varcph,varinit_g(ngrid)%varrfh                      &
-                     ,varinit_g(ngrid)%varcfh,basic_g(ngrid)%rtp,tend%rtt)
+                     ,varinit_g(ngrid)%varcfh,basic_g(ngrid)%rtp,tend_g(ngrid)%rtt)
    end if
    return
 end subroutine datassim

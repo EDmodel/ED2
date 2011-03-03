@@ -214,61 +214,61 @@ module mem_basic
       npts=n1*n2*n3
       !----- Acoustic time step variables. ------------------------------------------------!
       if (associated(basic%up))                                                            &
-         call vtables2 (basic%up(1,1,1),basicm%up(1,1,1),ng,npts,imean                     &
+         call vtables2 (basic%up,basicm%up,ng,npts,imean                                   &
                        ,'UP :3:hist:anal:mpti:mpt3:mpt2')
       if (associated(basic%vp))                                                            &
-         call vtables2 (basic%vp(1,1,1),basicm%vp(1,1,1),ng,npts,imean                     &
+         call vtables2 (basic%vp,basicm%vp,ng,npts,imean                                   &
                        ,'VP :3:hist:anal:mpti:mpt3:mpt2')
       if (associated(basic%wp))                                                            &
-         call vtables2 (basic%wp(1,1,1),basicm%wp(1,1,1),ng,npts,imean                     &
+         call vtables2 (basic%wp,basicm%wp,ng,npts,imean                                   &
                        ,'WP :3:hist:anal:mpti:mpt3:mpt2')
       if (associated(basic%pp))                                                            &
-         call vtables2 (basic%pp(1,1,1),basicm%pp(1,1,1),ng,npts,imean                     &
+         call vtables2 (basic%pp,basicm%pp,ng,npts,imean                                   &
                        ,'PP :3:hist:anal:mpti:mpt3:mpt2')
       if (associated(basic%uc))                                                            &
-         call vtables2 (basic%uc(1,1,1),basicm%uc(1,1,1),ng,npts,imean                     &
+         call vtables2 (basic%uc,basicm%uc,ng,npts,imean                                   &
                        ,'UC :3:hist:mpti:mpt3:mpt2')
       if (associated(basic%vc))                                                            &
-         call vtables2 (basic%vc(1,1,1),basicm%vc(1,1,1),ng,npts,imean                     &
+         call vtables2 (basic%vc,basicm%vc,ng,npts,imean                                   &
                        ,'VC :3:hist:mpti:mpt3:mpt2')
       if (associated(basic%wc))                                                            &
-         call vtables2 (basic%wc(1,1,1),basicm%wc(1,1,1),ng,npts,imean                     &
+         call vtables2 (basic%wc,basicm%wc,ng,npts,imean                                   &
                        ,'WP :3:hist:mpti:mpt3:mpt2')
       if (associated(basic%pc))                                                            &
-         call vtables2 (basic%pc(1,1,1),basicm%pc(1,1,1),ng,npts,imean                     &
+         call vtables2 (basic%pc,basicm%pc,ng,npts,imean                                   &
                        ,'PC :3:hist:mpti:mpt3:mpt2')
       !----- "Normal" time step variables. ------------------------------------------------!
       if (associated(basic%thp))                                                           &
-         call vtables2 (basic%thp(1,1,1),basicm%thp(1,1,1),ng, npts, imean                 &
+         call vtables2 (basic%thp,basicm%thp,ng, npts, imean                               &
                        ,'THP :3:hist:anal:mpti:mpt3:mpt1')
       if (associated(basic%rtp))                                                           &
-         call vtables2 (basic%rtp(1,1,1),basicm%rtp(1,1,1),ng, npts, imean                 &
+         call vtables2 (basic%rtp,basicm%rtp,ng, npts, imean                               &
                        ,'RTP :3:hist:anal:mpti:mpt3:mpt1')
       if (associated(basic%co2p))                                                          &
-         call vtables2 (basic%co2p(1,1,1),basicm%co2p(1,1,1),ng, npts, imean               &
+         call vtables2 (basic%co2p,basicm%co2p,ng, npts, imean                             &
                        ,'CO2P :3:hist:anal:mpti:mpt3:mpt1')
       !----- Diagnostic variables. --------------------------------------------------------!
       if (associated(basic%theta))                                                         &
-         call vtables2 (basic%theta(1,1,1),basicm%theta(1,1,1),ng, npts, imean             &
+         call vtables2 (basic%theta,basicm%theta,ng, npts, imean                           &
                        ,'THETA :3:hist:anal:mpti:mpt3')
       if (associated(basic%rv))                                                            &
-         call vtables2 (basic%rv(1,1,1),basicm%rv(1,1,1),ng, npts, imean                   &
+         call vtables2 (basic%rv,basicm%rv,ng, npts, imean                                 &
                        ,'RV :3:hist:anal:mpti:mpt3')
       !----- Reference state variables. ---------------------------------------------------!
       if (associated(basic%pi0))                                                           &
-         call vtables2 (basic%pi0(1,1,1),basicm%pi0(1,1,1),ng, npts, imean                 &
+         call vtables2 (basic%pi0,basicm%pi0,ng, npts, imean                               &
                        ,'PI0 :3:mpti')
       if (associated(basic%th0))                                                           &
-         call vtables2 (basic%th0(1,1,1),basicm%th0(1,1,1),ng, npts, imean                 &
+         call vtables2 (basic%th0,basicm%th0,ng, npts, imean                               &
                        ,'TH0 :3:mpti')
       if (associated(basic%dn0))                                                           &
-         call vtables2 (basic%dn0(1,1,1),basicm%dn0(1,1,1),ng, npts, imean                 &
+         call vtables2 (basic%dn0,basicm%dn0,ng, npts, imean                               &
                        ,'DN0 :3:mpti')
       if (associated(basic%dn0u))                                                          &
-         call vtables2 (basic%dn0u(1,1,1),basicm%dn0u(1,1,1),ng, npts, imean               &
+         call vtables2 (basic%dn0u,basicm%dn0u,ng, npts, imean                             &
                        ,'DN0U :3:mpti')
       if (associated(basic%dn0v))                                                          &
-         call vtables2 (basic%dn0v(1,1,1),basicm%dn0v(1,1,1),ng, npts, imean               &
+         call vtables2 (basic%dn0v,basicm%dn0v,ng, npts, imean                             &
                        ,'DN0V :3:mpti')
                     
       !------------------------------------------------------------------------------------!
@@ -277,14 +277,14 @@ module mem_basic
       npts=n2*n3
       !----- Reference values. ------------------------------------------------------------!
       if (associated(basic%fcoru))                                                         &
-         call vtables2 (basic%fcoru(1,1),basicm%fcoru(1,1),ng, npts, imean                 &
+         call vtables2 (basic%fcoru,basicm%fcoru,ng, npts, imean                           &
                        ,'FCORU :2:mpti')      
       if (associated(basic%fcorv))                                                         &
-         call vtables2 (basic%fcorv(1,1),basicm%fcorv(1,1),ng, npts, imean                 &
+         call vtables2 (basic%fcorv,basicm%fcorv,ng, npts, imean                           &
                        ,'FCORV :2:mpti')
       !----- Time spend by each node. -----------------------------------------------------!
-      if (associated(basic%cputime)) &
-         call vtables2 (basic%cputime(1,1),basicm%cputime(1,1),ng, npts, imean             &
+      if (associated(basic%cputime))                                                       &
+         call vtables2 (basic%cputime,basicm%cputime,ng, npts, imean                       &
                        ,'CPUTIME :2:anal:mpti:mpt3')
     
       return

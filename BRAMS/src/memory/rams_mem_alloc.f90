@@ -117,7 +117,7 @@ subroutine rams_mem_alloc(proc_type)
    integer                        , intent(in) :: proc_type
    !----- Local Variables: ----------------------------------------------------------------!
    integer, pointer , dimension(:)             :: nmzp,nmxp,nmyp
-   integer                                     :: ng,nv,imean,na,ne
+   integer                                     :: ng,nv,imean,na,ne,ntpts
    logical                                     :: Alloc_Old_Grell_Flag
    !----- Local variables because of TEB_SPM ----------------------------------------------!
    type(gaspart_vars), pointer :: gaspart_p
@@ -362,11 +362,11 @@ subroutine rams_mem_alloc(proc_type)
    allocate(turb_g(ngrids),turbm_g(ngrids))
    do ng=1,ngrids
       call nullify_turb(turb_g(ng)) ; call nullify_turb(turbm_g(ng))
-      call alloc_turb(turb_g(ng),nmzp(ng),nmxp(ng),nmyp(ng),ng,co2_on)
+      call alloc_turb(turb_g(ng),nmzp(ng),nmxp(ng),nmyp(ng),ng)
       if (imean == 1) then
-         call alloc_turb(turbm_g(ng),nmzp(ng),nmxp(ng),nmyp(ng),ng,co2_on)
+         call alloc_turb(turbm_g(ng),nmzp(ng),nmxp(ng),nmyp(ng),ng)
       elseif (imean == 0) then
-         call alloc_turb(turbm_g(ng),1,1,1,ng,co2_on)
+         call alloc_turb(turbm_g(ng),1,1,1,ng)
       end if
       call zero_turb(turb_g(ng))
       call zero_turb(turbm_g(ng))
@@ -501,16 +501,23 @@ subroutine rams_mem_alloc(proc_type)
    ! that define scalar variables first.                                                   !
    !---------------------------------------------------------------------------------------!
    !----- Assuming same scalars on all grids ----------------------------------------------!
-   call nullify_tend(naddsc)
    write (unit=*,fmt=*) ' [+] Tend allocation on node ',mynum,'...'
-   call alloc_tend(nmzp,nmxp,nmyp,ngrids,naddsc,proc_type)
+   allocate(tend_g(ngrids))
+   ntpts = 0
    do ng=1,ngrids
-      if (TEB_SPM==1) then
-         nullify(gaspart_p)
-         gaspart_p => gaspart_g(ng)
+      ntpts = max(ntpts,nmzp(ng)*nmxp(ng)*nmyp(ng))
+   end do
+   do ng=1,ngrids
+      call nullify_tend(tend_g(ng))
+      call alloc_tend(nmzp(ng),nmxp(ng),nmyp(ng),ng,ntpts)
+   end do
+   do ng=1,ngrids
+      if (teb_spm == 1) then
+            nullify(gaspart_p)
+            gaspart_p => gaspart_g(ng)
       end if
-      call filltab_tend(basic_g(ng),micro_g(ng),turb_g(ng),scalar_g(:,ng),gaspart_p,naddsc &
-                       ,ng)
+      call filltab_tend(nmzp(ng),nmxp(ng),nmyp(ng),naddsc,tend_g(ng),basic_g(ng)           &
+                       ,micro_g(ng),turb_g(ng),scalar_g(1:naddsc,ng),gaspart_p,ng)
    end do
    !---------------------------------------------------------------------------------------!
 

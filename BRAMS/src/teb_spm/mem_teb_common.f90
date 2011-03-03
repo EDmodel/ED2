@@ -68,15 +68,15 @@ CONTAINS
     npts=n2*n3
 
        IF (ASSOCIATED(tebc%EMIS_TOWN))  &
-         CALL vtables2 (tebc%EMIS_TOWN(1,1),tebcm%EMIS_TOWN(1,1)&
+         CALL vtables2 (tebc%EMIS_TOWN,tebcm%EMIS_TOWN&
          ,ng, npts, imean,  &
          'EMIS_TOWN :2:hist:anal:lite:mpti:mpt3:mpt1')
        IF (ASSOCIATED(tebc%ALB_TOWN))  &
-         CALL vtables2 (tebc%ALB_TOWN(1,1),tebcm%ALB_TOWN(1,1)&
+         CALL vtables2 (tebc%ALB_TOWN,tebcm%ALB_TOWN&
          ,ng, npts, imean,  &
          'ALB_TOWN :2:hist:anal:lite:mpti:mpt3:mpt1')
        IF (ASSOCIATED(tebc%TS_TOWN))  &
-         CALL vtables2 (tebc%TS_TOWN(1,1),tebcm%TS_TOWN(1,1)&
+         CALL vtables2 (tebc%TS_TOWN,tebcm%TS_TOWN&
          ,ng, npts, imean,  &
          'TS_TOWN :2:hist:anal:lite:mpti:mpt3:mpt1')
     RETURN

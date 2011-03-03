@@ -17,11 +17,13 @@ module mem_scratch
       !----- The largest arrays available, they should hold the largest possible variable -!
       real, pointer, dimension(:) ::  scr1,scr2,scr3,scr4,scr5,scr6
       !----- 2-D variables, they should hold any (X,Y) variable for any grid. -------------!
-      real, pointer, dimension(:) ::  vt2da,vt2db,vt2dc,vt2dd,vt2de,vt2df
+      real, pointer, dimension(:) ::  vt2da,vt2db,vt2dc,vt2dd,vt2de,vt2df,vt2dg,vt2dh
+      real, pointer, dimension(:) ::  vt2di,vt2dj,vt2dk,vt2dl,vt2dm,vt2dn,vt2do,vt2dp
+      real, pointer, dimension(:) ::  vt2dq,vt2dr,vt2ds
       !----- 3-D variables, for (Z,X,Y), (X,Y,P), (X,Y,C), and (X,Y,W) variables. ---------!
       real, pointer, dimension(:) ::  vt3da,vt3db,vt3dc,vt3dd,vt3de,vt3df,vt3dg,vt3dh
-      real, pointer, dimension(:) ::  vt3di,vt3dj,vt3dk,vt3dl,vt3dm,vt3dn,vt3do,vt3dp,vt3dq
-      real, pointer, dimension(:) ::  vt3dr,vt3ds
+      real, pointer, dimension(:) ::  vt3di,vt3dj,vt3dk,vt3dl,vt3dm,vt3dn,vt3do,vt3dp
+      real, pointer, dimension(:) ::  vt3dq,vt3dr,vt3ds
       !----- 4-D variables, for (Z,X,Y,C), (G,X,Y,P), and (S,X,Y,P) variables -------------!
       real, pointer, dimension(:) ::  vt4da,vt4db,vt4dc
    end type scratch_vars
@@ -149,9 +151,28 @@ module mem_scratch
       allocate (scratch%scr5 (nptsmax))
       allocate (scratch%scr6 (nptsmax))
 
+      allocate (scratch%vt2da(mpts2d))
+      allocate (scratch%vt2db(mpts2d))
+      allocate (scratch%vt2dc(mpts2d))
+      allocate (scratch%vt2dd(mpts2d))
+      allocate (scratch%vt2de(mpts2d))
+      allocate (scratch%vt2df(mpts2d))
+      allocate (scratch%vt2dg(mpts2d))
+      allocate (scratch%vt2dh(mpts2d))
+      allocate (scratch%vt2di(mpts2d))
+      allocate (scratch%vt2dj(mpts2d))
+      allocate (scratch%vt2dk(mpts2d))
+      allocate (scratch%vt2dl(mpts2d))
+      allocate (scratch%vt2dm(mpts2d))
+      allocate (scratch%vt2dn(mpts2d))
+      allocate (scratch%vt2do(mpts2d))
+      allocate (scratch%vt2dp(mpts2d))
+      allocate (scratch%vt2dq(mpts2d))
+      allocate (scratch%vt2dr(mpts2d))
+      allocate (scratch%vt2ds(mpts2d))
+
       allocate (scratch%vt3da(mpts3d))
       allocate (scratch%vt3db(mpts3d))
-
       allocate (scratch%vt3dc(mpts3d))
       allocate (scratch%vt3dd(mpts3d))
       allocate (scratch%vt3de(mpts3d))
@@ -170,13 +191,6 @@ module mem_scratch
       allocate (scratch%vt3dr(mpts3d))
       allocate (scratch%vt3ds(mpts3d))
 
-      allocate (scratch%vt2da(mpts2d))
-      allocate (scratch%vt2db(mpts2d))
-      allocate (scratch%vt2dc(mpts2d))
-      allocate (scratch%vt2dd(mpts2d))
-      allocate (scratch%vt2de(mpts2d))
-      allocate (scratch%vt2df(mpts2d))
-
 
       allocate (scratch%vt4da(mpts4d))
       allocate (scratch%vt4db(mpts4d))
@@ -189,6 +203,26 @@ module mem_scratch
       call azero(nptsmax, scratch%scr4)
       call azero(nptsmax, scratch%scr5)
       call azero(nptsmax, scratch%scr6)
+
+      call azero(mpts2d , scratch%vt2da)
+      call azero(mpts2d , scratch%vt2db)
+      call azero(mpts2d , scratch%vt2dc)
+      call azero(mpts2d , scratch%vt2dd)
+      call azero(mpts2d , scratch%vt2de)
+      call azero(mpts2d , scratch%vt2df)
+      call azero(mpts2d , scratch%vt2dg)
+      call azero(mpts2d , scratch%vt2dh)
+      call azero(mpts2d , scratch%vt2di)
+      call azero(mpts2d , scratch%vt2dj)
+      call azero(mpts2d , scratch%vt2dk)
+      call azero(mpts2d , scratch%vt2dl)
+      call azero(mpts2d , scratch%vt2dm)
+      call azero(mpts2d , scratch%vt2dn)
+      call azero(mpts2d , scratch%vt2do)
+      call azero(mpts2d , scratch%vt2dp)
+      call azero(mpts2d , scratch%vt2dq)
+      call azero(mpts2d , scratch%vt2dr)
+      call azero(mpts2d , scratch%vt2ds)
 
       call azero(mpts3d , scratch%vt3da)
       call azero(mpts3d , scratch%vt3db)
@@ -209,12 +243,7 @@ module mem_scratch
       call azero(mpts3d , scratch%vt3dq)
       call azero(mpts3d , scratch%vt3dr)
       call azero(mpts3d , scratch%vt3ds)
-      call azero(mpts2d , scratch%vt2da)
-      call azero(mpts2d , scratch%vt2db)
-      call azero(mpts2d , scratch%vt2dc)
-      call azero(mpts2d , scratch%vt2dd)
-      call azero(mpts2d , scratch%vt2de)
-      call azero(mpts2d , scratch%vt2df)
+
       call azero(mpts4d , scratch%vt4da)
       call azero(mpts4d , scratch%vt4db)
       call azero(mpts4d , scratch%vt4dc)
@@ -241,6 +270,27 @@ module mem_scratch
       if (associated(scratch%scr4 ))  nullify (scratch%scr4 )
       if (associated(scratch%scr5 ))  nullify (scratch%scr5 )
       if (associated(scratch%scr6 ))  nullify (scratch%scr6 )
+
+      if (associated(scratch%vt2da))  nullify (scratch%vt2da)
+      if (associated(scratch%vt2db))  nullify (scratch%vt2db)
+      if (associated(scratch%vt2dc))  nullify (scratch%vt2dc)
+      if (associated(scratch%vt2dd))  nullify (scratch%vt2dd)
+      if (associated(scratch%vt2de))  nullify (scratch%vt2de)
+      if (associated(scratch%vt2df))  nullify (scratch%vt2df)
+      if (associated(scratch%vt2dg))  nullify (scratch%vt2dg)
+      if (associated(scratch%vt2dh))  nullify (scratch%vt2dh)
+      if (associated(scratch%vt2di))  nullify (scratch%vt2di)
+      if (associated(scratch%vt2dj))  nullify (scratch%vt2dj)
+      if (associated(scratch%vt2dk))  nullify (scratch%vt2dk)
+      if (associated(scratch%vt2dl))  nullify (scratch%vt2dl)
+      if (associated(scratch%vt2dm))  nullify (scratch%vt2dm)
+      if (associated(scratch%vt2dn))  nullify (scratch%vt2dn)
+      if (associated(scratch%vt2do))  nullify (scratch%vt2do)
+      if (associated(scratch%vt2dp))  nullify (scratch%vt2dp)
+      if (associated(scratch%vt2dq))  nullify (scratch%vt2dq)
+      if (associated(scratch%vt2dr))  nullify (scratch%vt2dr)
+      if (associated(scratch%vt2ds))  nullify (scratch%vt2ds)
+
       if (associated(scratch%vt3da))  nullify (scratch%vt3da)
       if (associated(scratch%vt3db))  nullify (scratch%vt3db)
       if (associated(scratch%vt3dc))  nullify (scratch%vt3dc)
@@ -260,12 +310,7 @@ module mem_scratch
       if (associated(scratch%vt3dq))  nullify (scratch%vt3dq)
       if (associated(scratch%vt3dr))  nullify (scratch%vt3dr)
       if (associated(scratch%vt3ds))  nullify (scratch%vt3ds)
-      if (associated(scratch%vt2da))  nullify (scratch%vt2da)
-      if (associated(scratch%vt2db))  nullify (scratch%vt2db)
-      if (associated(scratch%vt2dc))  nullify (scratch%vt2dc)
-      if (associated(scratch%vt2dd))  nullify (scratch%vt2dd)
-      if (associated(scratch%vt2de))  nullify (scratch%vt2de)
-      if (associated(scratch%vt2df))  nullify (scratch%vt2df)
+
       if (associated(scratch%vt4da))  nullify (scratch%vt4da)
       if (associated(scratch%vt4db))  nullify (scratch%vt4db)
       if (associated(scratch%vt4dc))  nullify (scratch%vt4dc)
@@ -292,6 +337,27 @@ module mem_scratch
       if (associated(scratch%scr4 ))  deallocate (scratch%scr4 )
       if (associated(scratch%scr5 ))  deallocate (scratch%scr5 )
       if (associated(scratch%scr6 ))  deallocate (scratch%scr6 )
+
+      if (associated(scratch%vt2da))  deallocate (scratch%vt2da)
+      if (associated(scratch%vt2db))  deallocate (scratch%vt2db)
+      if (associated(scratch%vt2dc))  deallocate (scratch%vt2dc)
+      if (associated(scratch%vt2dd))  deallocate (scratch%vt2dd)
+      if (associated(scratch%vt2de))  deallocate (scratch%vt2de)
+      if (associated(scratch%vt2df))  deallocate (scratch%vt2df)
+      if (associated(scratch%vt2dg))  deallocate (scratch%vt2dg)
+      if (associated(scratch%vt2dh))  deallocate (scratch%vt2dh)
+      if (associated(scratch%vt2di))  deallocate (scratch%vt2di)
+      if (associated(scratch%vt2dj))  deallocate (scratch%vt2dj)
+      if (associated(scratch%vt2dk))  deallocate (scratch%vt2dk)
+      if (associated(scratch%vt2dl))  deallocate (scratch%vt2dl)
+      if (associated(scratch%vt2dm))  deallocate (scratch%vt2dm)
+      if (associated(scratch%vt2dn))  deallocate (scratch%vt2dn)
+      if (associated(scratch%vt2do))  deallocate (scratch%vt2do)
+      if (associated(scratch%vt2dp))  deallocate (scratch%vt2dp)
+      if (associated(scratch%vt2dq))  deallocate (scratch%vt2dq)
+      if (associated(scratch%vt2dr))  deallocate (scratch%vt2dr)
+      if (associated(scratch%vt2ds))  deallocate (scratch%vt2ds)
+
       if (associated(scratch%vt3da))  deallocate (scratch%vt3da)
       if (associated(scratch%vt3db))  deallocate (scratch%vt3db)
       if (associated(scratch%vt3dc))  deallocate (scratch%vt3dc)
@@ -311,12 +377,7 @@ module mem_scratch
       if (associated(scratch%vt3dq))  deallocate (scratch%vt3dq)
       if (associated(scratch%vt3dr))  deallocate (scratch%vt3dr)
       if (associated(scratch%vt3ds))  deallocate (scratch%vt3ds)
-      if (associated(scratch%vt2da))  deallocate (scratch%vt2da)
-      if (associated(scratch%vt2db))  deallocate (scratch%vt2db)
-      if (associated(scratch%vt2dc))  deallocate (scratch%vt2dc)
-      if (associated(scratch%vt2dd))  deallocate (scratch%vt2dd)
-      if (associated(scratch%vt2de))  deallocate (scratch%vt2de)
-      if (associated(scratch%vt2df))  deallocate (scratch%vt2df)
+
       if (associated(scratch%vt4da))  deallocate (scratch%vt4da)
       if (associated(scratch%vt4db))  deallocate (scratch%vt4db)
       if (associated(scratch%vt4dc))  deallocate (scratch%vt4dc)

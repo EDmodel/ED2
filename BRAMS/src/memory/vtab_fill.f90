@@ -10,8 +10,8 @@ subroutine vtables2(var,varm,ng,npts,imean,tabstr)
    use var_tables
       
    implicit none
-   real, target :: var,varm
    integer, intent(in) :: ng,npts,imean
+   real, dimension (npts), target :: var,varm
    character (len=*), intent(in) :: tabstr
 
    character (len=80) ::line
@@ -140,12 +140,13 @@ end subroutine lite_varset
             
 !-------------------------------------------------------------------------
    
-   subroutine vtables_scalar(varp,vart,ng,tabstr)
+   subroutine vtables_scalar(npts,varp,vart,ng,tabstr)
 
    use var_tables
       
    implicit none
-   real, target :: varp,vart
+   integer, intent(in) :: npts
+   real, dimension(npts), target :: varp,vart
    integer, intent(in) :: ng
    character (len=*), intent(in) :: tabstr
 

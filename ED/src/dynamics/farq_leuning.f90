@@ -497,8 +497,9 @@ module farq_leuning
       ! close all stomata, as there was no viable state for stomata to remain opened.      !
       !------------------------------------------------------------------------------------!
       if (.not. success) then
-         call copy_solution(stclosed,lightlim)
-         lightlim%co2_demand = discard
+         call copy_solution(stclosed,stopen)
+         limit_flag = -1
+         return
       end if
       !------------------------------------------------------------------------------------!
 
@@ -523,8 +524,9 @@ module farq_leuning
       ! close all stomata, as there was no viable state for stomata to remain opened.      !
       !------------------------------------------------------------------------------------!
       if (.not. success) then
-         call copy_solution(stclosed,rubiscolim)
-         rubiscolim%co2_demand = discard
+         call copy_solution(stclosed,stopen)
+         limit_flag = -2
+         return
       end if
       !------------------------------------------------------------------------------------!
 
@@ -562,7 +564,7 @@ module farq_leuning
       ! stomata, as there was no viable state for stomata to remain opened.                !
       !------------------------------------------------------------------------------------!
       if (.not. success) then
-         call copy_solution(stclosed,co2lim)
+         call copy_solution(stclosed,stopen)
          co2lim%co2_demand = discard
          return
       end if
@@ -571,20 +573,15 @@ module farq_leuning
 
 
       !------------------------------------------------------------------------------------!
-      !     The actual solution will be the one with the lowest carbon demand.  In case    !
-      ! all three states failed, the solution is considered invalid and therefore all      !
-      ! stomata are closed.                                                                !
+      !     If we have reached this point, it means that we found solutions for all the    !
+      ! cases.  The actual solution will be the one with the lowest carbon demand.         !
       !------------------------------------------------------------------------------------!
-      if (lightlim%co2_demand == discard .and. rubiscolim%co2_demand == discard .and.      &
-          co2lim%co2_demand == discard) then
-         call copy_solution(stclosed,stopen)
-         limit_flag = -2
-      elseif (lightlim%co2_demand <= rubiscolim%co2_demand .and.                           &
+      if (lightlim%co2_demand <= rubiscolim%co2_demand .and.                               &
           lightlim%co2_demand <= co2lim%co2_demand              )  then
          !----- Light is the strongest limitation. ----------------------------------------!
          call copy_solution(lightlim,stopen)
          limit_flag = 1
-      elseif (rubiscolim%co2_demand < lightlim%co2_demand .and.                            &
+      elseif (rubiscolim%co2_demand <  lightlim%co2_demand .and.                           &
               rubiscolim%co2_demand <= co2lim%co2_demand        ) then
          !----- Rubisco is the strongest limitation. --------------------------------------!
          call copy_solution(rubiscolim,stopen)
@@ -596,50 +593,6 @@ module farq_leuning
       end if
       !------------------------------------------------------------------------------------!
 
-
-
-      !------------------------------------------------------------------------------------!
-      !     Final sanity check.  If the carbon demand is negative, or if the conductivity  !
-      ! has somehow become negative, close all stomata.                                    !
-      !------------------------------------------------------------------------------------!
-      if (stopen%co2_demand < 0.d0 .and. limit_flag > 0) then
-         select case (limit_flag)
-         case (1)
-            call set_co2_demand_params('LIGHT')
-         case (2)
-            call set_co2_demand_params('RUBISCO')
-         case (3)
-            call set_co2_demand_params('CO2')
-         end select
-
-         call copy_solution(stclosed,stopen)
-         limit_flag = -1
-      elseif (stopen%stom_cond_h2o < thispft%b) then
-         select case (limit_flag)
-         case (1)
-            call set_co2_demand_params('LIGHT')
-         case (2)
-            call set_co2_demand_params('RUBISCO')
-         case (3)
-            call set_co2_demand_params('CO2')
-         end select
-
-         call copy_solution(stclosed,stopen)
-         limit_flag = -4
-      elseif (stopen%stom_cond_h2o > c34smax_gsw8) then
-
-         select case (limit_flag)
-         case (1)
-            call set_co2_demand_params('LIGHT')
-         case (2)
-            call set_co2_demand_params('RUBISCO')
-         case (3)
-            call set_co2_demand_params('CO2')
-         end select
-
-         call copy_solution(stclosed,stopen)
-         limit_flag = 4
-      end if
       return
    end subroutine photosynthesis_exact_solver
    !=======================================================================================!

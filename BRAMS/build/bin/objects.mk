@@ -82,9 +82,13 @@ OBJ_MODEL =                         \
 	landuse_input.o             \
 	leaf_coms.o                 \
 	leaf3.o                     \
+	leaf3_bc.o                  \
+	leaf3_can.o                 \
 	leaf3_hyd.o                 \
 	leaf3_init.o                \
+	leaf3_ocean.o               \
 	leaf3_teb.o                 \
+	leaf3_tw.o                  \
 	leaf3_utils.o               \
 	local_proc.o                \
 	machine_arq.o               \
@@ -293,6 +297,7 @@ OBJ_MODEL =                         \
 	ed_opspec.o                 \
 	ed_para_coms.o              \
 	ed_params.o                 \
+	ed_print.o                 \
 	ed_read_ed10_20_history.o   \
 	ed_read_ed21_history.o      \
 	ed_state_vars.o             \

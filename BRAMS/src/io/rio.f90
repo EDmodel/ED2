@@ -339,9 +339,9 @@ end subroutine hiswrt
 subroutine rams_aprep_p (n1,a,b,c)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
-   integer              , intent(in) :: n1
-   real   , dimension(*), intent(in)  :: a,b
-   real   , dimension(*), intent(out) :: c
+   integer              , intent(in)    :: n1
+   real   , dimension(*), intent(in)    :: a,b
+   real   , dimension(*), intent(inout) :: c
    !----- Local variables -----------------------------------------------------------------!
    integer :: i
    !---------------------------------------------------------------------------------------!
@@ -368,10 +368,10 @@ end subroutine rams_aprep_p
 subroutine rams_aprep_hkh(n1,hkm,vkh,dn0,scr1,idiffk,xkhkm)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
-   integer              , intent(in)  :: n1,idiffk
-   real                 , intent(in)  :: xkhkm
-   real   , dimension(*), intent(in)  :: hkm,vkh,dn0
-   real   , dimension(*), intent(out) :: scr1
+   integer              , intent(in)    :: n1,idiffk
+   real                 , intent(in)    :: xkhkm
+   real   , dimension(*), intent(in)    :: hkm,vkh,dn0
+   real   , dimension(*), intent(inout) :: scr1
    !----- Local variables -----------------------------------------------------------------!
    integer :: ind
    !---------------------------------------------------------------------------------------!
@@ -405,9 +405,9 @@ end subroutine rams_aprep_hkh
 subroutine rams_aprep_vkh(n1,vkh,dn0,vt3dd)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
-   integer              , intent(in)  :: n1
-   real   , dimension(*), intent(in)  :: vkh,dn0
-   real   , dimension(*), intent(out) :: vt3dd
+   integer              , intent(in)    :: n1
+   real   , dimension(*), intent(in)    :: vkh,dn0
+   real   , dimension(*), intent(inout) :: vt3dd
    !----- Local variables -----------------------------------------------------------------!
    integer :: ind
    !---------------------------------------------------------------------------------------!

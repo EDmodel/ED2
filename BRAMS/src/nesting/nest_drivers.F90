@@ -10,7 +10,7 @@
 subroutine nstbdriv()
 
   use mem_tend, only: &
-       tend
+       tend_g
 
   use var_tables, only: &
        num_scalar,      &
@@ -41,6 +41,8 @@ subroutine nstbdriv()
        nstbot,        &
        nsttop,        &
        jdim
+  use mem_scratch, only: &
+       scratch
 
   implicit none
 
@@ -64,36 +66,40 @@ subroutine nstbdriv()
   tymeinvs = 1.0 / (dtlt * float(nndtrat(ngrid)+1-isstp))
 
   call nstbtnd(mzp,mxp,myp,ia,iz,ja,jz,ibcon  &
-       ,basic_g(ngrid)%up,tend%ut  &
+       ,basic_g(ngrid)%up,tend_g(ngrid)%ut  &
        ,nbounds(ngrid)%bux,nbounds(ngrid)%buy  &
        ,nbounds(ngrid)%buz  &
        ,'u',tymeinvv,nstbot,nsttop,jdim)
 
   call nstbtnd(mzp,mxp,myp,ia,iz,ja,jz,ibcon  &
-       ,basic_g(ngrid)%vp,tend%vt  &
+       ,basic_g(ngrid)%vp,tend_g(ngrid)%vt  &
        ,nbounds(ngrid)%bvx,nbounds(ngrid)%bvy  &
        ,nbounds(ngrid)%bvz  &
        ,'v',tymeinvv,nstbot,nsttop,jdim)
 
   call nstbtnd(mzp,mxp,myp,ia,iz,ja,jz,ibcon  &
-       ,basic_g(ngrid)%wp,tend%wt  &
+       ,basic_g(ngrid)%wp,tend_g(ngrid)%wt  &
        ,nbounds(ngrid)%bwx,nbounds(ngrid)%bwy  &
        ,nbounds(ngrid)%bwz  &
        ,'w',tymeinvv,nstbot,nsttop,jdim)
 
   call nstbtnd(mzp,mxp,myp,ia,iz,ja,jz,ibcon  &
-       ,basic_g(ngrid)%pp,tend%pt  &
+       ,basic_g(ngrid)%pp,tend_g(ngrid)%pt  &
        ,nbounds(ngrid)%bpx,nbounds(ngrid)%bpy  &
        ,nbounds(ngrid)%bpz  &
        ,'p',tymeinvv,nstbot,nsttop,jdim)
 
   do n = 1,num_scalar(ngrid)
+     call atob(mzp*mxp*myp,scalar_tab(n,ngrid)%var_p,scratch%scr5)
+     call atob(mzp*mxp*myp,scalar_tab(n,ngrid)%var_t,scratch%scr6)
      call nstbtnd(mzp,mxp,myp,ia,iz,ja,jz,ibcon  &
-          ,scalar_tab(n,ngrid)%var_p,scalar_tab(n,ngrid)%var_t  &
+          ,scratch%scr5,scratch%scr6  &
           ,nbounds(ngrid)%bsx(:,:,:,n),nbounds(ngrid)%bsy(:,:,:,n)  &
           ,nbounds(ngrid)%bsz(:,:,:,n)  &
           ,'t',tymeinvs,nstbot,nsttop,jdim)
-  enddo
+     call atob(mzp*mxp*myp,scratch%scr5,scalar_tab(n,ngrid)%var_p)
+     call atob(mzp*mxp*myp,scratch%scr6,scalar_tab(n,ngrid)%var_t)
+  end do
   return
 end subroutine nstbdriv
 

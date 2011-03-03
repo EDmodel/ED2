@@ -203,7 +203,7 @@ rmass.o: mem_turb.mod
 dealloc.o: catt_start.mod mem_aerad.mod mem_all.mod mem_ensemble.mod
 dealloc.o: mem_gaspart.mod mem_globaer.mod mem_globrad.mod mem_mass.mod
 dealloc.o: mem_opt.mod mem_scratch1_grell.mod mem_scratch_grell.mod mem_teb.mod
-dealloc.o: mem_teb_common.mod teb_spm_start.mod
+dealloc.o: mem_teb_common.mod mem_tend.mod teb_spm_start.mod
 hdf5_coms.o: 
 mem_all.o: io_params.mod mem_basic.mod mem_cuparm.mod mem_grid.mod mem_leaf.mod
 mem_all.o: mem_micro.mod mem_nestb.mod mem_oda.mod mem_radiate.mod
@@ -258,7 +258,8 @@ mksfc_sst.o: io_params.mod mem_grid.mod mem_leaf.mod mem_mksfc.mod
 mksfc_top.o: io_params.mod mem_grid.mod mem_mksfc.mod
 ndvi_read.o: io_params.mod mem_grid.mod mem_leaf.mod
 nest_geosst.o: io_params.mod leaf_coms.mod mem_basic.mod mem_grid.mod
-nest_geosst.o: mem_leaf.mod mem_mksfc.mod mem_scratch.mod mem_soil_moisture.mod
+nest_geosst.o: mem_leaf.mod mem_mksfc.mod mem_radiate.mod mem_scratch.mod
+nest_geosst.o: mem_soil_moisture.mod
 nest_init_aux.o: mem_basic.mod mem_grid.mod mem_leaf.mod mem_scratch.mod
 sst_read.o: io_params.mod mem_grid.mod mem_leaf.mod
 mpass_cyclic.o: cyclic_mod.mod grid_dims.mod mem_aerad.mod mem_basic.mod
@@ -346,16 +347,22 @@ rad_mclat.o: rconstants.mod
 mem_soil_moisture.o: leaf_coms.mod
 soil_moisture_init.o: io_params.mod leaf_coms.mod mem_grid.mod mem_leaf.mod
 soil_moisture_init.o: mem_soil_moisture.mod rconstants.mod
-leaf3.o: catt_start.mod leaf_coms.mod mem_all.mod mem_leaf.mod mem_scratch.mod
-leaf3.o: mem_teb.mod mem_teb_common.mod node_mod.mod rconstants.mod
+leaf3.o: io_params.mod leaf_coms.mod mem_basic.mod mem_cuparm.mod mem_grid.mod
+leaf3.o: mem_leaf.mod mem_micro.mod mem_radiate.mod mem_scratch.mod mem_teb.mod
+leaf3.o: mem_teb_common.mod mem_turb.mod node_mod.mod rconstants.mod
 leaf3.o: teb_spm_start.mod therm_lib.mod
+leaf3_can.o: catt_start.mod leaf_coms.mod rconstants.mod therm_lib.mod
 leaf3_hyd.o: leaf_coms.mod mem_grid.mod mem_leaf.mod rconstants.mod
 leaf3_hyd.o: therm_lib.mod
 leaf3_init.o: io_params.mod leaf_coms.mod mem_grid.mod mem_leaf.mod
 leaf3_init.o: rconstants.mod teb_spm_start.mod therm_lib.mod
+leaf3_ocean.o: io_params.mod leaf_coms.mod mem_grid.mod rconstants.mod
+leaf3_ocean.o: therm_lib.mod
 leaf3_teb.o: mem_emiss.mod rconstants.mod teb_vars_const.mod therm_lib.mod
-leaf3_utils.o: catt_start.mod io_params.mod leaf_coms.mod mem_cuparm.mod
-leaf3_utils.o: mem_grid.mod mem_leaf.mod mem_micro.mod mem_scratch.mod
+leaf3_tw.o: catt_start.mod leaf_coms.mod mem_grid.mod mem_leaf.mod
+leaf3_tw.o: mem_radiate.mod mem_scratch.mod rconstants.mod therm_lib.mod
+leaf3_utils.o: catt_start.mod grid_dims.mod io_params.mod leaf_coms.mod
+leaf3_utils.o: mem_grid.mod mem_leaf.mod mem_radiate.mod mem_scratch.mod
 leaf3_utils.o: node_mod.mod rconstants.mod teb_spm_start.mod therm_lib.mod
 leaf_coms.o: grid_dims.mod mem_leaf.mod rconstants.mod therm_lib.mod
 mem_leaf.o: grid_dims.mod io_params.mod var_tables.mod
@@ -519,6 +526,8 @@ ed_opspec.o: decomp_coms.mod disturb_coms.mod ed_max_dims.mod ed_misc_coms.mod
 ed_opspec.o: ed_para_coms.mod grid_coms.mod mem_polygons.mod met_driver_coms.mod
 ed_opspec.o: pft_coms.mod phenology_coms.mod physiology_coms.mod rk4_coms.mod
 ed_opspec.o: soil_coms.mod
+ed_print.o: ed_max_dims.mod ed_misc_coms.mod ed_node_coms.mod ed_state_vars.mod
+ed_print.o: ed_var_tables.mod
 ed_read_ed10_20_history.o: allometry.mod consts_coms.mod disturb_coms.mod
 ed_read_ed10_20_history.o: ed_max_dims.mod ed_misc_coms.mod ed_state_vars.mod
 ed_read_ed10_20_history.o: fuse_fiss_utils.mod grid_coms.mod mem_polygons.mod
@@ -533,8 +542,8 @@ ed_xml_config.o: grid_coms.mod hydrology_coms.mod met_driver_coms.mod
 ed_xml_config.o: pft_coms.mod phenology_coms.mod physiology_coms.mod
 ed_xml_config.o: rk4_coms.mod soil_coms.mod
 edio.o: c34constants.mod consts_coms.mod ed_max_dims.mod ed_misc_coms.mod
-edio.o: ed_node_coms.mod ed_state_vars.mod ed_var_tables.mod grid_coms.mod
-edio.o: pft_coms.mod soil_coms.mod therm_lib.mod
+edio.o: ed_node_coms.mod ed_state_vars.mod grid_coms.mod pft_coms.mod
+edio.o: soil_coms.mod therm_lib.mod
 h5_output.o: an_header.mod c34constants.mod ed_max_dims.mod ed_misc_coms.mod
 h5_output.o: ed_node_coms.mod ed_state_vars.mod ed_var_tables.mod
 h5_output.o: fusion_fission_coms.mod grid_coms.mod  hdf5_coms.mod

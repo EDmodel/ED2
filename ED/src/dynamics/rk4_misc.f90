@@ -32,6 +32,8 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
                                     , rk4tiny_sfcw_mass      & ! intent(in)
                                     , checkbudget            & ! intent(in)
                                     , print_detailed         & ! intent(in)
+                                    , rk4min_soil_water      & ! intent(in)
+                                    , rk4max_soil_water      & ! intent(in)
                                     , find_derived_thbounds  & ! sub-routine
                                     , reset_rk4_fluxes       ! ! sub-routine
    use ed_max_dims           , only : n_pft                  ! ! intent(in)
@@ -113,7 +115,15 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    !     Soil properties.                                                                  !
    !---------------------------------------------------------------------------------------!
    do k = rk4site%lsl, nzg
-      targetp%soil_water(k)   = dble(sourcesite%soil_water(k,ipa))
+      !------------------------------------------------------------------------------------!
+      !     Soil water may be slightly off-bounds.  This may happen when the soil moisture !
+      ! is exactly at the bounds, but then it is copied to single precision and then back  !
+      ! to double precision.  Therefore at this time only we must ensure that we bound it, !
+      ! otherwise the model will crash due to the round-off error.                         !            
+      !------------------------------------------------------------------------------------!
+      targetp%soil_water(k)   = min( rk4max_soil_water(k)                                  &
+                                   , max( rk4min_soil_water(k)                             &
+                                        , dble(sourcesite%soil_water(k,ipa)) ) )
       targetp%soil_energy(k)  = dble(sourcesite%soil_energy(k,ipa))
       targetp%soil_tempk(k)   = dble(sourcesite%soil_tempk(k,ipa))
       targetp%soil_fracliq(k) = dble(sourcesite%soil_fracliq(k,ipa))
@@ -130,7 +140,7 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    ksn                   = targetp%nlev_sfcwater
    sum_sfcw_mass = 0.d0
    do k = 1, nzs
-      targetp%sfcwater_mass(k)    = dble(sourcesite%sfcwater_mass(k,ipa))
+      targetp%sfcwater_mass(k)    = max(0.d0,dble(sourcesite%sfcwater_mass(k,ipa)))
       targetp%sfcwater_depth(k)   = dble(sourcesite%sfcwater_depth(k,ipa))
       targetp%sfcwater_energy(k)  = dble(sourcesite%sfcwater_energy(k,ipa))                &
                                   * dble(sourcesite%sfcwater_mass(k,ipa))
@@ -265,7 +275,7 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
       if (targetp%solvable(ico)) then
          if (hcap_scale == 1.d0) then
             targetp%veg_energy(ico) = dble(cpatch%veg_energy(ico))
-            targetp%veg_water (ico) = dble(cpatch%veg_water (ico))
+            targetp%veg_water (ico) = max(0.d0,dble(cpatch%veg_water (ico)))
             targetp%hcapveg   (ico) = dble(cpatch%hcapveg   (ico))
          else
             targetp%hcapveg   (ico) = dble(cpatch%hcapveg(ico)) * hcap_scale
@@ -855,7 +865,7 @@ end subroutine update_diagnostic_vars
 ! 3. Compute the amount of mass each layer has, and redistribute them accordingly.         !
 ! 4. Percolates excessive liquid water if needed.                                          !
 !------------------------------------------------------------------------------------------!
-subroutine adjust_sfcw_properties(nzg,nzs,initp,csite,ipa)
+subroutine adjust_sfcw_properties(nzg,nzs,initp,hdid,csite,ipa)
 
    use rk4_coms      , only : rk4patchtype          & ! structure
                             , rk4min_sfcw_mass      & ! intent(in)
@@ -863,9 +873,12 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,csite,ipa)
                             , rk4water_stab_thresh  & ! intent(in)
                             , rk4tiny_sfcw_mass     & ! intent(in)
                             , rk4tiny_sfcw_depth    & ! intent(in)
+                            , rk4min_can_shv        & ! intent(in)
                             , rk4snowmin            & ! intent(in)
                             , ipercol               & ! intent(in)
-                            , rk4eps2               ! ! intent(in)
+                            , rk4eps2               & ! intent(in)
+                            , wcapcan               & ! intent(in)
+                            , wcapcani              ! ! intent(in)
    use ed_state_vars , only : sitetype              & ! structure
                             , patchtype             ! ! structure
    use soil_coms     , only : soil8                 & ! intent(in)
@@ -880,7 +893,10 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,csite,ipa)
                             , wdnsi8                & ! intent(in)
                             , tsupercool8           & ! intent(in)
                             , qliqt38               & ! intent(in)
-                            , wdnsi8                ! ! intent(in)
+                            , wdnsi8                & ! intent(in)
+                            , fdnsi8                & ! intent(in)
+                            , alli8                 & ! intent(in)
+                            , alvi8                 ! ! intent(in)
    use therm_lib8    , only : qtk8                  & ! subroutine
                             , qwtk8                 ! ! subroutine
    implicit none
@@ -888,6 +904,7 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,csite,ipa)
    type(rk4patchtype)     , target     :: initp
    type(sitetype)         , target     :: csite
    integer                , intent(in) :: ipa
+   real(kind=8)           , intent(in) :: hdid
    integer                , intent(in) :: nzg
    integer                , intent(in) :: nzs
    !----- Local variables -----------------------------------------------------------------!
@@ -898,6 +915,7 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,csite,ipa)
    integer                             :: ksnnew
    integer                             :: k
    !----- Control variables ---------------------------------------------------------------!
+   real(kind=8)                        :: hdidi
    real(kind=8)                        :: wtold
    real(kind=8)                        :: wtnew
    real(kind=8), dimension(nzs)        :: newsfcw_mass
@@ -910,6 +928,12 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,csite,ipa)
    real(kind=8)                        :: energy_free
    real(kind=8)                        :: wmass_free
    real(kind=8)                        :: depth_free
+   real(kind=8)                        :: energy_available
+   real(kind=8)                        :: wmass_available
+   real(kind=8)                        :: depth_available
+   real(kind=8)                        :: energy_needed
+   real(kind=8)                        :: wmass_needed
+   real(kind=8)                        :: depth_needed
    real(kind=8)                        :: wmass_perc
    real(kind=8)                        :: energy_perc
    real(kind=8)                        :: depth_perc
@@ -931,6 +955,9 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,csite,ipa)
    real(kind=8)                        :: gi               ! Partial density of ice
    integer                             :: nsoil
    !----- Variables used for the water and energy budget. ---------------------------------!
+   real(kind=8)                        :: wmass_cas_beg
+   real(kind=8)                        :: wmass_cas_end
+   real(kind=8)                        :: energy_input
    real(kind=8)                        :: wmass_virtual_beg
    real(kind=8)                        :: energy_virtual_beg
    real(kind=8)                        :: wmass_sfcw_beg
@@ -954,6 +981,11 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,csite,ipa)
    real(kind=8)           , parameter  :: Crmin   = 3.d-2
    real(kind=8)           , parameter  :: Crmax   = 1.d-1
    real(kind=8)           , parameter  :: ge      = 2.d2
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Find the inverse of the time step. ----------------------------------------------!
+   hdidi      = 1.d0 / hdid
    !---------------------------------------------------------------------------------------!
 
 
@@ -988,13 +1020,16 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,csite,ipa)
    !---------------------------------------------------------------------------------------!
    !      Initialise the budget variables.                                                 !
    !---------------------------------------------------------------------------------------!
+   wmass_cas_beg      = initp%can_shv * wcapcan
+   energy_input       = 0.d0
    wmass_virtual_beg  = initp%virtual_water
    energy_virtual_beg = initp%virtual_energy
    wmass_sfcw_beg     = sum_sfcw_mass
    energy_sfcw_beg    = sum_sfcw_energy
    wmass_soil_beg     = initp%soil_water(nzg)  * dslz8(nzg) * wdns8
    energy_soil_beg    = initp%soil_energy(nzg) * dslz8(nzg)
-   wmass_total_beg    = wmass_virtual_beg  + wmass_sfcw_beg  + wmass_soil_beg
+   wmass_total_beg    = wmass_virtual_beg  + wmass_sfcw_beg  + wmass_soil_beg              &
+                      + wmass_cas_beg
    energy_total_beg   = energy_virtual_beg + energy_sfcw_beg + energy_soil_beg
    !---------------------------------------------------------------------------------------!
 
@@ -1013,6 +1048,64 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,csite,ipa)
       ! can reject this step.                                                              !
       !------------------------------------------------------------------------------------!
       return
+   elseif ((initp%virtual_water + sum_sfcw_mass) < 0.d0) then
+      !------------------------------------------------------------------------------------!
+      !     The mass of the potential new temporary surface water is within bounds but it  !
+      ! is negative.  This can only happen if the layer evaporated more than what it       !
+      ! should, so we condense some of the water back from the canopy air space.  If it is !
+      ! going to deplete the canopy air space specific humidity too much, then we leave    !
+      ! the remainder to be stolen from the top soil, but this is dangerous because the    !
+      ! soil may be too dry too.                                                           !
+      !------------------------------------------------------------------------------------!
+      wmass_needed               = - (initp%virtual_water  + sum_sfcw_mass  )
+      energy_needed              = - (initp%virtual_energy + sum_sfcw_energy)
+      depth_needed               = - (initp%virtual_depth  + sum_sfcw_depth )
+
+      !----- Find the amount available at the canopy air space. ---------------------------!
+      wmass_available            = wcapcan * (initp%can_shv - 5.d0 * rk4min_can_shv)
+      if ( wmass_available > wmass_needed) then
+         !---------------------------------------------------------------------------------!
+         !    There is enough water vapour. The transfer will require phase change, so the !
+         ! energy transfer will be a latent heat flux.  Remove the water from the canopy   !
+         ! air space.                                                                      !
+         !---------------------------------------------------------------------------------!
+         initp%can_shv      = initp%can_shv       - wmass_needed  * wcapcani
+         initp%avg_vapor_gc = initp%avg_vapor_gc  - wmass_needed * hdidi
+
+         energy_input       = energy_needed
+
+         wmass_free  = 0.d0
+         energy_free = 0.d0
+         depth_free  = 0.d0
+
+      elseif (wmass_available > 0.d0) then
+         !---------------------------------------------------------------------------------!
+         !    There is not enough water vapour. Dry down to the minimum, and hope for the  !
+         ! best.                                                                           !
+         !---------------------------------------------------------------------------------!
+         energy_available   = wmass_available * (alvi8 - initp%soil_fracliq(nzg) * alli8)
+         depth_available    = wmass_available * ( initp%soil_fracliq(nzg) * wdnsi8         &
+                                                + (1.d0-initp%soil_fracliq(nzg)) * fdnsi8)
+
+         energy_input       = energy_available
+
+         initp%can_shv      = initp%can_shv       - wmass_available * wcapcani
+         initp%avg_vapor_gc = initp%avg_vapor_gc  - wmass_available * hdidi
+         
+         wmass_free         = wmass_available  - wmass_needed 
+         energy_free        = energy_available - energy_needed
+         depth_free         = depth_available  - depth_needed 
+      end if
+
+      !----- Reset both the temporary surface water and the virtual layer. ----------------!
+      initp%virtual_water      = 0.d0
+      initp%virtual_energy     = 0.d0
+      initp%virtual_depth      = 0.d0
+      initp%sfcwater_mass  (:) = 0.d0
+      initp%sfcwater_energy(:) = 0.d0
+      initp%sfcwater_depth (:) = 0.d0
+      !----- Set ksnnew to zero to force all free water to go to the soil. ----------------!
+      ksnnew                   = 0
    elseif ((initp%virtual_water + sum_sfcw_mass) < rk4tiny_sfcw_mass) then
       !------------------------------------------------------------------------------------!
       !     The mass of the potential new temporary surface water is within bounds but it  !
@@ -1406,13 +1499,15 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,csite,ipa)
    !---------------------------------------------------------------------------------------!
    !      Compute the budget variables after the adjustments.                              !
    !---------------------------------------------------------------------------------------!
+   wmass_cas_end      = initp%can_shv * wcapcan
    wmass_virtual_end  = initp%virtual_water
    energy_virtual_end = initp%virtual_energy
    wmass_sfcw_end     = sum_sfcw_mass
    energy_sfcw_end    = sum_sfcw_energy
    wmass_soil_end     = initp%soil_water(nzg)  * dslz8(nzg) * wdns8
    energy_soil_end    = initp%soil_energy(nzg) * dslz8(nzg)
-   wmass_total_end    = wmass_virtual_end  + wmass_sfcw_end  + wmass_soil_end
+   wmass_total_end    = wmass_virtual_end  + wmass_sfcw_end  + wmass_soil_end              &
+                      + wmass_cas_end
    energy_total_end   = energy_virtual_end + energy_sfcw_end + energy_soil_end
    !---------------------------------------------------------------------------------------!
 
@@ -1423,8 +1518,8 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,csite,ipa)
    !---------------------------------------------------------------------------------------!
    wmass_total_rch  = 2.d0 * abs(wmass_total_end - wmass_total_beg)                        &
                     / (abs(wmass_total_end) + abs(wmass_total_beg))
-   energy_total_rch = 2.d0 * abs(energy_total_end - energy_total_beg)                      &
-                    / (abs(energy_total_end) + abs(energy_total_beg))
+   energy_total_rch = 2.d0 * abs(energy_total_end - energy_input - energy_total_beg)       &
+                    / (abs(energy_total_end - energy_input) + abs(energy_total_beg))
    if (wmass_total_rch > 1.d-6 .or. energy_total_rch > 1.d-6) then
       write (unit=*,fmt='(a)')           '------------------------------------------------'
       write (unit=*,fmt='(a)')           ' Water or energy conservation was violated!!!   '
@@ -1432,6 +1527,7 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,csite,ipa)
       write (unit=*,fmt='(a)')           ' '
       write (unit=*,fmt='(a)')           ' - Initial conditions: '
       write (unit=*,fmt='(a,1x,es14.7)') '   + Total water mass    = ',wmass_total_beg
+      write (unit=*,fmt='(a,1x,es14.7)') '   + CAS mass            = ',wmass_cas_beg
       write (unit=*,fmt='(a,1x,es14.7)') '   + Virtual mass        = ',wmass_virtual_beg
       write (unit=*,fmt='(a,1x,es14.7)') '   + Ponding/snow mass   = ',wmass_sfcw_beg
       write (unit=*,fmt='(a,1x,es14.7)') '   + Soil mass           = ',wmass_soil_beg
@@ -1442,6 +1538,7 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,csite,ipa)
       write (unit=*,fmt='(a)')           ' '
       write (unit=*,fmt='(a)')           ' - Final conditions: '
       write (unit=*,fmt='(a,1x,es14.7)') '   + Total water mass    = ',wmass_total_end
+      write (unit=*,fmt='(a,1x,es14.7)') '   + CAS mass            = ',wmass_cas_end
       write (unit=*,fmt='(a,1x,es14.7)') '   + Virtual mass        = ',wmass_virtual_end
       write (unit=*,fmt='(a,1x,es14.7)') '   + Ponding/snow mass   = ',wmass_sfcw_end
       write (unit=*,fmt='(a,1x,es14.7)') '   + Soil mass           = ',wmass_soil_end
@@ -1449,6 +1546,7 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,csite,ipa)
       write (unit=*,fmt='(a,1x,es14.7)') '   + Virtual energy      = ',energy_virtual_end
       write (unit=*,fmt='(a,1x,es14.7)') '   + Ponding/snow energy = ',energy_sfcw_end
       write (unit=*,fmt='(a,1x,es14.7)') '   + Soil energy         = ',energy_soil_end
+      write (unit=*,fmt='(a,1x,es14.7)') '   + Input energy (cond) = ',energy_input
       write (unit=*,fmt='(a)')           ' '
       write (unit=*,fmt='(a)')           ' - Relative error: '
       write (unit=*,fmt='(a,1x,es14.7)') '   + Total water mass    = ',wmass_total_rch
@@ -1505,7 +1603,7 @@ subroutine adjust_topsoil_properties(initp,hdid,csite,ipa)
                                    , alli8                & ! intent(in)
                                    , t3ple8               & ! intent(in)
                                    , wdns8                & ! intent(in)
-                                   , idnsi8               & ! intent(in)
+                                   , fdnsi8               & ! intent(in)
                                    , toodry8              & ! intent(in)
                                    , tsupercool8          & ! intent(in)
                                    , qliqt38              & ! intent(in)
@@ -1555,21 +1653,9 @@ subroutine adjust_topsoil_properties(initp,hdid,csite,ipa)
    kt            = nzg
    nstop         = csite%ntext_soil(kt,ipa)
 
-   !---------------------------------------------------------------------------------------!
-   !     Now we check if the soil moisture is within safe bounds or seriously messed up.   !
-   ! In boths case we won't bother adjusting.                                              !
-   !---------------------------------------------------------------------------------------!
-   if (initp%soil_water(kt) >= soil8(nstop)%soilcp .and.                                   &
-       initp%soil_water(kt) <= soil8(nstop)%slmsts) then 
-      !----- We are in the normal range, return... ----------------------------------------!
-      return
-   end if
-
    !----- Check whether we are just slightly off. -----------------------------------------!
-   slightlymoist = initp%soil_water(kt) > soil8(nstop)%slmsts .and.                        &
-                   initp%soil_water(kt) <= rk4max_soil_water(kt)
-   slightlydry   = initp%soil_water(kt) < soil8(nstop)%soilcp .and.                        &
-                   initp%soil_water(kt) >= rk4min_soil_water(kt)
+   slightlymoist = initp%soil_water(kt) > soil8(nstop)%slmsts 
+   slightlydry   = initp%soil_water(kt) < soil8(nstop)%soilcp
 
    !---------------------------------------------------------------------------------------!
    !     If we reached this point, then we may be slightly off-track.  It is very likely   !
@@ -1831,7 +1917,7 @@ subroutine adjust_topsoil_properties(initp,hdid,csite,ipa)
                                      + (1.d0 - initp%soil_fracliq(kt)) * cice8             &
                                      * initp%soil_tempk(kt))
       depth_excess  = water_excess * ( initp%soil_fracliq(kt) * wdnsi8                     &
-                                     + (1.d0 - initp%soil_fracliq(kt)) * idnsi8)
+                                     + (1.d0 - initp%soil_fracliq(kt)) * fdnsi8)
       !------------------------------------------------------------------------------------!
 
       if (initp%nlev_sfcwater > 0) then
@@ -2075,96 +2161,75 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
 
 
          !---------------------------------------------------------------------------------!
-         !    Here we check the bounds for this cohort, and decide what to do in case it   !
-         ! is not bounded.                                                                 !
+         !    In case water is to be removed or added, we will need to update the          !
+         ! vegetation energy.  We want to preserve the temperature, though, because this   !
+         ! is happens as loss of internal energy (shedding) or latent heat (fast           !
+         ! dew/boiling).                                                                   !
+         !---------------------- ----------------------------------------------------------!
+         call qwtk8(initp%veg_energy(ico),initp%veg_water(ico),initp%hcapveg(ico)          &
+                   ,initp%veg_temp(ico),initp%veg_fliq(ico))
+         old_veg_energy = initp%veg_energy(ico)
+         old_veg_water  = initp%veg_water (ico)
+         old_veg_temp   = initp%veg_temp  (ico)
+         old_veg_fliq   = initp%veg_fliq  (ico)
          !---------------------------------------------------------------------------------!
-         if (initp%veg_water(ico) < rk4min_leaf_water) then
-            !------------------------------------------------------------------------------!
-            !    Leaf water is too negative, break it now so the step can be rejected.     !
-            !------------------------------------------------------------------------------!
-            cycle cohortloop
 
-
-         else
+         if (initp%veg_water(ico) > max_leaf_water) then
 
             !------------------------------------------------------------------------------!
-            !    In case water is to be removed or added, we will need to update the       !
-            ! vegetation energy.  We want to preserve the temperature, though, because     !
-            ! this is happens as loss of internal energy (shedding) or latent heat (fast   !
-            ! dew/boiling).                                                                !
-            !---------------------- -------------------------------------------------------!
-            call qwtk8(initp%veg_energy(ico),initp%veg_water(ico),initp%hcapveg(ico)       &
-                      ,initp%veg_temp(ico),initp%veg_fliq(ico))
-            old_veg_energy = initp%veg_energy(ico)
-            old_veg_water  = initp%veg_water (ico)
-            old_veg_temp   = initp%veg_temp  (ico)
-            old_veg_fliq   = initp%veg_fliq  (ico)
+            !    Too much water over these leaves, we shall shed the excess to the ground. !
             !------------------------------------------------------------------------------!
+            veg_wshed  = initp%veg_water(ico) - max_leaf_water
+            veg_qwshed = veg_wshed                                                         &
+                       * ( initp%veg_fliq(ico) * cliq8 * (initp%veg_temp(ico)-tsupercool8)                            &
+                         + (1.d0-initp%veg_fliq(ico)) * cice8 * initp%veg_temp(ico))
+            veg_dwshed = veg_wshed                                                         &
+                       * ( initp%veg_fliq(ico) * wdnsi8                                    &
+                         + (1.d0-initp%veg_fliq(ico))*fdnsi8)
 
-            if (initp%veg_temp(ico)  < rk4min_veg_temp .or.                                &
-                initp%veg_temp(ico)  > rk4max_veg_temp) then
+            !----- Add the contribution of this cohort to the total shedding. -------------!
+            veg_wshed_tot  = veg_wshed_tot  + veg_wshed
+            veg_qwshed_tot = veg_qwshed_tot + veg_qwshed
+            veg_dwshed_tot = veg_dwshed_tot + veg_dwshed
 
-               cycle cohortloop
+            !----- Update water mass and energy. ------------------------------------------!
+            initp%veg_water(ico)  = initp%veg_water(ico)  - veg_wshed
+            initp%veg_energy(ico) = initp%veg_energy(ico) - veg_qwshed
 
-            elseif (initp%veg_water(ico) > max_leaf_water) then
-
-               !---------------------------------------------------------------------------!
-               !    Too much water over these leaves, we shall shed the excess to the      !
-               ! ground.                                                                   !
-               !---------------------------------------------------------------------------!
-               veg_wshed  = initp%veg_water(ico) - max_leaf_water
-               veg_qwshed = veg_wshed                                                      &
-                          * ( initp%veg_fliq(ico) * cliq8                                  &
-                            * (initp%veg_temp(ico)-tsupercool8)                            &
-                            + (1.d0-initp%veg_fliq(ico)) * cice8 * initp%veg_temp(ico))
-               veg_dwshed = veg_wshed                                                      &
-                          * ( initp%veg_fliq(ico) * wdnsi8                                 &
-                            + (1.d0-initp%veg_fliq(ico))*fdnsi8)
-
-               !----- Add the contribution of this cohort to the total shedding. ----------!
-               veg_wshed_tot  = veg_wshed_tot  + veg_wshed
-               veg_qwshed_tot = veg_qwshed_tot + veg_qwshed
-               veg_dwshed_tot = veg_dwshed_tot + veg_dwshed
-
-               !----- Update water mass and energy. ---------------------------------------!
-               initp%veg_water(ico)  = initp%veg_water(ico)  - veg_wshed
-               initp%veg_energy(ico) = initp%veg_energy(ico) - veg_qwshed
-
-               !----- Update fluxes if needed be. -----------------------------------------!
-               if (print_detailed) then
-                  initp%cfx_qwshed(ico) = initp%cfx_qwshed(ico) + veg_qwshed * hdidi
-               end if
+            !----- Update fluxes if needed be. --------------------------------------------!
+            if (print_detailed) then
+               initp%cfx_qwshed(ico) = initp%cfx_qwshed(ico) + veg_qwshed * hdidi
+            end if
  
 
-            elseif (initp%veg_water(ico) < min_leaf_water) then
-               !---------------------------------------------------------------------------!
-               !    If veg_water is tiny and positive, exchange moisture with the air by   !
-               ! donating the total amount as "boiling" (fast evaporation or sublimation). !
-               ! In case the total is tiny but negative, exchange moisture with the air,   !
-               ! "stealing" moisture as fast "dew/frost" condensation.                     !
-               !---------------------------------------------------------------------------!
-               veg_boil  = max(0.d0,  initp%veg_water(ico))
-               veg_dew   = max(0.d0,- initp%veg_water(ico))
-               veg_qboil = veg_boil * (alvi8 - initp%veg_fliq(ico) * alli8)
-               veg_qdew  = veg_dew  * (alvi8 - initp%veg_fliq(ico) * alli8)
+         elseif (initp%veg_water(ico) < min_leaf_water) then
+            !------------------------------------------------------------------------------!
+            !    If veg_water is tiny and positive, exchange moisture with the air by      !
+            ! donating the total amount as "boiling" (fast evaporation or sublimation).    !
+            ! In case the total is tiny but negative, exchange moisture with the air,      !
+            ! "stealing" moisture as fast "dew/frost" condensation.                        !
+            !------------------------------------------------------------------------------!
+            veg_boil  = max(0.d0,  initp%veg_water(ico))
+            veg_dew   = max(0.d0,- initp%veg_water(ico))
+            veg_qboil = veg_boil * (alvi8 - initp%veg_fliq(ico) * alli8)
+            veg_qdew  = veg_dew  * (alvi8 - initp%veg_fliq(ico) * alli8)
 
 
-               !----- Add the contribution of this cohort to the total boiling. -----------!
-               veg_boil_tot  = veg_boil_tot  + veg_boil
-               veg_dew_tot   = veg_dew_tot   + veg_dew
-               veg_qboil_tot = veg_qboil_tot + veg_qboil
-               veg_qdew_tot  = veg_qdew_tot  + veg_qdew
+            !----- Add the contribution of this cohort to the total boiling. --------------!
+            veg_boil_tot  = veg_boil_tot  + veg_boil
+            veg_dew_tot   = veg_dew_tot   + veg_dew
+            veg_qboil_tot = veg_qboil_tot + veg_qboil
+            veg_qdew_tot  = veg_qdew_tot  + veg_qdew
 
-               !----- Update cohort state variables. --------------------------------------!
-               initp%veg_water(ico)  = 0.d0
-               initp%veg_energy(ico) = initp%veg_energy(ico)  + veg_qdew - veg_qboil
+            !----- Update cohort state variables. -----------------------------------------!
+            initp%veg_water(ico)  = 0.d0
+            initp%veg_energy(ico) = initp%veg_energy(ico)  + veg_qdew - veg_qboil
 
-               !----- Update fluxes if needed be. -----------------------------------------!
-               if (print_detailed) then
-                  initp%cfx_qwflxvc(ico) = initp%cfx_qwflxvc(ico)                          &
-                                         + (veg_qboil - veg_qdew) * hdidi
-               end if
-           end if
+            !----- Update fluxes if needed be. --------------------------------------------!
+            if (print_detailed) then
+               initp%cfx_qwflxvc(ico) = initp%cfx_qwflxvc(ico)                             &
+                                      + (veg_qboil - veg_qdew) * hdidi
+            end if
          end if
       end if
    end do cohortloop

@@ -16,7 +16,7 @@ integer, parameter :: maxvars=1600
 
 type var_tables_r
    
-   real, pointer :: var_p,var_m
+   real, dimension(:), pointer :: var_p,var_m
    integer :: npts, idim_type
    integer :: ihist,ianal,imean,ilite,impti,impt1,impt2,impt3,irecycle
    character (len=16) :: name
@@ -38,7 +38,7 @@ integer, allocatable :: num_var(:)
 
 type scalar_table
    
-   real, pointer :: var_p,var_t
+   real, dimension(:), pointer :: var_p,var_t
    character (len=16) :: name
    ! ALF
    real, pointer :: a_var_p(:), a_var_t(:)

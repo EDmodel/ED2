@@ -451,25 +451,25 @@ module mem_cuparm
       !------------------------------------------------------------------------------------!
       npts=n1*n2*n3*nclouds
       if (associated(cuparm%thsrc))                                                        &
-         call vtables2(cuparm%thsrc(1,1,1,1),cuparmm%thsrc(1,1,1,1),ng,npts,imean          &
-                       ,'THSRC :8:hist:anal:mpti:mpt3:mpt1')
+         call vtables2(cuparm%thsrc,cuparmm%thsrc,ng,npts,imean                            &
+                       ,'THSRC :8:hist:anal:mpti:mpt3')
 
       if (associated(cuparm%rtsrc))                                                        &
-         call vtables2(cuparm%rtsrc(1,1,1,1),cuparmm%rtsrc(1,1,1,1),ng,npts,imean          &
-                      ,'RTSRC :8:hist:anal:mpti:mpt3:mpt1')
+         call vtables2(cuparm%rtsrc,cuparmm%rtsrc,ng,npts,imean                            &
+                      ,'RTSRC :8:hist:anal:mpti:mpt3')
 
       if (associated(cuparm%co2src))                                                       &
-           call vtables2(cuparm%co2src(1,1,1,1),cuparmm%co2src(1,1,1,1),ng,npts,imean      &
-                        ,'CO2SRC :8:hist:anal:mpti:mpt3:mpt1')
+           call vtables2(cuparm%co2src,cuparmm%co2src,ng,npts,imean                        &
+                        ,'CO2SRC :8:hist:anal:mpti:mpt3')
 
       if (associated(cuparm%cuprliq))                                                      &
-           call vtables2(cuparm%cuprliq(1,1,1,1),cuparmm%cuprliq(1,1,1,1),ng,npts,imean    &
-                        ,'CUPRLIQ :8:hist:anal:mpti:mpt3:mpt1')
+           call vtables2(cuparm%cuprliq,cuparmm%cuprliq,ng,npts,imean                      &
+                        ,'CUPRLIQ :8:hist:anal:mpti:mpt3')
 
       if (associated(cuparm%cuprice))                                                      &
-           call vtables2(cuparm%cuprice(1,1,1,1),cuparmm%cuprice(1,1,1,1),ng,npts,imean    &
-                        ,'CUPRICE :8:hist:anal:mpti:mpt3:mpt1')
-      !--------------------------------------------------------------------------------------!
+           call vtables2(cuparm%cuprice,cuparmm%cuprice,ng,npts,imean                      &
+                        ,'CUPRICE :8:hist:anal:mpti:mpt3')
+      !------------------------------------------------------------------------------------!
 
 
       !------------------------------------------------------------------------------------!
@@ -477,17 +477,17 @@ module mem_cuparm
       !------------------------------------------------------------------------------------!
       npts=n1*n2*n3
       if (associated(cuparm%thsrcp))                                                       &
-         call vtables2(cuparm%thsrcp(1,1,1),cuparmm%thsrcp(1,1,1),ng,npts,imean            &
-                      ,'THSRCP :3:mpti:mpt3:mpt1')
+         call vtables2(cuparm%thsrcp,cuparmm%thsrcp,ng,npts,imean                          &
+                      ,'THSRCP :3:mpti:mpt3')
       if (associated(cuparm%rtsrcp))                                                       &
-         call vtables2(cuparm%rtsrcp(1,1,1),cuparmm%rtsrcp(1,1,1),ng,npts,imean            &
-                      ,'RTSRCP :3:mpti:mpt3:mpt1')
+         call vtables2(cuparm%rtsrcp,cuparmm%rtsrcp,ng,npts,imean                          &
+                      ,'RTSRCP :3:mpti:mpt3')
       if (associated(cuparm%thsrcf))                                                       &
-         call vtables2(cuparm%thsrcf(1,1,1),cuparmm%thsrcf(1,1,1),ng,npts,imean            &
-                      ,'THSRCF :3:mpti:mpt3:mpt1')
+         call vtables2(cuparm%thsrcf,cuparmm%thsrcf,ng,npts,imean                          &
+                      ,'THSRCF :3:mpti:mpt3')
       if (associated(cuparm%rtsrcf))                                                       &
-         call vtables2(cuparm%rtsrcf(1,1,1),cuparmm%rtsrcf(1,1,1),ng,npts,imean            &
-                      ,'RTSRCF :3:mpti:mpt3:mpt1')
+         call vtables2(cuparm%rtsrcf,cuparmm%rtsrcf,ng,npts,imean                          &
+                      ,'RTSRCF :3:mpti:mpt3')
       !--------------------------------------------------------------------------------------!
 
 
@@ -498,96 +498,96 @@ module mem_cuparm
       npts=n2*n3*nclouds
 
       if (associated(cuparm%aadn))                                                         &
-         call vtables2(cuparm%aadn(1,1,1),cuparmm%aadn(1,1,1),ng,npts,imean                &
-                      ,'AADN :9:hist:anal:mpti:mpt3:mpt1')
+         call vtables2(cuparm%aadn,cuparmm%aadn,ng,npts,imean                              &
+                      ,'AADN :9:hist:anal:mpti:mpt3')
 
       if (associated(cuparm%aaup))                                                         &
-         call vtables2(cuparm%aaup(1,1,1),cuparmm%aaup(1,1,1),ng, npts, imean              &
-                      ,'AAUP :9:hist:anal:mpti:mpt3:mpt1')
+         call vtables2(cuparm%aaup,cuparmm%aaup,ng, npts, imean                            &
+                      ,'AAUP :9:hist:anal:mpti:mpt3')
 
       if (associated(cuparm%areadn))                                                       &
-         call vtables2(cuparm%areadn(1,1,1),cuparmm%areadn(1,1,1),ng,npts,imean            &
-                      ,'AREADN :9:hist:anal:mpti:mpt3:mpt1')
+         call vtables2(cuparm%areadn,cuparmm%areadn,ng,npts,imean                          &
+                      ,'AREADN :9:hist:anal:mpti:mpt3')
 
       if (associated(cuparm%areaup))                                                       &
-         call vtables2(cuparm%areaup(1,1,1),cuparmm%areaup(1,1,1),ng,npts,imean            &
-                      ,'AREAUP :9:hist:anal:mpti:mpt3:mpt1')
+         call vtables2(cuparm%areaup,cuparmm%areaup,ng,npts,imean                          &
+                      ,'AREAUP :9:hist:anal:mpti:mpt3')
 
       if (associated(cuparm%conprr))                                                       &
-         call vtables2(cuparm%conprr(1,1,1),cuparmm%conprr(1,1,1),ng,npts,imean            &
-                      ,'CONPRR :9:hist:anal:mpti:mpt3:mpt1')
+         call vtables2(cuparm%conprr,cuparmm%conprr,ng,npts,imean                          &
+                      ,'CONPRR :9:hist:anal:mpti:mpt3')
 
       if (associated(cuparm%dnmf))                                                         &
-         call vtables2(cuparm%dnmf(1,1,1),cuparmm%dnmf(1,1,1),ng,npts,imean                &
-                      ,'DNMF :9:hist:anal:mpti:mpt3:mpt1')
+         call vtables2(cuparm%dnmf,cuparmm%dnmf,ng,npts,imean                              &
+                      ,'DNMF :9:hist:anal:mpti:mpt3')
 
       if (associated(cuparm%dnmx))                                                         &
-         call vtables2(cuparm%dnmx(1,1,1),cuparmm%dnmx(1,1,1),ng,npts,imean                &
-                      ,'DNMX :9:hist:anal:mpti:mpt3:mpt1')
+         call vtables2(cuparm%dnmx,cuparmm%dnmx,ng,npts,imean                              &
+                      ,'DNMX :9:hist:anal:mpti:mpt3')
 
       if (associated(cuparm%edt))                                                          &
-         call vtables2(cuparm%edt(1,1,1),cuparmm%edt(1,1,1),ng,npts,imean                  &
-                      ,'EDT :9:hist:anal:mpti:mpt3:mpt1')
+         call vtables2(cuparm%edt,cuparmm%edt,ng,npts,imean                                &
+                      ,'EDT :9:hist:anal:mpti:mpt3')
 
       if (associated(cuparm%upmf))                                                         &
-         call vtables2(cuparm%upmf(1,1,1),cuparmm%upmf(1,1,1),ng,npts,imean                &
-                      ,'UPMF :9:hist:anal:mpti:mpt3:mpt1')
+         call vtables2(cuparm%upmf,cuparmm%upmf,ng,npts,imean                              &
+                      ,'UPMF :9:hist:anal:mpti:mpt3')
 
       if (associated(cuparm%upmx))                                                         &
-         call vtables2(cuparm%upmx(1,1,1),cuparmm%upmx(1,1,1),ng,npts,imean                &
-                      ,'UPMX :9:hist:anal:mpti:mpt3:mpt1')
+         call vtables2(cuparm%upmx,cuparmm%upmx,ng,npts,imean                              &
+                      ,'UPMX :9:hist:anal:mpti:mpt3')
 
       if (associated(cuparm%wdndraft))                                                     &
-         call vtables2(cuparm%wdndraft(1,1,1),cuparmm%wdndraft(1,1,1),ng,npts,imean        &
-                      ,'WDNDRAFT :9:hist:anal:mpti:mpt3:mpt1')
+         call vtables2(cuparm%wdndraft,cuparmm%wdndraft,ng,npts,imean                      &
+                      ,'WDNDRAFT :9:hist:anal:mpti:mpt3')
 
       if (associated(cuparm%wupdraft))                                                     &
-         call vtables2(cuparm%wupdraft(1,1,1),cuparmm%wupdraft(1,1,1),ng,npts,imean        &
-                      ,'WUPDRAFT :9:hist:anal:mpti:mpt3:mpt1')
+         call vtables2(cuparm%wupdraft,cuparmm%wupdraft,ng,npts,imean                      &
+                      ,'WUPDRAFT :9:hist:anal:mpti:mpt3')
 
       if (associated(cuparm%wbuoymin))                                                     &
-         call vtables2(cuparm%wbuoymin(1,1,1),cuparmm%wbuoymin(1,1,1),ng,npts,imean        &
-                      ,'WBUOYMIN :9:hist:anal:mpti:mpt3:mpt1')
+         call vtables2(cuparm%wbuoymin,cuparmm%wbuoymin,ng,npts,imean                      &
+                      ,'WBUOYMIN :9:hist:anal:mpti:mpt3')
 
       if (associated(cuparm%xierr))                                                        &
-         call vtables2(cuparm%xierr(1,1,1),cuparmm%xierr(1,1,1),ng,npts,imean              &
-                      ,'XIERR :9:hist:anal:mpti:mpt3:mpt1')
+         call vtables2(cuparm%xierr,cuparmm%xierr,ng,npts,imean                            &
+                      ,'XIERR :9:hist:anal:mpti:mpt3')
 
       if (associated(cuparm%zklod))                                                        &
-         call vtables2(cuparm%zklod(1,1,1),cuparmm%zklod(1,1,1),ng,npts,imean              &
-                      ,'ZKLOD :9:hist:anal:mpti:mpt3:mpt1')
+         call vtables2(cuparm%zklod,cuparmm%zklod,ng,npts,imean                            &
+                      ,'ZKLOD :9:hist:anal:mpti:mpt3')
 
       if (associated(cuparm%zklou))                                                        &
-         call vtables2(cuparm%zklou(1,1,1),cuparmm%zklou(1,1,1),ng,npts,imean              &
-                      ,'ZKLOU :9:hist:anal:mpti:mpt3:mpt1')
+         call vtables2(cuparm%zklou,cuparmm%zklou,ng,npts,imean                            &
+                      ,'ZKLOU :9:hist:anal:mpti:mpt3')
 
       if (associated(cuparm%zkdet))                                                        &
-         call vtables2(cuparm%zkdet(1,1,1),cuparmm%zkdet(1,1,1),ng,npts,imean              &
-                      ,'ZKDET :9:hist:anal:mpti:mpt3:mpt1')
+         call vtables2(cuparm%zkdet,cuparmm%zkdet,ng,npts,imean                            &
+                      ,'ZKDET :9:hist:anal:mpti:mpt3')
 
       if (associated(cuparm%zklcl))                                                        &
-         call vtables2(cuparm%zklcl(1,1,1),cuparmm%zklcl(1,1,1),ng,npts,imean              &
-                      ,'ZKLCL :9:hist:anal:mpti:mpt3:mpt1')
+         call vtables2(cuparm%zklcl,cuparmm%zklcl,ng,npts,imean                            &
+                      ,'ZKLCL :9:hist:anal:mpti:mpt3')
 
       if (associated(cuparm%zklfc))                                                        &
-         call vtables2(cuparm%zklfc(1,1,1),cuparmm%zklfc(1,1,1),ng,npts,imean              &
-                      ,'ZKLFC :9:hist:anal:mpti:mpt3:mpt1')
+         call vtables2(cuparm%zklfc,cuparmm%zklfc,ng,npts,imean                            &
+                      ,'ZKLFC :9:hist:anal:mpti:mpt3')
 
       if (associated(cuparm%zklnb))                                                        &
-         call vtables2(cuparm%zklnb(1,1,1),cuparmm%zklnb(1,1,1),ng,npts,imean              &
-                      ,'ZKLNB :9:hist:anal:mpti:mpt3:mpt1')
+         call vtables2(cuparm%zklnb,cuparmm%zklnb,ng,npts,imean                            &
+                      ,'ZKLNB :9:hist:anal:mpti:mpt3')
 
       if (associated(cuparm%zktop))                                                        &
-         call vtables2(cuparm%zktop(1,1,1),cuparmm%zktop(1,1,1),ng,npts,imean              &
-                      ,'ZKTOP :9:hist:anal:mpti:mpt3:mpt1')
+         call vtables2(cuparm%zktop,cuparmm%zktop,ng,npts,imean                            &
+                      ,'ZKTOP :9:hist:anal:mpti:mpt3')
 
       if (associated(cuparm%xiact_c))                                                      &
-         call vtables2(cuparm%xiact_c(1,1,1),cuparmm%xiact_c(1,1,1),ng,npts,imean          &
-                      ,'XIACT_C :9:hist:anal:mpti:mpt3:mpt1')
+         call vtables2(cuparm%xiact_c,cuparmm%xiact_c,ng,npts,imean                        &
+                      ,'XIACT_C :9:hist:anal:mpti:mpt3')
 
       if (associated(cuparm%xiact_p))                                                      &
-         call vtables2(cuparm%xiact_p(1,1,1),cuparmm%xiact_p(1,1,1),ng,npts,imean          &
-                      ,'XIACT_P :9:hist:anal:mpti:mpt3:mpt1')
+         call vtables2(cuparm%xiact_p,cuparmm%xiact_p,ng,npts,imean                        &
+                      ,'XIACT_P :9:hist:anal:mpti:mpt3')
       !------------------------------------------------------------------------------------!
 
 
@@ -596,14 +596,14 @@ module mem_cuparm
       !------------------------------------------------------------------------------------!
       npts=n2*n3
       if (associated(cuparm%aconpr))                                                       &
-         call vtables2(cuparm%aconpr(1,1),cuparmm%aconpr(1,1),ng,npts,imean                &
-                      ,'ACONPR :2:hist:anal:mpti:mpt3:mpt1')
+         call vtables2(cuparm%aconpr,cuparmm%aconpr,ng,npts,imean                          &
+                      ,'ACONPR :2:hist:anal:mpti:mpt3')
       if (associated(cuparm%conprrp))                                                      &
-         call vtables2(cuparm%conprrp(1,1),cuparmm%conprrp(1,1),ng,npts,imean              &
-                      ,'CONPRRP :2:mpti:mpt3:mpt1')
+         call vtables2(cuparm%conprrp,cuparmm%conprrp,ng,npts,imean                        &
+                      ,'CONPRRP :2:mpti:mpt3')
       if (associated(cuparm%conprrf))                                                      &
-         call vtables2(cuparm%conprrf(1,1),cuparmm%conprrf(1,1),ng,npts,imean              &
-                      ,'CONPRRF :2:mpti:mpt3:mpt1')
+         call vtables2(cuparm%conprrf,cuparmm%conprrf,ng,npts,imean                        &
+                      ,'CONPRRF :2:mpti:mpt3')
       !------------------------------------------------------------------------------------!
 
       return

@@ -90,7 +90,7 @@ subroutine compute_mass_flux(mzp,mxp,myp,ia,iz,ja,jz,dtlti,frqmassi,vt3da,vt3db,
    integer                        , intent(in)    :: ia,iz,ja,jz
    real                           , intent(in)    :: dtlti,frqmassi
    real   , dimension(mzp,mxp,myp), intent(in)    :: vt3da,vt3db,vt3dc
-   real   , dimension(mzp,mxp,myp), intent(out)   :: afxu,afxv,afxw
+   real   , dimension(mzp,mxp,myp), intent(inout) :: afxu,afxv,afxw
    real   , dimension(mzp,mxp,myp), intent(inout) :: afxub,afxvb,afxwb
    integer                                        :: i,j,k
 
@@ -204,19 +204,19 @@ subroutine prep_convflx_to_mass(m1,mgmzp,maxens_cap,dnmf,upmf,ierr_cap,jmin_cap,
    real, dimension(m1,maxens_cap)     :: efxup_cap   ! Entrainment associated w/ updraft
    !---------------------------------------------------------------------------------------!
 
-   nmok      = 0
-   cfxdn     = 0.
-   cfxup     = 0.
-   dfxdn     = 0.
-   dfxup     = 0.
-   efxdn     = 0.
-   efxup     = 0.
-   cfxdn_cap = 0.
-   cfxup_cap = 0.
-   dfxdn_cap = 0.
-   dfxup_cap = 0.
-   efxdn_cap = 0.
-   efxup_cap = 0.
+   nmok           = 0
+   cfxdn    (:)   = 0.
+   cfxup    (:)   = 0.
+   dfxdn    (:)   = 0.
+   dfxup    (:)   = 0.
+   efxdn    (:)   = 0.
+   efxup    (:)   = 0.
+   cfxdn_cap(:,:) = 0.
+   cfxup_cap(:,:) = 0.
+   dfxdn_cap(:,:) = 0.
+   dfxup_cap(:,:) = 0.
+   efxdn_cap(:,:) = 0.
+   efxup_cap(:,:) = 0.
 
    stacloop: do icap=1,maxens_cap
    

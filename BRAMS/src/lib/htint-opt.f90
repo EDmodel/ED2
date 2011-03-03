@@ -33,7 +33,7 @@ SUBROUTINE htint_inter (nzz1, vctra, nzz2, vctrb, ind1, ind2, weight)
   INTEGER, INTENT(IN ) :: nzz1
   INTEGER, INTENT(IN ) :: nzz2
   REAL,    INTENT(IN ) :: vctra(nzz1)
-  REAL,    INTENT(OUT) :: vctrb(nzz2)
+  REAL,    INTENT(inOUT) :: vctrb(nzz2)
   INTEGER, INTENT(IN ) :: ind1(nzz2)
   INTEGER, INTENT(IN ) :: ind2(nzz2)
   REAL,    INTENT(IN ) :: weight(nzz2)
@@ -69,9 +69,9 @@ SUBROUTINE htint_index (nzz1, eleva, nzz2, elevb, ind1, ind2, weight)
 
   REAL,    INTENT(IN ) :: eleva(nzz1)
   REAL,    INTENT(IN ) :: elevb(nzz2)
-  INTEGER, INTENT(OUT) :: ind1(nzz2)
-  INTEGER, INTENT(OUT) :: ind2(nzz2)
-  REAL,    INTENT(OUT) :: weight(nzz2)
+  INTEGER, INTENT(inOUT) :: ind1(nzz2)
+  INTEGER, INTENT(inOUT) :: ind2(nzz2)
+  REAL,    INTENT(inOUT) :: weight(nzz2)
 
 
 !!$  ! FOR DEBUG
@@ -152,7 +152,7 @@ SUBROUTINE htint (nzz1, vctra, eleva, nzz2, vctrb, elevb)
   INTEGER, INTENT(IN ) :: nzz1
   INTEGER, INTENT(IN ) :: nzz2
   REAL,    INTENT(IN ) :: vctra(nzz1)
-  REAL,    INTENT(OUT) :: vctrb(nzz2)
+  REAL,    INTENT(inOUT) :: vctrb(nzz2)
   REAL,    INTENT(IN ) :: eleva(nzz1)
   REAL,    INTENT(IN ) :: elevb(nzz2)
 
