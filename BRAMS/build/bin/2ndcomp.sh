@@ -253,6 +253,7 @@ rm -fv v_interps.o                v_interps.mod
 rm -fv var_tables.o               var_tables.mod
 rm -fv varf_read.o                varf_read.mod
 rm -fv varf_update.o              varf_update.mod
+rm -fv varutils.o                 varutils.mod
 rm -fv vformat.o                  vformat.mod
 rm -fv vtab_fill.o                vtab_fill.mod
 rm -fv edcp_driver.o              edcp_driver.mod

@@ -58,7 +58,7 @@ Module mem_leaf
                                        , veg_ndvic    & ! Current NDVI          [      ---]
                                        , veg_ndvif    & ! Future NDVI           [      ---]
                                        , leaf_class   & ! Vegetation class      [      ---]
-                                       , stom_resist  ! ! Stomatal resistance   [      ???]
+                                       , stom_condct  ! ! Stomatal resistance   [      ???]
 
 
       !------------------------------------------------------------------------------------!
@@ -127,17 +127,26 @@ Module mem_leaf
    !---------------------------------------------------------------------------------------!
    !     Other variables.                                                                  !
    !---------------------------------------------------------------------------------------!
-   integer                 :: nslcon  ! Soil texture if constant for entire domain
-   integer                 :: nvgcon  ! Vegetation class if constant for entire domain
-   integer                 :: nvegpat ! Number of vegetation types
-   integer                 :: isfcl   ! Surface model (1. LEAF3, 2. LEAF-Hydro, 5. ED2)
-   integer                 :: istar   ! Which surface layer model should I use?
-                                      !    1. Louis (1979), 2. Oncley and Dudhia (1995).
-                                      !    3. Beljaars and Holtslag (1991)
-                                      !    4. BH91, using OD95 to find zeta.
-   real                    :: dtleaf  ! LEAF-3 target time step.  It will be either this
-                                      !    or the actual BRAMS time step (whichever is 
-                                      !    lower).
+   integer                 :: nslcon      ! Soil texture if constant for entire domain
+   integer                 :: nvgcon      ! Vegetation class if constant for entire domain
+   integer                 :: nvegpat     ! Number of vegetation types
+   integer                 :: isfcl       ! Surface model (1. LEAF3, 2. LEAF-Hydro, 5. ED2)
+   integer                 :: istar       ! Which surface layer model should I use?
+                                          !    1. Louis (1979)
+                                          !    2. Oncley and Dudhia (1995).
+                                          !    3. Beljaars and Holtslag (1991)
+                                          !    4. BH91, using OD95 to find zeta.
+                                          !    5. OD95, using BH91 to find zeta
+   integer                 :: isoilbc     ! Bottom soil boundary condition.
+                                          !    0. Bedrock
+                                          !    1. Free drainage
+                                          !    2. Half drainage
+   real                    :: runoff_time ! Runoff time scale.
+   real                    :: dtleaf      ! LEAF-3 target time step.  It will be either this
+                                          !    this or the actual BRAMS time step (which-
+                                          !    ever is the lowest).
+   real                    :: betapower   ! Power for the beta parameter that controls 
+                                          !    ground evaporation.
 
    real, dimension(nzgmax) :: stgoff  ! Initial soil temperature offset
    real, dimension(nzgmax) :: slmstr  ! Initial soil moisture if constant for entire domain
@@ -208,7 +217,7 @@ Module mem_leaf
       allocate (leaf%veg_ndvic        (    nx,ny,np))
       allocate (leaf%veg_ndvif        (    nx,ny,np))
       allocate (leaf%leaf_class       (    nx,ny,np))
-      allocate (leaf%stom_resist      (    nx,ny,np))
+      allocate (leaf%stom_condct      (    nx,ny,np))
 
       allocate (leaf%can_rvap         (    nx,ny,np))
       allocate (leaf%can_theta        (    nx,ny,np))
@@ -300,7 +309,7 @@ Module mem_leaf
       if (associated(leaf%veg_ndvic        ))  nullify(leaf%veg_ndvic        )
       if (associated(leaf%veg_ndvif        ))  nullify(leaf%veg_ndvif        )
       if (associated(leaf%leaf_class       ))  nullify(leaf%leaf_class       )
-      if (associated(leaf%stom_resist      ))  nullify(leaf%stom_resist      )
+      if (associated(leaf%stom_condct      ))  nullify(leaf%stom_condct      )
 
       if (associated(leaf%can_rvap         ))  nullify(leaf%can_rvap         )
       if (associated(leaf%can_theta        ))  nullify(leaf%can_theta        )
@@ -389,7 +398,7 @@ Module mem_leaf
       if (associated(leaf%veg_ndvic        ))  deallocate(leaf%veg_ndvic        )
       if (associated(leaf%veg_ndvif        ))  deallocate(leaf%veg_ndvif        )
       if (associated(leaf%leaf_class       ))  deallocate(leaf%leaf_class       )
-      if (associated(leaf%stom_resist      ))  deallocate(leaf%stom_resist      )
+      if (associated(leaf%stom_condct      ))  deallocate(leaf%stom_condct      )
 
       if (associated(leaf%can_rvap         ))  deallocate(leaf%can_rvap         )
       if (associated(leaf%can_theta        ))  deallocate(leaf%can_theta        )
@@ -442,7 +451,7 @@ Module mem_leaf
    !=======================================================================================!
    !     This subroutine will fill pointers to arrays into variable tables.                !
    !---------------------------------------------------------------------------------------!
-   subroutine filltab_leaf(leaf,leafm,imean,nz,nx,ny,nzg,nzs,np,ng)
+   subroutine filltab_leaf(leaf,leafm,imean,nmz,nmx,nmy,nmzg,nmzs,nmpat,ng)
       use var_tables
       use io_params, only: ipastin ! INTENT(IN)
 
@@ -451,12 +460,12 @@ Module mem_leaf
       type (leaf_vars), intent(inout) :: leaf
       type (leaf_vars), intent(inout) :: leafm
       integer         , intent(in)    :: imean
-      integer         , intent(in)    :: nz
-      integer         , intent(in)    :: nx
-      integer         , intent(in)    :: ny
-      integer         , intent(in)    :: nzg
-      integer         , intent(in)    :: nzs
-      integer         , intent(in)    :: np
+      integer         , intent(in)    :: nmz
+      integer         , intent(in)    :: nmx
+      integer         , intent(in)    :: nmy
+      integer         , intent(in)    :: nmzg
+      integer         , intent(in)    :: nmzs
+      integer         , intent(in)    :: nmpat
       integer         , intent(in)    :: ng
       !----- Local variables. -------------------------------------------------------------!
       integer                         :: npts
@@ -472,9 +481,9 @@ Module mem_leaf
       end select
 
       !------------------------------------------------------------------------------------!
-      !     4-D variables, dimensioned by nzg*nx*ny*np.                                    !
+      !     4-D variables, dimensioned by nmzg*nmx*nmy*npat.                               !
       !------------------------------------------------------------------------------------!
-      npts = nzg * nx * ny * np
+      npts = nmzg * nmx * nmy * nmpat
 
       if (associated(leaf%soil_water))                                                     &
          call vtables2(leaf%soil_water(1,1,1,1),leafm%soil_water(1,1,1,1),ng,npts,imean    &
@@ -490,9 +499,9 @@ Module mem_leaf
 
 
       !------------------------------------------------------------------------------------!
-      !     4-D variables, dimensioned by nzs*nx*ny*np.                                    !
+      !     4-D variables, dimensioned by nmzs*nmx*nmy*nmpat.                              !
       !------------------------------------------------------------------------------------!
-      npts = nzs * nx * ny * np
+      npts = nmzs * nmx * nmy * nmpat
 
       if (associated(leaf%sfcwater_mass))                                                  &
          call vtables2(leaf%sfcwater_mass(1,1,1,1),leafm%sfcwater_mass(1,1,1,1)            &
@@ -510,9 +519,9 @@ Module mem_leaf
                       ,'SFCWATER_DEPTH :5:hist:anal:mpti:mpt1:mpt3'//trim(str_recycle))
 
       !------------------------------------------------------------------------------------!
-      !     3-D variables, dimensioned by nx*ny*np.                                        !
+      !     3-D variables, dimensioned by nmx*nmy*nmpat.                                   !
       !------------------------------------------------------------------------------------!
-      npts = nx * ny * np
+      npts = nmx * nmy * nmpat
 
       if (associated(leaf%soil_rough))                                                     &
          call vtables2(leaf%soil_rough(1,1,1),leafm%soil_rough(1,1,1),ng,npts,imean        &
@@ -580,7 +589,7 @@ Module mem_leaf
 
       if (associated(leaf%veg_ndvip))                                                      &
          call vtables2(leaf%veg_ndvip(1,1,1),leafm%veg_ndvip(1,1,1),ng,npts,imean          &
-                      ,'VEG_NDVIP :6:hist:mpt1:mpti:mpt3')
+                      ,'VEG_NDVIP :6:hist:mpti:mpt1:mpt3')
 
       if (associated(leaf%veg_ndvic))                                                      &
          call vtables2(leaf%veg_ndvic(1,1,1),leafm%veg_ndvic(1,1,1),ng,npts,imean          &
@@ -592,11 +601,11 @@ Module mem_leaf
 
       if (associated(leaf%leaf_class))                                                     &
          call vtables2(leaf%leaf_class(1,1,1),leafm%leaf_class(1,1,1),ng,npts,imean        &
-                      ,'LEAF_CLASS :6:hist:anal:mpti:mpt3'//trim(str_recycle))
+                      ,'LEAF_CLASS :6:hist:anal:mpti:mpt1:mpt3'//trim(str_recycle))
 
-      if (associated(leaf%stom_resist))                                                    &
-         call vtables2(leaf%stom_resist(1,1,1),leafm%stom_resist(1,1,1),ng,npts,imean      &
-                      ,'STOM_RESIST :6:hist:anal:mpti:mpt1:mpt3'//trim(str_recycle))
+      if (associated(leaf%stom_condct))                                                    &
+         call vtables2(leaf%stom_condct(1,1,1),leafm%stom_condct(1,1,1),ng,npts,imean      &
+                      ,'STOM_CONDCT :6:hist:anal:mpti:mpt1:mpt3'//trim(str_recycle))
 
       if (associated(leaf%can_rvap))                                                       &
          call vtables2(leaf%can_rvap(1,1,1),leafm%can_rvap(1,1,1),ng,npts,imean            &
@@ -702,7 +711,7 @@ Module mem_leaf
       !------------------------------------------------------------------------------------!
       !     2-D variables, dimensioned by nx*ny.                                           !
       !------------------------------------------------------------------------------------!
-      npts=nx*ny
+      npts=nmx*nmy
 
       if (associated(leaf%snow_mass))                                                      &
          call vtables2(leaf%snow_mass(1,1),leafm%snow_mass(1,1),ng,npts,imean              &

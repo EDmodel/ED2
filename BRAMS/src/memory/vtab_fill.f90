@@ -1,13 +1,11 @@
-!############################# Change Log ##################################
-! 5.0.0
-!
-!###########################################################################
-!  Copyright (C)  1990, 1995, 1999, 2000, 2003 - All Rights Reserved
-!  Regional Atmospheric Modeling System - RAMS
-!###########################################################################
-
-
-   subroutine vtables2(var,varm,ng,npts,imean,tabstr)
+!============================= Change Log =================================================!
+! 5.0.0                                                                                    !
+!                                                                                          !
+!==========================================================================================!
+!  Copyright (C)  1990, 1995, 1999, 2000, 2003 - All Rights Reserved                       !
+!  Regional Atmospheric Modeling System - RAMS                                             !
+!==========================================================================================!
+subroutine vtables2(var,varm,ng,npts,imean,tabstr)
 
    use var_tables
       
@@ -20,23 +18,24 @@
    character (len=1) ::toksep=':', cdimen,ctype
    character (len=32) ::tokens(10)
    character (len=8) :: cname,ctab
-   
+
    integer :: ntok,nt,nv
      
    call tokenize1(tabstr,tokens,ntok,toksep)
-   
+
    num_var(ng)=num_var(ng)+1
    nv=num_var(ng)
 
    vtab_r(nv,ng)%var_p => var
    vtab_r(nv,ng)%var_m => varm
 
-  
+
    vtab_r(nv,ng)%name=tokens(1)
    vtab_r(nv,ng)%npts=npts
    read(tokens(2),*) vtab_r(nv,ng)%idim_type
    !print*,'tab:',nv,ng,vtab_r(nv,ng)%name ,vtab_r(nv,ng)%npts
-     
+
+
    vtab_r(nv,ng)%ihist=0
    vtab_r(nv,ng)%ianal=0
    vtab_r(nv,ng)%imean=imean
@@ -51,30 +50,30 @@
       ctab=tokens(nt)         
       
       if(ctab == 'hist' ) then
-      	 vtab_r(nv,ng)%ihist=1
+         vtab_r(nv,ng)%ihist=1
       elseif(ctab == 'anal' ) then
-      	 vtab_r(nv,ng)%ianal=1
+         vtab_r(nv,ng)%ianal=1
       elseif(ctab == 'lite' ) then
-      	 vtab_r(nv,ng)%ilite=1
+         vtab_r(nv,ng)%ilite=1
       elseif(ctab == 'mpti' ) then
-      	 vtab_r(nv,ng)%impti=1
+         vtab_r(nv,ng)%impti=1
       elseif(ctab == 'mpt1' ) then
-      	 vtab_r(nv,ng)%impt1=1
+         vtab_r(nv,ng)%impt1=1
       elseif(ctab == 'mpt2' ) then
-      	 vtab_r(nv,ng)%impt2=1
+         vtab_r(nv,ng)%impt2=1
       elseif(ctab == 'mpt3' ) then
-      	 vtab_r(nv,ng)%impt3=1
+         vtab_r(nv,ng)%impt3=1
       elseif(ctab == 'recycle' ) then
-      	 vtab_r(nv,ng)%irecycle=1
+         vtab_r(nv,ng)%irecycle=1
       else
          print*, 'Illegal table specification for var:', tokens(1),ctab
          stop 'bad var table'
       endif
 
    enddo
-  
+
    return
-   end
+end subroutine vtables2
 
 !-------------------------------------------------------------------------
 

@@ -71,7 +71,9 @@ subroutine rams_node()
        i0, j0,         & ! INTENT(IN)
        mmxp,           & ! INTENT(IN)
        mmyp,           & ! INTENT(IN)
-       mmzp              ! INTENT(IN)
+       mmzp,           & ! INTENT(IN)
+       nsend_buff,     & ! intent(out)
+       nrecv_buff      ! ! intent(out)
   
   use mem_leaf, only: isfcl ! intent(in)
 
@@ -95,6 +97,11 @@ subroutine rams_node()
   integer :: ierr ! For new MPI call style
 
   ipara=1
+  
+  ! Reset the send and receive sizes
+  nsend_buff(:) = 0
+  nrecv_buff(:) = 0
+  
   !          Call routine to initialize input parameters
   !               and namelist settings
   !          -----------------------------------
@@ -109,7 +116,7 @@ subroutine rams_node()
   !          Routine to get fields from master and finish initialization
   !          -----------------------------------------------------------
 
-  call init_fields(1)
+  call init_fields(.true.)
 
   isendflg=0
   isendlite = 0
@@ -192,7 +199,7 @@ subroutine rams_node()
 
      if (isendbackflg==1) then
 
-        call init_fields(0) ! Get fields from master
+        call init_fields(.false.) ! Get fields from master
 
      endif
 
@@ -395,132 +402,201 @@ subroutine init_params(init)
   if (if_oda == 1) call nodeget_oda()
   call nodeget_misc
 end subroutine init_params
-!
-!     ****************************************************************
-!
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
 subroutine init_fields(init)
 
-  use mem_grid
-  use node_mod
+   use mem_grid
+   use node_mod
 
-  use var_tables
+   use var_tables
 
-  use mem_leaf, only : ISFCL ! For SiB
-  use mem_cuparm, only : nclouds
-  use mem_aerad , only : nwave
+   use mem_leaf  , only : isfcl
+   use mem_cuparm, only : nclouds
+   use mem_aerad , only : nwave
+   use grid_dims , only : ndim_types
 
-  implicit none
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   logical, intent(in)            :: init
+   !----- Local variables. ----------------------------------------------------------------!
+   integer, dimension(ndim_types) :: npvar
+   integer                        :: ierr
+   integer                        :: hugedim
+   integer                        :: ng
+   integer                        :: nm
+   integer                        :: itype
+   integer                        :: i1
+   integer                        :: j1
+   integer                        :: i2
+   integer                        :: j2
+   integer                        :: xlbc
+   integer                        :: ylbc
+   integer                        :: fdzp
+   integer                        :: fdep
+   integer                        :: idim
+   integer                        :: memf
+   integer                        :: nv
+   !----- Include modules. ----------------------------------------------------------------!
+   include 'interface.h'
+   include 'mpif.h'
+   !---------------------------------------------------------------------------------------!
 
-  integer :: init
-  integer :: ierr
-  integer :: hugedim
-  include 'interface.h'
-  include 'mpif.h'
-
-  integer :: ng,nm,itype,i1,j1,i2,j2,memf,npvar,nv
 
 
-  !          Initialize surface constants.
-  !          -------------------------------------------------------
-  if(init == 1) then
-     ! ALF - For use with SiB
-     select case (isfcl)
-     case (1,2,5)
-        call sfcdata
-     case (3)
-        !call sfcdata_sib_driver
-     end select
-  endif
 
-  !          Get all necessary fields from master.
-  !          -------------------------------------------------------
-  call node_getinit()
-  if (isfcl == 5 .and. init == 1) then
-     call node_ed_init()
-  endif
 
-  !          Initialize the ED2 Environment
-  !          ------------------------------------------------------
+   !---------------------------------------------------------------------------------------!
+   !      Initialise surface constants.                                                    !
+   !---------------------------------------------------------------------------------------!
+   if (init) then
+      select case (isfcl)
+      case (1,2,5)
+         call sfcdata
+      case (3)
+         !call sfcdata_sib_driver
+      end select
+   end if
+   !---------------------------------------------------------------------------------------!
 
-  !     Can we use existing memory for the nesting communication buffers?
-  !       If not, allocate new buffers or compute buffer sizes.
 
-  !       Check feedback buffer.
 
-  ! itype=6 !Changed for reproducibility - Saulo Barros
-  itype=7
 
-  ! If using cyclic boundary conditions, initialize parallel communication
-  ! for them
-  !  Find number of lbc variables to be communicated.
-  npvar=0
-  do nv = 1,num_var(1)
-     if(vtab_r(nv,1)%impt1 == 1 ) then
-        npvar=npvar+1
-     endif
-  enddo
 
-  nbuff_feed=0
-  do ng=1,ngrids
-     do nm=1,nmachs
-        i1=ipaths(1,itype,ng,nm)
-        i2=ipaths(2,itype,ng,nm)
-        j1=ipaths(3,itype,ng,nm)
-        j2=ipaths(4,itype,ng,nm)
-        hugedim = max(nnzp(ng),nzg,nzs) * max(npatch,nclouds,nwave)
-        memf=(i2-i1+1)*(j2-j1+1)*hugedim*npvar
-        nbuff_feed=max(nbuff_feed,memf)
-     enddo
-  enddo
+   !---------------------------------------------------------------------------------------!
+   !          Get all necessary fields from master.                                        !
+   !---------------------------------------------------------------------------------------!
+   call node_getinit()
+   if (isfcl == 5 .and. init) then
+      call node_ed_init()
+   end if
+   !---------------------------------------------------------------------------------------!
 
-  !____________________________________________
-  !
-  !    Allocate long time step send and receive buffers
 
-  !  Checking the size of real and integer packages, and setting up the largest as 
-  ! standard, so nothing is lost...
-  call MPI_Pack_size(1,MPI_REAL,MPI_COMM_WORLD,mpi_real_size,ierr)
-  call MPI_Pack_size(1,MPI_INTEGER,MPI_COMM_WORLD,mpi_int_size,ierr)
-  f_ndmd_size = max(mpi_real_size,mpi_int_size)
 
-  if(init /= 1) then
-     do nm=1,nmachs
-        if (associated(node_buffs(nm)%lbc_send_buff) )    &
-            deallocate(node_buffs(nm)%lbc_send_buff)
-        if (associated(node_buffs(nm)%lbc_recv_buff) )    &
-            deallocate(node_buffs(nm)%lbc_recv_buff)
-        if (associated(node_buffs_st(nm)%lbc_send_buff) ) &
-            deallocate(node_buffs_st(nm)%lbc_send_buff)
-        if (associated(node_buffs_st(nm)%lbc_recv_buff) ) &
-            deallocate(node_buffs_st(nm)%lbc_recv_buff)
-     end do
-  end if
 
-  do nm=1,nmachs
-     node_buffs(nm)%nsend = max(node_buffs(nm)%nsend ,nbuff_feed)
-     node_buffs(nm)%nrecv = max(node_buffs(nm)%nrecv ,nbuff_feed)
-     node_buffs_st(nm)%nsend = node_buffs(nm)%nsend
-     node_buffs_st(nm)%nrecv = node_buffs(nm)%nrecv
-  
-   if (node_buffs(nm)%nsend > 0) &
-       allocate(node_buffs(nm)%lbc_send_buff(node_buffs(nm)%nsend*f_ndmd_size))
-   if (node_buffs(nm)%nrecv > 0) &
-       allocate(node_buffs(nm)%lbc_recv_buff(node_buffs(nm)%nrecv*f_ndmd_size))
-   if (node_buffs_st(nm)%nsend > 0) &
-       allocate(node_buffs_st(nm)%lbc_send_buff(node_buffs_st(nm)%nsend*f_ndmd_size))
-   if (node_buffs_st(nm)%nrecv > 0) &
-       allocate(node_buffs_st(nm)%lbc_recv_buff(node_buffs_st(nm)%nrecv*f_ndmd_size))
-  end do
+   !---------------------------------------------------------------------------------------!
+   !       Check feedback buffer.                                                          !
+   !---------------------------------------------------------------------------------------!
+   ! itype=6 !Changed for reproducibility - Saulo Barros
+   itype=7
+   !---------------------------------------------------------------------------------------!
 
-  if (ibnd == 4 .or. jbnd == 4) then
-     call node_cycinit(nnzp(1),nnxp(1),nnyp(1),npvar,nmachs,ibnd,jbnd,mynum)
-  endif
 
-  return
+
+   !----- Find number of lbc variables to be communicated. --------------------------------!
+   npvar(:) = 0
+   do nv = 1,num_var(1)
+      if (vtab_r(nv,1)%impt1 == 1 ) then
+         idim        = vtab_r(nv,1)%idim_type
+         npvar(idim) = npvar(idim) + 1
+      end if
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Find the size of the lateral boundary condition buffers.                         !
+   !---------------------------------------------------------------------------------------!
+   nbuff_feed=0
+   do ng=1,ngrids
+      do nm=1,nmachs
+         i1         = ipaths(1,itype,ng,nm)
+         i2         = ipaths(2,itype,ng,nm)
+         j1         = ipaths(3,itype,ng,nm)
+         j2         = ipaths(4,itype,ng,nm)
+         xlbc       = i2 - i1 + 1
+         ylbc       = j2 - j1 + 1 
+         
+         memf = 0
+         do idim = 2, ndim_types
+            call ze_dims(ng,idim,.false.,fdzp,fdep)
+            memf = memf + fdzp * xlbc * ylbc * fdep * npvar(idim)
+         end do 
+
+         nbuff_feed = max(nbuff_feed,memf)
+      end do
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Allocate long time step send and receive buffers.  Check the size of real and      !
+   ! integer packages, and set up the largest as standard, so nothing is lost...           !
+   !---------------------------------------------------------------------------------------!
+   call MPI_Pack_size(1,MPI_REAL,MPI_COMM_WORLD,mpi_real_size,ierr)
+   call MPI_Pack_size(1,MPI_INTEGER,MPI_COMM_WORLD,mpi_int_size,ierr)
+   f_ndmd_size = max(mpi_real_size,mpi_int_size)
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     De-allocate the buffers if this is not the first time this sub-routine is called. !
+   !---------------------------------------------------------------------------------------!
+   if (.not. init) then
+      do nm=1,nmachs
+         call dealloc_node_buff(node_buffs_lbc(nm))
+         call dealloc_node_buff(node_buffs_st(nm))
+         call dealloc_node_buff(node_buffs_feed(nm))
+         call dealloc_node_buff(node_buffs_nest(nm))
+      end do
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     If the buffer is smaller than the actual needs, then de-allocate and re-allocate  !
+   ! the buffers.                                                                          !
+   !---------------------------------------------------------------------------------------!
+   do nm=1,nmachs
+      if (nsend_buff(nm) > 0 .or. nrecv_buff(nm) > 0) then
+         nbuff_feed = max(nbuff_feed,nsend_buff(nm),nrecv_buff(nm))
+         call dealloc_node_buff(node_buffs_lbc(nm))
+         call alloc_node_buff(node_buffs_lbc(nm),nbuff_feed,f_ndmd_size)
+         call dealloc_node_buff(node_buffs_st(nm))
+         call alloc_node_buff(node_buffs_st(nm),nbuff_feed,f_ndmd_size)
+         call dealloc_node_buff(node_buffs_feed(nm))
+         call alloc_node_buff(node_buffs_feed(nm),nbuff_feed,f_ndmd_size)
+         call dealloc_node_buff(node_buffs_nest(nm))
+         call alloc_node_buff(node_buffs_nest(nm),nbuff_feed,f_ndmd_size)
+      end if
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !!     In case the boundary conditions are cyclic, initialise the cyclic structure.     !
+   !---------------------------------------------------------------------------------------!
+   if (ibnd == 4 .or. jbnd == 4) then
+      call node_cycinit(nnzp(1),nnxp(1),nnyp(1),npvar,nmachs,ibnd,jbnd,mynum)
+   end if
+   !---------------------------------------------------------------------------------------!
+
+   return
 end subroutine init_fields
+!==========================================================================================!
+!==========================================================================================!
 
-!     ****************************************************************
 
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
 subroutine node_index()
 
   use node_mod

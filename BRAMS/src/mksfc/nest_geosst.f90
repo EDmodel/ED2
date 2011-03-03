@@ -281,7 +281,7 @@ subroutine geonest_nofile(ngra,ngrb)
           , leaf_g(ifm)%patch_area                , leaf_g(ifm)%patch_rough                &
           , leaf_g(ifm)%patch_wetind              , leaf_g(ifm)%leaf_class                 &
           , leaf_g(ifm)%soil_rough                , leaf_g(ifm)%sfcwater_nlev              &
-          , leaf_g(ifm)%stom_resist               , leaf_g(ifm)%ground_rsat                &
+          , leaf_g(ifm)%stom_condct               , leaf_g(ifm)%ground_rsat                &
           , leaf_g(ifm)%ground_rvap               , leaf_g(ifm)%ground_temp                &
           , leaf_g(ifm)%ground_fliq               , leaf_g(ifm)%veg_water                  &
           , leaf_g(ifm)%veg_hcap                  , leaf_g(ifm)%veg_energy                 &
@@ -348,7 +348,7 @@ subroutine geonest_nofile(ngra,ngrb)
                , leaf_g(ifm)%patch_area              , leaf_g(ifm)%patch_rough             &
                , leaf_g(ifm)%patch_wetind            , leaf_g(ifm)%leaf_class              &
                , leaf_g(ifm)%soil_rough              , leaf_g(ifm)%sfcwater_nlev           &
-               , leaf_g(ifm)%stom_resist             , leaf_g(ifm)%ground_rsat             &
+               , leaf_g(ifm)%stom_condct             , leaf_g(ifm)%ground_rsat             &
                , leaf_g(ifm)%ground_rvap             , leaf_g(ifm)%ground_temp             &
                , leaf_g(ifm)%ground_fliq             , leaf_g(ifm)%veg_water               &
                , leaf_g(ifm)%veg_hcap                , leaf_g(ifm)%veg_energy              &

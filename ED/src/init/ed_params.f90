@@ -853,7 +853,7 @@ subroutine init_pft_photo_params()
    Vm_high_temp(17)          =  45.0  + thioff ! C3
 
    !------ Vm0 is the maximum photosynthesis capacity in µmol/m2/s. -----------------------!
-   Vm0(1)                    = 12.5            * vmfact
+   Vm0(1)                    = 12.5            * vmfact              !vmfact=0.4
    Vm0(2)                    = 18.8            * vmfact
    Vm0(3)                    = 12.5            * vmfact
    Vm0(4)                    = 6.25            * vmfact
@@ -870,7 +870,7 @@ subroutine init_pft_photo_params()
    Vm0(17)                   = 15.625          * vmfact
 
    !----- Define the stomatal slope (aka the M factor). -----------------------------------!
-   stomatal_slope(1)         =  6.4    * mfact
+   stomatal_slope(1)         =  6.4    * mfact  !=3
    stomatal_slope(2)         =  8.0    * mfact
    stomatal_slope(3)         =  8.0    * mfact
    stomatal_slope(4)         =  8.0    * mfact
@@ -906,7 +906,7 @@ subroutine init_pft_photo_params()
    cuticular_cond(16)        = 10000.0
    cuticular_cond(17)        = 2000.0 
 
-   quantum_efficiency(1)     = 0.06
+   quantum_efficiency(1)     = 0.053
    quantum_efficiency(2)     = 0.08
    quantum_efficiency(3)     = 0.08
    quantum_efficiency(4)     = 0.08
@@ -2121,6 +2121,8 @@ subroutine init_physiology_params()
                              , photo_prefix      ! ! intent(out)
    use consts_coms    , only : umol_2_mol        & ! intent(in)
                              , t00               & ! intent(in)
+                             , mmdry             & ! intent(in)
+                             , mmco2i            & ! intent(in)
                              , Watts_2_Ein       ! ! intent(in)
    implicit none
 
@@ -2196,10 +2198,11 @@ subroutine init_physiology_params()
 
 
    !---------------------------------------------------------------------------------------!
-   !    The following parameter is the k coefficient in Foley et al. (1996) that is used   !
-   ! to determine the CO2-limited photosynthesis for C4 grasses.                           !
+   !    The following parameter is the k coefficient following Collatz et al. (1992)       !
+   !    that is used to determine the CO2-limited photosynthesis for C4 grasses.           !
+   !    This matches the number in Foley et al. (1996) but we correct for a unit errror    !
    !---------------------------------------------------------------------------------------!
-   klowco2      = 18000.    ! coefficient for low CO2                            [ mol/mol]
+   klowco2      = 18000.*mmdry*mmco2i       ! coefficient for low CO2  [mol/mol]                          [ mol/mol]
    !---------------------------------------------------------------------------------------!
 
 

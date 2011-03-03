@@ -399,8 +399,8 @@ enddo
 !       Make sure all positive definite quantities remain such.
 
 call tkeinit(mzp,mxp,myp,1,mxp,1,myp)
-
 call negadj1(mzp,mxp,myp,1,mxp,1,myp)
+
 
 
 return

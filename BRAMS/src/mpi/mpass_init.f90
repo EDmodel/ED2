@@ -129,6 +129,8 @@ subroutine masterput_nl(master_num)
    use turb_coms          , only : nna                         & ! intent(in)
                                  , nnb                         & ! intent(in)
                                  , nnc                         ! ! intent(in)
+   use leaf_coms          , only : ustmin                      & ! intent(in)
+                                 , ggfact                      ! ! intent(in)
    implicit none
    !----- External variable declaration ---------------------------------------------------!
    include 'interface.h'
@@ -279,6 +281,11 @@ subroutine masterput_nl(master_num)
    call MPI_Bcast(SLZ,NZGMAX,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(STGOFF,NZGMAX,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(SLMSTR,NZGMAX,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(BETAPOWER,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(USTMIN,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(GGFACT,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(ISOILBC,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(RUNOFF_TIME,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(IDIFFK,MAXGRDS,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(IBRUVAIS,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(IBOTFLX,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
@@ -919,6 +926,8 @@ subroutine nodeget_nl
    use turb_coms          , only : nna                         & ! intent(out)
                                  , nnb                         & ! intent(out)
                                  , nnc                         ! ! intent(out)
+   use leaf_coms          , only : ustmin                      & ! intent(out)
+                                 , ggfact                      ! ! intent(out)
    implicit none
    !----- External variable declaration ---------------------------------------------------!
    include 'interface.h'
@@ -1064,6 +1073,11 @@ subroutine nodeget_nl
    call MPI_Bcast(SLZ,NZGMAX,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(STGOFF,NZGMAX,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(SLMSTR,NZGMAX,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(BETAPOWER,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(USTMIN,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(GGFACT,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(ISOILBC,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(RUNOFF_TIME,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(IDIFFK,MAXGRDS,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(IBRUVAIS,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(IBOTFLX,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
@@ -1323,10 +1337,10 @@ subroutine nodeget_grid_dimens()
    zzz=1000
    do nm=1,nmachs
      zzz=zzz+1
-     call MPI_Recv(node_buffs(nm)%nsend,1,MPI_INTEGER,master_num,zzz,MPI_COMM_WORLD        &
+     call MPI_Recv(nsend_buff(nm),1,MPI_INTEGER,master_num,zzz,MPI_COMM_WORLD    &
                   ,MPI_STATUS_IGNORE,ierr)
      zzz=zzz+1
-     call MPI_Recv(node_buffs(nm)%nrecv,1,MPI_INTEGER,master_num,zzz,MPI_COMM_WORLD        &
+     call MPI_Recv(nrecv_buff(nm),1,MPI_INTEGER,master_num,zzz,MPI_COMM_WORLD    &
                   ,MPI_STATUS_IGNORE,ierr)
    end do
    zzz=zzz+1
@@ -1415,6 +1429,14 @@ subroutine nodeget_gridset
 
    return
 end subroutine nodeget_gridset
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
 !==========================================================================================!
 !==========================================================================================!
 !    This subroutine receives information that did not fit in any of the previous calls,   !

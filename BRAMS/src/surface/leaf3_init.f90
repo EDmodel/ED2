@@ -1,113 +1,217 @@
-!############################# Change Log ##################################
-! 5.0.0
-!
-!###########################################################################
-!  Copyright (C)  1990, 1995, 1999, 2000, 2003 - All Rights Reserved
-!  Regional Atmospheric Modeling System - RAMS
-!###########################################################################
+!====================================== Change Log ========================================!
+! 5.0.0                                                                                    !
+!                                                                                          !
+!==========================================================================================!
+!  Copyright (C)  1990, 1995, 1999, 2000, 2003 - All Rights Reserved                       !
+!  Regional Atmospheric Modeling System - RAMS                                             !
+!==========================================================================================!
+!==========================================================================================!
+subroutine sfcdata()
+   use mem_grid
+   use mem_leaf
+   use leaf_coms
 
-subroutine sfcdata
-
-use mem_grid
-use mem_leaf
-use leaf_coms
-
-implicit none
-
-integer :: k,nnn
-
-type soil_class
-   real :: slpots     ! Soil moisture potential at saturation         [       m]
-   real :: slmsts     ! Soil moisture at saturation                   [   m3/m3]
-   real :: slbs       ! B exponent                                    [     n/d]
-   real :: slcpd      ! Specific heat of dry soil                     [  J/m3/K]
-   real :: soilcp     ! Dry soil capacity (at -3.1MPa)                [   m3/m3]
-   real :: soilwp     ! Wilting point capacity (at -1.5MPa)           [   m3/m3]
-   real :: slcons     ! hydraulic conductivity at saturation          [     m/s]
-   real :: slcons0    ! Surface value for slcons                      [     m/s]
-   real :: soilcond0  ! Intercept for conductivity calculation        [   N/K/s]
-   real :: soilcond1  ! Linear coefficient for conductivity           [   N/K/s]
-   real :: soilcond2  ! Quadratic coefficient for conductivity        [   N/K/s]
-   real :: sfldcap    ! Soil field capacity                           [   m3/m3]
-   real :: xsand      ! Percentage of sand                            [     ---]
-   real :: xclay      ! Percentage of clay                            [     ---]
-   real :: xorgan     ! Percentage of organic material                [     ---]
-   real :: xrobulk    ! Bulk density                                  [     ---]
-   real :: slden      ! "Dry" soil density (porosity)                 [   kg/m3]
-end type soil_class
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-real :: romin,roorg,slfcap,refdepth,tmin,ratio,xmin
-real, dimension     (nstyp) :: xsand,xclay,xorgan,xrobulk
-type(soil_class) , dimension(nstyp)            :: soilparms
-
-real, dimension (12,0:nvtyp+nvtyp_teb) :: bioparms
-
-!  Soil Characteristics (see Clapp & Hornberger, 1978; McCumber & Pielke,
-!                        1981; Pielke, 1984; Tremback & Kessler, 1985)
-!
-!  slpots  - saturation moisture potential (m)
-!  slmsts  - saturation volumetric moisture content (m3/m3)
-!  slbs    - b exponent (dimensionless)
-!  slcons  - saturation soil hydraulic conductivity (m/s)
-!  slcons0 - surface value for slcons (m/s)
-!  slcpd   - dry soil volumetric heat capacity (J/m3/K)
-!  slden   - dry soil density (kg/m3) (also total soil porosity)
-
-
-
-
-
-!         LEAF-3 BIOPHYSICAL PARAMETERS BY LANDUSE CLASS NUMBER
-
-data bioparms/  &
-!-----------------------------------------------------------------------------
-!albv_green     sr_max         veg_clump       rootdep             LEAF-3 CLASS #
-!     albv_brown     tai_max        veg_frac        dead_frac      AND DESCRIPTION
-!          emisv          sai            veg_ht         rcmin
-!-----------------------------------------------------------------------------
- .00, .00, .00,  .0, 0.0,  .0,  .0, .00,   .0,  .0, .0,   0., & !  0  Ocean
- .00, .00, .00,  .0, 0.0,  .0,  .0, .00,   .0,  .0, .0,   0., & !  1  Lakes, rivers, streams
- .00, .00, .00,  .0, 0.0,  .0,  .0, .00,   .0,  .0, .0,   0., & !  2  Ice cap/glacier
- .00, .00, .00,  .0, 0.0,  .0,  .0, .00,   .0,  .0, .0,   0., & !  3  Desert, bare soil
- .14, .24, .97, 5.4, 8.0, 1.0, 1.0, .80, 20.0, 1.5, .0, 500., & !  4  Evergreen needleleaf tree
- .14, .24, .95, 5.4, 8.0, 1.0, 1.0, .80, 22.0, 1.5, .0, 500., & !  5  Deciduous needleleaf tree
- .20, .24, .95, 6.2, 7.0, 1.0,  .0, .80, 22.0, 1.5, .0, 500., & !  6  Deciduous broadleaf tree
- .12, .18, .95, 4.1, 6.5, 1.0,  .0, .90, 32.0, 2.5, .0, 285., & !  7  Evergreen broadleaf tree
- .13, .30, .96, 5.1, 4.0, 1.0,  .0, .75,   .3,  .7, .7, 100., & !  8  Short grass
- .24, .43, .96, 5.1, 5.0, 1.0,  .0, .80,  1.2, 1.0, .7, 100., & !  9  Tall grass
- .24, .24, .96, 5.1, 1.0,  .2, 1.0, .20,   .7, 1.0, .0, 500., & ! 10  Semi-desert
- .20, .24, .95, 5.1, 4.5,  .5, 1.0, .60,   .2, 1.0, .0,  50., & ! 11  Tundra
- .14, .24, .97, 5.1, 5.5, 1.0, 1.0, .70,  1.0, 1.0, .0, 500., & ! 12  Evergreen shrub
- .20, .28, .97, 5.1, 5.5, 1.0, 1.0, .70,  1.0, 1.0, .0, 500., & ! 13  Deciduous shrub
- .16, .24, .96, 6.2, 7.0, 1.0,  .5, .80, 22.0, 1.5, .0, 500., & ! 14  Mixed woodland
- .22, .40, .95, 5.1, 5.0,  .5,  .0, .85,  1.0, 1.0, .0, 100., & ! 15  Crop/mixed farming, C3 grassland
- .18, .40, .95, 5.1, 5.0,  .5,  .0, .80,  1.1, 1.0, .0, 500., & ! 16  Irrigated crop
- .12, .43, .98, 5.1, 7.0, 1.0,  .0, .80,  1.6, 1.0, .0, 500., & ! 17  Bog or marsh
- !srf  ---
- .13, .30, .96, 5.1, 6.0, 1.0,  .0, .80,  7.0, 1.5, .0, 100., & ! 18  Wooded grassland
- .20, .36, .90, 5.1, 3.6, 1.0,  .0, .74,  6.0,  .8, .0, 500., & ! 19  Urban and built up
- .17, .24, .95, 4.1, 7.0, 1.0,  .0, .90, 32.0, 1.5, .0, 500., & ! 20  Wetland evergreen broadleaf tree
- .16, .24, .96, 5.1, 2.0, 1.5, 1.0, .10, 20.0, 1.5, .0, 500./   ! 21  Very urban
+   implicit none
+   !----- Local structures. ---------------------------------------------------------------!
+   type soil_class
+      !------------------------------------------------------------------------------------!
+      !  Soil Characteristics (see Clapp & Hornberger, 1978; McCumber & Pielke, 1981;      !
+      !                            Pielke, 1984; Tremback & Kessler, 1985)                 !
+      !------------------------------------------------------------------------------------!
+      real :: slpots     ! Soil moisture potential at saturation         [       m]
+      real :: slmsts     ! Soil moisture at saturation                   [   m3/m3]
+      real :: slbs       ! B exponent                                    [     n/d]
+      real :: slcpd      ! Specific heat of dry soil                     [  J/m3/K]
+      real :: soilcp     ! Dry soil capacity (at -3.1MPa)                [   m3/m3]
+      real :: soilwp     ! Wilting point capacity (at -1.5MPa)           [   m3/m3]
+      real :: slcons     ! hydraulic conductivity at saturation          [     m/s]
+      real :: slcons0    ! Surface value for slcons                      [     m/s]
+      real :: soilcond0  ! Intercept for conductivity calculation        [   N/K/s]
+      real :: soilcond1  ! Linear coefficient for conductivity           [   N/K/s]
+      real :: soilcond2  ! Quadratic coefficient for conductivity        [   N/K/s]
+      real :: sfldcap    ! Soil field capacity                           [   m3/m3]
+      real :: xsand      ! Percentage of sand                            [     ---]
+      real :: xclay      ! Percentage of clay                            [     ---]
+      real :: xorgan     ! Percentage of organic material                [     ---]
+      real :: xrobulk    ! Bulk density                                  [     ---]
+      real :: slden      ! "Dry" soil density (porosity)                 [   kg/m3]
+   end type soil_class
+   !.......................................................................................!
+   type vegt_class
+      !----- LEAF-3 biophysical parameters by land use class number. ----------------------!
+      real :: albv_green
+      real :: albv_brown
+      real :: emisv
+      real :: sr_max
+      real :: tai_max
+      real :: sai
+      real :: veg_clump
+      real :: veg_frac
+      real :: veg_ht
+      real :: rootdep
+      real :: dead_frac
+      real :: gsw_max
+      real :: leaf_width
+      real :: stom_side
+   end type vegt_class
+   !----- Local variables. ----------------------------------------------------------------!
+   type(soil_class) , dimension(nstyp)            :: soilparms
+   type(vegt_class) , dimension(nvtyp+nvtyp_teb)  :: bioparms
+   real             , dimension(nstyp)            :: xsand
+   real             , dimension(nstyp)            :: xclay
+   real             , dimension(nstyp)            :: xorgan
+   real             , dimension(nstyp)            :: xrobulk
+   integer                                        :: k
+   integer                                        :: nnn
+   real                                           :: romin
+   real                                           :: roorg
+   real                                           :: slfcap
+   real                                           :: refdepth
+   real                                           :: tmin
+   real                                           :: ratio
+   real                                           :: xmin
+   !---------------------------------------------------------------------------------------!
 
 
 
    !---------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+   !    Declare the biophysics parameters.                                                 !
+   ! (1st line)   albv_green   albv_brown            emisv          sr_max        tai_max  !
+   ! (2nd line)          sai    veg_clump         veg_frac          veg_ht        rootdep  !
+   ! (3rd line)    dead_frac      gsw_max       leaf_width       stom_side                 !
+   !---------------------------------------------------------------------------------------!
+   bioparms = (/                                                                           &
+   !-----  0. Ocean.  Not really used, and this is class 0.  Let's skip it. ---------------!
+   !    vegt_class(      0.00,       0.00,             0.00,            0.0,           0.0 &
+   !              ,       0.0,        0.0,             0.00,            0.0,           0.0 &
+   !              ,       0.0,        0.0,             0.00,            0.0               )&
+   !-----  1. Lakes, rivers, streams. -----------------------------------------------------!
+       vegt_class(      0.00,       0.00,             0.00,            0.0,           0.0  &
+                 ,       0.0,        0.0,             0.00,            0.0,           0.0  &
+                 ,       0.0,        0.0,             0.00,            0.0               ) &
+   !-----  2. Ice cap/glacier. ------------------------------------------------------------!
+      ,vegt_class(      0.00,       0.00,             0.00,            0.0,           0.0  &
+                 ,       0.0,        0.0,             0.00,            0.0,           0.0  &
+                 ,       0.0,        0.0,             0.00,            0.0               ) &
+   !-----  3. Desert, bare soil. ----------------------------------------------------------!
+      ,vegt_class(      0.00,       0.00,             0.00,            0.0,           0.0  &
+                 ,       0.0,        0.0,             0.00,            0.0,           0.0  &
+                 ,       0.0,        0.0,             0.00,            0.0               ) &
+   !-----  4. Evergreen needleleaf tree. --------------------------------------------------!
+      ,vegt_class(      0.14,       0.24,             0.97,            5.4,           8.0  &
+                 ,       1.0,        1.0,             0.80,           20.0,           1.5  &
+                 ,       0.0,     0.0020,             0.05,            2.0               ) &
+   !-----  5. Deciduous needleleaf tree. --------------------------------------------------!
+      ,vegt_class(      0.14,       0.24,             0.95,            5.4,           8.0  &
+                 ,       1.0,        1.0,             0.80,           22.0,           1.5  &
+                 ,       0.0,     0.0020,             0.05,            2.0               ) &
+   !-----  6. Deciduous broadleaf tree. ---------------------------------------------------!
+      ,vegt_class(      0.20,       0.24,             0.95,            6.2,           7.0  &
+                 ,       1.0,        0.0,             0.80,           22.0,           1.5  &
+                 ,       0.0,     0.0020,             0.10,            1.0               ) &
+   !-----  7. Evergreen broadleaf tree. ---------------------------------------------------!
+      ,vegt_class(      0.12,       0.18,             0.95,            4.1,           6.5  &
+                 ,       1.0,        0.0,             0.90,           32.0,           2.5  &
+                 ,       0.0,     0.0035,             0.20,            1.0               ) &
+   !-----  8. Short grass. ----------------------------------------------------------------!
+      ,vegt_class(      0.13,       0.30,             0.96,            5.1,           4.0  &
+                 ,       1.0,        0.0,             0.75,            0.3,           0.7  &
+                 ,       0.7,     0.0100,             0.10,            1.0               ) &
+   !-----  9. Tall grass. -----------------------------------------------------------------!
+      ,vegt_class(      0.24,       0.43,             0.96,            5.1,           5.0  &
+                 ,       1.0,        0.0,             0.80,            1.2,           1.0  &
+                 ,       0.7,     0.0100,             0.10,            1.0               ) &
+   !----- 10. Semi-desert. ----------------------------------------------------------------!
+      ,vegt_class(      0.24,       0.24,             0.96,            5.1,           1.0  &
+                 ,       0.2,        1.0,             0.20,            0.7,           1.0  &
+                 ,       0.0,     0.0020,             0.03,            1.0               ) &
+   !----- 11. Tundra. ---------------------------------------------------------------------!
+      ,vegt_class(      0.20,       0.24,             0.95,            5.1,           4.5  &
+                 ,       0.5,        1.0,             0.60,            0.2,           1.0  &
+                 ,       0.0,     0.0200,             0.03,            1.0               ) &
+   !----- 12. Evergreen shrub. ------------------------------------------------------------!
+      ,vegt_class(      0.14,       0.24,             0.97,            5.1,           5.5  &
+                 ,       1.0,        1.0,             0.70,            1.0,           1.0  &
+                 ,       0.0,     0.0020,             0.05,            1.0               ) &
+   !----- 13. Deciduous shrub. ------------------------------------------------------------!
+      ,vegt_class(      0.20,       0.28,             0.97,            5.1,           5.5  &
+                 ,       1.0,        1.0,             0.70,            1.0,           1.0  &
+                 ,       0.0,     0.0020,             0.05,            1.0               ) &
+   !----- 14. Mixed woodland. -------------------------------------------------------------!
+      ,vegt_class(      0.16,       0.24,             0.96,            6.2,           7.0  &
+                 ,       1.0,        0.5,             0.80,           22.0,           1.5  &
+                 ,       0.0,     0.0020,             0.08,            1.0               ) &
+   !----- 15. Crop/mixed farming, C3 grassland. -------------------------------------------!
+      ,vegt_class(      0.22,       0.40,             0.95,            5.1,           5.0  &
+                 ,       0.5,        0.0,             0.85,            1.0,           1.0  &
+                 ,       0.0,     0.0100,             0.10,            1.0               ) &
+   !----- 16. Irrigated crop. -------------------------------------------------------------!
+      ,vegt_class(      0.18,       0.40,             0.95,            5.1,           5.0  &
+                 ,       0.5,        0.0,             0.80,            1.1,           1.0  &
+                 ,       0.0,     0.0020,             0.10,            1.0               ) &
+   !----- 17. Bog or marsh. ---------------------------------------------------------------!
+      ,vegt_class(      0.12,       0.43,             0.98,            5.1,           7.0  &
+                 ,       1.0,        0.0,             0.80,            1.6,           1.0  &
+                 ,       0.0,     0.0020,             0.20,            1.0               ) &
+   !----- 18. Wooded grassland. -----------------------------------------------------------!
+      ,vegt_class(      0.13,       0.30,             0.96,            5.1,           6.0  &
+                 ,       1.0,        0.0,             0.80,            7.0,           1.5  &
+                 ,       0.0,     0.0100,             0.08,            1.0               ) &
+   !----- 19. Urban and built up. ---------------------------------------------------------!
+      ,vegt_class(      0.20,       0.36,             0.90,            5.1,           3.6  &
+                 ,       1.0,        0.0,             0.74,            6.0,           0.8  &
+                 ,       0.0,     0.0020,             0.05,            1.0               ) &
+   !----- 20. Wetland evergreen broadleaf tree. -------------------------------------------!
+      ,vegt_class(      0.17,       0.24,             0.95,            4.1,           7.0  &
+                 ,       1.0,        0.0,             0.90,           32.0,           1.5  &
+                 ,       0.0,     0.0020,             0.20,            1.0               ) &
+   !----- 21. Very urban. -----------------------------------------------------------------!
+      ,vegt_class(      0.16,       0.24,             0.96,            5.1,           2.0  &
+                 ,       1.5,        1.0,             0.10,           20.0,           1.5  &
+                 ,       0.0,     0.0020,             0.05,            1.0               ) &
+   /)
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Assign the vector variables from the look-up table.  These variables will be used !
+   ! by the biophysics solver in LEAF-3.                                                   !
+   !---------------------------------------------------------------------------------------!
+   do nnn = 1,(nvtyp+nvtyp_teb)
+      albv_green(nnn) = bioparms(nnn)%albv_green
+      albv_brown(nnn) = bioparms(nnn)%albv_brown
+      emisv(nnn)      = bioparms(nnn)%emisv
+      sr_max(nnn)     = bioparms(nnn)%sr_max
+      tai_max(nnn)    = bioparms(nnn)%tai_max
+      sai(nnn)        = bioparms(nnn)%sai
+      veg_clump(nnn)  = bioparms(nnn)%veg_clump
+      veg_frac(nnn)   = bioparms(nnn)%veg_frac
+      veg_ht(nnn)     = bioparms(nnn)%veg_ht
+      dead_frac(nnn)  = bioparms(nnn)%dead_frac
+      gsw_max(nnn)    = bioparms(nnn)%gsw_max
+      leaf_width(nnn) = bioparms(nnn)%leaf_width
+      stom_side(nnn)  = bioparms(nnn)%stom_side
+
+      glai_max(nnn)   = tai_max(nnn) - sai(nnn)
+
+      root(1,nnn)  = 0.              ! not used
+
+      !----- Find the bottom layer that this patch can access water. ----------------------!
+      kroot(nnn)   = nzg
+      do k = nzg-1,1,-1
+         if (slz(k+1) > -bioparms(nnn)%rootdep) kroot(nnn) = k
+      end do
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
+   ! Define the soil parameters.                                                           !
    ! (1st line)          slpots        slmsts          slbs     slcpd        soilcp        !
    ! (2nd line)          soilwp        slcons       slcons0 soilcond0     soilcond1        !
    ! (3rd line)       soilcond2       sfldcap         xsand     xclay        xorgan        !
@@ -176,162 +280,180 @@ data bioparms/  &
                  ,         500.,         300.                                      )       &
    /)
    !---------------------------------------------------------------------------------------!
-! Thermal conductivity in J/msK
-cka = 0.418684 * 0.0615
-ckw = 0.418684 * 1.45
-romin = 2655.0
-roorg = 1300.0
 
-slz(nzg+1) = 0.
 
-slfcap = -10. / 3.
-refdepth = -2.0
+   !------ Thermal conductivity in J/msK. -------------------------------------------------!
+   cka   = 0.418684 * 0.0615
+   ckw   = 0.418684 * 1.45
+   romin = 2655.0
+   roorg = 1300.0
 
-do nnn = 1,nstyp
-   slcons0(nnn) = soilparms(nnn)%slcons0
-   fhydraul(nnn) = log (soilparms(nnn)%slcons / soilparms(nnn)%slcons0) / refdepth
 
-   do k = 1,nzg
-      slcons1(k,nnn) = soilparms(nnn)%slcons      ! ORIGINAL form - const with depth
-!     slcons1(k,nnn) = soilparms(nnn)%slcons0  &  ! TOPMODEL form - large at surface
-!        * exp(slz(k) * fhydraul(nnn))            !    and exp decrease with depth
+   !------ Set the top soil depth to be zero. ---------------------------------------------!
+   slz(nzg+1) = 0.
+   slfcap     = -10. / 3.
+   refdepth   = -2.0
+
+   do nnn = 1,nstyp
+      slcons0(nnn) = soilparms(nnn)%slcons0
+      fhydraul(nnn) = log (soilparms(nnn)%slcons / soilparms(nnn)%slcons0) / refdepth
+
+      do k = 1,nzg
+         select case (isfcl)
+         case (2)
+            !----- TOPMODEL form - large at surface, and exponential decrease with depth. -!
+            slcons1(k,nnn) = soilparms(nnn)%slcons0 * exp(slz(k) * fhydraul(nnn))
+         case default
+            !----- ORIGINAL form - const with depth. --------------------------------------!
+            slcons1(k,nnn) = soilparms(nnn)%slcons      
+         end select
+      end do
+      !------ Copy the other parameters to the vectors. -----------------------------------!
+      slpots   (nnn) = soilparms(nnn)%slpots
+      slmsts   (nnn) = soilparms(nnn)%slmsts
+      slbs     (nnn) = soilparms(nnn)%slbs
+      slcons   (nnn) = soilparms(nnn)%slcons
+      slcons00 (nnn) = soilparms(nnn)%slcons0
+      slcpd    (nnn) = soilparms(nnn)%slcpd
+      slden    (nnn) = soilparms(nnn)%slden
+      sfldcap  (nnn) = soilparms(nnn)%sfldcap
+      soilcp   (nnn) = soilparms(nnn)%soilcp
+      soilwp   (nnn) = soilparms(nnn)%soilwp
+      soilcond0(nnn) = soilparms(nnn)%soilcond0
+      soilcond1(nnn) = soilparms(nnn)%soilcond1
+      soilcond2(nnn) = soilparms(nnn)%soilcond2
+      xsand    (nnn) = soilparms(nnn)%xsand
+      xclay    (nnn) = soilparms(nnn)%xclay
+      xorgan   (nnn) = soilparms(nnn)%xorgan
+      xrobulk  (nnn) = soilparms(nnn)%xrobulk
+
+      !----- Define the emmisivity and slfc. ----------------------------------------------!
+      emisg(nnn) = .98
+      slfc(nnn) = slmsts(nnn) * (slfcap / slpots(nnn)) ** (-1. / slbs(nnn))
    end do
 
-   slpots   (nnn) = soilparms(nnn)%slpots
-   slmsts   (nnn) = soilparms(nnn)%slmsts
-   slbs     (nnn) = soilparms(nnn)%slbs
-   slcons   (nnn) = soilparms(nnn)%slcons
-   slcons00 (nnn) = soilparms(nnn)%slcons0
-   slcpd    (nnn) = soilparms(nnn)%slcpd
-   slden    (nnn) = soilparms(nnn)%slden
-   sfldcap  (nnn) = soilparms(nnn)%sfldcap
-   soilcp   (nnn) = soilparms(nnn)%soilcp
-   soilwp   (nnn) = soilparms(nnn)%soilwp
-   soilcond0(nnn) = soilparms(nnn)%soilcond0
-   soilcond1(nnn) = soilparms(nnn)%soilcond1
-   soilcond2(nnn) = soilparms(nnn)%soilcond2
-   xsand    (nnn) = soilparms(nnn)%xsand
-   xclay    (nnn) = soilparms(nnn)%xclay
-   xorgan   (nnn) = soilparms(nnn)%xorgan
-   xrobulk  (nnn) = soilparms(nnn)%xrobulk
+   return
+end subroutine sfcdata
+!==========================================================================================!
+!==========================================================================================!
 
 
-   emisg(nnn) = .98
-   slfc(nnn) = slmsts(nnn) * (slfcap / slpots(nnn)) ** (-1. / slbs(nnn))
 
-!    tmin = xsand(nnn) + xclay(nnn)
-!    romean = xorgan(nnn) * roorg + tmin * romin
-!    sporo(nnn) = 1.0 - xrobulk(nnn) / romean
-!    ratio = (xorgan(nnn) / roorg) / (tmin / romin)
-!    sorgan(nnn) = ratio / (1.0 + ratio) * (1.0 - sporo(nnn))
-!    xmin = 1.0 - sporo(nnn) - sorgan(nnn)
-!    ssand(nnn) = xsand(nnn) * xmin / tmin
-!    sclay(nnn) = xclay(nnn) * xmin / tmin
 
-enddo
 
-do nnn = 1,(nvtyp+nvtyp_teb)
-   albv_green(nnn) = bioparms(1,nnn)
-   albv_brown(nnn) = bioparms(2,nnn)
-   emisv(nnn)      = bioparms(3,nnn)
-   sr_max(nnn)     = bioparms(4,nnn)
-   tai_max(nnn)    = bioparms(5,nnn)
-   sai(nnn)        = bioparms(6,nnn)
-   veg_clump(nnn)  = bioparms(7,nnn)
-   veg_frac(nnn)   = bioparms(8,nnn)
-   veg_ht(nnn)     = bioparms(9,nnn)
-   dead_frac(nnn)  = bioparms(11,nnn)
-   rcmin(nnn)      = bioparms(12,nnn)
-   glai_max(nnn)   = tai_max(nnn) - sai(nnn)
-
-   root(1,nnn)  = 0.              ! not used
-   kroot(nnn)   = nzg
-   do k = nzg-1,1,-1
-      if (slz(k+1) .gt. -bioparms(10,nnn)) kroot(nnn) = k
-   enddo
-enddo
-
-return
-end
-
-! ****************************************************************************
-
+!==========================================================================================!
+!==========================================================================================!
+!      Fill the snow_mass and snow_depth arrays with a default value of 0.  This default   !
+! is used when snowcover information is not read from varfiles.                            !
+!------------------------------------------------------------------------------------------!
 subroutine snowinit(n2,n3,snow_mass,snow_depth)
-implicit none
-integer :: n2,n3,i,j
-real, dimension(n2,n3) :: snow_mass,snow_depth
+   implicit none
+   !------ Arguments. ---------------------------------------------------------------------!
+   integer                  , intent(in)    :: n2
+   integer                  , intent(in)    :: n3
+   real   , dimension(n2,n3), intent(inout) :: snow_mass
+   real   , dimension(n2,n3), intent(inout) :: snow_depth
+   !------ Local variables. ---------------------------------------------------------------!
+   integer                                  :: i
+   integer                                  :: j
+   !---------------------------------------------------------------------------------------!
 
-! Fill the snow_mass and snow_depth arrays with a default value of 0.  This
-! default is used when snowcover information is not read from varfiles.
-
-do j = 1,n3
-   do i = 1,n2
-      snow_mass(i,j) = 0.
-      snow_depth(i,j) = 0.
-   enddo
-enddo
-return
-end
-
-
-!*****************************************************************************
-
-subroutine sfcinit_file(n2,n3,mzg,npat,ifm,patch_area,leaf_class,soil_text)
-
-use mem_leaf
-use rconstants
-use leaf_coms, only : tiny_parea
-
-implicit none
-
-integer :: n2,n3,mzg,npat,ifm,i,j,k,ipat
-
-real, dimension(mzg,n2,n3,npat) :: soil_text
-real, dimension(n2,n3,npat) :: patch_area,leaf_class
-
-! This subroutine fills the arrays PATCH_AREA, leaf_class, and SOIL_TEXT
-! horizontally homogeneously with default values that are defined in the
-! RAMSIN namelist file.  These fields comprise the land/sea surface data
-! types that are normally available on standard RAMS datasets.  The default
-! values assigned here may be overridden by (1) interpolation from coarser
-! grids, (2) specifying new values in subroutine sfcinit_user in the file
-! ruser.f, or (3) reading data from the standard RAMS datasets.
-
-pctlcon = max(0.,min(pctlcon, 1. - tiny_parea))
-
-do j = 1,n3
-   do i = 1,n2
-
-      patch_area(i,j,1) = 1. - pctlcon         ! patch 1
-      leaf_class(i,j,1) = 0.                   ! patch 1
-
-      patch_area(i,j,2) = pctlcon              ! patch 2
-      leaf_class(i,j,2) = float(nvgcon)        ! patch 2
-
-      do k = 1,mzg
-         soil_text(k,i,j,1) = 0.               ! patch 1
-         soil_text(k,i,j,2) = float(nslcon)    ! patch 2
-      enddo
-
-   enddo
-enddo
-
-do ipat = 3,npat
    do j = 1,n3
       do i = 1,n2
+         snow_mass(i,j) = 0.
+         snow_depth(i,j) = 0.
+      end do
+   end do
 
-         patch_area(i,j,ipat) = 0.
-         leaf_class(i,j,ipat) = leaf_class(i,j,2)
+   return
+end subroutine snowinit
+!==========================================================================================!
+!==========================================================================================!
 
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!      This subroutine fills the arrays PATCH_AREA, leaf_class, and SOIL_TEXT horizontally !
+! homogeneously with default values that are defined in the RAMSIN namelist file.  These   !
+! fields comprise the land/sea surface data types that are normally available on standard  !
+! RAMS datasets.  The default values assigned here may be overridden by:                   !
+! (1) interpolation from coarser grids,                                                    !
+! (2) specifying new hardcoded values in subroutine sfcinit_user in the file ruser.f90,    !
+! (3) reading data from the standard RAMS datasets.                                        !
+!------------------------------------------------------------------------------------------!
+subroutine sfcinit_file(n2,n3,mzg,npat,ifm,patch_area,leaf_class,soil_text)
+   use mem_leaf
+   use rconstants
+   use leaf_coms , only : tiny_parea
+
+   implicit none
+   !------ Arguments. ---------------------------------------------------------------------!
+   integer                           , intent(in)    :: n2
+   integer                           , intent(in)    :: n3
+   integer                           , intent(in)    :: mzg
+   integer                           , intent(in)    :: npat
+   integer                           , intent(in)    :: ifm
+   real   , dimension(mzg,n2,n3,npat), intent(inout) :: soil_text
+   real   , dimension(n2,n3,npat)    , intent(inout) :: patch_area
+   real   , dimension(n2,n3,npat)    , intent(inout) :: leaf_class
+   !------ Local variables. ---------------------------------------------------------------!
+   integer                                           :: i
+   integer                                           :: j
+   integer                                           :: k
+   integer                                           :: ipat
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Re-define the percentage of land cover, so it's always bounded. -----------------!
+   pctlcon = max(0.,min(pctlcon, 1. - tiny_parea))
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Create two patches, one with water, the other with land.                          !
+   !---------------------------------------------------------------------------------------!
+   do j = 1,n3
+      do i = 1,n2
+         !----- Water patch. --------------------------------------------------------------!
+         patch_area(i,j,1) = 1. - pctlcon
+         leaf_class(i,j,1) = 0.
          do k = 1,mzg
-            soil_text(k,i,j,ipat) = soil_text(k,i,j,2)
-         enddo
+            soil_text(k,i,j,1) = 0.               ! patch 1
+         end do
+         !----- Land patch. ---------------------------------------------------------------!
+         patch_area(i,j,2) = pctlcon
+         leaf_class(i,j,2) = float(nvgcon)
+         do k = 1,mzg
+            soil_text(k,i,j,2) = float(nslcon)
+         end do
+      end do
+   end do
+   !---------------------------------------------------------------------------------------!
 
-      enddo
-   enddo
-enddo
 
-return
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Leave any other patch that may exist empty.                                       !
+   !---------------------------------------------------------------------------------------!
+   do ipat = 3,npat
+      do j = 1,n3
+         do i = 1,n2
+            patch_area(i,j,ipat) = 0.
+            leaf_class(i,j,ipat) = leaf_class(i,j,2)
+
+            do k = 1,mzg
+               soil_text(k,i,j,ipat) = soil_text(k,i,j,2)
+            end do
+
+         end do
+      end do
+   end do
+   !---------------------------------------------------------------------------------------!
+   return
 end subroutine sfcinit_file
 !==========================================================================================!
 !==========================================================================================!
@@ -355,7 +477,7 @@ subroutine sfcinit_nofile(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,seatp,s
                          ,sfcwater_depth,ustar,tstar,rstar,cstar,zeta,ribulk,veg_fracarea  &
                          ,veg_agb,veg_lai,veg_tai,veg_rough,veg_height,veg_albedo          &
                          ,patch_area,patch_rough,patch_wetind,leaf_class,soil_rough        &
-                         ,sfcwater_nlev,stom_resist,ground_rsat,ground_rvap,ground_temp    &
+                         ,sfcwater_nlev,stom_condct,ground_rsat,ground_rvap,ground_temp    &
                          ,ground_fliq,veg_water,veg_hcap,veg_energy,can_prss,can_theiv     &
                          ,can_theta,can_rvap,can_co2,sensible_gc,sensible_vc,evap_gc       &
                          ,evap_vc,transp,gpp,plresp,resphet,veg_ndvip,veg_ndvic,veg_ndvif  &
@@ -384,7 +506,7 @@ subroutine sfcinit_nofile(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,seatp,s
    real, dimension(    n2,n3,npat), intent(inout) :: veg_rough,veg_height,veg_albedo
    real, dimension(    n2,n3,npat), intent(inout) :: patch_area,patch_rough,patch_wetind
    real, dimension(    n2,n3,npat), intent(inout) :: leaf_class
-   real, dimension(    n2,n3,npat), intent(inout) :: soil_rough,sfcwater_nlev,stom_resist
+   real, dimension(    n2,n3,npat), intent(inout) :: soil_rough,sfcwater_nlev,stom_condct
    real, dimension(    n2,n3,npat), intent(inout) :: ground_rsat,ground_rvap
    real, dimension(    n2,n3,npat), intent(inout) :: ground_temp,ground_fliq
    real, dimension(    n2,n3,npat), intent(inout) :: veg_water,veg_energy,veg_hcap
@@ -479,7 +601,7 @@ subroutine sfcinit_nofile(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,seatp,s
 
             veg_height(i,j,ipat)  = veg_ht(nveg)
             veg_albedo(i,j,ipat)  = albv_green(nveg)
-            stom_resist(i,j,ipat) = 1.e6
+            stom_condct(i,j,ipat) = 1.e-6
 
             !------------------------------------------------------------------------------!
             !     We cannot allow the vegetation height to be above the first level.  If   !

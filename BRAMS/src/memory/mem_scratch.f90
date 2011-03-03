@@ -15,7 +15,7 @@ module mem_scratch
 
    type scratch_vars
       !----- The largest arrays available, they should hold the largest possible variable -!
-      real, pointer, dimension(:) ::  scr1,scr2,scr3
+      real, pointer, dimension(:) ::  scr1,scr2,scr3,scr4,scr5,scr6
       !----- 2-D variables, they should hold any (X,Y) variable for any grid. -------------!
       real, pointer, dimension(:) ::  vt2da,vt2db,vt2dc,vt2dd,vt2de,vt2df
       !----- 3-D variables, for (Z,X,Y), (X,Y,P), (X,Y,C), and (X,Y,W) variables. ---------!
@@ -46,18 +46,38 @@ module mem_scratch
    subroutine alloc_scratch(ngrs,nmzp,nmxp,nmyp,nnzp,nnxp,nnyp,nzg,nzs,npatch,nclouds      &
                            ,maxx,maxy,maxz)
 
-      use mem_aerad,    only : nwave    ! ! intent(in)
-      use mem_radiate , only : ilwrtyp  & ! intent(in)
-                             , iswrtyp  ! ! intent(in)
-      use catt_start  , only : CATT     ! ! intent(in)
+      use mem_aerad,    only : nwave       ! ! intent(in)
+      use mem_radiate , only : ilwrtyp     & ! intent(in)
+                             , iswrtyp     ! ! intent(in)
+      use catt_start  , only : CATT        ! ! intent(in)
+      use grid_dims   , only : ndim_types  & ! intent(in)
+                             , number_dims ! ! intent(in)
       implicit none
       !------ Arguments -------------------------------------------------------------------!
-      integer                  , intent(in)  :: ngrs,nzg,nzs,npatch,nclouds
-      integer, dimension (ngrs), intent(in)  :: nmzp,nmxp,nmyp,nnzp,nnxp,nnyp
-      integer                  , intent(out) :: maxx,maxy,maxz
+      integer                        , intent(in)  :: ngrs
+      integer                        , intent(in)  :: nzg
+      integer                        , intent(in)  :: nzs
+      integer                        , intent(in)  :: npatch
+      integer                        , intent(in)  :: nclouds
+      integer, dimension (ngrs)      , intent(in)  :: nmzp
+      integer, dimension (ngrs)      , intent(in)  :: nmxp
+      integer, dimension (ngrs)      , intent(in)  :: nmyp
+      integer, dimension (ngrs)      , intent(in)  :: nnzp
+      integer, dimension (ngrs)      , intent(in)  :: nnxp
+      integer, dimension (ngrs)      , intent(in)  :: nnyp
+      integer                        , intent(out) :: maxx
+      integer                        , intent(out) :: maxy
+      integer                        , intent(out) :: maxz
       !------ Local variables -------------------------------------------------------------!
-      integer                                :: ng,ntpts,ntpts2,ntpts4,ntptsx
-      integer                                :: ntpts_catt
+      integer, dimension (ndim_types)              :: npts_local
+      integer, dimension (ndim_types)              :: npts_global
+      integer                                      :: nptsmax
+      integer                                      :: mpts1d
+      integer                                      :: mpts2d
+      integer                                      :: mpts3d
+      integer                                      :: mpts4d
+      integer                                      :: ng
+      integer                                      :: idim
       !------------------------------------------------------------------------------------!
 
       !------------------------------------------------------------------------------------!
@@ -67,114 +87,137 @@ module mem_scratch
       maxx       = 0
       maxy       = 0
       maxz       = 0
-      ntpts      = 0
-      ntpts2     = 0
-      ntpts_catt = 0
-      ntpts4     = 0
       do ng=1,ngrs
          maxx   = max(maxx,nnxp(ng))
          maxy   = max(maxy,nnyp(ng))
          maxz   = max(maxz,nnzp(ng))
-         ntpts  = max(nmxp(ng)*nmyp(ng)*nmzp(ng),nmxp(ng)*nmyp(ng)*nclouds                 &
-                     ,nmxp(ng)*nmyp(ng)*npatch,ntpts )
-         ntpts2 = max(nmxp(ng)*nmyp(ng),ntpts2 )
-         ntpts4 = max(nmxp(ng)*nmyp(ng)*max(nmzp(ng),nzg,nzs,nwave)*max(npatch,nclouds)    &
-                     ,ntpts4)
-      enddo
-      
-      !----- Setting the maximum possible number for scr1 and scr2. -----------------------!
-      ntptsx=max(maxx*maxy*maxz,ntpts4,ntpts2*nzg*npatch,ntpts2*nzs*npatch,maxz*40)+1000
+      end do
 
-      !----- Making it even larger in case it's a CATT run --------------------------------!
-      if (ilwrtyp==4 .or. iswrtyp==4) then
-         ntpts_catt = max(ntptsx,maxx*maxy*nwave)+1000
-      else
-         ntpts_catt = ntptsx
-      end if
+      !----- Initialise all dimensions with zero. -----------------------------------------!
+      npts_local (:) = 0
+      npts_global(:) = 0
+      do ng = 1,ngrs
+         !----- 1-D. ----------------------------------------------------------------------!
+         npts_local (1) = max(npts_local(1),nmxp(ng),nmyp(ng),nmzp(ng),nclouds,npatch      &
+                             ,nwave,nzg,nzs)
+         npts_global(1) = max(npts_global(1),nnxp(ng),nnyp(ng),nnzp(ng),nclouds,npatch     &
+                             ,nwave,nzg,nzs)
+         !----- 2-D (nxp,nyp) -------------------------------------------------------------!
+         npts_local (2) = max(npts_local(2),nmxp(ng)*nmyp(ng))
+         npts_global(2) = max(npts_global(2),nnxp(ng)*nnyp(ng))
+         !----- 3-D (nzp,nxp,nyp) ---------------------------------------------------------!
+         npts_local (3) = max(npts_local(3),nmzp(ng)*nmxp(ng)*nmyp(ng))
+         npts_global(3) = max(npts_global(3),nnzp(ng)*nnxp(ng)*nnyp(ng))
+         !----- 4-D (nzg,nxp,nyp,npatch) --------------------------------------------------!
+         npts_local (4) = max(npts_local(4),nzg*nmxp(ng)*nmyp(ng)*npatch)
+         npts_global(4) = max(npts_global(4),nzg*nnxp(ng)*nnyp(ng)*npatch)
+         !----- 4-D (nzs,nxp,nyp,npatch) --------------------------------------------------!
+         npts_local (5) = max(npts_local(5),nzs*nmxp(ng)*nmyp(ng)*npatch)
+         npts_global(5) = max(npts_global(5),nzs*nnxp(ng)*nnyp(ng)*npatch)
+         !----- 3-D (nxp,nyp,npatch) ------------------------------------------------------!
+         npts_local (6) = max(npts_local(6),nmxp(ng)*nmyp(ng)*npatch)
+         npts_global(6) = max(npts_global(6),nnxp(ng)*nnyp(ng)*npatch)
+         !----- 3-D (nxp,nyp,nwave) -------------------------------------------------------!
+         npts_local (7) = max(npts_local(7),nmxp(ng)*nmyp(ng)*nwave)
+         npts_global(7) = max(npts_global(7),nnxp(ng)*nnyp(ng)*nwave)
+         !----- 4-D (nzp,nxp,nyp,nclouds) -------------------------------------------------!
+         npts_local (8) = max(npts_local(8),nmzp(ng)*nmxp(ng)*nmyp(ng)*nclouds)
+         npts_global(8) = max(npts_global(8),nnzp(ng)*nnxp(ng)*nnyp(ng)*nclouds)
+         !----- 3-D (nxp,nyp,nclouds) -----------------------------------------------------!
+         npts_local (9) = max(npts_local(9),nmxp(ng)*nmyp(ng)*nclouds)
+         npts_global(9) = max(npts_global(9),nnxp(ng)*nnyp(ng)*nclouds)
+      end do
+      
+      !----- Set the maximum possible number for scr1 and scr2. ---------------------------!
+      nptsmax = maxval(npts_global)
+      mpts1d  = maxval(npts_local,mask = number_dims == 1)
+      mpts2d  = maxval(npts_local,mask = number_dims == 2)
+      mpts3d  = maxval(npts_local,mask = number_dims == 3)
+      mpts4d  = maxval(npts_local,mask = number_dims == 4)
+      !------------------------------------------------------------------------------------!
+
+
+
 
       !------------------------------------------------------------------------------------!
       !    Allocate arrays based on options (if necessary).                                !
       !------------------------------------------------------------------------------------!
-      allocate (scratch%scr1 (ntpts_catt))
-      allocate (scratch%scr2 (ntpts_catt))
+      allocate (scratch%scr1 (nptsmax))
+      allocate (scratch%scr2 (nptsmax))
+      allocate (scratch%scr3 (nptsmax))
+      allocate (scratch%scr4 (nptsmax))
+      allocate (scratch%scr5 (nptsmax))
+      allocate (scratch%scr6 (nptsmax))
 
-      if (ilwrtyp==4 .or. iswrtyp==4) then
-         allocate (scratch%scr3 (ntpts_catt))
-      else
-         allocate (scratch%scr3 (1))  ! Not used in this case
-      endif
+      allocate (scratch%vt3da(mpts3d))
+      allocate (scratch%vt3db(mpts3d))
 
-      allocate (scratch%vt3da(ntpts ))
-      allocate (scratch%vt3db(ntpts ))
+      allocate (scratch%vt3dc(mpts3d))
+      allocate (scratch%vt3dd(mpts3d))
+      allocate (scratch%vt3de(mpts3d))
+      allocate (scratch%vt3df(mpts3d))
+      allocate (scratch%vt3dg(mpts3d))
+      allocate (scratch%vt3dh(mpts3d))
+      allocate (scratch%vt3di(mpts3d))
+      allocate (scratch%vt3dj(mpts3d))
+      allocate (scratch%vt3dk(mpts3d))
+      allocate (scratch%vt3dl(mpts3d))
+      allocate (scratch%vt3dm(mpts3d))
+      allocate (scratch%vt3dn(mpts3d))
+      allocate (scratch%vt3do(mpts3d))
+      allocate (scratch%vt3dp(mpts3d))
+      allocate (scratch%vt3dq(mpts3d))
+      allocate (scratch%vt3dr(mpts3d))
+      allocate (scratch%vt3ds(mpts3d))
 
-      allocate (scratch%vt3dc(ntpts ))
-      allocate (scratch%vt3dd(ntpts ))
-      allocate (scratch%vt3de(ntpts ))
-      allocate (scratch%vt3df(ntpts ))
-      allocate (scratch%vt3dg(ntpts ))
-      allocate (scratch%vt3dh(ntpts ))
-      allocate (scratch%vt3di(ntpts ))
-      allocate (scratch%vt3dj(ntpts ))
-      allocate (scratch%vt3dk(ntpts ))
-      allocate (scratch%vt3dl(ntpts ))
-      allocate (scratch%vt3dm(ntpts ))
-      allocate (scratch%vt3dn(ntpts ))
-      allocate (scratch%vt3do(ntpts ))
-      allocate (scratch%vt3dp(ntpts ))
-      allocate (scratch%vt3dq(ntpts ))
-      allocate (scratch%vt3dr(ntpts ))
-      allocate (scratch%vt3ds(ntpts ))
-
-      allocate (scratch%vt2da(ntpts2))
-      allocate (scratch%vt2db(ntpts2))
-      allocate (scratch%vt2dc(ntpts2))
-      allocate (scratch%vt2dd(ntpts2))
-      allocate (scratch%vt2de(ntpts2))
-      allocate (scratch%vt2df(ntpts2))
+      allocate (scratch%vt2da(mpts2d))
+      allocate (scratch%vt2db(mpts2d))
+      allocate (scratch%vt2dc(mpts2d))
+      allocate (scratch%vt2dd(mpts2d))
+      allocate (scratch%vt2de(mpts2d))
+      allocate (scratch%vt2df(mpts2d))
 
 
-      allocate (scratch%vt4da(ntpts4))
-      allocate (scratch%vt4db(ntpts4))
-      allocate (scratch%vt4dc(ntpts4))
+      allocate (scratch%vt4da(mpts4d))
+      allocate (scratch%vt4db(mpts4d))
+      allocate (scratch%vt4dc(mpts4d))
 
-      ! ALF - Putting zero in all variables
-      ! For CATT
-      call azero(ntpts_catt, scratch%scr1)
-      call azero(ntpts_catt, scratch%scr2)
-      if (CATT == 1) then
-         call azero(ntpts_catt, scratch%scr3)
-      else
-         call azero(1, scratch%scr3)  ! Not used in this case
-      endif
+      !----- ALF - Put zero in every variable. --------------------------------------------!
+      call azero(nptsmax, scratch%scr1)
+      call azero(nptsmax, scratch%scr2)
+      call azero(nptsmax, scratch%scr3)
+      call azero(nptsmax, scratch%scr4)
+      call azero(nptsmax, scratch%scr5)
+      call azero(nptsmax, scratch%scr6)
 
-      call azero(ntpts , scratch%vt3da)
-      call azero(ntpts , scratch%vt3db)
-      call azero(ntpts , scratch%vt3dc)
-      call azero(ntpts , scratch%vt3dd)
-      call azero(ntpts , scratch%vt3de)
-      call azero(ntpts , scratch%vt3df)
-      call azero(ntpts , scratch%vt3dg)
-      call azero(ntpts , scratch%vt3dh)
-      call azero(ntpts , scratch%vt3di)
-      call azero(ntpts , scratch%vt3dj)
-      call azero(ntpts , scratch%vt3dk)
-      call azero(ntpts , scratch%vt3dl)
-      call azero(ntpts , scratch%vt3dm)
-      call azero(ntpts , scratch%vt3dn)
-      call azero(ntpts , scratch%vt3do)
-      call azero(ntpts , scratch%vt3dp)
-      call azero(ntpts , scratch%vt3dq)
-      call azero(ntpts , scratch%vt3dr)
-      call azero(ntpts , scratch%vt3ds)
-      call azero(ntpts2, scratch%vt2da)
-      call azero(ntpts2, scratch%vt2db)
-      call azero(ntpts2, scratch%vt2dc)
-      call azero(ntpts2, scratch%vt2dd)
-      call azero(ntpts2, scratch%vt2de)
-      call azero(ntpts2, scratch%vt2df)
-      call azero(ntpts4, scratch%vt4da)
-      call azero(ntpts4, scratch%vt4db)
-      call azero(ntpts4, scratch%vt4dc)
+      call azero(mpts3d , scratch%vt3da)
+      call azero(mpts3d , scratch%vt3db)
+      call azero(mpts3d , scratch%vt3dc)
+      call azero(mpts3d , scratch%vt3dd)
+      call azero(mpts3d , scratch%vt3de)
+      call azero(mpts3d , scratch%vt3df)
+      call azero(mpts3d , scratch%vt3dg)
+      call azero(mpts3d , scratch%vt3dh)
+      call azero(mpts3d , scratch%vt3di)
+      call azero(mpts3d , scratch%vt3dj)
+      call azero(mpts3d , scratch%vt3dk)
+      call azero(mpts3d , scratch%vt3dl)
+      call azero(mpts3d , scratch%vt3dm)
+      call azero(mpts3d , scratch%vt3dn)
+      call azero(mpts3d , scratch%vt3do)
+      call azero(mpts3d , scratch%vt3dp)
+      call azero(mpts3d , scratch%vt3dq)
+      call azero(mpts3d , scratch%vt3dr)
+      call azero(mpts3d , scratch%vt3ds)
+      call azero(mpts2d , scratch%vt2da)
+      call azero(mpts2d , scratch%vt2db)
+      call azero(mpts2d , scratch%vt2dc)
+      call azero(mpts2d , scratch%vt2dd)
+      call azero(mpts2d , scratch%vt2de)
+      call azero(mpts2d , scratch%vt2df)
+      call azero(mpts4d , scratch%vt4da)
+      call azero(mpts4d , scratch%vt4db)
+      call azero(mpts4d , scratch%vt4dc)
 
       return
    end subroutine alloc_scratch
@@ -195,6 +238,9 @@ module mem_scratch
       if (associated(scratch%scr1 ))  nullify (scratch%scr1 )
       if (associated(scratch%scr2 ))  nullify (scratch%scr2 )
       if (associated(scratch%scr3 ))  nullify (scratch%scr3 )
+      if (associated(scratch%scr4 ))  nullify (scratch%scr4 )
+      if (associated(scratch%scr5 ))  nullify (scratch%scr5 )
+      if (associated(scratch%scr6 ))  nullify (scratch%scr6 )
       if (associated(scratch%vt3da))  nullify (scratch%vt3da)
       if (associated(scratch%vt3db))  nullify (scratch%vt3db)
       if (associated(scratch%vt3dc))  nullify (scratch%vt3dc)
@@ -243,6 +289,9 @@ module mem_scratch
       if (associated(scratch%scr1 ))  deallocate (scratch%scr1 )
       if (associated(scratch%scr2 ))  deallocate (scratch%scr2 )
       if (associated(scratch%scr3 ))  deallocate (scratch%scr3 )
+      if (associated(scratch%scr4 ))  deallocate (scratch%scr4 )
+      if (associated(scratch%scr5 ))  deallocate (scratch%scr5 )
+      if (associated(scratch%scr6 ))  deallocate (scratch%scr6 )
       if (associated(scratch%vt3da))  deallocate (scratch%vt3da)
       if (associated(scratch%vt3db))  deallocate (scratch%vt3db)
       if (associated(scratch%vt3dc))  deallocate (scratch%vt3dc)

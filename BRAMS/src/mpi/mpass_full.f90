@@ -38,14 +38,29 @@ subroutine master_sendinit()
    !----- External variable declaration ---------------------------------------------------!
    include 'mpif.h'
    include 'interface.h'
-   !----- Local variables -----------------------------------------------------------------!
-   integer :: ierr
-   integer :: nm,nmp,ind,nwords,mxp,myp,mxyp,mxyzp,nv,npts,ng,i
-   integer :: mpiid
+   !----- Local constants. ----------------------------------------------------------------!
+   integer, parameter        :: ntags=9
+   !----- Local variables. ----------------------------------------------------------------!
+   integer, dimension(ntags) :: msgtags  ! List of variable dims to be sent to the node
+   integer                   :: ierr     !
+   integer                   :: nm       ! Machine number counter for machine loop
+   integer                   :: ng       ! Grid number counter for grid loop
+   integer                   :: nv       ! Variable number counter for variable loop
+   integer                   :: sdxp     ! Number of X points for this sub-domain
+   integer                   :: sdyp     ! Number of Y points for this sub-domain
+   integer                   :: fdzp     ! Number of Z points for the full domain
+   integer                   :: fdep     ! Number of E points for the full domain
+                                         !    (clouds, patches, waves...)
+   integer                   :: sdxyp    ! Number of horizontal points for this sub-domain
+   integer                   :: npts     ! Number of points that this package contains
+   integer                   :: mpivarid ! Flag for MPI so it won't be messed up.
+   integer                   :: mpitagid ! Flag for MPI so it won't be messed up.
+   integer                   :: mpivnmid ! Flag for MPI so it won't be messed up.
    !---------------------------------------------------------------------------------------!
 
+
    machloop: do nm = 1,nmachs
-      !----- Sending time information -----------------------------------------------------!
+      !----- Send the time information. ---------------------------------------------------!
       call MPI_Send(vtime1,1,MPI_DOUBLE_PRECISION,machnum(nm),200,MPI_COMM_WORLD,ierr)
       call MPI_Send(vtime2,1,MPI_DOUBLE_PRECISION,machnum(nm),201,MPI_COMM_WORLD,ierr)
       call MPI_Send(htime1,1,MPI_DOUBLE_PRECISION,machnum(nm),202,MPI_COMM_WORLD,ierr)
@@ -63,80 +78,90 @@ subroutine master_sendinit()
       call MPI_Send(ndvitime2,maxgrds,MPI_DOUBLE_PRECISION,machnum(nm),211,MPI_COMM_WORLD  &
                    ,ierr)
 
-      mpiid = 100000
+      mpivarid = 100000
+      mpitagid = 600000
+      mpivnmid = 900000
       gridloop: do ng = 1,ngrids
 
-         !----- Defining grid dimensions --------------------------------------------------!
-         mxp   = nxend(nm,ng) - nxbeg(nm,ng) + 1
-         myp   = nyend(nm,ng) - nybeg(nm,ng) + 1
-         mxyp  = mxp * myp
-         mxyzp = mxyp * nnzp(ng)
+         !----- Define sub-domain dimensions. ---------------------------------------------!
+         sdxp   = nxend(nm,ng) - nxbeg(nm,ng) + 1
+         sdyp   = nyend(nm,ng) - nybeg(nm,ng) + 1
+         sdxyp  = sdxp * sdyp
 
          !----- Send variables that the nodes will only have the subdomain portion of. ----!
          varloop: do nv = 1,num_var(ng)
             if ( vtab_r(nv,ng)%impti == 1) then
-               !----- This will create a unique ID for this package -----------------------!
-               mpiid = mpiid + 1
+               !----- This will create a unique flag for this package ---------------------!
+               mpivarid = mpivarid + 1
+               mpitagid = mpitagid + 1
+               mpivnmid = mpivnmid + 1
+               !---------------------------------------------------------------------------!
+
+
 
                !---------------------------------------------------------------------------!
-               !     We will always send scratch%scr2, which is a scratch variable enough  !
-               ! large to receive any subdomain. Here all we do is to copy the right       !
-               ! amount of data to scr2 depending on the variable type, and then define    !
-               ! npts accordingly.                                                         !
+               !    Define the size of the vertical and "environmental" dimensions depend- !
+               ! ing on the variable type.                                                 !
                !---------------------------------------------------------------------------!
-               select case(vtab_r(nv,ng)%idim_type)
-               case (2) !----- 2D variables (nxp,nyp) -------------------------------------!
-                  call mk_2_buff(vtab_r(nv,ng)%var_p ,scratch%scr2,nnxp(ng),nnyp(ng)       &
-                                ,mxp,myp,nxbeg(nm,ng),nxend(nm,ng),nybeg(nm,ng)            &
-                                ,nyend(nm,ng))
-                  npts=mxyp
+               call ze_dims(ng,vtab_r(nv,ng)%idim_type,.true.,fdzp,fdep)
+               !---------------------------------------------------------------------------!
 
-               case (3) !----- 3D variables (nzp,nxp,nyp) ---------------------------------!
-                  call mk_3_buff(vtab_r(nv,ng)%var_p,scratch%scr2,nnzp(ng),nnxp(ng)        &
-                                ,nnyp(ng),mxp,myp,nxbeg(nm,ng),nxend(nm,ng),nybeg(nm,ng)   &
-                                ,nyend(nm,ng))
-                  npts=mxyzp
 
-               case (4) !----- 4D variables (nzg,nxp,nyp,npatch) --------------------------!
-                  call mk_4_buff(vtab_r(nv,ng)%var_p,scratch%scr2,nzg,nnxp(ng),nnyp(ng)    &
-                                ,npatch,mxp,myp,nxbeg(nm,ng),nxend(nm,ng),nybeg(nm,ng)     &
-                                ,nyend(nm,ng))
-                  npts=mxyp*nzg*npatch
 
-               case (5) !----- 4D variables (nzs,nxp,nyp,npatch) --------------------------!
-                  call mk_4_buff(vtab_r(nv,ng)%var_p,scratch%scr2,nzs,nnxp(ng),nnyp(ng)    &
-                                ,npatch,mxp,myp,nxbeg(nm,ng),nxend(nm,ng),nybeg(nm,ng)     &
-                                ,nyend(nm,ng))
-                  npts=mxyp*nzs*npatch
+               !---------------------------------------------------------------------------!
+               !       The total number of points in the buffer is the product of the four !
+               ! dimensions.                                                               !
+               !---------------------------------------------------------------------------!
+               npts = fdzp * sdxyp * fdep
+               !---------------------------------------------------------------------------!
 
-               case (6) !----- 3D variables (nxp,nyp,npatch) ------------------------------!
-                  call mk_2p_buff(vtab_r(nv,ng)%var_p,scratch%scr2,nnxp(ng),nnyp(ng)       &
-                                 ,npatch,mxp,myp,nxbeg(nm,ng),nxend(nm,ng),nybeg(nm,ng)    &
-                                 ,nyend(nm,ng))
-                  npts=mxyp*npatch
 
-               case (7) !----- 3D variables (nxp,nyp,nwave) -------------------------------!
-                  call mk_2p_buff(vtab_r(nv,ng)%var_p,scratch%scr2,nnxp(ng),nnyp(ng)       &
-                                    ,nwave,mxp,myp,nxbeg(nm,ng),nxend(nm,ng),nybeg(nm,ng)  &
-                                    ,nyend(nm,ng))
-                  npts=mxyp*nwave
+               !---------------------------------------------------------------------------!
+               !     Build the vector with the tag information.                            !
+               !---------------------------------------------------------------------------!
+               msgtags(1) = nm
+               msgtags(2) = ng
+               msgtags(3) = npts
+               msgtags(4) = vtab_r(nv,ng)%idim_type
+               msgtags(5) = nv
+               msgtags(6) = sdxp
+               msgtags(7) = sdyp
+               msgtags(8) = fdzp
+               msgtags(9) = fdep
+               !---------------------------------------------------------------------------!
 
-               case (8) !----- 4D variables (nzp,nxp,nyp,nclouds) -------------------------!
-                  call mk_4_buff(vtab_r(nv,ng)%var_p,scratch%scr2,nnzp(ng),nnxp(ng)        &
-                                ,nnyp(ng),nclouds,mxp,myp,nxbeg(nm,ng),nxend(nm,ng)        &
-                                ,nybeg(nm,ng),nyend(nm,ng))
-                  npts=mxyzp*nclouds
 
-               case (9) !----- 3D variables (nxp,nyp,nclouds) -----------------------------!
-                  call mk_2p_buff(vtab_r(nv,ng)%var_p,scratch%scr2,nnxp(ng),nnyp(ng)       &
-                                 ,nclouds,mxp,myp,nxbeg(nm,ng),nxend(nm,ng),nybeg(nm,ng)   &
-                                 ,nyend(nm,ng))
-                  npts=mxyp*nclouds
+               !---------------------------------------------------------------------------!
+               !     Copy the information that will be sent to scratch%scr2.  This is a    !
+               ! scratch variable that is large enough to receive any subdomain.           !
+               !---------------------------------------------------------------------------!
+               call azero(npts,scratch%scr2)
+               call mk_full_buff(vtab_r(nv,ng)%var_p,scratch%scr2                          &
+                                ,fdzp,nnxp(ng),nnyp(ng),fdep                               &
+                                ,nxbeg(nm,ng),nxend(nm,ng),nybeg(nm,ng),nyend(nm,ng))
+               !---------------------------------------------------------------------------!
 
-               end select
-               !----- Sending the buffer to the node --------------------------------------!
-               call MPI_Send(scratch%scr2,npts,MPI_REAL,machnum(nm),mpiid                  &
+
+
+
+               !----- Send the variable name to the node. ---------------------------------!
+               call MPI_Send(vtab_r(nv,ng)%name,16,MPI_CHARACTER,machnum(nm),mpivnmid      &
                             ,MPI_COMM_WORLD,ierr)
+               !---------------------------------------------------------------------------!
+
+
+
+               !----- Send the tag info to the node. --------------------------------------!
+               call MPI_Send(msgtags,ntags,MPI_INTEGER,machnum(nm),mpitagid                &
+                            ,MPI_COMM_WORLD,ierr)
+               !---------------------------------------------------------------------------!
+
+
+
+               !----- Send the buffer to the node -----------------------------------------!
+               call MPI_Send(scratch%scr2,npts,MPI_REAL,machnum(nm),mpivarid               &
+                            ,MPI_COMM_WORLD,ierr)
+               !---------------------------------------------------------------------------!
             end if
          end do varloop
       end do gridloop
@@ -144,187 +169,6 @@ subroutine master_sendinit()
 
    return
 end subroutine master_sendinit
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-!     This subroutine simply copies the 2D subdomain data to the buffer matrix. Here we    !
-! use the following notation: n? is the full domain dimension, whereas m? is the machine   !
-! subdomain dimension.                                                                     !
-!------------------------------------------------------------------------------------------!
-subroutine mk_2_buff(mydata,buff,nx,ny,mx,my,ibeg,iend,jbeg,jend)
-   implicit none
-   !----- Arguments -----------------------------------------------------------------------!
-   integer               , intent(in)  :: nx,ny,mx,my,ibeg,iend,jbeg,jend
-   real, dimension(nx,ny), intent(in)  :: mydata
-   real, dimension(mx,my), intent(out) :: buff
-   !----- Local variables. ----------------------------------------------------------------!
-   integer                             :: mi
-   integer                             :: mj
-   integer                             :: ni
-   integer                             :: nj
-   !---------------------------------------------------------------------------------------!
-   nj = jbeg
-   do mj=1,my
-      ni=ibeg
-
-      do mi=1,mx
-         buff(mi,mj)=mydata(ni,nj)
-         ni = ni + 1
-      end do
-
-      nj = nj +1
-   end do
-
-   return
-end subroutine mk_2_buff
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-!     This subroutine simply copies a 2D subdomain data that has an extra dimension (such  !
-! as patch, wavelength, or cloud size) to the buffer matrix. X and Y are the only dimen-   !
-! sions allowed to have sub-domains. Here we use the following notation: n? is the full    !
-! domain dimension, whereas m? is the machine subdomain dimension.                         !
-!------------------------------------------------------------------------------------------!
-subroutine mk_2p_buff(mydata,buff,nx,ny,ne,mx,my,ibeg,iend,jbeg,jend)
-   implicit none
-   !----- Arguments -----------------------------------------------------------------------!
-   integer                  , intent(in)  :: nx,ny,ne,mx,my,ibeg,iend,jbeg,jend
-   real, dimension(nx,ny,ne), intent(in)  :: mydata
-   real, dimension(mx,my,ne), intent(out) :: buff
-   !----- Local variables. ----------------------------------------------------------------!
-   integer                             :: mi
-   integer                             :: mj
-   integer                             :: ni
-   integer                             :: nj
-   integer                             :: nl
-   !---------------------------------------------------------------------------------------!
-
-   do nl=1,ne
-      nj = jbeg
-      do mj=1,my
-         ni=ibeg
-
-         do mi=1,mx
-
-            buff(mi,mj,nl)=mydata(ni,nj,nl)
-
-            ni = ni + 1
-         end do
-
-         nj = nj +1
-      end do
-   end do
-
-   return
-end subroutine mk_2p_buff
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-!     This subroutine simply copies a 3D subdomain data to the buffer matrix. Here we use  !
-! the following notation: n? is the full domain dimension, whereas m? is the machine sub-  !
-! domain dimension. Note that X and Y are the only dimensions allowed to have sub-domains. !
-!------------------------------------------------------------------------------------------!
-subroutine mk_3_buff(mydata,buff,nz,nx,ny,mx,my,ibeg,iend,jbeg,jend)
-   implicit none
-   !----- Arguments -----------------------------------------------------------------------!
-   integer                  , intent(in)  :: nz,nx,ny,mx,my,ibeg,iend,jbeg,jend
-   real, dimension(nz,nx,ny), intent(in)  :: mydata
-   real, dimension(nz,mx,my), intent(out) :: buff
-   !----- Local variables. ----------------------------------------------------------------!
-   integer                             :: mi
-   integer                             :: mj
-   integer                             :: ni
-   integer                             :: nj
-   integer                             :: nk
-   !---------------------------------------------------------------------------------------!
-
-   nj = jbeg
-   do mj=1,my
-      ni=ibeg
-
-      do mi=1,mx
-
-         do nk=1,nz
-            buff(nk,mi,mj)=mydata(nk,ni,nj)
-         end do
-
-         ni = ni + 1
-      end do
-
-      nj = nj +1
-   end do
-
-   return
-end subroutine mk_3_buff
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-!     This subroutine simply copies a 3D subdomain data that has an extra dimension (such  !
-! as patch, wavelength, or cloud size) to the buffer matrix. X and Y are the only dimen-   !
-! sions allowed to have sub-domains.                                                       !
-!------------------------------------------------------------------------------------------!
-subroutine mk_4_buff(mydata,buff,nz,nx,ny,ne,mx,my,ibeg,iend,jbeg,jend)
-  implicit none
-   !----- Arguments -----------------------------------------------------------------------!
-   integer                     , intent(in)  :: nz,nx,ny,ne,mx,my,ibeg,iend,jbeg,jend
-   real, dimension(nz,nx,ny,ne), intent(in)  :: mydata
-   real, dimension(nz,mx,my,ne), intent(out) :: buff
-   !----- Local variables. ----------------------------------------------------------------!
-   integer                             :: mi
-   integer                             :: mj
-   integer                             :: ni
-   integer                             :: nj
-   integer                             :: nk
-   integer                             :: nl
-   !---------------------------------------------------------------------------------------!
-
-   do nl=1,ne
-      nj = jbeg
-      do mj=1,my
-         ni=ibeg
-
-         do mi=1,mx
-            do nk=1,nz
-               buff(nk,mi,mj,nl)=mydata(nk,ni,nj,nl)
-            end do
-            ni = ni + 1
-         end do
-
-         nj = nj +1
-      end do
-   end do
-
-
-   return
-end subroutine mk_4_buff
 !==========================================================================================!
 !==========================================================================================!
 
@@ -347,16 +191,38 @@ subroutine node_getinit()
    use mem_varinit
    use mem_grid
    use io_params
+   use mem_aerad, only: nwave
 
    implicit none
 
    !----- External variable declaration ---------------------------------------------------!
    include 'mpif.h'
    include 'interface.h'
+   !----- Local constants. ----------------------------------------------------------------!
+   integer, parameter        :: ntags=9
    !----- Local variables -----------------------------------------------------------------!
-   integer :: ierr
-   integer :: mxyp,mxyzp,nv,nmp
-   integer :: ng, mpiid
+   character(len=16)         :: name_exp ! Expected variable name
+   integer, dimension(ntags) :: msgtags  ! List of variable dims to be sent to the node
+   integer :: ierr                       ! Error flag
+   integer :: sdxp                       ! Number of points in X direction
+   integer :: sdyp                       ! Number of points in Y direction
+   integer :: fdzp                       ! Number of points in Z direction
+   integer :: fdep                       ! Number of points in "E" direction
+   integer :: nv                         ! variable number
+   integer :: ng                         ! grid number
+   integer :: nm                         ! machine number
+   integer :: nv_exp                     ! Expected variable number
+   integer :: ng_exp                     ! Expected grid number
+   integer :: nm_exp                     ! Expected machine number
+   integer :: npts_exp                   ! Expected number of points
+   integer :: sdxp_exp                   ! Expected number of points in X direction
+   integer :: sdyp_exp                   ! Expected number of points in Y direction
+   integer :: fdzp_exp                   ! Expected number of points in Z direction
+   integer :: fdep_exp                   ! Expected number of points in "E" direction
+   integer :: idim_exp                   ! Expected number of dimensions.
+   integer :: mpivarid                   ! Unique identifier for the actual variable.
+   integer :: mpitagid                   ! Unique identifier for the tag.
+   integer :: mpivnmid                   ! Unique identifier for the variable name.
    !---------------------------------------------------------------------------------------!
 
    !----- Getting the time-related information --------------------------------------------!
@@ -386,19 +252,127 @@ subroutine node_getinit()
                 ,MPI_STATUS_IGNORE,ierr)
    !---------------------------------------------------------------------------------------!
 
-   mpiid = 100000
+   mpivarid = 100000
+   mpitagid = 600000
+   mpivnmid = 900000
    gridloop: do ng = 1,ngrids
-      varloop: do nv=1,num_var(ng)
+      varloop: do nv = 1,num_var(ng)
 
          if (vtab_r(nv,ng)%impti == 1) then
-            mpiid = mpiid + 1
+
+            !----- Update the unique flag counters. ---------------------------------------!
+            mpivarid = mpivarid + 1
+            mpitagid = mpitagid + 1
+            mpivnmid = mpivnmid + 1
             !------------------------------------------------------------------------------!
-            !    Receiving the variable sub-domain. Using the variable table pointer to    !
-            ! receive the information. It is already set up to the actual place so this    !
+
+
+
+            !------------------------------------------------------------------------------!
+            !     Receive the variable name.                                               !
+            !------------------------------------------------------------------------------!
+            call MPI_Recv(name_exp,16,MPI_CHARACTER,master_num,mpivnmid,MPI_COMM_WORLD     &
+                         ,MPI_STATUS_IGNORE,ierr)
+            !------------------------------------------------------------------------------!
+
+            !------------------------------------------------------------------------------!
+            !     Receive the tag.                                                         !
+            !------------------------------------------------------------------------------!
+            call MPI_Recv(msgtags,ntags,MPI_INTEGER,master_num,mpitagid,MPI_COMM_WORLD     &
+                         ,MPI_STATUS_IGNORE,ierr)
+            !------------------------------------------------------------------------------!
+
+
+
+
+            !----- Define the dimensions of this receive. ---------------------------------!
+            sdxp = mmxp(ng)
+            sdyp = mmyp(ng)
+            !------------------------------------------------------------------------------!
+
+
+
+            !------------------------------------------------------------------------------!
+            !    Define the size of the vertical and "environmental" dimensions depend-    !
+            ! ing on the variable type.                                                    !
+            !------------------------------------------------------------------------------!
+            call ze_dims(ng,vtab_r(nv,ng)%idim_type,.false.,fdzp,fdep)
+            !------------------------------------------------------------------------------!
+
+
+            !----- Retrieve the expected values. ------------------------------------------!
+            nm_exp   = msgtags(1)
+            ng_exp   = msgtags(2)
+            npts_exp = msgtags(3)
+            idim_exp = msgtags(4)
+            nv_exp   = msgtags(5)
+            sdxp_exp = msgtags(6)
+            sdyp_exp = msgtags(7)
+            fdzp_exp = msgtags(8)
+            fdep_exp = msgtags(9)
+            !------------------------------------------------------------------------------!
+
+
+            !------ Sanity check. ---------------------------------------------------------!
+            if ( vtab_r(nv,ng)%name      /= name_exp .or.                                  &
+                 mynum                   /= nm_exp   .or.                                  &
+                 ng                      /= ng_exp   .or.                                  &
+                 nv                      /= nv_exp   .or.                                  &
+                 vtab_r(nv,ng)%npts      /= npts_exp .or.                                  &
+                 vtab_r(nv,ng)%idim_type /= idim_exp .or.                                  &
+                 sdxp                    /= sdxp_exp .or.                                  &
+                 sdyp                    /= sdyp_exp .or.                                  &
+                 fdzp                    /= fdzp_exp .or.                                  &
+                 fdep                    /= fdep_exp )                                     &
+            then
+               write (unit=*,fmt='(a)')       '---- Actual point ------------------------'
+               write (unit=*,fmt='(a,1x,a)')  '  + NAME      =',trim(vtab_r(nv,ng)%name)
+               write (unit=*,fmt='(a,1x,i9)') '  + NM        =',mynum
+               write (unit=*,fmt='(a,1x,i9)') '  + NG        =',ng
+               write (unit=*,fmt='(a,1x,i9)') '  + NV        =',nv
+               write (unit=*,fmt='(a,1x,i9)') '  + NPTS      =',vtab_r(nv,nv)%npts
+               write (unit=*,fmt='(a,1x,i9)') '  + IDIM_TYPE =',vtab_r(nv,nv)%idim_type
+               write (unit=*,fmt='(a,1x,i9)') '  + SDXP      =',sdxp
+               write (unit=*,fmt='(a,1x,i9)') '  + SDYP      =',sdyp
+               write (unit=*,fmt='(a,1x,i9)') '  + FDZP      =',fdzp
+               write (unit=*,fmt='(a,1x,i9)') '  + FDEP      =',fdep
+               write (unit=*,fmt='(a)')       '---- Message received --------------------'
+               write (unit=*,fmt='(a,1x,a)')  '  + NAME      =',trim(name_exp)
+               write (unit=*,fmt='(a,1x,i9)') '  + NM        =',nm_exp
+               write (unit=*,fmt='(a,1x,i9)') '  + NG        =',ng_exp
+               write (unit=*,fmt='(a,1x,i9)') '  + NV        =',nv_exp
+               write (unit=*,fmt='(a,1x,i9)') '  + NPTS      =',npts_exp
+               write (unit=*,fmt='(a,1x,i9)') '  + IDIM_TYPE =',idim_exp
+               write (unit=*,fmt='(a,1x,i9)') '  + SDXP      =',sdxp_exp
+               write (unit=*,fmt='(a,1x,i9)') '  + SDYP      =',sdyp_exp
+               write (unit=*,fmt='(a,1x,i9)') '  + FDZP      =',fdzp_exp
+               write (unit=*,fmt='(a,1x,i9)') '  + FDEP      =',fdep_exp
+               call abort_run('Conflict in the message received...','node_getinit'         &
+                             ,'mpass_full.f90')
+            end if
+            !------------------------------------------------------------------------------!
+
+
+
+            !------------------------------------------------------------------------------!
+            !    Receive the variable sub-domain, using the variable table pointer to      !
+            ! receive the information.  It is already set up to the actual place so this   !
             ! will direct it to the right place.                                           !
             !------------------------------------------------------------------------------!
-            call MPI_Recv(vtab_r(nv,ng)%var_p,vtab_r(nv,ng)%npts,MPI_REAL,master_num       &
-                         ,mpiid,MPI_COMM_WORLD,MPI_STATUS_IGNORE,ierr)
+            call azero(npts_exp,scratch%scr1)
+            call MPI_Recv(scratch%scr1,npts_exp,MPI_REAL,master_num,mpivarid               &
+                         ,MPI_COMM_WORLD,MPI_STATUS_IGNORE,ierr)
+            !------------------------------------------------------------------------------!
+
+
+
+            !------------------------------------------------------------------------------!
+            !     Extract the received information and place it into the right place in    !
+            ! the actual variable to which the variable table points.                      !
+            !------------------------------------------------------------------------------!
+            call ex_full_buff(vtab_r(nv,ng)%var_p,scratch%scr1,fdzp,sdxp,sdyp,fdep         &
+                             ,sdxp,sdyp,0,0,1,sdxp,1,sdyp)
+            !------------------------------------------------------------------------------!
          end if
 
       end do varloop
@@ -426,41 +400,104 @@ subroutine node_sendall()
    use var_tables
    use mem_scratch
    use grid_dims
+   use mem_cuparm , only : nclouds ! ! intent(in)
+   use mem_aerad  , only : nwave   ! ! intent(in)
 
    implicit none
    !----- External variable declaration ---------------------------------------------------!
    include 'mpif.h'
    include 'interface.h'
    !----- Local constants -----------------------------------------------------------------!
-   integer                  , parameter :: ntags=5
+   integer                  , parameter :: ntags = 9
    !----- Local variables -----------------------------------------------------------------!
-   integer                              :: ierr,mpiidtags,mpiidvtab
-   integer                              :: mxyp,mxyzp,nmp,nv,ind,ng
    integer, dimension(ntags)            :: msgtags
+   integer                              :: ierr
+   integer                              :: mpitagsid
+   integer                              :: mpivtabid
+   integer                              :: mpinameid
+   integer                              :: sdxp
+   integer                              :: sdyp
+   integer                              :: fdzp
+   integer                              :: fdep
+   integer                              :: nmp
+   integer                              :: nv
+   integer                              :: ind
+   integer                              :: ng
    !---------------------------------------------------------------------------------------!
 
-   mpiidtags=200000000 + maxvars*maxgrds*(mynum-1)
-   mpiidvtab=300000000 + maxvars*maxgrds*(mynum-1)
+   mpitagsid=200000000 + maxvars*maxgrds*(mynum-1)
+   mpivtabid=300000000 + maxvars*maxgrds*(mynum-1)
+   mpinameid=400000000 + maxvars*maxgrds*(mynum-1)
    gridloop: do ng=1,ngrids
-      !----- Preparing the tags with information pertinent to this grid and this machine. -!
-      msgtags(1)=mynum
-      msgtags(2)=ng
 
       varloop: do nv=1,num_var(ng)
 
          if (vtab_r(nv,ng)%impt3 == 1) then
-            !----- Filling the remainder tags with variable specific information. ---------!
-            msgtags(3)= vtab_r(nv,ng)%npts
-            msgtags(4)= vtab_r(nv,ng)%idim_type
-            msgtags(5)= nv
-            mpiidtags = mpiidtags + 1
-            mpiidvtab = mpiidvtab + 1
+            !----- Update the tag counters. -----------------------------------------------!
+            mpitagsid = mpitagsid + 1
+            mpivtabid = mpivtabid + 1
+            mpinameid = mpinameid + 1
+            !------------------------------------------------------------------------------!
 
-            !----- Sending the tags then the variable to the head node --------------------!
-            call MPI_Send(msgtags,ntags,MPI_INTEGER,master_num,mpiidtags                   &
+
+
+            !----- Define the horizontal dimensions of this sub-domain. -------------------!
+            sdxp = mmxp(ng)
+            sdyp = mmyp(ng)
+            !------------------------------------------------------------------------------!
+
+
+
+            !------------------------------------------------------------------------------!
+            !    Find the size of the vertical and "environmental" dimensions depending on !
+            ! the variable type.                                                           !
+            !------------------------------------------------------------------------------!
+            call ze_dims(ng,vtab_r(nv,ng)%idim_type,.false.,fdzp,fdep)
+            !------------------------------------------------------------------------------!
+
+
+
+            !------------------------------------------------------------------------------!
+            !      Prepare the tags with information about the message that is about to be !
+            ! sent to the head node.                                                       !
+            !------------------------------------------------------------------------------!
+            msgtags(1) = mynum
+            msgtags(2) = ng
+            msgtags(3) = vtab_r(nv,ng)%npts
+            msgtags(4) = vtab_r(nv,ng)%idim_type
+            msgtags(5) = nv
+            msgtags(6) = sdxp
+            msgtags(7) = sdyp
+            msgtags(8) = fdzp
+            msgtags(9) = fdep
+            !------------------------------------------------------------------------------!
+
+
+
+            !------------------------------------------------------------------------------!
+            !     Copy the information that will be sent to scratch%scr6.  This is a       !
+            ! scratch variable that is large enough to receive any subdomain.              !
+            !------------------------------------------------------------------------------!
+            call azero(vtab_r(nv,ng)%npts,scratch%scr6)
+            call mk_full_buff(vtab_r(nv,ng)%var_p,scratch%scr6,fdzp,sdxp,sdyp,fdep         &
+                             ,1,sdxp,1,sdyp)
+            !------------------------------------------------------------------------------!
+
+
+
+            !------------------------------------------------------------------------------! 
+            !    Send the messages to the head node.  They go in three steps, the first    !
+            ! with the variable name, the second with the dimensions, and the third with   !
+            ! the field.                                                                   !
+            !------------------------------------------------------------------------------! 
+            call MPI_Send(vtab_r(nv,ng)%name,16,MPI_CHARACTER,master_num,mpinameid         &
                          ,MPI_COMM_WORLD,ierr)
-            call MPI_Send(vtab_r(nv,ng)%var_p,vtab_r(nv,ng)%npts,MPI_REAL,master_num       &
-                         ,mpiidvtab,MPI_COMM_WORLD,ierr)
+            call MPI_Send(msgtags,ntags,MPI_INTEGER,master_num,mpitagsid                   &
+                         ,MPI_COMM_WORLD,ierr)
+            call MPI_Send(scratch%scr6,vtab_r(nv,ng)%npts,MPI_REAL,master_num,mpivtabid    &
+                         ,MPI_COMM_WORLD,ierr)
+            !------------------------------------------------------------------------------! 
+
          end if
       end do varloop
    end do gridloop
@@ -486,8 +523,8 @@ subroutine master_getall()
    use rpara
    use var_tables
    use mem_scratch
-   use mem_cuparm, only: nclouds
-   use mem_aerad, only: nwave
+   use mem_cuparm , only: nclouds ! ! intent(in)
+   use mem_aerad  , only: nwave   ! ! intent(in)
    use grid_dims
   
    implicit none
@@ -495,95 +532,186 @@ subroutine master_getall()
    include 'mpif.h'
    include 'interface.h'
    !----- Local constants -----------------------------------------------------------------!
-   integer                  , parameter :: ntags=5
+   integer                  , parameter :: ntags=9
    !----- Local variables -----------------------------------------------------------------!
-   integer                              :: ierr,nmi,numvars,nvvv,mxp,myp,mxyp,mxyzp
-   integer                              :: nm,il1,ir2,jb1,jt2,ind,nv,idim_type,npts,ng
-   integer                              :: mpiidtags,mpiidvtab
+   character(len=16)                    :: name_exp
    integer, dimension(ntags)            :: msgtags
+   integer                              :: ierr
+   integer                              :: nmi
+   integer                              :: numvars
+   integer                              :: nvvv
+   integer                              :: sdxp
+   integer                              :: sdyp
+   integer                              :: sdxyp
+   integer                              :: fdzp
+   integer                              :: fdep
+   integer                              :: sdxp_exp
+   integer                              :: sdyp_exp
+   integer                              :: fdzp_exp
+   integer                              :: fdep_exp
+   integer                              :: npts_exp
+   integer                              :: nm
+   integer                              :: iwest
+   integer                              :: ieast
+   integer                              :: jsouth
+   integer                              :: jnorth
+   integer                              :: ioff
+   integer                              :: joff
+   integer                              :: nv
+   integer                              :: idim_type
+   integer                              :: npts
+   integer                              :: ng
+   integer                              :: mpitagsid
+   integer                              :: mpivtabid
+   integer                              :: mpinameid
    !---------------------------------------------------------------------------------------!
 
-   !----- Defining how many variables will be collected -----------------------------------!
+   !----- Determine how many variables will be collected ---------------------------------!
    numvars=0
    do ng=1,ngrids
       do nv=1,num_var(ng)
          if (vtab_r(nv,ng)%impt3 == 1) numvars=numvars+1
       end do
    end do
+   !---------------------------------------------------------------------------------------!
 
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Loop over all machines to receive the nodes information.                          !
+   !---------------------------------------------------------------------------------------!
    machloop: do nmi = 1,nmachs
-      mpiidtags=200000000 + maxvars*maxgrds*(machnum(nmi)-1)
-      mpiidvtab=300000000 + maxvars*maxgrds*(machnum(nmi)-1)
+      mpitagsid = 200000000 + maxvars*maxgrds*(machnum(nmi)-1)
+      mpivtabid = 300000000 + maxvars*maxgrds*(machnum(nmi)-1)
+      mpinameid = 400000000 + maxvars*maxgrds*(machnum(nmi)-1)
+
       varloop: do nvvv=1,numvars
-         mpiidtags = mpiidtags + 1
-         mpiidvtab = mpiidvtab + 1
-         !----- Receiving the tag information and assigning the variables. ----------------!
-         call MPI_Recv(msgtags,ntags,MPI_INTEGER,machnum(nmi),mpiidtags,MPI_COMM_WORLD     &
+         !----- Update the message flag. --------------------------------------------------!
+         mpitagsid = mpitagsid + 1
+         mpivtabid = mpivtabid + 1
+         mpinameid = mpinameid + 1
+         !---------------------------------------------------------------------------------!
+
+
+
+         !----- Receive the expected variable name. ---------------------------------------!
+         call MPI_Recv(name_exp,16,MPI_CHARACTER,machnum(nmi),mpinameid,MPI_COMM_WORLD     &
+                      ,MPI_STATUS_IGNORE,ierr)
+         !---------------------------------------------------------------------------------!
+
+
+         !----- Receive the tag information and assign some variables. --------------------!
+         call MPI_Recv(msgtags,ntags,MPI_INTEGER,machnum(nmi),mpitagsid,MPI_COMM_WORLD     &
                       ,MPI_STATUS_IGNORE,ierr)
          nm        = msgtags(1)
          ng        = msgtags(2)
-         npts      = msgtags(3)
+         npts_exp  = msgtags(3)
          idim_type = msgtags(4)
          nv        = msgtags(5)
+         sdxp_exp  = msgtags(6)
+         sdyp_exp  = msgtags(7)
+         fdzp_exp  = msgtags(8)
+         fdep_exp  = msgtags(9)
+         !---------------------------------------------------------------------------------!
 
-         !----- Copying the domain edges to scratch variables -----------------------------!
-         il1       = nxbegc(nm,ng)
-         ir2       = nxendc(nm,ng)
-         jb1       = nybegc(nm,ng)
-         jt2       = nyendc(nm,ng)
-         
-         !----- Receiving the data in the scratch array. ----------------------------------!
-         call MPI_Recv(scratch%scr1,npts,MPI_REAL,nm,mpiidvtab,MPI_COMM_WORLD              &
+
+
+         !----- Copy the domain edges to scratch variables. -------------------------------!
+         sdxp   = nxend  (nm,ng) - nxbeg  (nm,ng) + 1
+         sdyp   = nyend  (nm,ng) - nybeg  (nm,ng) + 1
+         iwest  = nxbegc (nm,ng)
+         ieast  = nxendc (nm,ng)
+         jsouth = nybegc (nm,ng)
+         jnorth = nyendc (nm,ng)
+         ioff   = ixoff  (nm,ng)
+         joff   = iyoff  (nm,ng)
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !     Find the vertical and "environmental" dimensions depending on the variable  !
+         ! type.                                                                           !
+         !---------------------------------------------------------------------------------!
+         call ze_dims(ng,idim_type,.true.,fdzp,fdep)
+         !---------------------------------------------------------------------------------!
+
+
+
+         !----- Determine the number of points. -------------------------------------------!
+         npts = sdxp * sdyp * fdzp * fdep
+         !---------------------------------------------------------------------------------!
+
+
+
+         !------ Sanity check. ------------------------------------------------------------!
+         if ( vtab_r(nv,ng)%name      /= name_exp     .or.                                 &
+              nm                      /= machnum(nmi) .or.                                 &
+              npts                    /= npts_exp     .or.                                 &
+              vtab_r(nv,ng)%idim_type /= idim_type    .or.                                 &
+              sdxp                    /= sdxp_exp     .or.                                 &
+              sdyp                    /= sdyp_exp     .or.                                 &
+              fdzp                    /= fdzp_exp     .or.                                 &
+              fdep                    /= fdep_exp     )                                    &
+         then
+            write (unit=*,fmt='(a)')       '---- Actual point ------------------------'
+            write (unit=*,fmt='(a,1x,a)')  '  + NAME      =',trim(vtab_r(nv,ng)%name)
+            write (unit=*,fmt='(a,1x,i9)') '  + NM        =',machnum(nmi)
+            write (unit=*,fmt='(a,1x,i9)') '  + NG        =',ng
+            write (unit=*,fmt='(a,1x,i9)') '  + NV        =',nv
+            write (unit=*,fmt='(a,1x,i9)') '  + NPTS      =',npts
+            write (unit=*,fmt='(a,1x,i9)') '  + IDIM_TYPE =',vtab_r(nv,nv)%idim_type
+            write (unit=*,fmt='(a,1x,i9)') '  + SDXP      =',sdxp
+            write (unit=*,fmt='(a,1x,i9)') '  + SDYP      =',sdyp
+            write (unit=*,fmt='(a,1x,i9)') '  + FDZP      =',fdzp
+            write (unit=*,fmt='(a,1x,i9)') '  + FDEP      =',fdep
+            write (unit=*,fmt='(a)')       '---- Message received --------------------'
+            write (unit=*,fmt='(a,1x,a)')  '  + NAME      =',trim(name_exp)
+            write (unit=*,fmt='(a,1x,i9)') '  + NM        =',nm
+            write (unit=*,fmt='(a,1x,i9)') '  + NG        =',ng
+            write (unit=*,fmt='(a,1x,i9)') '  + NV        =',nv
+            write (unit=*,fmt='(a,1x,i9)') '  + NPTS      =',npts_exp
+            write (unit=*,fmt='(a,1x,i9)') '  + IDIM_TYPE =',idim_type
+            write (unit=*,fmt='(a,1x,i9)') '  + SDXP      =',sdxp_exp
+            write (unit=*,fmt='(a,1x,i9)') '  + SDYP      =',sdyp_exp
+            write (unit=*,fmt='(a,1x,i9)') '  + FDZP      =',fdzp_exp
+            write (unit=*,fmt='(a,1x,i9)') '  + FDEP      =',fdep_exp
+            call abort_run('Conflict in the message received...','master_getall'           &
+                          ,'mpass_full.f90')
+         end if
+         !---------------------------------------------------------------------------------!
+
+
+
+
+         !---------------------------------------------------------------------------------!
+         !     Shift the usable domain to the actual edge for edge and corner sub-domains. !
+         !---------------------------------------------------------------------------------!
+         if(iand(ibcflg(nm,ng),1) /= 0) iwest  = iwest  - 1
+         if(iand(ibcflg(nm,ng),2) /= 0) ieast  = ieast  + 1
+         if(iand(ibcflg(nm,ng),4) /= 0) jsouth = jsouth - 1
+         if(iand(ibcflg(nm,ng),8) /= 0) jnorth = jnorth + 1
+         !---------------------------------------------------------------------------------!
+
+
+
+
+         !----- Receive the data and put it temporarily into the scratch array. -----------!
+         call azero(npts,scratch%scr1)
+         call MPI_Recv(scratch%scr1,npts,MPI_REAL,nm,mpivtabid,MPI_COMM_WORLD              &
                       ,MPI_STATUS_IGNORE,ierr)
-         if(iand(ibcflg(nm,ng),1) /= 0) il1 = il1 - 1
-         if(iand(ibcflg(nm,ng),2) /= 0) ir2 = ir2 + 1
-         if(iand(ibcflg(nm,ng),4) /= 0) jb1 = jb1 - 1
-         if(iand(ibcflg(nm,ng),8) /= 0) jt2 = jt2 + 1
-         
-         !----- Copying the subdomain dimensions to scratch variables ---------------------! 
-         mxp  = nxend(nm,ng) - nxbeg(nm,ng) + 1
-         myp  = nyend(nm,ng) - nybeg(nm,ng) + 1
-         mxyp = mxp * myp
+         !---------------------------------------------------------------------------------!
+
+
 
          !---------------------------------------------------------------------------------!
-         !     Copying the scratch array to the proper place, using the var table pointer. !
-         ! This is already set up so it will copy to the appropriate place.                !
+         !     Extract the received information and place it into the right place in the   !
+         ! actual variable to which the variable table points.                             !
          !---------------------------------------------------------------------------------!
-         select case (idim_type)
-         case (2) !----- 2D variables (nxp,nyp) -------------------------------------------!
-            call ex_2_buff(vtab_r(nv,ng)%var_p,scratch%scr1,nnxp(ng),nnyp(ng),mxp,myp      &
-                          ,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
-
-         case (3) !----- 3D variables (nzp,nxp,nyp) ---------------------------------------!
-            call ex_3_buff(vtab_r(nv,ng)%var_p,scratch%scr1,nnzp(ng),nnxp(ng),nnyp(ng)     &
-                          ,mxp,myp,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
-
-         case (4) !----- 4D variables (nzg,nxp,nyp,npatch) --------------------------------!
-            call ex_4_buff(vtab_r(nv,ng)%var_p,scratch%scr1,nzg,nnxp(ng),nnyp(ng)          &
-                          ,npatch,mxp,myp,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
-
-         case (5) !----- 4D variables (nzs,nxp,nyp,npatch) --------------------------------!
-            call ex_4_buff(vtab_r(nv,ng)%var_p,scratch%scr1,nzs,nnxp(ng),nnyp(ng)          &
-                          ,npatch,mxp,myp,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
-
-         case (6) !----- 3D variables (nxp,nyp,npatch) ------------------------------------!
-            call ex_2p_buff(vtab_r(nv,ng)%var_p,scratch%scr1,nnxp(ng),nnyp(ng),npatch      &
-                           ,mxp,myp,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
-
-         case (7) !----- 3D variables (nxp,nyp,nwave) -------------------------------------!
-            call ex_2p_buff(vtab_r(nv,ng)%var_p,scratch%scr1,nnxp(ng),nnyp(ng),nwave       &
-                           ,mxp,myp,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
-
-         case (8) !----- 4D variables (nzp,nxp,nyp,nclouds) -------------------------------!
-            call ex_4_buff(vtab_r(nv,ng)%var_p,scratch%scr1,nnzp(ng),nnxp(ng),nnyp(ng)     &
-                          ,nclouds,mxp,myp,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
-
-         case (9) !----- 3D variables (nxp,nyp,nclouds) -----------------------------------!
-            call ex_2p_buff(vtab_r(nv,ng)%var_p,scratch%scr1,nnxp(ng),nnyp(ng),nclouds     &
-                           ,mxp,myp,ixoff(nm,ng),iyoff(nm,ng),il1,ir2,jb1,jt2)
-
-         end select
-
+         call ex_full_buff(vtab_r(nv,ng)%var_p,scratch%scr1,fdzp,nnxp(ng),nnyp(ng),fdep    &
+                          ,sdxp,sdyp,ioff,joff,iwest,ieast,jsouth,jnorth)
+         !---------------------------------------------------------------------------------!
       end do varloop
    end do machloop
    return
@@ -598,159 +726,107 @@ end subroutine master_getall
 
 !==========================================================================================!
 !==========================================================================================!
-!     This subroutine copies the 2D variable sub-domain data on the buffer to their actual !
-! place in the full domain. Here we use the following notation: n? is the full domain      !
-! dimension, whereas m? is the machine subdomain dimension.                                !
+!     This subroutine copies part of the full domain to the buffer matrix, which will be   !
+! sent to the nodes.                                                                       !
 !------------------------------------------------------------------------------------------!
-subroutine ex_2_buff(mydata,buff,nx,ny,mx,my,ioff,joff,ibeg,iend,jbeg,jend)
+subroutine mk_full_buff(mydata,buff,nz,nx,ny,ne,iwest,ieast,jsouth,jnorth)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
-   integer               , intent(in)    :: nx,ny,mx,my,ioff,joff,ibeg,iend,jbeg,jend
-   real, dimension(mx,my), intent(in)    :: buff
-   real, dimension(nx,ny), intent(inout) :: mydata
+   integer                     , intent(in)    :: nz
+   integer                     , intent(in)    :: nx
+   integer                     , intent(in)    :: ny
+   integer                     , intent(in)    :: ne
+   integer                     , intent(in)    :: iwest
+   integer                     , intent(in)    :: ieast
+   integer                     , intent(in)    :: jsouth
+   integer                     , intent(in)    :: jnorth
+   real, dimension(nz,nx,ny,ne), intent(in)    :: mydata
+   real, dimension(*)          , intent(inout) :: buff
    !----- Local variables. ----------------------------------------------------------------!
-   integer                               :: ni
-   integer                               :: nj
-   integer                               :: mi
-   integer                               :: mj
+   integer                                     :: ind
+   integer                                     :: i
+   integer                                     :: j
+   integer                                     :: k
+   integer                                     :: l
    !---------------------------------------------------------------------------------------!
 
-   do mj=jbeg,jend
-      nj = mj + joff
-      do mi=ibeg,iend
-         ni = mi + ioff
-         mydata(ni,nj) = buff(mi,mj)
-      end do
-   end do
 
-   return
-end subroutine ex_2_buff
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-!     This subroutine copies the 2D variable (with an extra dimension that is usually      !
-! patch, wavelength or cloud size) sub-domain data on the buffer to their actual           !
-! place in the full domain. Here we use the following notation: n? is the full domain      !
-! dimension, whereas m? is the machine subdomain dimension.                                !
-!------------------------------------------------------------------------------------------!
-subroutine ex_2p_buff(mydata,buff,nx,ny,ne,mx,my,ioff,joff,ibeg,iend,jbeg,jend)
-   implicit none
-   !----- Arguments -----------------------------------------------------------------------!
-   integer                  , intent(in)    :: nx,ny,ne,mx,my,ioff,joff,ibeg,iend,jbeg,jend
-   real, dimension(mx,my,ne), intent(in)    :: buff
-   real, dimension(nx,ny,ne), intent(inout) :: mydata
-   !----- Local variables. ----------------------------------------------------------------!
-   integer                               :: ni
-   integer                               :: nj
-   integer                               :: nl
-   integer                               :: mi
-   integer                               :: mj
    !---------------------------------------------------------------------------------------!
-
-   do nl = 1, ne
-      do mj=jbeg,jend
-         nj = mj + joff
-         do mi=ibeg,iend
-            ni = mi + ioff
-            mydata(ni,nj,nl) = buff(mi,mj,nl)
-         end do
-      end do
-   end do
-
-   return
-end subroutine ex_2p_buff
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-!     This subroutine copies the 3D variable sub-domain data on the buffer to their actual !
-! place in the full domain. X and Y are the only dimensions allowed to have sub-domains.   !
-! Here we use the following notation: n? is the full domain dimension, whereas m? is the   !
-! machine subdomain dimension.                                                             !
-!------------------------------------------------------------------------------------------!
-subroutine ex_3_buff(mydata,buff,nz,nx,ny,mx,my,ioff,joff,ibeg,iend,jbeg,jend)
-   implicit none
-   !----- Arguments -----------------------------------------------------------------------!
-   integer                  , intent(in)    :: nz,nx,ny,mx,my,ioff,joff,ibeg,iend,jbeg,jend
-   real, dimension(nz,mx,my), intent(in)    :: buff
-   real, dimension(nz,nx,ny), intent(inout) :: mydata
-   !----- Local variables. ----------------------------------------------------------------!
-   integer                               :: ni
-   integer                               :: nj
-   integer                               :: nk
-   integer                               :: mi
-   integer                               :: mj
+   !     Copy the information to the buffer.                                               !
    !---------------------------------------------------------------------------------------!
-
-   do mj=jbeg,jend
-      nj = mj + joff
-      do mi=ibeg,iend
-         ni = mi + ioff
-         do nk=1,nz
-            mydata(nk,ni,nj) = buff(nk,mi,mj)
-         end do
-      end do
-   end do
-
-   return
-end subroutine ex_3_buff
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-!     This subroutine copies the 3D variable (with an extra dimension that is usually      !
-! patch, wavelength or cloud size) sub-domain data on the buffer to their actual           !
-! place in the full domain. Here we use the following notation: n? is the full domain      !
-! dimension, whereas m? is the machine subdomain dimension.                                !
-!------------------------------------------------------------------------------------------!
-subroutine ex_4_buff(mydata,buff,nz,nx,ny,ne,mx,my,ioff,joff,ibeg,iend,jbeg,jend)
-   implicit none
-   !----- Arguments -----------------------------------------------------------------------!
-   integer                     , intent(in)    :: nz,nx,ny,ne,mx,my,ioff,joff
-   integer                     , intent(in)    :: ibeg,iend,jbeg,jend
-   real, dimension(nz,mx,my,ne), intent(in)    :: buff
-   real, dimension(nz,nx,ny,ne), intent(inout) :: mydata
-   !----- Local variables. ----------------------------------------------------------------!
-   integer                               :: ni
-   integer                               :: nj
-   integer                               :: nk
-   integer                               :: nl
-   integer                               :: mi
-   integer                               :: mj
-   !---------------------------------------------------------------------------------------!
-
-   do nl=1,ne
-      do mj=jbeg,jend
-         nj = mj + joff
-         do mi=ibeg,iend
-            ni = mi + ioff
-            do nk=1,nz
-               mydata(nk,ni,nj,nl) = buff(nk,mi,mj,nl)
+   ind = 0
+   do l=1,ne
+      do j=jsouth,jnorth
+         do i=iwest,ieast
+            do k=1,nz
+               ind       = ind + 1
+               buff(ind) = mydata(k,i,j,l)
             end do
          end do
       end do
    end do
+   !---------------------------------------------------------------------------------------!
 
    return
-end subroutine ex_4_buff
+end subroutine mk_full_buff
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine extracts the information stored in the buffer, and copies to the     !
+! actual place that will be used by the head node.                                         !
+!------------------------------------------------------------------------------------------!
+subroutine ex_full_buff(mydata,buff,nz,nx,ny,ne,mx,my,ioff,joff,iwest,ieast,jsouth,jnorth)
+   implicit none
+   !----- Arguments -----------------------------------------------------------------------!
+   integer                     , intent(in)    :: ne
+   integer                     , intent(in)    :: nx
+   integer                     , intent(in)    :: ny
+   integer                     , intent(in)    :: nz
+   integer                     , intent(in)    :: mx
+   integer                     , intent(in)    :: my
+   integer                     , intent(in)    :: ioff
+   integer                     , intent(in)    :: joff
+   integer                     , intent(in)    :: iwest
+   integer                     , intent(in)    :: ieast
+   integer                     , intent(in)    :: jsouth
+   integer                     , intent(in)    :: jnorth
+   real, dimension(nz,mx,my,ne), intent(in)    :: buff
+   real, dimension(nz,nx,ny,ne), intent(inout) :: mydata
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                     :: iabs
+   integer                                     :: jabs
+   integer                                     :: i
+   integer                                     :: j
+   integer                                     :: k
+   integer                                     :: l
+   integer                                     :: ind
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Copy the buffer information.                                                       !
+   !---------------------------------------------------------------------------------------!
+   do l=1,ne
+      do j=jsouth,jnorth
+         jabs = j + joff
+         do i=iwest,ieast
+            iabs = i + ioff
+            do k=1,nz
+               mydata(k,iabs,jabs,l) = buff(k,i,j,l)
+            end do
+         end do
+      end do
+   end do
+   !---------------------------------------------------------------------------------------!
+
+   return
+end subroutine ex_full_buff
 !==========================================================================================!
 !==========================================================================================!
