@@ -112,7 +112,10 @@ module ed_state_vars
      ! phenology_status codes:
      ! 0 - plant has the maximum LAI, given its size
      ! 1 - plant has an LAI between 0 and its maximum
+     ! -1 - plant is actively dropping leaves
      ! 2 - plant has no leaves
+
+     
      integer ,pointer,dimension(:) :: phenology_status
 
      ! Biomass of live tissue (kgC/plant)

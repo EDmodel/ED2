@@ -13,7 +13,7 @@ module growth_balive
    !=========================================================================!
    !     This subroutine will update the alive biomass, and compute the      !
    ! respiration terms other than leaf respiration.                          !
-   ! IMPORTANT: The order of the operations here affect the C/N budgests, so !
+   ! IMPORTANT: The order of the operations here affect the C/N budgets, so  !
    !            don't change the order of the operations unless you really   !
    !            know what you are doing.                                     !
    !-------------------------------------------------------------------------!
