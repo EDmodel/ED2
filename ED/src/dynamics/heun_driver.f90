@@ -556,7 +556,7 @@ subroutine heun_integ(h1,csite,ipa,nsteps)
             !----- ii.  Final update of top soil properties to avoid off-bounds moisture. -!
             call adjust_topsoil_properties(integration_buff%ytemp,h,csite,ipa)
             !----- iii.  Make snow layers stable and positively defined. ------------------!
-            call adjust_sfcw_properties(nzg,nzs,integration_buff%ytemp,csite,ipa)
+            call adjust_sfcw_properties(nzg,nzs,integration_buff%ytemp,h,csite,ipa)
             !----- iv. Update the diagnostic variables. -----------------------------------!
             call update_diagnostic_vars(integration_buff%ytemp,csite,ipa)
             !------------------------------------------------------------------------------!
@@ -631,7 +631,7 @@ subroutine heun_integ(h1,csite,ipa,nsteps)
                integration_buff%y%sfcwater_energy(ksn) =                                   &
                                   integration_buff%y%sfcwater_energy(ksn) - qwfree
 
-               call adjust_sfcw_properties(nzg,nzs,integration_buff%y,csite,ipa)
+               call adjust_sfcw_properties(nzg,nzs,integration_buff%y,dtrk4,csite,ipa)
                call update_diagnostic_vars(integration_buff%y,csite,ipa)
 
                !----- Compute runoff for output -------------------------------------------!

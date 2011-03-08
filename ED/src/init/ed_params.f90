@@ -1844,7 +1844,7 @@ subroutine init_pft_derived_params()
    real                              :: bdead_max
    real                              :: min_plant_dens
    real                              :: hgt_max
-   logical               , parameter :: print_zero_table = .false. !.true.
+   logical               , parameter :: print_zero_table = .false.
    character(len=str_len), parameter :: zero_table_fn    = 'minimum.size.txt'
    !---------------------------------------------------------------------------------------!
 
@@ -2257,7 +2257,7 @@ subroutine init_physiology_params()
    !     Parameters that control debugging output.                                         !
    !---------------------------------------------------------------------------------------!
    !----- I should print detailed debug information. --------------------------------------!
-   print_photo_debug = .false.
+   print_photo_debug = .true.
    !----- File name prefix for the detailed information in case of debugging. -------------!
    photo_prefix      = 'photo_state_'
    !---------------------------------------------------------------------------------------!
@@ -2783,7 +2783,7 @@ subroutine init_rk4_params()
    !     Variables used to keep track on the error.                                        !
    !---------------------------------------------------------------------------------------!
    record_err     = .false.                  ! Compute and keep track of the errors.
-   print_detailed = .false.                  ! Print detailed information about the thermo-
+   print_detailed = .true.                  ! Print detailed information about the thermo-
                                              !    dynamic state.  This will create one file
                                              !    for each patch, so it is not recommended 
                                              !    for simulations that span over one month.
@@ -2843,8 +2843,8 @@ subroutine init_rk4_params()
    ! pact of such exchange dependent on the soil depth, we assign the scale a function of  !
    ! the top layer thickness.                                                              !
    !---------------------------------------------------------------------------------------!
-   rk4min_sfcw_moist =  -5.0000d-4 ! Minimum water mass allowed.
-   rk4min_virt_moist =  -5.0000d-4 ! Minimum water allowed at virtual pool.
+   rk4min_sfcw_moist = -5.0000d-4                  ! Minimum water mass allowed.
+   rk4min_virt_moist = -5.0000d-4                  ! Minimum water allowed at virtual pool.
    !---------------------------------------------------------------------------------------!
 
 

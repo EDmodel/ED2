@@ -139,7 +139,7 @@ subroutine odeint(h1,csite,ipa,nsteps)
                integration_buff%y%sfcwater_energy(ksn) =                                   &
                                      integration_buff%y%sfcwater_energy(ksn) - qwfree
 
-               call adjust_sfcw_properties(nzg,nzs,integration_buff%y,csite,ipa)
+               call adjust_sfcw_properties(nzg,nzs,integration_buff%y,dtrk4,csite,ipa)
                call update_diagnostic_vars(integration_buff%y,csite,ipa)
 
                !----- Compute runoff for output -------------------------------------------!

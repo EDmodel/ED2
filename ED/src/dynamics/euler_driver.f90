@@ -413,13 +413,6 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nsteps)
    cpatch => csite%patch(ipa)
 
    !---------------------------------------------------------------------------------------!
-   !    If top snow layer is too thin for computational stability, have it evolve in       !
-   ! thermal equilibrium with top soil layer.                                              !
-   !---------------------------------------------------------------------------------------!
-   ! call adjust_sfcw_properties(nzg,nzs,initp, csite,ipa)
-   ! call update_diagnostic_vars(initp,csite,ipa)
-
-   !---------------------------------------------------------------------------------------!
    ! Set initial time and stepsize.                                                        !
    !---------------------------------------------------------------------------------------!
    x = tbeg
@@ -547,7 +540,7 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nsteps)
             !----- ii.  Final update of top soil properties to avoid off-bounds moisture. -!
             call adjust_topsoil_properties(ytemp,h,csite,ipa)
             !----- ii. Make temporary surface water stable and positively defined. --------!
-            call adjust_sfcw_properties(nzg,nzs,ytemp,csite,ipa)
+            call adjust_sfcw_properties(nzg,nzs,ytemp,h,csite,ipa)
             !----- iii.  Update the diagnostic variables. ---------------------------------!
             call update_diagnostic_vars(ytemp, csite,ipa)
             !------------------------------------------------------------------------------!
@@ -615,7 +608,7 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nsteps)
                !----- Recompute the energy removing runoff --------------------------------!
                initp%sfcwater_energy(ksn) = initp%sfcwater_energy(ksn) - qwfree
 
-               call adjust_sfcw_properties(nzg,nzs,initp,csite,ipa)
+               call adjust_sfcw_properties(nzg,nzs,initp,dtrk4,csite,ipa)
                call update_diagnostic_vars(initp,csite,ipa)
 
                !----- Compute runoff for output -------------------------------------------!
