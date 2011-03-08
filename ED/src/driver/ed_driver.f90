@@ -21,7 +21,7 @@ subroutine ed_driver()
                            , nnodetot            & ! intent(in)
                            , sendnum             & ! intent(inout)
                            , recvnum             ! ! intent(in)
-
+   use phenology_startup , only : phenology_init  ! ! intent(in)
    implicit none
    !----- Included variables. -------------------------------------------------------------!
    include 'mpif.h' ! MPI commons
@@ -124,7 +124,7 @@ subroutine ed_driver()
 
       if (nnodetot /= 1 ) call MPI_Barrier(MPI_COMM_WORLD,ierr)
       !------------------------------------------------------------------------------------!
-
+      call phenology_init()
    else
 
       !------------------------------------------------------------------------------------!
