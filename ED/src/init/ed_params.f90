@@ -1447,7 +1447,7 @@ subroutine init_pft_alloc_params()
    hgt_ref(6:11)  = 1.3
    hgt_ref(12:15) = 0.0
    hgt_ref(16)    = 0.0
-   hgt_ref(17)    = 0.15
+   hgt_ref(17)    = 0.4
 
    !----- Fraction of structural stem that is assumed to be above ground. -----------------!
    agf_bs = 0.7
@@ -1467,7 +1467,7 @@ subroutine init_pft_alloc_params()
    b1Ht(12:13) = 0.4778
    b1Ht(14:15) = 0.0
    b1Ht(16)    = 0.0
-   b1Ht(17)    = 45.4395
+   b1Ht(17)    = 38.0
    !----- DBH-height allometry slope [1/cm]. ----------------------------------------------!
    b2Ht(1:4)   = 0.0
    b2Ht(5)     = -0.75
@@ -1480,7 +1480,7 @@ subroutine init_pft_alloc_params()
    b2Ht(12:13) = -0.75
    b2Ht(14:15) =  0.0
    b2Ht(16)    =  0.0
-   b2Ht(17)    = -0.02037
+   b2Ht(17)    = -0.03
    !----- DBH-leaf allometry intercept [kg leaf biomass / plant * cm^(-b2Bl)]. ------------!
    b1Bl(1:4)   = 0.0
    b1Bl(5)     = 0.08

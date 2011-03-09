@@ -5,22 +5,23 @@
 ! known as master.                                                                         !
 !------------------------------------------------------------------------------------------!
 subroutine ed_driver()
-   use grid_coms    , only : ngrids              & ! intent(in)
-                           , time                & ! intent(inout)
-                           , timmax              ! ! intent(inout)
-   use ed_state_vars, only : allocate_edglobals  & ! sub-routine
-                           , filltab_alltypes    & ! sub-routine
-                           , edgrid_g            ! ! intent(inout)
-   use ed_misc_coms , only : iyeara              & ! intent(in)
-                           , imontha             & ! intent(in)
-                           , idatea              & ! intent(in)
-                           , itimea              & ! intent(in)
-                           , runtype             ! ! intent(in)
-   use soil_coms    , only : alloc_soilgrid      ! ! sub-routine
-   use ed_node_coms , only : mynum               & ! intent(in)
-                           , nnodetot            & ! intent(in)
-                           , sendnum             & ! intent(inout)
-                           , recvnum             ! ! intent(in)
+   use grid_coms         , only : ngrids              & ! intent(in)
+                                , time                & ! intent(inout)
+                                , timmax              ! ! intent(inout)
+   use ed_state_vars     , only : allocate_edglobals  & ! sub-routine
+                                , filltab_alltypes    & ! sub-routine
+                                , edgrid_g            ! ! intent(inout)
+   use ed_misc_coms      , only : iyeara              & ! intent(in)
+                                , imontha             & ! intent(in)
+                                , idatea              & ! intent(in)
+                                , itimea              & ! intent(in)
+                                , runtype             ! ! intent(in)
+   use soil_coms         , only : alloc_soilgrid      ! ! sub-routine
+   use ed_node_coms      , only : mynum               & ! intent(in)
+                                , nnodetot            & ! intent(in)
+                                , sendnum             & ! intent(inout)
+                                , recvnum             ! ! intent(in)
+   use phenology_startup , only : phenology_init      ! ! intent(in)
 
    implicit none
    !----- Included variables. -------------------------------------------------------------!
@@ -124,7 +125,7 @@ subroutine ed_driver()
 
       if (nnodetot /= 1 ) call MPI_Barrier(MPI_COMM_WORLD,ierr)
       !------------------------------------------------------------------------------------!
-
+      call phenology_init()
    else
 
       !------------------------------------------------------------------------------------!
