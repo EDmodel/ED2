@@ -465,7 +465,7 @@ module leaf_coms
       !     The following variables are reset only once per leaf3 call.  Internal          !
       ! constants or variables that depend only on the grid called should be flushed here. !
       !------------------------------------------------------------------------------------!
-      select case (idel)
+      select case (trim(idel))
       case ('INITIAL')
          niter_leaf    = 0
          dtll          = 0.
@@ -495,7 +495,7 @@ module leaf_coms
       !     The following variables are reset only once per grid point call.  Variables    !
       ! like the atmospheric forcing should be placed here.                                !
       !------------------------------------------------------------------------------------!
-      select case (idel)
+      select case (trim(idel))
       case ('INITIAL','GRID_POINT')
          atm_up    = 0
          atm_vp    = 0.
@@ -525,7 +525,7 @@ module leaf_coms
       ! Internal prognostic variables and variables that should remain constant during the !
       ! time steps should be placed here.                                                  !
       !------------------------------------------------------------------------------------!
-      select case (idel)
+      select case (trim(idel))
       case ('INITIAL','GRID_POINT','PATCH')
          solvable                = .false.
 

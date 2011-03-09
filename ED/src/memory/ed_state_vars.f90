@@ -5825,6 +5825,7 @@ contains
          osite%can_rhos(opa)                    = isite%can_rhos(ipa)
          osite%can_prss(opa)                    = isite%can_prss(ipa)
          osite%can_theta(opa)                   = isite%can_theta(ipa)
+         osite%can_depth(opa)                   = isite%can_depth(ipa)
          osite%opencan_frac(opa)                = isite%opencan_frac(ipa)
          osite%ggbare(opa)                      = isite%ggbare(ipa)
          osite%ggveg(opa)                       = isite%ggveg(ipa)
@@ -5974,81 +5975,81 @@ contains
             osite%aux_s(k,opa)                  =  isite%aux_s(k,ipa)
          end do
 
-        !----- PFT types. -----------------------------------------------------------------!
-        do ipft=1,n_pft
-           osite%repro(ipft,opa)                =  isite%repro(ipft,ipa)
-           osite%A_o_max(ipft,opa)              =  isite%A_o_max(ipft,ipa)
-           osite%A_c_max(ipft,opa)              =  isite%A_c_max(ipft,ipa)
+         !----- PFT types. ----------------------------------------------------------------!
+         do ipft=1,n_pft
+            osite%repro(ipft,opa)                =  isite%repro(ipft,ipa)
+            osite%A_o_max(ipft,opa)              =  isite%A_o_max(ipft,ipa)
+            osite%A_c_max(ipft,opa)              =  isite%A_c_max(ipft,ipa)
+            
+            do isto=1,n_stoma_atts
+               osite%old_stoma_vector_max(isto,ipft,opa) =                                 &
+                                                  isite%old_stoma_vector_max(isto,ipft,ipa)
+            end do
+
+            do idbh=1,ff_ndbh
+               osite%pft_density_profile(ipft,idbh,opa) =                                  &
+                                                   isite%pft_density_profile(ipft,idbh,ipa)
+            end do
+            
+            !----- This is to copy the old_stoma_data_max structure. ----------------------!
+            osdo => osite%old_stoma_data_max(ipft,opa)
+            osdi => isite%old_stoma_data_max(ipft,ipa)
            
-           do isto=1,n_stoma_atts
-              osite%old_stoma_vector_max(isto,ipft,opa) =                                  &
-                                                 isite%old_stoma_vector_max(isto,ipft,ipa)
-           end do
+            osdo%recalc           = osdi%recalc
+            osdo%T_L              = osdi%T_L
+            osdo%e_A              = osdi%e_A
+            osdo%PAR              = osdi%PAR
+            osdo%rb_factor        = osdi%rb_factor
+            osdo%prss             = osdi%prss
+            osdo%phenology_factor = osdi%phenology_factor
+            osdo%gsw_open         = osdi%gsw_open
+            osdo%ilimit           = osdi%ilimit
+            osdo%T_L_residual     = osdi%T_L_residual
+            osdo%e_a_residual     = osdi%e_a_residual
+            osdo%par_residual     = osdi%par_residual
+            osdo%rb_residual      = osdi%rb_residual
+            osdo%leaf_residual    = osdi%leaf_residual
+            osdo%gsw_residual     = osdi%gsw_residual
+         end do
 
-           do idbh=1,ff_ndbh
-              osite%pft_density_profile(ipft,idbh,opa) =                                   &
-                                                  isite%pft_density_profile(ipft,idbh,ipa)
-           end do
-           
-           !----- This is to copy the old_stoma_data_max structure. -----------------------!
-           osdo => osite%old_stoma_data_max(ipft,opa)
-           osdi => isite%old_stoma_data_max(ipft,ipa)
-          
-           osdo%recalc           = osdi%recalc
-           osdo%T_L              = osdi%T_L
-           osdo%e_A              = osdi%e_A
-           osdo%PAR              = osdi%PAR
-           osdo%rb_factor        = osdi%rb_factor
-           osdo%prss             = osdi%prss
-           osdo%phenology_factor = osdi%phenology_factor
-           osdo%gsw_open         = osdi%gsw_open
-           osdo%ilimit           = osdi%ilimit
-           osdo%T_L_residual     = osdi%T_L_residual
-           osdo%e_a_residual     = osdi%e_a_residual
-           osdo%par_residual     = osdi%par_residual
-           osdo%rb_residual      = osdi%rb_residual
-           osdo%leaf_residual    = osdi%leaf_residual
-           osdo%gsw_residual     = osdi%gsw_residual
-        end do
+         !----- DBH types. ----------------------------------------------------------------!
+         do idbh=1,n_dbh
+            osite%co2budget_gpp_dbh(idbh,opa) = isite%co2budget_gpp_dbh(idbh,ipa)
+         end do
 
-        !----- DBH types. -----------------------------------------------------------------!
-        do idbh=1,n_dbh
-           osite%co2budget_gpp_dbh(idbh,opa) = isite%co2budget_gpp_dbh(idbh,ipa)
-        end do
-
-        !----- Daily averages. ------------------------------------------------------------!
-        if (idoutput > 0 .or. imoutput > 0) then
-           osite%dmean_rh             (opa) = isite%dmean_rh             (opa)
-           osite%dmean_co2_residual   (opa) = isite%dmean_co2_residual   (opa)
-           osite%dmean_energy_residual(opa) = isite%dmean_energy_residual(opa)
-           osite%dmean_water_residual (opa) = isite%dmean_water_residual (opa)
-           osite%dmean_lambda_light   (opa) = isite%dmean_lambda_light   (opa)
-           osite%dmean_A_decomp       (opa) = isite%dmean_A_decomp       (opa)
-           osite%dmean_Af_decomp      (opa) = isite%dmean_Af_decomp      (opa)
-           osite%dmean_rk4step        (opa) = isite%dmean_rk4step        (opa)
-        end if
+         !----- Daily averages. -----------------------------------------------------------!
+         if (idoutput > 0 .or. imoutput > 0) then
+            osite%dmean_rh             (opa) = isite%dmean_rh             (opa)
+            osite%dmean_co2_residual   (opa) = isite%dmean_co2_residual   (opa)
+            osite%dmean_energy_residual(opa) = isite%dmean_energy_residual(opa)
+            osite%dmean_water_residual (opa) = isite%dmean_water_residual (opa)
+            osite%dmean_lambda_light   (opa) = isite%dmean_lambda_light   (opa)
+            osite%dmean_A_decomp       (opa) = isite%dmean_A_decomp       (opa)
+            osite%dmean_Af_decomp      (opa) = isite%dmean_Af_decomp      (opa)
+            osite%dmean_rk4step        (opa) = isite%dmean_rk4step        (opa)
+         end if
     
-        if (imoutput > 0) then
-           osite%mmean_rh             (opa) = isite%mmean_rh             (ipa)
-           osite%mmean_co2_residual   (opa) = isite%mmean_co2_residual   (ipa)
-           osite%mmean_energy_residual(opa) = isite%mmean_energy_residual(ipa)
-           osite%mmean_water_residual (opa) = isite%mmean_water_residual (ipa)
-           osite%mmean_lambda_light   (opa) = isite%mmean_lambda_light   (ipa)
-           osite%mmean_A_decomp       (opa) = isite%mmean_A_decomp       (ipa)
-           osite%mmean_Af_decomp      (opa) = isite%mmean_Af_decomp      (ipa)
-           osite%mmean_rk4step        (opa) = isite%mmean_rk4step        (ipa)
-        end if
+         if (imoutput > 0) then
+            osite%mmean_rh             (opa) = isite%mmean_rh             (ipa)
+            osite%mmean_co2_residual   (opa) = isite%mmean_co2_residual   (ipa)
+            osite%mmean_energy_residual(opa) = isite%mmean_energy_residual(ipa)
+            osite%mmean_water_residual (opa) = isite%mmean_water_residual (ipa)
+            osite%mmean_lambda_light   (opa) = isite%mmean_lambda_light   (ipa)
+            osite%mmean_A_decomp       (opa) = isite%mmean_A_decomp       (ipa)
+            osite%mmean_Af_decomp      (opa) = isite%mmean_Af_decomp      (ipa)
+            osite%mmean_rk4step        (opa) = isite%mmean_rk4step        (ipa)
+         end if
 
-       !----- Copy all cohorts. -----------------------------------------------------------!
-       call allocate_patchtype(osite%patch(opa),isite%patch(ipa)%ncohorts)
-       call copy_patchtype(isite%patch(ipa),osite%patch(opa),1,isite%patch(ipa)%ncohorts   &
-                                                            ,1,isite%patch(ipa)%ncohorts )
-    end do opaloop
+         !----- Copy all cohorts. ---------------------------------------------------------!
+         call allocate_patchtype(osite%patch(opa),isite%patch(ipa)%ncohorts)
+         call copy_patchtype(isite%patch(ipa),osite%patch(opa),1,isite%patch(ipa)%ncohorts &
+                                                              ,1,isite%patch(ipa)%ncohorts)
+      end do opaloop
 
-    return
-  end subroutine copy_sitetype
-!==========================================================================================!
-!==========================================================================================!
+      return
+   end subroutine copy_sitetype
+   !=======================================================================================!
+   !=======================================================================================!
 
 
 

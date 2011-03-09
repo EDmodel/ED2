@@ -356,8 +356,8 @@ leaf3_hyd.o: leaf_coms.mod mem_grid.mod mem_leaf.mod rconstants.mod
 leaf3_hyd.o: therm_lib.mod
 leaf3_init.o: io_params.mod leaf_coms.mod mem_grid.mod mem_leaf.mod
 leaf3_init.o: rconstants.mod teb_spm_start.mod therm_lib.mod
-leaf3_ocean.o: io_params.mod leaf_coms.mod mem_grid.mod rconstants.mod
-leaf3_ocean.o: therm_lib.mod
+leaf3_ocean.o: io_params.mod leaf_coms.mod mem_grid.mod node_mod.mod
+leaf3_ocean.o: rconstants.mod therm_lib.mod
 leaf3_teb.o: mem_emiss.mod rconstants.mod teb_vars_const.mod therm_lib.mod
 leaf3_tw.o: catt_start.mod leaf_coms.mod mem_grid.mod mem_leaf.mod
 leaf3_tw.o: mem_radiate.mod mem_scratch.mod rconstants.mod therm_lib.mod

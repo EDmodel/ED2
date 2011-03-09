@@ -853,7 +853,7 @@ subroutine init_pft_photo_params()
    Vm_high_temp(17)          =  45.0  + thioff ! C3
 
    !------ Vm0 is the maximum photosynthesis capacity in µmol/m2/s. -----------------------!
-   Vm0(1)                    = 12.5            
+   Vm0(1)                    = 12.5            * vmfact  
    Vm0(2)                    = 18.8            * vmfact
    Vm0(3)                    = 12.5            * vmfact
    Vm0(4)                    = 6.25            * vmfact
@@ -870,7 +870,7 @@ subroutine init_pft_photo_params()
    Vm0(17)                   = 15.625          * vmfact
 
    !----- Define the stomatal slope (aka the M factor). -----------------------------------!
-   stomatal_slope(1)         =  6.0    
+   stomatal_slope(1)         =  6.4
    stomatal_slope(2)         =  8.0    * mfact
    stomatal_slope(3)         =  8.0    * mfact
    stomatal_slope(4)         =  8.0    * mfact
@@ -1079,7 +1079,7 @@ subroutine init_pft_resp_params()
    root_turnover_rate(16)         = 2.0
    root_turnover_rate(17)         = 0.333
 
-   dark_respiration_factor(1)     = 0.04
+   dark_respiration_factor(1)     = 0.06
    dark_respiration_factor(2)     = 0.02 * gamfact
    dark_respiration_factor(3)     = 0.02 * gamfact
    dark_respiration_factor(4)     = 0.02 * gamfact
@@ -1426,7 +1426,7 @@ subroutine init_pft_alloc_params()
    !---------------------------------------------------------------------------------------!
    !    Minimum height of an individual.                                                   !
    !---------------------------------------------------------------------------------------!
-   hgt_min(1)     = 0.50
+   hgt_min(1)     = 0.15
    hgt_min(2:4)   = 0.50
    hgt_min(5)     = 0.15
    hgt_min(6)     = 1.50
@@ -1447,7 +1447,7 @@ subroutine init_pft_alloc_params()
    hgt_ref(6:11)  = 1.3
    hgt_ref(12:15) = 0.0
    hgt_ref(16)    = 0.0
-   hgt_ref(17)    = 0.4
+   hgt_ref(17)    = 0.15
 
    !----- Fraction of structural stem that is assumed to be above ground. -----------------!
    agf_bs = 0.7
@@ -1467,7 +1467,7 @@ subroutine init_pft_alloc_params()
    b1Ht(12:13) = 0.4778
    b1Ht(14:15) = 0.0
    b1Ht(16)    = 0.0
-   b1Ht(17)    = 38.0
+   b1Ht(17)    = 45.4395
    !----- DBH-height allometry slope [1/cm]. ----------------------------------------------!
    b2Ht(1:4)   = 0.0
    b2Ht(5)     = -0.75
@@ -1478,9 +1478,9 @@ subroutine init_pft_alloc_params()
    b2Ht(10)    = -0.04964
    b2Ht(11)    = -0.05404
    b2Ht(12:13) = -0.75
-   b2Ht(14:15) = 0.0
-   b2Ht(16)    = 0.0
-   b2Ht(17)    = -0.03
+   b2Ht(14:15) =  0.0
+   b2Ht(16)    =  0.0
+   b2Ht(17)    = -0.02037
    !----- DBH-leaf allometry intercept [kg leaf biomass / plant * cm^(-b2Bl)]. ------------!
    b1Bl(1:4)   = 0.0
    b1Bl(5)     = 0.08
@@ -1760,7 +1760,7 @@ subroutine init_pft_repro_params()
                        , repro_min_h        ! ! intent(out)
    implicit none
 
-   r_fract(1)                = 0.3
+   r_fract(1)                = 1.0
    r_fract(2:4)              = 0.3
    r_fract(5)                = 0.3
    r_fract(6:11)             = 0.3
@@ -2257,7 +2257,7 @@ subroutine init_physiology_params()
    !     Parameters that control debugging output.                                         !
    !---------------------------------------------------------------------------------------!
    !----- I should print detailed debug information. --------------------------------------!
-   print_photo_debug = .true.
+   print_photo_debug = .false.
    !----- File name prefix for the detailed information in case of debugging. -------------!
    photo_prefix      = 'photo_state_'
    !---------------------------------------------------------------------------------------!
@@ -2783,7 +2783,7 @@ subroutine init_rk4_params()
    !     Variables used to keep track on the error.                                        !
    !---------------------------------------------------------------------------------------!
    record_err     = .false.                  ! Compute and keep track of the errors.
-   print_detailed = .true.                  ! Print detailed information about the thermo-
+   print_detailed = .false.                  ! Print detailed information about the thermo-
                                              !    dynamic state.  This will create one file
                                              !    for each patch, so it is not recommended 
                                              !    for simulations that span over one month.
@@ -2805,7 +2805,7 @@ subroutine init_rk4_params()
    rk4min_can_shv    =  1.0000d-8 ! Minimum canopy    specific humidity         [kg/kg_air]
    rk4max_can_shv    =  4.6000d-2 ! Maximum canopy    specific humidity         [kg/kg_air]
    rk4max_can_rhv    =  1.1000d0  ! Maximum canopy    relative humidity (**)    [      ---]
-   rk4min_can_co2    =  1.0000d2  ! Minimum canopy    CO2 mixing ratio          [ µmol/mol]
+   rk4min_can_co2    =  1.0000d1  ! Minimum canopy    CO2 mixing ratio          [ µmol/mol]
    rk4max_can_co2    =  2.0000d3  ! Maximum canopy    CO2 mixing ratio          [ µmol/mol]
    rk4min_soil_temp  =  1.8400d2  ! Minimum soil      temperature               [        K]
    rk4max_soil_temp  =  3.5100d2  ! Maximum soil      temperature               [        K]

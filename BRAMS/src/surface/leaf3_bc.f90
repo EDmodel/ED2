@@ -90,8 +90,6 @@ subroutine leaf_bcond(m2,m3,mzg,mzs,npat,ia,iz,ja,jz,jdim,ibcon,soil_water,sfcwa
    !---------------------------------------------------------------------------------------!
 
 
-
-
    !----- Western Boundary ----------------------------------------------------------------!
    if (iand(ibcon,1) /= 0) then
       do j=ja,jz

@@ -80,6 +80,7 @@ subroutine leaf3_timestep()
                              , emis_town         & ! intent(out)
                              , alb_town          & ! intent(out)
                              , ts_town           & ! intent(out)
+                             , ggbare            & ! intent(out)
                              , flush_leaf_coms   ! ! sub-routine
    use mem_basic      , only : basic_g           & ! intent(in)
                              , co2_on            & ! intent(in)
@@ -302,6 +303,11 @@ subroutine leaf3_timestep()
 
 
             !------------------------------------------------------------------------------!
+            !    If this patch is not to be solved, skip it.                               !
+            !------------------------------------------------------------------------------!
+            if (ip /= 1 .and. leaf_g(ngrid)%patch_area(i,j,ip) < tiny_parea) cycle patloop1
+
+            !------------------------------------------------------------------------------!
             !      This will reset some variables, so we make sure they are properly       !
             ! initialised for every grid point.                                            !
             !------------------------------------------------------------------------------!
@@ -316,8 +322,7 @@ subroutine leaf3_timestep()
                                    ,leaf_g(ngrid)%seatp (i,j)                              &
                                    ,leaf_g(ngrid)%seatf (i,j)                              &
                                    ,leaf_g(ngrid)%soil_energy(:,i,j,1))
-            elseif ( ip >= 2 .and. isfcl >= 1 .and.                                        &
-                     leaf_g(ngrid)%patch_area(i,j,ip) >= tiny_parea ) then
+            elseif (isfcl >= 1) then
                call vegndvi( ngrid                                                         &
                            , leaf_g(ngrid)%patch_area  (i,j,ip)                            &
                            , leaf_g(ngrid)%leaf_class  (i,j,ip)                            &
@@ -368,7 +373,7 @@ subroutine leaf3_timestep()
                               ,leaf_g(ngrid)%veg_water        (i,j,ip)                     &
                               ,leaf_g(ngrid)%veg_hcap         (i,j,ip)                     )
 
-            if (ip /= 1 .and. leaf_g(ngrid)%patch_area(i,j,ip) >= tiny_parea) then
+            if (ip /= 1) then
                call leaf_grndvap(leaf_g(ngrid)%soil_energy       (nzg,i,j,ip)              &
                                 ,leaf_g(ngrid)%soil_water        (nzg,i,j,ip)              &
                                 ,leaf_g(ngrid)%soil_text         (nzg,i,j,ip)              &
@@ -405,9 +410,7 @@ subroutine leaf3_timestep()
                ! and fracliq array with liquid fraction of water content in soil and snow. !
                ! Other snowcover properties are also computed here.                        !
                !---------------------------------------------------------------------------!
-               if ((iswrtyp > 0 .or. ilwrtyp > 0)                                    .and. &
-                   (ip == 1     .or. leaf_g(ngrid)%patch_area(i,j,ip) >= tiny_parea) ) then
-
+               if (iswrtyp > 0 .or. ilwrtyp > 0) then
                   call sfcrad(nzg,nzs,ip                                                   &
                              ,leaf_g(ngrid)%soil_water       (:,i,j,ip)                    &
                              ,leaf_g(ngrid)%soil_text        (:,i,j,ip)                    &
@@ -486,7 +489,6 @@ subroutine leaf3_timestep()
                !---------------------------------------------------------------------------!
 
 
-
                !----- Solve the canopy and soil, depending on which patch we are. ---------!
                select case (ip)
                case (1)
@@ -495,6 +497,7 @@ subroutine leaf3_timestep()
                                       ,leaf_g(ngrid)%tstar                       (i,j,ip)  &
                                       ,leaf_g(ngrid)%rstar                       (i,j,ip)  &
                                       ,leaf_g(ngrid)%cstar                       (i,j,ip)  &
+                                      ,leaf_g(ngrid)%patch_rough                 (i,j,ip)  &
                                       ,leaf_g(ngrid)%can_prss                    (i,j,ip)  &
                                       ,leaf_g(ngrid)%can_rvap                    (i,j,ip)  &
                                       ,leaf_g(ngrid)%can_co2                     (i,j,ip)  &
@@ -678,7 +681,7 @@ subroutine leaf3_timestep()
    !     Normalise accumulated fluxes and albedo seen by atmosphere over one full BRAMS    !
    ! timestep (dtlt).                                                                      !
    !---------------------------------------------------------------------------------------!
-   call normal_accfluxes(mxp,myp,ia,iz,ja,jz,scratch%vt2di                                 &
+   call normal_accfluxes(mxp,myp,npatch,ia,iz,ja,jz,scratch%vt2di,leaf_g(ngrid)%patch_area &
                         ,turb_g(ngrid)%sflux_u,turb_g(ngrid)%sflux_v,turb_g(ngrid)%sflux_w &
                         ,turb_g(ngrid)%sflux_t,turb_g(ngrid)%sflux_r,turb_g(ngrid)%sflux_c &
                         ,radiate_g(ngrid)%albedt,radiate_g(ngrid)%rlongup )
