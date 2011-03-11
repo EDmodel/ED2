@@ -483,6 +483,9 @@ subroutine read_ed21_history_file
                      call hdf_getslab_r(cpatch%bdead ,'BDEAD ' ,dsetrank,iparallel,.true.)
                      call hdf_getslab_r(cpatch%balive,'BALIVE ',dsetrank,iparallel,.true.)
                      call hdf_getslab_r(cpatch%bleaf ,'BLEAF ' ,dsetrank,iparallel,.true.)
+                     call hdf_getslab_r(cpatch%broot ,'BROOT ' ,dsetrank,iparallel,.true.)
+                     call hdf_getslab_r(cpatch%bsapwood        ,'BSAPWOOD '                &
+                                       ,dsetrank,iparallel,.true.)
                      call hdf_getslab_r(cpatch%bstorage        ,'BSTORAGE '                &
                                        ,dsetrank,iparallel,.true.)
                      call hdf_getslab_i(cpatch%phenology_status,'PHENOLOGY_STATUS '        &
@@ -574,6 +577,14 @@ subroutine read_ed21_history_file
                             cpatch%bleaf(ico) < tiny_biomass) then
                            cpatch%bleaf(ico) = tiny_biomass
                         end if
+                        if (cpatch%broot(ico) > 0.            .and.                        &
+                            cpatch%broot(ico) < tiny_biomass) then
+                           cpatch%broot(ico) = tiny_biomass
+                        end if
+                        if (cpatch%bsapwood(ico) > 0.            .and.                     &
+                            cpatch%bsapwood(ico) < tiny_biomass) then
+                           cpatch%bsapwood(ico) = tiny_biomass
+                        end if
                         if (cpatch%bdead(ico) > 0.            .and.                        &
                             cpatch%bdead(ico) < tiny_biomass) then
                            cpatch%bdead(ico) = tiny_biomass
@@ -590,26 +601,20 @@ subroutine read_ed21_history_file
                         !----- Compute the above-ground biomass. --------------------------!
                         cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)  &
                                                     ,cpatch%bleaf(ico),cpatch%pft(ico)     &
-                                                    ,cpatch%hite(ico),cpatch%bstorage(ico))
+                                                    ,cpatch%hite(ico),cpatch%bstorage(ico) &
+                                                    ,cpatch%bsapwood(ico))
 
                         cpatch%basarea(ico)  = cpatch%nplant(ico) * pio4                   &
                                              * cpatch%dbh(ico) * cpatch%dbh(ico)
 
-                        cpatch%broot(ico)    = q(cpatch%pft(ico)) * cpatch%balive(ico)     &
-                                             / ( 1.0 + q(cpatch%pft(ico))                  &
-                                               + qsw(cpatch%pft(ico)) * cpatch%hite(ico))
-                        
-                        cpatch%bsapwood(ico) = qsw(cpatch%pft(ico)) * cpatch%balive(ico)   &
-                                             * cpatch%hite(ico)                            &
-                                             / ( 1.0 + q(cpatch%pft(ico))                  &
-                                               + qsw(cpatch%pft(ico)) * cpatch%hite(ico))
-                        
+                         
                         !----- Assign LAI, WPA, and WAI -----------------------------------!
                         call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico)             &
                                          ,cpatch%bdead(ico),cpatch%balive(ico)             &
                                          ,cpatch%dbh(ico), cpatch%hite(ico)                &
                                          ,cpatch%pft(ico), SLA(cpatch%pft(ico))            &
-                                         ,cpatch%lai(ico),cpatch%wpa(ico), cpatch%wai(ico))
+                                         ,cpatch%lai(ico),cpatch%wpa(ico), cpatch%wai(ico) &
+                                         ,cpatch%bsapwood(ico))
 
 
                         !----- Update the derived patch-level variables. ------------------!
@@ -1422,6 +1427,10 @@ subroutine read_ed21_history_unstruct
                                           ,dsetrank,iparallel,.true.)
                         call hdf_getslab_r(cpatch%bleaf           ,'BLEAF '                &
                                           ,dsetrank,iparallel,.true.)
+                        call hdf_getslab_r(cpatch%broot           ,'BROOT '                &
+                                          ,dsetrank,iparallel,.true.)
+                        call hdf_getslab_r(cpatch%bsapwood        ,'BSAPWOOD '                &
+                                          ,dsetrank,iparallel,.true.)
                         call hdf_getslab_r(cpatch%bstorage        ,'BSTORAGE '             &
                                           ,dsetrank,iparallel,.true.)
                         call hdf_getslab_i(cpatch%phenology_status,'PHENOLOGY_STATUS '     &
@@ -1517,6 +1526,14 @@ subroutine read_ed21_history_unstruct
                                cpatch%bleaf(ico) < tiny_biomass) then
                               cpatch%bleaf(ico) = tiny_biomass
                            end if
+                           if (cpatch%broot(ico) > 0.            .and.                     &
+                               cpatch%broot(ico) < tiny_biomass) then
+                              cpatch%broot(ico) = tiny_biomass
+                           end if
+                           if (cpatch%bsapwood(ico) > 0.            .and.                  &
+                               cpatch%bsapwood(ico) < tiny_biomass) then
+                              cpatch%bsapwood(ico) = tiny_biomass
+                           end if
                            if (cpatch%bdead(ico) > 0.            .and.                     &
                                cpatch%bdead(ico) < tiny_biomass) then
                               cpatch%bdead(ico) = tiny_biomass
@@ -1533,21 +1550,11 @@ subroutine read_ed21_history_unstruct
                                                        ,cpatch%balive(ico)                 &
                                                        ,cpatch%bleaf(ico),cpatch%pft(ico)  &
                                                        ,cpatch%hite(ico)                   &
-                                                       ,cpatch%bstorage(ico))
+                                                       ,cpatch%bstorage(ico)               &
+                                                       ,cpatch%bsapwood(ico))
 
                            cpatch%basarea(ico)  = cpatch%nplant(ico) * pio4                &
                                                 * cpatch%dbh(ico) * cpatch%dbh(ico)
-
-                           cpatch%broot(ico)    = q(cpatch%pft(ico)) * cpatch%balive(ico)  &
-                                                / ( 1.0 + q(cpatch%pft(ico))               &
-                                                  + qsw(cpatch%pft(ico))                   &
-                                                  * cpatch%hite(ico))
-                           
-                           cpatch%bsapwood(ico) = qsw(cpatch%pft(ico))                     &
-                                                * cpatch%balive(ico) * cpatch%hite(ico)    &
-                                                / ( 1.0 + q(cpatch%pft(ico))               &
-                                                  + qsw(cpatch%pft(ico))                   &
-                                                  * cpatch%hite(ico))
 
                            !----- Assign LAI, WPA, and WAI --------------------------------!
                            call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico)          &
@@ -1555,7 +1562,7 @@ subroutine read_ed21_history_unstruct
                                             ,cpatch%dbh(ico),cpatch%hite(ico)              &
                                             ,cpatch%pft(ico),SLA(cpatch%pft(ico))          &
                                             ,cpatch%lai(ico),cpatch%wpa(ico)               &
-                                            ,cpatch%wai(ico))
+                                            ,cpatch%wai(ico),cpatch%bsapwood(ico))
 
 
                            !----- Update the derived patch-level variables. ---------------!

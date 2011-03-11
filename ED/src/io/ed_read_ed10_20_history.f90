@@ -708,7 +708,8 @@ subroutine read_ed10_ed20_history_file
                                          ,cpatch%bdead(ic2),cpatch%balive(ic2)             &
                                          ,cpatch%dbh(ic2), cpatch%hite(ic2)                &
                                          ,cpatch%pft(ic2), SLA(cpatch%pft(ic2))            &
-                                         ,cpatch%lai(ic2),cpatch%wpa(ic2), cpatch%wai(ic2))
+                                         ,cpatch%lai(ic2),cpatch%wpa(ic2), cpatch%wai(ic2) &
+                                         ,cpatch%bsapwood(ic2))
 
                         !----- Initialise the carbon balance. -----------------------------!
                         cpatch%cb    (1:12,ic2) = cb(1:12,ic)
@@ -719,7 +720,8 @@ subroutine read_ed10_ed20_history_file
                         !----- Above ground biomass, use the allometry. -------------------!
                         cpatch%agb(ic2) = ed_biomass(cpatch%bdead(ic2),cpatch%balive(ic2)  &
                                                     ,cpatch%bleaf(ic2),cpatch%pft(ic2)     &
-                                                    ,cpatch%hite(ic2),cpatch%bstorage(ic2))
+                                                    ,cpatch%hite(ic2),cpatch%bstorage(ic2) &
+                                                    ,cpatch%bsapwood(ic2))
                         cpatch%basarea(ic2)  = cpatch%nplant(ic2) * pio4                    &
                                              * cpatch%dbh(ic2) * cpatch%dbh(ic2)
 

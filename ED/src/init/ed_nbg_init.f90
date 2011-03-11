@@ -201,12 +201,13 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
          call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)          &
                           ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)            &
                           ,cpatch%pft(ico),cpatch%sla(ico),cpatch%lai(ico)                 &
-                          ,cpatch%wpa(ico),cpatch%wai(ico))
+                          ,cpatch%wpa(ico),cpatch%wai(ico),cpatch%bsapwood(ico))
 
          !----- Find the above-ground biomass and basal area. -----------------------------!
          cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)                 &
                                      ,cpatch%bleaf(ico),cpatch%pft(ico)                    &
-                                     ,cpatch%hite(ico),cpatch%bstorage(ico))
+                                     ,cpatch%hite(ico),cpatch%bstorage(ico)                &
+                                     ,cpatch%bsapwood(ico))
          cpatch%basarea(ico) = pio4 * cpatch%dbh(ico)*cpatch%dbh(ico)
 
          !----- Initialize other cohort-level variables. ----------------------------------!
@@ -223,7 +224,8 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
          cpatch%hcapveg(ico)    = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico)         &
                                               ,cpatch%balive(ico),cpatch%nplant(ico)       &
                                               ,cpatch%hite(ico),cpatch%pft(ico)            &
-                                              ,cpatch%phenology_status(ico))
+                                              ,cpatch%phenology_status(ico)                &
+                                              ,cpatch%bsapwood(ico))
  
          !----- Update total patch-level above-ground biomass -----------------------------!
          csite%plant_ag_biomass(ipa) = csite%plant_ag_biomass(ipa)                         &
@@ -353,12 +355,13 @@ subroutine init_cohorts_by_layers(csite,lsl,ipa_a,ipa_z)
          call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)          &
                           ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)            &
                           ,cpatch%pft(ico),cpatch%sla(ico),cpatch%lai(ico)                 &
-                          ,cpatch%wpa(ico),cpatch%wai(ico))
+                          ,cpatch%wpa(ico),cpatch%wai(ico),cpatch%bsapwood(ico))
 
          !----- Find the above-ground biomass and basal area. -----------------------------!
          cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)                 &
                                      ,cpatch%bleaf(ico),cpatch%pft(ico)                    &
-                                     ,cpatch%hite(ico),cpatch%bstorage(ico))
+                                     ,cpatch%hite(ico),cpatch%bstorage(ico)                &
+                                     ,cpatch%bsapwood(ico))
          cpatch%basarea(ico) = cpatch%dbh(ico)*cpatch%dbh(ico)
 
          !----- Initialize other cohort-level variables. ----------------------------------!
@@ -375,7 +378,8 @@ subroutine init_cohorts_by_layers(csite,lsl,ipa_a,ipa_z)
          cpatch%hcapveg(ico)    = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico)         &
                                               ,cpatch%balive(ico),cpatch%nplant(ico)       &
                                               ,cpatch%hite(ico),cpatch%pft(ico)            &
-                                              ,cpatch%phenology_status(ico))
+                                              ,cpatch%phenology_status(ico)                &
+                                              ,cpatch%bsapwood(ico))
  
          !----- Update total patch-level above-ground biomass -----------------------------!
          csite%plant_ag_biomass(ipa) = csite%plant_ag_biomass(ipa)                         &

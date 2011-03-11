@@ -178,9 +178,7 @@ subroutine avg_ed_daily_output_pool()
    use grid_coms    , only : ngrids       & ! intent(in)
                            , nzg          & ! intent(in)
                            , nzs          ! ! intent(in)
-   use pft_coms     , only : q            & ! intent(in)
-                           , qsw          & ! intent(in)
-                           , c2n_leaf     & ! intent(in)
+   use pft_coms     , only : c2n_leaf     & ! intent(in)
                            , c2n_stem     & ! intent(in)
                            , c2n_storage  ! ! intent(in)
    implicit none
@@ -261,9 +259,7 @@ subroutine avg_ed_daily_output_pool()
                   cgrid%Cstore(ipy)  = cgrid%Cstore(ipy)                                   &
                                      + cpatch%bstorage(ico) * cpatch%nplant(ico) * area_pa
                   cgrid%Croot(ipy)   = cgrid%Croot(ipy)                                    &
-                                     + cpatch%balive(ico) * cpatch%nplant(ico) * q(ipft)   &
-                                     / (1.0 + q(ipft) + qsw(ipft) * cpatch%hite(ico))      &
-                                     * area_pa
+                                     + cpatch%broot(ico) * cpatch%nplant(ico) * area_pa
 
                   cgrid%Nleaf(ipy)   = cgrid%Nleaf(ipy)                                    &
                                      + cpatch%bleaf(ico) * cpatch%nplant(ico)              &
@@ -273,8 +269,7 @@ subroutine avg_ed_daily_output_pool()
                                      / c2n_storage * area_pa ! C:N not pft specific
                   !----- It appears we assume leaf and root have same C:N. ----------------!
                   cgrid%Nroot(ipy)   = cgrid%Nroot(ipy)                                    &
-                                     + cpatch%balive(ico) * cpatch%nplant(ico) * q(ipft)   &
-                                     / (1.0 + q(ipft) + qsw(ipft) *cpatch%hite(ico))       &
+                                     + cpatch%broot(ico) * cpatch%nplant(ico)              &
                                      / c2n_leaf(ipft) * area_pa 
                   cgrid%Ndead(ipy)   = cgrid%Ndead(ipy)                                    &
                                      + cpatch%bdead(ico) * cpatch%nplant(ico)              &

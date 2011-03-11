@@ -700,9 +700,8 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
    use ed_misc_coms          , only : dtlsm                & ! intent(in)
                                     , fast_diagnostics     ! ! intent(in)
    use canopy_struct_dynamics, only : vertical_vel_flux8   ! ! function
-   use pft_coms              , only : water_conductance    & ! intent(in)
-                                    , q                    & ! intent(in)
-                                    , qsw                  ! ! intent(in)
+   use pft_coms              , only : water_conductance    ! ! intent(in)
+
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(sitetype)     , target      :: csite            ! Current site

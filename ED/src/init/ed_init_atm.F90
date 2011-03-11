@@ -165,7 +165,8 @@ subroutine ed_init_atm()
                                                        ,cpatch%nplant(ico)                 &
                                                        ,cpatch%hite(ico)                   &
                                                        ,cpatch%pft(ico)                    &
-                                                       ,cpatch%phenology_status(ico) )
+                                                       ,cpatch%phenology_status(ico)       &
+                                                       ,cpatch%bsapwood(ico))
                   cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * cpatch%veg_temp(ico)
                   csite%hcapveg    (ipa) = csite%hcapveg (ipa) + cpatch%hcapveg (ico)
                   !----- Initialise the leaf surface and intercellular properties. --------!

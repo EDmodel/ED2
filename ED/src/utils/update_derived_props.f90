@@ -121,7 +121,8 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
       csite%plant_ag_biomass(ipa) = csite%plant_ag_biomass(ipa)                            &
                                   + ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)        &
                                               ,cpatch%bleaf(ico),cpatch%pft(ico)           &
-                                              ,cpatch%hite(ico),cpatch%bstorage(ico))      &
+                                              ,cpatch%hite(ico),cpatch%bstorage(ico)       &
+                                              ,cpatch%bsapwood(ico))      &
                                   * cpatch%nplant(ico)           
       !------------------------------------------------------------------------------------!
 

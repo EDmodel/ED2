@@ -5828,6 +5828,7 @@ contains
          osite%can_rhos(opa)                    = isite%can_rhos(ipa)
          osite%can_prss(opa)                    = isite%can_prss(ipa)
          osite%can_theta(opa)                   = isite%can_theta(ipa)
+         osite%can_depth(opa)                   = isite%can_depth(ipa)
          osite%opencan_frac(opa)                = isite%opencan_frac(ipa)
          osite%ggbare(opa)                      = isite%ggbare(ipa)
          osite%ggveg(opa)                       = isite%ggveg(ipa)

@@ -388,13 +388,14 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                  call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)  &
                                   ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)    &
                                   ,cpatch%pft(ico),cpatch%sla(ico), cpatch%lai(ico)        &
-                                  ,cpatch%wpa(ico),cpatch%wai(ico))
+                                  ,cpatch%wpa(ico),cpatch%wai(ico), cpatch%bsapwood(ico))
 
                  !----- Update basal area and above-ground biomass. -----------------------!
                  cpatch%basarea(ico) = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)                
                  cpatch%agb(ico)     = ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)     &
                                                  ,cpatch%bleaf(ico),cpatch%pft(ico)        &
-                                                 ,cpatch%hite(ico) ,cpatch%bstorage(ico))     
+                                                 ,cpatch%hite(ico) ,cpatch%bstorage(ico)   &
+                                                 ,cpatch%bsapwood(ico))     
 
                  !-------------------------------------------------------------------------!
                  !    Here we are leaving all water in the branches and twigs... Do not    !
@@ -405,7 +406,8 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                  cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico)   &
                                                    ,cpatch%balive(ico),cpatch%nplant(ico) &
                                                    ,cpatch%hite(ico),cpatch%pft(ico)      &
-                                                   ,cpatch%phenology_status(ico))
+                                                   ,cpatch%phenology_status(ico)          &
+                                                   ,cpatch%bsapwood(ico))
                  call update_veg_energy_cweh(csite,ipa,ico,old_hcapveg)
 
                  !----- Updating patch heat capacity. ----------------------------------!
