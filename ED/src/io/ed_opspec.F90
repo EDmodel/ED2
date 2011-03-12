@@ -995,7 +995,7 @@ subroutine ed_opspec_misc
    use phenology_coms        , only : iphen_scheme                 & ! intent(in)
                                     , radint                       & ! intent(in)
                                     , radslp                       & ! intent(in)
-                                    , tcfact                       ! ! intent(in)
+                                    , thetacrit                    ! ! intent(in)
    use pft_coms              , only : include_these_pft            & ! intent(in)
                                     , pft_1st_check                & ! intent(in)
                                     , agri_stock                   & ! intent(in)
@@ -1335,10 +1335,10 @@ end do
       ifaterr = ifaterr +1
    end if
    
-   if (tcfact < 0. .or. tcfact > 1.) then
+   if (thetacrit < 0. .or. thetacrit > 1.) then
       write (reason,fmt='(a,1x,es12.5,a)')                                                 &
-                    'Invalid TCFACT, it must be between 0 and 1. Yours is set to'       &
-                    ,tcfact,'...'
+                    'Invalid THETACRIT, it must be between 0 and 1. Yours is set to'       &
+                    ,thetacrit,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if

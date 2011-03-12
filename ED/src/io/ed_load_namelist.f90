@@ -104,7 +104,7 @@ subroutine copy_nl(copy_type)
                                    , repro_scheme              & ! intent(out)
                                    , radint                    & ! intent(out)
                                    , radslp                    & ! intent(out)
-                                   , tcfact                     ! ! intent(out)
+                                   , thetacrit                 ! ! intent(out)
    use decomp_coms          , only : n_decomp_lim              & ! intent(out)
                                    , LloydTaylor               ! ! intent(out)
    use disturb_coms         , only : include_fire              & ! intent(out)
@@ -294,7 +294,7 @@ subroutine copy_nl(copy_type)
       mfact                     = nl%mfact
       kfact                     = nl%kfact
       gamfact                   = nl%gamfact
-      tcfact                    = nl%tcfact
+      thetacrit                 = nl%thetacrit
       lwfact                    = nl%lwfact
       thioff                    = nl%thioff
       icomppt                   = nl%icomppt

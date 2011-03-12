@@ -2565,12 +2565,12 @@ subroutine init_phen_coms
                             , max_phenology_dist       & ! intent(out)
                             , radint                   & ! intent(out)
                             , radslp                   & ! intent(out)
-                            , tcfact                   ! ! intent(in)
+                            , thetacrit                   ! ! intent(in)
    implicit none
 
  
    retained_carbon_fraction = 0.5
-   theta_crit               = 0.2 * tcfact
+   theta_crit               = thetacrit
    dl_tr                    = 655.0
    st_tr1                   = 284.3
    st_tr2                   = 275.15
