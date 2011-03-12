@@ -469,6 +469,10 @@ subroutine init_can_air_params()
                              , isfclyrm              & ! intent(in)
                              , ustmin                & ! intent(in)
                              , ggfact                & ! intent(in)
+                             , gamm                  & ! intent(in)
+                             , gamh                  & ! intent(in)
+                             , tprandtl              & ! intent(in)
+                             , vkopr                 & ! intent(in)
                              , dry_veg_lwater        & ! intent(out)
                              , fullveg_lwater        & ! intent(out)
                              , rb_inter              & ! intent(out)
@@ -510,10 +514,6 @@ subroutine init_can_air_params()
                              , z0moz0h               & ! intent(out)
                              , z0hoz0m               & ! intent(out)
                              , ribmaxbh91            & ! intent(out)
-                             , gamm                  & ! intent(out)
-                             , gamh                  & ! intent(out)
-                             , tprandtl              & ! intent(out)
-                             , vkopr                 & ! intent(out)
                              , bl798                 & ! intent(out)
                              , csm8                  & ! intent(out)
                              , csh8                  & ! intent(out)
@@ -650,11 +650,6 @@ subroutine init_can_air_params()
    z0moz0h     = 1.0           ! z0(M)/z0(h)
    z0hoz0m     = 1. / z0moz0h  ! z0(M)/z0(h)
    ribmaxbh91  = 0.20          ! Maximum bulk Richardson number
-   !----- Used by OD95 and BH91. ----------------------------------------------------------!
-   gamm        = 13.0          ! Gamma for momentum.
-   gamh        = 13.0          ! Gamma for heat.
-   tprandtl    = 0.74          ! Turbulent Prandtl number.
-   vkopr       = vonk/tprandtl ! Von Karman / Prandtl number
    !---------------------------------------------------------------------------------------!
 
 

@@ -161,6 +161,9 @@ module ename_coms
       real                                              :: runoff_time
       real                                              :: betapower
       real                                              :: ustmin
+      real                                              :: gamm
+      real                                              :: gamh
+      real                                              :: tprandtl
       real                                              :: ggfact
 
       !----- Options for printing polygon vectors/arrays to standard output. --------------!
@@ -367,6 +370,9 @@ module ename_coms
       enl%runoff_time               = undef_real
       enl%betapower                 = undef_real
       enl%ustmin                    = undef_real
+      enl%gamm                      = undef_real
+      enl%gamh                      = undef_real
+      enl%tprandtl                  = undef_real
       enl%ggfact                    = undef_real
 
       enl%iprintpolys               = undef_integer

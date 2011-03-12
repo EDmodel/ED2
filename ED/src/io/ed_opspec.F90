@@ -961,7 +961,10 @@ subroutine ed_opspec_misc
                                     , i_blyr_condct                & ! intent(in)
                                     , isfclyrm                     & ! intent(in)
                                     , ustmin                       & ! intent(in)
-                                    , ggfact                       ! ! intent(in)
+                                    , ggfact                       & ! intent(in)
+                                    , gamm                         & ! intent(in)
+                                    , gamh                         & ! intent(in)
+                                    , tprandtl                     ! ! intent(in)
    use soil_coms             , only : isoilflg                     & ! intent(in)
                                     , nslcon                       & ! intent(in)
                                     , slxclay                      & ! intent(in)
@@ -1557,6 +1560,30 @@ end do
       write (reason,fmt='(a,1x,es14.7,a)')                                                 &
             'Invalid GGFACT, it must be between 0.0 and 100.0. Yours is set to'            &
            ,ggfact,'...'
+      call opspec_fatal(reason,'opspec_misc')  
+      ifaterr = ifaterr +1
+   end if
+
+   if (gamm < 0.1 .or. gamm > 100.0) then
+      write (reason,fmt='(a,1x,es14.7,a)')                                                 &
+            'Invalid GAMM, it must be between 0.1 and 100.0. Yours is set to'              &
+           ,gamm,'...'
+      call opspec_fatal(reason,'opspec_misc')  
+      ifaterr = ifaterr +1
+   end if
+
+   if (gamh < 0.1 .or. gamh > 100.0) then
+      write (reason,fmt='(a,1x,es14.7,a)')                                                 &
+            'Invalid GAMH, it must be between 0.1 and 100.0. Yours is set to'              &
+           ,gamh,'...'
+      call opspec_fatal(reason,'opspec_misc')  
+      ifaterr = ifaterr +1
+   end if
+
+   if (tprandtl < 0.01 .or. tprandtl > 100.0) then
+      write (reason,fmt='(a,1x,es14.7,a)')                                                 &
+            'Invalid TPRANDTL, it must be between 0.01 and 100.0. Yours is set to'         &
+           ,tprandtl,'...'
       call opspec_fatal(reason,'opspec_misc')  
       ifaterr = ifaterr +1
    end if

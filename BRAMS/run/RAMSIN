@@ -580,6 +580,14 @@
    USTMIN   = 0.10,          ! Minimum u* (m/s)
    
 
+   !---------------------------------------------------------------------------------------!
+   !     The following variables are used only when ISFCLYRM is not 1.                     !
+   !---------------------------------------------------------------------------------------!
+   GAMM            = 13.,   ! Momentum coefficient
+   GAMH            = 13.,   ! Heat coefficient
+   TPRANDTL        = 0.74,  ! Turbulent Prandtl number
+   !---------------------------------------------------------------------------------------!
+
    ICO2    = 1,              ! CO2 prognostic level
                              !  0 - Do not solve it (CO2CON(1) will be used as a time
                              !      invariant CO2 mixing ratio whenever needed);

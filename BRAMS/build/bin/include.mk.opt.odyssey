@@ -51,7 +51,7 @@ LIBNCARG=$(BASE)/libncarg-$(UTILS_VERSION).a
 # HDF4 library: Instructions to install: www.cptec.inpe.br/brams
 # If you run "configure" script, you don't need to edit line bellow
 USE_HDF4=1
-HDF4_LIBS=-lmfhdf -ldf -lz -ljpeg -lsz
+HDF4_LIBS=-lmfhdf -ldf -lz -ljpeg
 # --------------------------------------------------------------
 
 # HDF 5  Libraries

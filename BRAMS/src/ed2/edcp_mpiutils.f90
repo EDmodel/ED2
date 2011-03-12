@@ -127,7 +127,11 @@ subroutine masterput_ednl(mainnum)
                                    , isfclyrm                   & ! intent(in)
                                    , i_blyr_condct              & ! intent(in)
                                    , ustmin                     & ! intent(in)
-                                   , ggfact                     ! ! intent(in)
+                                   , ggfact                     & ! intent(in)
+                                   , gamm                       & ! intent(in)
+                                   , gamh                       & ! intent(in)
+                                   , tprandtl                   & ! intent(in)
+                                   , vkopr                      ! ! intent(in)
    use mem_edcp             , only : co2_offset                 ! ! intent(in)
    implicit none
    include 'mpif.h'
@@ -291,6 +295,11 @@ subroutine masterput_ednl(mainnum)
 
    call MPI_Bcast(co2_offset,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
   
+   call MPI_Bcast(gamm,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(gamh,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(tprandtl,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(vkopr,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
+
    return
 end subroutine masterput_ednl
 !==========================================================================================!
@@ -428,7 +437,11 @@ subroutine nodeget_ednl(master_num)
                                    , isfclyrm                   & ! intent(out)
                                    , i_blyr_condct              & ! intent(out)
                                    , ustmin                     & ! intent(out)
-                                   , ggfact                     ! ! intent(out)
+                                   , ggfact                     & ! intent(out)
+                                   , gamm                       & ! intent(out)
+                                   , gamh                       & ! intent(out)
+                                   , tprandtl                   & ! intent(out)
+                                   , vkopr                      ! ! intent(out)
    use mem_edcp             , only : co2_offset                 ! ! intent(out)
 
    implicit none
@@ -593,7 +606,12 @@ subroutine nodeget_ednl(master_num)
    call MPI_Bcast(zrough,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
   
    call MPI_Bcast(co2_offset,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
-  
+
+   call MPI_Bcast(gamm,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(gamh,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(tprandtl,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(vkopr,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+
    return
 end subroutine nodeget_ednl
 !==========================================================================================!

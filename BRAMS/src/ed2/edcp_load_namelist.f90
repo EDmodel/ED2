@@ -147,19 +147,22 @@ subroutine read_ednl(iunit)
                                    , imonthh                         & ! intent(in)
                                    , isoilflg                        ! ! intent(in)
    use mem_leaf             , only : nslcon                          & ! intent(in)
-                                   , leaf_zrough => zrough           & ! intent(in)
                                    , slz                             & ! intent(in)
                                    , stgoff                          & ! intent(in)
                                    , slmstr                          & ! intent(in)
                                    , isfcl                           & ! intent(in)
                                    , nvegpat                         & ! intent(in)
                                    , istar                           & ! intent(in)
-                                   , leaf_bpower => betapower        & ! intent(in)
-                                   , leaf_isoilbc => isoilbc         & ! intent(in)
-                                   , leaf_ipercol => ipercol         & ! intent(in)
+                                   , leaf_zrough      => zrough      & ! intent(in)
+                                   , leaf_bpower      => betapower   & ! intent(in)
+                                   , leaf_isoilbc     => isoilbc     & ! intent(in)
+                                   , leaf_ipercol     => ipercol     & ! intent(in)
                                    , leaf_runoff_time => runoff_time ! ! intent(in)
-   use leaf_coms            , only : leaf_ustmin => ustmin           & ! intent(in)
-                                   , leaf_ggfact => ggfact           ! ! intent(in)
+   use leaf_coms            , only : leaf_ustmin      => ustmin      & ! intent(in)
+                                   , leaf_ggfact      => ggfact      & ! intent(in)
+                                   , leaf_gamm        => gamm        & ! intent(in)
+                                   , leaf_gamh        => gamh        & ! intent(in)
+                                   , leaf_tprandtl    => tprandtl    ! ! intent(in)
    use mem_radiate          , only : radfrq                          ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
@@ -292,7 +295,7 @@ subroutine read_ednl(iunit)
                        ,deltay,polelat,polelon,centlat,centlon,nstratx,nstraty,iclobber    &
                        ,nzg,nzs,isoilflg,nslcon,slz,slmstr,stgoff,leaf_zrough,ngrids       &
                        ,leaf_bpower,leaf_ustmin,leaf_ggfact,leaf_isoilbc,leaf_ipercol      &
-                       ,leaf_runoff_time)
+                       ,leaf_runoff_time,leaf_gamm,leaf_gamh,leaf_tprandtl)
    !---------------------------------------------------------------------------------------!
    !      The following variables can be defined in the regular ED2IN file for stand-alone !
    ! runs, but they cannot be changed in the coupled simulation (or they are never used    !
@@ -421,7 +424,8 @@ subroutine copy_in_bramsnl(expnme_b,runtype_b,itimez_b,idatez_b,imonthz_b,iyearz
                           ,polelat_b,polelon_b,centlat_b,centlon_b,nstratx_b,nstraty_b     &
                           ,iclobber_b,nzg_b,nzs_b,isoilflg_b,nslcon_b,slz_b,slmstr_b       &
                           ,stgoff_b,zrough_b,ngrids_b,betapower_b,ustmin_b,ggfact_b        &
-                          ,isoilbc_b,ipercol_b,runoff_time_b)
+                          ,isoilbc_b,ipercol_b,runoff_time_b,gamm_b,gamh_b,tprandtl_b)
+   use consts_coms    , only : vonk              ! ! intent(in)
    use ed_misc_coms   , only : expnme            & ! intent(out)
                              , runtype           & ! intent(out)
                              , itimez            & ! intent(out)
@@ -465,7 +469,11 @@ subroutine copy_in_bramsnl(expnme_b,runtype_b,itimez_b,idatez_b,imonthz_b,iyearz
    use grid_dims      , only : maxgrds           & ! intent(out)
                              , nzgmax            ! ! intent(out)
    use canopy_air_coms, only : ustmin            & ! intent(out)
-                             , ggfact            ! ! intent(out)
+                             , ggfact            & ! intent(out)
+                             , gamm              & ! intent(out)
+                             , gamh              & ! intent(out)
+                             , tprandtl          & ! intent(out)
+                             , vkopr             ! ! intent(out)
    use rk4_coms       , only : ipercol           ! ! intent(out)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
@@ -514,6 +522,9 @@ subroutine copy_in_bramsnl(expnme_b,runtype_b,itimez_b,idatez_b,imonthz_b,iyearz
    integer                   , intent(in) :: isoilbc_b     ! Bottom soil boundary condition
    integer                   , intent(in) :: ipercol_b     ! Percolation scheme.
    real                      , intent(in) :: runoff_time_b ! Runoff time scale.
+   real                      , intent(in) :: gamm_b        ! Sfc. lyr. Gamma for momentum
+   real                      , intent(in) :: gamh_b        ! Sfc. lyr. Gamma for heat
+   real                      , intent(in) :: tprandtl_b    ! Turbulent Prandtl number
    !---------------------------------------------------------------------------------------!
 
 
@@ -569,6 +580,11 @@ subroutine copy_in_bramsnl(expnme_b,runtype_b,itimez_b,idatez_b,imonthz_b,iyearz
    isoilbc     = isoilbc_b
    ipercol     = ipercol_b
    runoff_time = runoff_time_b
+
+   gamm        = gamm_b
+   gamh        = gamh_b
+   tprandtl    = tprandtl_b
+   vkopr       = vonk / tprandtl
    !---------------------------------------------------------------------------------------!
 
    return

@@ -559,6 +559,14 @@
                               !  5 - The parametrisation of Oncley and Dudhia, but using 
                               !      z/L estimation as in Beljaars and Holtslag
 
+   !---------------------------------------------------------------------------------------!
+   !     The following variables are used only when ISFCLYRM is not 1.                     !
+   !---------------------------------------------------------------------------------------!
+   NL%GAMM            = 13.   ! Momentum coefficient
+   NL%GAMH            = 13.   ! Heat coefficient
+   NL%TPRANDTL        = 0.74  ! Turbulent Prandtl number
+   !---------------------------------------------------------------------------------------!
+
    NL%IPERCOL         = 0     ! Percolation scheme:
                               !  0 - Original method, from LEAF-3.  Shed liquid in excess 
                               !      of a 1:9 liquid-to-ice ratio through percolation.

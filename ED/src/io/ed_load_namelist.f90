@@ -182,14 +182,19 @@ subroutine copy_nl(copy_type)
                                    , isfclyrm                  & ! intent(out)
                                    , i_blyr_condct             & ! intent(out)
                                    , ustmin                    & ! intent(out)
-                                   , ggfact                    ! ! intent(out)
+                                   , ggfact                    & ! intent(out)
+                                   , gamm                      & ! intent(out)
+                                   , gamh                      & ! intent(out)
+                                   , tprandtl                  & ! intent(out)
+                                   , vkopr                     ! ! intent(out)
    use optimiz_coms         , only : ioptinpt                  ! ! intent(out)
    use canopy_radiation_coms, only : crown_mod                 ! ! intent(out)
    use rk4_coms             , only : ibranch_thermo            & ! intent(out)
                                    , ipercol                   & ! intent(out)
                                    , rk4_tolerance             ! ! intent(out)
    use ed_para_coms         , only : loadmeth                  ! ! intent(out)
-   use consts_coms          , only : hr_sec                    & ! intent(in)
+   use consts_coms          , only : vonk                      & ! intent(in)
+                                   , hr_sec                    & ! intent(in)
                                    , min_sec                   ! ! intent(in)
 
    implicit none
@@ -310,6 +315,9 @@ subroutine copy_nl(copy_type)
       icanturb                  = nl%icanturb
       i_blyr_condct             = nl%i_blyr_condct
       isfclyrm                  = nl%isfclyrm
+      gamm                      = nl%gamm
+      gamh                      = nl%gamh
+      tprandtl                  = nl%tprandtl
       ipercol                   = nl%ipercol
 
       include_these_pft         = nl%include_these_pft
@@ -488,6 +496,21 @@ subroutine copy_nl(copy_type)
 
    call copy_path_from_grid_1(ngrids,'sfilin'         ,sfilin         )
    !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Find von-Karman/Prandtl number ratio. -------------------------------------------!
+   if (tprandtl /= 0.0) then
+      vkopr = vonk / tprandtl
+   else
+      !------------------------------------------------------------------------------------!
+      !     It doesn't make sense, but tprandtl is wrong and the run will crash at         !
+      ! ed_opspec.                                                                         !
+      !------------------------------------------------------------------------------------!
+      vkopr = 0.0
+   end if 
+   !---------------------------------------------------------------------------------------!
+
    return
 end subroutine copy_nl
 !==========================================================================================!
