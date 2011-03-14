@@ -134,7 +134,9 @@ subroutine masterput_nl(master_num)
                                  , lc_gamm => gamm             & ! intent(in)
                                  , lc_gamh => gamh             & ! intent(in)
                                  , tprandtl                    & ! intent(in)
-                                 , vkopr                       ! ! intent(in)
+                                 , vkopr                       & ! intent(in)
+                                 , vh2vr                       & ! intent(in)
+                                 , vh2dh                       ! ! intent(in)
    implicit none
    !----- External variable declaration ---------------------------------------------------!
    include 'interface.h'
@@ -291,6 +293,8 @@ subroutine masterput_nl(master_num)
    call MPI_Bcast(LC_GAMH,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(TPRANDTL,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(VKOPR,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(VH2VR,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(VH2DH,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(GGFACT,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(ISOILBC,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(IPERCOL,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
@@ -940,7 +944,9 @@ subroutine nodeget_nl
                                  , lc_gamm => gamm             & ! intent(out)
                                  , lc_gamh => gamh             & ! intent(out)
                                  , tprandtl                    & ! intent(out)
-                                 , vkopr                       ! ! intent(out)
+                                 , vkopr                       & ! intent(out)
+                                 , vh2vr                       & ! intent(out)
+                                 , vh2dh                       ! ! intent(out)
    implicit none
    !----- External variable declaration ---------------------------------------------------!
    include 'interface.h'
@@ -1092,6 +1098,8 @@ subroutine nodeget_nl
    call MPI_Bcast(LC_GAMH,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(TPRANDTL,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(VKOPR,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(VH2VR,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(VH2DH,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(GGFACT,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(ISOILBC,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(IPERCOL,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)

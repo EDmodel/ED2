@@ -31,6 +31,8 @@ module leaf_coms
    real    :: gamm      ! Gamma used by Businger et al. (1971) - momentum.
    real    :: gamh      ! Gamma used by Businger et al. (1971) - heat.
    real    :: tprandtl  ! Turbulent Prandtl number.
+   real    :: vh2vr     ! Vegetation roughness:vegetation height ratio
+   real    :: vh2dh     ! Displacement height:vegetation height ratio
    !---------------------------------------------------------------------------------------!
 
 

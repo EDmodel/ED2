@@ -5,56 +5,61 @@
 !   The following list is the number used to identify the type of variable.                !
 !                                                                                          !
 !     !----- POLYGON: --------------------------------------!                              !
-!     ! 10  : rank 1 : integer                              !                              !
-!     ! 11  : rank 1 : real                                 !                              !
-!     ! 12  : rank 2 : s-layer                              !                              !
-!     ! 120 : rank 2 : s-layer, integer                     !                              !
-!     ! 13  : rank 2 : w-layer                              !                              !
-!     ! 14  : rank 2 : pft                                  !                              !
-!     ! 146 : rank 3 : npft,ndbh                            !                              !
-!     ! 15  : rank 2 : disturbance                          !                              !
-!     ! 16  : rank 2 : dbh                                  !                              !
-!     ! 17  : rank 2 : age                                  !                              !
-!     ! 155 : rank 2 : max_lu_years                         !                              !
-!     ! 156 : rank 3 : max_lu_years, num_lu_transitions     !                              !
+!     !  10  : rank 1 : integer                             !                              !
+!     !  11  : rank 1 : real                                !                              !
+!     ! -11  : rank 2 : ndcycle                             !                              !
+!     !  12  : rank 2 : s-layer                             !                              !
+!     !  120 : rank 2 : s-layer, integer                    !                              !
+!     ! -12  : rank 3 : ndcycle,s-layer                     !                              !
+!     !  13  : rank 2 : w-layer                             !                              !
+!     !  14  : rank 2 : pft                                 !                              !
+!     !  146 : rank 3 : npft,ndbh                           !                              !
+!     !  15  : rank 2 : disturbance                         !                              !
+!     !  16  : rank 2 : dbh                                 !                              !
+!     !  17  : rank 2 : age                                 !                              !
+!     !  155 : rank 2 : max_lu_years                        !                              !
+!     !  156 : rank 3 : max_lu_years, num_lu_transitions    !                              !
 !     !-----------------------------------------------------!                              !
 !                                                                                          !
 !     !----- SITE: -----------------------------------------!                              !
-!     ! 20  : rank 1 : integer                              !                              !
-!     ! 21  : rank 1 : real                                 !                              !
-!     ! 22  : rank 2 : s-layer                              !                              !
-!     ! 220 : rank 2 : s-layer, integer                     !                              !
-!     ! 23  : rank 2 : w-layer                              !                              !
-!     ! 24  : rank 2 : pft                                  !                              !
-!     ! 246 : rank 3 : pft, dbh                             !                              !
-!     ! 25  : rank 2 : disturbance                          !                              !
-!     ! 255 : rank 3 : disturbance,disturbance              !                              !
-!     ! 26  : rank 2 : dbh                                  !                              !
-!     ! 27  : rank 2 : age                                  !                              !
-!     ! 28  : rank 2 : mortality                            !                              !
-!     ! 29  : rank 2 : months (12)                          !                              !
+!     !  20  : rank 1 : integer                             !                              !
+!     !  21  : rank 1 : real                                !                              !
+!     ! -21  : rank 2 : ndcycle                             !                              !
+!     !  22  : rank 2 : s-layer                             !                              !
+!     !  220 : rank 2 : s-layer, integer                    !                              !
+!     !  23  : rank 2 : w-layer                             !                              !
+!     !  24  : rank 2 : pft                                 !                              !
+!     !  246 : rank 3 : pft, dbh                            !                              !
+!     !  25  : rank 2 : disturbance                         !                              !
+!     !  255 : rank 3 : disturbance,disturbance             !                              !
+!     !  26  : rank 2 : dbh                                 !                              !
+!     !  27  : rank 2 : age                                 !                              !
+!     !  28  : rank 2 : mortality                           !                              !
+!     !  29  : rank 2 : months (12)                         !                              !
 !     !-----------------------------------------------------!                              !
 !                                                                                          !
-!     !----- SITE: -----------------------------------------!                              !
-!     ! 30  : rank 1 : integer                              !                              !
-!     ! 31  : rank 1 : real                                 !                              !
-!     ! 32  : rank 2 : s-layer                              !                              !
-!     ! 320 : rank 2 : s-layer, integer                     !                              !
-!     ! 33  : rank 2 : w-layer                              !                              !
-!     ! 34  : rank 2 : pft                                  !                              !
-!     ! 346 : rank 3 : pft,ff_dbh                           !                              !
-!     ! 35  : rank 2 : disturbance                          !                              !
-!     ! 36  : rank 2 : dbh                                  !                              !
-!     ! 37  : rank 2 : age                                  !                              !
+!     !----- PATCH: ----------------------------------------!                              !
+!     !  30  : rank 1 : integer                             !                              !
+!     !  31  : rank 1 : real                                !                              !
+!     ! -31  : rank 2 : ndcycle                             !                              !
+!     !  32  : rank 2 : s-layer                             !                              !
+!     !  320 : rank 2 : s-layer, integer                    !                              !
+!     !  33  : rank 2 : w-layer                             !                              !
+!     !  34  : rank 2 : pft                                 !                              !
+!     !  346 : rank 3 : pft,ff_dbh                          !                              !
+!     !  35  : rank 2 : disturbance                         !                              !
+!     !  36  : rank 2 : dbh                                 !                              !
+!     !  37  : rank 2 : age                                 !                              !
 !     !-----------------------------------------------------!                              !
 !                                                                                          !
 !     !----- COHORT: ---------------------------------------!                              !
-!     ! 40  : rank 1 : integer                              !                              !
-!     ! 41  : rank 1 : cohort (real)                        !                              !
-!     ! 44  : rank 2 : cohort, pft                          !                              !
-!     ! 46  : rank 2 : cohort, dbh                          !                              !
-!     ! 47  : rank 2 : cohort, age                          !                              !
-!     ! 49  : rank 2 : cohort, nmonths+1                    !                              !
+!     !  40  : rank 1 : integer                             !                              !
+!     !  41  : rank 1 : cohort (real)                       !                              !
+!     ! -41  : rank 2 : ndcycle                             !                              !
+!     !  44  : rank 2 : cohort, pft                         !                              !
+!     !  46  : rank 2 : cohort, dbh                         !                              !
+!     !  47  : rank 2 : cohort, age                         !                              !
+!     !  49  : rank 2 : cohort, nmonths+1                   !                              !
 !     !-----------------------------------------------------!                              !
 !                                                                                          !
 !     !----- OTHER: ----------------------------------------!                              !
@@ -90,6 +95,7 @@ module ed_var_tables
       integer             :: iyear
       integer             :: iopti
       integer             :: imont
+      integer             :: idcyc
       integer             :: idail
       integer             :: var_len_global
       character (len=64)  :: name
@@ -215,6 +221,7 @@ module ed_var_tables
          vt_info(nv,igr)%imont    = 0
          vt_info(nv,igr)%idail    = 0
          vt_info(nv,igr)%iyear    = 0
+         vt_info(nv,igr)%idcyc    = 0
          vt_info(nv,igr)%iopti    = 0
          
          do nt=3,ntok
@@ -250,6 +257,9 @@ module ed_var_tables
 
             case('dail') 
                vt_info(nv,igr)%idail    = 1
+
+            case('dcyc') 
+               vt_info(nv,igr)%idcyc    = 1
 
             case('year') 
                vt_info(nv,igr)%iyear    = 1
@@ -380,6 +390,7 @@ module ed_var_tables
          vt_info(nv,igr)%irecycle = 0
          vt_info(nv,igr)%imont    = 0
          vt_info(nv,igr)%idail    = 0
+         vt_info(nv,igr)%idcyc    = 0
          vt_info(nv,igr)%iyear    = 0
          vt_info(nv,igr)%iopti    = 0
          
@@ -416,6 +427,9 @@ module ed_var_tables
 
             case('dail') 
                vt_info(nv,igr)%idail    = 1
+
+            case('dcyc') 
+               vt_info(nv,igr)%idcyc    = 1
 
             case('year') 
                vt_info(nv,igr)%iyear    = 1
@@ -545,6 +559,7 @@ module ed_var_tables
          vt_info(nv,igr)%irecycle = 0
          vt_info(nv,igr)%imont    = 0
          vt_info(nv,igr)%idail    = 0
+         vt_info(nv,igr)%idcyc    = 0
          vt_info(nv,igr)%iyear    = 0
          vt_info(nv,igr)%iopti    = 0
          
@@ -581,6 +596,9 @@ module ed_var_tables
 
             case('dail') 
                vt_info(nv,igr)%idail    = 1
+
+            case('dcyc') 
+               vt_info(nv,igr)%idcyc    = 1
 
             case('year') 
                vt_info(nv,igr)%iyear    = 1
@@ -710,6 +728,7 @@ module ed_var_tables
          vt_info(nv,igr)%irecycle = 0
          vt_info(nv,igr)%imont    = 0
          vt_info(nv,igr)%idail    = 0
+         vt_info(nv,igr)%idcyc    = 0
          vt_info(nv,igr)%iyear    = 0
          vt_info(nv,igr)%iopti    = 0
          
@@ -746,6 +765,9 @@ module ed_var_tables
 
             case('dail') 
                vt_info(nv,igr)%idail    = 1
+
+            case('dcyc') 
+               vt_info(nv,igr)%idcyc    = 1
 
             case('year') 
                vt_info(nv,igr)%iyear    = 1
@@ -873,6 +895,7 @@ module ed_var_tables
          vt_info(nv,igr)%irecycle = 0
          vt_info(nv,igr)%imont    = 0
          vt_info(nv,igr)%idail    = 0
+         vt_info(nv,igr)%idcyc    = 0
          vt_info(nv,igr)%iyear    = 0
          vt_info(nv,igr)%iopti    = 0
          
@@ -909,6 +932,9 @@ module ed_var_tables
 
             case('dail') 
                vt_info(nv,igr)%idail    = 1
+
+            case('dcyc') 
+               vt_info(nv,igr)%idcyc    = 1
 
             case('year') 
                vt_info(nv,igr)%iyear    = 1
@@ -1037,6 +1063,7 @@ module ed_var_tables
          vt_info(nv,igr)%irecycle = 0
          vt_info(nv,igr)%imont    = 0
          vt_info(nv,igr)%idail    = 0
+         vt_info(nv,igr)%idcyc    = 0
          vt_info(nv,igr)%iyear    = 0
          vt_info(nv,igr)%iopti    = 0
          
@@ -1073,6 +1100,9 @@ module ed_var_tables
 
             case('dail') 
                vt_info(nv,igr)%idail    = 1
+
+            case('dcyc') 
+               vt_info(nv,igr)%idcyc    = 1
 
             case('year') 
                vt_info(nv,igr)%iyear    = 1
@@ -1200,6 +1230,7 @@ module ed_var_tables
          vt_info(nv,igr)%irecycle = 0
          vt_info(nv,igr)%imont    = 0
          vt_info(nv,igr)%idail    = 0
+         vt_info(nv,igr)%idcyc    = 0
          vt_info(nv,igr)%iyear    = 0
          vt_info(nv,igr)%iopti    = 0
          
@@ -1236,6 +1267,9 @@ module ed_var_tables
 
             case('dail') 
                vt_info(nv,igr)%idail    = 1
+
+            case('dcyc') 
+               vt_info(nv,igr)%idcyc    = 1
 
             case('year') 
                vt_info(nv,igr)%iyear    = 1
@@ -1363,6 +1397,7 @@ module ed_var_tables
          vt_info(nv,igr)%irecycle = 0
          vt_info(nv,igr)%imont    = 0
          vt_info(nv,igr)%idail    = 0
+         vt_info(nv,igr)%idcyc    = 0
          vt_info(nv,igr)%iyear    = 0
          vt_info(nv,igr)%iopti    = 0
          
@@ -1399,6 +1434,9 @@ module ed_var_tables
 
             case('dail') 
                vt_info(nv,igr)%idail    = 1
+
+            case('dcyc') 
+               vt_info(nv,igr)%idcyc    = 1
 
             case('year') 
                vt_info(nv,igr)%iyear    = 1

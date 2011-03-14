@@ -583,12 +583,15 @@ subroutine opspec3
   use mem_cuparm
   use mem_turb
   use mem_leaf
-  use leaf_coms, only :  &
-          ustmin,        & ! intent(in)
-          ggfact,        & ! intent(in)
-          lc_gamm => gamm,          & ! intent(in)
-          lc_gamh => gamh,          & ! intent(in)
-          tprandtl       ! ! intent(in)
+  use leaf_coms, only :     &
+          ustmin,           & ! intent(in)
+          ggfact,           & ! intent(in)
+          lc_gamm => gamm,  & ! intent(in)
+          lc_gamh => gamh,  & ! intent(in)
+          tprandtl,         & ! intent(in)
+          vh2vr,            & ! intent(in)
+          vh2dh             ! ! intent(in)
+          
   use therm_lib , only:  &
           level          ! ! intent(in)
   use grell_coms, only:  &
@@ -1003,6 +1006,16 @@ subroutine opspec3
   
   if (tprandtl < 0.01 .or. tprandtl > 100.0) then
      print *, 'FATAL - TPRANDTL must be between 0.01 and 100.'
+     ifaterr = ifaterr + 1
+  end if
+  
+  if (vh2vr < 0.001 .or. vh2vr > 0.99) then
+     print *, 'FATAL - VH2VR must be between 0.001 and 0.99'
+     ifaterr = ifaterr + 1
+  end if
+  
+  if (vh2dh <= vh2vr .or. vh2dh > 0.99) then
+     print *, 'FATAL - VH2DH must be greater than VH2VR and less than 0.99'
      ifaterr = ifaterr + 1
   end if
 

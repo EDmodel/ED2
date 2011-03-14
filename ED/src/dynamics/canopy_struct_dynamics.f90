@@ -186,7 +186,7 @@ module canopy_struct_dynamics
 
          zref     = cmet%geoht
          h        = csite%veg_height(ipa)
-         d0       = 0.
+         d0       = csite%veg_displace(ipa)
 
          !----- Calculate the surface roughness inside the canopy. ------------------------!
          csite%rough(ipa) = soil_rough * (1.0 - csite%snowfac(ipa))                        &
@@ -237,8 +237,8 @@ module canopy_struct_dynamics
       !              computes the vegetated ground conductance differently.                !
       !------------------------------------------------------------------------------------!
       case (-2,-1)
-         h        = csite%veg_height(ipa) * (1. - csite%snowfac(ipa)) ! Vegetation height
-         d0       = vh2dh * h                                         ! 0-plane displacement
+         h        = csite%veg_height(ipa)    ! Vegetation height
+         d0       = csite%veg_displace(ipa)  ! 0-plane displacement
          zref     = cmet%geoht
          
 
@@ -811,8 +811,8 @@ module canopy_struct_dynamics
       ! consider the crown area to determine the reduction factor.                         !
       !------------------------------------------------------------------------------------!
       case (3)
-         h        = csite%veg_height(ipa)  ! Vegetation height
-         d0       = vh2dh * h              ! 0-plane displacement
+         h        = csite%veg_height(ipa)   ! Vegetation height
+         d0       = csite%veg_displace(ipa) ! 0-plane displacement
          zref     = cmet%geoht
 
          !---------------------------------------------------------------------------------!
@@ -841,7 +841,7 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          call ed_stars(cmet%atm_theta,cmet%atm_theiv,cmet%atm_shv,cmet%atm_co2             &
                       ,csite%can_theta(ipa),csite%can_theiv(ipa),csite%can_shv(ipa)        &
-                      ,csite%can_co2(ipa),zref,0.0,cmet%vels,csite%rough(ipa)              &
+                      ,csite%can_co2(ipa),zref,d0,cmet%vels,csite%rough(ipa)               &
                       ,csite%ustar(ipa),csite%tstar(ipa),estar,csite%qstar(ipa)            &
                       ,csite%cstar(ipa),csite%zeta(ipa),csite%ribulk(ipa)                  &
                       ,csite%ggnet(ipa))
@@ -1142,9 +1142,9 @@ module canopy_struct_dynamics
       !------------------------------------------------------------------------------------!
       case (-2,-1) 
          !----- Vegetation height. --------------------------------------------------------!
-         h        = dble(csite%veg_height(ipa)) * (1.d0 - dble(csite%snowfac(ipa)))
+         h        = dble(csite%veg_height(ipa))
          !----- 0-plane displacement height. ----------------------------------------------!
-         d0       = vh2dh8 * h     
+         d0       = dble(csite%veg_displace(ipa))
          zref     = rk4site%geoht
          
 
@@ -1701,8 +1701,8 @@ module canopy_struct_dynamics
       ! consider the crown area to determine the reduction factor.                         !
       !------------------------------------------------------------------------------------!
       case (3)
-         h        = dble(csite%veg_height(ipa))  ! Vegetation height
-         d0       = vh2dh8 * h                   ! 0-plane displacement
+         h        = dble(csite%veg_height(ipa))    ! Vegetation height
+         d0       = dble(csite%veg_displace(ipa))  ! 0-plane displacement height
          zref     = rk4site%geoht
 
          !---------------------------------------------------------------------------------!
@@ -1727,7 +1727,7 @@ module canopy_struct_dynamics
          !---------------------------------------------------------------------------------!
          call ed_stars8(rk4site%atm_theta,rk4site%atm_theiv,rk4site%atm_shv                &
                        ,rk4site%atm_co2,initp%can_theta ,initp%can_theiv,initp%can_shv     &
-                       ,initp%can_co2,zref,0.d0,vels_ref,initp%rough                       &
+                       ,initp%can_co2,zref,d0,vels_ref,initp%rough                         &
                        ,initp%ustar,initp%tstar,initp%estar,initp%qstar,initp%cstar        &
                        ,initp%zeta,initp%ribulk,initp%ggnet)
          !---------------------------------------------------------------------------------!
@@ -1847,8 +1847,8 @@ module canopy_struct_dynamics
    !           tions.  Mon. Wea. Rev., 123, 3344-3357, 1995.                               !
    !---------------------------------------------------------------------------------------!
    subroutine ed_stars(theta_atm,theiv_atm,shv_atm,co2_atm,theta_can,theiv_can             &
-                      ,shv_can,co2_can,zref,d0,uref,rough,ustar,tstar,estar,qstar,cstar    &
-                      ,zeta,rib,ggbare)
+                      ,shv_can,co2_can,zref,dheight,uref,rough,ustar,tstar,estar,qstar     &
+                      ,cstar,zeta,rib,ggbare)
       use consts_coms     , only : grav          & ! intent(in)
                                  , vonk          & ! intent(in)
                                  , epim1         & ! intent(in)
@@ -1878,7 +1878,7 @@ module canopy_struct_dynamics
       real, intent(in)  :: shv_can      ! Canopy air vapour spec. humidity      [kg/kg_air]
       real, intent(in)  :: co2_can      ! Canopy air CO2 specific volume        [  µmol/m³]
       real, intent(in)  :: zref         ! Height at reference point             [        m]
-      real, intent(in)  :: d0           ! Zero-plane displacement height        [        m]
+      real, intent(in)  :: dheight      ! Zero-plane displacement height        [        m]
       real, intent(in)  :: uref         ! Wind speed at reference height        [      m/s]
       real, intent(in)  :: rough        ! Roughness                             [        m]
       real, intent(out) :: ustar        ! U*, friction velocity                 [      m/s]
@@ -1918,11 +1918,11 @@ module canopy_struct_dynamics
       !----- Finding the variables common to both methods. --------------------------------!
       thetav_atm = theta_atm * (1. + epim1 * shv_atm)
       thetav_can = theta_can * (1. + epim1 * shv_can)
-      zoz0m      = (zref-d0)/rough
+      zoz0m      = (zref-dheight)/rough
       lnzoz0m    = log(zoz0m)
       zoz0h      = z0moz0h * zoz0m
       lnzoz0h    = log(zoz0h)
-      rib        = 2.0 * grav * (zref-d0-rough) * (thetav_atm-thetav_can)                  &
+      rib        = 2.0 * grav * (zref-dheight-rough) * (thetav_atm-thetav_can)             &
                  / ( (thetav_atm+thetav_can) * uref * uref)
       stable     = thetav_atm >= thetav_can
 
@@ -1990,7 +1990,7 @@ module canopy_struct_dynamics
             !----- Unstable case. ---------------------------------------------------------!
             zeta = rib * lnzoz0m
          end if
-         zeta0m = rough * zeta / (zref - d0)
+         zeta0m = rough * zeta / (zref - dheight)
 
          !----- Finding ustar, making sure it is not too small. ---------------------------!
          ustar = max (ustmin, vonk * uref                                                  &
@@ -2018,8 +2018,8 @@ module canopy_struct_dynamics
          rib = min(rib,ribmaxbh91)
          
          !----- We now compute the stability correction functions. ------------------------!
-         zeta   = zoobukhov(rib,zref-d0,rough,zoz0m,lnzoz0m,zoz0h,lnzoz0h,stable)
-         zeta0m = rough * zeta / (zref-d0)
+         zeta   = zoobukhov(rib,zref-dheight,rough,zoz0m,lnzoz0m,zoz0h,lnzoz0h,stable)
+         zeta0m = rough * zeta / (zref-dheight)
          zeta0h = z0hoz0m * zeta0m
 
          !----- Finding ustar, making sure it is not too small. ---------------------------!
@@ -2089,7 +2089,8 @@ module canopy_struct_dynamics
    !---------------------------------------------------------------------------------------!
    subroutine ed_stars8(theta_atm,theiv_atm,shv_atm,co2_atm                                &
                        ,theta_can,theiv_can,shv_can,co2_can                                &
-                       ,zref,d0,uref,rough,ustar,tstar,estar,qstar,cstar,zeta,rib,ggbare)
+                       ,zref,dheight,uref,rough,ustar,tstar,estar,qstar,cstar,zeta,rib     &
+                       ,ggbare)
       use consts_coms     , only : grav8         & ! intent(in)
                                  , vonk8         & ! intent(in)
                                  , epim18        & ! intent(in)
@@ -2119,7 +2120,7 @@ module canopy_struct_dynamics
       real(kind=8), intent(in)  :: shv_can      ! Canopy air vapour spec. hum.    [kg/kg_air]
       real(kind=8), intent(in)  :: co2_can      ! Canopy air CO2 specific volume [  µmol/m³]
       real(kind=8), intent(in)  :: zref         ! Height at reference point      [        m]
-      real(kind=8), intent(in)  :: d0           ! Zero-plane displacement height [        m]
+      real(kind=8), intent(in)  :: dheight      ! Zero-plane displacement height [        m]
       real(kind=8), intent(in)  :: uref         ! Wind speed at reference height [      m/s]
       real(kind=8), intent(in)  :: rough        ! Roughness                      [        m]
       real(kind=8), intent(out) :: ustar        ! U*, friction velocity          [      m/s]
@@ -2159,11 +2160,11 @@ module canopy_struct_dynamics
       !----- Finding the variables common to both methods. --------------------------------!
       thetav_atm = theta_atm * (1.d0 + epim18 * shv_atm)
       thetav_can = theta_can * (1.d0 + epim18 * shv_can)
-      zoz0m      = (zref-d0)/rough
+      zoz0m      = (zref-dheight)/rough
       lnzoz0m    = log(zoz0m)
       zoz0h      = z0moz0h8 * zoz0m
       lnzoz0h    = log(zoz0h)
-      rib        = 2.d0 * grav8 * (zref-d0-rough) * (thetav_atm-thetav_can)                &
+      rib        = 2.d0 * grav8 * (zref-dheight-rough) * (thetav_atm-thetav_can)           &
                  / ( (thetav_atm+thetav_can) * uref * uref)
       stable     = thetav_atm >= thetav_can
 
@@ -2232,7 +2233,7 @@ module canopy_struct_dynamics
             zeta  = rib * lnzoz0m
          end if
 
-         zeta0m = rough * zeta / (zref - d0)
+         zeta0m = rough * zeta / (zref - dheight)
 
          !----- Finding ustar, making sure it is not too small. ---------------------------!
          ustar = max (ustmin8, vonk8 * uref                                                &
@@ -2260,8 +2261,8 @@ module canopy_struct_dynamics
          rib = min(rib,ribmaxbh918)
 
          !----- We now compute the stability correction functions. ------------------------!
-         zeta   = zoobukhov8(rib,zref-d0,rough,zoz0m,lnzoz0m,zoz0h,lnzoz0h,stable)
-         zeta0m = rough * zeta / (zref - d0)
+         zeta   = zoobukhov8(rib,zref-dheight,rough,zoz0m,lnzoz0m,zoz0h,lnzoz0h,stable)
+         zeta0m = rough * zeta / (zref - dheight)
          zeta0h = z0hoz0m8 * zeta0m
 
          !----- Finding ustar, making sure it is not too small. ---------------------------!
@@ -2307,7 +2308,7 @@ module canopy_struct_dynamics
    !    This function determines the wind at a given height, given that the stars are al-  !
    ! ready known, as well as the Richardson number and the zetas.                          !
    !---------------------------------------------------------------------------------------!
-   real(kind=4) function reduced_wind(ustar,zeta,rib,zref,d0,height,rough)
+   real(kind=4) function reduced_wind(ustar,zeta,rib,zref,dheight,height,rough)
       use consts_coms    , only : vonk     ! ! intent(in)
       use canopy_air_coms, only : isfclyrm & ! intent(in)
                                 , bl79     & ! intent(in)
@@ -2322,15 +2323,15 @@ module canopy_struct_dynamics
       real(kind=4), intent(in) :: zeta      ! Normalised height                   [    ---]
       real(kind=4), intent(in) :: rib       ! Bulk Richardson number              [    ---]
       real(kind=4), intent(in) :: zref      ! Reference height                    [      m]
-      real(kind=4), intent(in) :: d0        ! Displacement height                 [      m]
+      real(kind=4), intent(in) :: dheight   ! Displacement height                 [      m]
       real(kind=4), intent(in) :: height    ! Height to determine the red. wind   [      m]
       real(kind=4), intent(in) :: rough     ! Roughness scale                     [      m]
       !----- Local variables. -------------------------------------------------------------!
       logical                  :: stable    ! Canopy air space is stable          [    T|F]
       real(kind=4)             :: zetah     ! Zeta for h=height                   [    ---]
       real(kind=4)             :: zeta0     ! Zeta for h=rough                    [    ---]
-      real(kind=4)             :: hoz0      ! ((h-d0)/z0)                         [    ---]
-      real(kind=4)             :: lnhoz0    ! ln ((h-d0)/z0)                      [    ---]
+      real(kind=4)             :: hoz0      ! ((h-dheight)/z0)                    [    ---]
+      real(kind=4)             :: lnhoz0    ! ln ((h-dheight)/z0)                 [    ---]
       real(kind=4)             :: a2        ! Drag coeff. in neutral conditions
       real(kind=4)             :: fm        ! Stability parameter for momentum
       real(kind=4)             :: c2        ! Part of the c coefficient.
@@ -2349,7 +2350,7 @@ module canopy_struct_dynamics
 
 
       !----- Find the log for the log-height interpolation of wind. -----------------------!
-      hoz0      = height/rough
+      hoz0      = (height - dheight)/rough
       lnhoz0    = log(hoz0)
       !------------------------------------------------------------------------------------!
 
@@ -2386,8 +2387,8 @@ module canopy_struct_dynamics
       case default  !----- Other methods. -------------------------------------------------!
 
          !----- Determine zeta for the sought height and for roughness height. ------------!
-         zetah = zeta * height / zref
-         zeta0 = zeta * rough  / zref
+         zetah = zeta * (height-dheight) / (zref-dheight)
+         zeta0 = zeta * rough            / (zref-dheight)
          !---------------------------------------------------------------------------------!
 
          reduced_wind = (ustar/vonk) * (lnhoz0 - psim(zetah,stable) + psim(zeta0,stable))
@@ -2417,7 +2418,7 @@ module canopy_struct_dynamics
    !    This function determines the wind at a given height, given that the stars are al-  !
    ! ready known, as well as the Richardson number and the zetas.                          !
    !---------------------------------------------------------------------------------------!
-   real(kind=8) function reduced_wind8(ustar,zeta,rib,zref,d0,height,rough)
+   real(kind=8) function reduced_wind8(ustar,zeta,rib,zref,dheight,height,rough)
       use consts_coms    , only : vonk8     ! ! intent(in)
       use canopy_air_coms, only : isfclyrm  & ! intent(in)
                                 , bl798     & ! intent(in)
@@ -2432,7 +2433,7 @@ module canopy_struct_dynamics
       real(kind=8), intent(in) :: zeta      ! Normalised height                   [    ---]
       real(kind=8), intent(in) :: rib       ! Bulk Richardson number              [    ---]
       real(kind=8), intent(in) :: zref      ! Reference height                    [      m]
-      real(kind=8), intent(in) :: d0        ! Displacement height                 [      m]
+      real(kind=8), intent(in) :: dheight   ! Displacement height                 [      m]
       real(kind=8), intent(in) :: height    ! Height to determine the red. wind   [      m]
       real(kind=8), intent(in) :: rough     ! Roughness scale                     [      m]
       !----- Local variables. -------------------------------------------------------------!
@@ -2459,7 +2460,7 @@ module canopy_struct_dynamics
 
 
       !----- Find the log for the log-height interpolation of wind. -----------------------!
-      hoz0      = height/rough
+      hoz0      = (height-dheight)/rough
       lnhoz0    = log(hoz0)
       !------------------------------------------------------------------------------------!
 
@@ -2496,8 +2497,8 @@ module canopy_struct_dynamics
       case default  !----- Other methods. -------------------------------------------------!
 
          !----- Determine zeta for the sought height and for roughness height. ------------!
-         zetah = zeta * height / zref
-         zeta0 = zeta * rough  / zref
+         zetah = zeta * (height-dheight) / (zref-dheight)
+         zeta0 = zeta * rough            / (zref-dheight)
          !---------------------------------------------------------------------------------!
 
          reduced_wind8 = (ustar/vonk8)                                                     &

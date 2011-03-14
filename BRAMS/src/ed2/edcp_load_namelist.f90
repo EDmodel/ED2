@@ -3,7 +3,7 @@
 !     This subroutine will read the ED parameters from the ED2_INFO namelist (part of the  !
 ! RAMSIN file).                                                                            !
 !------------------------------------------------------------------------------------------!
-subroutine read_ednl(iunit)
+subroutine read_ednl(iunit,filename)
    !----- ED2 modules. --------------------------------------------------------------------!
    use ed_max_dims          , only : n_pft                     & ! intent(in)
                                    , undef_integer             & ! intent(in)
@@ -73,6 +73,7 @@ subroutine read_ednl(iunit)
    use ed_misc_coms         , only : ifoutput                  & ! intent(out)
                                    , idoutput                  & ! intent(out)
                                    , imoutput                  & ! intent(out)
+                                   , iqoutput                  & ! intent(out)
                                    , iyoutput                  & ! intent(out)
                                    , itoutput                  & ! intent(out)
                                    , isoutput                  & ! intent(out)
@@ -82,6 +83,7 @@ subroutine read_ednl(iunit)
                                    , outstate                  & ! intent(out)
                                    , unitfast                  & ! intent(out)
                                    , unitstate                 & ! intent(out)
+                                   , ndcycle                   & ! intent(out)
                                    , ied_init_mode             & ! intent(out)
                                    , current_time              & ! intent(out)
                                    , thsums_database           & ! intent(out)
@@ -162,19 +164,24 @@ subroutine read_ednl(iunit)
                                    , leaf_ggfact      => ggfact      & ! intent(in)
                                    , leaf_gamm        => gamm        & ! intent(in)
                                    , leaf_gamh        => gamh        & ! intent(in)
-                                   , leaf_tprandtl    => tprandtl    ! ! intent(in)
+                                   , leaf_tprandtl    => tprandtl    & ! intent(in)
+                                   , leaf_vh2vr       => vh2vr       & ! intent(in)
+                                   , leaf_vh2dh       => vh2dh       ! ! intent(in)
    use mem_radiate          , only : radfrq                          ! ! intent(in)
+   use consts_coms          , only : day_sec                         ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
-   integer, intent(in) :: iunit ! Namelist unit number
+   integer         , intent(in) :: iunit    ! Namelist unit number
+   character(len=*), intent(in) :: filename ! file name with namelists
    !----- Local variables. ----------------------------------------------------------------!
-   integer             :: err
-   integer             :: decomp_scheme
-   logical             :: fexists
-   logical             :: op
+   integer                      :: i
+   integer                      :: err
+   integer                      :: decomp_scheme
+   logical                      :: fexists
+   logical                      :: op
    !----- Namelist. -----------------------------------------------------------------------!
-   namelist /ED2_INFO/  dtlsm,co2_offset,ifoutput,idoutput,imoutput,iyoutput,itoutput      &
-                       ,isoutput,attach_metadata,outfast,outstate,ffilout,sfilout          &
+   namelist /ED2_INFO/  dtlsm,co2_offset,ifoutput,idoutput,imoutput,iqoutput,iyoutput      &
+                       ,itoutput,isoutput,attach_metadata,outfast,outstate,ffilout,sfilout &
                        ,ied_init_mode,edres,sfilin,veg_database,soil_database,lu_database  &
                        ,plantation_file,lu_rescale_file,thsums_database,soilstate_db       &
                        ,soildepth_db,isoilstateinit,isoildepthflg,integration_scheme       &
@@ -196,85 +203,103 @@ subroutine read_ednl(iunit)
    lu_rescale_file (:) = undef_path
 
    sfilin          (:) = undef_path
-   
+   !---------------------------------------------------------------------------------------!
 
 
+
+   !---------------------------------------------------------------------------------------!
+   !      Read in MODEL_FILE_INFO namelist.                                                !
+   !---------------------------------------------------------------------------------------!
    read (unit=iunit, iostat=err, NML=ED2_INFO)
    if (err /= 0) then
-      write (unit=*,fmt='(a)') '**(ERROR)** reading section ED2_INFO of namelist file. '
-      write (unit=*,fmt='(a)') ' Compare values read with file contents:' 
-      write (unit=*,fmt=*) 'dtlsm=',dtlsm
-      write (unit=*,fmt=*) 'co2_offset=',co2_offset
-      write (unit=*,fmt=*) 'ifoutput=',ifoutput
-      write (unit=*,fmt=*) 'idoutput=',idoutput
-      write (unit=*,fmt=*) 'imoutput=',imoutput
-      write (unit=*,fmt=*) 'iyoutput=',iyoutput
-      write (unit=*,fmt=*) 'itoutput=',itoutput
-      write (unit=*,fmt=*) 'isoutput=',isoutput
-      write (unit=*,fmt=*) 'attach_metadata=',attach_metadata
-      write (unit=*,fmt=*) 'outfast=',outfast
-      write (unit=*,fmt=*) 'outstate=',outstate
-      write (unit=*,fmt=*) 'ffilout=',ffilout
-      write (unit=*,fmt=*) 'sfilout=',sfilout
-      write (unit=*,fmt=*) 'ied_init_mode=',ied_init_mode
-      write (unit=*,fmt=*) 'edres=',edres
-      write (unit=*,fmt=*) 'sfilin=',sfilin
-      write (unit=*,fmt=*) 'veg_database=',veg_database
-      write (unit=*,fmt=*) 'soil_database=',soil_database
-      write (unit=*,fmt=*) 'lu_database=',lu_database
-      write (unit=*,fmt=*) 'plantation_file=',plantation_file
-      write (unit=*,fmt=*) 'lu_rescale_file=',lu_rescale_file
-      write (unit=*,fmt=*) 'thsums_database=',thsums_database
-      write (unit=*,fmt=*) 'soilstate_db=',soilstate_db
-      write (unit=*,fmt=*) 'soildepth_db=',soildepth_db
-      write (unit=*,fmt=*) 'isoilstateinit=',isoilstateinit
-      write (unit=*,fmt=*) 'isoildepthflg=',isoildepthflg
-      write (unit=*,fmt=*) 'integration_scheme=',integration_scheme
-      write (unit=*,fmt=*) 'rk4_tolerance=',rk4_tolerance
-      write (unit=*,fmt=*) 'ibranch_thermo=',ibranch_thermo
-      write (unit=*,fmt=*) 'istoma_scheme=',istoma_scheme
-      write (unit=*,fmt=*) 'iphen_scheme=',iphen_scheme
-      write (unit=*,fmt=*) 'radint=',radint
-      write (unit=*,fmt=*) 'radslp=',radslp
-      write (unit=*,fmt=*) 'repro_scheme=',repro_scheme
-      write (unit=*,fmt=*) 'lapse_scheme=',lapse_scheme
-      write (unit=*,fmt=*) 'crown_mod=',crown_mod
-      write (unit=*,fmt=*) 'decomp_scheme=',decomp_scheme
-      write (unit=*,fmt=*) 'h2o_plant_lim=',h2o_plant_lim
-      write (unit=*,fmt=*) 'vmfact=',vmfact
-      write (unit=*,fmt=*) 'mfact=',mfact
-      write (unit=*,fmt=*) 'kfact=',kfact
-      write (unit=*,fmt=*) 'gamfact=',gamfact
-      write (unit=*,fmt=*) 'lwfact=',lwfact
-      write (unit=*,fmt=*) 'thioff=',thioff
-      write (unit=*,fmt=*) 'icomppt=',icomppt
-      write (unit=*,fmt=*) 'quantum_efficiency_t=',quantum_efficiency_t
-      write (unit=*,fmt=*) 'n_plant_lim=',n_plant_lim
-      write (unit=*,fmt=*) 'n_decomp_lim=',n_decomp_lim
-      write (unit=*,fmt=*) 'include_fire=',include_fire
-      write (unit=*,fmt=*) 'ianth_disturb=',ianth_disturb
-      write (unit=*,fmt=*) 'icanturb=',icanturb
-      write (unit=*,fmt=*) 'i_blyr_condct=',i_blyr_condct
-      write (unit=*,fmt=*) 'include_these_pft=',include_these_pft
-      write (unit=*,fmt=*) 'agri_stock=',agri_stock
-      write (unit=*,fmt=*) 'plantation_stock=',plantation_stock
-      write (unit=*,fmt=*) 'pft_1st_check=',pft_1st_check
-      write (unit=*,fmt=*) 'maxpatch=',maxpatch
-      write (unit=*,fmt=*) 'maxcohort=',maxcohort
-      write (unit=*,fmt=*) 'treefall_disturbance_rate=',treefall_disturbance_rate
-      write (unit=*,fmt=*) 'iprintpolys=',iprintpolys
-      write (unit=*,fmt=*) 'npvars=',npvars
-      write (unit=*,fmt=*) 'printvars=',printvars
-      write (unit=*,fmt=*) 'pfmtstr=',pfmtstr
-      write (unit=*,fmt=*) 'ipmin=',ipmin
-      write (unit=*,fmt=*) 'ipmax=',ipmax
-      write (unit=*,fmt=*) 'iphenys1=',iphenys1
-      write (unit=*,fmt=*) 'iphenysf=',iphenysf
-      write (unit=*,fmt=*) 'iphenyf1=',iphenyf1
-      write (unit=*,fmt=*) 'iphenyff=',iphenyff
-      write (unit=*,fmt=*) 'iedcnfgf=',iedcnfgf
-      write (unit=*,fmt=*) 'event_file=',event_file
-      write (unit=*,fmt=*) 'phenpath =',phenpath 
+      write (unit=*,fmt='(a)')        '--------------------------------------------------'
+      write (unit=*,fmt='(a)')        ' ERROR reading the namelist! '
+      write (unit=*,fmt='(a,1x,a)')   ' Namelist file   : ',trim(filename)
+      write (unit=*,fmt='(a,1x,a)')   ' Namelist section: ','MODEL_FILE_INFO'
+      write (unit=*,fmt='(a)')        ' Compare values read with file contents...'
+      write (unit=*,fmt='(a)')        '--------------------------------------------------'
+      write (unit=*,fmt='(a)')        ''
+      write (unit=*,fmt=*) ' dtlsm                     =',dtlsm
+      write (unit=*,fmt=*) ' co2_offset                =',co2_offset
+      write (unit=*,fmt=*) ' ifoutput                  =',ifoutput
+      write (unit=*,fmt=*) ' idoutput                  =',idoutput
+      write (unit=*,fmt=*) ' imoutput                  =',imoutput
+      write (unit=*,fmt=*) ' iqoutput                  =',iqoutput
+      write (unit=*,fmt=*) ' iyoutput                  =',iyoutput
+      write (unit=*,fmt=*) ' itoutput                  =',itoutput
+      write (unit=*,fmt=*) ' isoutput                  =',isoutput
+      write (unit=*,fmt=*) ' attach_metadata           =',attach_metadata
+      write (unit=*,fmt=*) ' outfast                   =',outfast
+      write (unit=*,fmt=*) ' outstate                  =',outstate
+      write (unit=*,fmt=*) ' ffilout                   =',trim(ffilout)
+      write (unit=*,fmt=*) ' sfilout                   =',trim(sfilout)
+      write (unit=*,fmt=*) ' ied_init_mode             =',ied_init_mode
+      write (unit=*,fmt=*) ' edres                     =',edres
+      write (unit=*,fmt=*) ' sfilin                    =',(trim(sfilin(i))//';'            &
+                                                          ,i=1,size(sfilin))
+      write (unit=*,fmt=*) ' veg_database              =',(trim(veg_database(i))//';'      &
+                                                          ,i=1,size(veg_database))
+      write (unit=*,fmt=*) ' soil_database             =',(trim(soil_database(i))//';'     &
+                                                          ,i=1,size(soil_database))
+      write (unit=*,fmt=*) ' lu_database               =',(trim(lu_database(i))//';'       &
+                                                          ,i=1,size(lu_database))
+      write (unit=*,fmt=*) ' plantation_file           =',(trim(plantation_file(i))//';'   &
+                                                          ,i=1,size(plantation_file))
+      write (unit=*,fmt=*) ' lu_rescale_file           =',(trim(lu_rescale_file(i))//';'   &
+                                                          ,i=1,size(lu_rescale_file))
+      write (unit=*,fmt=*) ' thsums_database           =',trim(thsums_database)
+      write (unit=*,fmt=*) ' soilstate_db              =',trim(soilstate_db)
+      write (unit=*,fmt=*) ' soildepth_db              =',trim(soildepth_db)
+      write (unit=*,fmt=*) ' isoilstateinit            =',isoilstateinit
+      write (unit=*,fmt=*) ' isoildepthflg             =',isoildepthflg
+      write (unit=*,fmt=*) ' integration_scheme        =',integration_scheme
+      write (unit=*,fmt=*) ' rk4_tolerance             =',rk4_tolerance
+      write (unit=*,fmt=*) ' ibranch_thermo            =',ibranch_thermo
+      write (unit=*,fmt=*) ' istoma_scheme             =',istoma_scheme
+      write (unit=*,fmt=*) ' iphen_scheme              =',iphen_scheme
+      write (unit=*,fmt=*) ' radint                    =',radint
+      write (unit=*,fmt=*) ' radslp                    =',radslp
+      write (unit=*,fmt=*) ' repro_scheme              =',repro_scheme
+      write (unit=*,fmt=*) ' lapse_scheme              =',lapse_scheme
+      write (unit=*,fmt=*) ' crown_mod                 =',crown_mod
+      write (unit=*,fmt=*) ' decomp_scheme             =',decomp_scheme
+      write (unit=*,fmt=*) ' h2o_plant_lim             =',h2o_plant_lim
+      write (unit=*,fmt=*) ' vmfact                    =',vmfact
+      write (unit=*,fmt=*) ' mfact                     =',mfact
+      write (unit=*,fmt=*) ' kfact                     =',kfact
+      write (unit=*,fmt=*) ' gamfact                   =',gamfact
+      write (unit=*,fmt=*) ' lwfact                    =',lwfact
+      write (unit=*,fmt=*) ' thioff                    =',thioff
+      write (unit=*,fmt=*) ' icomppt                   =',icomppt
+      write (unit=*,fmt=*) ' quantum_efficiency_t      =',quantum_efficiency_t
+      write (unit=*,fmt=*) ' n_plant_lim               =',n_plant_lim
+      write (unit=*,fmt=*) ' n_decomp_lim              =',n_decomp_lim
+      write (unit=*,fmt=*) ' include_fire              =',include_fire
+      write (unit=*,fmt=*) ' ianth_disturb             =',ianth_disturb
+      write (unit=*,fmt=*) ' icanturb                  =',icanturb
+      write (unit=*,fmt=*) ' i_blyr_condct             =',i_blyr_condct
+      write (unit=*,fmt=*) ' include_these_pft         =',include_these_pft
+      write (unit=*,fmt=*) ' agri_stock                =',agri_stock
+      write (unit=*,fmt=*) ' plantation_stock          =',plantation_stock
+      write (unit=*,fmt=*) ' pft_1st_check             =',pft_1st_check
+      write (unit=*,fmt=*) ' maxpatch                  =',maxpatch
+      write (unit=*,fmt=*) ' maxcohort                 =',maxcohort
+      write (unit=*,fmt=*) ' treefall_disturbance_rate =',treefall_disturbance_rate
+      write (unit=*,fmt=*) ' iprintpolys               =',iprintpolys
+      write (unit=*,fmt=*) ' npvars                    =',npvars
+      write (unit=*,fmt=*) ' printvars                 =',(trim(printvars(i))//';'         &
+                                                          ,i=1,size(printvars))
+      write (unit=*,fmt=*) ' pfmtstr                   =',(trim(pfmtstr(i))//';'           &
+                                                          ,i=1,size(pfmtstr))
+      write (unit=*,fmt=*) ' ipmin                     =',ipmin
+      write (unit=*,fmt=*) ' ipmax                     =',ipmax
+      write (unit=*,fmt=*) ' iphenys1                  =',iphenys1
+      write (unit=*,fmt=*) ' iphenysf                  =',iphenysf
+      write (unit=*,fmt=*) ' iphenyf1                  =',iphenyf1
+      write (unit=*,fmt=*) ' iphenyff                  =',iphenyff
+      write (unit=*,fmt=*) ' iedcnfgf                  =',trim(iedcnfgf)
+      write (unit=*,fmt=*) ' event_file                =',trim(event_file)
+      write (unit=*,fmt=*) ' phenpath                  =',trim(phenpath)
       call abort_run('Error reading namelist, ED2_INFO block.','read_ednl'                 &
                     ,'edcp_load_namelist.f90')
    end if
@@ -295,11 +320,12 @@ subroutine read_ednl(iunit)
                        ,deltay,polelat,polelon,centlat,centlon,nstratx,nstraty,iclobber    &
                        ,nzg,nzs,isoilflg,nslcon,slz,slmstr,stgoff,leaf_zrough,ngrids       &
                        ,leaf_bpower,leaf_ustmin,leaf_ggfact,leaf_isoilbc,leaf_ipercol      &
-                       ,leaf_runoff_time,leaf_gamm,leaf_gamh,leaf_tprandtl)
+                       ,leaf_runoff_time,leaf_gamm,leaf_gamh,leaf_tprandtl,leaf_vh2vr      &
+                       ,leaf_vh2dh)
    !---------------------------------------------------------------------------------------!
    !      The following variables can be defined in the regular ED2IN file for stand-alone !
    ! runs, but they cannot be changed in the coupled simulation (or they are never used    !
-   ! in the coupled run.  We assign some standard values to these variables.               !
+   ! in the coupled run).  We assign some standard values to these variables.              !
    !---------------------------------------------------------------------------------------!
    n_ed_region   = ngrids   ! No POI is allowed in coupled runs.
    n_poi = 0                ! No POI is allowed in coupled runs.
@@ -343,6 +369,22 @@ subroutine read_ednl(iunit)
    frqfast  = frqanl
    frqstate = frqhis
    isfclyrm = istar
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     The following variable will be used to allocate the mean diurnal cycle.  It will  !
+   ! be set to 1 in case the user doesn't want the mean diurnal cycle, or if frqanl is     !
+   ! invalid.                                                                              !
+   !---------------------------------------------------------------------------------------!
+   if (iqoutput == 0 .or. frqfast <= 0) then
+      ndcycle = 1 
+   else
+      ndcycle = max(1,int(frqfast / day_sec))
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
    !      Set current time to initial time here.  If this is a history run, reset current  !
@@ -424,7 +466,8 @@ subroutine copy_in_bramsnl(expnme_b,runtype_b,itimez_b,idatez_b,imonthz_b,iyearz
                           ,polelat_b,polelon_b,centlat_b,centlon_b,nstratx_b,nstraty_b     &
                           ,iclobber_b,nzg_b,nzs_b,isoilflg_b,nslcon_b,slz_b,slmstr_b       &
                           ,stgoff_b,zrough_b,ngrids_b,betapower_b,ustmin_b,ggfact_b        &
-                          ,isoilbc_b,ipercol_b,runoff_time_b,gamm_b,gamh_b,tprandtl_b)
+                          ,isoilbc_b,ipercol_b,runoff_time_b,gamm_b,gamh_b,tprandtl_b      &
+                          ,vh2vr_b,vh2dh_b)
    use consts_coms    , only : vonk              ! ! intent(in)
    use ed_misc_coms   , only : expnme            & ! intent(out)
                              , runtype           & ! intent(out)
@@ -473,7 +516,9 @@ subroutine copy_in_bramsnl(expnme_b,runtype_b,itimez_b,idatez_b,imonthz_b,iyearz
                              , gamm              & ! intent(out)
                              , gamh              & ! intent(out)
                              , tprandtl          & ! intent(out)
-                             , vkopr             ! ! intent(out)
+                             , vkopr             & ! intent(out)
+                             , vh2vr             & ! intent(out)
+                             , vh2dh             ! ! intent(out)
    use rk4_coms       , only : ipercol           ! ! intent(out)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
@@ -525,6 +570,8 @@ subroutine copy_in_bramsnl(expnme_b,runtype_b,itimez_b,idatez_b,imonthz_b,iyearz
    real                      , intent(in) :: gamm_b        ! Sfc. lyr. Gamma for momentum
    real                      , intent(in) :: gamh_b        ! Sfc. lyr. Gamma for heat
    real                      , intent(in) :: tprandtl_b    ! Turbulent Prandtl number
+   real                      , intent(in) :: vh2vr_b       ! Veg. Height => Veg. Roughness
+   real                      , intent(in) :: vh2dh_b       ! Veg. Height => Displacement h.
    !---------------------------------------------------------------------------------------!
 
 
@@ -585,6 +632,9 @@ subroutine copy_in_bramsnl(expnme_b,runtype_b,itimez_b,idatez_b,imonthz_b,iyearz
    gamh        = gamh_b
    tprandtl    = tprandtl_b
    vkopr       = vonk / tprandtl
+
+   vh2vr       = vh2vr_b
+   vh2dh       = vh2dh_b
    !---------------------------------------------------------------------------------------!
 
    return

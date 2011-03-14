@@ -22,7 +22,7 @@
 !------------------------------------------------------------------------------------------!
 subroutine leaf_stars(theta_atm,theiv_atm,shv_atm,rvap_atm,co2_atm                         &
                      ,theta_can,theiv_can,shv_can,rvap_can,co2_can                         &
-                     ,zref,uref,dtll,rough,ustar,tstar,estar,qstar,rstar,cstar             &
+                     ,zref,dheight,uref,dtll,rough,ustar,tstar,estar,qstar,rstar,cstar     &
                      ,zeta,rib,r_aer)
    use mem_leaf  , only : istar      ! ! intent(in)
    use rconstants, only : grav       & ! intent(in)
@@ -58,6 +58,7 @@ subroutine leaf_stars(theta_atm,theiv_atm,shv_atm,rvap_atm,co2_atm              
    real, intent(in)  :: rvap_can     ! Canopy air vapour mixing ratio           [kg/kg_air]
    real, intent(in)  :: co2_can      ! Canopy air CO2 mixing ratio              [ µmol/mol]
    real, intent(in)  :: zref         ! Height at reference point                [        m]
+   real, intent(in)  :: dheight      ! Displacement height                      [        m]
    real, intent(in)  :: uref         ! Wind speed at reference height           [      m/s]
    real, intent(in)  :: dtll         ! Time step                                [        m]
    real, intent(in)  :: rough        ! z0, the roughness                        [        m]
@@ -104,11 +105,11 @@ subroutine leaf_stars(theta_atm,theiv_atm,shv_atm,rvap_atm,co2_atm              
    !----- Find the variables common to both methods. --------------------------------------!
    thetav_atm = theta_atm * (1. + epim1 * shv_atm)
    thetav_can = theta_can * (1. + epim1 * shv_can)
-   zoz0m      = zref/rough
+   zoz0m      = (zref-dheight)/rough
    lnzoz0m    = log(zoz0m)
    zoz0h      = z0moz0h * zoz0m
    lnzoz0h    = log(zoz0h)
-   rib        = 2.0 * grav * zref * (thetav_atm-thetav_can)                                &
+   rib        = 2.0 * grav * (zref-dheight-rough) * (thetav_atm-thetav_can)                &
               / ( (thetav_atm+thetav_can) * uref * uref)
    stable     = thetav_atm >= thetav_can
 
@@ -181,7 +182,7 @@ subroutine leaf_stars(theta_atm,theiv_atm,shv_atm,rvap_atm,co2_atm              
          !----- Unstable case. ------------------------------------------------------------!
          zeta = rib * lnzoz0m
       end if
-      zeta0m = rough * zeta / zref
+      zeta0m = rough * zeta / (zref - dheight)
 
       !----- Finding the aerodynamic resistance similarly to L79. -------------------------!
       r_aer = tprandtl * (lnzoz0m - psih(zeta,stable) + psih(zeta0m,stable))               &
@@ -215,8 +216,8 @@ subroutine leaf_stars(theta_atm,theiv_atm,shv_atm,rvap_atm,co2_atm              
 
 
       !----- We now compute the stability correction functions. ---------------------------!
-      zeta   = zoobukhov(rib,zref,rough,zoz0m,lnzoz0m,zoz0h,lnzoz0h,stable)
-      zeta0m = rough * zeta / zref
+      zeta   = zoobukhov(rib,zref-dheight,rough,zoz0m,lnzoz0m,zoz0h,lnzoz0h,stable)
+      zeta0m = rough * zeta / (zref-dheight)
       zeta0h = z0hoz0m * zeta0m
 
       !----- Finding the aerodynamic resistance similarly to L79. -------------------------!
@@ -829,7 +830,7 @@ end subroutine sfc_pcp
 ! and albedo.                                                                              !
 !------------------------------------------------------------------------------------------!
 subroutine vegndvi(ifm,patch_area,leaf_class,veg_fracarea,veg_lai,veg_tai,veg_rough        &
-                  ,veg_height,veg_albedo,veg_ndvip,veg_ndvic,veg_ndvif)
+                  ,veg_height,veg_displace,veg_albedo,veg_ndvip,veg_ndvic,veg_ndvif)
 
    use leaf_coms
    use rconstants
@@ -848,6 +849,7 @@ subroutine vegndvi(ifm,patch_area,leaf_class,veg_fracarea,veg_lai,veg_tai,veg_ro
    real                            , intent(out)   :: veg_lai
    real                            , intent(out)   :: veg_tai
    real                            , intent(out)   :: veg_fracarea
+   real                            , intent(out)   :: veg_displace
    real                            , intent(out)   :: veg_rough
    real                            , intent(out)   :: veg_albedo
    real                            , intent(inout) :: veg_ndvic
@@ -963,6 +965,7 @@ subroutine vegndvi(ifm,patch_area,leaf_class,veg_fracarea,veg_lai,veg_tai,veg_ro
 
       !----- Compute vegetation roughness height, albedo, and fractional area. ------------!
       veg_rough    = veg_height * (1. - bz * exp(-hz * veg_tai))
+      veg_displace = veg_height * vh2dh
       veg_albedo   = albv_green(nveg) * green_frac + albv_brown(nveg) * (1. - green_frac)
       veg_fracarea = veg_frac(nveg) * (1. - exp(-extinc_veg * veg_tai))
    end if
@@ -1192,7 +1195,7 @@ end subroutine sfcrad
 !    This function determines the wind at a given height, given that the stars are al-     !
 ! ready known, as well as the Richardson number and the zetas.                             !
 !------------------------------------------------------------------------------------------!
-real(kind=4) function leaf_reduced_wind(ustar,zeta,rib,zref,d0,height,rough)
+real(kind=4) function leaf_reduced_wind(ustar,zeta,rib,zref,dheight,height,rough)
    use rconstants     , only : vonk     ! ! intent(in)
    use leaf_coms      , only : bl79     & ! intent(in)
                              , csm      & ! intent(in)
@@ -1207,7 +1210,7 @@ real(kind=4) function leaf_reduced_wind(ustar,zeta,rib,zref,d0,height,rough)
    real(kind=4), intent(in) :: zeta      ! Normalised height                      [    ---]
    real(kind=4), intent(in) :: rib       ! Bulk Richardson number                 [    ---]
    real(kind=4), intent(in) :: zref      ! Reference height                       [      m]
-   real(kind=4), intent(in) :: d0        ! Displacement height                    [      m]
+   real(kind=4), intent(in) :: dheight   ! Displacement height                    [      m]
    real(kind=4), intent(in) :: height    ! Height to determine the red. wind      [      m]
    real(kind=4), intent(in) :: rough     ! Roughness scale                        [      m]
    !----- Local variables. ----------------------------------------------------------------!
@@ -1234,7 +1237,7 @@ real(kind=4) function leaf_reduced_wind(ustar,zeta,rib,zref,d0,height,rough)
 
 
    !----- Find the log for the log-height interpolation of wind. --------------------------!
-   hoz0      = height/rough
+   hoz0      = (height-dheight)/rough
    lnhoz0    = log(hoz0)
    !---------------------------------------------------------------------------------------!
 
@@ -1271,8 +1274,8 @@ real(kind=4) function leaf_reduced_wind(ustar,zeta,rib,zref,d0,height,rough)
    case default  !----- Other methods. ----------------------------------------------------!
 
       !----- Determine zeta for the sought height and for roughness height. ---------------!
-      zetah = zeta * height / zref
-      zeta0 = zeta * rough  / zref
+      zetah = zeta * (height-dheight) / (zref-dheight)
+      zeta0 = zeta * rough            / (zref-dheight)
       !------------------------------------------------------------------------------------!
 
       leaf_reduced_wind = (ustar/vonk) * (lnhoz0 - psim(zetah,stable) + psim(zeta0,stable))

@@ -202,7 +202,8 @@ module fuse_fiss_utils
                               , sitetype           & ! Structure
                               , patchtype          ! ! Structure
       use disturb_coms , only : min_new_patch_area ! ! intent(in)
-      use ed_misc_coms , only : imoutput           & ! intent(in)
+      use ed_misc_coms , only : iqoutput           & ! intent(in)
+                              , imoutput           & ! intent(in)
                               , idoutput           ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -264,33 +265,38 @@ module fuse_fiss_utils
 
          cpatch => csite%patch(ipa)
          do ico = 1, cpatch%ncohorts
-            cpatch%nplant(ico)              = cpatch%nplant(ico)              * area_scale
-            cpatch%lai(ico)                 = cpatch%lai(ico)                 * area_scale
-            cpatch%wpa(ico)                 = cpatch%wpa(ico)                 * area_scale
-            cpatch%wai(ico)                 = cpatch%wai(ico)                 * area_scale
-            cpatch%mean_gpp(ico)            = cpatch%mean_gpp(ico)            * area_scale
-            cpatch%mean_leaf_resp(ico)      = cpatch%mean_leaf_resp(ico)      * area_scale
-            cpatch%mean_root_resp(ico)      = cpatch%mean_root_resp(ico)      * area_scale
-            cpatch%mean_growth_resp(ico)    = cpatch%mean_growth_resp(ico)    * area_scale
-            cpatch%mean_storage_resp(ico)   = cpatch%mean_storage_resp(ico)   * area_scale
-            cpatch%mean_vleaf_resp(ico)     = cpatch%mean_vleaf_resp(ico)     * area_scale
-            cpatch%Psi_open(ico)            = cpatch%Psi_open(ico)            * area_scale
-            cpatch%gpp(ico)                 = cpatch%gpp(ico)                 * area_scale
-            cpatch%leaf_respiration(ico)    = cpatch%leaf_respiration(ico)    * area_scale
-            cpatch%root_respiration(ico)    = cpatch%root_respiration(ico)    * area_scale
-            cpatch%veg_water(ico)           = cpatch%veg_water(ico)           * area_scale
-            cpatch%hcapveg(ico)             = cpatch%hcapveg(ico)             * area_scale
-            cpatch%veg_energy(ico)          = cpatch%veg_energy(ico)          * area_scale
-            cpatch%monthly_dndt(ico)        = cpatch%monthly_dndt(ico)        * area_scale
-            if (idoutput > 0 .or. imoutput > 0 ) then
-               cpatch%dmean_par_v     (ico) = cpatch%dmean_par_v     (ico)    * area_scale
-               cpatch%dmean_par_v_beam(ico) = cpatch%dmean_par_v_beam(ico)    * area_scale
-               cpatch%dmean_par_v_diff(ico) = cpatch%dmean_par_v_diff(ico)    * area_scale
+            cpatch%nplant               (ico) = cpatch%nplant            (ico) * area_scale
+            cpatch%lai                  (ico) = cpatch%lai               (ico) * area_scale
+            cpatch%wpa                  (ico) = cpatch%wpa               (ico) * area_scale
+            cpatch%wai                  (ico) = cpatch%wai               (ico) * area_scale
+            cpatch%mean_gpp             (ico) = cpatch%mean_gpp          (ico) * area_scale
+            cpatch%mean_leaf_resp       (ico) = cpatch%mean_leaf_resp    (ico) * area_scale
+            cpatch%mean_root_resp       (ico) = cpatch%mean_root_resp    (ico) * area_scale
+            cpatch%mean_growth_resp     (ico) = cpatch%mean_growth_resp  (ico) * area_scale
+            cpatch%mean_storage_resp    (ico) = cpatch%mean_storage_resp (ico) * area_scale
+            cpatch%mean_vleaf_resp      (ico) = cpatch%mean_vleaf_resp   (ico) * area_scale
+            cpatch%Psi_open             (ico) = cpatch%Psi_open          (ico) * area_scale
+            cpatch%gpp                  (ico) = cpatch%gpp               (ico) * area_scale
+            cpatch%leaf_respiration     (ico) = cpatch%leaf_respiration  (ico) * area_scale
+            cpatch%root_respiration     (ico) = cpatch%root_respiration  (ico) * area_scale
+            cpatch%veg_water            (ico) = cpatch%veg_water         (ico) * area_scale
+            cpatch%hcapveg              (ico) = cpatch%hcapveg           (ico) * area_scale
+            cpatch%veg_energy           (ico) = cpatch%veg_energy        (ico) * area_scale
+            cpatch%monthly_dndt         (ico) = cpatch%monthly_dndt      (ico) * area_scale
+            if (idoutput > 0 .or. imoutput > 0 .or. iqoutput > 0) then
+               cpatch%dmean_par_v       (ico) = cpatch%dmean_par_v       (ico) * area_scale
+               cpatch%dmean_par_v_beam  (ico) = cpatch%dmean_par_v_beam  (ico) * area_scale
+               cpatch%dmean_par_v_diff  (ico) = cpatch%dmean_par_v_diff  (ico) * area_scale
             end if
-            if (imoutput > 0 ) then
-               cpatch%mmean_par_v     (ico) = cpatch%mmean_par_v     (ico)    * area_scale
-               cpatch%mmean_par_v_beam(ico) = cpatch%mmean_par_v_beam(ico)    * area_scale
-               cpatch%mmean_par_v_diff(ico) = cpatch%mmean_par_v_diff(ico)    * area_scale
+            if (imoutput > 0 .or. iqoutput > 0) then
+               cpatch%mmean_par_v       (ico) = cpatch%mmean_par_v       (ico) * area_scale
+               cpatch%mmean_par_v_beam  (ico) = cpatch%mmean_par_v_beam  (ico) * area_scale
+               cpatch%mmean_par_v_diff  (ico) = cpatch%mmean_par_v_diff  (ico) * area_scale
+            end if
+            if (iqoutput > 0) then
+               cpatch%qmean_par_v     (:,ico) = cpatch%qmean_par_v     (:,ico) * area_scale
+               cpatch%qmean_par_v_beam(:,ico) = cpatch%qmean_par_v_beam(:,ico) * area_scale
+               cpatch%qmean_par_v_diff(:,ico) = cpatch%qmean_par_v_diff(:,ico) * area_scale
             end if
          end do
       end do
@@ -615,7 +621,8 @@ module fuse_fiss_utils
       use allometry            , only : dbh2h                  & ! function
                                       , bd2dbh                 & ! function
                                       , dbh2bd                 ! ! function
-      use ed_misc_coms         , only : imoutput               & ! intent(in)
+      use ed_misc_coms         , only : iqoutput               & ! intent(in)
+                                      , imoutput               & ! intent(in)
                                       , idoutput               ! ! intent(in)
       implicit none
       !----- Constants --------------------------------------------------------------------!
@@ -704,38 +711,43 @@ module fuse_fiss_utils
                !            should be rescaled.  Variables whose units are per plant       !
                !            should _NOT_ be included here.                                 !
                !---------------------------------------------------------------------------!
-               cpatch%lai(ico)                 = cpatch%lai(ico)                  * 0.5
-               cpatch%wpa(ico)                 = cpatch%wpa(ico)                  * 0.5
-               cpatch%wai(ico)                 = cpatch%wai(ico)                  * 0.5
-               cpatch%nplant(ico)              = cpatch%nplant(ico)               * 0.5
-               cpatch%mean_gpp(ico)            = cpatch%mean_gpp(ico)             * 0.5
-               cpatch%mean_leaf_resp(ico)      = cpatch%mean_leaf_resp(ico)       * 0.5
-               cpatch%mean_root_resp(ico)      = cpatch%mean_root_resp(ico)       * 0.5
-               cpatch%mean_growth_resp(ico)    = cpatch%mean_growth_resp(ico)     * 0.5
-               cpatch%mean_storage_resp(ico)   = cpatch%mean_storage_resp(ico)    * 0.5
-               cpatch%mean_vleaf_resp(ico)     = cpatch%mean_vleaf_resp(ico)      * 0.5               
-               cpatch%today_gpp(ico)           = cpatch%today_gpp(ico)            * 0.5
-               cpatch%today_gpp_pot(ico)       = cpatch%today_gpp_pot(ico)        * 0.5
-               cpatch%today_gpp_max(ico)       = cpatch%today_gpp_max(ico)        * 0.5
-               cpatch%today_leaf_resp(ico)     = cpatch%today_leaf_resp(ico)      * 0.5
-               cpatch%today_root_resp(ico)     = cpatch%today_root_resp(ico)      * 0.5
-               cpatch%Psi_open(ico)            = cpatch%Psi_open(ico)             * 0.5
-               cpatch%gpp(ico)                 = cpatch%gpp(ico)                  * 0.5
-               cpatch%leaf_respiration(ico)    = cpatch%leaf_respiration(ico)     * 0.5
-               cpatch%root_respiration(ico)    = cpatch%root_respiration(ico)     * 0.5
-               cpatch%monthly_dndt(ico)        = cpatch%monthly_dndt(ico)         * 0.5
-               cpatch%veg_water(ico)           = cpatch%veg_water(ico)            * 0.5
-               cpatch%hcapveg(ico)             = cpatch%hcapveg(ico)              * 0.5
-               cpatch%veg_energy(ico)          = cpatch%veg_energy(ico)           * 0.5
-               if (idoutput > 0 .or. imoutput > 0 ) then
-                  cpatch%dmean_par_v     (ico) = cpatch%dmean_par_v     (ico)     * 0.5
-                  cpatch%dmean_par_v_beam(ico) = cpatch%dmean_par_v_beam(ico)     * 0.5
-                  cpatch%dmean_par_v_diff(ico) = cpatch%dmean_par_v_diff(ico)     * 0.5
+               cpatch%lai                  (ico) = cpatch%lai               (ico) * 0.5
+               cpatch%wpa                  (ico) = cpatch%wpa               (ico) * 0.5
+               cpatch%wai                  (ico) = cpatch%wai               (ico) * 0.5
+               cpatch%nplant               (ico) = cpatch%nplant            (ico) * 0.5
+               cpatch%mean_gpp             (ico) = cpatch%mean_gpp          (ico) * 0.5
+               cpatch%mean_leaf_resp       (ico) = cpatch%mean_leaf_resp    (ico) * 0.5
+               cpatch%mean_root_resp       (ico) = cpatch%mean_root_resp    (ico) * 0.5
+               cpatch%mean_growth_resp     (ico) = cpatch%mean_growth_resp  (ico) * 0.5
+               cpatch%mean_storage_resp    (ico) = cpatch%mean_storage_resp (ico) * 0.5
+               cpatch%mean_vleaf_resp      (ico) = cpatch%mean_vleaf_resp   (ico) * 0.5
+               cpatch%today_gpp            (ico) = cpatch%today_gpp         (ico) * 0.5
+               cpatch%today_gpp_pot        (ico) = cpatch%today_gpp_pot     (ico) * 0.5
+               cpatch%today_gpp_max        (ico) = cpatch%today_gpp_max     (ico) * 0.5
+               cpatch%today_leaf_resp      (ico) = cpatch%today_leaf_resp   (ico) * 0.5
+               cpatch%today_root_resp      (ico) = cpatch%today_root_resp   (ico) * 0.5
+               cpatch%Psi_open             (ico) = cpatch%Psi_open          (ico) * 0.5
+               cpatch%gpp                  (ico) = cpatch%gpp               (ico) * 0.5
+               cpatch%leaf_respiration     (ico) = cpatch%leaf_respiration  (ico) * 0.5
+               cpatch%root_respiration     (ico) = cpatch%root_respiration  (ico) * 0.5
+               cpatch%monthly_dndt         (ico) = cpatch%monthly_dndt      (ico) * 0.5
+               cpatch%veg_water            (ico) = cpatch%veg_water         (ico) * 0.5
+               cpatch%hcapveg              (ico) = cpatch%hcapveg           (ico) * 0.5
+               cpatch%veg_energy           (ico) = cpatch%veg_energy        (ico) * 0.5
+               if (idoutput > 0 .or. imoutput > 0 .or. iqoutput > 0 ) then
+                  cpatch%dmean_par_v       (ico) = cpatch%dmean_par_v     (ico)   * 0.5
+                  cpatch%dmean_par_v_beam  (ico) = cpatch%dmean_par_v_beam(ico)   * 0.5
+                  cpatch%dmean_par_v_diff  (ico) = cpatch%dmean_par_v_diff(ico)   * 0.5
                end if
-               if (imoutput > 0 ) then
-                  cpatch%mmean_par_v     (ico) = cpatch%mmean_par_v     (ico)     * 0.5
-                  cpatch%mmean_par_v_beam(ico) = cpatch%mmean_par_v_beam(ico)     * 0.5
-                  cpatch%mmean_par_v_diff(ico) = cpatch%mmean_par_v_diff(ico)     * 0.5
+               if (imoutput > 0 .or. iqoutput > 0  ) then
+                  cpatch%mmean_par_v       (ico) = cpatch%mmean_par_v     (ico)   * 0.5
+                  cpatch%mmean_par_v_beam  (ico) = cpatch%mmean_par_v_beam(ico)   * 0.5
+                  cpatch%mmean_par_v_diff  (ico) = cpatch%mmean_par_v_diff(ico)   * 0.5
+               end if
+               if (iqoutput > 0  ) then
+                  cpatch%qmean_par_v     (:,ico) = cpatch%qmean_par_v     (:,ico) * 0.5
+                  cpatch%qmean_par_v_beam(:,ico) = cpatch%qmean_par_v_beam(:,ico) * 0.5
+                  cpatch%qmean_par_v_diff(:,ico) = cpatch%qmean_par_v_diff(:,ico) * 0.5
                end if
 
                !---------------------------------------------------------------------------!
@@ -802,7 +814,8 @@ module fuse_fiss_utils
       use ed_max_dims  , only : n_mort     ! ! intent(in)
       use ed_state_vars, only : patchtype  & ! Structure
                               , stoma_data ! ! Structure
-      use ed_misc_coms , only : idoutput   & ! intent(in)
+      use ed_misc_coms , only : iqoutput   & ! intent(in)
+                              , idoutput   & ! intent(in)
                               , imoutput   ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -940,7 +953,7 @@ module fuse_fiss_utils
       osdt%gsw_residual     = ossc%gsw_residual
      
      
-      if (idoutput > 0 .or. imoutput > 0) then
+      if (idoutput > 0 .or. imoutput > 0 .or. iqoutput > 0) then
          cpatch%dmean_par_v           (idt) = cpatch%dmean_par_v           (isc) 
          cpatch%dmean_par_v_beam      (idt) = cpatch%dmean_par_v_beam      (isc) 
          cpatch%dmean_par_v_diff      (idt) = cpatch%dmean_par_v_diff      (isc) 
@@ -963,7 +976,7 @@ module fuse_fiss_utils
          cpatch%dmean_norm_par_diff   (idt) = cpatch%dmean_norm_par_diff   (isc)
       end if
 
-      if (imoutput > 0) then
+      if (imoutput > 0 .or. iqoutput > 0) then
          cpatch%mmean_par_v             (idt) = cpatch%mmean_par_v             (isc) 
          cpatch%mmean_par_v_beam        (idt) = cpatch%mmean_par_v_beam        (isc) 
          cpatch%mmean_par_v_diff        (idt) = cpatch%mmean_par_v_diff        (isc) 
@@ -992,6 +1005,21 @@ module fuse_fiss_utils
          cpatch%mmean_norm_par_beam     (idt) = cpatch%mmean_norm_par_beam     (isc)
          cpatch%mmean_norm_par_diff     (idt) = cpatch%mmean_norm_par_diff     (isc)
          cpatch%mmean_mort_rate       (:,idt) = cpatch%mmean_mort_rate       (:,isc)
+      end if
+
+      if (iqoutput > 0) then
+         cpatch%qmean_par_v        (:,idt) = cpatch%qmean_par_v        (:,isc)
+         cpatch%qmean_par_v_beam   (:,idt) = cpatch%qmean_par_v_beam   (:,isc)
+         cpatch%qmean_par_v_diff   (:,idt) = cpatch%qmean_par_v_diff   (:,isc)
+         cpatch%qmean_fs_open      (:,idt) = cpatch%qmean_fs_open      (:,isc)
+         cpatch%qmean_fsw          (:,idt) = cpatch%qmean_fsw          (:,isc)
+         cpatch%qmean_fsn          (:,idt) = cpatch%qmean_fsn          (:,isc)
+         cpatch%qmean_psi_open     (:,idt) = cpatch%qmean_psi_open     (:,isc)
+         cpatch%qmean_psi_closed   (:,idt) = cpatch%qmean_psi_closed   (:,isc)
+         cpatch%qmean_water_supply (:,idt) = cpatch%qmean_water_supply (:,isc)
+         cpatch%qmean_gpp          (:,idt) = cpatch%qmean_gpp          (:,isc)
+         cpatch%qmean_leaf_resp    (:,idt) = cpatch%qmean_leaf_resp    (:,isc)
+         cpatch%qmean_root_resp    (:,idt) = cpatch%qmean_root_resp    (:,isc)
       end if
 
       return
@@ -1023,7 +1051,9 @@ module fuse_fiss_utils
                                , dbh2h                  ! ! function
       use ed_max_dims   , only : n_mort                 ! ! intent(in)
       use ed_misc_coms  , only : imoutput               & ! intent(in)
-                               , idoutput               ! ! intent(in)
+                               , iqoutput               & ! intent(in)
+                               , idoutput               & ! intent(in)
+                               , ndcycle                ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(patchtype) , target     :: cpatch            ! Current patch
@@ -1035,6 +1065,7 @@ module fuse_fiss_utils
       integer         , intent(in) :: lsl               ! Lowest soil level
       !----- Local variables --------------------------------------------------------------!
       integer                      :: imon              ! Month for cb loop
+      integer                      :: icyc              ! Time of day for dcycle loop
       integer                      :: imty              ! Mortality type
       real                         :: newni             ! Inverse of new nplants
       real                         :: newlaii           ! Inverse of new LAI
@@ -1371,7 +1402,7 @@ module fuse_fiss_utils
       !    Now that we have daily and monthly means going to the cohort level, we must     !
       ! fuse them too.                                                                     !
       !------------------------------------------------------------------------------------!
-      if (idoutput > 0 .or. imoutput > 0) then
+      if (idoutput > 0 .or. imoutput > 0 .or. iqoutput > 0) then
          cpatch%dmean_light_level       (recc) = ( cpatch%dmean_light_level(recc)          &
                                                  * cpatch%nplant(recc)                     &
                                                  + cpatch%dmean_light_level(donc)          &
@@ -1444,7 +1475,7 @@ module fuse_fiss_utils
          cpatch%dmean_water_supply      (recc) = cpatch%dmean_water_supply(recc)           &
                                                + cpatch%dmean_water_supply(donc)
       end if
-      if (imoutput > 0) then
+      if (imoutput > 0 .or. iqoutput > 0) then
          cpatch%mmean_light_level     (recc) = ( cpatch%mmean_light_level(recc)            &
                                                * cpatch%nplant(recc)                       &
                                                + cpatch%mmean_light_level(donc)            &
@@ -1560,6 +1591,59 @@ module fuse_fiss_utils
                                                + cpatch%mmean_water_supply(donc)
       end if
 
+      !------------------------------------------------------------------------------------!
+      !    Fuse the mean diurnal cycle.                                                    !
+      !------------------------------------------------------------------------------------!
+      if (iqoutput > 0) then
+         do icyc=1,ndcycle
+            cpatch%qmean_gpp          (icyc,recc) = ( cpatch%qmean_gpp        (icyc,recc)  &
+                                                    * cpatch%nplant                (recc)  &
+                                                    + cpatch%qmean_gpp        (icyc,donc)  &
+                                                    * cpatch%nplant                (donc)) &
+                                                  * newni
+            cpatch%qmean_leaf_resp    (icyc,recc) = ( cpatch%qmean_leaf_resp  (icyc,recc)  &
+                                                    * cpatch%nplant                (recc)  &
+                                                    + cpatch%qmean_leaf_resp  (icyc,donc)  &
+                                                    * cpatch%nplant                (donc)) &
+                                                  * newni
+            cpatch%qmean_root_resp    (icyc,recc) = ( cpatch%qmean_root_resp  (icyc,recc)  &
+                                                    * cpatch%nplant                (recc)  &
+                                                    + cpatch%qmean_root_resp  (icyc,donc)  &
+                                                    * cpatch%nplant                (donc)) &
+                                                  * newni
+            !----- The following variables depend on LAI more than nplant. ----------------!
+            cpatch%qmean_fs_open      (icyc,recc) = ( cpatch%qmean_fs_open    (icyc,recc)  &
+                                                    * cpatch%lai                   (recc)  &
+                                                    + cpatch%qmean_fs_open    (icyc,donc)  &
+                                                    * cpatch%lai                   (donc)) &
+                                                  * newlaii
+            cpatch%qmean_fsw          (icyc,recc) = ( cpatch%qmean_fsw        (icyc,recc)  &
+                                                    * cpatch%lai                   (recc)  &
+                                                    + cpatch%qmean_fsw        (icyc,donc)  &
+                                                    * cpatch%lai                   (donc)) &
+                                                  * newlaii
+            cpatch%qmean_fsn          (icyc,recc) = ( cpatch%qmean_fsn        (icyc,recc)  &
+                                                    * cpatch%lai                   (recc)  &
+                                                    + cpatch%qmean_fsn        (icyc,donc)  &
+                                                    * cpatch%lai                   (donc)) &
+                                                  * newlaii
+
+            !----- The following variables are "extensive", add them. ---------------------!
+            cpatch%qmean_par_v        (icyc,recc) = cpatch%qmean_par_v        (icyc,recc)  &
+                                                  + cpatch%qmean_par_v        (icyc,donc)
+            cpatch%qmean_par_v_beam   (icyc,recc) = cpatch%qmean_par_v_beam   (icyc,recc)  &
+                                                  + cpatch%qmean_par_v_beam   (icyc,donc)
+            cpatch%qmean_par_v_diff   (icyc,recc) = cpatch%qmean_par_v_diff   (icyc,recc)  &
+                                                  + cpatch%qmean_par_v_diff   (icyc,donc)
+            cpatch%qmean_psi_open     (icyc,recc) = cpatch%qmean_psi_open     (icyc,recc)  &
+                                                  + cpatch%qmean_psi_open     (icyc,donc)
+            cpatch%qmean_psi_closed   (icyc,recc) = cpatch%qmean_psi_closed   (icyc,recc)  &
+                                                  + cpatch%qmean_psi_closed   (icyc,donc)
+            cpatch%qmean_water_supply (icyc,recc) = cpatch%qmean_water_supply (icyc,recc)  &
+                                                  + cpatch%qmean_water_supply (icyc,donc)
+         end do
+      end if
+
 
 
       !------------------------------------------------------------------------------------!
@@ -1575,6 +1659,7 @@ module fuse_fiss_utils
       else
          cpatch%lai(recc) = 0.
       end if
+      !------------------------------------------------------------------------------------!
 
       return
    end subroutine fuse_2_cohorts
@@ -2281,8 +2366,10 @@ module fuse_fiss_utils
                                     , cpor                  & ! intent(in)
                                     , p00                   ! ! intent(in)
       use therm_lib          , only : qwtk                  ! ! function
-      use ed_misc_coms       , only : idoutput              & ! intent(in)
-                                    , imoutput              ! ! intent(in)
+      use ed_misc_coms       , only : iqoutput              & ! intent(in)
+                                    , idoutput              & ! intent(in)
+                                    , imoutput              & ! intent(in)
+                                    , ndcycle               ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype)         , target      :: csite             ! Current site
@@ -2296,7 +2383,7 @@ module fuse_fiss_utils
       !----- Local variables --------------------------------------------------------------!
       type(patchtype)        , pointer     :: cpatch            ! Current patch
       type(patchtype)        , pointer     :: temppatch         ! Temporary patch
-      integer                              :: ico,iii           ! Counters
+      integer                              :: ico,iii,icyc      ! Counters
       integer                              :: ndc               ! # of cohorts - donp patch
       integer                              :: nrc               ! # of cohorts - recp patch
       real                                 :: newarea           ! new patch area
@@ -2711,7 +2798,7 @@ module fuse_fiss_utils
       !    We must also check whether daily/monthly output variables exist.  If they do,   !
       ! then we must fuse them too.                                                        !
       !------------------------------------------------------------------------------------! 
-      if (idoutput > 0 .or. imoutput > 0) then
+      if (idoutput > 0 .or. imoutput > 0 .or. iqoutput > 0) then
          csite%dmean_rh(recp)           = newareai                                         &
                                         * ( csite%dmean_rh(donp) * csite%area(donp)        &
                                           + csite%dmean_rh(recp) * csite%area(recp) )
@@ -2752,7 +2839,7 @@ module fuse_fiss_utils
                                              + csite%dmean_rk4step(recp)                   &
                                              * csite%area(recp) )
       end if
-      if (imoutput > 0) then
+      if (imoutput > 0 .or. iqoutput > 0) then
          csite%mmean_rh(recp)           = newareai                                         &
                                         * ( csite%mmean_rh(donp) * csite%area(donp)        &
                                           + csite%mmean_rh(recp) * csite%area(recp) )
@@ -2793,6 +2880,16 @@ module fuse_fiss_utils
                                              * csite%area(recp) )
       end if
 
+      if (iqoutput > 0) then
+         do icyc=1,ndcycle
+            csite%qmean_rh     (icyc,recp) = newareai                                      &
+                                           * ( csite%qmean_rh               (icyc,donp)    &
+                                             * csite%area                        (donp)    &
+                                             + csite%qmean_rh               (icyc,recp)    &
+                                             * csite%area                        (recp))
+         end do
+      end if
+
       !------------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
       call qwtk(csite%avg_veg_energy(recp),csite%avg_veg_water(recp),csite%hcapveg(recp)   &
@@ -2819,38 +2916,43 @@ module fuse_fiss_utils
       !            here.                                                                   !
       !------------------------------------------------------------------------------------!
       do ico = 1,nrc
-         cpatch%lai(ico)                 = cpatch%lai(ico)                  * area_scale
-         cpatch%wpa(ico)                 = cpatch%wpa(ico)                  * area_scale
-         cpatch%wai(ico)                 = cpatch%wai(ico)                  * area_scale
-         cpatch%nplant(ico)              = cpatch%nplant(ico)               * area_scale
-         cpatch%mean_gpp(ico)            = cpatch%mean_gpp(ico)             * area_scale
-         cpatch%mean_leaf_resp(ico)      = cpatch%mean_leaf_resp(ico)       * area_scale
-         cpatch%mean_root_resp(ico)      = cpatch%mean_root_resp(ico)       * area_scale
-         cpatch%mean_growth_resp(ico)    = cpatch%mean_growth_resp(ico)     * area_scale
-         cpatch%mean_storage_resp(ico)   = cpatch%mean_storage_resp(ico)    * area_scale
-         cpatch%mean_vleaf_resp(ico)     = cpatch%mean_vleaf_resp(ico)      * area_scale
-         cpatch%today_gpp(ico)           = cpatch%today_gpp(ico)            * area_scale
-         cpatch%today_gpp_pot(ico)       = cpatch%today_gpp_pot(ico)        * area_scale
-         cpatch%today_gpp_max(ico)       = cpatch%today_gpp_max(ico)        * area_scale
-         cpatch%today_leaf_resp(ico)     = cpatch%today_leaf_resp(ico)      * area_scale
-         cpatch%today_root_resp(ico)     = cpatch%today_root_resp(ico)      * area_scale
-         cpatch%Psi_open(ico)            = cpatch%Psi_open(ico)             * area_scale
-         cpatch%gpp(ico)                 = cpatch%gpp(ico)                  * area_scale
-         cpatch%leaf_respiration(ico)    = cpatch%leaf_respiration(ico)     * area_scale
-         cpatch%root_respiration(ico)    = cpatch%root_respiration(ico)     * area_scale
-         cpatch%monthly_dndt(ico)        = cpatch%monthly_dndt(ico)         * area_scale
-         cpatch%veg_water(ico)           = cpatch%veg_water(ico)            * area_scale
-         cpatch%hcapveg(ico)             = cpatch%hcapveg(ico)              * area_scale
-         cpatch%veg_energy(ico)          = cpatch%veg_energy(ico)           * area_scale
-         if (idoutput > 0 .or. imoutput > 0 ) then
-            cpatch%dmean_par_v     (ico) = cpatch%dmean_par_v     (ico)     * area_scale
-            cpatch%dmean_par_v_beam(ico) = cpatch%dmean_par_v_beam(ico)     * area_scale
-            cpatch%dmean_par_v_diff(ico) = cpatch%dmean_par_v_diff(ico)     * area_scale
+         cpatch%lai                   (ico) = cpatch%lai                (ico)  * area_scale
+         cpatch%wpa                   (ico) = cpatch%wpa                (ico)  * area_scale
+         cpatch%wai                   (ico) = cpatch%wai                (ico)  * area_scale
+         cpatch%nplant                (ico) = cpatch%nplant             (ico)  * area_scale
+         cpatch%mean_gpp              (ico) = cpatch%mean_gpp           (ico)  * area_scale
+         cpatch%mean_leaf_resp        (ico) = cpatch%mean_leaf_resp     (ico)  * area_scale
+         cpatch%mean_root_resp        (ico) = cpatch%mean_root_resp     (ico)  * area_scale
+         cpatch%mean_growth_resp      (ico) = cpatch%mean_growth_resp   (ico)  * area_scale
+         cpatch%mean_storage_resp     (ico) = cpatch%mean_storage_resp  (ico)  * area_scale
+         cpatch%mean_vleaf_resp       (ico) = cpatch%mean_vleaf_resp    (ico)  * area_scale
+         cpatch%today_gpp             (ico) = cpatch%today_gpp          (ico)  * area_scale
+         cpatch%today_gpp_pot         (ico) = cpatch%today_gpp_pot      (ico)  * area_scale
+         cpatch%today_gpp_max         (ico) = cpatch%today_gpp_max      (ico)  * area_scale
+         cpatch%today_leaf_resp       (ico) = cpatch%today_leaf_resp    (ico)  * area_scale
+         cpatch%today_root_resp       (ico) = cpatch%today_root_resp    (ico)  * area_scale
+         cpatch%Psi_open              (ico) = cpatch%Psi_open           (ico)  * area_scale
+         cpatch%gpp                   (ico) = cpatch%gpp                (ico)  * area_scale
+         cpatch%leaf_respiration      (ico) = cpatch%leaf_respiration   (ico)  * area_scale
+         cpatch%root_respiration      (ico) = cpatch%root_respiration   (ico)  * area_scale
+         cpatch%monthly_dndt          (ico) = cpatch%monthly_dndt       (ico)  * area_scale
+         cpatch%veg_water             (ico) = cpatch%veg_water          (ico)  * area_scale
+         cpatch%hcapveg               (ico) = cpatch%hcapveg            (ico)  * area_scale
+         cpatch%veg_energy            (ico) = cpatch%veg_energy         (ico)  * area_scale
+         if (idoutput > 0 .or. imoutput > 0 .or. iqoutput > 0) then
+            cpatch%dmean_par_v        (ico) = cpatch%dmean_par_v        (ico)  * area_scale
+            cpatch%dmean_par_v_beam   (ico) = cpatch%dmean_par_v_beam   (ico)  * area_scale
+            cpatch%dmean_par_v_diff   (ico) = cpatch%dmean_par_v_diff   (ico)  * area_scale
          end if
-         if (imoutput > 0 ) then
-            cpatch%mmean_par_v     (ico) = cpatch%mmean_par_v     (ico)     * area_scale
-            cpatch%mmean_par_v_beam(ico) = cpatch%mmean_par_v_beam(ico)     * area_scale
-            cpatch%mmean_par_v_diff(ico) = cpatch%mmean_par_v_diff(ico)     * area_scale
+         if (imoutput > 0 .or. iqoutput > 0) then
+            cpatch%mmean_par_v        (ico) = cpatch%mmean_par_v        (ico)  * area_scale
+            cpatch%mmean_par_v_beam   (ico) = cpatch%mmean_par_v_beam   (ico)  * area_scale
+            cpatch%mmean_par_v_diff   (ico) = cpatch%mmean_par_v_diff   (ico)  * area_scale
+         end if
+         if (iqoutput > 0) then
+            cpatch%qmean_par_v      (:,ico) = cpatch%qmean_par_v      (:,ico)  * area_scale
+            cpatch%qmean_par_v_beam (:,ico) = cpatch%qmean_par_v_beam (:,ico)  * area_scale
+            cpatch%qmean_par_v_diff (:,ico) = cpatch%qmean_par_v_diff (:,ico)  * area_scale
          end if
       end do
       !----- 2. Adjust densities of cohorts in donor patch --------------------------------!
@@ -2863,38 +2965,43 @@ module fuse_fiss_utils
       !            here.                                                                   !
       !------------------------------------------------------------------------------------!
       do ico = 1,ndc
-         cpatch%lai(ico)                 = cpatch%lai(ico)                  * area_scale
-         cpatch%wpa(ico)                 = cpatch%wpa(ico)                  * area_scale
-         cpatch%wai(ico)                 = cpatch%wai(ico)                  * area_scale
-         cpatch%nplant(ico)              = cpatch%nplant(ico)               * area_scale
-         cpatch%mean_gpp(ico)            = cpatch%mean_gpp(ico)             * area_scale
-         cpatch%mean_leaf_resp(ico)      = cpatch%mean_leaf_resp(ico)       * area_scale
-         cpatch%mean_root_resp(ico)      = cpatch%mean_root_resp(ico)       * area_scale
-         cpatch%mean_growth_resp(ico)    = cpatch%mean_growth_resp(ico)     * area_scale
-         cpatch%mean_storage_resp(ico)   = cpatch%mean_storage_resp(ico)    * area_scale
-         cpatch%mean_vleaf_resp(ico)     = cpatch%mean_vleaf_resp(ico)      * area_scale
-         cpatch%today_gpp(ico)           = cpatch%today_gpp(ico)            * area_scale
-         cpatch%today_gpp_pot(ico)       = cpatch%today_gpp_pot(ico)        * area_scale
-         cpatch%today_gpp_max(ico)       = cpatch%today_gpp_max(ico)        * area_scale
-         cpatch%today_leaf_resp(ico)     = cpatch%today_leaf_resp(ico)      * area_scale
-         cpatch%today_root_resp(ico)     = cpatch%today_root_resp(ico)      * area_scale
-         cpatch%Psi_open(ico)            = cpatch%Psi_open(ico)             * area_scale
-         cpatch%gpp(ico)                 = cpatch%gpp(ico)                  * area_scale
-         cpatch%leaf_respiration(ico)    = cpatch%leaf_respiration(ico)     * area_scale
-         cpatch%root_respiration(ico)    = cpatch%root_respiration(ico)     * area_scale
-         cpatch%monthly_dndt(ico)        = cpatch%monthly_dndt(ico)         * area_scale
-         cpatch%veg_water(ico)           = cpatch%veg_water(ico)            * area_scale
-         cpatch%hcapveg(ico)             = cpatch%hcapveg(ico)              * area_scale
-         cpatch%veg_energy(ico)          = cpatch%veg_energy(ico)           * area_scale
-         if (idoutput > 0 .or. imoutput > 0 ) then
-            cpatch%dmean_par_v     (ico) = cpatch%dmean_par_v     (ico)     * area_scale
-            cpatch%dmean_par_v_beam(ico) = cpatch%dmean_par_v_beam(ico)     * area_scale
-            cpatch%dmean_par_v_diff(ico) = cpatch%dmean_par_v_diff(ico)     * area_scale
+         cpatch%lai                   (ico) = cpatch%lai                (ico)  * area_scale
+         cpatch%wpa                   (ico) = cpatch%wpa                (ico)  * area_scale
+         cpatch%wai                   (ico) = cpatch%wai                (ico)  * area_scale
+         cpatch%nplant                (ico) = cpatch%nplant             (ico)  * area_scale
+         cpatch%mean_gpp              (ico) = cpatch%mean_gpp           (ico)  * area_scale
+         cpatch%mean_leaf_resp        (ico) = cpatch%mean_leaf_resp     (ico)  * area_scale
+         cpatch%mean_root_resp        (ico) = cpatch%mean_root_resp     (ico)  * area_scale
+         cpatch%mean_growth_resp      (ico) = cpatch%mean_growth_resp   (ico)  * area_scale
+         cpatch%mean_storage_resp     (ico) = cpatch%mean_storage_resp  (ico)  * area_scale
+         cpatch%mean_vleaf_resp       (ico) = cpatch%mean_vleaf_resp    (ico)  * area_scale
+         cpatch%today_gpp             (ico) = cpatch%today_gpp          (ico)  * area_scale
+         cpatch%today_gpp_pot         (ico) = cpatch%today_gpp_pot      (ico)  * area_scale
+         cpatch%today_gpp_max         (ico) = cpatch%today_gpp_max      (ico)  * area_scale
+         cpatch%today_leaf_resp       (ico) = cpatch%today_leaf_resp    (ico)  * area_scale
+         cpatch%today_root_resp       (ico) = cpatch%today_root_resp    (ico)  * area_scale
+         cpatch%Psi_open              (ico) = cpatch%Psi_open           (ico)  * area_scale
+         cpatch%gpp                   (ico) = cpatch%gpp                (ico)  * area_scale
+         cpatch%leaf_respiration      (ico) = cpatch%leaf_respiration   (ico)  * area_scale
+         cpatch%root_respiration      (ico) = cpatch%root_respiration   (ico)  * area_scale
+         cpatch%monthly_dndt          (ico) = cpatch%monthly_dndt       (ico)  * area_scale
+         cpatch%veg_water             (ico) = cpatch%veg_water          (ico)  * area_scale
+         cpatch%hcapveg               (ico) = cpatch%hcapveg            (ico)  * area_scale
+         cpatch%veg_energy            (ico) = cpatch%veg_energy         (ico)  * area_scale
+         if (idoutput > 0 .or. imoutput > 0 .or. iqoutput > 0) then
+            cpatch%dmean_par_v        (ico) = cpatch%dmean_par_v        (ico)  * area_scale
+            cpatch%dmean_par_v_beam   (ico) = cpatch%dmean_par_v_beam   (ico)  * area_scale
+            cpatch%dmean_par_v_diff   (ico) = cpatch%dmean_par_v_diff   (ico)  * area_scale
          end if
-         if (imoutput > 0 ) then
-            cpatch%mmean_par_v     (ico) = cpatch%mmean_par_v     (ico)     * area_scale
-            cpatch%mmean_par_v_beam(ico) = cpatch%mmean_par_v_beam(ico)     * area_scale
-            cpatch%mmean_par_v_diff(ico) = cpatch%mmean_par_v_diff(ico)     * area_scale
+         if (imoutput > 0 .or. iqoutput > 0) then
+            cpatch%mmean_par_v        (ico) = cpatch%mmean_par_v        (ico)  * area_scale
+            cpatch%mmean_par_v_beam   (ico) = cpatch%mmean_par_v_beam   (ico)  * area_scale
+            cpatch%mmean_par_v_diff   (ico) = cpatch%mmean_par_v_diff   (ico)  * area_scale
+         end if
+         if (iqoutput > 0) then
+            cpatch%qmean_par_v      (:,ico) = cpatch%qmean_par_v      (:,ico)  * area_scale
+            cpatch%qmean_par_v_beam (:,ico) = cpatch%qmean_par_v_beam (:,ico)  * area_scale
+            cpatch%qmean_par_v_diff (:,ico) = cpatch%qmean_par_v_diff (:,ico)  * area_scale
          end if
       end do
       !------------------------------------------------------------------------------------!
@@ -2937,6 +3044,7 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------!
       !    Now we update some variables that depend on cohort statistics, namely:          !
       ! + csite%veg_height(recp)                                                           !
+      ! + csite%veg_displace(recp)                                                         !
       ! + csite%disp_height(recp)                                                          !
       ! + csite%lai(recp)                                                                  !
       ! + csite%veg_rough(recp)                                                            !

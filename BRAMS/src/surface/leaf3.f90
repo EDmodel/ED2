@@ -331,6 +331,7 @@ subroutine leaf3_timestep()
                            , leaf_g(ngrid)%veg_tai     (i,j,ip)                            &
                            , leaf_g(ngrid)%veg_rough   (i,j,ip)                            &
                            , leaf_g(ngrid)%veg_height  (i,j,ip)                            &
+                           , leaf_g(ngrid)%veg_displace(i,j,ip)                            &
                            , leaf_g(ngrid)%veg_albedo  (i,j,ip)                            &
                            , leaf_g(ngrid)%veg_ndvip   (i,j,ip)                            &
                            , leaf_g(ngrid)%veg_ndvic   (i,j,ip)                            &
@@ -447,24 +448,25 @@ subroutine leaf3_timestep()
                               ,atm_shv                                                     &
                               ,atm_rvap                                                    &
                               ,atm_co2                                                     &
-                              ,leaf_g(ngrid)%can_theta  (i,j,ip)                           &
-                              ,leaf_g(ngrid)%can_theiv  (i,j,ip)                           &
+                              ,leaf_g(ngrid)%can_theta   (i,j,ip)                          &
+                              ,leaf_g(ngrid)%can_theiv   (i,j,ip)                          &
                               ,can_shv                                                     &
-                              ,leaf_g(ngrid)%can_rvap   (i,j,ip)                           &
-                              ,leaf_g(ngrid)%can_co2    (i,j,ip)                           &
+                              ,leaf_g(ngrid)%can_rvap    (i,j,ip)                          &
+                              ,leaf_g(ngrid)%can_co2     (i,j,ip)                          &
                               ,geoht                                                       &
+                              ,leaf_g(ngrid)%veg_displace(i,j,ip)                          &
                               ,atm_vels                                                    &
                               ,dtll                                                        &
-                              ,leaf_g(ngrid)%patch_rough(i,j,ip)                           &
-                              ,leaf_g(ngrid)%ustar      (i,j,ip)                           &
-                              ,leaf_g(ngrid)%tstar      (i,j,ip)                           &
+                              ,leaf_g(ngrid)%patch_rough (i,j,ip)                          &
+                              ,leaf_g(ngrid)%ustar       (i,j,ip)                          &
+                              ,leaf_g(ngrid)%tstar       (i,j,ip)                          &
                               ,estar                                                       &
                               ,qstar                                                       &
-                              ,leaf_g(ngrid)%rstar      (i,j,ip)                           &
-                              ,leaf_g(ngrid)%cstar      (i,j,ip)                           &
-                              ,leaf_g(ngrid)%zeta       (i,j,ip)                           &
-                              ,leaf_g(ngrid)%ribulk     (i,j,ip)                           &
-                              ,leaf_g(ngrid)%R_aer      (i,j,ip)                           )
+                              ,leaf_g(ngrid)%rstar       (i,j,ip)                          &
+                              ,leaf_g(ngrid)%cstar       (i,j,ip)                          &
+                              ,leaf_g(ngrid)%zeta        (i,j,ip)                          &
+                              ,leaf_g(ngrid)%ribulk      (i,j,ip)                          &
+                              ,leaf_g(ngrid)%R_aer       (i,j,ip)                          )
                !---------------------------------------------------------------------------!
 
 
@@ -715,25 +717,26 @@ subroutine leaf3_timestep()
                       , leaf_g(ngrid)%veg_albedo         , leaf_g(ngrid)%veg_fracarea      &
                       , leaf_g(ngrid)%veg_lai            , leaf_g(ngrid)%veg_tai           &
                       , leaf_g(ngrid)%veg_rough          , leaf_g(ngrid)%veg_height        &
-                      , leaf_g(ngrid)%patch_area         , leaf_g(ngrid)%patch_rough       &
-                      , leaf_g(ngrid)%patch_wetind       , leaf_g(ngrid)%leaf_class        &
-                      , leaf_g(ngrid)%soil_rough         , leaf_g(ngrid)%sfcwater_nlev     &
-                      , leaf_g(ngrid)%stom_condct        , leaf_g(ngrid)%ground_rsat       &
-                      , leaf_g(ngrid)%ground_rvap        , leaf_g(ngrid)%ground_temp       &
-                      , leaf_g(ngrid)%ground_fliq        , leaf_g(ngrid)%veg_water         &
-                      , leaf_g(ngrid)%veg_hcap           , leaf_g(ngrid)%veg_energy        &
-                      , leaf_g(ngrid)%can_prss           , leaf_g(ngrid)%can_theiv         &
-                      , leaf_g(ngrid)%can_theta          , leaf_g(ngrid)%can_rvap          &
-                      , leaf_g(ngrid)%can_co2            , leaf_g(ngrid)%sensible_gc       &
-                      , leaf_g(ngrid)%sensible_vc        , leaf_g(ngrid)%evap_gc           &
-                      , leaf_g(ngrid)%evap_vc            , leaf_g(ngrid)%transp            &
-                      , leaf_g(ngrid)%gpp                , leaf_g(ngrid)%plresp            &
-                      , leaf_g(ngrid)%resphet            , leaf_g(ngrid)%veg_ndvip         &
-                      , leaf_g(ngrid)%veg_ndvic          , leaf_g(ngrid)%veg_ndvif         &
-                      , turb_g(ngrid)%sflux_u            , turb_g(ngrid)%sflux_v           &
-                      , turb_g(ngrid)%sflux_w            , turb_g(ngrid)%sflux_t           &
-                      , turb_g(ngrid)%sflux_r            , turb_g(ngrid)%sflux_c           &
-                      , radiate_g(ngrid)%albedt          , radiate_g(ngrid)%rlongup        )
+                      , leaf_g(ngrid)%veg_displace       , leaf_g(ngrid)%patch_area        &   
+                      , leaf_g(ngrid)%patch_rough        , leaf_g(ngrid)%patch_wetind      &
+                      , leaf_g(ngrid)%leaf_class         , leaf_g(ngrid)%soil_rough        &
+                      , leaf_g(ngrid)%sfcwater_nlev      , leaf_g(ngrid)%stom_condct       &
+                      , leaf_g(ngrid)%ground_rsat        , leaf_g(ngrid)%ground_rvap       &
+                      , leaf_g(ngrid)%ground_temp        , leaf_g(ngrid)%ground_fliq       &
+                      , leaf_g(ngrid)%veg_water          , leaf_g(ngrid)%veg_hcap          &
+                      , leaf_g(ngrid)%veg_energy         , leaf_g(ngrid)%can_prss          &
+                      , leaf_g(ngrid)%can_theiv          , leaf_g(ngrid)%can_theta         &
+                      , leaf_g(ngrid)%can_rvap           , leaf_g(ngrid)%can_co2           &
+                      , leaf_g(ngrid)%sensible_gc        , leaf_g(ngrid)%sensible_vc       &
+                      , leaf_g(ngrid)%evap_gc            , leaf_g(ngrid)%evap_vc           &
+                      , leaf_g(ngrid)%transp             , leaf_g(ngrid)%gpp               &
+                      , leaf_g(ngrid)%plresp             , leaf_g(ngrid)%resphet           &
+                      , leaf_g(ngrid)%veg_ndvip          , leaf_g(ngrid)%veg_ndvic         &
+                      , leaf_g(ngrid)%veg_ndvif          , turb_g(ngrid)%sflux_u           &
+                      , turb_g(ngrid)%sflux_v            , turb_g(ngrid)%sflux_w           &
+                      , turb_g(ngrid)%sflux_t            , turb_g(ngrid)%sflux_r           &
+                      , turb_g(ngrid)%sflux_c            , radiate_g(ngrid)%albedt         &
+                      , radiate_g(ngrid)%rlongup         )
    !---------------------------------------------------------------------------------------!
    return
 end subroutine leaf3_timestep

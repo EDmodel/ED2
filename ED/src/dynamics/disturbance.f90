@@ -874,6 +874,7 @@ module disturbance_utils
       use ed_state_vars, only : sitetype   & ! structure
                               , patchtype  ! ! structure
       use ed_misc_coms , only : idoutput   & ! intent(in)
+                              , iqoutput   & ! intent(in)
                               , imoutput   ! ! intent(in)
       use ed_max_dims  , only : n_pft      ! ! intent(in)
     
@@ -980,15 +981,23 @@ module disturbance_utils
             tpatch%hcapveg            (nco) = tpatch%hcapveg          (nco) * survival_fac
             tpatch%veg_energy         (nco) = tpatch%veg_energy       (nco) * survival_fac
             !----- Carbon flux monthly means are extensive, we must convert them. ---------!
-            if (idoutput > 0 .or. imoutput > 0) then
+            if (idoutput > 0 .or. imoutput > 0 .or. iqoutput > 0) then
                tpatch%dmean_par_v     (nco) = tpatch%dmean_par_v      (nco) * survival_fac
                tpatch%dmean_par_v_beam(nco) = tpatch%dmean_par_v_beam (nco) * survival_fac
                tpatch%dmean_par_v_diff(nco) = tpatch%dmean_par_v_diff (nco) * survival_fac
             end if
-            if (imoutput > 0) then
+            if (imoutput > 0 .or. iqoutput > 0) then
                tpatch%mmean_par_v     (nco) = tpatch%mmean_par_v      (nco) * survival_fac
                tpatch%mmean_par_v_beam(nco) = tpatch%mmean_par_v_beam (nco) * survival_fac
                tpatch%mmean_par_v_diff(nco) = tpatch%mmean_par_v_diff (nco) * survival_fac
+            end if
+            if (iqoutput > 0) then
+               tpatch%qmean_par_v     (:,nco) = tpatch%qmean_par_v      (:,nco)            &
+                                              * survival_fac
+               tpatch%qmean_par_v_beam(:,nco) = tpatch%qmean_par_v_beam (:,nco)            &
+                                              * survival_fac
+               tpatch%qmean_par_v_diff(:,nco) = tpatch%qmean_par_v_diff (:,nco)            &
+                                              * survival_fac
             end if
          end if
       end do cohortloop

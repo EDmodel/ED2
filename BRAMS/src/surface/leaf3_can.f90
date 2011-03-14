@@ -6,8 +6,8 @@
 !------------------------------------------------------------------------------------------!
 subroutine leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mass          &
                       ,ustar,tstar,rstar,cstar,zeta,ribulk,soil_rough,veg_rough            &
-                      ,patch_rough,veg_height,veg_lai,veg_tai,veg_water,veg_hcap           &
-                      ,veg_energy,leaf_class,veg_fracarea,stom_condct,can_prss             &
+                      ,patch_rough,veg_height,veg_displace,veg_lai,veg_tai,veg_water       &
+                      ,veg_hcap,veg_energy,leaf_class,veg_fracarea,stom_condct,can_prss    &
                       ,can_rvap,can_co2,sensible_gc,sensible_vc,evap_gc,evap_vc            &
                       ,transp,gpp,plresp,resphet,ground_rsat,ground_rvap,ground_temp       &
                       ,ground_fliq,available_water,rshort)
@@ -39,6 +39,7 @@ subroutine leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mas
    real                , intent(in)    :: veg_rough
    real                , intent(in)    :: patch_rough
    real                , intent(in)    :: veg_height
+   real                , intent(in)    :: veg_displace
    real                , intent(in)    :: veg_lai
    real                , intent(in)    :: veg_tai
    real                , intent(in)    :: leaf_class
@@ -146,9 +147,9 @@ subroutine leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mas
    ! (zognd,0) when vegetation is fully buried in snow.                                    !
    !---------------------------------------------------------------------------------------!
    zognd = soil_rough
-   zoveg = veg_rough * (1.-snowfac) + zognd * snowfac
-   zdisp = veg_height * (1.-snowfac)
-   zveg  = zdisp / 0.63
+   zoveg = veg_rough    * (1. - snowfac) + zognd * snowfac
+   zdisp = veg_displace * (1. - snowfac)
+   zveg  = veg_height   * (1. - snowfac)
    !---------------------------------------------------------------------------------------!
 
 
@@ -314,7 +315,8 @@ subroutine leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mas
       !------------------------------------------------------------------------------------!
       !     Find the wind speed at the top of the canopy, using the similarity theory.     !
       !------------------------------------------------------------------------------------!
-      veg_wind = leaf_reduced_wind(ustar,zeta,ribulk,geoht,0.0,veg_height,patch_rough)
+      veg_wind = leaf_reduced_wind(ustar,zeta,ribulk,geoht,veg_displace,veg_height         &
+                                  ,patch_rough)
 
 
       !------------------------------------------------------------------------------------!

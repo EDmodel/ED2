@@ -136,6 +136,10 @@
    NL%IFOUTPUT  =  0            ! Instantaneous analysis (site average)
    NL%IDOUTPUT  =  0            ! Daily means (site average)
    NL%IMOUTPUT  =  3            ! Monthly means (site average)
+   NL%IQOUTPUT  =  0            ! Monthly mean of the diurnal cycle
+                                !    If this option is on, then FRQFAST must be set 
+                                !    in seconds and be less than one day, otherwise, 
+                                !    the model won't run.
    NL%IYOUTPUT  =  0            ! Annual output
    NL%ITOUTPUT  =  0            ! Instantaneous fluxes (site average)
                                 ! single annual file, no patch/cohort, for optimization or 
@@ -565,6 +569,8 @@
    NL%GAMM            = 13.   ! Momentum coefficient
    NL%GAMH            = 13.   ! Heat coefficient
    NL%TPRANDTL        = 0.74  ! Turbulent Prandtl number
+   NL%VH2VR           = 0.13  ! Vegetation Roughness: Vegetation height ratio
+   NL%VH2DH           = 0.63  ! Displacement height : vegetation height ratio
    !---------------------------------------------------------------------------------------!
 
    NL%IPERCOL         = 0     ! Percolation scheme:

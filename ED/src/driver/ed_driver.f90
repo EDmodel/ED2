@@ -260,28 +260,26 @@ end subroutine ed_driver
 
 !==========================================================================================!
 !==========================================================================================!
+!     This sub-routine finds which frequency the model should use to normalise averaged    !
+! variables.  FRQSUM should never exceed one day to avoid build up and overflows.          !
+!------------------------------------------------------------------------------------------!
 subroutine find_frqsum()
-   use ed_misc_coms, only:  &
-        unitfast,        &
-        unitstate,       &
-        isoutput,        &
-        ifoutput,        &
-        itoutput,        &
-        imoutput,        &
-        idoutput,        &
-        frqstate,        &
-        frqfast,         &
-        frqsum
+   use ed_misc_coms, only : unitfast   & ! intent(in)
+                          , unitstate  & ! intent(in)
+                          , isoutput   & ! intent(in)
+                          , ifoutput   & ! intent(in)
+                          , itoutput   & ! intent(in)
+                          , imoutput   & ! intent(in)
+                          , idoutput   & ! intent(in)
+                          , iqoutput   & ! intent(in)
+                          , frqstate   & ! intent(in)
+                          , frqfast    & ! intent(in)
+                          , frqsum     ! ! intent(out)
    use consts_coms, only: day_sec
 
    implicit none 
-
-   !---------------------------------------------------------------------------------------!
-   ! Determining which frequency I should use to normalize variables. FRQSUM should never  !
-   ! exceed 1 day.                                                                         !
-   !---------------------------------------------------------------------------------------!
    if (ifoutput == 0 .and. isoutput == 0 .and. idoutput == 0 .and. imoutput == 0 .and.     &
-       itoutput == 0 ) then
+       iqoutput == 0 .and. itoutput == 0 ) then
       write(unit=*,fmt='(a)') '---------------------------------------------------------'
       write(unit=*,fmt='(a)') '  WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! '
       write(unit=*,fmt='(a)') '  WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! '
@@ -294,13 +292,26 @@ subroutine find_frqsum()
       frqsum=day_sec ! This avoids the number to get incredibly large.
 
    !---------------------------------------------------------------------------------------!
+   !    Mean diurnal cycle is on.  Frqfast will be in seconds, so it is likely to be the   !
+   ! smallest.  The only exception is if frqstate is more frequent thant frqfast, so we    !
+   ! just need to check that too.                                                          !
+   !---------------------------------------------------------------------------------------!
+   elseif (iqoutput > 0) then
+      if (unitstate == 0) then
+         frqsum = min(min(frqstate,frqfast),day_sec)
+      else
+         frqsum = min(frqfast,day_sec)
+      end if
+
+   !---------------------------------------------------------------------------------------!
    !     Either no instantaneous output was requested, or the user is outputting it at     !
    ! monthly or yearly scale, force it to be one day.                                      !
    !---------------------------------------------------------------------------------------!
-   elseif ((isoutput == 0 .and. (ifoutput == 0 .and. itoutput == 0)) .or.                  &
-           ((ifoutput == 0.and. itoutput == 0) .and.                                       &
+   elseif ((isoutput == 0  .and. (ifoutput == 0 .and. itoutput == 0)) .or.                 &
+           ((ifoutput == 0 .and. itoutput == 0) .and.                                      &
              isoutput  > 0 .and. unitstate > 1) .or.                                       &
-           (isoutput == 0 .and. (ifoutput > 0 .or. itoutput > 0) .and. unitfast  > 1) .or. &
+           (isoutput == 0 .and.                                                            &
+            (ifoutput > 0 .or. itoutput > 0) .and. unitfast  > 1) .or.                     &
            ((ifoutput  > 0 .or. itoutput > 0) .and.                                        &
              isoutput  > 0 .and. unitstate > 1 .and. unitfast > 1)                         &
           ) then

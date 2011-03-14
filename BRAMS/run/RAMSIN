@@ -586,6 +586,8 @@
    GAMM            = 13.,   ! Momentum coefficient
    GAMH            = 13.,   ! Heat coefficient
    TPRANDTL        = 0.74,  ! Turbulent Prandtl number
+   VH2VR           = 0.13,  ! Vegetation Roughness: Vegetation height ratio
+   VH2DH           = 0.63,  ! Displacement height : vegetation height ratio
    !---------------------------------------------------------------------------------------!
 
    ICO2    = 1,              ! CO2 prognostic level
@@ -799,6 +801,9 @@
                                ! FRQANL
    IDOUTPUT  =  0,             ! Daily means   (mostly polygon averages)
    IMOUTPUT  =  0,             ! Monthly means (mostly polygon averages)
+   IQOUTPUT  =  0,             ! Monthly mean diurnal cycle
+                               !  The number of points to build the mean
+                               !  diurnal cycle is defined by FRQANL
    IYOUTPUT  =  0,             ! Annual output
    ITOUTPUT  =  0,             ! Instantaneous fluxes (site average)
                                !     single annual file, no patch/cohort, 

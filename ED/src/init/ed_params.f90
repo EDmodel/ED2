@@ -473,6 +473,8 @@ subroutine init_can_air_params()
                              , gamh                  & ! intent(in)
                              , tprandtl              & ! intent(in)
                              , vkopr                 & ! intent(in)
+                             , vh2vr                 & ! intent(in)
+                             , vh2dh                 & ! intent(in)
                              , dry_veg_lwater        & ! intent(out)
                              , fullveg_lwater        & ! intent(out)
                              , rb_inter              & ! intent(out)
@@ -486,8 +488,6 @@ subroutine init_can_air_params()
                              , ubmin                 & ! intent(out)
                              , exar8                 & ! intent(out)
                              , ez                    & ! intent(out)
-                             , vh2vr                 & ! intent(out)
-                             , vh2dh                 & ! intent(out)
                              , ustmin8               & ! intent(out)
                              , ugbmin8               & ! intent(out)
                              , ubmin8                & ! intent(out)
@@ -608,7 +608,7 @@ subroutine init_can_air_params()
    !                        is used to calculate the heat and moisture storage capacity in !
    !                        the canopy air space.                                          !
    !---------------------------------------------------------------------------------------!
-   veg_height_min        = 1.0             ! alternative: minval(hgt_min) 
+   veg_height_min        = minval(hgt_min) ! alternative: minval(hgt_min) 
    minimum_canopy_depth  = 5.0             ! alternative: minval(hgt_min) 
 
    !----- This is the dimensionless exponential wind atenuation factor. -------------------!
@@ -656,12 +656,6 @@ subroutine init_can_air_params()
    
    !----- This is the relation between displacement height and roughness when icanturb=-1. !
    ez  = 0.172
-
-   !----- This is the conversion from veg. height to roughness when icanturb /= -1. -------!
-   vh2vr = 0.13
-   
-   !----- This is the conversion from vegetation height to displacement height. -----------!
-   vh2dh  = 0.63
    !---------------------------------------------------------------------------------------!
 
 
@@ -1421,7 +1415,7 @@ subroutine init_pft_alloc_params()
    !---------------------------------------------------------------------------------------!
    !    Minimum height of an individual.                                                   !
    !---------------------------------------------------------------------------------------!
-   hgt_min(1)     = 0.15
+   hgt_min(1)     = 0.50
    hgt_min(2:4)   = 0.50
    hgt_min(5)     = 0.15
    hgt_min(6)     = 1.50

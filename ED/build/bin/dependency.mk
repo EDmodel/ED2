@@ -90,7 +90,7 @@ ed_init_atm.o: fuse_fiss_utils.mod grid_coms.mod met_driver_coms.mod
 ed_init_atm.o: pft_coms.mod soil_coms.mod therm_lib.mod
 ed_nbg_init.o: allometry.mod consts_coms.mod ed_max_dims.mod ed_misc_coms.mod
 ed_nbg_init.o: ed_state_vars.mod ed_therm_lib.mod fuse_fiss_utils.mod
-ed_nbg_init.o: pft_coms.mod
+ed_nbg_init.o: pft_coms.mod physiology_coms.mod
 ed_params.o: allometry.mod canopy_air_coms.mod canopy_radiation_coms.mod
 ed_params.o: consts_coms.mod decomp_coms.mod disturb_coms.mod ed_max_dims.mod
 ed_params.o: ed_misc_coms.mod fusion_fission_coms.mod grid_coms.mod
@@ -155,9 +155,9 @@ consts_coms.o:
 decomp_coms.o: ed_max_dims.mod
 disturb_coms.o: ed_max_dims.mod
 ed_max_dims.o: 
-ed_mem_alloc.o: ed_max_dims.mod ed_mem_grid_dim_defs.mod ed_misc_coms.mod
-ed_mem_alloc.o: ed_node_coms.mod ed_state_vars.mod ed_work_vars.mod
-ed_mem_alloc.o: grid_coms.mod mem_polygons.mod
+ed_mem_alloc.o: ed_max_dims.mod ed_mem_grid_dim_defs.mod ed_node_coms.mod
+ed_mem_alloc.o: ed_state_vars.mod ed_work_vars.mod grid_coms.mod
+ed_mem_alloc.o: mem_polygons.mod
 ed_misc_coms.o: ed_max_dims.mod
 ed_state_vars.o: c34constants.mod disturb_coms.mod ed_max_dims.mod
 ed_state_vars.o: ed_misc_coms.mod ed_node_coms.mod ed_var_tables.mod

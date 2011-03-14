@@ -3,11 +3,12 @@
 !      This subroutine initializes a near-bare ground polygon.                             !
 !------------------------------------------------------------------------------------------!
 subroutine near_bare_ground_init(cgrid)
-   use ed_state_vars , only : edtype            & ! structure
-                            , polygontype       & ! structure
-                            , sitetype          & ! structure
-                            , allocate_sitetype ! ! subroutine
-   use ed_misc_coms  , only : ied_init_mode     ! ! intent(in)
+   use ed_state_vars  , only : edtype            & ! structure
+                             , polygontype       & ! structure
+                             , sitetype          & ! structure
+                             , allocate_sitetype ! ! subroutine
+   use ed_misc_coms   , only : ied_init_mode     ! ! intent(in)
+   use physiology_coms, only : n_plant_lim       ! ! intent(in)
    
    implicit none
 
@@ -32,12 +33,32 @@ subroutine near_bare_ground_init(cgrid)
          csite%dist_type          (1) = 3
          csite%age                (1) = 0.0
          csite%area               (1) = 1.0
-         csite%fast_soil_C        (1) = 0.2
-         csite%slow_soil_C        (1) = 0.01
-         csite%structural_soil_C  (1) = 0.0 ! 10.0
-         csite%structural_soil_L  (1) = 0.0 ! csite%structural_soil_C (1)
-         csite%mineralized_soil_N (1) = 0.0 ! 1.0
-         csite%fast_soil_N        (1) = 0.0 ! 1.0
+
+         !---------------------------------------------------------------------------------!
+         !     Someone that uses the nitrogen model should check whether this is necessary !
+         ! or not.  If nitrogen limitation is off, then we start all carbon and nitrogen   !
+         ! pools with zeroes, otherwise we initialise with the former default values.      !
+         !---------------------------------------------------------------------------------!
+         select case (n_plant_lim)
+         case (0)
+            csite%fast_soil_C        (1) = 0.0
+            csite%slow_soil_C        (1) = 0.0
+            csite%structural_soil_C  (1) = 0.0
+            csite%structural_soil_L  (1) = 0.0
+            csite%mineralized_soil_N (1) = 0.0
+            csite%fast_soil_N        (1) = 0.0
+
+         case (1)
+            csite%fast_soil_C        (1) = 0.2
+            csite%slow_soil_C        (1) = 0.01
+            csite%structural_soil_C  (1) = 10.0
+            csite%structural_soil_L  (1) = csite%structural_soil_C (1)
+            csite%mineralized_soil_N (1) = 1.0
+            csite%fast_soil_N        (1) = 1.0
+
+         end select
+         !---------------------------------------------------------------------------------!
+
          csite%sum_dgd            (1) = 0.0
          csite%sum_chd            (1) = 0.0
          csite%plantation         (1) = 0

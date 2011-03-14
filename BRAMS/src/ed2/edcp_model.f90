@@ -135,6 +135,7 @@ subroutine ed_coup_model(ifm)
                            , isoutput           & ! intent(in)
                            , idoutput           & ! intent(in)
                            , imoutput           & ! intent(in)
+                           , iqoutput           & ! intent(in)
                            , itoutput           & ! intent(in)
                            , iyoutput           & ! intent(in)
                            , frqsum             & ! intent(inout)
@@ -176,9 +177,11 @@ subroutine ed_coup_model(ifm)
    logical                               :: new_year
    logical                               :: the_end
    logical                               :: history_time
+   logical                               :: dcycle_time
    logical                               :: annual_time
    logical                               :: mont_analy_time
    logical                               :: dail_analy_time
+   logical                               :: dcyc_analy_time
    logical                               :: reset_time
    integer                               :: ndays
    integer                               :: jfm
@@ -188,6 +191,7 @@ subroutine ed_coup_model(ifm)
    logical                    , save     :: first_time = .true.
    logical                    , save     :: writing_dail
    logical                    , save     :: writing_mont
+   logical                    , save     :: writing_dcyc
    logical                    , save     :: writing_year
    logical, dimension(maxgrds), save     :: calledgrid
    !---------------------------------------------------------------------------------------!
@@ -200,6 +204,7 @@ subroutine ed_coup_model(ifm)
    if (first_time) then
       writing_dail      = idoutput > 0
       writing_mont      = imoutput > 0
+      writing_dcyc      = iqoutput > 0
       writing_year      = iyoutput > 0
       filltables        = .false.
       record_err        = .false.
@@ -238,7 +243,7 @@ subroutine ed_coup_model(ifm)
    !---------------------------------------------------------------------------------------!
    !     Update the daily averages if daily or monthly analysis are needed.                !
    !---------------------------------------------------------------------------------------!
-   if (writing_dail .or. writing_mont) then
+   if (writing_dail .or. writing_mont .or. writing_dcyc) then
       call integrate_ed_daily_output_state(edgrid_g(ifm))
    end if
 
@@ -257,35 +262,39 @@ subroutine ed_coup_model(ifm)
       call update_model_time_dm(current_time, dtlsm)
 
       !------------------------------------------------------------------------------------!
-      !     Checking whether now is any of those special times...                          !
+      !     Check whether now is any of those special times...                             !
       !------------------------------------------------------------------------------------!
       new_day         = current_time%time  <  dtlsm
       new_month       = current_time%date  == 1  .and. new_day
       new_year        = current_time%month == 1  .and. new_month
       mont_analy_time = new_month .and. writing_mont
+      dcyc_analy_time = new_month .and. writing_dcyc
       annual_time     = new_month .and. writing_year .and.                                 &
                         current_time%month == outputmonth
       dail_analy_time = new_day   .and. writing_dail
       reset_time      = mod(time,dble(frqsum)) < dble(dtlsm)
       the_end         = mod(time,timmax)       < dble(dtlsm)
 
-      !----- Checking whether this is time to write fast analysis output or not. ----------!
+      !----- Check whether this is time to write fast analysis output or not. -------------!
       select case (unitfast)
       case (0,1) !----- Now both are in seconds -------------------------------------------!
          analysis_time   = mod(current_time%time, frqfast) < dtlsm .and.                   &
                            (ifoutput /= 0 .or. itoutput /= 0 .or. ioutput /= 0)
+         dcycle_time     = mod(current_time%time, frqfast) < dtlsm .and. iqoutput /= 0
       case (2)   !----- Months, analysis time is at the new month -------------------------!
          analysis_time   = new_month .and.                                                 &
                            (ifoutput /= 0 .or. itoutput /= 0 .or. ioutput /= 0) .and.      &
                            mod(real(12+current_time%month-imontha),frqfast) == 0.
+         dcycle_time     = .false.
       case (3) !----- Year, analysis time is at the same month as initial time ------------!
          analysis_time   = new_month  .and.                                                &
                            (ifoutput /= 0 .or. itoutput /= 0 .or. ioutput /= 0) .and.      &
                            current_time%month == imontha .and.                             &
                            mod(real(current_time%year-iyeara),frqfast) == 0.
+         dcycle_time     = .false.
       end select
 
-      !----- Checking whether this is time to write restart output or not. ----------------!
+      !----- Check whether this is time to write restart output or not. -------------------!
       select case(unitstate)
       case (0,1) !----- Now both are in seconds -------------------------------------------!
          history_time   = mod(current_time%time, frqstate) < dtlsm .and.                   &
@@ -300,7 +309,7 @@ subroutine ed_coup_model(ifm)
       end select
 
       !------------------------------------------------------------------------------------!
-      !    Updating nrec_fast and nrec_state if it is a new month and outfast/outstate are !
+      !    Update nrec_fast and nrec_state if it is a new month and outfast/outstate are   !
       ! monthly and frqfast/frqstate are daily or by seconds.                              !
       !------------------------------------------------------------------------------------!
       if (new_month) then
@@ -308,11 +317,18 @@ subroutine ed_coup_model(ifm)
          if (outfast  == -2.) nrec_fast  = ndays*ceiling(day_sec/frqfast)
          if (outstate == -2.) nrec_state = ndays*ceiling(day_sec/frqstate)
       end if
+      !------------------------------------------------------------------------------------!
 
 
-      !----- Call the output subroutine. --------------------------------------------------!
-      call ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,annual_time     &
-                    ,writing_dail,writing_mont,history_time,the_end)
+      !------------------------------------------------------------------------------------!
+      !     Call the model output driver.                                                  !
+      !------------------------------------------------------------------------------------!
+      call ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,dcyc_analy_time &
+                    ,annual_time,writing_dail,writing_mont,writing_dcyc,history_time       &
+                    ,dcycle_time,the_end)
+      !------------------------------------------------------------------------------------!
+
+
 
       !------------------------------------------------------------------------------------!
       !     If this is the time to write the output, then send the data back to the LEAF   !
@@ -323,9 +339,12 @@ subroutine ed_coup_model(ifm)
             call copy_avgvars_to_leaf(jfm)
          end do
       end if
+      !------------------------------------------------------------------------------------!
+
+
 
       !------------------------------------------------------------------------------------!
-      ! Reset time happens every frqsum. This is to avoid variables to build up when       !
+      !      Reset time happens every frqsum. This is to avoid variables to build up when  !
       ! history and analysis are off.  Put outside ed_output so we have a chance to copy   !
       ! some of these to BRAMS structures.                                                 !
       !------------------------------------------------------------------------------------!
@@ -336,7 +355,7 @@ subroutine ed_coup_model(ifm)
       end if
 
       !------------------------------------------------------------------------------------!
-      !     Checking whether this is the beginning of a new simulated day.  Longer-scale   !
+      !     Check whether this is the beginning of a new simulated day.  Longer-scale      !
       ! processes, those which are updated once a day, once a month, or once a year, are   !
       ! updated here.  Since the subroutines here have internal grid loops, we only call   !
       ! this part of the code when all grids have reached this point.                      !
@@ -374,7 +393,7 @@ subroutine ed_coup_model(ifm)
          end do
       end if
 
-      !----- Update Lateral hydrology. ----------------------------------------------------!
+      !----- Update lateral hydrology. ----------------------------------------------------!
       call calcHydroSubsurface()
       call calcHydroSurface()
       call writeHydro()

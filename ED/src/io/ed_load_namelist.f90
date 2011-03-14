@@ -133,6 +133,7 @@ subroutine copy_nl(copy_type)
                                    , ifoutput                  & ! intent(out)
                                    , iclobber                  & ! intent(out)
                                    , frqfast                   & ! intent(out)
+                                   , ndcycle                   & ! intent(out)
                                    , sfilin                    & ! intent(out)
                                    , ied_init_mode             & ! intent(out)
                                    , current_time              & ! intent(out)
@@ -144,6 +145,7 @@ subroutine copy_nl(copy_type)
                                    , idoutput                  & ! intent(out)
                                    , imoutput                  & ! intent(out)
                                    , iyoutput                  & ! intent(out)
+                                   , iqoutput                  & ! intent(out)
                                    , itoutput                  & ! intent(out)
                                    , dtlsm                     & ! intent(out)
                                    , frqstate                  & ! intent(out)
@@ -186,7 +188,9 @@ subroutine copy_nl(copy_type)
                                    , gamm                      & ! intent(out)
                                    , gamh                      & ! intent(out)
                                    , tprandtl                  & ! intent(out)
-                                   , vkopr                     ! ! intent(out)
+                                   , vkopr                     & ! intent(out)
+                                   , vh2vr                     & ! intent(out)
+                                   , vh2dh                     ! ! intent(out)
    use optimiz_coms         , only : ioptinpt                  ! ! intent(out)
    use canopy_radiation_coms, only : crown_mod                 ! ! intent(out)
    use rk4_coms             , only : ibranch_thermo            & ! intent(out)
@@ -194,6 +198,7 @@ subroutine copy_nl(copy_type)
                                    , rk4_tolerance             ! ! intent(out)
    use ed_para_coms         , only : loadmeth                  ! ! intent(out)
    use consts_coms          , only : vonk                      & ! intent(in)
+                                   , day_sec                   & ! intent(in)
                                    , hr_sec                    & ! intent(in)
                                    , min_sec                   ! ! intent(in)
 
@@ -228,6 +233,7 @@ subroutine copy_nl(copy_type)
       ifoutput                  = nl%ifoutput
       idoutput                  = nl%idoutput
       imoutput                  = nl%imoutput
+      iqoutput                  = nl%iqoutput
       iyoutput                  = nl%iyoutput
       itoutput                  = nl%itoutput
       isoutput                  = nl%isoutput
@@ -318,6 +324,8 @@ subroutine copy_nl(copy_type)
       gamm                      = nl%gamm
       gamh                      = nl%gamh
       tprandtl                  = nl%tprandtl
+      vh2vr                     = nl%vh2vr
+      vh2dh                     = nl%vh2dh
       ipercol                   = nl%ipercol
 
       include_these_pft         = nl%include_these_pft
@@ -467,6 +475,19 @@ subroutine copy_nl(copy_type)
                           ,idatea,itimea*100,time)
 
    end select
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     The following variable will be used to allocate the mean diurnal cycle.  It will  !
+   ! be set to 1 in case the user doesn't want the mean diurnal cycle, or if frqanl is     !
+   ! invalid.                                                                              !
+   !---------------------------------------------------------------------------------------!
+   if (iqoutput == 0 .or. frqfast <= 0 .or. unitfast > 0) then
+      ndcycle = 1 
+   else
+      ndcycle = max(1,int(day_sec / frqfast))
+   end if
    !---------------------------------------------------------------------------------------!
 
 

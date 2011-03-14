@@ -74,16 +74,17 @@ subroutine ed_masterput_nl(par_run)
    use ed_max_dims,     only: str_len,max_poi,max_ed_regions,nzgmax,n_pft,maxgrds,maxpvars
    use ed_misc_coms,    only: expnme, runtype,itimea,iyeara,imontha,idatea ,itimez,iyearz  &
                              ,imonthz,idatez,dtlsm,radfrq,ifoutput,idoutput,imoutput       &
-                             ,itoutput,iyoutput,iclobber,frqfast,sfilin,ffilout            &
+                             ,iqoutput,itoutput,iyoutput,iclobber,frqfast,sfilin,ffilout   &
                              ,ied_init_mode,thsums_database,integration_scheme,end_time    &
                              ,current_time,sfilout,frqstate,isoutput,iprintpolys,printvars &
                              ,pfmtstr,ipmin,ipmax,iedcnfgf,outfast,outstate,out_time_fast  &
                              ,out_time_state,nrec_fast,nrec_state,irec_fast,irec_state     &
-                             ,unitfast,unitstate,event_file,itimeh,iyearh,imonthh,idateh
+                             ,unitfast,unitstate,event_file,itimeh,iyearh,imonthh,idateh   &
+                             ,ndcycle
 
    use ed_misc_coms   , only: attach_metadata
    use canopy_air_coms, only: icanturb, i_blyr_condct, isfclyrm, ustmin, gamm, gamh        &
-                             ,tprandtl,vkopr, ggfact
+                             ,tprandtl,vkopr, ggfact, vh2vr, vh2dh
    use grid_coms,       only: nzg,nzs,ngrids,nnxp,nnyp,deltax,deltay,polelat,polelon       &
                              ,centlat,centlon,time,timmax,nstratx,nstraty
    use soil_coms,       only: isoilflg,nslcon,slxclay,slxsand,slz,slmstr,stgoff,veg_database,soil_database &
@@ -156,9 +157,11 @@ subroutine ed_masterput_nl(par_run)
    call MPI_Bcast(ifoutput,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(idoutput,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(imoutput,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(iqoutput,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(iyoutput,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(itoutput,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(isoutput,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(ndcycle ,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(iclobber,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(frqfast,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
@@ -267,6 +270,8 @@ subroutine ed_masterput_nl(par_run)
    call MPI_Bcast(gamh,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(tprandtl,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(vkopr,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(vh2vr,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(vh2dh,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(ggfact,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(iprintpolys,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
@@ -865,13 +870,14 @@ subroutine ed_nodeget_nl
 !------------------------------------------------------------------------------------------!
    use ed_max_dims,     only: str_len,max_poi,max_ed_regions,nzgmax,n_pft,maxgrds,maxpvars
    use ed_misc_coms,    only: expnme, runtype,itimea,iyeara,imontha,idatea ,itimez,iyearz  &
-                             ,imonthz,idatez,dtlsm,radfrq,ifoutput,idoutput,imoutput, itoutput       &
-                             ,iyoutput,iclobber,frqfast,sfilin,ffilout,ied_init_mode       &
-                             ,thsums_database,integration_scheme,end_time,current_time     &
-                             ,isoutput,sfilout,frqstate,iprintpolys,printvars,pfmtstr      &
-                             ,ipmin,ipmax,iedcnfgf,outfast,outstate,out_time_fast          &
+                             ,imonthz,idatez,dtlsm,radfrq,ifoutput,idoutput,imoutput       &
+                             ,iqoutput, itoutput,iyoutput,iclobber,frqfast,sfilin,ffilout  &
+                             ,ied_init_mode,thsums_database,integration_scheme,end_time    &
+                             ,current_time,isoutput,sfilout,frqstate,iprintpolys,printvars &
+                             ,pfmtstr,ipmin,ipmax,iedcnfgf,outfast,outstate,out_time_fast  &
                              ,out_time_state,nrec_fast,nrec_state,irec_fast,irec_state     &
-                             ,unitfast,unitstate,event_file,itimeh,iyearh,imonthh,idateh
+                             ,unitfast,unitstate,event_file,itimeh,iyearh,imonthh,idateh   &
+                             ,ndcycle
 
    use grid_coms,       only: nzg,nzs,ngrids,nnxp,nnyp,deltax,deltay,polelat,polelon       &
                              ,centlat,centlon,time,timmax,nstratx,nstraty
@@ -894,7 +900,7 @@ subroutine ed_nodeget_nl
    use optimiz_coms,    only: ioptinpt
    use ed_misc_coms,    only: attach_metadata
    use canopy_air_coms, only: icanturb, i_blyr_condct, isfclyrm, ustmin, gamm, gamh        &
-                             ,tprandtl, vkopr, ggfact
+                             ,tprandtl, vkopr, ggfact, vh2vr, vh2dh
    use pft_coms,        only: include_these_pft,agri_stock,plantation_stock,pft_1st_check
    use canopy_radiation_coms, only: crown_mod
    use rk4_coms,        only: rk4_tolerance, ibranch_thermo, ipercol
@@ -946,9 +952,11 @@ subroutine ed_nodeget_nl
    call MPI_Bcast(ifoutput,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(idoutput,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(imoutput,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(iqoutput,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(iyoutput,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(itoutput,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(isoutput,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(ndcycle ,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(iclobber,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(frqfast,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
@@ -1065,6 +1073,8 @@ subroutine ed_nodeget_nl
    call MPI_Bcast(gamh,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(tprandtl,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(vkopr,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(vh2vr,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(vh2dh,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(ggfact,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
 
    call MPI_Bcast(iprintpolys,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)

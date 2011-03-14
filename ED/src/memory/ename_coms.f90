@@ -49,6 +49,7 @@ module ename_coms
       integer                                           :: ifoutput
       integer                                           :: idoutput
       integer                                           :: imoutput
+      integer                                           :: iqoutput
       integer                                           :: iyoutput
       integer                                           :: itoutput
       integer                                           :: isoutput
@@ -164,6 +165,8 @@ module ename_coms
       real                                              :: gamm
       real                                              :: gamh
       real                                              :: tprandtl
+      real                                              :: vh2vr
+      real                                              :: vh2dh
       real                                              :: ggfact
 
       !----- Options for printing polygon vectors/arrays to standard output. --------------!
@@ -257,6 +260,7 @@ module ename_coms
       enl%ifoutput                  = undef_integer
       enl%idoutput                  = undef_integer
       enl%imoutput                  = undef_integer
+      enl%iqoutput                  = undef_integer
       enl%iyoutput                  = undef_integer
       enl%itoutput                  = undef_integer
       enl%isoutput                  = undef_integer
@@ -373,6 +377,8 @@ module ename_coms
       enl%gamm                      = undef_real
       enl%gamh                      = undef_real
       enl%tprandtl                  = undef_real
+      enl%vh2vr                     = undef_real
+      enl%vh2dh                     = undef_real
       enl%ggfact                    = undef_real
 
       enl%iprintpolys               = undef_integer

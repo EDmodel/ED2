@@ -49,6 +49,7 @@ Module mem_leaf
                                        , veg_agb      & ! Above-ground biomass  [   kgC/m²]
                                        , veg_rough    & ! Roughness length      [        m]
                                        , veg_height   & ! Height                [        m]
+                                       , veg_displace & ! Displacement height   [        m]
                                        , veg_albedo   & ! Albedo                [      ---]
                                        , veg_tai      & ! Tree area index       [    m²/m²]
                                        , veg_water    & ! Leaf surface water    [    kg/m²]
@@ -214,6 +215,7 @@ Module mem_leaf
       allocate (leaf%veg_agb          (    nx,ny,np))
       allocate (leaf%veg_rough        (    nx,ny,np))
       allocate (leaf%veg_height       (    nx,ny,np))
+      allocate (leaf%veg_displace     (    nx,ny,np))
       allocate (leaf%veg_albedo       (    nx,ny,np))
       allocate (leaf%veg_tai          (    nx,ny,np))
       allocate (leaf%veg_water        (    nx,ny,np))
@@ -306,6 +308,7 @@ Module mem_leaf
       if (associated(leaf%veg_agb          ))  nullify(leaf%veg_agb          )
       if (associated(leaf%veg_rough        ))  nullify(leaf%veg_rough        )
       if (associated(leaf%veg_height       ))  nullify(leaf%veg_height       )
+      if (associated(leaf%veg_displace     ))  nullify(leaf%veg_displace     )
       if (associated(leaf%veg_albedo       ))  nullify(leaf%veg_albedo       )
       if (associated(leaf%veg_tai          ))  nullify(leaf%veg_tai          )
       if (associated(leaf%veg_water        ))  nullify(leaf%veg_water        )
@@ -397,6 +400,7 @@ Module mem_leaf
       if (associated(leaf%veg_agb          ))  leaf%veg_agb          = 0.0
       if (associated(leaf%veg_rough        ))  leaf%veg_rough        = 0.0
       if (associated(leaf%veg_height       ))  leaf%veg_height       = 0.0
+      if (associated(leaf%veg_displace     ))  leaf%veg_displace     = 0.0
       if (associated(leaf%veg_albedo       ))  leaf%veg_albedo       = 0.0
       if (associated(leaf%veg_tai          ))  leaf%veg_tai          = 0.0
       if (associated(leaf%veg_water        ))  leaf%veg_water        = 0.0
@@ -486,6 +490,7 @@ Module mem_leaf
       if (associated(leaf%veg_agb          ))  deallocate(leaf%veg_agb          )
       if (associated(leaf%veg_rough        ))  deallocate(leaf%veg_rough        )
       if (associated(leaf%veg_height       ))  deallocate(leaf%veg_height       )
+      if (associated(leaf%veg_displace     ))  deallocate(leaf%veg_displace     )
       if (associated(leaf%veg_albedo       ))  deallocate(leaf%veg_albedo       )
       if (associated(leaf%veg_tai          ))  deallocate(leaf%veg_tai          )
       if (associated(leaf%veg_water        ))  deallocate(leaf%veg_water        )
@@ -663,6 +668,10 @@ Module mem_leaf
       if (associated(leaf%veg_height))                                                     &
          call vtables2(leaf%veg_height,leafm%veg_height,ng,npts,imean                      &
                       ,'VEG_HEIGHT :6:hist:anal:mpti:mpt3'//trim(str_recycle))
+
+      if (associated(leaf%veg_displace))                                                   &
+         call vtables2(leaf%veg_displace,leafm%veg_height,ng,npts,imean                    &
+                      ,'VEG_DISPLACE :6:hist:anal:mpti:mpt3'//trim(str_recycle))
 
       if (associated(leaf%veg_albedo))                                                     &
          call vtables2(leaf%veg_albedo,leafm%veg_albedo,ng,npts,imean                      &

@@ -2570,11 +2570,13 @@ subroutine print_csiteipa(csite, ipa)
 
    write (unit=*,fmt='(80a)') ('-',k=1,80)
 
-   write (unit=*,fmt='(6(a12,1x))')  '  VEG_HEIGHT','   VEG_ROUGH','         LAI'          &
-                                    ,'        HTRY','    CAN_RHOS','   CAN_DEPTH'
-   write (unit=*,fmt='(6(es12.4,1x))') csite%veg_height(ipa),csite%veg_rough(ipa)          &
-                                      ,csite%lai(ipa),csite%htry(ipa)                      &
-                                      ,csite%can_rhos(ipa),csite%can_depth(ipa)
+   write (unit=*,fmt='(7(a12,1x))')  '  VEG_HEIGHT','   VEG_ROUGH','VEG_DISPLACE'          &
+                                    ,'         LAI','        HTRY','    CAN_RHOS'          &
+                                    ,'   CAN_DEPTH'
+   write (unit=*,fmt='(7(es12.4,1x))') csite%veg_height(ipa),csite%veg_rough(ipa)          &
+                                      ,csite%veg_displace(ipa),csite%lai(ipa)              &
+                                      ,csite%htry(ipa),csite%can_rhos(ipa)                 &
+                                      ,csite%can_depth(ipa)
 
    write (unit=*,fmt='(80a)') ('-',k=1,80)
 
@@ -2747,22 +2749,22 @@ subroutine print_rk4patch(y,csite,ipa)
    write (unit=*,fmt='(a)'  ) ' '
    write (unit=*,fmt='(80a)') ('-',k=1,80)
 
-   write (unit=*,fmt='(8(a12,1x))')   '  VEG_HEIGHT','   VEG_ROUGH','   PATCH_LAI'         &
-                                     ,'    CAN_RHOS','   CAN_DEPTH','     CAN_CO2'         &
+   write (unit=*,fmt='(8(a12,1x))')   '  VEG_HEIGHT','   VEG_ROUGH','VEG_DISPLACE'         &
+                                     ,'   PATCH_LAI','   CAN_DEPTH','     CAN_CO2'         &
                                      ,'    CAN_PRSS','       GGNET'
                                      
    write (unit=*,fmt='(8(es12.4,1x))') csite%veg_height(ipa),csite%veg_rough(ipa)          &
-                                      ,csite%lai(ipa),y%can_rhos,y%can_depth,y%can_co2     &
-                                      ,y%can_prss,y%ggnet
+                                      ,csite%veg_displace(ipa),csite%lai(ipa),y%can_depth  &
+                                      ,y%can_co2,y%can_prss,y%ggnet
    write (unit=*,fmt='(80a)') ('-',k=1,80)
-   write (unit=*,fmt='(7(a12,1x))')  '   CAN_THEIV','   CAN_THETA','    CAN_TEMP'          &
-                                    ,'     CAN_SHV','     CAN_SSH','    CAN_RVAP'          &
-                                    ,'     CAN_RHV'
+   write (unit=*,fmt='(8(a12,1x))')  '    CAN_RHOS','   CAN_THEIV','   CAN_THETA'          &
+                                    ,'    CAN_TEMP','     CAN_SHV','     CAN_SSH'          &
+                                    ,'    CAN_RVAP','     CAN_RHV'
                                      
                                      
-   write (unit=*,fmt='(7(es12.4,1x))')   y%can_theiv, y%can_theta, y%can_temp              &
-                                       , y%can_shv  , y%can_ssh  , y%can_rvap              &
-                                       , y%can_rhv
+   write (unit=*,fmt='(8(es12.4,1x))')   y%can_rhos , y%can_theiv, y%can_theta             &
+                                       , y%can_temp , y%can_shv  , y%can_ssh               &
+                                       , y%can_rvap , y%can_rhv
                                        
 
    write (unit=*,fmt='(80a)') ('-',k=1,80)

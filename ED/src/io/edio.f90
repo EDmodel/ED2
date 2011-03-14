@@ -2,8 +2,9 @@
 !==========================================================================================!
 !     This is the main driver for file output in ED.                                       !
 !------------------------------------------------------------------------------------------!
-subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,annual_time     &
-                    ,writing_dail,writing_mont,history_time,the_end)
+subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,dcyc_analy_time &
+                    ,annual_time,writing_dail,writing_mont,writing_dcyc,history_time       &
+                    ,dcycle_time,the_end)
 
    use ed_state_vars, only : edgrid_g          & ! structure
                            , filltab_alltypes  & ! subroutine
@@ -16,6 +17,7 @@ subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,annua
                            , current_time      & ! intent(in)
                            , idoutput          & ! intent(in)
                            , imoutput          & ! intent(in)
+                           , iqoutput          & ! intent(in)
                            , iyoutput          & ! intent(in)
                            , isoutput          & ! intent(in)
                            , ifoutput          & ! intent(in)
@@ -28,10 +30,13 @@ subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,annua
    logical, intent(in)  :: the_end
    logical, intent(in)  :: analysis_time
    logical, intent(in)  :: dail_analy_time
+   logical, intent(in)  :: mont_analy_time
+   logical, intent(in)  :: dcyc_analy_time
    logical, intent(in)  :: writing_dail
    logical, intent(in)  :: writing_mont
-   logical, intent(in)  :: mont_analy_time
+   logical, intent(in)  :: writing_dcyc
    logical, intent(in)  :: history_time
+   logical, intent(in)  :: dcycle_time
    logical, intent(in)  :: new_day
    logical, intent(in)  :: annual_time
    !----- Local variables. ----------------------------------------------------------------!
@@ -46,7 +51,7 @@ subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,annua
    ! cohorts or patches (e.g, a cohort or a patch has been terminated or created).         !
    !---------------------------------------------------------------------------------------!
    if (analysis_time   .or. history_time    .or.                                           &
-       dail_analy_time .or. mont_analy_time .or. annual_time ) then
+       dail_analy_time .or. mont_analy_time .or. dcyc_analy_time .or. annual_time ) then
 
       if (filltables) then
          
@@ -64,8 +69,8 @@ subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,annua
    !      If this is the time for an output, we shall call routines to prepare the vari-   !
    ! ables for output.                                                                     !
    !---------------------------------------------------------------------------------------!
-   if ( analysis_time .or.   history_time .or.                                             &
-       (new_day       .and. (writing_dail .or. writing_mont))) then
+   if ( analysis_time .or.   history_time .or. dcycle_time  .or.                           &
+       (new_day       .and. (writing_dail .or. writing_mont .or. writing_dcyc))) then
       do ifm=1,ngrids
          call normalize_averaged_vars(edgrid_g(ifm),frqsum,dtlsm)
       end do
@@ -73,7 +78,7 @@ subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,annua
       !----- Perform averaging and data preparation. --------------------------------------!
       call spatial_averages
       
-      if (writing_dail .or. writing_mont) then
+      if (writing_dail .or. writing_mont .or. writing_dcyc) then
          do ifm=1,ngrids
             call integrate_ed_daily_output_flux(edgrid_g(ifm))
          end do
@@ -101,12 +106,14 @@ subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,annua
 
 
    !----- Daily analysis output and monthly integration. ----------------------------------!
-   if (new_day .and. (writing_dail .or. writing_mont)) then
+   if (new_day .and. (writing_dail .or. writing_mont .or. writing_dcyc)) then
       call avg_ed_daily_output_pool()
 
       do ifm=1,ngrids
          call normalize_ed_daily_output_vars(edgrid_g(ifm))
-         if (writing_mont) call integrate_ed_monthly_output_vars(edgrid_g(ifm))
+         if (writing_mont .or. writing_dcyc) then
+            call integrate_ed_monthly_output_vars(edgrid_g(ifm))
+         end if
       end do
 
       if (dail_analy_time) call h5_output('DAIL')
@@ -120,13 +127,13 @@ subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,annua
 
 
 
-   !----- Monthly analysis output. --------------------------------------------------------!
-   if (mont_analy_time) then
+   !----- Monthly analysis and monthly mean diurnal cycle output. -------------------------!
+   if (mont_analy_time .or. dcyc_analy_time) then
       do ifm=1,ngrids
          call normalize_ed_monthly_output_vars(edgrid_g(ifm))
       end do
-      call h5_output('MONT')
-
+      if (mont_analy_time) call h5_output('MONT')
+      if (dcyc_analy_time) call h5_output('DCYC')
       do ifm=1,ngrids
          call zero_ed_monthly_output_vars(edgrid_g(ifm))
       end do
@@ -716,17 +723,8 @@ subroutine spatial_averages
                   csite%laiarea(ipa) = 0.
                end if
 
-               !---------------------------------------------------------------------------!
-               !    Updating some other flux variables that do not need to be scaled by    !
-               ! frqsum.                                                                   !
-               !---------------------------------------------------------------------------!
-               cgrid%avg_plant_resp(ipy)  = cgrid%avg_plant_resp(ipy)                      &
-                                          + csite%co2budget_plresp(ipa)                    &
-                                          * csite%area(ipa)*cpoly%area(isi)                &
-                                          * site_area_i * poly_area_i
-
                cgrid%avg_htroph_resp(ipy) = cgrid%avg_htroph_resp(ipy)                     &
-                                          + csite%co2budget_rh(ipa)                        &
+                                          + csite%mean_rh(ipa)                             &
                                           * csite%area(ipa)*cpoly%area(isi)                &
                                           * site_area_i * poly_area_i
 
@@ -882,7 +880,21 @@ subroutine spatial_averages
             call qwtk(skin_energy,skin_water,skin_hcap,cpoly%avg_skin_temp(isi),skin_fliq)
 
          end do siteloop
-     
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !    Find plant respiration using the other averaged quantities.                  !
+         !---------------------------------------------------------------------------------!
+         cgrid%avg_plant_resp(ipy)  = cgrid%avg_leaf_resp     (ipy)                        &
+                                    + cgrid%avg_root_resp     (ipy)                        &
+                                    + cgrid%avg_growth_resp   (ipy)                        &
+                                    + cgrid%avg_storage_resp  (ipy)                        &
+                                    + cgrid%avg_vleaf_resp    (ipy)
+         !---------------------------------------------------------------------------------!
+
+
 
          !----- Normalize the lai specific quantities -------------------------------------!
          if (area_sum(1)>0.) then

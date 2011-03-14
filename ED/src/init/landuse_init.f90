@@ -70,9 +70,10 @@ subroutine landuse_init
    real                                       :: slat
    real                                       :: nlat
    !----- Local constants. ----------------------------------------------------------------!
-   character(len=12)    , parameter           :: fffmt='(a,1x,f12.5)'
-   character(len=13)    , parameter           :: esfmt='(a,1x,es12.5)'
-   integer              , parameter           :: hoff = 18
+   character(len=12)    , parameter           :: fffmt    = '(a,1x,f12.5)'
+   character(len=13)    , parameter           :: esfmt    = '(a,1x,es12.5)'
+   integer              , parameter           :: hoff     = 18
+   real                 , parameter           :: huge_dbh = huge(1.)
    !----- External function. --------------------------------------------------------------!
    real                 , external            :: dist_gc
    !---------------------------------------------------------------------------------------!
@@ -109,7 +110,8 @@ subroutine landuse_init
       polyloop: do ipy = 1,cgrid%npolygons
          cpoly => cgrid%polygon(ipy)
 
-         if (ianth_disturb == 1) then
+         select case (ianth_disturb)
+         case (1)
 
             !------------------------------------------------------------------------------!
             !     Comput the distance between the current polygon and all the files.       !
@@ -138,9 +140,9 @@ subroutine landuse_init
             ! harvesting.  The actual variables will be read in the following block.       !
             !------------------------------------------------------------------------------!
             harvest_pft(1:n_pft)   = -1
-            mindbh_1ary(1:n_pft)   = huge(1.)
+            mindbh_1ary(1:n_pft)   = huge_dbh
             harvprob_1ary(1:n_pft) = 0.
-            mindbh_2ary(1:n_pft)   = huge(1.)
+            mindbh_2ary(1:n_pft)   = huge_dbh
             harvprob_2ary(1:n_pft) = 0.
 
             !----- Define the format for the header. --------------------------------------!
@@ -262,9 +264,9 @@ subroutine landuse_init
 
 
                !----- Initialise the PFT-dependent arrays. --------------------------------!
-               cpoly%mindbh_primary    (1:n_pft,isi) = huge(1.)
+               cpoly%mindbh_primary    (1:n_pft,isi) = huge_dbh
                cpoly%probharv_primary  (1:n_pft,isi) = 0.
-               cpoly%mindbh_secondary  (1:n_pft,isi) = huge(1.)
+               cpoly%mindbh_secondary  (1:n_pft,isi) = huge_dbh
                cpoly%probharv_secondary(1:n_pft,isi) = 0.
 
                !----- Fill the arrays with the appropriate PFT. ---------------------------!
@@ -366,9 +368,9 @@ subroutine landuse_init
                !----- Set the parameters in a way that no logging/ploughing will happen. --!
                do isi = 1,cpoly%nsites
                   cpoly%num_landuse_years(isi)                  = 1
-                  cpoly%mindbh_primary    (1:n_pft,isi)         = huge(1.)
+                  cpoly%mindbh_primary    (1:n_pft,isi)         = huge_dbh
                   cpoly%probharv_primary  (1:n_pft,isi)         = 0.
-                  cpoly%mindbh_secondary  (1:n_pft,isi)         = huge(1.)
+                  cpoly%mindbh_secondary  (1:n_pft,isi)         = huge_dbh
                   cpoly%probharv_secondary(1:n_pft,isi)         = 0.
                   cpoly%clutimes(1,isi)%landuse_year            = iyeara
                   cpoly%clutimes(1,isi)%landuse(1:num_lu_trans) = 0.0
@@ -384,7 +386,7 @@ subroutine landuse_init
             !----- Initialise plantation patches if plantation information is available. --!
             cpoly%plantation(:) = 0
             call read_plantation_fractions(cpoly,cgrid%lon(ipy),cgrid%lat(ipy),igr)
-         else
+         case (0)
             !------------------------------------------------------------------------------!
             !      Anthropogenic disturbance is not used this time, allocate only a single !
             ! landuse year.                                                                !
@@ -395,9 +397,9 @@ subroutine landuse_init
             !----- Set the parameters in a way that no logging/ploughing will happen. -----!
             do isi = 1,cpoly%nsites
                cpoly%num_landuse_years(isi)                  = 1
-               cpoly%mindbh_primary    (1:n_pft,isi)         = huge(1.)
+               cpoly%mindbh_primary    (1:n_pft,isi)         = huge_dbh
                cpoly%probharv_primary  (1:n_pft,isi)         = 0.
-               cpoly%mindbh_secondary  (1:n_pft,isi)         = huge(1.)
+               cpoly%mindbh_secondary  (1:n_pft,isi)         = huge_dbh
                cpoly%probharv_secondary(1:n_pft,isi)         = 0.
                cpoly%clutimes(1,isi)%landuse_year            = iyeara
                cpoly%clutimes(1,isi)%landuse(1:num_lu_trans) = 0.0
@@ -408,7 +410,7 @@ subroutine landuse_init
             !----- No plantations. --------------------------------------------------------!
             cpoly%plantation(:) = 0
             !------------------------------------------------------------------------------!
-         end if
+         end select
          
       end do polyloop
    end do gridloop
