@@ -140,6 +140,7 @@ module ename_coms
       real                                              :: mfact
       real                                              :: kfact
       real                                              :: gamfact
+      real                                              :: thetacrit
       real                                              :: lwfact
       real                                              :: thioff
       integer                                           :: icomppt
@@ -344,6 +345,7 @@ module ename_coms
       enl%mfact                     = undef_real
       enl%kfact                     = undef_real
       enl%gamfact                   = undef_real
+      enl%thetacrit                 = undef_real
       enl%lwfact                    = undef_real
       enl%thioff                    = undef_real
       enl%icomppt                   = undef_integer

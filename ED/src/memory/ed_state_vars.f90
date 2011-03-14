@@ -112,7 +112,10 @@ module ed_state_vars
      ! phenology_status codes:
      ! 0 - plant has the maximum LAI, given its size
      ! 1 - plant has an LAI between 0 and its maximum
+     ! -1 - plant is actively dropping leaves
      ! 2 - plant has no leaves
+
+     
      integer ,pointer,dimension(:) :: phenology_status
 
      ! Biomass of live tissue (kgC/plant)
@@ -5825,6 +5828,7 @@ contains
          osite%can_rhos(opa)                    = isite%can_rhos(ipa)
          osite%can_prss(opa)                    = isite%can_prss(ipa)
          osite%can_theta(opa)                   = isite%can_theta(ipa)
+         osite%can_depth(opa)                   = isite%can_depth(ipa)
          osite%opencan_frac(opa)                = isite%opencan_frac(ipa)
          osite%ggbare(opa)                      = isite%ggbare(ipa)
          osite%ggveg(opa)                       = isite%ggveg(ipa)

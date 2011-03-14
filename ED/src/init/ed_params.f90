@@ -853,7 +853,7 @@ subroutine init_pft_photo_params()
    Vm_high_temp(17)          =  45.0  + thioff ! C3
 
    !------ Vm0 is the maximum photosynthesis capacity in µmol/m2/s. -----------------------!
-   Vm0(1)                    = 12.5            
+   Vm0(1)                    = 12.5            * 1.5
    Vm0(2)                    = 18.8            * vmfact
    Vm0(3)                    = 12.5            * vmfact
    Vm0(4)                    = 6.25            * vmfact
@@ -870,7 +870,7 @@ subroutine init_pft_photo_params()
    Vm0(17)                   = 15.625          * vmfact
 
    !----- Define the stomatal slope (aka the M factor). -----------------------------------!
-   stomatal_slope(1)         =  6.0    
+   stomatal_slope(1)         =  6.4    
    stomatal_slope(2)         =  8.0    * mfact
    stomatal_slope(3)         =  8.0    * mfact
    stomatal_slope(4)         =  8.0    * mfact
@@ -1079,7 +1079,7 @@ subroutine init_pft_resp_params()
    root_turnover_rate(16)         = 2.0
    root_turnover_rate(17)         = 0.333
 
-   dark_respiration_factor(1)     = 0.04
+   dark_respiration_factor(1)     = 0.04 * 1.5
    dark_respiration_factor(2)     = 0.02 * gamfact
    dark_respiration_factor(3)     = 0.02 * gamfact
    dark_respiration_factor(4)     = 0.02 * gamfact
@@ -1221,7 +1221,12 @@ subroutine init_pft_mort_params()
       treefall_disturbance_rate = 0.
    end if
    
-   seedling_mortality = 0.95
+   seedling_mortality(1) = 0.60
+   seedling_mortality(2:4) = 0.95 
+   seedling_mortality(5) = 0.60
+   seedling_mortality(6:15) = 0.95 
+   seedling_mortality(16) = 0.60 
+   seedling_mortality(17) = 0.95 
 
    treefall_s_gtht = 0.0
 
@@ -1760,7 +1765,7 @@ subroutine init_pft_repro_params()
                        , repro_min_h        ! ! intent(out)
    implicit none
 
-   r_fract(1)                = 0.3
+   r_fract(1)                = 1.0
    r_fract(2:4)              = 0.3
    r_fract(5)                = 0.3
    r_fract(6:11)             = 0.3
@@ -2257,7 +2262,7 @@ subroutine init_physiology_params()
    !     Parameters that control debugging output.                                         !
    !---------------------------------------------------------------------------------------!
    !----- I should print detailed debug information. --------------------------------------!
-   print_photo_debug = .true.
+   print_photo_debug = .false.
    !----- File name prefix for the detailed information in case of debugging. -------------!
    photo_prefix      = 'photo_state_'
    !---------------------------------------------------------------------------------------!
@@ -2559,12 +2564,13 @@ subroutine init_phen_coms
                             , vm_min                   & ! intent(out)
                             , max_phenology_dist       & ! intent(out)
                             , radint                   & ! intent(out)
-                            , radslp                   ! ! intent(out)
+                            , radslp                   & ! intent(out)
+                            , thetacrit                   ! ! intent(in)
    implicit none
 
  
    retained_carbon_fraction = 0.5
-   theta_crit               = 0.2
+   theta_crit               = thetacrit
    dl_tr                    = 655.0
    st_tr1                   = 284.3
    st_tr2                   = 275.15
@@ -2576,10 +2582,10 @@ subroutine init_phen_coms
    rad_turnover_int         = dble(radint)  !-11.3868
    rad_turnover_slope       = dble(radslp)  !0.0824
 
-   vm_tran                  = 7.5
+   vm_tran                  = 8.5
    vm_slop                  = 7.0
-   vm_amp                   = 51.0
-   vm_min                   = 15.0
+   vm_amp                   = 42.0
+   vm_min                   = 18.0
 
    !---------------------------------------------------------------------------------------!
    !     This variable is the maximum distance between the coordinates of a prescribed     !
@@ -2783,7 +2789,7 @@ subroutine init_rk4_params()
    !     Variables used to keep track on the error.                                        !
    !---------------------------------------------------------------------------------------!
    record_err     = .false.                  ! Compute and keep track of the errors.
-   print_detailed = .true.                  ! Print detailed information about the thermo-
+   print_detailed = .false.                  ! Print detailed information about the thermo-
                                              !    dynamic state.  This will create one file
                                              !    for each patch, so it is not recommended 
                                              !    for simulations that span over one month.

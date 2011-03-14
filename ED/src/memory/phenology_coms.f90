@@ -35,6 +35,9 @@ Module phenology_coms
 
   real :: l_fract
 
+  !theta_crit value
+  real :: thetacrit
+  
   !Flag specifying the first and last spring
   integer :: iphenys1,iphenysf,iphenyf1,iphenyff 
 

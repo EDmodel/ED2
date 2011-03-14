@@ -1292,7 +1292,8 @@ module disturbance_utils
       !----- Compute all area indices needed. ---------------------------------------------!
       call area_indices(cpatch%nplant(nc),cpatch%bleaf(nc),cpatch%bdead(nc)                &
                        ,cpatch%balive(nc),cpatch%dbh(nc),cpatch%hite(nc),cpatch%pft(nc)    &
-                       ,cpatch%sla(nc),cpatch%lai(nc),cpatch%wpa(nc),cpatch%wai(nc))
+                       ,cpatch%sla(nc),cpatch%lai(nc),cpatch%wpa(nc),cpatch%wai(nc)        &
+                       ,cpatch%bsapwood(nc))
 
 
       !------------------------------------------------------------------------------------!
@@ -1304,7 +1305,8 @@ module disturbance_utils
       !----- Finding the new basal area and above-ground biomass. -------------------------!
       cpatch%basarea(nc) = pio4 * cpatch%dbh(nc) * cpatch%dbh(nc)
       cpatch%agb(nc)     = ed_biomass(cpatch%bdead(nc),cpatch%balive(nc),cpatch%bleaf(nc)  &
-                                     ,cpatch%pft(nc),cpatch%hite(nc) ,cpatch%bstorage(nc))
+                                     ,cpatch%pft(nc),cpatch%hite(nc) ,cpatch%bstorage(nc)  &
+                                     ,cpatch%bsapwood(nc))
 
       !----- Initialise other cohort-level variables. -------------------------------------!
       call init_ed_cohort_vars(cpatch, nc, lsl)
@@ -1317,7 +1319,7 @@ module disturbance_utils
       cpatch%hcapveg(nc)    = calc_hcapveg(cpatch%bleaf(nc),cpatch%bdead(nc)               &
                                           ,cpatch%balive(nc),cpatch%nplant(nc)             &
                                           ,cpatch%hite(nc),cpatch%pft(nc)                  &
-                                          ,cpatch%phenology_status(nc))
+                                          ,cpatch%phenology_status(nc),cpatch%bsapwood(nc))
 
       cpatch%veg_energy(nc) = cpatch%hcapveg(nc) * cpatch%veg_temp(nc)
 

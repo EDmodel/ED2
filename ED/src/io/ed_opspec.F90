@@ -994,7 +994,8 @@ subroutine ed_opspec_misc
                                     , treefall_disturbance_rate    ! ! intent(in)
    use phenology_coms        , only : iphen_scheme                 & ! intent(in)
                                     , radint                       & ! intent(in)
-                                    , radslp                       ! ! intent(in)
+                                    , radslp                       & ! intent(in)
+                                    , thetacrit                    ! ! intent(in)
    use pft_coms              , only : include_these_pft            & ! intent(in)
                                     , pft_1st_check                & ! intent(in)
                                     , agri_stock                   & ! intent(in)
@@ -1330,6 +1331,14 @@ end do
       write (reason,fmt='(a,1x,es12.5,a)')                                                 &
                     'Invalid GAMFACT, it must be between 0 and 100. Yours is set to'       &
                     ,gamfact,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+   
+   if (thetacrit < 0. .or. thetacrit > 1.) then
+      write (reason,fmt='(a,1x,es12.5,a)')                                                 &
+                    'Invalid THETACRIT, it must be between 0 and 1. Yours is set to'       &
+                    ,thetacrit,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if

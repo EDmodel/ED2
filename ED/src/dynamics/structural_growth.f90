@@ -116,8 +116,9 @@ subroutine structural_growth(cgrid, month)
 
                !----- Determine how to distribute what is in bstorage. --------------------!
                call plant_structural_allocation(cpatch%pft(ico),cpatch%hite(ico)           &
-                                               ,cgrid%lat(ipy),month,f_bseeds,f_bdead)
-
+                                            ,cgrid%lat(ipy),month                          &
+                                            ,cpatch%phenology_status(ico),f_bseeds,f_bdead)
+               
                !----- Grow plants; bdead gets fraction f_bdead of bstorage. ---------------!
                cpatch%bdead(ico) = cpatch%bdead(ico) + f_bdead * cpatch%bstorage(ico)
 
@@ -180,7 +181,8 @@ subroutine structural_growth(cgrid, month)
                cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico)      &
                                                  ,cpatch%balive(ico),cpatch%nplant(ico)    &
                                                  ,cpatch%hite(ico),cpatch%pft(ico)         &
-                                                 ,cpatch%phenology_status(ico))
+                                                 ,cpatch%phenology_status(ico)             &
+                                                 ,cpatch%bsapwood(ico))
                call update_veg_energy_cweh(csite,ipa,ico,old_hcapveg)
                !----- Likewise, update the patch heat capacity ----------------------------!
                csite%hcapveg(ipa) = csite%hcapveg(ipa) + cpatch%hcapveg(ico) - old_hcapveg
@@ -432,7 +434,7 @@ end subroutine structural_growth_eq_0
 !     This subroutine will decide the partition of storage biomass into seeds and dead     !
 ! (structural) biomass.                                                                    !
 !------------------------------------------------------------------------------------------!
-subroutine plant_structural_allocation(ipft,hite,lat,month,f_bseeds,f_bdead)
+subroutine plant_structural_allocation(ipft,hite,lat,month,phen_status,f_bseeds,f_bdead)
    use pft_coms      , only : phenology    & ! intent(in)
                             , repro_min_h  & ! intent(in)
                             , r_fract      ! ! intent(in)
@@ -443,6 +445,7 @@ subroutine plant_structural_allocation(ipft,hite,lat,month,f_bseeds,f_bdead)
    integer        , intent(in)  :: month
    real           , intent(in)  :: hite
    real           , intent(in)  :: lat
+   integer        , intent(in)  :: phen_status
    real           , intent(out) :: f_bseeds
    real           , intent(out) :: f_bdead
    !----- Local variables -----------------------------------------------------------------!
@@ -454,20 +457,28 @@ subroutine plant_structural_allocation(ipft,hite,lat,month,f_bseeds,f_bdead)
    late_spring = (lat >= 0.0 .and. month == 6) .or. (lat < 0.0 .and. month == 12) 
 
    !----- Calculate fraction of bstorage going to bdead and reproduction. -----------------!
-   if (phenology(ipft) /= 2   .or.  late_spring) then
-
-      !----- For all PFTs except broadleaf deciduous. -------------------------------------!
-      if (hite <= repro_min_h(ipft)) then
-         f_bseeds = 0.0
+   if (phenology(ipft) /= 2   .or.  late_spring )    then
+       if (phen_status == 0)  then
+   !---------------------------------------------------------------------------------------!
+   !  Check phenology status.  We dont want to grow if we're actively dropping             !
+   !  leaves or off allometry                                                              !
+   !---------------------------------------------------------------------------------------!
+        !----- For all PFTs except broadleaf deciduous. -----------------------------------!
+        if (hite <= repro_min_h(ipft)) then
+           f_bseeds = 0.0
+        else
+           f_bseeds = r_fract(ipft)
+        end if
+        f_bdead  = 1.0 - f_bseeds
       else
-         f_bseeds = r_fract(ipft)
+        f_bdead  = 0.0
+        f_bseeds = 0.0
       end if
-      f_bdead  = 1.0 - f_bseeds
-   else
-      f_bdead  = 0.0
-      f_bseeds = 0.0
-   end if
-         
+  else
+     f_bdead  = 0.0
+     f_bseeds = 0.0
+  end if 
+          
    return
 end subroutine plant_structural_allocation
 !==========================================================================================!
@@ -536,12 +547,14 @@ subroutine update_derived_cohort_props(cpatch,ico,green_leaf_factor,lsl)
    !----- Update LAI, WPA, and WAI --------------------------------------------------------!
    call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)                &
               ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico),cpatch%pft(ico)        &
-              ,cpatch%sla(ico),cpatch%lai(ico),cpatch%wpa(ico),cpatch%wai(ico))
+              ,cpatch%sla(ico),cpatch%lai(ico),cpatch%wpa(ico),cpatch%wai(ico)             &
+              ,cpatch%bsapwood(ico))
 
    !----- Finding the new basal area and above-ground biomass. ----------------------------!
    cpatch%basarea(ico) = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)                
    cpatch%agb(ico)     = ed_biomass(cpatch%bdead(ico),cpatch%balive(ico),cpatch%bleaf(ico) &
-                                   ,cpatch%pft(ico),cpatch%hite(ico) ,cpatch%bstorage(ico))
+                                   ,cpatch%pft(ico),cpatch%hite(ico) ,cpatch%bstorage(ico) &
+                                   ,cpatch%bsapwood(ico))
 
    !----- Update rooting depth ------------------------------------------------------------!
    rootdepth = calc_root_depth(cpatch%hite(ico), cpatch%dbh(ico), cpatch%pft(ico))
@@ -615,7 +628,8 @@ subroutine update_vital_rates(cpatch,ico,ilu,dbh_in,bdead_in,balive_in,hite_in,b
    cpatch%basarea(ico)    = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)
    cpatch%agb(ico)        = ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)                &
                                       ,cpatch%bleaf(ico),cpatch%pft(ico)                   &
-                                      ,cpatch%hite(ico) ,cpatch%bstorage(ico) ) 
+                                      ,cpatch%hite(ico) ,cpatch%bstorage(ico)              &
+                                      ,cpatch%bsapwood(ico) ) 
 
    !---------------------------------------------------------------------------------------!
    !     Changing the agb growth to kgC/plant/year, basal area to cm2/plant/year, and DBH  !
