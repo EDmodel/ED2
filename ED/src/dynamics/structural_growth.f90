@@ -648,7 +648,10 @@ subroutine update_vital_rates(cpatch,ico,ilu,dbh_in,bdead_in,balive_in,hite_in,b
    !---------------------------------------------------------------------------------------!
    basal_area_mort(ipft,idbh) = basal_area_mort(ipft,idbh)                                 &
                               + area * (nplant_in - cpatch%nplant(ico)) * ba_in * 12.0
-   agb_mort(ipft,idbh)        = agb_mort(ipft,idbh) + area * mort_litter * 12.0
+!!   agb_mort(ipft,idbh)        = agb_mort(ipft,idbh) + area * mort_litter 
+!! calculation based on mort_litter includes TOTAL biomass, not AGB [[mcd]]
+   agb_mort(ipft,idbh)        = agb_mort(ipft,idbh)                                        &
+                              + area * (nplant_in - cpatch%nplant(ico))*agb_in * 12.0
 
    return
 end subroutine update_vital_rates

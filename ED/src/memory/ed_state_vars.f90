@@ -9603,7 +9603,7 @@ contains
        nvar=nvar+1
          call vtable_edio_r(csite%sfcwater_depth(1,1),nvar,igr,init,csite%paglob_id, &
          var_len,var_len_global,max_ptrs,'SFCWATER_DEPTH :33:hist:opti') 
-       call metadata_edio(nvar,igr,'No metadata available','[NA]','m') 
+       call metadata_edio(nvar,igr,'Depth of snow or other surface water by patch and layer','[NA]','m') 
     endif
 
     if (associated(csite%rshort_s)) then

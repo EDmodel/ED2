@@ -118,6 +118,15 @@ Module ed_misc_coms
   integer :: vary_rad
   integer :: vary_hyd  
 
+  ! soil biogeochem initial conditions (over-rides patch files)
+  ! useful for data assimilation & sensitivity analysis
+  real    :: init_fsc 
+  real    :: init_stsc 
+  real    :: init_ssc 
+  real    :: init_stsl 
+  real    :: init_fsn 
+  real    :: init_msn 
+
   ! Logical Switches for various memory structures
 
   logical :: fast_diagnostics       !! If ifoutput,idoutput,and imoutput are zero, then

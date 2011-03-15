@@ -178,6 +178,7 @@
    NL%ICLOBBER  = 1             ! 0 = stop if files exist, 1 = overwite files
    NL%FRQFAST   = 21600.        ! Time interval between analysis/history files
    NL%FRQSTATE  = 12.           ! Time interval between history files
+
 !------------------------------------------------------------------------------------------!
 
 

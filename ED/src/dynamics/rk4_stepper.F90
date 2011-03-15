@@ -145,6 +145,7 @@ module rk4_stepper
             endif
          
          else
+
             !------------------------------------------------------------------------------!
             ! 3b.  Great, it worked, so now we can advance to the next step.  We just need !
             !      to do some minor adjustments before...                                  !
@@ -282,8 +283,6 @@ module rk4_stepper
       call rk4_sanity_check(ak7,reject_step,csite,ipa,dydx,h,print_diags)
       if (reject_step) return
 
-
-
       call leaf_derivs(ak7, ak3, csite,ipa)
       call copy_rk4_patch(y, ak7, cpatch)
       call inc_rk4_patch(ak7, dydx, rk4_b41*h, cpatch)
@@ -296,7 +295,6 @@ module rk4_stepper
       call update_diagnostic_vars(ak7, csite,ipa)
       call rk4_sanity_check(ak7, reject_step, csite,ipa,dydx,h,print_diags)
       if (reject_step) return
-
 
 
       call leaf_derivs(ak7, ak4, csite, ipa)
@@ -312,8 +310,6 @@ module rk4_stepper
       call update_diagnostic_vars(ak7, csite,ipa)
       call rk4_sanity_check(ak7,reject_step,csite,ipa,dydx,h,print_diags)
       if (reject_step) return
-
-
 
       call leaf_derivs(ak7, ak5, csite, ipa)
       call copy_rk4_patch(y, ak7, cpatch)

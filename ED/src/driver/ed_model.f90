@@ -154,7 +154,7 @@ subroutine ed_model()
 
 
    timestep: do while (time < timmax)
-      
+
       istp = istp + 1
       !     begtime=time
       
@@ -192,7 +192,7 @@ subroutine ed_model()
             call heun_timestep(edgrid_g(ifm))
          end do
       end select
-      
+
       !-------------------------------------------------------------------!
       ! Update the daily averages if daily or monthly analysis are needed !
       !-------------------------------------------------------------------!
@@ -259,6 +259,7 @@ subroutine ed_model()
 
       !----- Check if this is the beginning of a new simulated day. -----------------------!
       if(new_day)then
+
          if(record_err) then
             open(unit=77,file=trim(integ_fname),form="formatted",access="append"           &
                 ,status="old")
@@ -308,6 +309,16 @@ subroutine ed_model()
          
       endif
 
+      if(analysis_time)then
+         if(new_month .and. new_day)then
+            if(current_time%month == outputMonth)then
+               do ifm = 1,ngrids                     
+                  call update_ed_yearly_vars(edgrid_g(ifm))
+                  enddo
+            endif
+         endif
+      endif
+
       !   Call the model output driver 
       !   ====================================================
       call ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,annual_time &
@@ -332,19 +343,7 @@ subroutine ed_model()
          end do
       endif
       
-
-      if(analysis_time)then
-         if(new_month .and. new_day)then
-            if(current_time%month == 6)then
-               do ifm = 1,ngrids
-                     
-                  call update_ed_yearly_vars(edgrid_g(ifm))
-                  enddo
-                  !call zero_ed_yearly_vars(polygon_list_g(1)%first_polygon)
-            endif
-         endif
-      endif
-
+ 
       !!Update Lateral Hydrology
       call calcHydroSubsurface()
       call calcHydroSurface()

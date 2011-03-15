@@ -243,7 +243,7 @@ subroutine init_met_params()
    atm_tmp_max = 331.     ! Highest temperature ever measured, in El Azizia, Libya
    !----- Minimum and maximum acceptable air specific humidity [kg_H2O/kg_air]. -----------!
    atm_shv_min = 1.e-6    ! That corresponds to a relative humidity of 0.1% at 1000hPa
-   atm_shv_max = 3.e-2    ! That corresponds to a dew point of 32°C at 1000hPa.
+   atm_shv_max = 3.2e-2 !3.e-2    ! That corresponds to a dew point of 32°C at 1000hPa.
    !----- Minimum and maximum acceptable CO2 mixing ratio [µmol/mol]. ---------------------!
    atm_co2_min = 100.     ! 
    atm_co2_max = 1100.    ! 
@@ -1839,14 +1839,13 @@ subroutine init_soil_coms
 ! moisture potential)  (NML, 2/2010)                                                       !
 !------------------------------------------------------------------------------------------!
 
+
 ! *Rows are folded over to adere to coding standard, ie maximum line lengt
 !------------------------------------------------------------------------------------------!
 ! (1st fold)           slpots     slmsts       slbs     slcpd         soilcp               !
 ! (2nd) soilwp     slcons        slcons0   soilcond0 soilcond1  soilcond2                  !       
 ! (3rd)sfldcap     xsand    xclay   xorgan    xrobulk  slden                               !
 !------------------------------------------------------------------------------------------!
-
-
 
 soil= (/ soil_class(-0.049831046,  0.373250,  3.295000,  1465000.,  0.026183447,  &
      0.032636854,  2.446420e-5,  0.000500000,   0.3000,   4.8000,  -2.7000,  &
@@ -2270,9 +2269,10 @@ end subroutine init_rk4_params
 !==========================================================================================!
 subroutine overwrite_with_xml_config(thisnode)
    !!! PARSE XML FILE
-   use ed_max_dims, only: n_pft
-   use ed_misc_coms, only: iedcnfgf
-   
+   use ed_max_dims,   only: n_pft
+   use ed_misc_coms,  only: iedcnfgf
+   use hydrology_coms,only: useTOPMODEL
+   use soil_coms,     only: isoilbc
    implicit none
    integer, intent(in) :: thisnode
    integer             :: max_pft_xml
@@ -2302,6 +2302,11 @@ subroutine overwrite_with_xml_config(thisnode)
          call read_ed_xml_config(trim(iedcnfgf))
 
          !! THIRD, recalculate any derived values based on xml
+         if(useTOPMODEL == 1) then
+            isoilbc = 0
+            print*,"TOPMODEL enabled, setting ISOILBC to 0"
+         end if
+
 
          !! FINALLY, write out copy of settings
          call write_ed_xml_config()

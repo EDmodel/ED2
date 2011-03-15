@@ -43,7 +43,8 @@ module disturbance_utils
       use disturb_coms , only : treefall_age_threshold  & ! intent(in)
                               , min_new_patch_area      & ! intent(in)
                               , mature_harvest_age      & ! intent(in)
-                              , plantation_rotation     ! ! intent(in)
+                              , plantation_rotation     & ! intent(in)
+                              , ianth_disturb
       use ed_max_dims  , only : n_dist_types            & ! intent(in)
                               , n_pft                   & ! intent(in)
                               , n_dbh                   ! ! intent(in)
@@ -492,6 +493,7 @@ module disturbance_utils
             ! to check the year because all years in this simulation are assigned          !
             ! prescribed disturbance rates (even if that means zero disturbance).          !
             !------------------------------------------------------------------------------!
+if(ianth_disturb > 0) then
             useyear = cpoly%num_landuse_years(isi)
             !----- Loop over years. -------------------------------------------------------!
             find_lu_year: do iyear = 1,cpoly%num_landuse_years(isi)
@@ -622,6 +624,12 @@ module disturbance_utils
             cpoly%loss_fraction(2,isi) = agf_bs
             cpoly%loss_fraction(3,isi) = 0.0
             !------------------------------------------------------------------------------!
+         else
+            !----- Set disturbance rates assuming only natural disturbance. ---------------!
+            cpoly%disturbance_rates(1:2,1:3,isi) = 0.0
+            cpoly%disturbance_rates(3,1,isi)     = 0.0
+            cpoly%disturbance_rates(3,2:3,isi)   = cpoly%nat_disturbance_rate(isi)
+         endif
 
          end do siteloop
       end do polyloop

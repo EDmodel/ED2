@@ -381,7 +381,7 @@ subroutine read_met_drivers_init
             else
                year_use = year_use + 1
             end if
-
+            print*,"METYEARS",iyear,year_use,metcyc1,metcycf
             metyears(iyear) = year_use
          end do
 
@@ -446,6 +446,7 @@ subroutine read_met_drivers_init
          if (exans) then
             call shdf5_open_f(trim(infile),'R')
          else
+            print*,iyear,year_use
             call fatal_error('Cannot open met driver input file '//trim(infile)//'!'       &
                             ,'read_met_drivers_init','ed_met_driver.f90')
          end if

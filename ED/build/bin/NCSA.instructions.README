@@ -1,0 +1,73 @@
+## Instructions on how to run ED2.1 on the National Center for 
+## Supercomputing Applications (NCSA) system
+## 
+## Hongqiang Sun
+##
+## Tested on "abe" April 2010
+##
+
+1. edit your home directory .soft file with the following:
+# Common TeraGrid Software Stack Version 3 (CTSSv3)
+#
+# Please consult TeraGrid user documentation at
+#    http://www.teragrid.org/userinfo/software/softenv.php
+# for information on customizing this file.
+#
+# TeraGrid wide basic software suite
+@teragrid-basic
+
+# TeraGrid wide Globus 4 and Grid software suite
+@globus-4.0
+
+# Platform recommended development software suite
+@teragrid-dev
+#
+   +intel-10.1.017
+   +intel-mkl-10.0.3.020
+ +mpichvmi-intel
++totalview
+
+2. in order to run MVAPICH2 jobs, a file named .mpd.conf needs to exist in your home directory with the line:
+
+MPD_SECRETWORD=XXXXXXX     
+
+where XXXXXXX is a string of random alphanumeric characters, with at least one alphabetic character.
+
+The file should also be readable and writeable only by the owner, so the permissions need to be set as follows:
+
+chmod 700 $HOME/.mpd.conf
+
+3. the script for running a job:
+#!/bin/tcsh
+# request a total of 4 processors for this job (2 nodes and 2 processors per node)  
+#PBS -l nodes=2:ppn=2
+#PBS -l walltime=00:30:00
+# pbs standard outfile and errfile
+#PBS -o outfile
+#PBS -e errfile
+#setting the project ID
+#PBS -A dqe
+# Export all my environment variables to the job
+#PBS -V
+# mail is sent to you when the job starts and when it terminates or aborts
+#PBS -m bea
+# specify your email address
+#PBS -M hsun22@illinois.edu
+# append the location of the lib of szip,to use it at running time
+setenv LD_LIBRARY_PATH {$LD_LIBRARY_PATH}:/usr/apps/hdf/szip/v2.1/shared/encoder/lib
+#Using mvapich2 to strart mpd
+mvapich2-start-mpd
+# cd working directory
+cd ~/EDBRAMS/ED/run
+#running ED2
+mpiexec -machinefile $PBS_NODEFILE -np 4 ~/EDBRAMS/ED/build/ed_2.1-ncsa ED2IN 
+4. submitting a job:
+qsub script
+
+note: 
+if display while loading shared libraries: libsz.so.2: cannot open shared object file: No such
+file or directory. running following can be solved:
+setenv LD_LIBRARY_PATH {$LD_LIBRARY_PATH}:/usr/apps/hdf/szip/v2.1/shared/encoder/lib
+
+
+   

@@ -75,6 +75,8 @@ subroutine landuse_init
    real                 , external            :: dist_gc
    !---------------------------------------------------------------------------------------!
 
+if(ianth_disturb == 0) return
+
    !----- Finding number of simulation years ----------------------------------------------!
    sim_years = iyearz-iyeara+1
 
