@@ -8452,6 +8452,13 @@ contains
               var_len,var_len_global,max_ptrs,'QMEAN_VAPOR_AC :-11:hist:dcyc') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
+      
+      if(associated(cgrid%qmean_vapor_gc)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%qmean_vapor_gc,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'QMEAN_VAPOR_GC :-11:hist:dcyc') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
 
       if(associated(cgrid%qmean_vapor_vc)) then
          nvar=nvar+1
@@ -8695,6 +8702,13 @@ contains
          nvar=nvar+1
          call vtable_edio_r(npts,cgrid%qmsqu_root_resp,nvar,igr,init,cgrid%pyglob_id, &
               var_len,var_len_global,max_ptrs,'QMSQU_ROOT_RESP :-11:hist:dcyc') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if(associated(cgrid%qmsqu_plresp)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%qmsqu_plresp,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'QMSQU_PLRESP :-11:hist:dcyc') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 

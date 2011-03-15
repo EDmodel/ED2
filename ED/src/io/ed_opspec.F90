@@ -1664,10 +1664,10 @@ end do
       ifaterr = ifaterr +1
    end if
 
-   if (vh2dh <= vh2vr .or. vh2dh > 0.99) then
-      write (reason,fmt='(a,es14.7,a,2x,a,1x,es14.7,a)')                                   &
-            'Invalid VH2DH, it must be between VH2VR (',vh2vr,') and 0.99.'                &
-           ,'Yours is set to',vh2dh,'...'
+   if (vh2dh < 0.0 .or. vh2dh > 0.99) then
+      write (reason,fmt='(a,1x,es14.7,a)')                                                 &
+            'Invalid VH2DH, it must be between 0.0 and 0.99.  Yours is set to'             &
+           ,vh2dh,'...'
       call opspec_fatal(reason,'opspec_misc')  
       ifaterr = ifaterr +1
    end if

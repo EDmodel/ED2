@@ -1159,7 +1159,7 @@ subroutine integrate_ed_daily_output_flux(cgrid)
       !------------------------------------------------------------------------------------!
       if (iqoutput > 0) then
          !------ Use the local site sum to integrate the following variables. -------------!
-         cgrid%qmean_gpp            (it,ipy) = cgrid%qmean_leaf_resp             (it,ipy)  &
+         cgrid%qmean_gpp            (it,ipy) = cgrid%qmean_gpp                   (it,ipy)  &
                                              + cgrid%avg_gpp                        (ipy)  &
                                              * umols_2_kgCyr
          cgrid%qmean_leaf_resp      (it,ipy) = cgrid%qmean_leaf_resp             (it,ipy)  &
@@ -1317,6 +1317,7 @@ subroutine normalize_ed_daily_vars(cgrid,timefac1)
                             , n_dbh         ! ! intent(in)
    use ed_misc_coms  , only : imoutput      & ! intent(in)
                             , idoutput      & ! intent(in)
+                            , iqoutput      & ! intent(in)
                             , ddbhi         & ! intent(in)
                             , dagei         ! ! intent(in)
    use consts_coms   , only : umols_2_kgCyr ! ! intent(in)
@@ -1351,8 +1352,8 @@ subroutine normalize_ed_daily_vars(cgrid,timefac1)
    !---------------------------------------------------------------------------------------!
    if (first_time) then
       first_time   = .false.
-      save_daily   = imoutput > 0 .or. idoutput > 0
-      save_monthly = imoutput > 0
+      save_daily   = imoutput > 0 .or. idoutput > 0 .or. iqoutput > 0
+      save_monthly = imoutput > 0 .or. iqoutput > 0
    end if
 
    polyloop: do ipy=1,cgrid%npolygons
@@ -2884,7 +2885,7 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
                                               * ndaysi * dtlsm_o_frqfast
             cgrid%qmean_atm_vels      (t,ipy) = cgrid%qmean_atm_vels      (t,ipy)          &
                                               * ndaysi * dtlsm_o_frqfast
-            cgrid%qmean_gpp           (t,ipy) = cgrid%qmean_leaf_resp     (t,ipy)  * ndaysi
+            cgrid%qmean_gpp           (t,ipy) = cgrid%qmean_gpp           (t,ipy)  * ndaysi
             cgrid%qmean_leaf_resp     (t,ipy) = cgrid%qmean_leaf_resp     (t,ipy)  * ndaysi
             cgrid%qmean_root_resp     (t,ipy) = cgrid%qmean_root_resp     (t,ipy)  * ndaysi
             cgrid%qmean_plresp        (t,ipy) = cgrid%qmean_plresp        (t,ipy)  * ndaysi
@@ -3114,6 +3115,9 @@ subroutine zero_ed_monthly_output_vars(cgrid)
             end do
          end do
 
+         cgrid%qmean_fs_open       (:,ipy) = 0.0
+         cgrid%qmean_fsw           (:,ipy) = 0.0
+         cgrid%qmean_fsn           (:,ipy) = 0.0
          cgrid%qmean_veg_energy    (:,ipy) = 0.0
          cgrid%qmean_veg_water     (:,ipy) = 0.0
          cgrid%qmean_veg_hcap      (:,ipy) = 0.0
