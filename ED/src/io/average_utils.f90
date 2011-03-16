@@ -2755,27 +2755,26 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
       !------------------------------------------------------------------------------------!
       if (iqoutput > 0) then
          do t=1,ndcycle
+
+            !----- Initialise site sums (auxiliary variables). ----------------------------!
+            poly_area_i = 1./sum(cpoly%area)
+            sss_rh           = 0.
+            sss_fsn          = 0.
+            sss_fsw          = 0.
+            sss_fs_open      = 0.
+            !------------------------------------------------------------------------------!
+
             do isi=1,cpoly%nsites
                csite => cpoly%site(isi)
 
-               !----- Initialise site sums (auxiliary variables). -------------------------!
-               poly_area_i = 1./sum(cpoly%area)
-               sss_rh           = 0.
-               sss_fsn          = 0.
-               sss_fsw          = 0.
-               sss_fs_open      = 0.
+               !----- Initialise patch sums (auxiliary variables). ------------------------!
+               pss_fsn          = 0.
+               pss_fsw          = 0.
+               pss_fs_open      = 0.
                !---------------------------------------------------------------------------!
 
                do ipa = 1,csite%npatches
                   cpatch => csite%patch(ipa)
-
-                  !----- Initialise patch sums (auxiliary variables). ---------------------!
-                  pss_fsn          = 0.
-                  pss_fsw          = 0.
-                  pss_fs_open      = 0.
-                  !------------------------------------------------------------------------!
-
-
 
                   !----- Find whether there is at least one cohort that is solved. --------!
                   any_solvable = .false.

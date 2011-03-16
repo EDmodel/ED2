@@ -10,8 +10,6 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ed_ktrans,lsl               
    use ed_max_dims    , only : n_pft             ! ! intent(in)
    use pft_coms       , only : leaf_width        & ! intent(in)
                              , water_conductance & ! intent(in)
-                             , q                 & ! intent(in)
-                             , qsw               & ! intent(in)
                              , include_pft       ! ! intent(in)
    use soil_coms      , only : soil              & ! intent(in)
                              , dslz              ! ! intent(in)
@@ -255,9 +253,7 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ed_ktrans,lsl               
                                          + cpatch%leaf_respiration(ico)
 
             !----- Root biomass [kg/m2]. --------------------------------------------------!
-            broot_loc = q(ipft) * cpatch%balive(ico)                                       &
-                      / (1.0 + q(ipft) + cpatch%hite(ico) * qsw(ipft) )                    &
-                      * cpatch%nplant(ico)
+            broot_loc = cpatch%broot(ico)  * cpatch%nplant(ico)
 
             !----- Supply of water. -------------------------------------------------------!
             cpatch%water_supply(ico) = water_conductance(ipft)                             &

@@ -1030,10 +1030,14 @@
    !    These are factors that multiply some of the ED-2.1 default parameters.  Setting    !
    ! them to 1.0 will make them the default.  These are applied for all PFTs.              !
    !---------------------------------------------------------------------------------------!
-   VMFACT          = 1.,    ! Factor for changing Vm0 from the default
+   VMFACT          = 2.,    ! Factor for changing Vm0 from the default
    MFACT           = 1.,    ! Factor for changing stomatal slope (M)
-   KFACT           = 1.,    ! Factor for changing the water conductance (Kw)
-   GAMFACT         = 1.,    ! Factor for changing the dark respiration factor (gamma)
+   KFACT           = 2.,    ! Factor for changing the water conductance (Kw)
+   GAMFACT         = 0.50,  ! Factor for changing the dark respiration factor (gamma)
+   THETACRIT       = 0.20,  ! Leaf drought phenology threshold.  This is the relative 
+                            !     soil moisture above the wilting point below which the
+                            !     drought-deciduous plants will start shedding their 
+                            !     leaves
    LWFACT          = 1.,    ! Factor for changing the leaf width (w)
    THIOFF          = 0.,    ! Offset to be added to the Vm_high_temp
    !---------------------------------------------------------------------------------------!
@@ -1066,7 +1070,11 @@
                               !    fires. 
                               ! 2. Fire will be triggered with enough biomass and the
                               !    total soil water at the top 75 cm falls below a 
-                              !    threshold. 
+                              !    threshold.
+
+   SM_FIRE         = 0.11,    ! Threshold to define the relative soil moisture of the top 
+                              !    75cm that will trigger fires.  Used only when 
+                              !    include_fire is set to 2.
 
    IANTH_DISTURB   = 1,       ! Flag specifying whether (1) or not (0) to include
                               ! anthropogenic disturbances such as agriculture, 

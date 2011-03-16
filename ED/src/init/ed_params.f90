@@ -842,7 +842,7 @@ subroutine init_pft_photo_params()
    Vm_high_temp(17)          =  45.0  + thioff ! C3
 
    !------ Vm0 is the maximum photosynthesis capacity in µmol/m2/s. -----------------------!
-   Vm0(1)                    = 12.5            * vmfact  
+   Vm0(1)                    = 12.5            * 1.5
    Vm0(2)                    = 18.8            * vmfact
    Vm0(3)                    = 12.5            * vmfact
    Vm0(4)                    = 6.25            * vmfact
@@ -854,7 +854,7 @@ subroutine init_pft_photo_params()
    Vm0(10)                   = 15.625 * 1.1171 * vmfact
    Vm0(11)                   = 6.25   * 1.1171 * vmfact
    Vm0(12:13)                = 18.3            * vmfact
-   Vm0(14:15)                = 12.5            * vmfact
+   Vm0(14:15)                = 12.5            * 1.5
    Vm0(16)                   = 21.875          * vmfact
    Vm0(17)                   = 15.625          * vmfact
 
@@ -872,8 +872,8 @@ subroutine init_pft_photo_params()
    stomatal_slope(11)        =  6.3949 * mfact
    stomatal_slope(12)        =  8.0    * mfact
    stomatal_slope(13)        =  8.0    * mfact
-   stomatal_slope(14)        =  6.0
-   stomatal_slope(15)        =  6.0
+   stomatal_slope(14)        =  6.4
+   stomatal_slope(15)        =  6.4
    stomatal_slope(16)        =  8.0    * mfact
    stomatal_slope(17)        =  6.4    * mfact
  
@@ -1210,7 +1210,12 @@ subroutine init_pft_mort_params()
       treefall_disturbance_rate = 0.
    end if
    
-   seedling_mortality = 0.95
+   seedling_mortality(1) = 0.60
+   seedling_mortality(2:4) = 0.95 
+   seedling_mortality(5) = 0.60
+   seedling_mortality(6:15) = 0.95 
+   seedling_mortality(16) = 0.60 
+   seedling_mortality(17) = 0.95 
 
    treefall_s_gtht = 0.0
 
@@ -1832,32 +1837,34 @@ subroutine init_pft_derived_params()
    real                              :: bleaf_max
    real                              :: bdead_max
    real                              :: min_plant_dens
-   real                              :: hgt_max
+   real, dimension(n_pft)            :: hgt_max
    logical               , parameter :: print_zero_table = .false.
    character(len=str_len), parameter :: zero_table_fn    = 'minimum.size.txt'
    !---------------------------------------------------------------------------------------!
 
+
+   !----- Maximum Height. -----------------------------------------------------------------!
+   hgt_max( 1) = 1.50
+   hgt_max( 2) = 35.0
+   hgt_max( 3) = 35.0
+   hgt_max( 4) = 35.0
+   hgt_max( 5) = 0.95  * b1Ht( 5)
+   hgt_max( 6) = 0.999 * b1Ht( 6)
+   hgt_max( 7) = 0.999 * b1Ht( 7)
+   hgt_max( 8) = 0.999 * b1Ht( 8)
+   hgt_max( 9) = 0.999 * b1Ht( 9)
+   hgt_max(10) = 0.999 * b1Ht(10)
+   hgt_max(11) = 0.999 * b1Ht(11)
+   hgt_max(12) = 0.95  * b1Ht(12)
+   hgt_max(13) = 0.95  * b1Ht(13)
+   hgt_max(14) = 1.50
+   hgt_max(15) = 1.50
+   hgt_max(16) = 1.50
+   hgt_max(17) = min(35.0, 0.95 * b1Ht(17))
+
    !----- Maximum DBH. --------------------------------------------------------------------!
-   do ipft=1,n_pft
-      !----- Decide how to find the maximum DBH PFT. --------------------------------------!
-      select case (ipft)
-      case (1,14:16)
-         hgt_max = 1.50
-      case (2:4)
-         hgt_max = 35.0
-      case (6:11)
-         hgt_max = 0.999 * b1Ht(ipft)
-      case (5,12:13)
-         hgt_max = 0.95  * b1Ht(ipft)
-      case (17)
-         hgt_max = min(35.0, 0.95  * b1Ht(ipft))
-      case default
-         write(unit=*,fmt='(a,1x,i6)') ' Unexpected PFT type:',ipft
-         call fatal_error('No maximum height defined for this PFT!'                        &
-                         ,'init_pft_derived_params','ed_params.f90')
-      end select
-      
-      max_dbh(ipft) = h2dbh(hgt_max,ipft)
+   do ipft=1,n_pft     
+      max_dbh(ipft) = h2dbh(hgt_max(ipft),ipft)
    end do
 
 
@@ -1868,14 +1875,15 @@ subroutine init_pft_derived_params()
    !---------------------------------------------------------------------------------------!
    if (print_zero_table) then
       open  (unit=61,file=trim(zero_table_fn),status='replace',action='write')
-      write (unit=61,fmt='(16(a,1x))')                '  PFT',        'NAME            '   &
+      write (unit=61,fmt='(18(a,1x))')                '  PFT',        'NAME            '   &
                                               ,'     HGT_MIN','         DBH'               &
                                               ,'   BLEAF_MIN','   BDEAD_MIN'               &
                                               ,'  BALIVE_MIN','   BLEAF_MAX'               &
                                               ,'   BDEAD_MAX','  BALIVE_MAX'               &
                                               ,'   INIT_DENS','MIN_REC_SIZE'               &
                                               ,'MIN_COH_SIZE',' NEGL_NPLANT'               &
-                                              ,'         SLA','     LAI_MIN'
+                                              ,'         SLA','     LAI_MIN'               &
+                                              ,'     HGT_MAX','     MAX_DBH'
    end if
    min_plant_dens = onesixth * minval(init_density)
    do ipft = 1,n_pft
@@ -1948,7 +1956,7 @@ subroutine init_pft_derived_params()
 
 
       if (print_zero_table) then
-         write (unit=61,fmt='(i5,1x,a16,1x,14(es12.5,1x))')                                &
+         write (unit=61,fmt='(i5,1x,a16,1x,16(es12.5,1x))')                                &
                                                      ipft,pft_name16(ipft),hgt_min(ipft)   &
                                                     ,dbh,bleaf_min,bdead_min,balive_min    &
                                                     ,bleaf_max,bdead_max,balive_max        &
@@ -1956,7 +1964,8 @@ subroutine init_pft_derived_params()
                                                     ,min_recruit_size(ipft)                &
                                                     ,min_cohort_size(ipft)                 &
                                                     ,negligible_nplant(ipft)               &
-                                                    ,sla(ipft),lai_min(ipft)
+                                                    ,sla(ipft),lai_min(ipft)               &
+                                                    ,hgt_max(ipft),max_dbh(ipft)
       end if
       !------------------------------------------------------------------------------------!
    end do
@@ -1979,7 +1988,8 @@ end subroutine init_pft_derived_params
 !==========================================================================================!
 subroutine init_disturb_params
 
-   use disturb_coms , only : min_new_patch_area       & ! intent(out)
+   use disturb_coms , only : sm_fire                  & ! intent(in)
+                           , min_new_patch_area       & ! intent(out)
                            , treefall_hite_threshold  & ! intent(out)
                            , treefall_age_threshold   & ! intent(out)
                            , forestry_on              & ! intent(out)
@@ -2034,7 +2044,7 @@ subroutine init_disturb_params
    ! moisture equal to soilcp + (slmsts-soilcp) * fire_smoist_threshold [m3_H2O/m3_gnd]    !
    ! would have.                                                                           !
    !---------------------------------------------------------------------------------------!
-   fire_smoist_threshold = 0.06
+   fire_smoist_threshold = sm_fire
 
    !----- Maximum depth that will be considered in the average soil -----------------------!
    fire_smoist_depth     = -1.0
@@ -2548,12 +2558,13 @@ subroutine init_phen_coms
                             , vm_min                   & ! intent(out)
                             , max_phenology_dist       & ! intent(out)
                             , radint                   & ! intent(out)
-                            , radslp                   ! ! intent(out)
+                            , radslp                   & ! intent(out)
+                            , thetacrit                   ! ! intent(in)
    implicit none
 
  
    retained_carbon_fraction = 0.5
-   theta_crit               = 0.2
+   theta_crit               = thetacrit
    dl_tr                    = 655.0
    st_tr1                   = 284.3
    st_tr2                   = 275.15
@@ -2565,10 +2576,10 @@ subroutine init_phen_coms
    rad_turnover_int         = dble(radint)  !-11.3868
    rad_turnover_slope       = dble(radslp)  !0.0824
 
-   vm_tran                  = 7.5
+   vm_tran                  = 8.5
    vm_slop                  = 7.0
-   vm_amp                   = 51.0
-   vm_min                   = 15.0
+   vm_amp                   = 42.0
+   vm_min                   = 18.0
 
    !---------------------------------------------------------------------------------------!
    !     This variable is the maximum distance between the coordinates of a prescribed     !

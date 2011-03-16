@@ -103,7 +103,8 @@ subroutine copy_nl(copy_type)
                                    , phenpath                  & ! intent(out)
                                    , repro_scheme              & ! intent(out)
                                    , radint                    & ! intent(out)
-                                   , radslp                    ! ! intent(out)
+                                   , radslp                    & ! intent(out)
+                                   , thetacrit                 ! ! intent(out)
    use decomp_coms          , only : n_decomp_lim              & ! intent(out)
                                    , LloydTaylor               ! ! intent(out)
    use disturb_coms         , only : include_fire              & ! intent(out)
@@ -111,7 +112,8 @@ subroutine copy_nl(copy_type)
                                    , treefall_disturbance_rate & ! intent(out)
                                    , lu_database               & ! intent(out)
                                    , plantation_file           & ! intent(out)
-                                   , lu_rescale_file           ! ! intent(out)
+                                   , lu_rescale_file           & ! intent(out)
+                                   , sm_fire                   ! ! intent(out)
    use pft_coms             , only : include_these_pft         & ! intent(out)
                                    , agri_stock                & ! intent(out)
                                    , plantation_stock          & ! intent(out)
@@ -304,6 +306,7 @@ subroutine copy_nl(copy_type)
       mfact                     = nl%mfact
       kfact                     = nl%kfact
       gamfact                   = nl%gamfact
+      thetacrit                 = nl%thetacrit
       lwfact                    = nl%lwfact
       thioff                    = nl%thioff
       icomppt                   = nl%icomppt
@@ -313,6 +316,7 @@ subroutine copy_nl(copy_type)
       n_plant_lim               = nl%n_plant_lim
       n_decomp_lim              = nl%n_decomp_lim
       include_fire              = nl%include_fire
+      sm_fire                   = nl%sm_fire
       ianth_disturb             = nl%ianth_disturb
 
       !----- Decomp_scheme is not a true ED variable, we save it in LloydTaylor instead. --!

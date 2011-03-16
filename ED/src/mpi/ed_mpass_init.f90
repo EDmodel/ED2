@@ -99,11 +99,11 @@ subroutine ed_masterput_nl(par_run)
    use physiology_coms, only: istoma_scheme, h2o_plant_lim, n_plant_lim, vmfact, mfact     &
                             , kfact, gamfact, lwfact, thioff, icomppt, quantum_efficiency_T
    use phenology_coms , only: iphen_scheme,iphenys1,iphenysf,iphenyf1,iphenyff,phenpath    &
-                             ,repro_scheme, radint, radslp
+                             ,repro_scheme, radint, radslp, thetacrit
    use decomp_coms,     only: n_decomp_lim
    use pft_coms,        only: include_these_pft,agri_stock,plantation_stock,pft_1st_check
    use disturb_coms,    only: include_fire,ianth_disturb, treefall_disturbance_rate        &
-                             ,lu_database,plantation_file,lu_rescale_file
+                             ,lu_database,plantation_file,lu_rescale_file,sm_fire
    use optimiz_coms,    only: ioptinpt
    use canopy_radiation_coms, only : crown_mod
    use rk4_coms,        only: rk4_tolerance, ibranch_thermo, ipercol
@@ -244,6 +244,7 @@ subroutine ed_masterput_nl(par_run)
    call MPI_Bcast(mfact,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(kfact,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(gamfact,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(thetacrit,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(lwfact,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(thioff,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(icomppt,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
@@ -251,6 +252,7 @@ subroutine ed_masterput_nl(par_run)
    call MPI_Bcast(n_plant_lim,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(n_decomp_lim,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(include_fire,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(sm_fire,1,MPI_REAL,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(ianth_disturb,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(include_these_pft,n_pft,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(agri_stock,1,MPI_INTEGER,mainnum,MPI_COMM_WORLD,ierr)
@@ -893,10 +895,10 @@ subroutine ed_nodeget_nl
    use physiology_coms, only: istoma_scheme, h2o_plant_lim, n_plant_lim, vmfact, mfact     &
                             , kfact, gamfact, lwfact, thioff, icomppt, quantum_efficiency_T
    use phenology_coms , only: iphen_scheme,iphenys1,iphenysf,iphenyf1,iphenyff,phenpath    &
-                             ,repro_scheme, radint, radslp
+                             ,repro_scheme, radint, radslp, thetacrit
    use decomp_coms,     only: n_decomp_lim
    use disturb_coms,    only: include_fire,ianth_disturb, treefall_disturbance_rate        &
-                             ,lu_database,plantation_file,lu_rescale_file
+                             ,lu_database,plantation_file,lu_rescale_file,sm_fire
    use optimiz_coms,    only: ioptinpt
    use ed_misc_coms,    only: attach_metadata
    use canopy_air_coms, only: icanturb, i_blyr_condct, isfclyrm, ustmin, gamm, gamh        &
@@ -1047,6 +1049,7 @@ subroutine ed_nodeget_nl
    call MPI_Bcast(mfact,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(kfact,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(gamfact,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(thetacrit,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(lwfact,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(thioff,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(icomppt,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
@@ -1054,6 +1057,7 @@ subroutine ed_nodeget_nl
    call MPI_Bcast(n_plant_lim,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(n_decomp_lim,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(include_fire,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
+   call MPI_Bcast(sm_fire,1,MPI_REAL,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(ianth_disturb,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(include_these_pft,n_pft,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)
    call MPI_Bcast(agri_stock,1,MPI_INTEGER,master_num,MPI_COMM_WORLD,ierr)

@@ -467,6 +467,10 @@
    NL%MFACT           = 1.    ! Factor for changing stomatal slope (M)
    NL%KFACT           = 2.    ! Factor for changing the water conductance (Kw)
    NL%GAMFACT         = 0.50  ! Factor for changing the dark respiration factor (gamma)
+   NL%THETACRIT       = 0.20  ! Leaf drought phenology threshold.  This is the relative 
+                              !     soil moisture above the wilting point below which the
+                              !     drought-deciduous plants will start shedding their 
+                              !     leaves
    NL%LWFACT          = 1.    ! Factor for changing the leaf width factor (w)
    NL%THIOFF          = 0.    ! Offset to be added to the Vm_high_temp
    !---------------------------------------------------------------------------------------!
@@ -501,7 +505,11 @@
                               ! 2. Fire will be triggered with enough biomass and the
                               !    total soil water at the top 75 cm falls below a 
                               !    threshold. 
-                             
+
+   NL%SM_FIRE         = 0.11  ! Threshold to define the relative soil moisture of the top 
+                              !    75cm that will trigger fires.  Used only when 
+                              !    include_fire is set to 2.
+
 
    NL%IANTH_DISTURB   = 0     ! Flag specifying whether (1) or not (0) to include
                               ! anthropogenic disturbances such as agriculture, 

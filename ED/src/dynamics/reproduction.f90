@@ -297,7 +297,8 @@ subroutine reproduction(cgrid, month)
                   !------------------------------------------------------------------------!
                   cpatch%agb(ico)     = ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)    &
                                                   ,cpatch%bleaf(ico),cpatch%pft(ico)       &
-                                                  ,cpatch%hite(ico),cpatch%bstorage(ico))
+                                                  ,cpatch%hite(ico),cpatch%bstorage(ico)   &
+                                                  ,cpatch%bsapwood(ico))
                   cpatch%basarea(ico) = pio4 * cpatch%dbh(ico)  * cpatch%dbh(ico)
                   cpatch%dagb_dt(ico) = 0.0
                   cpatch%dba_dt(ico)  = 0.0
@@ -315,12 +316,14 @@ subroutine reproduction(cgrid, month)
                   call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico) &
                                    ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)   &
                                    ,cpatch%pft(ico),cpatch%sla(ico), cpatch%lai(ico)       &
-                                   ,cpatch%wpa(ico),cpatch%wai(ico)) !here sla is not yet assigned; will be in init_ed_cohort_vars 
+                                   ,cpatch%wpa(ico),cpatch%wai(ico),cpatch%bsapwood(ico)) 
+                           !here sla is not yet assigned; will be in init_ed_cohort_vars 
                   !----- Finding heat capacity and vegetation internal energy. ------------!
                   cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico)   &
                                                     ,cpatch%balive(ico),cpatch%nplant(ico) &
                                                     ,cpatch%hite(ico),cpatch%pft(ico)      &
-                                                    ,cpatch%phenology_status(ico))
+                                                    ,cpatch%phenology_status(ico)          &
+                                                    ,cpatch%bsapwood(ico))
                   cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * cpatch%veg_temp(ico)
 
                   !----- Update number of cohorts in this site. ---------------------------!

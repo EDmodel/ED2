@@ -1056,10 +1056,12 @@ subroutine ed_opspec_misc
    use decomp_coms           , only : n_decomp_lim                 ! ! intent(in)
    use disturb_coms          , only : include_fire                 & ! intent(in)
                                     , ianth_disturb                & ! intent(in)
-                                    , treefall_disturbance_rate    ! ! intent(in)
+                                    , treefall_disturbance_rate    & ! intent(in)
+                                    , sm_fire                      ! ! intent(in)
    use phenology_coms        , only : iphen_scheme                 & ! intent(in)
                                     , radint                       & ! intent(in)
-                                    , radslp                       ! ! intent(in)
+                                    , radslp                       & ! intent(in)
+                                    , thetacrit                    ! ! intent(in)
    use pft_coms              , only : include_these_pft            & ! intent(in)
                                     , pft_1st_check                & ! intent(in)
                                     , agri_stock                   & ! intent(in)
@@ -1405,6 +1407,14 @@ end do
       ifaterr = ifaterr +1
    end if
    
+   if (thetacrit < 0. .or. thetacrit > 1.) then
+      write (reason,fmt='(a,1x,es12.5,a)')                                                 &
+                    'Invalid THETACRIT, it must be between 0 and 1. Yours is set to'       &
+                    ,thetacrit,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+   
    if (lwfact < 0. .or. lwfact > 100.) then
       write (reason,fmt='(a,1x,es12.5,a)')                                                 &
                     'Invalid LWFACT, it must be between 0 and 100. Yours is set to'        &
@@ -1457,6 +1467,14 @@ end do
       write (reason,fmt='(a,1x,i4,a)')                                                     &
                     'Invalid INCLUDE_FIRE, it must be between 0 and 2. Yours is set to'    &
                     ,include_fire,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+   
+   if (sm_fire < 0. .or. sm_fire > 1.) then
+      write (reason,fmt='(a,1x,es12.5,a)')                                                 &
+                    'Invalid SM_FIRE, it must be between 0 and 1.  Yours is set to'        &
+                    ,sm_fire,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
