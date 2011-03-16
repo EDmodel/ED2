@@ -731,7 +731,8 @@ module growth_balive
                               , sla          & ! intent(in)
                               , q            & ! intent(in)
                               , qsw          & ! intent(in)
-                              , c2n_stem     ! ! intent(in)
+                              , c2n_stem     & ! intent(in)
+                              , phenology    ! ! intent(in)
       use decomp_coms  , only : f_labile     ! ! intent(in)
       use allometry    , only : dbh2bl       ! ! function
       use phenology_coms, only: theta_crit   ! ! intent(in)
@@ -779,7 +780,13 @@ module growth_balive
             ! can go to balive pools, and put any excess in storage.         !
             !----------------------------------------------------------------!
             available_carbon=cpatch%bstorage(ico) + carbon_balance
-            elongf      = min (1.0, cpatch%paw_avg(ico)/theta_crit)
+            
+            select case (phenology(ipft))
+            case (4)
+                elongf      = min (1.0, cpatch%paw_avg(ico)/theta_crit)
+            case default
+                elongf  = 1.0
+            end select
 
             !-----Maximum bleaf that the allometric relationship would allow !
             !     If the tree is drought stress (elongf<1), we do not allow  !
@@ -910,7 +917,8 @@ module growth_balive
                 else
                      cpatch%broot(ico) = cpatch%broot(ico) - (increment -    &
                                       cpatch%bleaf(ico))
-                     cpatch%bleaf(ico) = 0.0                          
+                     cpatch%bleaf(ico) = 0.0
+                     cpatch%phenology_status(ico) = 2
                 end if
                 
                 cpatch%balive(ico) = cpatch%bleaf(ico) + cpatch%broot(ico) + &

@@ -337,6 +337,11 @@ subroutine update_phenology(doy, cpoly, isi, lat)
             !    okay again, and leaves can start growing.                                 !
             !------------------------------------------------------------------------------!
             if (cpatch%phenology_status(ico) < 2 .and. drop_cold) then
+            
+               if (cpoly%green_leaf_factor(ipft,isi) < 0.02) then
+                   bl_max = 0.0
+               end if
+               
                delta_bleaf = cpatch%bleaf(ico) - bl_max
 
                if (delta_bleaf > 0.0) then
@@ -344,7 +349,7 @@ subroutine update_phenology(doy, cpoly, isi, lat)
                   !    Phenology_status = 0 means that the plant has leaves, but they are  !
                   ! not growing (not necessarily because the leaves are fully flushed).    !
                   !------------------------------------------------------------------------!
-                  cpatch%phenology_status(ico) = 0
+                  cpatch%phenology_status(ico) = -1
                   cpatch%leaf_drop(ico) = (1.0 - retained_carbon_fraction) * delta_bleaf
                   csite%fsc_in(ipa) = csite%fsc_in(ipa)                                    &
                                     + cpatch%nplant(ico) * cpatch%leaf_drop(ico)           &
@@ -378,18 +383,18 @@ subroutine update_phenology(doy, cpoly, isi, lat)
                end if
 
                !----- Set status flag. ----------------------------------------------------!
-               if (bl_max == 0.0 .or. cpoly%green_leaf_factor(ipft,isi) < 0.02) then
+               if (bl_max == 0.0) then
                   cpatch%phenology_status(ico) = 2 
-                  cpatch%bleaf(ico)      = 0.0
                end if
+               
             elseif(cpatch%phenology_status(ico) == 2 .and. leaf_out_cold) then
                !---------------------------------------------------------------------------!
-               !      Update the phenology status (1 means that leaves are growing), and   !
-               ! the plant carbon pools, and the phenology status.                         !
+               !      Update the phenology status (1 means that leaves are growing),       !
                !---------------------------------------------------------------------------!
                cpatch%phenology_status(ico) = 1
-               cpatch%bleaf(ico) = cpoly%green_leaf_factor(ipft,isi) * cpatch%balive(ico)  &
-                                 * salloci
+               ! NML -> now all growth is done in growth_balive
+               !cpatch%bleaf(ico) = cpoly%green_leaf_factor(ipft,isi) * cpatch%balive(ico)  &
+               !                  * salloci
             end if
 
 
@@ -414,7 +419,7 @@ subroutine update_phenology(doy, cpoly, isi, lat)
             
             delta_bleaf = cpatch%bleaf(ico) - bl_max
 
-            if (delta_bleaf > 0.0) then
+            if (delta_bleaf > 0.0 .and. cpatch%phenology_status(ico) < 2) then
                cpatch%phenology_status(ico) = -1 
                cpatch%leaf_drop(ico) = (1.0 - retained_carbon_fraction) * delta_bleaf
                csite%fsc_in(ipa) = csite%fsc_in(ipa)                                       &
