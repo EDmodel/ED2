@@ -505,6 +505,8 @@ subroutine update_derived_cohort_props(cpatch,ico,green_leaf_factor,lsl)
                             , ed_biomass          & ! function
                             , area_indices        ! ! subroutine
    use consts_coms   , only : pio4                ! ! intent(in)
+   use phenology_coms, only: theta_crit   ! ! intent(in)
+   
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(patchtype), target     :: cpatch
@@ -515,6 +517,7 @@ subroutine update_derived_cohort_props(cpatch,ico,green_leaf_factor,lsl)
    real :: bl
    real :: bl_max
    real :: rootdepth
+   real :: elongf
    !---------------------------------------------------------------------------------------!
 
    !----- Getting DBH and height from structural biomass. ---------------------------------!
@@ -522,24 +525,27 @@ subroutine update_derived_cohort_props(cpatch,ico,green_leaf_factor,lsl)
    cpatch%hite(ico) = dbh2h(cpatch%pft(ico), cpatch%dbh(ico))
    
    !----- Checking the phenology status and whether it needs to change. -------------------!
-   if(cpatch%phenology_status(ico) /= 2)then
+   if(cpatch%phenology_status(ico) < 2 .and. cpatch%phenology_status(ico) /= -1) then
 
-      bl     = cpatch%balive(ico) * green_leaf_factor                                      &
-             / (1.0 + q(cpatch%pft(ico)) + qsw(cpatch%pft(ico)) * cpatch%hite(ico))
-      bl_max = dbh2bl(cpatch%dbh(ico),cpatch%pft(ico)) * green_leaf_factor
+     select case (phenology(cpatch%pft(ico)))
+     case (4)
+           elongf      = min (1.0, cpatch%paw_avg(ico)/theta_crit)
+     case default
+           elongf  = 1.0
+     end select
+
+      bl_max = dbh2bl(cpatch%dbh(ico),cpatch%pft(ico)) * green_leaf_factor * elongf
       !------------------------------------------------------------------------------------!
       !     If LEAF biomass is not the maximum, set it to 1 (leaves partially flushed),    !
       ! otherwise, set it to 0 (leaves are fully flushed).                                 !
       !------------------------------------------------------------------------------------!
-      if (bl < bl_max) then
+      if (cpatch%bleaf(ico) < bl_max) then
          cpatch%phenology_status(ico) = 1
       else
          cpatch%phenology_status(ico) = 0
       end if
-      cpatch%bleaf(ico) = bl
-    else
-      cpatch%bleaf(ico) = 0.
-    end if
+
+   end if
       
    !----- Update LAI, WPA, and WAI --------------------------------------------------------!
    call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)                &
