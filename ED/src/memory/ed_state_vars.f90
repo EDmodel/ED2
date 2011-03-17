@@ -5895,7 +5895,7 @@ contains
        end do
     end if
 
-    if (imoutput > 0 .or. iqoutput > 0) then
+    if (iqoutput > 0) then
        do m=1,ndcycle
           patchout%qmean_par_v       (m,1:inc) = pack(patchin%qmean_par_v       (m,:),mask)
           patchout%qmean_par_v_beam  (m,1:inc) = pack(patchin%qmean_par_v_beam  (m,:),mask)

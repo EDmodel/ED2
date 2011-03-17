@@ -505,6 +505,8 @@ subroutine update_derived_cohort_props(cpatch,ico,green_leaf_factor,lsl)
                             , ed_biomass          & ! function
                             , area_indices        ! ! subroutine
    use consts_coms   , only : pio4                ! ! intent(in)
+   use phenology_coms, only: theta_crit   ! ! intent(in)
+   
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(patchtype), target     :: cpatch
@@ -515,31 +517,36 @@ subroutine update_derived_cohort_props(cpatch,ico,green_leaf_factor,lsl)
    real :: bl
    real :: bl_max
    real :: rootdepth
+   real :: elongf
    !---------------------------------------------------------------------------------------!
 
-   !----- Getting DBH and height from structural biomass. ---------------------------------!
+   !----- Gett DBH and height from structural biomass. ------------------------------------!
    cpatch%dbh(ico) = bd2dbh(cpatch%pft(ico), cpatch%bdead(ico))
    cpatch%hite(ico) = dbh2h(cpatch%pft(ico), cpatch%dbh(ico))
    
-   !----- Checking the phenology status and whether it needs to change. -------------------!
-   if(cpatch%phenology_status(ico) /= 2)then
+   !----- Check the phenology status and whether it needs to change. ----------------------!
+   select case (cpatch%phenology_status(ico))
+   case (0,1)
 
-      bl     = cpatch%balive(ico) * green_leaf_factor                                      &
-             / (1.0 + q(cpatch%pft(ico)) + qsw(cpatch%pft(ico)) * cpatch%hite(ico))
-      bl_max = dbh2bl(cpatch%dbh(ico),cpatch%pft(ico)) * green_leaf_factor
+      select case (phenology(cpatch%pft(ico)))
+      case (4)
+         elongf  = min (1.0, cpatch%paw_avg(ico)/theta_crit)
+      case default
+         elongf  = 1.0
+      end select
+
+      bl_max = dbh2bl(cpatch%dbh(ico),cpatch%pft(ico)) * green_leaf_factor * elongf
       !------------------------------------------------------------------------------------!
       !     If LEAF biomass is not the maximum, set it to 1 (leaves partially flushed),    !
       ! otherwise, set it to 0 (leaves are fully flushed).                                 !
       !------------------------------------------------------------------------------------!
-      if (bl < bl_max) then
+      if (cpatch%bleaf(ico) < bl_max) then
          cpatch%phenology_status(ico) = 1
       else
          cpatch%phenology_status(ico) = 0
       end if
-      cpatch%bleaf(ico) = bl
-    else
-      cpatch%bleaf(ico) = 0.
-    end if
+
+   end select
       
    !----- Update LAI, WPA, and WAI --------------------------------------------------------!
    call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)                &
@@ -615,13 +622,13 @@ subroutine update_vital_rates(cpatch,ico,ilu,dbh_in,bdead_in,balive_in,hite_in,b
    !---------------------------------------------------------------------------------------!
 
 
-   !----- Making the alias for PFT type. --------------------------------------------------!
+   !----- Make the alias for PFT type. ----------------------------------------------------!
    ipft = cpatch%pft(ico)
 
-   !----- Finding the DBH bin. ------------------------------------------------------------!
+   !----- Find the DBH bin. ---------------------------------------------------------------!
    idbh = max(1,min(n_dbh,ceiling(dbh_in*ddbhi)))
 
-   !----- Finding the new basal area and above-ground biomass. ----------------------------!
+   !----- Find the new basal area and above-ground biomass. -------------------------------!
    cpatch%basarea(ico)    = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)
    cpatch%agb(ico)        = ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)                &
                                       ,cpatch%bleaf(ico),cpatch%pft(ico)                   &
@@ -629,7 +636,7 @@ subroutine update_vital_rates(cpatch,ico,ilu,dbh_in,bdead_in,balive_in,hite_in,b
                                       ,cpatch%bsapwood(ico) ) 
 
    !---------------------------------------------------------------------------------------!
-   !     Changing the agb growth to kgC/plant/year, basal area to cm2/plant/year, and DBH  !
+   !     Change the agb growth to kgC/plant/year, basal area to cm2/plant/year, and DBH    !
    ! growth to cm/year.                                                                    !
    !---------------------------------------------------------------------------------------!
    cpatch%dagb_dt(ico)    = (cpatch%agb(ico)     - agb_in ) * 12.0
@@ -671,6 +678,7 @@ subroutine update_vital_rates(cpatch,ico,ilu,dbh_in,bdead_in,balive_in,hite_in,b
    basal_area_mort(ipft,idbh) = basal_area_mort(ipft,idbh)                                 &
                               + area * (nplant_in - cpatch%nplant(ico)) * ba_in * 12.0
    agb_mort(ipft,idbh)        = agb_mort(ipft,idbh) + area * mort_litter * 12.0
+   !---------------------------------------------------------------------------------------!
 
    return
 end subroutine update_vital_rates
