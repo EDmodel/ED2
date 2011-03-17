@@ -22,7 +22,7 @@
 !------------------------------------------------------------------------------------------!
 subroutine leaf_stars(theta_atm,theiv_atm,shv_atm,rvap_atm,co2_atm                         &
                      ,theta_can,theiv_can,shv_can,rvap_can,co2_can                         &
-                     ,zref,uref,dtll,rough,ustar,tstar,estar,qstar,rstar,cstar             &
+                     ,zref,dheight,uref,dtll,rough,ustar,tstar,estar,qstar,rstar,cstar     &
                      ,zeta,rib,r_aer)
    use mem_leaf  , only : istar      ! ! intent(in)
    use rconstants, only : grav       & ! intent(in)
@@ -30,6 +30,7 @@ subroutine leaf_stars(theta_atm,theiv_atm,shv_atm,rvap_atm,co2_atm              
                         , epim1      & ! intent(in)
                         , halfpi     ! ! intent(in)
    use leaf_coms , only : ustmin     & ! intent(in)
+                        , ggfact     & ! intent(in)
                         , bl79       & ! intent(in)
                         , csm        & ! intent(in)
                         , csh        & ! intent(in)
@@ -43,6 +44,7 @@ subroutine leaf_stars(theta_atm,theiv_atm,shv_atm,rvap_atm,co2_atm              
                         , psim       & ! function
                         , psih       & ! function
                         , zoobukhov  ! ! function
+   use node_mod  , only : mynum      ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    real, intent(in)  :: theta_atm    ! Above canopy air pot. temperature        [        K]
@@ -56,6 +58,7 @@ subroutine leaf_stars(theta_atm,theiv_atm,shv_atm,rvap_atm,co2_atm              
    real, intent(in)  :: rvap_can     ! Canopy air vapour mixing ratio           [kg/kg_air]
    real, intent(in)  :: co2_can      ! Canopy air CO2 mixing ratio              [ µmol/mol]
    real, intent(in)  :: zref         ! Height at reference point                [        m]
+   real, intent(in)  :: dheight      ! Displacement height                      [        m]
    real, intent(in)  :: uref         ! Wind speed at reference height           [      m/s]
    real, intent(in)  :: dtll         ! Time step                                [        m]
    real, intent(in)  :: rough        ! z0, the roughness                        [        m]
@@ -98,14 +101,15 @@ subroutine leaf_stars(theta_atm,theiv_atm,shv_atm,rvap_atm,co2_atm              
    real, external    :: cbrt         ! Cubic root
    !---------------------------------------------------------------------------------------!
 
-   !----- Finding the variables common to both methods. -----------------------------------!
+
+   !----- Find the variables common to both methods. --------------------------------------!
    thetav_atm = theta_atm * (1. + epim1 * shv_atm)
    thetav_can = theta_can * (1. + epim1 * shv_can)
-   zoz0m      = zref/rough
+   zoz0m      = (zref-dheight)/rough
    lnzoz0m    = log(zoz0m)
    zoz0h      = z0moz0h * zoz0m
    lnzoz0h    = log(zoz0h)
-   rib        = 2.0 * grav * zref * (thetav_atm-thetav_can)                                &
+   rib        = 2.0 * grav * (zref-dheight-rough) * (thetav_atm-thetav_can)                &
               / ( (thetav_atm+thetav_can) * uref * uref)
    stable     = thetav_atm >= thetav_can
 
@@ -178,7 +182,7 @@ subroutine leaf_stars(theta_atm,theiv_atm,shv_atm,rvap_atm,co2_atm              
          !----- Unstable case. ------------------------------------------------------------!
          zeta = rib * lnzoz0m
       end if
-      zeta0m = rough * zeta / zref
+      zeta0m = rough * zeta / (zref - dheight)
 
       !----- Finding the aerodynamic resistance similarly to L79. -------------------------!
       r_aer = tprandtl * (lnzoz0m - psih(zeta,stable) + psih(zeta0m,stable))               &
@@ -212,8 +216,8 @@ subroutine leaf_stars(theta_atm,theiv_atm,shv_atm,rvap_atm,co2_atm              
 
 
       !----- We now compute the stability correction functions. ---------------------------!
-      zeta   = zoobukhov(rib,zref,rough,zoz0m,lnzoz0m,zoz0h,lnzoz0h,stable)
-      zeta0m = rough * zeta / zref
+      zeta   = zoobukhov(rib,zref-dheight,rough,zoz0m,lnzoz0m,zoz0h,lnzoz0h,stable)
+      zeta0m = rough * zeta / (zref-dheight)
       zeta0h = z0hoz0m * zeta0m
 
       !----- Finding the aerodynamic resistance similarly to L79. -------------------------!
@@ -239,25 +243,11 @@ subroutine leaf_stars(theta_atm,theiv_atm,shv_atm,rvap_atm,co2_atm              
    rstar = c3 *    (rvap_atm  - rvap_can )
    cstar = c3 *    (co2_atm   - co2_can  )
 
-   return
-
    if (abs(tstar) < 1.e-7) tstar = 0.
    if (abs(estar) < 1.e-7) estar = 0.
    if (abs(qstar) < 1.e-7) qstar = 0.
    if (abs(rstar) < 1.e-7) rstar = 0.
    if (abs(cstar) < 1.e-7) cstar = 0.
-
-   !---------------------------------------------------------------------------------------!
-   !     Limit ustar so that the flux cannot take more than 1/2 velocity in a timestep.    !
-   !---------------------------------------------------------------------------------------!
-   delz  = 2. * zref
-   d_vel = - ustar * ustar * dtll / delz
-   vel_new = uref + d_vel
-   if (vel_new < .5 * uref) then
-      d_vel = .5 * uref
-      ustar = sqrt(d_vel * delz / dtll)
-   end if
-   !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
    !    Compute the ground conductance.  This equation is similar to the original, except  !
@@ -266,6 +256,8 @@ subroutine leaf_stars(theta_atm,theiv_atm,shv_atm,rvap_atm,co2_atm              
    !---------------------------------------------------------------------------------------!
    ggbare = c3 * ustar
    !---------------------------------------------------------------------------------------!
+
+
    return
 end subroutine leaf_stars
 !==========================================================================================!
@@ -838,7 +830,7 @@ end subroutine sfc_pcp
 ! and albedo.                                                                              !
 !------------------------------------------------------------------------------------------!
 subroutine vegndvi(ifm,patch_area,leaf_class,veg_fracarea,veg_lai,veg_tai,veg_rough        &
-                  ,veg_height,veg_albedo,veg_ndvip,veg_ndvic,veg_ndvif)
+                  ,veg_height,veg_displace,veg_albedo,veg_ndvip,veg_ndvic,veg_ndvif)
 
    use leaf_coms
    use rconstants
@@ -857,6 +849,7 @@ subroutine vegndvi(ifm,patch_area,leaf_class,veg_fracarea,veg_lai,veg_tai,veg_ro
    real                            , intent(out)   :: veg_lai
    real                            , intent(out)   :: veg_tai
    real                            , intent(out)   :: veg_fracarea
+   real                            , intent(out)   :: veg_displace
    real                            , intent(out)   :: veg_rough
    real                            , intent(out)   :: veg_albedo
    real                            , intent(inout) :: veg_ndvic
@@ -972,6 +965,7 @@ subroutine vegndvi(ifm,patch_area,leaf_class,veg_fracarea,veg_lai,veg_tai,veg_ro
 
       !----- Compute vegetation roughness height, albedo, and fractional area. ------------!
       veg_rough    = veg_height * (1. - bz * exp(-hz * veg_tai))
+      veg_displace = veg_height * vh2dh
       veg_albedo   = albv_green(nveg) * green_frac + albv_brown(nveg) * (1. - green_frac)
       veg_fracarea = veg_frac(nveg) * (1. - exp(-extinc_veg * veg_tai))
    end if
@@ -1201,7 +1195,7 @@ end subroutine sfcrad
 !    This function determines the wind at a given height, given that the stars are al-     !
 ! ready known, as well as the Richardson number and the zetas.                             !
 !------------------------------------------------------------------------------------------!
-real(kind=4) function leaf_reduced_wind(ustar,zeta,rib,zref,d0,height,rough)
+real(kind=4) function leaf_reduced_wind(ustar,zeta,rib,zref,dheight,height,rough)
    use rconstants     , only : vonk     ! ! intent(in)
    use leaf_coms      , only : bl79     & ! intent(in)
                              , csm      & ! intent(in)
@@ -1216,7 +1210,7 @@ real(kind=4) function leaf_reduced_wind(ustar,zeta,rib,zref,d0,height,rough)
    real(kind=4), intent(in) :: zeta      ! Normalised height                      [    ---]
    real(kind=4), intent(in) :: rib       ! Bulk Richardson number                 [    ---]
    real(kind=4), intent(in) :: zref      ! Reference height                       [      m]
-   real(kind=4), intent(in) :: d0        ! Displacement height                    [      m]
+   real(kind=4), intent(in) :: dheight   ! Displacement height                    [      m]
    real(kind=4), intent(in) :: height    ! Height to determine the red. wind      [      m]
    real(kind=4), intent(in) :: rough     ! Roughness scale                        [      m]
    !----- Local variables. ----------------------------------------------------------------!
@@ -1243,7 +1237,7 @@ real(kind=4) function leaf_reduced_wind(ustar,zeta,rib,zref,d0,height,rough)
 
 
    !----- Find the log for the log-height interpolation of wind. --------------------------!
-   hoz0      = height/rough
+   hoz0      = (height-dheight)/rough
    lnhoz0    = log(hoz0)
    !---------------------------------------------------------------------------------------!
 
@@ -1280,8 +1274,8 @@ real(kind=4) function leaf_reduced_wind(ustar,zeta,rib,zref,d0,height,rough)
    case default  !----- Other methods. ----------------------------------------------------!
 
       !----- Determine zeta for the sought height and for roughness height. ---------------!
-      zetah = zeta * height / zref
-      zeta0 = zeta * rough  / zref
+      zetah = zeta * (height-dheight) / (zref-dheight)
+      zeta0 = zeta * rough            / (zref-dheight)
       !------------------------------------------------------------------------------------!
 
       leaf_reduced_wind = (ustar/vonk) * (lnhoz0 - psim(zetah,stable) + psim(zeta0,stable))
@@ -1645,8 +1639,8 @@ subroutine leaf3_roughness(ip,veg_fracarea,patch_area,ustar,topzo,veg_rough,soil
       !------------------------------------------------------------------------------------!
       !    For water surfaces (patch 1), compute roughness length based on previous ustar. !
       !------------------------------------------------------------------------------------!
-      patch_rough = max(z0fac_water * ustar * ustar, min_waterrough)
-   elseif (isfcl >= 1 .and. patch_area >= tiny_parea) then
+      patch_rough = max(z0fac_water * ustar ** 2, min_waterrough)
+   elseif (isfcl >= 1) then
       !----- Possibly land, and with sufficient area. -------------------------------------!
       summer_rough = max( topzo                                                            &
                         , veg_rough * veg_fracarea + soil_rough * (1.0 - veg_fracarea) )
@@ -1671,33 +1665,39 @@ end subroutine leaf3_roughness
 !     This sub-routine normalises the accumulated fluxes and albedo seen by atmosphere     !
 ! over one full BRAMS timestep (dtlt).                                                     !
 !------------------------------------------------------------------------------------------!
-subroutine normal_accfluxes(m2,m3,ia,iz,ja,jz,atm_rhos,sflux_u,sflux_v,sflux_w,sflux_t     &
-                           ,sflux_r,sflux_c,albedt,rlongup)
-   use leaf_coms  , only : dtll_factor ! ! intent(in)
+subroutine normal_accfluxes(m2,m3,mpat,ia,iz,ja,jz,atm_rhos,patch_area,sflux_u,sflux_v     &
+                           ,sflux_w,sflux_t,sflux_r,sflux_c,albedt,rlongup)
+   use leaf_coms  , only : dtll_factor & ! intent(in)
+                         , tiny_parea  ! ! intent(in)
    use mem_radiate, only : iswrtyp     & ! intent(in)
                          , ilwrtyp     ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
-   integer                  , intent(in)    :: m2
-   integer                  , intent(in)    :: m3
-   integer                  , intent(in)    :: ia
-   integer                  , intent(in)    :: iz
-   integer                  , intent(in)    :: ja
-   integer                  , intent(in)    :: jz
-   real   , dimension(m2,m3), intent(in)    :: atm_rhos
-   real   , dimension(m2,m3), intent(inout) :: sflux_u
-   real   , dimension(m2,m3), intent(inout) :: sflux_v
-   real   , dimension(m2,m3), intent(inout) :: sflux_w
-   real   , dimension(m2,m3), intent(inout) :: sflux_t
-   real   , dimension(m2,m3), intent(inout) :: sflux_r
-   real   , dimension(m2,m3), intent(inout) :: sflux_c
-   real   , dimension(m2,m3), intent(inout) :: albedt
-   real   , dimension(m2,m3), intent(inout) :: rlongup
+   integer                       , intent(in)    :: m2
+   integer                       , intent(in)    :: m3
+   integer                       , intent(in)    :: mpat
+   integer                       , intent(in)    :: ia
+   integer                       , intent(in)    :: iz
+   integer                       , intent(in)    :: ja
+   integer                       , intent(in)    :: jz
+   real   , dimension(m2,m3)     , intent(in)    :: atm_rhos
+   real   , dimension(m2,m3,mpat), intent(in)    :: patch_area
+   real   , dimension(m2,m3)     , intent(inout) :: sflux_u
+   real   , dimension(m2,m3)     , intent(inout) :: sflux_v
+   real   , dimension(m2,m3)     , intent(inout) :: sflux_w
+   real   , dimension(m2,m3)     , intent(inout) :: sflux_t
+   real   , dimension(m2,m3)     , intent(inout) :: sflux_r
+   real   , dimension(m2,m3)     , intent(inout) :: sflux_c
+   real   , dimension(m2,m3)     , intent(inout) :: albedt
+   real   , dimension(m2,m3)     , intent(inout) :: rlongup
    !----- Local variables. ----------------------------------------------------------------!
-   integer                                  :: i
-   integer                                  :: j
-   real                                     :: rho_dtlt
-   logical                                  :: rad_on
+   integer                                       :: i
+   integer                                       :: j
+   integer                                       :: p
+   real                                          :: rho_dtlt
+   real                                          :: solarea
+   real                                          :: solarea_i
+   logical                                       :: rad_on
    !---------------------------------------------------------------------------------------!
 
 
@@ -1710,18 +1710,24 @@ subroutine normal_accfluxes(m2,m3,ia,iz,ja,jz,atm_rhos,sflux_u,sflux_v,sflux_w,s
    latloop: do j=ja,jz
       lonloop: do i=ia,iz
 
+         solarea = patch_area(i,j,1)
+         do p=2,mpat
+            if (patch_area(i,j,p) >= tiny_parea) solarea = solarea + patch_area(i,j,p)
+         end do
+         solarea_i = 1.0 / solarea
+
          rho_dtlt = atm_rhos(i,j) * dtll_factor
 
-         sflux_u(i,j) = sflux_u(i,j) * rho_dtlt
-         sflux_v(i,j) = sflux_v(i,j) * rho_dtlt
-         sflux_w(i,j) = sflux_w(i,j) * rho_dtlt
-         sflux_t(i,j) = sflux_t(i,j) * rho_dtlt
-         sflux_r(i,j) = sflux_r(i,j) * rho_dtlt
-         sflux_c(i,j) = sflux_c(i,j) * rho_dtlt
+         sflux_u(i,j) = sflux_u(i,j) * rho_dtlt * solarea_i
+         sflux_v(i,j) = sflux_v(i,j) * rho_dtlt * solarea_i
+         sflux_w(i,j) = sflux_w(i,j) * rho_dtlt * solarea_i
+         sflux_t(i,j) = sflux_t(i,j) * rho_dtlt * solarea_i
+         sflux_r(i,j) = sflux_r(i,j) * rho_dtlt * solarea_i
+         sflux_c(i,j) = sflux_c(i,j) * rho_dtlt * solarea_i
 
           if (rad_on) then
-             albedt (i,j) = albedt (i,j) * dtll_factor
-             rlongup(i,j) = rlongup(i,j) * dtll_factor
+             albedt (i,j) = albedt (i,j) * dtll_factor * solarea_i
+             rlongup(i,j) = rlongup(i,j) * dtll_factor * solarea_i
           end if
 
       end do lonloop
@@ -1787,7 +1793,7 @@ subroutine leaf_solve_veg(ip,mzs,leaf_class,veg_height,patch_area,veg_fracarea,v
    !---------------------------------------------------------------------------------------!
    if (initial) then
       !---- First call.  Decide whether the vegetation can be solved. ---------------------!
-      if (ip == 1 .or. patch_area < tiny_parea) then
+      if (ip == 1) then
          solvable = .false.
       else
          nveg = nint(leaf_class)

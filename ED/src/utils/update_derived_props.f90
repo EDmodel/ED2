@@ -135,9 +135,9 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
       ! storey.  Also, we must take into account the depth of the temporary surface water  !
       ! or snow, because this will make the plants "shorter".                              !
       !------------------------------------------------------------------------------------!
-      if (csite%opencan_frac(ipa) > 0.0 .and.                                              &
-          cpatch%hite(ico) > csite%total_snow_depth(ipa)) then
-         weight                  = min(1.0, cpatch%nplant(ico)                              &
+      if (csite%opencan_frac(ipa) > 0.0                         .and.                      &
+          cpatch%hite(ico)        > csite%total_snow_depth(ipa) ) then
+         weight                  = min(1.0, cpatch%nplant(ico)                             &
                                           * dbh2ca(cpatch%dbh(ico),cpatch%sla(ico),ipft))
          norm_fac                = norm_fac + weight
          csite%veg_height(ipa)   = csite%veg_height(ipa)                                   &
@@ -168,11 +168,15 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
 
 
 
-   !----- Update the canopy depth, and impose the minimum if needed be. -------------------!
-   csite%can_depth(ipa) = max(csite%veg_height(ipa), minimum_canopy_depth)
+   !----- Find the 0-plane displacement due to vegetation. --------------------------------!
+   csite%veg_displace(ipa) = vh2dh * csite%veg_height(ipa)
    !---------------------------------------------------------------------------------------!
 
 
+
+   !----- Update the canopy depth, and impose the minimum if needed be. -------------------!
+   csite%can_depth(ipa) = max(csite%veg_height(ipa), minimum_canopy_depth)
+   !---------------------------------------------------------------------------------------!
 
 
    !----- Find the PFT-dependent size distribution of this patch. -------------------------!

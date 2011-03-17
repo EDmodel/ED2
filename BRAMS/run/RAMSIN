@@ -580,6 +580,16 @@
    USTMIN   = 0.10,          ! Minimum u* (m/s)
    
 
+   !---------------------------------------------------------------------------------------!
+   !     The following variables are used only when ISFCLYRM is not 1.                     !
+   !---------------------------------------------------------------------------------------!
+   GAMM            = 13.,   ! Momentum coefficient
+   GAMH            = 13.,   ! Heat coefficient
+   TPRANDTL        = 0.74,  ! Turbulent Prandtl number
+   VH2VR           = 0.13,  ! Vegetation Roughness: Vegetation height ratio
+   VH2DH           = 0.63,  ! Displacement height : vegetation height ratio
+   !---------------------------------------------------------------------------------------!
+
    ICO2    = 1,              ! CO2 prognostic level
                              !  0 - Do not solve it (CO2CON(1) will be used as a time
                              !      invariant CO2 mixing ratio whenever needed);
@@ -791,6 +801,9 @@
                                ! FRQANL
    IDOUTPUT  =  0,             ! Daily means   (mostly polygon averages)
    IMOUTPUT  =  0,             ! Monthly means (mostly polygon averages)
+   IQOUTPUT  =  0,             ! Monthly mean diurnal cycle
+                               !  The number of points to build the mean
+                               !  diurnal cycle is defined by FRQANL
    IYOUTPUT  =  0,             ! Annual output
    ITOUTPUT  =  0,             ! Instantaneous fluxes (site average)
                                !     single annual file, no patch/cohort, 
@@ -1017,10 +1030,14 @@
    !    These are factors that multiply some of the ED-2.1 default parameters.  Setting    !
    ! them to 1.0 will make them the default.  These are applied for all PFTs.              !
    !---------------------------------------------------------------------------------------!
-   VMFACT          = 1.,    ! Factor for changing Vm0 from the default
+   VMFACT          = 2.,    ! Factor for changing Vm0 from the default
    MFACT           = 1.,    ! Factor for changing stomatal slope (M)
-   KFACT           = 1.,    ! Factor for changing the water conductance (Kw)
-   GAMFACT         = 1.,    ! Factor for changing the dark respiration factor (gamma)
+   KFACT           = 2.,    ! Factor for changing the water conductance (Kw)
+   GAMFACT         = 0.50,  ! Factor for changing the dark respiration factor (gamma)
+   THETACRIT       = 0.20,  ! Leaf drought phenology threshold.  This is the relative 
+                            !     soil moisture above the wilting point below which the
+                            !     drought-deciduous plants will start shedding their 
+                            !     leaves
    LWFACT          = 1.,    ! Factor for changing the leaf width (w)
    THIOFF          = 0.,    ! Offset to be added to the Vm_high_temp
    !---------------------------------------------------------------------------------------!
@@ -1053,7 +1070,11 @@
                               !    fires. 
                               ! 2. Fire will be triggered with enough biomass and the
                               !    total soil water at the top 75 cm falls below a 
-                              !    threshold. 
+                              !    threshold.
+
+   SM_FIRE         = 0.11,    ! Threshold to define the relative soil moisture of the top 
+                              !    75cm that will trigger fires.  Used only when 
+                              !    include_fire is set to 2.
 
    IANTH_DISTURB   = 1,       ! Flag specifying whether (1) or not (0) to include
                               ! anthropogenic disturbances such as agriculture, 

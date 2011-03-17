@@ -475,14 +475,14 @@ end subroutine sfcinit_file
 subroutine sfcinit_nofile(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,seatp,seatf       &
                          ,soil_water,soil_energy,soil_text,sfcwater_mass,sfcwater_energy   &
                          ,sfcwater_depth,ustar,tstar,rstar,cstar,zeta,ribulk,veg_fracarea  &
-                         ,veg_agb,veg_lai,veg_tai,veg_rough,veg_height,veg_albedo          &
-                         ,patch_area,patch_rough,patch_wetind,leaf_class,soil_rough        &
-                         ,sfcwater_nlev,stom_condct,ground_rsat,ground_rvap,ground_temp    &
-                         ,ground_fliq,veg_water,veg_hcap,veg_energy,can_prss,can_theiv     &
-                         ,can_theta,can_rvap,can_co2,sensible_gc,sensible_vc,evap_gc       &
-                         ,evap_vc,transp,gpp,plresp,resphet,veg_ndvip,veg_ndvic,veg_ndvif  &
-                         ,snow_mass,snow_depth,cosz,rlongup,albedt,rvv,prsv,piv,vt2da      &
-                         ,vt2db,glat,glon,zot,flpw,rtgt)
+                         ,veg_agb,veg_lai,veg_tai,veg_rough,veg_height,veg_displace        &
+                         ,veg_albedo,patch_area,patch_rough,patch_wetind,leaf_class        &
+                         ,soil_rough,sfcwater_nlev,stom_condct,ground_rsat,ground_rvap     &
+                         ,ground_temp,ground_fliq,veg_water,veg_hcap,veg_energy,can_prss   &
+                         ,can_theiv,can_theta,can_rvap,can_co2,sensible_gc,sensible_vc     &
+                         ,evap_gc,evap_vc,transp,gpp,plresp,resphet,veg_ndvip,veg_ndvic    &
+                         ,veg_ndvif,snow_mass,snow_depth,cosz,rlongup,albedt,rvv,prsv,piv  &
+                         ,vt2da,vt2db,glat,glon,zot,flpw,rtgt)
    use mem_grid
    use mem_leaf
    use leaf_coms
@@ -530,6 +530,7 @@ subroutine sfcinit_nofile(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,seatp,s
    real, dimension(    n2,n3,npat), intent(inout) :: veg_tai
    real, dimension(    n2,n3,npat), intent(inout) :: veg_rough
    real, dimension(    n2,n3,npat), intent(inout) :: veg_height
+   real, dimension(    n2,n3,npat), intent(inout) :: veg_displace
    real, dimension(    n2,n3,npat), intent(inout) :: veg_albedo
    real, dimension(    n2,n3,npat), intent(inout) :: patch_area
    real, dimension(    n2,n3,npat), intent(inout) :: patch_rough
@@ -674,13 +675,14 @@ subroutine sfcinit_nofile(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,seatp,s
 
             nveg = nint(leaf_class(i,j,ipat))
 
-            soil_rough(i,j,ipat)  = zrough
-            patch_rough(i,j,ipat) = max(zrough,zot(i,j))
-            veg_rough(i,j,ipat)   = .13 * veg_ht(nveg)
+            soil_rough  (i,j,ipat)  = zrough
+            patch_rough (i,j,ipat)  = max(zrough,zot(i,j))
+            veg_rough   (i,j,ipat)  = vh2vr * veg_ht(nveg)
 
-            veg_height(i,j,ipat)  = veg_ht(nveg)
-            veg_albedo(i,j,ipat)  = albv_green(nveg)
-            stom_condct(i,j,ipat) = 1.e-6
+            veg_height  (i,j,ipat)  = veg_ht(nveg)
+            veg_displace(i,j,ipat)  = vh2dh * veg_ht(nveg)
+            veg_albedo  (i,j,ipat)  = albv_green(nveg)
+            stom_condct (i,j,ipat)  = 1.e-6
 
             !------------------------------------------------------------------------------!
             !     We cannot allow the vegetation height to be above the first level.  If   !
@@ -815,12 +817,12 @@ subroutine sfcinit_nofile(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,seatp,s
                sfcwater_nlev(i,j,ipat) = 0.
             end if
 
-            call vegndvi(ifm, patch_area  (i,j,ipat) , leaf_class(i,j,ipat)                &
-                            , veg_fracarea(i,j,ipat) , veg_lai   (i,j,ipat)                &
-                            , veg_tai     (i,j,ipat) , veg_rough (i,j,ipat)                &
-                            , veg_height  (i,j,ipat) , veg_albedo(i,j,ipat)                &
-                            , veg_ndvip   (i,j,ipat) , veg_ndvic (i,j,ipat)                &
-                            , veg_ndvif   (i,j,ipat)                                       )
+            call vegndvi(ifm, patch_area      (i,j,ipat) , leaf_class         (i,j,ipat)   &
+                            , veg_fracarea    (i,j,ipat) , veg_lai            (i,j,ipat)   &
+                            , veg_tai         (i,j,ipat) , veg_rough          (i,j,ipat)   &
+                            , veg_height      (i,j,ipat) , veg_displace       (i,j,ipat)   &
+                            , veg_albedo      (i,j,ipat) , veg_ndvip          (i,j,ipat)   &
+                            , veg_ndvic       (i,j,ipat) , veg_ndvif          (i,j,ipat)   )
 
             call leaf_grndvap( soil_energy(mzg,i,j,ipat) , soil_water     (mzg,i,j,ipat)   &
                              , soil_text  (mzg,i,j,ipat) , sfcwater_energy(  1,i,j,ipat)   &

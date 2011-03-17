@@ -452,11 +452,12 @@ subroutine sfcinit_hstart()
                end if
 
                !----- Assign roughnesses and a couple of other parameters. ----------------!
-               leaf_g(ifm)%soil_rough(i,j,ipat)  = zrough
-               leaf_g(ifm)%patch_rough(i,j,ipat) = max(zrough,grid_g(ifm)%topzo(i,j))
-               leaf_g(ifm)%veg_rough(i,j,ipat)   = .13 * veg_ht(nveg)
-               leaf_g(ifm)%veg_height(i,j,ipat)  = veg_ht(nveg)
-               leaf_g(ifm)%stom_condct(i,j,ipat) = 1.e-6
+               leaf_g(ifm)%soil_rough  (i,j,ipat) = zrough
+               leaf_g(ifm)%patch_rough (i,j,ipat) = max(zrough,grid_g(ifm)%topzo(i,j))
+               leaf_g(ifm)%veg_rough   (i,j,ipat) = vh2vr * veg_ht(nveg)
+               leaf_g(ifm)%veg_height  (i,j,ipat) = veg_ht(nveg)
+               leaf_g(ifm)%veg_displace(i,j,ipat) = vh2dh * veg_ht(nveg)
+               leaf_g(ifm)%stom_condct (i,j,ipat) = 1.e-6
 
                !----- Checking for temporary surface water/snow layers --------------------! 
                do k = 1,nzs
@@ -477,6 +478,7 @@ subroutine sfcinit_hstart()
                               ,leaf_g(ifm)%veg_tai                     (i,j,ipat)          &
                               ,leaf_g(ifm)%veg_rough                   (i,j,ipat)          &
                               ,leaf_g(ifm)%veg_height                  (i,j,ipat)          &
+                              ,leaf_g(ifm)%veg_displace                (i,j,ipat)          &
                               ,leaf_g(ifm)%veg_albedo                  (i,j,ipat)          &
                               ,leaf_g(ifm)%veg_ndvip                   (i,j,ipat)          &
                               ,leaf_g(ifm)%veg_ndvic                   (i,j,ipat)          &

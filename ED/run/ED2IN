@@ -114,6 +114,10 @@
    NL%IFOUTPUT  =  0            ! Instantaneous analysis (site average)
    NL%IDOUTPUT  =  0            ! Daily means (site average)
    NL%IMOUTPUT  =  3            ! Monthly means (site average)
+   NL%IQOUTPUT  =  0            ! Monthly mean of the diurnal cycle
+                                !    If this option is on, then FRQFAST must be set 
+                                !    in seconds and be less than one day, otherwise, 
+                                !    the model won't run.
    NL%IYOUTPUT  =  0            ! Annual output
    NL%ITOUTPUT  =  0            ! Instantaneous fluxes (site average)
                                 ! single annual file, no patch/cohort, for optimization or 
@@ -378,7 +382,11 @@
    NL%VMFACT          = 2   ! Factor for changing Vm0 from the default
    NL%MFACT           = 1.125    ! Factor for changing stomatal slope (M)
    NL%KFACT           = 2.    ! Factor for changing the water conductance (Kw)
-   NL%GAMFACT         = 0.5    ! Factor for changing the dark respiration factor (gamma)
+   NL%GAMFACT         = 0.50  ! Factor for changing the dark respiration factor (gamma)
+   NL%THETACRIT       = 0.20  ! Leaf drought phenology threshold.  This is the relative 
+                              !     soil moisture above the wilting point below which the
+                              !     drought-deciduous plants will start shedding their 
+                              !     leaves
    NL%LWFACT          = 1.    ! Factor for changing the leaf width factor (w)
    NL%THIOFF          = 0.    ! Offset to be added to the Vm_high_temp
    NL%GGFACT          = 1.    ! Factor to multiply the ground to canopy conductancd
@@ -415,6 +423,11 @@
                               ! 2. Fire will be triggered with enough biomass and the
                               !    total soil water at the top 75 cm falls below a 
                               !    threshold. 
+
+   NL%SM_FIRE         = 0.11  ! Threshold to define the relative soil moisture of the top 
+                              !    75cm that will trigger fires.  Used only when 
+                              !    include_fire is set to 2.
+
 
    NL%IANTH_DISTURB   = 0     ! Flag specifying whether (1) or not (0) to include
                               ! anthropogenic disturbances such as agriculture, 
@@ -467,6 +480,16 @@
                               !      works better during night time.
                               !  4 - The parametrisation of Beljaars and Holtslag, but 
                               !      using z/L estimation as in Oncley and Dudhia. 
+
+   !---------------------------------------------------------------------------------------!
+   !     The following variables are used only when ISFCLYRM is not 1.                     !
+   !---------------------------------------------------------------------------------------!
+   NL%GAMM            = 13.   ! Momentum coefficient
+   NL%GAMH            = 13.   ! Heat coefficient
+   NL%TPRANDTL        = 0.74  ! Turbulent Prandtl number
+   NL%VH2VR           = 0.13  ! Vegetation Roughness: Vegetation height ratio
+   NL%VH2DH           = 0.63  ! Displacement height : vegetation height ratio
+   !---------------------------------------------------------------------------------------!
 
    NL%IPERCOL         = 0     ! Percolation scheme:
                               !  0 - Original method, from LEAF-3.  Shed liquid in excess 

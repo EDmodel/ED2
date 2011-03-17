@@ -1219,6 +1219,7 @@ subroutine grell_inre_solver(nclouds,cldd,clds,tscal,fac,aatot0,mfke,ierr,upmf,u
    integer, dimension(nclouds)          :: cloud   ! Absolute cloud index.
    !----- Temporary, allocatable arrays. --------------------------------------------------!
    real   , dimension(:,:), allocatable :: kke     ! Subset of mass flux kernel
+   real   , dimension(:)  , allocatable :: diagkke ! Diagonal of kke
    real   , dimension(:)  , allocatable :: mfo     ! Minus the large-scale forcing
    real   , dimension(:)  , allocatable :: mb      ! Mass flux
    integer, dimension(:)  , allocatable :: cldidx  ! Cloud index, to copy back to ensemble
@@ -1267,7 +1268,7 @@ subroutine grell_inre_solver(nclouds,cldd,clds,tscal,fac,aatot0,mfke,ierr,upmf,u
       if (nsolv == 0) exit inre_loop
 
       !----- Allocate some vectors we need for solving the linear system. -----------------!
-      allocate(kke(nsolv,nsolv),mfo(nsolv),mb(nsolv),cldidx(nsolv))
+      allocate(kke(nsolv,nsolv),diagkke(nsolv),mfo(nsolv),mb(nsolv),cldidx(nsolv))
       
       !----- Store the actual cloud number of those clouds 
       cldidx = pack(cloud,okcld)
@@ -1282,12 +1283,26 @@ subroutine grell_inre_solver(nclouds,cldd,clds,tscal,fac,aatot0,mfke,ierr,upmf,u
             kke(isol,jsol) = fac * mfke(cldidx(isol),cldidx(jsol))
          end do
       end do
+      !------------------------------------------------------------------------------------!
+
+
+
+      !------------------------------------------------------------------------------------!
+      !     Find the array of kernels.                                                     !
+      !------------------------------------------------------------------------------------!
+      call diagon(nsolv,kke,diagkke)
+      !------------------------------------------------------------------------------------!
+
+
 
       !------------------------------------------------------------------------------------!
       !     Solve the linear system using a Gaussian elimination method.  The system, as   !
       ! stated in Lord et al. (1982), is : K * Mb = -F.                                    !
       !------------------------------------------------------------------------------------!
       call lisys_solver(nsolv,kke,mfo,mb,is_sing)
+      !------------------------------------------------------------------------------------!
+
+
 
       !------------------------------------------------------------------------------------! 
       !     First we check whether the solution is an appropriate one or something went    !
@@ -1298,21 +1313,21 @@ subroutine grell_inre_solver(nclouds,cldd,clds,tscal,fac,aatot0,mfke,ierr,upmf,u
          !     The matrix is singular or almost singular, so we cannot solve these clouds. !
          ! We can quit this routine after freeing the allocated arrays.                    !
          !---------------------------------------------------------------------------------!
-         deallocate(kke,mfo,mb,cldidx)
+         deallocate(kke,diagkke,mfo,mb,cldidx)
          exit inre_loop
-      elseif (any(mb < 0.)) then
+      elseif (any(mb < 0.) .or. any(diagkke == 0.)) then
          !---------------------------------------------------------------------------------!
-         !     There are some negative members which can't be solved, so we must eliminate !
-         ! these and try again.                                                            !
+         !     There are some negative members or the diagonal of the kernel has some      !
+         ! zeroes, which can't be solved, so we must eliminate these and try again.        !
          !---------------------------------------------------------------------------------!
          do jsol=1,nsolv
             jcld = cldidx(jsol)
-            if (mb(jsol) < 0. ) then
+            if (mb(jsol) < 0. .or. diagkke(jsol) == 0.) then
                okcld(jcld) = .false.
             end if
          end do
          !----- Free memory so it will be ready to be allocated next time. ----------------!
-         deallocate(kke,mfo,mb,cldidx)
+         deallocate(kke,diagkke,mfo,mb,cldidx)
       else
          !---------------------------------------------------------------------------------!
          !     All mass flux terms are zero or positive, we are all set.  Simply copy the  !
@@ -1325,7 +1340,7 @@ subroutine grell_inre_solver(nclouds,cldd,clds,tscal,fac,aatot0,mfke,ierr,upmf,u
             upmx(jcld) = max(0.,mfo(jsol) / kke(jsol,jsol))
          end do
          !----- Free memory before leaving the subroutine. --------------------------------!
-         deallocate(kke,mfo,mb,cldidx)
+         deallocate(kke,diagkke,mfo,mb,cldidx)
          exit inre_loop
       end if
 

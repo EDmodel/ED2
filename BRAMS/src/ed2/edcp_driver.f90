@@ -18,6 +18,7 @@ subroutine ed_coup_driver()
                             , ifoutput            & ! intent(in)
                             , idoutput            & ! intent(in)
                             , imoutput            & ! intent(in)
+                            , iqoutput            & ! intent(in)
                             , iyoutput            & ! intent(in)
                             , integration_scheme  & ! intent(in)
                             , runtype             ! ! intent(in)
@@ -69,7 +70,8 @@ subroutine ed_coup_driver()
    ! If they are not >0, then set the logical, fast_diagnostics to false.                  !
    !---------------------------------------------------------------------------------------!
    fast_diagnostics = checkbudget   .or. ifoutput /= 0 .or. idoutput /= 0 .or.             &
-                      imoutput /= 0 .or. ioutput  /= 0 .or. iyoutput /= 0
+                      iqoutput /= 0 .or. imoutput /= 0 .or. ioutput  /= 0 .or.             &
+                      iyoutput /= 0
 
    !---------------------------------------------------------------------------------------!
    ! STEP 2: Set the ED model parameters                                                   !
@@ -198,7 +200,7 @@ subroutine ed_coup_driver()
    ! STEP 16. Zero and initialize diagnostic output variables                              !
    !---------------------------------------------------------------------------------------!
    if (trim(runtype) /= 'HISTORY') then
-      if (imoutput > 0) then
+      if (imoutput > 0 .or. iqoutput > 0) then
          do ifm=1,ngrids
             call zero_ed_monthly_output_vars(edgrid_g(ifm))
             call zero_ed_daily_output_vars(edgrid_g(ifm))
@@ -264,6 +266,9 @@ end subroutine ed_coup_driver
 
 !==========================================================================================!
 !==========================================================================================!
+!     This sub-routine finds which frequency the model should use to normalise averaged    !
+! variables.  FRQSUM should never exceed one day to avoid build up and overflows.          !
+!------------------------------------------------------------------------------------------!
 subroutine find_frqsum()
    use ed_misc_coms, only : unitfast  & ! intent(in)
                           , unitstate & ! intent(in)
@@ -272,6 +277,7 @@ subroutine find_frqsum()
                           , ifoutput  & ! intent(in)
                           , imoutput  & ! intent(in)
                           , idoutput  & ! intent(in)
+                          , iqoutput  & ! intent(in)
                           , frqstate  & ! intent(in)
                           , frqfast   & ! intent(in)
                           , frqsum    ! ! intent(out)
@@ -279,12 +285,9 @@ subroutine find_frqsum()
    use io_params   , only : ioutput   ! ! intent(in)
    implicit none
 
-   !---------------------------------------------------------------------------------------!
-   !     Determine which frequency I should use to normalise variables.  FRQSUM should     !
-   ! never exceed 1 day.                                                                   !
-   !---------------------------------------------------------------------------------------!
+
    if (ifoutput == 0 .and. isoutput == 0 .and. idoutput == 0 .and. imoutput == 0 .and.     &
-       itoutput == 0 .and. ioutput  == 0 ) then
+       iqoutput == 0 .and. itoutput == 0 .and. ioutput  == 0 ) then
       write(unit=*,fmt='(a)') '---------------------------------------------------------'
       write(unit=*,fmt='(a)') '  WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! '
       write(unit=*,fmt='(a)') '  WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! '
@@ -297,6 +300,25 @@ subroutine find_frqsum()
       frqsum=day_sec ! This avoids the number to get incredibly large.
 
    !---------------------------------------------------------------------------------------!
+   !    BRAMS output is on.  Units are in seconds, test which frqsum to use (the smallest  !
+   ! between frqfast and frqstate.).                                                       !
+   !---------------------------------------------------------------------------------------!
+   elseif (ioutput > 0) then
+      frqsum=min(min(frqstate,frqfast),day_sec)
+
+   !---------------------------------------------------------------------------------------!
+   !    Mean diurnal cycle is on.  Frqfast will be in seconds, so it is likely to be the   !
+   ! smallest.  The only exception is if frqstate is more frequent thant frqfast, so we    !
+   ! just need to check that too.                                                          !
+   !---------------------------------------------------------------------------------------!
+   elseif (iqoutput > 0) then
+      if (unitstate == 0) then
+         frqsum = min(min(frqstate,frqfast),day_sec)
+      else
+         frqsum = min(frqfast,day_sec)
+      end if
+
+   !---------------------------------------------------------------------------------------!
    !     Either no instantaneous output was requested, or the user is outputting it at     !
    ! monthly or yearly scale, force it to be one day.                                      !
    !---------------------------------------------------------------------------------------!
@@ -304,18 +326,13 @@ subroutine find_frqsum()
             itoutput == 0 .and. ioutput == 0 ) .or.                                        &
            (ifoutput == 0 .and. itoutput == 0 .and.                                        &
             isoutput  > 0 .and. unitstate > 1) .or.                                        &
-           (isoutput == 0 .and. (ifoutput  > 0 .or. itoutput > 0) .and.                    &
-            unitfast  > 1) .or.                                                            &
-           ((ifoutput  > 0 .or. itoutput > 0) .and. isoutput  > 0 .and.                    &
-             unitstate > 1 .and. unitfast > 1)                                             &
+           (isoutput == 0 .and.                                                            &
+            (ifoutput  > 0 .or. itoutput > 0) .and. unitfast  > 1) .or.                    &
+           ((ifoutput  > 0 .or. itoutput > 0) .and.                                        &
+            isoutput  > 0 .and. unitstate > 1 .and. unitfast > 1)                          &
           ) then
       frqsum=day_sec
-   !---------------------------------------------------------------------------------------!
-   !    BRAMS output is on, and because this is a coupled run, the units are in seconds,   !
-   ! test which frqsum to use (the smallest between frqfast and frqstate.).                !
-   !---------------------------------------------------------------------------------------!
-   elseif (ioutput > 0) then
-      frqsum=min(min(frqstate,frqfast),day_sec)
+
    !---------------------------------------------------------------------------------------!
    !    Only restarts, and the unit is in seconds, test which frqsum to use.               !
    !---------------------------------------------------------------------------------------!

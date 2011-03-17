@@ -8,7 +8,8 @@ subroutine init_full_history_restart()
   use ed_misc_coms, only: sfilin, ied_init_mode,current_time
   use mem_polygons, only: grid_res,edres
   use consts_coms, only: pio180
-  use ed_misc_coms, only: use_target_year, restart_target_year,ied_init_mode,runtype
+  use ed_misc_coms, only: use_target_year, restart_target_year,ied_init_mode,runtype, &
+                          ndcycle
   use ed_state_vars,only: polygontype,sitetype,patchtype,edtype, &
        edgrid_g,allocate_sitetype,allocate_patchtype,allocate_polygontype
   use soil_coms, only: alloc_soilgrid
@@ -474,7 +475,7 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
   use hdf5_coms,only:file_id,dset_id,dspace_id,plist_id, &
        globdims,chnkdims,chnkoffs,cnt,stride, &
        memdims,memoffs,memsize,datatype_id
-
+  use ed_misc_coms, only: ndcycle
   implicit none
 
   
@@ -718,6 +719,10 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
      call hdf_getslab_r(cgrid%dmean_atm_shv        (ipy:ipy) ,'DMEAN_ATM_SHV         '     &
                        ,dsetrank,iparallel,.false.)
 
+  if (associated(cgrid%dmean_atm_co2        ))                                             &
+     call hdf_getslab_r(cgrid%dmean_atm_co2        (ipy:ipy) ,'DMEAN_ATM_CO2         '     &
+                       ,dsetrank,iparallel,.false.)
+
   if (associated(cgrid%dmean_atm_prss       ))                                             &
      call hdf_getslab_r(cgrid%dmean_atm_prss       (ipy:ipy) ,'DMEAN_ATM_PRSS        '     &
                        ,dsetrank,iparallel,.false.)
@@ -879,6 +884,10 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
      call hdf_getslab_r(cgrid%mmean_atm_shv        (ipy:ipy) ,'MMEAN_ATM_SHV         '     &
                        ,dsetrank,iparallel,.false.)
  
+  if (associated(cgrid%mmean_atm_co2        ))                                             &
+     call hdf_getslab_r(cgrid%mmean_atm_co2        (ipy:ipy) ,'MMEAN_ATM_CO2         '     &
+                       ,dsetrank,iparallel,.false.)
+ 
   if (associated(cgrid%mmean_atm_prss       ))                                             &
      call hdf_getslab_r(cgrid%mmean_atm_prss       (ipy:ipy) ,'MMEAN_ATM_PRSS        '     &
                        ,dsetrank,iparallel,.false.)
@@ -969,6 +978,235 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    if(associated(cgrid%mmean_soil_water)) &
       call hdf_getslab_r(cgrid%mmean_soil_water(:,ipy) ,'MMEAN_SOIL_WATER ' ,&
       dsetrank,iparallel,.false.)
+
+
+   ! Variables with 2 dimensions (ndcycle,npolygons)
+   dsetrank    = 2
+   globdims(1) = int(ndcycle,8)
+   chnkdims(1) = int(ndcycle,8)
+   memdims(1)  = int(ndcycle,8)
+   memsize(1)  = int(ndcycle,8)
+   chnkoffs(1) = 0_8
+   memoffs(1)  = 0_8
+
+   globdims(2)  = int(cgrid%npolygons_global,8)
+   chnkdims(2)  = 1_8
+   chnkoffs(2)  = int(py_index - 1,8)
+   memdims(2)   = 1_8
+   memsize(2)   = 1_8
+   memoffs(2)   = 0_8
+ 
+  if (associated(cgrid%qmean_pcpg           ))                                             &
+     call hdf_getslab_r(cgrid%qmean_pcpg           (:,ipy)   ,'QMEAN_PCPG            '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%qmean_runoff         ))                                             &
+     call hdf_getslab_r(cgrid%qmean_runoff         (:,ipy)   ,'QMEAN_RUNOFF          '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%qmean_drainage       ))                                             &
+     call hdf_getslab_r(cgrid%qmean_drainage       (:,ipy)   ,'QMEAN_DRAINAGE        '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%qmean_gpp            ))                                             &
+     call hdf_getslab_r(cgrid%qmean_gpp            (:,ipy)   ,'QMEAN_GPP             '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%qmean_evap           ))                                             &
+     call hdf_getslab_r(cgrid%qmean_evap           (:,ipy)   ,'QMEAN_EVAP            '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%qmean_transp         ))                                             &
+     call hdf_getslab_r(cgrid%qmean_transp         (:,ipy)   ,'QMEAN_TRANSP          '     &
+                       ,dsetrank,iparallel,.false.)                                        
+
+  if (associated(cgrid%qmean_sensible_vc    ))                                             &
+     call hdf_getslab_r(cgrid%qmean_sensible_vc    (:,ipy)   ,'QMEAN_SENSIBLE_VC     '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%qmean_sensible_gc    ))                                             &
+     call hdf_getslab_r(cgrid%qmean_sensible_gc    (:,ipy)   ,'QMEAN_SENSIBLE_GC     '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%qmean_sensible_ac    ))                                             &
+     call hdf_getslab_r(cgrid%qmean_sensible_ac    (:,ipy)   ,'QMEAN_SENSIBLE_AC     '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%qmean_vapor_vc       ))                                             &
+     call hdf_getslab_r(cgrid%qmean_vapor_vc       (:,ipy)   ,'QMEAN_VAPOR_VC        '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%qmean_vapor_gc       ))                                             &
+     call hdf_getslab_r(cgrid%qmean_vapor_gc       (:,ipy)   ,'QMEAN_VAPOR_GC        '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%qmean_vapor_ac       ))                                             &
+     call hdf_getslab_r(cgrid%qmean_vapor_ac       (:,ipy)   ,'QMEAN_VAPOR_AC        '     &
+                       ,dsetrank,iparallel,.false.)                                        
+
+  if (associated(cgrid%qmean_nep            ))                                             &
+     call hdf_getslab_r(cgrid%qmean_nep            (:,ipy)   ,'QMEAN_NEP             '     &
+                       ,dsetrank,iparallel,.false.)                                        
+
+  if (associated(cgrid%qmean_plresp         ))                                             &
+     call hdf_getslab_r(cgrid%qmean_plresp         (:,ipy)   ,'QMEAN_PLRESP          '     &
+                       ,dsetrank,iparallel,.false.)                                        
+
+  if (associated(cgrid%qmean_rh             ))                                             &
+     call hdf_getslab_r(cgrid%qmean_rh             (:,ipy)   ,'QMEAN_RH              '     &
+                       ,dsetrank,iparallel,.false.)                                        
+
+  if (associated(cgrid%qmean_leaf_resp      ))                                             &
+     call hdf_getslab_r(cgrid%qmean_leaf_resp      (:,ipy)   ,'QMEAN_LEAF_RESP       '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%qmean_root_resp      ))                                             &
+     call hdf_getslab_r(cgrid%qmean_root_resp      (:,ipy)   ,'QMEAN_ROOT_RESP       '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%qmean_fs_open        ))                                             &
+     call hdf_getslab_r(cgrid%qmean_fs_open        (:,ipy)   ,'QMEAN_FS_OPEN         '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%qmean_fsw            ))                                             &
+     call hdf_getslab_r(cgrid%qmean_fsw            (:,ipy)   ,'QMEAN_FSW             '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%qmean_fsn            ))                                             &
+     call hdf_getslab_r(cgrid%qmean_fsn            (:,ipy)   ,'QMEAN_FSN             '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%qmean_can_temp       ))                                             &
+     call hdf_getslab_r(cgrid%qmean_can_temp       (:,ipy)   ,'QMEAN_CAN_TEMP        '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%qmean_can_shv        ))                                             &
+     call hdf_getslab_r(cgrid%qmean_can_shv        (:,ipy)   ,'QMEAN_CAN_SHV         '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%qmean_can_prss       ))                                             &
+     call hdf_getslab_r(cgrid%qmean_can_prss       (:,ipy)   ,'QMEAN_CAN_PRSS        '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%qmean_can_theta      ))                                             &
+     call hdf_getslab_r(cgrid%qmean_can_theta      (:,ipy)   ,'QMEAN_CAN_THETA       '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%qmean_can_theiv      ))                                             &
+     call hdf_getslab_r(cgrid%qmean_can_theiv      (:,ipy)   ,'QMEAN_CAN_THEIV       '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%qmean_can_co2        ))                                             &
+     call hdf_getslab_r(cgrid%qmean_can_co2        (:,ipy)   ,'QMEAN_CAN_CO2         '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%qmean_can_rhos       ))                                             &
+     call hdf_getslab_r(cgrid%qmean_can_rhos       (:,ipy)   ,'QMEAN_CAN_RHOS        '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%qmean_veg_energy     ))                                             &
+     call hdf_getslab_r(cgrid%qmean_veg_energy     (:,ipy)   ,'QMEAN_VEG_ENERGY      '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%qmean_veg_water      ))                                             &
+     call hdf_getslab_r(cgrid%qmean_veg_water      (:,ipy)   ,'QMEAN_VEG_WATER       '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%qmean_veg_hcap       ))                                             &
+     call hdf_getslab_r(cgrid%qmean_veg_hcap       (:,ipy)   ,'QMEAN_VEG_HCAP        '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%qmean_veg_temp       ))                                             &
+     call hdf_getslab_r(cgrid%qmean_veg_temp       (:,ipy)   ,'QMEAN_VEG_TEMP        '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%qmean_atm_temp       ))                                             &
+     call hdf_getslab_r(cgrid%qmean_atm_temp       (:,ipy)   ,'QMEAN_ATM_TEMP        '     &
+                       ,dsetrank,iparallel,.false.)
+  
+  if (associated(cgrid%qmean_rshort       ))                                               &
+       call hdf_getslab_r(cgrid%qmean_rshort       (:,ipy)   ,'QMEAN_RSHORT        '       &
+       ,dsetrank,iparallel,.false.)
+  
+  if (associated(cgrid%qmean_rlong       ))                                                &
+       call hdf_getslab_r(cgrid%qmean_rlong       (:,ipy)   ,'QMEAN_RLONG        '         &
+       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%qmean_atm_shv        ))                                             &
+     call hdf_getslab_r(cgrid%qmean_atm_shv        (:,ipy)   ,'QMEAN_ATM_SHV         '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%qmean_atm_co2        ))                                             &
+     call hdf_getslab_r(cgrid%qmean_atm_co2        (:,ipy)   ,'QMEAN_ATM_CO2         '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%qmean_atm_prss       ))                                             &
+     call hdf_getslab_r(cgrid%qmean_atm_prss       (:,ipy)   ,'QMEAN_ATM_PRSS        '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%qmean_atm_vels       ))                                             &
+     call hdf_getslab_r(cgrid%qmean_atm_vels       (:,ipy)   ,'QMEAN_ATM_VELS        '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%qmsqu_gpp       ))                                                  &
+     call hdf_getslab_r(cgrid%qmsqu_gpp            (:,ipy)   ,'QMSQU_GPP             '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%qmsqu_leaf_resp ))                                                  &
+     call hdf_getslab_r(cgrid%qmsqu_leaf_resp      (:,ipy)   ,'QMSQU_LEAF_RESP       '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%qmsqu_root_resp ))                                                  &
+     call hdf_getslab_r(cgrid%qmsqu_root_resp      (:,ipy)   ,'QMSQU_ROOT_RESP       '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%qmsqu_plresp ))                                                     &
+     call hdf_getslab_r(cgrid%qmsqu_plresp         (:,ipy)   ,'QMSQU_PLRESP          '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%qmsqu_nee       ))                                                  &
+     call hdf_getslab_r(cgrid%qmsqu_nee            (:,ipy)   ,'QMSQU_NEE             '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%qmsqu_nep       ))                                                  &
+     call hdf_getslab_r(cgrid%qmsqu_nep            (:,ipy)   ,'QMSQU_NEP             '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%qmsqu_rh        ))                                                  &
+     call hdf_getslab_r(cgrid%qmsqu_rh             (:,ipy)   ,'QMSQU_RH              '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%qmsqu_sensible_ac))                                                 &
+     call hdf_getslab_r(cgrid%qmsqu_sensible_ac    (:,ipy)   ,'QMSQU_SENSIBLE_AC     '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%qmsqu_sensible_vc))                                                 &
+     call hdf_getslab_r(cgrid%qmsqu_sensible_vc    (:,ipy)   ,'QMSQU_SENSIBLE_VC     '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%qmsqu_sensible_gc))                                                 &
+     call hdf_getslab_r(cgrid%qmsqu_sensible_gc    (:,ipy)   ,'QMSQU_SENSIBLE_GC     '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%qmsqu_evap      ))                                                  &
+     call hdf_getslab_r(cgrid%qmsqu_evap           (:,ipy)   ,'QMSQU_EVAP            '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%qmsqu_transp    ))                                                  &
+     call hdf_getslab_r(cgrid%qmsqu_transp         (:,ipy)   ,'QMSQU_TRANSP          '     &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%qmsqu_vapor_ac))                                                    &
+     call hdf_getslab_r(cgrid%qmsqu_vapor_ac       (:,ipy)   ,'QMSQU_VAPOR_AC     '        &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%qmsqu_vapor_vc))                                                    &
+     call hdf_getslab_r(cgrid%qmsqu_vapor_vc       (:,ipy)   ,'QMSQU_VAPOR_VC     '        &
+                       ,dsetrank,iparallel,.false.)
+
+  if (associated(cgrid%qmsqu_vapor_gc))                                                    &
+     call hdf_getslab_r(cgrid%qmsqu_vapor_gc       (:,ipy)   ,'QMSQU_VAPOR_GC     '        &
+                       ,dsetrank,iparallel,.false.)
 
 
    ! Variables with 2 dimensions (n_pft,npolygons)
@@ -1073,6 +1311,38 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    if (associated(cgrid%disturbance_rates))                                                &
        call hdf_getslab_r(cgrid%disturbance_rates(:,:,ipy),'DISTURBANCE_RATES '            &
                          ,dsetrank,iparallel,.false.)
+
+
+   ! Variables with three dimensions(nzg,ndcycle,npolygons)
+   dsetrank    = 3
+   globdims(1) = int(nzg,8)
+   chnkdims(1) = int(nzg,8)
+   memdims(1)  = int(nzg,8)
+   memsize(1)  = int(nzg,8)
+   chnkoffs(1) = 0_8
+   memoffs(1)  = 0_8
+
+   globdims(2) = int(ndcycle,8)
+   chnkdims(2) = int(ndcycle,8)
+   memdims(2)  = int(ndcycle,8)
+   memsize(2)  = int(ndcycle,8)
+   chnkoffs(2) = 0_8
+   memoffs(2)  = 0_8
+
+   globdims(3)  = int(cgrid%npolygons_global,8)
+   chnkdims(3)  = 1_8
+   chnkoffs(3)  = int(py_index - 1,8)
+   memdims(3)   = 1_8
+   memsize(3)   = 1_8
+   memoffs(3)   = 0_8
+
+   if(associated(cgrid%qmean_soil_temp)) &
+      call hdf_getslab_r(cgrid%qmean_soil_temp(:,:,ipy)  ,'QMEAN_SOIL_TEMP '  ,&
+      dsetrank,iparallel,.false.)
+
+   if(associated(cgrid%qmean_soil_water)) &
+      call hdf_getslab_r(cgrid%qmean_soil_water(:,:,ipy) ,'QMEAN_SOIL_WATER ' ,&
+      dsetrank,iparallel,.false.)
 
    return
  end subroutine fill_history_grid
@@ -1346,6 +1616,7 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
         globdims,chnkdims,chnkoffs,cnt,stride, &
         memdims,memoffs,memsize,datatype_id,setsize
    use fusion_fission_coms, only: ff_ndbh
+   use ed_misc_coms, only : ndcycle
    use hdf5
 
    implicit none
@@ -1492,6 +1763,7 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    call hdf_getslab_r(csite%mmean_Af_decomp,'MMEAN_AF_DECOMP ',dsetrank,iparallel,.false.)
    call hdf_getslab_r(csite%veg_rough,'VEG_ROUGH ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%veg_height ,'VEG_HEIGHT ',dsetrank,iparallel,.true.)
+   call hdf_getslab_r(csite%veg_displace ,'VEG_DISPLACE ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%fsc_in,'FSC_IN ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%ssc_in,'SSC_IN ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%ssl_in,'SSL_IN ',dsetrank,iparallel,.true.)
@@ -1531,6 +1803,22 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
         call hdf_getslab_r(csite%dmean_rk4step,'DMEAN_RK4STEP ',dsetrank,iparallel,.false.)
    if (associated(csite%mmean_rk4step)) &
         call hdf_getslab_r(csite%mmean_rk4step,'MMEAN_RK4STEP ',dsetrank,iparallel,.false.)
+   
+   dsetrank    = 2
+   globdims(1) = int(ndcycle,8)
+   chnkdims(1) = int(ndcycle,8)
+   memdims(1)  = int(ndcycle,8)
+   memsize(1)  = int(ndcycle,8)
+   chnkoffs(1) = 0
+   memoffs(1)  = 0
+   globdims(2) = int(npatches_global,8)
+   chnkdims(2) = int(csite%npatches,8)
+   chnkoffs(2) = int(sipa_index - 1,8)
+   memdims(2)  = int(csite%npatches,8)
+   memsize(2)  = int(csite%npatches,8)
+   memoffs(2)  = 0
+   
+   call hdf_getslab_r(csite%qmean_rh,'QMEAN_RH_PA ',dsetrank,iparallel,.true.)
    
    dsetrank    = 2
    globdims(1) = int(nzs,8)
@@ -1742,6 +2030,7 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
   use ed_max_dims,only: n_pft, n_mort
   use ed_therm_lib, only : calc_hcapveg
   use allometry, only : area_indices
+  use ed_misc_coms, only : ndcycle
   use therm_lib, only : qwtk
   implicit none
 
@@ -2044,6 +2333,45 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
      memoffs(2)  = 0_8
 
      call hdf_getslab_r(cpatch%mort_rate,'MORT_RATE_CO ',dsetrank,iparallel,.true.)
+
+     !----- 2-D, dimensioned by the number of diurnal cycle times. ------------------------!
+     dsetrank    = 2
+     globdims(1) = int(ndcycle,8)
+     chnkdims(1) = int(ndcycle,8)
+     chnkoffs(1) = 0_8
+     memdims(1)  = int(ndcycle,8)
+     memsize(1)  = int(ndcycle,8)
+     memoffs(2)  = 0_8
+
+     globdims(2) = int(ncohorts_global,8)
+     chnkdims(2) = int(cpatch%ncohorts,8)
+     chnkoffs(2) = int(paco_index - 1,8)
+     memdims(2)  = int(cpatch%ncohorts,8)
+     memsize(2)  = int(cpatch%ncohorts,8)
+     memoffs(2)  = 0_8
+
+     call hdf_getslab_r(cpatch%qmean_gpp         ,'QMEAN_GPP_CO '                          &
+                       ,dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%qmean_leaf_resp   ,'QMEAN_LEAF_RESP_CO '                    &
+                       ,dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%qmean_root_resp   ,'QMEAN_ROOT_RESP_CO '                    &
+                       ,dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%qmean_par_v       ,'QMEAN_PAR_V '                           &
+                       ,dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%qmean_par_v_beam  ,'QMEAN_PAR_V_BEAM '                      &
+                       ,dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%qmean_par_v_diff  ,'QMEAN_PAR_V_DIFF '                      &
+                       ,dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%qmean_fs_open     ,'QMEAN_FS_OPEN_CO '                      &
+                       ,dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%qmean_fsw         ,'QMEAN_FSW_CO '                          &
+                       ,dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%qmean_psi_open    ,'QMEAN_PSI_OPEN_CO '                     &
+                       ,dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%qmean_psi_closed  ,'QMEAN_PSI_CLOSED_CO '                   &
+                       ,dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%qmean_water_supply,'QMEAN_WATER_SUPPLY_CO '                 &
+                       ,dsetrank,iparallel,.true.)
 
 
      dsetrank    = 2

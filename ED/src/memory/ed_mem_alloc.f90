@@ -20,9 +20,6 @@ subroutine ed_mem_alloc(proc_type)
    use ed_work_vars       , only : work_e,                 & ! intent(out)
                                    ed_alloc_work,          & ! subroutine
                                    ed_nullify_work         ! ! subroutine
-   
-   use ed_misc_coms          , only : idoutput,               & ! intent(in)
-                                   imoutput                ! ! intent(in)
    use ed_node_coms       , only : mmxp, mmyp, mynum
 
    implicit none

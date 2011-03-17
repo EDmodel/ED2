@@ -456,28 +456,25 @@ subroutine plant_structural_allocation(ipft,hite,lat,month,phen_status,f_bseeds,
    !----- Check whether this is late spring... --------------------------------------------!
    late_spring = (lat >= 0.0 .and. month == 6) .or. (lat < 0.0 .and. month == 12) 
 
-   !----- Calculate fraction of bstorage going to bdead and reproduction. -----------------!
-   if (phenology(ipft) /= 2   .or.  late_spring )    then
-       if (phen_status == 0)  then
    !---------------------------------------------------------------------------------------!
-   !  Check phenology status.  We dont want to grow if we're actively dropping             !
-   !  leaves or off allometry                                                              !
+   !      Calculate fraction of bstorage going to bdead and reproduction.  First we must   !
+   ! make sure that the plant should do something here.  A plant should not allocate any-  !
+   ! thing to reproduction or growth if it is not the right time of year (for cold         !
+   ! deciduous plants), or if the plants are actively dropping leaves or off allometry.    !
    !---------------------------------------------------------------------------------------!
-        !----- For all PFTs except broadleaf deciduous. -----------------------------------!
-        if (hite <= repro_min_h(ipft)) then
-           f_bseeds = 0.0
-        else
-           f_bseeds = r_fract(ipft)
-        end if
-        f_bdead  = 1.0 - f_bseeds
+   if ((phenology(ipft) /= 2   .or.  late_spring) .and. phen_status == 0)    then
+      !----- For all PFTs except broadleaf deciduous. -------------------------------------!
+      if (hite <= repro_min_h(ipft)) then
+         f_bseeds = 0.0
       else
-        f_bdead  = 0.0
-        f_bseeds = 0.0
+         f_bseeds = r_fract(ipft)
       end if
-  else
-     f_bdead  = 0.0
-     f_bseeds = 0.0
-  end if 
+      f_bdead  = 1.0 - f_bseeds
+   else
+      f_bdead  = 0.0
+      f_bseeds = 0.0
+   end if 
+   !---------------------------------------------------------------------------------------!
           
    return
 end subroutine plant_structural_allocation

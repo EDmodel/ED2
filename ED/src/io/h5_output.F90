@@ -131,8 +131,10 @@ subroutine h5_output(vtype)
      vnam='Y'
   case ('OPTI') 
      vnam='T'
-  case('HIST') 
+  case ('HIST') 
      vnam='S'  ! S for reStart, don't want confusion with RAMS' H or R files
+  case ('DCYC')
+     vnam='Q'  ! Running out of letters...
   end select  
   nvcnt=0
 
@@ -170,7 +172,7 @@ subroutine h5_output(vtype)
            call makefnam(anamel,ffilout,zero,outyear,outmonth,outdate, &
                 0,vnam,cgrid,'h5 ')
            
-        case('MONT')
+        case('MONT','DCYC')
            
            call date_add_to (iyeara,imontha,idatea,itimea*100,  &
                 time-21600.0d0,'s',outyear,outmonth,outdate,outhour)
@@ -304,11 +306,12 @@ subroutine h5_output(vtype)
            
            !        vtinfo => vt_info(nv,ngr)
            
-           if ((vtype == 'INST' .and. vt_info(nv,ngr)%ianal == 1) .or. &
+           if ( (vtype == 'INST' .and. vt_info(nv,ngr)%ianal == 1) .or. &
                 (vtype == 'OPTI' .and. vt_info(nv,ngr)%iopti == 1) .or. &
                 (vtype == 'LITE' .and. vt_info(nv,ngr)%ilite == 1) .or. &
                 (vtype == 'DAIL' .and. vt_info(nv,ngr)%idail == 1) .or. &
                 (vtype == 'MONT' .and. vt_info(nv,ngr)%imont == 1) .or. &
+                (vtype == 'DCYC' .and. vt_info(nv,ngr)%idcyc == 1) .or. &
                 (vtype == 'YEAR' .and. vt_info(nv,ngr)%iyear == 1) .or. &
                 (vtype == 'HIST' .and. vt_info(nv,ngr)%ihist == 1)) then
               
@@ -588,6 +591,8 @@ subroutine h5_output(vtype)
         subaname='  Daily average analysis HDF write    '
      case ('MONT')
         subaname='  Monthly average analysis HDF write   '
+     case ('DCYC')
+        subaname='  Mean diurnal cycle analysis HDF write   '
      case ('YEAR')
         subaname='  Annual average analysis HDF write   '
      case ('OPTI')
@@ -661,6 +666,7 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
                                  , globdims       ! ! intent(in)
    use fusion_fission_coms, only : ff_ndbh        ! ! intent(in)
    use c34constants       , only : n_stoma_atts   ! ! intent(in)
+   use ed_misc_coms       , only : ndcycle        ! ! intent(in)
 
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
@@ -707,6 +713,19 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
       cnt(1)      = 1_8
       stride(1)   = 1_8
       
+   case (-11) ! (ndcycle,npolygons)  
+      
+      ! Soil column type
+      dsetrank = 2
+      globdims(1) = int(ndcycle,8)
+      chnkdims(1) = int(ndcycle,8)
+      chnkoffs(1) = 0_8
+      globdims(2) = int(var_len_global,8)
+      chnkdims(2) = int(varlen,8)
+      chnkoffs(2) = int(globid,8)
+      cnt(1:2)    = 1_8
+      stride(1:2) = 1_8
+      
    case (12,120) ! (nzg,npolygons)  
       
       ! Soil column type
@@ -719,6 +738,22 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
       chnkoffs(2) = int(globid,8)
       cnt(1:2)    = 1_8
       stride(1:2) = 1_8
+
+   case (-12) ! (nzg,ndcycle,npolygons)
+      
+      dsetrank = 3
+      
+      globdims(1) = int(nzg,8)
+      chnkdims(1) = int(nzg,8)
+      chnkoffs(1) = 0_8
+      globdims(2) = int(ndcycle,8)
+      chnkdims(2) = int(ndcycle,8)
+      chnkoffs(2) = 0_8
+      globdims(3) = int(var_len_global,8)
+      chnkdims(3) = int(varlen,8)
+      chnkoffs(3) = int(globid,8)
+      cnt(1:3)      = 1_8
+      stride(1:3)   = 1_8
       
    case (14) ! (n_pft,npolygons)  
       
@@ -1009,6 +1044,19 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
       cnt(1)      = 1_8
       stride(1)   = 1_8
       
+   case (-31) ! (ndcycle,npatches)
+      
+      ! Soil column type
+      dsetrank = 2
+      globdims(1) = int(ndcycle,8)
+      chnkdims(1) = int(ndcycle,8)
+      chnkoffs(1) = 0_8
+      globdims(2) = int(var_len_global,8)
+      chnkdims(2) = int(varlen,8)
+      chnkoffs(2) = int(globid,8)
+      cnt(1:2)    = 1_8
+      stride(1:2) = 1_8
+       
    case (32,320) ! (nzg,npatches)
       
       ! Soil column type
@@ -1021,7 +1069,7 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
       chnkoffs(2) = int(globid,8)
       cnt(1:2)    = 1_8
       stride(1:2) = 1_8
-      
+     
    case (33) !(nzs,npatches)
       
       ! Surface water column type
@@ -1130,6 +1178,18 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
       globdims(1) = int(var_len_global,8)
       cnt(1)      = 1_8
       stride(1)   = 1_8
+
+   case (-41) !(ndcycle,ncohorts)
+      
+      dsetrank = 2
+      globdims(1) = int(ndcycle,8)
+      chnkdims(1) = int(ndcycle,8)
+      chnkoffs(1) = 0_8
+      globdims(2) = int(var_len_global,8)
+      chnkdims(2) = int(varlen,8)
+      chnkoffs(2) = int(globid,8)
+      cnt(1:2)    = 1_8
+      stride(1:2) = 1_8
 
    case (416) !(16 - ncohorts (stoma data))
       

@@ -5,18 +5,19 @@
 ! which case there will be a note explaining the reason.                                   !
 !------------------------------------------------------------------------------------------!
 subroutine init_ed_cohort_vars(cpatch,ico, lsl)
-   use ed_state_vars, only : patchtype           ! ! structure
-   use allometry    , only : calc_root_depth     & ! function
-                           , assign_root_depth   ! ! function
-   use pft_coms     , only : leaf_turnover_rate  & ! intent(in)
-                           , Vm0                 & ! intent(in)
-                           , sla                 ! ! intent(in)
-   use ed_misc_coms , only : imoutput            & ! intent(in)
-                           , idoutput            ! ! intent(in)
-   use phenology_coms , only : vm_tran           & ! intent(in)
-                             , vm_slop           & ! intent(in)
-                             , vm_amp            & ! intent(in)
-                             , vm_min            ! ! intent(in)
+   use ed_state_vars , only : patchtype           ! ! structure
+   use allometry     , only : calc_root_depth     & ! function
+                            , assign_root_depth   ! ! function
+   use pft_coms      , only : leaf_turnover_rate  & ! intent(in)
+                            , Vm0                 & ! intent(in)
+                            , sla                 ! ! intent(in)
+   use ed_misc_coms  , only : imoutput            & ! intent(in)
+                            , idoutput            & ! intent(in)
+                            , iqoutput            ! ! intent(in)
+   use phenology_coms, only : vm_tran             & ! intent(in)
+                            , vm_slop             & ! intent(in)
+                            , vm_amp              & ! intent(in)
+                            , vm_min              ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    type(patchtype), target     :: cpatch     ! Current patch
@@ -202,9 +203,10 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
 
 
    !---------------------------------------------------------------------------------------!
-   !     The monthly means are allocated only when the user wants the monthly output.      !
+   !     The monthly means are allocated only when the user wants the monthly output or    !
+   ! the mean diurnal cycle.                                                               !
    !---------------------------------------------------------------------------------------!
-   if (imoutput > 0) then
+   if (imoutput > 0 .or. iqoutput > 0) then
       cpatch%mmean_par_v            (ico) = 0.0
       cpatch%mmean_par_v_beam       (ico) = 0.0
       cpatch%mmean_par_v_diff       (ico) = 0.0
@@ -240,9 +242,9 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
 
    !---------------------------------------------------------------------------------------!
    !     The daily means are allocated only when the user wants the daily or the monthly   !
-   ! output.                                                                               !
+   ! output, or the mean diurnal cycle.                                                    !
    !---------------------------------------------------------------------------------------!
-   if (idoutput > 0 .or. imoutput > 0) then
+   if (idoutput > 0 .or. imoutput > 0 .or. iqoutput > 0) then
       cpatch%dmean_par_v            (ico) = 0.0
       cpatch%dmean_par_v_beam       (ico) = 0.0
       cpatch%dmean_par_v_diff       (ico) = 0.0
@@ -263,6 +265,27 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
       cpatch%dmean_psi_closed       (ico) = 0.0
       cpatch%dmean_water_supply     (ico) = 0.0
       cpatch%dmean_lambda_light     (ico) = 0.0
+   end if
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     The daily means are allocated only when the user wants the daily or the monthly   !
+   ! output, or the mean diurnal cycle.                                                    !
+   !---------------------------------------------------------------------------------------!
+   if (iqoutput > 0) then
+      cpatch%qmean_par_v            (:,ico) = 0.0
+      cpatch%qmean_par_v_beam       (:,ico) = 0.0
+      cpatch%qmean_par_v_diff       (:,ico) = 0.0
+      cpatch%qmean_gpp              (:,ico) = 0.0
+      cpatch%qmean_leaf_resp        (:,ico) = 0.0
+      cpatch%qmean_root_resp        (:,ico) = 0.0
+      cpatch%qmean_fsw              (:,ico) = 0.0
+      cpatch%qmean_fsn              (:,ico) = 0.0
+      cpatch%qmean_fs_open          (:,ico) = 0.0
+      cpatch%qmean_psi_open         (:,ico) = 0.0
+      cpatch%qmean_psi_closed       (:,ico) = 0.0
+      cpatch%qmean_water_supply     (:,ico) = 0.0
    end if
 
 
@@ -315,7 +338,7 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
   use grid_coms,     only: nzs, nzg
   use soil_coms, only: slz
   use canopy_air_coms, only : veg_height_min, minimum_canopy_depth
-  use ed_misc_coms, only : imoutput, idoutput
+  use ed_misc_coms, only : imoutput, idoutput, iqoutput
 
   implicit none
 
@@ -408,7 +431,7 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
 
 
 
-  if (idoutput > 0 .or. imoutput > 0) then
+  if (idoutput > 0 .or. imoutput > 0 .or. iqoutput > 0) then
      csite%dmean_A_decomp        (ip1:ip2) = 0.0
      csite%dmean_Af_decomp       (ip1:ip2) = 0.0
      csite%dmean_rh              (ip1:ip2) = 0.0
@@ -419,7 +442,7 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
      csite%dmean_rk4step         (ip1:ip2) = 0.0
   end if
 
-  if (imoutput > 0) then
+  if (imoutput > 0 .or. iqoutput > 0) then
      csite%mmean_A_decomp        (ip1:ip2) = 0.0
      csite%mmean_Af_decomp       (ip1:ip2) = 0.0
      csite%mmean_rh              (ip1:ip2) = 0.0
@@ -428,6 +451,10 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
      csite%mmean_water_residual  (ip1:ip2) = 0.0
      csite%mmean_lambda_light    (ip1:ip2) = 0.0
      csite%mmean_rk4step         (ip1:ip2) = 0.0
+  end if
+
+  if (iqoutput > 0) then
+     csite%qmean_rh              (:,ip1:ip2) = 0.0
   end if
 
   !----------------------------------------------------------------------------------------!

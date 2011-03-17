@@ -26,10 +26,25 @@ module leaf_coms
                        , twothirds ! ! intent(in)
 
    !----- Parameters that are initialised from RAMSIN. ------------------------------------! 
-   real    :: ustmin               ! Minimum ustar                               [     m/s]
-   real    :: ggfact               ! Factor to multiply the ground->canopy conductance.
+   real    :: ustmin    ! Minimum ustar                                          [     m/s]
+   real    :: ggfact    ! Factor to multiply the ground->canopy conductance.
+   real    :: gamm      ! Gamma used by Businger et al. (1971) - momentum.
+   real    :: gamh      ! Gamma used by Businger et al. (1971) - heat.
+   real    :: tprandtl  ! Turbulent Prandtl number.
+   real    :: vh2vr     ! Vegetation roughness:vegetation height ratio
+   real    :: vh2dh     ! Displacement height:vegetation height ratio
    !---------------------------------------------------------------------------------------!
 
+
+
+   !----- This parameter is assigned based on namelist variables. -------------------------!
+   real    :: vkopr     ! von Karman / turbulent Prandtl
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Commons used by LEAF-3.                                                           !
+   !---------------------------------------------------------------------------------------!
    integer :: niter_leaf       ! ! number of leaf timesteps
 
    logical :: solvable         ! ! Flag to determine whether to solve vegetation or not.
@@ -270,11 +285,6 @@ module leaf_coms
    real, parameter :: z0moz0h     = 1.0           ! z0(M)/z0(h)
    real, parameter :: z0hoz0m     = 1. / z0moz0h  ! z0(M)/z0(h)
    real, parameter :: ribmaxbh91  = 0.20          ! Maximum bulk Richardson number
-   !----- Used by OD95 and BH91. ----------------------------------------------------------!
-   real, parameter :: gamm       = 13.0   ! Gamma used by Businger et al. (1971) - momentum.
-   real, parameter :: gamh       = 13.0   ! Gamma used by Businger et al. (1971) - heat.
-   real, parameter :: tprandtl   = 0.74   ! Turbulent Prandtl number.
-   real, parameter :: vkopr      = vonk/tprandtl ! von Karman / turbulent Prandtl
    !---------------------------------------------------------------------------------------!
 
 
@@ -465,7 +475,7 @@ module leaf_coms
       !     The following variables are reset only once per leaf3 call.  Internal          !
       ! constants or variables that depend only on the grid called should be flushed here. !
       !------------------------------------------------------------------------------------!
-      select case (idel)
+      select case (trim(idel))
       case ('INITIAL')
          niter_leaf    = 0
          dtll          = 0.
@@ -495,7 +505,7 @@ module leaf_coms
       !     The following variables are reset only once per grid point call.  Variables    !
       ! like the atmospheric forcing should be placed here.                                !
       !------------------------------------------------------------------------------------!
-      select case (idel)
+      select case (trim(idel))
       case ('INITIAL','GRID_POINT')
          atm_up    = 0
          atm_vp    = 0.
@@ -525,7 +535,7 @@ module leaf_coms
       ! Internal prognostic variables and variables that should remain constant during the !
       ! time steps should be placed here.                                                  !
       !------------------------------------------------------------------------------------!
-      select case (idel)
+      select case (trim(idel))
       case ('INITIAL','GRID_POINT','PATCH')
          solvable                = .false.
 
