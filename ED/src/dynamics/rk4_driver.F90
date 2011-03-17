@@ -22,6 +22,7 @@ module rk4_driver
                                         , polygontype          & ! structure
                                         , sitetype             & ! structure
                                         , patchtype            ! ! structure
+      use met_driver_coms        , only : met_driv_state       ! ! structure
       use grid_coms              , only : nzg                  ! ! intent(in)
       use canopy_struct_dynamics , only : canopy_turbulence8   ! ! subroutine
       use ed_misc_coms           , only : current_time         ! ! intent(in)
@@ -36,11 +37,13 @@ module rk4_driver
       type(polygontype)         , pointer     :: cpoly
       type(sitetype)            , pointer     :: csite
       type(patchtype)           , pointer     :: cpatch
-      integer                                 :: ipy,isi,ipa
+      type(met_driv_state)      , pointer     :: cmet
+      integer                                 :: ipy
+      integer                                 :: isi
+      integer                                 :: ipa
       integer                                 :: iun
-      integer, dimension(nzg)                 :: ed_ktrans
+      integer, dimension(:)     , allocatable :: ed_ktrans
       integer                                 :: nsteps
-      real                                    :: sum_lai_rbi
       real                                    :: wcurr_loss2atm
       real                                    :: ecurr_loss2atm
       real                                    :: co2curr_loss2atm
@@ -53,43 +56,23 @@ module rk4_driver
       real                                    :: old_can_co2
       real                                    :: old_can_rhos
       real                                    :: old_can_temp
-
-
-      logical                   , save        :: first_time=.true.
-      !----- Local constants. -------------------------------------------------------------!
-      logical                   , parameter   :: print_dbg_fields = .false.
       !----- Functions --------------------------------------------------------------------!
       real                      , external    :: walltime
       !------------------------------------------------------------------------------------!
-      
+
+
+      !----- Allocate the auxiliary variables. --------------------------------------------!
+      allocate(ed_ktrans(nzg))
+
       polygonloop: do ipy = 1,cgrid%npolygons
          cpoly => cgrid%polygon(ipy)
 
          siteloop: do isi = 1,cpoly%nsites
             csite => cpoly%site(isi)
+            cmet  => cpoly%met(isi)
 
             patchloop: do ipa = 1,csite%npatches
                cpatch => csite%patch(ipa)
-
-               if (print_dbg_fields) then
-                  iun = 30+ipa
-                  if (first_time) then
-                     write (unit=iun,fmt='(19(a,1x))') 'YEAR','MONTH','  DAY','  TIME'     &
-                          ,'  VEG.HEIGHT','   CAN.DEPTH','       SPEED','       PRESS'     &
-                          ,'    ATM.TEMP','    CAN.TEMP','   SFCW.TEMP','    SOIL.TMP'     &
-                          ,'    ATM.SHV ','     CAN.SHV','   SFCW.MASS','  SOIL.MOIST'     &
-                          ,'    ATM.CO2 ','     CAN.CO2','    CAN.DENS'
-                  end if
-                  write (unit=iun,fmt='(i4.4,2(4x,i2.2),1x,f6.0,15(1x,es12.5))')           &
-                     current_time%year,current_time%month,current_time%date                &
-                    ,current_time%time,csite%veg_height(ipa),csite%can_depth(ipa)          &
-                    ,cpoly%met(isi)%vels,cpoly%met(isi)%prss,cpoly%met(isi)%atm_tmp        &
-                    ,csite%can_temp(ipa),csite%sfcwater_tempk(1,ipa)                       &
-                    ,csite%soil_tempk(nzg,ipa),cpoly%met(isi)%atm_shv,csite%can_shv(ipa)   &
-                    ,csite%sfcwater_mass(1,ipa),csite%soil_water(nzg,ipa)                  &
-                    ,cpoly%met(isi)%atm_co2,csite%can_co2(ipa),csite%can_rhos(ipa)
-                   
-               end if
 
                
                !----- Reset all buffers to zero, as a safety measure. ---------------------!
@@ -126,23 +109,31 @@ module rk4_driver
                old_can_temp     = csite%can_temp(ipa)
 
                !----- Get velocity for aerodynamic resistance. ----------------------------!
-               if (csite%can_theta(ipa) < cpoly%met(isi)%atm_theta) then
-                  cpoly%met(isi)%vels = cpoly%met(isi)%vels_stab
+               if (csite%can_theta(ipa) < cmet%atm_theta) then
+                  cmet%vels = cmet%vels_stab
                else
-                  cpoly%met(isi)%vels = cpoly%met(isi)%vels_unstab
+                  cmet%vels = cmet%vels_unstab
                end if
+               !---------------------------------------------------------------------------!
+
+
+
+               !---------------------------------------------------------------------------!
+               !    Update roughness and canopy depth.                                     !
+               !---------------------------------------------------------------------------!
+               call update_patch_derived_props(csite,cpoly%lsl(isi),cmet%prss,ipa)
+               !---------------------------------------------------------------------------!
+
+
 
                !---------------------------------------------------------------------------!
                !    Copy the meteorological variables to the rk4site structure.            !
                !---------------------------------------------------------------------------!
-               call copy_met_2_rk4site(cpoly%met(isi)%vels,cpoly%met(isi)%atm_theiv        &
-                                      ,cpoly%met(isi)%atm_theta,cpoly%met(isi)%atm_tmp     &
-                                      ,cpoly%met(isi)%atm_shv,cpoly%met(isi)%atm_co2       &
-                                      ,cpoly%met(isi)%geoht,cpoly%met(isi)%exner           &
-                                      ,cpoly%met(isi)%pcpg,cpoly%met(isi)%qpcpg            &
-                                      ,cpoly%met(isi)%dpcpg,cpoly%met(isi)%prss            &
-                                      ,cpoly%met(isi)%geoht,cpoly%lsl(isi)                 &
-                                      ,cpoly%green_leaf_factor(:,isi)                      &
+               call copy_met_2_rk4site(cmet%vels,cmet%atm_theiv,cmet%atm_theta             &
+                                      ,cmet%atm_tmp,cmet%atm_shv,cmet%atm_co2,cmet%geoht   &
+                                      ,cmet%exner,cmet%pcpg,cmet%qpcpg,cmet%dpcpg          &
+                                      ,cmet%prss,cmet%rshort,cmet%rlong,cmet%geoht         &
+                                      ,cpoly%lsl(isi),cpoly%green_leaf_factor(:,isi)       &
                                       ,cgrid%lon(ipy),cgrid%lat(ipy))
 
                !----- Compute current storage terms. --------------------------------------!
@@ -156,16 +147,14 @@ module rk4_driver
                !---------------------------------------------------------------------------!
                !     Calculate the canopy geometry, and the scalar transport coefficients. !
                !---------------------------------------------------------------------------!
-               call canopy_turbulence8(csite,integration_buff%initp,ipa,.true.)
+               call canopy_turbulence8(csite,integration_buff%initp,ipa)
 
 
 
                !----- Get photosynthesis, stomatal conductance, and transpiration. --------!
-               call canopy_photosynthesis(csite,ipa,cpoly%met(isi)%vels                    &
-                          ,cpoly%met(isi)%atm_tmp,cpoly%met(isi)%prss,ed_ktrans            &
-                          ,csite%ntext_soil(:,ipa),csite%soil_water(:,ipa)                 &
-                          ,csite%soil_fracliq(:,ipa),cpoly%lsl(isi),sum_lai_rbi            &
-                          ,cpoly%leaf_aging_factor(:,isi),cpoly%green_leaf_factor(:,isi) )
+               call canopy_photosynthesis(csite,cmet,nzg,ipa,ed_ktrans,cpoly%lsl(isi)      &
+                                         ,cpoly%leaf_aging_factor(:,isi)                   &
+                                         ,cpoly%green_leaf_factor(:,isi))
 
                !----- Compute root and heterotrophic respiration. -------------------------!
                call soil_respiration(csite,ipa)
@@ -196,20 +185,21 @@ module rk4_driver
                !---------------------------------------------------------------------------!
                !     Compute the residuals.                                                !
                !---------------------------------------------------------------------------!
-               call compute_budget(csite,cpoly%lsl(isi),cpoly%met(isi)%pcpg                &
-                                  ,cpoly%met(isi)%qpcpg,ipa,wcurr_loss2atm,ecurr_loss2atm  &
-                                  ,co2curr_loss2atm,wcurr_loss2drainage                    &
-                                  ,ecurr_loss2drainage,wcurr_loss2runoff,ecurr_loss2runoff &
-                                  ,cpoly%area(isi),cgrid%cbudget_nep(ipy),old_can_theiv    &
-                                  ,old_can_shv,old_can_co2,old_can_rhos,old_can_temp)
-               
+               call compute_budget(csite,cpoly%lsl(isi),cmet%pcpg,cmet%qpcpg,ipa           &
+                                  ,wcurr_loss2atm,ecurr_loss2atm,co2curr_loss2atm          &
+                                  ,wcurr_loss2drainage,ecurr_loss2drainage                 &
+                                  ,wcurr_loss2runoff,ecurr_loss2runoff,cpoly%area(isi)     &
+                                  ,cgrid%cbudget_nep(ipy),old_can_theiv,old_can_shv        &
+                                  ,old_can_co2,old_can_rhos,old_can_temp)
 
             end do patchloop
          end do siteloop
 
       end do polygonloop
 
-      first_time = .false.
+      !----- De-allocate scratch variables. -----------------------------------------------!
+      deallocate (ed_ktrans)
+
       return
    end subroutine rk4_timestep
    !=======================================================================================!
@@ -244,10 +234,7 @@ module rk4_driver
                                  , tbeg                 & ! intent(inout)
                                  , tend                 & ! intent(inout)
                                  , dtrk4                & ! intent(inout)
-                                 , dtrk4i               & ! intent(inout)
-                                 , ibranch_thermo       & ! intent(in)
-                                 , effarea_water        & ! intent(out)
-                                 , effarea_heat         ! ! intent(out)
+                                 , dtrk4i               ! ! intent(inout)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(sitetype)        , target      :: csite
@@ -267,29 +254,13 @@ module rk4_driver
       logical                  , save       :: first_time=.true.
       !------------------------------------------------------------------------------------!
 
-      !----- Assigning some constants which will remain the same throughout the run. ------!
+      !----- Assign some constants which will remain the same throughout the run. ---------!
       if (first_time) then
          first_time = .false.
          tbeg   = 0.d0
          tend   = dble(dtlsm)
          dtrk4  = tend - tbeg
          dtrk4i = 1.d0/dtrk4
-         
-         !---------------------------------------------------------------------------------!
-         !    The area factor for heat and water exchange between canopy and vegetation is !
-         ! applied only on LAI, and it depends on how we are considering the branches and  !
-         ! twigs.  If their area isn't explicitly defined, we add a 0.2 factor to the      !
-         ! area because WPA will be 0.  Otherwise, we don't add anything to the LAI, and   !
-         ! let WPA to do the job.                                                          !
-         !---------------------------------------------------------------------------------!
-         select case (ibranch_thermo)
-         case (0)
-            effarea_water = 1.2d0
-            effarea_heat  = 2.2d0
-         case default
-            effarea_water = 1.0d0
-            effarea_heat  = 2.0d0
-         end select
       end if
 
       !------------------------------------------------------------------------------------!
@@ -366,8 +337,9 @@ module rk4_driver
                                       , slz8                 ! ! intent(in)
       use grid_coms            , only : nzg                  & ! intent(in)
                                       , nzs                  ! ! intent(in)
-      use therm_lib            , only : qwtk                 ! ! subroutine
-      use ed_therm_lib         , only : ed_grndvap           ! ! subroutine
+      use therm_lib            , only : qwtk                 & ! subroutine
+                                      , rslif                ! ! function
+      use canopy_air_coms      , only : i_blyr_condct        ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(rk4patchtype), target      :: initp
@@ -390,10 +362,8 @@ module rk4_driver
       integer                         :: ksn
       integer                         :: nsoil
       integer                         :: nlsw1
-      real(kind=8)                    :: available_water
       real(kind=8)                    :: tmp_energy
-      real                            :: surface_temp
-      real                            :: surface_fliq
+      real(kind=8)                    :: available_water
       !----- Local contants ---------------------------------------------------------------!
       real        , parameter         :: tendays_sec=10.*day_sec
       !----- External function ------------------------------------------------------------!
@@ -414,6 +384,11 @@ module rk4_driver
       csite%can_co2(ipa)      = sngloff(initp%can_co2       ,tiny_offset)
       csite%can_rhos(ipa)     = sngloff(initp%can_rhos      ,tiny_offset)
       csite%can_depth(ipa)    = sngloff(initp%can_depth     ,tiny_offset)
+      csite%opencan_frac(ipa) = sngloff(initp%opencan_frac  ,tiny_offset)
+
+      csite%ggbare(ipa)       = sngloff(initp%ggbare        ,tiny_offset)
+      csite%ggveg (ipa)       = sngloff(initp%ggveg         ,tiny_offset)
+      csite%ggnet (ipa)       = sngloff(initp%ggnet         ,tiny_offset)
 
       csite%ustar (ipa)   = sngloff(initp%ustar   ,tiny_offset)
       csite%tstar (ipa)   = sngloff(initp%tstar   ,tiny_offset)
@@ -433,13 +408,14 @@ module rk4_driver
       !    These variables are fast scale fluxes, and they may not be allocated, so just   !
       ! check this before copying.                                                         !
       !------------------------------------------------------------------------------------!
-      if(fast_diagnostics) then
+      if (fast_diagnostics) then
 
          csite%avg_vapor_vc(ipa)         =sngloff(initp%avg_vapor_vc      ,tiny_offset)
          csite%avg_dew_cg(ipa)           =sngloff(initp%avg_dew_cg        ,tiny_offset)
          csite%avg_vapor_gc(ipa)         =sngloff(initp%avg_vapor_gc      ,tiny_offset)
          csite%avg_wshed_vg(ipa)         =sngloff(initp%avg_wshed_vg      ,tiny_offset)
          csite%avg_intercepted(ipa)      =sngloff(initp%avg_intercepted   ,tiny_offset)
+         csite%avg_throughfall(ipa)      =sngloff(initp%avg_throughfall   ,tiny_offset)
          csite%avg_vapor_ac(ipa)         =sngloff(initp%avg_vapor_ac      ,tiny_offset)
          csite%avg_transp(ipa)           =sngloff(initp%avg_transp        ,tiny_offset)
          csite%avg_evap(ipa)             =sngloff(initp%avg_evap          ,tiny_offset)
@@ -449,6 +425,7 @@ module rk4_driver
          csite%avg_sensible_vc(ipa)      =sngloff(initp%avg_sensible_vc   ,tiny_offset)
          csite%avg_qwshed_vg(ipa)        =sngloff(initp%avg_qwshed_vg     ,tiny_offset)
          csite%avg_qintercepted(ipa)     =sngloff(initp%avg_qintercepted  ,tiny_offset)
+         csite%avg_qthroughfall(ipa)     =sngloff(initp%avg_qthroughfall  ,tiny_offset)
          csite%avg_sensible_gc(ipa)      =sngloff(initp%avg_sensible_gc   ,tiny_offset)
          csite%avg_sensible_ac(ipa)      =sngloff(initp%avg_sensible_ac   ,tiny_offset)
          csite%avg_carbon_ac(ipa)        =sngloff(initp%avg_carbon_ac     ,tiny_offset)
@@ -490,9 +467,7 @@ module rk4_driver
 
 
       !------------------------------------------------------------------------------------!
-      ! paw_avg - 10-day average of plant available water.                              !
-      !     I don't think this is currently used, but it may be turned on for drought-     !
-      ! -related  phenology.                                                               !
+      ! paw_avg - 10-day average of plant available water.                                 !
       !------------------------------------------------------------------------------------!
       cpatch => csite%patch(ipa)
       do ico = 1,cpatch%ncohorts
@@ -526,8 +501,8 @@ module rk4_driver
       
 
       !------------------------------------------------------------------------------------!
-      !    Surface water energy is computed in J/m² inside the integrator. Converting it   !
-      ! back to J/kg in the layers that surface water/snow still exists.                   !
+      !    Surface water energy is computed in J/m² inside the integrator. Convert it back !
+      ! to J/kg in the layers that surface water/snow still exists.                        !
       !------------------------------------------------------------------------------------!
       csite%nlev_sfcwater(ipa)    = initp%nlev_sfcwater
       csite%total_snow_depth(ipa) = 0.
@@ -569,18 +544,63 @@ module rk4_driver
       do ico = 1,cpatch%ncohorts
 
          if (initp%solvable(ico)) then
-            !------------------------------------------------------------------------------!
-            !    The cohort was solved, update internal energy and water, and re-calculate !
-            ! temperature.  Note that energy may need to be scaled back.                   !
-            !------------------------------------------------------------------------------!
-            cpatch%veg_water(ico)  = sngloff(initp%veg_water(ico),tiny_offset)
-            tmp_energy             = initp%veg_energy(ico)                                 &
-                                   + (dble(cpatch%hcapveg(ico))-initp%hcapveg(ico))        &
-                                   * initp%veg_temp(ico)
+            select case (i_blyr_condct)
+            case (-1)
+               !---------------------------------------------------------------------------!
+               !    The cohort was solved, update internal energy and water, and re-       !
+               ! calculate temperature.  Note that energy may need to be scaled back.      !
+               !---------------------------------------------------------------------------!
+               cpatch%veg_water(ico)  = sngloff(initp%veg_water(ico),tiny_offset)
+               tmp_energy             = initp%veg_energy(ico)                              &
+                                      + (dble(cpatch%hcapveg(ico))-initp%hcapveg(ico))     &
+                                      * initp%veg_temp(ico)
 
-            cpatch%veg_energy(ico) = sngloff(tmp_energy,tiny_offset)
-            call qwtk(cpatch%veg_energy(ico),cpatch%veg_water(ico),cpatch%hcapveg(ico)     &
-                     ,cpatch%veg_temp(ico),cpatch%veg_fliq(ico))
+               cpatch%veg_energy(ico) = sngloff(tmp_energy,tiny_offset)
+               call qwtk(cpatch%veg_energy(ico),cpatch%veg_water(ico),cpatch%hcapveg(ico)  &
+                        ,cpatch%veg_temp(ico),cpatch%veg_fliq(ico))
+
+            case default
+               !---------------------------------------------------------------------------!
+               !    The cohort was solved, update water and internal energy, and re-       !
+               ! calculate the temperature and leaf intercellular specific humidity.  The  !
+               ! vegetation dry heat capacity is constant within one time step, so it does !
+               ! not need to be updated.                                                   !
+               !---------------------------------------------------------------------------!
+               cpatch%veg_water(ico)  = sngloff(initp%veg_water(ico) , tiny_offset)
+               cpatch%veg_energy(ico) = sngloff(initp%veg_energy(ico), tiny_offset)
+               call qwtk(cpatch%veg_energy(ico),cpatch%veg_water(ico),cpatch%hcapveg(ico)  &
+                        ,cpatch%veg_temp(ico),cpatch%veg_fliq(ico))
+
+            end select
+
+            !------------------------------------------------------------------------------!
+            !     The intercellular specific humidity is always assumed to be at           !
+            ! saturation for a given temperature.  Find the saturation mixing ratio, then  !
+            ! convert it to specific humidity.                                             !
+            !------------------------------------------------------------------------------!
+            cpatch%lint_shv(ico) = rslif(csite%can_prss(ipa),cpatch%veg_temp(ico))
+            cpatch%lint_shv(ico) = cpatch%lint_shv(ico) / (1. + cpatch%lint_shv(ico))
+            !----- Convert the wind. ------------------------------------------------------!
+            cpatch%veg_wind(ico) = sngloff(initp%veg_wind(ico),tiny_offset)
+            !------------------------------------------------------------------------------!
+
+
+            !------------------------------------------------------------------------------!
+            !     Copy the conductances.                                                   !
+            !------------------------------------------------------------------------------!
+            cpatch%gbh       (ico) = sngloff(initp%gbh       (ico), tiny_offset)
+            cpatch%gbw       (ico) = sngloff(initp%gbw       (ico), tiny_offset)
+            !------------------------------------------------------------------------------!
+
+
+
+            !------------------------------------------------------------------------------!
+            !     Divide the values of water demand by the time step to obtain the average !
+            ! value over the past DTLSM period.                                            !
+            !------------------------------------------------------------------------------!
+            cpatch%psi_open  (ico) = sngloff(initp%psi_open  (ico),tiny_offset) / hdid
+            cpatch%psi_closed(ico) = sngloff(initp%psi_closed(ico),tiny_offset) / hdid
+
          elseif (cpatch%hite(ico) <=  csite%total_snow_depth(ipa)) then
             !------------------------------------------------------------------------------!
             !    For plants buried in snow, fix the leaf temperature to the snow temper-   !
@@ -594,6 +614,19 @@ module rk4_driver
             cpatch%veg_fliq(ico)   = 0.
             cpatch%veg_water(ico)  = 0.
             cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * cpatch%veg_temp(ico)
+            !------------------------------------------------------------------------------!
+            !     The intercellular specific humidity is always assumed to be at           !
+            ! saturation for a given temperature.  Find the saturation mixing ratio, then  !
+            ! convert it to specific humidity.                                             !
+            !------------------------------------------------------------------------------!
+            cpatch%lint_shv(ico) = rslif(csite%can_prss(ipa),cpatch%veg_temp(ico))
+            cpatch%lint_shv(ico) = cpatch%lint_shv(ico) / (1. + cpatch%lint_shv(ico))
+            !----- Copy the meteorological wind to here. ----------------------------------!
+            cpatch%veg_wind(ico) = sngloff(rk4site%vels, tiny_offset)
+            !----- Make water demand 0. ---------------------------------------------------!
+            cpatch%psi_open  (ico) = 0.0
+            cpatch%psi_closed(ico) = 0.0
+
          else
             !------------------------------------------------------------------------------!
             !     For plants with minimal foliage or very sparse patches, fix the leaf     !
@@ -603,6 +636,18 @@ module rk4_driver
             cpatch%veg_fliq(ico)   = 0.
             cpatch%veg_water(ico)  = 0. 
             cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * cpatch%veg_temp(ico)
+            !------------------------------------------------------------------------------!
+            !     The intercellular specific humidity is always assumed to be at           !
+            ! saturation for a given temperature.  Find the saturation mixing ratio, then  !
+            ! convert it to specific humidity.                                             !
+            !------------------------------------------------------------------------------!
+            cpatch%lint_shv(ico) = rslif(csite%can_prss(ipa),cpatch%veg_temp(ico))
+            cpatch%lint_shv(ico) = cpatch%lint_shv(ico) / (1. + cpatch%lint_shv(ico))
+            !----- Copy the meteorological wind to here. ----------------------------------!
+            cpatch%veg_wind(ico) = sngloff(rk4site%vels, tiny_offset)
+            !----- Make water demand 0. ---------------------------------------------------!
+            cpatch%psi_open  (ico) = 0.0
+            cpatch%psi_closed(ico) = 0.0
          end if
 
          !---------------------------------------------------------------------------------!
@@ -642,14 +687,11 @@ module rk4_driver
          !---------------------------------------------------------------------------------!
       end do
 
-
-      ksn   = csite%nlev_sfcwater(ipa)
-      nsoil = csite%ntext_soil(nzg,ipa)
-      nlsw1 = max(1, ksn)
-      call ed_grndvap(ksn,nsoil,csite%soil_water(nzg,ipa),csite%soil_energy(nzg,ipa)       &
-                     ,csite%sfcwater_energy(nlsw1,ipa),csite%can_prss(ipa)                 &
-                     ,csite%can_shv(ipa),csite%ground_shv(ipa),csite%surface_ssh(ipa)      &
-                     ,surface_temp,surface_fliq)
+      !------ Copy the ground variables to the output. ------------------------------------!
+      csite%ground_shv (ipa) = sngloff(initp%ground_shv , tiny_offset)
+      csite%ground_ssh (ipa) = sngloff(initp%ground_ssh , tiny_offset)
+      csite%ground_temp(ipa) = sngloff(initp%ground_temp, tiny_offset)
+      csite%ground_fliq(ipa) = sngloff(initp%ground_fliq, tiny_offset)
       return
    end subroutine initp2modelp
    !=======================================================================================!

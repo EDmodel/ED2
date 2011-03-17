@@ -45,7 +45,8 @@ subroutine read_ed10_ed20_history_file
                              , dbh2bl              & ! function
                              , ed_biomass          & ! function
                              , area_indices        ! ! subroutine
-   use fuse_fiss_utils, only : sort_cohorts        ! ! intent(in)
+   use fuse_fiss_utils, only : sort_cohorts        & ! subroutine
+                             , sort_patches        ! ! subroutine
    use disturb_coms   , only : min_new_patch_area  ! ! intent(in)
    implicit none
 
@@ -103,7 +104,6 @@ subroutine read_ed10_ed20_history_file
    integer                                                :: nsitepat
    integer                                                :: npatch2
    integer                                                :: nw
-   integer                                                :: ied_init_mode_local
    logical              , dimension(huge_cohort)          :: add_this_cohort
    logical                                                :: renumber_pfts
    logical                                                :: site_match
@@ -165,9 +165,6 @@ subroutine read_ed10_ed20_history_file
    ! cohorts from the closest polygon.                                                     !
    !---------------------------------------------------------------------------------------!
    gridloop: do igr = 1,ngrids
-
-      !----- Copy the namelist variable to the local one, so we can change it here. -------!
-      ied_init_mode_local = ied_init_mode 
 
       !----- Retrieve all files with the specified prefix. --------------------------------!
       call ed_filelist(full_list,sfilin(igr),nflist)
@@ -242,24 +239,11 @@ subroutine read_ed10_ed20_history_file
             !    Open the patch file and read in all patches.                              !
             !------------------------------------------------------------------------------!
             open(unit=12,file=trim(pss_name),form='formatted',status='old',action='read')
-            !----- Header.  This is read for when ied_init_mode is -1. --------------------!
             read(unit=12,fmt='(a4)')  cdum
-
-            !------------------------------------------------------------------------------!
-            !    If the user chose to run a mixed ED-1.0/ED-2.0 initialisation, then we    !
-            ! must decide here whether the file format of the current polygon.             !
-            !------------------------------------------------------------------------------!
-            if (ied_init_mode == -1) then
-               if (trim(cdum) == 'time') then
-                  ied_init_mode_local = 2
-               else
-                  ied_init_mode_local = 1
-               end if
-            end if
             
             !----- Read the other information from the header (if there is any...). -------!
             nwater = 1
-            select case (ied_init_mode_local)
+            select case (ied_init_mode)
             case (1)
                read (unit=12,fmt=*) cdum,nwater
                read (unit=12,fmt=*) cdum,depth(1:nwater)
@@ -294,7 +278,7 @@ subroutine read_ed10_ed20_history_file
                !    If we can still add new patches, read the next one, according to the   !
                ! input format type.                                                        !
                !---------------------------------------------------------------------------!
-               select case (ied_init_mode_local)
+               select case (ied_init_mode)
                case (1)
                   !----- ED-1.0 file. -----------------------------------------------------!
                   read(unit=12,fmt=*,iostat=ierr) time(ip),pname(ip),trk(ip),dage,darea    &
@@ -385,6 +369,7 @@ subroutine read_ed10_ed20_history_file
                if (area(ip) > min_area) ip = ip + 1
 
             end do count_patches
+            
             
             !------------------------------------------------------------------------------!
             !      Here we determine the number of patches.  Unless there are no patches,  !
@@ -490,29 +475,13 @@ subroutine read_ed10_ed20_history_file
          
          close(unit=12,status='keep')
 
-
          !---------------------------------------------------------------------------------!
          !    Open the cohort file and read in all cohorts.                                !
          !---------------------------------------------------------------------------------!
          open(unit=12,file=trim(css_name),form='formatted',status='old')
-         !----- Header.  This is read for when ied_init_mode is -1. -----------------------!
          read(unit=12,fmt='(a4)')  cdum
 
-         !---------------------------------------------------------------------------------!
-         !    If the user chose to run a mixed ED-1.0/ED-2.0 initialisation, then we must  !
-         ! decide here whether the file format of the current polygon.                     !
-         !---------------------------------------------------------------------------------!
-         if (ied_init_mode == -1) then
-            if (trim(cdum) == 'time') then
-               ied_init_mode_local = 2
-            else
-               ied_init_mode_local = 1
-            end if
-         else
-            ied_init_mode_local = ied_init_mode
-         end if
-
-         if (ied_init_mode_local == 1) then
+         if (ied_init_mode == 1) then
             read(unit=12,fmt=*) !---- Skip second line. -----------------------------------!
          end if
          ic = 0
@@ -543,7 +512,7 @@ subroutine read_ed10_ed20_history_file
             !    If we can still add new cohorts, read the next one, according to the      !
             ! input format type.                                                           !
             !------------------------------------------------------------------------------!
-            select case (ied_init_mode_local)
+            select case (ied_init_mode)
             case (1)
                !----- ED-1.0 file. --------------------------------------------------------!
                read(unit=12,fmt=*,iostat=ierr)  ctime(ic),cpname(ic),cname(ic),dbh(ic)     &
@@ -648,6 +617,7 @@ subroutine read_ed10_ed20_history_file
          !----- Find the total number of cohorts. -----------------------------------------!
          ncohorts = max(ic-1,0)
          
+         
          close (unit=12,status='keep')
 
          loop_sites: do isi=1,cpoly%nsites
@@ -676,7 +646,7 @@ subroutine read_ed10_ed20_history_file
                         ! in the ED-2.1 standard.                                          !
                         !------------------------------------------------------------------!
                         !----- Plant density, it should be in [plants/m2]. ----------------!
-                        if(ied_init_mode_local == 1) then
+                        if(ied_init_mode == 1) then
                            cpatch%nplant(ic2) = nplant(ic) / (csite%area(ipa) )
                         else
                            cpatch%nplant(ic2) = nplant(ic)
@@ -738,7 +708,8 @@ subroutine read_ed10_ed20_history_file
                                          ,cpatch%bdead(ic2),cpatch%balive(ic2)             &
                                          ,cpatch%dbh(ic2), cpatch%hite(ic2)                &
                                          ,cpatch%pft(ic2), SLA(cpatch%pft(ic2))            &
-                                         ,cpatch%lai(ic2),cpatch%wpa(ic2), cpatch%wai(ic2))
+                                         ,cpatch%lai(ic2),cpatch%wpa(ic2), cpatch%wai(ic2) &
+                                         ,cpatch%bsapwood(ic2))
 
                         !----- Initialise the carbon balance. -----------------------------!
                         cpatch%cb    (1:12,ic2) = cb(1:12,ic)
@@ -749,7 +720,8 @@ subroutine read_ed10_ed20_history_file
                         !----- Above ground biomass, use the allometry. -------------------!
                         cpatch%agb(ic2) = ed_biomass(cpatch%bdead(ic2),cpatch%balive(ic2)  &
                                                     ,cpatch%bleaf(ic2),cpatch%pft(ic2)     &
-                                                    ,cpatch%hite(ic2),cpatch%bstorage(ic2))
+                                                    ,cpatch%hite(ic2),cpatch%bstorage(ic2) &
+                                                    ,cpatch%bsapwood(ic2))
                         cpatch%basarea(ic2)  = cpatch%nplant(ic2) * pio4                    &
                                              * cpatch%dbh(ic2) * cpatch%dbh(ic2)
 
@@ -814,12 +786,15 @@ subroutine read_ed10_ed20_history_file
                   call init_ed_cohort_vars(cpatch,ico,cpoly%lsl(isi))
                end do
 
+               !----- Make sure that cohorts are organised from tallest to shortest. ------!
                call sort_cohorts(cpatch)
             end do
 
             !----- Initialise the patch-level variables. ----------------------------------!
             call init_ed_patch_vars(csite,1,csite%npatches,cpoly%lsl(isi))
-            
+
+            !----- Make sure that patches are organised from oldest to youngest. ----------!
+            call sort_patches(csite)
          end do
 
          !----- Initialise site-level variables. ------------------------------------------!

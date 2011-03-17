@@ -17,7 +17,7 @@
 !     This routine is the subdriver to compute tendencies due to subgrid-scale turbulence. !
 !------------------------------------------------------------------------------------------!
 subroutine diffuse()
-   use mem_tend       , only : tend         ! ! intent(inout)
+   use mem_tend       , only : tend_g       ! ! intent(inout)
    use mem_basic      , only : basic_g      ! ! intent(in)
    use var_tables     , only : num_scalar   & ! intent(in)
                              , scalar_tab   ! ! intent(inout)
@@ -94,7 +94,7 @@ subroutine diffuse()
    nullify(hkh_p)
 
    !---------------------------------------------------------------------------------------!
-   !    Coping the vapour and total mixing ratio to scratch vectors. This way the Brunt-   !
+   !    Copying the vapour and total mixing ratio to scratch vectors. This way the Brunt-  !
    ! -Väisälä frequency and Nakanishi-Niino subroutines will also work for runs that       !
    !  don't use water.                                                                     !
    !  - vt3dp -> water vapour mixing ratio;                                                !
@@ -175,7 +175,7 @@ subroutine diffuse()
    select case (idiffk(ngrid))
    case (1) !----- Original Mellor-Yamada Level 2½: Helfand and Labraga (1988). -----------!
       call tkemy(mzp,mxp,myp,ia,iz,ja,jz,ibcon,jdim,mi0(ngrid),mj0(ngrid)                  &
-             ,turb_g(ngrid)%tkep       ,tend%tket                ,scratch%vt3dh            &
+             ,turb_g(ngrid)%tkep       ,tend_g(ngrid)%tket       ,scratch%vt3dh            &
              ,scratch%vt3di            ,scratch%vt3dj            ,scratch%scr1             &
              ,grid_g(ngrid)%rtgt       ,basic_g(ngrid)%theta     ,basic_g(ngrid)%dn0       &
              ,basic_g(ngrid)%up        ,basic_g(ngrid)%vp        ,basic_g(ngrid)%wp        &
@@ -185,7 +185,7 @@ subroutine diffuse()
 
    case (4) !----- Deardoff (1980) LES scheme. --------------------------------------------!
       call mxtked(mzp,mxp,myp,ia,iz,ja,jz,ibcon,jdim                                       &
-             ,turb_g(ngrid)%tkep       ,tend%tket                ,basic_g(ngrid)%up        &
+             ,turb_g(ngrid)%tkep       ,tend_g(ngrid)%tket       ,basic_g(ngrid)%up        &
              ,basic_g(ngrid)%vp        ,basic_g(ngrid)%wp        ,basic_g(ngrid)%rtp       &
              ,basic_g(ngrid)%rv        ,basic_g(ngrid)%theta     ,scratch%vt3da            &
              ,scratch%vt3dc            ,scratch%vt3dh            ,scratch%vt3dj            &
@@ -195,7 +195,7 @@ subroutine diffuse()
 
    case (5) !----- Trini Castelli tkescl for E-l closure. ---------------------------------!
       call tkescl(mzp,mxp,myp,npatch,ia,iz,ja,jz                                           &
-             ,turb_g(ngrid)%tkep       ,tend%tket                ,turb_g(ngrid)%epsp       &
+             ,turb_g(ngrid)%tkep       ,tend_g(ngrid)%tket       ,turb_g(ngrid)%epsp       &
              ,scratch%vt3da            ,scratch%vt3dc            ,scratch%vt3dh            &
              ,scratch%vt3di            ,scratch%vt3dj            ,scratch%scr1             &
              ,scratch%scr2             ,grid_g(ngrid)%rtgt       ,scratch%vt3dd            &
@@ -204,8 +204,8 @@ subroutine diffuse()
 
    case (6) !----- Trini Castelli subroutine TKE-eps for E-eps closure. -------------------!
       call tkeeps(mzp,mxp,myp,npatch,ia,iz,ja,jz                                           &
-             ,turb_g(ngrid)%tkep       ,tend%tket                ,turb_g(ngrid)%epsp       &
-             ,tend%epst                ,scratch%vt3da            ,scratch%vt3dc            &
+             ,turb_g(ngrid)%tkep       ,tend_g(ngrid)%tket       ,turb_g(ngrid)%epsp       &
+             ,tend_g(ngrid)%epst       ,scratch%vt3da            ,scratch%vt3dc            &
              ,scratch%vt3dh            ,scratch%vt3di            ,scratch%vt3dj            &
              ,scratch%scr1             ,scratch%scr2             ,grid_g(ngrid)%rtgt       &
              ,leaf_g(ngrid)%ustar      ,leaf_g(ngrid)%patch_area ,grid_g(ngrid)%flpw       &
@@ -213,7 +213,7 @@ subroutine diffuse()
 
    case (7) !----- Nananishi and Niino (2004), scheme based on Mellor-Yamada Level 2½. ----!
       call nakanishi(mzp, mxp, myp, npatch, ia, iz, ja, jz, jdim                           &
-              ,turb_g(ngrid)%tkep       ,tend%tket                ,scratch%vt3dd           &
+              ,turb_g(ngrid)%tkep       ,tend_g(ngrid)%tket       ,scratch%vt3dd           &
               ,scratch%vt3de            ,scratch%vt3dh            ,scratch%vt3di           &
               ,scratch%vt3dj            ,scratch%scr1             ,grid_g(ngrid)%rtgt      &
               ,basic_g(ngrid)%theta     ,scratch%vt3dp            ,scratch%vt3dq           &
@@ -227,7 +227,7 @@ subroutine diffuse()
 
    case (8) !----- Nananishi and Niino (2004), scheme based on Mellor-Yamada Level 2½. ----!
       call nakanishi(mzp, mxp, myp, npatch, ia, iz, ja, jz, jdim                           &
-              ,turb_g(ngrid)%tkep       ,tend%tket                ,scratch%vt3dd           &
+              ,turb_g(ngrid)%tkep       ,tend_g(ngrid)%tket       ,scratch%vt3dd           &
               ,scratch%vt3de            ,scratch%vt3dh            ,scratch%vt3di           &
               ,scratch%vt3dj            ,scratch%scr1             ,grid_g(ngrid)%rtgt      &
               ,basic_g(ngrid)%theta     ,scratch%vt3dp            ,scratch%vt3dq           &
@@ -290,8 +290,8 @@ subroutine diffuse()
    if (if_adap == 0) then
       call diffvel(mzp,mxp,myp,ia,iz,ja,jz,jdim,ia_1,ja_1,ia1,ja1,iz_1,jz_1,iz1,jz1,izu    &
              ,jzv                      ,idiffk(ngrid)            ,basic_g(ngrid)%up        &
-             ,basic_g(ngrid)%vp        ,basic_g(ngrid)%wp        ,tend%ut                  &
-             ,tend%vt                  ,tend%wt                  ,scratch%vt3da            &
+             ,basic_g(ngrid)%vp        ,basic_g(ngrid)%wp        ,tend_g(ngrid)%ut         &
+             ,tend_g(ngrid)%vt         ,tend_g(ngrid)%wt         ,scratch%vt3da            &
              ,scratch%vt3db            ,scratch%vt3dc            ,scratch%vt3dd            &
              ,scratch%vt3de            ,scratch%vt3df            ,scratch%vt3dg            &
              ,scratch%vt3dj            ,scratch%vt3dk            ,scratch%vt3dl            &
@@ -304,7 +304,7 @@ subroutine diffuse()
    else
       call diffvel_adap(mzp,mxp,myp,ia,iz,ja,jz,jdim,iz1,jz1,izu,jzv,idiffk(ngrid)         &
              ,basic_g(ngrid)%up        ,basic_g(ngrid)%vp        ,basic_g(ngrid)%wp        &
-             ,tend%ut                  ,tend%vt                  ,tend%wt                  &
+             ,tend_g(ngrid)%ut         ,tend_g(ngrid)%vt         ,tend_g(ngrid)%wt         &
              ,scratch%vt3da            ,scratch%vt3db            ,scratch%vt3dc            &
              ,scratch%vt3dd            ,scratch%vt3de            ,scratch%vt3df            &
              ,scratch%vt3dg            ,scratch%vt3dj            ,scratch%vt3dk            &

@@ -69,19 +69,19 @@ subroutine cu_inv_tend(m1,m2,m3,ia,iz,ja,jz,thsrc,thsrcp,thsrcf,rtsrc,rtsrcp,rts
 
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
-   integer                  , intent(in)  :: m1,m2,m3,ia,iz,ja,jz
-   real, dimension(   m2,m3), intent(in)  :: conprrp,conprrf
-   real, dimension(m1,m2,m3), intent(in)  :: thsrcp,thsrcf,rtsrcp,rtsrcf
-   real, dimension(   m2,m3), intent(out) :: conprr
-   real, dimension(m1,m2,m3), intent(out) :: thsrc,rtsrc
+   integer                  , intent(in)    :: m1,m2,m3,ia,iz,ja,jz
+   real, dimension(   m2,m3), intent(in)    :: conprrp,conprrf
+   real, dimension(m1,m2,m3), intent(in)    :: thsrcp,thsrcf,rtsrcp,rtsrcf
+   real, dimension(   m2,m3), intent(inout) :: conprr
+   real, dimension(m1,m2,m3), intent(inout) :: thsrc,rtsrc
    !----- Local variables -----------------------------------------------------------------!
    integer                                :: k,i,j
    real                                   :: tfact,grwt
    !---------------------------------------------------------------------------------------!
 
-   thsrc(1:m1,1:m2,1:m3) = 0.
-   rtsrc(1:m1,1:m2,1:m3) = 0.
-   conprr(1:m2,1:m3)     = 0.
+   thsrc(:,:,:) = 0.
+   rtsrc(:,:,:) = 0.
+   conprr(:,:)  = 0.
 
    if (time < tcu_beg .or. time > tcu_end ) return
 

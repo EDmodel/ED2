@@ -311,7 +311,7 @@ subroutine par_model(master_num)
      if (isendflg==1) then
 
         if (load_bal==1) then
-           call node_decomp(0)
+           call node_decomp(.false.)
            call dump_Domain_Decomposition()
            call masterput_grid_dimens(master_num)
         endif

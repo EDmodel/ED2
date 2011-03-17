@@ -11,11 +11,6 @@ module canopy_radiation_coms
    use ed_max_dims , only : n_pft
    implicit none 
 
-   !----- Converts PAR radiation from  watts to Einsteins (units are Ein/watt of PAR). ----!
-   real, parameter :: Watts2Ein = 4.6e-6
-   real, parameter :: Ein2Watts = 1./Watts2Ein
-   !---------------------------------------------------------------------------------------!
-
 
    !---------------------------------------------------------------------------------------!
    !     Leaf angle distribution parameter (dimensionless).  Let mu' be the cosine of leaf !
@@ -82,16 +77,7 @@ module canopy_radiation_coms
 
    !----- Emissivity of the vegetation. ---------------------------------------------------!
    real(kind=8), dimension(n_pft) :: emis_v
-
-
    !---------------------------------------------------------------------------------------!
-   !    The following values are used to decide whether the radiation should be called or  !
-   ! not.  For a simple test, I am currently using TAI rather than LAI, but I'm aware that !
-   ! branches and twigs probably should be treated differently.                            !
-   !---------------------------------------------------------------------------------------!
-   real :: lai_min       !----- Minimum LAI used in the radiative transfer scheme. --------!
-   real :: tai_min       !----- Minimum TAI used in the radiative transfer scheme. --------!
-   real :: patch_lai_min !----- Minimum patch-level LAI for a stable ecosystem. -----------!
 
    !---------------------------------------------------------------------------------------!
    ! Fraction of bleaf_max below which we skip photosynthesis, radiation and heat balance. !
@@ -108,6 +94,16 @@ module canopy_radiation_coms
    integer :: crown_mod
    !---------------------------------------------------------------------------------------!
 
+
+
+   !---------------------------------------------------------------------------------------!
+   !     The following variables control whether to call things that should be called      !
+   ! when there is still some light.                                                       !
+   !---------------------------------------------------------------------------------------!
+   real(kind=4)    :: rshort_twilight_min
+   real(kind=4)    :: cosz_min
+   real(kind=8)    :: cosz_min8
+   !---------------------------------------------------------------------------------------!
 end module canopy_radiation_coms
 !==========================================================================================!
 !==========================================================================================!

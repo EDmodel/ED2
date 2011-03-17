@@ -583,6 +583,15 @@ subroutine opspec3
   use mem_cuparm
   use mem_turb
   use mem_leaf
+  use leaf_coms, only :     &
+          ustmin,           & ! intent(in)
+          ggfact,           & ! intent(in)
+          lc_gamm => gamm,  & ! intent(in)
+          lc_gamh => gamh,  & ! intent(in)
+          tprandtl,         & ! intent(in)
+          vh2vr,            & ! intent(in)
+          vh2dh             ! ! intent(in)
+          
   use therm_lib , only:  &
           level          ! ! intent(in)
   use grell_coms, only:  &
@@ -969,6 +978,64 @@ subroutine opspec3
         ifaterr=ifaterr+1
      end select
   endif
+  
+  if (betapower < 0.0 .or. betapower > 10.0) then
+     print *, 'FATAL - BETAPOWER must be between 0.0 and 10.0'
+     ifaterr = ifaterr + 1
+  end if
+  
+  if (ustmin < 1.e-4 .or. ustmin > 1.0) then
+     print *, 'FATAL - USTMIN must be between 0.0001 and 1.0'
+     ifaterr = ifaterr + 1
+  end if
+  
+  if (ggfact < 0.0 .or. ggfact > 100.0) then
+     print *, 'FATAL - GGFACT must be between 0.0 and 100.0'
+     ifaterr = ifaterr + 1
+  end if
+  
+  if (lc_gamm < 0.1 .or. lc_gamm > 100.0) then
+     print *, 'FATAL - GAMM must be between 0.1 and 100.'
+     ifaterr = ifaterr + 1
+  end if
+  
+  if (lc_gamh < 0.1 .or. lc_gamh > 100.0) then
+     print *, 'FATAL - GAMH must be between 0.1 and 100.'
+     ifaterr = ifaterr + 1
+  end if
+  
+  if (tprandtl < 0.01 .or. tprandtl > 100.0) then
+     print *, 'FATAL - TPRANDTL must be between 0.01 and 100.'
+     ifaterr = ifaterr + 1
+  end if
+  
+  if (vh2vr < 0.001 .or. vh2vr > 0.99) then
+     print *, 'FATAL - VH2VR must be between 0.001 and 0.99'
+     ifaterr = ifaterr + 1
+  end if
+  
+  if (vh2dh <= vh2vr .or. vh2dh > 0.99) then
+     print *, 'FATAL - VH2DH must be greater than VH2VR and less than 0.99'
+     ifaterr = ifaterr + 1
+  end if
+
+  if (isoilbc < 0 .or. isoilbc > 3) then
+     write (unit=*,fmt='(a,1x,i4,a)')                                                      &
+       'Invalid ISOILBC, it must be between 0 and 3. Yours is set to',isoilbc,'...'
+     ifaterr = ifaterr +1
+  end if
+ 
+  if (ipercol < 0 .or. ipercol > 1) then
+     write (unit=*,fmt='(a,1x,i4,a)')                                                      &
+       'Invalid IPERCOL, it must be between 0 and 1. Yours is set to',ipercol,'...'
+     ifaterr = ifaterr +1
+  end if
+   
+  if (runoff_time < 0.0) then
+     write (unit=*,fmt='(a,1x,es14.7,a)')                                                  &
+           'Invalid RUNOFF_TIME, it can''t be negative. Yours is set to',runoff_time,'...'
+     ifaterr = ifaterr +1
+  end if
 
 ![MLO - Some extra checks for mass and Medvidy's fix on Exner tendency
 ! Complete Exner tendency and vertical coordinate.
@@ -1041,8 +1108,8 @@ subroutine opspec3
   end select
   
   ! Check whether the surface layer exchange scheme the user chose is okay. 
-  if (isfcl /= 0 .and. (istar < 1 .or. istar > 4)) then
-     print *, 'fatal - ISTAR must be between 1 and 4, and yours is set to ',istar,'...'
+  if (isfcl /= 0 .and. (istar < 1 .or. istar > 5)) then
+     print *, 'fatal - ISTAR must be between 1 and 5, and yours is set to ',istar,'...'
      ifaterr=ifaterr+1
   end if
 

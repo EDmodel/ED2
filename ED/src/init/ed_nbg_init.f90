@@ -3,11 +3,12 @@
 !      This subroutine initializes a near-bare ground polygon.                             !
 !------------------------------------------------------------------------------------------!
 subroutine near_bare_ground_init(cgrid)
-   use ed_state_vars , only : edtype           & ! structure
-                            , polygontype      & ! structure
-                            , sitetype         & ! structure
-                            ,allocate_sitetype ! ! subroutine
-   use ed_misc_coms  , only : ied_init_mode    ! ! intent(in)
+   use ed_state_vars  , only : edtype            & ! structure
+                             , polygontype       & ! structure
+                             , sitetype          & ! structure
+                             , allocate_sitetype ! ! subroutine
+   use ed_misc_coms   , only : ied_init_mode     ! ! intent(in)
+   use physiology_coms, only : n_plant_lim       ! ! intent(in)
    
    implicit none
 
@@ -32,12 +33,32 @@ subroutine near_bare_ground_init(cgrid)
          csite%dist_type          (1) = 3
          csite%age                (1) = 0.0
          csite%area               (1) = 1.0
-         csite%fast_soil_C        (1) = 0.2
-         csite%slow_soil_C        (1) = 0.01
-         csite%structural_soil_C  (1) = 10.0
-         csite%structural_soil_L  (1) = csite%structural_soil_C (1)
-         csite%mineralized_soil_N (1) = 1.0
-         csite%fast_soil_N        (1) = 1.0
+
+         !---------------------------------------------------------------------------------!
+         !     Someone that uses the nitrogen model should check whether this is necessary !
+         ! or not.  If nitrogen limitation is off, then we start all carbon and nitrogen   !
+         ! pools with zeroes, otherwise we initialise with the former default values.      !
+         !---------------------------------------------------------------------------------!
+         select case (n_plant_lim)
+         case (0)
+            csite%fast_soil_C        (1) = 0.0
+            csite%slow_soil_C        (1) = 0.0
+            csite%structural_soil_C  (1) = 0.0
+            csite%structural_soil_L  (1) = 0.0
+            csite%mineralized_soil_N (1) = 0.0
+            csite%fast_soil_N        (1) = 0.0
+
+         case (1)
+            csite%fast_soil_C        (1) = 0.2
+            csite%slow_soil_C        (1) = 0.01
+            csite%structural_soil_C  (1) = 10.0
+            csite%structural_soil_L  (1) = csite%structural_soil_C (1)
+            csite%mineralized_soil_N (1) = 1.0
+            csite%fast_soil_N        (1) = 1.0
+
+         end select
+         !---------------------------------------------------------------------------------!
+
          csite%sum_dgd            (1) = 0.0
          csite%sum_chd            (1) = 0.0
          csite%plantation         (1) = 0
@@ -47,7 +68,7 @@ subroutine near_bare_ground_init(cgrid)
          select case (ied_init_mode)
          case (-8)
             call init_cohorts_by_layers(csite,cpoly%lsl(isi),1,csite%npatches)
-         case (0)
+         case (-1,0)
             call init_nbg_cohorts(csite,cpoly%lsl(isi),1,csite%npatches)
          end select
 
@@ -83,6 +104,7 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
                                  , allocate_sitetype  & ! subroutine
                                  , allocate_patchtype ! ! subroutine
    use ed_max_dims        , only : n_pft              ! ! intent(in)
+   use ed_misc_coms       , only : ied_init_mode      ! ! intent(in)
    use pft_coms           , only : q                  & ! intent(in)
                                  , qsw                & ! intent(in)
                                  , sla                & ! intent(in)
@@ -123,12 +145,23 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
    patchloop: do ipa=ipa_a,ipa_z
       cpatch => csite%patch(ipa)
 
-      ! Decide how many cohorts to allocate
-      select case (csite%dist_type(ipa))
-      case (1)   ! Agriculture
-         mypfts = sum(include_pft_ag)
-      case (2,3) ! Secondary or primary forest
-         mypfts= sum(include_pft)
+      !----- Check which initialisation we are going to use. ------------------------------!
+      select case (ied_init_mode)
+      case (-1) !------ True bare ground simulation (absolute desert). --------------------!
+         mypfts = 0
+         return
+      case ( 0) !------ Nearly bare ground simulation (start with a few seedlings). -------!
+
+         !---------------------------------------------------------------------------------!
+         !     Decide how many cohorts to allocate.                                        !
+         !---------------------------------------------------------------------------------!
+         select case (csite%dist_type(ipa))
+         case (1)   !---- Agriculture. ----------------------------------------------------!
+            mypfts = sum(include_pft_ag)
+         case (2,3) !---- Secondary or primary forest. ------------------------------------!
+            mypfts= sum(include_pft)
+         end select
+         !---------------------------------------------------------------------------------!
       end select
 
       !----- Perform cohort allocation. ---------------------------------------------------!
@@ -189,12 +222,13 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
          call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)          &
                           ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)            &
                           ,cpatch%pft(ico),cpatch%sla(ico),cpatch%lai(ico)                 &
-                          ,cpatch%wpa(ico),cpatch%wai(ico))
+                          ,cpatch%wpa(ico),cpatch%wai(ico),cpatch%bsapwood(ico))
 
          !----- Find the above-ground biomass and basal area. -----------------------------!
          cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)                 &
                                      ,cpatch%bleaf(ico),cpatch%pft(ico)                    &
-                                     ,cpatch%hite(ico),cpatch%bstorage(ico))
+                                     ,cpatch%hite(ico),cpatch%bstorage(ico)                &
+                                     ,cpatch%bsapwood(ico))
          cpatch%basarea(ico) = pio4 * cpatch%dbh(ico)*cpatch%dbh(ico)
 
          !----- Initialize other cohort-level variables. ----------------------------------!
@@ -211,7 +245,8 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
          cpatch%hcapveg(ico)    = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico)         &
                                               ,cpatch%balive(ico),cpatch%nplant(ico)       &
                                               ,cpatch%hite(ico),cpatch%pft(ico)            &
-                                              ,cpatch%phenology_status(ico))
+                                              ,cpatch%phenology_status(ico)                &
+                                              ,cpatch%bsapwood(ico))
  
          !----- Update total patch-level above-ground biomass -----------------------------!
          csite%plant_ag_biomass(ipa) = csite%plant_ag_biomass(ipa)                         &
@@ -341,12 +376,13 @@ subroutine init_cohorts_by_layers(csite,lsl,ipa_a,ipa_z)
          call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)          &
                           ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)            &
                           ,cpatch%pft(ico),cpatch%sla(ico),cpatch%lai(ico)                 &
-                          ,cpatch%wpa(ico),cpatch%wai(ico))
+                          ,cpatch%wpa(ico),cpatch%wai(ico),cpatch%bsapwood(ico))
 
          !----- Find the above-ground biomass and basal area. -----------------------------!
          cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)                 &
                                      ,cpatch%bleaf(ico),cpatch%pft(ico)                    &
-                                     ,cpatch%hite(ico),cpatch%bstorage(ico))
+                                     ,cpatch%hite(ico),cpatch%bstorage(ico)                &
+                                     ,cpatch%bsapwood(ico))
          cpatch%basarea(ico) = cpatch%dbh(ico)*cpatch%dbh(ico)
 
          !----- Initialize other cohort-level variables. ----------------------------------!
@@ -363,7 +399,8 @@ subroutine init_cohorts_by_layers(csite,lsl,ipa_a,ipa_z)
          cpatch%hcapveg(ico)    = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico)         &
                                               ,cpatch%balive(ico),cpatch%nplant(ico)       &
                                               ,cpatch%hite(ico),cpatch%pft(ico)            &
-                                              ,cpatch%phenology_status(ico))
+                                              ,cpatch%phenology_status(ico)                &
+                                              ,cpatch%bsapwood(ico))
  
          !----- Update total patch-level above-ground biomass -----------------------------!
          csite%plant_ag_biomass(ipa) = csite%plant_ag_biomass(ipa)                         &

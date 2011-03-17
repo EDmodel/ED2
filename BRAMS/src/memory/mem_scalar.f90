@@ -13,8 +13,8 @@ module mem_scalar
 
   type scalar_vars
      real, pointer, dimension(:,:,:) :: sclp
-     real, pointer, dimension(:,:) :: drydep
-     real, pointer, dimension(:) :: sclt
+     real, pointer, dimension(:,:)   :: drydep
+     real, pointer, dimension(:,:,:) :: sclt
      ! For CATT
      real, pointer, dimension(:,:) :: wetdep
      real, pointer, dimension(:,:,:) :: srcsc
@@ -44,6 +44,7 @@ contains
     do nsc=1,naddsc
        !print*,'escalar=',nsc,naddsc,n1,n2,n3
        allocate (scal(nsc)%sclp(n1,n2,n3))
+       allocate (scal(nsc)%sclt(n1,n2,n3))
        allocate (scal(nsc)%drydep(n2,n3))
        allocate (scal(nsc)%wetdep(n2,n3))
        allocate (scal(nsc)%srcsc(n1,n2,n3))
@@ -66,6 +67,7 @@ contains
 
     do nsc=1,naddsc
        if (associated(scal(nsc)%sclp))   deallocate (scal(nsc)%sclp)
+       if (associated(scal(nsc)%sclt))   deallocate (scal(nsc)%sclt)
        if (associated(scal(nsc)%drydep)) deallocate (scal(nsc)%drydep)
        ! For CATT
        if (associated(scal(nsc)%wetdep)) deallocate (scal(nsc)%wetdep)
@@ -90,6 +92,7 @@ contains
 
     do nsc=1,naddsc
        if (associated(scal(nsc)%sclp))   nullify (scal(nsc)%sclp)
+       if (associated(scal(nsc)%sclt))   nullify (scal(nsc)%sclt)
        if (associated(scal(nsc)%drydep)) nullify (scal(nsc)%drydep)
        ! For CATT
        if (associated(scal(nsc)%wetdep)) nullify (scal(nsc)%wetdep)
@@ -128,26 +131,26 @@ contains
        npts=n1*n2*n3
 
        write(sname,'(a4,i3.3)') 'SCLP',na
-       call vtables2 (scal%sclp(1,1,1),scalm%sclp(1,1,1)  &
+       call vtables2 (scal%sclp,scalm%sclp  &
             ,ng, npts, imean,  &
             trim(sname)//' :3:hist:anal:mpti:mpt3:mpt1'//trim(str_recycle))
 
        npts=n2*n3
 
        write(sname,'(a4,i3.3)') 'SCDD',na
-       call vtables2 (scal%drydep(1,1),scalm%drydep(1,1)  &
+       call vtables2 (scal%drydep,scalm%drydep  &
             ,ng, npts, imean,  &
             trim(sname)//' :2:hist:anal:mpti:mpt3:mpt1')
 
        write(sname,'(a6,i3.3)') 'wetdep',na
-       call vtables2 (scal%wetdep(1,1),scalm%wetdep(1,1)  &
+       call vtables2 (scal%wetdep,scalm%wetdep  &
             ,ng, npts, imean,  &
             trim(sname)//' :2:hist:anal:mpti:mpt3:mpt1')
 
        npts=n1*n2*n3
 
        write(sname,'(a5,i3.3)') 'scrsc',na
-       call vtables2 (scal%srcsc(1,1,1),scalm%srcsc(1,1,1)  &
+       call vtables2 (scal%srcsc,scalm%srcsc  &
             ,ng, npts, imean,  &
             trim(sname)//' :3:hist:anal:mpti:mpt3:mpt1')
     endif

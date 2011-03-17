@@ -82,7 +82,7 @@ module ed_max_dims
    integer, parameter :: ed_maxatm = 625
 
    !----- Maximum file name length. -------------------------------------------------------!
-   integer, parameter :: str_len=256
+   integer, parameter :: str_len=300
    
    !----- Maximum variables string length. ------------------------------------------------!
    integer, parameter :: str_len_short=32
@@ -108,8 +108,10 @@ module ed_max_dims
    ! 13 - c3 crop (e.g.,wheat, rice, soybean)                                              !
    ! 14 - c4 pasture                                                                       !
    ! 15 - c4 crop (e.g.,corn/maize)                                                        !
+   ! 16 - Subtropical C3 grass                                                             !
+   ! 17 - Araucaria                                                                        !
    !---------------------------------------------------------------------------------------!
-   integer, parameter :: n_pft = 15
+   integer, parameter :: n_pft = 17
 
 
    !---------------------------------------------------------------------------------------!
@@ -174,8 +176,8 @@ module ed_max_dims
    !  MAX_WATER    - maximum number of soil water levels (not assigned to polygons).       !
    !---------------------------------------------------------------------------------------!
    integer, parameter :: huge_polygon = nxpmax * nypmax
-   integer, parameter :: huge_patch   = 2000
-   integer, parameter :: huge_cohort  = 20000
+   integer, parameter :: huge_patch   = 3500
+   integer, parameter :: huge_cohort  = 35000
    integer, parameter :: max_water    = 100
 
    !----- Maximum number of land use polygons that can be read by filelist. ---------------!

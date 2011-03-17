@@ -150,6 +150,7 @@ module disturb_coms
    ! equivalent average soil moisture is below this threshold and include_fire is 2.       !
    ! Units: relative fraction.                                                             !
    !---------------------------------------------------------------------------------------!
+   real :: sm_fire
    real :: fire_smoist_threshold
    !---------------------------------------------------------------------------------------!
    !     Depth to be compared with the soil average when include_fire is 2. Units: meters. !

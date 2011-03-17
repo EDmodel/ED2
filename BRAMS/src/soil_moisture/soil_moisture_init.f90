@@ -17,7 +17,9 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,npat,ifm,can_theta,can_prss,glat,glon
    use mem_soil_moisture , only : soil_moist      & ! intent(in)
                                 , soil_moist_fail & ! intent(in)
                                 , usdata_in       & ! intent(in)
-                                , usmodel_in      ! ! intent(in)
+                                , usmodel_in      & ! intent(in)
+                                , oslmsts         & ! intent(in)
+                                , osoilcp         ! ! intent(in)
    use io_params         , only : timstr          ! ! intent(in)
    use rconstants        , only : cpi             & ! intent(in)
                                 , rocp            & ! intent(in)
@@ -359,7 +361,8 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,npat,ifm,can_theta,can_prss,glat,glon
             if(glat(i,j) < latni .or. glat(i,j) > latnf .or.                               &
                glon(i,j) < lonni .or. glon(i,j) > lonnf) cycle readiloop
 
-            call interpolacao (glon(i,j),glat(i,j),nlon,nlat,prlat,prlon,i1,i2,ic,j1,j2,jc)
+            call nearest_neighbour_sm(glon(i,j),glat(i,j),nlon,nlat,prlat,prlon            &
+                                     ,i1,i2,ic,j1,j2,jc)
 
             if(ic >= 0 .and. jc >= 0) then
                dlonr = 0.5 * (glon(n2,j)-glon(1,j)) / real(n2-1)
@@ -384,8 +387,15 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,npat,ifm,can_theta,can_prss,glat,glon
                               !------------------------------------------------------------!
                               select case (trim(pref))
                               case ('us','SM')
-                                 !----- Soil moisture in [m3/m3]. -------------------------!
-                                 usdum(k) = usdum(k) + api_us(ii,jj,k)
+                                 !---------------------------------------------------------!
+                                 !    Soil moisture in [m3/m3].  Since the current version !
+                                 ! of BRAMS-4.0.6 (and ED2-BRAMS) utilises a different     !
+                                 ! number, we first normalise the soil moisture then scale !
+                                 ! with the current parameter.                             !
+                                 !---------------------------------------------------------!
+                                 nsoil           = nint(soil_text(k,i,j,ipat))
+                                 api_us(ii,jj,k) = api_us(ii,jj,k) / oslmsts(nsoil)
+                                 usdum(k)        = usdum(k) + api_us(ii,jj,k)*slmsts(nsoil)
                               case ('SM_v2.','GL_SM.GPCP.','GL_SM.GPNR.')
                                  !----- Soil moisture in fraction of saturation. ----------!
                                  nsoil    = nint(soil_text(k,i,j,ipat))
@@ -434,8 +444,8 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,npat,ifm,can_theta,can_prss,glat,glon
 
       deallocate(api_us,usdum,prlat,prlon)
       
-      !----- Writing the soil moisture into the output. -----------------------------------!
-      open (unit=19,file=usmodel,status='NEW',form='unformatted',access='direct'           &
+      !----- Write the soil moisture into the output. -------------------------------------!
+      open (unit=19,file=usmodel,status='new',form='unformatted',access='direct'           &
            ,recl=4*n2*n3*mzg*npat)
       write(unit=19,rec=1) soil_water
       close(unit=19,status='keep')
@@ -447,7 +457,7 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,npat,ifm,can_theta,can_prss,glat,glon
       write(unit=*,fmt='(a,1x,a)')  ' + File:',trim(usmodel)
       write(unit=*,fmt='(a)') '------------------------------------------------'
 
-      open (unit=19,file=usmodel,status='OLD',form='unformatted',access='direct'           &
+      open (unit=19,file=usmodel,status='old',form='unformatted',access='direct'           &
            ,recl=4*n2*n3*mzg*npat)
       read (unit=19,rec=1) soil_water
       close(unit=19,status='keep')
@@ -458,12 +468,12 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,npat,ifm,can_theta,can_prss,glat,glon
       hejloop: do j = 1,n3
         heiloop: do i = 1,n2
 
-            !----- Finding canopy temperature for this patch. -----------------------------!
+            !----- Find the canopy temperature for this patch. ----------------------------!
             can_temp = can_theta(i,j,ipat) * (p00i * can_prss(i,j,ipat)) ** rocp
 
             hekloop: do k = 1,mzg
                nsoil = nint(soil_text(k,i,j,ipat))
-               !----- Making sure that the soil moisture is bounded... --------------------!
+               !----- Make sure that the soil moisture is bounded... ----------------------!
                soil_water(k,i,j,npat) = max(soilcp(nsoil)                                  &
                                            ,min(soil_water(k,i,j,ipat), slmsts(nsoil)))
                tsoil = can_temp + stgoff(k)
@@ -493,114 +503,181 @@ end subroutine soil_moisture_init
 
 !==========================================================================================!
 !==========================================================================================!
+!     This sub-routine swaps the order of the bytes for real numbers of size 4.            !
+!------------------------------------------------------------------------------------------!
 subroutine swap32(a,n)
-  implicit none
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                       , intent(in)    :: n
+   real(kind=4)    , dimension(n), intent(inout) :: a
+   !----- Local variables. ----------------------------------------------------------------!
+   integer (kind=4)                              :: ijklmn
+   character(len=1), dimension(4)                :: jtemp
+   character(len=1)                              :: ktemp
+   real(kind=4)                                  :: r4mould
+   integer(kind=4)                               :: i4mould
+   integer                                       :: i
+   integer                                       :: itemp
+   !---------------------------------------------------------------------------------------!
 
-  integer,      intent(in)                  :: n
-  real(kind=4), intent(inout), dimension(n) :: a
 
-  !
-  !      REVERSE ORDER OF BYTES IN INTEGER*4 WORD, or REAL*4
-  !
-  integer (kind=4)  ::   ijklmn
-  !
-  character (len=1) :: jtemp(4)
-  character (len=1) :: ktemp
-  real(kind=4)    :: r4mold=6. !MLO - Real mold for bit transfer, the number itself has no meaning.
-  integer(kind=4) :: i4mold=6  !MLO - Integer mold for bit transfer, the number itself has no meaning.
-  !
-  ! Local variables
-  integer :: i, itemp
+   !---------------------------------------------------------------------------------------!
+   !     This will ensure that the bit values in the character and integer variables       !
+   ! match.                                                                                !
+   !---------------------------------------------------------------------------------------!
+   equivalence (jtemp(1),itemp)
+   save
 
-  equivalence (jtemp(1),itemp)
-  !
-  save
-  !
-  ![MLO - Alternative way to save bit representation and preserve interface between subroutine and call
-  do i = 1,n
-     ijklmn   = transfer(a(i),i4mold)
-     itemp    = ijklmn
-     ktemp    = jtemp(4)
-     jtemp(4) = jtemp(1)
-     jtemp(1) = ktemp
-     ktemp    = jtemp(3)
-     jtemp(3) = jtemp(2)
-     jtemp(2) = ktemp
-     ijklmn   = itemp
-     a(i)     = transfer(ijklmn,r4mold)
-  enddo
 
-  return
+   !---------------------------------------------------------------------------------------!
+   !     These values themselves are meaningless, they are just moulds that are needed for !
+   ! the bit transfer.                                                                     !
+   !---------------------------------------------------------------------------------------!
+   r4mould = 6.
+   i4mould = 6
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !    This method saves the bit representation whilst preserving the interface between   !
+   ! this subroutine and its calls throughout the code.                                    !
+   !---------------------------------------------------------------------------------------!
+   do i = 1,n
+      ijklmn   = transfer(a(i),i4mould)
+      itemp    = ijklmn
+      ktemp    = jtemp(4)
+      jtemp(4) = jtemp(1)
+      jtemp(1) = ktemp
+      ktemp    = jtemp(3)
+      jtemp(3) = jtemp(2)
+      jtemp(2) = ktemp
+      ijklmn   = itemp
+      a(i)     = transfer(ijklmn,r4mould)
+   end do
+   !---------------------------------------------------------------------------------------!
+
+   return
 end subroutine swap32
+!==========================================================================================!
+!==========================================================================================!
 
-!
-! prlatlon
-!----------------------------------------------------------------
-! SUB-ROTINA QUE ESTABELECE LATITUDES E LONGITUDES DOS PONTOS DE  
-! GRADE DO CAMPO DE PRECIPITACAO
-subroutine api_prlatlon(nlon,nlat,prlat,prlon,ilatn,ilonn,latni,lonni)
-  implicit none
-  real prlat(nlon,nlat),prlon(nlon,nlat)
-  real ilatn,ilonn,latni,lonni
-  integer nlon,nlat,i,j
-  do j=1,nlat
-     do i=1,nlon
-        prlon(i,j)=lonni+(i-1)*ilonn
-        prlat(i,j)=latni+(j-1)*ilatn
-     enddo
-  enddo
-  return
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!      This sub-routine generates the longitudes and latitudes of the soil moisture input  !
+! data.                                                                                    !
+!------------------------------------------------------------------------------------------!
+subroutine api_prlatlon(nlon,nlat,prlat,prlon,dlatn,dlonn,latni,lonni)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                   , intent(in)  :: nlon
+   integer                   , intent(in)  :: nlat
+   real, dimension(nlon,nlat), intent(out) :: prlon
+   real, dimension(nlon,nlat), intent(out) :: prlat
+   real                      , intent(in)  :: dlonn
+   real                      , intent(in)  :: dlatn
+   real                      , intent(in)  :: lonni
+   real                      , intent(in)  :: latni
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                 :: i
+   integer                                 :: j
+   !---------------------------------------------------------------------------------------!
+
+   do j=1,nlat
+      do i=1,nlon
+         prlon(i,j) = lonni + real(i-1) * dlonn
+         prlat(i,j) = latni + real(j-1) * dlatn
+      end do
+   end do
+   return
 end subroutine api_prlatlon
+!==========================================================================================!
+!==========================================================================================!
 
-!----------------------------------------------------------------
-! interpolacao
-!----------------------------------------------------------------
-! SUB-ROTINA QUE REALIZA INTERPOLACAO ENTRE GRADES (RAMS E UMIDADE DO SOLO)  
-subroutine interpolacao (glon,glat,nlon,nlat,prlat,prlon,i1,i2,ic,j1,j2,jc)
 
-  implicit none
 
-  integer :: i1, i2, ic, j1, j2, jc
 
-  real    :: glat, glon
 
-  integer :: nlon, nlat
 
-  real    :: prlat(nlon,nlat), prlon(nlon,nlat)
+!==========================================================================================!
+!==========================================================================================!
+!      This sub-routine finds the input data point that is the closest to a given BRAMS    !
+! grid point.  This utilises the minimum great circle distance.                            !
+!------------------------------------------------------------------------------------------!
+subroutine nearest_neighbour_sm(glon,glat,nlon,nlat,prlat,prlon,i1,i2,ic,j1,j2,jc)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                   , intent(in)  :: nlon
+   integer                   , intent(in)  :: nlat
+   real, dimension(nlon,nlat), intent(in)  :: prlon
+   real, dimension(nlon,nlat), intent(in)  :: prlat
+   real                      , intent(in)  :: glon
+   real                      , intent(in)  :: glat
+   integer                   , intent(out) :: i1
+   integer                   , intent(out) :: i2
+   integer                   , intent(out) :: ic
+   integer                   , intent(out) :: j1
+   integer                   , intent(out) :: j2
+   integer                   , intent(out) :: jc
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                 :: i
+   integer                                 :: j
+   real                                    :: closest
+   real                                    :: distnow
+   !----- External functions. -------------------------------------------------------------!
+   real                      , external    :: dist_gc
+   !---------------------------------------------------------------------------------------!
 
-  ! Local Variables
-  real    :: diffx1, diffx2, diffy1, diffy2
-  integer :: i, j
+   !----- Find the dataset grid point index that corresponds to the BRAMS longitude. ------!
+   lonloop: do i=1,nlon
+      if (glon <= prlon(i,1)) exit lonloop
+   end do lonloop
+   !----- Found the point, 
+   i2 = i
+   i1 = i-1
 
-  do i=1,nlon
-     if (glon.le.prlon(i,1)) exit !GOTO 333
-  enddo
-!333 CONTINUE
-  i2=i
-  i1=i-1
+   !----- Find the dataset grid point index that corresponds to the BRAMS latitude. -------!
+   latloop: do j=1,nlat
+      if (glat <= prlat(1,j)) exit latloop
+   end do latloop
+   j2=j
+   j1=j-1
 
-  do j=1,nlat
-     if (glat.le.prlat(1,j)) exit !GOTO 555
-  enddo
-!555 CONTINUE
-  j2=j
-  j1=j-1
-              
-  diffx1 =    glon - prlon(i1,j1)
-  diffx2 = -( glon - prlon(i1,j2) )
-  diffy1 =    glat - prlat(i1,j1)
-  diffy2=  -( glat - prlat(i2,j1) )
 
-  jc=j1
-  ic=i1
-  if(diffx1.gt.diffx2) ic=i2
-  if(diffy1.gt.diffy2) jc=j2
+   !---------------------------------------------------------------------------------------!
+   !     Flag the grid centre to an absurd number in case the grid point is outside the    !
+   ! dataset domain.  If this turns out the be the case, quit without checking the         !
+   ! distances.                                                                            !
+   !---------------------------------------------------------------------------------------!
+   if(i1 < 1 .or. i1 > nlon .or. j1 < 1 .or. j1 > nlat) then
+      ic=-9999
+      jc=-9999
+      return
+   end if
 
-  if(i1 .lt. 1 .or. i1 .gt. nlon .or. j1 .lt. 1 .or. j1 .gt. nlat) then
-     ic=-9999
-     jc=-9999
-  endif
 
-  return
-end subroutine interpolacao
-!----------------------------------------------------------------
+   !----- Start the distance of the closest point so it will be switched by the first. ----!
+   closest = huge(1.)
+
+
+   !----- Try the four combinations, and pick up the closest one. -------------------------!
+   do j = j1,j2
+      do i = i1,i2
+         distnow = dist_gc(glon,prlon(i,j),glat,prlat(i,j))
+
+         if (distnow < closest) then
+           ic      = i
+           jc      = j
+           distnow = closest
+         end if
+      end do
+   end do
+
+   return
+end subroutine nearest_neighbour_sm
+!==========================================================================================!
+!==========================================================================================!

@@ -45,7 +45,7 @@ subroutine dealloc_all()
   use mem_ensemble, only : ensemble_e,dealloc_ensemble
   use mem_mass, only : mass_g, massm_g, dealloc_mass
   use mem_scratch1_grell, only : sc1_grell_g,dealloc_scratch1_grell
-
+  use mem_tend, only : tend_g, dealloc_tend
 
   implicit none
 
@@ -55,7 +55,6 @@ subroutine dealloc_all()
 
   deallocate(num_var,vtab_r,scalar_tab,num_scalar)
 
-  call dealloc_tend(naddsc)
   call dealloc_scratch()
 
   call dealloc_scratch_grell()
@@ -75,6 +74,7 @@ subroutine dealloc_all()
   endif
 
   do ng=1,ngrids
+     call dealloc_tend(tend_g(ng))
      call dealloc_basic(basic_g(ng)) 
      call dealloc_basic(basicm_g(ng))
      call dealloc_cuparm(cuparm_g(ng))  
@@ -115,6 +115,7 @@ subroutine dealloc_all()
      endif
 
   enddo
+  if (allocated(tend_g   )) deallocate(tend_g                )
   if (allocated(basic_g  )) deallocate(basic_g   ,basicm_g   )
   if (allocated(cuparm_g )) deallocate(cuparm_g  ,cuparmm_g  )
   if (allocated(grid_g   )) deallocate(grid_g    ,gridm_g    )

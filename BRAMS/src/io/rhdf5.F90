@@ -6,9 +6,10 @@ subroutine anlhdf(vtype)
 
    use an_header
    use var_tables
-   use grid_dims ,only : maxgrds
-   use mem_aerad, only : nwave
-   use mem_cuparm, only: nclouds
+   use grid_dims , only : maxgrds & ! intent(in)
+                        , str_len ! ! intent(in)
+   use mem_aerad , only : nwave   ! ! intent(in)
+   use mem_cuparm, only : nclouds ! ! intent(in)
 
    use mem_grid
    use io_params
@@ -25,7 +26,7 @@ subroutine anlhdf(vtype)
 
 #if USE_HDF5
    !----- Local variables -----------------------------------------------------------------!
-   character(len=128)       :: anamel
+   character(len=str_len)   :: anamel
    character(len=2)         :: cgrid
    character(len=40)        :: subaname
    character(len=16)        :: varn
@@ -37,7 +38,7 @@ subroutine anlhdf(vtype)
    logical                  :: exans
    real(kind=8)             :: timeold
    !----- Local constants -----------------------------------------------------------------!
-   real(kind=8),parameter :: zero = 0.0
+   real(kind=8),parameter :: zero = 0.d0
    !-----  HDF specific data types --------------------------------------------------------!
    integer, save                 :: ihdfinit = 0
    integer                       :: hdferr

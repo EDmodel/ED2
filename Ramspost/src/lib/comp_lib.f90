@@ -2329,7 +2329,7 @@ subroutine RAMS_reduced_prop(nx,ny,nz,np,ng,which,topt,theta_atm,rvap_atm,co2_at
                multh = tprandtl     * ( lnzooz0m - psih(zetaoh,stable,myistar)             &
                                       + psih(zeta0h,stable,myistar) ) / vonk
 
-            case (3)
+            case (3,5)
                !---------------------------------------------------------------------------!
                ! 3. Here we use the model proposed by BH91, which is almost the same as    !
                !    the OD95 method, with the two following (important) differences.       !
@@ -2338,8 +2338,8 @@ subroutine RAMS_reduced_prop(nx,ny,nz,np,ng,which,topt,theta_atm,rvap_atm,co2_at
                !       that the oft-used approximation (-beta*zeta) can cause poor         !
                !       ventilation of the stable layer, leading to decoupling between the  !
                !       atmosphere and the canopy air space and excessive cooling.          !
-               !    c. Here we distinguish the fluxes between roughness for momentum and   !
-               !       for heat, as BH91 did.                                              !
+               ! 5. Similar as 3, but we compute the stable functions the same way as      !
+               !    OD95.                                                                  !
                !---------------------------------------------------------------------------!
                if (is_ed2) then 
                   !----- Make sure that the bulk Richardson number is not above ribmax. ---!
@@ -3061,6 +3061,41 @@ subroutine RAMS_comp_theta2temp(nx,ny,nz,inthoutt,press)
    end do
    return
 end subroutine RAMS_comp_theta2temp
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+subroutine RAMS_comp_zenith(nx,ny,cosz,zenith)
+   use rconstants, only : onerad ! ! intent(in)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   integer                  , intent(in)    :: nx
+   integer                  , intent(in)    :: ny
+   real   , dimension(nx,ny), intent(in)    :: cosz
+   real   , dimension(nx,ny), intent(inout) :: zenith
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                     :: x
+   integer                                     :: y
+   integer                                     :: z
+   real                                        :: theta
+   real                                        :: temp
+   !---------------------------------------------------------------------------------------!
+
+   do y=1,ny
+      do x=1,nx
+         zenith(x,y) = acos(cosz(x,y)) * onerad
+         if (zenith(x,y) > 90. ) zenith(x,y) = 90.
+      end do
+   end do
+
+   return
+end subroutine RAMS_comp_zenith
 !==========================================================================================!
 !==========================================================================================!
 

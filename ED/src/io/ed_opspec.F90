@@ -336,25 +336,49 @@ end subroutine ed_opspec_par
 
 !==========================================================================================!
 !==========================================================================================!
-subroutine ed_opspec_times
-!------------------------------------------------------------------------------------------!
 !    This subroutine checks time related settings from ED2IN.                              !
 !------------------------------------------------------------------------------------------!
-   use ed_misc_coms , only : frqfast,frqstate,imontha,idatea,iyeara,itimea  &
-                         ,imonthz,idatez,iyearz,itimez,dtlsm,radfrq      &
-                         ,ifoutput,isoutput,idoutput,imoutput,iyoutput,itoutput,  &
-                         nrec_fast,nrec_state,outfast,outstate,unitfast,unitstate
-   use consts_coms, only : day_sec,hr_sec
-   use grid_coms , only : timmax
-   use ed_misc_coms, only : fast_diagnostics
+subroutine ed_opspec_times
+   use ed_misc_coms , only : frqfast          & ! intent(in)
+                           , frqstate         & ! intent(in)
+                           , imontha          & ! intent(in)
+                           , idatea           & ! intent(in)
+                           , iyeara           & ! intent(in)
+                           , itimea           & ! intent(in)
+                           , imonthz          & ! intent(in)
+                           , idatez           & ! intent(in)
+                           , iyearz           & ! intent(in)
+                           , itimez           & ! intent(in)
+                           , dtlsm            & ! intent(in)
+                           , radfrq           & ! intent(in)
+                           , ifoutput         & ! intent(in)
+                           , isoutput         & ! intent(in)
+                           , idoutput         & ! intent(in)
+                           , imoutput         & ! intent(in)
+                           , iyoutput         & ! intent(in)
+                           , iqoutput         & ! intent(in)
+                           , itoutput         & ! intent(in)
+                           , nrec_fast        & ! intent(in)
+                           , nrec_state       & ! intent(in)
+                           , outfast          & ! intent(in)
+                           , outstate         & ! intent(in)
+                           , unitfast         & ! intent(in)
+                           , unitstate        ! ! intent(in)
+   use consts_coms  , only : day_sec          & ! intent(in)
+                           , hr_sec           ! ! intent(in)
+   use grid_coms    , only : timmax           ! ! intent(in)
+   use ed_misc_coms , only : fast_diagnostics ! ! intent(in)
+   use ed_max_dims  , only : str_len          ! ! intent(in)
 
    implicit none
-   character(len=222)           :: reason
-   integer :: ifaterr
+   !------ Local variables. ---------------------------------------------------------------!
+   character(len=str_len) :: reason
+   integer                :: ifaterr
+   !---------------------------------------------------------------------------------------!
    ifaterr=0
 
    !---------------------------------------------------------------------------------------!
-   !     Checking whether the user provided a valid combination of unitfast, frqfast, and  !
+   !     Check whether the user provided a valid combination of unitfast, frqfast, and     !
    ! outfast.                                                                              !
    !---------------------------------------------------------------------------------------!
    select case(unitfast)
@@ -362,25 +386,35 @@ subroutine ed_opspec_times
    !    Seconds                                                                            !
    !---------------------------------------------------------------------------------------!
    case (0)
-      if (ifoutput == 0) then
-         nrec_fast = 1 ! Useless, no output will be created.
-      !------------------------------------------------------------------------------------!
-      !    If unitfrq is 0, then frqfast must be either a divisor or a multiple of one day !
-      ! in case there is daily and/or monthly analysis.                                    !
-      !------------------------------------------------------------------------------------!
+      if (ifoutput == 0 .and. iqoutput == 0) then
+         !---- Useless, no output will be created. ----------------------------------------!
+         nrec_fast = 1
+      elseif (iqoutput /= 0 .and. mod(day_sec,frqfast) /= 0.) then
+         !---------------------------------------------------------------------------------!
+         !    If mean diurnal cycle is on, then frqfast must be a divisor of one day.      !
+         !---------------------------------------------------------------------------------!
+         write(reason,fmt='(a,1x,f8.2,a,2x,1x,es14.7,a)')                                  &
+            'FRQFAST must be a divisor of ',day_sec,'sec when mean diurnal cycle is on.'   &
+           ,'Yours is set to ',frqfast,'sec...'
+         call opspec_fatal(reason,'opspec_times')
+
       elseif ((imoutput /= 0 .or. idoutput /= 0 .or. outfast == -1. .or. outfast == -2. )  &
              .and. (mod(day_sec,frqfast) /= 0. .and. mod(frqfast,day_sec) /= 0.)) then
+         !---------------------------------------------------------------------------------!
+         !    If unitfrq is 0, then frqfast must be either a divisor or a multiple of one  !
+         ! day in case there is daily and/or monthly analysis.                             !
+         !---------------------------------------------------------------------------------!
          write(reason,fmt='(a,1x,f8.2,1x,a,1x,es14.7)')  &
              'FRQFAST must be a divisor or an integer multiple of ',day_sec,               &
-             ' sec when daily and/or monthly analysis are on. Yours is set to ',frqfast
+             ' sec when daily and/or monthly analysis are on.  Yours is set to ',frqfast
          call opspec_fatal(reason,'opspec_times')
          ifaterr = ifaterr + 1
       !------------------------------------------------------------------------------------!
-      !   Checking outfast setting and adjusting it if needed. Depending on the            !
+      !   Check outfast setting and adjusting it if needed. Depending on the               !
       ! configuration, this will cause the run to crash.                                   !
       !------------------------------------------------------------------------------------!
-      !----- User didn't specify any outfast, use frqfast ---------------------------------!
       elseif(outfast == 0.) then
+         !----- User didn't specify any outfast, use frqfast ------------------------------!
          outfast    = frqfast
          nrec_fast  = 1
       elseif (outfast == -1.) then
@@ -417,12 +451,21 @@ subroutine ed_opspec_times
    case (1)
       if (ifoutput == 0) then
          nrec_fast = 1 ! Useless, no output will be created.
-      !------------------------------------------------------------------------------------!
-      !    If unitfrq is 0, then frqfast must be either a divisor or a multiple of one day !
-      ! in case there is daily and/or monthly analysis.                                    !
-      !------------------------------------------------------------------------------------!
+      elseif (iqoutput /= 0) then
+         !---------------------------------------------------------------------------------!
+         !    If mean diurnal cycle is on, frqfast must be given in seconds.               !
+         !---------------------------------------------------------------------------------!
+         write(reason,fmt='(a,2x,a)')                                                      &
+            'FRQFAST must be given in sec when IQOUTPUT (mean diurnal cycle) is not zero.' &
+           ,'Your UNITFAST is set to 2, which means months, check your namelist...'
+         call opspec_fatal(reason,'opspec_times')
+
       elseif ((imoutput /= 0 .or. idoutput /= 0) .and.                                     &
               (mod(day_sec,day_sec*frqfast) /= 0. .and. mod(frqfast,1.) /= 0.)) then
+         !---------------------------------------------------------------------------------!
+         !    If unitfrq is 0, then frqfast must be either a divisor or a multiple of one  !
+         ! day in case there is daily and/or monthly analysis.                             !
+         !---------------------------------------------------------------------------------!
          write(reason,fmt='(a,1x,f8.2,1x,a,1x,es14.7)')                                    &
              'FRQFAST must be a divisor or an integer multiple of ',1,                     &
              ' day when daily and/or monthly analysis are on. Yours is set to ',frqfast
@@ -475,6 +518,14 @@ subroutine ed_opspec_times
    case (2)
       if (ifoutput == 0) then
          nrec_fast = 1 ! Useless, no output will be created.
+      elseif (iqoutput /= 0) then
+         !---------------------------------------------------------------------------------!
+         !    If mean diurnal cycle is on, frqfast must be given in seconds.               !
+         !---------------------------------------------------------------------------------!
+         write(reason,fmt='(a,2x,a)')                                                      &
+            'FRQFAST must be given in sec when IQOUTPUT (mean diurnal cycle) is not zero.' &
+           ,'Your UNITFAST is set to 2, which means months, check your namelist...'
+         call opspec_fatal(reason,'opspec_times')
       !------------------------------------------------------------------------------------!
       !    If unifrq is monthly, it needs to be a round number.                            !
       !------------------------------------------------------------------------------------!
@@ -534,6 +585,14 @@ subroutine ed_opspec_times
              '(years). Yours is currently set to ',frqfast
          call opspec_fatal(reason,'opspec_times')  
          ifaterr = ifaterr + 1
+      elseif (iqoutput /= 0) then
+         !---------------------------------------------------------------------------------!
+         !    If mean diurnal cycle is on, frqfast must be given in seconds.               !
+         !---------------------------------------------------------------------------------!
+         write(reason,fmt='(a,2x,a)')                                                      &
+            'FRQFAST must be given in sec when IQOUTPUT (mean diurnal cycle) is not zero.' &
+           ,'Your UNITFAST is set to 3, which means years, check your namelist...'
+         call opspec_fatal(reason,'opspec_times')
       !------------------------------------------------------------------------------------!
       !    This is fine but now outfast must be set exactly as frqfast. If the user wasn't !
       ! aware of this, print an informative banner.                                        !
@@ -569,13 +628,13 @@ subroutine ed_opspec_times
       call opspec_fatal(reason,'opspec_times')  
       ifaterr = ifaterr +1
    end select
+   !---------------------------------------------------------------------------------------!
+   !---------------------------------------------------------------------------------------!
 
 
 
 
-
-
-
+   !---------------------------------------------------------------------------------------!
    !---------------------------------------------------------------------------------------!
    !     Checking whether the user provided a valid combination of unitstate, frqstate,    !
    ! and outstate.                                                                         !
@@ -898,19 +957,19 @@ subroutine ed_opspec_times
       ifaterr=ifaterr+1
    end if
 
-   if (mod(hr_sec,dtlsm) /= 0.0) then
-      write(reason,fmt='(a,1x,f8.2,1x,a,1x,es14.7)')  &
-          'DTLSM must be a divisor of ',hr_sec,' sec. Yours is set to ',dtlsm
-      call opspec_fatal(reason,'opspec_times')  
-      ifaterr=ifaterr+1
-   end if
+   !if (mod(hr_sec,dtlsm) /= 0.0) then
+   !   write(reason,fmt='(a,1x,f8.2,1x,a,1x,es14.7)')  &
+   !       'DTLSM must be a divisor of ',hr_sec,' sec. Yours is set to ',dtlsm
+   !   call opspec_fatal(reason,'opspec_times')  
+   !   ifaterr=ifaterr+1
+   !end if
 
-   if (mod(hr_sec,radfrq) /= 0.0) then
-      write(reason,fmt='(a,1x,f8.2,1x,a,1x,es14.7)')  &
-          'RADFRQ must be a divisor of ',hr_sec,' sec. Yours is set to ',radfrq
-      call opspec_fatal(reason,'opspec_times')  
-      ifaterr=ifaterr+1
-   end if
+   !if (mod(hr_sec,radfrq) /= 0.0) then
+   !   write(reason,fmt='(a,1x,f8.2,1x,a,1x,es14.7)')  &
+   !       'RADFRQ must be a divisor of ',hr_sec,' sec. Yours is set to ',radfrq
+   !   call opspec_fatal(reason,'opspec_times')  
+   !   ifaterr=ifaterr+1
+   !end if
 
    ! Not sure if this is really necessary. If not, please remove it...
    if (mod(radfrq,dtlsm) /= 0.0) then
@@ -941,14 +1000,15 @@ end subroutine ed_opspec_times
 
 !==========================================================================================!
 !==========================================================================================!
+!    This subroutine performs miscellaneous tests over the options, like values outside    !
+! the allowed ranges and conflicting dynamic settings.                                     !
+!------------------------------------------------------------------------------------------!
 subroutine ed_opspec_misc
-   !---------------------------------------------------------------------------------------!
-   !    This subroutine performs miscellaneous tests over the options, like values outside !
-   ! the allowed ranges and conflicting dynamic settings.                                  !
-   !---------------------------------------------------------------------------------------!
-   use ed_max_dims           , only : n_pft                        ! ! intent(in)
+   use ed_max_dims           , only : n_pft                        & ! intent(in)
+                                    , str_len                      ! ! intent(in)
    use ed_misc_coms          , only : ifoutput                     & ! intent(in)
                                     , idoutput                     & ! intent(in)
+                                    , iqoutput                     & ! intent(in)
                                     , imoutput                     & ! intent(in)
                                     , iyoutput                     & ! intent(in)
                                     , itoutput                     & ! intent(in)
@@ -958,7 +1018,15 @@ subroutine ed_opspec_misc
                                     , ied_init_mode                & ! intent(in)
                                     , integration_scheme           ! ! intent(in)
    use canopy_air_coms       , only : icanturb                     & ! intent(in)
-                                    , isfclyrm                     ! ! intent(in)
+                                    , i_blyr_condct                & ! intent(in)
+                                    , isfclyrm                     & ! intent(in)
+                                    , ustmin                       & ! intent(in)
+                                    , ggfact                       & ! intent(in)
+                                    , gamm                         & ! intent(in)
+                                    , gamh                         & ! intent(in)
+                                    , tprandtl                     & ! intent(in)
+                                    , vh2vr                        & ! intent(in)
+                                    , vh2dh                        ! ! intent(in)
    use soil_coms             , only : isoilflg                     & ! intent(in)
                                     , nslcon                       & ! intent(in)
                                     , slxclay                      & ! intent(in)
@@ -967,6 +1035,7 @@ subroutine ed_opspec_misc
                                     , isoildepthflg                & ! intent(in)
                                     , isoilbc                      & ! intent(in)
                                     , zrough                       & ! intent(in)
+                                    , betapower                    & ! intent(in)
                                     , runoff_time                  ! ! intent(in)
    use mem_polygons          , only : n_poi                        & ! intent(in)
                                     , n_ed_region                  & ! intent(in)
@@ -974,18 +1043,32 @@ subroutine ed_opspec_misc
                                     , maxcohort                    ! ! intent(in)
    use grid_coms             , only : ngrids                       ! ! intent(in)
    use physiology_coms       , only : istoma_scheme                & ! intent(in)
-                                    , n_plant_lim                  ! ! intent(in)
+                                    , h2o_plant_lim                & ! intent(in)
+                                    , n_plant_lim                  & ! intent(in)
+                                    , vmfact                       & ! intent(in)
+                                    , mfact                        & ! intent(in)
+                                    , kfact                        & ! intent(in)
+                                    , gamfact                      & ! intent(in)
+                                    , lwfact                       & ! intent(in)
+                                    , thioff                       & ! intent(in)
+                                    , icomppt                      & ! intent(in)
+                                    , quantum_efficiency_T         ! ! intent(in)
    use decomp_coms           , only : n_decomp_lim                 ! ! intent(in)
    use disturb_coms          , only : include_fire                 & ! intent(in)
                                     , ianth_disturb                & ! intent(in)
-                                    , treefall_disturbance_rate    ! ! intent(in)
-   use phenology_coms        , only : iphen_scheme                 ! ! intent(in)
+                                    , treefall_disturbance_rate    & ! intent(in)
+                                    , sm_fire                      ! ! intent(in)
+   use phenology_coms        , only : iphen_scheme                 & ! intent(in)
+                                    , radint                       & ! intent(in)
+                                    , radslp                       & ! intent(in)
+                                    , thetacrit                    ! ! intent(in)
    use pft_coms              , only : include_these_pft            & ! intent(in)
                                     , pft_1st_check                & ! intent(in)
                                     , agri_stock                   & ! intent(in)
                                     , plantation_stock             ! ! intent(in)
    use canopy_radiation_coms , only : crown_mod                    ! ! intent(in)
    use rk4_coms              , only : ibranch_thermo               & ! intent(in)
+                                    , ipercol                      & ! intent(in)
                                     , rk4_tolerance                ! ! intent(in)
 
 #if defined(COUPLED)
@@ -995,9 +1078,9 @@ subroutine ed_opspec_misc
 
    implicit none
    !----- Local variables -----------------------------------------------------------------!
-   character(len=222) :: reason
-   integer            :: ifaterr,ifm,ipft
-   logical            :: agri_ok,plantation_ok
+   character(len=str_len) :: reason
+   integer                :: ifaterr,ifm,ipft
+   logical                :: agri_ok,plantation_ok
    !----- Local constants -----------------------------------------------------------------!
    integer, parameter :: skip=huge(6)
    !---------------------------------------------------------------------------------------!
@@ -1020,6 +1103,12 @@ subroutine ed_opspec_misc
    if (imoutput /= 0 .and. imoutput /= 3) then
       write (reason,fmt='(a,1x,i4,a)') &
         'Invalid IMOUTPUT, it must be 0 (none) or 3 (HDF5). Yours is set to',imoutput,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+   if (iqoutput /= 0 .and. iqoutput /= 3) then
+      write (reason,fmt='(a,1x,i4,a)') &
+        'Invalid IQOUTPUT, it must be 0 (none) or 3 (HDF5). Yours is set to',iqoutput,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
@@ -1055,24 +1144,7 @@ subroutine ed_opspec_misc
       ifaterr = ifaterr +1
    end if
 
-   if (ied_init_mode == -1) then ! This should be avoided. Use as a last resort!
-      write (unit=*,fmt='(a)') '==========================================================='
-      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
-      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
-      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
-      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
-      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
-      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
-      write (unit=*,fmt='(a)') '==========================================================='
-      write (unit=*,fmt='(a)') '    You have set up the run to read ED-1 and ED-2 files    '
-      write (unit=*,fmt='(a)') ' mixed in the same run. This is against my beliefs and you '
-      write (unit=*,fmt='(a)') ' should know that I''m only doing this because I am a very '
-      write (unit=*,fmt='(a)') ' nice model and I don''t know how to say NO! to such a     '
-      write (unit=*,fmt='(a)') ' desperate user. But don''t put high expectations on this  '
-      write (unit=*,fmt='(a)') ' run, and in case it crashes, it is going to be all your   '
-      write (unit=*,fmt='(a)') ' fault and I will remind you that!!!                       '
-      write (unit=*,fmt='(a)') '==========================================================='
-   elseif (ied_init_mode == -8) then 
+   if (ied_init_mode == -8) then 
       !------------------------------------------------------------------------------------!
       !     This is just for idealised test runs and shouldn't be used as a regular        !
       ! option.                                                                            !
@@ -1090,10 +1162,10 @@ subroutine ed_opspec_misc
       write (unit=*,fmt='(a)') ' simulations only.  If that''s not what you wanted, change '
       write (unit=*,fmt='(a)') ' your IED_INIT_MODE variable on your ED2IN.                '
       write (unit=*,fmt='(a)') '==========================================================='
-   elseif ((ied_init_mode < 0 .or. ied_init_mode > 6) .and. ied_init_mode /= 99 ) then
+   elseif ((ied_init_mode < -1 .or. ied_init_mode > 6) .and. ied_init_mode /= 99 ) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-                      'Invalid IED_INIT_MODE, it must be between 0 and 6. Yours is set to' &
-                     ,ied_init_mode,'...'
+                     'Invalid IED_INIT_MODE, it must be between -1 and 6. Yours is set to' &
+                    ,ied_init_mode,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
@@ -1272,10 +1344,105 @@ end do
       ifaterr = ifaterr +1
    end if
 
-   if (iphen_scheme < 0 .or. iphen_scheme > 3) then
+   if (iphen_scheme < -1 .or. iphen_scheme > 3) then
       write (reason,fmt='(a,1x,i4,a)')                                                     &
-                    'Invalid IPHEN_SCHEME, it must be between 0 and 3. Yours is set to'    &
+                    'Invalid IPHEN_SCHEME, it must be between -1 and 3. Yours is set to'   &
                     ,iphen_scheme,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+
+   if (radint < -100.0 .or. radint > 100.0) then
+      write (reason,fmt='(a,1x,es12.5,a)')                                                 &
+                    'Invalid RADINT, it must be between -100 and 100. Yours is set to'     &
+                    ,radint,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+ 
+    if (radslp < 0.0 .or. radslp > 1.0) then
+      write (reason,fmt='(a,1x,es12.5,a)')                                                 &
+                    'Invalid RADSLP, it must be between 0 and 1. Yours is set to'          &
+                    ,radslp,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if  
+   if (h2o_plant_lim < 0 .or. h2o_plant_lim > 2) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid H2O_PLANT_LIM, it must be between 0 and 2. Yours is set to'   &
+                    ,h2o_plant_lim,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+
+   if (vmfact < 0. .or. vmfact > 100.) then
+      write (reason,fmt='(a,1x,es12.5,a)')                                                 &
+                    'Invalid VMFACT, it must be between 0 and 100. Yours is set to'        &
+                    ,vmfact,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+   
+  if (kfact < 0. .or. kfact > 100.) then
+      write (reason,fmt='(a,1x,es12.5,a)')                                                 &
+                    'Invalid KFACT, it must be between 0 and 100. Yours is set to'         &
+                    ,kfact,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+   
+   if (mfact < 0. .or. mfact > 100.) then
+      write (reason,fmt='(a,1x,es12.5,a)')                                                 &
+                    'Invalid MFACT, it must be between 0 and 100. Yours is set to'         &
+                    ,mfact,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+   
+   if (gamfact < 0. .or. gamfact > 100.) then
+      write (reason,fmt='(a,1x,es12.5,a)')                                                 &
+                    'Invalid GAMFACT, it must be between 0 and 100. Yours is set to'       &
+                    ,gamfact,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+   
+   if (thetacrit < 0. .or. thetacrit > 1.) then
+      write (reason,fmt='(a,1x,es12.5,a)')                                                 &
+                    'Invalid THETACRIT, it must be between 0 and 1. Yours is set to'       &
+                    ,thetacrit,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+   
+   if (lwfact < 0. .or. lwfact > 100.) then
+      write (reason,fmt='(a,1x,es12.5,a)')                                                 &
+                    'Invalid LWFACT, it must be between 0 and 100. Yours is set to'        &
+                    ,lwfact,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+    
+   if (thioff < -20. .or. thioff > 20.) then
+      write (reason,fmt='(a,1x,es12.5,a)')                                                 &
+                    'Invalid THIOFF, it must be between -20 and 20. Yours is set to'       &
+                    ,lwfact,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+    
+   if (icomppt < 0 .or. icomppt > 0) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid ICOMPPT, it must be between 0 and 0. Yours is set to'         &
+                    ,icomppt,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
+
+   if (quantum_efficiency_T < 0 .or. quantum_efficiency_T > 1) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+                    'Invalid QUANTUM_EFFICIENCY_T, it must be either 0 or 1. Yours is set to'         &
+                    ,quantum_efficiency_T,'...'
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
@@ -1303,6 +1470,14 @@ end do
       call opspec_fatal(reason,'opspec_misc')
       ifaterr = ifaterr +1
    end if
+   
+   if (sm_fire < 0. .or. sm_fire > 1.) then
+      write (reason,fmt='(a,1x,es12.5,a)')                                                 &
+                    'Invalid SM_FIRE, it must be between 0 and 1.  Yours is set to'        &
+                    ,sm_fire,'...'
+      call opspec_fatal(reason,'opspec_misc')
+      ifaterr = ifaterr +1
+   end if
 
    if (ianth_disturb < 0 .or. ianth_disturb > 1) then
       write (reason,fmt='(a,1x,i4,a)') &
@@ -1312,36 +1487,33 @@ end do
    end if
 
    select case (icanturb)
-   case (-1)
-      write (unit=*,fmt='(a)') '==========================================================='
-      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
-      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
-      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
-      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
-      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
-      write (unit=*,fmt='(a)') '   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   '
-      write (unit=*,fmt='(a)') '==========================================================='
-      write (unit=*,fmt='(a)') '    You have set up the canopy turbulence structure to     '
-      write (unit=*,fmt='(a)') ' -1, which is the old-style ED-2.0.  This is known to have '
-      write (unit=*,fmt='(a)') ' serious issues and it''s currently deprecated.  The only  '
-      write (unit=*,fmt='(a)') ' reason why I''m letting you to run with this option is    '
-      write (unit=*,fmt='(a)') ' because I am a very nice model and I don''t really know   '
-      write (unit=*,fmt='(a)') ' how to say NO!  But don''t expect much from this run, and '
-      write (unit=*,fmt='(a)') ' in case this run crashes, it is going to be all your      '
-      write (unit=*,fmt='(a)') ' fault and I will remind you that!!!                       '
-      write (unit=*,fmt='(a)') '==========================================================='
-   case (0,1,2)
+   case (-2:3)
       continue
    case default
       write (reason,fmt='(a,1x,i4,a)') &
-        'Invalid ICANTURB, it must be between -1 and 2. Yours is set to',icanturb,'...'
+        'Invalid ICANTURB, it must be between -2 and 3. Yours is set to',icanturb,'...'
       call opspec_fatal(reason,'opspec_misc')  
       ifaterr = ifaterr +1
    end select
 
-   if (isfclyrm < 1 .or. isfclyrm > 4) then
+   if (i_blyr_condct < -1 .or. i_blyr_condct > 2) then
       write (reason,fmt='(a,1x,i4,a)') &
-        'Invalid ISFCLYRM, it must be between 1 and 4. Yours is set to',isfclyrm,'...'
+            'Invalid I_BLYR_CONDCT, it must be between -1 and 2. Yours is set to'          &
+           ,i_blyr_condct,'...'
+      call opspec_fatal(reason,'opspec_misc')  
+      ifaterr = ifaterr +1
+   end if
+
+   if (isfclyrm < 1 .or. isfclyrm > 5) then
+      write (reason,fmt='(a,1x,i4,a)') &
+        'Invalid ISFCLYRM, it must be between 1 and 5. Yours is set to',isfclyrm,'...'
+      call opspec_fatal(reason,'opspec_misc')  
+      ifaterr = ifaterr +1
+   end if
+
+   if (ipercol < 0 .or. ipercol > 1) then
+      write (reason,fmt='(a,1x,i4,a)')                                                     &
+        'Invalid IPERCOL, it must be either 0 or 1. Yours is set to',ipercol,'...'
       call opspec_fatal(reason,'opspec_misc')  
       ifaterr = ifaterr +1
    end if
@@ -1450,6 +1622,70 @@ end do
    if (runoff_time < 0.0) then
       write (reason,fmt='(a,1x,es14.7,a)')                                                 &
             'Invalid RUNOFF_TIME, it can''t be negative. Yours is set to',runoff_time,'...'
+      call opspec_fatal(reason,'opspec_misc')  
+      ifaterr = ifaterr +1
+   end if
+    
+   if (betapower < 0.0 .or. betapower > 10.0) then
+      write (reason,fmt='(a,1x,es14.7,a)')                                                 &
+            'Invalid BETAPOWER, it must be between 0.0 and 10.0. Yours is set to'          &
+           ,betapower,'...'
+      call opspec_fatal(reason,'opspec_misc')  
+      ifaterr = ifaterr +1
+   end if
+    
+   if (ustmin < 0.0001 .or. ustmin > 1.0) then
+      write (reason,fmt='(a,1x,es14.7,a)')                                                 &
+            'Invalid USTMIN, it must be between 0.0001 and 1.0. Yours is set to'           &
+           ,ustmin,'...'
+      call opspec_fatal(reason,'opspec_misc')  
+      ifaterr = ifaterr +1
+   end if
+    
+   if (ggfact < 0.0 .or. ggfact > 100.0) then
+      write (reason,fmt='(a,1x,es14.7,a)')                                                 &
+            'Invalid GGFACT, it must be between 0.0 and 100.0. Yours is set to'            &
+           ,ggfact,'...'
+      call opspec_fatal(reason,'opspec_misc')  
+      ifaterr = ifaterr +1
+   end if
+
+   if (gamm < 0.1 .or. gamm > 100.0) then
+      write (reason,fmt='(a,1x,es14.7,a)')                                                 &
+            'Invalid GAMM, it must be between 0.1 and 100.0. Yours is set to'              &
+           ,gamm,'...'
+      call opspec_fatal(reason,'opspec_misc')  
+      ifaterr = ifaterr +1
+   end if
+
+   if (gamh < 0.1 .or. gamh > 100.0) then
+      write (reason,fmt='(a,1x,es14.7,a)')                                                 &
+            'Invalid GAMH, it must be between 0.1 and 100.0. Yours is set to'              &
+           ,gamh,'...'
+      call opspec_fatal(reason,'opspec_misc')  
+      ifaterr = ifaterr +1
+   end if
+
+   if (tprandtl < 0.01 .or. tprandtl > 100.0) then
+      write (reason,fmt='(a,1x,es14.7,a)')                                                 &
+            'Invalid TPRANDTL, it must be between 0.01 and 100.0. Yours is set to'         &
+           ,tprandtl,'...'
+      call opspec_fatal(reason,'opspec_misc')  
+      ifaterr = ifaterr +1
+   end if
+
+   if (vh2vr < 0.001 .or. vh2vr > 0.99) then
+      write (reason,fmt='(a,1x,es14.7,a)')                                                 &
+            'Invalid VH2VR, it must be between 0.001 and 0.99.  Yours is set to'           &
+           ,vh2vr,'...'
+      call opspec_fatal(reason,'opspec_misc')  
+      ifaterr = ifaterr +1
+   end if
+
+   if (vh2dh < 0.0 .or. vh2dh > 0.99) then
+      write (reason,fmt='(a,1x,es14.7,a)')                                                 &
+            'Invalid VH2DH, it must be between 0.0 and 0.99.  Yours is set to'             &
+           ,vh2dh,'...'
       call opspec_fatal(reason,'opspec_misc')  
       ifaterr = ifaterr +1
    end if

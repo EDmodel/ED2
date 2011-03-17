@@ -40,6 +40,7 @@ rm -fv first_rams.o               first_rams.mod
 rm -fv gaspart.o                  gaspart.mod
 rm -fv geodat.o                   geodat.mod
 rm -fv getvar.o                   getvar.mod
+rm -fv great_circle.o             great_circle.mod
 rm -fv grell_coms.o               grell_coms.mod
 rm -fv grell_cupar_aux.o          grell_cupar_aux.mod
 rm -fv grell_cupar_downdraft.o    grell_cupar_downdraft.mod
@@ -72,9 +73,13 @@ rm -fv kuo_cupar_driver.o         kuo_cupar_driver.mod
 rm -fv landuse_input.o            landuse_input.mod
 rm -fv leaf_coms.o                leaf_coms.mod
 rm -fv leaf3.o                    leaf3.mod
+rm -fv leaf3_bc.o                 leaf3_bc.mod
+rm -fv leaf3_can.o                leaf3_can.mod
 rm -fv leaf3_hyd.o                leaf3_hyd.mod
 rm -fv leaf3_init.o               leaf3_init.mod
+rm -fv leaf3_ocean.o              leaf3_ocean.mod
 rm -fv leaf3_teb.o                leaf3_teb.mod
+rm -fv leaf3_tw.o                 leaf3_tw.mod
 rm -fv leaf3_utils.o              leaf3_utils.mod
 rm -fv local_proc.o               local_proc.mod
 rm -fv machine_arq.o              machine_arq.mod
@@ -159,6 +164,7 @@ rm -fv nest_drivers.o             nest_drivers.mod
 rm -fv nest_feed.o                nest_feed.mod
 rm -fv nest_filldens.o            nest_filldens.mod
 rm -fv nest_geosst.o              nest_geosst.mod
+rm -fv nest_init_aux.o            nest_init_aux.mod
 rm -fv nest_intrp.o               nest_intrp.mod
 rm -fv nest_move.o                nest_move.mod
 rm -fv node_mod.o                 node_mod.mod
@@ -251,6 +257,7 @@ rm -fv v_interps.o                v_interps.mod
 rm -fv var_tables.o               var_tables.mod
 rm -fv varf_read.o                varf_read.mod
 rm -fv varf_update.o              varf_update.mod
+rm -fv varutils.o                 varutils.mod
 rm -fv vformat.o                  vformat.mod
 rm -fv vtab_fill.o                vtab_fill.mod
 rm -fv edcp_driver.o              edcp_driver.mod
@@ -277,6 +284,7 @@ rm -fv ed_bare_restart.o          ed_bare_restart.mod
 rm -fv ed_filelist.o              ed_filelist.mod
 rm -fv ed_grid.o                  ed_grid.mod
 rm -fv ed_init.o                  ed_init.mod
+rm -fv ed_init_atm.o              ed_init_atm.mod
 rm -fv ed_init_full_history.o     ed_init_full_history.mod
 rm -fv ed_max_dims.o              ed_max_dims.mod
 rm -fv ed_mem_grid_dim_defs.o     ed_mem_grid_dim_defs.mod
@@ -285,6 +293,7 @@ rm -fv ed_node_coms.o             ed_node_coms.mod
 rm -fv ed_opspec.o                ed_opspec.mod
 rm -fv ed_para_coms.o             ed_para_coms.mod
 rm -fv ed_params.o                ed_params.mod
+rm -fv ed_print.o                 ed_print.mod 
 rm -fv ed_read_ed10_20_history.o  ed_read_ed10_20_history.mod
 rm -fv ed_read_ed21_history.o     ed_read_ed21_history.mod
 rm -fv ed_state_vars.o            ed_state_vars.mod
@@ -302,7 +311,6 @@ rm -fv fire.o                     fire.mod
 rm -fv forestry.o                 forestry.mod
 rm -fv fuse_fiss_utils.o          fuse_fiss_utils.mod
 rm -fv fusion_fission_coms.o      fusion_fission_coms.mod
-rm -fv great_circle.o             great_circle.mod
 rm -fv grid_coms.o                grid_coms.mod
 rm -fv growth_balive.o            growth_balive.mod
 rm -fv h5_output.o                h5_output.mod
@@ -340,3 +348,4 @@ rm -fv soil_respiration.o         soil_respiration.mod
 rm -fv structural_growth.o        structural_growth.mod
 rm -fv twostream_rad.o            twostream_rad.mod
 rm -fv update_derived_props.o     update_derived_props.mod
+rm -fv vegetation_dynamics.o      vegetation_dynamics.mod

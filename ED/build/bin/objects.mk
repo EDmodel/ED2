@@ -45,6 +45,7 @@ OBJ_MODEL =                        \
 	ed_params.o                \
 	ed_para_coms.o             \
 	ed_para_init.o             \
+	ed_print.o                 \
 	ed_read_ed10_20_history.o  \
 	ed_read_ed21_history.o     \
 	ed_state_vars.o            \
@@ -108,4 +109,5 @@ OBJ_MODEL =                        \
 	twostream_rad.o            \
 	update_derived_props.o     \
 	utils_c.o                  \
-	utils_f.o
+	utils_f.o                  \
+	vegetation_dynamics.o

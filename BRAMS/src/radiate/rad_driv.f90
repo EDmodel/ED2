@@ -11,7 +11,7 @@
 !   This is the main driver for the radiation effect on the thermodynamic properties.      !
 !------------------------------------------------------------------------------------------!
 subroutine radiate(mzp,mxp,myp,ia,iz,ja,jz,mynum)
-   use mem_tend   ,  only: tend
+   use mem_tend   ,  only: tend_g         ! ! intent(inout)
    use mem_grid   ,  only: ngrid          & ! intent(in)
                           ,time           & ! intent(in)
                           ,dtlt           & ! intent(in)
@@ -91,7 +91,7 @@ subroutine radiate(mzp,mxp,myp,ia,iz,ja,jz,mynum)
    call rad_copy2scratch(mzp,mxp,myp,npatch)
 
    !----- Updating the temperature tendency -----------------------------------------------!
-   call tend_accum(mzp,mxp,myp,ia,iz,ja,jz,tend%tht,radiate_g(ngrid)%fthrd)
+   call tend_accum(mzp,mxp,myp,ia,iz,ja,jz,tend_g(ngrid)%tht,radiate_g(ngrid)%fthrd)
 
    !----- If this is the first time Harrington is called, run initialization. -------------!  
    if ((iswrtyp == 3 .or. ilwrtyp == 3) .and. ncall_i == 0) then
@@ -99,7 +99,6 @@ subroutine radiate(mzp,mxp,myp,ia,iz,ja,jz,mynum)
       !    If first call for this node, initialize several quantities & mclatchy sounding  !
       ! data.                                                                              !
       !------------------------------------------------------------------------------------!
-      write (unit=*,fmt=*) '----> Initializing Harrington on node ',mynum
       call harr_radinit(nnzp(1))
       ncall_i = ncall_i + 1
    end if
@@ -119,27 +118,13 @@ subroutine radiate(mzp,mxp,myp,ia,iz,ja,jz,mynum)
       call azero(mxp*myp,radiate_g(ngrid)%rlong)
 
       !------------------------------------------------------------------------------------!
-      !    Compute solar zenith angle, multiplier for solar constant, surface albedo, and  !
-      ! surface upward longwave radiation.                                                 !
+      !    Compute solar zenith angle.                                                     !
       !------------------------------------------------------------------------------------!
-      call radprep( mxp,myp,nzg,nzs,npatch,ia,iz,ja,jz,iswrtyp,ilwrtyp                     &
-                  , leaf_g(ngrid)%soil_water           , leaf_g(ngrid)%soil_energy         &
-                  , leaf_g(ngrid)%soil_text            , leaf_g(ngrid)%sfcwater_energy     &
-                  , leaf_g(ngrid)%sfcwater_mass        , leaf_g(ngrid)%sfcwater_depth      &
-                  , leaf_g(ngrid)%leaf_class           , leaf_g(ngrid)%veg_fracarea        &
-                  , leaf_g(ngrid)%veg_height           , leaf_g(ngrid)%veg_albedo          &
-                  , leaf_g(ngrid)%patch_area           , leaf_g(ngrid)%sfcwater_nlev       &
-                  , leaf_g(ngrid)%veg_energy           , leaf_g(ngrid)%veg_water           &
-                  , leaf_g(ngrid)%veg_hcap             , leaf_g(ngrid)%can_prss            &
-                  , leaf_g(ngrid)%can_theiv            , leaf_g(ngrid)%can_theta           &
-                  , leaf_g(ngrid)%can_rvap             , scratch%vt2da                     &
-                  , scratch%vt2db                      , scratch%vt2dc                     &
-                  , scratch%vt3dp                      , grid_g(ngrid)%glat                &
-                  , grid_g(ngrid)%glon                 , radiate_g(ngrid)%rlongup          &
-                  , radiate_g(ngrid)%rlong_albedo      , radiate_g(ngrid)%albedt           &
-                  , radiate_g(ngrid)%rshort            , radiate_g(ngrid)%rlong            &
-                  , radiate_g(ngrid)%rshort_top        , radiate_g(ngrid)%rshortup_top     &
-                  , radiate_g(ngrid)%cosz              )
+      call zen(mxp,myp,ia,iz,ja,jz,iswrtyp,ilwrtyp,grid_g(ngrid)%glon,grid_g(ngrid)%glat   &
+              ,radiate_g(ngrid)%cosz)
+      !------------------------------------------------------------------------------------!
+
+
 
       !----- CARMA radiation --------------------------------------------------------------!
       if (ilwrtyp == 4 .or. iswrtyp == 4) then
@@ -479,94 +464,6 @@ end subroutine tend_accum
 
 !==========================================================================================!
 !==========================================================================================!
-!     This subroutine prepares some fields for the radiation scheme, namely the zenital    !
-! angle and the surface radiation and albedo, which are computed beforehand and can be     !
-! thought as the external or boundary conditions.                                          !
-!------------------------------------------------------------------------------------------!
-subroutine radprep(m2,m3,mzg,mzs,np,ia,iz,ja,jz,iswrtyp,ilwrtyp,soil_water,soil_energy     &
-                  ,soil_text,sfcwater_energy,sfcwater_mass,sfcwater_depth,leaf_class       &
-                  ,veg_fracarea,veg_height,veg_albedo,patch_area,sfcwater_nlev,veg_energy  &
-                  ,veg_water,veg_hcap,can_prss,can_theiv,can_theta,can_rvap,emis_town      &
-                  ,alb_town,ts_town,g_urban,glat,glon,rlongup,rlong_albedo,albedt,rshort   &
-                  ,rlong,rshort_top,rshortup_top,cosz)
-  
-   use teb_spm_start, only : TEB_SPM
-   use mem_leaf     , only : isfcl
-
-   implicit none
-
-   !----- Arguments -----------------------------------------------------------------------!
-   integer                      , intent(in)    :: m2,m3,mzg,mzs,np,ia,iz,ja,jz
-   integer                      , intent(in)    :: iswrtyp,ilwrtyp
-   real, dimension(mzg,m2,m3,np), intent(in)    :: soil_water,soil_energy,soil_text
-   real, dimension(mzs,m2,m3,np), intent(in)    :: sfcwater_energy,sfcwater_mass
-   real, dimension(mzs,m2,m3,np), intent(in)    :: sfcwater_depth
-   real, dimension    (m2,m3,np), intent(in)    :: leaf_class,veg_fracarea,veg_height
-   real, dimension    (m2,m3,np), intent(in)    :: veg_albedo,patch_area,sfcwater_nlev
-   real, dimension    (m2,m3,np), intent(in)    :: veg_energy,veg_water,veg_hcap
-   real, dimension    (m2,m3,np), intent(in)    :: can_prss,can_theiv,can_theta,can_rvap
-   real, dimension    (m2,m3)   , intent(in)    :: emis_town,alb_town,ts_town
-   real, dimension    (m2,m3,np), intent(in)    :: g_urban
-   real, dimension    (m2,m3)   , intent(in)    :: glat,glon,rlong_albedo,rshort
-   real, dimension    (m2,m3)   , intent(in)    :: rlong,rshort_top,rshortup_top
-   real, dimension    (m2,m3)   , intent(inout) :: rlongup,albedt,cosz
-   !----- Local variables -----------------------------------------------------------------!
-   integer                                    :: ip,i,j
-   !---------------------------------------------------------------------------------------!
-
-
-
-   !---------------------------------------------------------------------------------------!
-   ! 1. Compute the cosine of solar zenith angle [cosz(x,y)] and the solar constant factr  !
-   !    [solfac].                                                                          !
-   !---------------------------------------------------------------------------------------!
-    call zen(m2,m3,ia,iz,ja,jz,iswrtyp,ilwrtyp,glon,glat,cosz)
-
-
-   !---------------------------------------------------------------------------------------!
-   ! 2. Compute patch-averaged surface albedo [albedt(i,j)] and upward longwave radiative  !
-   !    flux [rlongup(i,j)]. In case of a EDBRAMS run this is done in ED so we skip it     !
-   !    here.                                                                              !
-   !---------------------------------------------------------------------------------------!
-
-   if (isfcl /= 5) then
-      !-----Zero out rlongup and albedt prior to summing over land/sea flux cells ---------!
-      call azero2(m2*m3,rlongup,albedt)
-      do ip = 1,np
-         do j = ja,jz
-            do i = ia,iz
-
-               call sfcrad( mzg,mzs,ip                                                          &
-                           , soil_energy     (:,i,j,ip)    , soil_water      (:,i,j,ip)    &
-                           , soil_text       (:,i,j,ip)    , sfcwater_energy (:,i,j,ip)    &
-                           , sfcwater_mass   (:,i,j,ip)    , sfcwater_depth  (:,i,j,ip)    &
-                           , patch_area        (i,j,ip)    , leaf_class        (i,j,ip)    &
-                           , veg_height        (i,j,ip)    , veg_fracarea      (i,j,ip)    &
-                           , veg_albedo        (i,j,ip)    , sfcwater_nlev     (i,j,ip)    &
-                           , veg_energy        (i,j,ip)    , veg_water         (i,j,ip)    &
-                           , veg_hcap          (i,j,ip)    , can_prss          (i,j,ip)    &
-                           , can_theiv         (i,j,ip)    , can_theta         (i,j,ip)    &
-                           , can_rvap          (i,j,ip)    , rshort            (i,j)       &
-                           , rlong             (i,j)       , albedt            (i,j)       &
-                           , rlongup           (i,j)       , cosz              (i,j)       &
-                           , g_urban           (i,j,ip)    , emis_town         (i,j)       &
-                           , alb_town          (i,j)       , ts_town           (i,j)       )
-            end do
-         end do
-      end do
-   end if
-   return
-end subroutine radprep
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
 !     This is the wrapper for Mahrer-Pielke and Chen-Cotton radiation methods. This sub-   !
 ! routine is different from the original because now it uses the new variables computed at !
 ! the "zen" subroutine to find the hour angle. Also, most sin/cos calculations are done in !
@@ -575,7 +472,7 @@ end subroutine radprep
 subroutine radcomp(m1,m2,m3,ifm,ia,iz,ja,jz,theta,pi0,pp,rv,dn0,rtp,co2p,fthrd,rtgt,f13t   &
                   ,f23t,glon,rshort,rlong,albedt,cosz,rlongup,fthrd_lw,mynum)
 
-   use mem_grid   , only : dzm,dzt,itopo,plonn,ngrid,time,itimea,centlon
+   use mem_grid   , only : dzm,dzt,itopo,plonn,ngrid,time,itimea,centlon,dtlt
    use mem_scratch, only : scratch
    use mem_radiate, only : ilwrtyp,iswrtyp,lonrad,cdec,jday,solfac,sun_longitude
    use rconstants , only : cpi,cpor,p00,stefan,solar,pio1808,pi1,halfpi
@@ -598,6 +495,7 @@ subroutine radcomp(m1,m2,m3,ifm,ia,iz,ja,jz,theta,pi0,pp,rv,dn0,rtp,co2p,fthrd,r
    real(kind=8), parameter :: offset=1.d-20
    !---------------------------------------------------------------------------------------!
 
+
    !----- Constant longitude if lonrad is set to 0 ----------------------------------------!
    gglon=dble(centlon(1))
 
@@ -609,7 +507,7 @@ subroutine radcomp(m1,m2,m3,ifm,ia,iz,ja,jz,theta,pi0,pp,rv,dn0,rtp,co2p,fthrd,r
             fthrs(k) = 0.
          end do
          do k = 1,m1
-            !---- Computing some basic thermodynamic variables (pressure, temperature) ----!
+            !---- Compute some basic thermodynamic variables (pressure, temperature). -----!
             pird(k) = (pp(k,i,j) + pi0(k,i,j)) * cpi
             temprd(k) = theta(k,i,j) * pird(k)
             rvr(k)  = max(0.,rv(k,i,j))
@@ -625,7 +523,8 @@ subroutine radcomp(m1,m2,m3,ifm,ia,iz,ja,jz,theta,pi0,pp,rv,dn0,rtp,co2p,fthrd,r
             fthrs(k) = 0.
 
          end do
-         temprd(1) = (rlongup(i,j) / stefan) ** 0.25
+         temprd(1) = sqrt(sqrt(rlongup(i,j) / stefan))
+         !---------------------------------------------------------------------------------!
 
          !----- Sanity check --------------------------------------------------------------!
          do k=1,m1

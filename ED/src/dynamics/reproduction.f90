@@ -233,6 +233,7 @@ subroutine reproduction(cgrid, month)
             ! of recruits.                                                                 !
             !------------------------------------------------------------------------------!
             if (ncohorts_new > cpatch%ncohorts) then
+               nullify(temppatch)
                allocate(temppatch)
                call allocate_patchtype(temppatch,cpatch%ncohorts)
 
@@ -296,7 +297,8 @@ subroutine reproduction(cgrid, month)
                   !------------------------------------------------------------------------!
                   cpatch%agb(ico)     = ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)    &
                                                   ,cpatch%bleaf(ico),cpatch%pft(ico)       &
-                                                  ,cpatch%hite(ico),cpatch%bstorage(ico))
+                                                  ,cpatch%hite(ico),cpatch%bstorage(ico)   &
+                                                  ,cpatch%bsapwood(ico))
                   cpatch%basarea(ico) = pio4 * cpatch%dbh(ico)  * cpatch%dbh(ico)
                   cpatch%dagb_dt(ico) = 0.0
                   cpatch%dba_dt(ico)  = 0.0
@@ -314,12 +316,14 @@ subroutine reproduction(cgrid, month)
                   call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico) &
                                    ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)   &
                                    ,cpatch%pft(ico),cpatch%sla(ico), cpatch%lai(ico)       &
-                                   ,cpatch%wpa(ico),cpatch%wai(ico)) !here sla is not yet assigned; will be in init_ed_cohort_vars 
+                                   ,cpatch%wpa(ico),cpatch%wai(ico),cpatch%bsapwood(ico)) 
+                           !here sla is not yet assigned; will be in init_ed_cohort_vars 
                   !----- Finding heat capacity and vegetation internal energy. ------------!
                   cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico)   &
                                                     ,cpatch%balive(ico),cpatch%nplant(ico) &
                                                     ,cpatch%hite(ico),cpatch%pft(ico)      &
-                                                    ,cpatch%phenology_status(ico))
+                                                    ,cpatch%phenology_status(ico)          &
+                                                    ,cpatch%bsapwood(ico))
                   cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * cpatch%veg_temp(ico)
 
                   !----- Update number of cohorts in this site. ---------------------------!
@@ -334,7 +338,7 @@ subroutine reproduction(cgrid, month)
          
          
          !---------------------------------------------------------------------------------!
-         !   Now that recruitment has occured, re-sort, terminate, fuse, and split.        !
+         !   Now that recruitment has occured, terminate, fuse, split, and re-sort.        !
          !---------------------------------------------------------------------------------!
          update_patch_loop: do ipa = 1,csite%npatches
             cpatch => csite%patch(ipa)
@@ -344,6 +348,9 @@ subroutine reproduction(cgrid, month)
                call fuse_cohorts(csite,ipa, cpoly%green_leaf_factor(:,isi),cpoly%lsl(isi))                         
                call split_cohorts(cpatch, cpoly%green_leaf_factor(:,isi),cpoly%lsl(isi))
             end if
+
+            !----- Sort the cohorts by height. --------------------------------------------!
+            call sort_cohorts(cpatch)
 
             !----- Update the number of cohorts (this is redundant...). -------------------!
             csite%cohort_count(ipa) = cpatch%ncohorts

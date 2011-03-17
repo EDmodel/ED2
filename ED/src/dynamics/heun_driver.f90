@@ -14,7 +14,8 @@ subroutine heun_timestep(cgrid)
                                     , sitetype           & ! structure
                                     , patchtype          ! ! structure
    use met_driver_coms       , only : met_driv_state     ! ! structure
-   use grid_coms             , only : nzg                ! ! intent(in)
+   use grid_coms             , only : nzg                & ! intent(in)
+                                    , nzs                ! ! intent(in)
    use ed_misc_coms          , only : dtlsm              ! ! intent(in)
    use ed_max_dims           , only : n_dbh              ! ! intent(in)
    use soil_coms             , only : soil_rough         & ! intent(in)
@@ -27,41 +28,44 @@ subroutine heun_timestep(cgrid)
 
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
-   type(edtype)             , target    :: cgrid
+   type(edtype)             , target      :: cgrid
    !----- Local variables -----------------------------------------------------------------!
-   type(polygontype)        , pointer   :: cpoly
-   type(sitetype)           , pointer   :: csite
-   type(patchtype)          , pointer   :: cpatch
-   type(met_driv_state)     , pointer   :: cmet
-   integer                              :: ipy
-   integer                              :: isi
-   integer                              :: ipa
-   integer                              :: ico
-   integer                              :: nsteps
-   integer, dimension(nzg)              :: ed_ktrans
-   real                                 :: thetaatm
-   real                                 :: thetacan
-   real                                 :: rasveg
-   real                                 :: storage_decay
-   real                                 :: leaf_flux
-   real                                 :: veg_tai
-   real                                 :: sum_lai_rbi
-   real                                 :: wcurr_loss2atm
-   real                                 :: ecurr_loss2atm
-   real                                 :: co2curr_loss2atm
-   real                                 :: wcurr_loss2drainage
-   real                                 :: ecurr_loss2drainage
-   real                                 :: wcurr_loss2runoff
-   real                                 :: ecurr_loss2runoff
-   real                                 :: old_can_theiv
-   real                                 :: old_can_shv
-   real                                 :: old_can_co2
-   real                                 :: old_can_rhos
-   real                                 :: old_can_temp
-   real                                 :: fm
+   type(polygontype)        , pointer     :: cpoly
+   type(sitetype)           , pointer     :: csite
+   type(patchtype)          , pointer     :: cpatch
+   type(met_driv_state)     , pointer     :: cmet
+   integer                                :: ipy
+   integer                                :: isi
+   integer                                :: ipa
+   integer                                :: ico
+   integer                                :: nsteps
+   integer, dimension(:)    , allocatable :: ed_ktrans
+   real                                   :: thetaatm
+   real                                   :: thetacan
+   real                                   :: rasveg
+   real                                   :: storage_decay
+   real                                   :: leaf_flux
+   real                                   :: veg_tai
+   real                                   :: wcurr_loss2atm
+   real                                   :: ecurr_loss2atm
+   real                                   :: co2curr_loss2atm
+   real                                   :: wcurr_loss2drainage
+   real                                   :: ecurr_loss2drainage
+   real                                   :: wcurr_loss2runoff
+   real                                   :: ecurr_loss2runoff
+   real                                   :: old_can_theiv
+   real                                   :: old_can_shv
+   real                                   :: old_can_co2
+   real                                   :: old_can_rhos
+   real                                   :: old_can_temp
+   real                                   :: fm
    !----- External functions. -------------------------------------------------------------!
-   real, external                       :: compute_netrad
+   real, external                         :: compute_netrad
    !---------------------------------------------------------------------------------------!
+
+   !----- Allocate the auxiliary variables. -----------------------------------------------!
+   allocate(ed_ktrans(nzg))
+
 
    polyloop: do ipy = 1,cgrid%npolygons
       cpoly => cgrid%polygon(ipy)
@@ -99,6 +103,17 @@ subroutine heun_timestep(cgrid)
             else
                cmet%vels = cmet%vels_unstab
             end if
+            !------------------------------------------------------------------------------!
+
+
+
+            !------------------------------------------------------------------------------!
+            !    Update roughness and canopy depth.                                        !
+            !------------------------------------------------------------------------------!
+            call update_patch_derived_props(csite,cpoly%lsl(isi),cmet%prss,ipa)
+            !------------------------------------------------------------------------------!
+
+
 
             !------------------------------------------------------------------------------!
             !    Copy the meteorological variables to the rk4site structure.               !
@@ -106,7 +121,7 @@ subroutine heun_timestep(cgrid)
             call copy_met_2_rk4site(cmet%vels,cmet%atm_theiv,cmet%atm_theta                &
                                    ,cmet%atm_tmp,cmet%atm_shv,cmet%atm_co2,cmet%geoht      &
                                    ,cmet%exner,cmet%pcpg,cmet%qpcpg,cmet%dpcpg,cmet%prss   &
-                                   ,cmet%geoht,cpoly%lsl(isi)                              &
+                                   ,cmet%rshort,cmet%rlong,cmet%geoht,cpoly%lsl(isi)       &
                                    ,cpoly%green_leaf_factor(:,isi)                         &
                                    ,cgrid%lon(ipy),cgrid%lat(ipy))
 
@@ -124,13 +139,10 @@ subroutine heun_timestep(cgrid)
             ! ness scale, the characteristic scales (stars) and canopy resistance and      !
             ! capacities.                                                                  !
             !------------------------------------------------------------------------------!
-            call canopy_turbulence8(csite,integration_buff%initp,ipa,.true.)
+            call canopy_turbulence8(csite,integration_buff%initp,ipa)
 
             !----- Get photosynthesis, stomatal conductance, and transpiration. -----------!
-            call canopy_photosynthesis(csite,ipa,cmet%vels,cmet%atm_tmp,cmet%prss          &
-                                      ,ed_ktrans,csite%ntext_soil(:,ipa)                   &
-                                      ,csite%soil_water(:,ipa),csite%soil_fracliq(:,ipa)   &
-                                      ,cpoly%lsl(isi),sum_lai_rbi                          &
+            call canopy_photosynthesis(csite,cmet,nzg,ipa,ed_ktrans,cpoly%lsl(isi)         &
                                       ,cpoly%leaf_aging_factor(:,isi)                      &
                                       ,cpoly%green_leaf_factor(:,isi))
 
@@ -175,6 +187,9 @@ subroutine heun_timestep(cgrid)
       end do siteloop
    end do polyloop
 
+   !----- De-allocate the auxiliary variables. --------------------------------------------!
+   deallocate(ed_ktrans)
+
    return
 end subroutine heun_timestep
 !==========================================================================================!
@@ -210,10 +225,7 @@ subroutine integrate_patch_heun(csite,ipa,wcurr_loss2atm,ecurr_loss2atm,co2curr_
                               , tbeg                 & ! intent(inout)
                               , tend                 & ! intent(inout)
                               , dtrk4                & ! intent(inout)
-                              , dtrk4i               & ! intent(inout)
-                              , ibranch_thermo       & ! intent(in)
-                              , effarea_water        & ! intent(out)
-                              , effarea_heat         ! ! intent(out)
+                              , dtrk4i               ! ! intent(inout)
    use rk4_driver      , only : initp2modelp         ! ! subroutine
 
    implicit none
@@ -241,22 +253,6 @@ subroutine integrate_patch_heun(csite,ipa,wcurr_loss2atm,ecurr_loss2atm,co2curr_
       tend   = dble(dtlsm)
       dtrk4  = tend - tbeg
       dtrk4i = 1.d0/dtrk4
-      
-      !------------------------------------------------------------------------------------!
-      !    The area factor for heat and water exchange between canopy and vegetation is    !
-      ! applied only on LAI, and it depends on how we are considering the branches and     !
-      ! twigs.  If their area isn't explicitly defined, we add a 0.2 factor to the area    !
-      ! because WPA will be 0.  Otherwise, we don't add anything to the LAI, and let WPA   !
-      ! to do the job.                                                                     !
-      !------------------------------------------------------------------------------------!
-      select case (ibranch_thermo)
-      case (0)
-         effarea_water = 1.2d0
-         effarea_heat  = 2.2d0
-      case default
-         effarea_water = 1.0d0
-         effarea_heat  = 2.0d0
-      end select
    end if
 
    !---------------------------------------------------------------------------------------!
@@ -324,8 +320,8 @@ subroutine heun_integ(h1,csite,ipa,nsteps)
    use rk4_coms       , only : integration_vars       & ! structure
                              , integration_buff       & ! structure
                              , rk4site                & ! intent(in)
-                             , rk4min_sfcwater_mass   & ! intent(in)
                              , print_diags            & ! intent(in)
+                             , print_detailed         & ! intent(in)
                              , maxstp                 & ! intent(in)
                              , tbeg                   & ! intent(in)
                              , tend                   & ! intent(in)
@@ -341,12 +337,15 @@ subroutine heun_integ(h1,csite,ipa,nsteps)
                              , safety                 & ! intent(in)
                              , pgrow                  & ! intent(in)
                              , pshrnk                 & ! intent(in)
-                             , errcon                 ! ! intent(in)
+                             , errcon                 & ! intent(in)
+                             , norm_rk4_fluxes        & ! sub-routine
+                             , reset_rk4_fluxes       ! ! sub-routine
    use rk4_stepper    , only : rk4_sanity_check       & ! subroutine
                              , print_sanity_check     ! ! subroutine
    use ed_misc_coms   , only : fast_diagnostics       ! ! intent(in)
    use hydrology_coms , only : useRUNOFF              ! ! intent(in)
    use grid_coms      , only : nzg                    & ! intent(in)
+                             , nzs                    & ! intent(in)
                              , time                   ! ! intent(in)
    use soil_coms      , only : dslz8                  & ! intent(in)
                              , runoff_time            ! ! intent(in)
@@ -387,8 +386,6 @@ subroutine heun_integ(h1,csite,ipa,nsteps)
    real(kind=8)              , save        :: runoff_time_i
    !----- External function. --------------------------------------------------------------!
    real                      , external    :: sngloff
-   !----- Local constant. -----------------------------------------------------------------!
-   logical                   , parameter   :: print_intstep = .false.
    !---------------------------------------------------------------------------------------!
    
    !----- Checking whether we will use runoff or not, and saving this check to save time. -!
@@ -400,28 +397,10 @@ subroutine heun_integ(h1,csite,ipa,nsteps)
          runoff_time_i = 0.d0
       end if
       first_time   = .false.
-
-      if (print_intstep) then
-         write (unit=66,fmt='(27(a,1x))')                                                  &
-                       '  ELAPSED_TIME','     TIME_STEP','       ATM_SHV','       CAN_SHV' &
-                      ,'    GROUND_SHV','     ATM_THETA','     CAN_THETA','      ATM_TEMP' &
-                      ,'      CAN_TEMP','     ATM_THEIV','     CAN_THEIV','      ATM_PRSS' &
-                      ,'      CAN_PRSS','      ATM_RHOS','      CAN_RHOS','      ATM_VELS' &
-                      ,'     CAN_DEPTH','          RAIN','         USTAR','         TSTAR' &
-                      ,'         ESTAR','         QSTAR','          ZETA','        RIBULK' &
-                      ,'     SFCW_MASS','    SFCW_DEPTH','    SOIL_WATER'
-      end if
    end if
 
    !----- Use some aliases for simplicity. ------------------------------------------------!
    cpatch => csite%patch(ipa)
-
-   !---------------------------------------------------------------------------------------!
-   !    If top snow layer is too thin for computational stability, have it evolve in       !
-   ! thermal equilibrium with top soil layer.                                              !
-   !---------------------------------------------------------------------------------------!
-   call redistribute_snow(integration_buff%initp, csite,ipa)
-   call update_diagnostic_vars(integration_buff%initp,csite,ipa)
 
    !---------------------------------------------------------------------------------------!
    !     Create temporary patches.                                                         !
@@ -523,6 +502,7 @@ subroutine heun_integ(h1,csite,ipa,nsteps)
                write (unit=*,fmt='(a,1x,f9.4)')   ' + LONGITUDE:     ',rk4site%lon
                write (unit=*,fmt='(a,1x,f9.4)')   ' + LATITUDE:      ',rk4site%lat
                write (unit=*,fmt='(a)')           ' + PATCH INFO:    '
+               write (unit=*,fmt='(a,1x,i6)')     '   - NUMBER:      ',ipa
                write (unit=*,fmt='(a,1x,es12.4)') '   - AGE:         ',csite%age(ipa)
                write (unit=*,fmt='(a,1x,i6)')     '   - DIST_TYPE:   ',csite%dist_type(ipa)
                write (unit=*,fmt='(a,1x,l1)')     ' + REJECT_STEP:   ',reject_step
@@ -575,11 +555,13 @@ subroutine heun_integ(h1,csite,ipa,nsteps)
             call adjust_veg_properties(integration_buff%ytemp,h,csite,ipa)
             !----- ii.  Final update of top soil properties to avoid off-bounds moisture. -!
             call adjust_topsoil_properties(integration_buff%ytemp,h,csite,ipa)
-            !----- iii. Make snow layers stable and positively defined. -------------------!
-            call redistribute_snow(integration_buff%ytemp, csite,ipa)
-            !----- iv.  Update the diagnostic variables. ----------------------------------!
-            call update_diagnostic_vars(integration_buff%ytemp, csite,ipa)
+            !----- iii.  Make snow layers stable and positively defined. ------------------!
+            call adjust_sfcw_properties(nzg,nzs,integration_buff%ytemp,h,csite,ipa)
+            !----- iv. Update the diagnostic variables. -----------------------------------!
+            call update_diagnostic_vars(integration_buff%ytemp,csite,ipa)
             !------------------------------------------------------------------------------!
+
+
 
             !------------------------------------------------------------------------------!
             ! 3c. Set up h for the next time.  And here we can relax h for the next step,  !
@@ -592,29 +574,26 @@ subroutine heun_integ(h1,csite,ipa,nsteps)
             endif
             hnext = max(2.d0*hmin,hnext)
 
-            !----- 3d. Copying the temporary structure to the intermediate state. ---------!
-            call copy_rk4_patch(integration_buff%ytemp,integration_buff%y,csite%patch(ipa))
-
-            !----- 3e. Print the output if the user wants it. -----------------------------!
-            if (print_intstep) then
-               write (unit=66,fmt='(27(es14.7,1x))')                                       &
-                     elaptime,h,rk4site%atm_shv,integration_buff%y%can_shv                 &
-                    ,integration_buff%y%ground_shv,rk4site%atm_theta                       &
-                    ,integration_buff%y%can_theta,rk4site%atm_tmp                          &
-                    ,integration_buff%y%can_temp,rk4site%atm_theiv                         &
-                    ,integration_buff%y%can_theiv,rk4site%atm_prss                         &
-                    ,integration_buff%y%can_prss,rk4site%rhos,integration_buff%y%can_rhos  &
-                    ,rk4site%vels,integration_buff%y%can_depth,rk4site%pcpg                &
-                    ,integration_buff%y%ustar,integration_buff%y%tstar                     &
-                    ,integration_buff%y%estar,integration_buff%y%qstar                     &
-                    ,integration_buff%y%zeta,integration_buff%y%ribulk                     &
-                    ,integration_buff%y%sfcwater_mass(1)                                   &
-                    ,integration_buff%y%sfcwater_depth(1)                                  &
-                    ,integration_buff%y%soil_water(nzg)
+            !------ 3d. Normalise the fluxes if the user wants detailed debugging. --------!
+            if (print_detailed) then
+               call norm_rk4_fluxes(integration_buff%ytemp,h)
+               call print_rk4_state(integration_buff%y,integration_buff%ytemp,csite,ipa,x,h)
             end if
 
-            !----- 3f. Updating time. -----------------------------------------------------!
+            !----- 3e. Copy the temporary structure to the intermediate state. ------------!
+            call copy_rk4_patch(integration_buff%ytemp,integration_buff%y,csite%patch(ipa))
+
+            !------------------------------------------------------------------------------!
+            !    3f. Flush step-by-step fluxes to zero if the user wants detailed          !
+            !        debugging.                                                            !
+            !------------------------------------------------------------------------------!
+            if (print_detailed) then
+               call reset_rk4_fluxes(integration_buff%y)
+            end if
+
+            !----- 3g. Update time. -------------------------------------------------------!
             x        = x + h
+            hdid     = h
             h        = hnext
             elaptime = elaptime + h
 
@@ -652,7 +631,7 @@ subroutine heun_integ(h1,csite,ipa,nsteps)
                integration_buff%y%sfcwater_energy(ksn) =                                   &
                                   integration_buff%y%sfcwater_energy(ksn) - qwfree
 
-               call redistribute_snow(integration_buff%y,csite,ipa)
+               call adjust_sfcw_properties(nzg,nzs,integration_buff%y,dtrk4,csite,ipa)
                call update_diagnostic_vars(integration_buff%y,csite,ipa)
 
                !----- Compute runoff for output -------------------------------------------!
@@ -752,6 +731,8 @@ subroutine heun_stepper(x,h,csite,ipa,reject_step,reject_result)
    use rk4_stepper   , only : rk4_sanity_check    ! ! subroutine
    use ed_state_vars , only : sitetype            & ! structure
                             , patchtype           ! ! structure
+   use grid_coms     , only : nzg                 & ! intent(in)
+                            , nzs                 ! ! structure
    implicit none
 
    !----- Arguments -----------------------------------------------------------------------!
@@ -764,6 +745,7 @@ subroutine heun_stepper(x,h,csite,ipa,reject_step,reject_result)
    !----- Local variables -----------------------------------------------------------------!
    type(patchtype)   , pointer     :: cpatch
    real(kind=8)                    :: combh
+   real(kind=8)                    :: dpdt
    !---------------------------------------------------------------------------------------!
 
 
@@ -782,11 +764,17 @@ subroutine heun_stepper(x,h,csite,ipa,reject_step,reject_result)
    !----- yeuler is the temporary array with the Euler step with no correction. -----------!
    call copy_rk4_patch(integration_buff%y,integration_buff%ak3,cpatch)
    call inc_rk4_patch (integration_buff%ak3,integration_buff%dydx, heun_b21*h, cpatch)
-   combh = heun_b21*h
-   call adjust_veg_properties    (integration_buff%ak3,combh,csite,ipa)
-   call adjust_topsoil_properties(integration_buff%ak3,combh,csite,ipa)
-   call redistribute_snow        (integration_buff%ak3      ,csite,ipa)
-   call update_diagnostic_vars   (integration_buff%ak3      ,csite,ipa)
+   call update_diagnostic_vars(integration_buff%ak3      ,csite,ipa)
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !       Estimate the derivative of canopy pressure.                                     !
+   !---------------------------------------------------------------------------------------!
+   dpdt          = (integration_buff%ak3%can_prss - integration_buff%y%can_prss) / combh
+   integration_buff%dydx%can_prss = dpdt * heun_b21
    !---------------------------------------------------------------------------------------!
 
 
@@ -816,13 +804,13 @@ subroutine heun_stepper(x,h,csite,ipa,reject_step,reject_result)
    call copy_rk4_patch(integration_buff%y,integration_buff%ytemp, cpatch)
    call inc_rk4_patch(integration_buff%ytemp,integration_buff%dydx, heun_c1*h, cpatch)
    call inc_rk4_patch(integration_buff%ytemp,integration_buff%ak2 , heun_c2*h, cpatch)
-   combh = (heun_c1+heun_c2) * h ! Which should be h
 
-   !----- Update the diagnostic properties and make final adjustments. --------------------!
-   call adjust_veg_properties    (integration_buff%ytemp,combh,csite,ipa)
-   call adjust_topsoil_properties(integration_buff%ytemp,combh,csite,ipa)
-   call redistribute_snow        (integration_buff%ytemp      ,csite,ipa)
-   call update_diagnostic_vars   (integration_buff%ytemp      ,csite,ipa)
+   !---------------------------------------------------------------------------------------!
+   !      Update the diagnostic properties and make final adjustments.  This time we will  !
+   ! run the full adjustment, to make sure that the step will be rejected especially if    !
+   ! there are issues with the top soil properties.                                        !
+   !---------------------------------------------------------------------------------------!
+   call update_diagnostic_vars   (integration_buff%ytemp        ,csite,ipa)
    !---------------------------------------------------------------------------------------!
 
 
@@ -835,6 +823,26 @@ subroutine heun_stepper(x,h,csite,ipa,reject_step,reject_result)
                         ,integration_buff%ak2,h,print_diags)
    if(reject_result)return
    !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !       Estimate the derivative of canopy pressure.                                     !
+   !---------------------------------------------------------------------------------------!
+   dpdt          = (integration_buff%ak3%can_prss - integration_buff%y%can_prss) / combh
+   integration_buff%dydx%can_prss = integration_buff%dydx%can_prss + dpdt * heun_c1
+   integration_buff%ak2%can_prss  =                                  dpdt * heun_c2
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Average the pressure derivative estimates.                                       !
+   !---------------------------------------------------------------------------------------!
+   integration_buff%dydx%can_prss = integration_buff%dydx%can_prss / (heun_b21 + heun_c1)
+   integration_buff%ak2%can_prss  = integration_buff%ak2%can_prss  / (           heun_c2)
+   !---------------------------------------------------------------------------------------!
+
 
 
    !---------------------------------------------------------------------------------------!

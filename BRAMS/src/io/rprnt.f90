@@ -256,6 +256,8 @@ elseif (vnam == 'veg_albedo'     ) then
         vnam2 = '[veg_albedo (m)]         '
 elseif (vnam == 'veg_height'     ) then
         vnam2 = '[veg_height (m)]         '
+elseif (vnam == 'veg_displace'   ) then
+        vnam2 = '[displacement_height (m)]'
 elseif (vnam == 'patch_area'     ) then
         vnam2 = '[patch_area]             '
 elseif (vnam == 'patch_rough'    ) then
@@ -268,8 +270,8 @@ elseif (vnam == 'soil_rough'     ) then
         vnam2 = '[soil rough (m)]         '
 elseif (vnam == 'sfcwater_nlev'  ) then
         vnam2 = '[sfcwater_nlev]          '
-elseif (vnam == 'stom_resist'    ) then
-        vnam2 = '[stom_resist (s/m)]      '
+elseif (vnam == 'stom_condct'    ) then
+        vnam2 = '[stom_condct (kg/m2/s)]  '
 elseif (vnam == 'ground_rsat'    ) then
         vnam2 = '[ground_rsat (g/kg)]     '
 elseif (vnam == 'ground_rvap'    ) then
@@ -335,7 +337,7 @@ do k = k1,k2
                      call qtk(leaf%soil_energy(k,i,j,ipat)  &
                         ,tempkk(i+1-i1),fracliqq(i+1-i1))
                   elseif (ipat == 1) then
-                     tempk(i+1-i1) = leaf%soil_energy(k,i,j,ipat)
+                     soil_tempk(i+1-i1) = leaf%soil_energy(k,i,j,ipat)
                   else
                      nsoil = nint(leaf%soil_text(k,i,j,ipat))
                      call qwtk(leaf%soil_energy(k,i,j,ipat)       &
@@ -345,7 +347,7 @@ do k = k1,k2
                enddo
 
                call plin(nc,j,ipat,2,1.               &
-                  ,tempk(1:nc)                        &
+                  ,soil_tempk(1:nc)                   &
                   ,leaf%patch_area(i1:i2,j,ipat))
             elseif (vnam == 'soil_text'      ) then
                call plin(nc,j,ipat,3,1.                  &
@@ -367,7 +369,7 @@ do k = k1,k2
                            ,slcpd(nsoil),tempkk(i+1-i1),fracliqq(i+1-i1))
                enddo
                call plin(nc,j,ipat,2,1.               &
-                  ,tempk(1:nc)                        &
+                  ,sfcwater_tempk(1:nc)               &
                   ,leaf%patch_area(i1:i2,j,ipat))
             elseif (vnam == 'sfcwater_depth' ) then
                call plin(nc,j,ipat,3,1.               &
@@ -425,6 +427,10 @@ do k = k1,k2
                call plin(nc,j,ipat,3,1.               &
                   ,leaf%veg_height(i1:i2,j,ipat)         &
                   ,leaf%patch_area(i1:i2,j,ipat))
+            elseif (vnam == 'veg_displace'   ) then
+               call plin(nc,j,ipat,3,1.               &
+                  ,leaf%veg_displace(i1:i2,j,ipat)       &
+                  ,leaf%patch_area(i1:i2,j,ipat))
             elseif (vnam == 'patch_area'     ) then
                write(6,243)j,ipat,(leaf%patch_area(i,j,ipat),i=i1,i2)
             elseif (vnam == 'patch_rough'    ) then
@@ -447,9 +453,9 @@ do k = k1,k2
                call plin(nc,j,ipat,3,1.               &
                   ,leaf%sfcwater_nlev(i1:i2,j,ipat)      &
                   ,leaf%patch_area(i1:i2,j,ipat))
-            elseif (vnam == 'stom_resist'    ) then
+            elseif (vnam == 'stom_condct'    ) then
                call plin(nc,j,ipat,3,1.               &
-                  ,leaf%stom_resist(i1:i2,j,ipat)        &
+                  ,leaf%stom_condct(i1:i2,j,ipat)        &
                   ,leaf%patch_area(i1:i2,j,ipat))
             elseif (vnam == 'ground_rsat'    ) then
                call plin(nc,j,ipat,3,1.e3             &
@@ -1257,20 +1263,6 @@ ELSEIF(VARN.EQ.'DNTOT') THEN
     TILO='DN(#/cc)'
   ELSE
     OPTLIB=0.
-  IF(LEVEL.EQ.4)THEN
-     DO L=2,ICLOUD+1
-       OPTLIB=OPTLIB+scalar_tab(l,ngrid)%var_p
-     ENDDO
-     OPTLIB=OPTLIB*basic_g(ngrid)%DN0(k,i,j)
-     IF(OPTLIB.LT.1E+04)OPTLIB=0.
-  ENDIF
-  IF(LEVEL.GT.4)THEN
-     DO L=NSH,ICLOUD+NSH-1
-       OPTLIB=OPTLIB+scalar_tab(l,ngrid)%var_p
-     ENDDO
-     OPTLIB=OPTLIB*basic_g(ngrid)%DN0(k,i,j)
-     IF(OPTLIB.LT.1E+03)OPTLIB=0.
-  ENDIF
   ENDIF
 !
 !
@@ -1283,16 +1275,6 @@ ELSEIF(VARN.EQ.'DMTOT') THEN
     TILO='DM(G/KG)'
   ELSE
     OPTLIB=0.
-  IF(LEVEL.EQ.4)THEN
-     DO L=ICLOUD+2,2*ICLOUD+1
-        OPTLIB=OPTLIB+scalar_tab(l,ngrid)%var_p
-    ENDDO
-    ENDIF
-  IF(LEVEL.GT.4)THEN
-     DO L=ICLOUD+NSH,2*ICLOUD+NSH-1
-        OPTLIB=OPTLIB+scalar_tab(l,ngrid)%var_p
-    ENDDO
-    ENDIF
   ENDIF
 !
 !
@@ -1305,11 +1287,6 @@ ELSEIF(VARN.EQ.'INACT') THEN
     TILO='AIN(#/l)'
   ELSE
     OPTLIB=0.
-  IF(LEVEL.GT.4)THEN
-       OPTLIB=OPTLIB+scalar_tab(nsin,ngrid)%var_p
-     OPTLIB=OPTLIB*basic_g(ngrid)%DN0(k,i,j)
-     IF(OPTLIB.LT.1E+01)OPTLIB=0.
-  ENDIF
   ENDIF
 !
 !
@@ -1322,13 +1299,6 @@ ELSEIF(VARN.EQ.'PNTOT') THEN
     TILO='PN(#/l)'
   ELSE
     OPTLIB=0.
-  IF(LEVEL.GT.4)THEN
-     DO L=NSH+2*ICLOUD,NSH+2*ICLOUD+IPRIS-1
-       OPTLIB=OPTLIB+scalar_tab(l,ngrid)%var_p
-     ENDDO
-     OPTLIB=OPTLIB*basic_g(ngrid)%DN0(k,i,j)
-     IF(OPTLIB.LT.1E+01)OPTLIB=0.
-  ENDIF
   ENDIF
 !
 !
@@ -1341,11 +1311,6 @@ ELSEIF(VARN.EQ.'PMTOT') THEN
     TILO='PM(G/KG)'
   ELSE
     OPTLIB=0.
-  IF(LEVEL.GT.4)THEN
-     DO L=NSH+2*ICLOUD+IPRIS,NSH+2*ICLOUD+2*IPRIS-1
-        OPTLIB=OPTLIB+scalar_tab(l,ngrid)%var_p
-    ENDDO
-    ENDIF
   ENDIF
 !
 !           TOTAL NUMBER CONCENTRATION OF AGGREGATES
@@ -1357,13 +1322,6 @@ ELSEIF(VARN.EQ.'ANTOT') THEN
     TILO='AN(#/l)'
   ELSE
     OPTLIB=0.
-  IF(LEVEL.GT.4)THEN
-     DO L=NSH+2*ICLOUD+2*IPRIS,NSH+2*ICLOUD+2*IPRIS+IAGGR-1
-       OPTLIB=OPTLIB+scalar_tab(l,ngrid)%var_p
-     ENDDO
-     OPTLIB=OPTLIB*basic_g(ngrid)%DN0(k,i,j)
-     IF(OPTLIB.LT.1E+01)OPTLIB=0.
-  ENDIF
   ENDIF
 !
 !
@@ -1376,12 +1334,6 @@ ELSEIF(VARN.EQ.'AMTOT') THEN
     TILO='AM(G/KG)'
   ELSE
     OPTLIB=0.
-  IF(LEVEL.GT.4)THEN
-     DO L=NSH+2*ICLOUD+2*IPRIS+IAGGR,NSH+2*ICLOUD+2*IPRIS  &
-                      +2*IAGGR-1
-        OPTLIB=OPTLIB+scalar_tab(l,ngrid)%var_p
-    ENDDO
-    ENDIF
   ENDIF
 !
 !           TOTAL NUMBER CONCENTRATION OF GRAUPEL
@@ -1393,14 +1345,6 @@ ELSEIF(VARN.EQ.'GNTOT') THEN
     TILO='GN(#/l)'
   ELSE
     OPTLIB=0.
-  IF(LEVEL.GT.4)THEN
-     DO L=NSH+2*ICLOUD+2*IPRIS+2*IAGGR,NSH+2*ICLOUD+2*IPRIS  &
-                      +2*IAGGR+IGRAUP-1
-       OPTLIB=OPTLIB+scalar_tab(l,ngrid)%var_p
-     ENDDO
-     OPTLIB=OPTLIB*basic_g(ngrid)%DN0(k,i,j)
-     IF(OPTLIB.LT.1E+01)OPTLIB=0.
-  ENDIF
   ENDIF
 !
 !
@@ -1413,12 +1357,6 @@ ELSEIF(VARN.EQ.'GMTOT') THEN
     TILO='GM(G/KG)'
   ELSE
     OPTLIB=0.
-  IF(LEVEL.GT.4)THEN
-     DO L=NSH+2*ICLOUD+2*IPRIS+2*IAGGR+IGRAUP,NSH+2*ICLOUD  &
-                      +2*IPRIS+2*IAGGR+2*IGRAUP-1
-        OPTLIB=OPTLIB+scalar_tab(l,ngrid)%var_p
-    ENDDO
-    ENDIF
   ENDIF
 !
 !           TOTAL NUMBER CONCENTRATION OF ICE
@@ -1430,20 +1368,6 @@ ELSEIF(VARN.EQ.'INTOT') THEN
     TILO='IN(#/l)'
   ELSE
     OPTLIB=0.
-  IF(LEVEL.GT.4)THEN
-     DO L=NSH+2*ICLOUD,NSH+2*ICLOUD+IPRIS-1
-       OPTLIB=OPTLIB+scalar_tab(l,ngrid)%var_p
-     ENDDO
-     DO L=NSH+2*ICLOUD+2*IPRIS,NSH+2*ICLOUD+2*IPRIS+IAGGR-1
-       OPTLIB=OPTLIB+scalar_tab(l,ngrid)%var_p
-     ENDDO
-     DO L=NSH+2*ICLOUD+2*IPRIS+2*IAGGR,NSH+2*ICLOUD+2*IPRIS  &
-                      +2*IAGGR+IGRAUP-1
-       OPTLIB=OPTLIB+scalar_tab(l,ngrid)%var_p
-     ENDDO
-     OPTLIB=OPTLIB*basic_g(ngrid)%DN0(k,i,j)
-     IF(OPTLIB.LT.1E+01)OPTLIB=0.
-  ENDIF
   ENDIF
 !
 !
@@ -1456,19 +1380,6 @@ ELSEIF(VARN.EQ.'IMTOT') THEN
     TILO='IM(G/KG)'
   ELSE
     OPTLIB=0.
-  IF(LEVEL.GT.4)THEN
-     DO L=NSH+2*ICLOUD+IPRIS,NSH+2*ICLOUD+2*IPRIS-1
-        OPTLIB=OPTLIB+scalar_tab(l,ngrid)%var_p
-    ENDDO
-     DO L=NSH+2*ICLOUD+2*IPRIS+IAGGR,NSH+2*ICLOUD+2*IPRIS  &
-                      +2*IAGGR-1
-        OPTLIB=OPTLIB+scalar_tab(l,ngrid)%var_p
-    ENDDO
-     DO L=NSH+2*ICLOUD+2*IPRIS+2*IAGGR+IGRAUP,NSH+2*ICLOUD  &
-                      +2*IPRIS+2*IAGGR+2*IGRAUP-1
-        OPTLIB=OPTLIB+scalar_tab(l,ngrid)%var_p
-    ENDDO
-    ENDIF
   ENDIF
 !
 !           TOTAL ACCUMULATED PRECIPITATION

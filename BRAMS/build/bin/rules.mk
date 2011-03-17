@@ -204,6 +204,11 @@ getvar.o: $(UTILS_LIB)/getvar.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
+great_circle.o : $(UTILS_LIB)/great_circle.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90) 
+
 grell_coms.o : $(CUPARM)/grell_coms.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
@@ -359,6 +364,16 @@ leaf3.o : $(SURFACE)/leaf3.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90) 
 
+leaf3_bc.o : $(SURFACE)/leaf3_bc.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90) 
+
+leaf3_can.o : $(SURFACE)/leaf3_can.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90) 
+
 leaf3_hyd.o : $(SURFACE)/leaf3_hyd.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
@@ -369,10 +384,20 @@ leaf3_init.o : $(SURFACE)/leaf3_init.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90) 
 
+leaf3_ocean.o : $(SURFACE)/leaf3_ocean.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90) 
+
 leaf3_teb.o : $(SURFACE)/leaf3_teb.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
+
+leaf3_tw.o : $(SURFACE)/leaf3_tw.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90) 
 
 leaf3_utils.o : $(SURFACE)/leaf3_utils.f90
 	cp -f $< $(<F:.f90=.f90)
@@ -785,6 +810,11 @@ nest_filldens.o : $(NESTING)/nest_filldens.f90
 	rm -f $(<F:.f90=.f90) 
 
 nest_geosst.o : $(MKSFC)/nest_geosst.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90) 
+
+nest_init_aux.o : $(MKSFC)/nest_init_aux.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90) 
@@ -1224,6 +1254,11 @@ varf_update.o : $(FDDA)/varf_update.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90) 
 
+varutils.o : $(UTILS_LIB)/varutils.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90) 
+
 vformat.o    : $(UTILS_LIB)/vformat.f90 
 	 cp -f $< $(<F:.f90=.f90)
 	 $(F90_COMMAND) $(<F:.f90=.f90)
@@ -1379,6 +1414,11 @@ ed_init.o : $(ED_INIT)/ed_init.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
+ed_init_atm.o : $(ED_INIT)/ed_init_atm.F90
+	cp -f $< $(<F:.F90=.F90)
+	$(FPP_COMMAND) $(<F:.F90=.F90)
+	rm -f $(<F:.F90=.F90) 
+
 ed_init_full_history.o : $(ED_IO)/ed_init_full_history.F90
 	cp -f $< $(<F:.F90=.F90)
 	$(FPP_COMMAND) $(HDF5_INCS) $(<F:.F90=.F90)
@@ -1420,6 +1460,11 @@ ed_para_coms.o : $(ED_MPI)/ed_para_coms.f90
 	rm -f $(<F:.f90=.f90) 
 
 ed_params.o : $(ED_INIT)/ed_params.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+ed_print.o : $(ED_IO)/ed_print.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
@@ -1513,11 +1558,6 @@ fuse_fiss_utils.o : $(ED_UTILS)/fuse_fiss_utils.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
-
-great_circle.o : $(ED_UTILS)/great_circle.f90
-	cp -f $< $(<F:.f90=.f90)
-	$(F90_COMMAND) $(<F:.f90=.f90)
-	rm -f $(<F:.f90=.f90) 
 
 grid_coms.o : $(ED_MEMORY)/grid_coms.f90
 	cp -f $< $(<F:.f90=.f90)
@@ -1705,6 +1745,11 @@ twostream_rad.o : $(ED_DYNAMICS)/twostream_rad.f90
 	rm -f $(<F:.f90=.f90)
 
 update_derived_props.o : $(ED_UTILS)/update_derived_props.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+vegetation_dynamics.o : $(ED_DYNAMICS)/vegetation_dynamics.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)

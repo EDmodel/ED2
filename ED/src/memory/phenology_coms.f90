@@ -35,12 +35,17 @@ Module phenology_coms
 
   real :: l_fract
 
+  !theta_crit value
+  real :: thetacrit
+  
   !Flag specifying the first and last spring
   integer :: iphenys1,iphenysf,iphenyf1,iphenyff 
 
   character(len=str_len) :: phenpath
 
   ! Light-controlled
+  real :: radint
+  real :: radslp
   real :: rad_turnover_int
   real :: rad_turnover_slope  
 

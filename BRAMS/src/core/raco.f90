@@ -35,8 +35,8 @@ subroutine acoustic_new()
                      , scratch%vt3dh        , scratch%vt2da        , basic_g(ngrid)%dn0    &
                      , basic_g(ngrid)%pi0   , basic_g(ngrid)%th0   , basic_g(ngrid)%up     &
                      , basic_g(ngrid)%vp    , basic_g(ngrid)%wp    , basic_g(ngrid)%pp     &
-                     , tend%ut              , tend%vt              , tend%wt               &
-                     , tend%pt              , grid_g(ngrid)%topt   , grid_g(ngrid)%topu    &
+                     , tend_g(ngrid)%ut     , tend_g(ngrid)%vt     , tend_g(ngrid)%wt      &
+                     , tend_g(ngrid)%pt     , grid_g(ngrid)%topt   , grid_g(ngrid)%topu    &
                      , grid_g(ngrid)%topv   , grid_g(ngrid)%rtgt   , grid_g(ngrid)%rtgu    &
                      , grid_g(ngrid)%f13u   , grid_g(ngrid)%dxu    , grid_g(ngrid)%rtgv    &
                      , grid_g(ngrid)%dyv    , grid_g(ngrid)%f23v   , grid_g(ngrid)%f13t    &
@@ -51,8 +51,8 @@ subroutine acoustic_new()
                      , scratch%vt3dh        , scratch%vt2da        , basic_g(ngrid)%dn0    &
                      , basic_g(ngrid)%pi0   , basic_g(ngrid)%th0   , basic_g(ngrid)%up     &
                      , basic_g(ngrid)%vp    , basic_g(ngrid)%wp    , basic_g(ngrid)%pp     &
-                     , tend%ut              , tend%vt              , tend%wt               &
-                     , tend%pt              , grid_g(ngrid)%dxu    , grid_g(ngrid)%dyv     &
+                     , tend_g(ngrid)%ut     , tend_g(ngrid)%vt     , tend_g(ngrid)%wt      &
+                     , tend_g(ngrid)%pt     , grid_g(ngrid)%dxu    , grid_g(ngrid)%dyv     &
                      , grid_g(ngrid)%fmapui , grid_g(ngrid)%fmapvi , grid_g(ngrid)%dxt     &
                      , grid_g(ngrid)%dyt    , grid_g(ngrid)%fmapt  , grid_g(ngrid)%aru     &
                      , grid_g(ngrid)%arv    , grid_g(ngrid)%arw    , grid_g(ngrid)%volt    &
@@ -127,62 +127,50 @@ subroutine acoust_new(m1,m2,m3,scr1,scr2,vt3da,vt3db,vt3dc,vt3dd,vt3de,vt3df,vt3
 
       dts = 2. * dtlt / nnacoust(ngrid)
 
-      if (iter == 1)  &
-           call coefz(mzp,mxp,myp,ia,iz,ja,jz,vt3dc,vt3dd,vt3de,dn0    &
-                     ,pi0,th0,rtgt,a1da2,vt3df,vt3dg,scr2,vctr1,vctr2  )
+      if (iter == 1)  then
+           call coefz(mzp,mxp,myp,ia,iz,ja,jz,vt3dc,vt3dd,vt3de,dn0,pi0,th0,rtgt,a1da2     &
+                     ,vt3df,vt3dg,scr2,vctr1,vctr2  )
+      end if
 
-      if (ipara == 1) then
-         if (iter /= 1) then
-            call node_getst(4)
-            if (ngrid == 1) call node_getcyclic(4)
-         end if
+      if (iter /= 1) then
+         call mpilbc_driver('getst',4)
       end if
 
       call prdctu(mzp,mxp,myp,ia,izu,ja,jz,ibcon,up,ut,pp,vt3da,th0,vt3db,f13u,rtgu,rtgt   &
                  ,dxu,vt3dh,topu,mynum)
 
-      if (ipara == 1) then
-         if (iter /= nnacoust(ngrid)) then
-            call node_sendst(2)
-            if (ngrid == 1) call node_sendcyclic(2)
-         endif
-      endif
+      if (iter /= nnacoust(ngrid)) then
+         call mpilbc_driver('sendst',2)
+      end if
 
       !------------------------------------------------------------------------------------!
-      if (nxtnest(ngrid) .eq. 0 .and. ipara .eq. 0)  &
-           call cyclic_set (nzp,nxp,nyp,up(1,1,1),'U')
+      if (nxtnest(ngrid) == 0 .and. ipara == 0)  then
+         call cyclic_set (nzp,nxp,nyp,up(1,1,1),'U')
+      end if
       !------------------------------------------------------------------------------------!
 
       call prdctv(mzp,mxp,myp,ia,iz,ja,jzv,ibcon,vp,vt,pp,vt3da,th0,vt3db,f23v,rtgv,rtgt   &
-                ,dyv,vt3dh,topv)
+                 ,dyv,vt3dh,topv)
 
-      if (ipara == 1) then
-         if (iter /= nnacoust(ngrid)) then
-            call node_sendst(3)
-            if (ngrid == 1) call node_sendcyclic(3)
-         else
-            call node_sendst(5)
-            if (ngrid == 1) call node_sendcyclic(5)
-         endif
-      endif
+      if (iter /= nnacoust(ngrid)) then
+         call mpilbc_driver('sendst',3)
+      else
+         call mpilbc_driver('sendst',5)
+      end if
 
       !------------------------------------------------------------------------------------!
-      if (nxtnest(ngrid) .eq. 0 .and. ipara .eq. 0)  &
-           call cyclic_set (nzp,nxp,nyp,vp,'V')
+      if (nxtnest(ngrid) == 0 .and. ipara == 0) then
+         call cyclic_set (nzp,nxp,nyp,vp,'V')
+      end if
       !------------------------------------------------------------------------------------!
 
       call prdctw1(mzp,mxp,myp,ia,iz,ja,jz,ibcon,wp,wt,pp,vt3dc,a1da2,vt3dh,rtgt,topt)
 
-      if (ipara == 1) then
-         if (iter /= nnacoust(ngrid)) then
-            call node_getst(2)
-            if (ngrid == 1) call node_getcyclic(2)
-            call node_getst(3)
-            if (ngrid == 1) call node_getcyclic(3)
-         else
-            call node_getst(5)
-            if (ngrid == 1) call node_getcyclic(5)
-         end if
+      if (iter /= nnacoust(ngrid)) then
+         call mpilbc_driver('getst',2)
+         call mpilbc_driver('getst',3)
+      else
+         call mpilbc_driver('getst',5)
       end if
 
       call prdctp1_new(mzp,mxp,myp,ia,iz,ja,jz,pp,up,vp,pi0,dn0,th0,pt,vt3da,vt3db,f13t    &
@@ -192,8 +180,9 @@ subroutine acoust_new(m1,m2,m3,scr1,scr2,vt3da,vt3db,vt3dc,vt3dd,vt3de,vt3df,vt3
       call prdctw3(mzp,mxp,myp,ia,iz,ja,jz,wp,scr1,vt3df,vt3dg,vt3dc,vt3dd,pp,impl)
 
       !------------------------------------------------------------------------------------!
-      if (nxtnest(ngrid) == 0 .and. ipara == 0)  &
-           call cyclic_set (nzp,nxp,nyp,wp,'W')
+      if (nxtnest(ngrid) == 0 .and. ipara == 0) then
+         call cyclic_set (nzp,nxp,nyp,wp,'W')
+      end if
       !------------------------------------------------------------------------------------!
 
       call prdctp2(mzp,mxp,myp,ia,iz,ja,jz,ibcon,pp,wp,vt3dd,vt3de,rtgt,mynum)
@@ -203,16 +192,10 @@ subroutine acoust_new(m1,m2,m3,scr1,scr2,vt3da,vt3db,vt3dc,vt3dd,vt3de,vt3df,vt3
            call cyclic_set (nzp,nxp,nyp,pp(1,1,1),'T')
       !------------------------------------------------------------------------------------!
 
-      if (ipara == 1) then
-         if (iter /= nnacoust(ngrid)) then
-            call node_sendst(4)
-            if (ngrid == 1) call node_sendcyclic(4)
-         else
-            call node_sendst(6)
-            if (ngrid == 1) call node_sendcyclic(6)
-            call node_getst(6)
-            if (ngrid == 1) call node_getcyclic(6)
-         end if
+      if (iter /= nnacoust(ngrid)) then
+         call mpilbc_driver('sendst',4)
+      else
+         call mpilbc_driver('fullst',6)
       end if
 
    end do
@@ -504,12 +487,12 @@ subroutine prdctp1_new(m1,m2,m3,ia,iz,ja,jz  &
 
   real, dimension(m1,m2,m3), intent(in)    :: up,vp,pi0,pt,dn0,th0
 
-  real, dimension(m1,m2,m3), intent(out)   :: heatfx,heatdv
+  real, dimension(m1,m2,m3), intent(inout)   :: heatfx,heatdv
 
   real, dimension(m2,m3), intent(in)       :: f13t,f23t,rtgt,rtgu,rtgv, &
        fmapui,fmapvi,dxt,dyt,fmapt
 
-  real, dimension(m2,m3), intent(out)      :: heatfx1
+  real, dimension(m2,m3), intent(inout)      :: heatfx1
 
   ! Local Variables
   integer :: i, j, k
@@ -709,7 +692,7 @@ subroutine buoyancy()
   implicit none
 
   call boyanc(mzp,mxp,myp,ia,iz,ja,jz             &
-       ,grid_g(ngrid)%flpw    ,tend%wt            &
+       ,grid_g(ngrid)%flpw   ,tend_g(ngrid)%wt    &
        ,basic_g(ngrid)%theta ,basic_g(ngrid)%rtp  &
        ,basic_g(ngrid)%rv    ,basic_g(ngrid)%th0  &
        ,scratch%vt3da        ,mynum               )

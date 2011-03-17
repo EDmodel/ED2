@@ -23,6 +23,7 @@ subroutine simple_lake_model(time,dtlongest)
                                      , rocp              & ! intent(in)
                                      , cpor              & ! intent(in)
                                      , alvl              & ! intent(in)
+                                     , epim1             & ! intent(in)
                                      , mmdryi            & ! intent(in)
                                      , mmdry             ! ! intent(in)
    use canopy_air_coms        , only : ustmin            & ! intent(in)
@@ -64,7 +65,7 @@ subroutine simple_lake_model(time,dtlongest)
    use therm_lib              , only : rhovsil           & ! function
                                      , reducedpress      & ! function
                                      , thetaeiv          & ! function
-                                     , thetaeiv2thil     & ! function
+                                     , thrhsh2temp       & ! function
                                      , idealdenssh       ! ! function
    use canopy_struct_dynamics , only : ed_stars          & ! subroutine
                                      , vertical_vel_flux ! ! function
@@ -86,23 +87,22 @@ subroutine simple_lake_model(time,dtlongest)
    real                     :: cosine, sine
    real                     :: atm_temp,atm_theiv,atm_theta,atm_shv,atm_co2,atm_prss
    real                     :: can_temp,can_theiv,can_theta,can_shv,can_co2,can_prss
-   real                     :: can_rvap,can_lntheiv,can_exner,atm_rhos,can_rhos
+   real                     :: can_rvap,can_lntheta,can_exner,atm_rhos,can_rhos
    real                     :: water_temp,water_ssh,water_rough
    real                     :: ustar,tstar,estar,qstar,cstar
-   real                     :: zeta,ribulk
+   real                     :: zeta,ribulk,gglake
    real(kind=8)             :: angle
    real                     :: water_lc,water_ac
-   real                     :: sensible_lc,enthalpy_ac
+   real                     :: sensible_lc,enthalpy_ac,sensible_ac
    real                     :: carbon_emission,carbon_uptake,carbon_ac
    real                     :: avg_water_lc,avg_water_ac
-   real                     :: avg_sensible_lc,avg_enthalpy_ac
+   real                     :: avg_sensible_lc,avg_enthalpy_ac,avg_sensible_ac
    real                     :: avg_carbon_emission,avg_carbon_uptake,avg_carbon_ac
-   real                     :: prev_can_shv,prev_can_temp,prev_can_lntheiv,prev_can_co2
-   real                     :: prev_can_theiv,prev_can_rhos
-   real                     :: hcapcan, wcapcan, ccapcan, rdi
+   real                     :: prev_can_shv,prev_can_temp,prev_can_lntheta,prev_can_co2
+   real                     :: prev_can_theiv,prev_can_prss,prev_can_theta
+   real                     :: hcapcan, wcapcan, ccapcan
    real                     :: sflux_u,sflux_v,sflux_w,sflux_t,sflux_r,sflux_c
    real                     :: timefac_sst
-   real                     :: fm
    !----- Local constants -----------------------------------------------------------------!
    real, parameter          :: d0=0.
    real, parameter          :: z0fac_water = .016 / grav
@@ -265,10 +265,10 @@ subroutine simple_lake_model(time,dtlongest)
          ! ed_stars, which is set up for the former, not the latter, we locally solve      !
          ! everything for specific humidity, converting in the end.                        !
          !---------------------------------------------------------------------------------!
-         atm_shv  = rv_mean / (1. + rtp_mean)
+         atm_shv  = rtp_mean / (1. + rtp_mean)
          !---------------------------------------------------------------------------------!
 
-         atm_theiv    = thetaeiv(atm_theta,atm_prss,atm_temp,rv_mean,rtp_mean,-8)
+         atm_theiv    = thetaeiv(atm_theta,atm_prss,atm_temp,rtp_mean,rtp_mean,-8)
          atm_rhos     = idealdenssh(atm_prss,atm_temp,atm_shv)
 
 
@@ -293,7 +293,7 @@ subroutine simple_lake_model(time,dtlongest)
          can_rvap     = leaf_g(ngrid)%can_rvap(i,j,1)
          can_shv      = can_rvap / (1. + can_rvap)
          !------ Finding the derived properties. ------------------------------------------!
-         can_lntheiv  = log(can_theiv)
+         can_lntheta  = log(can_theta)
          can_prss     = reducedpress(atm_prss,atm_theta,atm_shv,geoht                      &
                                              ,can_theta,can_shv,can_depth_min)
          can_exner    = cp * (can_prss * p00i) ** rocp
@@ -315,6 +315,7 @@ subroutine simple_lake_model(time,dtlongest)
          avg_water_ac        = 0.0
          avg_sensible_lc     = 0.0
          avg_enthalpy_ac     = 0.0
+         avg_sensible_ac     = 0.0
          avg_carbon_emission = 0.0
          avg_carbon_uptake   = 0.0
 
@@ -355,29 +356,26 @@ subroutine simple_lake_model(time,dtlongest)
             call ed_stars(atm_theta,atm_theiv,atm_shv,atm_co2                              &
                          ,can_theta,can_theiv,can_shv,can_co2                              &
                          ,geoht,d0,vels,water_rough                                        &
-                         ,ustar,tstar,estar,qstar,cstar,zeta,ribulk,fm)
+                         ,ustar,tstar,estar,qstar,cstar,zeta,ribulk,gglake)
 
             
             sflux_w  = sflux_w + vertical_vel_flux(zeta,tstar,ustar)
 
-            !------------------------------------------------------------------------------!
-            !      Finding the resistance, and updating the canopy temperature and         !
-            ! specific humidity.                                                           !
-            !------------------------------------------------------------------------------!
-            rdi = .2 * ustar
-
             !------ Copying the values to scratch buffers. --------------------------------!
-            prev_can_lntheiv  = can_lntheiv
+            prev_can_lntheta  = can_lntheta
             prev_can_theiv    = can_theiv
+            prev_can_theta    = can_theta
             prev_can_temp     = can_temp
             prev_can_shv      = can_shv
             prev_can_co2      = can_co2
+            prev_can_prss     = can_prss
 
             !------ Computing the lake->canopy and free atmosphere->canopy fluxes. --------!
-            water_lc        = can_rhos * ( water_ssh - can_shv) * rdi
+            water_lc        = can_rhos * ( water_ssh - can_shv) * gglake
             water_ac        = can_rhos * ustar * qstar
-            sensible_lc     = can_rhos * cp * (water_temp -  can_temp) * rdi 
-            enthalpy_ac     = can_rhos * ustar * estar * can_exner
+            sensible_lc     = can_rhos * cp * (water_temp -  can_temp) * gglake 
+            enthalpy_ac     = can_rhos * ustar * estar * cp * can_temp
+            sensible_ac     = can_rhos * ustar * tstar * can_exner
             carbon_emission = 0. ! For the time being, no idea of what to put in here...
             carbon_uptake   = 0. ! For the time being, no idea of what to put in here...
             carbon_ac       = can_rhos * ustar * cstar * mmdryi
@@ -391,9 +389,8 @@ subroutine simple_lake_model(time,dtlongest)
             !    Updating the prognostic variables, enthalpy, specific humidity, and CO2   !
             ! mixing ratio.                                                                !
             !------------------------------------------------------------------------------!
-            can_lntheiv  = prev_can_lntheiv                                                &
-                         + dtllohcc * ( sensible_lc + enthalpy_ac + alvl * avg_water_lc)
-            can_shv      = prev_can_shv  + dtllowcc * (water_lc    + water_ac)
+            can_lntheta  = prev_can_lntheta + dtllohcc * (sensible_lc + sensible_ac)
+            can_shv      = prev_can_shv     + dtllowcc * (water_lc    + water_ac)
             can_co2      = prev_can_co2                                                    &
                          + dtlloccc * (carbon_emission + carbon_uptake  + carbon_ac)
 
@@ -402,12 +399,12 @@ subroutine simple_lake_model(time,dtlongest)
             !     Updating the thermodynamic properties.  Notice that we assume pressure   !
             ! to remain constant over the full time step, which is a simplification...     !
             !------------------------------------------------------------------------------!
-            can_theiv    = exp(can_lntheiv)
-            can_rvap     = can_shv / (1.0 - can_shv)
-            can_theta    = thetaeiv2thil(can_theiv,can_prss,can_rvap)
-            can_temp     = cpi * can_theta * can_exner
-            can_rhos     = idealdenssh(can_prss,can_temp,can_shv)
-
+            can_theta = exp(can_lntheta)
+            can_rvap  = can_shv / (1. - can_shv)
+            can_temp  = thrhsh2temp(can_theta,can_rhos,can_shv)
+            can_prss  = can_rhos * rdry * can_temp * (1. + epim1 * can_shv)
+            can_exner = cp  * (p00i * can_prss) ** rocp
+            can_theiv = thetaeiv(can_theta,can_prss,can_temp,can_rvap,can_rvap,-8)
 
 
 
@@ -428,17 +425,20 @@ subroutine simple_lake_model(time,dtlongest)
                write(unit=*,fmt='(a,1x,es12.5)') 'ATM_CO2            : ',atm_co2
                write(unit=*,fmt='(a,1x,es12.5)') 'WATER_TEMP         : ',water_temp
                write(unit=*,fmt='(a,1x,es12.5)') 'WATER_SSH          : ',water_ssh
-               write(unit=*,fmt='(a,1x,es12.5)') 'CANOPY_PRSS        : ',can_prss
                write(unit=*,fmt='(a,1x,es12.5)') 'CANOPY_DENS        : ',can_rhos
                write(unit=*,fmt='(a,1x,es12.5)') 'CANOPY_THEIV       : ',can_theiv
                write(unit=*,fmt='(a,1x,es12.5)') 'PREV_CAN_THEIV     : ',prev_can_theiv
+               write(unit=*,fmt='(a,1x,es12.5)') 'CANOPY_THETA       : ',can_theta
+               write(unit=*,fmt='(a,1x,es12.5)') 'PREV_CAN_THETA     : ',prev_can_theta
                write(unit=*,fmt='(a,1x,es12.5)') 'CANOPY_TEMP        : ',can_temp
                write(unit=*,fmt='(a,1x,es12.5)') 'PREV_CAN_TEMP      : ',prev_can_temp
                write(unit=*,fmt='(a,1x,es12.5)') 'CANOPY_QVAP        : ',can_shv
                write(unit=*,fmt='(a,1x,es12.5)') 'PREV_CAN_QVAP      : ',prev_can_shv
                write(unit=*,fmt='(a,1x,es12.5)') 'CANOPY_CO2         : ',can_co2
                write(unit=*,fmt='(a,1x,es12.5)') 'PREV_CAN_CO2       : ',prev_can_co2
-               write(unit=*,fmt='(a,1x,es12.5)') 'RDI                : ',rdi
+               write(unit=*,fmt='(a,1x,es12.5)') 'CANOPY_PRSS        : ',can_prss
+               write(unit=*,fmt='(a,1x,es12.5)') 'PREV_CAN_PRSS      : ',prev_can_prss
+               write(unit=*,fmt='(a,1x,es12.5)') 'GGLAKE             : ',gglake
                write(unit=*,fmt='(a,1x,es12.5)') 'DTLLOWCC           : ',dtllowcc
                write(unit=*,fmt='(a,1x,es12.5)') 'USTAR              : ',ustar
                write(unit=*,fmt='(a,1x,es12.5)') 'TSTAR              : ',tstar
@@ -450,7 +450,7 @@ subroutine simple_lake_model(time,dtlongest)
                write(unit=*,fmt='(a,1x,es12.5)') 'WATER_LAKE2CAN     : ',water_lc
                write(unit=*,fmt='(a,1x,es12.5)') 'WATER_ATM2CAN      : ',water_ac
                write(unit=*,fmt='(a,1x,es12.5)') 'HEAT_LAKE2CAN      : ',sensible_lc
-               write(unit=*,fmt='(a,1x,es12.5)') 'HEAT_ATM2CAN       : ',enthalpy_ac
+               write(unit=*,fmt='(a,1x,es12.5)') 'HEAT_ATM2CAN       : ',sensible_ac
                write(unit=*,fmt='(a,1x,es12.5)') 'CARBON_EMISSION    : ',carbon_emission
                write(unit=*,fmt='(a,1x,es12.5)') 'CARBON_UPTAKE      : ',carbon_uptake
                write(unit=*,fmt='(a,1x,es12.5)') 'CARBON_ATM2CAN     : ',carbon_ac
@@ -475,6 +475,7 @@ subroutine simple_lake_model(time,dtlongest)
             avg_water_ac        = avg_water_ac        + water_ac
             avg_sensible_lc     = avg_sensible_lc     + sensible_lc
             avg_enthalpy_ac     = avg_enthalpy_ac     + enthalpy_ac
+            avg_sensible_ac     = avg_sensible_ac     + sensible_ac
             avg_carbon_emission = avg_carbon_emission + carbon_emission
             avg_carbon_uptake   = avg_carbon_uptake   + carbon_uptake
          end do timeloop
@@ -502,12 +503,14 @@ subroutine simple_lake_model(time,dtlongest)
          wgrid_g(ngrid)%sflux_c(i,j) = atm_rhos * sflux_c * dtll_factor
          
          !----- Finding the sources and sinks components. ---------------------------------!
-         leaf_g(ngrid)%sensible(i,j,1) = avg_sensible_lc     * dtll_factor
-         leaf_g(ngrid)%evap(i,j,1)     = avg_water_lc * alvl * dtll_factor
-         leaf_g(ngrid)%transp(i,j,1)   = 0.
-         leaf_g(ngrid)%gpp(i,j,1)      = avg_carbon_uptake   * dtll_factor
-         leaf_g(ngrid)%plresp(i,j,1)   = 0.
-         leaf_g(ngrid)%resphet(i,j,1)  = avg_carbon_emission * dtll_factor
+         leaf_g(ngrid)%sensible_gc(i,j,1) = avg_sensible_lc     * dtll_factor
+         leaf_g(ngrid)%sensible_vc(i,j,1) = 0.
+         leaf_g(ngrid)%evap_gc(i,j,1)     = avg_water_lc * alvl * dtll_factor
+         leaf_g(ngrid)%evap_vc(i,j,1)     = 0.
+         leaf_g(ngrid)%transp(i,j,1)      = 0.
+         leaf_g(ngrid)%gpp(i,j,1)         = avg_carbon_uptake   * dtll_factor
+         leaf_g(ngrid)%plresp(i,j,1)      = 0.
+         leaf_g(ngrid)%resphet(i,j,1)     = avg_carbon_emission * dtll_factor
 
          !----- Finding some radiation properties. ----------------------------------------!
          wgrid_g(ngrid)%albedt(i,j)  = min(max(-.0139 + .0467 * tan(acos(cosz)),.03),.999)

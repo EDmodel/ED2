@@ -44,6 +44,8 @@ subroutine copy_atm2lsm(ifm,init)
                                    , wdnsi         & ! intent(in)
                                    , tsupercool    ! ! intent(in)
    use ed_node_coms         , only : mynum         ! ! intent(in)
+   use mem_edcp             , only : co2_offset    & ! intent(in)
+                                   , atm_co2_min   ! ! intent(in)
    use therm_lib            , only : thetaeiv      & ! intent(in)
                                    , rehuil        & ! intent(in)
                                    , ptrh2rvapil   ! ! intent(in)
@@ -53,28 +55,56 @@ subroutine copy_atm2lsm(ifm,init)
 
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
-   integer                             , intent(in) :: ifm
-   logical                             , intent(in) :: init
+   integer                             , intent(in)  :: ifm
+   logical                             , intent(in)  :: init
    !----- Local variables -----------------------------------------------------------------!
-   type(edtype)                        , pointer    :: cgrid
-   type(polygontype)                   , pointer    :: cpoly 
-   integer                                          :: ipy,isi,ipa
-   integer                                          :: m1,m2,m3,m1max
-   integer                                          :: ix,iy,i,j,n
-   integer                                          :: k1w,k2w,k3w
-   integer                                          :: k2u,k3u,k2u_1,k3u_1
-   integer                                          :: k2v,k3v,k2v_1,k3v_1
-   real, dimension(mmxp(ifm),mmyp(ifm))             :: rshortd
-   real, dimension(mmxp(ifm),mmyp(ifm))             :: up_mean,vp_mean,pi0_mean
-   real, dimension(mmxp(ifm),mmyp(ifm))             :: rv_mean,rtp_mean,theta_mean
-   real, dimension(mmxp(ifm),mmyp(ifm))             :: co2p_mean
-   real, dimension(mmxp(ifm),mmyp(ifm))             :: map_2d_lsm
-   real                                             :: rshort1,cosz1,rshortd1,scalar1
-   real                                             :: topma_t,wtw,wtu1,wtu2,wtv1,wtv2
-   real                                             :: relhum
-   real                                             :: rvaux
-   real                                             :: fice,snden
-
+   type(edtype)                        , pointer     :: cgrid
+   type(polygontype)                   , pointer     :: cpoly 
+   integer                                           :: ipy
+   integer                                           :: isi
+   integer                                           :: ipa
+   integer                                           :: m1
+   integer                                           :: m2
+   integer                                           :: m3
+   integer                                           :: m1max
+   integer                                           :: ix
+   integer                                           :: iy
+   integer                                           :: i
+   integer                                           :: j
+   integer                                           :: n
+   integer                                           :: k1w
+   integer                                           :: k2w
+   integer                                           :: k3w
+   integer                                           :: k2u
+   integer                                           :: k3u
+   integer                                           :: k2u_1
+   integer                                           :: k3u_1
+   integer                                           :: k2v
+   integer                                           :: k3v
+   integer                                           :: k2v_1
+   integer                                           :: k3v_1
+   real             , dimension(:,:)   , allocatable :: rshortd
+   real             , dimension(:,:)   , allocatable :: up_mean
+   real             , dimension(:,:)   , allocatable :: vp_mean
+   real             , dimension(:,:)   , allocatable :: pi0_mean
+   real             , dimension(:,:)   , allocatable :: rv_mean
+   real             , dimension(:,:)   , allocatable :: rtp_mean
+   real             , dimension(:,:)   , allocatable :: theta_mean
+   real             , dimension(:,:)   , allocatable :: co2p_mean
+   real                                              :: rshort1
+   real                                              :: cosz1
+   real                                              :: rshortd1
+   real                                              :: scalar1
+   real                                              :: topma_t
+   real                                              :: wtw
+   real                                              :: wtu1
+   real                                              :: wtu2
+   real                                              :: wtv1
+   real                                              :: wtv2
+   real                                              :: relhum
+   real                                              :: rvaux
+   real                                              :: fice
+   real                                              :: snden
    !---------------------------------------------------------------------------------------!
   
    !----- Assigning some aliases. ---------------------------------------------------------!
@@ -82,6 +112,15 @@ subroutine copy_atm2lsm(ifm,init)
    m3    =  mmyp(ifm)
    cgrid => edgrid_g(ifm)
 
+   !----- Allocate the 2-D arrays. --------------------------------------------------------!
+   allocate(rshortd    (m2,m3))
+   allocate(up_mean    (m2,m3))
+   allocate(vp_mean    (m2,m3))
+   allocate(pi0_mean   (m2,m3))
+   allocate(rv_mean    (m2,m3))
+   allocate(rtp_mean   (m2,m3))
+   allocate(theta_mean (m2,m3))
+   allocate(co2p_mean  (m2,m3))
 
    up_mean    = 0.0
    vp_mean    = 0.0
@@ -271,7 +310,7 @@ subroutine copy_atm2lsm(ifm,init)
       
       cgrid%met(ipy)%atm_theta    = theta_mean(ix,iy)
       cgrid%met(ipy)%atm_tmp      = cpi * cgrid%met(ipy)%atm_theta * cgrid%met(ipy)%exner
-      cgrid%met(ipy)%atm_co2      = co2p_mean(ix,iy)
+      cgrid%met(ipy)%atm_co2      = max(atm_co2_min,co2p_mean(ix,iy) + co2_offset)
 
 
       !------------------------------------------------------------------------------------!
@@ -297,17 +336,17 @@ subroutine copy_atm2lsm(ifm,init)
          rtp_mean(ix,iy) = max(rtp_mean(ix,iy), rv_mean(ix,iy))
       end if
       !----- Find the specific humidity. --------------------------------------------------!
-      cgrid%met(ipy)%atm_shv = rv_mean(ix,iy) / (1. + rtp_mean(ix,iy))
+      cgrid%met(ipy)%atm_shv = rtp_mean(ix,iy) / (1. + rtp_mean(ix,iy))
       !------------------------------------------------------------------------------------!
 
       !----- Find the ice-vapour equivalent potential temperature. ------------------------!
       cgrid%met(ipy)%atm_theiv = thetaeiv(cgrid%met(ipy)%atm_theta,cgrid%met(ipy)%prss     &
-                                         ,cgrid%met(ipy)%atm_tmp,rv_mean(ix,iy)            &
+                                         ,cgrid%met(ipy)%atm_tmp,rtp_mean(ix,iy)           &
                                          ,rtp_mean(ix,iy),-9)
    end do polyloop1st
 
    !----- Filling the precipitation arrays. -----------------------------------------------!
-   call fill_site_precip(ifm,cgrid,m2,m3,ia,iz,ja,jz,pi0_mean,theta_mean,init)
+   call fill_site_precip(ifm,cgrid,m2,m3,ia,iz,ja,jz,init)
 
   
    polyloop2nd: do ipy = 1,cgrid%npolygons
@@ -448,6 +487,16 @@ subroutine copy_atm2lsm(ifm,init)
       end do siteloop
    end do polyloop2nd
 
+   !----- Allocate the 2-D arrays. --------------------------------------------------------!
+   deallocate(rshortd    )
+   deallocate(up_mean    )
+   deallocate(vp_mean    )
+   deallocate(pi0_mean   )
+   deallocate(rv_mean    )
+   deallocate(rtp_mean   )
+   deallocate(theta_mean )
+   deallocate(co2p_mean  )
+
    return
 end subroutine copy_atm2lsm
 !==========================================================================================!
@@ -464,7 +513,7 @@ end subroutine copy_atm2lsm
 ! microphysics) to retrieve precipitation for ED. It is currently a simplified method,     !
 ! because it doesn't fully take advantage of the bulk microphysics details.                !
 !------------------------------------------------------------------------------------------!
-subroutine fill_site_precip(ifm,cgrid,m2,m3,ia,iz,ja,jz,pi0_mean,theta_mean,init)
+subroutine fill_site_precip(ifm,cgrid,m2,m3,ia,iz,ja,jz,init)
    use mem_cuparm   , only : cuparm_g     & ! structure
                            , nnqparm      ! ! intent(in)
    use mem_micro    , only : micro_g      ! ! structure
@@ -480,7 +529,6 @@ subroutine fill_site_precip(ifm,cgrid,m2,m3,ia,iz,ja,jz,pi0_mean,theta_mean,init
    !----- Arguments. ----------------------------------------------------------------------!
    type(edtype)          , target     :: cgrid
    integer               , intent(in) :: ifm,m2,m3,ia,iz,ja,jz
-   real, dimension(m2,m3), intent(in) :: pi0_mean,theta_mean
    logical               , intent(in) :: init
    !----- Local variables -----------------------------------------------------------------!
    integer                            :: i,j,n,ix,iy,ipy
@@ -497,14 +545,10 @@ subroutine fill_site_precip(ifm,cgrid,m2,m3,ia,iz,ja,jz,pi0_mean,theta_mean,init
 
    !----- Zero the precipitation structures. ----------------------------------------------!
    do ipy=1,cgrid%npolygons
-      cgrid%met(ipy)%pcpg = 0
+      cgrid%met(ipy)%pcpg = 0.
    end do
-   do i=ia,iz
-      do j=ja,jz
-         conprr_mean(i,j)  = 0.
-         bulkprr_mean(i,j) = 0.
-      end do
-   end do
+   conprr_mean (:,:) = 0.
+   bulkprr_mean(:,:) = 0.
 
    !---------------------------------------------------------------------------------------!
    !     Here we need to check which kind of precipitation we have available, since both   !
@@ -520,8 +564,8 @@ subroutine fill_site_precip(ifm,cgrid,m2,m3,ia,iz,ja,jz,pi0_mean,theta_mean,init
       ! the previous one will give the average precipitation rate between two ED calls, so !
       ! it will take the right total amount of convective precipitation.                   !
       !------------------------------------------------------------------------------------!
-      do i=ia,iz
-         do j=ja,jz
+      do j=ja,jz
+         do i=ia,iz
             conprr_mean(i,j) = dtlsmi * ( cuparm_g(ifm)%aconpr(i,j)                        &
                                         - ed_precip_g(ifm)%prev_aconpr(i,j) )
             ed_precip_g(ifm)%prev_aconpr(i,j) = cuparm_g(ifm)%aconpr(i,j)
@@ -540,8 +584,8 @@ subroutine fill_site_precip(ifm,cgrid,m2,m3,ia,iz,ja,jz,pi0_mean,theta_mean,init
       ! amount of resolved precipitation since the last ED call, thus taking the right     !
       ! amount of resolved precipitation.                                                  !
       !------------------------------------------------------------------------------------!
-      do i=ia,iz
-         do j=ja,jz
+      do j=ja,jz
+         do i=ia,iz
             !------------------------------------------------------------------------------!
             !     Here I add all forms of precipitation available, previously converted    !
             ! into the equivalent amount of liquid water.  Even when the bulk microphysics !
@@ -849,26 +893,19 @@ end subroutine copy_fluxes_lsm2atm
 ! in LEAF-3, which will get the data from ED-2.  Also, it will perform initialisation of   !
 ! some structures that are used in the ED-2/LEAF-3 interfacing.                            !
 !------------------------------------------------------------------------------------------!
-subroutine initialize_ed2leaf(ifm,mxp,myp)
+subroutine initialize_ed2leaf(ifm)
   
    use mem_edcp     , only : ed_fluxf_g     & ! structure
                            , ed_fluxp_g     & ! structure
                            , wgrid_g        & ! structure
-                           , ed_precip_g    & ! structure
-                           , alloc_edprecip & ! structure
-                           , zero_edprecip  & ! structure
-                           , alloc_edflux   & ! structure
-                           , zero_edflux    & ! structure
-                           , alloc_wgrid    & ! structure
-                           , zero_wgrid     ! ! structure
-   use node_mod     , only : mmxp           & ! intent(in)
-                           , mmyp           & ! intent(in)
+                           , ed_precip_g    ! ! structure
+   use node_mod     , only : mxp            & ! intent(in)
+                           , myp            & ! intent(in)
                            , ia             & ! intent(in)
                            , iz             & ! intent(in)
                            , ja             & ! intent(in)
                            , jz             & ! intent(in)
                            , mynum          ! ! intent(in)
-   use ed_work_vars , only : work_e         ! ! structure
    use mem_leaf     , only : leaf_g         ! ! structure
    use mem_basic    , only : basic_g        ! ! structure
    use mem_grid     , only : grid_g         & ! structure
@@ -888,58 +925,44 @@ subroutine initialize_ed2leaf(ifm,mxp,myp)
    use therm_lib    , only : reducedpress   & ! function
                            , thetaeiv       & ! function
                            , bulk_on        ! ! intent(in)
+   use ed_state_vars, only : edgrid_g       & ! intent(in)
+                           , edtype         ! ! structure
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
-   integer                            , intent(in) :: ifm, mxp, myp
+   integer             , intent(in)  :: ifm
    !----- Local variables -----------------------------------------------------------------!
-   integer                                         :: ix,iy,i,j
-   integer                                         :: k2w,k3w,k1w
-   real                                            :: topma_t,wtw
-   real                                            :: atm_prss,atm_shv,atm_temp
-   real,dimension(mmxp(ifm),mmyp(ifm))             :: theta_mean
-   real,dimension(mmxp(ifm),mmyp(ifm))             :: thil_mean
-   real,dimension(mmxp(ifm),mmyp(ifm))             :: pi0_mean
-   real,dimension(mmxp(ifm),mmyp(ifm))             :: rv_mean
-   real,dimension(mmxp(ifm),mmyp(ifm))             :: rtp_mean
-   real,dimension(mmxp(ifm),mmyp(ifm))             :: geoht
-   real                                            :: totpcp
-   logical                                         :: cumulus_on
+   type(edtype)        , pointer     :: cgrid
+   integer                           :: i
+   integer                           :: j
+   integer                           :: k2w
+   integer                           :: k3w
+   integer                           :: k1w
+   real                              :: topma_t
+   real                              :: wtw
+   real                              :: atm_prss
+   real                              :: atm_shv
+   real                              :: atm_temp
+   real, dimension(:,:), allocatable :: theta_mean
+   real, dimension(:,:), allocatable :: thil_mean
+   real, dimension(:,:), allocatable :: pi0_mean
+   real, dimension(:,:), allocatable :: rv_mean
+   real, dimension(:,:), allocatable :: rtp_mean
+   real, dimension(:,:), allocatable :: geoht
+   real                              :: totpcp
+   logical                           :: cumulus_on
    !---------------------------------------------------------------------------------------!
 
    !----- Some aliases.  ------------------------------------------------------------------!
-   cumulus_on   = nnqparm(ifm) > 0
+   cumulus_on   =  nnqparm(ifm) > 0
+   cgrid        => edgrid_g(ifm)
 
-   !---------------------------------------------------------------------------------------!
-   ! Step 1 - Set the patch are fraction in the leaf array to the land fraction in the     !
-   !          work array. The leaf array has the border cells and is 2 cells larger in     !
-   !          each dimension than the work array, thus the ix and iy instead of a simple   !
-   !          loop.                                                                        !
-   !---------------------------------------------------------------------------------------!
-   leaf_g(ifm)%patch_area(:,:,1)=1.0
-   leaf_g(ifm)%patch_area(:,:,2)=0.0
-   do i=1,mxp
-      do j=1,myp
-         ix = work_e(ifm)%xatm(i,j)
-         iy = work_e(ifm)%yatm(i,j)
-         leaf_g(ifm)%patch_area(ix,iy,1) = 1.0-work_e(ifm)%landfrac(i,j)
-         leaf_g(ifm)%patch_area(ix,iy,2) = work_e(ifm)%landfrac(i,j)
-      end do
-   end do
-
-   !---------------------------------------------------------------------------------------!
-   ! Step 2 - Allocate the flux arrays from terrestrial and water bodies.  These arrays    !
-   !          are the same size as the leaf arrays, and 2 greater than the work arrays.    !
-   !---------------------------------------------------------------------------------------!
-   call alloc_edflux(ed_fluxf_g(ifm),mmxp(ifm),mmyp(ifm))
-   call alloc_edflux(ed_fluxp_g(ifm),mmxp(ifm),mmyp(ifm))
-   call alloc_wgrid(wgrid_g(ifm),mmxp(ifm),mmyp(ifm))
-   call alloc_edprecip(ed_precip_g(ifm),mmxp(ifm),mmyp(ifm))
-   !----- Assign zeroes to the newly allocated matrices. ----------------------------------!
-   call zero_edflux(ed_fluxf_g(ifm))
-   call zero_edflux(ed_fluxp_g(ifm))
-   call zero_wgrid(wgrid_g(ifm))
-   call zero_edprecip(ed_precip_g(ifm))
-   !---------------------------------------------------------------------------------------!
+   !----- Allocate temporary variables. ---------------------------------------------------!
+   allocate (theta_mean (mxp,myp))
+   allocate (thil_mean  (mxp,myp))
+   allocate (pi0_mean   (mxp,myp))
+   allocate (rv_mean    (mxp,myp))
+   allocate (rtp_mean   (mxp,myp))
+   allocate (geoht      (mxp,myp))
 
 
 
@@ -951,20 +974,20 @@ subroutine initialize_ed2leaf(ifm,mxp,myp)
    !---------------------------------------------------------------------------------------!
    select case (if_adap)
    case (0) !------ Terrain-following coordinates. ----------------------------------------!
-      do j=ja,jz
-         do i=ia,iz
+      do j=1,myp
+         do i=1,mxp
             theta_mean(i,j) = basic_g(ifm)%theta(2,i,j)
             thil_mean(i,j)  = basic_g(ifm)%thp(2,i,j)
             rv_mean(i,j)    = basic_g(ifm)%rv(2,i,j)
             rtp_mean(i,j)   = basic_g(ifm)%rtp(2,i,j)
             pi0_mean(i,j)   = ( basic_g(ifm)%pp(1,i,j)  + basic_g(ifm)%pp(2,i,j)           &
                               + basic_g(ifm)%pi0(1,i,j) + basic_g(ifm)%pi0(2,i,j) ) * 0.5
-            geoht(i,j)      = (zt(2)-zm(1)) * grid_g(ifm)%rtgt(ix,iy)
+            geoht(i,j)      = (zt(2)-zm(1)) * grid_g(ifm)%rtgt(i,j)
          end do
       end do
    case (1)
-      do j=ja,jz
-         do i=ia,iz
+      do j=1,myp
+         do i=1,mxp
             !----- Weighted average -------------------------------------------------------!
             k2w = nint(grid_g(ifm)%flpw(i,j)) 
             k1w = k2w - 1
@@ -994,16 +1017,16 @@ subroutine initialize_ed2leaf(ifm,mxp,myp)
                               * (basic_g(ifm)%pp(k3w,i,j) + basic_g(ifm)%pi0(k3w,i,j))
             end if
 
-            geoht(i,j)        = (zt(k2w)-zm(k1w)) * grid_g(ifm)%rtgt(ix,iy)
+            geoht(i,j)        = (zt(k2w)-zm(k1w)) * grid_g(ifm)%rtgt(i,j)
          end do
       end do
    end select
 
-   do j=ja,jz
-      do i=ia,iz
+   do j=1,myp
+      do i=1,mxp
          !----- Finding the atmospheric pressure and specific humidity. -------------------!
-         atm_prss                     =  p00 * (cpi * pi0_mean(i,j)) ** cpor
-         atm_shv                      = rv_mean(i,j) / (1. + rtp_mean(i,j))
+         atm_prss                     = p00 * (cpi * pi0_mean(i,j)) ** cpor
+         atm_shv                      = rtp_mean(i,j) / (1. + rtp_mean(i,j))
          atm_temp                     = cpi * pi0_mean(i,j) * theta_mean(i,j)
 
          !----- Computing the state variables. --------------------------------------------!
@@ -1013,26 +1036,39 @@ subroutine initialize_ed2leaf(ifm,mxp,myp)
                                                      ,geoht(i,j),theta_mean(i,j)           &
                                                      ,atm_shv,can_depth)
          leaf_g(ifm)%can_theiv(i,j,1) =  thetaeiv(thil_mean(i,j),atm_prss,atm_temp         &
-                                                 ,rv_mean(i,j),rtp_mean(i,j),-7)
-         leaf_g(ifm)%gpp      (i,j,1) = 0.0
-         leaf_g(ifm)%resphet  (i,j,1) = 0.0
-         leaf_g(ifm)%plresp   (i,j,1) = 0.0
-         leaf_g(ifm)%sensible (i,j,1) = 0.0
-         leaf_g(ifm)%evap     (i,j,1) = 0.0
-         leaf_g(ifm)%transp   (i,j,1) = 0.0
+                                                 ,rtp_mean(i,j),rtp_mean(i,j),-7)
+         leaf_g(ifm)%gpp         (i,j,1) = 0.0
+         leaf_g(ifm)%resphet     (i,j,1) = 0.0
+         leaf_g(ifm)%plresp      (i,j,1) = 0.0
+         leaf_g(ifm)%sensible_gc (i,j,1) = 0.0
+         leaf_g(ifm)%sensible_vc (i,j,1) = 0.0
+         leaf_g(ifm)%evap_gc     (i,j,1) = 0.0
+         leaf_g(ifm)%evap_vc     (i,j,1) = 0.0
+         leaf_g(ifm)%transp      (i,j,1) = 0.0
 
-         leaf_g(ifm)%can_theta(i,j,2) = leaf_g(ifm)%can_theta(i,j,1)
-         leaf_g(ifm)%can_theiv(i,j,2) = leaf_g(ifm)%can_theiv(i,j,1)
-         leaf_g(ifm)%can_rvap (i,j,2) = leaf_g(ifm)%can_rvap (i,j,1)
-         leaf_g(ifm)%can_prss (i,j,2) = leaf_g(ifm)%can_prss(i,j,1)
-         leaf_g(ifm)%gpp      (i,j,2) = 0.0
-         leaf_g(ifm)%resphet  (i,j,2) = 0.0
-         leaf_g(ifm)%plresp   (i,j,2) = 0.0
-         leaf_g(ifm)%sensible (i,j,2) = 0.0
-         leaf_g(ifm)%evap     (i,j,2) = 0.0
-         leaf_g(ifm)%transp   (i,j,2) = 0.0
+         leaf_g(ifm)%can_theta   (i,j,2) = leaf_g(ifm)%can_theta(i,j,1)
+         leaf_g(ifm)%can_theiv   (i,j,2) = leaf_g(ifm)%can_theiv(i,j,1)
+         leaf_g(ifm)%can_rvap    (i,j,2) = leaf_g(ifm)%can_rvap (i,j,1)
+         leaf_g(ifm)%can_prss    (i,j,2) = leaf_g(ifm)%can_prss(i,j,1)
+         leaf_g(ifm)%gpp         (i,j,2) = 0.0
+         leaf_g(ifm)%resphet     (i,j,2) = 0.0
+         leaf_g(ifm)%plresp      (i,j,2) = 0.0
+         leaf_g(ifm)%sensible_gc (i,j,2) = 0.0
+         leaf_g(ifm)%sensible_vc (i,j,2) = 0.0
+         leaf_g(ifm)%evap_gc     (i,j,2) = 0.0
+         leaf_g(ifm)%evap_vc     (i,j,2) = 0.0
+         leaf_g(ifm)%transp      (i,j,2) = 0.0
       end do
    end do
+
+   !----- De-allocate temporary variables. ------------------------------------------------!
+   deallocate (theta_mean)
+   deallocate (thil_mean )
+   deallocate (pi0_mean  )
+   deallocate (rv_mean   )
+   deallocate (rtp_mean  )
+   deallocate (geoht     )
+
    return
 end subroutine initialize_ed2leaf
 !==========================================================================================!
@@ -1312,7 +1348,7 @@ subroutine transfer_ed2leaf(ifm,timel)
          leaf_g(ifm)%ribulk (m2,j,2) = leaf_g(ifm)%ribulk (m2-1,j,2)
       end do
    end if
-  
+
    !----- Southern Boundary ---------------------------------------------------------------!
    if (jdim == 1 .and. iand(ibcon,4) /= 0) then
       do i = ia,iz
@@ -1407,7 +1443,7 @@ subroutine transfer_ed2leaf(ifm,timel)
    end if
 
    !----- Southeastern corner -------------------------------------------------------------!
-   if (iand(ibcon,6) /= 0 .or. (iand(ibcon,1) /= 0 .and. jdim == 0)) then
+   if (iand(ibcon,6) /= 0 .or. (iand(ibcon,2) /= 0 .and. jdim == 0)) then
       ic=m2
       jc=1
       ici=m2-1
@@ -1438,11 +1474,11 @@ subroutine transfer_ed2leaf(ifm,timel)
       leaf_g(ifm)%ribulk (ic,jc,2) = leaf_g(ifm)%ribulk (ici,jci,2)
    end if
   
-   !----- Northeastern corner -------------------------------------------------------------!
-   if (iand(ibcon,9) /= 0 .or. (iand(ibcon,2) /= 0 .and. jdim == 0)) then
-      ic=m2
+   !----- Northwestern corner -------------------------------------------------------------!
+   if (iand(ibcon,9) /= 0 .or. (iand(ibcon,1) /= 0 .and. jdim == 0)) then
+      ic=1
       jc=m3
-      ici=m2-1
+      ici=2
       jci=m3-jdim
 
       radiate_g(ifm)%albedt(ic,jc) = radiate_g(ifm)%albedt(ici,jci)
@@ -1469,12 +1505,12 @@ subroutine transfer_ed2leaf(ifm,timel)
       leaf_g(ifm)%zeta   (ic,jc,2) = leaf_g(ifm)%zeta   (ici,jci,2)
       leaf_g(ifm)%ribulk (ic,jc,2) = leaf_g(ifm)%ribulk (ici,jci,2)
    end if
-  
-   !----- Northwestern corner -------------------------------------------------------------!
+
+   !----- Northeastern corner -------------------------------------------------------------!
    if (iand(ibcon,10) /= 0 .or. (iand(ibcon,2) /= 0 .and. jdim == 0)) then
-      ic=1
+      ic=m2
       jc=m3
-      ici=2
+      ici=m2-1
       jci=m3-jdim
 
       radiate_g(ifm)%albedt(ic,jc) = radiate_g(ifm)%albedt(ici,jci)
@@ -1523,6 +1559,8 @@ subroutine copy_avgvars_to_leaf(ifm)
                             , sitetype     & ! structure
                             , patchtype    ! ! structure
    use mem_leaf      , only : leaf_g       ! ! intent(inout)
+   use mem_edcp      , only : co2_offset   & ! intent(in)
+                            , atm_co2_min  ! ! intent(in)
    use mem_grid      , only : nzg          & ! intent(in)
                             , nzs          ! ! intent(in)
    use rconstants    , only : t3ple        & ! intent(in)
@@ -1544,9 +1582,16 @@ subroutine copy_avgvars_to_leaf(ifm)
    type(sitetype)   , pointer :: csite
    type(patchtype)  , pointer :: cpatch
    integer                    :: ipy,isi,ipa,ico
-   integer                    :: ix,iy,k,idbh,ipft
-   real                       :: site_area_i,poly_area_i
-   real                       :: sitesum_gpp     , sitesum_plresp, sitesum_resphet
+   integer                    :: ix
+   integer                    :: iy
+   integer                    :: k
+   integer                    :: idbh
+   integer                    :: ipft
+   real                       :: site_area_i
+   real                       :: poly_area_i
+   real                       :: sitesum_gpp
+   real                       :: sitesum_plresp
+   real                       :: sitesum_resphet
    !---------------------------------------------------------------------------------------!
 
    !----- Set the pointers ----------------------------------------------------------------!
@@ -1559,9 +1604,9 @@ subroutine copy_avgvars_to_leaf(ifm)
       iy = cgrid%ilat(ipy)
       
       do k=1,nzg
-         leaf_g(ifm)%soil_text(k,ix,iy,2)   = cgrid%ntext_soil(k,ipy)
+         leaf_g(ifm)%soil_text  (k,ix,iy,2) = real(cgrid%ntext_soil(k,ipy))
          leaf_g(ifm)%soil_energy(k,ix,iy,2) = cgrid%avg_soil_energy(k,ipy)
-         leaf_g(ifm)%soil_water(k,ix,iy,2)  = cgrid%avg_soil_water(k,ipy)
+         leaf_g(ifm)%soil_water (k,ix,iy,2) = cgrid%avg_soil_water (k,ipy)
       end do
       !----- Surface water is always 1, because we give the averaged value. ---------------!
       leaf_g(ifm)%sfcwater_nlev     (ix,iy,2) = 1.
@@ -1593,23 +1638,26 @@ subroutine copy_avgvars_to_leaf(ifm)
       !------------------------------------------------------------------------------------!
       !      Update canopy air properties.                                                 !
       !------------------------------------------------------------------------------------!
-      leaf_g(ifm)%can_theta(ix,iy,2)    = cgrid%avg_can_theta(ipy)
-      leaf_g(ifm)%can_theiv(ix,iy,2)    = cgrid%avg_can_theiv(ipy)
-      leaf_g(ifm)%can_co2(ix,iy,2)      = cgrid%avg_can_co2(ipy)
-      leaf_g(ifm)%can_prss(ix,iy,2)     = cgrid%avg_can_prss(ipy)
+      leaf_g(ifm)%can_theta(ix,iy,2)   = cgrid%avg_can_theta(ipy)
+      leaf_g(ifm)%can_theiv(ix,iy,2)   = cgrid%avg_can_theiv(ipy)
+      leaf_g(ifm)%can_co2(ix,iy,2)     = max( atm_co2_min                                  &
+                                            , cgrid%avg_can_co2(ipy) - co2_offset)
+      leaf_g(ifm)%can_prss(ix,iy,2)    = cgrid%avg_can_prss(ipy)
       !----- ED uses specific humidity, converting it to mixing ratio. --------------------!
-      leaf_g(ifm)%can_rvap(ix,iy,2)     = cgrid%avg_can_shv(ipy)                           &
-                                        / (1.-cgrid%avg_can_shv(ipy))
+      leaf_g(ifm)%can_rvap(ix,iy,2)    = cgrid%avg_can_shv(ipy)                           &
+                                       / (1.-cgrid%avg_can_shv(ipy))
       !------------------------------------------------------------------------------------!
 
-      leaf_g(ifm)%sensible(ix,iy,2)  = cgrid%avg_sensible_vc(ipy)                          &
-                                     + cgrid%avg_sensible_gc(ipy)
-      leaf_g(ifm)%evap(ix,iy,2)      = cgrid%avg_evap(ipy)   * alvl
-      leaf_g(ifm)%transp(ix,iy,2)    = cgrid%avg_transp(ipy) * alvl
+      leaf_g(ifm)%sensible_gc(ix,iy,2) = cgrid%avg_sensible_gc(ipy)
+      leaf_g(ifm)%sensible_vc(ix,iy,2) = cgrid%avg_sensible_vc(ipy)
+      leaf_g(ifm)%evap_gc(ix,iy,2)     = (cgrid%avg_vapor_gc(ipy) - cgrid%avg_dew_cg(ipy)) &
+                                       * alvl
+      leaf_g(ifm)%evap_vc(ix,iy,2)     = cgrid%avg_vapor_vc(ipy) * alvl
+      leaf_g(ifm)%transp(ix,iy,2)      = cgrid%avg_transp(ipy)   * alvl
 
-      leaf_g(ifm)%gpp(ix,iy,2)       = 0.0
-      leaf_g(ifm)%resphet(ix,iy,2)   = 0.0
-      leaf_g(ifm)%plresp(ix,iy,2)    = 0.0
+      leaf_g(ifm)%gpp(ix,iy,2)         = 0.0
+      leaf_g(ifm)%resphet(ix,iy,2)     = 0.0
+      leaf_g(ifm)%plresp(ix,iy,2)      = 0.0
 
       sitesum_gpp      = 0.0
       sitesum_plresp   = 0.0

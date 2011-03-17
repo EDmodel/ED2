@@ -68,19 +68,19 @@ recursive subroutine read_ed_xml_config(filename)
   use physiology_coms
   use decomp_coms
   use fusion_fission_coms
-  use ed_misc_coms
   use grid_coms, only : ngrids
+  use ed_max_dims, only : str_len
 
   use soil_coms  !, only: infiltration_method, dewmax, water_stab_thresh
 !  use ed_data
-  use ed_misc_coms, only: ied_init_mode,ffilout,integration_scheme,sfilin,sfilout
+  use ed_misc_coms!, only: ied_init_mode,ffilout,integration_scheme,sfilin,sfilout,thsums_database
   use rk4_coms, only : rk4min_veg_temp
   implicit none
   integer(4) :: i,npft,ntag,myPFT,len,ival = 0
   logical(4) :: texist = .false.
   real(8) :: rval
   character*(*) :: filename
-  character(len=256)  :: cval
+  character(len=str_len)  :: cval
   integer             :: ng
 !  type(eddata) :: data
 
@@ -484,8 +484,6 @@ recursive subroutine read_ed_xml_config(filename)
         if(texist) rlong_min = real(rval) 
         call getConfigREAL  ('veg_temp_min','radiation',i,rval,texist)
         if(texist) rk4min_veg_temp = rval ! This is double precision. 
-        call getConfigREAL  ('lai_min','radiation',i,rval,texist)
-        if(texist) lai_min = real(rval)       
         call getConfigREAL  ('mubar','radiation',i,rval,texist)
         if(texist) mubar = rval
         call getConfigREAL  ('visible_fraction','radiation',i,rval,texist)
@@ -1045,9 +1043,10 @@ subroutine putConfigSTRING(tag,value)
 end subroutine putConfigSTRING
 
 subroutine putConfigINT(tag,ivalue)
+  use ed_max_dims, only : str_len
   character(*),intent(in) :: tag 
   integer,intent(in) :: ivalue
-  character(256) :: value
+  character(str_len) :: value
   integer :: lenval 
   write(value,"(i11.1)") ivalue
   lenval = len(trim(value))
@@ -1057,9 +1056,10 @@ subroutine putConfigINT(tag,ivalue)
 end subroutine putConfigINT
 
 subroutine putConfigREAL(tag,rvalue)
+  use ed_max_dims, only : str_len
   character(*),intent(in) :: tag 
   real,intent(in) :: rvalue
-  character(256) :: value
+  character(str_len) :: value
   integer :: lenval 
   write(value,"(f20.10)") rvalue
   lenval = len(trim(value))
@@ -1069,9 +1069,10 @@ subroutine putConfigREAL(tag,rvalue)
 end subroutine putConfigREAL
 
 subroutine putConfigREAL8(tag,rvalue)
+  use ed_max_dims, only : str_len
   character(*),intent(in) :: tag 
   real(kind=8),intent(in) :: rvalue
-  character(256) :: value
+  character(str_len) :: value
   integer :: lenval 
   write(value,"(f40.20)") rvalue
   lenval = len(trim(value))

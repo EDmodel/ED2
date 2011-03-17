@@ -8,9 +8,7 @@ subroutine fire_frequency(month, cgrid)
                             , polygontype            & ! structure
                             , sitetype               & ! structure
                             , patchtype              ! ! structure
-   use pft_coms      , only : agf_bs                 & ! intent(in)
-                            , qsw                    & ! intent(in)
-                            , q                      ! ! intent(in)
+   use pft_coms      , only : agf_bs                 ! ! intent(in)
    use grid_coms     , only : nzg                    ! ! intent(in)
    use soil_coms     , only : slz                    & ! intent(in)
                             , soil                   & ! intent(in)
@@ -80,7 +78,8 @@ subroutine fire_frequency(month, cgrid)
             !------------------------------------------------------------------------------!
             cohortloop: do ico = 1,cpatch%ncohorts
                babove = ed_biomass(cpatch%bdead(ico),cpatch%balive(ico),cpatch%bleaf(ico)  &
-                                  ,cpatch%pft(ico),cpatch%hite(ico),cpatch%bstorage(ico))  &
+                                  ,cpatch%pft(ico),cpatch%hite(ico),cpatch%bstorage(ico)   &
+                                  ,cpatch%bsapwood(ico))                                   &
                       * cpatch%nplant(ico)
                fuel   = fuel + babove
             end do cohortloop

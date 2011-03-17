@@ -442,8 +442,8 @@ subroutine sfcinit_hstart()
             patchloop: do ipat = 2,npatch
 
                !---------------------------------------------------------------------------!
-               !    Checking whether the patch is also water. If so, assign class 1 (in-   !
-               ! land water)                                                               !
+               !    Check whether the patch is also water.  If so, assign class 1 (inland  !
+               ! water).                                                                   !
                !---------------------------------------------------------------------------!
                nveg = nint(leaf_g(ifm)%leaf_class(i,j,ipat))
                if(nveg == 0) then
@@ -451,12 +451,13 @@ subroutine sfcinit_hstart()
                   nveg = nint(leaf_g(ifm)%leaf_class(i,j,ipat))
                end if
 
-               !----- Assigning a handful of parameters -----------------------------------!
-               leaf_g(ifm)%soil_rough(i,j,ipat)  = zrough
-               leaf_g(ifm)%patch_rough(i,j,ipat) = max(zrough,grid_g(ifm)%topzo(i,j))
-               leaf_g(ifm)%veg_rough(i,j,ipat)   = .13 * veg_ht(nveg)
-               leaf_g(ifm)%veg_height(i,j,ipat)  = veg_ht(nveg)
-               leaf_g(ifm)%stom_resist(i,j,ipat) = 1.e6
+               !----- Assign roughnesses and a couple of other parameters. ----------------!
+               leaf_g(ifm)%soil_rough  (i,j,ipat) = zrough
+               leaf_g(ifm)%patch_rough (i,j,ipat) = max(zrough,grid_g(ifm)%topzo(i,j))
+               leaf_g(ifm)%veg_rough   (i,j,ipat) = vh2vr * veg_ht(nveg)
+               leaf_g(ifm)%veg_height  (i,j,ipat) = veg_ht(nveg)
+               leaf_g(ifm)%veg_displace(i,j,ipat) = vh2dh * veg_ht(nveg)
+               leaf_g(ifm)%stom_condct (i,j,ipat) = 1.e-6
 
                !----- Checking for temporary surface water/snow layers --------------------! 
                do k = 1,nzs
@@ -467,20 +468,24 @@ subroutine sfcinit_hstart()
                end do
 
 
-               !----- Computing the NDVI --------------------------------------------------!
-               if (ipat >= 2) call vegndvi(ifm,leaf_g(ifm)%patch_area           (i,j,ipat) &
-                                              ,leaf_g(ifm)%leaf_class           (i,j,ipat) &
-                                              ,leaf_g(ifm)%veg_fracarea         (i,j,ipat) &
-                                              ,leaf_g(ifm)%veg_lai              (i,j,ipat) &
-                                              ,leaf_g(ifm)%veg_tai              (i,j,ipat) &
-                                              ,leaf_g(ifm)%veg_rough            (i,j,ipat) &
-                                              ,leaf_g(ifm)%veg_height           (i,j,ipat) &
-                                              ,leaf_g(ifm)%veg_albedo           (i,j,ipat) &
-                                              ,leaf_g(ifm)%veg_ndvip            (i,j,ipat) &
-                                              ,leaf_g(ifm)%veg_ndvic            (i,j,ipat) &
-                                              ,leaf_g(ifm)%veg_ndvif            (i,j,ipat) )
+               !----- Compute NDVI and LAI. -----------------------------------------------!
+               if (ipat >= 2) then
+                  call vegndvi(ifm                                                         &
+                              ,leaf_g(ifm)%patch_area                  (i,j,ipat)          &
+                              ,leaf_g(ifm)%leaf_class                  (i,j,ipat)          &
+                              ,leaf_g(ifm)%veg_fracarea                (i,j,ipat)          &
+                              ,leaf_g(ifm)%veg_lai                     (i,j,ipat)          &
+                              ,leaf_g(ifm)%veg_tai                     (i,j,ipat)          &
+                              ,leaf_g(ifm)%veg_rough                   (i,j,ipat)          &
+                              ,leaf_g(ifm)%veg_height                  (i,j,ipat)          &
+                              ,leaf_g(ifm)%veg_displace                (i,j,ipat)          &
+                              ,leaf_g(ifm)%veg_albedo                  (i,j,ipat)          &
+                              ,leaf_g(ifm)%veg_ndvip                   (i,j,ipat)          &
+                              ,leaf_g(ifm)%veg_ndvic                   (i,j,ipat)          &
+                              ,leaf_g(ifm)%veg_ndvif                   (i,j,ipat)          )
+               end if
 
-               !----- Finding the surface saturation mixing ratio -------------------------!
+               !----- Find the surface saturation mixing ratio. ---------------------------!
                call leaf_grndvap(leaf_g(ifm)%soil_energy           (nzg,i,j,ipat)          &
                                 ,leaf_g(ifm)%soil_water            (nzg,i,j,ipat)          &
                                 ,leaf_g(ifm)%soil_text             (nzg,i,j,ipat)          &
@@ -521,16 +526,16 @@ subroutine hi_interp(n1,n2,n3,n4,vn,xm1,xt1,ym1,yt1,zm1,zt1,plat1,plon1,topt1,zt
 
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
-   character(len=*)               , intent(in)  :: vname
-   integer                        , intent(in)  :: n1,n2,n3,n4,ngr1,idim
-   integer                        , intent(in)  :: m1,m2,m3,m4,ngm
-   real                           , intent(in)  :: plat1,plon1,ztop1
-   real   , dimension(n1         ), intent(in)  :: zm1,zt1
-   real   , dimension(   n2      ), intent(in)  :: xm1,xt1
-   real   , dimension(      n3   ), intent(in)  :: ym1,yt1
-   real   , dimension(   n2,n3   ), intent(in)  :: topt1
-   real   , dimension(n1,n2,n3,n4), intent(in)  :: vn
-   real   , dimension(m1,m2,m3,m4), intent(out) :: vm
+   character(len=*)               , intent(in)    :: vname
+   integer                        , intent(in)    :: n1,n2,n3,n4,ngr1,idim
+   integer                        , intent(in)    :: m1,m2,m3,m4,ngm
+   real                           , intent(in)    :: plat1,plon1,ztop1
+   real   , dimension(n1         ), intent(in)    :: zm1,zt1
+   real   , dimension(   n2      ), intent(in)    :: xm1,xt1
+   real   , dimension(      n3   ), intent(in)    :: ym1,yt1
+   real   , dimension(   n2,n3   ), intent(in)    :: topt1
+   real   , dimension(n1,n2,n3,n4), intent(in)    :: vn
+   real   , dimension(m1,m2,m3,m4), intent(inout) :: vm
    !----- Local variables -----------------------------------------------------------------!
    integer                               :: i,j,k,np,ii,jj
    real                                  :: xxm,yym,fixxm,fiyym,topoh,rtgth
@@ -544,8 +549,12 @@ subroutine hi_interp(n1,n2,n3,n4,vn,xm1,xt1,ym1,yt1,zm1,zt1,plat1,plon1,topt1,zt
    ! memory.                                                                               !
    !---------------------------------------------------------------------------------------!
    do np=1,n4
-      do k=1,n1
-         scr3(1:n2,1:n3,k,np) = vn(k,1:n2,1:n3,np)
+      do j=1,n3
+         do i=1,n2
+            do k=1,n1
+               scr3(i,j,k,np) = vn(k,i,j,np)
+            end do
+         end do
       end do
    end do
 
@@ -594,14 +603,14 @@ subroutine hi_interp(n1,n2,n3,n4,vn,xm1,xt1,ym1,yt1,zm1,zt1,plat1,plon1,topt1,zt
 
          do np=1,n4
             do k=1,n1
-               call gdtost2(scr3(1,1,k,np),n2,n3,fixxm,fiyym,vctr1(k))    
-            enddo
+               call gdtost2(scr3(1:n2,1:n3,k,np),n2,n3,fixxm,fiyym,vctr1(k))    
+            end do
 
             select case (idim)
             !----- 3D variable, interpolate this column vertically to actual grid ---------!
             case (3,8)
                
-               call gdtost2(topt1(1,1),n2,n3,fixxm,fiyym,topoh)    
+               call gdtost2(topt1(1:n2,1:n3),n2,n3,fixxm,fiyym,topoh)    
                rtgth=1.-topoh/ztop1
                do k=1,m1
                   !----- Actual grid level heights ----------------------------------------!
@@ -613,7 +622,7 @@ subroutine hi_interp(n1,n2,n3,n4,vn,xm1,xt1,ym1,yt1,zm1,zt1,plat1,plon1,topt1,zt
                end do
 
                !----- Interpolate vertically ----------------------------------------------!
-               call htint(n1,vctr1(1),vctr3(1),m1,vctr10(1),vctr2(1))
+               call htint(n1,vctr1,vctr3,m1,vctr10,vctr2)
                vm(1:m1,i,j,np)=vctr10(1:m1)
             !----- 2d variable (or 2d+extra dimension), no vertical dimension -------------!
             case (2,6,7,9)
@@ -754,10 +763,10 @@ end subroutine hi_avgw
 subroutine patch_land_average(n1,n2,n3,n4,parea,pa1,paa)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
-   integer                     , intent(in)  :: n1,n2,n3,n4
-   real, dimension(   n2,n3,n4), intent(in)  :: parea
-   real, dimension(n1,n2,n3,n4), intent(in)  :: pa1
-   real, dimension(n1,n2,n3   ), intent(out) :: paa
+   integer                     , intent(in)    :: n1,n2,n3,n4
+   real, dimension(   n2,n3,n4), intent(in)    :: parea
+   real, dimension(n1,n2,n3,n4), intent(in)    :: pa1
+   real, dimension(n1,n2,n3   ), intent(inout) :: paa
    !----- Local variables -----------------------------------------------------------------!
    integer                                   :: i,j,k,np
    real                                      :: sw
@@ -806,9 +815,9 @@ subroutine patch_land_unaverage(n1,n2,n3,n4,paa,pa1)
    implicit none
 
    !----- Arguments -----------------------------------------------------------------------!
-   integer                         , intent(in)  :: n1,n2,n3,n4
-   real   , dimension (n1,n2,n3)   , intent(in)  :: paa
-   real   , dimension (n1,n2,n3,n4), intent(out) :: pa1
+   integer                         , intent(in)    :: n1,n2,n3,n4
+   real   , dimension (n1,n2,n3)   , intent(in)    :: paa
+   real   , dimension (n1,n2,n3,n4), intent(inout) :: pa1
    !----- Local variables -----------------------------------------------------------------!
    integer                                       :: i,j,k,np
    real                                          :: sw

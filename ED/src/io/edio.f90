@@ -1,146 +1,167 @@
+!==========================================================================================!
+!==========================================================================================!
+!     This is the main driver for file output in ED.                                       !
+!------------------------------------------------------------------------------------------!
+subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,dcyc_analy_time &
+                    ,annual_time,writing_dail,writing_mont,writing_dcyc,history_time       &
+                    ,dcycle_time,the_end)
 
- 
-subroutine ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,annual_time&
-                    ,writing_dail,writing_mont,history_time,the_end)
-  
-  use ed_state_vars,only:filltab_alltypes,edgrid_g,filltables
+   use ed_state_vars, only : edgrid_g          & ! structure
+                           , filltab_alltypes  & ! subroutine
+                           , filltables        ! ! intent(inout)
+   use grid_coms    , only : ngrids            & ! intent(in)
+                           , nzg               ! ! intent(in)
+   use ed_node_coms , only : mynum             & ! intent(in)
+                           , nnodetot          ! ! intent(in)
+   use ed_misc_coms , only : dtlsm             & ! intent(in)
+                           , current_time      & ! intent(in)
+                           , idoutput          & ! intent(in)
+                           , imoutput          & ! intent(in)
+                           , iqoutput          & ! intent(in)
+                           , iyoutput          & ! intent(in)
+                           , isoutput          & ! intent(in)
+                           , ifoutput          & ! intent(in)
+                           , itoutput          & ! intent(in)
+                           , iprintpolys       & ! intent(in)
+                           , frqsum            ! ! intent(in)
 
-  use grid_coms, only: ngrids,nzg  ! INTENT(IN)
-
-  use ed_node_coms,only : mynum,nnodetot
-
-  use ed_misc_coms, only: dtlsm, current_time, &
-       idoutput,    &
-       imoutput,    &
-       iyoutput,    &
-       isoutput,    &
-       ifoutput,    &
-       itoutput,    &
-       iprintpolys, &
-       frqsum
-
-  implicit none
-    
-  logical, intent(in)  :: the_end,analysis_time,dail_analy_time
-  logical, intent(in)  :: writing_dail,writing_mont
-  logical, intent(in) :: mont_analy_time,history_time,new_day,annual_time
-  integer :: ifm
-
-
-  ! If there is any IO, then we need to check if the pointer tables
-  ! need to be rehashed, they will need to be rehashed if their has been 
-  ! a change in the number of cohorts or patches, ie if a monthly event had
-  ! just happened.
-
-  if(analysis_time .or. history_time .or. dail_analy_time .or. mont_analy_time .or. annual_time ) then
-     if(filltables) then
-        
-        ! Rehash the tables
-        call filltab_alltypes
-        ! Reset the rehash flag
-        filltables=.false.
-
-     endif
-  endif
-
-
-
-  if(analysis_time .or. history_time .or. (new_day .and. (writing_dail .or. writing_mont))) then
-     do ifm=1,ngrids
-        call normalize_averaged_vars(edgrid_g(ifm),frqsum,dtlsm)
-     enddo
-
-     !  Perform averaging and data preparation
-     call spatial_averages
-     
-     if (writing_dail .or. writing_mont) then
-        do ifm=1,ngrids
-           call integrate_ed_daily_output_flux(edgrid_g(ifm))
-        end do
-     end if
-  endif
-  
-  
-  if (analysis_time) then
-     
-    
-     !  Write out analysis fields - mostly polygon averages
-     if (ifoutput.eq.3) then
-        call h5_output('INST')
-     endif
-     if (itoutput.eq.3) then
-        call h5_output('OPTI')
-     endif
-
-     
-     ! If printpolys is on then print this info to
-     ! the screen
-     
-     if (iprintpolys.eq.1) then
-        do ifm=1,ngrids
-           call print_fields(ifm,edgrid_g(ifm))
-        enddo
-     endif
-
-  endif
-
-  ! Daily analysis output and monthly integration
-  if (new_day .and. (writing_dail .or. writing_mont)) then
-
-     call avg_ed_daily_output_pool()
-
-     do ifm=1,ngrids
-        call normalize_ed_daily_output_vars(edgrid_g(ifm))
-        if (writing_mont) call integrate_ed_monthly_output_vars(edgrid_g(ifm))
-     end do
-
-     if (dail_analy_time) call h5_output('DAIL')
-
-     do ifm=1,ngrids
-       call zero_ed_daily_output_vars(edgrid_g(ifm))
-     end do
-
-  end if
-
-  ! Monthly analysis output
-  if (mont_analy_time) then
-
-     do ifm=1,ngrids
-        call normalize_ed_monthly_output_vars(edgrid_g(ifm))
-     end do
-
-     call h5_output('MONT')
-
-     do ifm=1,ngrids
-        call zero_ed_monthly_output_vars(edgrid_g(ifm))
-     end do
-  end if
-
-  if (annual_time) then
-
-     call h5_output('YEAR')
-
-     do ifm=1,ngrids
-        call zero_ed_yearly_vars(edgrid_g(ifm))
-     end do
-  endif
-
-  ! History files should only be output at a frequency which
-  ! divides by frqanl, thus the integrated fast-time variables
-  ! are valid, but representative of the last frqanl period, not
-  ! the last frqhist period.
-
-
-  if(history_time) then
-
-     if (isoutput /= 0) then
-        call h5_output('HIST')
-     end if
-  endif
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   logical, intent(in)  :: the_end
+   logical, intent(in)  :: analysis_time
+   logical, intent(in)  :: dail_analy_time
+   logical, intent(in)  :: mont_analy_time
+   logical, intent(in)  :: dcyc_analy_time
+   logical, intent(in)  :: writing_dail
+   logical, intent(in)  :: writing_mont
+   logical, intent(in)  :: writing_dcyc
+   logical, intent(in)  :: history_time
+   logical, intent(in)  :: dcycle_time
+   logical, intent(in)  :: new_day
+   logical, intent(in)  :: annual_time
+   !----- Local variables. ----------------------------------------------------------------!
+   integer              :: ifm
+   !---------------------------------------------------------------------------------------!
 
 
 
-  return
+   !---------------------------------------------------------------------------------------!
+   !      If there is any IO, then we need to check whether the pointer tables are up to   !
+   ! date or not.  They must be rehashed if there has been any change in the number of     !
+   ! cohorts or patches (e.g, a cohort or a patch has been terminated or created).         !
+   !---------------------------------------------------------------------------------------!
+   if (analysis_time   .or. history_time    .or.                                           &
+       dail_analy_time .or. mont_analy_time .or. dcyc_analy_time .or. annual_time ) then
+
+      if (filltables) then
+         
+         !----- Re-hash the tables. -------------------------------------------------------!
+         call filltab_alltypes
+         !----- Reset the rehash flag. ----------------------------------------------------!
+         filltables=.false.
+      end if
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      If this is the time for an output, we shall call routines to prepare the vari-   !
+   ! ables for output.                                                                     !
+   !---------------------------------------------------------------------------------------!
+   if ( analysis_time .or.   history_time .or. dcycle_time  .or.                           &
+       (new_day       .and. (writing_dail .or. writing_mont .or. writing_dcyc))) then
+      do ifm=1,ngrids
+         call normalize_averaged_vars(edgrid_g(ifm),frqsum,dtlsm)
+      end do
+
+      !----- Perform averaging and data preparation. --------------------------------------!
+      call spatial_averages
+      
+      if (writing_dail .or. writing_mont .or. writing_dcyc) then
+         do ifm=1,ngrids
+            call integrate_ed_daily_output_flux(edgrid_g(ifm))
+         end do
+      end if
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Instantaneous analysis. ---------------------------------------------------------!
+   if (analysis_time) then
+      !----- Write out analysis fields - mostly polygon averages. -------------------------!
+      if (ifoutput == 3) call h5_output('INST')
+      if (itoutput == 3) call h5_output('OPTI')
+
+      !----- If printpolys is on then print this info to the screen. ----------------------!
+      if (iprintpolys == 1) then
+         do ifm=1,ngrids
+            call print_fields(ifm,edgrid_g(ifm))
+         end do
+      end if
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Daily analysis output and monthly integration. ----------------------------------!
+   if (new_day .and. (writing_dail .or. writing_mont .or. writing_dcyc)) then
+      call avg_ed_daily_output_pool()
+
+      do ifm=1,ngrids
+         call normalize_ed_daily_output_vars(edgrid_g(ifm))
+         if (writing_mont .or. writing_dcyc) then
+            call integrate_ed_monthly_output_vars(edgrid_g(ifm))
+         end if
+      end do
+
+      if (dail_analy_time) call h5_output('DAIL')
+
+      do ifm=1,ngrids
+         call zero_ed_daily_output_vars(edgrid_g(ifm))
+      end do
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !----- Monthly analysis and monthly mean diurnal cycle output. -------------------------!
+   if (mont_analy_time .or. dcyc_analy_time) then
+      do ifm=1,ngrids
+         call normalize_ed_monthly_output_vars(edgrid_g(ifm))
+      end do
+      if (mont_analy_time) call h5_output('MONT')
+      if (dcyc_analy_time) call h5_output('DCYC')
+      do ifm=1,ngrids
+         call zero_ed_monthly_output_vars(edgrid_g(ifm))
+      end do
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Yearly analysis output. ---------------------------------------------------------!
+   if (annual_time) then
+      call h5_output('YEAR')
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      History files should only be output at a frequency which divides by frqanl, thus !
+   ! the integrated fast-time variables are valid, but representative of the last frqanl   !
+   ! period, not the last frqhist period.                                                  !
+   !---------------------------------------------------------------------------------------!
+   if (history_time .and. isoutput /= 0) then
+      call h5_output('HIST')
+   end if
+   !---------------------------------------------------------------------------------------!
+
+   return
 end subroutine ed_output
 !==========================================================================================!
 !==========================================================================================!
@@ -164,9 +185,7 @@ subroutine avg_ed_daily_output_pool()
    use grid_coms    , only : ngrids       & ! intent(in)
                            , nzg          & ! intent(in)
                            , nzs          ! ! intent(in)
-   use pft_coms     , only : q            & ! intent(in)
-                           , qsw          & ! intent(in)
-                           , c2n_leaf     & ! intent(in)
+   use pft_coms     , only : c2n_leaf     & ! intent(in)
                            , c2n_stem     & ! intent(in)
                            , c2n_storage  ! ! intent(in)
    implicit none
@@ -189,9 +208,32 @@ subroutine avg_ed_daily_output_pool()
    gridloop: do igr=1,ngrids
       cgrid => edgrid_g(igr)
 
+      !------------------------------------------------------------------------------------!
+      !   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! !
+      !------------------------------------------------------------------------------------!
+      !     Please, don't initialise polygon-level (cgrid) variables outside polyloop.     !
+      ! This works in off-line runs, but it causes memory leaks (and crashes) in the       !
+      ! coupled runs over the ocean, where cgrid%npolygons can be 0 if one of the sub-     !
+      ! domains falls entirely over the ocean.  Thanks!                                    !
+      !------------------------------------------------------------------------------------!
+      ! cgrid%blah = 0. !<<--- This is a bad way of doing, look inside the loop for the
+      !                 !      safe way of initialising the variable.
+      !------------------------------------------------------------------------------------!
       polygonloop: do ipy=1,cgrid%npolygons
          cpoly => cgrid%polygon(ipy)
-         
+
+         !---------------------------------------------------------------------------------!
+         !     This is the right and safe place to initialise polygon-level (cgrid) vari-  !
+         ! ables, so in case npolygons is zero this will not cause memory leaks.  I know,  !
+         ! this never happens in off-line runs, but it is quite common in coupled runs...  !
+         ! Whenever one of the nodes receives a sub-domain where all the points are over   !
+         ! the ocean, ED will not assign any polygon in that sub-domain, which means that  !
+         ! that node will have 0 polygons, and the variables cannot be allocated.  If you  !
+         ! try to access the polygon level variable outside the loop, then the model       !
+         ! crashes due to segmentation violation (a bad thing), whereas by putting the     !
+         ! variables here both the off-line model and the coupled runs will work, because  !
+         ! this loop will be skipped when there is no polygon.                             !
+         !---------------------------------------------------------------------------------!
          !----- Zero variables. -----------------------------------------------------------!
          cgrid%Cleaf (ipy)  = 0.0
          cgrid%Croot (ipy)  = 0.0
@@ -213,7 +255,8 @@ subroutine avg_ed_daily_output_pool()
                !---------------------------------------------------------------------------!
                !     Here we must include a loop through all cohorts, because this may be  !
                ! an empty patch and vector operations cannot be done if the patchtype      !
-               ! structure is not allocated.                                               !
+               ! structure is not allocated.  This actually happens in both off-line and   !
+               ! coupled runs, especially over deserts...                                  !
                !---------------------------------------------------------------------------!
                cohortloop: do ico = 1,cpatch%ncohorts
                   ipft = cpatch%pft(ico)
@@ -223,9 +266,7 @@ subroutine avg_ed_daily_output_pool()
                   cgrid%Cstore(ipy)  = cgrid%Cstore(ipy)                                   &
                                      + cpatch%bstorage(ico) * cpatch%nplant(ico) * area_pa
                   cgrid%Croot(ipy)   = cgrid%Croot(ipy)                                    &
-                                     + cpatch%balive(ico) * cpatch%nplant(ico) * q(ipft)   &
-                                     / (1.0 + q(ipft) + qsw(ipft) * cpatch%hite(ico))      &
-                                     * area_pa
+                                     + cpatch%broot(ico) * cpatch%nplant(ico) * area_pa
 
                   cgrid%Nleaf(ipy)   = cgrid%Nleaf(ipy)                                    &
                                      + cpatch%bleaf(ico) * cpatch%nplant(ico)              &
@@ -235,8 +276,7 @@ subroutine avg_ed_daily_output_pool()
                                      / c2n_storage * area_pa ! C:N not pft specific
                   !----- It appears we assume leaf and root have same C:N. ----------------!
                   cgrid%Nroot(ipy)   = cgrid%Nroot(ipy)                                    &
-                                     + cpatch%balive(ico) * cpatch%nplant(ico) * q(ipft)   &
-                                     / (1.0 + q(ipft) + qsw(ipft) *cpatch%hite(ico))       &
+                                     + cpatch%broot(ico) * cpatch%nplant(ico)              &
                                      / c2n_leaf(ipft) * area_pa 
                   cgrid%Ndead(ipy)   = cgrid%Ndead(ipy)                                    &
                                      + cpatch%bdead(ico) * cpatch%nplant(ico)              &
@@ -264,30 +304,30 @@ end subroutine avg_ed_daily_output_pool
 !------------------------------------------------------------------------------------------!
 subroutine spatial_averages
 
-   use ed_state_vars         , only : edtype            & ! structure
-                                    , polygontype       & ! structure
-                                    , sitetype          & ! structure
-                                    , patchtype         & ! structure
-                                    , edgrid_g          ! ! structure
-   use grid_coms             , only : ngrids            & ! intent(in)
-                                    , nzg               & ! intent(in)
-                                    , nzs               ! ! intent(in)
-   use consts_coms           , only : alvl              & ! intent(in)
-                                    , cpi               & ! intent(in)
-                                    , wdns              & ! intent(in)
-                                    , p00i              & ! intent(in)
-                                    , rocp              & ! intent(in)
-                                    , umol_2_kgC        & ! intent(in)
-                                    , day_sec           ! ! intent(in)
-   use ed_misc_coms          , only : frqsum            ! ! intent(in)
-   use therm_lib             , only : qwtk              & ! subroutine
-                                    , qtk               & ! subroutine
-                                    , idealdenssh       ! ! function
-   use soil_coms             , only : min_sfcwater_mass & ! intent(in)
-                                    , soil              & ! intent(in)
-                                    , dslz              ! ! intent(in)
-   use c34constants          , only : n_stoma_atts
-   use ed_max_dims           , only : n_pft
+   use ed_state_vars         , only : edtype             & ! structure
+                                    , polygontype        & ! structure
+                                    , sitetype           & ! structure
+                                    , patchtype          & ! structure
+                                    , edgrid_g           ! ! structure
+   use grid_coms             , only : ngrids             & ! intent(in)
+                                    , nzg                & ! intent(in)
+                                    , nzs                ! ! intent(in)
+   use consts_coms           , only : alvl               & ! intent(in)
+                                    , cpi                & ! intent(in)
+                                    , wdns               & ! intent(in)
+                                    , p00i               & ! intent(in)
+                                    , rocp               & ! intent(in)
+                                    , umol_2_kgC         & ! intent(in)
+                                    , day_sec            ! ! intent(in)
+   use ed_misc_coms          , only : frqsum             ! ! intent(in)
+   use therm_lib             , only : qwtk               & ! subroutine
+                                    , qtk                & ! subroutine
+                                    , idealdenssh        ! ! function
+   use soil_coms             , only : tiny_sfcwater_mass & ! intent(in)
+                                    , soil               & ! intent(in)
+                                    , dslz               ! ! intent(in)
+   use c34constants          , only : n_stoma_atts       ! ! intent(in)
+   use ed_max_dims           , only : n_pft              ! ! intent(in)
    implicit none
    !----- Local variables -----------------------------------------------------------------!
    type(edtype)         , pointer :: cgrid
@@ -322,10 +362,15 @@ subroutine spatial_averages
       cgrid => edgrid_g(igr)
 
       !------------------------------------------------------------------------------------!
-      !    WARNING! cgrid variables should never be initialized outside the                !
-      !             "do ipy=1,cgrid%npolygons" loop. npolygons is often 0 for some nodes   !
-      !             on coupled runs (sudomains entirely over ocean), and initializing here !
-      !             will cause either a crash or even worse, a memory leak.                !
+      !   WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! !
+      !------------------------------------------------------------------------------------!
+      !     Please, don't initialise polygon-level (cgrid) variables outside polyloop.     !
+      ! This works in off-line runs, but it causes memory leaks (and crashes) in the       !
+      ! coupled runs over the ocean, where cgrid%npolygons can be 0 if one of the sub-     !
+      ! domains falls entirely over the ocean.  Thanks!                                    !
+      !------------------------------------------------------------------------------------!
+      ! cgrid%blah = 0. !<<--- This is a bad way of doing, look inside the loop for the
+      !                 !      safe way of initialising the variable.
       !------------------------------------------------------------------------------------!
       polyloop: do ipy=1,cgrid%npolygons
          cpoly => cgrid%polygon(ipy)
@@ -336,7 +381,16 @@ subroutine spatial_averages
          poly_avg_soil_hcap = 0.0
 
          !---------------------------------------------------------------------------------!
-         !    Here is the safe place to initialize cgrid-level variables.                  !
+         !     This is the right and safe place to initialise polygon-level (cgrid) vari-  !
+         ! ables, so in case npolygons is zero this will not cause memory leaks.  I know,  !
+         ! this never happens in off-line runs, but it is quite common in coupled runs...  !
+         ! Whenever one of the nodes receives a sub-domain where all the points are over   !
+         ! the ocean, ED will not assign any polygon in that sub-domain, which means that  !
+         ! that node will have 0 polygons, and the variables cannot be allocated.  If you  !
+         ! try to access the polygon level variable outside the loop, then the model       !
+         ! crashes due to segmentation violation (a bad thing), whereas by putting the     !
+         ! variables here both the off-line model and the coupled runs will work, because  !
+         ! this loop will be skipped when there is no polygon.                             !
          !---------------------------------------------------------------------------------!
          cgrid%avg_lai_ebalvars(:,:,ipy) = 0.0
          cgrid%avg_balive          (ipy) = 0.0
@@ -384,16 +438,17 @@ subroutine spatial_averages
 
 
             !----- Average fast time flux dynamics over sites. ----------------------------!
-            cpoly%avg_vapor_vc(isi) = sum(csite%avg_vapor_vc * csite%area ) * site_area_i
-            cpoly%avg_dew_cg(isi)   = sum(csite%avg_dew_cg   * csite%area ) * site_area_i
-            cpoly%avg_vapor_gc(isi) = sum(csite%avg_vapor_gc * csite%area ) * site_area_i
-            cpoly%avg_wshed_vg(isi) = sum(csite%avg_wshed_vg * csite%area ) * site_area_i
-            cpoly%avg_vapor_ac(isi) = sum(csite%avg_vapor_ac * csite%area ) * site_area_i
-            cpoly%avg_transp(isi)   = sum(csite%avg_transp   * csite%area ) * site_area_i
-            cpoly%avg_evap(isi)     = sum(csite%avg_evap     * csite%area ) * site_area_i
-            cpoly%aux(isi)          = sum(csite%aux          * csite%area ) * site_area_i
-            cpoly%avg_drainage(isi) = sum(csite%avg_drainage * csite%area ) * site_area_i
-            cpoly%avg_runoff(isi)   = sum(csite%avg_runoff   * csite%area ) * site_area_i
+            cpoly%avg_carbon_ac(isi) = sum(csite%avg_carbon_ac * csite%area ) * site_area_i
+            cpoly%avg_vapor_vc(isi)  = sum(csite%avg_vapor_vc  * csite%area ) * site_area_i
+            cpoly%avg_dew_cg(isi)    = sum(csite%avg_dew_cg    * csite%area ) * site_area_i
+            cpoly%avg_vapor_gc(isi)  = sum(csite%avg_vapor_gc  * csite%area ) * site_area_i
+            cpoly%avg_wshed_vg(isi)  = sum(csite%avg_wshed_vg  * csite%area ) * site_area_i
+            cpoly%avg_vapor_ac(isi)  = sum(csite%avg_vapor_ac  * csite%area ) * site_area_i
+            cpoly%avg_transp(isi)    = sum(csite%avg_transp    * csite%area ) * site_area_i
+            cpoly%avg_evap(isi)      = sum(csite%avg_evap      * csite%area ) * site_area_i
+            cpoly%aux(isi)           = sum(csite%aux           * csite%area ) * site_area_i
+            cpoly%avg_drainage(isi)  = sum(csite%avg_drainage  * csite%area ) * site_area_i
+            cpoly%avg_runoff(isi)    = sum(csite%avg_runoff    * csite%area ) * site_area_i
             cpoly%avg_drainage_heat(isi) = sum(csite%avg_drainage_heat * csite%area )      &
                                          * site_area_i
             cpoly%avg_runoff_heat(isi)   = sum(csite%avg_runoff_heat   * csite%area )      &
@@ -401,6 +456,10 @@ subroutine spatial_averages
             cpoly%avg_intercepted(isi)   = sum(csite%avg_intercepted    * csite%area )     &
                                          * site_area_i
             cpoly%avg_qintercepted(isi)  = sum(csite%avg_qintercepted   * csite%area )     &
+                                         * site_area_i
+            cpoly%avg_throughfall(isi)   = sum(csite%avg_throughfall    * csite%area )     &
+                                         * site_area_i
+            cpoly%avg_qthroughfall(isi)  = sum(csite%avg_qthroughfall   * csite%area )     &
                                          * site_area_i
             cpoly%avg_sensible_vc(isi)   = sum(csite%avg_sensible_vc    * csite%area )     &
                                          * site_area_i
@@ -428,28 +487,27 @@ subroutine spatial_averages
                                            * site_area_i
             !------------------------------------------------------------------------------!
             !------------------------------------------------------------------------------!
-            !     Finding average soil properties.  The average soil temperature and       !
-            ! liquid fraction is not directly computed, since the total mass and therefore !
-            ! the total heat capacity (dry + water/ice) is different from each patch.      !
+            !     Find average soil properties.  The average soil temperature and liquid   !
+            ! fraction is not directly computed, since the total mass and therefore the    !
+            ! total heat capacity (dry + water/ice) is different from each patch.          !
             !------------------------------------------------------------------------------!
             cpoly%avg_soil_wetness(isi)     = 0.0
+            cpoly%avg_sensible_gg(:,isi) = matmul(csite%avg_sensible_gg,csite%area)        &
+                                         * site_area_i
+            cpoly%avg_smoist_gg(:,isi)   = matmul(csite%avg_smoist_gg  ,csite%area)        &
+                                         * site_area_i
+            cpoly%avg_smoist_gc(:,isi)   = matmul(csite%avg_smoist_gc  ,csite%area)        &
+                                         * site_area_i
+            cpoly%aux_s(:,isi)           = matmul(csite%aux_s          ,csite%area)        &
+                                         * site_area_i
+            cpoly%avg_soil_energy(:,isi) = matmul(csite%soil_energy    ,csite%area)        &
+                                         * site_area_i
+            cpoly%avg_soil_water(:,isi)  = matmul(csite%soil_water     ,csite%area)        &
+                                         * site_area_i
+
             do k=cpoly%lsl(isi),nzg
-               cpoly%avg_sensible_gg(k,isi) = sum(csite%avg_sensible_gg(k,:) * csite%area) &
-                                            * site_area_i
-               cpoly%avg_smoist_gg(k,isi)   = sum(csite%avg_smoist_gg(k,:)   * csite%area) &
-                                            * site_area_i
-               cpoly%avg_smoist_gc(k,isi)   = sum(csite%avg_smoist_gc(k,:)   * csite%area) &
-                                            * site_area_i
-               cpoly%aux_s(k,isi)           = sum(csite%aux_s(k,:)           * csite%area) &
-                                            * site_area_i
-
-               cpoly%avg_soil_energy(k,isi) = sum(csite%soil_energy(k,:)     * csite%area) &
-                                            * site_area_i
-               cpoly%avg_soil_water(k,isi)  = sum(csite%soil_water(k,:)      * csite%area) &
-                                            * site_area_i
-
                !---------------------------------------------------------------------------!
-               !    Finding the mean heat capacity. This shouldn't matter in the current   !
+               !    Find the mean heat capacity. This shouldn't matter in the current     !
                ! version as all patches within the same site have the same soil texture.   !
                ! Since heat capacity is given in J/m3/K, it's safe to average it even if   !
                ! soil texture changed.                                                     !
@@ -521,7 +579,7 @@ subroutine spatial_averages
             ! the mean temperature and liquid fraction.  Otherwise, make them with zero/   !
             ! default values.                                                              !
             !------------------------------------------------------------------------------!
-            if (cpoly%avg_sfcw_mass(isi) > min_sfcwater_mass) then
+            if (cpoly%avg_sfcw_mass(isi) > tiny_sfcwater_mass) then
                cpoly%avg_sfcw_energy(isi) = cpoly%avg_sfcw_energy(isi)                     &
                                           / cpoly%avg_sfcw_mass(isi)
                call qtk(cpoly%avg_sfcw_energy(isi),cpoly%avg_sfcw_tempk(isi)               &
@@ -660,17 +718,8 @@ subroutine spatial_averages
                   csite%laiarea(ipa) = 0.
                end if
 
-               !---------------------------------------------------------------------------!
-               !    Updating some other flux variables that do not need to be scaled by    !
-               ! frqsum.                                                                   !
-               !---------------------------------------------------------------------------!
-               cgrid%avg_plant_resp(ipy)  = cgrid%avg_plant_resp(ipy)                      &
-                                          + csite%co2budget_plresp(ipa)                    &
-                                          * csite%area(ipa)*cpoly%area(isi)                &
-                                          * site_area_i * poly_area_i
-
                cgrid%avg_htroph_resp(ipy) = cgrid%avg_htroph_resp(ipy)                     &
-                                          + csite%co2budget_rh(ipa)                        &
+                                          + csite%mean_rh(ipa)                             &
                                           * csite%area(ipa)*cpoly%area(isi)                &
                                           * site_area_i * poly_area_i
 
@@ -826,7 +875,21 @@ subroutine spatial_averages
             call qwtk(skin_energy,skin_water,skin_hcap,cpoly%avg_skin_temp(isi),skin_fliq)
 
          end do siteloop
-     
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !    Find plant respiration using the other averaged quantities.                  !
+         !---------------------------------------------------------------------------------!
+         cgrid%avg_plant_resp(ipy)  = cgrid%avg_leaf_resp     (ipy)                        &
+                                    + cgrid%avg_root_resp     (ipy)                        &
+                                    + cgrid%avg_growth_resp   (ipy)                        &
+                                    + cgrid%avg_storage_resp  (ipy)                        &
+                                    + cgrid%avg_vleaf_resp    (ipy)
+         !---------------------------------------------------------------------------------!
+
+
 
          !----- Normalize the lai specific quantities -------------------------------------!
          if (area_sum(1)>0.) then
@@ -859,11 +922,13 @@ subroutine spatial_averages
          cgrid%wpa(ipy)  = sum(cpoly%wpa  * cpoly%area ) * poly_area_i
          cgrid%wai(ipy)  = sum(cpoly%wai  * cpoly%area ) * poly_area_i
          !----- Average fast time flux dynamics over polygons. ----------------------------!
+         cgrid%avg_carbon_ac(ipy)    = sum(cpoly%avg_carbon_ac    *cpoly%area)*poly_area_i
          cgrid%avg_vapor_vc(ipy)     = sum(cpoly%avg_vapor_vc     *cpoly%area)*poly_area_i
          cgrid%avg_dew_cg(ipy)       = sum(cpoly%avg_dew_cg       *cpoly%area)*poly_area_i
          cgrid%avg_vapor_gc(ipy)     = sum(cpoly%avg_vapor_gc     *cpoly%area)*poly_area_i
          cgrid%avg_wshed_vg(ipy)     = sum(cpoly%avg_wshed_vg     *cpoly%area)*poly_area_i
          cgrid%avg_intercepted(ipy)  = sum(cpoly%avg_intercepted  *cpoly%area)*poly_area_i
+         cgrid%avg_throughfall(ipy)  = sum(cpoly%avg_throughfall  *cpoly%area)*poly_area_i
          cgrid%avg_fsc(ipy)          = sum(cpoly%avg_fsc          *cpoly%area)*poly_area_i
          cgrid%avg_stsc(ipy)         = sum(cpoly%avg_stsc         *cpoly%area)*poly_area_i
          cgrid%avg_ssc(ipy)          = sum(cpoly%avg_ssc          *cpoly%area)*poly_area_i
@@ -880,6 +945,7 @@ subroutine spatial_averages
          cgrid%avg_sensible_vc(ipy)  = sum(cpoly%avg_sensible_vc  *cpoly%area)*poly_area_i
          cgrid%avg_qwshed_vg(ipy)    = sum(cpoly%avg_qwshed_vg    *cpoly%area)*poly_area_i
          cgrid%avg_qintercepted(ipy) = sum(cpoly%avg_qintercepted *cpoly%area)*poly_area_i
+         cgrid%avg_qthroughfall(ipy) = sum(cpoly%avg_qthroughfall *cpoly%area)*poly_area_i
          cgrid%avg_sensible_gc(ipy)  = sum(cpoly%avg_sensible_gc  *cpoly%area)*poly_area_i
          cgrid%avg_sensible_ac(ipy)  = sum(cpoly%avg_sensible_ac  *cpoly%area)*poly_area_i
 
@@ -907,20 +973,20 @@ subroutine spatial_averages
          !    Similar to the site level, average mass, heat capacity and energy then find  !
          ! the average temperature and liquid water fraction.                              !
          !---------------------------------------------------------------------------------!
-         do k=cgrid%lsl(ipy),nzg
-            cgrid%avg_sensible_gg(k,ipy) = sum(cpoly%avg_sensible_gg(k,:)*cpoly%area)      &
-                                         * poly_area_i
-            cgrid%avg_smoist_gg(k,ipy)   = sum(cpoly%avg_smoist_gg(k,:)  *cpoly%area)      &
-                                         * poly_area_i
-            cgrid%avg_smoist_gc(k,ipy)   = sum(cpoly%avg_smoist_gc(k,:)  *cpoly%area)      &
-                                         * poly_area_i
-            cgrid%aux_s(k,ipy)           = sum(cpoly%aux_s(k,:)          *cpoly%area)      &
-                                         * poly_area_i
-            cgrid%avg_soil_energy(k,ipy) = sum(cpoly%avg_soil_energy(k,:)*cpoly%area)      &
-                                         * poly_area_i
-            cgrid%avg_soil_water(k,ipy)  = sum(cpoly%avg_soil_water(k,:) *cpoly%area)      &
-                                         * poly_area_i
+         cgrid%avg_sensible_gg(:,ipy) = matmul(cpoly%avg_sensible_gg, cpoly%area)          &
+                                      * poly_area_i
+         cgrid%avg_smoist_gg(:,ipy)   = matmul(cpoly%avg_smoist_gg  , cpoly%area)          &
+                                      * poly_area_i
+         cgrid%avg_smoist_gc(:,ipy)   = matmul(cpoly%avg_smoist_gc  , cpoly%area)          &
+                                      * poly_area_i
+         cgrid%aux_s(:,ipy)           = matmul(cpoly%aux_s          , cpoly%area)          &
+                                      * poly_area_i
+         cgrid%avg_soil_energy(:,ipy) = matmul(cpoly%avg_soil_energy, cpoly%area)          &
+                                      * poly_area_i
+         cgrid%avg_soil_water(:,ipy)  = matmul(cpoly%avg_soil_water , cpoly%area)          &
+                                      * poly_area_i
 
+         do k=cgrid%lsl(ipy),nzg
             !------------------------------------------------------------------------------!
             !     Finding the average temperature and liquid fraction.  The polygon-level  !
             ! mean heat capacity was already found during the site loop.                   !
@@ -943,7 +1009,7 @@ subroutine spatial_averages
                                          * cpoly%avg_sfcw_mass * cpoly%area) * poly_area_i
 
          !----- Scale energy and find temp and fracliq if there is enogh mass -------------!
-         if (cgrid%avg_sfcw_mass(ipy) > min_sfcwater_mass) then
+         if (cgrid%avg_sfcw_mass(ipy) > tiny_sfcwater_mass) then
             cgrid%avg_sfcw_energy(ipy) = cgrid%avg_sfcw_energy(ipy)                        &
                                        / cgrid%avg_sfcw_mass(ipy)
             call qtk(cgrid%avg_sfcw_energy(ipy),cgrid%avg_sfcw_tempk(ipy)                  &
@@ -994,40 +1060,6 @@ subroutine spatial_averages
 
    return
 end subroutine spatial_averages
-
-! ==============================
-
-subroutine get2d(m1,m2,temp2,in_ptr)
-  
-  implicit none
-  integer :: m1,m2,i,j
-  real,dimension(m1,m2) :: temp2
-  real,dimension(m1,m2) :: in_ptr
-  do i = 1,m1
-     do j = 1,m2
-        temp2(i,j) = in_ptr(i,j)
-     enddo
-  enddo
-  return
-end subroutine get2d
-
-! =============================
-
-subroutine get3d(m1,m2,m3,temp3,in_ptr)
-  
-  implicit none
-  integer :: m1,m2,m3,i,j,k
-  real,dimension(m1,m2,m3) :: temp3
-  real,dimension(m1,m2,m3) :: in_ptr
-  do i = 1,m1
-     do j = 1,m2
-        do k = 1,m3
-           temp3(i,j,k) = in_ptr(i,j,k)
-        enddo
-     enddo
-  enddo
-  return
-end subroutine get3d
 !==========================================================================================!
 !==========================================================================================!
 
@@ -1035,332 +1067,3 @@ end subroutine get3d
 
 
 
-
-!==========================================================================================!
-!==========================================================================================!
-subroutine print_fields(ifm,cgrid)
-  
-  !------------------------------------------------------
-  ! PRINT OUT FIELDS OF INTEREST
-  !
-  ! This subroutine prints patch, cohort, polygon or site level
-  ! data, upscales that data to the site level and stores
-  ! the data in its spatial array coordinate.
-  ! The data is then printed to the screen, based on a
-  ! specified window of data.
-  ! Note, this may be printing windows on various nodes,
-  ! or this may be called from a master process.  Be
-  ! conscious of this; as it will dictate what part of the
-  ! domain you are accessing variables from, and whether
-  ! or not the variable of interest is stored in memory
-  ! at that time.  For instance, many variables are stored
-  ! only on the slave nodes, and need not be passed back
-  ! to the master.  Likewise, many slave node data will
-  ! accumulate after each lsm call, until they are passed back
-  ! to the master, where they are normalized. These variables
-  ! will be immediately zeroed on the slaves after being
-  ! sent to the master.
-  ! Dont forget to adjust the number precision on the 
-  ! format string at the end.  The X.Xf
-  !--------------------------------------------------------
-  
-  use ed_node_coms,only: mynum,nnodetot,sendnum,recvnum,master_num,machs
-  use ed_state_vars,only: edtype,polygontype
-  use ed_misc_coms, only: &
-            printvars,  &
-            ipmax,      &
-            ipmin,      &
-            pfmtstr,    &
-            iprintpolys
-  
-  use ed_var_tables,only:vt_info,num_var
-
-
-  implicit none
-
-  include 'mpif.h'
-  integer,dimension(MPI_STATUS_SIZE) :: status
-  integer  :: ifm,nv,np,i,ip
-  integer  :: ping
-  integer  :: npolys
-  integer  :: g_idmin,g_idmax,l_idmin,l_idmax,ierr
-  integer  :: node_idmin,node_idmax
-  integer  :: mast_idmin,mast_idmax
-  integer  :: g_id,g_ln,nm
-  integer  :: ncols,row,maxrows,col
-  integer,parameter :: maxcols = 10
-
-  real,pointer,dimension(:) :: pvar_l
-  real,pointer,dimension(:) :: pvar_g
-  
-  character(len=30)     :: fmtstr
-  character(len=32)     :: pvar_name
-  
-  ! Linked structures
-  type(edtype),target     :: cgrid
-  
-  logical :: pvartrue
-  logical :: ptr_recv
-  logical :: ptr_send
-
-  ping = 8675309
-
-  
-  npolys = ipmax - ipmin + 1
-  
-  ! Adjust the format string according to the chosen
-  ! Variables
-  ! ------------------------------------------------
-
-  ! CHeck the window size
-  ! ---------------------
-  
-  if (ipmax.gt.cgrid%npolygons_global) then
-     print*,"========================================="
-     print*,"You have specified a print index"
-     print*,"greater than the total number of polygons"
-     print*,"You must reduce this number. Stopping"
-     stop
-  end if
-
-
-  ! Allocate the print and scratch vector
-  allocate(pvar_l(npolys))
-
-  if (mynum .eq. nnodetot .or. nnodetot .eq. 1) allocate(pvar_g(npolys))
-
-  
-  ! Loop through the printvar entries from the namelist
-
-  ip = 0
-  
-  count_pvars: do
-
-     ip = ip+1
-     pvar_name = printvars(ip)
-     if (len_trim(pvar_name).eq.32) then
-        
-        exit count_pvars
-     endif
-
-     if (nnodetot /= 1) call MPI_Barrier(MPI_COMM_WORLD,ierr)
-
-     pvartrue = .false.
-     do nv = 1,num_var(ifm)
-
-        if(trim(vt_info(nv,ifm)%name) .eq. trim(pvar_name)) then
-           pvartrue = .true.
-           
-           ! If this is root, then collect the sends, keep reading to find out what it is
-           ! receiving
-           if (nnodetot > 1) then
-              
-              if (mynum == nnodetot) then
-                 
-                 pvar_g = -99.9
-                 ! Loop through the variable table to match the print variable
-                 print*,""
-                 print*," ============ ",trim(pvar_name)," =================="
-                 print*,""
-
-                 do nm = 1,nnodetot-1
-
-                    call MPI_Recv(ptr_recv,1,MPI_LOGICAL,machs(nm),120,MPI_COMM_WORLD,status,ierr)
-
-                    if (ptr_recv) then
-                       call MPI_Recv(mast_idmin,1,MPI_INTEGER,machs(nm),121,MPI_COMM_WORLD,status,ierr)
-                       call MPI_Recv(mast_idmax,1,MPI_INTEGER,machs(nm),122,MPI_COMM_WORLD,status,ierr)
-                       call MPI_Recv(pvar_g(mast_idmin:mast_idmax),mast_idmax-mast_idmin+1,MPI_REAL,&
-                            machs(nm),123,MPI_COMM_WORLD,status,ierr)
-                    end if
-                 enddo
-              endif
-           else
-              
-              ! Loop through the variable table to match the print variable
-              print*,""
-              print*," ============ ",trim(pvar_name)," =================="
-              print*,""
-              pvar_g = -99.9
-           endif
-        
-              
-           ! The namelist print entry has been matched with the var_table
-           ! entry.  Now lets cycle through our machines and determine
-           ! if those machines hold data that should be printed.  If so, 
-           ! then send that data to the master (machine 0).
-
-           ! This is scratch space that all machines will use
-
-           pvar_l =-99.9
-           
-           ! Set the blocking recieve to allow ordering, start with machine 1
-           if (mynum /= 1) call MPI_Recv(ping,1,MPI_INTEGER,recvnum,93,MPI_COMM_WORLD,status,ierr)
-           
-           ! Cycle through this node's pointers for the current variable.  If the index
-           ! falls within the printable range. Save that pointer to a local array.
-           ! Once all the pointers have been cycled, send the local array to the 
-           ! master to populate a global array and print
-           
-           ptr_send = .false.
-           node_idmin = -1
-           node_idmax = -1
-
-           do np = 1,vt_info(nv,ifm)%nptrs
-              g_id = vt_info(nv,ifm)%vt_vector(np)%globid+1
-              g_ln = vt_info(nv,ifm)%vt_vector(np)%varlen
-              
-              ! Determine if any of this segment falls within the 
-              ! range desired for output, globid+1 is the global index
-
-              if (g_id .le. ipmax .and. g_id+g_ln-1 .ge. ipmin ) then
-
-                 ! OK, this segment is good, set the send flag
-                 ptr_send = .true.
-
-                 ! These are the indices of the data in the current segment to use
-                 ! and the indices in the global array they will be sent to
-                 if (g_id >= ipmin) then
-                    l_idmin = 1
-                    g_idmin = g_id - ipmin + 1
-                 else
-                    l_idmin = ipmin - g_id + 1
-                    g_idmin = 1
-                 endif
-
-                 if (g_id+g_ln-1 < ipmax) then
-                    l_idmax = g_ln
-                    g_idmax = g_id + g_ln - ipmin
-                 else
-                    l_idmax = ipmax - g_id + 1
-                    g_idmax = ipmax - ipmin + 1
-                 endif
-                 
-                 ! These should be the same size, if not...
-                 if (l_idmax - l_idmin .ne. g_idmax - g_idmin ) then
-                    print*,"NOT THE SAME LENGTHS"
-                    print*,l_idmax - l_idmin,g_idmax - g_idmin
-                    print*,l_idmax,l_idmin,g_idmax,g_idmin
-                    stop
-                 endif
-
-                 ! Shift the global dataset so that it is applied to the
-                 ! first index
-
-                 call fillvar_l(pvar_l,vt_info(nv,ifm)%vt_vector(np)%var_rp,npolys,g_ln,g_idmin,l_idmin,l_idmax)
-
-                 ! Determine the minimum and maximum indices that will be sent
-                 if (g_idmin < node_idmin .or. node_idmin.eq.-1) node_idmin = g_idmin
-                 if (g_idmax > node_idmax .or. node_idmax.eq.-1) node_idmax = g_idmax
-
-              end if
-              
-           enddo
-           
-           if (nnodetot > 1) then
-              
-              ! The local array for this machine has been created. Send it off to the master
-
-              if (mynum /= nnodetot) then
-
-                 call MPI_Send(ptr_send,1,MPI_LOGICAL,machs(nnodetot),120,MPI_COMM_WORLD,ierr)
-                 if (ptr_send) then
-                    call MPI_Send(node_idmin,1,MPI_INTEGER,machs(nnodetot),121,MPI_COMM_WORLD,ierr)
-                    call MPI_Send(node_idmax,1,MPI_INTEGER,machs(nnodetot),122,MPI_COMM_WORLD,ierr)
-                    call MPI_Send(pvar_l(node_idmin:node_idmax),node_idmax-node_idmin+1, &
-                         MPI_REAL,machs(nnodetot),123,MPI_COMM_WORLD,ierr)
-                 end if
-                 
-              
-                 ! When this node is finished, send the blocking MPI_Send to the next machine
-
-                 call MPI_Send(ping,1,MPI_INTEGER,sendnum,93,MPI_COMM_WORLD,ierr)
-                 
-                 ! If this is root, then just copy the array to the global
-              else
-                            
-                 if (ptr_send) then
-
-                    pvar_g(node_idmin:node_idmax) = pvar_l(node_idmin:node_idmax)
-           
-                 end if
-                 
-              endif
-
-
-              
-           else
-              
-              pvar_g = pvar_l
-              
-           endif
-           
-           
-           ! The data over the desired range of indices have been collected
-           ! if this is the only machine or the root machine, then print it 
-           ! to standard output
-           
-           if (mynum .eq. nnodetot .or. nnodetot .eq. 1) then
-
-              ! Print out a maximum of 10 variables per row...
-
-              maxrows = ceiling(real(npolys)/real(maxcols))
-
-              do row = 1,maxrows
-                 
-                 ncols = min( maxcols,npolys-((row-1)*maxcols)   )
-                 col   = ( (row-1)*maxcols)+1
-                 
-                 write(fmtstr,'(i3)')ncols
-                 fmtstr = '('// trim(fmtstr)  // '(2x,' // trim(pfmtstr(ip)) // '))'
-                 
-                 print(trim(fmtstr)),(pvar_g(i),i=col,col+ncols-1)
-              enddo
-              print*,""
-              print*,""
-              
-           endif
-           
-        endif
-        
-     enddo
-
-     ! Check to see if we matched the variable
-     if(.not.pvartrue) then
-        print*,"The diagnostic variable named:",trim(pvar_name)
-        print*,"does not match any of the var_table variables"
-        print*,"Check you namelist entries, and the variable "
-        print*,"registry and/or remove this"
-        print*,"diagnostic variable."
-        call fatal_error('Bad variable name...','print_fields','edio.f90')
-     endif
-
-  end do count_pvars
-
-  ! Dont proceed until everything is written out
-  ! if this is not done, then there will be other writing
-  ! contaminating the output, and thats icky
-  if (nnodetot /= 1) call MPI_Barrier(MPI_COMM_WORLD,ierr)
-
-  
-  return
-end subroutine print_fields
-
-! =======================================================
-
-subroutine fillvar_l(pvar_l,vt_ptr,npts_out,npts_in,out1,in1,in2)
-  
-  implicit none
-  real,dimension(npts_out)  :: pvar_l
-  real,dimension(npts_in)   :: vt_ptr
-  integer,intent(in)      :: npts_in,npts_out
-  integer,intent(in)      :: out1,in1,in2
-  integer :: i,j
-  
-  j = out1
-  do i = in1,in2     
-     pvar_l(j) = vt_ptr(i)
-     j = j + 1
-  enddo
-  return
-end subroutine fillvar_l

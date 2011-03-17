@@ -24,6 +24,8 @@ module mortality
                                , treefall_hite_threshold    ! ! intent(in)
       use ed_misc_coms  , only : current_time               ! ! intent(in)
       use ed_max_dims   , only : n_pft                      ! ! intent(in)
+      use consts_coms   , only : lnexp_min                  & ! intent(in)
+                               , lnexp_max                  ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(patchtype), target     :: cpatch          ! Current patch
@@ -33,6 +35,7 @@ module mortality
       !----- Local variables --------------------------------------------------------------!
       integer                     :: ipft            ! PFT 
       real                        :: threshtemp      ! Cold threshold temperature
+      real                        :: expmort         ! Carbon-balance term
       !------------------------------------------------------------------------------------!
 
 
@@ -49,9 +52,9 @@ module mortality
       !------------------------------------------------------------------------------------!
       ! 2.  Mortality rates due to negative carbon balance.                                !
       !------------------------------------------------------------------------------------!
-      cpatch%mort_rate(2,ico) = mort1(ipft)                                                &
-                              / (1. + exp(mort2(ipft) * cpatch%cbr_bar(ico)))
-      !cpatch%mort_rate(2,ico) = 0.
+      expmort                 = max( lnexp_min, min( lnexp_max                             &
+                                                   , mort2(ipft) * cpatch%cbr_bar(ico)))
+      cpatch%mort_rate(2,ico) = mort1(ipft) / (1. + exp(expmort))
       !------------------------------------------------------------------------------------!
 
 

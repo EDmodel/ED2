@@ -598,3 +598,8 @@ BRAMS/tmpbuild
 ED/tmpbuild
 Ramspost/build/bin/scratch_coms.mod
 BRAMS/build/bin/leaf3.f90
+SA1.4326
+brams4326
+deforest-22km
+BRAMS/build/bin/farq_leuning.mod
+ED/build/bin/farq_leuning.mod

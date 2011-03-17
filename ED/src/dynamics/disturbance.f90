@@ -84,6 +84,7 @@ module disturbance_utils
       !------------------------------------------------------------------------------------!
 
       !----- Allocating the temporary site that will host the original patches. -----------!
+      nullify(tsite)
       allocate(tsite)
 
       polyloop: do ipy = 1,cgrid%npolygons
@@ -701,6 +702,8 @@ if(ianth_disturb > 0) then
       csite%can_prss                   (np) = 0.0
       csite%can_shv                    (np) = 0.0
       csite%can_co2                    (np) = 0.0
+      csite%ggbare                     (np) = 0.0
+      csite%ggveg                      (np) = 0.0
       csite%soil_energy          (1:nzg,np) = 0.0
       csite%soil_water           (1:nzg,np) = 0.0
       csite%sfcwater_mass        (1:nzs,np) = 0.0
@@ -715,15 +718,15 @@ if(ianth_disturb > 0) then
       csite%total_plant_nitrogen_uptake(np) = 0.0
       !------------------------------------------------------------------------------------!
 
+      !----- Initialise all fast variables. -----------------------------------------------!
+      call init_ed_patch_vars(csite,np,np,lsl)
+
       !------------------------------------------------------------------------------------!
       !     Soil texture is the only one that doesn't receive zeroes, but the soil type    !
       ! from the donor patch.  In reality, this should be revised when multiple soil       !
       ! types are allowed in the same polygon.                                             !
       !------------------------------------------------------------------------------------!
       csite%ntext_soil(1:nzg,np) = csite%ntext_soil(1:nzg,dp)
-
-      !----- Initialise all fast variables. -----------------------------------------------!
-      call init_ed_patch_vars(csite,np,np,lsl)
 
 
       return
@@ -799,6 +802,12 @@ if(ianth_disturb > 0) then
       csite%can_depth                  (np) = csite%can_depth                  (np)        &
                                             + csite%can_depth                  (cp)        &
                                             * area_fac
+      csite%ggbare                     (np) = csite%ggbare                     (np)        &
+                                            + csite%ggbare                     (cp)        &
+                                            * area_fac
+      csite%ggveg                      (np) = csite%ggveg                      (np)        &
+                                            + csite%ggveg                      (cp)        &
+                                            * area_fac
       csite%rough                      (np) = csite%rough                      (np)        &
                                             + csite%rough                      (cp)        &
                                             * area_fac
@@ -873,6 +882,7 @@ if(ianth_disturb > 0) then
       use ed_state_vars, only : sitetype   & ! structure
                               , patchtype  ! ! structure
       use ed_misc_coms , only : idoutput   & ! intent(in)
+                              , iqoutput   & ! intent(in)
                               , imoutput   ! ! intent(in)
       use ed_max_dims  , only : n_pft      ! ! intent(in)
     
@@ -903,7 +913,7 @@ if(ianth_disturb > 0) then
       !------------------------------------------------------------------------------------!
       cpatch => csite%patch(cp)
       npatch => csite%patch(np)
-    
+      nullify(tpatch)
       allocate(tpatch)
 
       !----- Mask: flag to decide whether the cohort survived or not. ---------------------!
@@ -979,15 +989,23 @@ if(ianth_disturb > 0) then
             tpatch%hcapveg            (nco) = tpatch%hcapveg          (nco) * survival_fac
             tpatch%veg_energy         (nco) = tpatch%veg_energy       (nco) * survival_fac
             !----- Carbon flux monthly means are extensive, we must convert them. ---------!
-            if (idoutput > 0 .or. imoutput > 0) then
+            if (idoutput > 0 .or. imoutput > 0 .or. iqoutput > 0) then
                tpatch%dmean_par_v     (nco) = tpatch%dmean_par_v      (nco) * survival_fac
                tpatch%dmean_par_v_beam(nco) = tpatch%dmean_par_v_beam (nco) * survival_fac
                tpatch%dmean_par_v_diff(nco) = tpatch%dmean_par_v_diff (nco) * survival_fac
             end if
-            if (imoutput > 0) then
+            if (imoutput > 0 .or. iqoutput > 0) then
                tpatch%mmean_par_v     (nco) = tpatch%mmean_par_v      (nco) * survival_fac
                tpatch%mmean_par_v_beam(nco) = tpatch%mmean_par_v_beam (nco) * survival_fac
                tpatch%mmean_par_v_diff(nco) = tpatch%mmean_par_v_diff (nco) * survival_fac
+            end if
+            if (iqoutput > 0) then
+               tpatch%qmean_par_v     (:,nco) = tpatch%qmean_par_v      (:,nco)            &
+                                              * survival_fac
+               tpatch%qmean_par_v_beam(:,nco) = tpatch%qmean_par_v_beam (:,nco)            &
+                                              * survival_fac
+               tpatch%qmean_par_v_diff(:,nco) = tpatch%qmean_par_v_diff (:,nco)            &
+                                              * survival_fac
             end if
          end if
       end do cohortloop
@@ -1238,6 +1256,7 @@ if(ianth_disturb > 0) then
       !------------------------------------------------------------------------------------!
       nc = cpatch%ncohorts + 1
       if (cpatch%ncohorts > 0) then
+         nullify(tpatch)
          allocate(tpatch)
          call allocate_patchtype(tpatch,cpatch%ncohorts)
          call copy_patchtype(cpatch,tpatch,1,cpatch%ncohorts,1,cpatch%ncohorts)
@@ -1290,7 +1309,8 @@ if(ianth_disturb > 0) then
       !----- Compute all area indices needed. ---------------------------------------------!
       call area_indices(cpatch%nplant(nc),cpatch%bleaf(nc),cpatch%bdead(nc)                &
                        ,cpatch%balive(nc),cpatch%dbh(nc),cpatch%hite(nc),cpatch%pft(nc)    &
-                       ,cpatch%sla(nc),cpatch%lai(nc),cpatch%wpa(nc),cpatch%wai(nc))
+                       ,cpatch%sla(nc),cpatch%lai(nc),cpatch%wpa(nc),cpatch%wai(nc)        &
+                       ,cpatch%bsapwood(nc))
 
 
       !------------------------------------------------------------------------------------!
@@ -1302,7 +1322,8 @@ if(ianth_disturb > 0) then
       !----- Finding the new basal area and above-ground biomass. -------------------------!
       cpatch%basarea(nc) = pio4 * cpatch%dbh(nc) * cpatch%dbh(nc)
       cpatch%agb(nc)     = ed_biomass(cpatch%bdead(nc),cpatch%balive(nc),cpatch%bleaf(nc)  &
-                                     ,cpatch%pft(nc),cpatch%hite(nc) ,cpatch%bstorage(nc))
+                                     ,cpatch%pft(nc),cpatch%hite(nc) ,cpatch%bstorage(nc)  &
+                                     ,cpatch%bsapwood(nc))
 
       !----- Initialise other cohort-level variables. -------------------------------------!
       call init_ed_cohort_vars(cpatch, nc, lsl)
@@ -1315,7 +1336,7 @@ if(ianth_disturb > 0) then
       cpatch%hcapveg(nc)    = calc_hcapveg(cpatch%bleaf(nc),cpatch%bdead(nc)               &
                                           ,cpatch%balive(nc),cpatch%nplant(nc)             &
                                           ,cpatch%hite(nc),cpatch%pft(nc)                  &
-                                          ,cpatch%phenology_status(nc))
+                                          ,cpatch%phenology_status(nc),cpatch%bsapwood(nc))
 
       cpatch%veg_energy(nc) = cpatch%hcapveg(nc) * cpatch%veg_temp(nc)
 

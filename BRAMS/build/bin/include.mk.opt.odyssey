@@ -51,7 +51,7 @@ LIBNCARG=$(BASE)/libncarg-$(UTILS_VERSION).a
 # HDF4 library: Instructions to install: www.cptec.inpe.br/brams
 # If you run "configure" script, you don't need to edit line bellow
 USE_HDF4=1
-HDF4_LIBS=-L.hdf4_libs -lmfhdf -ldf -lz -ljpeg -lsz
+HDF4_LIBS=-lmfhdf -ldf -lz -ljpeg
 # --------------------------------------------------------------
 
 # HDF 5  Libraries
@@ -59,9 +59,10 @@ HDF4_LIBS=-L.hdf4_libs -lmfhdf -ldf -lz -ljpeg -lsz
 # and specify the location of the include directory
 # library files. Make sure you include the zlib.a location too.
 USE_HDF5=1
-HDF5_INCS=-I/odyssey/apps/hdf5/intel/lib -I/odyssey/apps/hdf5/intel/include
-HDF5_LIBS=-L/odyssey/apps/hdf5/intel/lib -lhdf5 -lm -lhdf5_fortran -lhdf5 -lhdf5_hl -lz
-
+HDF5_INCS=
+HDF5_LIBS=-lhdf5 -lm -lhdf5_fortran -lhdf5 -lhdf5_hl -lz
+#HDF5_INCS=
+#HDF5_LIBS=-L/n/sw/hdf5-1.8.5_intel-11.1.072/ -lhdf5 -lm -lhdf5_fortran -lhdf5 -lhdf5_hl -lz
 # MPI_Wtime. ---------------------------------------------------
 # If USE_MPIWTIME=1, then it will use MPI libraries to compute
 # the wall time (the only double-precision intrinsic).  In case
@@ -254,39 +255,47 @@ ifeq ($(KIND_COMP),A)
    USE_INTERF=0
    F_OPTS= -FR -O0 -recursive -Vaxlib  -check all -g -fpe0 -ftz -gen-interfaces            \
             -warn interfaces -debug extended -debug inline_debug_info                      \
-             -debug-parameters all -traceback -ftrapuv
+             -debug-parameters all -traceback -ftrapuv -fp-stack-check -implicitnone       \
+             -openmp
    C_OPTS= -O0 -DLITTLE  -g -traceback -debug extended
-   LOADER_OPTS= -FR -O0 -Vaxlib  -check all -g -fpe0 -ftz -gen-interfaces \
-              -warn interfaces -debug extended -debug inline_debug_info  \
-              -debug-parameters all -traceback -ftrapuv
+   LOADER_OPTS= -FR -O0 -Vaxlib  -check all -g -fpe0 -ftz -gen-interfaces                  \
+              -warn interfaces -debug extended -debug inline_debug_info                    \
+              -debug-parameters all -traceback -ftrapuv -fp-stack-check -implicitnone      \
+              -openmp
    C_LOADER_OPTS=-v -g -traceback
    #---------------------------------------------------------------------------------------#
 endif
 ifeq ($(KIND_COMP),B)
    USE_INTERF=1
    F_OPTS= -FR -O0 -recursive -Vaxlib  -check all -g -fpe0 -ftz  -debug extended           \
-           -debug inline_debug_info -debug-parameters all -traceback -ftrapuv
+           -debug inline_debug_info -debug-parameters all -traceback -ftrapuv              \
+           -fp-stack-check -implicitnone -openmp
    C_OPTS= -O0 -DLITTLE  -g -traceback -debug extended
    LOADER_OPTS= -FR -O0 -Vaxlib  -check all -g -fpe0 -ftz -debug extended                  \
-                -debug inline_debug_info -debug-parameters all -traceback -ftrapuv
+                -debug inline_debug_info -debug-parameters all -traceback -ftrapuv         \
+                -fp-stack-check -implicitnone -openmp
    C_LOADER_OPTS=-v -g -traceback
    #---------------------------------------------------------------------------------------#
 endif
 ifeq ($(KIND_COMP),C)
     USE_INTERF=1
     F_OPTS= -FR -O2 -recursive -Vaxlib  -check all -g -fpe0 -ftz  -debug extended          \
-            -debug inline_debug_info -debug-parameters all -traceback -ftrapuv
+            -debug inline_debug_info -debug-parameters all -traceback -ftrapuv             \
+            -fp-stack-check -implicitnone -openmp
     C_OPTS= -O2 -DLITTLE  -g -traceback -debug extended
     LOADER_OPTS= -FR -O2 -Vaxlib  -check all -g -fpe0 -ftz -debug extended                 \
-                 -debug inline_debug_info -debug-parameters all -traceback -ftrapuv
+                 -debug inline_debug_info -debug-parameters all -traceback -ftrapuv        \
+                 -fp-stack-check -implicitnone -openmp
     C_LOADER_OPTS=-v -g -traceback
    #---------------------------------------------------------------------------------------#
 endif
 ifeq ($(KIND_COMP),D)
    USE_INTERF=1
-   F_OPTS= -FR -O2 -recursive -Vaxlib -check all -fpe0 -ftz  -traceback -ftrapuv
+   F_OPTS= -FR -O2 -recursive -Vaxlib -check all -fpe0 -ftz  -traceback -ftrapuv           \
+           -fp-stack-check -implicitnone -openmp
    C_OPTS= -O2 -DLITTLE -traceback
-   LOADER_OPTS= -FR -O2 -Vaxlib  -check all -fpe0 -ftz -traceback -ftrapuv
+   LOADER_OPTS= -FR -O2 -Vaxlib  -check all -fpe0 -ftz -traceback -ftrapuv -fp-stack-check \
+                -implicitnone -openmp
    C_LOADER_OPTS=-v -traceback
    #---------------------------------------------------------------------------------------#
 endif

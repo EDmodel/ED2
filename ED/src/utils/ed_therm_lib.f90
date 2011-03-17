@@ -42,7 +42,7 @@ module ed_therm_lib
    !      energy storages on the land surface fluxes and radiative temperature.            !
    !      J. Geophys. Res., v. 112, doi: 10.1029/2006JD007425.                             !
    !---------------------------------------------------------------------------------------!
-   real function calc_hcapveg(bleaf,bdead,balive,nplant,hite,pft,phen_status)
+   real function calc_hcapveg(bleaf,bdead,balive,nplant,hite,pft,phen_status, bsapwood)
       use consts_coms          , only : cliq                ! ! intent(in)
       use pft_coms             , only : c_grn_leaf_dry      & ! intent(in)
                                       , wat_dry_ratio_grn   & ! intent(in)
@@ -57,6 +57,7 @@ module ed_therm_lib
       real    , intent(in)    :: bleaf         ! Biomass of leaves              [kgC/plant]
       real    , intent(in)    :: bdead         ! Biomass of structural stem     [kgC/plant]
       real    , intent(in)    :: balive        ! Biomass of live tissue         [kgC/plant]
+      real    , intent(in)    :: bsapwood      ! Biomass of sapwood             [kgC/plant]
       real    , intent(in)    :: nplant        ! Number of plants               [ plant/m2]
       real    , intent(in)    :: hite          ! Cohort mean height             [        m]
       integer , intent(in)    :: pft           ! Plant functional type          [     ----]
@@ -79,7 +80,7 @@ module ed_therm_lib
          !----- Finding branch/twig specific heat and biomass. ----------------------------!
          spheat_wood = (c_ngrn_biom_dry(pft) + wat_dry_ratio_ngrn(pft) * cliq)             &
                      / (1. + wat_dry_ratio_ngrn(pft)) + delta_c(pft)
-         bwood = wood_biomass(bdead,balive,pft,hite)
+         bwood = wood_biomass(bdead,balive,pft,hite, bsapwood)
       end select
 
       select case (phen_status)
@@ -212,64 +213,117 @@ module ed_therm_lib
 
    !=======================================================================================!
    !=======================================================================================!
-   !      This routine computes surface_ssh, which is is the saturation mixing ratio of    !
+   !      This routine computes ground_shv, which is is the saturation mixing ratio of     !
    ! the top soil or snow surface and is used for dew formation and snow evaporation.      !
+   ! References:                                                                           !
+   !                                                                                       !
+   ! NP89 - Noilhan, J., S. Planton, 1989: A simple parameterization of land surface       !
+   !        processes for meteorological models. Mon. Wea. Rev., 117, 536-549.             !
+   !                                                                                       !
+   ! LP92 - Lee, T. J., R. A. Pielke, 1992: Estimating the soil surface specific humidity  !
+   !        J. Appl. Meteorol., 31, 480-484.                                               !
+   !                                                                                       !
+   ! LP93 - Lee, T. J., R. A. Pielke, 1993: CORRIGENDUM, J. Appl. Meteorol., 32, 580.      !
    !---------------------------------------------------------------------------------------!
-   subroutine ed_grndvap(nlev_sfcwater,nts,soil_water,soil_energy,sfcwater_energy,can_prss &
-                        ,can_shv,ground_shv,surface_ssh,surface_tempk,surface_fracliq)
-     
-      use soil_coms   , only: ed_nstyp,soil
-      use grid_coms   , only: nzg
-      use consts_coms , only: pi1,wdns,gorh2o
-      use therm_lib   , only: rslif,qtk,qwtk
-     
+   subroutine ed_grndvap(ksn,nsoil,topsoil_water,topsoil_temp,topsoil_fliq,sfcwater_temp   &
+                        ,sfcwater_fliq,can_prss,can_shv,ground_shv,ground_ssh              &
+                        ,ground_temp,ground_fliq)
+
+      use soil_coms   , only : soil      & ! intent(in)
+                             , betapower ! ! intent(in)
+      use consts_coms , only : pi1       & ! intent(in)
+                             , wdns      & ! intent(in)
+                             , gorh2o    & ! intent(in)
+                             , lnexp_min ! ! intent(in)
+      use therm_lib   , only : rslif     ! ! function
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      integer, intent(in)  :: nlev_sfcwater   ! # active levels of surface water
-      integer, intent(in)  :: nts             ! soil textural class (local name)
-     
-      real   , intent(in)  :: soil_water      ! soil water content              [m訛h2o/m設
-      real   , intent(in)  :: soil_energy     ! Soil internal energy            [     J/m設
-      real   , intent(in)  :: sfcwater_energy ! Snow/water internal energy      [     J/kg]
-      real   , intent(in)  :: can_prss        ! canopy pressure                 [       Pa]
-      real   , intent(in)  :: can_shv         ! canopy vapor spec humidity      [kg_vap/kg]
-      real   , intent(out) :: ground_shv      ! ground equilibrium spec hum     [kg_vap/kg]
-      real   , intent(out) :: surface_ssh     ! surface (saturation) spec hum   [kg_vap/kg]
-      real   , intent(out) :: surface_tempk   ! Surface water temperature       [        K]
-      real   , intent(out) :: surface_fracliq ! fraction of surface water in liquid phase
+      integer     , intent(in)  :: ksn           ! # of surface water layers    [     ----]
+      integer     , intent(in)  :: nsoil         ! Soil type                    [     ----]
+      real(kind=4), intent(in)  :: topsoil_water ! Top soil water               [m訛h2o/m設
+      real(kind=4), intent(in)  :: topsoil_temp  ! Top soil temperature         [        K]
+      real(kind=4), intent(in)  :: topsoil_fliq  ! Top soil liquid water frac.  [       --]
+      real(kind=4), intent(in)  :: sfcwater_temp ! Snow/water temperature       [        K]
+      real(kind=4), intent(in)  :: sfcwater_fliq ! Snow/water liq. water frac.  [       --]
+      real(kind=4), intent(in)  :: can_prss      ! canopy pressure              [       Pa]
+      real(kind=4), intent(in)  :: can_shv       ! canopy vapour spec humidity  [kg_vap/kg]
+      real(kind=4), intent(out) :: ground_shv    ! ground equilibrium spec hum  [kg_vap/kg]
+      real(kind=4), intent(out) :: ground_ssh    ! sfc. saturation spec. hum.   [kg_vap/kg]
+      real(kind=4), intent(out) :: ground_temp   ! Surface temperature          [        K]
+      real(kind=4), intent(out) :: ground_fliq   ! Surface liquid water frac.   [       --]
       !----- Local variables --------------------------------------------------------------!
-      real                 :: slpotvn         ! soil water potential            [        m]
-      real                 :: alpha           ! "alpha" term in Lee and Pielke (1993)
-      real                 :: beta            ! "beta" term in Lee and Pielke (1993)
-      real                 :: lnalpha         ! ln(alpha)
+      real(kind=4)              :: slpotvn       ! soil water potential         [        m]
+      real(kind=4)              :: alpha         ! alpha term (Lee-Pielke,1992) [     ----]
+      real(kind=4)              :: beta          ! beta term  (Lee-Pielke,1992) [     ----]
+      real(kind=4)              :: lnalpha       ! ln(alpha)                    [     ----]
+      real(kind=4)              :: smterm        ! soil moisture term           [     ----]
       !------------------------------------------------------------------------------------!
-      
-      if (nlev_sfcwater > 0 .and. sfcwater_energy > 0.) then
-         !----- If a temporary layer exists, this is the surface. -------------------------!
-         call qtk(sfcwater_energy,surface_tempk,surface_fracliq)
-         surface_ssh = rslif(can_prss,surface_tempk)
-         surface_ssh = surface_ssh / (1.0 + surface_ssh)
-         ground_shv  = surface_ssh
-      else
+
+
+      !------------------------------------------------------------------------------------!
+      !     Decide what are we going to call surface.                                      !
+      !------------------------------------------------------------------------------------!
+      select case (ksn)
+      case (0)
          !---------------------------------------------------------------------------------!
-         !      Without snowcover, ground_shv is the effective saturation mixing ratio of  !
-         ! soil and is used for soil evaporation.  First, compute the "alpha" term or soil !
-         ! "relative humidity" and the "beta" term.                                        !
+         !      Without snowcover or water ponding, ground_shv is the effective specific   !
+         ! humidity of soil and is used for soil evaporation.  This value is a combination !
+         ! of the canopy air specific humidity, the saturation specific humidity at the    !
+         ! soil temperature.  When the soil tends to dry air soil moisture, ground_shv     !
+         ! tends to the canopy air space specific humidity, whereas it tends to the        !
+         ! saturation value when the soil moisture is near or above field capacity.  These !
+         ! tendencies will be determined by the alpha and beta parameters.                 !
          !---------------------------------------------------------------------------------!
-         call qwtk(soil_energy,soil_water*wdns,soil(nts)%slcpd,surface_tempk               &
-                  ,surface_fracliq)
-         surface_ssh = rslif(can_prss,surface_tempk)
-         surface_ssh = surface_ssh / (1.0 + surface_ssh)
-         slpotvn     = soil(nts)%slpots * (soil(nts)%slmsts / soil_water) ** soil(nts)%slbs
-         lnalpha     = gorh2o * slpotvn / surface_tempk
-         if (lnalpha > -38.) then
-            alpha       = exp(lnalpha)
+         ground_temp = topsoil_temp
+         ground_fliq = topsoil_fliq
+         !----- Compute the saturation specific humidity at ground temperature. -----------!
+         ground_ssh  = rslif(can_prss,ground_temp)
+         ground_ssh  = ground_ssh / (1.0 + ground_ssh)
+         !----- Determine alpha. ----------------------------------------------------------!
+         slpotvn      = soil(nsoil)%slpots                                                 &
+                      * (soil(nsoil)%slmsts / topsoil_water) ** soil(nsoil)%slbs
+         lnalpha     = gorh2o * slpotvn / ground_temp
+         if (lnalpha > lnexp_min) then
+            alpha   = exp(lnalpha)
          else
-            alpha       = 0.0
+            alpha   = 0.0
          end if
-         beta        = .25 * (1. - cos (min(1.,soil_water / soil(nts)%sfldcap) * pi1)) ** 2
-         ground_shv  = surface_ssh * alpha * beta + (1. - beta) * can_shv
-      end if
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !     Determine Beta, following NP89.  However, because we want evaporation to be !
+         ! shut down when the soil approaches the dry air soil moisture, we offset both    !
+         ! the soil moisture and field capacity to the soil moisture above dry air soil.   !
+         ! This is necessary to avoid evaporation to be large just slightly above the dry  !
+         ! air soil, which was happening especially for those soil types rich in clay.     !
+         !---------------------------------------------------------------------------------!
+         smterm     = (topsoil_water - soil(nsoil)%soilcp)                                 &
+                    / (soil(nsoil)%sfldcap - soil(nsoil)%soilcp)
+         beta       = (.5 * (1. - cos (min(1.,smterm) * pi1))) ** betapower
+         !----- Use the expression from LP92 to determine the specific humidity. ----------!
+         ground_shv = ground_ssh * alpha * beta + (1. - beta) * can_shv
+         !---------------------------------------------------------------------------------!
+
+      case default
+         !---------------------------------------------------------------------------------!
+         !    If a temporary layer exists, we use the top layer as the surface.  Since     !
+         ! this is "pure" water or snow, we let it evaporate freely.  We can understand    !
+         ! this as the limit of alpha and beta tending to one.                             !
+         !---------------------------------------------------------------------------------!
+         ground_temp = sfcwater_temp
+         ground_fliq = sfcwater_fliq
+         !----- Compute the saturation specific humidity at ground temperature. -----------!
+         ground_ssh = rslif(can_prss,ground_temp)
+         ground_ssh = ground_ssh / (1.0 + ground_ssh)
+         !----- The ground specific humidity in this case is just the saturation value. ---!
+         ground_shv  = ground_ssh
+         !---------------------------------------------------------------------------------!
+      end select
+      !------------------------------------------------------------------------------------!
+
+
       return
    end subroutine ed_grndvap
    !=======================================================================================!
@@ -282,68 +336,117 @@ module ed_therm_lib
 
    !=======================================================================================!
    !=======================================================================================!
-   !      This routine computes surface_ssh, which is is the saturation mixing ratio of    !
+   !      This routine computes ground_shv, which is is the saturation mixing ratio of     !
    ! the top soil or snow surface and is used for dew formation and snow evaporation.      !
-   ! This uses double precision arguments for real numbers.                                !
+   ! References:                                                                           !
+   !                                                                                       !
+   ! NP89 - Noilhan, J., S. Planton, 1989: A simple parameterization of land surface       !
+   !        processes for meteorological models. Mon. Wea. Rev., 117, 536-549.             !
+   !                                                                                       !
+   ! LP92 - Lee, T. J., R. A. Pielke, 1992: Estimating the soil surface specific humidity  !
+   !        J. Appl. Meteorol., 31, 480-484.                                               !
+   !                                                                                       !
+   ! LP93 - Lee, T. J., R. A. Pielke, 1993: CORRIGENDUM, J. Appl. Meteorol., 32, 580.      !
    !---------------------------------------------------------------------------------------!
-   subroutine ed_grndvap8(nlev_sfcwater,nts,soil_water,soil_energy,sfcwater_energy         &
-                        ,can_prss,can_shv,ground_shv,surface_ssh,surface_tempk             &
-                        ,surface_fracliq)
-      use soil_coms   , only: ed_nstyp,soil8
-      use grid_coms   , only: nzg
-      use consts_coms , only: pi18,wdns8,gorh2o8
-      use therm_lib8  , only: rslif8,qtk8,qwtk8
-     
+   subroutine ed_grndvap8(ksn,nsoil,topsoil_water,topsoil_temp,topsoil_fliq,sfcwater_temp  &
+                         ,sfcwater_fliq,can_prss,can_shv,ground_shv,ground_ssh             &
+                         ,ground_temp,ground_fliq)
+      use soil_coms   , only : soil8      & ! intent(in)
+                             , betapower8 ! ! intent(in)
+      use consts_coms , only : pi18       & ! intent(in)
+                             , wdns8      & ! intent(in)
+                             , gorh2o8    & ! intent(in)
+                             , lnexp_min8 ! ! intent(in) 
+      use therm_lib8  , only : rslif8     ! ! function
+
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      integer, intent(in)  :: nlev_sfcwater   ! # active levels of surface water
-      integer, intent(in)  :: nts             ! soil textural class (local name)
-     
-      real(kind=8), intent(in)  :: soil_water      ! soil water content         [m訛h2o/m設
-      real(kind=8), intent(in)  :: soil_energy     ! Soil internal energy       [     J/m設
-      real(kind=8), intent(in)  :: sfcwater_energy ! Snow/water internal energy [     J/kg]
-      real(kind=8), intent(in)  :: can_prss        ! canopy air pressure        [       Pa]
-      real(kind=8), intent(in)  :: can_shv         ! canopy vapor spec humidity [kg_vap/kg]
-      real(kind=8), intent(out) :: ground_shv      ! Gnd. equilibrium spec hum  [kg_vap/kg]
-      real(kind=8), intent(out) :: surface_ssh     ! Sfc. sat. spec hum         [kg_vap/kg]
-      real(kind=8), intent(out) :: surface_tempk   ! Surface water temperature  [        K]
-      real(kind=8), intent(out) :: surface_fracliq ! liquid fraction of surface water
+      integer     , intent(in)  :: ksn           ! # of surface water layers    [     ----]
+      integer     , intent(in)  :: nsoil         ! Soil type                    [     ----]
+      real(kind=8), intent(in)  :: topsoil_water ! Top soil water               [m訛h2o/m設
+      real(kind=8), intent(in)  :: topsoil_temp  ! Top soil temperature         [        K]
+      real(kind=8), intent(in)  :: topsoil_fliq  ! Top soil liquid water frac.  [       --]
+      real(kind=8), intent(in)  :: sfcwater_temp ! Snow/water temperature       [        K]
+      real(kind=8), intent(in)  :: sfcwater_fliq ! Snow/water liq. water frac.  [       --]
+      real(kind=8), intent(in)  :: can_prss      ! canopy pressure              [       Pa]
+      real(kind=8), intent(in)  :: can_shv       ! canopy vapour spec humidity  [kg_vap/kg]
+      real(kind=8), intent(out) :: ground_shv    ! ground equilibrium spec hum  [kg_vap/kg]
+      real(kind=8), intent(out) :: ground_ssh    ! sfc. saturation spec. hum.   [kg_vap/kg]
+      real(kind=8), intent(out) :: ground_temp   ! Surface temperature          [        K]
+      real(kind=8), intent(out) :: ground_fliq   ! Surface liquid water frac.   [       --]
       !----- Local variables --------------------------------------------------------------!
-      real(kind=8)              :: slpotvn         ! soil water potential       [        m]
-      real(kind=8)              :: alpha           ! "alpha" term in Lee and Pielke (1993)
-      real(kind=8)              :: beta            ! "beta" term in Lee and Pielke (1993)
-      real(kind=8)              :: lnalpha         ! ln(alpha)
+      real(kind=8)              :: slpotvn       ! soil water potential         [        m]
+      real(kind=8)              :: alpha         ! alpha term (Lee-Pielke,1992) [     ----]
+      real(kind=8)              :: beta          ! beta term  (Lee-Pielke,1992) [     ----]
+      real(kind=8)              :: lnalpha       ! ln(alpha)                    [     ----]
+      real(kind=8)              :: smterm        ! soil moisture term           [     ----]
       !------------------------------------------------------------------------------------!
-      
-      if (nlev_sfcwater > 0 .and. sfcwater_energy > 0.d0) then
-         !----- If a temporary layer exists, this is the surface. -------------------------!
-         call qtk8(sfcwater_energy,surface_tempk,surface_fracliq)
-         surface_ssh = rslif8(can_prss,surface_tempk)
-         surface_ssh = surface_ssh / (1.d0 + surface_ssh)
-         ground_shv  = surface_ssh
-         ground_shv  = surface_ssh
-      else
+
+
+      !------------------------------------------------------------------------------------!
+      !     Decide what are we going to call surface.                                      !
+      !------------------------------------------------------------------------------------!
+      select case (ksn)
+      case (0)
          !---------------------------------------------------------------------------------!
-         !      Without snowcover, ground_shv is the effective saturation mixing ratio of  !
-         ! soil and is used for soil evaporation.  First, compute the "alpha" term or soil !
-         ! "relative humidity" and the "beta" term.                                        !
+         !      Without snowcover or water ponding, ground_shv is the effective specific   !
+         ! humidity of soil and is used for soil evaporation.  This value is a combination !
+         ! of the canopy air specific humidity, the saturation specific humidity at the    !
+         ! soil temperature.  When the soil tends to dry air soil moisture, ground_shv     !
+         ! tends to the canopy air space specific humidity, whereas it tends to the        !
+         ! saturation value when the soil moisture is near or above field capacity.  These !
+         ! tendencies will be determined by the alpha and beta parameters.                 !
          !---------------------------------------------------------------------------------!
-         call qwtk8(soil_energy,soil_water*wdns8,soil8(nts)%slcpd,surface_tempk            &
-                  ,surface_fracliq)
-         surface_ssh = rslif8(can_prss,surface_tempk)
-         surface_ssh = surface_ssh / (1.d0 + surface_ssh)
-         slpotvn     = soil8(nts)%slpots*(soil8(nts)%slmsts / soil_water)                  &
-                     ** soil8(nts)%slbs
-         lnalpha     = gorh2o8 * slpotvn / surface_tempk
-         if (lnalpha > -38.) then
-            alpha       = exp(lnalpha)
+         ground_temp = topsoil_temp
+         ground_fliq = topsoil_fliq
+         !----- Compute the saturation specific humidity at ground temperature. -----------!
+         ground_ssh  = rslif8(can_prss,ground_temp)
+         ground_ssh  = ground_ssh / (1.d0 + ground_ssh)
+         !----- Determine alpha. ----------------------------------------------------------!
+         slpotvn      = soil8(nsoil)%slpots                                                &
+                      * (soil8(nsoil)%slmsts / topsoil_water) ** soil8(nsoil)%slbs
+         lnalpha     = gorh2o8 * slpotvn / ground_temp
+         if (lnalpha > lnexp_min8) then
+            alpha   = exp(lnalpha)
          else
-            alpha       = 0.d0
+            alpha   = 0.d0
          end if
-         beta        = 2.5d-1                                                              &
-                     * (1.d0 - cos (min(1.d0,soil_water / soil8(nts)%sfldcap) * pi18)) ** 2
-         ground_shv  = surface_ssh * alpha * beta + (1.d0 - beta) * can_shv
-      end if
+         !---------------------------------------------------------------------------------!
+
+
+
+         !---------------------------------------------------------------------------------!
+         !     Determine Beta, following NP89.  However, because we want evaporation to be !
+         ! shut down when the soil approaches the dry air soil moisture, we offset both    !
+         ! the soil moisture and field capacity to the soil moisture above dry air soil.   !
+         ! This is necessary to avoid evaporation to be large just slightly above the dry  !
+         ! air soil, which was happening especially for those soil types rich in clay.     !
+         !---------------------------------------------------------------------------------!
+         smterm     = (topsoil_water - soil8(nsoil)%soilcp)                                &
+                    / (soil8(nsoil)%sfldcap - soil8(nsoil)%soilcp)
+         beta       = (5.d-1 * (1.d0 - cos (min(1.d0,smterm) * pi18))) ** betapower8
+         !----- Use the expression from LP92 to determine the specific humidity. ----------!
+         ground_shv = ground_ssh * alpha * beta + (1.d0 - beta) * can_shv
+         !---------------------------------------------------------------------------------!
+
+      case default
+         !---------------------------------------------------------------------------------!
+         !    If a temporary layer exists, we use the top layer as the surface.  Since     !
+         ! this is "pure" water or snow, we let it evaporate freely.  We can understand    !
+         ! this as the limit of alpha and beta tending to one.                             !
+         !---------------------------------------------------------------------------------!
+         ground_temp = sfcwater_temp
+         ground_fliq = sfcwater_fliq
+         !----- Compute the saturation specific humidity at ground temperature. -----------!
+         ground_ssh = rslif8(can_prss,ground_temp)
+         ground_ssh = ground_ssh / (1.d0 + ground_ssh)
+         !----- The ground specific humidity in this case is just the saturation value. ---!
+         ground_shv  = ground_ssh
+         !---------------------------------------------------------------------------------!
+      end select
+      !------------------------------------------------------------------------------------!
+
+
       return
    end subroutine ed_grndvap8
    !=======================================================================================!

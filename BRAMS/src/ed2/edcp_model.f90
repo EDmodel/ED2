@@ -6,15 +6,15 @@
 !------------------------------------------------------------------------------------------!
 subroutine ed_timestep()
   
-   use grid_dims   , only : maxgrds      ! ! intent(in)
-   use mem_grid    , only : ngrid        & ! intent(in)
-                          , time         & ! intent(in)
-                          , dtlt         ! ! intent
-   use ed_node_coms, only : mynum        ! ! intent(in)
-   use ed_misc_coms, only : dtlsm        & ! intent(in)
-                          , current_time ! ! intent(inout)
-   use mem_edcp    , only : edtime1      & ! intent(out)
-                          , edtime2      ! ! intent(out)
+   use grid_dims    , only : maxgrds             ! ! intent(in)
+   use mem_grid     , only : ngrid               & ! intent(in)
+                           , time                & ! intent(in)
+                           , dtlt                ! ! intent
+   use ed_node_coms , only : mynum               ! ! intent(in)
+   use ed_misc_coms , only : dtlsm               & ! intent(in)
+                           , current_time        ! ! intent(inout)
+   use mem_edcp     , only : edtime1             & ! intent(out)
+                           , edtime2             ! ! intent(out)
    implicit none
    !----- Local variables. ----------------------------------------------------------------!
    real(kind=8)                            :: thistime
@@ -33,9 +33,7 @@ subroutine ed_timestep()
    !----- External function. --------------------------------------------------------------!
    real                       , external   :: walltime
    !---------------------------------------------------------------------------------------!
-
-
-  
+   
    !---------------------------------------------------------------------------------------!
    !     Now the solve the water fluxes.  This is called every time step.                  !
    !---------------------------------------------------------------------------------------!
@@ -87,7 +85,7 @@ subroutine ed_timestep()
       end if
 
 
-      
+
       !------------------------------------------------------------------------------------!
       !      If this is the first time the routine is called, then the ed_fluxp_g arrays   !
       ! (the flux arrays from previous time) are zero.  So just this once, copy the future !
@@ -101,8 +99,8 @@ subroutine ed_timestep()
   
 
    !---------------------------------------------------------------------------------------!
-   !      Update the leaf_g surface flux arrays of tstar,rstar and ustar.  This gets       !
-   ! called every step because it is a time interpolation.                                 !
+   !      Update the leaf_g surface flux arrays of tstar,rstar and ustar.  This is called  !
+   ! every step because it is a time interpolation.                                        !
    !---------------------------------------------------------------------------------------!
    call transfer_ed2leaf(ngrid,time)
 
@@ -137,6 +135,7 @@ subroutine ed_coup_model(ifm)
                            , isoutput           & ! intent(in)
                            , idoutput           & ! intent(in)
                            , imoutput           & ! intent(in)
+                           , iqoutput           & ! intent(in)
                            , itoutput           & ! intent(in)
                            , iyoutput           & ! intent(in)
                            , frqsum             & ! intent(inout)
@@ -156,8 +155,12 @@ subroutine ed_coup_model(ifm)
    use ed_state_vars, only : edgrid_g           & ! intent(inout)
                            , edtype             & ! variable type
                            , patchtype          & ! variable type
-                           , filltab_alltypes   ! ! subroutine
+                           , filltab_alltypes   & ! subroutine
+                           , filltables         ! ! intent(in)
    use rk4_driver   , only : rk4_timestep       ! ! subroutine
+   use rk4_coms     , only : record_err         & ! intent(out)
+                           , print_detailed     & ! intent(out)
+                           , print_thbnd        ! ! intent(out)
    use ed_node_coms , only : mynum              & ! intent(in)
                            , nnodetot           ! ! intent(in)
    use mem_polygons , only : maxpatch           & ! intent(in)
@@ -174,9 +177,11 @@ subroutine ed_coup_model(ifm)
    logical                               :: new_year
    logical                               :: the_end
    logical                               :: history_time
+   logical                               :: dcycle_time
    logical                               :: annual_time
    logical                               :: mont_analy_time
    logical                               :: dail_analy_time
+   logical                               :: dcyc_analy_time
    logical                               :: reset_time
    integer                               :: ndays
    integer                               :: jfm
@@ -186,18 +191,25 @@ subroutine ed_coup_model(ifm)
    logical                    , save     :: first_time = .true.
    logical                    , save     :: writing_dail
    logical                    , save     :: writing_mont
+   logical                    , save     :: writing_dcyc
    logical                    , save     :: writing_year
    logical, dimension(maxgrds), save     :: calledgrid
    !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!
-   !     Saving some of the output control variables. The test can be done only once.      !
+   !     Save some of the output control variables, and settings that should never happen  !
+   ! in a coupled model.  The test can be done only once.                                  !
    !---------------------------------------------------------------------------------------!
    if (first_time) then
       writing_dail      = idoutput > 0
       writing_mont      = imoutput > 0
+      writing_dcyc      = iqoutput > 0
       writing_year      = iyoutput > 0
+      filltables        = .false.
+      record_err        = .false.
+      print_detailed    = .false.
+      print_thbnd       = .false.
       calledgrid(:)     = .false.
       first_time        = .false.
    end if
@@ -231,7 +243,7 @@ subroutine ed_coup_model(ifm)
    !---------------------------------------------------------------------------------------!
    !     Update the daily averages if daily or monthly analysis are needed.                !
    !---------------------------------------------------------------------------------------!
-   if (writing_dail .or. writing_mont) then
+   if (writing_dail .or. writing_mont .or. writing_dcyc) then
       call integrate_ed_daily_output_state(edgrid_g(ifm))
    end if
 
@@ -250,35 +262,39 @@ subroutine ed_coup_model(ifm)
       call update_model_time_dm(current_time, dtlsm)
 
       !------------------------------------------------------------------------------------!
-      !     Checking whether now is any of those special times...                          !
+      !     Check whether now is any of those special times...                             !
       !------------------------------------------------------------------------------------!
       new_day         = current_time%time  <  dtlsm
       new_month       = current_time%date  == 1  .and. new_day
       new_year        = current_time%month == 1  .and. new_month
       mont_analy_time = new_month .and. writing_mont
+      dcyc_analy_time = new_month .and. writing_dcyc
       annual_time     = new_month .and. writing_year .and.                                 &
                         current_time%month == outputmonth
       dail_analy_time = new_day   .and. writing_dail
       reset_time      = mod(time,dble(frqsum)) < dble(dtlsm)
       the_end         = mod(time,timmax)       < dble(dtlsm)
 
-      !----- Checking whether this is time to write fast analysis output or not. ----------!
+      !----- Check whether this is time to write fast analysis output or not. -------------!
       select case (unitfast)
       case (0,1) !----- Now both are in seconds -------------------------------------------!
          analysis_time   = mod(current_time%time, frqfast) < dtlsm .and.                   &
                            (ifoutput /= 0 .or. itoutput /= 0 .or. ioutput /= 0)
+         dcycle_time     = mod(current_time%time, frqfast) < dtlsm .and. iqoutput /= 0
       case (2)   !----- Months, analysis time is at the new month -------------------------!
          analysis_time   = new_month .and.                                                 &
                            (ifoutput /= 0 .or. itoutput /= 0 .or. ioutput /= 0) .and.      &
                            mod(real(12+current_time%month-imontha),frqfast) == 0.
+         dcycle_time     = .false.
       case (3) !----- Year, analysis time is at the same month as initial time ------------!
          analysis_time   = new_month  .and.                                                &
                            (ifoutput /= 0 .or. itoutput /= 0 .or. ioutput /= 0) .and.      &
                            current_time%month == imontha .and.                             &
                            mod(real(current_time%year-iyeara),frqfast) == 0.
+         dcycle_time     = .false.
       end select
 
-      !----- Checking whether this is time to write restart output or not. ----------------!
+      !----- Check whether this is time to write restart output or not. -------------------!
       select case(unitstate)
       case (0,1) !----- Now both are in seconds -------------------------------------------!
          history_time   = mod(current_time%time, frqstate) < dtlsm .and.                   &
@@ -293,7 +309,7 @@ subroutine ed_coup_model(ifm)
       end select
 
       !------------------------------------------------------------------------------------!
-      !    Updating nrec_fast and nrec_state if it is a new month and outfast/outstate are !
+      !    Update nrec_fast and nrec_state if it is a new month and outfast/outstate are   !
       ! monthly and frqfast/frqstate are daily or by seconds.                              !
       !------------------------------------------------------------------------------------!
       if (new_month) then
@@ -301,11 +317,18 @@ subroutine ed_coup_model(ifm)
          if (outfast  == -2.) nrec_fast  = ndays*ceiling(day_sec/frqfast)
          if (outstate == -2.) nrec_state = ndays*ceiling(day_sec/frqstate)
       end if
+      !------------------------------------------------------------------------------------!
 
 
-      !----- Call the output subroutine. --------------------------------------------------!
-      call ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,annual_time     &
-                    ,writing_dail,writing_mont,history_time,the_end)
+      !------------------------------------------------------------------------------------!
+      !     Call the model output driver.                                                  !
+      !------------------------------------------------------------------------------------!
+      call ed_output(analysis_time,new_day,dail_analy_time,mont_analy_time,dcyc_analy_time &
+                    ,annual_time,writing_dail,writing_mont,writing_dcyc,history_time       &
+                    ,dcycle_time,the_end)
+      !------------------------------------------------------------------------------------!
+
+
 
       !------------------------------------------------------------------------------------!
       !     If this is the time to write the output, then send the data back to the LEAF   !
@@ -316,9 +339,12 @@ subroutine ed_coup_model(ifm)
             call copy_avgvars_to_leaf(jfm)
          end do
       end if
+      !------------------------------------------------------------------------------------!
+
+
 
       !------------------------------------------------------------------------------------!
-      ! Reset time happens every frqsum. This is to avoid variables to build up when       !
+      !      Reset time happens every frqsum. This is to avoid variables to build up when  !
       ! history and analysis are off.  Put outside ed_output so we have a chance to copy   !
       ! some of these to BRAMS structures.                                                 !
       !------------------------------------------------------------------------------------!
@@ -329,7 +355,7 @@ subroutine ed_coup_model(ifm)
       end if
 
       !------------------------------------------------------------------------------------!
-      !     Checking whether this is the beginning of a new simulated day.  Longer-scale   !
+      !     Check whether this is the beginning of a new simulated day.  Longer-scale      !
       ! processes, those which are updated once a day, once a month, or once a year, are   !
       ! updated here.  Since the subroutines here have internal grid loops, we only call   !
       ! this part of the code when all grids have reached this point.                      !
@@ -345,8 +371,9 @@ subroutine ed_coup_model(ifm)
          ! vectors must be updated, and the global definitions of the total numbers must   !
          ! be exported to every node.                                                      !
          !---------------------------------------------------------------------------------!
-         if (new_month .and. (maxpatch >= 0 .or. maxcohort >= 0)) then
-            call filltab_alltypes
+         if (new_month) then
+            !----- Flag to run the subroutine filltab_alltypes. ---------------------------!
+            if (maxcohort >= 0 .or. maxpatch >= 0) filltables=.true.
 
             !---- Also, we must re-allocate the cohort-level integration buffer. ----------!
             call initialize_rk4patches(.false.)
@@ -360,7 +387,13 @@ subroutine ed_coup_model(ifm)
       end if
    
 
-      !----- Update Lateral hydrology. ----------------------------------------------------!
+      if (analysis_time .and. new_month .and. new_day .and. current_time%month == 6) then
+         do jfm = 1,ngrids
+            call update_ed_yearly_vars(edgrid_g(jfm))
+         end do
+      end if
+
+      !----- Update lateral hydrology. ----------------------------------------------------!
       call calcHydroSubsurface()
       call calcHydroSurface()
       call writeHydro()
@@ -369,170 +402,5 @@ subroutine ed_coup_model(ifm)
 
    return
 end subroutine ed_coup_model
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-subroutine update_model_time_dm(ctime,dtlong)
-
-   use ed_misc_coms, only : simtime
-   use  consts_coms, only : day_sec
-   implicit none
-
-   type(simtime) :: ctime
-   real, intent(in) :: dtlong
-   logical, external :: isleap
-   integer, dimension(12) :: daymax
-  
-   daymax=(/31,28,31,30,31,30,31,31,30,31,30,31/)
-
-
-   ctime%time = ctime%time + dtlong
-  
-   if (ctime%time >= day_sec)then
-      ctime%time = ctime%time - day_sec
-      ctime%date = ctime%date + 1
-
-      ! Before checking, adjust for leap year
-      if (isleap(ctime%year)) daymax(2) = 29
-    
-      if (ctime%date > daymax(ctime%month)) then
-         ctime%date  = 1
-         ctime%month = ctime%month + 1
-      
-         if(ctime%month == 13)then
-            ctime%month = 1
-            ctime%year = ctime%year + 1
-         endif
-      endif
-      
-   elseif(ctime%time < 0.0)then
-      ctime%time = ctime%time + day_sec
-      ctime%date = ctime%date - 1
-
-      if(ctime%date == 0)then
-         ctime%month = ctime%month - 1
-         
-         if(ctime%month == 0)then
-            ctime%month = 12
-            ctime%year = ctime%year - 1
-            ctime%date = daymax(12)
-
-         else
-            if (isleap(ctime%year)) daymax(2) = 29
-            ctime%date = daymax(ctime%month)
-         end if
-      end if
-   end if
-
-   return
-end subroutine update_model_time_dm
-!==========================================================================================!
-!==========================================================================================!
-
-
-
-
-
-
-!==========================================================================================!
-!==========================================================================================!
-!     This subroutine will drive the longer-term vegetation dynamics.                      !
-!------------------------------------------------------------------------------------------!
-subroutine vegetation_dynamics(new_month,new_year)
-   use grid_coms        , only : ngrids
-   use ed_misc_coms     , only : current_time           & ! intent(in)
-                               , dtlsm                  & ! intent(in)
-                               , frqsum                 ! ! intent(in)
-   use disturb_coms     , only : include_fire           ! ! intent(in)
-   use disturbance_utils, only : apply_disturbances     & ! subroutine
-                               , site_disturbance_rates ! ! subroutine
-   use fuse_fiss_utils  , only : fuse_patches           ! ! subroutine
-   use ed_state_vars    , only : edgrid_g               & ! intent(inout)
-                               , edtype                 ! ! variable type
-   use growth_balive    , only : dbalive_dt             ! ! subroutine
-   use consts_coms      , only : day_sec                & ! intent(in)
-                               , yr_day                 ! ! intent(in)
-   use mem_polygons     , only : maxpatch               ! ! intent(in)
-   implicit none
-   !----- Arguments. ----------------------------------------------------------------------!
-   logical     , intent(in)   :: new_month
-   logical     , intent(in)   :: new_year
-   !----- Local variables. ----------------------------------------------------------------!
-   type(edtype), pointer      :: cgrid
-   real                       :: tfact1
-   real                       :: tfact2
-   integer                    :: doy
-   integer                    :: ip
-   integer                    :: isite
-   integer                    :: ifm
-   !----- External functions. -------------------------------------------------------------!
-   integer     , external     :: julday
-   !---------------------------------------------------------------------------------------!
-
-   !----- Find the day of year. -----------------------------------------------------------!
-   doy = julday(current_time%month, current_time%date, current_time%year)
-  
-   !----- Time factor for normalizing daily variables updated on the DTLSM step. ----------!
-   tfact1 = dtlsm / day_sec
-   !----- Time factor for averaging dailies. ----------------------------------------------!
-   tfact2 = 1.0 / yr_day
-
-   !----- Apply events. -------------------------------------------------------------------!
-   call prescribed_event(current_time%year,doy)
-
-  
-   do ifm=1,ngrids
-
-      cgrid => edgrid_g(ifm) 
-      call normalize_ed_daily_vars(cgrid, tfact1)
-      call phenology_driver(cgrid,doy,current_time%month, tfact1)
-      call dbalive_dt(cgrid,tfact2)
-
-      if(new_month)then
-
-         call update_workload(cgrid)
-
-         call structural_growth(cgrid, current_time%month)
-         call reproduction(cgrid,current_time%month)
-
-         if(include_fire /= 0) then
-            call fire_frequency(current_time%month,cgrid)
-         end if
-
-         call site_disturbance_rates(current_time%month, current_time%year, cgrid)
-
-         if(new_year) then
-            !write (unit=*,fmt='(a)') '### Apply_disturbances...'
-            call apply_disturbances(cgrid)
-         end if
-         
-      end if
-
-      call update_C_and_N_pools(cgrid)
-      call zero_ed_daily_vars(cgrid)
-
-      !------------------------------------------------------------------------------------!
-      !      Fuse patches last, after all updates have been applied.  This reduces the     !
-      ! number of patch variables that actually need to be fused.                          !
-      !------------------------------------------------------------------------------------!
-      if(new_year) then
-         if (maxpatch >= 0) call fuse_patches(cgrid,ifm)
-      end if
-
-      !----- Recalculate the AGB and basal area at the polygon level. ---------------------!
-      call update_polygon_derived_props(cgrid)
-      call print_C_and_N_budgets(cgrid)
-
-   end do
-
-   return
-end subroutine vegetation_dynamics
 !==========================================================================================!
 !==========================================================================================!

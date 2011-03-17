@@ -83,11 +83,11 @@ subroutine shcupar(m1,m2,m3,ia,iz,ja,jz,i0,j0,wp,theta,pp,pi0,dn0,rv,thsrcsh,rts
 
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
-   integer                  , intent(in)  :: m1,m2,m3,ia,iz,ja,jz,i0,j0
-   real, dimension(m1,m2,m3), intent(in)  :: wp,theta,pp,pi0,dn0,rv,khv,rcloud
-   real, dimension(   m2,m3), intent(in)  :: rtgt,tfz,qfz
-   real, dimension(m1,m2,m3), intent(out) :: thsrcsh,rtsrcsh
-   real, dimension   (m2,m3), intent(out) :: shmf
+   integer                  , intent(in)    :: m1,m2,m3,ia,iz,ja,jz,i0,j0
+   real, dimension(m1,m2,m3), intent(in)    :: wp,theta,pp,pi0,dn0,rv,khv,rcloud
+   real, dimension(   m2,m3), intent(in)    :: rtgt,tfz,qfz
+   real, dimension(m1,m2,m3), intent(inout) :: thsrcsh,rtsrcsh
+   real, dimension   (m2,m3), intent(inout) :: shmf
    !----- Local variables -----------------------------------------------------------------!
    integer                                :: icpcnt = 0
    integer                                :: iprtfrq, i, j, k

@@ -37,7 +37,7 @@ subroutine phenology_driver(cgrid, doy, month, tfact)
          end do
          
          select case (iphen_scheme)
-         case (0,2)
+         case (-1,0,2)
             !------------------------------------------------------------------------------!
             !     Default predictive scheme (Botta et al.) or the modified drought         !
             ! deciduous phenology for broadleaf PFTs.                                      !
@@ -113,7 +113,7 @@ subroutine phenology_driver_eq_0(cgrid, doy, month, tfact)
          end do
          
          select case (iphen_scheme)
-         case (0,2)
+         case (-1,0,2)
             !------------------------------------------------------------------------------!
             !     Default predictive scheme (Botta et al.) or the modified drought         !
             ! deciduous phenology for broadleaf PFTs.                                      !
@@ -320,9 +320,10 @@ subroutine update_phenology(doy, cpoly, isi, lat)
                
             elseif(theta(kroot) > theta_crit .and. cpatch%phenology_status(ico) == 2) then
                
-               !----- It is time to flush.  Update carbon pools ---------------------------!
+               !----- It is time to flush.  Change phenology_status will update -----------!
+               !----- carbon pools in growth_balive       ---------------------------------!
                cpatch%phenology_status(ico) = 1
-               cpatch%bleaf(ico)            = cpatch%balive(ico) * salloci
+
             end if  ! critical moisture
 
          case (2)
@@ -336,6 +337,11 @@ subroutine update_phenology(doy, cpoly, isi, lat)
             !    okay again, and leaves can start growing.                                 !
             !------------------------------------------------------------------------------!
             if (cpatch%phenology_status(ico) < 2 .and. drop_cold) then
+            
+               if (cpoly%green_leaf_factor(ipft,isi) < 0.02) then
+                   bl_max = 0.0
+               end if
+               
                delta_bleaf = cpatch%bleaf(ico) - bl_max
 
                if (delta_bleaf > 0.0) then
@@ -343,7 +349,7 @@ subroutine update_phenology(doy, cpoly, isi, lat)
                   !    Phenology_status = 0 means that the plant has leaves, but they are  !
                   ! not growing (not necessarily because the leaves are fully flushed).    !
                   !------------------------------------------------------------------------!
-                  cpatch%phenology_status(ico) = 0
+                  cpatch%phenology_status(ico) = -1
                   cpatch%leaf_drop(ico) = (1.0 - retained_carbon_fraction) * delta_bleaf
                   csite%fsc_in(ipa) = csite%fsc_in(ipa)                                    &
                                     + cpatch%nplant(ico) * cpatch%leaf_drop(ico)           &
@@ -377,18 +383,18 @@ subroutine update_phenology(doy, cpoly, isi, lat)
                end if
 
                !----- Set status flag. ----------------------------------------------------!
-               if (bl_max == 0.0 .or. cpoly%green_leaf_factor(ipft,isi) < 0.02) then
+               if (bl_max == 0.0) then
                   cpatch%phenology_status(ico) = 2 
-                  cpatch%bleaf(ico)      = 0.0
                end if
+               
             elseif(cpatch%phenology_status(ico) == 2 .and. leaf_out_cold) then
                !---------------------------------------------------------------------------!
-               !      Update the phenology status (1 means that leaves are growing), and   !
-               ! the plant carbon pools, and the phenology status.                         !
+               !      Update the phenology status (1 means that leaves are growing),       !
                !---------------------------------------------------------------------------!
                cpatch%phenology_status(ico) = 1
-               cpatch%bleaf(ico) = cpoly%green_leaf_factor(ipft,isi) * cpatch%balive(ico)  &
-                                 * salloci
+               ! NML -> now all growth is done in growth_balive
+               !cpatch%bleaf(ico) = cpoly%green_leaf_factor(ipft,isi) * cpatch%balive(ico)  &
+               !                  * salloci
             end if
 
 
@@ -405,10 +411,16 @@ subroutine update_phenology(doy, cpoly, isi, lat)
             elongf      = min (1.0, cpatch%paw_avg(ico)/theta_crit)
             bl_max      = elongf * dbh2bl(cpatch%dbh(ico),ipft)
                
+
+            !----- In case it is too dry, drop all the leaves... --------------------------!
+            if (elongf < 0.02) then
+               bl_max = 0.0
+            end if
+            
             delta_bleaf = cpatch%bleaf(ico) - bl_max
 
-            if (delta_bleaf > 0.0) then
-               cpatch%phenology_status(ico) = 0 
+            if (delta_bleaf > 0.0 .and. cpatch%phenology_status(ico) < 2) then
+               cpatch%phenology_status(ico) = -1 
                cpatch%leaf_drop(ico) = (1.0 - retained_carbon_fraction) * delta_bleaf
                csite%fsc_in(ipa) = csite%fsc_in(ipa)                                       &
                                  + cpatch%nplant(ico) * cpatch%leaf_drop(ico)              &
@@ -436,19 +448,21 @@ subroutine update_phenology(doy, cpoly, isi, lat)
                                      * (1.0 / c2n_leaf(ipft) - 1.0/c2n_storage)
                
                cpatch%bleaf(ico)     = bl_max
+               
+               if (cpatch%bleaf(ico) == 0.0) then
+               !   No leaves                                                               !
+                         cpatch%phenology_status(ico) = 2
+               end if
+               
                cpatch%cb(13,ico)     = cpatch%cb(13,ico)     - cpatch%leaf_drop(ico)
                cpatch%cb_max(13,ico) = cpatch%cb_max(13,ico) - cpatch%leaf_drop(ico)
             !------ Becoming slightly moister again, start flushing the leaves. -----------!
-            elseif (elongf > 0.02) then
-               cpatch%phenology_status(ico) = 1 
-               cpatch%bleaf(ico)            = elongf * cpatch%balive(ico) * salloci
+
+            elseif (elongf > 0.02 .and. cpatch%phenology_status(ico) /= 0) then  
+            ! Not in allometry but growing, allocate carbon in growth_balive               !      
+                    cpatch%phenology_status(ico) = 1                
             end if
 
-            !----- In case it is too dry, drop all the leaves... --------------------------!
-            if (elongf < 0.02)then
-               cpatch%phenology_status(ico) = 2
-               cpatch%bleaf(ico) = 0.0
-            end if
 
          end select
          !---------------------------------------------------------------------------------!
@@ -457,12 +471,13 @@ subroutine update_phenology(doy, cpoly, isi, lat)
          call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)          &
                           ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)            &
                           ,cpatch%pft(ico),cpatch%sla(ico), cpatch%lai(ico)                &
-                          ,cpatch%wpa(ico),cpatch%wai(ico))
+                          ,cpatch%wpa(ico),cpatch%wai(ico),cpatch%bsapwood(ico))
 
          !----- Update above-ground biomass. ----------------------------------------------!
          cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)                 &
                                      ,cpatch%bleaf(ico),cpatch%pft(ico)                    &
-                                     ,cpatch%hite(ico) ,cpatch%bstorage(ico) ) 
+                                     ,cpatch%hite(ico) ,cpatch%bstorage(ico)               &
+                                     ,cpatch%bsapwood(ico)) 
 
          !---------------------------------------------------------------------------------!
          !    The leaf biomass of the cohort has changed, update the vegetation energy -   !
@@ -472,7 +487,8 @@ subroutine update_phenology(doy, cpoly, isi, lat)
          cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico)            &
                                            ,cpatch%balive(ico),cpatch%nplant(ico)          &
                                            ,cpatch%hite(ico),cpatch%pft(ico)               &
-                                           ,cpatch%phenology_status(ico))
+                                           ,cpatch%phenology_status(ico)                   &
+                                           ,cpatch%bsapwood(ico))
          csite%hcapveg(ipa)  = csite%hcapveg(ipa) + cpatch%hcapveg(ico) - old_hcapveg
          call update_veg_energy_cweh(csite,ipa,ico,old_hcapveg)
 
@@ -537,6 +553,8 @@ subroutine phenology_thresholds(daylight,soil_temp,soil_water,soil_class,sum_chd
    real                                   :: gdd_threshold
    integer                                :: k1
    integer                                :: k2
+   integer                                :: topsoil
+   integer                                :: nsoil
    !---------------------------------------------------------------------------------------!
 
    !----- Initialize variables. -----------------------------------------------------------!
@@ -571,12 +589,16 @@ subroutine phenology_thresholds(daylight,soil_temp,soil_water,soil_class,sum_chd
    ! represent different rooting depths.                                                   !
    !---------------------------------------------------------------------------------------!  
    theta(1:nzg) = 0.0
+   topsoil      = soil_class(nzg)
    do k1 = lsl, nzg
       do k2 = k1,nzg-1
+         nsoil     = soil_class(k2)
          theta(k1) = theta(k1)                                                             &
-                   + soil_water(k2) * (slz(k2+1)-slz(k2)) / soil(soil_class(k2))%slmsts
+                   + (soil_water(k2)     - soil(nsoil)%soilwp) * (slz(k2+1)-slz(k2))       &
+                   / (soil(nsoil)%slmsts - soil(nsoil)%soilwp)
       end do
-      theta(k1) = theta(k1) - soil_water(nzg) * slz(nzg) / soil(soil_class(nzg))%slmsts
+      theta(k1)    = theta(k1) - (soil_water(nzg)      - soil(topsoil)%soilwp) * slz(nzg)  &
+                               / (soil(topsoil)%slmsts - soil(topsoil)%soilwp)
       theta(k1) = - theta(k1) / slz(k1)
    end do
 

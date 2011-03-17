@@ -109,10 +109,10 @@ subroutine par_bintp(ac,as,dn0f,n1m,n2m,n3m,m1f  &
   integer, intent(in   ) :: ibcon               ! code for boundary building selection (see above)
   real,    intent(inout) :: ac(n1m,n2m,n3m)     ! input array to be interpolated, destroyed during computation
   real,    intent(inout) :: as(n1m,n2m,n3m)     ! scratch array
-  real,    intent(in   ) :: dn0f(m1,m2,m3)      ! finner grid density
-  real,    intent(out  ) :: bx(m1,m3,2)         ! finner grid x boundaries
-  real,    intent(out  ) :: by(m1,m2,2)         ! finner grid y boundaries
-  real,    intent(out  ) :: bz(m2,m3,2)         ! finner grid z boundaries
+  real,    intent(in   ) :: dn0f(m1,m2,m3)      ! finer grid density
+  real,    intent(inout) :: bx(m1,m3,2)         ! finer grid x boundaries
+  real,    intent(inout) :: by(m1,m2,2)         ! finer grid y boundaries
+  real,    intent(inout) :: bz(m2,m3,2)         ! finer grid z boundaries
   integer, intent(in   ) :: mynum               ! ID number for this node 
   ! Internal
   integer :: ia,iz,ja,jz,nc,kc,ic,jc,kf,if,jf,k1,k2,im,jm

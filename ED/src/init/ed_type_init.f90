@@ -1,194 +1,335 @@
-!====================================================================
-! ============================================
-
+!==========================================================================================!
+!==========================================================================================!
+!     This subroutine assigns an initial value of zero for most cohort-level variables.    !
+! There will be a few variables that must be initialised with a value other than zero, in  !
+! which case there will be a note explaining the reason.                                   !
+!------------------------------------------------------------------------------------------!
 subroutine init_ed_cohort_vars(cpatch,ico, lsl)
-  
-  use ed_state_vars, only : patchtype
-  use allometry    , only : calc_root_depth, assign_root_depth
-  use pft_coms     , only : leaf_turnover_rate, Vm0, sla
-  use ed_misc_coms , only : imoutput, idoutput
-
-  implicit none
-
-  type(patchtype),target :: cpatch
-  integer :: ico
-  real :: root_depth
-  integer, intent(in) :: lsl
-  
-  cpatch%solvable(ico) = .false.
-
-  cpatch%mean_gpp(ico)        = 0.0
-  cpatch%mean_leaf_resp(ico)  = 0.0
-  cpatch%mean_root_resp(ico)  = 0.0
-  cpatch%mean_growth_resp(ico) = 0.0
-  cpatch%mean_storage_resp(ico) = 0.0
-  cpatch%mean_vleaf_resp(ico) = 0.0
-  
-  cpatch%today_leaf_resp(ico) = 0.0
-  cpatch%today_root_resp(ico) = 0.0
-  cpatch%today_gpp(ico)       = 0.0
-  cpatch%today_gpp_pot(ico)   = 0.0
-  cpatch%today_gpp_max(ico)   = 0.0
-
-  
-  
-  cpatch%light_level     (ico)  = 0.0
-  cpatch%light_level_beam(ico)  = 0.0
-  cpatch%light_level_diff(ico)  = 0.0
-  cpatch%beamext_level   (ico)  = 0.0
-  cpatch%diffext_level   (ico)  = 0.0
-  cpatch%norm_par_beam   (ico)  = 0.0
-  cpatch%norm_par_diff   (ico)  = 0.0
-  cpatch%lambda_light(ico)      = 0.0
-
-  cpatch%gpp(ico) = 0.0
-  cpatch%leaf_respiration(ico) = 0.0
-  cpatch%root_respiration(ico) = 0.0
-  cpatch%growth_respiration(ico) = 0.0
-  cpatch%storage_respiration(ico) = 0.0
-  cpatch%vleaf_respiration(ico) = 0.0
-
-  cpatch%fsw(ico) = 1.0
-  cpatch%fsn(ico) = 1.0
-  
-  !----- This variable would never be assigned for low LAI cohorts 
-  cpatch%fs_open(ico) = cpatch%fsw(ico)*cpatch%fsn(ico)
-
-  cpatch%monthly_dndt(ico)      = 0.0
-  cpatch%mort_rate(:,ico)       = 0.0
-
-  cpatch%dagb_dt(ico)          = 0.0
-  cpatch%dba_dt(ico)           = 0.0
-  cpatch%ddbh_dt(ico)          = 0.0
+   use ed_state_vars , only : patchtype           ! ! structure
+   use allometry     , only : calc_root_depth     & ! function
+                            , assign_root_depth   ! ! function
+   use pft_coms      , only : leaf_turnover_rate  & ! intent(in)
+                            , Vm0                 & ! intent(in)
+                            , sla                 ! ! intent(in)
+   use ed_misc_coms  , only : imoutput            & ! intent(in)
+                            , idoutput            & ! intent(in)
+                            , iqoutput            ! ! intent(in)
+   use phenology_coms, only : vm_tran             & ! intent(in)
+                            , vm_slop             & ! intent(in)
+                            , vm_amp              & ! intent(in)
+                            , vm_min              ! ! intent(in)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   type(patchtype), target     :: cpatch     ! Current patch
+   integer        , intent(in) :: ico        ! Index of the current cohort
+   integer        , intent(in) :: lsl        ! Lowest soil level layer
+   !----- Local variables. ----------------------------------------------------------------!
+   real                        :: root_depth ! Root depth.
+   !---------------------------------------------------------------------------------------!
 
 
-  cpatch%par_v(ico)            = 0.0
-  cpatch%par_v_beam(ico)       = 0.0
-  cpatch%par_v_diffuse(ico)    = 0.0
-  cpatch%rshort_v(ico)         = 0.0
-  cpatch%rshort_v_beam(ico)    = 0.0
-  cpatch%rshort_v_diffuse(ico) = 0.0
-  cpatch%rlong_v(ico)          = 0.0
-  cpatch%rlong_v_surf(ico)     = 0.0
-  cpatch%rlong_v_incid(ico)    = 0.0
+   !---------------------------------------------------------------------------------------!
+   !    Set all cohorts to not have enough leaf area index to be solved.  The code will    !
+   ! update this every time step.                                                          !
+   !---------------------------------------------------------------------------------------!
+   cpatch%solvable(ico) = .false.
+   !---------------------------------------------------------------------------------------!
+
+
+   cpatch%mean_gpp(ico)          = 0.0
+   cpatch%mean_leaf_resp(ico)    = 0.0
+   cpatch%mean_root_resp(ico)    = 0.0
+   cpatch%mean_growth_resp(ico)  = 0.0
+   cpatch%mean_storage_resp(ico) = 0.0
+   cpatch%mean_vleaf_resp(ico)   = 0.0
+   cpatch%today_leaf_resp(ico)   = 0.0
+   cpatch%today_root_resp(ico)   = 0.0
+   cpatch%today_gpp(ico)         = 0.0
+   cpatch%today_gpp_pot(ico)     = 0.0
+   cpatch%today_gpp_max(ico)     = 0.0
+
+   cpatch%light_level     (ico)  = 0.0
+   cpatch%light_level_beam(ico)  = 0.0
+   cpatch%light_level_diff(ico)  = 0.0
+   cpatch%beamext_level   (ico)  = 0.0
+   cpatch%diffext_level   (ico)  = 0.0
+   cpatch%norm_par_beam   (ico)  = 0.0
+   cpatch%norm_par_diff   (ico)  = 0.0
+   cpatch%lambda_light(ico)      = 0.0
+
+   cpatch%gpp(ico)                 = 0.0
+   cpatch%leaf_respiration(ico)    = 0.0
+   cpatch%root_respiration(ico)    = 0.0
+   cpatch%growth_respiration(ico)  = 0.0
+   cpatch%storage_respiration(ico) = 0.0
+   cpatch%vleaf_respiration(ico)   = 0.0
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Start the fraction of open stomata with 1., since this is the most likely value   !
+   ! at night time.  FS_open is initialised with 0., though.                               !
+   !---------------------------------------------------------------------------------------!
+   cpatch%fsw(ico)     = 1.0
+   cpatch%fsn(ico)     = 1.0
+   cpatch%fs_open(ico) = 0.0
+   !---------------------------------------------------------------------------------------!
+
+
+   cpatch%monthly_dndt(ico)     = 0.0
+   cpatch%mort_rate(:,ico)      = 0.0
+
+   cpatch%dagb_dt(ico)          = 0.0
+   cpatch%dba_dt(ico)           = 0.0
+   cpatch%ddbh_dt(ico)          = 0.0
+
+
+   cpatch%par_v(ico)            = 0.0
+   cpatch%par_v_beam(ico)       = 0.0
+   cpatch%par_v_diffuse(ico)    = 0.0
+   cpatch%rshort_v(ico)         = 0.0
+   cpatch%rshort_v_beam(ico)    = 0.0
+   cpatch%rshort_v_diffuse(ico) = 0.0
+   cpatch%rlong_v(ico)          = 0.0
+   cpatch%rlong_v_surf(ico)     = 0.0
+   cpatch%rlong_v_incid(ico)    = 0.0
+
+   cpatch%gbh(ico)                  = 0.0
+   cpatch%gbw(ico)                  = 0.0
+   cpatch%A_open(ico)               = 0.0
+   cpatch%A_closed(ico)             = 0.0
+   cpatch%psi_open(ico)             = 0.0
+   cpatch%psi_closed(ico)           = 0.0
+   cpatch%water_supply(ico)         = 0.0
+   cpatch%gsw_open(ico)             = 0.0
+   cpatch%gsw_closed(ico)           = 0.0
+   cpatch%stomatal_conductance(ico) = 0.0
        
-  cpatch%rb(ico)               = 0.0
-  cpatch%A_open(ico)           = 0.0
-  cpatch%A_closed(ico)         = 0.0
-  cpatch%Psi_closed(ico)       = 0.0
-  cpatch%rsw_open(ico)         = 0.0
-  cpatch%rsw_closed(ico)       = 0.0
-      
-      
-  cpatch%stomatal_resistance(ico) = 0.0
-  cpatch%leaf_maintenance   (ico) = 0.0
-  cpatch%root_maintenance   (ico) = 0.0
-  cpatch%leaf_drop          (ico) = 0.0
-  cpatch%paw_avg(ico)             = 0.5 !0.0 - [KIM] starting from the mid point.  if starting from the driest point, plants'll drop leaves initially due to the water stress
-
-  cpatch%Psi_open(ico) = 0.0
-
-  cpatch%cb(1:13,ico) = 1.0
-  cpatch%cb_max(1:13,ico) = 1.0
-  cpatch%cbr_bar(ico) = 1.0
-
-  cpatch%old_stoma_data(ico)%recalc = 1
-  cpatch%old_stoma_data(ico)%T_L = 0.0
-  cpatch%old_stoma_data(ico)%e_A              = 0.0
-  cpatch%old_stoma_data(ico)%PAR              = 0.0
-  cpatch%old_stoma_data(ico)%rb_factor        = 0.0
-  cpatch%old_stoma_data(ico)%prss             = 0.0
-  cpatch%old_stoma_data(ico)%phenology_factor = 0.0
-  cpatch%old_stoma_data(ico)%gsw_open         = 0.0
-  cpatch%old_stoma_data(ico)%ilimit           = 0
-  cpatch%old_stoma_data(ico)%T_L_residual     = 0.0
-  cpatch%old_stoma_data(ico)%e_a_residual     = 0.0
-  cpatch%old_stoma_data(ico)%par_residual     = 0.0
-  cpatch%old_stoma_data(ico)%rb_residual      = 0.0
-  cpatch%old_stoma_data(ico)%leaf_residual    = 0.0
-  cpatch%old_stoma_data(ico)%gsw_residual     = 0.0
-  
-  
-  cpatch%old_stoma_vector(:,ico) = 0.
-  cpatch%old_stoma_vector(1,ico) = 1.
+       
+   cpatch%leaf_maintenance   (ico) = 0.0
+   cpatch%root_maintenance   (ico) = 0.0
+   cpatch%leaf_drop          (ico) = 0.0
 
 
-  root_depth = calc_root_depth(cpatch%hite(ico),cpatch%dbh(ico), cpatch%pft(ico))
-  cpatch%krdepth(ico) = assign_root_depth(root_depth, lsl)
-  
-  cpatch%first_census(ico) = 1
-  cpatch%new_recruit_flag(ico) = 0
-  cpatch%bseeds(ico) = 0.0
+   !---------------------------------------------------------------------------------------!
+   !    The average available water is initialised with 0.5, to make sure that the         !
+   ! model won't shed all the leaves immediately after the first step.                     !
+   !---------------------------------------------------------------------------------------!
+   cpatch%paw_avg(ico) = 0.5
+   !---------------------------------------------------------------------------------------!
 
-  cpatch%hcapveg(ico)    = 0.
-  cpatch%veg_energy(ico) = 0.
-  cpatch%veg_temp(ico)   = 0.
-  cpatch%veg_water(ico)  = 0.
-  cpatch%veg_fliq(ico)   = 0.
 
-  cpatch%turnover_amp(ico) = 1.0
+   !---------------------------------------------------------------------------------------!
+   !     The carbon balance must be initialised with a number other than zero (and better  !
+   ! be positive), otherwise a massive mortality will happen at the first year.  The 13th  !
+   ! element (current month integration) must be set to 0, though, otherwise the first     !
+   ! month carbon balance will be incorrect.                                               !
+   !---------------------------------------------------------------------------------------!
+   cpatch%cb(1:12,ico)     = 1.0
+   cpatch%cb_max(1:12,ico) = 1.0
+   cpatch%cbr_bar(ico)     = 1.0
+   cpatch%cb(13,ico)       = 0.0
+   cpatch%cb_max(13,ico)   = 0.0
+   !---------------------------------------------------------------------------------------!
 
-  if (imoutput > 0) then
-     cpatch%mmean_par_v            (ico) = 0.0
-     cpatch%mmean_par_v_beam       (ico) = 0.0
-     cpatch%mmean_par_v_diff       (ico) = 0.0
-     cpatch%mmean_gpp              (ico) = 0.0
-     cpatch%mmean_leaf_resp        (ico) = 0.0
-     cpatch%mmean_root_resp        (ico) = 0.0
-     cpatch%mmean_growth_resp      (ico) = 0.0
-     cpatch%mmean_storage_resp     (ico) = 0.0
-     cpatch%mmean_vleaf_resp       (ico) = 0.0
-     cpatch%mmean_light_level      (ico) = 0.0
-     cpatch%mmean_light_level_beam (ico) = 0.0
-     cpatch%mmean_light_level_diff (ico) = 0.0
-     cpatch%mmean_beamext_level    (ico) = 0.0
-     cpatch%mmean_diffext_level    (ico) = 0.0
-     cpatch%mmean_norm_par_beam    (ico) = 0.0
-     cpatch%mmean_norm_par_diff    (ico) = 0.0
-     cpatch%mmean_fs_open          (ico) = 0.0
-     cpatch%mmean_fsw              (ico) = 0.0
-     cpatch%mmean_fsn              (ico) = 0.0
-     cpatch%mmean_lambda_light     (ico) = 0.0
-     cpatch%mmean_leaf_maintenance (ico) = 0.0
-     cpatch%mmean_root_maintenance (ico) = 0.0
-     cpatch%mmean_leaf_drop        (ico) = 0.0
-     cpatch%mmean_cb               (ico) = 0.0
-     cpatch%mmean_mort_rate      (:,ico) = 0.0
-  end if
-  if (idoutput > 0 .or. imoutput > 0) then
-     cpatch%dmean_par_v            (ico) = 0.0
-     cpatch%dmean_par_v_beam       (ico) = 0.0
-     cpatch%dmean_par_v_diff       (ico) = 0.0
-     cpatch%dmean_gpp              (ico) = 0.0
-     cpatch%dmean_leaf_resp        (ico) = 0.0
-     cpatch%dmean_root_resp        (ico) = 0.0
-     cpatch%dmean_light_level      (ico) = 0.0
-     cpatch%dmean_light_level_beam (ico) = 0.0
-     cpatch%dmean_light_level_diff (ico) = 0.0
-     cpatch%dmean_beamext_level    (ico) = 0.0
-     cpatch%dmean_diffext_level    (ico) = 0.0
-     cpatch%dmean_norm_par_beam    (ico) = 0.0
-     cpatch%dmean_norm_par_diff    (ico) = 0.0
-     cpatch%dmean_fsw              (ico) = 0.0
-     cpatch%dmean_fsn              (ico) = 0.0
-     cpatch%dmean_lambda_light     (ico) = 0.0
-     cpatch%dmean_fs_open          (ico) = 0.0
-  end if
 
-  
-  if (leaf_turnover_rate(cpatch%pft(ico)) > 0.0) then
-     cpatch%llspan(ico) = 12.0/leaf_turnover_rate(cpatch%pft(ico)) !in month
-  else
-     cpatch%llspan(ico) = 9999.
-  end if
-  cpatch%vm_bar(ico) = Vm0(cpatch%pft(ico))
-  cpatch%sla(ico) = sla(cpatch%pft(ico))
+   !---------------------------------------------------------------------------------------!
+   !    The stomate structure.  This is initialised with zeroes except for the "recalc"    !
+   ! element, which should be set to 1 so the photosynthesis will be solved exactly at the !
+   ! first time.                                                                           !
+   !---------------------------------------------------------------------------------------!
+   cpatch%old_stoma_data(ico)%recalc           = 1
+   cpatch%old_stoma_data(ico)%T_L              = 0.0
+   cpatch%old_stoma_data(ico)%e_A              = 0.0
+   cpatch%old_stoma_data(ico)%PAR              = 0.0
+   cpatch%old_stoma_data(ico)%rb_factor        = 0.0
+   cpatch%old_stoma_data(ico)%prss             = 0.0
+   cpatch%old_stoma_data(ico)%phenology_factor = 0.0
+   cpatch%old_stoma_data(ico)%gsw_open         = 0.0
+   cpatch%old_stoma_data(ico)%ilimit           = 0
+   cpatch%old_stoma_data(ico)%T_L_residual     = 0.0
+   cpatch%old_stoma_data(ico)%e_a_residual     = 0.0
+   cpatch%old_stoma_data(ico)%par_residual     = 0.0
+   cpatch%old_stoma_data(ico)%rb_residual      = 0.0
+   cpatch%old_stoma_data(ico)%leaf_residual    = 0.0
+   cpatch%old_stoma_data(ico)%gsw_residual     = 0.0
+   cpatch%old_stoma_vector(:,ico) = 0.
+   cpatch%old_stoma_vector(1,ico) = 1.
+   !---------------------------------------------------------------------------------------!
 
-  return
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      The root depth should be the actual level for the roots.                         !
+   !---------------------------------------------------------------------------------------!
+   root_depth          = calc_root_depth(cpatch%hite(ico),cpatch%dbh(ico), cpatch%pft(ico))
+   cpatch%krdepth(ico) = assign_root_depth(root_depth, lsl)
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !       First census must be 1.  Not sure what this variable does, though.              !
+   !---------------------------------------------------------------------------------------!
+   cpatch%first_census(ico) = 1
+   !---------------------------------------------------------------------------------------!
+
+
+
+   cpatch%new_recruit_flag(ico) = 0
+   cpatch%bseeds(ico)           = 0.0
+
+   cpatch%hcapveg(ico)          = 0.
+   cpatch%veg_energy(ico)       = 0.
+   cpatch%veg_temp(ico)         = 0.
+   cpatch%veg_water(ico)        = 0.
+   cpatch%veg_fliq(ico)         = 0.
+   cpatch%veg_wind(ico)         = 0.
+   cpatch%lsfc_shv_open(ico)    = 0.
+   cpatch%lsfc_shv_closed(ico)  = 0.
+   cpatch%lsfc_co2_open(ico)    = 0.
+   cpatch%lsfc_co2_closed(ico)  = 0.
+   cpatch%lint_shv(ico)         = 0.
+   cpatch%lint_co2_open(ico)    = 0.
+   cpatch%lint_co2_closed(ico)  = 0.
+
+   !---------------------------------------------------------------------------------------!
+   !     Turnover amplitude must be set to 1 because it is used for scaling of the leaf    !
+   ! life span in the light-controlled phenology.                                          !
+   !---------------------------------------------------------------------------------------!
+   cpatch%turnover_amp(ico)     = 1.0
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     The monthly means are allocated only when the user wants the monthly output or    !
+   ! the mean diurnal cycle.                                                               !
+   !---------------------------------------------------------------------------------------!
+   if (imoutput > 0 .or. iqoutput > 0) then
+      cpatch%mmean_par_v            (ico) = 0.0
+      cpatch%mmean_par_v_beam       (ico) = 0.0
+      cpatch%mmean_par_v_diff       (ico) = 0.0
+      cpatch%mmean_gpp              (ico) = 0.0
+      cpatch%mmean_leaf_resp        (ico) = 0.0
+      cpatch%mmean_root_resp        (ico) = 0.0
+      cpatch%mmean_growth_resp      (ico) = 0.0
+      cpatch%mmean_storage_resp     (ico) = 0.0
+      cpatch%mmean_vleaf_resp       (ico) = 0.0
+      cpatch%mmean_light_level      (ico) = 0.0
+      cpatch%mmean_light_level_beam (ico) = 0.0
+      cpatch%mmean_light_level_diff (ico) = 0.0
+      cpatch%mmean_beamext_level    (ico) = 0.0
+      cpatch%mmean_diffext_level    (ico) = 0.0
+      cpatch%mmean_norm_par_beam    (ico) = 0.0
+      cpatch%mmean_norm_par_diff    (ico) = 0.0
+      cpatch%mmean_fs_open          (ico) = 0.0
+      cpatch%mmean_fsw              (ico) = 0.0
+      cpatch%mmean_fsn              (ico) = 0.0
+      cpatch%mmean_psi_open         (ico) = 0.0
+      cpatch%mmean_psi_closed       (ico) = 0.0
+      cpatch%mmean_water_supply     (ico) = 0.0
+      cpatch%mmean_lambda_light     (ico) = 0.0
+      cpatch%mmean_leaf_maintenance (ico) = 0.0
+      cpatch%mmean_root_maintenance (ico) = 0.0
+      cpatch%mmean_leaf_drop        (ico) = 0.0
+      cpatch%mmean_cb               (ico) = 0.0
+      cpatch%mmean_mort_rate      (:,ico) = 0.0
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     The daily means are allocated only when the user wants the daily or the monthly   !
+   ! output, or the mean diurnal cycle.                                                    !
+   !---------------------------------------------------------------------------------------!
+   if (idoutput > 0 .or. imoutput > 0 .or. iqoutput > 0) then
+      cpatch%dmean_par_v            (ico) = 0.0
+      cpatch%dmean_par_v_beam       (ico) = 0.0
+      cpatch%dmean_par_v_diff       (ico) = 0.0
+      cpatch%dmean_gpp              (ico) = 0.0
+      cpatch%dmean_leaf_resp        (ico) = 0.0
+      cpatch%dmean_root_resp        (ico) = 0.0
+      cpatch%dmean_light_level      (ico) = 0.0
+      cpatch%dmean_light_level_beam (ico) = 0.0
+      cpatch%dmean_light_level_diff (ico) = 0.0
+      cpatch%dmean_beamext_level    (ico) = 0.0
+      cpatch%dmean_diffext_level    (ico) = 0.0
+      cpatch%dmean_norm_par_beam    (ico) = 0.0
+      cpatch%dmean_norm_par_diff    (ico) = 0.0
+      cpatch%dmean_fsw              (ico) = 0.0
+      cpatch%dmean_fsn              (ico) = 0.0
+      cpatch%dmean_fs_open          (ico) = 0.0
+      cpatch%dmean_psi_open         (ico) = 0.0
+      cpatch%dmean_psi_closed       (ico) = 0.0
+      cpatch%dmean_water_supply     (ico) = 0.0
+      cpatch%dmean_lambda_light     (ico) = 0.0
+   end if
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     The daily means are allocated only when the user wants the daily or the monthly   !
+   ! output, or the mean diurnal cycle.                                                    !
+   !---------------------------------------------------------------------------------------!
+   if (iqoutput > 0) then
+      cpatch%qmean_par_v            (:,ico) = 0.0
+      cpatch%qmean_par_v_beam       (:,ico) = 0.0
+      cpatch%qmean_par_v_diff       (:,ico) = 0.0
+      cpatch%qmean_gpp              (:,ico) = 0.0
+      cpatch%qmean_leaf_resp        (:,ico) = 0.0
+      cpatch%qmean_root_resp        (:,ico) = 0.0
+      cpatch%qmean_fsw              (:,ico) = 0.0
+      cpatch%qmean_fsn              (:,ico) = 0.0
+      cpatch%qmean_fs_open          (:,ico) = 0.0
+      cpatch%qmean_psi_open         (:,ico) = 0.0
+      cpatch%qmean_psi_closed       (:,ico) = 0.0
+      cpatch%qmean_water_supply     (:,ico) = 0.0
+   end if
+
+
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     The leaf life span is initialised with the inverse of the turnover rate.  Notice  !
+   ! that the turnover rate is in years, but the life span is in months.  Also, some PFTs  !
+   ! do not define the turnover rate (temperate cold-deciduous for example), in which case !
+   ! we assign a meaningless number just to make sure the variable is initialised.         !
+   !---------------------------------------------------------------------------------------!
+   if (leaf_turnover_rate(cpatch%pft(ico)) > 0.0) then
+      cpatch%llspan(ico) = 12.0/leaf_turnover_rate(cpatch%pft(ico))
+   else
+      cpatch%llspan(ico) = 9999.
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !      The maximum capacity of Rubisco to perform the carboxylase function (Vm) and the !
+   ! specific leaf area (SLA) must be assigned with the default values.  These numbers     !
+   ! will change only if the PFT uses a light-controlled phenology.                        !
+   !---------------------------------------------------------------------------------------!
+   !cpatch%vm_bar(ico) = Vm0(cpatch%pft(ico))
+   cpatch%vm_bar(ico)= vm_amp / (1.0 + (cpatch%llspan(ico)/vm_tran)**vm_slop) + vm_min
+   cpatch%sla(ico) = sla(cpatch%pft(ico))
+   !---------------------------------------------------------------------------------------!
+
+
+   return
 end subroutine init_ed_cohort_vars
+!==========================================================================================!
+!==========================================================================================!
 
-! ==========================================
 
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
 subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
   
   use ed_state_vars,only:sitetype
@@ -197,7 +338,7 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
   use grid_coms,     only: nzs, nzg
   use soil_coms, only: slz
   use canopy_air_coms, only : veg_height_min, minimum_canopy_depth
-  use ed_misc_coms, only : imoutput, idoutput
+  use ed_misc_coms, only : imoutput, idoutput, iqoutput
 
   implicit none
 
@@ -211,13 +352,23 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
      enddo
   enddo
 
+  ! Initialise soil state variables
+  csite%ntext_soil(1:nzg,ip1:ip2)    = 0
+  csite%soil_water(1:nzg,ip1:ip2)     = 0.0
+  csite%soil_energy(1:nzg,ip1:ip2)   = 0.0
+  csite%soil_tempk(1:nzg,ip1:ip2)    = 0.0
+  csite%soil_fracliq(1:nzg,ip1:ip2)  = 0.0
+
 
   ! Initialize sfcwater state variables
-  csite%sfcwater_mass(1:nzs,ip1:ip2)   = 0.0
-  csite%sfcwater_energy(1:nzs,ip1:ip2) = 0.0
-  csite%sfcwater_depth(1:nzs,ip1:ip2)  = 0.0
-  csite%total_snow_depth(ip1:ip2)      = 0.0
-  csite%snowfac(ip1:ip2)               = 0.0
+  csite%sfcwater_mass(1:nzs,ip1:ip2)     = 0.0
+  csite%sfcwater_energy(1:nzs,ip1:ip2)   = 0.0
+  csite%sfcwater_depth(1:nzs,ip1:ip2)    = 0.0
+  csite%sfcwater_tempk(1:nzs,ip1:ip2)    = 0.0
+  csite%sfcwater_fracliq(1:nzs,ip1:ip2)  = 0.0
+  csite%total_snow_depth(ip1:ip2)        = 0.0
+  csite%snowfac(ip1:ip2)                 = 0.0
+  csite%runoff(ip1:ip2)                  = 0.0
 
   csite%rshort_s(:,ip1:ip2) = 0.0
   csite%rshort_s_beam(:,ip1:ip2) = 0.0
@@ -280,7 +431,7 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
 
 
 
-  if (idoutput > 0 .or. imoutput > 0) then
+  if (idoutput > 0 .or. imoutput > 0 .or. iqoutput > 0) then
      csite%dmean_A_decomp        (ip1:ip2) = 0.0
      csite%dmean_Af_decomp       (ip1:ip2) = 0.0
      csite%dmean_rh              (ip1:ip2) = 0.0
@@ -291,7 +442,7 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
      csite%dmean_rk4step         (ip1:ip2) = 0.0
   end if
 
-  if (imoutput > 0) then
+  if (imoutput > 0 .or. iqoutput > 0) then
      csite%mmean_A_decomp        (ip1:ip2) = 0.0
      csite%mmean_Af_decomp       (ip1:ip2) = 0.0
      csite%mmean_rh              (ip1:ip2) = 0.0
@@ -300,6 +451,10 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
      csite%mmean_water_residual  (ip1:ip2) = 0.0
      csite%mmean_lambda_light    (ip1:ip2) = 0.0
      csite%mmean_rk4step         (ip1:ip2) = 0.0
+  end if
+
+  if (iqoutput > 0) then
+     csite%qmean_rh              (:,ip1:ip2) = 0.0
   end if
 
   !----------------------------------------------------------------------------------------!
@@ -313,6 +468,7 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
   csite%avg_vapor_gc      (ip1:ip2)  = 0.0
   csite%avg_wshed_vg      (ip1:ip2)  = 0.0
   csite%avg_intercepted   (ip1:ip2)  = 0.0
+  csite%avg_throughfall   (ip1:ip2)  = 0.0
   csite%avg_vapor_ac      (ip1:ip2)  = 0.0
   csite%avg_transp        (ip1:ip2)  = 0.0
   csite%avg_evap          (ip1:ip2)  = 0.0
@@ -324,6 +480,7 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
   csite%avg_sensible_vc   (ip1:ip2)  = 0.0
   csite%avg_qwshed_vg     (ip1:ip2)  = 0.0
   csite%avg_qintercepted  (ip1:ip2)  = 0.0
+  csite%avg_qthroughfall  (ip1:ip2)  = 0.0
   csite%avg_sensible_gc   (ip1:ip2)  = 0.0
   csite%avg_sensible_ac   (ip1:ip2)  = 0.0
   csite%avg_runoff_heat   (ip1:ip2)  = 0.0
@@ -377,8 +534,16 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
   csite%can_theiv   (ip1:ip2) = 0.0
   csite%can_temp    (ip1:ip2) = 0.0
   csite%can_rhos    (ip1:ip2) = 0.0
+  csite%can_depth   (ip1:ip2) = 0.0
+  csite%opencan_frac(ip1:ip2) = 0.0
   csite%ground_shv  (ip1:ip2) = 0.0
-  csite%surface_ssh (ip1:ip2) = 0.0
+  csite%ground_ssh  (ip1:ip2) = 0.0
+  csite%ground_temp (ip1:ip2) = 0.0
+  csite%ground_fliq (ip1:ip2) = 0.0
+
+  csite%ggbare(ip1:ip2) = 0.0
+  csite%ggveg (ip1:ip2) = 0.0
+  csite%ggnet (ip1:ip2) = 0.0
 
   csite%old_stoma_data_max(:,ip1:ip2)%recalc = 1
   csite%old_stoma_data_max(:,ip1:ip2)%T_L = 0.0
@@ -474,7 +639,7 @@ subroutine init_ed_site_vars(cpoly, lat)
   cpoly%primary_harvest_memory(:) = 0.0
   cpoly%secondary_harvest_memory(:) = 0.0
   
-  cpoly%rad_avg(:) = 0.0
+  cpoly%rad_avg(:) = 200.0
   
   
   return
@@ -557,17 +722,17 @@ end subroutine init_ed_poly_vars
 ! and temporary layer temperature and liquid fraction, and the surface properties.         !
 !------------------------------------------------------------------------------------------!
 subroutine new_patch_sfc_props(csite,ipa)
-   use ed_state_vars , only : sitetype          & ! structure
-                            , patchtype         ! ! structure
-   use grid_coms     , only : nzg               & ! intent(in)
-                            , nzs               ! ! intent(in)
-   use soil_coms     , only : soil              & ! intent(in), look-up table
-                            , slz               & ! intent(in)
-                            , min_sfcwater_mass ! ! intent(in)
-   use consts_coms   , only : wdns              ! ! intent(in)
-   use therm_lib     , only : qwtk              & ! subroutine
-                            , qtk               ! ! subroutine
-   use ed_therm_lib  , only : ed_grndvap        ! ! subroutine
+   use ed_state_vars , only : sitetype           & ! structure
+                            , patchtype          ! ! structure
+   use grid_coms     , only : nzg                & ! intent(in)
+                            , nzs                ! ! intent(in)
+   use soil_coms     , only : soil               & ! intent(in), look-up table
+                            , slz                & ! intent(in)
+                            , tiny_sfcwater_mass ! ! intent(in)
+   use consts_coms   , only : wdns               ! ! intent(in)
+   use therm_lib     , only : qwtk               & ! subroutine
+                            , qtk                ! ! subroutine
+   use ed_therm_lib  , only : ed_grndvap         ! ! subroutine
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(sitetype) , target     :: csite          ! Current site
@@ -577,8 +742,6 @@ subroutine new_patch_sfc_props(csite,ipa)
    integer                     :: k              ! Layer counter
    integer                     :: ico            ! Cohort counter
    integer                     :: nsoil          ! Alias for soil texture class
-   real                        :: surface_temp   ! Scratch variable for ed_grndvap
-   real                        :: surface_fliq   ! Scratch variable for ed_grndvap
    !---------------------------------------------------------------------------------------!
   
    !----- Finding soil temperature and liquid water fraction. -----------------------------!
@@ -599,7 +762,7 @@ subroutine new_patch_sfc_props(csite,ipa)
    csite%nlev_sfcwater(ipa) = 0
    snowloop: do k=1,nzs
       !----- Leave the loop if there is not enough mass in this layer... ------------------!
-      if (csite%sfcwater_mass(k,ipa) <= min_sfcwater_mass)  exit snowloop
+      if (csite%sfcwater_mass(k,ipa) <= tiny_sfcwater_mass)  exit snowloop
       csite%nlev_sfcwater(ipa) = k
       csite%sfcwater_energy(k,ipa) = csite%sfcwater_energy(k,ipa)                          &
                                    / csite%sfcwater_mass(k,ipa)
@@ -628,9 +791,11 @@ subroutine new_patch_sfc_props(csite,ipa)
    !----- Now we can compute the surface properties. --------------------------------------!
    k=max(1,csite%nlev_sfcwater(ipa))
    call ed_grndvap(csite%nlev_sfcwater(ipa),csite%ntext_soil(nzg,ipa)                      &
-                  ,csite%soil_water(nzg,ipa),csite%soil_energy(nzg,ipa)                    &
-                  ,csite%sfcwater_energy(k,ipa), csite%can_prss(ipa),csite%can_shv(ipa)    &
-                  ,csite%ground_shv(ipa),csite%surface_ssh(ipa),surface_temp,surface_fliq)
+                  ,csite%soil_water(nzg,ipa),csite%soil_tempk(nzg,ipa)                     &
+                  ,csite%soil_fracliq(nzg,ipa),csite%sfcwater_tempk(k,ipa)                 &
+                  ,csite%sfcwater_fracliq(k,ipa),csite%can_prss(ipa)                       &
+                  ,csite%can_shv(ipa),csite%ground_shv(ipa),csite%ground_ssh(ipa)          &
+                  ,csite%ground_temp(ipa),csite%ground_fliq(ipa))
    !---------------------------------------------------------------------------------------! 
 
 

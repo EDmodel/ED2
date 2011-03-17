@@ -1,6 +1,6 @@
 ! =========================================================
 !
-! Create H5 output files from the var table
+! Create H5 output files from the var tablef
 
 ! =========================================================
 subroutine h5_output(vtype)
@@ -39,7 +39,7 @@ subroutine h5_output(vtype)
   use hdf5
 #endif
   use ed_node_coms,only:mynum,nnodetot,recvnum,sendnum
-  use ed_max_dims, only : n_pft,n_dist_types,n_dbh,maxgrds
+  use ed_max_dims, only : n_pft,n_dist_types,n_dbh,maxgrds, str_len
   use ed_state_vars,only: edgrid_g,edtype,polygontype,sitetype,patchtype,gdpy
 
   implicit none
@@ -51,13 +51,13 @@ subroutine h5_output(vtype)
 
   character*(*) vtype
 
-  character(len=128) :: anamel
-  character(len=3)  :: cgrid
-  character(len=40) :: subaname
-  character(len=64) :: varn
-  character(len=1)  :: vnam
-  character(len=64) :: c0
-  character(len=64),dimension(3) :: metadata
+  character(len=str_len)              :: anamel
+  character(len=3)                    :: cgrid
+  character(len=40)                   :: subaname
+  character(len=64)                   :: varn
+  character(len=1)                    :: vnam
+  character(len=64)                   :: c0
+  character(len=64)     ,dimension(3) :: metadata
   logical exans
 
   !  HDF specific data types
@@ -131,8 +131,10 @@ subroutine h5_output(vtype)
      vnam='Y'
   case ('OPTI') 
      vnam='T'
-  case('HIST') 
+  case ('HIST') 
      vnam='S'  ! S for reStart, don't want confusion with RAMS' H or R files
+  case ('DCYC')
+     vnam='Q'  ! Running out of letters...
   end select  
   nvcnt=0
 
@@ -170,7 +172,7 @@ subroutine h5_output(vtype)
            call makefnam(anamel,ffilout,zero,outyear,outmonth,outdate, &
                 0,vnam,cgrid,'h5 ')
            
-        case('MONT')
+        case('MONT','DCYC')
            
            call date_add_to (iyeara,imontha,idatea,itimea*100,  &
                 time-21600.0d0,'s',outyear,outmonth,outdate,outhour)
@@ -304,11 +306,12 @@ subroutine h5_output(vtype)
            
            !        vtinfo => vt_info(nv,ngr)
            
-           if ((vtype == 'INST' .and. vt_info(nv,ngr)%ianal == 1) .or. &
+           if ( (vtype == 'INST' .and. vt_info(nv,ngr)%ianal == 1) .or. &
                 (vtype == 'OPTI' .and. vt_info(nv,ngr)%iopti == 1) .or. &
                 (vtype == 'LITE' .and. vt_info(nv,ngr)%ilite == 1) .or. &
                 (vtype == 'DAIL' .and. vt_info(nv,ngr)%idail == 1) .or. &
                 (vtype == 'MONT' .and. vt_info(nv,ngr)%imont == 1) .or. &
+                (vtype == 'DCYC' .and. vt_info(nv,ngr)%idcyc == 1) .or. &
                 (vtype == 'YEAR' .and. vt_info(nv,ngr)%iyear == 1) .or. &
                 (vtype == 'HIST' .and. vt_info(nv,ngr)%ihist == 1)) then
               
@@ -336,24 +339,33 @@ subroutine h5_output(vtype)
 
                  call h5eset_auto_f(1,hdferr)
 
-                 if (vt_info(nv,ngr)%dtype == 'r') then   ! real data type
+                 select case (vt_info(nv,ngr)%dtype)
+                 case ('R','r') !----- Real variable (vector)
                     call h5dcreate_f(file_id,varn,H5T_NATIVE_REAL, filespace, &
                          dset_id,hdferr)
-                 else if (vt_info(nv,ngr)%dtype == 'i') then   ! integer data type
-                    call h5dcreate_f(file_id,varn,H5T_NATIVE_INTEGER, filespace, &
-                         dset_id,hdferr)
-                 else if (vt_info(nv,ngr)%dtype == 'c') then   ! character data type
-                    call h5dcreate_f(file_id,varn,H5T_NATIVE_CHARACTER, filespace, &
-                         dset_id,hdferr)
-                 else if (vt_info(nv,ngr)%dtype == 'd') then   ! character data type
+
+                 case ('D','d') !----- Double precision variable (vector)
                     call h5dcreate_f(file_id,varn,H5T_NATIVE_DOUBLE, filespace, &
                          dset_id,hdferr)
-                 else
+
+                 case ('I','i') !----- Integer variable (vector)
+                    call h5dcreate_f(file_id,varn,H5T_NATIVE_INTEGER, filespace, &
+                         dset_id,hdferr)
+
+                 case ('C','c') !----- Character variable (vector)
+                    call h5dcreate_f(file_id,varn,H5T_NATIVE_CHARACTER, filespace, &
+                         dset_id,hdferr)
+                 case default
                     print*,varn,vt_info(nv,ngr)%dtype
-                    call fatal_error('YOU ARE ATTEMPTING TO WRITE AN UNDEFINED DATATYPE'   &
+                    write(unit=*,fmt='(a)')      '----------------------------------------'
+                    write(unit=*,fmt='(a,1x,a)') ' Variable: ',trim(varn)
+                    write(unit=*,fmt='(a,1x,a)') ' Type:     ',trim(vt_info(nv,ngr)%dtype)
+                    write(unit=*,fmt='(a)')      '----------------------------------------'
+                    call fatal_error('Attempted to write an undefined datatype'    &
                                     ,'h5_output','h5_output.F90')
-                 endif
-                    
+
+                 end select
+
                  if (attach_metadata == 1) then
                     
                     arank = 1
@@ -477,25 +489,40 @@ subroutine h5_output(vtype)
                     end if
 
                     
-                    
-                    if (vt_info(nv,ngr)%dtype .eq. 'r') then   ! real data type
+                    select case (vt_info(nv,ngr)%dtype)
+                    case ('R') !----- Real variable (vector)
                        call h5dwrite_f(dset_id,H5T_NATIVE_REAL,vtvec%var_rp,globdims, &
                             hdferr,file_space_id = filespace, mem_space_id = memspace)
-                    elseif(vt_info(nv,ngr)%dtype .eq. 'i') then ! integer data type
-                       
-                       call h5dwrite_f(dset_id,H5T_NATIVE_INTEGER,vtvec%var_ip,globdims, &
-                            hdferr,file_space_id = filespace, mem_space_id = memspace)
-                       
-                    elseif(vt_info(nv,ngr)%dtype .eq. 'c') then ! character data type
-                       
-                       call h5dwrite_f(dset_id,H5T_NATIVE_CHARACTER,vtvec%var_cp,globdims, &
-                            hdferr,file_space_id = filespace, mem_space_id = memspace)
-                    elseif(vt_info(nv,ngr)%dtype .eq. 'd') then ! character data type
-                       
+
+                    case ('D') !----- Double precision variable (vector)
                        call h5dwrite_f(dset_id,H5T_NATIVE_DOUBLE,vtvec%var_dp,globdims, &
                             hdferr,file_space_id = filespace, mem_space_id = memspace)
 
-                    end if
+                    case ('I') !----- Integer variable (vector)
+                       call h5dwrite_f(dset_id,H5T_NATIVE_INTEGER,vtvec%var_ip,globdims, &
+                            hdferr,file_space_id = filespace, mem_space_id = memspace)
+
+                    case ('C') !----- Character variable (vector)
+                       call h5dwrite_f(dset_id,H5T_NATIVE_CHARACTER,vtvec%var_cp,globdims, &
+                            hdferr,file_space_id = filespace, mem_space_id = memspace)
+
+                    case ('r') !----- Real variable (scalar)
+                       call h5dwrite_f(dset_id,H5T_NATIVE_REAL,vtvec%sca_rp,globdims, &
+                            hdferr,file_space_id = filespace, mem_space_id = memspace)
+
+                    case ('d') !----- Double precision variable (scalar)
+                       call h5dwrite_f(dset_id,H5T_NATIVE_DOUBLE,vtvec%sca_dp,globdims, &
+                            hdferr,file_space_id = filespace, mem_space_id = memspace)
+
+                    case ('i') !----- Integer variable (scalar)
+                       call h5dwrite_f(dset_id,H5T_NATIVE_INTEGER,vtvec%sca_ip,globdims, &
+                            hdferr,file_space_id = filespace, mem_space_id = memspace)
+
+                    case ('c') !----- Character variable (scalar)
+                       call h5dwrite_f(dset_id,H5T_NATIVE_CHARACTER,vtvec%sca_cp,globdims, &
+                            hdferr,file_space_id = filespace, mem_space_id = memspace)
+
+                    end select
                     if (hdferr /= 0) then
                        write (unit=*,fmt=*) 'Variable name:    ',varn
                        write (unit=*,fmt=*) 'Global dimension: ',globdims
@@ -564,6 +591,8 @@ subroutine h5_output(vtype)
         subaname='  Daily average analysis HDF write    '
      case ('MONT')
         subaname='  Monthly average analysis HDF write   '
+     case ('DCYC')
+        subaname='  Mean diurnal cycle analysis HDF write   '
      case ('YEAR')
         subaname='  Annual average analysis HDF write   '
      case ('OPTI')
@@ -637,6 +666,7 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
                                  , globdims       ! ! intent(in)
    use fusion_fission_coms, only : ff_ndbh        ! ! intent(in)
    use c34constants       , only : n_stoma_atts   ! ! intent(in)
+   use ed_misc_coms       , only : ndcycle        ! ! intent(in)
 
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
@@ -663,7 +693,7 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
    !---------------------------------------------------------------------------------------!
 
    select case (idim_type) 
-   case(90) ! No polygon-site-patch or cohort dimension
+   case(90,92) ! No polygon-site-patch or cohort dimension, or a single-dimension vector
       
       dsetrank = 1
       chnkdims(1) = int(varlen,8)
@@ -671,20 +701,8 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
       globdims(1) = int(var_len_global,8)
       cnt(1)      = 1_8
       stride(1)   = 1_8
-
-   case(92) ! single vector soil info
       
-      dsetrank = 2
-      globdims(1) = int(nzg,8)
-      chnkdims(1) = int(nzg,8)
-      chnkoffs(1) = 0_8
-      globdims(2) = int(var_len_global,8)
-      chnkdims(2) = int(varlen,8)
-      chnkoffs(2) = int(globid,8)
-      cnt(1:2)    = 1_8
-      stride(1:2) = 1_8
-      
-   case (11) ! (npolygons) 
+   case (10,11) ! (npolygons) 
       
       ! Vector type,dimensions set
       
@@ -695,7 +713,20 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
       cnt(1)      = 1_8
       stride(1)   = 1_8
       
-   case (12) ! (nzg,npolygons)  
+   case (-11) ! (ndcycle,npolygons)  
+      
+      ! Soil column type
+      dsetrank = 2
+      globdims(1) = int(ndcycle,8)
+      chnkdims(1) = int(ndcycle,8)
+      chnkoffs(1) = 0_8
+      globdims(2) = int(var_len_global,8)
+      chnkdims(2) = int(varlen,8)
+      chnkoffs(2) = int(globid,8)
+      cnt(1:2)    = 1_8
+      stride(1:2) = 1_8
+      
+   case (12,120) ! (nzg,npolygons)  
       
       ! Soil column type
       dsetrank = 2
@@ -707,6 +738,22 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
       chnkoffs(2) = int(globid,8)
       cnt(1:2)    = 1_8
       stride(1:2) = 1_8
+
+   case (-12) ! (nzg,ndcycle,npolygons)
+      
+      dsetrank = 3
+      
+      globdims(1) = int(nzg,8)
+      chnkdims(1) = int(nzg,8)
+      chnkoffs(1) = 0_8
+      globdims(2) = int(ndcycle,8)
+      chnkdims(2) = int(ndcycle,8)
+      chnkoffs(2) = 0_8
+      globdims(3) = int(var_len_global,8)
+      chnkdims(3) = int(varlen,8)
+      chnkoffs(3) = int(globid,8)
+      cnt(1:3)      = 1_8
+      stride(1:3)   = 1_8
       
    case (14) ! (n_pft,npolygons)  
       
@@ -862,7 +909,7 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
       cnt(1:3)    = 1_8
       stride(1:3) = 1_8
 
-   case (21) !(nsites)
+   case (20,21) !(nsites)
       
       dsetrank = 1
       chnkdims(1) = int(varlen,8)
@@ -871,7 +918,7 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
       cnt(1)      = 1_8
       stride(1)   = 1_8
 
-   case(22) !(nzg,nsites)
+   case(22,220) !(nzg,nsites)
                
       ! Soil column type
       dsetrank = 2
@@ -988,7 +1035,7 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
       cnt(1:2)    = 1_8
       stride(1:2) = 1_8
      
-   case (31) !(npatches)
+   case (30,31) !(npatches)
       
       dsetrank = 1            
       chnkdims(1) = int(varlen,8)
@@ -997,7 +1044,20 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
       cnt(1)      = 1_8
       stride(1)   = 1_8
       
-   case (32) ! (nzg,npatches)
+   case (-31) ! (ndcycle,npatches)
+      
+      ! Soil column type
+      dsetrank = 2
+      globdims(1) = int(ndcycle,8)
+      chnkdims(1) = int(ndcycle,8)
+      chnkoffs(1) = 0_8
+      globdims(2) = int(var_len_global,8)
+      chnkdims(2) = int(varlen,8)
+      chnkoffs(2) = int(globid,8)
+      cnt(1:2)    = 1_8
+      stride(1:2) = 1_8
+       
+   case (32,320) ! (nzg,npatches)
       
       ! Soil column type
       dsetrank = 2
@@ -1009,7 +1069,7 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
       chnkoffs(2) = int(globid,8)
       cnt(1:2)    = 1_8
       stride(1:2) = 1_8
-      
+     
    case (33) !(nzs,npatches)
       
       ! Surface water column type
@@ -1110,7 +1170,7 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
       cnt(1:2)    = 1_8
       stride(1:2) = 1_8
               
-   case (41) !(ncohorts)
+   case (40,41) !(ncohorts)
       
       dsetrank = 1
       chnkdims(1) = int(varlen,8)
@@ -1118,6 +1178,18 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
       globdims(1) = int(var_len_global,8)
       cnt(1)      = 1_8
       stride(1)   = 1_8
+
+   case (-41) !(ndcycle,ncohorts)
+      
+      dsetrank = 2
+      globdims(1) = int(ndcycle,8)
+      chnkdims(1) = int(ndcycle,8)
+      chnkoffs(1) = 0_8
+      globdims(2) = int(var_len_global,8)
+      chnkdims(2) = int(varlen,8)
+      chnkoffs(2) = int(globid,8)
+      cnt(1:2)    = 1_8
+      stride(1:2) = 1_8
 
    case (416) !(16 - ncohorts (stoma data))
       

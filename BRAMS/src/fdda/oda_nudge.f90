@@ -165,39 +165,38 @@ if (wt_oda_grid(ng) > 0.0 .and. time >= todabeg .and. time <= todaend) then
       if(allocated(plt)) deallocate(plt);allocate(plt(nnxp(ng),nnyp(ng)))
 
 call oda_tendency(mmzp(ng),mmxp(ng),mmyp(ng),mia(ng),miz(ng),mja(ng),mjz(ng)  &
-                 ,basic_g(ng)%up,tend%ut,oda_g(ng)%uk,oda_g(ng)%ukv  &
+                 ,basic_g(ng)%up,tend_g(ng)%ut,oda_g(ng)%uk,oda_g(ng)%ukv  &
                  ,wt_oda_uv * wt_oda_grid(ng)/tnudoda,time,mi0(ng),mj0(ng))
 !      do j=1,nnyp(ng)
 !      do i=1,nnxp(ng)
       
-!      plt(i,j)=valugp(nnzp(ng),nnxp(ng),nnyp(ng),22,i,j,tend%ut(1))
+!      plt(i,j)=valugp(nnzp(ng),nnxp(ng),nnyp(ng),22,i,j,tend_g(ng)%ut)
 !      enddo
 !      enddo
     !  call ezcntr(plt,nnxp(ng),nnyp(ng))
 call oda_tendency(mmzp(ng),mmxp(ng),mmyp(ng),mia(ng),miz(ng),mja(ng),mjz(ng)  &
-                 ,basic_g(ng)%vp,tend%vt,oda_g(ng)%vk,oda_g(ng)%vkv  &
+                 ,basic_g(ng)%vp,tend_g(ng)%vt,oda_g(ng)%vk,oda_g(ng)%vkv  &
                  ,wt_oda_uv * wt_oda_grid(ng)/tnudoda,time,mi0(ng),mj0(ng))
 !      do j=1,nnyp(ng)
 !      do i=1,nnxp(ng)
       
-!      plt(i,j)=valugp(nnzp(ng),nnxp(ng),nnyp(ng),22,i,j,tend%vt(1))
+!      plt(i,j)=valugp(nnzp(ng),nnxp(ng),nnyp(ng),22,i,j,tend_g(ng)%vt)
 !      enddo
 !      enddo
    !   call ezcntr(plt,nnxp(ng),nnyp(ng))
 call oda_tendency(mmzp(ng),mmxp(ng),mmyp(ng),mia(ng),miz(ng),mja(ng),mjz(ng)  &
-                 ,basic_g(ng)%theta,tend%tht,oda_g(ng)%tk,oda_g(ng)%tkv  &
+                 ,basic_g(ng)%theta,tend_g(ng)%tht,oda_g(ng)%tk,oda_g(ng)%tkv  &
                  ,wt_oda_th * wt_oda_grid(ng)/tnudoda,time,mi0(ng),mj0(ng))
-!print*,'ttttt tend:',time,minval(tend%tht(1:mmzp(ng)*mmxp(ng)*mmyp(ng))) &
-!                     ,maxval(tend%tht(1:mmzp(ng)*mmxp(ng)*mmyp(ng)))
+!print*,'ttttt tend:',time,minval(tend_g(ng)%tht),maxval(tend_g(ng)%tht)
       !do j=1,nnyp(ng)
       !do i=1,nnxp(ng)
      
-      !plt(i,j)=valugp(nnzp(ng),nnxp(ng),nnyp(ng),2,i,j,tend%tht(1))
+      !plt(i,j)=valugp(nnzp(ng),nnxp(ng),nnyp(ng),2,i,j,tend_g(ng)%tht)
       !enddo
       !enddo
       !call ezcntr(plt,nnxp(ng),nnyp(ng))
 call oda_tendency(mmzp(ng),mmxp(ng),mmyp(ng),mia(ng),miz(ng),mja(ng),mjz(ng)  &
-                 ,basic_g(ng)%rtp,tend%rtt,oda_g(ng)%rk,oda_g(ng)%rkv         &
+                 ,basic_g(ng)%rtp,tend_g(ng)%rtt,oda_g(ng)%rk,oda_g(ng)%rkv   &
                  ,wt_oda_rt * wt_oda_grid(ng)/tnudoda,time,mi0(ng),mj0(ng))
 
 

@@ -89,45 +89,98 @@ real function cputime(w1)
   w1=walltime(fsecs)
   return
 end function cputime
+!==========================================================================================!
+!==========================================================================================!
 
-!***************************************************************************
 
-subroutine rearrange(nzp,nxp,nyp,a,b)
-  implicit none
-  integer :: nzp,nxp,nyp
-  real :: a(nzp,nxp,nyp),b(nxp,nyp,nzp)
-  integer :: k,i,j
 
-  do i=1,nxp
-     do j=1,nyp
-        do k=1,nzp
-           b(i,j,k)=a(k,i,j)
-        enddo
-     enddo
-  enddo
-  return
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This sub-routine re-arranges the vectors from the standard RAMS format (Z,X,Y,E) to  !
+! the VFM format (X,Y,Z,E).                                                                !
+!------------------------------------------------------------------------------------------!
+subroutine rearrange(nzpt,nxpt,nypt,nept,ramsarr,vfmarr)
+   implicit none
+   !------ Arguments. ---------------------------------------------------------------------!
+   integer                             , intent(in)  :: nzpt
+   integer                             , intent(in)  :: nxpt
+   integer                             , intent(in)  :: nypt
+   integer                             , intent(in)  :: nept
+   real, dimension(nzpt,nxpt,nypt,nept), intent(in)  :: ramsarr
+   real, dimension(nxpt,nypt,nzpt,nept), intent(out) :: vfmarr
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                           :: x
+   integer                                           :: y
+   integer                                           :: z
+   integer                                           :: e
+   !---------------------------------------------------------------------------------------!
+
+   do x=1,nxpt
+      do y=1,nypt
+         do z=1,nzpt
+            do e=1,nept
+               vfmarr(x,y,z,e) = ramsarr(z,x,y,e)
+            end do
+         end do
+      end do
+   end do
+
+   return
 end subroutine rearrange
+!==========================================================================================!
+!==========================================================================================!
 
-!***************************************************************************
 
-subroutine unarrange(nzp,nxp,nyp,a,b)
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This sub-routine re-arranges the vectors from the VFM format (X,Y,Z,E) to the        !
+! standard RAMS format (Z,X,Y,E).                                                          !
+!------------------------------------------------------------------------------------------!
+subroutine unarrange(nzpt,nxpt,nypt,nept,vfmarr,ramsarr)
   implicit none
-  integer :: nzp,nxp,nyp
-  real :: a(nxp,nyp,nzp),b(nzp,nxp,nyp)
-  integer :: k,i,j
+   !------ Arguments. ---------------------------------------------------------------------!
+   integer                             , intent(in)  :: nzpt
+   integer                             , intent(in)  :: nxpt
+   integer                             , intent(in)  :: nypt
+   integer                             , intent(in)  :: nept
+   real, dimension(nxpt,nypt,nzpt,nept), intent(in)  :: vfmarr
+   real, dimension(nzpt,nxpt,nypt,nept), intent(out) :: ramsarr
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                                           :: x
+   integer                                           :: y
+   integer                                           :: z
+   integer                                           :: e
+   !---------------------------------------------------------------------------------------!
 
-  do i=1,nxp
-     do j=1,nyp
-        do k=1,nzp
-           b(k,i,j)=a(i,j,k)
-        enddo
-     enddo
-  enddo
-  return
+   do z=1,nzpt
+      do x=1,nxpt
+         do y=1,nypt
+            do e=1,nept
+               ramsarr(z,x,y,e) = vfmarr(x,y,z,e)
+            end do
+         end do
+      end do
+   end do
+
+   return
 end subroutine unarrange
+!==========================================================================================!
+!==========================================================================================!
 
-!***************************************************************************
 
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
 subroutine makefnam (fname,prefix,tinc,iyr,imn,idy,itm,type,post,fmt)
 
   ! creates standard timestamped filename

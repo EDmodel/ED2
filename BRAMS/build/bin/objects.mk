@@ -49,6 +49,7 @@ OBJ_MODEL =                         \
 	gaspart.o                   \
 	geodat.o                    \
 	getvar.o                    \
+	great_circle.o              \
 	grell_coms.o                \
 	grell_cupar_aux.o           \
 	grell_cupar_downdraft.o     \
@@ -81,9 +82,13 @@ OBJ_MODEL =                         \
 	landuse_input.o             \
 	leaf_coms.o                 \
 	leaf3.o                     \
+	leaf3_bc.o                  \
+	leaf3_can.o                 \
 	leaf3_hyd.o                 \
 	leaf3_init.o                \
+	leaf3_ocean.o               \
 	leaf3_teb.o                 \
+	leaf3_tw.o                  \
 	leaf3_utils.o               \
 	local_proc.o                \
 	machine_arq.o               \
@@ -166,6 +171,7 @@ OBJ_MODEL =                         \
 	nest_feed.o                 \
 	nest_filldens.o             \
 	nest_geosst.o               \
+	nest_init_aux.o             \
 	nest_intrp.o                \
 	nest_move.o                 \
 	node_mod.o                  \
@@ -254,6 +260,7 @@ OBJ_MODEL =                         \
 	var_tables.o                \
 	varf_read.o                 \
 	varf_update.o               \
+	varutils.o                  \
 	vformat.o                   \
 	vtab_fill.o                 \
 	edcp_driver.o               \
@@ -281,6 +288,7 @@ OBJ_MODEL =                         \
 	ed_grid.o                   \
 	ed_init_full_history.o      \
 	ed_init.o                   \
+	ed_init_atm.o               \
 	ed_max_dims.o               \
 	ed_mem_grid_dim_defs.o      \
 	ed_misc_coms.o              \
@@ -289,6 +297,7 @@ OBJ_MODEL =                         \
 	ed_opspec.o                 \
 	ed_para_coms.o              \
 	ed_params.o                 \
+	ed_print.o                 \
 	ed_read_ed10_20_history.o   \
 	ed_read_ed21_history.o      \
 	ed_state_vars.o             \
@@ -307,7 +316,6 @@ OBJ_MODEL =                         \
 	forestry.o                  \
 	fuse_fiss_utils.o           \
 	fusion_fission_coms.o       \
-	great_circle.o              \
 	grid_coms.o                 \
 	growth_balive.o             \
 	h5_output.o                 \
@@ -345,5 +353,6 @@ OBJ_MODEL =                         \
 	stable_cohorts.o            \
 	structural_growth.o         \
 	twostream_rad.o             \
-	update_derived_props.o
+	update_derived_props.o      \
+	vegetation_dynamics.o
 

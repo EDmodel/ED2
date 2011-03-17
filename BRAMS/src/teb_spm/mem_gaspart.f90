@@ -129,81 +129,81 @@ endif
     npts=n2*n3
 
     IF (ASSOCIATED(gaspart%fusog))  &
-         CALL vtables2 (gaspart%FUSOG(1,1),gaspartm%FUSOG(1,1)&
+         CALL vtables2 (gaspart%FUSOG,gaspartm%FUSOG&
          ,ng, npts, imean,  &
          'FUSOG:2:hist:anal:mpti:mpt3:mpt1')
 
     npts=n1*n2*n3
 
     IF (ASSOCIATED(gaspart%pco))  &
-         CALL vtables2 (gaspart%PCO(1,1,1),gaspartm%PCO(1,1,1)&
+         CALL vtables2 (gaspart%PCO,gaspartm%PCO&
          ,ng, npts, imean,  &
          'PCO:3:hist:anal:mpti:mpt3:mpt1')
     IF (ASSOCIATED(gaspart%pno))  &
-         CALL vtables2 (gaspart%PNO(1,1,1),gaspartm%PNO(1,1,1)&
+         CALL vtables2 (gaspart%PNO,gaspartm%PNO&
          ,ng, npts, imean,  &
          'PNO:3:hist:anal:mpti:mpt3:mpt1')
     IF (ASSOCIATED(gaspart%pno2))  &
-         CALL vtables2 (gaspart%PNO2(1,1,1),gaspartm%PNO2(1,1,1)&
+         CALL vtables2 (gaspart%PNO2,gaspartm%PNO2&
          ,ng, npts, imean,  &
          'PNO2:3:hist:anal:mpti:mpt3:mpt1')
     IF (ASSOCIATED(gaspart%ppm25))  &
-         CALL vtables2 (gaspart%PPM25(1,1,1),gaspartm%PPM25(1,1,1)&
+         CALL vtables2 (gaspart%PPM25,gaspartm%PPM25&
          ,ng, npts, imean,  &
          'PPM25:3:hist:anal:mpti:mpt3:mpt1')
     IF (ASSOCIATED(gaspart%pvoc))  &
-         CALL vtables2 (gaspart%PVOC(1,1,1),gaspartm%PVOC(1,1,1)&
+         CALL vtables2 (gaspart%PVOC,gaspartm%PVOC&
          ,ng, npts, imean,  &
          'PVOC:3:hist:anal:mpti:mpt3:mpt1')
     IF (ASSOCIATED(gaspart%pso2))  &
-         CALL vtables2 (gaspart%PSO2(1,1,1),gaspartm%PSO2(1,1,1)&
+         CALL vtables2 (gaspart%PSO2,gaspartm%PSO2&
          ,ng, npts, imean,  &
          'PSO2:3:hist:anal:mpti:mpt3:mpt1')
     IF (ASSOCIATED(gaspart%pso4))  &
-         CALL vtables2 (gaspart%PSO4(1,1,1),gaspartm%PSO4(1,1,1)&
+         CALL vtables2 (gaspart%PSO4,gaspartm%PSO4&
          ,ng, npts, imean,  &
          'PSO4:3:hist:anal:mpti:mpt3:mpt1')
     IF (ASSOCIATED(gaspart%paer))  &
-         CALL vtables2 (gaspart%PAER(1,1,1),gaspartm%PAER(1,1,1)&
+         CALL vtables2 (gaspart%PAER,gaspartm%PAER&
          ,ng, npts, imean,  &
          'PAER:3:hist:anal:mpti:mpt3:mpt1')
     IF (ASSOCIATED(gaspart%PEOXID))  &
-         CALL vtables2 (gaspart%PEOXID(1,1,1),gaspartm%PEOXID(1,1,1)&
+         CALL vtables2 (gaspart%PEOXID,gaspartm%PEOXID&
          ,ng, npts, imean,  &
          'PEOXID:3:hist:anal:mpti:mpt3:mpt1')
     IF (ASSOCIATED(gaspart%gasr))  &
-         CALL vtables2 (gaspart%GASR(1,1,1),gaspartm%GASR(1,1,1)&
+         CALL vtables2 (gaspart%GASR,gaspartm%GASR&
          ,ng, npts, imean,  &
          'GASR:3:mpti:mpt3:mpt1')
 
 if(ichemi==1)then
 
     IF (ASSOCIATED(gaspart%po3))  &
-         CALL vtables2 (gaspart%PO3(1,1,1),gaspartm%PO3(1,1,1)&
+         CALL vtables2 (gaspart%PO3,gaspartm%PO3&
          ,ng, npts, imean,  &
          'PO3:3:hist:anal:mpti:mpt3:mpt1')
     IF (ASSOCIATED(gaspart%prhco))  &
-         CALL vtables2 (gaspart%PRHCO(1,1,1),gaspartm%PRHCO(1,1,1)&
+         CALL vtables2 (gaspart%PRHCO,gaspartm%PRHCO&
          ,ng, npts, imean,  &
          'PRHCO:3:hist:anal:mpti:mpt3:mpt1')
     IF (ASSOCIATED(gaspart%pho2))  &
-         CALL vtables2 (gaspart%PHO2(1,1,1),gaspartm%PHO2(1,1,1)&
+         CALL vtables2 (gaspart%PHO2,gaspartm%PHO2&
          ,ng, npts, imean,  &
          'PHO2:3:hist:anal:mpti:mpt3:mpt1')
     IF (ASSOCIATED(gaspart%po3p))  &
-         CALL vtables2 (gaspart%PO3P(1,1,1),gaspartm%PO3P(1,1,1)&
+         CALL vtables2 (gaspart%PO3P,gaspartm%PO3P&
          ,ng, npts, imean,  &
          'PO3P:3:hist:anal:mpti:mpt3:mpt1')
     IF (ASSOCIATED(gaspart%po1d))  &
-         CALL vtables2 (gaspart%PO1D(1,1,1),gaspartm%PO1D(1,1,1)&
+         CALL vtables2 (gaspart%PO1D,gaspartm%PO1D&
          ,ng, npts, imean,  &
          'PO1D:3:hist:anal:mpti:mpt3:mpt1')
     IF (ASSOCIATED(gaspart%pho))  &
-         CALL vtables2 (gaspart%PHO(1,1,1),gaspartm%PHO(1,1,1)&
+         CALL vtables2 (gaspart%PHO,gaspartm%PHO&
          ,ng, npts, imean,  &
          'PHO:3:hist:anal:mpti:mpt3:mpt1')
     IF (ASSOCIATED(gaspart%proo))  &
-         CALL vtables2 (gaspart%PROO(1,1,1),gaspartm%PROO(1,1,1)&
+         CALL vtables2 (gaspart%PROO,gaspartm%PROO&
          ,ng, npts, imean,  &
          'PROO:3:hist:anal:mpti:mpt3:mpt1')
 endif

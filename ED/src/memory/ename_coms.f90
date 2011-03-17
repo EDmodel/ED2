@@ -49,6 +49,7 @@ module ename_coms
       integer                                           :: ifoutput
       integer                                           :: idoutput
       integer                                           :: imoutput
+      integer                                           :: iqoutput
       integer                                           :: iyoutput
       integer                                           :: itoutput
       integer                                           :: isoutput
@@ -135,19 +136,40 @@ module ename_coms
       integer                                           :: repro_scheme
       integer                                           :: lapse_scheme
       integer                                           :: crown_mod
+      integer                                           :: h2o_plant_lim
+      real                                              :: vmfact
+      real                                              :: mfact
+      real                                              :: kfact
+      real                                              :: gamfact
+      real                                              :: thetacrit
+      real                                              :: lwfact
+      real                                              :: thioff
+      integer                                           :: icomppt
+      integer                                           :: quantum_efficiency_T
       integer                                           :: n_plant_lim
       integer                                           :: n_decomp_lim
       integer                                           :: decomp_scheme
       integer                                           :: include_fire
+      real                                              :: sm_fire
       integer                                           :: ianth_disturb
       integer                                           :: icanturb
+      integer                                           :: i_blyr_condct
       integer                                           :: isfclyrm
+      integer                                           :: ipercol
       integer               , dimension(n_pft)          :: include_these_pft
       integer                                           :: agri_stock
       integer                                           :: plantation_stock
       integer                                           :: pft_1st_check
       real                                              :: treefall_disturbance_rate
       real                                              :: runoff_time
+      real                                              :: betapower
+      real                                              :: ustmin
+      real                                              :: gamm
+      real                                              :: gamh
+      real                                              :: tprandtl
+      real                                              :: vh2vr
+      real                                              :: vh2dh
+      real                                              :: ggfact
 
       !----- Options for printing polygon vectors/arrays to standard output. --------------!
       integer                                           :: iprintpolys
@@ -169,6 +191,8 @@ module ename_coms
       integer                                           :: iphenysf
       integer                                           :: iphenyf1
       integer                                           :: iphenyff
+      real                                              :: radint
+      real                                              :: radslp
 
       !------ XML, phenology, and prescribed event files. ---------------------------------!
       character(len=str_len)                            :: iedcnfgf
@@ -238,6 +262,7 @@ module ename_coms
       enl%ifoutput                  = undef_integer
       enl%idoutput                  = undef_integer
       enl%imoutput                  = undef_integer
+      enl%iqoutput                  = undef_integer
       enl%iyoutput                  = undef_integer
       enl%itoutput                  = undef_integer
       enl%isoutput                  = undef_integer
@@ -323,13 +348,26 @@ module ename_coms
       enl%repro_scheme              = undef_integer
       enl%lapse_scheme              = undef_integer
       enl%crown_mod                 = undef_integer
+      enl%h2o_plant_lim             = undef_integer
+      enl%vmfact                    = undef_real
+      enl%mfact                     = undef_real
+      enl%kfact                     = undef_real
+      enl%gamfact                   = undef_real
+      enl%thetacrit                 = undef_real
+      enl%lwfact                    = undef_real
+      enl%thioff                    = undef_real
+      enl%icomppt                   = undef_integer
+      enl%quantum_efficiency_T      = undef_integer
       enl%n_plant_lim               = undef_integer
       enl%n_decomp_lim              = undef_integer
       enl%decomp_scheme             = undef_integer
       enl%include_fire              = undef_integer
+      enl%sm_fire                   = undef_real
       enl%ianth_disturb             = undef_integer
       enl%icanturb                  = undef_integer
+      enl%i_blyr_condct             = undef_integer
       enl%isfclyrm                  = undef_integer
+      enl%ipercol                   = undef_integer
 
       enl%include_these_pft         = (/(undef_integer,i=1,n_pft)/) 
       enl%agri_stock                = undef_integer
@@ -338,6 +376,14 @@ module ename_coms
 
       enl%treefall_disturbance_rate = undef_real
       enl%runoff_time               = undef_real
+      enl%betapower                 = undef_real
+      enl%ustmin                    = undef_real
+      enl%gamm                      = undef_real
+      enl%gamh                      = undef_real
+      enl%tprandtl                  = undef_real
+      enl%vh2vr                     = undef_real
+      enl%vh2dh                     = undef_real
+      enl%ggfact                    = undef_real
 
       enl%iprintpolys               = undef_integer
       enl%npvars                    = undef_integer
@@ -356,6 +402,8 @@ module ename_coms
       enl%iphenysf                  = undef_integer
       enl%iphenyf1                  = undef_integer
       enl%iphenyff                  = undef_integer
+      enl%radint                    = undef_real
+      enl%radslp                    = undef_real
 
       enl%iedcnfgf                  = undef_path
       enl%phenpath                  = undef_path
