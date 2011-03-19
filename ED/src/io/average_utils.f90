@@ -297,54 +297,139 @@ end subroutine normalize_averaged_vars
 !==========================================================================================!
 subroutine reset_averaged_vars(cgrid)
 
-   use ed_state_vars,only:edtype,polygontype,sitetype,patchtype
+   use ed_state_vars, only : edtype      & ! structure
+                           , polygontype & ! structure
+                           , sitetype    & ! structure
+                           , patchtype   ! ! structure
    
    implicit none
-   type(edtype),target :: cgrid
-   type(polygontype),pointer :: cpoly
-   type(sitetype),pointer :: csite
-   type(patchtype),pointer :: cpatch
-   integer :: ipy,isi,ipa,ico
+   !----- Arguments. ----------------------------------------------------------------------!
+   type(edtype)     , target  :: cgrid
+   !----- Local variables. ----------------------------------------------------------------!
+   type(polygontype), pointer :: cpoly
+   type(sitetype)   , pointer :: csite
+   type(patchtype)  , pointer :: cpatch
+   integer                    :: ipy
+   integer                    :: isi
+   integer                    :: ipa
+   integer                    :: ico
+   !---------------------------------------------------------------------------------------!
 
-   do ipy = 1,cgrid%npolygons
+   polyloop: do ipy = 1,cgrid%npolygons
 
-      ! Should this be here as well?
-      cgrid%cbudget_nep(ipy)       = 0.0
+      cgrid%cbudget_nep          (ipy) = 0.0
+      cgrid%avg_nir_beam         (ipy) = 0.0
+      cgrid%avg_nir_diffuse      (ipy) = 0.0
+      cgrid%avg_par_beam         (ipy) = 0.0
+      cgrid%avg_par_diffuse      (ipy) = 0.0
+      cgrid%avg_atm_tmp          (ipy) = 0.0
+      cgrid%avg_atm_shv          (ipy) = 0.0
+      cgrid%avg_rshort           (ipy) = 0.0
+      cgrid%avg_rshort_diffuse   (ipy) = 0.0
+      cgrid%avg_rlong            (ipy) = 0.0
+      cgrid%avg_pcpg             (ipy) = 0.0
+      cgrid%avg_qpcpg            (ipy) = 0.0
+      cgrid%avg_dpcpg            (ipy) = 0.0
+      cgrid%avg_vels             (ipy) = 0.0
+      cgrid%avg_atm_prss         (ipy) = 0.0
+      cgrid%avg_exner            (ipy) = 0.0
+      cgrid%avg_geoht            (ipy) = 0.0
+      cgrid%avg_atm_co2          (ipy) = 0.0
+      cgrid%avg_albedt           (ipy) = 0.0
+      cgrid%avg_rlongup          (ipy) = 0.0
 
-      ! Reset the meteorological diagnostic
-   
-      cgrid%avg_nir_beam(ipy)       = 0.0
-      cgrid%avg_nir_diffuse(ipy)    = 0.0
-      cgrid%avg_par_beam(ipy)       = 0.0
-      cgrid%avg_par_diffuse(ipy)    = 0.0
-      cgrid%avg_atm_tmp(ipy)        = 0.0
-      cgrid%avg_atm_shv(ipy)        = 0.0
-      cgrid%avg_rshort(ipy)         = 0.0
-      cgrid%avg_rshort_diffuse(ipy) = 0.0
-      cgrid%avg_rlong(ipy)          = 0.0
-      cgrid%avg_pcpg(ipy)           = 0.0
-      cgrid%avg_qpcpg(ipy)          = 0.0
-      cgrid%avg_dpcpg(ipy)          = 0.0
-      cgrid%avg_vels(ipy)           = 0.0
-      cgrid%avg_atm_prss(ipy)       = 0.0
-      cgrid%avg_exner(ipy)          = 0.0
-      cgrid%avg_geoht(ipy)          = 0.0
-      cgrid%avg_atm_co2(ipy)        = 0.0
-      cgrid%avg_albedt(ipy)         = 0.0
-      cgrid%avg_rlongup(ipy)        = 0.0
-   
-      !
-      cgrid%avg_drainage(ipy)       = 0.0
-      cgrid%avg_evap(ipy)           = 0.0
-      cgrid%avg_transp(ipy)         = 0.0
-      cgrid%avg_soil_temp(:,ipy)    = 0.0
-      cgrid%avg_soil_water(:,ipy)   = 0.0
-      cgrid%avg_soil_energy(:,ipy)  = 0.0
-      cgrid%avg_soil_fracliq(:,ipy) = 0.0
+      cgrid%avg_veg_energy       (ipy) = 0.0
+      cgrid%avg_veg_temp         (ipy) = 0.0
+      cgrid%avg_veg_hcap         (ipy) = 0.0
+      cgrid%avg_veg_fliq         (ipy) = 0.0
+      cgrid%avg_veg_water        (ipy) = 0.0
+
+      cgrid%avg_can_temp         (ipy) = 0.0
+      cgrid%avg_can_shv          (ipy) = 0.0
+      cgrid%avg_can_co2          (ipy) = 0.0
+      cgrid%avg_can_rhos         (ipy) = 0.0
+      cgrid%avg_can_prss         (ipy) = 0.0
+      cgrid%avg_can_theta        (ipy) = 0.0
+      cgrid%avg_can_theiv        (ipy) = 0.0
+      cgrid%avg_can_depth        (ipy) = 0.0
+
+      cgrid%avg_drainage         (ipy) = 0.0
+      cgrid%avg_evap             (ipy) = 0.0
+      cgrid%avg_transp           (ipy) = 0.0
+      cgrid%avg_soil_temp      (:,ipy) = 0.0
+      cgrid%avg_soil_water     (:,ipy) = 0.0
+      cgrid%avg_soil_energy    (:,ipy) = 0.0
+      cgrid%avg_soil_fracliq   (:,ipy) = 0.0
+
+      cgrid%avg_vapor_vc         (ipy) = 0.0
+      cgrid%avg_dew_cg           (ipy) = 0.0
+      cgrid%avg_vapor_gc         (ipy) = 0.0
+      cgrid%avg_wshed_vg         (ipy) = 0.0
+      cgrid%avg_intercepted      (ipy) = 0.0
+      cgrid%avg_throughfall      (ipy) = 0.0
+      cgrid%avg_vapor_ac         (ipy) = 0.0
+      cgrid%avg_transp           (ipy) = 0.0
+      cgrid%avg_evap             (ipy) = 0.0
+      cgrid%avg_runoff           (ipy) = 0.0
+      cgrid%avg_drainage         (ipy) = 0.0
+      cgrid%avg_drainage_heat    (ipy) = 0.0
+      cgrid%aux                  (ipy) = 0.0
+      cgrid%avg_carbon_ac        (ipy) = 0.0
+      cgrid%avg_sensible_vc      (ipy) = 0.0
+      cgrid%avg_qwshed_vg        (ipy) = 0.0
+      cgrid%avg_qintercepted     (ipy) = 0.0
+      cgrid%avg_qthroughfall     (ipy) = 0.0
+      cgrid%avg_sensible_gc      (ipy) = 0.0
+      cgrid%avg_sensible_ac      (ipy) = 0.0
+      cgrid%avg_runoff_heat      (ipy) = 0.0 
+
+      cgrid%aux_s              (:,ipy) = 0.0
+      cgrid%avg_smoist_gg      (:,ipy) = 0.0
+      cgrid%avg_smoist_gc      (:,ipy) = 0.0
+      cgrid%avg_sensible_gg    (:,ipy) = 0.0
+
+      cgrid%avg_soil_wetness     (ipy) = 0.0
+      cgrid%avg_skin_temp        (ipy) = 0.0
+      cgrid%avg_available_water  (ipy) = 0.0
+
+      cgrid%avg_lai_ebalvars (:,:,ipy) = 0.0
+
+      cgrid%avg_gpp              (ipy) = 0.0
+      cgrid%avg_leaf_resp        (ipy) = 0.0
+      cgrid%avg_root_resp        (ipy) = 0.0
+      cgrid%avg_growth_resp      (ipy) = 0.0
+      cgrid%avg_storage_resp     (ipy) = 0.0
+      cgrid%avg_vleaf_resp       (ipy) = 0.0
+      cgrid%avg_plant_resp       (ipy) = 0.0
+      cgrid%avg_growth_resp      (ipy) = 0.0
+      cgrid%avg_storage_resp     (ipy) = 0.0
+      cgrid%avg_vleaf_resp       (ipy) = 0.0
+      cgrid%avg_htroph_resp      (ipy) = 0.0 
+      cgrid%avg_leaf_drop        (ipy) = 0.0
+      cgrid%avg_leaf_maintenance (ipy) = 0.0
+      cgrid%avg_root_maintenance (ipy) = 0.0 
+
+      cgrid%avg_sfcw_depth       (ipy) = 0.0
+      cgrid%avg_sfcw_energy      (ipy) = 0.0
+      cgrid%avg_sfcw_mass        (ipy) = 0.0
+      cgrid%avg_sfcw_tempk       (ipy) = 0.0
+      cgrid%avg_sfcw_fracliq     (ipy) = 0.0
+      cgrid%avg_bdead            (ipy) = 0.0
+      cgrid%avg_balive           (ipy) = 0.0
+      cgrid%avg_bleaf            (ipy) = 0.0
+      cgrid%avg_broot            (ipy) = 0.0
+      cgrid%avg_bsapwood         (ipy) = 0.0
+      cgrid%avg_bstorage         (ipy) = 0.0 
+      cgrid%avg_bseeds           (ipy) = 0.0
+      cgrid%avg_fsc              (ipy) = 0.0
+      cgrid%avg_ssc              (ipy) = 0.0 
+      cgrid%avg_stsc             (ipy) = 0.0
+      cgrid%avg_fsn              (ipy) = 0.0
+      cgrid%avg_msn              (ipy) = 0.0 
 
 
       cpoly => cgrid%polygon(ipy)
-      do isi = 1,cpoly%nsites
+      siteloop: do isi = 1,cpoly%nsites
          csite => cpoly%site(isi)
 
          cpoly%avg_atm_tmp(isi)          = 0.0
@@ -354,8 +439,11 @@ subroutine reset_averaged_vars(cgrid)
          cpoly%avg_soil_temp(:,isi)      = 0.0
          cpoly%avg_soil_water(:,isi)     = 0.0
          cpoly%avg_soil_energy(:,isi)    = 0.0
+         cpoly%avg_soil_fracliq(:,isi)   = 0.0
 
-         do ipa = 1,csite%npatches
+
+
+         patchloop: do ipa = 1,csite%npatches
             cpatch => csite%patch(ipa)
 
             !----------------------------------------------------------------!
@@ -423,7 +511,7 @@ subroutine reset_averaged_vars(cgrid)
             csite%aux_s(:,ipa)              = 0.0
             csite%mean_rh(ipa)              = 0.0
          
-            do ico=1,cpatch%ncohorts
+            cohortloop: do ico=1,cpatch%ncohorts
                cpatch%leaf_respiration(ico)      = 0.0
                cpatch%root_respiration(ico)      = 0.0
                cpatch%gpp(ico)                   = 0.0
@@ -433,18 +521,10 @@ subroutine reset_averaged_vars(cgrid)
                cpatch%mean_storage_resp(ico)     = 0.0 
                cpatch%mean_growth_resp(ico)      = 0.0
                cpatch%mean_vleaf_resp(ico)       = 0.0
-            end do
-         end do
-
-
-      end do
-
-      cpoly%avg_soil_temp(:,:)      = 0.0
-      cpoly%avg_soil_water(:,:)     = 0.0
-      cpoly%avg_soil_energy(:,:)    = 0.0
-      cpoly%avg_soil_fracliq(:,:)   = 0.0
-
-   end do
+            end do cohortloop
+         end do patchloop
+      end do siteloop
+   end do polyloop
 
 
    return

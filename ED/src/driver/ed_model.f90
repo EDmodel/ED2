@@ -27,7 +27,7 @@ subroutine ed_model()
                             , nrec_fast           & ! intent(in)
                             , nrec_state          & ! intent(in)
                             , ffilout             & ! intent(in)
-                            , runtype
+                            , runtype             ! ! intent(in)
    use ed_misc_coms  , only : outputMonth         & ! intent(in)
                             , fast_diagnostics    ! ! intent(in)
    use grid_coms     , only : ngrids              & ! intent(in)
@@ -198,7 +198,16 @@ subroutine ed_model()
    
    
    if (ifoutput /= 0) call h5_output('INST')
-   if (isoutput /= 0) call h5_output('HIST')
+
+   if (isoutput /= 0) then
+      select case (trim(runtype))
+      case ('INITIAL')
+         call h5_output('HIST')
+      case ('HISTORY')
+         call h5_output('CONT')
+      end select
+   end if
+
    if (writing_year ) call h5_output('YEAR')
 
    !----- Start the timesteps. ------------------------------------------------------------!
