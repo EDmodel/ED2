@@ -947,6 +947,7 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,hdid,csite,ipa)
    real(kind=8)                        :: wmass_tot
    real(kind=8)                        :: hcapdry_tot
    real(kind=8)                        :: wmass_room
+   real(kind=8)                        :: energy_room
    real(kind=8)                        :: depthloss
    real(kind=8)                        :: snden
    real(kind=8)                        :: sndenmin
@@ -1345,10 +1346,46 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,hdid,csite,ipa)
 
 
    !---------------------------------------------------------------------------------------!
-   !     Add any remaining free water to the top soil layer.                               !
+   !     There may be a tiny amount of free standing water left.  We dump what we can in   !
+   ! the soil, and if there is still some water to be removed we  evaporate what is left.  !
    !---------------------------------------------------------------------------------------!
-   initp%soil_water(nzg)  = initp%soil_water(nzg)  + wmass_free  * dslzi8(nzg) * wdnsi8
-   initp%soil_energy(nzg) = initp%soil_energy(nzg) + energy_free * dslzi8(nzg)
+   if (wmass_free > 0.d0) then
+      wmass_room  = max(0.d0, soil8(nsoil)%slmsts - initp%soil_water(nzg))                 &
+                            * wdns8 * dslz8(nzg)
+      energy_room = energy_free * wmass_room / wmass_free
+
+      if (wmass_room > wmass_free) then
+         !---------------------------------------------------------------------------------!
+         !     There is enough space in the top soil layer for the remaining water, put    !
+         ! all the free water there.                                                       !
+         !---------------------------------------------------------------------------------!
+         initp%soil_water(nzg)  = initp%soil_water(nzg)  + wmass_free  * dslzi8(nzg)       &
+                                * wdnsi8
+         initp%soil_energy(nzg) = initp%soil_energy(nzg) + energy_free * dslzi8(nzg)
+      else
+         !----- Remove the water that can go to the soil. ---------------------------------!
+         wmass_free  = wmass_free  - wmass_room
+         energy_free = energy_free - energy_room
+
+         !----- Dump what we can dump on the top soil layer. ------------------------------!
+         initp%soil_water(nzg)  = initp%soil_water(nzg)  + wmass_room  * dslzi8(nzg)       &
+                                * wdnsi8
+         initp%soil_energy(nzg) = initp%soil_energy(nzg) + energy_room * dslzi8(nzg)
+
+         !----- Boil the remaining. -------------------------------------------------------!
+         initp%can_shv      = initp%can_shv       + wmass_free  * wcapcani
+         initp%avg_vapor_gc = initp%avg_vapor_gc  + wmass_free  * hdidi
+
+         energy_input       = -energy_free
+
+         wmass_free  = 0.d0
+         energy_free = 0.d0
+       end if
+   elseif (wmass_free < 0.d0) then
+      call fatal_error('Free mass is negative, this doesn''t make any sense!'              &
+                      ,'adjust_sfcw_properties','rk4_misc.f90')
+   
+   end if
    !---------------------------------------------------------------------------------------!
 
 
@@ -2570,11 +2607,13 @@ subroutine print_csiteipa(csite, ipa)
 
    write (unit=*,fmt='(80a)') ('-',k=1,80)
 
-   write (unit=*,fmt='(6(a12,1x))')  '  VEG_HEIGHT','   VEG_ROUGH','         LAI'          &
-                                    ,'        HTRY','    CAN_RHOS','   CAN_DEPTH'
-   write (unit=*,fmt='(6(es12.4,1x))') csite%veg_height(ipa),csite%veg_rough(ipa)          &
-                                      ,csite%lai(ipa),csite%htry(ipa)                      &
-                                      ,csite%can_rhos(ipa),csite%can_depth(ipa)
+   write (unit=*,fmt='(7(a12,1x))')  '  VEG_HEIGHT','   VEG_ROUGH','VEG_DISPLACE'          &
+                                    ,'         LAI','        HTRY','    CAN_RHOS'          &
+                                    ,'   CAN_DEPTH'
+   write (unit=*,fmt='(7(es12.4,1x))') csite%veg_height(ipa),csite%veg_rough(ipa)          &
+                                      ,csite%veg_displace(ipa),csite%lai(ipa)              &
+                                      ,csite%htry(ipa),csite%can_rhos(ipa)                 &
+                                      ,csite%can_depth(ipa)
 
    write (unit=*,fmt='(80a)') ('-',k=1,80)
 
@@ -2747,22 +2786,22 @@ subroutine print_rk4patch(y,csite,ipa)
    write (unit=*,fmt='(a)'  ) ' '
    write (unit=*,fmt='(80a)') ('-',k=1,80)
 
-   write (unit=*,fmt='(8(a12,1x))')   '  VEG_HEIGHT','   VEG_ROUGH','   PATCH_LAI'         &
-                                     ,'    CAN_RHOS','   CAN_DEPTH','     CAN_CO2'         &
+   write (unit=*,fmt='(8(a12,1x))')   '  VEG_HEIGHT','   VEG_ROUGH','VEG_DISPLACE'         &
+                                     ,'   PATCH_LAI','   CAN_DEPTH','     CAN_CO2'         &
                                      ,'    CAN_PRSS','       GGNET'
                                      
    write (unit=*,fmt='(8(es12.4,1x))') csite%veg_height(ipa),csite%veg_rough(ipa)          &
-                                      ,csite%lai(ipa),y%can_rhos,y%can_depth,y%can_co2     &
-                                      ,y%can_prss,y%ggnet
+                                      ,csite%veg_displace(ipa),csite%lai(ipa),y%can_depth  &
+                                      ,y%can_co2,y%can_prss,y%ggnet
    write (unit=*,fmt='(80a)') ('-',k=1,80)
-   write (unit=*,fmt='(7(a12,1x))')  '   CAN_THEIV','   CAN_THETA','    CAN_TEMP'          &
-                                    ,'     CAN_SHV','     CAN_SSH','    CAN_RVAP'          &
-                                    ,'     CAN_RHV'
+   write (unit=*,fmt='(8(a12,1x))')  '    CAN_RHOS','   CAN_THEIV','   CAN_THETA'          &
+                                    ,'    CAN_TEMP','     CAN_SHV','     CAN_SSH'          &
+                                    ,'    CAN_RVAP','     CAN_RHV'
                                      
                                      
-   write (unit=*,fmt='(7(es12.4,1x))')   y%can_theiv, y%can_theta, y%can_temp              &
-                                       , y%can_shv  , y%can_ssh  , y%can_rvap              &
-                                       , y%can_rhv
+   write (unit=*,fmt='(8(es12.4,1x))')   y%can_rhos , y%can_theiv, y%can_theta             &
+                                       , y%can_temp , y%can_shv  , y%can_ssh               &
+                                       , y%can_rvap , y%can_rhv
                                        
 
    write (unit=*,fmt='(80a)') ('-',k=1,80)

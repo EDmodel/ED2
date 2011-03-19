@@ -26,22 +26,23 @@ subroutine leaf_prognostic(ifm,i,j,ip)
               ,leaf_g(ifm)%veg_albedo       (i,j,ip),leaf_g(ifm)%veg_fracarea     (i,j,ip) &
               ,leaf_g(ifm)%veg_lai          (i,j,ip),leaf_g(ifm)%veg_tai          (i,j,ip) &
               ,leaf_g(ifm)%veg_rough        (i,j,ip),leaf_g(ifm)%veg_height       (i,j,ip) &
-              ,leaf_g(ifm)%patch_area       (i,j,ip),leaf_g(ifm)%patch_rough      (i,j,ip) &
-              ,leaf_g(ifm)%patch_wetind     (i,j,ip),leaf_g(ifm)%leaf_class       (i,j,ip) &
-              ,leaf_g(ifm)%soil_rough       (i,j,ip),leaf_g(ifm)%sfcwater_nlev    (i,j,ip) &
-              ,leaf_g(ifm)%stom_condct      (i,j,ip),leaf_g(ifm)%ground_rsat      (i,j,ip) &
-              ,leaf_g(ifm)%ground_rvap      (i,j,ip),leaf_g(ifm)%ground_temp      (i,j,ip) &
-              ,leaf_g(ifm)%ground_fliq      (i,j,ip),leaf_g(ifm)%veg_water        (i,j,ip) &
-              ,leaf_g(ifm)%veg_hcap         (i,j,ip),leaf_g(ifm)%veg_energy       (i,j,ip) &
-              ,leaf_g(ifm)%can_prss         (i,j,ip),leaf_g(ifm)%can_theiv        (i,j,ip) &
-              ,leaf_g(ifm)%can_theta        (i,j,ip),leaf_g(ifm)%can_rvap         (i,j,ip) &
-              ,leaf_g(ifm)%can_co2          (i,j,ip),leaf_g(ifm)%sensible_gc      (i,j,ip) &
-              ,leaf_g(ifm)%sensible_vc      (i,j,ip),leaf_g(ifm)%evap_gc          (i,j,ip) &
-              ,leaf_g(ifm)%evap_vc          (i,j,ip),leaf_g(ifm)%transp           (i,j,ip) &
-              ,leaf_g(ifm)%gpp              (i,j,ip),leaf_g(ifm)%plresp           (i,j,ip) &
-              ,leaf_g(ifm)%resphet          (i,j,ip),leaf_g(ifm)%veg_ndvip        (i,j,ip) &
-              ,leaf_g(ifm)%veg_ndvic        (i,j,ip),leaf_g(ifm)%veg_ndvif        (i,j,ip) &
-              ,radiate_g(ifm)%rshort        (i,j)   ,radiate_g(ifm)%cosz          (i,j)    )
+              ,leaf_g(ifm)%veg_displace     (i,j,ip),leaf_g(ifm)%patch_area       (i,j,ip) &
+              ,leaf_g(ifm)%patch_rough      (i,j,ip),leaf_g(ifm)%patch_wetind     (i,j,ip) &
+              ,leaf_g(ifm)%leaf_class       (i,j,ip),leaf_g(ifm)%soil_rough       (i,j,ip) &
+              ,leaf_g(ifm)%sfcwater_nlev    (i,j,ip),leaf_g(ifm)%stom_condct      (i,j,ip) &
+              ,leaf_g(ifm)%ground_rsat      (i,j,ip),leaf_g(ifm)%ground_rvap      (i,j,ip) &
+              ,leaf_g(ifm)%ground_temp      (i,j,ip),leaf_g(ifm)%ground_fliq      (i,j,ip) &
+              ,leaf_g(ifm)%veg_water        (i,j,ip),leaf_g(ifm)%veg_hcap         (i,j,ip) &
+              ,leaf_g(ifm)%veg_energy       (i,j,ip),leaf_g(ifm)%can_prss         (i,j,ip) &
+              ,leaf_g(ifm)%can_theiv        (i,j,ip),leaf_g(ifm)%can_theta        (i,j,ip) &
+              ,leaf_g(ifm)%can_rvap         (i,j,ip),leaf_g(ifm)%can_co2          (i,j,ip) &
+              ,leaf_g(ifm)%sensible_gc      (i,j,ip),leaf_g(ifm)%sensible_vc      (i,j,ip) &
+              ,leaf_g(ifm)%evap_gc          (i,j,ip),leaf_g(ifm)%evap_vc          (i,j,ip) &
+              ,leaf_g(ifm)%transp           (i,j,ip),leaf_g(ifm)%gpp              (i,j,ip) &
+              ,leaf_g(ifm)%plresp           (i,j,ip),leaf_g(ifm)%resphet          (i,j,ip) &
+              ,leaf_g(ifm)%veg_ndvip        (i,j,ip),leaf_g(ifm)%veg_ndvic        (i,j,ip) &
+              ,leaf_g(ifm)%veg_ndvif        (i,j,ip),radiate_g(ifm)%rshort        (i,j)    &
+              ,radiate_g(ifm)%cosz          (i,j)   )
 
    return
 end subroutine leaf_prognostic
@@ -57,12 +58,12 @@ end subroutine leaf_prognostic
 !==========================================================================================!
 subroutine leaftw(mzg,mzs,soil_water, soil_energy,soil_text,sfcwater_energy_int            &
                  ,sfcwater_mass,sfcwater_depth,ustar,tstar,rstar,cstar,zeta,ribulk         &
-                 ,veg_albedo,veg_fracarea,veg_lai,veg_tai,veg_rough,veg_height,patch_area  &
-                 ,patch_rough,patch_wetind,leaf_class,soil_rough,sfcwater_nlev,stom_condct &
-                 ,ground_rsat,ground_rvap,ground_temp,ground_fliq,veg_water,veg_hcap       &
-                 ,veg_energy,can_prss,can_theiv,can_theta,can_rvap,can_co2,sensible_gc     &
-                 ,sensible_vc,evap_gc,evap_vc,transp,gpp,plresp,resphet,veg_ndvip          &
-                 ,veg_ndvic,veg_ndvif,rshort,cosz)
+                 ,veg_albedo,veg_fracarea,veg_lai,veg_tai,veg_rough,veg_height             &
+                 ,veg_displace,patch_area,patch_rough,patch_wetind,leaf_class,soil_rough   &
+                 ,sfcwater_nlev,stom_condct,ground_rsat,ground_rvap,ground_temp            &
+                 ,ground_fliq,veg_water,veg_hcap,veg_energy,can_prss,can_theiv,can_theta   &
+                 ,can_rvap,can_co2,sensible_gc,sensible_vc,evap_gc,evap_vc,transp,gpp      &
+                 ,plresp,resphet,veg_ndvip,veg_ndvic,veg_ndvif,rshort,cosz)
 
    use leaf_coms
    use mem_leaf
@@ -95,6 +96,7 @@ subroutine leaftw(mzg,mzs,soil_water, soil_energy,soil_text,sfcwater_energy_int 
    real                   , intent(in)    :: veg_tai
    real                   , intent(in)    :: veg_rough
    real                   , intent(in)    :: veg_height
+   real                   , intent(in)    :: veg_displace
    real                   , intent(in)    :: patch_area
    real                   , intent(in)    :: patch_rough
    real                   , intent(in)    :: patch_wetind
@@ -236,10 +238,10 @@ subroutine leaftw(mzg,mzs,soil_water, soil_energy,soil_text,sfcwater_energy_int 
    !---------------------------------------------------------------------------------------!
    call leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mass,ustar       &
                    ,tstar,rstar,cstar,zeta,ribulk,soil_rough,veg_rough,patch_rough         &
-                   ,veg_height,veg_lai,veg_tai,veg_water,veg_hcap,veg_energy,leaf_class    &
-                   ,veg_fracarea,stom_condct,can_prss,can_rvap,can_co2,sensible_gc         &
-                   ,sensible_vc,evap_gc,evap_vc,transp,gpp,plresp,resphet,ground_rsat      &
-                   ,ground_rvap,ground_temp,ground_fliq,available_water,rshort)
+                   ,veg_height,veg_displace,veg_lai,veg_tai,veg_water,veg_hcap,veg_energy  &
+                   ,leaf_class,veg_fracarea,stom_condct,can_prss,can_rvap,can_co2          &
+                   ,sensible_gc,sensible_vc,evap_gc,evap_vc,transp,gpp,plresp,resphet      &
+                   ,ground_rsat,ground_rvap,ground_temp,ground_fliq,available_water,rshort)
    !---------------------------------------------------------------------------------------!
 
 

@@ -731,7 +731,8 @@ module growth_balive
                               , sla          & ! intent(in)
                               , q            & ! intent(in)
                               , qsw          & ! intent(in)
-                              , c2n_stem     ! ! intent(in)
+                              , c2n_stem     & ! intent(in)
+                              , phenology    ! ! intent(in)
       use decomp_coms  , only : f_labile     ! ! intent(in)
       use allometry    , only : dbh2bl       ! ! function
       use phenology_coms, only: theta_crit   ! ! intent(in)
@@ -763,6 +764,9 @@ module growth_balive
       real                           :: f_broot
       real                           :: f_bsapwood
       real                           :: f_resp
+      real                           :: tr_bleaf
+      real                           :: tr_broot
+      real                           :: tr_bsapwood
       real                           :: bl
       logical                        :: on_allometry
       !----------------------------------------------------------------------!
@@ -779,11 +783,18 @@ module growth_balive
             ! can go to balive pools, and put any excess in storage.         !
             !----------------------------------------------------------------!
             available_carbon=cpatch%bstorage(ico) + carbon_balance
-            elongf      = min (1.0, cpatch%paw_avg(ico)/theta_crit)
+            
+            select case (phenology(ipft))
+            case (4)
+                elongf      = min (1.0, cpatch%paw_avg(ico)/theta_crit)
+            case default
+                elongf  = 1.0
+            end select
 
-            !-----Maximum bleaf that the allometric relationship would allow !
-            !     If the tree is drought stress (elongf<1), we do not allow  !
-            !     the tree to get back to full allometery                    !
+            !----------------------------------------------------------------!
+            !     Maximum bleaf that the allometric relationship would       !
+            ! allow.  If the plant is drought stress (elongf < 1), we do not !
+            ! allow the plant to get back to full allometry.                 !
             !----------------------------------------------------------------!
 
             bl_max = dbh2bl(cpatch%dbh(ico),ipft) * green_leaf_factor * elongf
@@ -804,27 +815,44 @@ module growth_balive
             
             f_bleaf = delta_bleaf / bl_max
             f_broot = delta_broot / (balive_max * q(ipft) * salloci )
-            f_bsapwood = delta_bsapwood / (balive_max * qsw(ipft) *           &
+            f_bsapwood = delta_bsapwood / (balive_max * qsw(ipft) *          &
                        cpatch%hite(ico) * salloci)
             f_total = f_bleaf + f_broot + f_bsapwood
-              
-            cpatch%bleaf(ico) = cpatch%bleaf(ico) + min(delta_bleaf,         &
-                       (f_bleaf/f_total) * available_carbon)
-            cpatch%broot(ico) = cpatch%broot(ico) + min(delta_broot,         &
-                       (f_broot/f_total) * available_carbon)
-            cpatch%bsapwood(ico) = cpatch%bsapwood(ico) + min(delta_bsapwood,&
-                       (f_bsapwood/f_total) * available_carbon)
-              
-            cpatch%balive(ico) = cpatch%bleaf(ico) + cpatch%broot(ico) +     &
-                       cpatch%bsapwood(ico)
 
-            increment = carbon_balance -  min(delta_bleaf,                   &
-                       (f_bleaf/f_total) * available_carbon) -               &
-                       min(delta_broot,(f_broot/f_total) * available_carbon) &
-                       - min(delta_bsapwood, (f_bsapwood/f_total) *          &
-                       available_carbon)
+            !----------------------------------------------------------------!
+            !     We only allow transfer from storage to living tissues if   !
+            ! there is need to transfer.                                     !
+            !----------------------------------------------------------------!
+            if (f_total > 0.0) then
+               tr_bleaf    = min( delta_bleaf                                &
+                                , (f_bleaf/f_total)    * available_carbon)
+               tr_broot    = min( delta_broot                                &
+                                , (f_broot/f_total)    * available_carbon)
+               tr_bsapwood = min( delta_bsapwood                             &
+                                , (f_bsapwood/f_total) * available_carbon)
+            else
+               tr_bleaf    = 0.
+               tr_broot    = 0.
+               tr_bsapwood = 0.
+            end if
+            !----------------------------------------------------------------!
+
+            cpatch%bleaf(ico)    = cpatch%bleaf(ico)    + tr_bleaf
+            cpatch%broot(ico)    = cpatch%broot(ico)    + tr_broot
+            cpatch%bsapwood(ico) = cpatch%bsapwood(ico) + tr_bsapwood
+
+            cpatch%balive(ico)   = cpatch%bleaf(ico) + cpatch%broot(ico)     &
+                                 + cpatch%bsapwood(ico)
+
+            !----------------------------------------------------------------!
+            !    Find the amount of carbon used to recover the tissues that  !
+            ! were off-allometry, take that from the carbon balance first,   !
+            ! then use some of the storage if needed be.                     !
+            !----------------------------------------------------------------!
+            increment = carbon_balance -  tr_bleaf - tr_broot - tr_bsapwood
             cpatch%bstorage(ico) = max(0.0, cpatch%bstorage(ico) + increment)
-         
+            !----------------------------------------------------------------!
+
             if (increment <= 0.0)  then
             !    We are using up all of daily C gain and some of bstorage    !
             !    First calculate N demand from using daily C gain            !
@@ -855,10 +883,10 @@ module growth_balive
             on_allometry = 2.0 * abs(balive_max - cpatch%balive(ico))        &
                           /(balive_max + cpatch%balive(ico)) < 1.e-6
             if (elongf == 1.0 .and. on_allometry) then
-            !----------------------------------------------------------------!
-            !  we're back to allometry, change phenology_status              !
-            !----------------------------------------------------------------!
-                   cpatch%phenology_status(ico) = 0
+               !-------------------------------------------------------------!
+               !     We're back to allometry, change phenology_status.       !
+               !-------------------------------------------------------------!
+               cpatch%phenology_status(ico) = 0
             end if
               
          else
@@ -910,7 +938,8 @@ module growth_balive
                 else
                      cpatch%broot(ico) = cpatch%broot(ico) - (increment -    &
                                       cpatch%bleaf(ico))
-                     cpatch%bleaf(ico) = 0.0                          
+                     cpatch%bleaf(ico) = 0.0
+                     cpatch%phenology_status(ico) = 2
                 end if
                 
                 cpatch%balive(ico) = cpatch%bleaf(ico) + cpatch%broot(ico) + &

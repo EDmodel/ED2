@@ -356,14 +356,14 @@ subroutine sfcinit_nofile_user(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,so
                               ,soil_energy,soil_text,sfcwater_mass,sfcwater_energy         &
                               ,sfcwater_depth,ustar,tstar,rstar,cstar,zeta,ribulk          &
                               ,veg_fracarea,veg_agb,veg_lai,veg_tai,veg_rough,veg_height   &
-                              ,veg_albedo,patch_area,patch_rough,patch_wetind,leaf_class   &
-                              ,soil_rough,sfcwater_nlev,stom_condct,ground_rsat            &
-                              ,ground_rvap,ground_temp,ground_fliq,veg_water,veg_hcap      &
-                              ,veg_energy,can_prss,can_theiv,can_theta,can_rvap,can_co2    &
-                              ,sensible_gc,sensible_vc,evap_gc,evap_vc,transp,gpp,plresp   &
-                              ,resphet,veg_ndvip,veg_ndvic,veg_ndvif,snow_mass,snow_depth  &
-                              ,cosz,rlongup,albedt,rvv,prsv,piv,vt2da,vt2db,glat,glon,zot  &
-                              ,flpw,rtgt)
+                              ,veg_displace,veg_albedo,patch_area,patch_rough              &
+                              ,patch_wetind,leaf_class,soil_rough,sfcwater_nlev            &
+                              ,stom_condct,ground_rsat,ground_rvap,ground_temp,ground_fliq &
+                              ,veg_water,veg_hcap,veg_energy,can_prss,can_theiv,can_theta  &
+                              ,can_rvap,can_co2,sensible_gc,sensible_vc,evap_gc,evap_vc    &
+                              ,transp,gpp,plresp,resphet,veg_ndvip,veg_ndvic,veg_ndvif     &
+                              ,snow_mass,snow_depth,cosz,rlongup,albedt,rvv,prsv,piv,vt2da &
+                              ,vt2db,glat,glon,zot,flpw,rtgt)
 
    use mem_grid
    use mem_leaf
@@ -410,6 +410,7 @@ subroutine sfcinit_nofile_user(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,so
    real, dimension(    n2,n3,npat), intent(inout) :: veg_tai
    real, dimension(    n2,n3,npat), intent(inout) :: veg_rough
    real, dimension(    n2,n3,npat), intent(inout) :: veg_height
+   real, dimension(    n2,n3,npat), intent(inout) :: veg_displace
    real, dimension(    n2,n3,npat), intent(inout) :: veg_albedo
    real, dimension(    n2,n3,npat), intent(inout) :: patch_area
    real, dimension(    n2,n3,npat), intent(inout) :: patch_rough
@@ -531,17 +532,18 @@ subroutine sfcinit_nofile_user(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,so
 
    !            nveg = nint(leaf_class(i,j,ipat))
 
-   !            soil_rough(i,j,ipat)  = 
-   !            patch_rough(i,j,ipat) = 
-   !            veg_rough(i,j,ipat)   = 
+   !            soil_rough(i,j,ipat)    = 
+   !            patch_rough(i,j,ipat)   = 
+   !            veg_rough(i,j,ipat)     = 
 
-   !            veg_height(i,j,ipat)  = 
-   !            veg_albedo(i,j,ipat)  = 
-   !            stom_condct(i,j,ipat) = 
+   !            veg_height(i,j,ipat)    = 
+   !            veg_displace(i,j,ipat)  = 
+   !            veg_albedo(i,j,ipat)    =
+   !            stom_condct(i,j,ipat)   =
 
-   !            veg_hcap  (i,j,ipat) = 
-   !            veg_water (i,j,ipat) = 
-   !            veg_energy(i,j,ipat) = 
+   !            veg_hcap  (i,j,ipat)    = 
+   !            veg_water (i,j,ipat)    = 
+   !            veg_energy(i,j,ipat)    = 
 
    !            !----- Above-ground biomass.  This is non-0 only when we run ED-2. --------!
    !            veg_agb   (i,j,ipat) =

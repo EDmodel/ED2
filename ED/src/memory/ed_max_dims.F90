@@ -176,8 +176,8 @@ module ed_max_dims
    !  MAX_WATER    - maximum number of soil water levels (not assigned to polygons).       !
    !---------------------------------------------------------------------------------------!
    integer, parameter :: huge_polygon = nxpmax * nypmax
-   integer, parameter :: huge_patch   = 2000
-   integer, parameter :: huge_cohort  = 20000
+   integer, parameter :: huge_patch   = 3500
+   integer, parameter :: huge_cohort  = 35000
    integer, parameter :: max_water    = 100
 
    !----- Maximum number of land use polygons that can be read by filelist. ---------------!

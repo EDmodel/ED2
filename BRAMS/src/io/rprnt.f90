@@ -256,6 +256,8 @@ elseif (vnam == 'veg_albedo'     ) then
         vnam2 = '[veg_albedo (m)]         '
 elseif (vnam == 'veg_height'     ) then
         vnam2 = '[veg_height (m)]         '
+elseif (vnam == 'veg_displace'   ) then
+        vnam2 = '[displacement_height (m)]'
 elseif (vnam == 'patch_area'     ) then
         vnam2 = '[patch_area]             '
 elseif (vnam == 'patch_rough'    ) then
@@ -424,6 +426,10 @@ do k = k1,k2
             elseif (vnam == 'veg_height'     ) then
                call plin(nc,j,ipat,3,1.               &
                   ,leaf%veg_height(i1:i2,j,ipat)         &
+                  ,leaf%patch_area(i1:i2,j,ipat))
+            elseif (vnam == 'veg_displace'   ) then
+               call plin(nc,j,ipat,3,1.               &
+                  ,leaf%veg_displace(i1:i2,j,ipat)       &
                   ,leaf%patch_area(i1:i2,j,ipat))
             elseif (vnam == 'patch_area'     ) then
                write(6,243)j,ipat,(leaf%patch_area(i,j,ipat),i=i1,i2)

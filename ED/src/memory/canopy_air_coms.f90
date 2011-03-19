@@ -46,6 +46,14 @@ module canopy_air_coms
    real         :: ustmin
    !----- Factor to be applied to the ground->canopy conductance. -------------------------!
    real         :: ggfact
+   !----- Used by OD95 and BH91. ----------------------------------------------------------!
+   real   :: gamm        ! Gamma for momentum.
+   real   :: gamh        ! Gamma for heat.
+   real   :: tprandtl    ! Turbulent Prandtl number.
+   real   :: vkopr       ! Von Karman / Prandtl number (not read by namelist, but defined
+                         !     based on the namelist TPRANDTL
+   real   :: vh2vr       ! vegetation roughness:vegetation height ratio
+   real   :: vh2dh       ! displacement height:vegetation height ratio
    !---------------------------------------------------------------------------------------!
 
    !=======================================================================================!
@@ -62,8 +70,6 @@ module canopy_air_coms
    real         :: ubmin
    !----- Some parameters that were used in ED-2.0, added here for some tests. ------------!
    real         :: ez
-   real         :: vh2vr
-   real         :: vh2dh
    !----- Double precision version of some of these variables (for Runge-Kutta). ----------!
    real(kind=8) :: exar8
    real(kind=8) :: ustmin8
@@ -198,11 +204,6 @@ module canopy_air_coms
    real   :: z0moz0h     ! z0(M)/z0(h)
    real   :: z0hoz0m     ! z0(M)/z0(h)
    real   :: ribmaxbh91  ! Maximum bulk Richardson number
-   !----- Used by OD95 and BH91. ----------------------------------------------------------!
-   real   :: gamm        ! Gamma for momentum.
-   real   :: gamh        ! Gamma for heat.
-   real   :: tprandtl    ! Turbulent Prandtl number.
-   real   :: vkopr       ! Von Karman / Prandtl number
    !---------------------------------------------------------------------------------------!
 
    !----- Double precision of all these variables. ----------------------------------------!

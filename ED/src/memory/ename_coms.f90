@@ -49,6 +49,7 @@ module ename_coms
       integer                                           :: ifoutput
       integer                                           :: idoutput
       integer                                           :: imoutput
+      integer                                           :: iqoutput
       integer                                           :: iyoutput
       integer                                           :: itoutput
       integer                                           :: isoutput
@@ -149,6 +150,7 @@ module ename_coms
       integer                                           :: n_decomp_lim
       integer                                           :: decomp_scheme
       integer                                           :: include_fire
+      real                                              :: sm_fire
       integer                                           :: ianth_disturb
       integer                                           :: icanturb
       integer                                           :: i_blyr_condct
@@ -162,6 +164,11 @@ module ename_coms
       real                                              :: runoff_time
       real                                              :: betapower
       real                                              :: ustmin
+      real                                              :: gamm
+      real                                              :: gamh
+      real                                              :: tprandtl
+      real                                              :: vh2vr
+      real                                              :: vh2dh
       real                                              :: ggfact
 
       !----- Options for printing polygon vectors/arrays to standard output. --------------!
@@ -255,6 +262,7 @@ module ename_coms
       enl%ifoutput                  = undef_integer
       enl%idoutput                  = undef_integer
       enl%imoutput                  = undef_integer
+      enl%iqoutput                  = undef_integer
       enl%iyoutput                  = undef_integer
       enl%itoutput                  = undef_integer
       enl%isoutput                  = undef_integer
@@ -354,6 +362,7 @@ module ename_coms
       enl%n_decomp_lim              = undef_integer
       enl%decomp_scheme             = undef_integer
       enl%include_fire              = undef_integer
+      enl%sm_fire                   = undef_real
       enl%ianth_disturb             = undef_integer
       enl%icanturb                  = undef_integer
       enl%i_blyr_condct             = undef_integer
@@ -369,6 +378,11 @@ module ename_coms
       enl%runoff_time               = undef_real
       enl%betapower                 = undef_real
       enl%ustmin                    = undef_real
+      enl%gamm                      = undef_real
+      enl%gamh                      = undef_real
+      enl%tprandtl                  = undef_real
+      enl%vh2vr                     = undef_real
+      enl%vh2dh                     = undef_real
       enl%ggfact                    = undef_real
 
       enl%iprintpolys               = undef_integer

@@ -6,8 +6,9 @@
 ! used; we simply copy the canopy air space temperature and force water and internal       !
 ! energy to be zero.                                                                       !
 !------------------------------------------------------------------------------------------!
-subroutine leaf3_ocean(mzg,ustar,tstar,rstar,cstar,can_prss,can_rvap,can_co2,sensible_gc   &
-                      ,evap_gc,plresp,ground_temp,ground_rsat,ground_rvap,ground_fliq)
+subroutine leaf3_ocean(mzg,ustar,tstar,rstar,cstar,patch_rough,can_prss,can_rvap,can_co2   &
+                      ,sensible_gc,evap_gc,plresp,ground_temp,ground_rsat,ground_rvap      &
+                      ,ground_fliq)
    use leaf_coms , only : dtll           & ! intent(in)
                         , dtll_factor    & ! intent(in)
                         , ggbare         & ! intent(in)
@@ -35,7 +36,9 @@ subroutine leaf3_ocean(mzg,ustar,tstar,rstar,cstar,can_prss,can_rvap,can_co2,sen
                         , eflxac         & ! intent(out)
                         , hflxac         & ! intent(out)
                         , wflxac         & ! intent(out)
-                        , cflxac         ! ! intent(out)
+                        , cflxac         & ! intent(out)
+                        , ustmin         & ! intent(in)
+                        , ggfact         ! ! intent(in)
    use rconstants, only : mmdry          & ! intent(in)
                         , mmdryi         & ! intent(in)
                         , cp             & ! intent(in)
@@ -44,6 +47,7 @@ subroutine leaf3_ocean(mzg,ustar,tstar,rstar,cstar,can_prss,can_rvap,can_co2,sen
                         , alvl           ! ! intent(in)
    use therm_lib , only : rslif          & ! function
                         , thetaeiv       ! ! function
+   use node_mod  , only : mynum          ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer, intent(in)    :: mzg
@@ -51,6 +55,7 @@ subroutine leaf3_ocean(mzg,ustar,tstar,rstar,cstar,can_prss,can_rvap,can_co2,sen
    real   , intent(in)    :: tstar
    real   , intent(in)    :: rstar
    real   , intent(in)    :: cstar
+   real   , intent(in)    :: patch_rough
    real   , intent(in)    :: can_prss
    real   , intent(inout) :: can_rvap
    real   , intent(inout) :: can_co2
@@ -62,7 +67,6 @@ subroutine leaf3_ocean(mzg,ustar,tstar,rstar,cstar,can_prss,can_rvap,can_co2,sen
    real   , intent(out)   :: ground_rvap
    real   , intent(out)   :: ground_fliq
    !---------------------------------------------------------------------------------------!
-
 
 
 
@@ -104,7 +108,7 @@ subroutine leaf3_ocean(mzg,ustar,tstar,rstar,cstar,can_prss,can_rvap,can_co2,sen
    cflxgc  = 0. !----- No water carbon emission model available...
 
    !----- Compute the fluxes from atmosphere to canopy air space. -------------------------!
-   rho_ustar = can_rhos * ustar
+   rho_ustar = can_rhos  * ustar
    eflxac    = rho_ustar * estar * cp * can_temp
    hflxac    = rho_ustar * tstar * can_exner
    wflxac    = rho_ustar * rstar
@@ -116,9 +120,9 @@ subroutine leaf3_ocean(mzg,ustar,tstar,rstar,cstar,can_prss,can_rvap,can_co2,sen
    can_co2      = can_co2     + dtlloccc * (cflxgc + cflxac)
 
    !----- Integrate the fluxes. -----------------------------------------------------------!
-   sensible_gc = sensible_gc + hflxgc*dtll_factor
-   evap_gc     = evap_gc     + wflxgc*dtll_factor
-   plresp      = plresp      + cflxgc*dtll_factor
+   sensible_gc = sensible_gc +  hflxgc * dtll_factor
+   evap_gc     = evap_gc     + qwflxgc * dtll_factor
+   plresp      = plresp      +  cflxgc * dtll_factor
    !---------------------------------------------------------------------------------------!
 
    return

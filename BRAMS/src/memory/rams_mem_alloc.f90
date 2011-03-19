@@ -11,108 +11,73 @@ subroutine rams_mem_alloc(proc_type)
 
    use mem_all
    use node_mod
-   use leaf_coms, only : alloc_leafcol
+   use leaf_coms , only            : alloc_leafcol               ! ! sub-routine
+   use io_params , only            : maxlite                     & ! intent(in)
+                                   , lite_vars                   & ! intent(in)
+                                   , nlite_vars                  & ! intent(in)
+                                   , frqlite                     & ! intent(in)
+                                   , frqanl                      ! ! intent(in)
+   use grell_coms, only            : closure_type                & ! - intent(in)
+                                   , mgmzp                       & ! - intent(out)
+                                   , maxens_lsf                  & ! - intent(inout)
+                                   , maxens_eff                  & ! - intent(inout)
+                                   , maxens_cap                  & ! - intent(inout)
+                                   , maxens_dyn                  & ! - intent(inout)
+                                   , define_grell_coms           ! ! - subroutine
+   use mem_scratch_grell    , only : alloc_scratch_grell         & !  - subroutine
+                                   , zero_scratch_grell          ! !  - subroutine
 
-   use io_params, only : maxlite,lite_vars,nlite_vars,frqlite,frqanl
-
-   !----- Needed for Grell Cumulus parameterization ---------------------------------------!
-   use grell_coms, only:        & ! Scalar parameters:
-           closure_type         & ! - intent(in)
-          ,mgmzp                & ! - intent(out)
-          ,maxens_lsf           & ! - intent(inout)
-          ,maxens_eff           & ! - intent(inout)
-          ,maxens_cap           & ! - intent(inout)
-          ,maxens_dyn           & ! - intent(inout)
-          ,define_grell_coms    ! ! - subroutine
-            
-   use mem_scratch_grell, only: & ! Grell's simple scratch variables:
-           alloc_scratch_grell  & !  - subroutine
-          ,zero_scratch_grell     !  - subroutine
-
-   use mem_ensemble, only:         & ! Ensemble scratch variables:
-           ensemble_e             & !  - intent(out)
-          ,alloc_ensemble         & !  - subroutine
-          ,nullify_ensemble       & !  - subroutine
-          ,zero_ensemble            !  - subroutine
-
-   ! Needed for Optmization in HTINT
+   use mem_ensemble         , only : ensemble_e                  & !  - intent(out)
+                                   , alloc_ensemble              & !  - subroutine
+                                   , nullify_ensemble            & !  - subroutine
+                                   , zero_ensemble               ! !  - subroutine
    use mem_opt
-
-   ! Needed for CATT
-   use catt_start, only: CATT           ! intent(in)
+   use catt_start           , only : catt                        ! ! intent(in)
    use mem_carma
-   use mem_aerad, only: &
-        nwave,          &           !INTENT(IN)
-        initial_definitions_aerad !Subroutine
-   use mem_globaer, only: &
-        initial_definitions_globaer !Subroutine
-   use mem_globrad, only: &
-        init_globrad_params,          & ! Subroutine
-        initial_definitions_globrad !Subroutine
+   use mem_aerad            , only : nwave                       & ! intent(in)
+                                   , initial_definitions_aerad   ! ! subroutine
+   use mem_globaer          , only : initial_definitions_globaer ! ! subroutine
+   use mem_globrad          , only : init_globrad_params         & ! subroutine
+                                   , initial_definitions_globrad ! ! subroutine
    use extras
    use mem_turb_scalar
-   !25082004
-
-
-   ! For specific optimization depending the type of machine
-   use machine_arq, only: machine ! INTENT(IN)
-
-   ! Global grid dimension definitions
-   use mem_grid_dim_defs, only: define_grid_dim_pointer ! subroutine
-
+   use machine_arq          , only : machine                     ! ! intent(in)
+   use mem_grid_dim_defs    , only : define_grid_dim_pointer     ! ! subroutine
    use mem_scalar
-
-   ! TEB_SPM
-   use teb_spm_start, only: TEB_SPM ! INTENT(IN)
-
-   use mem_emiss, only: isource ! INTENT(IN)
-
-   use mem_gaspart, only: &
-        gaspart_g,        & ! INTENT(IN)
-        gaspartm_g,       & ! INTENT(IN)
-        gaspart_vars,     & ! Type
-        nullify_gaspart,  & ! Subroutine
-        alloc_gaspart,    & ! Subroutine
-        filltab_gaspart     ! Subroutine
-
-   use mem_teb_common, only: &
-        tebc_g,              & ! INTENT(IN)
-        tebcm_g,             & ! INTENT(IN)
-        nullify_tebc,        & ! Subroutine
-        alloc_tebc,          & ! Subroutine
-        filltab_tebc           ! Subroutine
-
-   use teb_vars_const, only: iteb ! INTENT(IN)
-
-   use mem_teb, only: &
-        teb_g,        & ! INTENT(IN)
-        tebm_g,       & ! INTENT(IN)
-        nullify_teb,  & ! Subroutine
-        alloc_teb,    & ! Subroutine
-        filltab_teb     ! Subroutine
-
-   use mem_mass, only :  mass_g,        & !subroutine
-                         massm_g,       & !subroutine
-                         define_frqmassave, & ! subroutine 
-                         nullify_mass,  & !subroutine
-                         alloc_mass,    & !subroutine
-                         zero_mass,     & !subroutine
-                         filltab_mass     !subroutine
-
-   ! Needed for Nakanishi and Niino and Helfand/Labraga turbulence parameters
-   use turb_coms, only: assign_turb_params
-   
-   
-   ! For old Grell 
-   use mem_grell_param       ! scalar parameters
-   use mem_scratch1_grell    ! scratch 1
-   use mem_scratch2_grell    ! scratch 2
-   use mem_scratch3_grell    ! scratch 3
-   use mem_scratch2_grell_sh ! scratch 2
-   use mem_scratch3_grell_sh ! scratch 3
-
+   use teb_spm_start        , only : teb_spm                     ! ! intent(in)
+   use mem_emiss            , only : isource                     ! ! intent(in)
+   use mem_gaspart          , only : gaspart_g                   & ! intent(in)
+                                   , gaspartm_g                  & ! intent(in)
+                                   , gaspart_vars                & ! type
+                                   , nullify_gaspart             & ! subroutine
+                                   , alloc_gaspart               & ! subroutine
+                                   , filltab_gaspart             ! ! subroutine
+   use mem_teb_common       , only : tebc_g                      & ! intent(in)
+                                   , tebcm_g                     & ! intent(in)
+                                   , nullify_tebc                & ! subroutine
+                                   , alloc_tebc                  & ! subroutine
+                                   , filltab_tebc                ! ! subroutine
+   use teb_vars_const       , only : iteb                        ! ! intent(in)
+   use mem_teb              , only : teb_g                       & ! intent(in)
+                                   , tebm_g                      & ! intent(in)
+                                   , nullify_teb                 & ! subroutine
+                                   , alloc_teb                   & ! subroutine
+                                   , filltab_teb                 ! ! subroutine
+   use mem_mass             , only : mass_g                      & ! subroutine
+                                   , massm_g                     & ! subroutine
+                                   , define_frqmassave           & ! subroutine 
+                                   , nullify_mass                & ! subroutine
+                                   , alloc_mass                  & ! subroutine
+                                   , zero_mass                   & ! subroutine
+                                   , filltab_mass                ! ! subroutine
+   use turb_coms            , only : assign_turb_params          ! ! subroutine
+   use mem_grell_param                                           ! ! scalar parameters
+   use mem_scratch1_grell                                        ! ! scratch 1
+   use mem_scratch2_grell                                        ! ! scratch 2
+   use mem_scratch3_grell                                        ! ! scratch 3
+   use mem_scratch2_grell_sh                                     ! ! scratch 2
+   use mem_scratch3_grell_sh                                     ! ! scratch 3
    implicit none
-
    !----- Arguments -----------------------------------------------------------------------!
    integer                        , intent(in) :: proc_type
    !----- Local Variables: ----------------------------------------------------------------!
@@ -297,13 +262,14 @@ subroutine rams_mem_alloc(proc_type)
    allocate(leaf_g(ngrids),leafm_g(ngrids))
    do ng=1,ngrids
       call nullify_leaf(leaf_g(ng)) ; call nullify_leaf(leafm_g(ng))
-      call alloc_leaf(leaf_g(ng),nmzp(ng),nmxp(ng),nmyp(ng)  &
-           ,nzg,nzs,npatch,ng,teb_spm)
+      call alloc_leaf(leaf_g(ng),nmzp(ng),nmxp(ng),nmyp(ng),nzg,nzs,npatch,ng,teb_spm)
+      call zero_leaf(leaf_g(ng))
       if (imean == 1) then
          call alloc_leaf(leafm_g(ng),nmzp(ng),nmxp(ng),nmyp(ng),nzg,nzs,npatch,ng,teb_spm)
       elseif (imean == 0) then
          call alloc_leaf(leafm_g(ng),1,1,1,1,1,1,1,teb_spm)
       end if
+      call zero_leaf(leafm_g(ng))
 
       call filltab_leaf(leaf_g(ng),leafm_g(ng),imean,nmzp(ng),nmxp(ng),nmyp(ng),nzg,nzs    &
                        ,npatch,ng)

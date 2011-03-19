@@ -55,6 +55,10 @@ subroutine patch_interp_driver(icm,ifm)
                     ,leaf_g(icm)%patch_area,leaf_g(icm)%patch_area                         &
                     ,scratch%vt3da,scratch%vt3db,scratch%vt2da,scratch%vt2db )
    call patch_interp(icm,ifm,1,nnxp(icm),nnyp(icm),npatch,1,nnxp(ifm),nnyp(ifm),npatch     &
+                    ,leaf_g(icm)%veg_displace,leaf_g(ifm)%veg_displace                     &
+                    ,leaf_g(icm)%patch_area,leaf_g(icm)%patch_area                         &
+                    ,scratch%vt3da,scratch%vt3db,scratch%vt2da,scratch%vt2db )
+   call patch_interp(icm,ifm,1,nnxp(icm),nnyp(icm),npatch,1,nnxp(ifm),nnyp(ifm),npatch     &
                     ,leaf_g(icm)%veg_albedo,leaf_g(ifm)%veg_albedo                         &
                     ,leaf_g(icm)%patch_area,leaf_g(icm)%patch_area                         &
                     ,scratch%vt3da,scratch%vt3db,scratch%vt2da,scratch%vt2db )
@@ -182,6 +186,7 @@ subroutine coarse2fine_driver(icm,ifm)
                                  ,leaf_g(ifm)%veg_tai        , leaf_g(icm)%veg_tai         &
                                  ,leaf_g(ifm)%veg_rough      , leaf_g(icm)%veg_rough       &
                                  ,leaf_g(ifm)%veg_height     , leaf_g(icm)%veg_height      &
+                                 ,leaf_g(ifm)%veg_displace   , leaf_g(icm)%veg_displace    &
                                  ,leaf_g(ifm)%veg_albedo     , leaf_g(icm)%veg_albedo      &
                                  ,leaf_g(ifm)%patch_rough    , leaf_g(icm)%patch_rough     &
                                  ,leaf_g(ifm)%patch_wetind   , leaf_g(icm)%patch_wetind    &
@@ -227,20 +232,21 @@ subroutine coarse2fine(ifm,mxpf,mypf,icm,mxpc,mypc,mzg,mzs,mpat                 
                 ,f_sfcwater_depth , c_sfcwater_depth ,f_veg_fracarea   , c_veg_fracarea    &
                 ,f_veg_agb        , c_veg_agb        ,f_veg_lai        , c_veg_lai         &
                 ,f_veg_tai        , c_veg_tai        ,f_veg_rough      , c_veg_rough       &
-                ,f_veg_height     , c_veg_height     ,f_veg_albedo     , c_veg_albedo      &
-                ,f_patch_rough    , c_patch_rough    ,f_patch_wetind   , c_patch_wetind    &
-                ,f_soil_rough     , c_soil_rough     ,f_sfcwater_nlev  , c_sfcwater_nlev   &
-                ,f_stom_condct    , c_stom_condct    ,f_ground_rsat    , c_ground_rsat     &
-                ,f_ground_rvap    , c_ground_rvap    ,f_ground_temp    , c_ground_temp     &
-                ,f_ground_fliq    , c_ground_fliq    ,f_veg_water      , c_veg_water       &
-                ,f_veg_energy     , c_veg_energy     ,f_veg_hcap       , c_veg_hcap        &
-                ,f_can_rvap       , c_can_rvap       ,f_can_co2        , c_can_co2         &
-                ,f_can_theiv      , c_can_theiv      ,f_can_theta      , c_can_theta       &
-                ,f_can_prss       , c_can_prss       ,f_veg_ndvic      , c_veg_ndvic       &
-                ,f_sensible_gc    , c_sensible_gc    ,f_sensible_vc    , c_sensible_vc     &
-                ,f_evap_gc        , c_evap_gc        ,f_evap_vc        , c_evap_vc         &
-                ,f_transp         , c_transp         ,f_gpp            , c_gpp             &
-                ,f_plresp         , c_plresp         ,f_resphet        , c_resphet         )
+                ,f_veg_height     , c_veg_height     ,f_veg_displace   , c_veg_displace    &
+                ,f_veg_albedo     , c_veg_albedo     ,f_patch_rough    , c_patch_rough     &
+                ,f_patch_wetind   , c_patch_wetind   ,f_soil_rough     , c_soil_rough      &
+                ,f_sfcwater_nlev  , c_sfcwater_nlev  ,f_stom_condct    , c_stom_condct     &
+                ,f_ground_rsat    , c_ground_rsat    ,f_ground_rvap    , c_ground_rvap     &
+                ,f_ground_temp    , c_ground_temp    ,f_ground_fliq    , c_ground_fliq     &
+                ,f_veg_water      , c_veg_water      ,f_veg_energy     , c_veg_energy      &
+                ,f_veg_hcap       , c_veg_hcap       ,f_can_rvap       , c_can_rvap        &
+                ,f_can_co2        , c_can_co2        ,f_can_theiv      , c_can_theiv       &
+                ,f_can_theta      , c_can_theta      ,f_can_prss       , c_can_prss        &
+                ,f_veg_ndvic      , c_veg_ndvic      ,f_sensible_gc    , c_sensible_gc     &
+                ,f_sensible_vc    , c_sensible_vc    ,f_evap_gc        , c_evap_gc         &
+                ,f_evap_vc        , c_evap_vc        ,f_transp         , c_transp          &
+                ,f_gpp            , c_gpp            ,f_plresp         , c_plresp          &
+                ,f_resphet        , c_resphet        )
    use mem_grid, only : ipm & ! intent(in)
                       , jpm ! ! intent(in)
    implicit none
@@ -265,6 +271,7 @@ subroutine coarse2fine(ifm,mxpf,mypf,icm,mxpc,mypc,mzg,mzs,mpat                 
    real, dimension(    mxpc,mypc,mpat), intent(in)  :: c_veg_tai
    real, dimension(    mxpc,mypc,mpat), intent(in)  :: c_veg_rough
    real, dimension(    mxpc,mypc,mpat), intent(in)  :: c_veg_height
+   real, dimension(    mxpc,mypc,mpat), intent(in)  :: c_veg_displace
    real, dimension(    mxpc,mypc,mpat), intent(in)  :: c_veg_albedo
    real, dimension(    mxpc,mypc,mpat), intent(in)  :: c_patch_rough
    real, dimension(    mxpc,mypc,mpat), intent(in)  :: c_patch_wetind
@@ -303,6 +310,7 @@ subroutine coarse2fine(ifm,mxpf,mypf,icm,mxpc,mypc,mzg,mzs,mpat                 
    real, dimension(    mxpf,mypf,mpat), intent(out) :: f_veg_tai
    real, dimension(    mxpf,mypf,mpat), intent(out) :: f_veg_rough
    real, dimension(    mxpf,mypf,mpat), intent(out) :: f_veg_height
+   real, dimension(    mxpf,mypf,mpat), intent(out) :: f_veg_displace
    real, dimension(    mxpf,mypf,mpat), intent(out) :: f_veg_albedo
    real, dimension(    mxpf,mypf,mpat), intent(out) :: f_patch_rough
    real, dimension(    mxpf,mypf,mpat), intent(out) :: f_patch_wetind
@@ -363,6 +371,7 @@ subroutine coarse2fine(ifm,mxpf,mypf,icm,mxpc,mypc,mzg,mzs,mpat                 
             f_veg_tai              (i,j,ipat) = c_veg_tai         (ic,jc,ipat)
             f_veg_rough            (i,j,ipat) = c_veg_rough       (ic,jc,ipat)
             f_veg_height           (i,j,ipat) = c_veg_height      (ic,jc,ipat)
+            f_veg_displace         (i,j,ipat) = c_veg_displace    (ic,jc,ipat)
             f_veg_albedo           (i,j,ipat) = c_veg_albedo      (ic,jc,ipat)
             f_patch_rough          (i,j,ipat) = c_patch_rough     (ic,jc,ipat)
             f_patch_wetind         (i,j,ipat) = c_patch_wetind    (ic,jc,ipat)

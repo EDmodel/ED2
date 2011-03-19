@@ -49,6 +49,7 @@ Module mem_leaf
                                        , veg_agb      & ! Above-ground biomass  [   kgC/m²]
                                        , veg_rough    & ! Roughness length      [        m]
                                        , veg_height   & ! Height                [        m]
+                                       , veg_displace & ! Displacement height   [        m]
                                        , veg_albedo   & ! Albedo                [      ---]
                                        , veg_tai      & ! Tree area index       [    m²/m²]
                                        , veg_water    & ! Leaf surface water    [    kg/m²]
@@ -214,6 +215,7 @@ Module mem_leaf
       allocate (leaf%veg_agb          (    nx,ny,np))
       allocate (leaf%veg_rough        (    nx,ny,np))
       allocate (leaf%veg_height       (    nx,ny,np))
+      allocate (leaf%veg_displace     (    nx,ny,np))
       allocate (leaf%veg_albedo       (    nx,ny,np))
       allocate (leaf%veg_tai          (    nx,ny,np))
       allocate (leaf%veg_water        (    nx,ny,np))
@@ -306,6 +308,7 @@ Module mem_leaf
       if (associated(leaf%veg_agb          ))  nullify(leaf%veg_agb          )
       if (associated(leaf%veg_rough        ))  nullify(leaf%veg_rough        )
       if (associated(leaf%veg_height       ))  nullify(leaf%veg_height       )
+      if (associated(leaf%veg_displace     ))  nullify(leaf%veg_displace     )
       if (associated(leaf%veg_albedo       ))  nullify(leaf%veg_albedo       )
       if (associated(leaf%veg_tai          ))  nullify(leaf%veg_tai          )
       if (associated(leaf%veg_water        ))  nullify(leaf%veg_water        )
@@ -366,6 +369,98 @@ Module mem_leaf
 
    !=======================================================================================!
    !=======================================================================================!
+   !    This subroutine will assign zeroes to all variables.  This is to avoid some bogus  !
+   ! values to variables that are never used.  The model only updates variables for        !
+   ! patches that have a minimum area.                                                     !
+   !---------------------------------------------------------------------------------------!
+   subroutine zero_leaf(leaf)
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type (leaf_vars), intent(inout) :: leaf
+      !------------------------------------------------------------------------------------!
+
+
+      if (associated(leaf%soil_water       ))  leaf%soil_water       = 0.0
+      if (associated(leaf%soil_energy      ))  leaf%soil_energy      = 0.0
+      if (associated(leaf%soil_text        ))  leaf%soil_text        = 0.0
+      if (associated(leaf%soil_rough       ))  leaf%soil_rough       = 0.0
+
+      if (associated(leaf%sfcwater_mass    ))  leaf%sfcwater_mass    = 0.0
+      if (associated(leaf%sfcwater_energy  ))  leaf%sfcwater_energy  = 0.0
+      if (associated(leaf%sfcwater_depth   ))  leaf%sfcwater_depth   = 0.0
+      if (associated(leaf%sfcwater_nlev    ))  leaf%sfcwater_nlev    = 0.0
+
+      if (associated(leaf%ground_rsat      ))  leaf%ground_rsat      = 0.0
+      if (associated(leaf%ground_rvap      ))  leaf%ground_rvap      = 0.0
+      if (associated(leaf%ground_temp      ))  leaf%ground_temp      = 0.0
+      if (associated(leaf%ground_fliq      ))  leaf%ground_fliq      = 0.0
+
+      if (associated(leaf%veg_fracarea     ))  leaf%veg_fracarea     = 0.0
+      if (associated(leaf%veg_lai          ))  leaf%veg_lai          = 0.0
+      if (associated(leaf%veg_agb          ))  leaf%veg_agb          = 0.0
+      if (associated(leaf%veg_rough        ))  leaf%veg_rough        = 0.0
+      if (associated(leaf%veg_height       ))  leaf%veg_height       = 0.0
+      if (associated(leaf%veg_displace     ))  leaf%veg_displace     = 0.0
+      if (associated(leaf%veg_albedo       ))  leaf%veg_albedo       = 0.0
+      if (associated(leaf%veg_tai          ))  leaf%veg_tai          = 0.0
+      if (associated(leaf%veg_water        ))  leaf%veg_water        = 0.0
+      if (associated(leaf%veg_hcap         ))  leaf%veg_hcap         = 0.0
+      if (associated(leaf%veg_energy       ))  leaf%veg_energy       = 0.0
+      if (associated(leaf%veg_ndvip        ))  leaf%veg_ndvip        = 0.0
+      if (associated(leaf%veg_ndvic        ))  leaf%veg_ndvic        = 0.0
+      if (associated(leaf%veg_ndvif        ))  leaf%veg_ndvif        = 0.0
+      if (associated(leaf%leaf_class       ))  leaf%leaf_class       = 0.0
+      if (associated(leaf%stom_condct      ))  leaf%stom_condct      = 0.0
+
+      if (associated(leaf%can_rvap         ))  leaf%can_rvap         = 0.0
+      if (associated(leaf%can_theta        ))  leaf%can_theta        = 0.0
+      if (associated(leaf%can_theiv        ))  leaf%can_theiv        = 0.0
+      if (associated(leaf%can_prss         ))  leaf%can_prss         = 0.0
+      if (associated(leaf%can_co2          ))  leaf%can_co2          = 0.0
+
+      if (associated(leaf%ustar            ))  leaf%ustar            = 0.0
+      if (associated(leaf%tstar            ))  leaf%tstar            = 0.0
+      if (associated(leaf%estar            ))  leaf%estar            = 0.0
+      if (associated(leaf%rstar            ))  leaf%rstar            = 0.0
+      if (associated(leaf%cstar            ))  leaf%cstar            = 0.0
+
+      if (associated(leaf%zeta             ))  leaf%zeta             = 0.0
+      if (associated(leaf%ribulk           ))  leaf%ribulk           = 0.0
+
+      if (associated(leaf%patch_area       ))  leaf%patch_area       = 0.0
+      if (associated(leaf%patch_rough      ))  leaf%patch_rough      = 0.0
+      if (associated(leaf%patch_wetind     ))  leaf%patch_wetind     = 0.0
+
+
+      if (associated(leaf%gpp              ))  leaf%gpp              = 0.0
+      if (associated(leaf%resphet          ))  leaf%resphet          = 0.0
+      if (associated(leaf%plresp           ))  leaf%plresp           = 0.0
+      if (associated(leaf%evap_gc          ))  leaf%evap_gc          = 0.0
+      if (associated(leaf%evap_vc          ))  leaf%evap_vc          = 0.0
+      if (associated(leaf%transp           ))  leaf%transp           = 0.0
+      if (associated(leaf%sensible_gc      ))  leaf%sensible_gc      = 0.0
+      if (associated(leaf%sensible_vc      ))  leaf%sensible_vc      = 0.0
+
+      if (associated(leaf%R_aer            ))  leaf%R_aer            = 0.0
+      if (associated(leaf%G_URBAN          ))  leaf%G_URBAN          = 0.0
+
+      if (associated(leaf%snow_mass        ))  leaf%snow_mass        = 0.0
+      if (associated(leaf%snow_depth       ))  leaf%snow_depth       = 0.0
+      if (associated(leaf%seatp            ))  leaf%seatp            = 0.0
+      if (associated(leaf%seatf            ))  leaf%seatf            = 0.0
+
+      return
+   end subroutine zero_leaf
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
    !     This subroutine will deallocate all pointers before deallocating the structure.   !
    !---------------------------------------------------------------------------------------!
    subroutine dealloc_leaf(leaf)
@@ -395,6 +490,7 @@ Module mem_leaf
       if (associated(leaf%veg_agb          ))  deallocate(leaf%veg_agb          )
       if (associated(leaf%veg_rough        ))  deallocate(leaf%veg_rough        )
       if (associated(leaf%veg_height       ))  deallocate(leaf%veg_height       )
+      if (associated(leaf%veg_displace     ))  deallocate(leaf%veg_displace     )
       if (associated(leaf%veg_albedo       ))  deallocate(leaf%veg_albedo       )
       if (associated(leaf%veg_tai          ))  deallocate(leaf%veg_tai          )
       if (associated(leaf%veg_water        ))  deallocate(leaf%veg_water        )
@@ -572,6 +668,10 @@ Module mem_leaf
       if (associated(leaf%veg_height))                                                     &
          call vtables2(leaf%veg_height,leafm%veg_height,ng,npts,imean                      &
                       ,'VEG_HEIGHT :6:hist:anal:mpti:mpt3'//trim(str_recycle))
+
+      if (associated(leaf%veg_displace))                                                   &
+         call vtables2(leaf%veg_displace,leafm%veg_height,ng,npts,imean                    &
+                      ,'VEG_DISPLACE :6:hist:anal:mpti:mpt3'//trim(str_recycle))
 
       if (associated(leaf%veg_albedo))                                                     &
          call vtables2(leaf%veg_albedo,leafm%veg_albedo,ng,npts,imean                      &
