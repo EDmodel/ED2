@@ -230,9 +230,16 @@ subroutine ed_coup_driver()
    !---------------------------------------------------------------------------------------!
    ! STEP 18:  Output initial state.                                                       !
    !---------------------------------------------------------------------------------------!
-   if (ioutput  > 0) call h5_output('HIST')
-   if (ioutput  > 0) call h5_output('INST')
-   if (iyoutput > 0) call h5_output('YEAR')
+   if (ioutput  /= 0) then
+      call h5_output('INST')
+      select case (trim(runtype))
+      case ('INITIAL')
+         call h5_output('HIST')
+      case ('HISTORY')
+         call h5_output('CONT')
+      end select
+   end if
+   if (iyoutput /= 0) call h5_output('YEAR')
 
    !---------------------------------------------------------------------------------------!
    ! STEP 19: Deallocate the work arrays.                                                  !
