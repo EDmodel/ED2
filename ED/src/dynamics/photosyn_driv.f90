@@ -105,7 +105,7 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ed_ktrans,lsl               
    las = .false.
    do ico = 1,cpatch%ncohorts
       !----- If this is the tallest cohort to be used, we save its index. -----------------!
-      if (.not. las .and. cpatch%solvable(ico)) then
+      if (.not. las .and. cpatch%resolvable(ico)) then
          las  = .true.
          tuco = ico
       end if
@@ -196,7 +196,7 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ed_ktrans,lsl               
       !     Only need to worry about photosyn if radiative transfer has been  done for     !
       ! this cohort.                                                                       !
       !------------------------------------------------------------------------------------!
-      if (cpatch%solvable(ico)) then
+      if (cpatch%resolvable(ico)) then
 
             !----- Alias for PFT ----------------------------------------------------------!
             ipft = cpatch%pft(ico)
@@ -486,7 +486,7 @@ subroutine print_photo_details(cmet,csite,ipa,ico,limit_flag,vm,compp)
    stom_condct =  cpatch%stomatal_conductance(ico)
    !---------------------------------------------------------------------------------------!
 
-   if (cpatch%solvable(ico)) then
+   if (cpatch%resolvable(ico)) then
       par_area   = cpatch%par_v(ico) * Watts_2_Ein * mol_2_umol
       parv       = par_area / cpatch%lai(ico)
       

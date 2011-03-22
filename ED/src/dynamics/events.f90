@@ -479,7 +479,7 @@ subroutine event_planting(pft,density8)
            csite => cpoly%site(isi)
 
            do ipa=1,csite%npatches
-              
+              call update_patch_thermo_props(csite,ipa,ipa)
               call plant_patch(csite,ipa,pft,density,cpoly%green_leaf_factor(:,isi) &
                                  ,planting_ht,cpoly%lsl(isi))            
               call update_patch_derived_props(csite, cpoly%lsl(isi), cpoly%met(isi)%prss,ipa)

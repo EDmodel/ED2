@@ -47,7 +47,7 @@ module leaf_coms
    !---------------------------------------------------------------------------------------!
    integer :: niter_leaf       ! ! number of leaf timesteps
 
-   logical :: solvable         ! ! Flag to determine whether to solve vegetation or not.
+   logical :: resolvable       ! ! Flag to determine whether to resolve vegetation or not.
 
    real    :: dtll             & ! leaf timestep
             , dtll_factor      & ! leaf timestep factor (leaf timestep / model timestep)
@@ -537,7 +537,7 @@ module leaf_coms
       !------------------------------------------------------------------------------------!
       select case (trim(idel))
       case ('INITIAL','GRID_POINT','PATCH')
-         solvable                = .false.
+         resolvable              = .false.
 
          can_lntheta             = 0.
          can_exner               = 0

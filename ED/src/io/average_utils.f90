@@ -680,14 +680,14 @@ subroutine integrate_ed_daily_output_state(cgrid)
                pss_veg_energy = pss_veg_energy + sum(cpatch%veg_energy) * csite%area(ipa)
                pss_veg_water  = pss_veg_water  + sum(cpatch%veg_water ) * csite%area(ipa)
                pss_veg_hcap   = pss_veg_hcap   + sum(cpatch%hcapveg   ) * csite%area(ipa)
-               patch_lai_i = 1./max(tiny(1.),sum(cpatch%lai,cpatch%solvable))
-               patch_lai = patch_lai + csite%area(ipa)*sum(cpatch%lai,cpatch%solvable)
+               patch_lai_i = 1./max(tiny(1.),sum(cpatch%lai,cpatch%resolvable))
+               patch_lai = patch_lai + csite%area(ipa)*sum(cpatch%lai,cpatch%resolvable)
                patch_lma = patch_lma + csite%area(ipa)*sum(cpatch%lai/sla(cpatch%pft)      &
-                                                          ,cpatch%solvable)
+                                                          ,cpatch%resolvable)
             end if
 
             do ico=1,cpatch%ncohorts
-               if (cpatch%solvable(ico)) then
+               if (cpatch%resolvable(ico)) then
                   cpatch%dmean_par_v       (ico) = cpatch%dmean_par_v       (ico)          &
                                                  + cpatch%par_v             (ico)
                   cpatch%dmean_par_v_beam  (ico) = cpatch%dmean_par_v_beam  (ico)          &
@@ -1056,7 +1056,7 @@ subroutine integrate_ed_daily_output_flux(cgrid)
                !---------------------------------------------------------------------------!
                if (iqoutput > 0) then
                   do ico=1,cpatch%ncohorts
-                     if (cpatch%solvable(ico)) then
+                     if (cpatch%resolvable(ico)) then
                         cpatch%qmean_gpp      (it,ico) = cpatch%qmean_gpp         (it,ico) &
                                                        + cpatch%mean_gpp             (ico) &
                                                        * umols_2_kgCyr                     &
@@ -1605,7 +1605,7 @@ subroutine normalize_ed_daily_output_vars(cgrid)
    integer                                         :: iage
    integer                                         :: k
    logical                                         :: forest
-   logical                                         :: any_solvable
+   logical                                         :: any_resolvable
    real                                            :: poly_area_i
    real                                            :: site_area_i
    real                                            :: forest_area_i
@@ -1780,9 +1780,9 @@ subroutine normalize_ed_daily_output_vars(cgrid)
             cpatch => csite%patch(ipa)
             
             
-            any_solvable = .false.
+            any_resolvable = .false.
             if (cpatch%ncohorts > 0) then
-               any_solvable = any(cpatch%solvable(1:cpatch%ncohorts))
+               any_resolvable = any(cpatch%resolvable(1:cpatch%ncohorts))
             end if
 
 
@@ -1858,16 +1858,16 @@ subroutine normalize_ed_daily_output_vars(cgrid)
             !------------------------------------------------------------------------------!
             !     Integrate the fraction of open stomata 
             !------------------------------------------------------------------------------!
-            if (any_solvable) then
-               patch_laiall_i = 1./max(tiny(1.),sum(cpatch%lai,cpatch%solvable))
+            if (any_resolvable) then
+               patch_laiall_i = 1./max(tiny(1.),sum(cpatch%lai,cpatch%resolvable))
                pss_fsn     = pss_fsn + csite%area(ipa)                                     &
-                           * ( sum(cpatch%dmean_fsn * cpatch%lai,cpatch%solvable)          &
+                           * ( sum(cpatch%dmean_fsn * cpatch%lai,cpatch%resolvable)        &
                              * patch_laiall_i)
                pss_fsw     = pss_fsw + csite%area(ipa)                                     &
-                           * ( sum(cpatch%dmean_fsw * cpatch%lai,cpatch%solvable)          &
+                           * ( sum(cpatch%dmean_fsw * cpatch%lai,cpatch%resolvable)        &
                              * patch_laiall_i)
                pss_fs_open = pss_fs_open + csite%area(ipa)                                 &
-                           * ( sum(cpatch%dmean_fs_open * cpatch%lai,cpatch%solvable)      &
+                           * ( sum(cpatch%dmean_fs_open * cpatch%lai,cpatch%resolvable)    &
                              * patch_laiall_i)
             end if
 
@@ -2510,7 +2510,7 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
    integer                                         :: iage
    integer                                         :: ilu
    integer                                         :: jlu
-   logical                                         :: any_solvable
+   logical                                         :: any_resolvable
    logical                                         :: forest
    real                                            :: srnonm1
    real                                            :: veg_fliq
@@ -2857,9 +2857,9 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
                   cpatch => csite%patch(ipa)
 
                   !----- Find whether there is at least one cohort that is solved. --------!
-                  any_solvable = .false.
+                  any_resolvable = .false.
                   if (cpatch%ncohorts > 0) then
-                     any_solvable = any(cpatch%solvable(1:cpatch%ncohorts))
+                     any_resolvable = any(cpatch%resolvable(1:cpatch%ncohorts))
                   end if
                   !------------------------------------------------------------------------!
 
@@ -2895,17 +2895,17 @@ subroutine normalize_ed_monthly_output_vars(cgrid)
                   !------------------------------------------------------------------------!
                   !     Integrate the fraction of open stomata.                            !
                   !------------------------------------------------------------------------!
-                  if (any_solvable) then
-                     patch_laiall_i = 1./max(tiny(1.),sum(cpatch%lai,cpatch%solvable))
+                  if (any_resolvable) then
+                     patch_laiall_i = 1./max(tiny(1.),sum(cpatch%lai,cpatch%resolvable))
                      pss_fsn     = pss_fsn + csite%area(ipa)                               &
                                  * (sum( cpatch%qmean_fsn(t,:) * cpatch%lai                &
-                                       , cpatch%solvable) * patch_laiall_i)
+                                       , cpatch%resolvable) * patch_laiall_i)
                      pss_fsw     = pss_fsw + csite%area(ipa)                               &
                                  * (sum( cpatch%qmean_fsw(t,:) * cpatch%lai                &
-                                       , cpatch%solvable) * patch_laiall_i)
+                                       , cpatch%resolvable) * patch_laiall_i)
                      pss_fs_open = pss_fs_open + csite%area(ipa)                           &
                                  * (sum( cpatch%qmean_fs_open(t,:) * cpatch%lai            &
-                                       , cpatch%solvable) * patch_laiall_i)
+                                       , cpatch%resolvable) * patch_laiall_i)
                   end if
                   !------------------------------------------------------------------------!
 

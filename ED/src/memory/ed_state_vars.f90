@@ -120,8 +120,8 @@ module ed_state_vars
      ! Wood area index (m2 wood / m2 ground)
      real ,pointer,dimension(:) :: wai
 
-     ! Logical test to check whether this cohort can be solved...
-     logical, pointer, dimension(:) :: solvable
+     ! Logical test to check whether this cohort can be resolved...
+     logical, pointer, dimension(:) :: resolvable
 
      ! Plant storage pool of carbon [kgC/plant]
      real ,pointer,dimension(:) :: bstorage
@@ -426,6 +426,9 @@ module ed_state_vars
 
      ! Plant available water, (stress function)  0 to 1 [unitless]
      real, pointer, dimension(:) :: paw_avg
+
+     ! Elongation factor (0 - 1), factor to scale bleaf under drought.
+     real, pointer, dimension(:) :: elongf
 
      ! Phenology-related
      real, pointer, dimension(:) :: turnover_amp
@@ -837,7 +840,7 @@ module ed_state_vars
 
      ! Total snow depth as calculated in the radiation scheme.  Used for 
      ! checking if cohorts are buried.  [m]
-     real , pointer,dimension(:) :: total_snow_depth
+     real , pointer,dimension(:) :: total_sfcw_depth
 
      ! Fraction of vegetation covered with snow.  Used for computing 
      ! surface roughness.
@@ -2760,7 +2763,7 @@ contains
     allocate(csite%albedo_diffuse(npatches))
     allocate(csite%rlongup(npatches))
     allocate(csite%rlong_albedo(npatches))
-    allocate(csite%total_snow_depth(npatches))
+    allocate(csite%total_sfcw_depth(npatches))
     allocate(csite%snowfac(npatches))
     allocate(csite%A_decomp(npatches))
     allocate(csite%f_decomp(npatches))
@@ -2910,7 +2913,7 @@ contains
     allocate(cpatch%lai(ncohorts))
     allocate(cpatch%wpa(ncohorts))
     allocate(cpatch%wai(ncohorts))
-    allocate(cpatch%solvable(ncohorts))
+    allocate(cpatch%resolvable(ncohorts))
     allocate(cpatch%bstorage(ncohorts))
     allocate(cpatch%cb(13,ncohorts))
     allocate(cpatch%cb_max(13,ncohorts))
@@ -2990,6 +2993,7 @@ contains
     allocate(cpatch%hcapveg(ncohorts))
     allocate(cpatch%gpp(ncohorts))
     allocate(cpatch%paw_avg(ncohorts))
+    allocate(cpatch%elongf(ncohorts))
     allocate(cpatch%turnover_amp(ncohorts))
     allocate(cpatch%llspan(ncohorts))
     allocate(cpatch%vm_bar(ncohorts))
@@ -3766,7 +3770,7 @@ contains
     nullify(csite%albedo_diffuse)
     nullify(csite%rlongup)
     nullify(csite%rlong_albedo)
-    nullify(csite%total_snow_depth)
+    nullify(csite%total_sfcw_depth)
     nullify(csite%snowfac)
     nullify(csite%A_decomp)
     nullify(csite%f_decomp)
@@ -3894,7 +3898,7 @@ contains
     nullify(cpatch%lai)
     nullify(cpatch%wpa)
     nullify(cpatch%wai)
-    nullify(cpatch%solvable)
+    nullify(cpatch%resolvable)
     nullify(cpatch%bstorage)
     nullify(cpatch%cb)
     nullify(cpatch%cb_max)
@@ -4019,6 +4023,7 @@ contains
     nullify(cpatch%hcapveg)
     nullify(cpatch%gpp)
     nullify(cpatch%paw_avg)
+    nullify(cpatch%elongf)
     nullify(cpatch%turnover_amp)
     nullify(cpatch%llspan)
     nullify(cpatch%vm_bar)
@@ -4758,7 +4763,7 @@ contains
     if(associated(csite%albedo_diffuse               )) deallocate(csite%albedo_diffuse               )
     if(associated(csite%rlongup                      )) deallocate(csite%rlongup                      )
     if(associated(csite%rlong_albedo                 )) deallocate(csite%rlong_albedo                 )
-    if(associated(csite%total_snow_depth             )) deallocate(csite%total_snow_depth             )
+    if(associated(csite%total_sfcw_depth             )) deallocate(csite%total_sfcw_depth             )
     if(associated(csite%snowfac                      )) deallocate(csite%snowfac                      )
     if(associated(csite%A_decomp                     )) deallocate(csite%A_decomp                     )
     if(associated(csite%f_decomp                     )) deallocate(csite%f_decomp                     )
@@ -4887,7 +4892,7 @@ contains
     if(associated(cpatch%lai))                 deallocate(cpatch%lai)
     if(associated(cpatch%wpa))                 deallocate(cpatch%wpa)
     if(associated(cpatch%wai))                 deallocate(cpatch%wai)
-    if(associated(cpatch%solvable))            deallocate(cpatch%solvable)
+    if(associated(cpatch%resolvable))          deallocate(cpatch%resolvable)
     if(associated(cpatch%bstorage))            deallocate(cpatch%bstorage)
     if(associated(cpatch%cb))                  deallocate(cpatch%cb)
     if(associated(cpatch%cb_max))              deallocate(cpatch%cb_max)
@@ -5013,6 +5018,7 @@ contains
     if(associated(cpatch%hcapveg))                deallocate(cpatch%hcapveg)
     if(associated(cpatch%gpp))                    deallocate(cpatch%gpp)
     if(associated(cpatch%paw_avg))                deallocate(cpatch%paw_avg)
+    if(associated(cpatch%elongf))                 deallocate(cpatch%elongf)
     if(associated(cpatch%turnover_amp))           deallocate(cpatch%turnover_amp)
     if(associated(cpatch%llspan))                 deallocate(cpatch%llspan)
     if(associated(cpatch%vm_bar))                 deallocate(cpatch%vm_bar)
@@ -5175,7 +5181,7 @@ contains
          osite%albedo_diffuse(opa)              = isite%albedo_diffuse(ipa)
          osite%rlongup(opa)                     = isite%rlongup(ipa)
          osite%rlong_albedo(opa)                = isite%rlong_albedo(ipa)
-         osite%total_snow_depth(opa)            = isite%total_snow_depth(ipa)
+         osite%total_sfcw_depth(opa)            = isite%total_sfcw_depth(ipa)
          osite%snowfac(opa)                     = isite%snowfac(ipa)
          osite%A_decomp(opa)                    = isite%A_decomp(ipa)
          osite%f_decomp(opa)                    = isite%f_decomp(ipa)
@@ -5470,7 +5476,7 @@ contains
     siteout%albedo_diffuse(1:inc)       = pack(sitein%albedo_diffuse,logmask)
     siteout%rlongup(1:inc)              = pack(sitein%rlongup,logmask)
     siteout%rlong_albedo(1:inc)         = pack(sitein%rlong_albedo,logmask)
-    siteout%total_snow_depth(1:inc)     = pack(sitein%total_snow_depth,logmask)
+    siteout%total_sfcw_depth(1:inc)     = pack(sitein%total_sfcw_depth,logmask)
     siteout%snowfac(1:inc)              = pack(sitein%snowfac,logmask)
     siteout%A_decomp(1:inc)             = pack(sitein%A_decomp,logmask)
     siteout%f_decomp(1:inc)             = pack(sitein%f_decomp,logmask)
@@ -5712,7 +5718,7 @@ contains
     patchout%lai(1:inc)              = pack(patchin%lai,mask)
     patchout%wpa(1:inc)              = pack(patchin%wpa,mask)
     patchout%wai(1:inc)              = pack(patchin%wai,mask)
-    patchout%solvable(1:inc)         = pack(patchin%solvable,mask)
+    patchout%resolvable(1:inc)       = pack(patchin%resolvable,mask)
     patchout%bstorage(1:inc)         = pack(patchin%bstorage,mask)
     patchout%cbr_bar(1:inc)          = pack(patchin%cbr_bar,mask)
     patchout%veg_energy(1:inc)       = pack(patchin%veg_energy,mask)
@@ -5785,6 +5791,7 @@ contains
     patchout%hcapveg(1:inc)          = pack(patchin%hcapveg,mask)
     patchout%gpp(1:inc)              = pack(patchin%gpp,mask)
     patchout%paw_avg(1:inc)          = pack(patchin%paw_avg,mask)
+    patchout%elongf(1:inc)           = pack(patchin%elongf,mask)
     patchout%turnover_amp(1:inc)     = pack(patchin%turnover_amp,mask)
     patchout%llspan(1:inc)           = pack(patchin%llspan,mask)
     patchout%vm_bar(1:inc)           = pack(patchin%vm_bar,mask)
@@ -5958,7 +5965,7 @@ contains
        patchout%lai(iout)              = patchin%lai(iin)
        patchout%wpa(iout)              = patchin%wpa(iin)
        patchout%wai(iout)              = patchin%wai(iin)
-       patchout%solvable(iout)         = patchin%solvable(iin)
+       patchout%resolvable(iout)       = patchin%resolvable(iin)
        patchout%bstorage(iout)         = patchin%bstorage(iin)
        patchout%cb(:,iout)             = patchin%cb(:,iin)
        patchout%cb_max(:,iout)         = patchin%cb_max(:,iin)
@@ -6034,6 +6041,7 @@ contains
        patchout%hcapveg(iout)          = patchin%hcapveg(iin)
        patchout%gpp(iout)              = patchin%gpp(iin)
        patchout%paw_avg(iout)          = patchin%paw_avg(iin)
+       patchout%elongf(iout)           = patchin%elongf(iin)
        patchout%turnover_amp(iout)     = patchin%turnover_amp(iin)
        patchout%llspan(iout)           = patchin%llspan(iin)
        patchout%vm_bar(iout)           = patchin%vm_bar(iin)
@@ -10895,10 +10903,10 @@ contains
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
-      if (associated(csite%total_snow_depth)) then
+      if (associated(csite%total_sfcw_depth)) then
          nvar=nvar+1
-           call vtable_edio_r(npts,csite%total_snow_depth,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'TOTAL_SNOW_DEPTH :31:hist') 
+           call vtable_edio_r(npts,csite%total_sfcw_depth,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'TOTAL_SFCW_DEPTH :31:hist') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 
@@ -12442,7 +12450,14 @@ contains
       if (associated(cpatch%paw_avg)) then
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%paw_avg,nvar,igr,init,cpatch%coglob_id, &
-           var_len,var_len_global,max_ptrs,'PAW_AVG :41:hist') 
+           var_len,var_len_global,max_ptrs,'PAW_AVG :41:hist:dail:mont:dcyc') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(cpatch%elongf)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%elongf,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'ELONGF :41:hist:dail:mont:dcyc') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 

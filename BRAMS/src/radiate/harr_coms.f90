@@ -119,8 +119,13 @@ module harr_coms
 
 
    !----- Dimension(nrad,mpb) -------------------------------------------------------------!
-   real, allocatable, dimension(:,:) :: fu    ! Dpwelling fluxes for pseudo-bands  [  W/m²]
+   real, allocatable, dimension(:,:) :: fu    ! Upwelling fluxes for pseudo-bands  [  W/m²]
    real, allocatable, dimension(:,:) :: fd    ! Downwelling flx. for pseudo-bands  [  W/m²]
+
+
+
+   !----- Dimension(mpb) ------------------------------------------------------------------!
+   real, allocatable, dimension(  :) :: vdflx ! Diffuse flux for pseudo-bands      [  W/m²]
    !---------------------------------------------------------------------------------------!
 
 
@@ -142,6 +147,7 @@ module harr_coms
 
    !----- Scalars. ------------------------------------------------------------------------!
    real                                 :: area_parm        ! Cumulus area        [   ----]
+   real                                 :: flx_diff         ! Diffuse shortwave
    !---------------------------------------------------------------------------------------!
 
 
@@ -192,6 +198,7 @@ module harr_coms
       allocate (gp              (nrad,mb )  )
       allocate (fu              (nrad,mpb)  )
       allocate (fd              (nrad,mpb)  )
+      allocate (vdflx                (mpb)  )
       allocate (tairk           (m1)        )
       allocate (rhoi            (m1)        )
       allocate (rhoe            (m1)        )
@@ -308,6 +315,7 @@ module harr_coms
             fu   (k,ipb)  = 0.0
             fd   (k,ipb)  = 0.0
          end do
+         vdflx     (ipb)  = 0.0
       end do
 
       return

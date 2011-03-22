@@ -603,7 +603,7 @@ subroutine spatial_averages
                ! scaled by nplant. Just make sure that we have at least one cohort.        !
                !---------------------------------------------------------------------------!
                if (cpatch%ncohorts > 0) then
-                  lai_patch = sum(cpatch%lai, cpatch%solvable)
+                  lai_patch = sum(cpatch%lai, cpatch%resolvable)
                   csite%avg_veg_energy(ipa) = sum(cpatch%veg_energy)
                   csite%avg_veg_water(ipa)  = sum(cpatch%veg_water)
                   csite%hcapveg(ipa)        = sum(cpatch%hcapveg)

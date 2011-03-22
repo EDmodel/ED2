@@ -1755,7 +1755,7 @@ subroutine leaf_solve_veg(ip,mzs,leaf_class,veg_height,patch_area,veg_fracarea,v
                        , tai_min     & ! intent(in)
                        , snowfac_max & ! intent(in)
                        , snowfac     & ! intent(inout)
-                       , solvable    ! ! intent(inout)
+                       , resolvable  ! ! intent(inout)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer                , intent(in) :: ip
@@ -1794,25 +1794,25 @@ subroutine leaf_solve_veg(ip,mzs,leaf_class,veg_height,patch_area,veg_fracarea,v
    if (initial) then
       !---- First call.  Decide whether the vegetation can be solved. ---------------------!
       if (ip == 1) then
-         solvable = .false.
+         resolvable = .false.
       else
          nveg = nint(leaf_class)
-         solvable = tai_max(nveg) >= tai_min .and.                                         &
-                    veg_tai       >= tai_min .and.                                         &
-                    snowfac       <= snowfac_max
+         resolvable = tai_max(nveg) >= tai_min .and.                                       &
+                      veg_tai       >= tai_min .and.                                       &
+                      snowfac       <= snowfac_max
       end if
    else
       !------------------------------------------------------------------------------------!
-      !     Call in the middle of the step.  This can go only from solvable to non-        !
-      ! solvable, in case snow or water has buried or drowned the plants.  The single      !
+      !     Call in the middle of the step.  This can go only from resolvable to non-      !
+      ! resolvable, in case snow or water has buried or drowned the plants.  The single    !
       ! direction is to avoid calling vegetation properties that cannot start to be        !
       ! computed in the middle of the step.                                                !
       !------------------------------------------------------------------------------------!
-      if (solvable) then
+      if (resolvable) then
          nveg = nint(leaf_class)
-         solvable = tai_max(nveg) >= tai_min .and.                                         &
-                    veg_tai       >= tai_min .and.                                         &
-                    snowfac       <= snowfac_max
+         resolvable = tai_max(nveg) >= tai_min .and.                                       &
+                      veg_tai       >= tai_min .and.                                       &
+                      snowfac       <= snowfac_max
       end if
    end if
    !---------------------------------------------------------------------------------------!

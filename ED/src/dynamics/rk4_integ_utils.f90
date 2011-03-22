@@ -642,8 +642,8 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
    !    Also, if the cohort has almost no water, make the scale less strict.               !
    !---------------------------------------------------------------------------------------!
    do ico = 1,cpatch%ncohorts
-      yscal%solvable(ico) = y%solvable(ico)
-      if (y%solvable(ico)) then
+      yscal%resolvable(ico) = y%resolvable(ico)
+      if (y%resolvable(ico)) then
          yscal%veg_energy(ico) = abs(y%veg_energy(ico)) + abs(dy%veg_energy(ico) * htry)
          yscal%veg_temp(ico)   = abs(y%veg_temp(ico))
          yscal%veg_water(ico)  = max(abs(y%veg_water(ico)) + abs(dy%veg_water(ico) * htry) &
@@ -841,7 +841,7 @@ subroutine get_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
    errh2oMAX  = 0.d0
    erreneMAX  = 0.d0
    do ico = 1,cpatch%ncohorts
-      if (yscal%solvable(ico)) then
+      if (yscal%resolvable(ico)) then
          errh2o     = abs(yerr%veg_water (ico) / yscal%veg_water (ico))
          errene     = abs(yerr%veg_energy(ico) / yscal%veg_energy(ico))
          errmax     = max(errmax,errh2o,errene)
@@ -1084,7 +1084,7 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
       targetp%psi_open    (k) = sourcep%psi_open    (k)
       targetp%psi_closed  (k) = sourcep%psi_closed  (k)
       targetp%fs_open     (k) = sourcep%fs_open     (k)
-      targetp%solvable    (k) = sourcep%solvable    (k)
+      targetp%resolvable  (k) = sourcep%resolvable  (k)
       targetp%gpp         (k) = sourcep%gpp         (k)
       targetp%leaf_resp   (k) = sourcep%leaf_resp   (k)
       targetp%root_resp   (k) = sourcep%root_resp   (k)

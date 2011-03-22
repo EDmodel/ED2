@@ -112,6 +112,7 @@ subroutine radiate(mzp,mxp,myp,ia,iz,ja,jz,mynum)
       call azero(mzp*mxp*myp,radiate_g(ngrid)%fthrd)
       call azero(mzp*mxp*myp,radiate_g(ngrid)%fthrd_lw)
       call azero(mxp*myp,radiate_g(ngrid)%rshort)
+      call azero(mxp*myp,radiate_g(ngrid)%rshort_diffuse)
       call azero(mxp*myp,radiate_g(ngrid)%rshort_top)
       call azero(mxp*myp,radiate_g(ngrid)%rshortup_top)
       call azero(mxp*myp,radiate_g(ngrid)%rlongup_top)
@@ -215,26 +216,26 @@ subroutine radiate(mzp,mxp,myp,ia,iz,ja,jz,mynum)
       if (iswrtyp == 3 .or. ilwrtyp == 3) then
          call harr_raddriv(mzp,mxp,myp,nclouds,ncrad,ngrid,if_adap,time,dtlt,ia,iz,ja,jz   &
                           ,nadd_rad,iswrtyp,ilwrtyp,icumfdbk                               &
-                          ,grid_g(ngrid)%flpw              ,grid_g(ngrid)%topt             &
-                          ,grid_g(ngrid)%glat              ,grid_g(ngrid)%rtgt             &
-                          ,basic_g(ngrid)%pi0              ,basic_g(ngrid)%pp              &
-                          ,basic_g(ngrid)%dn0              ,basic_g(ngrid)%theta           &
-                          ,basic_g(ngrid)%rv               ,scratch%vt3do                  &
-                          ,radiate_g(ngrid)%rshort         ,radiate_g(ngrid)%rlong         &
-                          ,radiate_g(ngrid)%fthrd          ,radiate_g(ngrid)%rlongup       &
-                          ,radiate_g(ngrid)%cosz           ,radiate_g(ngrid)%albedt        &
-                          ,radiate_g(ngrid)%rshort_top     ,radiate_g(ngrid)%rshortup_top  &
-                          ,radiate_g(ngrid)%rlongup_top    ,radiate_g(ngrid)%fthrd_lw      &
-                          ,scratch%vt3da                   ,scratch%vt3db                  &
-                          ,scratch%vt3dc                   ,scratch%vt3dd                  &
-                          ,scratch%vt3de                   ,scratch%vt3df                  &
-                          ,scratch%vt3dg                   ,scratch%vt3dh                  &
-                          ,scratch%vt3di                   ,scratch%vt3dj                  &
-                          ,scratch%vt3dk                   ,scratch%vt3dl                  &
-                          ,scratch%vt3dm                   ,scratch%vt3dn                  &
-                          ,scratch%vt4da                   ,scratch%vt4dc                  &
-                          ,scratch%vt3dr                   ,scratch%vt3ds                  &
-                          ,mynum                           )
+                          ,grid_g(ngrid)%flpw             ,grid_g(ngrid)%topt              &
+                          ,grid_g(ngrid)%glat             ,grid_g(ngrid)%rtgt              &
+                          ,basic_g(ngrid)%pi0             ,basic_g(ngrid)%pp               &
+                          ,basic_g(ngrid)%dn0             ,basic_g(ngrid)%theta            &
+                          ,basic_g(ngrid)%rv              ,scratch%vt3do                   &
+                          ,radiate_g(ngrid)%rshort        ,radiate_g(ngrid)%rshort_diffuse &
+                          ,radiate_g(ngrid)%rlong         ,radiate_g(ngrid)%fthrd          &
+                          ,radiate_g(ngrid)%rlongup       ,radiate_g(ngrid)%cosz           &
+                          ,radiate_g(ngrid)%albedt        ,radiate_g(ngrid)%rshort_top     &
+                          ,radiate_g(ngrid)%rshortup_top  ,radiate_g(ngrid)%rlongup_top    &
+                          ,radiate_g(ngrid)%fthrd_lw      ,scratch%vt3da                   &
+                          ,scratch%vt3db                  ,scratch%vt3dc                   &
+                          ,scratch%vt3dd                  ,scratch%vt3de                   &
+                          ,scratch%vt3df                  ,scratch%vt3dg                   &
+                          ,scratch%vt3dh                  ,scratch%vt3di                   &
+                          ,scratch%vt3dj                  ,scratch%vt3dk                   &
+                          ,scratch%vt3dl                  ,scratch%vt3dm                   &
+                          ,scratch%vt3dn                  ,scratch%vt4da                   &
+                          ,scratch%vt4dc                  ,scratch%vt3dr                   &
+                          ,scratch%vt3ds                  ,mynum                           )                               
       end if
    end if
    return
@@ -471,11 +472,32 @@ end subroutine tend_accum
 !------------------------------------------------------------------------------------------!
 subroutine radcomp(m1,m2,m3,ifm,ia,iz,ja,jz,theta,pi0,pp,rv,dn0,rtp,co2p,fthrd,rtgt,f13t   &
                   ,f23t,glon,rshort,rlong,albedt,cosz,rlongup,fthrd_lw,mynum)
-
-   use mem_grid   , only : dzm,dzt,itopo,plonn,ngrid,time,itimea,centlon,dtlt
-   use mem_scratch, only : scratch
-   use mem_radiate, only : ilwrtyp,iswrtyp,lonrad,cdec,jday,solfac,sun_longitude
-   use rconstants , only : cpi,cpor,p00,stefan,solar,pio1808,pi1,halfpi
+   use mem_grid   , only : dzm             & ! intent(in)
+                         , dzt             & ! intent(in)
+                         , itopo           & ! intent(in)
+                         , plonn           & ! intent(in)
+                         , ngrid           & ! intent(in)
+                         , time            & ! intent(in)
+                         , itimea          & ! intent(in)
+                         , centlon         & ! intent(in)
+                         , dtlt            ! ! intent(in)
+   use mem_scratch, only : scratch         ! ! intent(in)
+   use mem_radiate, only : ilwrtyp         & ! intent(in)
+                         , iswrtyp         & ! intent(in)
+                         , lonrad          & ! intent(in)
+                         , cdec            & ! intent(in)
+                         , jday            & ! intent(in)
+                         , solfac          & ! intent(in)
+                         , sun_longitude   & ! intent(in)
+                         , rad_cosz_min    ! ! intent(in)
+   use rconstants , only : cpi             & ! intent(in)
+                         , cpor            & ! intent(in)
+                         , p00             & ! intent(in)
+                         , stefan          & ! intent(in)
+                         , solar           & ! intent(in)
+                         , pio1808         & ! intent(in)
+                         , pi1             & ! intent(in)
+                         , halfpi          ! ! intent(in)
 
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
@@ -571,10 +593,10 @@ subroutine radcomp(m1,m2,m3,ifm,ia,iz,ja,jz,theta,pi0,pp,rv,dn0,rtp,co2p,fthrd,r
 
          !---------------------------------------------------------------------------------!
          !     The shortwave parameterizations are only valid if the cosine of the zenith  !
-         ! angle is greater than .03. Otherwise this is nighttime or polar night, and the  !
-         ! shortwave is zero anyway.                                                       !
+         ! angle is greater than cosz_min.  Otherwise this is nighttime or polar night,    !
+         ! and the shortwave is close to zero anyway.                                      !
          !---------------------------------------------------------------------------------!
-         if (cosz(i,j) > .03) then
+         if (cosz(i,j) > rad_cosz_min) then
             select case (iswrtyp)
             case (1) !----- Chen-Cotton (1983) --------------------------------------------!
                call shradc(m1,rvr,rtr,dn0r,dztr,prd,albedt(i,j),solar*1.e3*solfac          &

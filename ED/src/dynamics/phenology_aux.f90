@@ -9,8 +9,9 @@ subroutine prescribed_leaf_state(lat,imonth,iyear,doy,green_leaf_factor,leaf_agi
                              , iphenysf         & ! intent(in)
                              , iphenyf1         & ! intent(in)
                              , iphenyff         & ! intent(in)
-                             , prescribed_phen  ! ! intent(in)
-   use ed_max_dims       , only : n_pft            ! ! intent(in)
+                             , prescribed_phen  & ! intent(in)
+                             , elongf_min       ! ! intent(in)
+   use ed_max_dims    , only : n_pft            ! ! intent(in)
    use pft_coms       , only : phenology        ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
@@ -28,8 +29,6 @@ subroutine prescribed_leaf_state(lat,imonth,iyear,doy,green_leaf_factor,leaf_agi
    real                                :: delay
    real(kind=8)                        :: elonDen
    integer                             :: pft
-   !----- Local constants -----------------------------------------------------------------!
-   real                  , parameter   :: elonMin = 0.02
    !---------------------------------------------------------------------------------------!
   
    !---------------------------------------------------------------------------------------!
@@ -87,7 +86,7 @@ subroutine prescribed_leaf_state(lat,imonth,iyear,doy,green_leaf_factor,leaf_agi
             **phen_pars%color_b(my_year))
    end if
 
-   if(elongf < elonMin) elongf = 0.0
+   if(elongf < elongf_min) elongf = 0.0
 
    !----- Load the values for each PFT. ---------------------------------------------------!
    do pft = 1, n_pft
@@ -278,6 +277,208 @@ subroutine update_turnover(cpoly, isi)
 
    return
 end subroutine update_turnover
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!      This sub-routine will assign the initial potential available water and the          !
+! phenology that has been assigned.  This sub-routine should be called whenever a new      !
+! cohort is created, or at the initial run (except history).  The initial running average  !
+! is simply the the instantaneous soil moisture variable.  For plants other than the       !
+! drought-deciduous, the potential available water is found but it doesn't control the     !
+! phenology, so we assign fully flushed leaves.                                            !
+!------------------------------------------------------------------------------------------!
+subroutine first_phenology(cgrid)
+   use ed_state_vars , only : edtype           & ! structure
+                            , polygontype      & ! structure
+                            , sitetype         & ! structure
+                            , patchtype        ! ! structure
+   use ed_therm_lib  , only : calc_hcapveg     ! ! function
+   use allometry     , only : area_indices     ! ! subroutine
+   implicit none
+   !----- Arguments -----------------------------------------------------------------------!
+   type(edtype)     , target     :: cgrid          ! Current grid
+   !----- Local variables -----------------------------------------------------------------!
+   type(polygontype), pointer    :: cpoly          ! Current polygon
+   type(sitetype)   , pointer    :: csite          ! Current site
+   type(patchtype)  , pointer    :: cpatch         ! Current patch
+   integer                       :: ipy            ! Polygon counter
+   integer                       :: isi            ! Site counter
+   integer                       :: ipa            ! Patch counter
+   integer                       :: ico            ! Cohort counter
+   !----- External functions. -------------------------------------------------------------!
+   logical          , external   :: is_resolvable  ! The cohort can be resolved.
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Loop over all cohorts in this grid.                                               !
+   !---------------------------------------------------------------------------------------!
+   polyloop: do ipy=1,cgrid%npolygons
+      cpoly => cgrid%polygon(ipy)
+      siteloop: do isi=1,cpoly%nsites
+         csite => cpoly%site(isi)
+         patchloop: do ipa=1,csite%npatches
+            cpatch => csite%patch(ipa)
+            cohortloop: do ico=1,cpatch%ncohorts
+
+               !---------------------------------------------------------------------------!
+               !    Find the initial guess for potential available water and elongation    !
+               ! factor, then compute the equilibrium biomass of active tissues and        !
+               ! storage.                                                                  !
+               !---------------------------------------------------------------------------!
+               call pheninit_balive_bstorage(csite,ipa,ico)
+               !---------------------------------------------------------------------------!
+
+
+               !----- Find LAI, WPA, WAI. -------------------------------------------------!
+               call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)    &
+                                ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)      &
+                                ,cpatch%pft(ico),cpatch%sla(ico), cpatch%lai(ico)          &
+                                ,cpatch%wpa(ico),cpatch%wai(ico),cpatch%bsapwood(ico)) 
+               !---------------------------------------------------------------------------!
+
+               !----- Find heat capacity and vegetation internal energy. ------------------!
+               cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico)      &
+                                                 ,cpatch%balive(ico),cpatch%nplant(ico)    &
+                                                 ,cpatch%hite(ico),cpatch%pft(ico)         &
+                                                 ,cpatch%phenology_status(ico)             &
+                                                 ,cpatch%bsapwood(ico))
+               cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * cpatch%veg_temp(ico)
+               cpatch%resolvable(ico) = is_resolvable(csite,ipa,ico                        &
+                                                     ,cpoly%green_leaf_factor(:,isi))
+               !---------------------------------------------------------------------------!
+
+
+            end do cohortloop
+         end do patchloop
+      end do siteloop
+   end do polyloop
+
+   return
+end subroutine first_phenology
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!      This sub-routine will assign the initial potential available water and the          !
+! phenology that has been assigned, then find the biomass of active tissues and storage    !
+! that is in equilibrium with the initial soil moisture.  This sub-routine should be       !
+! called whenever a new cohort is planted or recruited, or at the initial run (except      !
+! history).  The initial running average is simply the the instantaneous soil moisture     !
+! variable.  For plants other than the drought-deciduous, the potential available water is !
+! found but it doesn't control the phenology, so we assign the biomass that matches the    !
+! fully flushed leaves.                                                                    !
+!------------------------------------------------------------------------------------------!
+subroutine pheninit_balive_bstorage(csite,ipa,ico)
+   use ed_state_vars , only : sitetype            & ! structure
+                            , patchtype           ! ! structure
+   use grid_coms     , only : nzg                 & ! intent(in)
+                            , nzs                 ! ! intent(in)
+   use soil_coms     , only : soil                & ! intent(in), look-up table
+                            , slz                 ! ! intent(in)
+   use phenology_coms, only : theta_crit          & ! intent(in)
+                            , elongf_min          ! ! intent(in)
+   use pft_coms      , only : phenology           & ! intent(in)
+                            , q                   & ! intent(in)
+                            , qsw                 ! ! intent(in)
+   use allometry     , only : dbh2bl              ! ! function
+   implicit none
+   !----- Arguments -----------------------------------------------------------------------!
+   type(sitetype) , target     :: csite          ! Current site
+   integer        , intent(in) :: ipa            ! Number of the current patch
+   integer        , intent(in) :: ico            ! Cohort counter
+   !----- Local variables -----------------------------------------------------------------!
+   type(patchtype), pointer    :: cpatch         ! Current patch
+   integer                     :: k              ! Layer counter
+   integer                     :: ipft           ! PFT type
+   integer                     :: nsoil          ! Alias for soil texture class
+   real                        :: salloc         ! balive:bleaf ratio
+   real                        :: salloci        ! bleaf:balive ratio
+   real                        :: bleaf_max      ! bleaf if all leaves are flushed
+   real                        :: balive_max     ! balive if on-allometry
+   !---------------------------------------------------------------------------------------!
+
+
+   cpatch => csite%patch(ipa)
+
+   ipft = cpatch%pft(ico)
+
+
+   cpatch%paw_avg(ico) = 0.0
+
+   do k = cpatch%krdepth(ico), nzg - 1
+      nsoil = csite%ntext_soil(k,ipa)
+      cpatch%paw_avg(ico) = cpatch%paw_avg(ico)                                            &
+                          + max(0.0,(csite%soil_water(k,ipa) - soil(nsoil)%soilwp))        &
+                          * (slz(k+1)-slz(k))                                              &
+                          / (soil(nsoil)%slmsts - soil(nsoil)%soilwp) 
+   end do
+   nsoil = csite%ntext_soil(nzg,ipa)
+   cpatch%paw_avg(ico) = cpatch%paw_avg(ico)                                               &
+                       + max(0.0,(csite%soil_water(nzg,ipa) - soil(nsoil)%soilwp))         &
+                       * (-1.0*slz(nzg)) / (soil(nsoil)%slmsts - soil(nsoil)%soilwp)
+   cpatch%paw_avg(ico) = cpatch%paw_avg(ico)/(-1.0*slz(cpatch%krdepth(ico)))
+   select case (phenology(ipft))
+   case (1)
+      if (cpatch%paw_avg(ico) < theta_crit) then
+         cpatch%elongf(ico) = 0.0
+      else
+         cpatch%elongf(ico) = 1.0
+      end if
+   case (4)
+      cpatch%elongf(ico)  = max(0.0,min(1.0,cpatch%paw_avg(ico)/theta_crit))
+   case default
+      cpatch%elongf(ico)  = 1.0
+   end select
+
+   !----- Set phenology status according to the elongation factor. ------------------------!
+   if (cpatch%elongf(ico) >= 1.0) then
+      cpatch%phenology_status(ico) = 0
+   elseif (cpatch%elongf(ico) > elongf_min) then
+      cpatch%phenology_status(ico) = -1
+   else
+      cpatch%phenology_status(ico) = 2
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Compute the biomass of living tissues. ------------------------------------------!
+   salloc               = 1.0 + q(ipft) + qsw(ipft) * cpatch%hite(ico)
+   salloci              = 1.0 / salloc
+   bleaf_max            = dbh2bl(cpatch%dbh(ico),cpatch%pft(ico))
+   balive_max           = bleaf_max * salloc
+   cpatch%bleaf(ico)    = bleaf_max * cpatch%elongf(ico)
+   cpatch%broot(ico)    = balive_max * q(ipft)   * salloci
+   cpatch%bsapwood(ico) = balive_max * qsw(ipft) * cpatch%hite(ico) * salloci
+   cpatch%balive(ico)   = cpatch%bleaf(ico) + cpatch%broot(ico) + cpatch%bsapwood(ico)
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !    Here we account for part of the carbon that didn't go to the leaves.  At this      !
+   ! point  we will be nice to the plants and leave all the carbon that didn't go to       !
+   ! leaves in the storage.  This gives some extra chance for the plant whilst it          !
+   ! conserves the total carbon.                                                           !
+   !---------------------------------------------------------------------------------------!
+   cpatch%bstorage(ico) = max(0.0, bleaf_max - cpatch%bleaf(ico))
+   !---------------------------------------------------------------------------------------!
+
+   return
+end subroutine pheninit_balive_bstorage
 !==========================================================================================!
 !==========================================================================================!
 

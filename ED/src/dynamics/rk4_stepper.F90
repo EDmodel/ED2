@@ -786,7 +786,7 @@ module rk4_stepper
       cflag7 = .false.
       cflag8 = .false.
       cohortloop: do ico = 1,cpatch%ncohorts
-         if (.not. y%solvable(ico)) cycle cohortloop
+         if (.not. y%resolvable(ico)) cycle cohortloop
 
          !----- Find the minimum leaf surface water. --------------------------------------!
          rk4min_veg_water = rk4min_veg_lwater * y%tai(ico)
@@ -1180,7 +1180,7 @@ module rk4_stepper
          '  COH','  PFT','         LAI','         WAI','         WPA','         TAI'       &
                         ,'  VEG_ENERGY','OLD_VEG_ENER','    VEG_TEMP','OLD_VEG_TEMP'
       do ico = 1,cpatch%ncohorts
-         if(y%solvable(ico)) then
+         if(y%resolvable(ico)) then
             write(unit=*,fmt='(2(i5,1x),8(es12.4,1x))')                                    &
                ico,cpatch%pft(ico),y%lai(ico),y%wai(ico),y%wpa(ico),y%tai(ico)             &
                   ,y%veg_energy(ico),cpatch%veg_energy(ico),y%veg_temp(ico)                &
@@ -1196,7 +1196,7 @@ module rk4_stepper
                         ,'   VEG_WATER',' OLD_VEG_H2O','    HEAT_CAP','RK4_HEAT_CAP'       &
                         ,'     FRACLIQ'
       do ico = 1,cpatch%ncohorts
-         if(y%solvable(ico)) then
+         if(y%resolvable(ico)) then
             write(unit=*,fmt='(2(i5,1x),9(es12.4,1x))')                                    &
                ico,cpatch%pft(ico),y%lai(ico),y%wai(ico),y%wpa(ico),y%tai(ico)             &
                   ,y%veg_water(ico),cpatch%veg_water(ico),cpatch%hcapveg(ico)              &
