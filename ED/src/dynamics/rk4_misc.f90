@@ -947,6 +947,7 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,hdid,csite,ipa)
    real(kind=8)                        :: wmass_tot
    real(kind=8)                        :: hcapdry_tot
    real(kind=8)                        :: wmass_room
+   real(kind=8)                        :: energy_room
    real(kind=8)                        :: depthloss
    real(kind=8)                        :: snden
    real(kind=8)                        :: sndenmin
@@ -1345,10 +1346,46 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,hdid,csite,ipa)
 
 
    !---------------------------------------------------------------------------------------!
-   !     Add any remaining free water to the top soil layer.                               !
+   !     There may be a tiny amount of free standing water left.  We dump what we can in   !
+   ! the soil, and if there is still some water to be removed we  evaporate what is left.  !
    !---------------------------------------------------------------------------------------!
-   initp%soil_water(nzg)  = initp%soil_water(nzg)  + wmass_free  * dslzi8(nzg) * wdnsi8
-   initp%soil_energy(nzg) = initp%soil_energy(nzg) + energy_free * dslzi8(nzg)
+   if (wmass_free > 0.d0) then
+      wmass_room  = max(0.d0, soil8(nsoil)%slmsts - initp%soil_water(nzg))                 &
+                            * wdns8 * dslz8(nzg)
+      energy_room = energy_free * wmass_room / wmass_free
+
+      if (wmass_room > wmass_free) then
+         !---------------------------------------------------------------------------------!
+         !     There is enough space in the top soil layer for the remaining water, put    !
+         ! all the free water there.                                                       !
+         !---------------------------------------------------------------------------------!
+         initp%soil_water(nzg)  = initp%soil_water(nzg)  + wmass_free  * dslzi8(nzg)       &
+                                * wdnsi8
+         initp%soil_energy(nzg) = initp%soil_energy(nzg) + energy_free * dslzi8(nzg)
+      else
+         !----- Remove the water that can go to the soil. ---------------------------------!
+         wmass_free  = wmass_free  - wmass_room
+         energy_free = energy_free - energy_room
+
+         !----- Dump what we can dump on the top soil layer. ------------------------------!
+         initp%soil_water(nzg)  = initp%soil_water(nzg)  + wmass_room  * dslzi8(nzg)       &
+                                * wdnsi8
+         initp%soil_energy(nzg) = initp%soil_energy(nzg) + energy_room * dslzi8(nzg)
+
+         !----- Boil the remaining. -------------------------------------------------------!
+         initp%can_shv      = initp%can_shv       + wmass_free  * wcapcani
+         initp%avg_vapor_gc = initp%avg_vapor_gc  + wmass_free  * hdidi
+
+         energy_input       = -energy_free
+
+         wmass_free  = 0.d0
+         energy_free = 0.d0
+       end if
+   elseif (wmass_free < 0.d0) then
+      call fatal_error('Free mass is negative, this doesn''t make any sense!'              &
+                      ,'adjust_sfcw_properties','rk4_misc.f90')
+   
+   end if
    !---------------------------------------------------------------------------------------!
 
 
@@ -2518,14 +2555,19 @@ subroutine print_csiteipa(csite, ipa)
    use grid_coms             , only : nzs           & ! intent(in)
                                     , nzg           ! ! intent(in)
    use ed_max_dims           , only : n_pft         ! ! intent(in)
+   use consts_coms           , only : day_sec       & ! intent(in)
+                                    , umol_2_kgC    ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(sitetype)  , target     :: csite
    integer         , intent(in) :: ipa
    !----- Local variable ------------------------------------------------------------------!
    type(patchtype) , pointer    :: cpatch
-   integer                      :: ico 
-   integer                      :: k   
+   integer                      :: ico
+   integer                      :: k
+   real                         :: growth_resp
+   real                         :: storage_resp
+   real                         :: vleaf_resp
    !---------------------------------------------------------------------------------------!
 
    cpatch => csite%patch(ipa)
@@ -2546,27 +2588,45 @@ subroutine print_csiteipa(csite, ipa)
    write (unit=*,fmt='(80a)') ('-',k=1,80)
    write (unit=*,fmt='(a)'  ) 'Cohort information (only the solvable ones shown): '
    write (unit=*,fmt='(80a)') ('-',k=1,80)
-   write (unit=*,fmt='(2(a7,1x),11(a12,1x))')                                              &
+   write (unit=*,fmt='(2(a7,1x),8(a12,1x))')                                               &
          '    PFT','KRDEPTH','      NPLANT','         LAI','         DBH','       BDEAD'   &
-                           &,'      BALIVE','  VEG_ENERGY','    VEG_TEMP','   VEG_WATER'   &
-                           &,'     FS_OPEN','         FSW','         FSN'
+                            ,'      BALIVE','  VEG_ENERGY','    VEG_TEMP','   VEG_WATER'
    do ico = 1,cpatch%ncohorts
       if (cpatch%solvable(ico)) then
-         write(unit=*,fmt='(2(i7,1x),11(es12.4,1x))') cpatch%pft(ico), cpatch%krdepth(ico) &
+         write(unit=*,fmt='(2(i7,1x),8(es12.4,1x))') cpatch%pft(ico), cpatch%krdepth(ico) &
               ,cpatch%nplant(ico),cpatch%lai(ico),cpatch%dbh(ico),cpatch%bdead(ico)        &
               ,cpatch%balive(ico),cpatch%veg_energy(ico),cpatch%veg_temp(ico)              &
-              ,cpatch%veg_water(ico),cpatch%fs_open(ico),cpatch%fsw(ico),cpatch%fsn(ico)
+              ,cpatch%veg_water(ico)
+      end if
+   end do
+   write (unit=*,fmt='(2(a7,1x),11(a12,1x))')                                              &
+         '    PFT','KRDEPTH','         LAI','     FS_OPEN','         FSW','         FSN'   &
+                            ,'         GPP','   LEAF_RESP','   ROOT_RESP',' GROWTH_RESP'   &
+                            ,'   STOR_RESP','  VLEAF_RESP'
+   do ico = 1,cpatch%ncohorts
+      if (cpatch%solvable(ico)) then
+         growth_resp  = cpatch%growth_respiration(ico)  * cpatch%nplant(ico)               &
+                      / (day_sec * umol_2_kgC)
+         storage_resp = cpatch%storage_respiration(ico) * cpatch%nplant(ico)               &
+                      / (day_sec * umol_2_kgC)
+         vleaf_resp   = cpatch%vleaf_respiration(ico)  * cpatch%nplant(ico)                &
+                      / (day_sec * umol_2_kgC)
+
+         write(unit=*,fmt='(2(i7,1x),11(es12.4,1x))') cpatch%pft(ico), cpatch%krdepth(ico) &
+              ,cpatch%lai(ico),cpatch%fs_open(ico),cpatch%fsw(ico),cpatch%fsn(ico)         &
+              ,cpatch%gpp(ico),cpatch%leaf_respiration(ico),cpatch%root_respiration(ico)   &
+              ,growth_resp,storage_resp,vleaf_resp
       end if
    end do
    write (unit=*,fmt='(a)'  ) ' '
    write (unit=*,fmt='(80a)') ('-',k=1,80)
 
-   write (unit=*,fmt='(7(a12,1x))')  '   DIST_TYPE','         AGE','        AREA'          &
-                                    ,'          RH','AVGDAILY_TMP','     SUM_CHD'          &
-                                    ,'     SUM_DGD'
+   write (unit=*,fmt='(8(a12,1x))')  '   DIST_TYPE','         AGE','        AREA'          &
+                                    ,'          RH','      CWD_RH','AVGDAILY_TMP'          &
+                                    ,'     SUM_CHD','     SUM_DGD'
    write (unit=*,fmt='(i12,1x,6(es12.4,1x))')  csite%dist_type(ipa),csite%age(ipa)         &
-         ,csite%area(ipa),csite%rh(ipa),csite%avg_daily_temp(ipa),csite%sum_chd(ipa)       &
-         ,csite%sum_dgd(ipa)
+         ,csite%area(ipa),csite%rh(ipa),csite%cwd_rh(ipa),csite%avg_daily_temp(ipa)        &
+         ,csite%sum_chd(ipa),csite%sum_dgd(ipa)
 
    write (unit=*,fmt='(80a)') ('-',k=1,80)
 
@@ -2711,6 +2771,17 @@ subroutine print_rk4patch(y,csite,ipa)
       end if
    end do
    write (unit=*,fmt='(80a)') ('-',k=1,80)
+   write (unit=*,fmt='(2(a7,1x),7(a12,1x))')                                               &
+         '    PFT','KRDEPTH','         LAI','         GPP','   LEAF_RESP','   ROOT_RESP'   &
+                            ,' GROWTH_RESP','   STOR_RESP','  VLEAF_RESP'
+   do ico = 1,cpatch%ncohorts
+      if (cpatch%solvable(ico)) then
+         write(unit=*,fmt='(2(i7,1x),7(es12.4,1x))') cpatch%pft(ico), cpatch%krdepth(ico)  &
+              ,y%lai(ico),y%gpp(ico),y%leaf_resp(ico),y%root_resp(ico),y%growth_resp(ico)  &
+              ,y%storage_resp(ico),y%vleaf_resp(ico)
+      end if
+   end do
+   write (unit=*,fmt='(80a)') ('-',k=1,80)
    write (unit=*,fmt='(2(a7,1x),9(a12,1x))')                                               &
          '    PFT','KRDEPTH','         LAI','         WPA','         TAI','  VEG_ENERGY'   &
              ,'   VEG_WATER','    VEG_HCAP','    VEG_TEMP','    VEG_FLIQ','    LINT_SHV'
@@ -2774,6 +2845,11 @@ subroutine print_rk4patch(y,csite,ipa)
                                     ,'     RI_BULK'
    write (unit=*,fmt='(7(es12.4,1x))') y%ustar,y%qstar,y%cstar,y%tstar,y%estar,y%zeta      &
                                       ,y%ribulk
+
+   write (unit=*,fmt='(80a)') ('-',k=1,80)
+
+   write (unit=*,fmt='(2(a12,1x))')  '          RH','      CWD_RH'
+   write (unit=*,fmt='(2(es12.4,1x))') y%rh,y%cwd_rh
 
    write (unit=*,fmt='(80a)') ('-',k=1,80)
 

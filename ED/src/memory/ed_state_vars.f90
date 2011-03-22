@@ -1378,8 +1378,6 @@ module ed_state_vars
      
      integer,pointer,dimension(:) :: yatm
 
-     integer,pointer,dimension(:) :: natm
-
      ! Sensible heat flux from the canopy to atmosphere, averaged across sites
    
      real,pointer,dimension(:) :: sensflux_py       ! of dimension npolys
@@ -2027,7 +2025,6 @@ contains
        allocate(cgrid%polygon(npolygons))
        allocate(cgrid%lat(npolygons))
        allocate(cgrid%lon(npolygons))
-       allocate(cgrid%natm(npolygons))
        allocate(cgrid%xatm(npolygons))
        allocate(cgrid%yatm(npolygons))
        allocate(cgrid%ntext_soil(nzg,npolygons))
@@ -3087,7 +3084,6 @@ contains
        nullify(cgrid%polygon                 )
        nullify(cgrid%lat                     )
        nullify(cgrid%lon                     )
-       nullify(cgrid%natm                    )
        nullify(cgrid%xatm                    )
        nullify(cgrid%yatm                    )
        nullify(cgrid%ntext_soil              )
@@ -4064,7 +4060,6 @@ contains
        if(associated(cgrid%polygon                 )) deallocate(cgrid%polygon                 )
        if(associated(cgrid%lat                     )) deallocate(cgrid%lat                     )
        if(associated(cgrid%lon                     )) deallocate(cgrid%lon                     )
-       if(associated(cgrid%natm                    )) deallocate(cgrid%natm                    )
        if(associated(cgrid%xatm                    )) deallocate(cgrid%xatm                    )
        if(associated(cgrid%yatm                    )) deallocate(cgrid%yatm                    )
        if(associated(cgrid%ntext_soil              )) deallocate(cgrid%ntext_soil              )
@@ -6599,6 +6594,22 @@ contains
                             ,var_len,var_len_global,max_ptrs                               &
                             ,'NZG :90:hist:anal:dail:mont:dcyc:year')
 
+      nvar=nvar+1
+      call vtable_edio_i_sca(nzs,nvar,igr,0,0                                              &
+                            ,var_len,var_len_global,max_ptrs                               &
+                            ,'NZS :90:hist:anal:dail:mont:dcyc:year')
+      call vtable_edio_i_sca(nzs,nvar,igr,1,0                                              &
+                            ,var_len,var_len_global,max_ptrs                               &
+                            ,'NZS :90:hist:anal:dail:mont:dcyc:year')
+
+      nvar=nvar+1
+      call vtable_edio_i_sca(ndcycle,nvar,igr,0,0                                              &
+                            ,var_len,var_len_global,max_ptrs                               &
+                            ,'NDCYCLE :90:hist:anal:dail:mont:dcyc:year')
+      call vtable_edio_i_sca(ndcycle,nvar,igr,1,0                                              &
+                            ,var_len,var_len_global,max_ptrs                               &
+                            ,'NDCYCLE :90:hist:anal:dail:mont:dcyc:year')
+
 
       !------------------------------------------------------------------------------------!
       !    1-D variables, soil layers.                                                     !
@@ -6642,10 +6653,6 @@ contains
    !---------------------------------------------------------------------------------------!
    subroutine filltab_edtype(igr,init)
 
-      use ed_var_tables, only : vtable_edio_r  & ! sub-routine
-                              , vtable_edio_i  & ! sub-routine
-                              , metadata_edio  ! ! sub-routine
-
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       integer     , intent(in) :: init
@@ -6669,7 +6676,55 @@ contains
       !------ Continue the counting. ------------------------------------------------------!
       nvar = nioglobal
 
+      call filltab_edtype_p10 (cgrid,igr,init,var_len,var_len_global,max_ptrs,nvar)
+      call filltab_edtype_p11 (cgrid,igr,init,var_len,var_len_global,max_ptrs,nvar)
+      call filltab_edtype_m11 (cgrid,igr,init,var_len,var_len_global,max_ptrs,nvar)
+      call filltab_edtype_p120(cgrid,igr,init,var_len,var_len_global,max_ptrs,nvar)
+      call filltab_edtype_p12 (cgrid,igr,init,var_len,var_len_global,max_ptrs,nvar)
+      call filltab_edtype_m12 (cgrid,igr,init,var_len,var_len_global,max_ptrs,nvar)
+      call filltab_edtype_p14 (cgrid,igr,init,var_len,var_len_global,max_ptrs,nvar)
+      call filltab_edtype_p16 (cgrid,igr,init,var_len,var_len_global,max_ptrs,nvar)
+      call filltab_edtype_p19 (cgrid,igr,init,var_len,var_len_global,max_ptrs,nvar)
+      call filltab_edtype_p146(cgrid,igr,init,var_len,var_len_global,max_ptrs,nvar)
+      call filltab_edtype_p199(cgrid,igr,init,var_len,var_len_global,max_ptrs,nvar)
+      call filltab_edtype_p155(cgrid,igr,init,var_len,var_len_global,max_ptrs,nvar)
+      !----- Save the number of polygon-level (edtype) variables that go to the output. ---!
+      if (init == 0) niogrid=nvar-nioglobal
+      !------------------------------------------------------------------------------------!
 
+      return
+     
+   end subroutine filltab_edtype
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This routine will fill the pointer table with the polygon-level variables         !
+   ! (edtype) that have one dimension and are integer (type 10).                           !
+   !---------------------------------------------------------------------------------------!
+   subroutine filltab_edtype_p10(cgrid,igr,init,var_len,var_len_global,max_ptrs,nvar)
+      use ed_var_tables, only : vtable_edio_i  & ! sub-routine
+                              , metadata_edio  ! ! sub-routine
+
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(edtype), target        :: cgrid
+      integer     , intent(in)    :: init
+      integer     , intent(in)    :: igr
+      integer     , intent(in)    :: var_len
+      integer     , intent(in)    :: max_ptrs
+      integer     , intent(in)    :: var_len_global
+      integer     , intent(inout) :: nvar
+      !----- Local variables. -------------------------------------------------------------!
+      integer                     :: npts
+      !------------------------------------------------------------------------------------!
+      
       !------------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
       !     This is the 1-D block.  All variables must have the number of points defined   !
@@ -6695,6 +6750,81 @@ contains
          call metadata_edio(nvar,igr,'Number of sites per polygon','NA','ipoly')
       end if
 
+      if (associated(cgrid%xatm)) then
+         nvar=nvar+1
+         call vtable_edio_i(npts,cgrid%xatm,nvar,igr,init,cgrid%pyglob_id                  &
+                           ,var_len,var_len_global,max_ptrs                                &
+                           ,'XATM :10:hist:anal:dail:mont:dcyc:year') 
+         call metadata_edio(nvar,igr,'Atm. cell x-indices of polygon','NA','ipoly')
+      end if
+      
+      if (associated(cgrid%yatm)) then
+         nvar=nvar+1
+         call vtable_edio_i(npts,cgrid%yatm,nvar,igr,init,cgrid%pyglob_id                  &
+                           ,var_len,var_len_global,max_ptrs                                &
+                           ,'YATM :10:hist:anal:dail:mont:dcyc:year') 
+         call metadata_edio(nvar,igr,'Atm cell y-indices of polygon','NA','ipoly')
+      end if
+      
+      if (associated(cgrid%lsl)) then
+         nvar=nvar+1
+         call vtable_edio_i(npts,cgrid%lsl,nvar,igr,init,cgrid%pyglob_id                   &
+                           ,var_len,var_len_global,max_ptrs                                &
+                           ,'LSL :10:hist:anal:dail:mont:dcyc:year')
+         call metadata_edio(nvar,igr,'Index of lowest soil layer','NA','ipoly')
+         
+      end if
+      
+      if (associated(cgrid%load_adjacency)) then
+         nvar=nvar+1
+         call vtable_edio_i(npts,cgrid%load_adjacency,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'LOAD_ADJACENCY :10:hist') 
+         call metadata_edio(nvar,igr,'Load Adjacency','[NA]','ipoly')
+      end if
+
+      return     
+   end subroutine filltab_edtype_p10
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This routine will fill the pointer table with the polygon-level variables         !
+   ! (edtype) that have one dimension and are real (type 11).                              !
+   !---------------------------------------------------------------------------------------!
+   subroutine filltab_edtype_p11(cgrid,igr,init,var_len,var_len_global,max_ptrs,nvar)
+      use ed_var_tables, only : vtable_edio_r  & ! sub-routine
+                              , metadata_edio  ! ! sub-routine
+
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(edtype), target        :: cgrid
+      integer     , intent(in)    :: init
+      integer     , intent(in)    :: igr
+      integer     , intent(in)    :: var_len
+      integer     , intent(in)    :: max_ptrs
+      integer     , intent(in)    :: var_len_global
+      integer     , intent(inout) :: nvar
+      !----- Local variables. -------------------------------------------------------------!
+      integer                     :: npts
+      !------------------------------------------------------------------------------------!
+
+
+      
+      !------------------------------------------------------------------------------------!
+      !------------------------------------------------------------------------------------!
+      !     This is the 1-D block.  All variables must have the number of points defined   !
+      ! by npts.                                                                           !
+      !------------------------------------------------------------------------------------!
+      npts = cgrid%npolygons
+
+
+
 
       if (associated(cgrid%lat)) then
          nvar=nvar+1
@@ -6711,42 +6841,6 @@ contains
                            ,var_len,var_len_global,max_ptrs                                &
                            ,'LONGITUDE :11:hist:anal:dail:mont:dcyc:year') 
          call metadata_edio(nvar,igr,'Longitude of Polygon','decimal degrees','ipoly')
-      end if
-
-
-      if (associated(cgrid%natm)) then
-         nvar=nvar+1
-         call vtable_edio_i(npts,cgrid%natm,nvar,igr,init,cgrid%pyglob_id                  &
-                           ,var_len,var_len_global,max_ptrs                                &
-                           ,'NATM :10:hist') 
-         call metadata_edio(nvar,igr,'Number of atm cells per polygon','NA','ipoly')
-      end if
-      
-      if (associated(cgrid%xatm)) then
-         nvar=nvar+1
-         call vtable_edio_i(npts,cgrid%xatm,nvar,igr,init,cgrid%pyglob_id                  &
-                           ,var_len,var_len_global,max_ptrs                                &
-                           ,'XATM :10:hist:anal:dail:mont:dcyc:year') 
-         call metadata_edio(nvar,igr,'Atm. cell x-indices of polygon','NA','ipoly')
-      end if
-      
-      if (associated(cgrid%yatm)) then
-         nvar=nvar+1
-         call vtable_edio_i(npts,cgrid%yatm,nvar,igr,init,cgrid%pyglob_id                  &
-                           ,var_len,var_len_global,max_ptrs                                &
-                           ,'YATM :10:hist:anal:dail:mont:dcyc:year') 
-         call metadata_edio(nvar,igr,'Atm cell y-indices of polygon','NA','ipoly')
-      end if
-
-
-      
-      if (associated(cgrid%lsl)) then
-         nvar=nvar+1
-         call vtable_edio_i(npts,cgrid%lsl,nvar,igr,init,cgrid%pyglob_id                   &
-                           ,var_len,var_len_global,max_ptrs                                &
-                           ,'LSL :10:hist:anal:dail:mont:dcyc:year')
-         call metadata_edio(nvar,igr,'Index of lowest soil layer','NA','ipoly')
-         
       end if
       
       if (associated(cgrid%wbar)) then
@@ -6855,13 +6949,6 @@ contains
          call vtable_edio_r(npts,cgrid%total_basal_area_recruit,nvar,igr,init,cgrid%pyglob_id, &
               var_len,var_len_global,max_ptrs,'TOTAL_BASAL_AREA_RECRUIT :11:hist:anal:year') 
          call metadata_edio(nvar,igr,'Polygon basal area gained by recruits','[cm2/m2/yr]','ipoly')
-      end if
-      
-      if (associated(cgrid%load_adjacency)) then
-         nvar=nvar+1
-         call vtable_edio_i(npts,cgrid%load_adjacency,nvar,igr,init,cgrid%pyglob_id, &
-              var_len,var_len_global,max_ptrs,'LOAD_ADJACENCY :10:hist') 
-         call metadata_edio(nvar,igr,'Load Adjacency','[NA]','ipoly')
       end if
       
       if (associated(cgrid%cosz)) then
@@ -8404,6 +8491,38 @@ contains
       !------------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
 
+      return     
+   end subroutine filltab_edtype_p11
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This routine will fill the pointer table with the polygon-level variables         !
+   ! (edtype) that have two dimensions (ndcycle,npolygons) and are real (type -11).        !
+   !---------------------------------------------------------------------------------------!
+   subroutine filltab_edtype_m11(cgrid,igr,init,var_len,var_len_global,max_ptrs,nvar)
+      use ed_var_tables, only : vtable_edio_r  & ! sub-routine
+                              , metadata_edio  ! ! sub-routine
+
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(edtype), target        :: cgrid
+      integer     , intent(in)    :: init
+      integer     , intent(in)    :: igr
+      integer     , intent(in)    :: var_len
+      integer     , intent(in)    :: max_ptrs
+      integer     , intent(in)    :: var_len_global
+      integer     , intent(inout) :: nvar
+      !----- Local variables. -------------------------------------------------------------!
+      integer                     :: npts
+      !------------------------------------------------------------------------------------!
+
 
 
 
@@ -8796,6 +8915,38 @@ contains
       !------------------------------------------------------------------------------------!
 
 
+      return     
+   end subroutine filltab_edtype_m11
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This routine will fill the pointer table with the polygon-level variables         !
+   ! (edtype) that have two dimensions (nzg,npolygons) and are integer (type 120).         !
+   !---------------------------------------------------------------------------------------!
+   subroutine filltab_edtype_p120(cgrid,igr,init,var_len,var_len_global,max_ptrs,nvar)
+      use ed_var_tables, only : vtable_edio_i  & ! sub-routine
+                              , metadata_edio  ! ! sub-routine
+
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(edtype), target        :: cgrid
+      integer     , intent(in)    :: init
+      integer     , intent(in)    :: igr
+      integer     , intent(in)    :: var_len
+      integer     , intent(in)    :: max_ptrs
+      integer     , intent(in)    :: var_len_global
+      integer     , intent(inout) :: nvar
+      !----- Local variables. -------------------------------------------------------------!
+      integer                     :: npts
+      !------------------------------------------------------------------------------------!
+
 
 
       !------------------------------------------------------------------------------------!
@@ -8804,6 +8955,7 @@ contains
       ! of points defined by npts.                                                         !
       !------------------------------------------------------------------------------------!
       npts = cgrid%npolygons * nzg
+
       if (associated(cgrid%ntext_soil)) then
          nvar=nvar+1
          call vtable_edio_i(npts,cgrid%ntext_soil,nvar,igr,init,cgrid%pyglob_id            &
@@ -8812,6 +8964,48 @@ contains
          call metadata_edio(nvar,igr,'Polygon mode soil class','OGE2 Class','ipoly-ngz')
 
       end if
+
+
+      return     
+   end subroutine filltab_edtype_p120
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This routine will fill the pointer table with the polygon-level variables         !
+   ! (edtype) that have two dimensions (ndcycle,npolygons) and are real (type 12).         !
+   !---------------------------------------------------------------------------------------!
+   subroutine filltab_edtype_p12(cgrid,igr,init,var_len,var_len_global,max_ptrs,nvar)
+      use ed_var_tables, only : vtable_edio_r  & ! sub-routine
+                              , metadata_edio  ! ! sub-routine
+
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(edtype), target        :: cgrid
+      integer     , intent(in)    :: init
+      integer     , intent(in)    :: igr
+      integer     , intent(in)    :: var_len
+      integer     , intent(in)    :: max_ptrs
+      integer     , intent(in)    :: var_len_global
+      integer     , intent(inout) :: nvar
+      !----- Local variables. -------------------------------------------------------------!
+      integer                     :: npts
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !------------------------------------------------------------------------------------!
+      !     This is the 2-D block, with soil layers.  All variables must have the number   !
+      ! of points defined by npts.                                                         !
+      !------------------------------------------------------------------------------------!
+      npts = cgrid%npolygons * nzg
+
       
       if (associated(cgrid%avg_smoist_gg)) then
          nvar=nvar+1
@@ -8903,13 +9097,45 @@ contains
 
 
 
+      return     
+   end subroutine filltab_edtype_p12
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This routine will fill the pointer table with the polygon-level variables         !
+   ! (edtype) that have three dimensions (nzg,ndcycle,npolygons) and are real (type -12).  !
+   !---------------------------------------------------------------------------------------!
+   subroutine filltab_edtype_m12(cgrid,igr,init,var_len,var_len_global,max_ptrs,nvar)
+      use ed_var_tables, only : vtable_edio_r  & ! sub-routine
+                              , metadata_edio  ! ! sub-routine
+
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(edtype), target        :: cgrid
+      integer     , intent(in)    :: init
+      integer     , intent(in)    :: igr
+      integer     , intent(in)    :: var_len
+      integer     , intent(in)    :: max_ptrs
+      integer     , intent(in)    :: var_len_global
+      integer     , intent(inout) :: nvar
+      !----- Local variables. -------------------------------------------------------------!
+      integer                     :: npts
+      !------------------------------------------------------------------------------------!
+
 
       !------------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
       !     This is the 3-D block, with soil depth class and diurnal cycle.  All vari-     !
       ! ables must have the number of points defined by npts.                              !
       !------------------------------------------------------------------------------------!
-      npts = cgrid%npolygons *  nzg
+      npts = cgrid%npolygons *  nzg * ndcycle
 
       if(associated(cgrid%qmean_soil_temp)) then
          nvar=nvar+1
@@ -8927,6 +9153,38 @@ contains
       !------------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
 
+
+      return     
+   end subroutine filltab_edtype_m12
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This routine will fill the pointer table with the polygon-level variables         !
+   ! (edtype) that have two dimensions (n_pft,npolygons) and are real (type 14).           !
+   !---------------------------------------------------------------------------------------!
+   subroutine filltab_edtype_p14(cgrid,igr,init,var_len,var_len_global,max_ptrs,nvar)
+      use ed_var_tables, only : vtable_edio_r  & ! sub-routine
+                              , metadata_edio  ! ! sub-routine
+
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(edtype), target        :: cgrid
+      integer     , intent(in)    :: init
+      integer     , intent(in)    :: igr
+      integer     , intent(in)    :: var_len
+      integer     , intent(in)    :: max_ptrs
+      integer     , intent(in)    :: var_len_global
+      integer     , intent(inout) :: nvar
+      !----- Local variables. -------------------------------------------------------------!
+      integer                     :: npts
+      !------------------------------------------------------------------------------------!
 
 
 
@@ -9005,6 +9263,38 @@ contains
       !------------------------------------------------------------------------------------!
 
 
+      return     
+   end subroutine filltab_edtype_p14
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This routine will fill the pointer table with the polygon-level variables         !
+   ! (edtype) that have two dimensions (n_dbh,npolygons) and are real (type 16).           !
+   !---------------------------------------------------------------------------------------!
+   subroutine filltab_edtype_p16(cgrid,igr,init,var_len,var_len_global,max_ptrs,nvar)
+      use ed_var_tables, only : vtable_edio_r  & ! sub-routine
+                              , metadata_edio  ! ! sub-routine
+
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(edtype), target        :: cgrid
+      integer     , intent(in)    :: init
+      integer     , intent(in)    :: igr
+      integer     , intent(in)    :: var_len
+      integer     , intent(in)    :: max_ptrs
+      integer     , intent(in)    :: var_len_global
+      integer     , intent(inout) :: nvar
+      !----- Local variables. -------------------------------------------------------------!
+      integer                     :: npts
+      !------------------------------------------------------------------------------------!
+
 
 
       !------------------------------------------------------------------------------------!
@@ -9031,8 +9321,37 @@ contains
       !------------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
 
+      return     
+   end subroutine filltab_edtype_p16
+   !=======================================================================================!
+   !=======================================================================================!
 
 
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This routine will fill the pointer table with the polygon-level variables         !
+   ! (edtype) that have two dimensions (13 months,npolygons) and are real (type 19).       !
+   !---------------------------------------------------------------------------------------!
+   subroutine filltab_edtype_p19(cgrid,igr,init,var_len,var_len_global,max_ptrs,nvar)
+      use ed_var_tables, only : vtable_edio_r  & ! sub-routine
+                              , metadata_edio  ! ! sub-routine
+
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(edtype), target        :: cgrid
+      integer     , intent(in)    :: init
+      integer     , intent(in)    :: igr
+      integer     , intent(in)    :: var_len
+      integer     , intent(in)    :: max_ptrs
+      integer     , intent(in)    :: var_len_global
+      integer     , intent(inout) :: nvar
+      !----- Local variables. -------------------------------------------------------------!
+      integer                     :: npts
+      !------------------------------------------------------------------------------------!
 
       !------------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
@@ -9050,6 +9369,38 @@ contains
       !------------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
 
+
+      return     
+   end subroutine filltab_edtype_p19
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This routine will fill the pointer table with the polygon-level variables         !
+   ! (edtype) that have three dimensions (n_dbh,n_pft,npolygons) and are real (type 146).  !
+   !---------------------------------------------------------------------------------------!
+   subroutine filltab_edtype_p146(cgrid,igr,init,var_len,var_len_global,max_ptrs,nvar)
+      use ed_var_tables, only : vtable_edio_r  & ! sub-routine
+                              , metadata_edio  ! ! sub-routine
+
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(edtype), target        :: cgrid
+      integer     , intent(in)    :: init
+      integer     , intent(in)    :: igr
+      integer     , intent(in)    :: var_len
+      integer     , intent(in)    :: max_ptrs
+      integer     , intent(in)    :: var_len_global
+      integer     , intent(inout) :: nvar
+      !----- Local variables. -------------------------------------------------------------!
+      integer                     :: npts
+      !------------------------------------------------------------------------------------!
 
 
 
@@ -9092,6 +9443,37 @@ contains
       !------------------------------------------------------------------------------------!
 
 
+      return     
+   end subroutine filltab_edtype_p146
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This routine will fill the pointer table with the polygon-level variables         !
+   ! (edtype) that have three dimensions (3,4,npolygons) and are real (type 199).          !
+   !---------------------------------------------------------------------------------------!
+   subroutine filltab_edtype_p199(cgrid,igr,init,var_len,var_len_global,max_ptrs,nvar)
+      use ed_var_tables, only : vtable_edio_r  & ! sub-routine
+                              , metadata_edio  ! ! sub-routine
+
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(edtype), target        :: cgrid
+      integer     , intent(in)    :: init
+      integer     , intent(in)    :: igr
+      integer     , intent(in)    :: var_len
+      integer     , intent(in)    :: max_ptrs
+      integer     , intent(in)    :: var_len_global
+      integer     , intent(inout) :: nvar
+      !----- Local variables. -------------------------------------------------------------!
+      integer                     :: npts
+      !------------------------------------------------------------------------------------!
 
 
       !------------------------------------------------------------------------------------!
@@ -9113,6 +9495,39 @@ contains
 
 
 
+      return     
+   end subroutine filltab_edtype_p199
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
+   !     This routine will fill the pointer table with the polygon-level variables         !
+   ! (edtype) that have three dimensions (n_dist_types,n_dist_types,npolygons) and are     !
+   ! real (type 155).                                                                      !
+   !---------------------------------------------------------------------------------------!
+   subroutine filltab_edtype_p155(cgrid,igr,init,var_len,var_len_global,max_ptrs,nvar)
+      use ed_var_tables, only : vtable_edio_r  & ! sub-routine
+                              , metadata_edio  ! ! sub-routine
+
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(edtype), target        :: cgrid
+      integer     , intent(in)    :: init
+      integer     , intent(in)    :: igr
+      integer     , intent(in)    :: var_len
+      integer     , intent(in)    :: max_ptrs
+      integer     , intent(in)    :: var_len_global
+      integer     , intent(inout) :: nvar
+      !----- Local variables. -------------------------------------------------------------!
+      integer                     :: npts
+      !------------------------------------------------------------------------------------!
+
 
       !------------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
@@ -9129,16 +9544,10 @@ contains
       end if
       !------------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
-   
 
 
-      !----- Save the number of polygon-level (edtype) variables that go to the output. ---!
-      if (init == 0) niogrid=nvar-nioglobal
-      !------------------------------------------------------------------------------------!
-
-      return
-     
-   end subroutine filltab_edtype
+      return     
+   end subroutine filltab_edtype_p155
    !=======================================================================================!
    !=======================================================================================!
 
@@ -10002,7 +10411,7 @@ contains
       if (associated(csite%ggnet)) then
          nvar=nvar+1
            call vtable_edio_r(npts,csite%ggnet,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'GGVEG :31:hist')
+           var_len,var_len_global,max_ptrs,'GGNET :31:hist')
            call metadata_edio(nvar,igr,'Net ground conductance','[m]','NA') 
       end if
 
