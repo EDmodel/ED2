@@ -719,13 +719,18 @@ subroutine cloud_opt(m1,ka,nrad,koff,mcat,icld,time,mynum)
                   ext = cxharr(k,icat) * rhoe(k) * dzl(krad)                               &
                       * bcoef(1,ib,krc) * dn ** bcoef(2,ib,krc)
 
+
+!                  if(abs(ocoef(3,ib,krc)*dn)>40.0 .or. abs(ocoef(5,ib,krc)*dn)>40.0) &
+!                       print*,ib,krc,ocoef(3,ib,krc),ocoef(5,ib,krc),dn
+
+
                   om = ocoef(1,ib,krc)                                                     &
-                     + ocoef(2,ib,krc) * exp(ocoef(3,ib,krc) * dn)                         &
-                     + ocoef(4,ib,krc) * exp(ocoef(5,ib,krc) * dn)
+                     + ocoef(2,ib,krc) * exp(max(-60.0,ocoef(3,ib,krc)*dn))                &
+                     + ocoef(4,ib,krc) * exp(max(-60.0,ocoef(5,ib,krc)*dn))
 
                   gg = gcoef(1,ib,icat)                                                    &
-                     + gcoef(2,ib,icat) * exp(gcoef(3,ib,icat) * dn)                       &
-                     + gcoef(4,ib,icat) * exp(gcoef(5,ib,icat) * dn)
+                     + gcoef(2,ib,icat) * exp(max(-60.0,gcoef(3,ib,icat)*dn))              &
+                     + gcoef(4,ib,icat) * exp(max(-60.0,gcoef(5,ib,icat)*dn))
 
                   if (ib <= nsolb) then
                      gg = gg * sacoef(icat)
@@ -809,12 +814,12 @@ subroutine cloud_opt(m1,ka,nrad,koff,mcat,icld,time,mynum)
                   * bcoef(1,ib,krc) * dn ** bcoef(2,ib,krc)
 
                om = ocoef(1,ib,krc)                                                        &
-                  + ocoef(2,ib,krc) * exp(ocoef(3,ib,krc) * dn)                            &
-                  + ocoef(4,ib,krc) * exp(ocoef(5,ib,krc) * dn)
+                  + ocoef(2,ib,krc) * exp(max(-60.0,ocoef(3,ib,krc)*dn))                   &
+                  + ocoef(4,ib,krc) * exp(max(-60.0,ocoef(5,ib,krc)*dn))
 
                gg = gcoef(1,ib,icat)                                                       &
-                  + gcoef(2,ib,icat) * exp(gcoef(3,ib,icat) * dn)                          &
-                  + gcoef(4,ib,icat) * exp(gcoef(5,ib,icat) * dn)
+                  + gcoef(2,ib,icat) * exp(max(-60.0,gcoef(3,ib,icat)*dn))                 &
+                  + gcoef(4,ib,icat) * exp(max(-60.0,gcoef(5,ib,icat)*dn))
 
                if (ib <= nsolb) then
                   gg = gg * sacoef(icat)

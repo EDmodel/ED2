@@ -607,6 +607,10 @@ module ed_state_vars
      
      ! Liquid fraction of soil
      real,    pointer,dimension(:,:) :: soil_fracliq
+
+     ! Root density [kg/m3] over the profile
+     ! Typically diagnosed for history or monthly output
+     real, pointer, dimension (:,:) :: rootdense
      
      ! Effective specific humidity (kg/kg) just above soil
      real,    pointer,dimension(:) :: ground_shv
@@ -1265,6 +1269,7 @@ module ed_state_vars
      real,pointer,dimension(:,:) :: avg_soil_temp
      real,pointer,dimension(:,:) :: avg_soil_fracliq
      real,pointer,dimension(:)   :: avg_soil_wetness	!relative to wilting point
+     real,pointer,dimension(:,:) :: avg_soil_rootfrac
      
      real,pointer,dimension(:) :: avg_skin_temp
      real,pointer,dimension(:) :: avg_available_water
@@ -1546,6 +1551,7 @@ module ed_state_vars
      real,pointer,dimension(:,:) :: avg_soil_water
      real,pointer,dimension(:,:) :: avg_soil_temp
      real,pointer,dimension(:,:) :: avg_soil_fracliq
+     real,pointer,dimension(:,:) :: avg_soil_rootfrac
      
      real,pointer,dimension(:) :: avg_soil_wetness
      real,pointer,dimension(:) :: avg_skin_temp
@@ -2131,6 +2137,7 @@ contains
        allocate(cgrid%avg_soil_water(nzg,npolygons))
        allocate(cgrid%avg_soil_temp (nzg,npolygons))
        allocate(cgrid%avg_soil_fracliq (nzg,npolygons))
+       allocate(cgrid%avg_soil_rootfrac(nzg,npolygons))
 
        allocate(cgrid%avg_soil_wetness   (npolygons))
        allocate(cgrid%avg_skin_temp      (npolygons))
@@ -2580,6 +2587,7 @@ contains
     allocate(cpoly%avg_soil_water      (nzg,nsites))
     allocate(cpoly%avg_soil_temp       (nzg,nsites))
     allocate(cpoly%avg_soil_fracliq    (nzg,nsites))
+    allocate(cpoly%avg_soil_rootfrac   (nzg,nsites))
     allocate(cpoly%avg_soil_wetness        (nsites))
     allocate(cpoly%avg_skin_temp           (nsites))
     allocate(cpoly%avg_available_water     (nsites))
@@ -2696,6 +2704,7 @@ contains
     allocate(csite%soil_water(nzg,npatches))
     allocate(csite%soil_tempk(nzg,npatches))
     allocate(csite%soil_fracliq(nzg,npatches))
+    allocate(csite%rootdense(nzg,npatches))
     allocate(csite%ground_shv(npatches))
     allocate(csite%ground_ssh(npatches))
     allocate(csite%ground_temp(npatches))
@@ -3185,6 +3194,7 @@ contains
        nullify(cgrid%avg_soil_water          )
        nullify(cgrid%avg_soil_temp           )
        nullify(cgrid%avg_soil_fracliq        )
+       nullify(cgrid%avg_soil_rootfrac       )
        nullify(cgrid%avg_soil_wetness        )
        nullify(cgrid%avg_skin_temp           )
        nullify(cgrid%avg_available_water     )
@@ -3593,6 +3603,7 @@ contains
     nullify(cpoly%avg_soil_water)
     nullify(cpoly%avg_soil_temp )
     nullify(cpoly%avg_soil_fracliq )
+    nullify(cpoly%avg_soil_rootfrac)
     nullify(cpoly%avg_soil_wetness )
     nullify(cpoly%avg_skin_temp  )
     nullify(cpoly%avg_available_water)
@@ -3698,6 +3709,7 @@ contains
     nullify(csite%soil_water)
     nullify(csite%soil_tempk)
     nullify(csite%soil_fracliq)
+    nullify(csite%rootdense)
     nullify(csite%ground_shv)
     nullify(csite%ground_ssh)
     nullify(csite%ground_temp)
@@ -4166,6 +4178,7 @@ contains
        if(associated(cgrid%avg_soil_water          )) deallocate(cgrid%avg_soil_water          )
        if(associated(cgrid%avg_soil_temp           )) deallocate(cgrid%avg_soil_temp           )
        if(associated(cgrid%avg_soil_fracliq        )) deallocate(cgrid%avg_soil_fracliq        )
+       if(associated(cgrid%avg_soil_rootfrac       )) deallocate(cgrid%avg_soil_rootfrac       )
        if(associated(cgrid%avg_soil_wetness        )) deallocate(cgrid%avg_soil_wetness        )
        if(associated(cgrid%avg_skin_temp           )) deallocate(cgrid%avg_skin_temp           )
        if(associated(cgrid%avg_available_water     )) deallocate(cgrid%avg_available_water     )
@@ -4583,6 +4596,7 @@ contains
     if(associated(cpoly%avg_soil_water              )) deallocate(cpoly%avg_soil_water              )
     if(associated(cpoly%avg_soil_temp               )) deallocate(cpoly%avg_soil_temp               )
     if(associated(cpoly%avg_soil_fracliq            )) deallocate(cpoly%avg_soil_fracliq            )
+    if(associated(cpoly%avg_soil_rootfrac           )) deallocate(cpoly%avg_soil_rootfrac           )
     if(associated(cpoly%avg_soil_wetness            )) deallocate(cpoly%avg_soil_wetness            )
     if(associated(cpoly%avg_skin_temp               )) deallocate(cpoly%avg_skin_temp               )
     if(associated(cpoly%avg_available_water         )) deallocate(cpoly%avg_available_water         )
@@ -8853,6 +8867,15 @@ contains
          call metadata_edio(nvar,igr,'Polygon Average Soil Fraction Liquid','[proportion]','ipoly - nzg') 
       end if
       
+
+      if (associated(cgrid%avg_soil_rootfrac)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cgrid%avg_soil_rootfrac,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'POLY_SOIL_ROOTFRAC :12:hist:mont:year') 
+         call metadata_edio(nvar,igr,'Polygon Average Root Fraction','[pdf]','ipoly - nzg') 
+      end if
+
+
       if(associated(cgrid%dmean_soil_temp)) then
          nvar=nvar+1
          call vtable_edio_r(npts,cgrid%dmean_soil_temp,nvar,igr,init,cgrid%pyglob_id, &
@@ -9676,6 +9699,14 @@ contains
            var_len,var_len_global,max_ptrs,'AGB_CUT :246:hist:year') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
+
+      if (associated(cpoly%avg_soil_rootfrac)) then
+         nvar=nvar+1
+         call vtable_edio_r(npts,cpoly%avg_soil_rootfrac,nvar,igr,init,cpoly%siglob_id, &
+              var_len,var_len_global,max_ptrs,'SITE_SOIL_ROOTFRAC :12:hist:mont:year') 
+         call metadata_edio(nvar,igr,'Site Average Root Fraction','[kg m-3]','ipoly - nzg') 
+      end if
+
 
       !------------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
@@ -10778,21 +10809,26 @@ contains
          nvar=nvar+1
            call vtable_edio_r(npts,csite%soil_tempk,nvar,igr,init,csite%paglob_id, &
            var_len,var_len_global,max_ptrs,'SOIL_TEMPK_PA :32:hist') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+         call metadata_edio(nvar,igr,'No metadata available','[K]','ipatch : nzg') 
       end if
 
       if (associated(csite%soil_fracliq)) then
          nvar=nvar+1
            call vtable_edio_r(npts,csite%soil_fracliq,nvar,igr,init,csite%paglob_id, &
            var_len,var_len_global,max_ptrs,'SOIL_FRACLIQ_PA :32:hist') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+         call metadata_edio(nvar,igr,'No metadata available','[normalized]','ipatch : nzg') 
+      end if
+
+      if (associated(csite%rootdense)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,csite%rootdense,nvar,igr,init,csite%paglob_id, &
+           var_len,var_len_global,max_ptrs,'PATCH_ROOT_DENSITY :32:hist') 
+         call metadata_edio(nvar,igr,'Patch level root density with depth','[kg/m3]',&
+              'ipatch : nzg') 
       end if
 
       !------------------------------------------------------------------------------------!
       !------------------------------------------------------------------------------------!
-
-
-
 
 
 
