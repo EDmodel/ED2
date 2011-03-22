@@ -23,7 +23,7 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
                                     , rk4eps                 & ! intent(in)
                                     , hcapveg_ref            & ! intent(in)
                                     , min_height             & ! intent(in)
-                                    , any_solvable           & ! intent(out)
+                                    , any_resolvable         & ! intent(out)
                                     , zoveg                  & ! intent(out)
                                     , zveg                   & ! intent(out)
                                     , wcapcan                & ! intent(out)
@@ -214,11 +214,11 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    !---------------------------------------------------------------------------------------!
    cpatch => sourcesite%patch(ipa)
    
-   any_solvable = .false.
+   any_resolvable = .false.
    do ico=1, cpatch%ncohorts
       !----- Copying the flag that determines whether this cohort is numerically stable. --!
-      targetp%solvable(ico) = cpatch%solvable(ico)
-      if (targetp%solvable(ico)) any_solvable = .true.
+      targetp%resolvable(ico) = cpatch%resolvable(ico)
+      if (targetp%resolvable(ico)) any_resolvable = .true.
    end do
 
 
@@ -228,7 +228,7 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    !---------------------------------------------------------------------------------------!
    select case (i_blyr_condct)
    case (-1)
-      if (any_solvable) then
+      if (any_resolvable) then
          hvegpat_min = hcapveg_ref * max(dble(cpatch%hite(1)),min_height)
          hcap_scale  = max(1.d0,hvegpat_min / sourcesite%hcapveg(ipa))
       else
@@ -272,7 +272,7 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
       ! of leaf water.  Otherwise, just fill with some safe values, but the cohort won't   !
       ! be really solved.                                                                  !
       !------------------------------------------------------------------------------------!
-      if (targetp%solvable(ico)) then
+      if (targetp%resolvable(ico)) then
          if (hcap_scale == 1.d0) then
             targetp%veg_energy(ico) = dble(cpatch%veg_energy(ico))
             targetp%veg_water (ico) = max(0.d0,dble(cpatch%veg_water (ico)))
@@ -784,7 +784,7 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
    cpatch => csite%patch(ipa)
    cohortloop: do ico=1,cpatch%ncohorts
       !----- Checking whether this is a prognostic cohort... ------------------------------!
-      if (initp%solvable(ico)) then
+      if (initp%resolvable(ico)) then
 
          !----- Find the minimum leaf water for this cohort. ------------------------------!
          rk4min_veg_water = rk4min_veg_lwater * initp%tai(ico)
@@ -2186,7 +2186,7 @@ subroutine adjust_veg_properties(initp,hdid,csite,ipa)
    !----- Looping over cohorts ------------------------------------------------------------!
    cohortloop: do ico=1,cpatch%ncohorts
       !----- Checking whether this is a prognostic cohort... ------------------------------!
-      if (initp%solvable(ico)) then
+      if (initp%resolvable(ico)) then
          !---------------------------------------------------------------------------------!
          !   Now we find the maximum leaf water possible.                                  !
          !---------------------------------------------------------------------------------!
@@ -2432,13 +2432,13 @@ subroutine print_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
    write(unit=*,fmt='(80a)') ('-',k=1,80)
    write(unit=*,fmt='(a)'  ) 
    write(unit=*,fmt='(80a)') ('-',k=1,80)
-   write(unit=*,fmt='(a)'      ) ' Cohort_level variables (only the solvable ones):'
+   write(unit=*,fmt='(a)'      ) ' Cohort_level variables (only the resolvable ones):'
    write(unit=*,fmt='(10(a,1x))')        'Name            ','   PFT','         LAI'        &
                                       ,'         WAI','         WPA','         TAI'        &
                                       ,'   Max.Error','   Abs.Error','       Scale'        &
                                       ,'Problem(T|F)'
    do ico = 1,cpatch%ncohorts
-      if (y%solvable(ico)) then
+      if (y%resolvable(ico)) then
          errmax       = max(errmax,abs(yerr%veg_water(ico)/yscal%veg_water(ico)))
          troublemaker = large_error(yerr%veg_water(ico),yscal%veg_water(ico))
          write(unit=*,fmt=cohfmt) 'VEG_WATER:',cpatch%pft(ico),y%lai(ico),y%wai(ico)       &
@@ -2586,13 +2586,13 @@ subroutine print_csiteipa(csite, ipa)
    write (unit=*,fmt='(a,1x,i6)')    'Ncohorts: ',cpatch%ncohorts
  
    write (unit=*,fmt='(80a)') ('-',k=1,80)
-   write (unit=*,fmt='(a)'  ) 'Cohort information (only the solvable ones shown): '
+   write (unit=*,fmt='(a)'  ) 'Cohort information (only the resolvable ones shown): '
    write (unit=*,fmt='(80a)') ('-',k=1,80)
    write (unit=*,fmt='(2(a7,1x),8(a12,1x))')                                               &
          '    PFT','KRDEPTH','      NPLANT','         LAI','         DBH','       BDEAD'   &
                             ,'      BALIVE','  VEG_ENERGY','    VEG_TEMP','   VEG_WATER'
    do ico = 1,cpatch%ncohorts
-      if (cpatch%solvable(ico)) then
+      if (cpatch%resolvable(ico)) then
          write(unit=*,fmt='(2(i7,1x),8(es12.4,1x))') cpatch%pft(ico), cpatch%krdepth(ico) &
               ,cpatch%nplant(ico),cpatch%lai(ico),cpatch%dbh(ico),cpatch%bdead(ico)        &
               ,cpatch%balive(ico),cpatch%veg_energy(ico),cpatch%veg_temp(ico)              &
@@ -2604,7 +2604,7 @@ subroutine print_csiteipa(csite, ipa)
                             ,'         GPP','   LEAF_RESP','   ROOT_RESP',' GROWTH_RESP'   &
                             ,'   STOR_RESP','  VLEAF_RESP'
    do ico = 1,cpatch%ncohorts
-      if (cpatch%solvable(ico)) then
+      if (cpatch%resolvable(ico)) then
          growth_resp  = cpatch%growth_respiration(ico)  * cpatch%nplant(ico)               &
                       / (day_sec * umol_2_kgC)
          storage_resp = cpatch%storage_respiration(ico) * cpatch%nplant(ico)               &
@@ -2624,7 +2624,7 @@ subroutine print_csiteipa(csite, ipa)
    write (unit=*,fmt='(8(a12,1x))')  '   DIST_TYPE','         AGE','        AREA'          &
                                     ,'          RH','      CWD_RH','AVGDAILY_TMP'          &
                                     ,'     SUM_CHD','     SUM_DGD'
-   write (unit=*,fmt='(i12,1x,6(es12.4,1x))')  csite%dist_type(ipa),csite%age(ipa)         &
+   write (unit=*,fmt='(i12,1x,7(es12.4,1x))')  csite%dist_type(ipa),csite%age(ipa)         &
          ,csite%area(ipa),csite%rh(ipa),csite%cwd_rh(ipa),csite%avg_daily_temp(ipa)        &
          ,csite%sum_chd(ipa),csite%sum_dgd(ipa)
 
@@ -2758,13 +2758,13 @@ subroutine print_rk4patch(y,csite,ipa)
    write (unit=*,fmt='(a,1x,es12.4)') ' Precip. depth flux  : ',rk4site%dpcpg
 
    write (unit=*,fmt='(80a)') ('=',k=1,80)
-   write (unit=*,fmt='(a)'  ) 'Cohort information (only those solvable are shown): '
+   write (unit=*,fmt='(a)'  ) 'Cohort information (only those resolvable are shown): '
    write (unit=*,fmt='(80a)') ('-',k=1,80)
    write (unit=*,fmt='(2(a7,1x),8(a12,1x))')                                               &
          '    PFT','KRDEPTH','      NPLANT','      HEIGHT','         DBH','       BDEAD'   &
                             ,'      BALIVE','     FS_OPEN','         FSW','         FSN'
    do ico = 1,cpatch%ncohorts
-      if (cpatch%solvable(ico)) then
+      if (cpatch%resolvable(ico)) then
          write(unit=*,fmt='(2(i7,1x),8(es12.4,1x))') cpatch%pft(ico), cpatch%krdepth(ico)  &
               ,cpatch%nplant(ico),cpatch%hite(ico),cpatch%dbh(ico),cpatch%bdead(ico)       &
               ,cpatch%balive(ico),cpatch%fs_open(ico),cpatch%fsw(ico),cpatch%fsn(ico)
@@ -2775,7 +2775,7 @@ subroutine print_rk4patch(y,csite,ipa)
          '    PFT','KRDEPTH','         LAI','         GPP','   LEAF_RESP','   ROOT_RESP'   &
                             ,' GROWTH_RESP','   STOR_RESP','  VLEAF_RESP'
    do ico = 1,cpatch%ncohorts
-      if (cpatch%solvable(ico)) then
+      if (cpatch%resolvable(ico)) then
          write(unit=*,fmt='(2(i7,1x),7(es12.4,1x))') cpatch%pft(ico), cpatch%krdepth(ico)  &
               ,y%lai(ico),y%gpp(ico),y%leaf_resp(ico),y%root_resp(ico),y%growth_resp(ico)  &
               ,y%storage_resp(ico),y%vleaf_resp(ico)
@@ -2786,7 +2786,7 @@ subroutine print_rk4patch(y,csite,ipa)
          '    PFT','KRDEPTH','         LAI','         WPA','         TAI','  VEG_ENERGY'   &
              ,'   VEG_WATER','    VEG_HCAP','    VEG_TEMP','    VEG_FLIQ','    LINT_SHV'
    do ico = 1,cpatch%ncohorts
-      if (y%solvable(ico)) then
+      if (y%resolvable(ico)) then
          write(unit=*,fmt='(2(i7,1x),9(es12.4,1x))') cpatch%pft(ico), cpatch%krdepth(ico)  &
                ,y%lai(ico),y%wpa(ico),y%tai(ico),y%veg_energy(ico),y%veg_water(ico)        &
                ,y%hcapveg(ico),y%veg_temp(ico),y%veg_fliq(ico),y%lint_shv(ico)
@@ -2798,7 +2798,7 @@ subroutine print_rk4patch(y,csite,ipa)
                   ,'    VEG_WIND','    REYNOLDS','     GRASHOF','NUSSELT_FORC'             &
                   ,'NUSSELT_FREE'
    do ico = 1,cpatch%ncohorts
-      if (y%solvable(ico)) then
+      if (y%resolvable(ico)) then
          write(unit=*,fmt='(2(i7,1x),8(es12.4,1x))') cpatch%pft(ico),cpatch%krdepth(ico)   &
                ,y%lai(ico),cpatch%hite(ico),y%veg_temp(ico),y%veg_wind(ico)                &
                ,y%veg_reynolds(ico),y%veg_grashof(ico),y%veg_nussforc(ico)                 &
@@ -2810,7 +2810,7 @@ subroutine print_rk4patch(y,csite,ipa)
               '    PFT','KRDEPTH','         LAI','      HEIGHT','         GBH'             &
                   ,'         GBW','  GSW_CLOSED','    GSW_OPEN','     FS_OPEN'
    do ico = 1,cpatch%ncohorts
-      if (y%solvable(ico)) then
+      if (y%resolvable(ico)) then
          write(unit=*,fmt='(2(i7,1x),7(es12.4,1x))') cpatch%pft(ico),cpatch%krdepth(ico)   &
                ,y%lai(ico),cpatch%hite(ico),y%gbh(ico),y%gbw(ico),y%gsw_closed(ico)        &
                ,y%gsw_open(ico),cpatch%fs_open(ico)
@@ -2941,7 +2941,7 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
    integer                            :: nsoil
    integer                            :: ico
    integer                            :: jco
-   integer                            :: issolved
+   integer                            :: isresolved
    logical                            :: isthere
    real(kind=8)                       :: sum_veg_energy
    real(kind=8)                       :: sum_veg_water
@@ -3017,7 +3017,7 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
    soil_rh        = initp%rh-initp%cwd_rh
    cpatch => csite%patch(ipa)
    do ico=1,cpatch%ncohorts
-      if (initp%solvable(ico)) then
+      if (initp%resolvable(ico)) then
          !----- Integrate vegetation properties using m2gnd rather than plant. ------------!
          sum_veg_energy = sum_veg_energy + initp%veg_energy(ico)
          sum_veg_water  = sum_veg_water  + initp%veg_water(ico)
@@ -3147,11 +3147,11 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
    !---------------------------------------------------------------------------------------!
    do ico=1, cpatch%ncohorts
 
-      !----- Find the integer version of "solvable". --------------------------------------!
-      if (initp%solvable(ico)) then
-         issolved = 1
+      !----- Find the integer version of "resolvable". ------------------------------------!
+      if (initp%resolvable(ico)) then
+         isresolved = 1
       else
-         issolved = 0
+         isresolved = 0
       end if
 
       !----- Copy intercepted water. ------------------------------------------------------!
@@ -3174,7 +3174,7 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
          write (unit=84,fmt=chfmt)                                                         &
                                  '         YEAR', '        MONTH', '          DAY'         &
                                , '         TIME', '         HDID', '          PFT'         &
-                               , '     SOLVABLE', '       NPLANT', '       HEIGHT'         &
+                               , '   RESOLVABLE', '       NPLANT', '       HEIGHT'         &
                                , '          TAI', '   CROWN_AREA', '   VEG_ENERGY'         &
                                , '    VEG_WATER', '     VEG_HCAP', '     VEG_TEMP'         &
                                , '     VEG_FLIQ', '     VEG_WIND', '      FS_OPEN'         &
@@ -3201,7 +3201,7 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
       write(unit=84,fmt=cbfmt)                                                             &
                  current_time%year      , current_time%month     , current_time%date       &
                , elapsec                , hdid                   , cpatch%pft(ico)         &
-               , issolved               , initp%nplant(ico)      , cpatch%hite(ico)        &
+               , isresolved             , initp%nplant(ico)      , cpatch%hite(ico)        &
                , initp%tai(ico)         , initp%crown_area(ico)  , initp%veg_energy(ico)   &
                , initp%veg_water(ico)   , initp%hcapveg(ico)     , initp%veg_temp(ico)     &
                , initp%veg_fliq(ico)    , initp%veg_wind(ico)    , initp%fs_open(ico)      &

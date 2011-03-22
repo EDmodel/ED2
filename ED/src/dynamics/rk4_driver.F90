@@ -474,13 +474,13 @@ module rk4_driver
          do k = cpatch%krdepth(ico), nzg - 1
             nsoil = csite%ntext_soil(k,ipa)
             available_water = available_water                                              &
-                            + (initp%soil_water(k) - soil8(nsoil)%soilwp)                  &
+                            + max(0.d0,(initp%soil_water(k) - soil8(nsoil)%soilwp))        &
                             * (slz8(k+1)-slz8(k))                                          &
                             / (soil8(nsoil)%slmsts - soil8(nsoil)%soilwp)
          end do
          nsoil = csite%ntext_soil(nzg,ipa)
          available_water = available_water                                                 &
-                         + (initp%soil_water(nzg) - soil8(nsoil)%soilwp)                   &
+                         + max(0.d0,(initp%soil_water(nzg) - soil8(nsoil)%soilwp))         &
                          * (-1.d0*slz8(nzg))                                               &
                          / (soil8(nsoil)%slmsts -soil8(nsoil)%soilwp) 
          available_water = available_water / (-1.d0*slz8(cpatch%krdepth(ico)))
@@ -504,7 +504,7 @@ module rk4_driver
       ! to J/kg in the layers that surface water/snow still exists.                        !
       !------------------------------------------------------------------------------------!
       csite%nlev_sfcwater(ipa)    = initp%nlev_sfcwater
-      csite%total_snow_depth(ipa) = 0.
+      csite%total_sfcw_depth(ipa) = 0.
       do k = 1, csite%nlev_sfcwater(ipa)
          csite%sfcwater_depth(k,ipa)   = sngloff(initp%sfcwater_depth(k)   ,tiny_offset)
          csite%sfcwater_mass(k,ipa)    = sngloff(initp%sfcwater_mass(k)    ,tiny_offset)
@@ -512,7 +512,7 @@ module rk4_driver
          csite%sfcwater_fracliq(k,ipa) = sngloff(initp%sfcwater_fracliq(k) ,tiny_offset)
          tmp_energy                    = initp%sfcwater_energy(k)/initp%sfcwater_mass(k)
          csite%sfcwater_energy(k,ipa)  = sngloff(tmp_energy                ,tiny_offset)
-         csite%total_snow_depth(ipa)   = csite%total_snow_depth(ipa)                       &
+         csite%total_sfcw_depth(ipa)   = csite%total_sfcw_depth(ipa)                       &
                                        + csite%sfcwater_depth(k,ipa)
       end do
       !------------------------------------------------------------------------------------!
@@ -542,7 +542,7 @@ module rk4_driver
       !------------------------------------------------------------------------------------!
       do ico = 1,cpatch%ncohorts
 
-         if (initp%solvable(ico)) then
+         if (initp%resolvable(ico)) then
             select case (i_blyr_condct)
             case (-1)
                !---------------------------------------------------------------------------!
@@ -600,7 +600,7 @@ module rk4_driver
             cpatch%psi_open  (ico) = sngloff(initp%psi_open  (ico),tiny_offset) / hdid
             cpatch%psi_closed(ico) = sngloff(initp%psi_closed(ico),tiny_offset) / hdid
 
-         elseif (cpatch%hite(ico) <=  csite%total_snow_depth(ipa)) then
+         elseif (cpatch%hite(ico) <=  csite%total_sfcw_depth(ipa)) then
             !------------------------------------------------------------------------------!
             !    For plants buried in snow, fix the leaf temperature to the snow temper-   !
             ! ature of the layer that is the closest to the leaves.                        !

@@ -179,6 +179,22 @@ subroutine ed_coup_driver()
          call update_derived_props(edgrid_g(ifm))
       end do
    end if
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !      Initialise drought phenology.  This should be done after the soil moisture has   !
+   ! been set up.                                                                          !
+   !---------------------------------------------------------------------------------------!
+   if (trim(runtype) /= 'HISTORY') then
+      do ifm=1,ngrids
+         call first_phenology(edgrid_g(ifm))
+      end do
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
    ! STEP 14. Fill the variable data-tables with all of the state data.  Also calculate    !

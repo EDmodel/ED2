@@ -217,7 +217,7 @@ module canopy_struct_dynamics
 
 
       !---- Find the minimum leaf boundary layer heat conductance. ------------------------!
-      if (any(cpatch%solvable)) then
+      if (any(cpatch%resolvable)) then
          gbhmos_min = 1. / (rb_inter + rb_slope * (csite%lai(ipa) + csite%wai(ipa)))
       else
          gbhmos_min = 0.
@@ -293,7 +293,7 @@ module canopy_struct_dynamics
          uh = reduced_wind(csite%ustar(ipa),csite%zeta(ipa),csite%ribulk(ipa),zref,d0      &
                           ,cpatch%hite(1),csite%rough(ipa))
          do ico=1,cpatch%ncohorts
-            if (cpatch%solvable(ico)) then
+            if (cpatch%resolvable(ico)) then
                ipft  = cpatch%pft(ico)
                hite  = cpatch%hite(ico)
 
@@ -875,7 +875,7 @@ module canopy_struct_dynamics
                           ,cpatch%hite(1),csite%rough(ipa))
          !---------------------------------------------------------------------------------!
          do ico = 1,cpatch%ncohorts
-            if (cpatch%solvable(ico)) then
+            if (cpatch%resolvable(ico)) then
                ipft       = cpatch%pft(ico)
                hite       = cpatch%hite(ico)
                crown_area = min(1.0, cpatch%nplant(ico)                                    &
@@ -1119,7 +1119,7 @@ module canopy_struct_dynamics
 
 
       !---- Find the minimum boundary layer heat conductance. -----------------------------!
-      if (any(initp%solvable)) then
+      if (any(initp%resolvable)) then
          gbhmos_min = 1.d0 / ( dble(rb_inter) + dble(rb_slope)                             &
                              * (dble(csite%lai(ipa)) + dble(csite%wai(ipa))))
       else
@@ -1196,7 +1196,7 @@ module canopy_struct_dynamics
                            ,dble(cpatch%hite(1)),initp%rough)
          laicum = 0.d0
          do ico=1,cpatch%ncohorts
-            if (initp%solvable(ico)) then
+            if (initp%resolvable(ico)) then
                ipft  = cpatch%pft(ico)
 
                !----- Calculate the wind speed at height z. -------------------------------!
@@ -1760,7 +1760,7 @@ module canopy_struct_dynamics
                            ,dble(cpatch%hite(1)),initp%rough)
          !---------------------------------------------------------------------------------!
          do ico = 1,cpatch%ncohorts
-            if (initp%solvable(ico)) then
+            if (initp%resolvable(ico)) then
                ipft = cpatch%pft(ico)
                
                initp%veg_wind(ico) = max(ugbmin8,uh)

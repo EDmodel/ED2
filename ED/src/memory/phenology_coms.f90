@@ -8,6 +8,8 @@ Module phenology_coms
   real :: retained_carbon_fraction  !  Before plants drop their leaves, they retain this fraction of their leaf carbon and nitrogen and put it into storage.
 
   real :: theta_crit                !  When soil porosity (relative to total soil porosity) drops below, this threshold, drought-deciduous plants drop their leaves.
+  
+  real :: elongf_min                ! Minimum elongation factor that supports leaves.
 
   ! leaf offset parameters are from White et al. 1997 Global
   ! Biogeochemical Cycles 11(2) 217-234 

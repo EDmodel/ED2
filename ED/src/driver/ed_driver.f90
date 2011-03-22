@@ -207,6 +207,19 @@ subroutine ed_driver()
 
 
    !---------------------------------------------------------------------------------------!
+   !      Initialise drought phenology.  This should be done after the soil moisture has   !
+   ! been set up.                                                                          !
+   !---------------------------------------------------------------------------------------!
+   if (trim(runtype) /= 'HISTORY') then
+      do ifm=1,ngrids
+         call first_phenology(edgrid_g(ifm))
+      end do
+   end if
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
    !      Fill the variable data-tables with all of the state data.  Also calculate the    !
    ! indexing of the vectors to allow for segmented I/O of hyperslabs and referencing of   !
    ! high level hierarchical data types with their parent types.                           !

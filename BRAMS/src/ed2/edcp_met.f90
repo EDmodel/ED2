@@ -9,7 +9,8 @@ subroutine copy_atm2lsm(ifm,init)
    use mem_basic            , only : co2_on        & ! intent(in)
                                    , co2con        & ! intent(in)
                                    , basic_g       ! ! structure
-   use mem_radiate          , only : radiate_g     ! ! structure
+   use mem_radiate          , only : radiate_g     & ! structure
+                                   , iswrtyp       ! ! intent(in)
    use mem_cuparm           , only : cuparm_g      ! ! structure
    use mem_micro            , only : micro_g       ! ! structure
    use mem_grid             , only : grid_g        & ! structure
@@ -91,9 +92,6 @@ subroutine copy_atm2lsm(ifm,init)
    real             , dimension(:,:)   , allocatable :: rtp_mean
    real             , dimension(:,:)   , allocatable :: theta_mean
    real             , dimension(:,:)   , allocatable :: co2p_mean
-   real                                              :: rshort1
-   real                                              :: cosz1
-   real                                              :: rshortd1
    real                                              :: scalar1
    real                                              :: topma_t
    real                                              :: wtw
@@ -156,17 +154,17 @@ subroutine copy_atm2lsm(ifm,init)
             else
                co2p_mean(i,j) = co2con(1)
             end if
-            !------------------------------------------------------------------------------!
-            !      The following subroutine calculates diffuse shortwave radiation.  This  !
-            ! is a gross approximation that uses constant scattering coefficients.  A more !
-            ! appropriate way of doing this was probably already designed by DMM.  Valeriy !
-            ! Ivanov is also investigating methods of parameterizing diffuse shortwave     !
-            ! radiation.                                                                   !
-            !------------------------------------------------------------------------------!
-            rshort1 = radiate_g(ifm)%rshort(i,j)
-            cosz1   = radiate_g(ifm)%cosz(i,j)
-            call short2diff(rshort1,cosz1,rshortd1)
-            rshortd(i,j) = rshortd1
+            if (iswrtyp == 3) then
+               !----- We obtain the diffuse radiation straight from Harrington. -----------!
+               rshortd(i,j) = radiate_g(ifm)%rshort_diffuse(i,j)
+            else
+               !---------------------------------------------------------------------------!
+               !      The following subroutine calculates diffuse shortwave radiation.     !
+               ! This is a gross approximation that uses constant scattering coefficients. !   !
+               !---------------------------------------------------------------------------!
+               call short2diff(radiate_g(ifm)%rshort(i,j),radiate_g(ifm)%cosz(i,j)         &
+                              ,rshortd(i,j))
+            end if
          end do
       end do
    case (1)
@@ -250,17 +248,18 @@ subroutine copy_atm2lsm(ifm,init)
                               * (basic_g(ifm)%pp(k3w,i,j) + basic_g(ifm)%pi0(k3w,i,j))
             end if
 
-            !------------------------------------------------------------------------------!
-            !      The following subroutine calculates diffuse shortwave radiation.  This  !
-            ! is a gross approximation that uses constant scattering coefficients.  A more !
-            ! appropriate way of doing this was probably already designed by DMM.  Valeriy !
-            ! Ivanov is also investigating methods of parameterizing diffuse shortwave     !
-            ! radiation.                                                                   !
-            !------------------------------------------------------------------------------!
-            rshort1 = radiate_g(ifm)%rshort(i,j)
-            cosz1   = radiate_g(ifm)%cosz(i,j)
-            call short2diff(rshort1,cosz1,rshortd1)
-            rshortd(i,j) = rshortd1
+
+            if (iswrtyp == 3) then
+               !----- We obtain the diffuse radiation straight from Harrington. -----------!
+               rshortd(i,j) = radiate_g(ifm)%rshort_diffuse(i,j)
+            else
+               !---------------------------------------------------------------------------!
+               !      The following subroutine calculates diffuse shortwave radiation.     !
+               ! This is a gross approximation that uses constant scattering coefficients. !   !
+               !---------------------------------------------------------------------------!
+               call short2diff(radiate_g(ifm)%rshort(i,j),radiate_g(ifm)%cosz(i,j)         &
+                              ,rshortd(i,j))
+            end if
         end do
       end do
    end select
@@ -282,10 +281,10 @@ subroutine copy_atm2lsm(ifm,init)
       ! These could be probably better retrieved from the radiation model, need to check   !
       ! that.                                                                              !
       !------------------------------------------------------------------------------------!
-      cgrid%met(ipy)%nir_beam     =  0.45*(radiate_g(ifm)%rshort(ix,iy)-rshortd(ix,iy))
-      cgrid%met(ipy)%nir_diffuse  =  0.45*(rshortd(ix,iy))
-      cgrid%met(ipy)%par_beam     =  0.55*(radiate_g(ifm)%rshort(ix,iy)-rshortd(ix,iy))
-      cgrid%met(ipy)%par_diffuse  =  0.55*(rshortd(ix,iy))
+      cgrid%met(ipy)%nir_beam     =  0.57 * (radiate_g(ifm)%rshort(ix,iy)-rshortd(ix,iy))
+      cgrid%met(ipy)%nir_diffuse  =  0.48 * (rshortd(ix,iy))
+      cgrid%met(ipy)%par_beam     =  0.43 * (radiate_g(ifm)%rshort(ix,iy)-rshortd(ix,iy))
+      cgrid%met(ipy)%par_diffuse  =  0.52 * (rshortd(ix,iy))
       !------------------------------------------------------------------------------------!
 
       cgrid%met(ipy)%rlong    = radiate_g(ifm)%rlong(ix,iy)
@@ -1708,10 +1707,12 @@ end subroutine copy_avgvars_to_leaf
 ! from the radiation schemes.                                                              !
 !------------------------------------------------------------------------------------------!
 subroutine short2diff(rshort_tot,cosz,rshort_diff)
+   use mem_radiate, only : rad_cosz_min & ! intent(in)
+                         , iswrtyp      ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    real, intent(in)    :: rshort_tot  ! Surface incident shortwave radiation
-   real, intent(inout) :: cosz        ! Cosine of the zenith distance
+   real, intent(in)    :: cosz        ! Cosine of the zenith distance
    real, intent(out)   :: rshort_diff ! Surface incident diffuse shortwave radiation.
    !----- Local variables. ----------------------------------------------------------------!
    real                :: stemp
@@ -1726,17 +1727,19 @@ subroutine short2diff(rshort_tot,cosz,rshort_diff)
    real, parameter     :: c5 = 1160.
    !---------------------------------------------------------------------------------------!
 
-   cosz        = max(cosz, 0.001)
-   stemp       = max(rshort_tot, 0.01)
+   if (cosz > rad_cosz_min) then
 
-   cloud       = min(1.,max(0.,(c5 * cosz - stemp) / (c4 * cosz)))
-   difrat      = min(1.,max(0.,0.0604 / ( cosz -0.0223 ) + 0.0683))
-   
-   difrat      = difrat + ( 1. - difrat ) * cloud
-   vnrat       = ( c1 - cloud*c2 ) / ( ( c1 - cloud*c3 ) + ( c1 - cloud*c2 ))
-   
-   rshort_diff = difrat*vnrat*stemp
-   
+      cloud       = min(1.,max(0.,(c5 * cosz - rshort_tot) / (c4 * cosz)))
+      difrat      = min(1.,max(0.,0.0604 / ( cosz -0.0223 ) + 0.0683))
+
+      difrat      = difrat + ( 1. - difrat ) * cloud
+      vnrat       = ( c1 - cloud*c2 ) / ( ( c1 - cloud*c3 ) + ( c1 - cloud*c2 ))
+
+      rshort_diff = difrat*vnrat*rshort_tot
+   else
+      rshort_diff = rshort_tot
+   end if
+
    return
 end subroutine short2diff
 !==========================================================================================!

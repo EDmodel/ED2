@@ -29,10 +29,10 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
 
 
    !---------------------------------------------------------------------------------------!
-   !    Set all cohorts to not have enough leaf area index to be solved.  The code will    !
+   !    Set all cohorts to not have enough leaf area index to be resolved.  The code will  !
    ! update this every time step.                                                          !
    !---------------------------------------------------------------------------------------!
-   cpatch%solvable(ico) = .false.
+   cpatch%resolvable(ico) = .false.
    !---------------------------------------------------------------------------------------!
 
 
@@ -108,13 +108,8 @@ subroutine init_ed_cohort_vars(cpatch,ico, lsl)
    cpatch%leaf_maintenance   (ico) = 0.0
    cpatch%root_maintenance   (ico) = 0.0
    cpatch%leaf_drop          (ico) = 0.0
-
-
-   !---------------------------------------------------------------------------------------!
-   !    The average available water is initialised with 0.5, to make sure that the         !
-   ! model won't shed all the leaves immediately after the first step.                     !
-   !---------------------------------------------------------------------------------------!
-   cpatch%paw_avg(ico) = 0.5
+   cpatch%paw_avg            (ico) = 0.0
+   cpatch%elongf             (ico) = 0.0
    !---------------------------------------------------------------------------------------!
 
 
@@ -366,7 +361,7 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
   csite%sfcwater_depth(1:nzs,ip1:ip2)    = 0.0
   csite%sfcwater_tempk(1:nzs,ip1:ip2)    = 0.0
   csite%sfcwater_fracliq(1:nzs,ip1:ip2)  = 0.0
-  csite%total_snow_depth(ip1:ip2)        = 0.0
+  csite%total_sfcw_depth(ip1:ip2)        = 0.0
   csite%snowfac(ip1:ip2)                 = 0.0
   csite%runoff(ip1:ip2)                  = 0.0
 
@@ -798,34 +793,6 @@ subroutine new_patch_sfc_props(csite,ipa)
                   ,csite%ground_temp(ipa),csite%ground_fliq(ipa))
    !---------------------------------------------------------------------------------------! 
 
-
-
-   !---------------------------------------------------------------------------------------!
-   !      paw_avg is a 10-day running average of available water. Initialize it with    !
-   ! the current value.                                                                    !
-   !  MLO: I don't think this is currently used, but if we do use this, then we should add !
-   !       a flag to initialise like this only if it is a new patch.  This is also called  !
-   !       during patch fusion, when the 10-day running average is available...            !
-   !---------------------------------------------------------------------------------------!
-   cpatch => csite%patch(ipa)
-   do ico = 1, cpatch%ncohorts
-      cpatch%paw_avg(ico) = 0.0
-
-      do k = cpatch%krdepth(ico), nzg - 1
-         nsoil = csite%ntext_soil(k,ipa)
-         cpatch%paw_avg(ico) = cpatch%paw_avg(ico)                                      &
-                             + (csite%soil_water(k,ipa) - soil(nsoil)%soilwp)           &
-                             * (slz(k+1)-slz(k))                                        &
-                             / (soil(nsoil)%slmsts - soil(nsoil)%soilwp) 
-      end do
-      nsoil = csite%ntext_soil(nzg,ipa)
-      cpatch%paw_avg(ico) = cpatch%paw_avg(ico)                                         &
-                          + (csite%soil_water(nzg,ipa) - soil(nsoil)%soilwp)            &
-                          * (-1.0*slz(nzg)) / (soil(nsoil)%slmsts - soil(nsoil)%soilwp) 
-      cpatch%paw_avg(ico) = cpatch%paw_avg(ico)/(-1.0*slz(cpatch%krdepth(ico)))
-   end do
-   !---------------------------------------------------------------------------------------! 
- 
    return
 end subroutine new_patch_sfc_props
 !==========================================================================================!

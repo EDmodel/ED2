@@ -77,6 +77,8 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,npat,ifm,can_theta,can_prss,glat,glon
    real                                              :: ilatn,ilonn,ilats,ilons
    real                                              :: latn,lonn,lats,lons
    real                                              :: dlatr,dlonr
+   real                                              :: slmrel
+   real                                              :: swat_new
    !----- Namelist in case soil moisture is not a default one. ----------------------------!
    namelist /gradeumso/ latni, latnf, lonni, lonnf, ilatn, ilonn, nlat, nlon
    !---------------------------------------------------------------------------------------!
@@ -393,13 +395,27 @@ subroutine soil_moisture_init(n1,n2,n3,mzg,npat,ifm,can_theta,can_prss,glat,glon
                                  ! number, we first normalise the soil moisture then scale !
                                  ! with the current parameter.                             !
                                  !---------------------------------------------------------!
-                                 nsoil           = nint(soil_text(k,i,j,ipat))
-                                 api_us(ii,jj,k) = api_us(ii,jj,k) / oslmsts(nsoil)
-                                 usdum(k)        = usdum(k) + api_us(ii,jj,k)*slmsts(nsoil)
-                              case ('SM_v2.','GL_SM.GPCP.','GL_SM.GPNR.')
-                                 !----- Soil moisture in fraction of saturation. ----------!
                                  nsoil    = nint(soil_text(k,i,j,ipat))
-                                 usdum(k) = usdum(k) + api_us(ii,jj,k)*slmsts(nsoil)
+                                 slmrel   = (api_us(ii,jj,k) - osoilcp(nsoil))             &
+                                          / (oslmsts(nsoil)  - osoilcp(nsoil))
+                                 swat_new = soilcp(nsoil)                                  &
+                                          + slmrel * (slmsts(nsoil)  - soilcp(nsoil))
+                                 usdum(k) = usdum(k) + swat_new
+
+                              case ('SM_v2.','GL_SM.GPCP.','GL_SM.GPNR.')
+                                 !---------------------------------------------------------!
+                                 !     Soil moisture in fraction of saturation.  Because   !
+                                 ! the relative position of dry air soil has changed, we   !
+                                 ! must scale the range to fall within the [soilcp;slmsts] !
+                                 ! interval.                                               !
+                                 !---------------------------------------------------------!
+                                 nsoil    = nint(soil_text(k,i,j,ipat))
+                                 slmrel   = ( api_us(ii,jj,k) * oslmsts(nsoil)             &
+                                            - osoilcp(nsoil))                              &
+                                          / (oslmsts(nsoil)  - osoilcp(nsoil))
+                                 swat_new = soilcp(nsoil)                                  &
+                                          + slmrel * (slmsts(nsoil)  - soilcp(nsoil))
+                                 usdum(k) = usdum(k) + swat_new
                               end select
                            end do
                         end if

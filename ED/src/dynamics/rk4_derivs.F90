@@ -94,7 +94,7 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
    use rk4_coms             , only : rk4eps                & ! intent(in)
                                    , rk4tiny_sfcw_mass     & ! intent(in)
                                    , checkbudget           & ! intent(in)
-                                   , any_solvable          & ! intent(in)
+                                   , any_resolvable        & ! intent(in)
                                    , rk4site               & ! intent(in)
                                    , rk4patchtype          & ! structure
                                    , print_detailed        ! ! intent(in)
@@ -612,7 +612,7 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
    end do
 
    !---- Update soil moisture and energy from transpiration/root uptake. ------------------!
-   if (any_solvable) then
+   if (any_resolvable) then
       do k1 = rk4site%lsl, mzg    ! loop over extracted water
          do k2=k1,mzg
             if (csite%ntext_soil(k2,ipa) /= 13) then
@@ -660,7 +660,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
                                     , wcapcani             & ! intent(in)
                                     , hcapcani             & ! intent(in)
                                     , ccapcani             & ! intent(in)
-                                    , any_solvable         & ! intent(in)
+                                    , any_resolvable       & ! intent(in)
                                     , tiny_offset          & ! intent(in)
                                     , rk4dry_veg_lwater    & ! intent(in)
                                     , rk4fullveg_lwater    & ! intent(in)
@@ -810,7 +810,7 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
    ! whether some cohorts are already full or not, or if it is fine to exceed the maximum  !
    ! amount of water that a cohort can hold.                                               !
    !---------------------------------------------------------------------------------------!
-   if (any_solvable) then
+   if (any_resolvable) then
       taii = 0.d0
       cpatch => csite%patch(ipa)
       do ico = 1,cpatch%ncohorts
@@ -1047,14 +1047,14 @@ subroutine canopy_derivs_two(mzg,initp,dinitp,csite,ipa,hflxgc,wflxgc,qwflxgc,de
 
 
       !------------------------------------------------------------------------------------!
-      !     Check whether this this cohort hasn't been flagged as non-solvable, i.e., it   !
+      !     Check whether this this cohort hasn't been flagged as non-resolvable, i.e., it !
       ! has leaves, belongs to a patch that is not too sparse, an it is not buried in      !
       ! snow.  We should compute energy and water at the cohort level only if the cohort   !
       ! is "safe".  Otherwise, we will set the leaf energy derivatives to zero, and pass   !
       ! all throughfall to the ground.  Later, these "unsafe" cohorts will have their leaf !
       ! energy set to equilibrium with the canopy air space (temperature).                 !
       !------------------------------------------------------------------------------------!
-      if (initp%solvable(ico)) then
+      if (initp%resolvable(ico)) then
 
          !------ Defining some shortcuts to indices ---------------------------------------!
          ipft  = cpatch%pft(ico)

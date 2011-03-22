@@ -491,7 +491,7 @@ subroutine read_ed21_history_file
                      call hdf_getslab_i(cpatch%phenology_status,'PHENOLOGY_STATUS '        &
                                        ,dsetrank,iparallel,.true.)
 
-                     !----- First the 2-D variables. --------------------------------------!
+                     !----- Then the 2-D variables. ---------------------------------------!
                      dsetrank    = 2
                      globdims(1) = 13_8
                      chnkdims(1) = 13_8
@@ -1436,7 +1436,7 @@ subroutine read_ed21_history_unstruct
                         call hdf_getslab_i(cpatch%phenology_status,'PHENOLOGY_STATUS '     &
                                           ,dsetrank,iparallel,.true.)
 
-                        !----- First the 2-D variables. -----------------------------------!
+                        !----- Then the 2-D variables. ------------------------------------!
                         dsetrank    = 2
                         globdims(1) = 13_8
                         chnkdims(1) = 13_8

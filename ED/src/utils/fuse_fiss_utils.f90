@@ -841,7 +841,7 @@ module fuse_fiss_utils
       cpatch%wpa(idt)                  = cpatch%wpa(isc)
       cpatch%wai(idt)                  = cpatch%wai(isc)
       cpatch%bstorage(idt)             = cpatch%bstorage(isc)
-      cpatch%solvable(idt)             = cpatch%solvable(isc)
+      cpatch%resolvable(idt)           = cpatch%resolvable(isc)
 
       do imonth = 1,13
          cpatch%cb(imonth,idt)         = cpatch%cb(imonth,isc)
@@ -925,6 +925,7 @@ module fuse_fiss_utils
 
       cpatch%gpp(idt)                  = cpatch%gpp(isc)
       cpatch%paw_avg(idt)              = cpatch%paw_avg(isc)
+      cpatch%elongf(idt)               = cpatch%elongf(isc)
 
       cpatch%turnover_amp(idt)         = cpatch%turnover_amp(isc)     
       cpatch%llspan(idt)               = cpatch%llspan(isc)     
@@ -1383,14 +1384,34 @@ module fuse_fiss_utils
       cpatch%root_respiration(recc) = cpatch%root_respiration(recc)                        &
                                     + cpatch%root_respiration(donc)
       !------------------------------------------------------------------------------------!
-     
-      cpatch%paw_avg(recc) = cpatch%paw_avg(recc) + cpatch%paw_avg(donc)
 
-      cpatch%turnover_amp(recc)  = (cpatch%turnover_amp(recc) * cpatch%nplant(recc)        &
-           + cpatch%turnover_amp(donc) * cpatch%nplant(donc) ) *newni   
-      cpatch%llspan(recc)  = (cpatch%llspan(recc) * cpatch%nplant(recc)                    &
-           + cpatch%llspan(donc) * cpatch%nplant(donc) ) *newni   
-      cpatch%vm_bar(recc)  = (cpatch%vm_bar(recc) * cpatch%nplant(recc)                    &
+
+      !------------------------------------------------------------------------------------!
+      !     Potential available water and elongation factor can be consider "intensive"    !
+      ! variable water.                                                                    !
+      !------------------------------------------------------------------------------------!
+      cpatch%paw_avg(recc) = ( cpatch%paw_avg(recc)     * cpatch%nplant(recc)              &
+                             + cpatch%paw_avg(donc)     * cpatch%nplant(donc) )            &
+                           * newni
+      cpatch%elongf(recc)  = ( cpatch%elongf(recc)     * cpatch%nplant(recc)               &
+                             + cpatch%elongf(donc)     * cpatch%nplant(donc) )             &
+                           * newni
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !    Light-phenology characteristics (MLO I am not sure if they should be scaled by  !
+      ! nplant or LAI, it seems LAI would make more sense...)
+      !------------------------------------------------------------------------------------!
+      cpatch%turnover_amp(recc)  = ( cpatch%turnover_amp(recc) * cpatch%nplant(recc)       &
+                                   + cpatch%turnover_amp(donc) * cpatch%nplant(donc) )     &
+                                 *newni   
+
+      cpatch%llspan(recc)        = ( cpatch%llspan(recc)       * cpatch%nplant(recc)       &
+                                   + cpatch%llspan(donc)       * cpatch%nplant(donc) )     &
+                                 *newni
+
+      cpatch%vm_bar(recc)        = (cpatch%vm_bar(recc) * cpatch%nplant(recc)                    &
            + cpatch%vm_bar(donc) * cpatch%nplant(donc) ) *newni   
       cpatch%sla(recc)  = (cpatch%sla(recc) * cpatch%nplant(recc)                          &
            + cpatch%sla(donc) * cpatch%nplant(donc) ) *newni   
@@ -2534,12 +2555,12 @@ module fuse_fiss_utils
          csite%sfcwater_energy(1,recp) = newareai *                                        &
                                          (csite%sfcwater_energy(1,recp) * csite%area(recp) &
                                          +csite%sfcwater_energy(1,donp) * csite%area(donp) )
-         csite%total_snow_depth(recp)  = csite%sfcwater_depth(1,recp)
+         csite%total_sfcw_depth(recp)  = csite%sfcwater_depth(1,recp)
       else
          csite%sfcwater_mass(1,recp)   = 0.
          csite%sfcwater_depth(1,recp)  = 0.
          csite%sfcwater_energy(1,recp) = 0.
-         csite%total_snow_depth(recp)  = 0.
+         csite%total_sfcw_depth(recp)  = 0.
       end if
       !------------------------------------------------------------------------------------!
       ! 4. Converting energy back to J/kg;                                                 !

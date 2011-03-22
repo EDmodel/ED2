@@ -232,7 +232,7 @@ subroutine sfcrad_ed(cosz, cosaoi, csite, maxcohort, rshort_tot,rshort_diffuse)
 
       !------------------------------------------------------------------------------------!
       !     Cohort_count is the number of cohorts that affect the radiation balance (i.e.  !
-      ! those which are flagged as solvable.                                               !
+      ! those which are flagged as resolvable.                                             !
       !------------------------------------------------------------------------------------!
       cohort_count = 0
 
@@ -274,7 +274,7 @@ subroutine sfcrad_ed(cosz, cosaoi, csite, maxcohort, rshort_tot,rshort_diffuse)
 
          !------ Transfer information from linked lists to arrays. ------------------------!
          
-         if (cpatch%solvable(ico)) then
+         if (cpatch%resolvable(ico)) then
 
             cohort_count                         = cohort_count + 1
             pft_array(cohort_count)              = cpatch%pft(ico)
@@ -365,7 +365,7 @@ subroutine sfcrad_ed(cosz, cosaoi, csite, maxcohort, rshort_tot,rshort_diffuse)
       end if
       
       csite%snowfac(ipa) = min(.99                                                         &
-                              ,csite%total_snow_depth(ipa)/max(.001,csite%veg_height(ipa)))
+                              ,csite%total_sfcw_depth(ipa)/max(.001,csite%veg_height(ipa)))
       
       !------------------------------------------------------------------------------------!
       !     This is the fraction of below-canopy radiation that is absorbed by the ground. !
@@ -435,7 +435,7 @@ subroutine sfcrad_ed(cosz, cosaoi, csite, maxcohort, rshort_tot,rshort_diffuse)
          il = 0
 
          do ico = cpatch%ncohorts,1,-1
-            if (cpatch%solvable(ico)) then
+            if (cpatch%resolvable(ico)) then
                il = il + 1
                cpatch%rshort_v_beam(ico)    = rshort_v_beam_array(il)
                cpatch%rshort_v_diffuse(ico) = rshort_v_diffuse_array(il)
@@ -677,7 +677,7 @@ subroutine scale_ed_radiation(rshort, rshort_diffuse, rlong, csite)
       do ipa = 1, csite%npatches
          cpatch => csite%patch(ipa)
          do ico = 1, cpatch%ncohorts
-            if (cpatch%solvable(ico)) then
+            if (cpatch%resolvable(ico)) then
                cpatch%rshort_v_beam(ico)    = 0.
                cpatch%rshort_v_diffuse(ico) = 0.
                cpatch%rshort_v(ico)         = 0.
@@ -717,7 +717,7 @@ subroutine scale_ed_radiation(rshort, rshort_diffuse, rlong, csite)
       cpatch => csite%patch(ipa)
       do ico = 1,cpatch%ncohorts
          
-         if (cpatch%solvable(ico)) then
+         if (cpatch%resolvable(ico)) then
             cpatch%rshort_v_beam(ico)    = cpatch%rshort_v_beam(ico)    * beam_radiation
             cpatch%rshort_v_diffuse(ico) = cpatch%rshort_v_diffuse(ico) * rshort_diffuse
             cpatch%rshort_v(ico)         = cpatch%rshort_v_beam(ico)                       &

@@ -619,7 +619,7 @@ subroutine sum_plant_cfluxes(csite,ipa, gpp, gpp_dbh,leaf_resp,root_resp,growth_
    !---------------------------------------------------------------------------------------!
    do ico = 1,cpatch%ncohorts
       !----- Adding GPP and leaf respiration only for those cohorts with enough leaves. ---!
-      if (cpatch%solvable(ico)) then
+      if (cpatch%resolvable(ico)) then
          gpp = gpp + cpatch%gpp(ico)
          !----- Forest cohorts have dbh distribution, add them to gpp_dbh. ----------------!
          if (forest) then 
