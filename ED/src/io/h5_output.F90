@@ -377,6 +377,12 @@ subroutine h5_output(vtype)
                !---------------------------------------------------------------------------!
                call h5screate_simple_f(dsetrank, globdims, filespace, hdferr)
                if (hdferr /= 0 .or. globdims(1) < 1 ) then
+                  write (unit=*,fmt='(a,1x,a)') ' VTYPE:    ',trim(vtype)
+                  write (unit=*,fmt='(a,1x,a)') ' VAR NAME: ',trim(varn)
+                  write (unit=*,fmt='(a,1x,i)') ' IDIM_TYPE:',vt_info(nv,ngr)%idim_type
+                  write (unit=*,fmt='(a,1x,i)') ' VLEN_GLOB:',vt_info(nv,ngr)%var_len_global
+                  write (unit=*,fmt=*)          ' DSETRANK: ',dsetrank
+                  write (unit=*,fmt=*)          ' GLOBDIMS: ',globdims
                   call fatal_error('Could not create the first filespace'                  &
                                   ,'h5_output','h5_output.f90')
                end if

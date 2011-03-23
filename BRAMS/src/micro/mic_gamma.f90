@@ -106,17 +106,27 @@ end subroutine gcf
 !==========================================================================================!
 !==========================================================================================!
 subroutine gser(gamser,a,x,gln)
-   use therm_lib, only: maxit,toler
+!!! RGK   use therm_lib, only: maxit,toler
+
+  use therm_lib, only: toler
+
    implicit none
    real :: a,x,gamser,gln
 
    real,external ::gammln
 
    real :: ap,sum,del
+   real :: denom
    integer :: n
 
+   integer :: maxit
+
+   maxit = 15
+
    gln = gammln(a)
-   if (x <= 0.) then
+!   if (x <= 0.) then
+
+   if(x <= 1e4*tiny(x)) then
       if (x < 0.) pause
       gamser = 0.
       return
@@ -125,9 +135,29 @@ subroutine gser(gamser,a,x,gln)
    sum = 1./a
    del = sum
 
+   ! Calculate the smallest del value to prevent underflows
+   ! Maxit is overkill, the order is -38 by the 20th iteration
+   ! 15 iterations will suffice
+   
+!   denom=1.0
+!   preitloop: do n = 1,maxit
+!      denom=denom*(1/(ap+n))
+!   end do preitloop!
+
+!   print*,dble(del),d!ble(x),dble(maxit),dble(denom)
+
+!   if(dble(del)*dble(x)**dble(maxit)*dble(denom)<=dble(tiny(x)))then
+
+!      print*,"TOO SMALL",dble(del)*dble(x)**dble(maxit)*dble(denom)
+      
+
+!   end if
+
+
    itloop: do n = 1, maxit
       ap = ap + 1.
       del = del*x/ap
+      if(abs(del)<=1e4*tiny(del)) exit itloop
       sum =  sum  +  del
       if(abs(del) < abs(sum)*toler) exit itloop
    end do itloop

@@ -1011,11 +1011,13 @@ subroutine opspec3
   
   if (vh2vr < 0.001 .or. vh2vr > 0.99) then
      print *, 'FATAL - VH2VR must be between 0.001 and 0.99'
+     print *, vh2vr
      ifaterr = ifaterr + 1
   end if
   
   if (vh2dh <= vh2vr .or. vh2dh > 0.99) then
      print *, 'FATAL - VH2DH must be greater than VH2VR and less than 0.99'
+     print *, vh2dh
      ifaterr = ifaterr + 1
   end if
 

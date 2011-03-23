@@ -353,6 +353,7 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
   csite%soil_energy(1:nzg,ip1:ip2)   = 0.0
   csite%soil_tempk(1:nzg,ip1:ip2)    = 0.0
   csite%soil_fracliq(1:nzg,ip1:ip2)  = 0.0
+  csite%rootdense(1:nzg,ip1:ip2)  = 0.0
 
 
   ! Initialize sfcwater state variables

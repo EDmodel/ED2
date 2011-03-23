@@ -360,6 +360,7 @@ subroutine reset_averaged_vars(cgrid)
       cgrid%avg_soil_water     (:,ipy) = 0.0
       cgrid%avg_soil_energy    (:,ipy) = 0.0
       cgrid%avg_soil_fracliq   (:,ipy) = 0.0
+      cgrid%avg_soil_rootfrac  (:,ipy) = 0.0
 
       cgrid%avg_vapor_vc         (ipy) = 0.0
       cgrid%avg_dew_cg           (ipy) = 0.0
@@ -440,6 +441,7 @@ subroutine reset_averaged_vars(cgrid)
          cpoly%avg_soil_water(:,isi)     = 0.0
          cpoly%avg_soil_energy(:,isi)    = 0.0
          cpoly%avg_soil_fracliq(:,isi)   = 0.0
+         cpoly%avg_soil_rootfrac(:,isi)  = 0.0
 
 
 

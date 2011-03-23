@@ -353,6 +353,7 @@ subroutine spatial_averages
    real                           :: skin_fliq
    real                           :: snowarea
    real                           :: dslzsum_i
+   real                           :: rdepth
    !---------------------------------------------------------------------------------------!
 
    !----- Time scale for output.  We will use the inverse more often. ---------------------!
@@ -505,6 +506,7 @@ subroutine spatial_averages
             cpoly%avg_soil_water(:,isi)  = matmul(csite%soil_water     ,csite%area)        &
                                          * site_area_i
 
+
             do k=cpoly%lsl(isi),nzg
                !---------------------------------------------------------------------------!
                !    Find the mean heat capacity. This shouldn't matter in the current     !
@@ -593,10 +595,12 @@ subroutine spatial_averages
             end if
             !------------------------------------------------------------------------------!
 
-
             !----- Average over patches. --------------------------------------------------!
             longpatchloop: do ipa=1,csite%npatches
                cpatch => csite%patch(ipa)
+
+               !----- Zero the rootfraction diagnostic. -----------------------------------!
+               csite%rootdense(:,ipa) = 0.
 
                !---------------------------------------------------------------------------!
                !     Adding cohort "extensive" variables. Those that are not must be       !
@@ -786,6 +790,20 @@ subroutine spatial_averages
                   cpatch%old_stoma_vector(14,ico) = cpatch%old_stoma_data(ico)%prss_residual
                   cpatch%old_stoma_vector(15,ico) = cpatch%old_stoma_data(ico)%leaf_residual
                   cpatch%old_stoma_vector(16,ico) = cpatch%old_stoma_data(ico)%gsw_residual
+
+
+                  !------------------------------------------------------------------------!
+                  !    Rooting fraction: step 1, find root biomass per cubic meter         !
+                  !    broot*nplant/rooting_depth   [kg/plant]*[plant/m2]/[m]              !
+                  !------------------------------------------------------------------------!
+                  rdepth = sum(dslz(cpatch%krdepth(ico):nzg))
+                  do k=cpatch%krdepth(ico),nzg
+                     csite%rootdense(k,ipa) = csite%rootdense(k,ipa)                       &
+                                            + cpatch%broot(ico)*cpatch%nplant(ico)/rdepth
+                  end do
+                  !------------------------------------------------------------------------!
+
+
                end do cohortloop
                   
                pftloop: do ipft = 1,n_pft
@@ -818,6 +836,13 @@ subroutine spatial_averages
                csite%laiarea = csite%laiarea / laiarea_site
             end if
 
+
+            ! Take an area weighted average of the root density to get site level fraction
+            !------------------------------------------------------------------------------!
+            cpoly%avg_soil_rootfrac(:,isi) = matmul(csite%rootdense,csite%area)        &
+                 * site_area_i
+
+            
             !------------------------------------------------------------------------------!
             !    Site average of canopy thermodynamic state.  We average the variables     !
             ! that are insensitive to changes in pressure (potential temperature, specific !
@@ -985,6 +1010,9 @@ subroutine spatial_averages
                                       * poly_area_i
          cgrid%avg_soil_water(:,ipy)  = matmul(cpoly%avg_soil_water , cpoly%area)          &
                                       * poly_area_i
+         cgrid%avg_soil_rootfrac(:,ipy) = matmul(cpoly%avg_soil_water,cpoly%area)          &
+                                      * poly_area_i
+
 
          do k=cgrid%lsl(ipy),nzg
             !------------------------------------------------------------------------------!
