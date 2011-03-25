@@ -118,10 +118,11 @@ subroutine euler_timestep(cgrid)
             !------------------------------------------------------------------------------!
             !    Copy the meteorological variables to the rk4site structure.               !
             !------------------------------------------------------------------------------!
-            call copy_met_2_rk4site(cmet%vels,cmet%atm_theiv,cmet%atm_theta                &
+            call copy_met_2_rk4site(nzg,cmet%vels,cmet%atm_theiv,cmet%atm_theta            &
                                    ,cmet%atm_tmp,cmet%atm_shv,cmet%atm_co2,cmet%geoht      &
                                    ,cmet%exner,cmet%pcpg,cmet%qpcpg,cmet%dpcpg,cmet%prss   &
                                    ,cmet%rshort,cmet%rlong,cmet%geoht,cpoly%lsl(isi)       &
+                                   ,cpoly%ntext_soil(:,isi)                                &
                                    ,cpoly%green_leaf_factor(:,isi)                         &
                                    ,cgrid%lon(ipy),cgrid%lat(ipy))
 
@@ -143,11 +144,12 @@ subroutine euler_timestep(cgrid)
 
             !----- Get photosynthesis, stomatal conductance, and transpiration. -----------!
             call canopy_photosynthesis(csite,cmet,nzg,ipa,ed_ktrans,cpoly%lsl(isi)         &
+                                      ,cpoly%ntext_soil(:,isi)                             &
                                       ,cpoly%leaf_aging_factor(:,isi)                      &
                                       ,cpoly%green_leaf_factor(:,isi))
 
             !----- Compute root and heterotrophic respiration. ----------------------------!
-            call soil_respiration(csite,ipa)
+            call soil_respiration(csite,ipa,nzg,cpoly%ntext_soil(:,isi))
 
             !------------------------------------------------------------------------------!
             !     Set up the remaining, carbon-dependent variables to the buffer.          !

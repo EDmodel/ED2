@@ -3,7 +3,7 @@
 !     This subroutine will control the photosynthesis scheme (Farquar and Leuning).  This  !
 ! is called every step, but not every sub-step.                                            !
 !------------------------------------------------------------------------------------------!
-subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ed_ktrans,lsl                          &
+subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ed_ktrans,lsl,ntext_soil               &
                                 ,leaf_aging_factor,green_leaf_factor)
    use ed_state_vars  , only : sitetype          & ! structure
                              , patchtype         ! ! structure
@@ -29,6 +29,7 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ed_ktrans,lsl               
    integer                   , intent(in)  :: ipa               ! Current patch #
    integer                   , intent(in)  :: lsl               ! Lowest soil level
    integer                   , intent(in)  :: mzg               ! Number of soil layers
+   integer, dimension(mzg)   , intent(in)  :: ntext_soil        ! Soil class
    real   , dimension(n_pft) , intent(in)  :: leaf_aging_factor ! 
    real   , dimension(n_pft) , intent(in)  :: green_leaf_factor ! 
    integer, dimension(mzg)   , intent(out) :: ed_ktrans         ! 
@@ -79,11 +80,11 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ed_ktrans,lsl               
 
 
    !----- Calculate liquid water available for transpiration. -----------------------------!
-   nsoil = csite%ntext_soil(mzg,ipa)
+   nsoil = ntext_soil(mzg)
    available_liquid_water(mzg) = wdns * dslz(mzg) * csite%soil_fracliq(mzg,ipa)            &
                                * max(0.0, csite%soil_water(mzg,ipa) - soil(nsoil)%soilwp )
    do k1 = mzg-1, lsl, -1
-      nsoil = csite%ntext_soil(k1,ipa)
+      nsoil = ntext_soil(k1)
       available_liquid_water(k1) = available_liquid_water(k1+1)                            &
                                  + wdns * dslz(k1) * csite%soil_fracliq(k1,ipa)            &
                                  * max(0.0, csite%soil_water(k1,ipa) - soil(nsoil)%soilwp )
@@ -399,7 +400,7 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ed_ktrans,lsl               
       swp = -huge(1.)
       if (root_depth_indices(k1)) then
          do k2 = k1, mzg
-            nsoil = csite%ntext_soil(k2,ipa)
+            nsoil = ntext_soil(k2)
             !------------------------------------------------------------------------------!
             !      Find slpotv using the available liquid water, since ice is unavailable  !
             ! for transpiration.                                                           !

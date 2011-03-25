@@ -103,10 +103,9 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    !---------------------------------------------------------------------------------------!
 
    !----- 4. Find the lower and upper bounds for the derived properties. ------------------!
-   call find_derived_thbounds(rk4site%lsl,nzg,targetp%can_rhos,targetp%can_theta           &
-                             ,targetp%can_temp,targetp%can_shv,targetp%can_rvap            &
-                             ,targetp%can_prss,targetp%can_depth                           &
-                             ,sourcesite%ntext_soil(:,ipa))
+   call find_derived_thbounds(targetp%can_rhos,targetp%can_theta,targetp%can_temp          &
+                             ,targetp%can_shv,targetp%can_rvap,targetp%can_prss            &
+                             ,targetp%can_depth)
 
    !----- Impose a non-sense number for flag_wflxgc. --------------------------------------!
    targetp%flag_wflxgc  = -1
@@ -167,11 +166,11 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    !     Compute the ground temperature and specific humidity.                             !
    !---------------------------------------------------------------------------------------!
    k = max(1,ksn)
-   call ed_grndvap8(ksn,sourcesite%ntext_soil(nzg,ipa),targetp%soil_water(nzg)             &
-                   ,targetp%soil_tempk(nzg),targetp%soil_fracliq(nzg)                      &
-                   ,targetp%sfcwater_tempk(k),targetp%sfcwater_fracliq(k),targetp%can_prss &
-                   ,targetp%can_shv,targetp%ground_shv,targetp%ground_ssh                  &
-                   ,targetp%ground_temp,targetp%ground_fliq)
+   call ed_grndvap8(ksn,targetp%soil_water(nzg),targetp%soil_tempk(nzg)                    &
+                   ,targetp%soil_fracliq(nzg),targetp%sfcwater_tempk(k)                    &
+                   ,targetp%sfcwater_fracliq(k),targetp%can_prss,targetp%can_shv           &
+                   ,targetp%ground_shv,targetp%ground_ssh,targetp%ground_temp              &
+                   ,targetp%ground_fliq)
    !---------------------------------------------------------------------------------------!
 
 
@@ -625,7 +624,7 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
 
    !----- Update soil temperature and liquid water fraction. ------------------------------!
    do k = rk4site%lsl, nzg
-      soilhcap = soil8(csite%ntext_soil(k,ipa))%slcpd
+      soilhcap = soil8(rk4site%ntext_soil(k))%slcpd
       call qwtk8(initp%soil_energy(k),initp%soil_water(k)*wdns8,soilhcap                   &
                 ,initp%soil_tempk(k),initp%soil_fracliq(k))
    end do
@@ -662,7 +661,7 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
          energy_tot  = initp%sfcwater_energy(k) + initp%soil_energy(nzg) * dslz8(nzg)
          wmass_tot   = initp%sfcwater_mass  (k)                                            &
                      + initp%soil_water (nzg) * dslz8(nzg) * wdns8
-         hcapdry_tot = soil8(csite%ntext_soil(nzg,ipa))%slcpd * dslz8(nzg)
+         hcapdry_tot = soil8(rk4site%ntext_soil(nzg))%slcpd * dslz8(nzg)
          !---------------------------------------------------------------------------------!
 
 
@@ -767,10 +766,10 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
                   initp%sfcwater_tempk(ksn) <= rk4max_sfcw_temp
    end if
    if (ok_ground) then
-      call ed_grndvap8(ksn,csite%ntext_soil(nzg,ipa),initp%soil_water(nzg)                 &
-                      ,initp%soil_tempk(nzg),initp%soil_fracliq(nzg)                       &
-                      ,initp%sfcwater_tempk(k),initp%sfcwater_fracliq(k),initp%can_prss    &
-                      ,initp%can_shv,initp%ground_shv,initp%ground_ssh,initp%ground_temp   &
+      call ed_grndvap8(ksn,initp%soil_water(nzg),initp%soil_tempk(nzg)                     &
+                      ,initp%soil_fracliq(nzg),initp%sfcwater_tempk(k)                     &
+                      ,initp%sfcwater_fracliq(k),initp%can_prss,initp%can_shv              &
+                      ,initp%ground_shv,initp%ground_ssh,initp%ground_temp                 &
                       ,initp%ground_fliq)
    end if
    !---------------------------------------------------------------------------------------!
@@ -868,6 +867,7 @@ end subroutine update_diagnostic_vars
 subroutine adjust_sfcw_properties(nzg,nzs,initp,hdid,csite,ipa)
 
    use rk4_coms      , only : rk4patchtype          & ! structure
+                            , rk4site               & ! intent(in)
                             , rk4min_sfcw_mass      & ! intent(in)
                             , rk4min_virt_water     & ! intent(in)
                             , rk4water_stab_thresh  & ! intent(in)
@@ -997,7 +997,7 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,hdid,csite,ipa)
 
 
    !----- Copy the soil type at the topmost level to nsoil. -------------------------------!
-   nsoil     = csite%ntext_soil(nzg,ipa)
+   nsoil     = rk4site%ntext_soil(nzg)
    !---------------------------------------------------------------------------------------!
    
 
@@ -1688,7 +1688,7 @@ subroutine adjust_topsoil_properties(initp,hdid,csite,ipa)
    
    !----- Defining some aliases that will be often used during the integration. -----------!
    kt            = nzg
-   nstop         = csite%ntext_soil(kt,ipa)
+   nstop         = rk4site%ntext_soil(kt)
 
    !----- Check whether we are just slightly off. -----------------------------------------!
    slightlymoist = initp%soil_water(kt) > soil8(nstop)%slmsts 
@@ -1823,7 +1823,7 @@ subroutine adjust_topsoil_properties(initp,hdid,csite,ipa)
       ! we compute the temperature and liquid fraction.                                    !
       !------------------------------------------------------------------------------------!
       kb              = nzg -1 
-      nsbeneath       = csite%ntext_soil(kb,ipa)
+      nsbeneath       = rk4site%ntext_soil(kb)
       water_available = (initp%soil_water(kb)-soil8(nsbeneath)%soilcp) * wdns8 * dslz8(kb)
       shcbeneath      = soil8(nsbeneath)%slcpd
       call qwtk8(initp%soil_energy(kb),initp%soil_water(kb)*wdns8,shcbeneath               &
@@ -2027,7 +2027,7 @@ subroutine adjust_topsoil_properties(initp,hdid,csite,ipa)
       ! beneath the top.                                                                   !
       !------------------------------------------------------------------------------------!
       kb         = nzg-1
-      nsbeneath  = csite%ntext_soil(kb,ipa)
+      nsbeneath  = rk4site%ntext_soil(kb)
       shcbeneath = soil8(nsbeneath)%slcpd
       call qwtk8(initp%soil_energy(kb),initp%soil_water(kb)*wdns8,shcbeneath               &
                 ,initp%soil_tempk(kb),initp%soil_fracliq(kb))
@@ -2668,7 +2668,7 @@ subroutine print_csiteipa(csite, ipa)
    write (unit=*,fmt='(a5,1x,5(a12,1x))')   '  KZG','  NTEXT_SOIL',' SOIL_ENERGY'          &
                                    &,'  SOIL_TEMPK','  SOIL_WATER','SOIL_FRACLIQ'
    do k=rk4site%lsl,nzg
-      write (unit=*,fmt='(i5,1x,i12,4(es12.4,1x))') k,csite%ntext_soil(k,ipa)              &
+      write (unit=*,fmt='(i5,1x,i12,4(es12.4,1x))') k,rk4site%ntext_soil(k)                &
             ,csite%soil_energy(k,ipa),csite%soil_tempk(k,ipa),csite%soil_water(k,ipa)      &
             ,csite%soil_fracliq(k,ipa)
    end do
@@ -2871,7 +2871,7 @@ subroutine print_rk4patch(y,csite,ipa)
    write (unit=*,fmt='(a5,1x,5(a12,1x))')   '  KZG','  NTEXT_SOIL',' SOIL_ENERGY'          &
                                    &,'  SOIL_TEMPK','  SOIL_WATER','SOIL_FRACLIQ'
    do k=rk4site%lsl,nzg
-      write (unit=*,fmt='(i5,1x,i12,4(es12.4,1x))') k,csite%ntext_soil(k,ipa)              &
+      write (unit=*,fmt='(i5,1x,i12,4(es12.4,1x))') k,rk4site%ntext_soil(k)                &
             ,y%soil_energy(k),y%soil_tempk(k),y%soil_water(k),y%soil_fracliq(k)
    end do
    
@@ -3060,7 +3060,7 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
 
 
    !----- Find the soil type of the top layer. --------------------------------------------!
-   nsoil   = csite%ntext_soil(nzg,ipa)
+   nsoil   = rk4site%ntext_soil(nzg)
    !---------------------------------------------------------------------------------------!
 
 

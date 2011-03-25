@@ -129,11 +129,12 @@ module rk4_driver
                !---------------------------------------------------------------------------!
                !    Copy the meteorological variables to the rk4site structure.            !
                !---------------------------------------------------------------------------!
-               call copy_met_2_rk4site(cmet%vels,cmet%atm_theiv,cmet%atm_theta             &
+               call copy_met_2_rk4site(nzg,cmet%vels,cmet%atm_theiv,cmet%atm_theta         &
                                       ,cmet%atm_tmp,cmet%atm_shv,cmet%atm_co2,cmet%geoht   &
                                       ,cmet%exner,cmet%pcpg,cmet%qpcpg,cmet%dpcpg          &
                                       ,cmet%prss,cmet%rshort,cmet%rlong,cmet%geoht         &
-                                      ,cpoly%lsl(isi),cpoly%green_leaf_factor(:,isi)       &
+                                      ,cpoly%lsl(isi),cpoly%ntext_soil(:,isi)              &
+                                      ,cpoly%green_leaf_factor(:,isi)                      &
                                       ,cgrid%lon(ipy),cgrid%lat(ipy))
 
                !----- Compute current storage terms. --------------------------------------!
@@ -153,11 +154,12 @@ module rk4_driver
 
                !----- Get photosynthesis, stomatal conductance, and transpiration. --------!
                call canopy_photosynthesis(csite,cmet,nzg,ipa,ed_ktrans,cpoly%lsl(isi)      &
+                                         ,cpoly%ntext_soil(:,isi)                          &
                                          ,cpoly%leaf_aging_factor(:,isi)                   &
                                          ,cpoly%green_leaf_factor(:,isi))
 
                !----- Compute root and heterotrophic respiration. -------------------------!
-               call soil_respiration(csite,ipa)
+               call soil_respiration(csite,ipa,nzg,cpoly%ntext_soil(:,isi))
 
                !---------------------------------------------------------------------------!
                !     Set up the integration patch.                                         !
@@ -472,13 +474,13 @@ module rk4_driver
       do ico = 1,cpatch%ncohorts
          available_water = 0.d0
          do k = cpatch%krdepth(ico), nzg - 1
-            nsoil = csite%ntext_soil(k,ipa)
+            nsoil = rk4site%ntext_soil(k)
             available_water = available_water                                              &
                             + max(0.d0,(initp%soil_water(k) - soil8(nsoil)%soilwp))        &
                             * (slz8(k+1)-slz8(k))                                          &
                             / (soil8(nsoil)%slmsts - soil8(nsoil)%soilwp)
          end do
-         nsoil = csite%ntext_soil(nzg,ipa)
+         nsoil = rk4site%ntext_soil(nzg)
          available_water = available_water                                                 &
                          + max(0.d0,(initp%soil_water(nzg) - soil8(nsoil)%soilwp))         &
                          * (-1.d0*slz8(nzg))                                               &

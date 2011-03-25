@@ -203,7 +203,7 @@ end subroutine update_patch_derived_props
 !      This subroutine will take care of some diagnostic thermodynamic properties, namely  !
 ! the canopy air density and temperature.                                                  !
 !------------------------------------------------------------------------------------------!
-subroutine update_patch_thermo_props(csite,ipaa,ipaz)
+subroutine update_patch_thermo_props(csite,ipaa,ipaz,mzg,mzs,ntext_soil)
   
    use ed_state_vars, only : sitetype      ! ! structure
    use therm_lib    , only : idealdenssh   & ! function
@@ -213,21 +213,22 @@ subroutine update_patch_thermo_props(csite,ipaa,ipaz)
                            , rocp          & ! intent(in)
                            , t00           & ! intent(in)
                            , wdns          ! ! intent(in)
-   use grid_coms    , only : nzg           & ! intent(in)
-                           , nzs           ! ! intent(in)
    use soil_coms    , only : soil          ! ! intent(in)
    implicit none
 
    !----- Arguments -----------------------------------------------------------------------!
-   type(sitetype)  , target     :: csite
-   integer         , intent(in) :: ipaa
-   integer         , intent(in) :: ipaz
+   type(sitetype)                , target     :: csite
+   integer                       , intent(in) :: ipaa
+   integer                       , intent(in) :: ipaz
+   integer                       , intent(in) :: mzg
+   integer                       , intent(in) :: mzs
+   integer       , dimension(mzg), intent(in) :: ntext_soil
    !----- Local variables. ----------------------------------------------------------------!
-   integer                      :: ipa
-   integer                      :: nsoil
-   integer                      :: ksn
-   integer                      :: k
-   real                         :: soilhcap
+   integer                                    :: ipa
+   integer                                    :: nsoil
+   integer                                    :: ksn
+   integer                                    :: k
+   real                                       :: soilhcap
    !---------------------------------------------------------------------------------------!
 
 
@@ -249,8 +250,8 @@ subroutine update_patch_thermo_props(csite,ipaa,ipaz)
                                            ,csite%can_shv(ipa))
 
       !----- Update soil temperature and liquid water fraction. ---------------------------!
-      do k = 1, nzg
-         nsoil    = csite%ntext_soil(k,ipa)
+      do k = 1, mzg
+         nsoil    = ntext_soil(k)
          soilhcap = soil(nsoil)%slcpd
          call qwtk(csite%soil_energy(k,ipa),csite%soil_water(k,ipa)*wdns,soilhcap          &
                   ,csite%soil_tempk(k,ipa),csite%soil_fracliq(k,ipa))
@@ -265,10 +266,10 @@ subroutine update_patch_thermo_props(csite,ipaa,ipaz)
          csite%total_sfcw_depth(ipa) =  csite%total_sfcw_depth(ipa)                        &
                                      +  csite%sfcwater_depth(k,ipa)
       end do
-      do k = ksn+1,nzs
+      do k = ksn+1,mzs
          if (k == 1) then
-            csite%sfcwater_tempk  (k,ipa) = csite%soil_tempk  (nzg,ipa)
-            csite%sfcwater_fracliq(k,ipa) = csite%soil_fracliq(nzg,ipa)
+            csite%sfcwater_tempk  (k,ipa) = csite%soil_tempk  (mzg,ipa)
+            csite%sfcwater_fracliq(k,ipa) = csite%soil_fracliq(mzg,ipa)
          else
             csite%sfcwater_tempk  (k,ipa) = csite%sfcwater_tempk  (k-1,ipa)
             csite%sfcwater_fracliq(k,ipa) = csite%sfcwater_fracliq(k-1,ipa)
@@ -508,7 +509,7 @@ subroutine read_soil_moist_temp(cgrid,igr)
                         cpatch => csite%patch(ipa)
 
                         do k=1,nzg
-                           ntext = csite%ntext_soil(k,ipa)
+                           ntext = cpoly%ntext_soil(k,isi)
 
                            if(abs(slz(k)) < 0.1)then
                               csite%soil_tempk(k,ipa) = tmp1
@@ -558,7 +559,7 @@ subroutine read_soil_moist_temp(cgrid,igr)
                         endif
                         
                         !----- Compute the ground specific humidity. ----------------------!
-                        ntext = csite%ntext_soil(k,ipa)
+                        ntext = cpoly%ntext_soil(k,isi)
                         nls   = csite%nlev_sfcwater(ipa)
                         nlsw1 = max(1,nls)
                         call ed_grndvap(nls,ntext,csite%soil_water(nzg,ipa)                &

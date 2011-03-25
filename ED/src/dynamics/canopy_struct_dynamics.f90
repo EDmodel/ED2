@@ -819,8 +819,10 @@ module canopy_struct_dynamics
          !     Find the roughness as the average between the bare ground and vegetated     !
          ! ground.  The weighting factor is the fraction of open canopy.                   !
          !---------------------------------------------------------------------------------!
-         csite%rough(ipa) = soil_rough * (1.0 - csite%opencan_frac(ipa))                   &
-                          + csite%veg_rough(ipa) * csite%opencan_frac(ipa)
+         csite%rough(ipa) = soil_rough * csite%opencan_frac(ipa)                           &
+                          + ( csite%veg_rough(ipa) * (1.0 - csite%snowfac(ipa))            &
+                            + snow_rough * csite%snowfac(ipa))                             &
+                          * (1.0 - csite%opencan_frac(ipa))
          !---------------------------------------------------------------------------------!
 
 
@@ -1709,10 +1711,11 @@ module canopy_struct_dynamics
          !     Find the roughness as the average between the bare ground and vegetated     !
          ! ground.  The weighting factor is the fraction of open canopy.                   !
          !---------------------------------------------------------------------------------!
-         initp%rough = dble(soil_rough)           * (1.d0 - initp%opencan_frac)            &
-                     + dble(csite%veg_rough(ipa)) *         initp%opencan_frac
+         initp%rough = dble(soil_rough) * initp%opencan_frac                               &
+                     + ( dble(csite%veg_rough(ipa)) * (1.d0 - dble(csite%snowfac(ipa)))    &
+                       + dble(snow_rough)*dble(csite%snowfac(ipa)) )                       &
+                     * (1.d0 - initp%opencan_frac)
          !---------------------------------------------------------------------------------!
-
 
 
          !----- Get the appropriate characteristic wind speed. ----------------------------!
@@ -2132,12 +2135,12 @@ module canopy_struct_dynamics
       real(kind=8), intent(out) :: rib          ! Bulk richardson number.        [      ---]
       real(kind=8), intent(out) :: ggbare       ! Ground conductance.            [      m/s]
       !----- Local variables, used by L79. ------------------------------------------------!
-      logical           :: stable       ! Stable state
-      real(kind=8)      :: zoz0m        ! zref/rough(momentum)
-      real(kind=8)      :: lnzoz0m      ! ln[zref/rough(momentum)]
-      real(kind=8)      :: zoz0h        ! zref/rough(heat)
-      real(kind=8)      :: lnzoz0h      ! ln[zref/rough(heat)]
-      real(kind=8)      :: c3           ! coefficient to find the other stars
+      logical                   :: stable       ! Stable state
+      real(kind=8)              :: zoz0m        ! zref/rough(momentum)
+      real(kind=8)              :: lnzoz0m      ! ln[zref/rough(momentum)]
+      real(kind=8)              :: zoz0h        ! zref/rough(heat)
+      real(kind=8)              :: lnzoz0h      ! ln[zref/rough(heat)]
+      real(kind=8)              :: c3           ! coefficient to find the other stars
       !----- Local variables --------------------------------------------------------------!
       real(kind=8)      :: a2           ! Drag coefficient in neutral conditions
       real(kind=8)      :: c1           ! a2 * vels

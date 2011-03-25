@@ -1793,7 +1793,8 @@ module fuse_fiss_utils
                                      , maxcohort           ! ! intent(in)
       use ed_node_coms        , only : mynum               ! ! intent(in)
       use ed_misc_coms        , only : current_time        ! ! intent(in)
-
+      use grid_coms           , only : nzg                 & ! intent(in)
+                                     , nzs                 ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       type(edtype)          , target      :: cgrid           ! Current grid
@@ -1986,7 +1987,8 @@ module fuse_fiss_utils
                   !     Take an average of the patch properties of donpatch and recpatch,  !
                   ! and assign the average recpatch.                                       !
                   !------------------------------------------------------------------------!
-                  call fuse_2_patches(csite,donp,recp,cpoly%met(isi)%prss,cpoly%lsl(isi)   &
+                  call fuse_2_patches(csite,donp,recp,nzg,nzs,cpoly%met(isi)%prss          &
+                                     ,cpoly%lsl(isi),cpoly%ntext_soil(:,isi)               &
                                      ,cpoly%green_leaf_factor(:,isi),elim_nplant,elim_lai)
 
 
@@ -2170,7 +2172,8 @@ module fuse_fiss_utils
                   ! properties of donpatch and recpatch, and leave the averaged values at  !
                   ! recpatch.                                                              !
                   !------------------------------------------------------------------------!
-                  call fuse_2_patches(csite,donp,recp,cpoly%met(isi)%prss,cpoly%lsl(isi)   &
+                  call fuse_2_patches(csite,donp,recp,nzg,nzs,cpoly%met(isi)%prss          &
+                                     ,cpoly%lsl(isi),cpoly%ntext_soil(:,isi)               &
                                      ,cpoly%green_leaf_factor(:,isi),elim_nplant,elim_lai)
                   !------------------------------------------------------------------------!
 
@@ -2372,13 +2375,11 @@ module fuse_fiss_utils
    !=======================================================================================!
    !   This subroutine will merge two patches into 1.                                      !
    !---------------------------------------------------------------------------------------!
-   subroutine fuse_2_patches(csite,donp,recp,prss,lsl,green_leaf_factor                 &
+   subroutine fuse_2_patches(csite,donp,recp,mzg,mzs,prss,lsl,ntext_soil,green_leaf_factor &
                                ,elim_nplant,elim_lai)
       use ed_state_vars      , only : sitetype              & ! Structure 
                                     , patchtype             ! ! Structure
       use soil_coms          , only : soil                  ! ! intent(in), lookup table
-      use grid_coms          , only : nzg                   & ! intent(in)
-                                    , nzs                   ! ! intent(in)
       use fusion_fission_coms, only : ff_ndbh               ! ! intent(in)
       use ed_max_dims        , only : n_pft                 & ! intent(in)
                                     , n_dbh                 ! ! intent(in)
@@ -2397,6 +2398,9 @@ module fuse_fiss_utils
       integer                , intent(in)  :: donp              ! Donating patch
       integer                , intent(in)  :: recp              ! Receptor patch
       integer                , intent(in)  :: lsl               ! Lowest soil level
+      integer                , intent(in)  :: mzg               ! # of soil layers
+      integer                , intent(in)  :: mzs               ! # of sfc. water layers
+      integer, dimension(mzg), intent(in)  :: ntext_soil        ! Soil type
       real, dimension(n_pft) , intent(in)  :: green_leaf_factor ! Green leaf factor...
       real                   , intent(in)  :: prss              ! Sfc. air density
       real                   , intent(out) :: elim_nplant       ! Eliminated nplant 
@@ -2570,8 +2574,8 @@ module fuse_fiss_utils
       !------------------------------------------------------------------------------------!
 
 
-      !----- Merging soil energy and water. -----------------------------------------------!
-      do iii=1,nzg
+      !----- Merge soil energy and water. -------------------------------------------------!
+      do iii=1,mzg
          csite%soil_energy(iii,recp)     = newareai *                                      &
                                          ( csite%soil_energy(iii,donp) * csite%area(donp)  &
                                          + csite%soil_energy(iii,recp) * csite%area(recp))
@@ -2595,7 +2599,7 @@ module fuse_fiss_utils
       ! + csite%csite%sfcwater_tempk(k,recp)                                               !
       ! + csite%sfcwater_fracliq(k,recp)                                                   !
       !------------------------------------------------------------------------------------!
-      call new_patch_sfc_props(csite,recp)
+      call new_patch_sfc_props(csite,recp,mzg,mzs,ntext_soil)
       !------------------------------------------------------------------------------------!
 
       csite%mean_rh(recp)                = newareai *                                      &
@@ -2790,7 +2794,7 @@ module fuse_fiss_utils
                                   + csite%wbudget_precipgain(recp) * csite%area(recp) )
 
 
-      do iii=1,nzg
+      do iii=1,mzg
          csite%avg_smoist_gg(iii,recp)   = newareai *                                      &
               ( csite%avg_smoist_gg(iii,donp)       * csite%area(donp)                     &
               + csite%avg_smoist_gg(iii,recp)       * csite%area(recp) )
@@ -2921,7 +2925,7 @@ module fuse_fiss_utils
       ! + csite%can_temp(recp)                                                             !
       ! + csite%can_rhos(recp)                                                             !
       !------------------------------------------------------------------------------------!
-      call update_patch_thermo_props(csite,recp,recp)
+      call update_patch_thermo_props(csite,recp,recp,mzg,mzs,ntext_soil)
 
       !------------------------------------------------------------------------------------!
       !     Now we need to adjust the densities of cohorts. Because the patch area         !

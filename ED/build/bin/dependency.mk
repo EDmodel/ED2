@@ -56,7 +56,7 @@ radiate_driver.o: ed_max_dims.mod ed_misc_coms.mod ed_state_vars.mod
 radiate_driver.o: grid_coms.mod soil_coms.mod
 reproduction.o: allometry.mod consts_coms.mod decomp_coms.mod ed_max_dims.mod
 reproduction.o: ed_state_vars.mod ed_therm_lib.mod fuse_fiss_utils.mod
-reproduction.o: mem_polygons.mod pft_coms.mod phenology_coms.mod
+reproduction.o: grid_coms.mod mem_polygons.mod pft_coms.mod phenology_coms.mod
 rk4_derivs.o: canopy_struct_dynamics.mod consts_coms.mod ed_max_dims.mod
 rk4_derivs.o: ed_misc_coms.mod ed_state_vars.mod grid_coms.mod pft_coms.mod
 rk4_derivs.o: rk4_coms.mod soil_coms.mod therm_lib8.mod
@@ -74,7 +74,7 @@ rk4_misc.o: therm_lib8.mod
 rk4_stepper.o: consts_coms.mod ed_state_vars.mod grid_coms.mod rk4_coms.mod
 rk4_stepper.o: soil_coms.mod therm_lib8.mod
 soil_respiration.o: consts_coms.mod decomp_coms.mod ed_state_vars.mod
-soil_respiration.o: grid_coms.mod pft_coms.mod soil_coms.mod
+soil_respiration.o: pft_coms.mod soil_coms.mod
 structural_growth.o: allometry.mod consts_coms.mod decomp_coms.mod
 structural_growth.o: ed_max_dims.mod ed_misc_coms.mod ed_state_vars.mod
 structural_growth.o: ed_therm_lib.mod pft_coms.mod phenology_coms.mod
@@ -92,7 +92,7 @@ ed_init_atm.o: fuse_fiss_utils.mod grid_coms.mod met_driver_coms.mod
 ed_init_atm.o: pft_coms.mod soil_coms.mod therm_lib.mod
 ed_nbg_init.o: allometry.mod consts_coms.mod ed_max_dims.mod ed_misc_coms.mod
 ed_nbg_init.o: ed_state_vars.mod ed_therm_lib.mod fuse_fiss_utils.mod
-ed_nbg_init.o: pft_coms.mod physiology_coms.mod
+ed_nbg_init.o: grid_coms.mod pft_coms.mod physiology_coms.mod
 ed_params.o: allometry.mod canopy_air_coms.mod canopy_radiation_coms.mod
 ed_params.o: consts_coms.mod decomp_coms.mod disturb_coms.mod ed_max_dims.mod
 ed_params.o: ed_misc_coms.mod fusion_fission_coms.mod grid_coms.mod
@@ -199,8 +199,9 @@ budget_utils.o: ed_state_vars.mod grid_coms.mod rk4_coms.mod soil_coms.mod
 dateutils.o: consts_coms.mod
 ed_filelist.o: ed_max_dims.mod
 ed_grid.o: consts_coms.mod ed_max_dims.mod ed_node_coms.mod grid_coms.mod
-ed_therm_lib.o: allometry.mod consts_coms.mod ed_state_vars.mod pft_coms.mod
-ed_therm_lib.o: rk4_coms.mod soil_coms.mod therm_lib.mod therm_lib8.mod
+ed_therm_lib.o: allometry.mod consts_coms.mod ed_max_dims.mod ed_state_vars.mod
+ed_therm_lib.o: grid_coms.mod pft_coms.mod rk4_coms.mod soil_coms.mod
+ed_therm_lib.o: therm_lib.mod therm_lib8.mod
 fatal_error.o: ed_node_coms.mod
 fuse_fiss_utils.o: allometry.mod consts_coms.mod decomp_coms.mod
 fuse_fiss_utils.o: disturb_coms.mod ed_max_dims.mod ed_misc_coms.mod

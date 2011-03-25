@@ -598,9 +598,6 @@ module ed_state_vars
      ! Short wave radiation absorbed by the surface water, 
      ! diffuse component (W/m2)
      real, pointer,dimension(:,:) :: rshort_s_diffuse
-
-     ! Soil textural class index
-     integer, pointer,dimension(:,:) :: ntext_soil
      
      ! Soil internal energy (J/m3)
      real,    pointer,dimension(:,:) :: soil_energy
@@ -2702,7 +2699,6 @@ contains
     allocate(csite%sfcwater_tempk(nzs,npatches))
     allocate(csite%sfcwater_fracliq(nzs,npatches))
     allocate(csite%nlev_sfcwater(npatches))
-    allocate(csite%ntext_soil(nzg,npatches))
     allocate(csite%soil_energy(nzg,npatches))
     allocate(csite%soil_water(nzg,npatches))
     allocate(csite%soil_tempk(nzg,npatches))
@@ -3707,7 +3703,6 @@ contains
     nullify(csite%sfcwater_tempk)
     nullify(csite%sfcwater_fracliq)
     nullify(csite%nlev_sfcwater)
-    nullify(csite%ntext_soil)
     nullify(csite%soil_energy)
     nullify(csite%soil_water)
     nullify(csite%soil_tempk)
@@ -4701,7 +4696,6 @@ contains
     if(associated(csite%sfcwater_tempk               )) deallocate(csite%sfcwater_tempk               )
     if(associated(csite%sfcwater_fracliq             )) deallocate(csite%sfcwater_fracliq             )
     if(associated(csite%nlev_sfcwater                )) deallocate(csite%nlev_sfcwater                )
-    if(associated(csite%ntext_soil                   )) deallocate(csite%ntext_soil                   )
     if(associated(csite%soil_energy                  )) deallocate(csite%soil_energy                  )
     if(associated(csite%soil_water                   )) deallocate(csite%soil_water                   )
     if(associated(csite%soil_tempk                   )) deallocate(csite%soil_tempk                   )
@@ -5276,7 +5270,6 @@ contains
 
          !----- Copy the soil variables. --------------------------------------------------!
          do k=1,nzg
-            osite%ntext_soil(k,opa)             =  isite%ntext_soil(k,ipa)
             osite%soil_energy(k,opa)            =  isite%soil_energy(k,ipa)
             osite%soil_water(k,opa)             =  isite%soil_water(k,ipa)
             osite%soil_tempk(k,opa)             =  isite%soil_tempk(k,ipa)
@@ -5576,7 +5569,6 @@ contains
     ! Soil layers 1:nzg
 
     do k=1,nzg
-       siteout%ntext_soil(k,1:inc)         = pack(sitein%ntext_soil(k,:),logmask)
        siteout%soil_energy(k,1:inc)        = pack(sitein%soil_energy(k,:),logmask)
        siteout%soil_water(k,1:inc)         = pack(sitein%soil_water(k,:),logmask)
        siteout%soil_tempk(k,1:inc)         = pack(sitein%soil_tempk(k,:),logmask)
@@ -11219,14 +11211,6 @@ contains
       ! types 32 and 320.                                                                  !
       !------------------------------------------------------------------------------------!
       npts = csite%npatches * nzg
-
-
-      if (associated(csite%ntext_soil)) then
-         nvar=nvar+1
-           call vtable_edio_i(npts,csite%ntext_soil,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'NTEXT_SOIL_PA :320:hist:anal:mont:dail:dcyc:year') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-      end if
 
       if (associated(csite%soil_energy)) then
          nvar=nvar+1

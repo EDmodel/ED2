@@ -14,6 +14,7 @@ subroutine read_ed10_ed20_history_file
                              , str_len             & ! intent(in)
                              , maxfiles            & ! intent(in)
                              , maxlist             ! ! intent(in)
+   use grid_coms      , only : nzg                 ! ! intent(in)
    use pft_coms       , only : SLA                 & ! intent(in)
                              , q                   & ! intent(in)
                              , qsw                 & ! intent(in)
@@ -92,6 +93,7 @@ subroutine read_ed10_ed20_history_file
    integer                                                :: ic2
    integer                                                :: nwater
    integer                                                :: ierr
+   integer                                                :: k
    integer                                                :: nf
    integer                                                :: nflist
    integer                                                :: nflsite

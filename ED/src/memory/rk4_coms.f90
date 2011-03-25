@@ -9,6 +9,7 @@
 !------------------------------------------------------------------------------------------!
 module rk4_coms
    use ed_max_dims, only : n_pft   & ! intent(in)
+                         , nzgmax  & ! intent(in)
                          , str_len ! ! intent(in)
 
    implicit none
@@ -271,29 +272,30 @@ module rk4_coms
    ! inside the Runge-Kutta integrator and do not change over time.                        !
    !---------------------------------------------------------------------------------------!
    type rk4sitetype
-      integer                        :: lsl
-      real(kind=8), dimension(n_pft) :: green_leaf_factor
-      real(kind=8)                   :: atm_rhos
-      real(kind=8)                   :: vels
-      real(kind=8)                   :: atm_tmp
-      real(kind=8)                   :: atm_theta
-      real(kind=8)                   :: atm_theiv
-      real(kind=8)                   :: atm_lntheta
-      real(kind=8)                   :: atm_shv
-      real(kind=8)                   :: atm_rvap
-      real(kind=8)                   :: atm_rhv
-      real(kind=8)                   :: atm_co2
-      real(kind=8)                   :: zoff
-      real(kind=8)                   :: atm_exner
-      real(kind=8)                   :: pcpg
-      real(kind=8)                   :: qpcpg
-      real(kind=8)                   :: dpcpg
-      real(kind=8)                   :: atm_prss
-      real(kind=8)                   :: geoht
-      real(kind=8)                   :: rshort
-      real(kind=8)                   :: rlong
-      real(kind=8)                   :: lon
-      real(kind=8)                   :: lat
+      integer                         :: lsl
+      integer     , dimension(nzgmax) :: ntext_soil
+      real(kind=8), dimension(n_pft)  :: green_leaf_factor
+      real(kind=8)                    :: atm_rhos
+      real(kind=8)                    :: vels
+      real(kind=8)                    :: atm_tmp
+      real(kind=8)                    :: atm_theta
+      real(kind=8)                    :: atm_theiv
+      real(kind=8)                    :: atm_lntheta
+      real(kind=8)                    :: atm_shv
+      real(kind=8)                    :: atm_rvap
+      real(kind=8)                    :: atm_rhv
+      real(kind=8)                    :: atm_co2
+      real(kind=8)                    :: zoff
+      real(kind=8)                    :: atm_exner
+      real(kind=8)                    :: pcpg
+      real(kind=8)                    :: qpcpg
+      real(kind=8)                    :: dpcpg
+      real(kind=8)                    :: atm_prss
+      real(kind=8)                    :: geoht
+      real(kind=8)                    :: rshort
+      real(kind=8)                    :: rlong
+      real(kind=8)                    :: lon
+      real(kind=8)                    :: lat
    end type rk4sitetype
    !---------------------------------------------------------------------------------------!
 
@@ -1452,8 +1454,8 @@ module rk4_coms
 
    !=======================================================================================!
    !=======================================================================================!
-   subroutine find_derived_thbounds(lsl,mzg,can_rhos,can_theta,can_temp,can_shv,can_rvap   &
-                                   ,can_prss,can_depth,nsoil)
+   subroutine find_derived_thbounds(can_rhos,can_theta,can_temp,can_shv,can_rvap,can_prss  &
+                                   ,can_depth)
       use grid_coms   , only : nzg           ! ! intent(in)
       use consts_coms , only : p008          & ! intent(in)
                              , rocp8         & ! intent(in)
@@ -1475,8 +1477,6 @@ module rk4_coms
       use ed_misc_coms, only : current_time  ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      integer                     , intent(in) :: lsl
-      integer                     , intent(in) :: mzg
       real(kind=8)                , intent(in) :: can_rhos
       real(kind=8)                , intent(in) :: can_theta
       real(kind=8)                , intent(in) :: can_temp
@@ -1484,7 +1484,6 @@ module rk4_coms
       real(kind=8)                , intent(in) :: can_rvap
       real(kind=8)                , intent(in) :: can_prss
       real(kind=8)                , intent(in) :: can_depth
-      integer     , dimension(mzg), intent(in) :: nsoil
       !----- Local variables. -------------------------------------------------------------!
       real(kind=8)                             :: can_prss_try
       real(kind=8)                             :: can_theta_try
@@ -1493,6 +1492,7 @@ module rk4_coms
       integer                                  :: hour
       integer                                  :: minute
       integer                                  :: second
+      integer                                  :: nsoil
       !----- Local parameters and locally saved variables. --------------------------------!
       logical                     , save       :: firsttime    = .true.
       !------------------------------------------------------------------------------------!
@@ -1505,8 +1505,8 @@ module rk4_coms
       !------------------------------------------------------------------------------------!
       if (firsttime) then
 
-         allocate(rk4min_soil_water(mzg))
-         allocate(rk4max_soil_water(mzg))
+         allocate(rk4min_soil_water(nzg))
+         allocate(rk4max_soil_water(nzg))
 
          if (print_thbnd) then
             open (unit=39,file=trim(thbnds_fout),status='replace',action='write')
@@ -1623,9 +1623,10 @@ module rk4_coms
       end if
 
 
-      do k = lsl, mzg
-         rk4min_soil_water(k) = soil8(nsoil(k))%soilcp * (1.d0 - rk4eps)
-         rk4max_soil_water(k) = soil8(nsoil(k))%slmsts * (1.d0 + rk4eps)
+      do k = rk4site%lsl, nzg
+         nsoil = rk4site%ntext_soil(k)
+         rk4min_soil_water(k) = soil8(nsoil)%soilcp * (1.d0 - rk4eps)
+         rk4max_soil_water(k) = soil8(nsoil)%slmsts * (1.d0 + rk4eps)
       end do
 
       return

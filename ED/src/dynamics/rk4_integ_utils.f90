@@ -221,9 +221,9 @@ end subroutine odeint
 ! is to ensure all variables are in double precision, so consistent with the buffer vari-  !
 ! ables.                                                                                   !
 !------------------------------------------------------------------------------------------!
-subroutine copy_met_2_rk4site(vels,atm_theiv,atm_theta,atm_tmp,atm_shv,atm_co2,zoff        &
-                            ,exner,pcpg,qpcpg,dpcpg,prss,rshort,rlong,geoht,lsl            &
-                            ,green_leaf_factor,lon,lat)
+subroutine copy_met_2_rk4site(mzg,vels,atm_theiv,atm_theta,atm_tmp,atm_shv,atm_co2,zoff    &
+                             ,exner,pcpg,qpcpg,dpcpg,prss,rshort,rlong,geoht,lsl           &
+                             ,ntext_soil,green_leaf_factor,lon,lat)
    use ed_max_dims    , only : n_pft         ! ! intent(in)
    use rk4_coms       , only : rk4site       ! ! structure
    use canopy_air_coms, only : ubmin8        ! ! intent(in)
@@ -231,6 +231,7 @@ subroutine copy_met_2_rk4site(vels,atm_theiv,atm_theta,atm_tmp,atm_shv,atm_co2,z
                              , idealdenssh8  ! ! function
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
+   integer                  , intent(in) :: mzg
    integer                  , intent(in) :: lsl
    real                     , intent(in) :: vels
    real                     , intent(in) :: atm_theiv
@@ -247,6 +248,7 @@ subroutine copy_met_2_rk4site(vels,atm_theiv,atm_theta,atm_tmp,atm_shv,atm_co2,z
    real                     , intent(in) :: rshort
    real                     , intent(in) :: rlong
    real                     , intent(in) :: geoht
+   integer, dimension(mzg)  , intent(in) :: ntext_soil
    real   , dimension(n_pft), intent(in) :: green_leaf_factor
    real                     , intent(in) :: lon
    real                     , intent(in) :: lat
@@ -256,7 +258,9 @@ subroutine copy_met_2_rk4site(vels,atm_theiv,atm_theta,atm_tmp,atm_shv,atm_co2,z
 
    
    !----- Copy the integer variables. -----------------------------------------------------!
-   rk4site%lsl     = lsl
+   rk4site%lsl               = lsl
+   rk4site%ntext_soil(:)     = 0
+   rk4site%ntext_soil(1:mzg) = ntext_soil(1:mzg)
 
    !----- Convert to double precision. ----------------------------------------------------!
    rk4site%atm_theiv             = dble(atm_theiv           )

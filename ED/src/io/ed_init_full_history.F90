@@ -2050,8 +2050,6 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    memdims(2)  = int(csite%npatches,8)
    memsize(2)  = int(csite%npatches,8)
    memoffs(2)  = 0
-   
-   call hdf_getslab_i(csite%ntext_soil,'NTEXT_SOIL_PA ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%soil_energy,'SOIL_ENERGY_PA ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%soil_water,'SOIL_WATER_PA ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%soil_tempk,'SOIL_TEMPK_PA ',dsetrank,iparallel,.true.)

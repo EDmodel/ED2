@@ -9,7 +9,8 @@ subroutine near_bare_ground_init(cgrid)
                              , allocate_sitetype ! ! subroutine
    use ed_misc_coms   , only : ied_init_mode     ! ! intent(in)
    use physiology_coms, only : n_plant_lim       ! ! intent(in)
-   
+   use grid_coms      , only : nzg               ! ! intent(in)
+
    implicit none
 
    !----- Arguments. ----------------------------------------------------------------------!
@@ -19,6 +20,7 @@ subroutine near_bare_ground_init(cgrid)
    type(sitetype)    , pointer :: csite
    integer                     :: ipy
    integer                     :: isi
+   integer                     :: k
    !---------------------------------------------------------------------------------------!
 
 
@@ -33,6 +35,7 @@ subroutine near_bare_ground_init(cgrid)
          csite%dist_type          (1) = 3
          csite%age                (1) = 0.0
          csite%area               (1) = 1.0
+
 
          !---------------------------------------------------------------------------------!
          !     Someone that uses the nitrogen model should check whether this is necessary !

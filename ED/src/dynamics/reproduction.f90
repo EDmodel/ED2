@@ -45,6 +45,7 @@ subroutine reproduction(cgrid, month)
                                  , h2dbh                 & ! function
                                  , ed_biomass            & ! function
                                  , area_indices          ! ! subroutine
+   use grid_coms          , only : nzg                   ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(edtype)     , target     :: cgrid
@@ -281,7 +282,7 @@ subroutine reproduction(cgrid, month)
                   ! tissues, we will make them consistent with the initial amount of water !
                   ! available.  This is done inside pheninit_alive_storage.                !
                   !------------------------------------------------------------------------!
-                  call pheninit_balive_bstorage(csite,ipa,ico)
+                  call pheninit_balive_bstorage(nzg,csite,ipa,ico,cpoly%ntext_soil(:,isi))
                   !------------------------------------------------------------------------!
 
 

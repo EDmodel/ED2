@@ -15,6 +15,8 @@ subroutine radiate_driver(cgrid)
                                     , visible_fraction_dif  & ! intent(in)
                                     , cosz_min              ! ! intent(in)
    use consts_coms           , only : pio180                ! ! intent(in)
+   use grid_coms             , only : nzg                   & ! intent(in)
+                                    , nzs                   ! ! intent(in)
    implicit none
    !----- Argument. -----------------------------------------------------------------------!
    type(edtype)     , target  :: cgrid
@@ -101,7 +103,8 @@ subroutine radiate_driver(cgrid)
 
 
             !----- Get unnormalized radiative transfer information. -----------------------!
-            call sfcrad_ed(cgrid%cosz(ipy),cpoly%cosaoi(isi),csite,maxcohort               &
+            call sfcrad_ed(cgrid%cosz(ipy),cpoly%cosaoi(isi),csite,nzg,nzs                 &
+                          ,cpoly%ntext_soil(:,isi),maxcohort                               &
                           ,rshort_tot,cpoly%met(isi)%rshort_diffuse)
 
             !----- Normalize the absorbed radiations. -------------------------------------!
@@ -140,7 +143,8 @@ end subroutine radiate_driver
 !     This subroutine will drive the distribution of radiation among crowns, snow layers,  !
 ! and soil.                                                                                !
 !------------------------------------------------------------------------------------------!
-subroutine sfcrad_ed(cosz, cosaoi, csite, maxcohort, rshort_tot,rshort_diffuse)
+subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,maxcohort                        &
+                    ,rshort_tot,rshort_diffuse)
 
    use ed_state_vars        , only : sitetype             & ! structure
                                    , patchtype            ! ! structure
@@ -149,8 +153,6 @@ subroutine sfcrad_ed(cosz, cosaoi, csite, maxcohort, rshort_tot,rshort_diffuse)
                                    , cosz_min             & ! intent(in)
                                    , visible_fraction_dir & ! intent(in)
                                    , visible_fraction_dif ! ! intent(in)
-   use grid_coms            , only : nzg                  & ! intent(in)
-                                   , nzs                  ! ! intent(in)
    use soil_coms            , only : soil                 & ! intent(in)
                                    , emisg                ! ! intent(in)
    use consts_coms          , only : stefan               ! ! intent(in)
@@ -159,69 +161,72 @@ subroutine sfcrad_ed(cosz, cosaoi, csite, maxcohort, rshort_tot,rshort_diffuse)
 
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
-   type(sitetype)  , target     :: csite
-   real            , intent(in) :: rshort_tot
-   real            , intent(in) :: rshort_diffuse
-   real            , intent(in) :: cosaoi
-   real            , intent(in) :: cosz
-   integer         , intent(in) :: maxcohort
+   type(sitetype)                  , target     :: csite
+   integer                         , intent(in) :: mzg
+   integer                         , intent(in) :: mzs
+   integer         , dimension(mzg), intent(in) :: ntext_soil
+   real                            , intent(in) :: rshort_tot
+   real                            , intent(in) :: rshort_diffuse
+   real                            , intent(in) :: cosaoi
+   real                            , intent(in) :: cosz
+   integer                         , intent(in) :: maxcohort
    !----- Local variables. ----------------------------------------------------------------!
-   type(patchtype) , pointer              :: cpatch
-   integer         , dimension(maxcohort) :: pft_array
-   integer                                :: il
-   integer                                :: ipa,ico
-   integer                                :: cohort_count
-   integer                                :: k
-   real                                   :: fcpct
-   real                                   :: alg
-   real                                   :: als
-   real                                   :: rad
-   real                                   :: fractrans
-   real            , dimension(nzs)       :: fracabs
-   real                                   :: absg
-   real                                   :: algs
-   real                                   :: downward_par_below_beam
-   real                                   :: upward_par_above_beam
-   real                                   :: downward_nir_below_beam
-   real                                   :: upward_nir_above_beam
-   real(kind=8)    , dimension(maxcohort) :: veg_temp_array
-   real(kind=8)    , dimension(maxcohort) :: tai_array
-   real(kind=8)    , dimension(maxcohort) :: CA_array
-   real(kind=8)    , dimension(maxcohort) :: lambda_array
-   real(kind=8)    , dimension(maxcohort) :: beam_level_array
-   real(kind=8)    , dimension(maxcohort) :: diff_level_array
-   real            , dimension(maxcohort) :: par_v_beam_array
-   real            , dimension(maxcohort) :: rshort_v_beam_array
-   real            , dimension(maxcohort) :: par_v_diffuse_array
-   real            , dimension(maxcohort) :: rshort_v_diffuse_array
-   real            , dimension(maxcohort) :: lw_v_surf_array
-   real            , dimension(maxcohort) :: lw_v_incid_array
-   real                                   :: downward_par_below_diffuse
-   real                                   :: upward_par_above_diffuse
-   real                                   :: downward_nir_below_diffuse
-   real                                   :: upward_nir_above_diffuse 
-   real(kind=8)                           :: lambda_tot
-   real                                   :: T_surface
-   real                                   :: emissivity
-   real                                   :: downward_lw_below_surf
-   real                                   :: downward_lw_below_incid
-   real                                   :: upward_lw_below_surf
-   real                                   :: upward_lw_below_incid
-   real                                   :: upward_lw_above_surf
-   real                                   :: upward_lw_above_incid
-   real                                   :: downward_rshort_below_beam
-   real                                   :: downward_rshort_below_diffuse
-   real                                   :: surface_absorbed_longwave_surf
-   real                                   :: surface_absorbed_longwave_incid
-   real                                   :: crown_area
-   real                                   :: remaining_par
-   real                                   :: remaining_par_beam
-   real                                   :: remaining_par_diff
-   real                                   :: difffac
+   type(patchtype) , pointer                    :: cpatch
+   integer         , dimension(maxcohort)       :: pft_array
+   integer                                      :: il
+   integer                                      :: ipa,ico
+   integer                                      :: cohort_count
+   integer                                      :: k
+   real                                         :: fcpct
+   real                                         :: alg
+   real                                         :: als
+   real                                         :: rad
+   real                                         :: fractrans
+   real            , dimension(mzs)             :: fracabs
+   real                                         :: absg
+   real                                         :: algs
+   real                                         :: downward_par_below_beam
+   real                                         :: upward_par_above_beam
+   real                                         :: downward_nir_below_beam
+   real                                         :: upward_nir_above_beam
+   real(kind=8)    , dimension(maxcohort)       :: veg_temp_array
+   real(kind=8)    , dimension(maxcohort)       :: tai_array
+   real(kind=8)    , dimension(maxcohort)       :: CA_array
+   real(kind=8)    , dimension(maxcohort)       :: lambda_array
+   real(kind=8)    , dimension(maxcohort)       :: beam_level_array
+   real(kind=8)    , dimension(maxcohort)       :: diff_level_array
+   real            , dimension(maxcohort)       :: par_v_beam_array
+   real            , dimension(maxcohort)       :: rshort_v_beam_array
+   real            , dimension(maxcohort)       :: par_v_diffuse_array
+   real            , dimension(maxcohort)       :: rshort_v_diffuse_array
+   real            , dimension(maxcohort)       :: lw_v_surf_array
+   real            , dimension(maxcohort)       :: lw_v_incid_array
+   real                                         :: downward_par_below_diffuse
+   real                                         :: upward_par_above_diffuse
+   real                                         :: downward_nir_below_diffuse
+   real                                         :: upward_nir_above_diffuse 
+   real(kind=8)                                 :: lambda_tot
+   real                                         :: T_surface
+   real                                         :: emissivity
+   real                                         :: downward_lw_below_surf
+   real                                         :: downward_lw_below_incid
+   real                                         :: upward_lw_below_surf
+   real                                         :: upward_lw_below_incid
+   real                                         :: upward_lw_above_surf
+   real                                         :: upward_lw_above_incid
+   real                                         :: downward_rshort_below_beam
+   real                                         :: downward_rshort_below_diffuse
+   real                                         :: surface_absorbed_longwave_surf
+   real                                         :: surface_absorbed_longwave_incid
+   real                                         :: crown_area
+   real                                         :: remaining_par
+   real                                         :: remaining_par_beam
+   real                                         :: remaining_par_diff
+   real                                         :: difffac
    !----- External function. --------------------------------------------------------------!
-   real            , external             :: sngloff
+   real            , external                   :: sngloff
    !----- Local constants. ----------------------------------------------------------------!
-   real(kind=8)    , parameter            :: tiny_offset = 1.d-20
+   real(kind=8)    , parameter                  :: tiny_offset = 1.d-20
    !---------------------------------------------------------------------------------------!
 
 
@@ -307,7 +312,7 @@ subroutine sfcrad_ed(cosz, cosaoi, csite, maxcohort, rshort_tot,rshort_diffuse)
 
       !----- Soil water fraction. ---------------------------------------------------------!
      
-      fcpct = csite%soil_water(nzg,ipa) / soil(csite%ntext_soil(nzg,ipa))%slmsts 
+      fcpct = csite%soil_water(mzg,ipa) / soil(ntext_soil(mzg))%slmsts 
 
       !----- Finding the ground albedo as a function of soil water relative moisture. -----!
       alg = max(.14,.31-.34*fcpct)
@@ -320,8 +325,8 @@ subroutine sfcrad_ed(cosz, cosaoi, csite, maxcohort, rshort_tot,rshort_diffuse)
       rad  = 1.0
       algs = 1.0
       if(csite%nlev_sfcwater(ipa) == 0)then
-         emissivity = emisg(csite%ntext_soil(nzg,ipa))
-         T_surface  = csite%soil_tempk(nzg,ipa)
+         emissivity = emisg(ntext_soil(mzg))
+         T_surface  = csite%soil_tempk(mzg,ipa)
       else
          !---------------------------------------------------------------------------------!
          !      Sfcwater albedo ALS ranges from wet-soil value .14 for all-liquid to .5    !

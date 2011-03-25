@@ -220,7 +220,7 @@ subroutine update_phenology(doy, cpoly, isi, lat)
 
       !----- Determine what phenology thresholds have been crossed. -----------------------!
       call phenology_thresholds(daylight,csite%soil_tempk(isoil_lev,ipa)                   &
-                               ,csite%soil_water(:,ipa),csite%ntext_soil(:,ipa)            &
+                               ,csite%soil_water(:,ipa),cpoly%ntext_soil(:,isi)            &
                                ,csite%sum_chd(ipa),csite%sum_dgd(ipa),drop_cold            &
                                ,leaf_out_cold,theta,cpoly%lsl(isi))
 
