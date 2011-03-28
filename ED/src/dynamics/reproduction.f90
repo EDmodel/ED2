@@ -319,7 +319,8 @@ subroutine reproduction(cgrid, month)
                   call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico) &
                                    ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)   &
                                    ,cpatch%pft(ico),cpatch%sla(ico), cpatch%lai(ico)       &
-                                   ,cpatch%wpa(ico),cpatch%wai(ico),cpatch%bsapwood(ico)) 
+                                   ,cpatch%wpa(ico),cpatch%wai(ico)                        &
+                                   ,cpatch%crown_area(ico),cpatch%bsapwood(ico))
                   !----- Find heat capacity and vegetation internal energy. ---------------!
                   cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico)   &
                                                     ,cpatch%balive(ico),cpatch%nplant(ico) &

@@ -165,7 +165,7 @@ subroutine leaf_canopy(mzg,mzs,ksn,soil_energy,soil_water,soil_text,sfcwater_mas
       ! and moisture fluxes from vegetation to canopy, and flux resistance from soil or    !
       ! snow to canopy.                                                                    !
       !------------------------------------------------------------------------------------!
-      factv       = log(geoht / zoveg) / (vonk * vonk * atm_vels)
+      factv       = log((geoht-zdisp) / zoveg) / (vonk * vonk * atm_vels)
       aux         = exp(exar * (1. - (zdisp + zoveg) / zveg))
       ggveg       = (exar * (zveg - zdisp)) / (factv * zveg  * (exp(exar) - aux))
       ggnet       = ggfact * ggbare * ggveg / (ggbare + ggveg)

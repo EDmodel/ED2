@@ -90,13 +90,6 @@ subroutine heun_timestep(cgrid)
             call zero_rk4_cohort(integration_buff%yscal)
             call zero_rk4_cohort(integration_buff%dydx)
 
-            !----- Save the previous thermodynamic state. ---------------------------------!
-            old_can_theiv    = csite%can_theiv(ipa)
-            old_can_shv      = csite%can_shv(ipa)
-            old_can_co2      = csite%can_co2(ipa)
-            old_can_rhos     = csite%can_rhos(ipa)
-            old_can_temp     = csite%can_temp(ipa)
-
             !----- Get velocity for aerodynamic resistance. -------------------------------!
             if (csite%can_theta(ipa) < cmet%atm_theta) then
                cmet%vels = cmet%vels_stab
@@ -110,7 +103,18 @@ subroutine heun_timestep(cgrid)
             !------------------------------------------------------------------------------!
             !    Update roughness and canopy depth.                                        !
             !------------------------------------------------------------------------------!
+            call update_patch_thermo_props(csite,ipa,ipa,nzg,nzs,cpoly%ntext_soil(:,isi))
             call update_patch_derived_props(csite,cpoly%lsl(isi),cmet%prss,ipa)
+            !------------------------------------------------------------------------------!
+
+
+
+            !----- Save the previous thermodynamic state. ---------------------------------!
+            old_can_theiv    = csite%can_theiv(ipa)
+            old_can_shv      = csite%can_shv(ipa)
+            old_can_co2      = csite%can_co2(ipa)
+            old_can_rhos     = csite%can_rhos(ipa)
+            old_can_temp     = csite%can_temp(ipa)
             !------------------------------------------------------------------------------!
 
 
@@ -646,27 +650,16 @@ subroutine heun_integ(h1,csite,ipa,nsteps)
                                              + sngloff(qwfree * dtrk4i,tiny_offset)
                end if
                if (checkbudget) then
-                  integration_buff%y%wbudget_loss2runoff = wfreeb
-                  integration_buff%y%ebudget_loss2runoff = qwfree
+                  integration_buff%y%wbudget_loss2runoff = wfreeb                          &
+                        + integration_buff%y%wbudget_loss2runoff
+                  integration_buff%y%ebudget_loss2runoff = qwfree                          &
+                        + integration_buff%y%ebudget_loss2runoff
                   integration_buff%y%wbudget_storage     =                                 &
                                      integration_buff%y%wbudget_storage - wfreeb
                   integration_buff%y%ebudget_storage    =                                  &
                                      integration_buff%y%ebudget_storage - qwfree
                end if
-
-            else
-               csite%runoff(ipa)          = 0.0
-               csite%avg_runoff(ipa)      = 0.0
-               csite%avg_runoff_heat(ipa) = 0.0
-               integration_buff%y%wbudget_loss2runoff  = 0.d0
-               integration_buff%y%ebudget_loss2runoff  = 0.d0
             end if
-         else
-            csite%runoff(ipa)          = 0.0
-            csite%avg_runoff(ipa)      = 0.0
-            csite%avg_runoff_heat(ipa) = 0.0
-            integration_buff%y%wbudget_loss2runoff  = 0.d0
-            integration_buff%y%ebudget_loss2runoff  = 0.d0
          end if
 
          !------ Copy the temporary patch to the next intermediate step -------------------!

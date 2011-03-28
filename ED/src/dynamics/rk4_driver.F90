@@ -23,7 +23,8 @@ module rk4_driver
                                         , sitetype             & ! structure
                                         , patchtype            ! ! structure
       use met_driver_coms        , only : met_driv_state       ! ! structure
-      use grid_coms              , only : nzg                  ! ! intent(in)
+      use grid_coms              , only : nzg                  & ! intent(in)
+                                        , nzs                  ! ! intent(in)
       use canopy_struct_dynamics , only : canopy_turbulence8   ! ! subroutine
       use ed_misc_coms           , only : current_time         ! ! intent(in)
       implicit none
@@ -101,13 +102,6 @@ module rk4_driver
                call zero_rk4_cohort(integration_buff%ak6)
                call zero_rk4_cohort(integration_buff%ak7)
 
-               !----- Save the previous thermodynamic state. ------------------------------!
-               old_can_theiv    = csite%can_theiv(ipa)
-               old_can_shv      = csite%can_shv(ipa)
-               old_can_co2      = csite%can_co2(ipa)
-               old_can_rhos     = csite%can_rhos(ipa)
-               old_can_temp     = csite%can_temp(ipa)
-
                !----- Get velocity for aerodynamic resistance. ----------------------------!
                if (csite%can_theta(ipa) < cmet%atm_theta) then
                   cmet%vels = cmet%vels_stab
@@ -121,7 +115,18 @@ module rk4_driver
                !---------------------------------------------------------------------------!
                !    Update roughness and canopy depth.                                     !
                !---------------------------------------------------------------------------!
+               call update_patch_thermo_props(csite,ipa,ipa,nzg,nzs                        &
+                                             ,cpoly%ntext_soil(:,isi))
                call update_patch_derived_props(csite,cpoly%lsl(isi),cmet%prss,ipa)
+               !---------------------------------------------------------------------------!
+
+
+               !----- Save the previous thermodynamic state. ------------------------------!
+               old_can_theiv    = csite%can_theiv(ipa)
+               old_can_shv      = csite%can_shv(ipa)
+               old_can_co2      = csite%can_co2(ipa)
+               old_can_rhos     = csite%can_rhos(ipa)
+               old_can_temp     = csite%can_temp(ipa)
                !---------------------------------------------------------------------------!
 
 
@@ -377,33 +382,34 @@ module rk4_driver
       ! those in which this is not true.  All floating point variables are converted back  !
       ! to single precision.                                                               !
       !------------------------------------------------------------------------------------!
-      csite%can_theiv(ipa)    = sngloff(initp%can_theiv     ,tiny_offset)
-      csite%can_theta(ipa)    = sngloff(initp%can_theta     ,tiny_offset)
-      csite%can_prss(ipa)     = sngloff(initp%can_prss      ,tiny_offset)
-      csite%can_temp(ipa)     = sngloff(initp%can_temp      ,tiny_offset)
-      csite%can_shv(ipa)      = sngloff(initp%can_shv       ,tiny_offset)
-      csite%can_co2(ipa)      = sngloff(initp%can_co2       ,tiny_offset)
-      csite%can_rhos(ipa)     = sngloff(initp%can_rhos      ,tiny_offset)
-      csite%can_depth(ipa)    = sngloff(initp%can_depth     ,tiny_offset)
-      csite%opencan_frac(ipa) = sngloff(initp%opencan_frac  ,tiny_offset)
+      csite%can_theiv(ipa)        = sngloff(initp%can_theiv       ,tiny_offset)
+      csite%can_theta(ipa)        = sngloff(initp%can_theta       ,tiny_offset)
+      csite%can_prss(ipa)         = sngloff(initp%can_prss        ,tiny_offset)
+      csite%can_temp(ipa)         = sngloff(initp%can_temp        ,tiny_offset)
+      csite%can_shv(ipa)          = sngloff(initp%can_shv         ,tiny_offset)
+      csite%can_co2(ipa)          = sngloff(initp%can_co2         ,tiny_offset)
+      csite%can_rhos(ipa)         = sngloff(initp%can_rhos        ,tiny_offset)
+      csite%can_depth(ipa)        = sngloff(initp%can_depth       ,tiny_offset)
+      csite%snowfac(ipa)          = sngloff(initp%snowfac         ,tiny_offset)
+      csite%total_sfcw_depth(ipa) = sngloff(initp%total_sfcw_depth,tiny_offset)
 
-      csite%ggbare(ipa)       = sngloff(initp%ggbare        ,tiny_offset)
-      csite%ggveg (ipa)       = sngloff(initp%ggveg         ,tiny_offset)
-      csite%ggnet (ipa)       = sngloff(initp%ggnet         ,tiny_offset)
+      csite%ggbare(ipa)           = sngloff(initp%ggbare          ,tiny_offset)
+      csite%ggveg (ipa)           = sngloff(initp%ggveg           ,tiny_offset)
+      csite%ggnet (ipa)           = sngloff(initp%ggnet           ,tiny_offset)
 
-      csite%ustar (ipa)   = sngloff(initp%ustar   ,tiny_offset)
-      csite%tstar (ipa)   = sngloff(initp%tstar   ,tiny_offset)
-      csite%qstar (ipa)   = sngloff(initp%qstar   ,tiny_offset)
-      csite%cstar (ipa)   = sngloff(initp%cstar   ,tiny_offset)
+      csite%ustar (ipa)           = sngloff(initp%ustar           ,tiny_offset)
+      csite%tstar (ipa)           = sngloff(initp%tstar           ,tiny_offset)
+      csite%qstar (ipa)           = sngloff(initp%qstar           ,tiny_offset)
+      csite%cstar (ipa)           = sngloff(initp%cstar           ,tiny_offset)
 
-      csite%zeta  (ipa)   = sngloff(initp%zeta    ,tiny_offset)
-      csite%ribulk(ipa)   = sngloff(initp%ribulk  ,tiny_offset)
+      csite%zeta  (ipa)           = sngloff(initp%zeta            ,tiny_offset)
+      csite%ribulk(ipa)           = sngloff(initp%ribulk          ,tiny_offset)
 
-      csite%upwp  (ipa)   = sngloff(initp%upwp    ,tiny_offset)
-      csite%wpwp  (ipa)   = sngloff(initp%wpwp    ,tiny_offset)
-      csite%tpwp  (ipa)   = sngloff(initp%tpwp    ,tiny_offset)
-      csite%qpwp  (ipa)   = sngloff(initp%qpwp    ,tiny_offset)
-      csite%cpwp  (ipa)   = sngloff(initp%cpwp    ,tiny_offset)
+      csite%upwp  (ipa)           = sngloff(initp%upwp            ,tiny_offset)
+      csite%wpwp  (ipa)           = sngloff(initp%wpwp            ,tiny_offset)
+      csite%tpwp  (ipa)           = sngloff(initp%tpwp            ,tiny_offset)
+      csite%qpwp  (ipa)           = sngloff(initp%qpwp            ,tiny_offset)
+      csite%cpwp  (ipa)           = sngloff(initp%cpwp            ,tiny_offset)
 
       !------------------------------------------------------------------------------------!
       !    These variables are fast scale fluxes, and they may not be allocated, so just   !
@@ -505,8 +511,7 @@ module rk4_driver
       !    Surface water energy is computed in J/m² inside the integrator. Convert it back !
       ! to J/kg in the layers that surface water/snow still exists.                        !
       !------------------------------------------------------------------------------------!
-      csite%nlev_sfcwater(ipa)    = initp%nlev_sfcwater
-      csite%total_sfcw_depth(ipa) = 0.
+      csite%nlev_sfcwater(ipa) = initp%nlev_sfcwater
       do k = 1, csite%nlev_sfcwater(ipa)
          csite%sfcwater_depth(k,ipa)   = sngloff(initp%sfcwater_depth(k)   ,tiny_offset)
          csite%sfcwater_mass(k,ipa)    = sngloff(initp%sfcwater_mass(k)    ,tiny_offset)
@@ -514,8 +519,6 @@ module rk4_driver
          csite%sfcwater_fracliq(k,ipa) = sngloff(initp%sfcwater_fracliq(k) ,tiny_offset)
          tmp_energy                    = initp%sfcwater_energy(k)/initp%sfcwater_mass(k)
          csite%sfcwater_energy(k,ipa)  = sngloff(tmp_energy                ,tiny_offset)
-         csite%total_sfcw_depth(ipa)   = csite%total_sfcw_depth(ipa)                       &
-                                       + csite%sfcwater_depth(k,ipa)
       end do
       !------------------------------------------------------------------------------------!
       !    For the layers that no longer exist, assign zeroes for prognostic variables,    !
@@ -536,6 +539,9 @@ module rk4_driver
          end if
       end do
       !------------------------------------------------------------------------------------!
+
+
+
 
       !------------------------------------------------------------------------------------!
       !     Cohort variables.  Here we must check whether the cohort was really solved or  !

@@ -65,10 +65,10 @@ subroutine canopy_photosynthesis(csite,cmet,mzg,ipa,ed_ktrans,lsl,ntext_soil    
    !---------------------------------------------------------------------------------------!
 
 
-   !----- Pointing to the cohort structures -----------------------------------------------!
+   !----- Point to the cohort structures --------------------------------------------------!
    cpatch => csite%patch(ipa)
 
-   !----- Finding the patch-level Total Leaf and Wood Area Index. -------------------------!
+   !----- Find the patch-level Total Leaf and Wood Area Index. ----------------------------!
    csite%lai(ipa) = 0.0
    csite%wpa(ipa) = 0.0
    csite%wai(ipa) = 0.0

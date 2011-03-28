@@ -57,8 +57,12 @@ subroutine odeint(h1,csite,ipa,nsteps)
    !----- External function. --------------------------------------------------------------!
    real                      , external    :: sngloff
    !---------------------------------------------------------------------------------------!
-   
-   !----- Checking whether we will use runoff or not, and saving this check to save time. -!
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Check whether we will use runoff or not, and saving this check to save time.      !
+   !---------------------------------------------------------------------------------------!
    if (first_time) then
       simplerunoff = useRUNOFF == 0 .and. runoff_time /= 0.
       if (runoff_time /= 0.) then
@@ -68,10 +72,10 @@ subroutine odeint(h1,csite,ipa,nsteps)
       end if
       first_time   = .false.
    end if
+   !---------------------------------------------------------------------------------------!
+
 
    cpatch => csite%patch(ipa)
-
-
 
    !---------------------------------------------------------------------------------------!
    !     Copy the initial patch to the one we use for integration.                         !
@@ -86,6 +90,9 @@ subroutine odeint(h1,csite,ipa,nsteps)
    x = tbeg
    h = h1
    if (dtrk4 < 0.d0) h = -h1
+   !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
    ! Begin timestep loop                                                                   !
@@ -117,10 +124,10 @@ subroutine odeint(h1,csite,ipa,nsteps)
          ! hdid (no reason to be faster than that).                                        !
          !---------------------------------------------------------------------------------!
          if (simplerunoff .and. ksn >= 1) then
-         
-            if (integration_buff%y%sfcwater_mass(ksn) > 0.d0   .and.                       &
+            if (integration_buff%y%sfcwater_mass(ksn)    > 0.d0   .and.                    &
                 integration_buff%y%sfcwater_fracliq(ksn) > 1.d-1) then
-               wfreeb = min(1.d0,dtrk4*runoff_time_i)                                      &
+
+               wfreeb = min(1.d0, dtrk4 * runoff_time_i)                                   &
                       * integration_buff%y%sfcwater_mass(ksn)                              &
                       * (integration_buff%y%sfcwater_fracliq(ksn) - 1.d-1) / 9.d-1
 
@@ -144,42 +151,32 @@ subroutine odeint(h1,csite,ipa,nsteps)
 
                !----- Compute runoff for output -------------------------------------------!
                if (fast_diagnostics) then
-                  ! There is no need to divide wfreeb and qwfree  by time step, which will
-                  ! be done in subroutine normalize_averaged_vars.
-                  csite%runoff(ipa) = csite%runoff(ipa)                                    &
-                                    + sngloff(wfreeb,tiny_offset)
-                  csite%avg_runoff(ipa) = csite%avg_runoff(ipa)                            &
-                                        + sngloff(wfreeb,tiny_offset)
+                  !------------------------------------------------------------------------!
+                  !      There is no need to divide wfreeb and qwfree  by time step, which !
+                  ! will be done in subroutine normalize_averaged_vars.                    !
+                  !------------------------------------------------------------------------!
+                  csite%runoff(ipa)          = csite%runoff(ipa)                           &
+                                             + sngloff(wfreeb,tiny_offset)
+                  csite%avg_runoff(ipa)      = csite%avg_runoff(ipa)                       &
+                                             + sngloff(wfreeb,tiny_offset)
                   csite%avg_runoff_heat(ipa) = csite%avg_runoff_heat(ipa)                  &
                                              + sngloff(qwfree,tiny_offset)
                end if
                if (checkbudget) then
-                  !To make sure that the previous values of wbudget_loss2runoff and ebudget_loss2runoff
-                  ! are accumulated to the next time step.
-                  integration_buff%y%wbudget_loss2runoff = wfreeb                      &
-                                 + integration_buff%y%wbudget_loss2runoff
-                  integration_buff%y%ebudget_loss2runoff = qwfree                      &
-                                 + integration_buff%y%ebudget_loss2runoff
+                  !------------------------------------------------------------------------!
+                  !      To make sure that the previous values of wbudget_loss2runoff and  !
+                  ! ebudget_loss2runoff are accumulated to the next time step.             !
+                  !------------------------------------------------------------------------!
+                  integration_buff%y%wbudget_loss2runoff = wfreeb                          &
+                                    + integration_buff%y%wbudget_loss2runoff
+                  integration_buff%y%ebudget_loss2runoff = qwfree                          &
+                                    + integration_buff%y%ebudget_loss2runoff
                   integration_buff%y%wbudget_storage =                                     &
-                     integration_buff%y%wbudget_storage - wfreeb
+                                      integration_buff%y%wbudget_storage - wfreeb
                   integration_buff%y%ebudget_storage =                                     &
-                     integration_buff%y%ebudget_storage - qwfree
-
+                                      integration_buff%y%ebudget_storage - qwfree
                end if
-
-            else
-               csite%runoff(ipa)                          = csite%runoff(ipa) + 0.0
-               csite%avg_runoff(ipa)                      = csite%avg_runoff(ipa) + 0.0
-               csite%avg_runoff_heat(ipa)                 = csite%avg_runoff_heat(ipa) + 0.0
-               integration_buff%initp%wbudget_loss2runoff = integration_buff%initp%wbudget_loss2runoff + 0.d0
-               integration_buff%initp%ebudget_loss2runoff = integration_buff%initp%ebudget_loss2runoff + 0.d0
             end if
-         else
-            csite%runoff(ipa)                          = csite%runoff(ipa) + 0.0
-            csite%avg_runoff(ipa)                      = csite%avg_runoff(ipa) + 0.0
-            csite%avg_runoff_heat(ipa)                 = csite%avg_runoff_heat(ipa) + 0.0
-            integration_buff%initp%wbudget_loss2runoff = integration_buff%initp%wbudget_loss2runoff + 0.d0
-            integration_buff%initp%ebudget_loss2runoff = integration_buff%initp%ebudget_loss2runoff + 0.d0
          end if
 
          !------ Copy the temporary patch to the next intermediate step -------------------!
@@ -986,57 +983,62 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
    integer                         :: k
    !---------------------------------------------------------------------------------------!
 
-   targetp%can_theiv       = sourcep%can_theiv
-   targetp%can_lntheta     = sourcep%can_lntheta
-   targetp%can_theta       = sourcep%can_theta
-   targetp%can_temp        = sourcep%can_temp
-   targetp%can_shv         = sourcep%can_shv
-   targetp%can_co2         = sourcep%can_co2
-   targetp%can_rhos        = sourcep%can_rhos
-   targetp%can_prss        = sourcep%can_prss
-   targetp%can_exner       = sourcep%can_exner
-   targetp%can_depth       = sourcep%can_depth
-   targetp%can_rvap        = sourcep%can_rvap
-   targetp%can_rhv         = sourcep%can_rhv
-   targetp%can_ssh         = sourcep%can_ssh
-   targetp%opencan_frac    = sourcep%opencan_frac
+   targetp%can_theiv        = sourcep%can_theiv
+   targetp%can_lntheta      = sourcep%can_lntheta
+   targetp%can_theta        = sourcep%can_theta
+   targetp%can_temp         = sourcep%can_temp
+   targetp%can_shv          = sourcep%can_shv
+   targetp%can_co2          = sourcep%can_co2
+   targetp%can_rhos         = sourcep%can_rhos
+   targetp%can_prss         = sourcep%can_prss
+   targetp%can_exner        = sourcep%can_exner
+   targetp%can_depth        = sourcep%can_depth
+   targetp%can_rvap         = sourcep%can_rvap
+   targetp%can_rhv          = sourcep%can_rhv
+   targetp%can_ssh          = sourcep%can_ssh
+   targetp%veg_height       = sourcep%veg_height
+   targetp%veg_displace     = sourcep%veg_displace
+   targetp%veg_rough        = sourcep%veg_rough
+   targetp%opencan_frac     = sourcep%opencan_frac
+   targetp%total_sfcw_depth = sourcep%total_sfcw_depth
+   targetp%snowfac          = sourcep%snowfac
 
-   targetp%ggbare          = sourcep%ggbare
-   targetp%ggveg           = sourcep%ggveg
-   targetp%ggnet           = sourcep%ggnet
+   targetp%ggbare           = sourcep%ggbare
+   targetp%ggveg            = sourcep%ggveg
+   targetp%ggnet            = sourcep%ggnet
 
-   targetp%flag_wflxgc     = sourcep%flag_wflxgc
+   targetp%flag_wflxgc      = sourcep%flag_wflxgc
 
-   targetp%virtual_water   = sourcep%virtual_water
-   targetp%virtual_energy  = sourcep%virtual_energy
-   targetp%virtual_depth   = sourcep%virtual_depth
-   targetp%virtual_tempk   = sourcep%virtual_tempk
-   targetp%virtual_fracliq = sourcep%virtual_fracliq
+   targetp%virtual_water    = sourcep%virtual_water
+   targetp%virtual_energy   = sourcep%virtual_energy
+   targetp%virtual_depth    = sourcep%virtual_depth
+   targetp%virtual_tempk    = sourcep%virtual_tempk
+   targetp%virtual_fracliq  = sourcep%virtual_fracliq
 
-   targetp%rough           = sourcep%rough
+   targetp%rough            = sourcep%rough
  
-   targetp%upwp            = sourcep%upwp
-   targetp%wpwp            = sourcep%wpwp
-   targetp%tpwp            = sourcep%tpwp
-   targetp%qpwp            = sourcep%qpwp
-   targetp%cpwp            = sourcep%cpwp
+   targetp%upwp             = sourcep%upwp
+   targetp%wpwp             = sourcep%wpwp
+   targetp%tpwp             = sourcep%tpwp
+   targetp%qpwp             = sourcep%qpwp
+   targetp%cpwp             = sourcep%cpwp
 
-   targetp%ground_shv      = sourcep%ground_shv
-   targetp%ground_ssh      = sourcep%ground_ssh
-   targetp%ground_temp     = sourcep%ground_temp
-   targetp%ground_fliq     = sourcep%ground_fliq
+   targetp%ground_shv       = sourcep%ground_shv
+   targetp%ground_ssh       = sourcep%ground_ssh
+   targetp%ground_temp      = sourcep%ground_temp
+   targetp%ground_fliq      = sourcep%ground_fliq
 
-   targetp%ustar           = sourcep%ustar
-   targetp%cstar           = sourcep%cstar
-   targetp%tstar           = sourcep%tstar
-   targetp%estar           = sourcep%estar
-   targetp%qstar           = sourcep%qstar
-   targetp%zeta            = sourcep%zeta
-   targetp%ribulk          = sourcep%ribulk
-   targetp%rasveg          = sourcep%rasveg
+   targetp%ustar            = sourcep%ustar
+   targetp%cstar            = sourcep%cstar
+   targetp%tstar            = sourcep%tstar
+   targetp%estar            = sourcep%estar
+   targetp%qstar            = sourcep%qstar
+   targetp%zeta             = sourcep%zeta
+   targetp%ribulk           = sourcep%ribulk
+   targetp%rasveg           = sourcep%rasveg
 
-   targetp%cwd_rh          = sourcep%cwd_rh
-   targetp%rh              = sourcep%rh
+   targetp%cwd_rh           = sourcep%cwd_rh
+   targetp%rh               = sourcep%rh
 
    do k=rk4site%lsl,nzg
       
@@ -1081,6 +1083,7 @@ subroutine copy_rk4_patch(sourcep, targetp, cpatch)
       targetp%wpa         (k) = sourcep%wpa         (k)
       targetp%tai         (k) = sourcep%tai         (k)
       targetp%crown_area  (k) = sourcep%crown_area  (k)
+      targetp%elongf      (k) = sourcep%elongf      (k)
       targetp%gbh         (k) = sourcep%gbh         (k)
       targetp%gbw         (k) = sourcep%gbw         (k)
       targetp%gsw_open    (k) = sourcep%gsw_open    (k)

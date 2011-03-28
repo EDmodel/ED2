@@ -632,7 +632,8 @@ subroutine cloud_opt(m1,ka,nrad,koff,mcat,icld,time,mynum)
                          , availcat     ! ! intent(in)
    use rconstants , only : p00i         & ! intent(in)
                          , rocp         & ! intent(in) 
-                         , hr_sec       ! ! intent(in)
+                         , hr_sec       & ! intent(in)
+                         , lnexp_min    ! ! intent(in)
    use harr_coms  , only : jhcatharr    & ! intent(in)
                           ,dzl          & ! intent(in)
                           ,dl           & ! intent(in)
@@ -720,10 +721,6 @@ subroutine cloud_opt(m1,ka,nrad,koff,mcat,icld,time,mynum)
                do ib = 1,nb
                   ext = cxharr(k,icat) * rhoe(k) * dzl(krad)                               &
                       * bcoef(1,ib,krc) * dn ** bcoef(2,ib,krc)
-
-
-!                  if(abs(ocoef(3,ib,krc)*dn)>40.0 .or. abs(ocoef(5,ib,krc)*dn)>40.0) &
-!                       print*,ib,krc,ocoef(3,ib,krc),ocoef(5,ib,krc),dn
 
 
                   om = ocoef(1,ib,krc)                                                     &

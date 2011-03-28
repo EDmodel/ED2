@@ -39,9 +39,27 @@ module rk4_coms
       !------------------------------------------------------------------------------------!
 
 
+      !----- Vegetation properties. -------------------------------------------------------!
+      real(kind=8)                        :: veg_height   ! Vegetation height    [       m]
+      real(kind=8)                        :: veg_displace ! 0-plane displacement [       m]
+      real(kind=8)                        :: veg_rough    ! Vegetation roughness [       m]
+      !------------------------------------------------------------------------------------!
+
 
       !----- Fraction of open canopy. -----------------------------------------------------!
-      real(kind=8)                        :: opencan_frac ! Frac. of open canopy [     ---]
+      real(kind=8)                        :: opencan_frac   ! Frac. of open canopy
+      !------------------------------------------------------------------------------------!
+
+
+
+      !----- Total depth of temporary surface water / snow. -------------------------------!
+      real(kind=8)                        :: total_sfcw_depth
+      !------------------------------------------------------------------------------------!
+
+
+
+      !----- Fraction of open canopy buried in snow. --------------------------------------!
+      real(kind=8)                        :: snowfac
       !------------------------------------------------------------------------------------!
 
 
@@ -158,6 +176,7 @@ module rk4_coms
       real(kind=8), pointer, dimension(:) :: wpa          ! Wood projected area [    m²/m²]
       real(kind=8), pointer, dimension(:) :: tai          ! Tree area index     [    m²/m²]
       real(kind=8), pointer, dimension(:) :: crown_area   ! Crown area          [    m²/m²]
+      real(kind=8), pointer, dimension(:) :: elongf       ! Elongation factor   [     ----]
       real(kind=8), pointer, dimension(:) :: gbh          ! Leaf b.lyr. condct. [ J/K/m²/s]
       real(kind=8), pointer, dimension(:) :: gbw          ! Leaf b.lyr. condct. [  kg/m²/s]
       real(kind=8), pointer, dimension(:) :: gsw_open     ! Sto. condct. (op.)  [ J/K/m²/s]
@@ -805,7 +824,12 @@ module rk4_coms
       y%can_rhos                       = 0.d0
       y%can_prss                       = 0.d0
       y%can_exner                      = 0.d0
+      y%veg_height                     = 0.d0
+      y%veg_displace                   = 0.d0
+      y%veg_rough                      = 0.d0
       y%opencan_frac                   = 0.d0
+      y%total_sfcw_depth               = 0.d0
+      y%snowfac                        = 0.d0
       y%ggbare                         = 0.d0
       y%ggveg                          = 0.d0
       y%ggnet                          = 0.d0
@@ -1008,6 +1032,7 @@ module rk4_coms
       allocate(y%wpa             (maxcohort))
       allocate(y%tai             (maxcohort))
       allocate(y%crown_area      (maxcohort))
+      allocate(y%elongf          (maxcohort))
       allocate(y%gbh             (maxcohort))
       allocate(y%gbw             (maxcohort))
       allocate(y%gsw_open        (maxcohort))
@@ -1069,6 +1094,7 @@ module rk4_coms
       nullify(y%wpa             )
       nullify(y%tai             )
       nullify(y%crown_area      )
+      nullify(y%elongf          )
       nullify(y%gbh             )
       nullify(y%gbw             )
       nullify(y%gsw_open        )
@@ -1128,6 +1154,7 @@ module rk4_coms
       if(associated(y%wpa             )) y%wpa              = 0.d0
       if(associated(y%tai             )) y%tai              = 0.d0
       if(associated(y%crown_area      )) y%crown_area       = 0.d0
+      if(associated(y%elongf          )) y%elongf           = 0.d0
       if(associated(y%gbh             )) y%gbh              = 0.d0
       if(associated(y%gbw             )) y%gbw              = 0.d0
       if(associated(y%gsw_open        )) y%gsw_open         = 0.d0
@@ -1187,6 +1214,7 @@ module rk4_coms
       if(associated(y%wpa             )) deallocate(y%wpa             )
       if(associated(y%tai             )) deallocate(y%tai             )
       if(associated(y%crown_area      )) deallocate(y%crown_area      )
+      if(associated(y%elongf          )) deallocate(y%elongf          )
       if(associated(y%gbh             )) deallocate(y%gbh             )
       if(associated(y%gbw             )) deallocate(y%gbw             )
       if(associated(y%gsw_open        )) deallocate(y%gsw_open        )

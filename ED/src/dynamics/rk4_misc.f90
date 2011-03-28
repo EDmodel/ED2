@@ -58,7 +58,6 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    integer               , intent(in) :: ipa
    !----- Local variables -----------------------------------------------------------------!
    type(patchtype)       , pointer    :: cpatch
-   real(kind=4)                       :: crown_area_tmp
    real(kind=8)                       :: rsat
    real(kind=8)                       :: sum_sfcw_mass
    real(kind=8)                       :: hvegpat_min
@@ -76,7 +75,7 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    ! no heat flux between time steps.  So we use these instead to start all other vari-    !
    ! ables.                                                                                !
    !---------------------------------------------------------------------------------------!
-   !----- 1. Update thermo variables that are conserved between steps. --------------------!
+   !----- Update thermo variables that are conserved between steps. -----------------------!
    targetp%can_theta    = dble(sourcesite%can_theta(ipa))
    targetp%can_theiv    = dble(sourcesite%can_theiv(ipa))
    targetp%can_shv      = dble(sourcesite%can_shv(ipa))
@@ -84,15 +83,25 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    targetp%can_depth    = dble(sourcesite%can_depth(ipa))
    targetp%can_rvap     = targetp%can_shv / (1.d0 - targetp%can_shv)
 
-   !----- 2. Update the canopy pressure and Exner function. -------------------------------!
+   !----- Update the canopy pressure and Exner function. ----------------------------------!
    targetp%can_prss     = reducedpress8(rk4site%atm_prss,rk4site%atm_theta,rk4site%atm_shv &
                                        ,rk4site%geoht,targetp%can_theta,targetp%can_shv    &
                                        ,targetp%can_depth)
    targetp%can_exner    = cp8 * (targetp%can_prss * p00i8) ** rocp8
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Update the vegetation properties used for roughness. ----------------------------!
+   targetp%veg_height   = dble(sourcesite%veg_height  (ipa))
+   targetp%veg_displace = dble(sourcesite%veg_displace(ipa))
+   targetp%veg_rough    = dble(sourcesite%veg_rough   (ipa))
+   !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
-   !  3. Update the natural logarithm of theta_eiv, temperature, density, relative         !
-   !     humidity, and the saturation specific humidity.                                   !
+   !     Update the natural logarithm of theta_eiv, temperature, density, relative         !
+   ! humidity, and the saturation specific humidity.                                       !
    !---------------------------------------------------------------------------------------!
    targetp%can_lntheta  = log(targetp%can_theta)
    targetp%can_temp     = cpi8 * targetp%can_theta * targetp%can_exner
@@ -102,7 +111,7 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    targetp%can_ssh      = rsat / (1.d0 + rsat)
    !---------------------------------------------------------------------------------------!
 
-   !----- 4. Find the lower and upper bounds for the derived properties. ------------------!
+   !----- Find the lower and upper bounds for the derived properties. ---------------------!
    call find_derived_thbounds(targetp%can_rhos,targetp%can_theta,targetp%can_temp          &
                              ,targetp%can_shv,targetp%can_rvap,targetp%can_prss            &
                              ,targetp%can_depth)
@@ -137,7 +146,7 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    !---------------------------------------------------------------------------------------!
    targetp%nlev_sfcwater = sourcesite%nlev_sfcwater(ipa)
    ksn                   = targetp%nlev_sfcwater
-   sum_sfcw_mass = 0.d0
+   sum_sfcw_mass  = 0.d0
    do k = 1, nzs
       targetp%sfcwater_mass(k)    = max(0.d0,dble(sourcesite%sfcwater_mass(k,ipa)))
       targetp%sfcwater_depth(k)   = dble(sourcesite%sfcwater_depth(k,ipa))
@@ -145,7 +154,7 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
                                   * dble(sourcesite%sfcwater_mass(k,ipa))
       targetp%sfcwater_tempk(k)   = dble(sourcesite%sfcwater_tempk(k,ipa))
       targetp%sfcwater_fracliq(k) = dble(sourcesite%sfcwater_fracliq(k,ipa))
-      sum_sfcw_mass = sum_sfcw_mass + targetp%sfcwater_mass(k)
+      sum_sfcw_mass  = sum_sfcw_mass  + targetp%sfcwater_mass (k)
    end do
    !----- Define the temporary surface water flag. ----------------------------------------!
    if (targetp%nlev_sfcwater == 0) then
@@ -158,6 +167,14 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
       !----- There is enough water. -------------------------------------------------------!
       targetp%flag_sfcwater = 2
    end if
+   !---------------------------------------------------------------------------------------!
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Find the total snow depth and fraction of canopy buried in snow.                  !
+   !---------------------------------------------------------------------------------------!
+   targetp%snowfac          = dble(sourcesite%snowfac(ipa))
+   targetp%total_sfcw_depth = dble(sourcesite%total_sfcw_depth(ipa))
    !---------------------------------------------------------------------------------------!
 
 
@@ -243,7 +260,7 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    !     Loop over cohorts.  We also use this loop to compute the fraction of open canopy, !
    ! which is initialised with 1. in case this is an empty patch.                          !
    !---------------------------------------------------------------------------------------!
-   targetp%opencan_frac = 1.d0
+   targetp%opencan_frac   = dble(sourcesite%opencan_frac(ipa))
    do ico = 1,cpatch%ncohorts
       ipft=cpatch%pft(ico)
 
@@ -255,14 +272,9 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
       targetp%wai(ico)        = dble(cpatch%wai(ico))
       targetp%wpa(ico)        = dble(cpatch%wpa(ico))
       targetp%tai(ico)        = targetp%lai(ico) + targetp%wai(ico)
-
-      !----- Find the crown area. ---------------------------------------------------------!
-      crown_area_tmp          = dbh2ca(cpatch%dbh(ico),cpatch%sla(ico),ipft)
-      targetp%crown_area(ico) = min( 1.d0                                                  &
-                                   , targetp%nplant(ico) * dble(crown_area_tmp)            &
-                                   * rk4site%green_leaf_factor(ipft) )
+      targetp%crown_area(ico) = dble(cpatch%crown_area(ico))
+      targetp%elongf(ico)     = dble(cpatch%elongf(ico)) * rk4site%green_leaf_factor(ipft)
       !------------------------------------------------------------------------------------!
-
 
 
       !------------------------------------------------------------------------------------!
@@ -330,9 +342,7 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
       targetp%psi_closed(ico) = 0.d0
       !------------------------------------------------------------------------------------!
       
-      targetp%opencan_frac = targetp%opencan_frac * (1.d0 - targetp%crown_area(ico))
    end do
-   targetp%opencan_frac = max(0.d0,min(1.d0,targetp%opencan_frac))
    !---------------------------------------------------------------------------------------!
 
 
@@ -640,6 +650,7 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
    !---------------------------------------------------------------------------------------!
    ok_sfcw = .true.
    ksn = initp%nlev_sfcwater
+   initp%total_sfcw_depth = 0.d0
    sfcwloop: do k=1,ksn
       if (initp%sfcwater_mass(k) < rk4min_sfcw_mass) then 
          !---------------------------------------------------------------------------------!
@@ -711,6 +722,7 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
          int_sfcw_energy = initp%sfcwater_energy(k)/initp%sfcwater_mass(k)
          call qtk8(int_sfcw_energy,initp%sfcwater_tempk(k),initp%sfcwater_fracliq(k))
       end if
+      initp%total_sfcw_depth = initp%total_sfcw_depth + initp%sfcwater_depth(k)
    end do sfcwloop
    !---------------------------------------------------------------------------------------!
    !    For non-existent layers of temporary surface water, we copy the temperature and    !
@@ -727,6 +739,13 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
    end do aboveloop
    !---------------------------------------------------------------------------------------!
 
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Update the fraction of the canopy covered in snow.                                !
+   !---------------------------------------------------------------------------------------!
+   initp%snowfac = min(9.9d-1,initp%total_sfcw_depth/initp%veg_height)
+   !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!
@@ -1380,7 +1399,7 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,hdid,csite,ipa)
 
          wmass_free  = 0.d0
          energy_free = 0.d0
-       end if
+      end if
    elseif (wmass_free < 0.d0) then
       call fatal_error('Free mass is negative, this doesn''t make any sense!'              &
                       ,'adjust_sfcw_properties','rk4_misc.f90')
@@ -2824,9 +2843,9 @@ subroutine print_rk4patch(y,csite,ipa)
                                      ,'   PATCH_LAI','   CAN_DEPTH','     CAN_CO2'         &
                                      ,'    CAN_PRSS','       GGNET'
                                      
-   write (unit=*,fmt='(8(es12.4,1x))') csite%veg_height(ipa),csite%veg_rough(ipa)          &
-                                      ,csite%veg_displace(ipa),csite%lai(ipa),y%can_depth  &
-                                      ,y%can_co2,y%can_prss,y%ggnet
+   write (unit=*,fmt='(8(es12.4,1x))') y%veg_height,y%veg_rough,y%veg_displace             &
+                                      ,csite%lai(ipa),y%can_depth,y%can_co2,y%can_prss     &
+                                      ,y%ggnet
    write (unit=*,fmt='(80a)') ('-',k=1,80)
    write (unit=*,fmt='(8(a12,1x))')  '    CAN_RHOS','   CAN_THEIV','   CAN_THETA'          &
                                     ,'    CAN_TEMP','     CAN_SHV','     CAN_SSH'          &

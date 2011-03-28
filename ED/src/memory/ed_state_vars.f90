@@ -120,6 +120,9 @@ module ed_state_vars
      ! Wood area index (m2 wood / m2 ground)
      real ,pointer,dimension(:) :: wai
 
+     ! Crown area (m2 crown / m2 ground)
+     real ,pointer,dimension(:) :: crown_area
+
      ! Logical test to check whether this cohort can be resolved...
      logical, pointer, dimension(:) :: resolvable
 
@@ -2918,6 +2921,7 @@ contains
     allocate(cpatch%lai(ncohorts))
     allocate(cpatch%wpa(ncohorts))
     allocate(cpatch%wai(ncohorts))
+    allocate(cpatch%crown_area(ncohorts))
     allocate(cpatch%resolvable(ncohorts))
     allocate(cpatch%bstorage(ncohorts))
     allocate(cpatch%cb(13,ncohorts))
@@ -3905,6 +3909,7 @@ contains
     nullify(cpatch%lai)
     nullify(cpatch%wpa)
     nullify(cpatch%wai)
+    nullify(cpatch%crown_area)
     nullify(cpatch%resolvable)
     nullify(cpatch%bstorage)
     nullify(cpatch%cb)
@@ -4901,6 +4906,7 @@ contains
     if(associated(cpatch%lai))                 deallocate(cpatch%lai)
     if(associated(cpatch%wpa))                 deallocate(cpatch%wpa)
     if(associated(cpatch%wai))                 deallocate(cpatch%wai)
+    if(associated(cpatch%crown_area))          deallocate(cpatch%crown_area)
     if(associated(cpatch%resolvable))          deallocate(cpatch%resolvable)
     if(associated(cpatch%bstorage))            deallocate(cpatch%bstorage)
     if(associated(cpatch%cb))                  deallocate(cpatch%cb)
@@ -5727,6 +5733,7 @@ contains
     patchout%lai(1:inc)              = pack(patchin%lai,mask)
     patchout%wpa(1:inc)              = pack(patchin%wpa,mask)
     patchout%wai(1:inc)              = pack(patchin%wai,mask)
+    patchout%crown_area(1:inc)       = pack(patchin%crown_area,mask)
     patchout%resolvable(1:inc)       = pack(patchin%resolvable,mask)
     patchout%bstorage(1:inc)         = pack(patchin%bstorage,mask)
     patchout%cbr_bar(1:inc)          = pack(patchin%cbr_bar,mask)
@@ -5974,6 +5981,7 @@ contains
        patchout%lai(iout)              = patchin%lai(iin)
        patchout%wpa(iout)              = patchin%wpa(iin)
        patchout%wai(iout)              = patchin%wai(iin)
+       patchout%crown_area(iout)       = patchin%crown_area(iin)
        patchout%resolvable(iout)       = patchin%resolvable(iin)
        patchout%bstorage(iout)         = patchin%bstorage(iin)
        patchout%cb(:,iout)             = patchin%cb(:,iin)
@@ -11683,6 +11691,13 @@ contains
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%wai,nvar,igr,init,cpatch%coglob_id, &
            var_len,var_len_global,max_ptrs,'WAI_CO :41:hist:dail:anal:mont:year:dcyc') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(cpatch%crown_area)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%crown_area,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'CROWN_AREA_CO :41:hist:dail:anal:mont:year:dcyc') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 

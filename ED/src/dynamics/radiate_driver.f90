@@ -157,7 +157,6 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,maxcohort             
                                    , emisg                ! ! intent(in)
    use consts_coms          , only : stefan               ! ! intent(in)
    use ed_max_dims          , only : n_pft                ! ! intent(in)
-   use allometry            , only : dbh2ca               ! ! function
 
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
@@ -218,7 +217,6 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,maxcohort             
    real                                         :: downward_rshort_below_diffuse
    real                                         :: surface_absorbed_longwave_surf
    real                                         :: surface_absorbed_longwave_incid
-   real                                         :: crown_area
    real                                         :: remaining_par
    real                                         :: remaining_par_beam
    real                                         :: remaining_par_diff
@@ -295,13 +293,10 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,maxcohort             
             diff_level_array(cohort_count)       = 0.d0
             select case (crown_mod)
             case (0)
-               CA_array(cohort_count) = 1.
+               CA_array(cohort_count)  = 1.d0
             case (1)
                !----- Crown area allom from Dietze and Clark (2008). ----------------------!
-               crown_area              = cpatch%nplant(ico)                                &
-                                       * dbh2ca(cpatch%dbh(ico),cpatch%sla(ico)            &
-                                               ,cpatch%pft(ico))
-               CA_array(cohort_count)  = min(1.d0,dble(crown_area))
+               CA_array(cohort_count)  = dble(cpatch%crown_area(ico))
             end select
          end if
 
@@ -368,9 +363,6 @@ subroutine sfcrad_ed(cosz,cosaoi,csite,mzg,mzs,ntext_soil,maxcohort             
          emissivity = 1.0
          T_surface  = csite%sfcwater_tempk(csite%nlev_sfcwater(ipa),ipa)
       end if
-      
-      csite%snowfac(ipa) = min(.99                                                         &
-                              ,csite%total_sfcw_depth(ipa)/max(.001,csite%veg_height(ipa)))
       
       !------------------------------------------------------------------------------------!
       !     This is the fraction of below-canopy radiation that is absorbed by the ground. !

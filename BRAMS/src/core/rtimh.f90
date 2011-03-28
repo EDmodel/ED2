@@ -147,7 +147,7 @@ subroutine timestep()
    !---------------------------------------------------------------------------------------!
    t1 = cputime(w1)
    select case (isfcl)
-   case (1,2)
+   case (0:2)
       call leaf3_timestep()
    case (5)
       call ed_timestep()

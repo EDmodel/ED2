@@ -1,8 +1,7 @@
 # DO NOT DELETE THIS LINE - used by make depend
 ed_1st.o: ed_misc_coms.mod ed_para_coms.mod ed_state_vars.mod
 ed_driver.o: consts_coms.mod ed_misc_coms.mod ed_node_coms.mod ed_state_vars.mod
-ed_driver.o: fuse_fiss_utils.mod grid_coms.mod phenology_startup.mod
-ed_driver.o: soil_coms.mod
+ed_driver.o: fuse_fiss_utils.mod grid_coms.mod soil_coms.mod
 ed_met_driver.o: canopy_air_coms.mod consts_coms.mod ed_max_dims.mod
 ed_met_driver.o: ed_misc_coms.mod ed_state_vars.mod grid_coms.mod hdf5_utils.mod
 ed_met_driver.o: mem_polygons.mod met_driver_coms.mod therm_lib.mod
@@ -51,9 +50,8 @@ phenology_driv.o: grid_coms.mod pft_coms.mod phenology_coms.mod soil_coms.mod
 photosyn_driv.o: consts_coms.mod ed_max_dims.mod ed_misc_coms.mod
 photosyn_driv.o: ed_state_vars.mod farq_leuning.mod met_driver_coms.mod
 photosyn_driv.o: pft_coms.mod physiology_coms.mod soil_coms.mod
-radiate_driver.o: allometry.mod canopy_radiation_coms.mod consts_coms.mod
-radiate_driver.o: ed_max_dims.mod ed_misc_coms.mod ed_state_vars.mod
-radiate_driver.o: grid_coms.mod soil_coms.mod
+radiate_driver.o: canopy_radiation_coms.mod consts_coms.mod ed_max_dims.mod
+radiate_driver.o: ed_misc_coms.mod ed_state_vars.mod grid_coms.mod soil_coms.mod
 reproduction.o: allometry.mod consts_coms.mod decomp_coms.mod ed_max_dims.mod
 reproduction.o: ed_state_vars.mod ed_therm_lib.mod fuse_fiss_utils.mod
 reproduction.o: grid_coms.mod mem_polygons.mod pft_coms.mod phenology_coms.mod
@@ -115,8 +113,8 @@ ed_init_full_history.o: allometry.mod c34constants.mod consts_coms.mod
 ed_init_full_history.o: ed_max_dims.mod ed_misc_coms.mod ed_node_coms.mod
 ed_init_full_history.o: ed_state_vars.mod ed_therm_lib.mod
 ed_init_full_history.o: fusion_fission_coms.mod grid_coms.mod 
-ed_init_full_history.o: hdf5_coms.mod mem_polygons.mod pft_coms.mod
-ed_init_full_history.o: soil_coms.mod therm_lib.mod
+ed_init_full_history.o: hdf5_coms.mod phenology_startup.mod soil_coms.mod
+ed_init_full_history.o: therm_lib.mod
 ed_load_namelist.o: canopy_air_coms.mod canopy_radiation_coms.mod
 ed_load_namelist.o: consts_coms.mod decomp_coms.mod disturb_coms.mod
 ed_load_namelist.o: ed_max_dims.mod ed_misc_coms.mod ed_para_coms.mod

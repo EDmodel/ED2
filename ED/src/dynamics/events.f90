@@ -388,7 +388,8 @@ subroutine event_harvest(agb_frac8,bgb_frac8,fol_frac8,stor_frac8)
                  call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)  &
                                   ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)    &
                                   ,cpatch%pft(ico),cpatch%sla(ico), cpatch%lai(ico)        &
-                                  ,cpatch%wpa(ico),cpatch%wai(ico), cpatch%bsapwood(ico))
+                                  ,cpatch%wpa(ico),cpatch%wai(ico), cpatch%crown_area(ico) &
+                                  ,cpatch%bsapwood(ico))
 
                  !----- Update basal area and above-ground biomass. -----------------------!
                  cpatch%basarea(ico) = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)                
@@ -753,6 +754,7 @@ subroutine event_till(rval8)
                  cpatch%lai(ico)        = 0.0
                  cpatch%wpa(ico)        = 0.0
                  cpatch%wai(ico)        = 0.0
+                 cpatch%crown_area(ico) = 0.0
                  cpatch%bleaf(ico)      = 0.0
                  cpatch%veg_energy(ico) = 0.0
                  cpatch%veg_water(ico)  = 0.0

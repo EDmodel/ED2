@@ -168,6 +168,7 @@ subroutine init_ed_misc_coms
                            , vary_hyd            & ! intent(out)
                            , vary_rad            & ! intent(out)
                            , max_thsums_dist     & ! intent(out)
+                           , max_poihist_dist    & ! intent(out)
                            , max_poi99_dist      ! ! intent(out)
    implicit none
 
@@ -216,6 +217,14 @@ subroutine init_ed_misc_coms
    ! use only).                                                                            !
    !---------------------------------------------------------------------------------------!
    max_poi99_dist     = 5.0 * erad * pio180
+   !---------------------------------------------------------------------------------------!
+
+   !---------------------------------------------------------------------------------------!
+   !      This variable is used for the history start initialisation.  This sets the       !
+   ! maximum acceptable distance between the expected polygon and the polygon found in the !
+   ! history file.  Units: m.                                                              !
+   !---------------------------------------------------------------------------------------!
+   max_poihist_dist   = 250.
    !---------------------------------------------------------------------------------------!
 
    return
@@ -2331,8 +2340,10 @@ subroutine init_soil_coms
                              , snow_rough            & ! intent(out)
                              , tiny_sfcwater_mass    & ! intent(out)
                              , infiltration_method   & ! intent(out)
+                             , soil_rough8           & ! intent(out)
+                             , snow_rough8           & ! intent(out)
                              , betapower8            ! ! intent(out)
-                             
+
    use grid_coms      , only : ngrids                ! ! intent(in)
    use consts_coms    , only : grav                  & ! intent(in)
                              , hr_sec                & ! intent(in)
@@ -2522,8 +2533,9 @@ subroutine init_soil_coms
       soil8(nsoil)%xrobulk   = dble(soil(nsoil)%xrobulk  )
       soil8(nsoil)%slden     = dble(soil(nsoil)%slden    )
    end do
-   betapower8 = dble(betapower)
-   
+   betapower8  = dble(betapower)
+   soil_rough8 = dble(soil_rough)
+   snow_rough8 = dble(snow_rough)
    return
 end subroutine init_soil_coms
 !==========================================================================================!

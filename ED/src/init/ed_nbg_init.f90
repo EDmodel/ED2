@@ -78,7 +78,7 @@ subroutine near_bare_ground_init(cgrid)
          !----- Initialise the patches now that cohorts are there. ------------------------!
          call init_ed_patch_vars(csite,1,csite%npatches,cpoly%lsl(isi))
       end do
-      !----- Once all patches are set, then we can assign initial values for sites. -------!
+      !----- Initialise some site-level variables. ----------------------------------------!
       call init_ed_site_vars(cpoly,cgrid%lat(ipy))
    end do
    
@@ -130,18 +130,18 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
 
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
-   type(sitetype)        , target     :: csite   ! Current site
-   integer               , intent(in) :: lsl     ! Lowest soil level
-   integer               , intent(in) :: ipa_a   ! 1st patch to be assigned with NBG state
-   integer               , intent(in) :: ipa_z   ! Last patch to be assigned with NBG state
+   type(sitetype)        , target     :: csite             ! Current site
+   integer               , intent(in) :: lsl               ! Lowest soil level
+   integer               , intent(in) :: ipa_a             ! 1st patch
+   integer               , intent(in) :: ipa_z             ! Last patch
    !----- Local variables -----------------------------------------------------------------!
-   type(patchtype)       , pointer    :: cpatch  ! Current patch
-   integer                            :: ipa     ! Patch number
-   integer                            :: ico     ! Cohort counter
-   integer                            :: mypfts  ! Number of PFTs to be included.
-   integer                            :: ipft    ! PFT counter
-   real                               :: salloc  ! Factor to find balive, broot, bsapwood
-   real                               :: salloci ! 1./salloc
+   type(patchtype)       , pointer    :: cpatch            ! Current patch
+   integer                            :: ipa               ! Patch number
+   integer                            :: ico               ! Cohort counter
+   integer                            :: mypfts            ! Number of included PFTs
+   integer                            :: ipft              ! PFT counter
+   real                               :: salloc            ! balive/bleaf when on allom.
+   real                               :: salloci           ! 1./salloc
    !---------------------------------------------------------------------------------------!
 
    !----- Patch loop. ---------------------------------------------------------------------!
@@ -225,7 +225,8 @@ subroutine init_nbg_cohorts(csite,lsl,ipa_a,ipa_z)
          call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)          &
                           ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)            &
                           ,cpatch%pft(ico),cpatch%sla(ico),cpatch%lai(ico)                 &
-                          ,cpatch%wpa(ico),cpatch%wai(ico),cpatch%bsapwood(ico))
+                          ,cpatch%wpa(ico),cpatch%wai(ico),cpatch%crown_area(ico)          &
+                          ,cpatch%bsapwood(ico))
 
          !----- Find the above-ground biomass and basal area. -----------------------------!
          cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)                 &
@@ -379,14 +380,15 @@ subroutine init_cohorts_by_layers(csite,lsl,ipa_a,ipa_z)
          call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)          &
                           ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)            &
                           ,cpatch%pft(ico),cpatch%sla(ico),cpatch%lai(ico)                 &
-                          ,cpatch%wpa(ico),cpatch%wai(ico),cpatch%bsapwood(ico))
+                          ,cpatch%wpa(ico),cpatch%wai(ico),cpatch%crown_area(ico)          &
+                          ,cpatch%bsapwood(ico))
 
          !----- Find the above-ground biomass and basal area. -----------------------------!
          cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)                 &
                                      ,cpatch%bleaf(ico),cpatch%pft(ico)                    &
                                      ,cpatch%hite(ico),cpatch%bstorage(ico)                &
                                      ,cpatch%bsapwood(ico))
-         cpatch%basarea(ico) = cpatch%dbh(ico)*cpatch%dbh(ico)
+         cpatch%basarea(ico) = pio4 * cpatch%dbh(ico) * cpatch%dbh(ico)
 
          !----- Initialize other cohort-level variables. ----------------------------------!
          call init_ed_cohort_vars(cpatch,ico,lsl)

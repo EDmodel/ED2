@@ -128,7 +128,6 @@ module canopy_struct_dynamics
       real           :: a_front      ! Frontal area / vol. flow exposed to drag [    m2/m3]
       real           :: zetac        ! Cumulative zeta function                 [      ---]
       real           :: K_top        ! Diffusivity at canopy top z=h            [     m2/s]
-      real           :: crown_area   ! Crown area index                         [    m2/m2]
       real           :: crowndepth   ! Depth of vegetation leafy crown          [        m]
       real           :: h            ! Canopy height                            [        m]
       real           :: layertai     ! Total leaf area of that discrete layer   [         ]
@@ -240,15 +239,20 @@ module canopy_struct_dynamics
          h        = csite%veg_height(ipa)    ! Vegetation height
          d0       = csite%veg_displace(ipa)  ! 0-plane displacement
          zref     = cmet%geoht
-         
+
 
          !---------------------------------------------------------------------------------!
-         !      Calculate a surface roughness that is visible to the ABL.  Roughness of    !
-         ! the rough wall.                                                                 !
+         !     Find the roughness as the average between the bare ground and vegetated     !
+         ! ground, and apply the snow cover to further scale it.  The weighting factors    !
+         ! are the fraction of open canopy and the fraction of the canopy buried in snow.  !
          !---------------------------------------------------------------------------------!
-         csite%rough(ipa) = max(soil_rough,csite%veg_rough(ipa))                           &
-                          * (1.0 - csite%snowfac(ipa))                                     &
-                          + snow_rough * csite%snowfac(ipa)
+         csite%rough(ipa) = snow_rough * csite%snowfac(ipa)                                &
+                          + ( soil_rough           * csite%opencan_frac(ipa)               &
+                            + csite%veg_rough(ipa) * (1.0 - csite%opencan_frac(ipa)) )     &
+                          * (1.0 - csite%snowfac(ipa))
+         !---------------------------------------------------------------------------------!
+
+
 
          !----- Get the appropriate characteristic wind speed. ----------------------------!
          if (stable) then
@@ -256,27 +260,23 @@ module canopy_struct_dynamics
          else
             cmet%vels = cmet%vels_unstab
          end if
+         !---------------------------------------------------------------------------------!
+
 
 
          !---------------------------------------------------------------------------------!
          !      Get ustar for the ABL, assume it is a dynamic shear layer that generates a !
          ! logarithmic profile of velocity.                                                !
-         !                                                                                 !
-         ! IMPORTANT NOTE: the displacement height here (d0), is used only for scaling the !
-         !                 vortices when determining diffusivity.  The default method      !
-         !                 taken from LEAF-3, as applied here, assumes that the zero plane !
-         !                 is at the ground surface when computing the log wind profile,   !
-         !                 hence the 0.0 as the argument to ed_stars.                      !
          !---------------------------------------------------------------------------------!
          call ed_stars(cmet%atm_theta,cmet%atm_theiv,cmet%atm_shv,cmet%atm_co2             &
                       ,csite%can_theta(ipa),csite%can_theiv(ipa),csite%can_shv(ipa)        &
-                      ,csite%can_co2(ipa),zref,0.0,cmet%vels,csite%rough(ipa)              &
+                      ,csite%can_co2(ipa),zref,d0,cmet%vels,csite%rough(ipa)               &
                       ,csite%ustar(ipa),csite%tstar(ipa),estar,csite%qstar(ipa)            &
                       ,csite%cstar(ipa),csite%zeta(ipa),csite%ribulk(ipa)                  &
                       ,csite%ggbare(ipa))
 
          if (csite%snowfac(ipa) < 0.9) then
-            factv  = log(zref / csite%rough(ipa)) / (vonk * vonk * cmet%vels)
+            factv  = log((zref-d0) / csite%rough(ipa)) / (vonk * vonk * cmet%vels)
             aux    = exp(exar * (1. - (d0 + csite%rough(ipa)) / h))
             csite%ggveg(ipa) = (exar * (h - d0 )) / (factv * h * (exp(exar) - aux))
          else 
@@ -302,12 +302,11 @@ module canopy_struct_dynamics
                case (-2)
                   cpatch%veg_wind(ico) = uh
                   ipft       = cpatch%pft(ico)
-                  crown_area = min(1.0, cpatch%nplant(ico)                                 &
-                                      * dbh2ca(cpatch%dbh(ico),cpatch%sla(ico),ipft))
 
                   cpatch%veg_wind(ico) = max(uh,ugbmin)
-                  uh = uh * ( crown_area * exp(- cpatch%lai(ico) / crown_area)             &
-                            + 1. - crown_area) 
+                  uh = uh * ( cpatch%crown_area(ico)                                       &
+                            * exp(- cpatch%lai(ico) / cpatch%crown_area(ico))              &
+                            + 1.0 - cpatch%crown_area(ico)) 
                case (-1)
                   cpatch%veg_wind(ico) = max(ugbmin,uh * exp ( -0.5 * laicum))
                end select
@@ -372,14 +371,21 @@ module canopy_struct_dynamics
          d0       = vh2dh * h              ! 0-plane displacement
          zref     = cmet%geoht
 
+
          !---------------------------------------------------------------------------------!
-         !      Calculate a surface roughness that is visible to the ABL.  Roughness of    !
-         ! the rough wall.                                                                 !
+         !     The roughness is found by combining two weighted averages.  The first one   !
+         ! checks the fraction of the patch that has closed canopy, and averages between   !
+         ! soil and vegetation roughness.  The other is the fraction of the vegetation     !
+         ! that is covered in snow.                                                        !
          !---------------------------------------------------------------------------------!
-         csite%rough(ipa) = max(soil_rough,csite%veg_rough(ipa))                           &
-                          * (1.0 - csite%snowfac(ipa))                                     &
-                          + snow_rough
-         
+         csite%rough(ipa) = snow_rough * csite%snowfac(ipa)                                &
+                          + ( soil_rough           * csite%opencan_frac(ipa)               &
+                            + csite%veg_rough(ipa) * (1.0 - csite%opencan_frac(ipa)) )     &
+                          * (1.0 - csite%snowfac(ipa))
+         !---------------------------------------------------------------------------------!
+
+
+
          !----- Calculate the soil surface roughness inside the canopy. -------------------!
          surf_rough = soil_rough * (1.0 - csite%snowfac(ipa))                              &
                     + snow_rough * csite%snowfac(ipa)
@@ -492,12 +498,22 @@ module canopy_struct_dynamics
          h    = csite%can_depth(ipa)  ! Canopy depth
          zref = cmet%geoht            ! Reference height
          d0   = vh2dh * h              ! 0-plane displacement
-         
-         !----- Calculate a surface roughness that is visible to the ABL. -----------------!
-         csite%rough(ipa) = max(soil_rough,csite%veg_rough(ipa))                           &
-                          * (1.0 - csite%snowfac(ipa))                                     &
-                          + snow_rough
-         
+
+
+         !---------------------------------------------------------------------------------!
+         !     The roughness is found by combining two weighted averages.  The first one   !
+         ! checks the fraction of the patch that has closed canopy, and averages between   !
+         ! soil and vegetation roughness.  The other is the fraction of the vegetation     !
+         ! that is covered in snow.                                                        !
+         !---------------------------------------------------------------------------------!
+         csite%rough(ipa) = snow_rough * csite%snowfac(ipa)                                &
+                          + ( soil_rough           * csite%opencan_frac(ipa)               &
+                            + csite%veg_rough(ipa) * (1.0 - csite%opencan_frac(ipa)) )     &
+                          * (1.0 - csite%snowfac(ipa))
+         !---------------------------------------------------------------------------------!
+
+
+
          !----- Calculate the soil surface roughness inside the canopy. -------------------!
          surf_rough = soil_rough * (1.0 - csite%snowfac(ipa))                              &
                     + snow_rough * csite%snowfac(ipa)
@@ -608,7 +624,7 @@ module canopy_struct_dynamics
       ! 2. Say that zref is really h+zref (sketchy...)                                     !
       ! 3. Say that zref is 2*h           (sketchy...)                                     !
       !------------------------------------------------------------------------------------!
-      case(2)
+      case (2)
          
          !----- Calculate the soil surface roughness inside the canopy. -------------------!
          surf_rough = soil_rough * (1.0 - csite%snowfac(ipa))                              &
@@ -815,14 +831,17 @@ module canopy_struct_dynamics
          d0       = csite%veg_displace(ipa) ! 0-plane displacement
          zref     = cmet%geoht
 
+
          !---------------------------------------------------------------------------------!
-         !     Find the roughness as the average between the bare ground and vegetated     !
-         ! ground.  The weighting factor is the fraction of open canopy.                   !
+         !     The roughness is found by combining two weighted averages.  The first one   !
+         ! checks the fraction of the patch that has closed canopy, and averages between   !
+         ! soil and vegetation roughness.  The other is the fraction of the vegetation     !
+         ! that is covered in snow.                                                        !
          !---------------------------------------------------------------------------------!
-         csite%rough(ipa) = soil_rough * csite%opencan_frac(ipa)                           &
-                          + ( csite%veg_rough(ipa) * (1.0 - csite%snowfac(ipa))            &
-                            + snow_rough * csite%snowfac(ipa))                             &
-                          * (1.0 - csite%opencan_frac(ipa))
+         csite%rough(ipa) = snow_rough * csite%snowfac(ipa)                                &
+                          + ( soil_rough           * csite%opencan_frac(ipa)               &
+                            + csite%veg_rough(ipa) * (1.0 - csite%opencan_frac(ipa)) )     &
+                          * (1.0 - csite%snowfac(ipa))
          !---------------------------------------------------------------------------------!
 
 
@@ -880,12 +899,11 @@ module canopy_struct_dynamics
             if (cpatch%resolvable(ico)) then
                ipft       = cpatch%pft(ico)
                hite       = cpatch%hite(ico)
-               crown_area = min(1.0, cpatch%nplant(ico)                                    &
-                                   * dbh2ca(cpatch%dbh(ico),cpatch%sla(ico),ipft))
 
                cpatch%veg_wind(ico) = max(uh,ugbmin)
-               uh = uh * ( crown_area * exp(- cpatch%lai(ico) / crown_area)                &
-                         + 1. - crown_area) 
+               uh = uh * ( cpatch%crown_area(ico)                                          &
+                         * exp(- cpatch%lai(ico) / cpatch%crown_area(ico))                 &
+                         + 1.0 - cpatch%crown_area(ico))                          
 
                !---------------------------------------------------------------------------!
                !    Find the aerodynamic conductances for heat and water at the leaf       !
@@ -1011,8 +1029,8 @@ module canopy_struct_dynamics
                                 , cpi8                 & ! intent(in)
                                 , epim18               & ! intent(in)
                                 , sqrt2o28             ! ! intent(in)
-      use soil_coms      , only : snow_rough           & ! intent(in)
-                                , soil_rough           ! ! intent(in)
+      use soil_coms      , only : snow_rough8          & ! intent(in)
+                                , soil_rough8          ! ! intent(in)
       use allometry      , only : h2trunkh             ! ! function
       implicit none
       !----- Arguments --------------------------------------------------------------------!
@@ -1089,8 +1107,7 @@ module canopy_struct_dynamics
          d0       = 0.d0
 
          !----- Calculate the surface roughness inside the canopy. ------------------------!
-         initp%rough = dble(soil_rough)*(1.d0 - dble(csite%snowfac(ipa)))                  &
-                     + dble(snow_rough)*dble(csite%snowfac(ipa))
+         initp%rough = soil_rough8 *(1.d0 - initp%snowfac) + snow_rough8 * initp%snowfac
          
          !----- Finding the characteristic scales (a.k.a. stars). -------------------------!
          call ed_stars8(rk4site%atm_theta,rk4site%atm_theiv,rk4site%atm_shv                &
@@ -1144,43 +1161,46 @@ module canopy_struct_dynamics
       !------------------------------------------------------------------------------------!
       case (-2,-1) 
          !----- Vegetation height. --------------------------------------------------------!
-         h        = dble(csite%veg_height(ipa))
+         h        = initp%veg_height
          !----- 0-plane displacement height. ----------------------------------------------!
-         d0       = dble(csite%veg_displace(ipa))
+         d0       = initp%veg_displace
          zref     = rk4site%geoht
-         
+         !---------------------------------------------------------------------------------!
+
+
 
          !---------------------------------------------------------------------------------!
-         !      Calculate a surface roughness that is visible to the ABL.  Roughness of    !
-         ! the rough wall.                                                                 !
+         !     The roughness is found by combining two weighted averages.  The first one   !
+         ! checks the fraction of the patch that has closed canopy, and averages between   !
+         ! soil and vegetation roughness.  The other is the fraction of the vegetation     !
+         ! that is covered in snow.                                                        !
          !---------------------------------------------------------------------------------!
-         initp%rough = max(dble(soil_rough),dble(csite%veg_rough(ipa)))                    &
-                     * (1.d0 - dble(csite%snowfac(ipa)))                                   &
-                       + dble(snow_rough) * dble(csite%snowfac(ipa))
+         initp%rough = snow_rough8 * initp%snowfac                                         &
+                     + ( soil_rough8     * initp%opencan_frac                              &
+                       + initp%veg_rough * (1.d0 - initp%opencan_frac) )                   &
+                     * (1.d0 - initp%snowfac)
+         !---------------------------------------------------------------------------------!
+
+
 
          !----- Get the appropriate characteristic wind speed. ----------------------------!
          vels_ref = max(ubmin8,rk4site%vels)
+         !---------------------------------------------------------------------------------!
 
 
          !---------------------------------------------------------------------------------!
          !      Get ustar for the ABL, assume it is a dynamic shear layer that generates a !
          ! logarithmic profile of velocity.                                                !
-         !                                                                                 !
-         ! IMPORTANT NOTE: the displacement height here (d0), is used only for scaling the !
-         !                 vortices when determining diffusivity.  The default method      !
-         !                 taken from LEAF-3, as applied here, assumes that the zero plane !
-         !                 is at the ground surface when computing the log wind profile,   !
-         !                 hence the 0.0 as the argument to ed_stars.                      !
          !---------------------------------------------------------------------------------!
          call ed_stars8(rk4site%atm_theta,rk4site%atm_theiv,rk4site%atm_shv                &
                        ,rk4site%atm_co2,initp%can_theta ,initp%can_theiv,initp%can_shv     &
-                       ,initp%can_co2,zref,0.d0,vels_ref,initp%rough                       &
+                       ,initp%can_co2,zref,d0,vels_ref,initp%rough                         &
                        ,initp%ustar,initp%tstar,initp%estar,initp%qstar,initp%cstar        &
                        ,initp%zeta,initp%ribulk,initp%ggbare)
          !---------------------------------------------------------------------------------!
 
-         if (csite%snowfac(ipa) < 0.9) then
-            factv        = log(zref / initp%rough) / (vonk8 * vonk8 * vels_ref)
+         if (initp%snowfac < 9.d-1) then
+            factv        = log((zref-d0) / initp%rough) / (vonk8 * vonk8 * vels_ref)
             aux          = exp(exar8 * (1.d0 - (d0 + initp%rough) / h))
             initp%ggveg  = (exar8 * (h - d0)) / (factv * h * (exp(exar8) - aux))
          else 
@@ -1259,7 +1279,7 @@ module canopy_struct_dynamics
          ! net resistance, which is, in turn, the weighted average of the resistances in   !
          ! bare and vegetated grounds.                                                     !
          !---------------------------------------------------------------------------------!
-         if (initp%opencan_frac > 9.99d-1 .or. csite%snowfac(ipa) >= 0.9) then
+         if (initp%opencan_frac > 9.9d-1 .or. initp%snowfac >= 9.d-1) then
             initp%ggnet = ggfact8 * initp%ggbare
          else
             initp%ggnet = ggfact8 * initp%ggbare * initp%ggveg                             &
@@ -1276,21 +1296,25 @@ module canopy_struct_dynamics
       !               even though it is nonsense.                                          !
       !------------------------------------------------------------------------------------!
       case (0)
-         h        = initp%can_depth   ! Canopy air space depth
+         h        = initp%veg_height  ! Canopy air space depth
          d0       = vh2dh8 * h        ! 0-plane displacement
          vels_ref = rk4site%vels
          zref     = rk4site%geoht
 
          !---------------------------------------------------------------------------------!
-         !      Calculate a surface roughness that is visible to the ABL.  Roughness of    !
-         ! the rough wall.                                                                 !
+         !     The roughness is found by combining two weighted averages.  The first one   !
+         ! checks the fraction of the patch that has closed canopy, and averages between   !
+         ! soil and vegetation roughness.  The other is the fraction of the vegetation     !
+         ! that is covered in snow.                                                        !
          !---------------------------------------------------------------------------------!
-         initp%rough = max(dble(soil_rough),dble(csite%veg_rough(ipa)))                    &
-                     * (1.d0 - dble(csite%snowfac(ipa))) + dble(snow_rough)
+         initp%rough = snow_rough8 * initp%snowfac                                         &
+                     + ( soil_rough8     * initp%opencan_frac                              &
+                       + initp%veg_rough * (1.d0 - initp%opencan_frac) )                   &
+                     * (1.d0 - initp%snowfac)
+         !---------------------------------------------------------------------------------!
          
          !----- Calculate the soil surface roughness inside the canopy. -------------------!
-         surf_rough = dble(soil_rough) * (1.d0 - dble(csite%snowfac(ipa)))                 &
-                    + dble(snow_rough)*dble(csite%snowfac(ipa))
+         surf_rough = soil_rough8 * (1.d0 - initp%snowfac) + snow_rough8 * initp%snowfac
 
 
          !---------------------------------------------------------------------------------!
@@ -1396,15 +1420,24 @@ module canopy_struct_dynamics
          h    = initp%can_depth             ! Canopy height
          zref = rk4site%geoht               ! Initial reference height
          d0   = vh2dh8 * h                  ! 0-plane displacement
-         
-         !----- Calculate a surface roughness that is visible to the ABL. -----------------!
-         initp%rough = max(dble(soil_rough),dble(csite%veg_rough(ipa)))                    &
-                     * (1.d0 - dble(csite%snowfac(ipa))) + dble(snow_rough)
+
+
+
+         !---------------------------------------------------------------------------------!
+         !     The roughness is found by combining two weighted averages.  The first one   !
+         ! checks the fraction of the patch that has closed canopy, and averages between   !
+         ! soil and vegetation roughness.  The other is the fraction of the vegetation     !
+         ! that is covered in snow.                                                        !
+         !---------------------------------------------------------------------------------!
+         initp%rough = snow_rough8 * initp%snowfac                                         &
+                     + ( soil_rough8     * initp%opencan_frac                              &
+                       + initp%veg_rough * (1.d0 - initp%opencan_frac) )                   &
+                     * (1.d0 - initp%snowfac)
+         !---------------------------------------------------------------------------------!
          
          !----- Calculate the soil surface roughness inside the canopy. -------------------!
-         surf_rough = dble(soil_rough) * (1.d0 - dble(csite%snowfac(ipa)))                 &
-                    + dble(snow_rough)*dble(csite%snowfac(ipa))
-         
+         surf_rough = soil_rough8 * (1.d0 - initp%snowfac) + snow_rough8 * initp%snowfac
+
          !----- Check what is the relative position of our reference data. ----------------!
          if (rk4site%geoht < h) then
             !----- First, find the wind speed at the canopy top. --------------------------!
@@ -1505,8 +1538,7 @@ module canopy_struct_dynamics
       case(2)
          
          !----- Calculate the soil surface roughness inside the canopy. -------------------!
-         surf_rough = dble(soil_rough) * (1.d0 - dble(csite%snowfac(ipa)))                 &
-                    + dble(snow_rough)*dble(csite%snowfac(ipa))
+         surf_rough = soil_rough8 * (1.d0 - initp%snowfac) + snow_rough8 * initp%snowfac
 
 
          !---------------------------------------------------------------------------------!
@@ -1612,7 +1644,7 @@ module canopy_struct_dynamics
          end do
 
          !----- Calculate the roughness lengths zo,zt,zr. ---------------------------------!
-         initp%rough = max((h-d0)*exp(-vonk8/ustarouh),dble(soil_rough))
+         initp%rough = max((h-d0)*exp(-vonk8/ustarouh),soil_rough8)
 
 
          !----- Calculate ustar, tstar, qstar, and cstar. ---------------------------------!
@@ -1703,18 +1735,20 @@ module canopy_struct_dynamics
       ! consider the crown area to determine the reduction factor.                         !
       !------------------------------------------------------------------------------------!
       case (3)
-         h        = dble(csite%veg_height(ipa))    ! Vegetation height
-         d0       = dble(csite%veg_displace(ipa))  ! 0-plane displacement height
+         h        = initp%veg_height    ! Vegetation height
+         d0       = initp%veg_displace  ! 0-plane displacement height
          zref     = rk4site%geoht
 
          !---------------------------------------------------------------------------------!
-         !     Find the roughness as the average between the bare ground and vegetated     !
-         ! ground.  The weighting factor is the fraction of open canopy.                   !
+         !     The roughness is found by combining two weighted averages.  The first one   !
+         ! checks the fraction of the patch that has closed canopy, and averages between   !
+         ! soil and vegetation roughness.  The other is the fraction of the vegetation     !
+         ! that is covered in snow.                                                        !
          !---------------------------------------------------------------------------------!
-         initp%rough = dble(soil_rough) * initp%opencan_frac                               &
-                     + ( dble(csite%veg_rough(ipa)) * (1.d0 - dble(csite%snowfac(ipa)))    &
-                       + dble(snow_rough)*dble(csite%snowfac(ipa)) )                       &
-                     * (1.d0 - initp%opencan_frac)
+         initp%rough = snow_rough8 * initp%snowfac                                         &
+                     + ( soil_rough8     * initp%opencan_frac                              &
+                       + initp%veg_rough * (1.d0 - initp%opencan_frac) )                   &
+                     * (1.d0 - initp%snowfac)
          !---------------------------------------------------------------------------------!
 
 

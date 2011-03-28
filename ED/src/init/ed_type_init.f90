@@ -572,7 +572,8 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
    
    
    csite%old_stoma_vector_max(:,:,ip1:ip2) = 0.
-   csite%old_stoma_vector_max(1,:,ip1:ip2) = real(csite%old_stoma_data_max(:,ip1:ip2)%recalc)
+   csite%old_stoma_vector_max(1,:,ip1:ip2) =                                               &
+                                         real(csite%old_stoma_data_max(:,ip1:ip2)%recalc)
 
 
    ncohorts = 0
@@ -584,74 +585,81 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
 
    return
 end subroutine init_ed_patch_vars
+!==========================================================================================!
+!==========================================================================================!
 
-!======================================================================
 
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!     This sub-routine initialises some site-level variables.                              !
+!------------------------------------------------------------------------------------------!
 subroutine init_ed_site_vars(cpoly, lat)
+   use ed_state_vars, only : polygontype      ! ! intent(in)
+   use ed_max_dims  , only : n_pft            & ! intent(in)
+                           , n_dbh            & ! intent(in)
+                           , n_dist_types     ! ! intent(in)
+   use pft_coms     , only : agri_stock       & ! intent(in)
+                           , plantation_stock ! ! intent(in)
+   use grid_coms    , only : nzs              & ! intent(in)
+                           , nzg              ! ! intent(in)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   type(polygontype), target     :: cpoly
+   real             , intent(in) :: lat
+   !----- External functions. -------------------------------------------------------------!
+   integer          , external   :: julday
+   !---------------------------------------------------------------------------------------!
 
-  use ed_state_vars,only:polygontype
-  use ed_max_dims, only: n_pft, n_dbh, n_age, n_dist_types 
-  use pft_coms, only: agri_stock,plantation_stock
-  use grid_coms, only: nzs, nzg
+   cpoly%basal_area       (1:n_pft, 1:n_dbh, :) = 0.0
+   cpoly%basal_area_growth(1:n_pft, 1:n_dbh, :) = 0.0
+   cpoly%basal_area_mort  (1:n_pft, 1:n_dbh, :) = 0.0
+   cpoly%basal_area_cut   (1:n_pft, 1:n_dbh, :) = 0.0
 
-  implicit none
+   cpoly%agb              (1:n_pft, 1:n_dbh, :) = 0.0
+   cpoly%agb_growth       (1:n_pft, 1:n_dbh, :) = 0.0
+   cpoly%agb_mort         (1:n_pft, 1:n_dbh, :) = 0.0
+   cpoly%agb_cut          (1:n_pft, 1:n_dbh, :) = 0.0
 
-  type(polygontype),target :: cpoly
-  real, intent(in) :: lat
-  integer, external :: julday
+   cpoly%green_leaf_factor(1:n_pft,:) = 1.0
+   cpoly%leaf_aging_factor(1:n_pft,:) = 1.0
 
-  cpoly%basal_area(1:n_pft, 1:n_dbh,:) = 0.0
-  cpoly%basal_area_growth(1:n_pft, 1:n_dbh,:) = 0.0
-  cpoly%basal_area_mort(1:n_pft, 1:n_dbh,:) = 0.0
-  cpoly%basal_area_cut(1:n_pft, 1:n_dbh,:) = 0.0
-!  cpoly%basal_area_recruit(1:n_pft, 1:n_dbh,:) = 0.0
+   !---------------------------------------------------------------------------------------!
+   !      Initialise the minimum monthly temperature with a very large value, this is      !
+   ! going to be reduced as the canopy temperature is updated.                             !
+   !---------------------------------------------------------------------------------------!
+   cpoly%min_monthly_temp(:) = huge(1.)
+   !---------------------------------------------------------------------------------------!
 
-  cpoly%agb(1:n_pft, 1:n_dbh,:) = 0.0
-  cpoly%agb_growth(1:n_pft, 1:n_dbh,:) = 0.0
-  cpoly%agb_mort(1:n_pft, 1:n_dbh,:) = 0.0
-  cpoly%agb_cut(1:n_pft, 1:n_dbh,:) = 0.0
-!  cpoly%agb_recruit(1:n_pft, 1:n_dbh,:) = 0.0
+   cpoly%lambda_fire       (1:12,:)                           = 0.0
 
-  cpoly%green_leaf_factor(1:n_pft,:) = 1.0
-  cpoly%leaf_aging_factor(1:n_pft,:) = 1.0
+   cpoly%disturbance_memory(1:n_dist_types, 1:n_dist_types,:) = 0.0
+   cpoly%disturbance_rates (1:n_dist_types, 1:n_dist_types,:) = 0.0
 
-  ! Initialising minimum monthly temperature with a very large value, to be reduced
-  ! as the canopy temperature is updated.
-  cpoly%min_monthly_temp(:) = huge(1.)
+   cpoly%agri_stocking_density(:)                             = 10.0
 
- ! cpoly%mm_gpp(:) = 0.0
- ! cpoly%mm_plresp(:) = 0.0
- ! cpoly%mm_rh(:) = 0.0
- ! cpoly%mm_nep(:) = 0.0
+   !---------------------------------------------------------------------------------------!
+   ! (KIM)                                                                                 !
+   !     - anyway, this part should be more elaborate for the case                         !
+   !     - that we have different crops/pastures.                                          !
+   !  It's now defined in ED2IN, but it assumes only one PFT. It is probably not the       !
+   !  ideal solution for regional runs...                                                  !
+   !---------------------------------------------------------------------------------------!
+   cpoly%agri_stocking_pft(:)       = agri_stock
+   cpoly%plantation_stocking_pft(:) = plantation_stock
 
-!  cpoly%mean_precip(:) = 0.0
-!  cpoly%mean_qprecip(:) = 0.0
-!  cpoly%mean_netrad(:) = 0.0
+   cpoly%plantation_stocking_density(:) = 4.0
 
-  cpoly%lambda_fire(1:12,:) = 0.0
+   cpoly%primary_harvest_memory(:)   = 0.0
+   cpoly%secondary_harvest_memory(:) = 0.0
   
-  cpoly%disturbance_memory(1:n_dist_types, 1:n_dist_types,:) = 0.0
-  cpoly%disturbance_rates(1:n_dist_types, 1:n_dist_types,:) = 0.0
-
-  cpoly%agri_stocking_density(:) = 10.0
-
-!KIM - 
-!    - anyway, this part should be more elaborate for the case 
-!    - that we have different crops/pastures.
-! It's now defined in ED2IN, but it assumes only one PFT. It is probably not the
-! ideal solution for regional runs...
-  cpoly%agri_stocking_pft(:) = agri_stock
-  cpoly%plantation_stocking_pft(:) = plantation_stock
-
-  cpoly%plantation_stocking_density(:) = 4.0
-
-  cpoly%primary_harvest_memory(:) = 0.0
-  cpoly%secondary_harvest_memory(:) = 0.0
-  
-  cpoly%rad_avg(:) = 200.0
+   cpoly%rad_avg(:) = 200.0
   
   
-  return
+   return
 end subroutine init_ed_site_vars
 !==========================================================================================!
 !==========================================================================================!
@@ -687,19 +695,44 @@ subroutine init_ed_poly_vars(cgrid)
    !---------------------------------------------------------------------------------------!
 
 
+   !---------------------------------------------------------------------------------------!
+   !    WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!   !
+   !---------------------------------------------------------------------------------------!
+   !     Please, don't initialise polygon-level (cgrid) variables outside polyloop.  This  !
+   ! works in off-line runs, but it causes memory leaks (and crashes) in the coupled runs  !
+   ! over the ocean, where cgrid%npolygons can be 0 if one of the subdomains falls         !
+   ! entirely over the ocean.  Thanks!                                                     !
+   !---------------------------------------------------------------------------------------!
+   ! cgrid%blah = 0. !<<--- This is a bad way of doing, look inside the loop for the
+   !                 !      safe way of initialising the variable.
+   !---------------------------------------------------------------------------------------!
+
 
    !---------------------------------------------------------------------------------------!
-   !      Defining a nominal initial value of patch workload.  Normally we start with the  !
+   !      Define a nominal initial value of patch workload.  Normally we start with the    !
    ! RK4 time step to be 1 second, so each patch will contribute with 86400 time steps per !
    ! day.                                                                                  !
    !---------------------------------------------------------------------------------------!
    patchload = day_sec
 
    do ipy = 1,cgrid%npolygons
-      !Moved inside the loop for the cases in which npolygons is 0
-      cgrid%mean_precip(ipy)  = 0.0
-      cgrid%mean_qprecip(ipy) = 0.0
-      cgrid%mean_netrad(ipy)  = 0.0
+
+      !------------------------------------------------------------------------------------!
+      !     This is the right and safe place to initialise polygon-level (cgrid) vari-     !
+      ! ables, so in case npolygons is zero this will not cause memory leaks.  I know,     !
+      ! this never happens in off-line runs, but it is quite common in coupled runs...     !
+      ! Whenever one of the nodes receives a sub-domain where all the points are over the  !
+      ! ocean, ED will not assign any polygon in that sub-domain, which means that that    !
+      ! node will have 0 polygons, and the variables cannot be allocated.  If you try to   !
+      ! access the polygon level variable outside the loop, then the model crashes due to  !
+      ! segmentation violation (a bad thing), whereas by putting the variables here both   !
+      ! the off-line model and the coupled runs will work, because this loop will be       !
+      ! skipped when there is no polygon.                                                  !
+      !------------------------------------------------------------------------------------!
+      cgrid%mean_precip (ipy)  = 0.0
+      cgrid%mean_qprecip(ipy)  = 0.0
+      cgrid%mean_netrad (ipy)  = 0.0
+
       call compute_C_and_N_storage(cgrid,ipy,soil_C, soil_N, veg_C, veg_N)
       cgrid%cbudget_initialstorage(ipy) = soil_C + veg_C
       cgrid%nbudget_initialstorage(ipy) = soil_N + veg_N
@@ -765,9 +798,9 @@ subroutine new_patch_sfc_props(csite,ipa,mzg,mzs,ntext_soil)
 
 
    !---------------------------------------------------------------------------------------! 
-   !   Determining number of temporary snow/surface water layers.  This is done by check-  !
-   ! ing the mass.  If it is a layer, then we convert sfcwater_energy from J/m2 to J/kg,   !
-   ! and compute the temperature and liquid fraction.                                      !
+   !   Determine the number of temporary snow/surface water layers.  This is done by       !
+   ! checking the mass.  In case there is a layer, we convert sfcwater_energy from J/m2 to !
+   ! J/kg, and compute the temperature and liquid fraction.                                !
    !---------------------------------------------------------------------------------------! 
    csite%nlev_sfcwater(ipa) = 0
    snowloop: do k=1,mzs

@@ -14,7 +14,8 @@ subroutine euler_timestep(cgrid)
                                     , sitetype           & ! structure
                                     , patchtype          ! ! structure
    use met_driver_coms       , only : met_driv_state     ! ! structure
-   use grid_coms             , only : nzg                ! ! intent(in)
+   use grid_coms             , only : nzg                & ! intent(in)
+                                    , nzs                ! ! intent(in)
    use ed_misc_coms          , only : dtlsm              ! ! intent(in)
    use ed_max_dims           , only : n_dbh              ! ! intent(in)
    use soil_coms             , only : soil_rough         & ! intent(in)
@@ -90,13 +91,6 @@ subroutine euler_timestep(cgrid)
             call zero_rk4_cohort(integration_buff%yscal)
             call zero_rk4_cohort(integration_buff%dydx)
 
-            !----- Save the previous thermodynamic state. ---------------------------------!
-            old_can_theiv    = csite%can_theiv(ipa)
-            old_can_shv      = csite%can_shv(ipa)
-            old_can_co2      = csite%can_co2(ipa)
-            old_can_rhos     = csite%can_rhos(ipa)
-            old_can_temp     = csite%can_temp(ipa)
-
             !----- Get velocity for aerodynamic resistance. -------------------------------!
             if (csite%can_theta(ipa) < cmet%atm_theta) then
                cmet%vels = cmet%vels_stab
@@ -110,7 +104,18 @@ subroutine euler_timestep(cgrid)
             !------------------------------------------------------------------------------!
             !    Update roughness and canopy depth.                                        !
             !------------------------------------------------------------------------------!
+            call update_patch_thermo_props(csite,ipa,ipa,nzg,nzs,cpoly%ntext_soil(:,isi))
             call update_patch_derived_props(csite,cpoly%lsl(isi),cmet%prss,ipa)
+            !------------------------------------------------------------------------------!
+
+
+
+            !----- Save the previous thermodynamic state. ---------------------------------!
+            old_can_theiv    = csite%can_theiv(ipa)
+            old_can_shv      = csite%can_shv(ipa)
+            old_can_co2      = csite%can_co2(ipa)
+            old_can_rhos     = csite%can_rhos(ipa)
+            old_can_temp     = csite%can_temp(ipa)
             !------------------------------------------------------------------------------!
 
 
@@ -623,25 +628,12 @@ subroutine euler_integ(h1,csite,initp,dinitp,ytemp,yscal,yerr,dydx,ipa,nsteps)
                                              + sngloff(qwfree * dtrk4i,tiny_offset)
                end if
                if (checkbudget) then
-                  initp%wbudget_loss2runoff = wfreeb
-                  initp%ebudget_loss2runoff = qwfree
+                  initp%wbudget_loss2runoff = initp%wbudget_loss2runoff + wfreeb
+                  initp%ebudget_loss2runoff = initp%ebudget_loss2runoff + qwfree
                   initp%wbudget_storage     = initp%wbudget_storage - wfreeb
                   initp%ebudget_storage     = initp%ebudget_storage - qwfree
                end if
-
-            else
-               csite%runoff(ipa)          = 0.0
-               csite%avg_runoff(ipa)      = 0.0
-               csite%avg_runoff_heat(ipa) = 0.0
-               initp%wbudget_loss2runoff  = 0.d0
-               initp%ebudget_loss2runoff  = 0.d0
             end if
-         else
-            csite%runoff(ipa)          = 0.0
-            csite%avg_runoff(ipa)      = 0.0
-            csite%avg_runoff_heat(ipa) = 0.0
-            initp%wbudget_loss2runoff  = 0.d0
-            initp%ebudget_loss2runoff  = 0.d0
          end if
          !------ Update the substep for next time and leave -------------------------------!
          csite%htry(ipa) = sngl(hnext)

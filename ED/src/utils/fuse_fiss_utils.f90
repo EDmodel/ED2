@@ -283,6 +283,8 @@ module fuse_fiss_utils
             cpatch%hcapveg              (ico) = cpatch%hcapveg           (ico) * area_scale
             cpatch%veg_energy           (ico) = cpatch%veg_energy        (ico) * area_scale
             cpatch%monthly_dndt         (ico) = cpatch%monthly_dndt      (ico) * area_scale
+            !----- Crown area shall not exceed one. ---------------------------------------!
+            cpatch%crown_area           (ico) = min(1.,cpatch%crown_area (ico) * area_scale)
             if (idoutput > 0 .or. imoutput > 0 .or. iqoutput > 0) then
                cpatch%dmean_par_v       (ico) = cpatch%dmean_par_v       (ico) * area_scale
                cpatch%dmean_par_v_beam  (ico) = cpatch%dmean_par_v_beam  (ico) * area_scale
@@ -714,6 +716,7 @@ module fuse_fiss_utils
                cpatch%lai                  (ico) = cpatch%lai               (ico) * 0.5
                cpatch%wpa                  (ico) = cpatch%wpa               (ico) * 0.5
                cpatch%wai                  (ico) = cpatch%wai               (ico) * 0.5
+               cpatch%crown_area           (ico) = cpatch%crown_area        (ico) * 0.5
                cpatch%nplant               (ico) = cpatch%nplant            (ico) * 0.5
                cpatch%mean_gpp             (ico) = cpatch%mean_gpp          (ico) * 0.5
                cpatch%mean_leaf_resp       (ico) = cpatch%mean_leaf_resp    (ico) * 0.5
@@ -840,6 +843,7 @@ module fuse_fiss_utils
       cpatch%lai(idt)                  = cpatch%lai(isc)
       cpatch%wpa(idt)                  = cpatch%wpa(isc)
       cpatch%wai(idt)                  = cpatch%wai(isc)
+      cpatch%crown_area(idt)           = cpatch%crown_area(isc)
       cpatch%bstorage(idt)             = cpatch%bstorage(isc)
       cpatch%resolvable(idt)           = cpatch%resolvable(isc)
 
@@ -1139,8 +1143,9 @@ module fuse_fiss_utils
       end if
       !------------------------------------------------------------------------------------!
 
-      cpatch%wpa(recc)    = cpatch%wpa(recc)  + cpatch%wpa(donc)
-      cpatch%wai(recc)    = cpatch%wai(recc)  + cpatch%wai(donc)
+      cpatch%wpa(recc)        = cpatch%wpa(recc)  + cpatch%wpa(donc)
+      cpatch%wai(recc)        = cpatch%wai(recc)  + cpatch%wai(donc)
+      cpatch%crown_area(recc) = min(1.0,cpatch%crown_area(recc)  + cpatch%crown_area(donc))
       cpatch%veg_energy(recc) = cpatch%veg_energy(recc) + cpatch%veg_energy(donc)
       cpatch%veg_water(recc)  = cpatch%veg_water(recc)  + cpatch%veg_water(donc)
       cpatch%hcapveg(recc)    = cpatch%hcapveg(recc)    + cpatch%hcapveg(donc)
@@ -2559,12 +2564,10 @@ module fuse_fiss_utils
          csite%sfcwater_energy(1,recp) = newareai *                                        &
                                          (csite%sfcwater_energy(1,recp) * csite%area(recp) &
                                          +csite%sfcwater_energy(1,donp) * csite%area(donp) )
-         csite%total_sfcw_depth(recp)  = csite%sfcwater_depth(1,recp)
       else
          csite%sfcwater_mass(1,recp)   = 0.
          csite%sfcwater_depth(1,recp)  = 0.
          csite%sfcwater_energy(1,recp) = 0.
-         csite%total_sfcw_depth(recp)  = 0.
       end if
       !------------------------------------------------------------------------------------!
       ! 4. Converting energy back to J/kg;                                                 !
@@ -2964,6 +2967,8 @@ module fuse_fiss_utils
          cpatch%veg_water             (ico) = cpatch%veg_water          (ico)  * area_scale
          cpatch%hcapveg               (ico) = cpatch%hcapveg            (ico)  * area_scale
          cpatch%veg_energy            (ico) = cpatch%veg_energy         (ico)  * area_scale
+         !----- Crown area shall not exceed one. ---------------------------------------!
+         cpatch%crown_area            (ico) = min(1.,cpatch%crown_area  (ico)  * area_scale)
          if (idoutput > 0 .or. imoutput > 0 .or. iqoutput > 0) then
             cpatch%dmean_par_v        (ico) = cpatch%dmean_par_v        (ico)  * area_scale
             cpatch%dmean_par_v_beam   (ico) = cpatch%dmean_par_v_beam   (ico)  * area_scale
@@ -3013,6 +3018,8 @@ module fuse_fiss_utils
          cpatch%veg_water             (ico) = cpatch%veg_water          (ico)  * area_scale
          cpatch%hcapveg               (ico) = cpatch%hcapveg            (ico)  * area_scale
          cpatch%veg_energy            (ico) = cpatch%veg_energy         (ico)  * area_scale
+         !----- Crown area shall not exceed one. ---------------------------------------!
+         cpatch%crown_area            (ico) = min(1.,cpatch%crown_area  (ico)  * area_scale)
          if (idoutput > 0 .or. imoutput > 0 .or. iqoutput > 0) then
             cpatch%dmean_par_v        (ico) = cpatch%dmean_par_v        (ico)  * area_scale
             cpatch%dmean_par_v_beam   (ico) = cpatch%dmean_par_v_beam   (ico)  * area_scale
@@ -3073,6 +3080,8 @@ module fuse_fiss_utils
       ! + csite%disp_height(recp)                                                          !
       ! + csite%lai(recp)                                                                  !
       ! + csite%veg_rough(recp)                                                            !
+      ! + csite%total_sfcw_depth(recp)                                                     !
+      ! + csite%snowfac(recp)                                                              !
       ! + csite%opencan_frac(recp)                                                         !
       ! + csite%ggnet(recp)                                                                !
       !------------------------------------------------------------------------------------!

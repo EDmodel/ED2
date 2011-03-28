@@ -251,7 +251,9 @@ module growth_balive
                                    , cpatch%dbh(ico)   , cpatch%hite(ico)    &
                                    , cpatch%pft(ico)   , cpatch%sla(ico)     &
                                    , cpatch%lai(ico)   , cpatch%wpa(ico)     &
-                                   , cpatch%wai(ico)   , cpatch%bsapwood(ico))
+                                   , cpatch%wai(ico)                         &
+                                   , cpatch%crown_area(ico)                  &
+                                   , cpatch%bsapwood(ico))
 
                   !----- Update above-ground biomass. -----------------------!
                   cpatch%agb(ico) = ed_biomass(cpatch%bdead(ico)             &

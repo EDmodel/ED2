@@ -71,8 +71,8 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
    real            , intent(in) :: prss
    !----- Local variables -----------------------------------------------------------------!
    type(patchtype) , pointer    :: cpatch
-   real                         :: norm_fac
    real                         :: weight
+   real                         :: weight_sum
    integer                      :: ico
    integer                      :: k
    integer                      :: ksn
@@ -91,12 +91,14 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
 
 
 
+
    !----- Reset properties. ---------------------------------------------------------------!
    csite%veg_height(ipa)       = 0.0
    csite%lai(ipa)              = 0.0
    csite%wpa(ipa)              = 0.0
    csite%wai(ipa)              = 0.0
-   norm_fac                    = 0.0
+   csite%hcapveg(ipa)          = 0.0
+   weight_sum                  = 0.0
    csite%opencan_frac(ipa)     = 1.0
    csite%plant_ag_biomass(ipa) = 0.0
    !---------------------------------------------------------------------------------------!
@@ -115,6 +117,10 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
       csite%wai(ipa)  = csite%wai(ipa)  + cpatch%wai(ico)
       !------------------------------------------------------------------------------------!
 
+      !----- Update the patch-level heat capacity. ----------------------------------------!
+      csite%hcapveg(ipa)  = csite%hcapveg(ipa)  + cpatch%hcapveg(ico)
+      !------------------------------------------------------------------------------------!
+
 
 
       !----- Compute the patch-level above-ground biomass
@@ -122,28 +128,24 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
                                   + ed_biomass(cpatch%bdead(ico),cpatch%balive(ico)        &
                                               ,cpatch%bleaf(ico),cpatch%pft(ico)           &
                                               ,cpatch%hite(ico),cpatch%bstorage(ico)       &
-                                              ,cpatch%bsapwood(ico))      &
+                                              ,cpatch%bsapwood(ico))                       &
                                   * cpatch%nplant(ico)           
       !------------------------------------------------------------------------------------!
 
 
 
       !------------------------------------------------------------------------------------!
-      !     Compute average vegetation height, weighting using crown area.  We add the     !
+      !     Compute average vegetation height, weighting using basal area.  We add the     !
       ! cohorts only until when the canopy is closed, this way we will not bias the        !
       ! vegetation height or the canopy depth towards the cohorts that live in the under-  !
       ! storey.  Also, we must take into account the depth of the temporary surface water  !
       ! or snow, because this will make the plants "shorter".                              !
       !------------------------------------------------------------------------------------!
-      if (csite%opencan_frac(ipa) > 0.0                         .and.                      &
-          cpatch%hite(ico)        > csite%total_sfcw_depth(ipa) ) then
-         weight                  = min(1.0, cpatch%nplant(ico)                             &
-                                          * dbh2ca(cpatch%dbh(ico),cpatch%sla(ico),ipft))
-         norm_fac                = norm_fac + weight
-         csite%veg_height(ipa)   = csite%veg_height(ipa)                                   &
-                                 + (cpatch%hite(ico) - csite%total_sfcw_depth(ipa))        &
-                                 * weight
-         csite%opencan_frac(ipa) = csite%opencan_frac(ipa) * (1.0 - weight)
+      if (csite%opencan_frac(ipa) > 0.0) then
+         weight                  = cpatch%nplant(ico) * cpatch%basarea(ico)
+         weight_sum              = weight_sum + weight
+         csite%veg_height(ipa)   = csite%veg_height(ipa) + cpatch%hite(ico) * weight
+         csite%opencan_frac(ipa) = csite%opencan_frac(ipa) * (1.0 - cpatch%crown_area(ico))
       end if
       !------------------------------------------------------------------------------------!
 
@@ -153,8 +155,8 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
 
 
    !----- Normalise the vegetation height, making sure that it is above the minimum. ------!
-   if (norm_fac > tiny(1.0)) then
-      csite%veg_height(ipa)  = max(veg_height_min,csite%veg_height(ipa) / norm_fac)
+   if (weight_sum > tiny(1.0)) then
+      csite%veg_height(ipa)  = max(veg_height_min,csite%veg_height(ipa) / weight_sum)
    else
       csite%veg_height(ipa)  = veg_height_min
    end if
@@ -177,6 +179,13 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
    !----- Update the canopy depth, and impose the minimum if needed be. -------------------!
    csite%can_depth(ipa) = max(csite%veg_height(ipa), minimum_canopy_depth)
    !---------------------------------------------------------------------------------------!
+
+
+
+   !----- Find the fraction of vegetation buried in snow. ---------------------------------!
+   csite%snowfac(ipa) = min(0.99, csite%total_sfcw_depth(ipa)/csite%veg_height(ipa))
+   !---------------------------------------------------------------------------------------!
+
 
 
    !----- Find the PFT-dependent size distribution of this patch. -------------------------!

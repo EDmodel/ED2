@@ -977,6 +977,8 @@ module disturbance_utils
             tpatch%veg_water          (nco) = tpatch%veg_water        (nco) * survival_fac
             tpatch%hcapveg            (nco) = tpatch%hcapveg          (nco) * survival_fac
             tpatch%veg_energy         (nco) = tpatch%veg_energy       (nco) * survival_fac
+            !----- Crown area shall not exceed 1. -----------------------------------------!
+            tpatch%crown_area         (nco) = min(1.,tpatch%crown_area(nco) * survival_fac)
             !----- Carbon flux monthly means are extensive, we must convert them. ---------!
             if (idoutput > 0 .or. imoutput > 0 .or. iqoutput > 0) then
                tpatch%dmean_par_v     (nco) = tpatch%dmean_par_v      (nco) * survival_fac
@@ -1302,7 +1304,7 @@ module disturbance_utils
       call area_indices(cpatch%nplant(nc),cpatch%bleaf(nc),cpatch%bdead(nc)                &
                        ,cpatch%balive(nc),cpatch%dbh(nc),cpatch%hite(nc),cpatch%pft(nc)    &
                        ,cpatch%sla(nc),cpatch%lai(nc),cpatch%wpa(nc),cpatch%wai(nc)        &
-                       ,cpatch%bsapwood(nc))
+                       ,cpatch%crown_area(nc),cpatch%bsapwood(nc))
 
 
       !----- Finding the new basal area and above-ground biomass. -------------------------!

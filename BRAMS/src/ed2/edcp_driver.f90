@@ -63,9 +63,7 @@ subroutine ed_coup_driver()
    wtime1      = walltime(wtime_start)
 
    !---------------------------------------------------------------------------------------!
-   ! STEP 1: Set the special diagnostic parameter                                          !
-   !                                                                                       !
-   !     Checking if the user has indicated a need for any of the fast flux diagnostic     !
+   !     Check whether the user has indicated a need for any of the fast flux diagnostic   !
    ! variables, these are used in conditions of ifoutput,idoutput and imoutput conditions. !
    ! If they are not >0, then set the logical, fast_diagnostics to false.                  !
    !---------------------------------------------------------------------------------------!
@@ -74,13 +72,13 @@ subroutine ed_coup_driver()
                       iyoutput /= 0
 
    !---------------------------------------------------------------------------------------!
-   ! STEP 2: Set the ED model parameters                                                   !
+   !     Set the ED model parameters.                                                      !
    !---------------------------------------------------------------------------------------!
    if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Load_Ed_Ecosystem_Params...'
    call load_ed_ecosystem_params()
    
    !---------------------------------------------------------------------------------------!
-   ! STEP 3: Overwrite the parameters in case a XML file is provided.                      !
+   !     Overwrite the parameters in case a XML file is provided.                          !
    !---------------------------------------------------------------------------------------!
    if (mynum /= 1) call MPI_Recv(ping,1,MPI_INTEGER,recvnum,91,MPI_COMM_WORLD              &
                                 ,MPI_STATUS_IGNORE,ierr)
@@ -89,13 +87,13 @@ subroutine ed_coup_driver()
    if (mynum < nnodetot ) call MPI_Send(ping,1,MPI_INTEGER,sendnum,91,MPI_COMM_WORLD,ierr)
 
    !---------------------------------------------------------------------------------------!
-   ! STEP 4: Allocate soil grid arrays.                                                    !
+   !     Allocate soil grid arrays.                                                        !
    !---------------------------------------------------------------------------------------!
    if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Alloc_Soilgrid...'
    call alloc_soilgrid()
 
    !---------------------------------------------------------------------------------------!
-   ! STEP 5: Set some polygon-level basic information, such as lon/lat/soil texture.       !
+   !     Set some polygon-level basic information, such as lon/lat/soil texture.           !
    !---------------------------------------------------------------------------------------!
    if (mynum == nnodetot) then
       write (unit=*,fmt='(a)') ' [+] Set_Polygon_Coordinates (coupled)...'
@@ -103,7 +101,7 @@ subroutine ed_coup_driver()
    call set_polygon_coordinates_edcp()
 
    !---------------------------------------------------------------------------------------!
-   ! STEP 6: Initialize inherent soil and vegetation properties.                           !
+   !      Initialize inherent soil and vegetation properties.                              !
    !---------------------------------------------------------------------------------------!
    if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Sfcdata_ED...'
    call sfcdata_ed()
@@ -111,7 +109,7 @@ subroutine ed_coup_driver()
    if (trim(runtype) == 'HISTORY') then
 
       !------------------------------------------------------------------------------------!
-      ! STEP 7A: Initialize the model state as a replicate image of a previous state.      !
+      !      Initialize the model state as a replicate image of a previous state.          !
       !------------------------------------------------------------------------------------!
       if (mynum /= 1) call MPI_Recv(ping,1,MPI_INTEGER,recvnum,90,MPI_COMM_WORLD           &
                                    ,MPI_STATUS_IGNORE,ierr)
@@ -124,21 +122,21 @@ subroutine ed_coup_driver()
    else
 
       !------------------------------------------------------------------------------------!
-      ! STEP 7B: Initialize state properties of polygons/sites/patches/cohorts.            !
+      !      Initialize state properties of polygons/sites/patches/cohorts.                !
       !------------------------------------------------------------------------------------!
       if (mynum == 1) write (unit=*,fmt='(a)') ' [+] Load_Ecosystem_State...'
       call load_ecosystem_state()
    end if
 
    !---------------------------------------------------------------------------------------!
-   ! STEP 8: Initialize hydrology related variables.                                       !
+   !      Initialize hydrology related variables.                                          !
    !---------------------------------------------------------------------------------------!
    if (mynum == 1) write (unit=*,fmt='(a)') ' [+] Initializing Hydrology...'
    call initHydrology()
 
 
    !---------------------------------------------------------------------------------------!
-   ! STEP 9: Initialize the flux arrays that pass to the atmosphere.                       !
+   !      Initialize the flux arrays that pass to the atmosphere.                          !
    !---------------------------------------------------------------------------------------!
    if (mynum == 1) write (unit=*,fmt='(a)') ' [+] Initialise flux arrays...'
    do ifm=1,ngrids
@@ -147,7 +145,7 @@ subroutine ed_coup_driver()
    end do
 
    !---------------------------------------------------------------------------------------!
-   ! STEP 10: Initialize meteorology.                                                      !
+   !      Initialize meteorology.                                                          !
    !---------------------------------------------------------------------------------------!
    if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] Initializing meteorology...'
    do ifm = 1,ngrids
@@ -156,7 +154,7 @@ subroutine ed_coup_driver()
    end do
 
    !---------------------------------------------------------------------------------------!
-   ! STEP 11. Initialize ed fields that depend on the atmosphere.                          !
+   !      Initialize ed fields that depend on the atmosphere.                              !
    !---------------------------------------------------------------------------------------!
    if (trim(runtype) /= 'HISTORY') then
       if (mynum == nnodetot) write (unit=*,fmt='(a)') ' [+] ed_init_atm...'
@@ -164,21 +162,19 @@ subroutine ed_coup_driver()
    end if
 
    !---------------------------------------------------------------------------------------!
-   ! STEP 12. Initialize upwelling long wave and albedo from sst and air temperature.      !
+   !      Initialize upwelling long wave and albedo from sst and air temperature.          !
    !---------------------------------------------------------------------------------------!
    call ed_init_radiation()
 
 
    !---------------------------------------------------------------------------------------!
-   ! STEP 13. Initialized some derived variables.  This must be done outside               !
-   !          init_full_history_restart because it depends on some meteorological          !
-   !          variables that are initialized at step 9.                                    !
+   !      Initialized some derived variables.  This must be done outside                   !
+   ! init_full_history_restart because it depends on some meteorological variables that    !
+   ! are initialized in ed_init_atm.                                                       !
    !---------------------------------------------------------------------------------------!
-   if (trim(runtype) == 'HISTORY') then
-      do ifm=1,ngrids
-         call update_derived_props(edgrid_g(ifm))
-      end do
-   end if
+   do ifm=1,ngrids
+      call update_derived_props(edgrid_g(ifm))
+   end do
    !---------------------------------------------------------------------------------------!
 
 
@@ -187,33 +183,31 @@ subroutine ed_coup_driver()
    !      Initialise drought phenology.  This should be done after the soil moisture has   !
    ! been set up.                                                                          !
    !---------------------------------------------------------------------------------------!
-   if (trim(runtype) /= 'HISTORY') then
-      do ifm=1,ngrids
-         call first_phenology(edgrid_g(ifm))
-      end do
-   end if
+   do ifm=1,ngrids
+      call first_phenology(edgrid_g(ifm))
+   end do
    !---------------------------------------------------------------------------------------!
 
 
 
    !---------------------------------------------------------------------------------------!
-   ! STEP 14. Fill the variable data-tables with all of the state data.  Also calculate    !
-   !          the indexing of the vectors to allow for segmented I/O of hyperslabs and     !
-   !          referencing of high level hierarchical data types with their parent types.   !
+   !      Fill the variable data-tables with all of the state data.  In addition, find     !
+   ! the indexing of the vectors to allow for segmented I/O of hyperslabs and referencing  !
+   ! of high level hierarchical data types with their parent types.                        !
    !---------------------------------------------------------------------------------------!
    if (mynum == 1) write (unit=*,fmt='(a)') ' [+] Filltab_Alltypes...'
    call filltab_alltypes()
 
 
    !---------------------------------------------------------------------------------------!
-   ! STEP 15. Checking how the output was configure and determining the averaging          !
-   !          frequency.                                                                   !
+   !      Check how the output was configure and determining the averaging frequency.      !
    !---------------------------------------------------------------------------------------!
    if (mynum == 1) write(unit=*,fmt='(a)') ' [+] Finding frqsum...'
    call find_frqsum()
 
    !---------------------------------------------------------------------------------------!
-   ! STEP 16. Zero and initialize diagnostic output variables                              !
+   !      Reset the diagnostic output variables, unless this is a history run, in which    !
+   ! case the variables may be partially integrated.                                       !
    !---------------------------------------------------------------------------------------!
    if (trim(runtype) /= 'HISTORY') then
       if (imoutput > 0 .or. iqoutput > 0) then
@@ -234,7 +228,7 @@ subroutine ed_coup_driver()
    end if
 
    !---------------------------------------------------------------------------------------!
-   ! STEP 17: Allocate memory to the integration patch.                                    !
+   !      Allocate memory to the integration patch.                                        !
    !---------------------------------------------------------------------------------------!
    call initialize_rk4patches(.true.)
 
@@ -244,7 +238,7 @@ subroutine ed_coup_driver()
 
 
    !---------------------------------------------------------------------------------------!
-   ! STEP 18:  Output initial state.                                                       !
+   !      Output initial state.                                                            !
    !---------------------------------------------------------------------------------------!
    if (ioutput  /= 0) then
       call h5_output('INST')
@@ -258,14 +252,14 @@ subroutine ed_coup_driver()
    if (iyoutput /= 0) call h5_output('YEAR')
 
    !---------------------------------------------------------------------------------------!
-   ! STEP 19: Deallocate the work arrays.                                                  !
+   !      Deallocate the work arrays.                                                      !
    !---------------------------------------------------------------------------------------!
    do ifm=1,ngrids
       call ed_dealloc_work(work_e(ifm))
    end do
 
    !---------------------------------------------------------------------------------------!
-   ! STEP 20. Get the CPU time and print the banner.                                       !
+   !      Get the CPU time and print the banner.                                           !
    !---------------------------------------------------------------------------------------!
    if (mynum == nnodetot) then
       call timing(1,cputime1)
