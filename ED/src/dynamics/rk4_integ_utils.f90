@@ -727,13 +727,15 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
                              abs(dy%ebudget_loss2drainage) < tiny_offset)      ) then
          yscal%ebudget_loss2drainage = huge_offset
       else 
-         yscal%ebudget_loss2drainage = abs(dy%ebudget_loss2drainage*htry)
+         yscal%ebudget_loss2drainage = abs(y%ebudget_loss2drainage)                        &
+                                       + abs(dy%ebudget_loss2drainage*htry)
       end if
       if (isoilbc == 0 .or. (abs(y%wbudget_loss2drainage)  < tiny_offset .and.             &
                              abs(dy%wbudget_loss2drainage) < tiny_offset)      ) then
          yscal%wbudget_loss2drainage = huge_offset
       else 
-         yscal%wbudget_loss2drainage = abs(dy%wbudget_loss2drainage*htry)
+         yscal%wbudget_loss2drainage = abs(y%wbudget_loss2drainage)                       &
+                                       + abs(dy%wbudget_loss2drainage*htry)
       end if
 
    else 
