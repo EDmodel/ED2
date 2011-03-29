@@ -4255,36 +4255,36 @@ module rad_carma
       real                                , intent(in)       :: tmag2
       real                                , intent(in)       :: wvno
       !----- Local variables. -------------------------------------------------------------!
-      complex(kind=16), dimension(iacap)                     :: acap
-      complex(kind=16), dimension(2)                         :: wfn
-      complex(kind=16), dimension(4)                         :: z
-      complex(kind=16), dimension(3,iacap)                   :: w
-      complex(kind=16), dimension(8)                         :: u
-      complex(kind=16)                                       :: fnap
-      complex(kind=16)                                       :: fnbp
-      complex(kind=16)                                       :: fna
-      complex(kind=16)                                       :: fnb
-      complex(kind=16)                                       :: rf
-      complex(kind=16)                                       :: rrf
-      complex(kind=16)                                       :: rrfx
-      complex(kind=16)                                       :: wm1
-      complex(kind=16)                                       :: fn1
-      complex(kind=16)                                       :: fn2
-      complex(kind=16)                                       :: tc1
-      complex(kind=16)                                       :: tc2
-      complex(kind=16)                                       :: k1
-      complex(kind=16)                                       :: k2
-      complex(kind=16)                                       :: k3
-      complex(kind=16)                                       :: rc
-      complex(kind=16)                                       :: dh1
-      complex(kind=16)                                       :: dh2
-      complex(kind=16)                                       :: dh4
-      complex(kind=16)                                       :: p24h24
-      complex(kind=16)                                       :: p24h21
-      complex(kind=16)                                       :: pstore
-      complex(kind=16)                                       :: hstore
-      complex(kind=16)                                       :: dummy
-      complex(kind=16)                                       :: dumsq
+      double complex, dimension(iacap)                     :: acap
+      double complex, dimension(2)                         :: wfn
+      double complex, dimension(4)                         :: z
+      double complex, dimension(3,iacap)                   :: w
+      double complex, dimension(8)                         :: u
+      double complex                                       :: fnap
+      double complex                                       :: fnbp
+      double complex                                       :: fna
+      double complex                                       :: fnb
+      double complex                                       :: rf
+      double complex                                       :: rrf
+      double complex                                       :: rrfx
+      double complex                                       :: wm1
+      double complex                                       :: fn1
+      double complex                                       :: fn2
+      double complex                                       :: tc1
+      double complex                                       :: tc2
+      double complex                                       :: k1
+      double complex                                       :: k2
+      double complex                                       :: k3
+      double complex                                       :: rc
+      double complex                                       :: dh1
+      double complex                                       :: dh2
+      double complex                                       :: dh4
+      double complex                                       :: p24h24
+      double complex                                       :: p24h21
+      double complex                                       :: pstore
+      double complex                                       :: hstore
+      double complex                                       :: dummy
+      double complex                                       :: dumsq
       real(kind=8)    , dimension(5)                         :: t
       real(kind=8)    , dimension(4)                         :: ta
       real(kind=8)    , dimension(2)                         :: tb

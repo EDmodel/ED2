@@ -2119,6 +2119,7 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    
    call hdf_getslab_r(csite%soil_tempk,'SOIL_TEMPK_PA ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%soil_fracliq,'SOIL_FRACLIQ_PA ',dsetrank,iparallel,.true.)
+   call hdf_getslab_r(csite%rootdense,'PATCH_ROOT_DENSITY ',dsetrank,iparallel,.false.)
 
    !-----------------------------------------------------------------------------------!
    !  Soil water is double precision, although it may not be DP in the dataset

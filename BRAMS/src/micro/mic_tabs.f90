@@ -531,6 +531,7 @@ subroutine mkcoltb
                   dnx = dnminx * (dnmaxx / dnminx) ** (real(iembx-1)/ real(nembc-1))
                   do idx = 1,ndx
                      dx(idx) = dxlo * (dxhi / dxlo)** (real(idx-1) / real(ndx-1))
+
                      fx(idx) = xj(dx(idx),cfvt(ihx),pwvt(ihx),cfvt(ihy),pwvt(ihy),vny,dnx  &
                                  ,dny,gnu(ix),gnu(iy),gyn1,gyn2,gynp,gynp1,gynp2)
                      gx(idx) = fx(idx) * cfmas(ihx)* dx(idx) ** pwmas(ihx)
@@ -595,7 +596,10 @@ real function xj(dx,cvx,pvx,cvy,pvy,vny,dnx,dny,xnu,ynu,gyn1,gyn2,gynp,gynp1,gyn
    dnxi8 = 1. / dnx8
    rdx8  = dx8 * dnxi8
    vx8   = cvx8 * dx8 ** pvx8
-   dxy   = (sngl(vx8) / cvy) ** (1. / pvy) / dny
+!   dxy   = (sngl(vx8) / cvy) ** (1. / pvy) / dny
+
+   dxy   = sngl(max( dble(tiny(dxy)) , (vx8/cvy8)**(1.d0/pvy8)/dny8 ) )
+
    ynup  = ynu + pvy 
    
 
