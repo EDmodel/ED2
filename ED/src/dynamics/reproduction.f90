@@ -61,9 +61,10 @@ subroutine reproduction(cgrid, month)
    logical                             :: late_spring
    real                                :: elim_nplant
    real                                :: elim_lai
-   real                                :: salloci
    !----- Saved variables -----------------------------------------------------------------!
    logical          , save             :: first_time=.true.
+   !----- External functions. -------------------------------------------------------------!
+   logical          , external         :: is_resolvable  ! The cohort can be resolved.
    !---------------------------------------------------------------------------------------!
 
    !---------------------------------------------------------------------------------------!
@@ -253,44 +254,45 @@ subroutine reproduction(cgrid, month)
                inew = 0
                recloop: do ico = temppatch%ncohorts+1,ncohorts_new
                   !------------------------------------------------------------------------!
-                  !     Adding the recruits, copying the information from the recruitment  !
-                  ! table, deriving other variables or assuming standard initial values.   !
+                  !     Add the recruits, copying the information from the recruitment     !
+                  ! table, and derive other variables or assume standard initial values.   !
                   !------------------------------------------------------------------------!
                   inew = inew + 1
 
-                  !----- Copying from recruitment table. ----------------------------------!
+                  !----- Copy from recruitment table (I). ---------------------------------!
                   cpatch%pft(ico)       = recruit(inew)%pft
                   cpatch%hite(ico)      = recruit(inew)%hite
                   cpatch%dbh(ico)       = recruit(inew)%dbh
-                  cpatch%bdead(ico)     = recruit(inew)%bdead
-                  cpatch%bleaf(ico)     = recruit(inew)%bleaf
-                  cpatch%balive(ico)    = recruit(inew)%balive
-                  cpatch%nplant (ico)   = recruit(inew)%nplant
+                  !------------------------------------------------------------------------!
 
                   !----- Carry out standard initialization. -------------------------------!
                   call init_ed_cohort_vars(cpatch,ico,cpoly%lsl(isi))
+                  !------------------------------------------------------------------------!
 
-                  !----- Assign initial sapwood and root biomass. -------------------------!
-                  ipft    = cpatch%pft(ico)
-                  salloci = 1. / (1. + qsw(ipft) * cpatch%hite(ico) + q(ipft))
-                  cpatch%broot(ico)    = q(ipft) * cpatch%balive(ico) * salloci
-                  cpatch%bsapwood(ico) = qsw(ipft) * cpatch%hite(ico)                      &
-                                       * cpatch%balive(ico) * salloci
+
+                  !----- Copy from recruitment table (II). --------------------------------!
+                  cpatch%bdead(ico)     = recruit(inew)%bdead
+                  cpatch%nplant(ico)    = recruit(inew)%nplant
+                  !------------------------------------------------------------------------!
+
+
+                  !------------------------------------------------------------------------!
+                  !     Even though we brought leaf biomass and biomass of the active      !
+                  ! tissues, we will make them consistent with the initial amount of water !
+                  ! available.  This is done inside pheninit_alive_storage.                !
+                  !------------------------------------------------------------------------!
+                  call pheninit_balive_bstorage(csite,ipa,ico)
+                  !------------------------------------------------------------------------!
 
 
                   !----- Assign temperature after init_ed_cohort_vars... ------------------!
                   cpatch%veg_temp(ico)  = recruit(inew)%veg_temp
 
                   !----- Initialise the next variables with zeroes... ---------------------!
-                  cpatch%phenology_status(ico) = 0
-                  cpatch%bstorage(ico)  = 0.0
                   cpatch%veg_water(ico) = 0.0
                   cpatch%veg_fliq(ico)  = 0.0
-                  !----- Cohort should be solvable... -------------------------------------!
-                  cpatch%solvable(ico) = .true.
-                  !----- Assigning SLA as the default value. ------------------------------!
-                  cpatch%sla(ico) = sla(cpatch%pft(ico))
-                  
+                  !------------------------------------------------------------------------!
+
                   !------------------------------------------------------------------------!
                   !    Computing initial AGB and Basal Area. Their derivatives will be     !
                   ! zero.                                                                  !
@@ -310,21 +312,22 @@ subroutine reproduction(cgrid, month)
                   cpatch%new_recruit_flag(ico) = 1
                   
                   !------------------------------------------------------------------------!
-                  !    Obtaining derived properties.                                       !
+                  !    Obtain derived properties.                                          !
                   !------------------------------------------------------------------------!
-                  !----- Finding LAI, WPA, WAI. -------------------------------------------!
+                  !----- Find LAI, WPA, WAI. ----------------------------------------------!
                   call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico) &
                                    ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)   &
                                    ,cpatch%pft(ico),cpatch%sla(ico), cpatch%lai(ico)       &
                                    ,cpatch%wpa(ico),cpatch%wai(ico),cpatch%bsapwood(ico)) 
-                           !here sla is not yet assigned; will be in init_ed_cohort_vars 
-                  !----- Finding heat capacity and vegetation internal energy. ------------!
+                  !----- Find heat capacity and vegetation internal energy. ---------------!
                   cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico)   &
                                                     ,cpatch%balive(ico),cpatch%nplant(ico) &
                                                     ,cpatch%hite(ico),cpatch%pft(ico)      &
                                                     ,cpatch%phenology_status(ico)          &
                                                     ,cpatch%bsapwood(ico))
                   cpatch%veg_energy(ico) = cpatch%hcapveg(ico) * cpatch%veg_temp(ico)
+                  cpatch%resolvable(ico) = is_resolvable(csite,ipa,ico                     &
+                                                        ,cpoly%green_leaf_factor(:,isi))
 
                   !----- Update number of cohorts in this site. ---------------------------!
                   csite%cohort_count(ipa) = csite%cohort_count(ipa) + 1

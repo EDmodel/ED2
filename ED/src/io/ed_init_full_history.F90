@@ -1235,11 +1235,11 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
                        ,dsetrank,iparallel,.false.)
   
   if (associated(cgrid%qmean_rshort       ))                                               &
-       call hdf_getslab_r(cgrid%qmean_rshort       (:,ipy)   ,'QMEAN_RSHORT        '       &
+     call hdf_getslab_r(cgrid%qmean_rshort       (:,ipy)   ,'QMEAN_RSHORT        '         &
        ,dsetrank,iparallel,.false.)
   
   if (associated(cgrid%qmean_rlong       ))                                                &
-       call hdf_getslab_r(cgrid%qmean_rlong       (:,ipy)   ,'QMEAN_RLONG        '         &
+     call hdf_getslab_r(cgrid%qmean_rlong       (:,ipy)   ,'QMEAN_RLONG        '           &
        ,dsetrank,iparallel,.false.)
 
   if (associated(cgrid%qmean_atm_shv        ))                                             &
@@ -1950,7 +1950,7 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    call hdf_getslab_r(csite%rlongup,'RLONGUP ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%rlong_albedo,'RLONG_ALBEDO ',dsetrank,iparallel,.true.)
 
-   call hdf_getslab_r(csite%total_snow_depth,'TOTAL_SNOW_DEPTH ',dsetrank,iparallel,.true.)
+   call hdf_getslab_r(csite%total_sfcw_depth,'TOTAL_SFCW_DEPTH ',dsetrank,iparallel,.false.)
    call hdf_getslab_r(csite%snowfac,'SNOWFAC ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%A_decomp,'A_DECOMP ',dsetrank,iparallel,.true.)
    call hdf_getslab_r(csite%f_decomp,'F_DECOMP ',dsetrank,iparallel,.true.)
@@ -2598,6 +2598,7 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
      call hdf_getslab_r(cpatch%root_respiration,'ROOT_RESPIRATION ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%gpp,'GPP ',dsetrank,iparallel,.true.)
      call hdf_getslab_r(cpatch%paw_avg,'PAW_AVG ',dsetrank,iparallel,.true.)
+     call hdf_getslab_r(cpatch%elongf,'ELONGF ',dsetrank,iparallel,.false.)
      
      !----- 13-month dimension (12 previous months + current month). ----------------------!
      dsetrank    = 2

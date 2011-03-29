@@ -529,7 +529,6 @@ subroutine update_derived_cohort_props(cpatch,ico,green_leaf_factor,lsl)
    real :: bl
    real :: bl_max
    real :: rootdepth
-   real :: elongf
    !---------------------------------------------------------------------------------------!
 
    !----- Gett DBH and height from structural biomass. ------------------------------------!
@@ -542,12 +541,13 @@ subroutine update_derived_cohort_props(cpatch,ico,green_leaf_factor,lsl)
 
       select case (phenology(cpatch%pft(ico)))
       case (4)
-         elongf  = min (1.0, cpatch%paw_avg(ico)/theta_crit)
+         cpatch%elongf(ico)  = max(0.0,min (1.0, cpatch%paw_avg(ico)/theta_crit))
       case default
-         elongf  = 1.0
+         cpatch%elongf(ico)  = 1.0
       end select
 
-      bl_max = dbh2bl(cpatch%dbh(ico),cpatch%pft(ico)) * green_leaf_factor * elongf
+      bl_max = dbh2bl(cpatch%dbh(ico),cpatch%pft(ico)) * green_leaf_factor                 &
+             * cpatch%elongf(ico)
       !------------------------------------------------------------------------------------!
       !     If LEAF biomass is not the maximum, set it to 1 (leaves partially flushed),    !
       ! otherwise, set it to 0 (leaves are fully flushed).                                 !
@@ -689,8 +689,11 @@ subroutine update_vital_rates(cpatch,ico,ilu,dbh_in,bdead_in,balive_in,hite_in,b
    !---------------------------------------------------------------------------------------!
    basal_area_mort(ipft,idbh) = basal_area_mort(ipft,idbh)                                 &
                               + area * (nplant_in - cpatch%nplant(ico)) * ba_in * 12.0
-   agb_mort(ipft,idbh)        = agb_mort(ipft,idbh) + area * mort_litter * 12.0
-   !---------------------------------------------------------------------------------------!
+
+!!   agb_mort(ipft,idbh)        = agb_mort(ipft,idbh) + area * mort_litter 
+!! calculation based on mort_litter includes TOTAL biomass, not AGB [[mcd]]
+   agb_mort(ipft,idbh)        = agb_mort(ipft,idbh)                                        &
+                              + area * (nplant_in - cpatch%nplant(ico))*agb_in * 12.0
 
    return
 end subroutine update_vital_rates

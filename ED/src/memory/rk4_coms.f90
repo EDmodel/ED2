@@ -164,7 +164,7 @@ module rk4_coms
       real(kind=8), pointer, dimension(:) :: psi_open     ! Water demand (op.)  [  kg/m²/s]
       real(kind=8), pointer, dimension(:) :: psi_closed   ! Water demand (clos.)[  kg/m²/s]
       real(kind=8), pointer, dimension(:) :: fs_open      ! Frac. of op. stom.  [      ---]
-      logical     , pointer, dimension(:) :: solvable     ! solve this cohort   [      T|F]
+      logical     , pointer, dimension(:) :: resolvable   ! resolve this cohort [      T|F]
       real(kind=8), pointer, dimension(:) :: gpp          ! Gross primary prod. [µmol/m²/s]
       real(kind=8), pointer, dimension(:) :: leaf_resp    ! Leaf respiration    [µmol/m²/s]
       real(kind=8), pointer, dimension(:) :: root_resp    ! Root respiration    [µmol/m²/s]
@@ -609,8 +609,8 @@ module rk4_coms
    !---------------------------------------------------------------------------------------!
    logical :: toosparse
    
-   !----- Flag to tell whether there is at least one "solvable" cohort in this patch ------!
-   logical :: any_solvable
+   !----- Flag to tell whether there is at least one "resolvable" cohort in this patch ----!
+   logical :: any_resolvable
 
    !----- Canopy water and heat capacity variables. ---------------------------------------!
    real(kind=8)    :: zoveg
@@ -1013,7 +1013,7 @@ module rk4_coms
       allocate(y%psi_open        (maxcohort))
       allocate(y%psi_closed      (maxcohort))
       allocate(y%fs_open         (maxcohort))
-      allocate(y%solvable        (maxcohort))
+      allocate(y%resolvable      (maxcohort))
       allocate(y%gpp             (maxcohort))
       allocate(y%leaf_resp       (maxcohort))
       allocate(y%root_resp       (maxcohort))
@@ -1074,7 +1074,7 @@ module rk4_coms
       nullify(y%psi_open        )
       nullify(y%psi_closed      )
       nullify(y%fs_open         )
-      nullify(y%solvable        )
+      nullify(y%resolvable      )
       nullify(y%gpp             )
       nullify(y%leaf_resp       )
       nullify(y%root_resp       )
@@ -1133,7 +1133,7 @@ module rk4_coms
       if(associated(y%psi_open        )) y%psi_open         = 0.d0
       if(associated(y%psi_closed      )) y%psi_closed       = 0.d0
       if(associated(y%fs_open         )) y%fs_open          = 0.d0
-      if(associated(y%solvable        )) y%solvable         = .false.
+      if(associated(y%resolvable      )) y%resolvable       = .false.
       if(associated(y%gpp             )) y%gpp              = 0.d0
       if(associated(y%leaf_resp       )) y%leaf_resp        = 0.d0
       if(associated(y%root_resp       )) y%root_resp        = 0.d0
@@ -1192,7 +1192,7 @@ module rk4_coms
       if(associated(y%psi_open        )) deallocate(y%psi_open        )
       if(associated(y%psi_closed      )) deallocate(y%psi_closed      )
       if(associated(y%fs_open         )) deallocate(y%fs_open         )
-      if(associated(y%solvable        )) deallocate(y%solvable        )
+      if(associated(y%resolvable      )) deallocate(y%resolvable      )
       if(associated(y%gpp             )) deallocate(y%gpp             )
       if(associated(y%leaf_resp       )) deallocate(y%leaf_resp       )
       if(associated(y%root_resp       )) deallocate(y%root_resp       )

@@ -160,6 +160,7 @@
    NL%ICLOBBER  = 1             ! 0 = stop if files exist, 1 = overwite files
    NL%FRQFAST   = 1.         ! Time interval between analysis/history files
    NL%FRQSTATE  = 1.         ! Time interval between history files
+
 !------------------------------------------------------------------------------------------!
 
 
@@ -300,8 +301,11 @@
 
    NL%ISOILBC        = 1  ! Soil boundary condition at lowest soil level
                           ! 0 - Bedrock;
-                          ! 1 - Free drainage.
+                          ! 1 - Free drainage with soil water content in of the boundary
+                          !     layer equal to that of the bottom layer.
                           ! 2 - Half drainage.
+                          ! 3 - Free drainage with soil water content in of the boundary
+                          !     layer equal to the field capacity.
 !------------------------------------------------------------------------------------------!
 
 
@@ -392,9 +396,6 @@
    NL%GGFACT          = 1.    ! Factor to multiply the ground to canopy conductancd
    !---------------------------------------------------------------------------------------!
 
-   NL%THETACRIT       = 0.2   ! soil moisture threashold at which point trees start to 
-                              ! drop their leaves
-   
    NL%ICOMPPT         = 0     ! Which compensation point should I use 
                               ! 0 -- original ED-2.1
                               ! other options coming soon
@@ -496,15 +497,7 @@
                               !      of a 1:9 liquid-to-ice ratio through percolation.
                               !  1 - Alternative "free" water calculation.  
                               !      Anderson (1976), NOAA Tech Report NWS 19.
-                              
-   !---------------------------------------------------------------------------------------!
-   !     The following variables are used only when ISFCLYRM is not 1.                     !
-   !---------------------------------------------------------------------------------------!
-!   NL%GAMM            = 13.   ! Momentum coefficient
-!   NL%GAMH            = 13.   ! Heat coefficient
-!   NL%TPRANDTL        = 0.74  ! Turbulent Prandtl number
-   !---------------------------------------------------------------------------------------!
-                              
+                                                            
    !--------------------------------------------------------------------!
    ! PLANT FUNCTIONAL TYPES (PFTs):                                     !
    !--------------------------------------------------------------------!

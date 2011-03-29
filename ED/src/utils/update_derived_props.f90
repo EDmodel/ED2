@@ -82,9 +82,9 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
 
    !----- Find the total snow depth. ------------------------------------------------------!
    ksn = csite%nlev_sfcwater(ipa)
-   csite%total_snow_depth(ipa) = 0.
+   csite%total_sfcw_depth(ipa) = 0.
    do k=1,ksn
-      csite%total_snow_depth(ipa) = csite%total_snow_depth(ipa)                            &
+      csite%total_sfcw_depth(ipa) = csite%total_sfcw_depth(ipa)                            &
                                   + csite%sfcwater_depth(k,ipa)
    end do
    !---------------------------------------------------------------------------------------!
@@ -136,12 +136,12 @@ subroutine update_patch_derived_props(csite,lsl,prss,ipa)
       ! or snow, because this will make the plants "shorter".                              !
       !------------------------------------------------------------------------------------!
       if (csite%opencan_frac(ipa) > 0.0                         .and.                      &
-          cpatch%hite(ico)        > csite%total_snow_depth(ipa) ) then
+          cpatch%hite(ico)        > csite%total_sfcw_depth(ipa) ) then
          weight                  = min(1.0, cpatch%nplant(ico)                             &
                                           * dbh2ca(cpatch%dbh(ico),cpatch%sla(ico),ipft))
          norm_fac                = norm_fac + weight
          csite%veg_height(ipa)   = csite%veg_height(ipa)                                   &
-                                 + (cpatch%hite(ico) - csite%total_snow_depth(ipa))        &
+                                 + (cpatch%hite(ico) - csite%total_sfcw_depth(ipa))        &
                                  * weight
          csite%opencan_frac(ipa) = csite%opencan_frac(ipa) * (1.0 - weight)
       end if
@@ -258,9 +258,12 @@ subroutine update_patch_thermo_props(csite,ipaa,ipaz)
 
       !----- Update temporary surface water temperature and liquid water fraction. --------!
       ksn = csite%nlev_sfcwater(ipa)
+      csite%total_sfcw_depth(ipa) = 0.
       do k = 1, ksn
          call qtk(csite%sfcwater_energy(k,ipa),csite%sfcwater_tempk(k,ipa)                 &
                  ,csite%sfcwater_fracliq(k,ipa))
+         csite%total_sfcw_depth(ipa) =  csite%total_sfcw_depth(ipa)                        &
+                                     +  csite%sfcwater_depth(k,ipa)
       end do
       do k = ksn+1,nzs
          if (k == 1) then
@@ -535,7 +538,7 @@ subroutine read_soil_moist_temp(cgrid,igr)
 
                        !----- Initial condition is with no snow/pond. ---------------------!
                        csite%nlev_sfcwater(ipa)    = 0
-                       csite%total_snow_depth(ipa) = 0.
+                       csite%total_sfcw_depth(ipa) = 0.
                         do k=1,nzs
                            csite%sfcwater_energy (k,ipa) = 0.
                            csite%sfcwater_depth  (k,ipa) = 0.

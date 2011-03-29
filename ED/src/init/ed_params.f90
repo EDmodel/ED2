@@ -267,7 +267,7 @@ subroutine init_met_params()
    atm_tmp_max = 331.     ! Highest temperature ever measured, in El Azizia, Libya
    !----- Minimum and maximum acceptable air specific humidity [kg_H2O/kg_air]. -----------!
    atm_shv_min = 1.e-6    ! That corresponds to a relative humidity of 0.1% at 1000hPa
-   atm_shv_max = 3.e-2    ! That corresponds to a dew point of 32°C at 1000hPa.
+   atm_shv_max = 3.2e-2 !3.e-2    ! That corresponds to a dew point of 32°C at 1000hPa.
    !----- Minimum and maximum acceptable CO2 mixing ratio [µmol/mol]. ---------------------!
    atm_co2_min = 100.     ! 
    atm_co2_max = 1100.    ! 
@@ -373,7 +373,6 @@ subroutine init_can_rad_params()
                                     , visible_fraction_dif        & ! intent(out)
                                     , leaf_reflect_nir            & ! intent(out)
                                     , leaf_trans_nir              & ! intent(out)
-                                    , blfac_min                   & ! intent(out)
                                     , rshort_twilight_min         & ! intent(out)
                                     , cosz_min                    & ! intent(out)
                                     , cosz_min8                   ! ! intent(out)
@@ -433,8 +432,6 @@ subroutine init_can_rad_params()
    emis_v(12:15) = 9.60d-1
    emis_v(16)    = 9.60d-1
    emis_v(17)    = 9.70d-1
-
-   blfac_min     = 1.0e-2
 
    !---------------------------------------------------------------------------------------!
    !     These variables are the thresholds for things that should be computed during the  !
@@ -1819,7 +1816,7 @@ subroutine init_pft_derived_params()
                                    , negligible_nplant    & ! intent(out)
                                    , c2n_recruit          & ! intent(out)
                                    , lai_min              ! ! intent(out)
-   use canopy_radiation_coms, only : blfac_min            ! ! intent(in)
+   use phenology_coms       , only : elongf_min           ! ! intent(in)
    use allometry            , only : h2dbh                & ! function
                                    , dbh2h                & ! function
                                    , dbh2bl               & ! function
@@ -1948,10 +1945,10 @@ subroutine init_pft_derived_params()
 
 
       !------------------------------------------------------------------------------------!
-      !     The minimum LAI is the LAI of a plant at the minimum cohort size that is       !
-      ! 50% green.                                                                          !
+      !     The minimum LAI is the LAI of a plant at the minimum cohort size that is at    !
+      ! the minimum elongation factor that supports leaves.                                !
       !------------------------------------------------------------------------------------!
-      lai_min(ipft) = 0.1 * min_plant_dens * sla(ipft) * bleaf_min * blfac_min
+      lai_min(ipft) = 0.1 * min_plant_dens * sla(ipft) * bleaf_min * elongf_min
       !------------------------------------------------------------------------------------!
 
 
@@ -2543,6 +2540,7 @@ subroutine init_phen_coms
    use consts_coms   , only : erad                     & ! intent(in)
                             , pio180                   ! ! intent(in)
    use phenology_coms, only : retained_carbon_fraction & ! intent(out)
+                            , elongf_min               & ! intent(out)
                             , theta_crit               & ! intent(out)
                             , dl_tr                    & ! intent(out)
                             , st_tr1                   & ! intent(out)
@@ -2564,6 +2562,7 @@ subroutine init_phen_coms
 
  
    retained_carbon_fraction = 0.5
+   elongf_min               = 0.02
    theta_crit               = thetacrit
    dl_tr                    = 655.0
    st_tr1                   = 284.3
@@ -2770,7 +2769,7 @@ subroutine init_rk4_params()
    !---------------------------------------------------------------------------------------!
    !    These two parameter will scale the cohort heat capacity inside the RK4 integrator, !
    ! to avoid having patches with heat capacity that is way too small to be computational- !
-   ! ly stable and solvable in a fast way.  If you don't want this and want to use the     !
+   ! ly stable and resolvable in a fast way.  If you don't want this and want to use the   !
    ! nominal heat capacity, the laziest way to turn this off is by setting hcapveg_ref to  !
    ! a small number.  Don't set it to zero, otherwise you may have FPE issues.             !
    !---------------------------------------------------------------------------------------!
@@ -2915,9 +2914,10 @@ end subroutine init_rk4_params
 !==========================================================================================!
 subroutine overwrite_with_xml_config(thisnode)
    !!! PARSE XML FILE
-   use ed_max_dims, only: n_pft
-   use ed_misc_coms, only: iedcnfgf
-   
+   use ed_max_dims,   only: n_pft
+   use ed_misc_coms,  only: iedcnfgf
+   use hydrology_coms,only: useTOPMODEL
+   use soil_coms,     only: isoilbc
    implicit none
    integer, intent(in) :: thisnode
    integer             :: max_pft_xml
@@ -2947,6 +2947,11 @@ subroutine overwrite_with_xml_config(thisnode)
          call read_ed_xml_config(trim(iedcnfgf))
 
          !! THIRD, recalculate any derived values based on xml
+         if(useTOPMODEL == 1) then
+            isoilbc = 0
+            print*,"TOPMODEL enabled, setting ISOILBC to 0"
+         end if
+
 
          !! FINALLY, write out copy of settings
          call write_ed_xml_config()

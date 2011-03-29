@@ -149,17 +149,17 @@ module ed_therm_lib
       !------------------------------------------------------------------------------------!
       !    When heat capacity is zero (i.e., no leaves and we are ignoring branches), we   !
       ! cannot find the temperature using qwtk because it is a singularity.  Notice that   !
-      ! this is different skipping when cohorts are not solvable... If the cohort is not   !
-      ! solvable but still has some heat capacity, we should update internal energy using  !
-      ! the traditional method, and NEVER force the heat capacity to be zero, otherwise we !
-      ! violate the fact that heat capacity is a linear function of mass and this will     !
-      ! cause problems during the fusion/splitting process.                                !
+      ! this is different skipping when cohorts are not resolvable... If the cohort is not !
+      ! resolvable but still has some heat capacity, we should update internal energy      !
+      ! using the traditional method, and NEVER force the heat capacity to be zero, other- !
+      ! wise we violate the fact that heat capacity is a linear function of mass and this  !
+      ! will cause problems during the fusion/splitting process.                           !
       !------------------------------------------------------------------------------------!
       if (cpatch%hcapveg(ico) == 0. ) then
          cpatch%veg_energy(ico) = 0.
          cpatch%veg_water(ico)  = 0.
          cpatch%veg_fliq(ico)   = 0.
-         if (cpatch%hite(ico) > csite%total_snow_depth(ipa)) then
+         if (cpatch%hite(ico) > csite%total_sfcw_depth(ipa)) then
             !----- Plant is exposed, set temperature to the canopy temperature. -----------!
             cpatch%veg_temp(ico) = csite%can_temp(ipa)
          else

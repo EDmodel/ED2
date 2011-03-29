@@ -124,6 +124,8 @@ real function resp_weight(soil_tempk,soil_water,slmsts)
    !----- Compute the weight, which is just the combination of both. ----------------------!
    resp_weight = temperature_limitation * water_limitation
       
+!!   print*,resp_weight,temperature_limitation,water_limitation,soil_tempk,resp_water_below_opt,resp_water_above_opt
+
    return
 end function resp_weight
 !==========================================================================================!
