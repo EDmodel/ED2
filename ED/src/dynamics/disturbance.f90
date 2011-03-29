@@ -968,6 +968,13 @@ module disturbance_utils
             tpatch%mean_storage_resp  (nco) = tpatch%mean_storage_resp(nco) * survival_fac
             tpatch%mean_vleaf_resp    (nco) = tpatch%mean_vleaf_resp  (nco) * survival_fac
             tpatch%today_gpp          (nco) = tpatch%today_gpp        (nco) * survival_fac
+            tpatch%today_nppleaf      (nco) = tpatch%today_nppleaf    (nco) * survival_fac
+            tpatch%today_nppfroot     (nco) = tpatch%today_nppfroot   (nco) * survival_fac
+            tpatch%today_nppsapwood   (nco) = tpatch%today_nppsapwood (nco) * survival_fac
+            tpatch%today_nppcroot     (nco) = tpatch%today_nppcroot   (nco) * survival_fac
+            tpatch%today_nppseeds     (nco) = tpatch%today_nppseeds   (nco) * survival_fac
+            tpatch%today_nppwood      (nco) = tpatch%today_nppwood    (nco) * survival_fac
+            tpatch%today_nppdaily     (nco) = tpatch%today_nppdaily   (nco) * survival_fac
             tpatch%today_gpp_pot      (nco) = tpatch%today_gpp_pot    (nco) * survival_fac
             tpatch%today_gpp_max      (nco) = tpatch%today_gpp_max    (nco) * survival_fac
             tpatch%today_leaf_resp    (nco) = tpatch%today_leaf_resp  (nco) * survival_fac

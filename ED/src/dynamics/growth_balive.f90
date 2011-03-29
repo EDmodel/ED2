@@ -843,7 +843,13 @@ module growth_balive
 
             cpatch%balive(ico)   = cpatch%bleaf(ico) + cpatch%broot(ico)     &
                                  + cpatch%bsapwood(ico)
-
+            
+            !--  npp allocation in diff pools in Kg C/m2/day        -------------!
+            cpatch%today_nppleaf(ico)   = tr_bleaf       * cpatch%nplant(ico)
+            cpatch%today_nppfroot(ico)  = tr_broot       * cpatch%nplant(ico)
+            cpatch%today_nppsapwood(ico)= tr_bsapwood    * cpatch%nplant(ico)
+            cpatch%today_nppdaily(ico)  = carbon_balance * cpatch%nplant(ico)
+            
             !----------------------------------------------------------------!
             !    Find the amount of carbon used to recover the tissues that  !
             ! were off-allometry, take that from the carbon balance first,   !
@@ -898,6 +904,12 @@ module growth_balive
             cpatch%bstorage(ico) = cpatch%bstorage(ico) + carbon_balance
             nitrogen_uptake      = nitrogen_uptake + carbon_balance          &
                                  / c2n_storage
+                                 
+            !--  npp allocation in diff pools in Kg C/m2/day        -------------!
+            cpatch%today_nppleaf(ico)     = 0.0
+            cpatch%today_nppfroot(ico)    = 0.0
+            cpatch%today_nppsapwood(ico)  = 0.0
+            cpatch%today_nppdaily(ico)    = carbon_balance * cpatch%nplant(ico)
          end if
  
 
@@ -961,6 +973,12 @@ module growth_balive
                               + (1.0 - f_labile(ipft)) / c2n_stem(ipft))     &
                             * cpatch%nplant(ico)
          end if
+         
+         !--  npp allocation in diff pools in Kg C/m2/day        -------------!
+         cpatch%today_nppleaf(ico)     = 0.0
+         cpatch%today_nppfroot(ico)    = 0.0
+         cpatch%today_nppsapwood(ico)  = 0.0
+         cpatch%today_nppdaily(ico)    = carbon_balance * cpatch%nplant(ico)
 
       end if
 
