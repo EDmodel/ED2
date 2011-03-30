@@ -504,7 +504,7 @@ subroutine spatial_averages
                                          * site_area_i
             cpoly%avg_smoist_gg(:,isi)   = matmul(csite%avg_smoist_gg  ,csite%area)        &
                                          * site_area_i
-            cpoly%avg_smoist_gc(:,isi)   = matmul(csite%avg_smoist_gc  ,csite%area)        &
+            cpoly%avg_transloss(:,isi)   = matmul(csite%avg_transloss  ,csite%area)        &
                                          * site_area_i
             cpoly%aux_s(:,isi)           = matmul(csite%aux_s          ,csite%area)        &
                                          * site_area_i
@@ -1051,7 +1051,7 @@ subroutine spatial_averages
                                       * poly_area_i
          cgrid%avg_smoist_gg(:,ipy)   = matmul(cpoly%avg_smoist_gg  , cpoly%area)          &
                                       * poly_area_i
-         cgrid%avg_smoist_gc(:,ipy)   = matmul(cpoly%avg_smoist_gc  , cpoly%area)          &
+         cgrid%avg_transloss(:,ipy)   = matmul(cpoly%avg_transloss  , cpoly%area)          &
                                       * poly_area_i
          cgrid%aux_s(:,ipy)           = matmul(cpoly%aux_s          , cpoly%area)          &
                                       * poly_area_i

@@ -211,7 +211,7 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
    dinitp%virtual_water      = 0.0d0
    dinitp%virtual_depth      = 0.0d0
    initp%extracted_water(:)  = 0.0d0
-   dinitp%avg_smoist_gc(:)   = 0.0d0
+   dinitp%avg_transloss(:)   = 0.0d0
 
    !---------------------------------------------------------------------------------------!
    !     Calculate water available to vegetation (in meters). SLZ is specified in RAMSIN.  !
@@ -624,7 +624,8 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
                   !----- Energy: only liquid water is lost through transpiration. ---------!
                   qwloss = wloss * cliqvlme8 * (initp%soil_tempk(k2) - tsupercool8)
                   dinitp%soil_energy(k2)   = dinitp%soil_energy(k2)   - qwloss
-                  dinitp%avg_smoist_gc(k2) = dinitp%avg_smoist_gc(k2) - wdns8*wloss
+                  dinitp%avg_transloss(k2) = dinitp%avg_transloss(k2) - wdns8*dble(wloss)  &
+                             * dslz8(k2)
                end if
             end if
          end do

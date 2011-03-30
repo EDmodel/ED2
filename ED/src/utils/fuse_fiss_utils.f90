@@ -2932,9 +2932,9 @@ module fuse_fiss_utils
               ( csite%avg_smoist_gg(iii,donp)       * csite%area(donp)                     &
               + csite%avg_smoist_gg(iii,recp)       * csite%area(recp) )
 
-         csite%avg_smoist_gc(iii,recp)   = newareai *                                      &
-              ( csite%avg_smoist_gc(iii,donp)       * csite%area(donp)                     &
-              + csite%avg_smoist_gc(iii,recp)       * csite%area(recp) )
+         csite%avg_transloss(iii,recp)   = newareai *                                      &
+              ( csite%avg_transloss(iii,donp)       * csite%area(donp)                     &
+              + csite%avg_transloss(iii,recp)       * csite%area(recp) )
 
          csite%aux_s(iii,recp)           = newareai *                                      &
               ( csite%aux_s(iii,donp)               * csite%area(donp)                     &

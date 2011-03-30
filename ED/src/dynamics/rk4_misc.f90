@@ -373,7 +373,7 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
       do k = rk4site%lsl, nzg
          targetp%avg_sensible_gg(k) = dble(sourcesite%avg_sensible_gg(k,ipa))
          targetp%avg_smoist_gg(k)   = dble(sourcesite%avg_smoist_gg(k,ipa)  )
-         targetp%avg_smoist_gc(k)   = dble(sourcesite%avg_smoist_gc(k,ipa)  )
+         targetp%avg_transloss(k)   = dble(sourcesite%avg_transloss(k,ipa)  )
       end do
    end if
    if (checkbudget) then

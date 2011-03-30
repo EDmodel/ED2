@@ -503,7 +503,7 @@ subroutine init_ed_patch_vars(csite,ip1,ip2,lsl)
   csite%avg_runoff_heat   (ip1:ip2)  = 0.0
   csite%avg_sensible_gg (:,ip1:ip2)  = 0.0
   csite%avg_smoist_gg   (:,ip1:ip2)  = 0.0
-  csite%avg_smoist_gc   (:,ip1:ip2)  = 0.0
+  csite%avg_transloss   (:,ip1:ip2)  = 0.0
   csite%aux_s           (:,ip1:ip2)  = 0.0
   csite%avg_available_water(ip1:ip2) = 0.0
   csite%avg_veg_energy(ip1:ip2)      = 0.0 

@@ -223,7 +223,7 @@ subroutine normalize_averaged_vars(cgrid,frqsum,dtlsm)
             do k=cpoly%lsl(isi),nzg
                csite%avg_sensible_gg(k,ipa) = csite%avg_sensible_gg(k,ipa) * frqsumi
                csite%avg_smoist_gg(k,ipa)   = csite%avg_smoist_gg(k,ipa)   * frqsumi
-               csite%avg_smoist_gc(k,ipa)   = csite%avg_smoist_gc(k,ipa)   * frqsumi
+               csite%avg_transloss(k,ipa)   = csite%avg_transloss(k,ipa)   * frqsumi
                csite%aux_s(k,ipa)           = csite%aux_s(k,ipa)           * frqsumi
             end do
             !------------------------------------------------------------------------------!
@@ -386,7 +386,7 @@ subroutine reset_averaged_vars(cgrid)
 
       cgrid%aux_s              (:,ipy) = 0.0
       cgrid%avg_smoist_gg      (:,ipy) = 0.0
-      cgrid%avg_smoist_gc      (:,ipy) = 0.0
+      cgrid%avg_transloss      (:,ipy) = 0.0
       cgrid%avg_sensible_gg    (:,ipy) = 0.0
 
       cgrid%avg_soil_wetness     (ipy) = 0.0
@@ -501,7 +501,7 @@ subroutine reset_averaged_vars(cgrid)
             csite%avg_evap(ipa)             = 0.0
             csite%avg_netrad(ipa)           = 0.0
             csite%avg_smoist_gg(:,ipa)      = 0.0
-            csite%avg_smoist_gc(:,ipa)      = 0.0
+            csite%avg_transloss(:,ipa)      = 0.0
             csite%avg_runoff(ipa)           = 0.0
             csite%avg_runoff_heat(ipa)      = 0.0
             csite%avg_drainage(ipa)         = 0.0
@@ -1206,7 +1206,7 @@ subroutine integrate_ed_daily_output_flux(cgrid)
          cgrid%dmean_soil_water(k,ipy)  = cgrid%dmean_soil_water(k,ipy)                    &
                                         + cgrid%avg_soil_water(k,ipy)
          cgrid%dmean_transloss(k,ipy)   = cgrid%dmean_transloss(k,ipy)                     &
-                                        + cgrid%avg_smoist_gc(k,ipy)
+                                        + cgrid%avg_transloss(k,ipy)
        end do
       cgrid%dmean_sensible_vc(ipy) = cgrid%dmean_sensible_vc(ipy)                          &
                                    + cgrid%avg_sensible_vc(ipy) 

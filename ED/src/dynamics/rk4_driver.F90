@@ -432,7 +432,7 @@ module rk4_driver
          do k = rk4site%lsl, nzg
             csite%avg_sensible_gg(k,ipa) =sngloff(initp%avg_sensible_gg(k)   ,tiny_offset)
             csite%avg_smoist_gg(k,ipa)   =sngloff(initp%avg_smoist_gg(k)     ,tiny_offset)
-            csite%avg_smoist_gc(k,ipa)   =sngloff(initp%avg_smoist_gc(k)     ,tiny_offset)
+            csite%avg_transloss(k,ipa)   =sngloff(initp%avg_transloss(k)     ,tiny_offset)
          end do
       end if
 

@@ -976,7 +976,7 @@ module ed_state_vars
      real,pointer,dimension(:,:) :: avg_smoist_gg   ! Moisture flux between soil layers
                                                     !  where layer (nzg) is the flux from the
                                                     !  surface water into the top layer        [kg/m2/s]
-     real,pointer,dimension(:,:) :: avg_smoist_gc   ! Transpired soil moisture sink in each layer
+     real,pointer,dimension(:,:) :: avg_transloss   ! Transpired soil moisture sink in each layer
                                                     !                                          [kg/m2/s]
      real,pointer,dimension(:)   :: avg_runoff      ! Average surface water runoff             [kg/m2/s]
      real,pointer,dimension(:)   :: avg_drainage    ! Average water drainage through the lower 
@@ -1248,7 +1248,7 @@ module ed_state_vars
      real,pointer,dimension(:)   :: avg_transp      ! Transpiration
      real,pointer,dimension(:)   :: avg_evap        ! Evaporation
      real,pointer,dimension(:,:) :: avg_smoist_gg   ! Moisture flux between layers
-     real,pointer,dimension(:,:) :: avg_smoist_gc   ! Trabspired soil moisture sink
+     real,pointer,dimension(:,:) :: avg_transloss   ! Trabspired soil moisture sink
      real,pointer,dimension(:)   :: avg_runoff      ! Total runoff
      real,pointer,dimension(:)   :: avg_drainage    ! Total drainage
      real,pointer,dimension(:)   :: avg_drainage_heat! Total drainage heat flux
@@ -1522,7 +1522,7 @@ module ed_state_vars
      real,pointer,dimension(:)   :: avg_transp      ! Transpiration
      real,pointer,dimension(:)   :: avg_evap        ! Evaporation
      real,pointer,dimension(:,:) :: avg_smoist_gg   ! Moisture flux between layers
-     real,pointer,dimension(:,:) :: avg_smoist_gc   ! Trabspired soil moisture sink
+     real,pointer,dimension(:,:) :: avg_transloss   ! Trabspired soil moisture sink
      real,pointer,dimension(:)   :: avg_runoff      ! Total runoff
      real,pointer,dimension(:)   :: avg_drainage      ! Total drainage through the soil bottom
      real,pointer,dimension(:)   :: avg_drainage_heat ! Total drainage internal heat loss
@@ -2146,7 +2146,7 @@ contains
        allocate(cgrid%avg_transp    (npolygons))
        allocate(cgrid%avg_evap      (npolygons))
        allocate(cgrid%avg_smoist_gg (nzg,npolygons))
-       allocate(cgrid%avg_smoist_gc (nzg,npolygons))
+       allocate(cgrid%avg_transloss (nzg,npolygons))
        allocate(cgrid%avg_runoff        (npolygons))
        allocate(cgrid%avg_drainage       (npolygons))
        allocate(cgrid%avg_drainage_heat  (npolygons))
@@ -2624,7 +2624,7 @@ contains
     allocate(cpoly%avg_evap      (nsites))
     
     allocate(cpoly%avg_smoist_gg (nzg,nsites))
-    allocate(cpoly%avg_smoist_gc (nzg,nsites))
+    allocate(cpoly%avg_transloss (nzg,nsites))
     allocate(cpoly%avg_runoff        (nsites))
     allocate(cpoly%avg_drainage  (nsites))
     allocate(cpoly%avg_drainage_heat  (nsites))
@@ -2890,7 +2890,7 @@ contains
     allocate(csite%avg_evap      (npatches))
     allocate(csite%avg_netrad    (npatches))
     allocate(csite%avg_smoist_gg (nzg,npatches))
-    allocate(csite%avg_smoist_gc (nzg,npatches))
+    allocate(csite%avg_transloss (nzg,npatches))
     allocate(csite%avg_runoff    (npatches))
     allocate(csite%avg_drainage  (npatches))
     allocate(csite%avg_drainage_heat  (npatches))
@@ -3253,7 +3253,7 @@ contains
        nullify(cgrid%avg_transp              )
        nullify(cgrid%avg_evap                )
        nullify(cgrid%avg_smoist_gg           )
-       nullify(cgrid%avg_smoist_gc           )
+       nullify(cgrid%avg_transloss           )
        nullify(cgrid%avg_runoff              )
        nullify(cgrid%avg_drainage            )
        nullify(cgrid%avg_drainage_heat       )
@@ -3686,7 +3686,7 @@ contains
     nullify(cpoly%avg_transp    )
     nullify(cpoly%avg_evap      )
     nullify(cpoly%avg_smoist_gg )
-    nullify(cpoly%avg_smoist_gc )
+    nullify(cpoly%avg_transloss )
     nullify(cpoly%avg_runoff    )
     nullify(cpoly%avg_drainage  )
     nullify(cpoly%avg_drainage_heat  )
@@ -3949,7 +3949,7 @@ contains
     nullify(csite%avg_evap      )
     nullify(csite%avg_netrad    )
     nullify(csite%avg_smoist_gg )
-    nullify(csite%avg_smoist_gc )
+    nullify(csite%avg_transloss )
     nullify(csite%avg_runoff    )
     nullify(csite%avg_drainage  )
     nullify(csite%avg_drainage_heat  )
@@ -4277,7 +4277,7 @@ contains
        if(associated(cgrid%avg_transp              )) deallocate(cgrid%avg_transp              )
        if(associated(cgrid%avg_evap                )) deallocate(cgrid%avg_evap                )
        if(associated(cgrid%avg_smoist_gg           )) deallocate(cgrid%avg_smoist_gg           )
-       if(associated(cgrid%avg_smoist_gc           )) deallocate(cgrid%avg_smoist_gc           )
+       if(associated(cgrid%avg_transloss           )) deallocate(cgrid%avg_transloss           )
        if(associated(cgrid%avg_runoff              )) deallocate(cgrid%avg_runoff              )
        if(associated(cgrid%avg_drainage            )) deallocate(cgrid%avg_drainage            )
        if(associated(cgrid%avg_drainage_heat       )) deallocate(cgrid%avg_drainage_heat       )
@@ -4725,7 +4725,7 @@ contains
     if(associated(cpoly%avg_transp                  )) deallocate(cpoly%avg_transp                  )
     if(associated(cpoly%avg_evap                    )) deallocate(cpoly%avg_evap                    )
     if(associated(cpoly%avg_smoist_gg               )) deallocate(cpoly%avg_smoist_gg               )
-    if(associated(cpoly%avg_smoist_gc               )) deallocate(cpoly%avg_smoist_gc               )
+    if(associated(cpoly%avg_transloss               )) deallocate(cpoly%avg_transloss               )
     if(associated(cpoly%avg_runoff                  )) deallocate(cpoly%avg_runoff                  )
     if(associated(cpoly%avg_drainage                )) deallocate(cpoly%avg_drainage                )
     if(associated(cpoly%avg_drainage_heat           )) deallocate(cpoly%avg_drainage_heat           )
@@ -4986,7 +4986,7 @@ contains
     if(associated(csite%avg_evap                     )) deallocate(csite%avg_evap                     )
     if(associated(csite%avg_netrad                   )) deallocate(csite%avg_netrad                   )
     if(associated(csite%avg_smoist_gg                )) deallocate(csite%avg_smoist_gg                )
-    if(associated(csite%avg_smoist_gc                )) deallocate(csite%avg_smoist_gc                )
+    if(associated(csite%avg_transloss                )) deallocate(csite%avg_transloss                )
     if(associated(csite%avg_runoff                   )) deallocate(csite%avg_runoff                   )
     if(associated(csite%avg_drainage                 )) deallocate(csite%avg_drainage                 )
     if(associated(csite%avg_drainage_heat            )) deallocate(csite%avg_drainage_heat            )
@@ -5462,7 +5462,7 @@ contains
             osite%soil_fracliq(k,opa)           =  isite%soil_fracliq(k,ipa)
             osite%rootdense(k,opa)              =  isite%rootdense(k,ipa)
             osite%avg_smoist_gg(k,opa)          =  isite%avg_smoist_gg(k,ipa)
-            osite%avg_smoist_gc(k,opa)          =  isite%avg_smoist_gc(k,ipa)
+            osite%avg_transloss(k,opa)          =  isite%avg_transloss(k,ipa)
             osite%avg_sensible_gg(k,opa)        =  isite%avg_sensible_gg(k,ipa)
             osite%aux_s(k,opa)                  =  isite%aux_s(k,ipa)
          end do
@@ -5762,7 +5762,7 @@ contains
        siteout%soil_fracliq(k,1:inc)       = pack(sitein%soil_fracliq(k,:),logmask)
        siteout%rootdense(k,1:inc)          = pack(sitein%rootdense(k,:),logmask)
        siteout%avg_smoist_gg(k,1:inc)      = pack(sitein%avg_smoist_gg(k,:),logmask)
-       siteout%avg_smoist_gc(k,1:inc)      = pack(sitein%avg_smoist_gc(k,:),logmask)
+       siteout%avg_transloss(k,1:inc)      = pack(sitein%avg_transloss(k,:),logmask)
        siteout%avg_sensible_gg(k,1:inc)    = pack(sitein%avg_sensible_gg(k,:),logmask)
        siteout%aux_s(k,1:inc)              = pack(sitein%aux_s(k,:),logmask)
     end do
@@ -9410,10 +9410,10 @@ contains
          call metadata_edio(nvar,igr,'Polygon averaged soil moisture flux,layer nzg is flux with CAS','[kg/m2/s]','ipoly-nzg') 
       end if
       
-      if (associated(cgrid%avg_smoist_gc)) then
+      if (associated(cgrid%avg_transloss)) then
          nvar=nvar+1
-         call vtable_edio_r(npts,cgrid%avg_smoist_gc,nvar,igr,init,cgrid%pyglob_id, &
-              var_len,var_len_global,max_ptrs,'AVG_SMOIST_GC :12:hist:anal') 
+         call vtable_edio_r(npts,cgrid%avg_transloss,nvar,igr,init,cgrid%pyglob_id, &
+              var_len,var_len_global,max_ptrs,'AVG_TRANSLOSS :12:hist:anal') 
          call metadata_edio(nvar,igr,'Polygon averaged soil moisture sink to transpiration','[kg/m2/s]','ipoly-nzg') 
       end if
 
