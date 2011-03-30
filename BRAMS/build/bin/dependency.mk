@@ -73,10 +73,20 @@ souza_cupar_driver.o: mem_micro.mod mem_scratch.mod mem_tend.mod mem_turb.mod
 souza_cupar_driver.o: node_mod.mod shcu_vars_const.mod therm_lib.mod
 edcp_driver.o: consts_coms.mod ed_misc_coms.mod ed_node_coms.mod
 edcp_driver.o: ed_state_vars.mod ed_work_vars.mod grid_coms.mod io_params.mod
-edcp_driver.o: mem_edcp.mod rk4_coms.mod soil_coms.mod
+edcp_driver.o: leaf_coms.mod mem_edcp.mod mem_leaf.mod rk4_coms.mod
+edcp_driver.o: soil_coms.mod
 edcp_init.o: ed_max_dims.mod ed_node_coms.mod ed_para_coms.mod ed_state_vars.mod
 edcp_init.o: ed_work_vars.mod grid_coms.mod mem_grid.mod mem_leaf.mod
 edcp_init.o: node_mod.mod rpara.mod soil_coms.mod
+edcp_lake_driver.o: canopy_air_coms.mod canopy_struct_dynamics.mod
+edcp_lake_driver.o: consts_coms.mod io_params.mod lake_coms.mod leaf_coms.mod
+edcp_lake_driver.o: mem_basic.mod mem_edcp.mod mem_grid.mod mem_leaf.mod
+edcp_lake_driver.o: mem_radiate.mod node_mod.mod rk4_coms.mod therm_lib.mod
+edcp_lake_driver.o: therm_lib8.mod
+edcp_lake_misc.o: canopy_air_coms.mod canopy_struct_dynamics.mod consts_coms.mod
+edcp_lake_misc.o: ed_misc_coms.mod lake_coms.mod leaf_coms.mod mem_edcp.mod
+edcp_lake_misc.o: mem_leaf.mod rk4_coms.mod therm_lib8.mod
+edcp_lake_stepper.o: ed_misc_coms.mod lake_coms.mod rk4_coms.mod
 edcp_load_namelist.o: canopy_air_coms.mod canopy_radiation_coms.mod
 edcp_load_namelist.o: consts_coms.mod decomp_coms.mod disturb_coms.mod
 edcp_load_namelist.o: ed_max_dims.mod ed_misc_coms.mod grid_coms.mod
@@ -104,11 +114,7 @@ edcp_mpiutils.o: optimiz_coms.mod pft_coms.mod phenology_coms.mod
 edcp_mpiutils.o: physiology_coms.mod rk4_coms.mod soil_coms.mod
 edcp_para_init.o: ed_node_coms.mod ed_work_vars.mod io_params.mod mem_grid.mod
 edcp_para_init.o: mem_leaf.mod mem_polygons.mod node_mod.mod soil_coms.mod
-edcp_water.o: canopy_air_coms.mod canopy_struct_dynamics.mod consts_coms.mod
-edcp_water.o: io_params.mod leaf_coms.mod mem_basic.mod mem_cuparm.mod
-edcp_water.o: mem_edcp.mod mem_grid.mod mem_leaf.mod mem_micro.mod
-edcp_water.o: mem_radiate.mod met_driver_coms.mod node_mod.mod rk4_coms.mod
-edcp_water.o: therm_lib.mod
+lake_coms.o: consts_coms.mod
 mem_edcp.o: var_tables.mod
 cond_read.o: mem_grid.mod mem_varinit.mod
 cond_update.o: an_header.mod grid_struct.mod mem_basic.mod mem_grid.mod
@@ -470,8 +476,7 @@ rk4_misc.o: allometry.mod canopy_air_coms.mod canopy_struct_dynamics.mod
 rk4_misc.o: consts_coms.mod ed_max_dims.mod ed_misc_coms.mod ed_state_vars.mod
 rk4_misc.o: ed_therm_lib.mod grid_coms.mod rk4_coms.mod soil_coms.mod
 rk4_misc.o: therm_lib8.mod
-rk4_stepper.o: consts_coms.mod ed_state_vars.mod grid_coms.mod rk4_coms.mod
-rk4_stepper.o: soil_coms.mod therm_lib8.mod
+rk4_stepper.o: ed_state_vars.mod grid_coms.mod rk4_coms.mod soil_coms.mod
 soil_respiration.o: consts_coms.mod decomp_coms.mod ed_state_vars.mod
 soil_respiration.o: pft_coms.mod soil_coms.mod
 structural_growth.o: allometry.mod consts_coms.mod decomp_coms.mod
@@ -664,6 +669,7 @@ hydrology_constants.mod: hydrology_constants.o
 io_params.mod: io_params.o
 isan_coms.mod: isan_coms.o
 ke_coms.mod: ke_coms.o
+lake_coms.mod: lake_coms.o
 leaf_coms.mod: leaf_coms.o
 libxml2f90_interface_module.mod: libxml2f90.f90_pp.o
 libxml2f90_module.mod: libxml2f90.f90_pp.o

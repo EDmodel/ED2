@@ -466,17 +466,20 @@ end subroutine set_polygon_coordinates_edcp
 ! the history file in case this is a history run.                                          !
 !------------------------------------------------------------------------------------------!
 subroutine alloc_edcp_driver(ngrds,nmxp,nmyp)
-   use mem_edcp     , only : ed_fluxf_g        & ! intent(inout)
-                           , ed_fluxp_g        & ! intent(inout)
-                           , wgrid_g           & ! intent(inout)
-                           , ed_precip_g       & ! intent(inout)
-                           , ed_precipm_g      & ! intent(inout)
-                           , alloc_edprecip    & ! sub-routine
-                           , zero_edprecip     & ! sub-routine
-                           , filltab_ed_precip & ! sub-routine
-                           , alloc_edflux      & ! sub-routine
-                           , zero_edflux       ! ! sub-routine
-
+   use mem_edcp , only : ed_fluxf_g        & ! intent(inout)
+                       , ed_fluxp_g        & ! intent(inout)
+                       , wgrid_g           & ! intent(inout)
+                       , wgridm_g          & ! intent(inout)
+                       , ed_precip_g       & ! intent(inout)
+                       , ed_precipm_g      & ! intent(inout)
+                       , alloc_edprecip    & ! sub-routine
+                       , zero_edprecip     & ! sub-routine
+                       , filltab_ed_precip & ! sub-routine
+                       , alloc_edflux      & ! sub-routine
+                       , zero_edflux       & ! sub-routine
+                       , filltab_edflux    ! ! sub-routine
+   use mem_leaf , only : dtleaf            ! ! intent(in) 
+   use leaf_coms, only : ustmin            ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
    integer                  , intent(in) :: ngrds
@@ -489,6 +492,7 @@ subroutine alloc_edcp_driver(ngrds,nmxp,nmyp)
 
    !----- Allocate the actual structures. -------------------------------------------------!
    allocate(wgrid_g     (ngrds))
+   allocate(wgridm_g    (ngrds))
    allocate(ed_fluxp_g  (ngrds))
    allocate(ed_fluxf_g  (ngrds))
    allocate(ed_precip_g (ngrds))
@@ -504,12 +508,14 @@ subroutine alloc_edcp_driver(ngrds,nmxp,nmyp)
       call alloc_edflux  (ed_fluxf_g  (ng), nmxp(ng), nmyp(ng))
       call alloc_edflux  (ed_fluxp_g  (ng), nmxp(ng), nmyp(ng))
       call alloc_edflux  (wgrid_g     (ng), nmxp(ng), nmyp(ng))
+      call alloc_edflux  (wgridm_g    (ng),        1,        1)
       call alloc_edprecip(ed_precip_g (ng), nmxp(ng), nmyp(ng))
       call alloc_edprecip(ed_precipm_g(ng),        1,        1)
       !----- Assign zeroes to the newly allocated matrices. -------------------------------!
-      call zero_edflux  (ed_fluxf_g  (ng))
-      call zero_edflux  (ed_fluxp_g  (ng))
-      call zero_edflux  (wgrid_g     (ng))
+      call zero_edflux  (ed_fluxf_g  (ng), ustmin, dtleaf)
+      call zero_edflux  (ed_fluxp_g  (ng), ustmin, dtleaf)
+      call zero_edflux  (wgrid_g     (ng), ustmin, dtleaf)
+      call zero_edflux  (wgridm_g    (ng), ustmin, dtleaf)
       call zero_edprecip(ed_precip_g (ng))
       call zero_edprecip(ed_precipm_g(ng))
       !------------------------------------------------------------------------------------!
@@ -520,6 +526,7 @@ subroutine alloc_edcp_driver(ngrds,nmxp,nmyp)
       !      Fill the variable tables, and do not bother making average arrays.  We don't  !
       ! need it.                                                                           !
       !------------------------------------------------------------------------------------!
+      call filltab_edflux   (wgrid_g    (ng),wgridm_g    (ng),0,nmxp(ng),nmyp(ng),ng)
       call filltab_ed_precip(ed_precip_g(ng),ed_precipm_g(ng),0,nmxp(ng),nmyp(ng),ng)
       !------------------------------------------------------------------------------------!
    end do

@@ -480,7 +480,7 @@ subroutine heun_integ(h1,csite,ipa,nsteps)
          !    two types of new tries.  If step failed to be minimally reasonable (reject-  !
          !    ed) we have assigned a standard large error (10.0).  Otherwise a new step is !
          !    calculated based on the size of that error.  Hopefully, those new steps      !
-         !    should be less than the previous h.  If the error was small, i.e. less then  !
+         !    should be less than the previous h.  If the error was small, i.e. less than  !
          !    rk4eps, then we are done with this step, and we can move forward             !
          !    time: x = x + h                                                              !
          !---------------------------------------------------------------------------------!

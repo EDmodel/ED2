@@ -175,6 +175,7 @@ subroutine leaf_ocean_diag(ifm,mzg,pastsst,futuresst,soil_energy)
    endif
    !---------------------------------------------------------------------------------------!
 
+
    !----- Find the sea surface temperature. -----------------------------------------------!
    sst = pastsst + timefac_sst * (futuresst -pastsst)
    ssq = cliq * (sst - tsupercool)
@@ -184,6 +185,7 @@ subroutine leaf_ocean_diag(ifm,mzg,pastsst,futuresst,soil_energy)
       soil_energy(izg) = ssq
       call qtk(soil_energy(izg),soil_tempk(izg),soil_fracliq(izg))
    end do
+   !---------------------------------------------------------------------------------------!
 
    return
 end subroutine leaf_ocean_diag

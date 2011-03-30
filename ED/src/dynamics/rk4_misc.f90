@@ -48,8 +48,7 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    use soil_coms             , only : soil8                  ! ! intent(in)
    use ed_therm_lib          , only : ed_grndvap8            ! ! subroutine
    use canopy_air_coms       , only : i_blyr_condct          ! ! intent(in)
-   use canopy_struct_dynamics, only : can_whcap8             & ! subroutine
-                                    , canopy_turbulence8     ! ! subroutine
+   use canopy_struct_dynamics, only : canopy_turbulence8     ! ! subroutine
    implicit none
 
    !----- Arguments -----------------------------------------------------------------------!
@@ -349,7 +348,6 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
 
    !----- Initialise the characteristic properties, and the heat capacities. --------------!
    call canopy_turbulence8(sourcesite,targetp,ipa)
-   call can_whcap8(sourcesite,ipa,targetp%can_rhos,targetp%can_temp,targetp%can_depth)
    !---------------------------------------------------------------------------------------!
 
    !----- Diagnostics variables -----------------------------------------------------------!
@@ -550,8 +548,7 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
                                     , cliq8                 & ! intent(in)
                                     , cice8                 & ! intent(in)
                                     , tsupercool8           ! ! intent(in)
-   use canopy_struct_dynamics, only : can_whcap8            & ! subroutine
-                                    , canopy_turbulence8    ! ! subroutine
+   use canopy_struct_dynamics, only : canopy_turbulence8    ! ! subroutine
    use ed_therm_lib          , only : ed_grndvap8           ! ! subroutine
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
@@ -578,9 +575,6 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
    real(kind=8)                     :: rk4min_veg_water
    !---------------------------------------------------------------------------------------!
 
-   !----- First, we update the canopy air equivalent potential temperature. ---------------!
-   initp%can_theta = exp(initp%can_lntheta)
-
    !----- Then we define some logicals to make the code cleaner. --------------------------!
    ok_shv   = initp%can_shv     >= rk4min_can_shv     .and.                                &
               initp%can_shv     <= rk4max_can_shv
@@ -594,6 +588,10 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
    ! when we add condensed/frozen water in the canopy air space.                           !
    !---------------------------------------------------------------------------------------!
    if (ok_shv .and. ok_theta) then
+
+      !----- First, we update the canopy air potential temperature. -----------------------!
+      initp%can_theta = exp(initp%can_lntheta)
+
       initp%can_rvap  = initp%can_shv / (1.d0 - initp%can_shv)
 
       !------------------------------------------------------------------------------------!
@@ -858,7 +856,6 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
    !----- Compute canopy turbulence properties. -------------------------------------------!
    if (ok_veg .and. ok_shv .and. ok_theta) then
       call canopy_turbulence8(csite,initp,ipa)
-      call can_whcap8(csite,ipa,initp%can_rhos,initp%can_temp,initp%can_depth)
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -2763,18 +2760,20 @@ subroutine print_rk4patch(y,csite,ipa)
 
    write (unit=*,fmt='(80a)')         ('-',k=1,80)
    write (unit=*,fmt='(a)')           ' ATMOSPHERIC CONDITIONS: '
-   write (unit=*,fmt='(a,1x,es12.4)') ' Air temperature     : ',rk4site%atm_tmp
-   write (unit=*,fmt='(a,1x,es12.4)') ' Air potential temp. : ',rk4site%atm_theta
-   write (unit=*,fmt='(a,1x,es12.4)') ' Air theta_Eiv       : ',rk4site%atm_theiv
-   write (unit=*,fmt='(a,1x,es12.4)') ' H2Ov mixing ratio   : ',rk4site%atm_shv
-   write (unit=*,fmt='(a,1x,es12.4)') ' CO2  mixing ratio   : ',rk4site%atm_co2
-   write (unit=*,fmt='(a,1x,es12.4)') ' Pressure            : ',rk4site%atm_prss
-   write (unit=*,fmt='(a,1x,es12.4)') ' Exner function      : ',rk4site%atm_exner
-   write (unit=*,fmt='(a,1x,es12.4)') ' Wind speed          : ',rk4site%vels
-   write (unit=*,fmt='(a,1x,es12.4)') ' Height              : ',rk4site%geoht
-   write (unit=*,fmt='(a,1x,es12.4)') ' Precip. mass  flux  : ',rk4site%pcpg
-   write (unit=*,fmt='(a,1x,es12.4)') ' Precip. heat  flux  : ',rk4site%qpcpg
-   write (unit=*,fmt='(a,1x,es12.4)') ' Precip. depth flux  : ',rk4site%dpcpg
+   write (unit=*,fmt='(a,1x,es12.4)') ' Air temperature       : ',rk4site%atm_tmp
+   write (unit=*,fmt='(a,1x,es12.4)') ' Air potential temp.   : ',rk4site%atm_theta
+   write (unit=*,fmt='(a,1x,es12.4)') ' Air theta_Eiv         : ',rk4site%atm_theiv
+   write (unit=*,fmt='(a,1x,es12.4)') ' H2Ov mixing ratio     : ',rk4site%atm_shv
+   write (unit=*,fmt='(a,1x,es12.4)') ' CO2  mixing ratio     : ',rk4site%atm_co2
+   write (unit=*,fmt='(a,1x,es12.4)') ' Pressure              : ',rk4site%atm_prss
+   write (unit=*,fmt='(a,1x,es12.4)') ' Exner function        : ',rk4site%atm_exner
+   write (unit=*,fmt='(a,1x,es12.4)') ' Wind speed            : ',rk4site%vels
+   write (unit=*,fmt='(a,1x,es12.4)') ' Height                : ',rk4site%geoht
+   write (unit=*,fmt='(a,1x,es12.4)') ' Precip. mass  flux    : ',rk4site%pcpg
+   write (unit=*,fmt='(a,1x,es12.4)') ' Precip. heat  flux    : ',rk4site%qpcpg
+   write (unit=*,fmt='(a,1x,es12.4)') ' Precip. depth flux    : ',rk4site%dpcpg
+   write (unit=*,fmt='(a,1x,es12.4)') ' Downward SW radiation : ',rk4site%rshort
+   write (unit=*,fmt='(a,1x,es12.4)') ' Downward LW radiation : ',rk4site%rlong
 
    write (unit=*,fmt='(80a)') ('=',k=1,80)
    write (unit=*,fmt='(a)'  ) 'Cohort information (only those resolvable are shown): '

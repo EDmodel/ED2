@@ -71,9 +71,6 @@ subroutine ed_init_atm()
    real                          :: elim_nplant
    real                          :: elim_lai
    real                          :: rvaux
-   real                          :: canwcap
-   real                          :: canccap
-   real                          :: canhcap
    !----- Add the MPI common block. -------------------------------------------------------!
    include 'mpif.h'
    !---------------------------------------------------------------------------------------!
@@ -176,7 +173,7 @@ subroutine ed_init_atm()
                   cpatch%lint_shv(ico) = cpatch%lint_shv(ico) / (1. + cpatch%lint_shv(ico))
                end do cohortloop1
                !----- Initialise vegetation wind and turbulence parameters. ---------------!
-               call canopy_turbulence(cpoly,isi,ipa,canwcap,canccap,canhcap)
+               call canopy_turbulence(cpoly,isi,ipa)
             end do patchloop1
          end do siteloop1
       end do polyloop1

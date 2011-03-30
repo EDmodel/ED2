@@ -704,7 +704,7 @@ subroutine leaf_can_diag(ip,can_theta,can_theiv,can_rvap,leaf_class,can_prss,ini
    ! currently a diagnostic variable only, but it should become the main variable if we    !
    ! ever switch to foggy canopy air space.                                                !
    !---------------------------------------------------------------------------------------!
-   can_theiv = thetaeiv(can_theta,can_prss,can_temp,can_rvap,can_rvap,-8)
+   can_theiv = thetaeiv(can_theta,can_prss,can_temp,can_rvap,can_rvap,-84)
    !---------------------------------------------------------------------------------------!
 
 

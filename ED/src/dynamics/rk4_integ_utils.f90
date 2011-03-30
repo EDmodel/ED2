@@ -591,7 +591,7 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
                                              + abs(dy%sfcwater_energy(1) * htry) )
       !------------------------------------------------------------------------------------!
 
-   case(2)
+   case (2)
       !----- Computationally stable layer. ------------------------------------------------!
       meanscale_sfcw_mass   = 0.d0
       meanscale_sfcw_energy = 0.d0
@@ -728,13 +728,15 @@ subroutine get_yscal(y,dy,htry,yscal,cpatch)
                              abs(dy%ebudget_loss2drainage) < tiny_offset)      ) then
          yscal%ebudget_loss2drainage = huge_offset
       else 
-         yscal%ebudget_loss2drainage = abs(dy%ebudget_loss2drainage*htry)
+         yscal%ebudget_loss2drainage = abs(y%ebudget_loss2drainage)                        &
+                                     + abs(dy%ebudget_loss2drainage*htry)
       end if
       if (isoilbc == 0 .or. (abs(y%wbudget_loss2drainage)  < tiny_offset .and.             &
                              abs(dy%wbudget_loss2drainage) < tiny_offset)      ) then
          yscal%wbudget_loss2drainage = huge_offset
       else 
-         yscal%wbudget_loss2drainage = abs(dy%wbudget_loss2drainage*htry)
+         yscal%wbudget_loss2drainage = abs(y%wbudget_loss2drainage)                        &
+                                     + abs(dy%wbudget_loss2drainage*htry)
       end if
 
    else 
@@ -796,7 +798,7 @@ subroutine get_errmax(errmax,yerr,yscal,cpatch,y,ytemp)
    integer                          :: k                ! Counter
    !---------------------------------------------------------------------------------------!
 
-   !----- Initialiee the error with an optimistic number... -------------------------------!
+   !----- Initialise the error with an optimistic number... -------------------------------!
    errmax = 0.d0
 
 
