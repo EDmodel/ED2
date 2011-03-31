@@ -189,7 +189,8 @@ subroutine copy_met_2_lake(i,j,ifm,dsst_dt)
                                      , jdim              & ! intent(in)
                                      , ngrid             ! ! intent(in)
    use therm_lib8             , only : thetaeiv8         & ! function
-                                     , idealdenssh8      ! ! function
+                                     , idealdenssh8      & ! function
+                                     , rehuil8           ! ! function
    use lake_coms              , only : lakemet           ! ! intent(out)
    use consts_coms            , only : cpi8              & ! intent(in)
                                      , p00i8             & ! intent(in)
@@ -389,6 +390,12 @@ subroutine copy_met_2_lake(i,j,ifm,dsst_dt)
 
 
 
+   !----- Log of potential temperature. ---------------------------------------------------!
+   lakemet%atm_lntheta  = log(lakemet%atm_theta)
+   !---------------------------------------------------------------------------------------!
+
+
+
    !----- Pressure. -----------------------------------------------------------------------!
    lakemet%atm_prss  = (lakemet%atm_exner * cpi8) ** cpor8 * p008
    !---------------------------------------------------------------------------------------!
@@ -415,6 +422,7 @@ subroutine copy_met_2_lake(i,j,ifm,dsst_dt)
    lakemet%atm_theiv = thetaeiv8(lakemet%atm_theta,lakemet%atm_prss,lakemet%atm_tmp        &
                                 ,lakemet%atm_rvap,lakemet%atm_rvap)
    lakemet%atm_rhos  = idealdenssh8(lakemet%atm_prss,lakemet%atm_tmp,lakemet%atm_shv)
+   lakemet%atm_rhv   = rehuil8(lakemet%atm_prss,lakemet%atm_tmp,lakemet%atm_rvap)
 
 
    !---------------------------------------------------------------------------------------!

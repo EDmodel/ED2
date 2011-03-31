@@ -57,8 +57,6 @@ subroutine copy_lake_init(i,j,ifm,initp)
 
    initp%can_temp     = cpi8 * initp%can_theta * initp%can_exner
 
-   initp%can_theiv    = thetaeiv8(initp%can_theta,initp%can_prss,initp%can_temp            &
-                                 ,initp%can_rvap,initp%can_rvap)
    initp%can_rhos     = idealdenssh8(initp%can_prss,initp%can_temp,initp%can_shv)
    initp%can_rhv      = rehuil8(initp%can_prss,initp%can_temp,initp%can_rvap)
    initp%can_ssh      = rslif8(initp%can_prss,initp%can_temp)

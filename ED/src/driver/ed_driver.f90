@@ -206,9 +206,11 @@ subroutine ed_driver()
    !      Initialise drought phenology.  This should be done after the soil moisture has   !
    ! been set up.                                                                          !
    !---------------------------------------------------------------------------------------!
-   do ifm=1,ngrids
-      call first_phenology(edgrid_g(ifm))
-   end do
+   if (runtype /= 'HISTORY') then
+      do ifm=1,ngrids
+         call first_phenology(edgrid_g(ifm))
+      end do
+   end if
    !---------------------------------------------------------------------------------------!
 
 
