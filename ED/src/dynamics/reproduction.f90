@@ -45,6 +45,7 @@ subroutine reproduction(cgrid, month)
                                  , h2dbh                 & ! function
                                  , ed_biomass            & ! function
                                  , area_indices          ! ! subroutine
+   use grid_coms          , only : nzg                   ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(edtype)     , target     :: cgrid
@@ -281,7 +282,7 @@ subroutine reproduction(cgrid, month)
                   ! tissues, we will make them consistent with the initial amount of water !
                   ! available.  This is done inside pheninit_alive_storage.                !
                   !------------------------------------------------------------------------!
-                  call pheninit_balive_bstorage(csite,ipa,ico)
+                  call pheninit_balive_bstorage(nzg,csite,ipa,ico,cpoly%ntext_soil(:,isi))
                   !------------------------------------------------------------------------!
 
 
@@ -318,7 +319,8 @@ subroutine reproduction(cgrid, month)
                   call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico) &
                                    ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)   &
                                    ,cpatch%pft(ico),cpatch%sla(ico), cpatch%lai(ico)       &
-                                   ,cpatch%wpa(ico),cpatch%wai(ico),cpatch%bsapwood(ico)) 
+                                   ,cpatch%wpa(ico),cpatch%wai(ico)                        &
+                                   ,cpatch%crown_area(ico),cpatch%bsapwood(ico))
                   !----- Find heat capacity and vegetation internal energy. ---------------!
                   cpatch%hcapveg(ico) = calc_hcapveg(cpatch%bleaf(ico),cpatch%bdead(ico)   &
                                                     ,cpatch%balive(ico),cpatch%nplant(ico) &

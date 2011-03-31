@@ -1496,7 +1496,7 @@ subroutine leaf_atmo1d(m2,m3,i,j,thp,theta,rv,rtp,co2p,up,vp,pitot,dens,height,p
    atm_co2      = co2p(i,j)
    atm_prss     = p00 * (cpi * atm_exner) ** cpor
    atm_temp     = cpi * atm_theta * atm_exner
-   atm_theiv    = thetaeiv(atm_thil,atm_prss,atm_temp,atm_rvap,atm_rtot,-8)
+   atm_theiv    = thetaeiv(atm_thil,atm_prss,atm_temp,atm_rvap,atm_rtot,-67)
    pcpgl        = pcpg(i,j)
    qpcpgl       = qpcpg(i,j)
    dpcpgl       = dpcpg(i,j)
@@ -1584,7 +1584,7 @@ subroutine leaf0(m2,m3,mpat,i,j,can_theta,can_rvap,can_co2,can_prss,can_theiv,pa
                      / ( can_rsat * (ep + can_rvap(i,j,2)))
 
    can_theiv(i,j,2)  = thetaeiv(can_theta(i,j,2),can_prss(i,j,2),can_temp,can_rvap(i,j,2)  &
-                               ,can_rvap(i,j,2),-8)
+                               ,can_rvap(i,j,2),-26)
 
    can_lntheta       = log(can_theta(i,j,2))
    can_rhos          = idealdenssh(can_prss(i,j,2),can_temp,can_shv)

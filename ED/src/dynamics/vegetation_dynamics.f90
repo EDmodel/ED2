@@ -104,7 +104,9 @@ subroutine vegetation_dynamics(new_month,new_year)
       end if
       !------------------------------------------------------------------------------------!
 
-
+      !------  update dmean and mmean values for NPP allocation terms ---------------------!
+      call normalize_ed_dailyNPP_vars(cgrid)
+      
       !------------------------------------------------------------------------------------!
       !     This should be done every day, but after the longer-scale steps.  We update    !
       ! the carbon and nitrogen pools, and re-set the daily variables.                     !

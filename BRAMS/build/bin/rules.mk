@@ -1289,6 +1289,21 @@ edcp_init.o : $(ED_MIXED)/edcp_init.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
+edcp_lake_driver.o : $(ED_MIXED)/edcp_lake_driver.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+edcp_lake_misc.o : $(ED_MIXED)/edcp_lake_misc.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
+edcp_lake_stepper.o : $(ED_MIXED)/edcp_lake_stepper.f90
+	cp -f $< $(<F:.f90=.f90)
+	$(F90_COMMAND) $(<F:.f90=.f90)
+	rm -f $(<F:.f90=.f90)
+
 edcp_load_namelist.o : $(ED_MIXED)/edcp_load_namelist.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
@@ -1319,7 +1334,7 @@ edcp_para_init.o : $(ED_MIXED)/edcp_para_init.f90
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)
 
-edcp_water.o : $(ED_MIXED)/edcp_water.f90
+lake_coms.o : $(ED_MIXED)/lake_coms.f90
 	cp -f $< $(<F:.f90=.f90)
 	$(F90_COMMAND) $(<F:.f90=.f90)
 	rm -f $(<F:.f90=.f90)

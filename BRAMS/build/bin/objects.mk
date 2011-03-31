@@ -265,14 +265,17 @@ OBJ_MODEL =                         \
 	vtab_fill.o                 \
 	edcp_driver.o               \
 	edcp_init.o                 \
+	edcp_lake_driver.o          \
+	edcp_lake_misc.o            \
+	edcp_lake_stepper.o         \
 	edcp_load_namelist.o        \
 	edcp_met.o                  \
 	edcp_met_init.o             \
 	edcp_model.o                \
 	edcp_mpiutils.o             \
 	edcp_para_init.o            \
-	edcp_water.o                \
 	mem_edcp.o                  \
+	lake_coms.o                 \
 	allometry.o                 \
 	average_utils.o             \
 	budget_utils.o              \

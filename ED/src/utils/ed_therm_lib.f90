@@ -348,7 +348,7 @@ module ed_therm_lib
    !                                                                                       !
    ! LP93 - Lee, T. J., R. A. Pielke, 1993: CORRIGENDUM, J. Appl. Meteorol., 32, 580.      !
    !---------------------------------------------------------------------------------------!
-   subroutine ed_grndvap8(ksn,nsoil,topsoil_water,topsoil_temp,topsoil_fliq,sfcwater_temp  &
+   subroutine ed_grndvap8(ksn,topsoil_water,topsoil_temp,topsoil_fliq,sfcwater_temp        &
                          ,sfcwater_fliq,can_prss,can_shv,ground_shv,ground_ssh             &
                          ,ground_temp,ground_fliq)
       use soil_coms   , only : soil8      & ! intent(in)
@@ -358,11 +358,12 @@ module ed_therm_lib
                              , gorh2o8    & ! intent(in)
                              , lnexp_min8 ! ! intent(in) 
       use therm_lib8  , only : rslif8     ! ! function
-
+      use rk4_coms    , only : rk4site    ! ! intent(in)
+      use grid_coms   , only : nzg        ! ! intent(in)
+      use ed_max_dims , only : n_pft      ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
       integer     , intent(in)  :: ksn           ! # of surface water layers    [     ----]
-      integer     , intent(in)  :: nsoil         ! Soil type                    [     ----]
       real(kind=8), intent(in)  :: topsoil_water ! Top soil water               [m³_h2o/m³]
       real(kind=8), intent(in)  :: topsoil_temp  ! Top soil temperature         [        K]
       real(kind=8), intent(in)  :: topsoil_fliq  ! Top soil liquid water frac.  [       --]
@@ -375,11 +376,52 @@ module ed_therm_lib
       real(kind=8), intent(out) :: ground_temp   ! Surface temperature          [        K]
       real(kind=8), intent(out) :: ground_fliq   ! Surface liquid water frac.   [       --]
       !----- Local variables --------------------------------------------------------------!
+      integer                   :: nsoil         ! Soil type                    [     ----]
+      integer                   :: k             ! Index counter.               [     ----]
       real(kind=8)              :: slpotvn       ! soil water potential         [        m]
       real(kind=8)              :: alpha         ! alpha term (Lee-Pielke,1992) [     ----]
       real(kind=8)              :: beta          ! beta term  (Lee-Pielke,1992) [     ----]
       real(kind=8)              :: lnalpha       ! ln(alpha)                    [     ----]
       real(kind=8)              :: smterm        ! soil moisture term           [     ----]
+      !------------------------------------------------------------------------------------!
+
+      !------ Soil type at the top layer. -------------------------------------------------!
+      nsoil = rk4site%ntext_soil(nzg)
+      select case (nsoil)
+      case (1:12)
+         continue
+      case default
+         write (unit=*,fmt='(a)'              ) ' ----- Strange site... ------------------'
+         write (unit=*,fmt='(a,1x,i7)'        ) ' NZG     =',nzg
+         write (unit=*,fmt='(a,1x,i7)'        ) ' LSL     =',rk4site%lsl
+         write (unit=*,fmt='(a,99(1x,i7))'    ) ' NTEXT   =',(rk4site%ntext_soil(k)        &
+                                                             ,k=1,nzg)
+         write (unit=*,fmt='(a,es12.5)'       ) ' THEIV   =',rk4site%atm_theiv
+         write (unit=*,fmt='(a,es12.5)'       ) ' THETA   =',rk4site%atm_theta
+         write (unit=*,fmt='(a,es12.5)'       ) ' TEMP    =',rk4site%atm_tmp
+         write (unit=*,fmt='(a,es12.5)'       ) ' SHV     =',rk4site%atm_shv
+         write (unit=*,fmt='(a,es12.5)'       ) ' CO2     =',rk4site%atm_co2
+         write (unit=*,fmt='(a,es12.5)'       ) ' ZOFF    =',rk4site%zoff
+         write (unit=*,fmt='(a,es12.5)'       ) ' EXNER   =',rk4site%atm_exner
+         write (unit=*,fmt='(a,es12.5)'       ) ' PCPG    =',rk4site%pcpg
+         write (unit=*,fmt='(a,es12.5)'       ) ' QPCPG   =',rk4site%qpcpg
+         write (unit=*,fmt='(a,es12.5)'       ) ' DPCPG   =',rk4site%dpcpg
+         write (unit=*,fmt='(a,es12.5)'       ) ' PRSS    =',rk4site%atm_prss
+         write (unit=*,fmt='(a,es12.5)'       ) ' RSHORT  =',rk4site%rshort
+         write (unit=*,fmt='(a,es12.5)'       ) ' RLONG   =',rk4site%rlong
+         write (unit=*,fmt='(a,es12.5)'       ) ' GEOHT   =',rk4site%geoht
+         write (unit=*,fmt='(a,es12.5)'       ) ' LON     =',rk4site%lon
+         write (unit=*,fmt='(a,es12.5)'       ) ' LAT     =',rk4site%lat
+         write (unit=*,fmt='(a,99(1x,es12.5))') ' ELONGF  =',(rk4site%green_leaf_factor(k) &
+                                                             ,k=1,n_pft)
+         write (unit=*,fmt='(a,99(1x,es12.5))') ' VELS    =',rk4site%vels
+         write (unit=*,fmt='(a,99(1x,es12.5))') ' LNTHETA =',rk4site%atm_lntheta
+         write (unit=*,fmt='(a,99(1x,es12.5))') ' RVAP    =',rk4site%atm_rvap
+         write (unit=*,fmt='(a,99(1x,es12.5))') ' RHV     =',rk4site%atm_rhv
+         write (unit=*,fmt='(a,99(1x,es12.5))') ' RHOS    =',rk4site%atm_rhos
+         call fatal_error ('Weird site-level soil texture!'                                &
+                          ,'ed_grndvap8','ed_therm_lib.f90')
+      end select
       !------------------------------------------------------------------------------------!
 
 

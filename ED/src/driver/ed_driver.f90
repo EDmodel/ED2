@@ -22,7 +22,6 @@ subroutine ed_driver()
                                 , nnodetot            & ! intent(in)
                                 , sendnum             & ! intent(inout)
                                 , recvnum             ! ! intent(in)
-   use phenology_startup , only : phenology_init      ! ! intent(in)
 
    implicit none
    !----- Included variables. -------------------------------------------------------------!
@@ -126,7 +125,6 @@ subroutine ed_driver()
 
       if (nnodetot /= 1 ) call MPI_Barrier(MPI_COMM_WORLD,ierr)
       !------------------------------------------------------------------------------------!
-      call phenology_init()
    else
 
       !------------------------------------------------------------------------------------!
@@ -138,7 +136,7 @@ subroutine ed_driver()
    end if
 
    !----- TEMPORARY THING... We eliminate all patches but the one to be debugged. ---------!
-   ! call exterminate_patches_except(10)
+   !call exterminate_patches_except(1)
    !---------------------------------------------------------------------------------------!
 
 
@@ -194,11 +192,9 @@ subroutine ed_driver()
    ! init_full_history_restart because it depends on some meteorological variables that    !
    ! were not initialised until the sub-routine ed_init_atm was called.                    !
    !---------------------------------------------------------------------------------------!
-   if (trim(runtype) == 'HISTORY') then
-      do ifm=1,ngrids
-         call update_derived_props(edgrid_g(ifm))
-      end do
-   end if
+   do ifm=1,ngrids
+      call update_derived_props(edgrid_g(ifm))
+   end do
    !---------------------------------------------------------------------------------------!
 
 
@@ -207,7 +203,7 @@ subroutine ed_driver()
    !      Initialise drought phenology.  This should be done after the soil moisture has   !
    ! been set up.                                                                          !
    !---------------------------------------------------------------------------------------!
-   if (trim(runtype) /= 'HISTORY') then
+   if (runtype /= 'HISTORY') then
       do ifm=1,ngrids
          call first_phenology(edgrid_g(ifm))
       end do

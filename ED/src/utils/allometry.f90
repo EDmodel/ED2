@@ -446,7 +446,8 @@ module allometry
    !                     forestry systems. Rapports Production Soudano-Sahélienne.         !
    !                     Wageningen, 1995.                                                 !
    !---------------------------------------------------------------------------------------!
-   subroutine area_indices(nplant,bleaf,bdead,balive,dbh,hite,pft,sla,lai,wpa,wai, bsapwood)
+   subroutine area_indices(nplant,bleaf,bdead,balive,dbh,hite,pft,sla,lai,wpa,wai          &
+                          ,crown_area,bsapwood)
       use pft_coms    , only : is_tropical     & ! intent(in)
                              , is_grass        & ! intent(in)
                              , rho             & ! intent(in)
@@ -466,32 +467,37 @@ module allometry
       use rk4_coms    , only : ibranch_thermo  ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      integer , intent(in)  :: pft     ! Plant functional type               [         ---]
-      real    , intent(in)  :: nplant  ! Number of plants                    [    plant/m²]
-      real    , intent(in)  :: bleaf   ! Specific leaf biomass               [   kgC/plant]
-      real    , intent(in)  :: bdead   ! Specific structural                 [   kgC/plant]
-      real    , intent(in)  :: balive  ! Specific live tissue biomass        [   kgC/plant]
-      real    , intent(in)  :: bsapwood  ! Specific sapwood biomass          [   kgC/plant]
-      real    , intent(in)  :: dbh     ! Diameter at breast height           [          cm]
-      real    , intent(in)  :: hite    ! Plant height                        [           m]
-      real    , intent(in)  :: sla     ! Specific leaf area                  [m²leaf/plant]
-      real    , intent(out) :: lai     ! Leaf area index                     [   m²leaf/m²]
-      real    , intent(out) :: wpa     ! Wood projected area                 [   m²wood/m²]
-      real    , intent(out) :: wai     ! Wood area index                     [   m²wood/m²]
+      integer , intent(in)  :: pft        ! Plant functional type            [         ---]
+      real    , intent(in)  :: nplant     ! Number of plants                 [    plant/m²]
+      real    , intent(in)  :: bleaf      ! Specific leaf biomass            [   kgC/plant]
+      real    , intent(in)  :: bdead      ! Specific structural              [   kgC/plant]
+      real    , intent(in)  :: balive     ! Specific live tissue biomass     [   kgC/plant]
+      real    , intent(in)  :: bsapwood   ! Specific sapwood biomass         [   kgC/plant]
+      real    , intent(in)  :: dbh        ! Diameter at breast height        [          cm]
+      real    , intent(in)  :: hite       ! Plant height                     [           m]
+      real    , intent(in)  :: sla        ! Specific leaf area               [m²leaf/plant]
+      real    , intent(out) :: lai        ! Leaf area index                  [   m²leaf/m²]
+      real    , intent(out) :: wpa        ! Wood projected area              [   m²wood/m²]
+      real    , intent(out) :: wai        ! Wood area index                  [   m²wood/m²]
+      real    , intent(out) :: crown_area ! Crown area                       [  m²crown/m²]
       !----- Local variables --------------------------------------------------------------!
-      real                  :: bwood   ! Wood biomass                        [   kgC/plant]
-      real                  :: swa     ! Specific wood area                  [    m²/plant]
-      real                  :: bdiamet ! Diameter of current branch          [           m]
-      real                  :: blength ! Length of each branch of this order [           m]
-      real                  :: nbranch ! Number of branches of this order    [        ----]
-      real                  :: bdmin   ! Minimum diameter                    [           m]
+      real                  :: bwood      ! Wood biomass                     [   kgC/plant]
+      real                  :: swa        ! Specific wood area               [    m²/plant]
+      real                  :: bdiamet    ! Diameter of current branch       [           m]
+      real                  :: blength    ! Length of each branch            [           m]
+      real                  :: nbranch    ! Number of branches               [        ----]
+      real                  :: bdmin      ! Minimum diameter                 [           m]
       !----- External functions -----------------------------------------------------------!
       real    , external    :: errorfun ! Error function.
       !------------------------------------------------------------------------------------!
       
       !----- First, we compute the LAI ----------------------------------------------------!
       lai = bleaf * nplant * sla
-      
+
+
+      !----- Find the crown area. ---------------------------------------------------------!
+      crown_area = min(1.0, nplant * dbh2ca(dbh,sla,pft))
+
       !------------------------------------------------------------------------------------!
       !     Here we check whether we need to compute the branch, stem, and effective       !
       ! branch area indices.  These are only needed when branch thermodynamics is used,    !

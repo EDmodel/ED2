@@ -138,7 +138,7 @@ subroutine fire_frequency(month, cgrid)
                !---------------------------------------------------------------------------!
                fire_wmass_threshold = 0
                do k = ka, nzg
-                  nsoil                = csite%ntext_soil(k,ipa)
+                  nsoil                = cpoly%ntext_soil(k,isi)
                   fire_wmass_threshold = fire_wmass_threshold                              &
                                        + ( fire_smoist_threshold                           &
                                          * (soil(nsoil)%slmsts - soil(nsoil)%soilcp)       &

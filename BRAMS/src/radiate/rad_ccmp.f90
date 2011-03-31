@@ -109,7 +109,7 @@ subroutine shradc(nzp,rvr,rtr,dn0r,dzzr,prd,albedo,solar,cosz,fthr,rshort)
      dsc(k,iv36)=dcvmgp(one,zero,drtr(k)-drvr(k)-1.e-5)
   enddo
   dsc(nzpp,iv36)=dsc(nzp,iv36)
-  icldfl=nint(min(1.,dssum(nz,dsc(2,iv36),1)))
+  icldfl=nint(min(1.d0, dssum(nz, dsc(2,iv36) ,1) ))
 
   if(icldfl /= 0) then
     !
@@ -134,7 +134,7 @@ subroutine shradc(nzp,rvr,rtr,dn0r,dzzr,prd,albedo,solar,cosz,fthr,rshort)
        !  new way from tripoli
        dsc(k,iv2)=.1833*dsc(k,iv1)
        dsc(k,iv3)=.2234*dsc(k,iv1)
-       dsc(k,iv4)=max(10.,dsc(k,iv1))
+       dsc(k,iv4)=max(10.d0,dsc(k,iv1))
        dsc(k,iv5)=10.**(.2633+1.7095*dlog(dlog10(dsc(k,iv4))))
        dsc(k,iv6)=10.**(.3492+1.6518*dlog(dlog10(dsc(k,iv4))))
     enddo
@@ -147,7 +147,7 @@ subroutine shradc(nzp,rvr,rtr,dn0r,dzzr,prd,albedo,solar,cosz,fthr,rshort)
        call dpstable(1,1,dcosz,dsc(k,iv2),dsc(k,iv4),dsc(k,iv6))
        call dpstable(2,1,dcosz,dsc(k,iv3),dsc(k,iv5),dsc(k,iv6))
        call dpstable(3,1,dcosz,dsc(k,iv3),dsc(k,iv6),dsc(k,iv6))
-       dsc(k,iv6)=min(dsc(k,iv6),.99999)
+       dsc(k,iv6)=min(dsc(k,iv6),.99999d0)
     enddo
     !
     !     landa.lt..75um
@@ -155,7 +155,7 @@ subroutine shradc(nzp,rvr,rtr,dn0r,dzzr,prd,albedo,solar,cosz,fthr,rshort)
     do k=2,nzpp
        dsc(k,iv30)=dsc(k,iv4)*dsc(k,iv2)
        dsc(k,irea)=dsc(k,iv30)/(dcosz+dsc(k,iv30))
-       dsc(k,irea)=min(1.,max(0.,dsc(k,irea)))
+       dsc(k,irea)=min(1.d0,max(0.d0,dsc(k,irea)))
        dsc(k,itr1)=1.-dsc(k,irea)
        dsc(k,iv11)=(1.-dsc(k,iv6)+2.*dsc(k,iv5)*dsc(k,iv6))  &
             /(1.-dsc(k,iv6))
@@ -275,11 +275,11 @@ subroutine shradc(nzp,rvr,rtr,dn0r,dzzr,prd,albedo,solar,cosz,fthr,rshort)
 
      do k=nzpp,2,-1
         dsc(k,iv13)=dsc(k,iv30)-dsc(k,iv16)*dtrsmt
-        dtrsmt=dtrsmt*max(0.,dsc(k,iv13))
+        dtrsmt=dtrsmt*max(0.d0,dsc(k,iv13))
      enddo
      do k=2,nzpp
         dsc(k,iv14)=dsc(k,iv30)-dsc(k,iv16)*dtrsmt
-        dtrsmt=dtrsmt*max(0.,dsc(k,iv14))
+        dtrsmt=dtrsmt*max(0.d0,dsc(k,iv14))
      enddo
      !
      !     REF.....STEPHENS,1979,J.A.S. P1542

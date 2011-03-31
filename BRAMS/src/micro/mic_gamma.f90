@@ -105,22 +105,48 @@ subroutine gcf(gammcf,a,x,gln)
 end subroutine gcf
 !==========================================================================================!
 !==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
 subroutine gser(gamser,a,x,gln)
-   use therm_lib, only: maxit,toler
+   use therm_lib , only : maxit      & ! intent(in)
+                        , toler      ! ! intent(in)
+   use rconstants, only : lnexp_min  ! ! intent(in)
    implicit none
-   real :: a,x,gamser,gln
+   !----- Arguments. ----------------------------------------------------------------------!
+   real   , intent(in)  :: a
+   real   , intent(in)  :: x
+   real   , intent(out) :: gln
+   real   , intent(out) :: gamser
+   !----- Local variables. ----------------------------------------------------------------!
+   real                 :: ap
+   real                 :: sum
+   real                 :: del
+   real                 :: lnexp
+   integer              :: n
+   !----- Local constants. ----------------------------------------------------------------!
+   real   , parameter   :: tiny_offset = 1.e-30
+   !----- External functions. -------------------------------------------------------------!
+   real   , external    :: gammln
+   !---------------------------------------------------------------------------------------!
 
-   real,external ::gammln
-
-   real :: ap,sum,del
-   integer :: n
 
    gln = gammln(a)
-   if (x <= 0.) then
-      if (x < 0.) pause
+   if (x < 0.) then
+      write (unit=*,fmt='(a,1x,es13.6)') 'A   = ',a
+      write (unit=*,fmt='(a,1x,es13.6)') 'X   = ',x
+      write (unit=*,fmt='(a,1x,es13.6)') 'GLN = ',gln
+      call abort_run('Invalid X, it should be non-negative.','gser','mic_gamma.f90')
+   elseif (x < tiny_offset) then
       gamser = 0.
       return
    end if
+
    ap = a
    sum = 1./a
    del = sum
@@ -129,11 +155,13 @@ subroutine gser(gamser,a,x,gln)
       ap = ap + 1.
       del = del*x/ap
       sum =  sum  +  del
-      if(abs(del) < abs(sum)*toler) exit itloop
+      if(abs(del) < tiny_offset .or. abs(del) < abs(sum)*toler) exit itloop
    end do itloop
 
-   if((-x+a*log(x)-gln) .gt. -38.) then
-     gamser = sum*exp(-x+a*log(x)-gln)
+   lnexp = -x + a*log(x) - gln
+
+   if(lnexp > lnexp_min) then
+     gamser = sum * exp(lnexp)
    else
      gamser = 0.
    endif

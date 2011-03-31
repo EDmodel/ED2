@@ -15,7 +15,7 @@ canopy_struct_dynamics.o: physiology_coms.mod rk4_coms.mod soil_coms.mod
 disturbance.o: allometry.mod consts_coms.mod decomp_coms.mod disturb_coms.mod
 disturbance.o: ed_max_dims.mod ed_misc_coms.mod ed_state_vars.mod
 disturbance.o: ed_therm_lib.mod fuse_fiss_utils.mod grid_coms.mod
-disturbance.o: mem_polygons.mod pft_coms.mod phenology_coms.mod
+disturbance.o: mem_polygons.mod pft_coms.mod
 euler_driver.o: canopy_air_coms.mod canopy_struct_dynamics.mod consts_coms.mod
 euler_driver.o: ed_max_dims.mod ed_misc_coms.mod ed_state_vars.mod grid_coms.mod
 euler_driver.o: hydrology_coms.mod met_driver_coms.mod rk4_coms.mod
@@ -42,9 +42,8 @@ lsm_hyd.o: grid_coms.mod hydrology_coms.mod hydrology_constants.mod pft_coms.mod
 lsm_hyd.o: soil_coms.mod therm_lib.mod
 mortality.o: consts_coms.mod disturb_coms.mod ed_max_dims.mod ed_misc_coms.mod
 mortality.o: ed_state_vars.mod pft_coms.mod
-phenology_aux.o: allometry.mod consts_coms.mod ed_max_dims.mod ed_state_vars.mod
-phenology_aux.o: ed_therm_lib.mod grid_coms.mod pft_coms.mod phenology_coms.mod
-phenology_aux.o: soil_coms.mod
+phenology_aux.o: consts_coms.mod ed_max_dims.mod ed_state_vars.mod pft_coms.mod
+phenology_aux.o: phenology_coms.mod
 phenology_driv.o: allometry.mod consts_coms.mod decomp_coms.mod ed_max_dims.mod
 phenology_driv.o: ed_misc_coms.mod ed_state_vars.mod ed_therm_lib.mod
 phenology_driv.o: grid_coms.mod pft_coms.mod phenology_coms.mod soil_coms.mod
@@ -212,8 +211,8 @@ hdf5_utils.o: hdf5_coms.mod
 invmondays.o: ed_misc_coms.mod
 lapse.o: consts_coms.mod ed_state_vars.mod met_driver_coms.mod
 numutils.o: consts_coms.mod therm_lib.mod
-stable_cohorts.o: ed_max_dims.mod ed_state_vars.mod pft_coms.mod
-stable_cohorts.o: phenology_coms.mod
+stable_cohorts.o: allometry.mod canopy_radiation_coms.mod ed_state_vars.mod
+stable_cohorts.o: pft_coms.mod
 therm_lib.o: consts_coms.mod
 therm_lib8.o: consts_coms.mod therm_lib.mod
 update_derived_props.o: allometry.mod canopy_air_coms.mod consts_coms.mod
