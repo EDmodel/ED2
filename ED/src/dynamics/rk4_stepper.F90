@@ -557,22 +557,19 @@ module rk4_stepper
       use ed_state_vars         , only : sitetype              & ! structure
                                        , patchtype             ! ! structure
       use grid_coms             , only : nzg                   ! ! intent(in)
-      use soil_coms             , only : soil8                 ! ! intent(in), lookup table
-      use consts_coms           , only : t3ple8                & ! intent(in)
-                                       , ttripoli8             ! ! intent(in)
-      use therm_lib8            , only : qtk8                  ! ! subroutine
 
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      type(rk4patchtype) , target      :: y,dydx
+      type(rk4patchtype) , target      :: y
+      type(rk4patchtype) , target      :: dydx
       type(sitetype)     , target      :: csite
       logical            , intent(in)  :: print_problems
       logical            , intent(out) :: reject_step
+      real(kind=8)       , intent(in)  :: h
       !----- Local variables --------------------------------------------------------------!
       type(patchtype)    , pointer     :: cpatch
       integer                          :: k
       integer                          :: ksn
-      real(kind=8)                     :: h
       real(kind=8)                     :: rk4min_veg_water
       integer                          :: ipa
       integer                          :: ico
@@ -1062,7 +1059,7 @@ module rk4_stepper
          write(unit=*,fmt='(6(a,1x))')     '   MIN_THEIV','   MAX_THEIV','     MIN_SHV'    &
                                           ,'     MAX_SHV','     MIN_RHV','     MAX_RHV'
          write(unit=*,fmt='(6(es12.5,1x))')  rk4min_can_theiv,rk4max_can_theiv             &
-                                            ,rk4min_can_shv  ,rk4max_can_shv                &
+                                            ,rk4min_can_shv  ,rk4max_can_shv               &
                                             ,rk4min_can_rhv  ,rk4max_can_rhv
          write(unit=*,fmt='(a)') ' '
          write(unit=*,fmt='(4(a,1x))')     '    MIN_TEMP','    MAX_TEMP','   MIN_THETA'    &
@@ -1092,7 +1089,7 @@ module rk4_stepper
          write(unit=*,fmt='(78a)')         ('-',k=1,78)
          write(unit=*,fmt='(a)')           ' '
          write(unit=*,fmt='(a)')           ' 4. SOIL (TEXTURE CLASS AT TOP LAYER): '
-         write(unit=*,fmt='(4(a,1x))')     '   MIN_WATER','   MAX_WATER','    MIN_TEMP'            &
+         write(unit=*,fmt='(4(a,1x))')     '   MIN_WATER','   MAX_WATER','    MIN_TEMP'    &
                                           ,'    MAX_TEMP'
          write(unit=*,fmt='(4(es12.5,1x))') rk4min_soil_water(nzg),rk4max_soil_water(nzg)  &
                                            ,rk4min_soil_temp      ,rk4max_soil_temp

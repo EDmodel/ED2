@@ -524,9 +524,9 @@ subroutine spatial_averages
                site_avg_soil_hcap(k) = 0.
                dslzsum_i = 1./ sum(dslz(cpoly%lsl(isi):nzg))
                do ipa=1,csite%npatches
-                  nsoil = csite%ntext_soil(k,ipa)
+                  nsoil = cpoly%ntext_soil(k,isi)
                   site_avg_soil_hcap(k) = site_avg_soil_hcap(k)                            &
-                                        + soil(csite%ntext_soil(k,ipa))%slcpd              &
+                                        + soil(cpoly%ntext_soil(k,isi))%slcpd              &
                                         * csite%area(ipa) * site_area_i
                   !----- Integrate soil wetness. ------------------------------------------!
                   cpoly%avg_soil_wetness(isi) = cpoly%avg_soil_wetness(isi)                &

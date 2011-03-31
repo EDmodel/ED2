@@ -1096,7 +1096,7 @@ subroutine opspec3
   end do
 
   select case (isfcl)
-  case (1,2,5)
+  case (0:2,5)
      continue
   case (3)
      print*,' fatal - SSiB is not available in this version, use LEAF or ED instead...'

@@ -120,6 +120,9 @@ module ed_state_vars
      ! Wood area index (m2 wood / m2 ground)
      real ,pointer,dimension(:) :: wai
 
+     ! Crown area (m2 crown / m2 ground)
+     real ,pointer,dimension(:) :: crown_area
+
      ! Logical test to check whether this cohort can be resolved...
      logical, pointer, dimension(:) :: resolvable
 
@@ -619,9 +622,6 @@ module ed_state_vars
      ! Short wave radiation absorbed by the surface water, 
      ! diffuse component (W/m2)
      real, pointer,dimension(:,:) :: rshort_s_diffuse
-
-     ! Soil textural class index
-     integer, pointer,dimension(:,:) :: ntext_soil
      
      ! Soil internal energy (J/m3)
      real,    pointer,dimension(:,:) :: soil_energy
@@ -2770,7 +2770,6 @@ contains
     allocate(csite%sfcwater_tempk(nzs,npatches))
     allocate(csite%sfcwater_fracliq(nzs,npatches))
     allocate(csite%nlev_sfcwater(npatches))
-    allocate(csite%ntext_soil(nzg,npatches))
     allocate(csite%soil_energy(nzg,npatches))
     allocate(csite%soil_water(nzg,npatches))
     allocate(csite%soil_tempk(nzg,npatches))
@@ -2990,6 +2989,7 @@ contains
     allocate(cpatch%lai(ncohorts))
     allocate(cpatch%wpa(ncohorts))
     allocate(cpatch%wai(ncohorts))
+    allocate(cpatch%crown_area(ncohorts))
     allocate(cpatch%resolvable(ncohorts))
     allocate(cpatch%bstorage(ncohorts))
     allocate(cpatch%cb(13,ncohorts))
@@ -3821,7 +3821,6 @@ contains
     nullify(csite%sfcwater_tempk)
     nullify(csite%sfcwater_fracliq)
     nullify(csite%nlev_sfcwater)
-    nullify(csite%ntext_soil)
     nullify(csite%soil_energy)
     nullify(csite%soil_water)
     nullify(csite%soil_tempk)
@@ -4024,6 +4023,7 @@ contains
     nullify(cpatch%lai)
     nullify(cpatch%wpa)
     nullify(cpatch%wai)
+    nullify(cpatch%crown_area)
     nullify(cpatch%resolvable)
     nullify(cpatch%bstorage)
     nullify(cpatch%cb)
@@ -4859,7 +4859,6 @@ contains
     if(associated(csite%sfcwater_tempk               )) deallocate(csite%sfcwater_tempk               )
     if(associated(csite%sfcwater_fracliq             )) deallocate(csite%sfcwater_fracliq             )
     if(associated(csite%nlev_sfcwater                )) deallocate(csite%nlev_sfcwater                )
-    if(associated(csite%ntext_soil                   )) deallocate(csite%ntext_soil                   )
     if(associated(csite%soil_energy                  )) deallocate(csite%soil_energy                  )
     if(associated(csite%soil_water                   )) deallocate(csite%soil_water                   )
     if(associated(csite%soil_tempk                   )) deallocate(csite%soil_tempk                   )
@@ -5065,6 +5064,7 @@ contains
     if(associated(cpatch%lai))                 deallocate(cpatch%lai)
     if(associated(cpatch%wpa))                 deallocate(cpatch%wpa)
     if(associated(cpatch%wai))                 deallocate(cpatch%wai)
+    if(associated(cpatch%crown_area))          deallocate(cpatch%crown_area)
     if(associated(cpatch%resolvable))          deallocate(cpatch%resolvable)
     if(associated(cpatch%bstorage))            deallocate(cpatch%bstorage)
     if(associated(cpatch%cb))                  deallocate(cpatch%cb)
@@ -5455,7 +5455,6 @@ contains
 
          !----- Copy the soil variables. --------------------------------------------------!
          do k=1,nzg
-            osite%ntext_soil(k,opa)             =  isite%ntext_soil(k,ipa)
             osite%soil_energy(k,opa)            =  isite%soil_energy(k,ipa)
             osite%soil_water(k,opa)             =  isite%soil_water(k,ipa)
             osite%soil_tempk(k,opa)             =  isite%soil_tempk(k,ipa)
@@ -5755,7 +5754,6 @@ contains
     ! Soil layers 1:nzg
 
     do k=1,nzg
-       siteout%ntext_soil(k,1:inc)         = pack(sitein%ntext_soil(k,:),logmask)
        siteout%soil_energy(k,1:inc)        = pack(sitein%soil_energy(k,:),logmask)
        siteout%soil_water(k,1:inc)         = pack(sitein%soil_water(k,:),logmask)
        siteout%soil_tempk(k,1:inc)         = pack(sitein%soil_tempk(k,:),logmask)
@@ -5914,6 +5912,7 @@ contains
     patchout%lai(1:inc)              = pack(patchin%lai,mask)
     patchout%wpa(1:inc)              = pack(patchin%wpa,mask)
     patchout%wai(1:inc)              = pack(patchin%wai,mask)
+    patchout%crown_area(1:inc)       = pack(patchin%crown_area,mask)
     patchout%resolvable(1:inc)       = pack(patchin%resolvable,mask)
     patchout%bstorage(1:inc)         = pack(patchin%bstorage,mask)
     patchout%cbr_bar(1:inc)          = pack(patchin%cbr_bar,mask)
@@ -6182,6 +6181,7 @@ contains
        patchout%lai(iout)              = patchin%lai(iin)
        patchout%wpa(iout)              = patchin%wpa(iin)
        patchout%wai(iout)              = patchin%wai(iin)
+       patchout%crown_area(iout)       = patchin%crown_area(iin)
        patchout%resolvable(iout)       = patchin%resolvable(iin)
        patchout%bstorage(iout)         = patchin%bstorage(iin)
        patchout%cb(:,iout)             = patchin%cb(:,iin)
@@ -11605,14 +11605,6 @@ contains
       !------------------------------------------------------------------------------------!
       npts = csite%npatches * nzg
 
-
-      if (associated(csite%ntext_soil)) then
-         nvar=nvar+1
-           call vtable_edio_i(npts,csite%ntext_soil,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'NTEXT_SOIL_PA :320:hist:anal:mont:dail:dcyc:year') 
-         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
-      end if
-
       if (associated(csite%soil_energy)) then
          nvar=nvar+1
            call vtable_edio_r(npts,csite%soil_energy,nvar,igr,init,csite%paglob_id, &
@@ -12084,6 +12076,13 @@ contains
          nvar=nvar+1
            call vtable_edio_r(npts,cpatch%wai,nvar,igr,init,cpatch%coglob_id, &
            var_len,var_len_global,max_ptrs,'WAI_CO :41:hist:dail:anal:mont:year:dcyc') 
+         call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
+      end if
+
+      if (associated(cpatch%crown_area)) then
+         nvar=nvar+1
+           call vtable_edio_r(npts,cpatch%crown_area,nvar,igr,init,cpatch%coglob_id, &
+           var_len,var_len_global,max_ptrs,'CROWN_AREA_CO :41:hist:dail:anal:mont:year:dcyc') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
 

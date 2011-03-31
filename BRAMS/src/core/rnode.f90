@@ -10,13 +10,13 @@ subroutine rams_node()
 
   use mem_grid, only : &
        ideltat,        & ! INTENT(IN)
-       iflag,          & ! INTENT(IN) - ALF - Modifyed in DTSET
+       iflag,          & ! INTENT(IN) - ALF - Modified in DTSET
        maxsched,       & ! INTENT(IN)
        maxschent,      & ! INTENT(IN)
-       nndtrat,        & ! INTENT(IN) - Modifyed in DTSET
+       nndtrat,        & ! INTENT(IN) - Modified in DTSET
        time,           & ! INTENT(INOUT)
        timmax,         & ! INTENT(IN)
-       dtlongn,        & ! INTENT(IN) - a ser Modifyed in DTSET
+       dtlongn,        & ! INTENT(IN) - a ser Modified in DTSET
        ngrids,         & ! INTENT(IN)
        nsubs,          & ! INTENT(IN) - a ser (OUT) na chamada a modsched
        isstp,          & ! INTENT(OUT)

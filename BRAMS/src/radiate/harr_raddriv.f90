@@ -50,8 +50,8 @@
 ! the integration.                                                                         !
 !------------------------------------------------------------------------------------------!
 subroutine harr_raddriv(m1,m2,m3,nclouds,ncrad,ifm,if_adap,time,deltat,ia,iz,ja,jz         &
-                       ,nadd_rad,iswrtyp,ilwrtyp,icumfdbk,flpw,topt,glat,rtgt,pi0,pp,rho   &
-                       ,theta,rv,co2p,rshort,rshort_diffuse,rlong,fthrd,rlongup,cosz       &
+                       ,nadd_rad,iswrtyp,ilwrtyp,icumfdbk,flpw,topt,glon,glat,rtgt,pi0,pp  &
+                       ,rho,theta,rv,co2p,rshort,rshort_diffuse,rlong,fthrd,rlongup,cosz   &
                        ,albedt,rshort_top,rshortup_top,rlongup_top,fthrd_lw                &
                        ,sh_c,sh_r,sh_p,sh_s,sh_a,sh_g,sh_h                                 &
                        ,con_c,con_r,con_p,con_s,con_a,con_g,con_h                          &
@@ -76,7 +76,7 @@ subroutine harr_raddriv(m1,m2,m3,nclouds,ncrad,ifm,if_adap,time,deltat,ia,iz,ja,
    integer                            , intent(in)    :: nadd_rad,iswrtyp,ilwrtyp,icumfdbk
    real(kind=8)                       , intent(in)    :: time
    real                               , intent(in)    :: deltat
-   real, dimension(m2,m3)             , intent(in)    :: topt,glat,flpw,rtgt
+   real, dimension(m2,m3)             , intent(in)    :: topt,glon,glat,flpw,rtgt
    real, dimension(m1,m2,m3)          , intent(in)    :: pi0,pp,rho,theta,rv,co2p
    real, dimension(m1,m2,m3)          , intent(in)    :: sh_c,sh_r,sh_p,sh_s,sh_a,sh_g,sh_h
    real, dimension(m1,m2,m3)          , intent(in)    :: con_c,con_r,con_p,con_s,con_a
@@ -217,6 +217,8 @@ subroutine harr_raddriv(m1,m2,m3,nclouds,ncrad,ifm,if_adap,time,deltat,ia,iz,ja,
                    write (unit=*,fmt='(a)') '         The model is about to stop!'
                    write (unit=*,fmt='(2(a,1x,i5,1x))') ' - Node:',mynum,' Grid: ',ifm
                    write (unit=*,fmt='(3(a,1x,i5,1x))') ' - k = ',k,' i = ',i,' j = ',j
+                   write (unit=*,fmt='(a,1x,f10.3)')    ' - Longitude:',glon(i,j)
+                   write (unit=*,fmt='(a,1x,f10.3)')    ' - Latitude :',glat(i,j)
                    write (unit=*,fmt='(a)') ' - Either the temperature is too low, or some'
                    write (unit=*,fmt='(a)') '   negative density, mixing ratio, '
                    write (unit=*,fmt='(a)') '   or pressure was detected!'
@@ -632,7 +634,8 @@ subroutine cloud_opt(m1,ka,nrad,koff,mcat,icld,time,mynum)
                          , availcat     ! ! intent(in)
    use rconstants , only : p00i         & ! intent(in)
                          , rocp         & ! intent(in) 
-                         , hr_sec       ! ! intent(in)
+                         , hr_sec       & ! intent(in)
+                         , lnexp_min    ! ! intent(in)
    use harr_coms  , only : jhcatharr    & ! intent(in)
                           ,dzl          & ! intent(in)
                           ,dl           & ! intent(in)
@@ -720,10 +723,6 @@ subroutine cloud_opt(m1,ka,nrad,koff,mcat,icld,time,mynum)
                do ib = 1,nb
                   ext = cxharr(k,icat) * rhoe(k) * dzl(krad)                               &
                       * bcoef(1,ib,krc) * dn ** bcoef(2,ib,krc)
-
-
-!                  if(abs(ocoef(3,ib,krc)*dn)>40.0 .or. abs(ocoef(5,ib,krc)*dn)>40.0) &
-!                       print*,ib,krc,ocoef(3,ib,krc),ocoef(5,ib,krc),dn
 
 
                   om = ocoef(1,ib,krc)                                                     &

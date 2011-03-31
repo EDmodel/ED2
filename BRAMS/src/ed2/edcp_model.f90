@@ -37,7 +37,7 @@ subroutine ed_timestep()
    !---------------------------------------------------------------------------------------!
    !     Now the solve the water fluxes.  This is called every time step.                  !
    !---------------------------------------------------------------------------------------!
-   call simple_lake_model(time,dtlt)
+   call simple_lake_model()
      
    !----- Now we check whether this is the time to call ED. -------------------------------!
    if ( mod(time+dble(dtlt),dble(dtlsm)) < dble(dtlt) .or. first_time(ngrid) ) then

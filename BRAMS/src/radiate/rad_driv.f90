@@ -217,25 +217,26 @@ subroutine radiate(mzp,mxp,myp,ia,iz,ja,jz,mynum)
          call harr_raddriv(mzp,mxp,myp,nclouds,ncrad,ngrid,if_adap,time,dtlt,ia,iz,ja,jz   &
                           ,nadd_rad,iswrtyp,ilwrtyp,icumfdbk                               &
                           ,grid_g(ngrid)%flpw             ,grid_g(ngrid)%topt              &
-                          ,grid_g(ngrid)%glat             ,grid_g(ngrid)%rtgt              &
-                          ,basic_g(ngrid)%pi0             ,basic_g(ngrid)%pp               &
-                          ,basic_g(ngrid)%dn0             ,basic_g(ngrid)%theta            &
-                          ,basic_g(ngrid)%rv              ,scratch%vt3do                   &
-                          ,radiate_g(ngrid)%rshort        ,radiate_g(ngrid)%rshort_diffuse &
-                          ,radiate_g(ngrid)%rlong         ,radiate_g(ngrid)%fthrd          &
-                          ,radiate_g(ngrid)%rlongup       ,radiate_g(ngrid)%cosz           &
-                          ,radiate_g(ngrid)%albedt        ,radiate_g(ngrid)%rshort_top     &
-                          ,radiate_g(ngrid)%rshortup_top  ,radiate_g(ngrid)%rlongup_top    &
-                          ,radiate_g(ngrid)%fthrd_lw      ,scratch%vt3da                   &
-                          ,scratch%vt3db                  ,scratch%vt3dc                   &
-                          ,scratch%vt3dd                  ,scratch%vt3de                   &
-                          ,scratch%vt3df                  ,scratch%vt3dg                   &
-                          ,scratch%vt3dh                  ,scratch%vt3di                   &
-                          ,scratch%vt3dj                  ,scratch%vt3dk                   &
-                          ,scratch%vt3dl                  ,scratch%vt3dm                   &
-                          ,scratch%vt3dn                  ,scratch%vt4da                   &
-                          ,scratch%vt4dc                  ,scratch%vt3dr                   &
-                          ,scratch%vt3ds                  ,mynum                           )                               
+                          ,grid_g(ngrid)%glon             ,grid_g(ngrid)%glat              &
+                          ,grid_g(ngrid)%rtgt             ,basic_g(ngrid)%pi0              &
+                          ,basic_g(ngrid)%pp              ,basic_g(ngrid)%dn0              &
+                          ,basic_g(ngrid)%theta           ,basic_g(ngrid)%rv               &
+                          ,scratch%vt3do                  ,radiate_g(ngrid)%rshort         &
+                          ,radiate_g(ngrid)%rshort_diffuse,radiate_g(ngrid)%rlong          &
+                          ,radiate_g(ngrid)%fthrd         ,radiate_g(ngrid)%rlongup        &
+                          ,radiate_g(ngrid)%cosz          ,radiate_g(ngrid)%albedt         &
+                          ,radiate_g(ngrid)%rshort_top    ,radiate_g(ngrid)%rshortup_top   &
+                          ,radiate_g(ngrid)%rlongup_top   ,radiate_g(ngrid)%fthrd_lw       &
+                          ,scratch%vt3da                  ,scratch%vt3db                   &
+                          ,scratch%vt3dc                  ,scratch%vt3dd                   &
+                          ,scratch%vt3de                  ,scratch%vt3df                   &
+                          ,scratch%vt3dg                  ,scratch%vt3dh                   &
+                          ,scratch%vt3di                  ,scratch%vt3dj                   &
+                          ,scratch%vt3dk                  ,scratch%vt3dl                   &
+                          ,scratch%vt3dm                  ,scratch%vt3dn                   &
+                          ,scratch%vt4da                  ,scratch%vt4dc                   &
+                          ,scratch%vt3dr                  ,scratch%vt3ds                   &
+                          ,mynum                          )
       end if
    end if
    return
