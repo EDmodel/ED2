@@ -233,7 +233,7 @@ module mem_basic
                        ,'VC :3:hist:mpti:mpt3:mpt2')
       if (associated(basic%wc))                                                            &
          call vtables2 (basic%wc,basicm%wc,ng,npts,imean                                   &
-                       ,'WP :3:hist:mpti:mpt3:mpt2')
+                       ,'WC :3:hist:anal:mpt3:mpt2')
       if (associated(basic%pc))                                                            &
          call vtables2 (basic%pc,basicm%pc,ng,npts,imean                                   &
                        ,'PC :3:hist:mpti:mpt3:mpt2')

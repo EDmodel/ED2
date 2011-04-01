@@ -163,14 +163,100 @@ subroutine lake_diagnostics(initp)
                                     , can_whcap8            ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
-   type(lakesitetype), target     :: initp
+   type(lakesitetype), target       :: initp
    !----- Local variables. ----------------------------------------------------------------!
    logical                          :: ok_shv
    logical                          :: ok_theta
    logical                          :: ok_ground
+   logical                          :: ok_flpoint
+   !----- External functions. -------------------------------------------------------------!
+   logical           , external     :: is_finite8
    !---------------------------------------------------------------------------------------!
 
 
+
+   !---------------------------------------------------------------------------------------!
+   !     Sanity check.                                                                     !
+   !---------------------------------------------------------------------------------------!
+   ok_flpoint = is_finite8(initp%can_shv)  .and. is_finite8(initp%can_lntheta) .and.       &
+                is_finite8(initp%can_prss) .and. is_finite8(initp%can_co2)     .and.       &
+                is_finite8(initp%lake_temp)
+   if (.not. ok_flpoint) then
+      write(unit=*,fmt='(a)'          ) '-------------------------------------------------'
+      write(unit=*,fmt='(a)'          ) '  Something went wrong...                        '
+      write(unit=*,fmt='(a)'          ) '-------------------------------------------------'
+      write(unit=*,fmt='(a)'          ) ' Meteorological forcing.'
+      write(unit=*,fmt='(a,1x,es12.5)') ' - Rhos           :',lakemet%atm_rhos
+      write(unit=*,fmt='(a,1x,es12.5)') ' - Temp           :',lakemet%atm_tmp
+      write(unit=*,fmt='(a,1x,es12.5)') ' - Theta          :',lakemet%atm_theta
+      write(unit=*,fmt='(a,1x,es12.5)') ' - Theiv          :',lakemet%atm_theiv
+      write(unit=*,fmt='(a,1x,es12.5)') ' - Lntheta        :',lakemet%atm_lntheta
+      write(unit=*,fmt='(a,1x,es12.5)') ' - Shv            :',lakemet%atm_shv
+      write(unit=*,fmt='(a,1x,es12.5)') ' - Rvap           :',lakemet%atm_rvap
+      write(unit=*,fmt='(a,1x,es12.5)') ' - Rel. hum.      :',lakemet%atm_rhv
+      write(unit=*,fmt='(a,1x,es12.5)') ' - CO2            :',lakemet%atm_co2
+      write(unit=*,fmt='(a,1x,es12.5)') ' - Exner          :',lakemet%atm_exner
+      write(unit=*,fmt='(a,1x,es12.5)') ' - Press          :',lakemet%atm_prss
+      write(unit=*,fmt='(a,1x,es12.5)') ' - Vels           :',lakemet%atm_vels
+      write(unit=*,fmt='(a,1x,es12.5)') ' - ucos           :',lakemet%ucos
+      write(unit=*,fmt='(a,1x,es12.5)') ' - usin           :',lakemet%usin
+      write(unit=*,fmt='(a,1x,es12.5)') ' - Geoht          :',lakemet%geoht
+      write(unit=*,fmt='(a,1x,es12.5)') ' - d(SST)/dt      :',lakemet%dsst_dt
+      write(unit=*,fmt='(a,1x,es12.5)') ' - Rshort         :',lakemet%rshort
+      write(unit=*,fmt='(a,1x,es12.5)') ' - Rlong          :',lakemet%rlong
+      write(unit=*,fmt='(a,1x,es12.5)') ' - Tanz           :',lakemet%tanz
+      write(unit=*,fmt='(a,1x,es12.5)') ' - Lon            :',lakemet%lon
+      write(unit=*,fmt='(a,1x,es12.5)') ' - Lat            :',lakemet%lat
+      write(unit=*,fmt='(a)'          ) ' '
+      write(unit=*,fmt='(a)'          ) '-------------------------------------------------'
+      write(unit=*,fmt='(a)'          ) ' Runge-Kutta structure.'
+      write(unit=*,fmt='(a)'          ) '  - Canopy air space.'
+      write(unit=*,fmt='(a,1x,es12.5)') '    * Rhos        :',initp%can_rhos
+      write(unit=*,fmt='(a,1x,es12.5)') '    * Temp        :',initp%can_temp
+      write(unit=*,fmt='(a,1x,es12.5)') '    * Theta       :',initp%can_theta
+      write(unit=*,fmt='(a,1x,es12.5)') '    * Theiv       :',initp%can_theiv
+      write(unit=*,fmt='(a,1x,es12.5)') '    * Lntheta     :',initp%can_lntheta
+      write(unit=*,fmt='(a,1x,es12.5)') '    * Shv         :',initp%can_shv
+      write(unit=*,fmt='(a,1x,es12.5)') '    * Rvap        :',initp%can_rvap
+      write(unit=*,fmt='(a,1x,es12.5)') '    * Rel. hum.   :',initp%can_rhv
+      write(unit=*,fmt='(a,1x,es12.5)') '    * CO2         :',initp%can_co2
+      write(unit=*,fmt='(a,1x,es12.5)') '    * Exner       :',initp%can_exner
+      write(unit=*,fmt='(a,1x,es12.5)') '    * Press       :',initp%can_prss
+      write(unit=*,fmt='(a,1x,es12.5)') '    * Depth       :',initp%can_depth
+      write(unit=*,fmt='(a)'          ) '  - Lake.'
+      write(unit=*,fmt='(a,1x,es12.5)') '    * Temp        :',initp%lake_temp
+      write(unit=*,fmt='(a,1x,es12.5)') '    * Fliq        :',initp%lake_fliq
+      write(unit=*,fmt='(a,1x,es12.5)') '    * Shv         :',initp%lake_shv
+      write(unit=*,fmt='(a,1x,es12.5)') '    * Ssh         :',initp%lake_ssh
+      write(unit=*,fmt='(a,1x,es12.5)') '    * Roughness   :',initp%lake_rough
+      write(unit=*,fmt='(a)'          ) '  - Stars.'
+      write(unit=*,fmt='(a,1x,es12.5)') '    * Ustar       :',initp%ustar
+      write(unit=*,fmt='(a,1x,es12.5)') '    * Tstar       :',initp%tstar
+      write(unit=*,fmt='(a,1x,es12.5)') '    * Estar       :',initp%estar
+      write(unit=*,fmt='(a,1x,es12.5)') '    * Qstar       :',initp%qstar
+      write(unit=*,fmt='(a,1x,es12.5)') '    * Cstar       :',initp%cstar
+      write(unit=*,fmt='(a,1x,es12.5)') '    * Zeta        :',initp%zeta
+      write(unit=*,fmt='(a,1x,es12.5)') '    * Ribulk      :',initp%ribulk
+      write(unit=*,fmt='(a,1x,es12.5)') '    * GGlake      :',initp%gglake
+      write(unit=*,fmt='(a)'          ) '  - Partially integrated fluxes.'
+      write(unit=*,fmt='(a,1x,es12.5)') '    * Vapour_gc   :',initp%avg_vapor_gc
+      write(unit=*,fmt='(a,1x,es12.5)') '    * Vapour_ac   :',initp%avg_vapor_ac
+      write(unit=*,fmt='(a,1x,es12.5)') '    * Sensible_gc :',initp%avg_sensible_gc
+      write(unit=*,fmt='(a,1x,es12.5)') '    * Sensible_ac :',initp%avg_sensible_ac
+      write(unit=*,fmt='(a,1x,es12.5)') '    * Carbon_gc   :',initp%avg_carbon_gc
+      write(unit=*,fmt='(a,1x,es12.5)') '    * Carbon_ac   :',initp%avg_carbon_ac
+      write(unit=*,fmt='(a,1x,es12.5)') '    * Sflux_u     :',initp%avg_sflux_u
+      write(unit=*,fmt='(a,1x,es12.5)') '    * Sflux_v     :',initp%avg_sflux_u
+      write(unit=*,fmt='(a,1x,es12.5)') '    * Sflux_w     :',initp%avg_sflux_w
+      write(unit=*,fmt='(a,1x,es12.5)') '    * Sflux_t     :',initp%avg_sflux_t
+      write(unit=*,fmt='(a,1x,es12.5)') '    * Sflux_r     :',initp%avg_sflux_r
+      write(unit=*,fmt='(a,1x,es12.5)') '    * Sflux_c     :',initp%avg_sflux_c
+      write(unit=*,fmt='(a,1x,es12.5)') '    * Albedt      :',initp%avg_albedt
+      write(unit=*,fmt='(a,1x,es12.5)') '    * Rlongup     :',initp%avg_rlongup
+      write(unit=*,fmt='(a)'          ) ' '
+      write(unit=*,fmt='(a)'          ) '-------------------------------------------------'
+      call abort_run('Non-resolvable values','lake_diagnostics','edcp_lake_misc.f90')
+   end if
 
 
    !----- Then we define some logicals to make the code cleaner. --------------------------!
