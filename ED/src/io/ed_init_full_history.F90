@@ -122,14 +122,14 @@ subroutine init_full_history_restart()
       if (.not.exists) then
          !----- History couldn't be found.  Stop the run. ---------------------------------!
          call fatal_error ('File '//trim(hnamel)//' not found.'                            &
-                          ,'init_full_history_restart','ed_history_io.f90')
+                          ,'init_full_history_restart','ed_init_full_history.F90')
       else
          call h5fopen_f(hnamel, H5F_ACC_RDONLY_F, file_id, hdferr)
          if (hdferr < 0) then
             write(unit=*,fmt='(a,1x,i8)') 'Error opening HDF5 file - error - ',hdferr
             write(unit=*,fmt='(a,1x,a)' ) '- Filename: ',trim(hnamel)
             call fatal_error('Error opening HDF5 file - error - '//trim(hnamel)            &
-                            ,'init_full_history_restart','ed_history_io.f90')
+                            ,'init_full_history_restart','ed_init_full_history.F90')
          end if
       end if
 
@@ -286,7 +286,7 @@ subroutine init_full_history_restart()
             write (unit=*,fmt='(a)'          ) '------------------------------------------'
 
             call fatal_error('Mismatch between polygon and dataset'                        &
-                            ,'init_full_history_restart','ed_history_io.f90')
+                            ,'init_full_history_restart','ed_init_full_history.F90')
          end if
          !---------------------------------------------------------------------------------!
 
@@ -585,6 +585,7 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
      call hdf_getslab_r(cgrid%dmean_gpp            (ipy:ipy) ,'DMEAN_GPP             '     &
                        ,dsetrank,iparallel,.false.)
 
+  if (associated(cgrid%dmean_nppleaf        ))                                             &
      call hdf_getslab_r(cgrid%dmean_nppleaf        (ipy:ipy) ,'DMEAN_NPPLEAF         '     &
                        ,dsetrank,iparallel,.false.)
                        
@@ -1316,9 +1317,9 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    if(associated(cgrid%mmean_wai_pft)) call hdf_getslab_r(cgrid%mmean_wai_pft(:,ipy) ,'MMEAN_WAI_PFT ' , &
         dsetrank,iparallel,.false.)
    if(associated(cgrid%agb_pft)) call hdf_getslab_r(cgrid%agb_pft(:,ipy) ,'AGB_PFT '       , &
-        dsetrank,iparallel,.true.)
+        dsetrank,iparallel,.false.)
    if(associated(cgrid%ba_pft)) call hdf_getslab_r(cgrid%ba_pft(:,ipy) ,'BA_PFT '        ,   &
-        dsetrank,iparallel,.true.)
+        dsetrank,iparallel,.false.)
 
 
    ! Variables with 2 dimensions (n_dbh,npolygons)
@@ -1577,27 +1578,27 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
 
    if (associated(cpoly%dmean_co2_residual))                                               &
       call hdf_getslab_r(cpoly%dmean_co2_residual   , 'DMEAN_CO2_RESIDUAL_SI '             &
-                        ,dsetrank,iparallel,.true.)
+                        ,dsetrank,iparallel,.false.)
 
    if (associated(cpoly%dmean_water_residual))                                             &
       call hdf_getslab_r(cpoly%dmean_water_residual , 'DMEAN_WATER_RESIDUAL_SI '           &
-                        ,dsetrank,iparallel,.true.)
+                        ,dsetrank,iparallel,.false.)
 
    if (associated(cpoly%dmean_energy_residual))                                            &
       call hdf_getslab_r(cpoly%dmean_energy_residual, 'DMEAN_ENERGY_RESIDUAL_SI '          &
-                        ,dsetrank,iparallel,.true.)
+                        ,dsetrank,iparallel,.false.)
 
    if (associated(cpoly%mmean_co2_residual))                                               &
       call hdf_getslab_r(cpoly%mmean_co2_residual   , 'MMEAN_CO2_RESIDUAL_SI '             &
-                        ,dsetrank,iparallel,.true.)
+                        ,dsetrank,iparallel,.false.)
 
    if (associated(cpoly%mmean_water_residual))                                             &
       call hdf_getslab_r(cpoly%mmean_water_residual , 'MMEAN_WATER_RESIDUAL_SI '           &
-                        ,dsetrank,iparallel,.true.)
+                        ,dsetrank,iparallel,.false.)
 
    if (associated(cpoly%mmean_energy_residual))                                            &
       call hdf_getslab_r(cpoly%mmean_energy_residual, 'MMEAN_ENERGY_RESIDUAL_SI '          &
-                        ,dsetrank,iparallel,.true.)
+                        ,dsetrank,iparallel,.false.)
 
    dsetrank    = 2_8
    globdims(1) = int(n_pft,8)
@@ -2000,27 +2001,27 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
 
    if (associated(csite%dmean_co2_residual))                                               &
       call hdf_getslab_r(csite%dmean_co2_residual   , 'DMEAN_CO2_RESIDUAL_PA '             &
-                        ,dsetrank,iparallel,.true.)
+                        ,dsetrank,iparallel,.false.)
 
    if (associated(csite%dmean_water_residual))                                             &
       call hdf_getslab_r(csite%dmean_water_residual , 'DMEAN_WATER_RESIDUAL_PA '           &
-                        ,dsetrank,iparallel,.true.)
+                        ,dsetrank,iparallel,.false.)
 
    if (associated(csite%dmean_energy_residual))                                            &
       call hdf_getslab_r(csite%dmean_energy_residual, 'DMEAN_ENERGY_RESIDUAL_PA '          &
-                        ,dsetrank,iparallel,.true.)
+                        ,dsetrank,iparallel,.false.)
 
    if (associated(csite%mmean_co2_residual))                                               &
       call hdf_getslab_r(csite%mmean_co2_residual   , 'MMEAN_CO2_RESIDUAL_PA '             &
-                        ,dsetrank,iparallel,.true.)
+                        ,dsetrank,iparallel,.false.)
 
    if (associated(csite%mmean_water_residual))                                             &
       call hdf_getslab_r(csite%mmean_water_residual , 'MMEAN_WATER_RESIDUAL_PA '           &
-                        ,dsetrank,iparallel,.true.)
+                        ,dsetrank,iparallel,.false.)
 
    if (associated(csite%mmean_energy_residual))                                            &
       call hdf_getslab_r(csite%mmean_energy_residual, 'MMEAN_ENERGY_RESIDUAL_PA '          &
-                        ,dsetrank,iparallel,.true.)
+                        ,dsetrank,iparallel,.false.)
 
 
 
@@ -2092,7 +2093,7 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
 !   call h5dopen_f(file_id,'SOIL_WATER_PA ', dset_id, hdferr)
 !   if (hdferr /= 0 ) then
 !      call fatal_error('Dataset did not have soil water?' &
-!           ,'fill_history_site','ed_history_io.f90')
+!           ,'fill_history_site','ed_init_full_history.F90')
 !   endif
    ! ---------------------------------------------------------------------------------!
    ! THESE LINES ARE USEFULL FOR DETERMINING DATA SIZE OF ANY GIVEN OBJECT IN A SET   !
@@ -2118,7 +2119,7 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
 !      deallocate(buff)
 !  else
 !     call fatal_error('Soil water dataset is not real nor double?'                         &
-!                     ,'fill_history_site','ed_history_io.f90')
+!                     ,'fill_history_site','ed_init_full_history.F90')
 !  end if
 
   !--------------------------------------------------------------------------------------------  
@@ -2614,7 +2615,7 @@ subroutine fill_history_patch(cpatch,paco_index,ncohorts_global,green_leaf_facto
 
      if (associated(cpatch%mmean_mort_rate))                                               &
         call hdf_getslab_r(cpatch%mmean_mort_rate,'MMEAN_MORT_RATE_CO '                    &
-                          ,dsetrank,iparallel,.true.)
+                          ,dsetrank,iparallel,.false.)
 
      !----- 2-D, dimensioned by the number of diurnal cycle times. ------------------------!
      dsetrank    = 2
@@ -2771,7 +2772,7 @@ subroutine hdf_getslab_r(buff,varn,dsetrank,iparallel,required)
      write(unit=*,fmt=*) 'File_ID = ',file_id
      write(unit=*,fmt=*) 'Dset_ID = ',dset_id
      call fatal_error('Could not get the dataset for '//trim(varn)//'!!!' &
-          ,'hdf_getslab_r','ed_history_io.f90')
+          ,'hdf_getslab_r','ed_init_full_history.F90')
      
   else if (hdferr /= 0 .and. .not.required ) then
 
@@ -2798,14 +2799,14 @@ subroutine hdf_getslab_r(buff,varn,dsetrank,iparallel,required)
      call h5dget_space_f(dset_id,filespace,hdferr)
      if (hdferr /= 0) then
         call fatal_error('Could not get the hyperslabs filespace for '//trim(varn)//'!!!' &
-             ,'hdf_getslab_r','ed_history_io.f90')
+             ,'hdf_getslab_r','ed_init_full_history.F90')
      end if
      
      call h5sselect_hyperslab_f(filespace,H5S_SELECT_SET_F,chnkoffs, &
           chnkdims,hdferr)
      if (hdferr /= 0) then
         call fatal_error('Could not assign the hyperslabs filespace for '//trim(varn)//'!!!' &
-             ,'hdf_getslab_r','ed_history_io.f90')
+             ,'hdf_getslab_r','ed_init_full_history.F90')
      end if
      
      call h5screate_simple_f(dsetrank,memsize,memspace,hdferr)
@@ -2813,14 +2814,14 @@ subroutine hdf_getslab_r(buff,varn,dsetrank,iparallel,required)
         write(unit=*,fmt=*) 'Chnkdims = ',chnkdims
         write(unit=*,fmt=*) 'Dsetrank = ',dsetrank
         call fatal_error('Could not create the hyperslabs memspace for '//trim(varn)//'!!!' &
-             ,'hdf_getslab_r','ed_history_io.f90')
+             ,'hdf_getslab_r','ed_init_full_history.F90')
      end if
      
      call h5sselect_hyperslab_f(memspace,H5S_SELECT_SET_F,memoffs, &
           memdims,hdferr)
      if (hdferr /= 0) then
         call fatal_error('Could not assign the hyperslabs filespace for '//trim(varn)//'!!!' &
-             ,'hdf_getslab_r','ed_history_io.f90')
+             ,'hdf_getslab_r','ed_init_full_history.F90')
      end if
      
      if (iparallel == 1) then
@@ -2831,7 +2832,7 @@ subroutine hdf_getslab_r(buff,varn,dsetrank,iparallel,required)
         
         if (hdferr /= 0) then
            call fatal_error('Could not read in the hyperslab dataset for '//trim(varn)//'!!!' &
-                ,'hdf_getslab_r','ed_history_io.f90')
+                ,'hdf_getslab_r','ed_init_full_history.F90')
         end if
 
      else
@@ -2841,7 +2842,7 @@ subroutine hdf_getslab_r(buff,varn,dsetrank,iparallel,required)
 
         if (hdferr /= 0) then
            call fatal_error('Could not read in the hyperslab dataset for '//trim(varn)//'!!!' &
-                ,'hdf_getslab_r','ed_history_io.f90')
+                ,'hdf_getslab_r','ed_init_full_history.F90')
         end if
 
      endif
@@ -2895,7 +2896,7 @@ subroutine hdf_getslab_d(buff,varn,dsetrank,iparallel,required)
      write(unit=*,fmt=*) 'File_ID = ',file_id
      write(unit=*,fmt=*) 'Dset_ID = ',dset_id
      call fatal_error('Could not get the dataset for '//trim(varn)//'!!!' &
-          ,'hdf_getslab_d','ed_history_io.f90')
+          ,'hdf_getslab_d','ed_init_full_history.F90')
      
   else if (hdferr /= 0 .and. .not.required ) then
 
@@ -2922,14 +2923,14 @@ subroutine hdf_getslab_d(buff,varn,dsetrank,iparallel,required)
      call h5dget_space_f(dset_id,filespace,hdferr)
      if (hdferr /= 0) then
         call fatal_error('Could not get the hyperslabs filespace for '//trim(varn)//'!!!' &
-             ,'hdf_getslab_r','ed_history_io.f90')
+             ,'hdf_getslab_r','ed_init_full_history.F90')
      end if
      
      call h5sselect_hyperslab_f(filespace,H5S_SELECT_SET_F,chnkoffs, &
           chnkdims,hdferr)
      if (hdferr /= 0) then
         call fatal_error('Could not assign the hyperslabs filespace for '//trim(varn)//'!!!' &
-             ,'hdf_getslab_r','ed_history_io.f90')
+             ,'hdf_getslab_r','ed_init_full_history.F90')
      end if
      
      call h5screate_simple_f(dsetrank,memsize,memspace,hdferr)
@@ -2937,14 +2938,14 @@ subroutine hdf_getslab_d(buff,varn,dsetrank,iparallel,required)
         write(unit=*,fmt=*) 'Chnkdims = ',chnkdims
         write(unit=*,fmt=*) 'Dsetrank = ',dsetrank
         call fatal_error('Could not create the hyperslabs memspace for '//trim(varn)//'!!!' &
-             ,'hdf_getslab_r','ed_history_io.f90')
+             ,'hdf_getslab_r','ed_init_full_history.F90')
      end if
      
      call h5sselect_hyperslab_f(memspace,H5S_SELECT_SET_F,memoffs, &
           memdims,hdferr)
      if (hdferr /= 0) then
         call fatal_error('Could not assign the hyperslabs filespace for '//trim(varn)//'!!!' &
-             ,'hdf_getslab_r','ed_history_io.f90')
+             ,'hdf_getslab_r','ed_init_full_history.F90')
      end if
      
      if (iparallel == 1) then
@@ -2954,7 +2955,7 @@ subroutine hdf_getslab_d(buff,varn,dsetrank,iparallel,required)
              xfer_prp = plist_id)
         if (hdferr /= 0) then
            call fatal_error('Could not read in the hyperslab dataset for '//trim(varn)//'!!!' &
-                ,'hdf_getslab_r','ed_history_io.f90')
+                ,'hdf_getslab_r','ed_init_full_history.F90')
         end if
         
      else
@@ -2963,7 +2964,7 @@ subroutine hdf_getslab_d(buff,varn,dsetrank,iparallel,required)
         
         if (hdferr /= 0) then
            call fatal_error('Could not read in the hyperslab dataset for '//trim(varn)//'!!!' &
-                ,'hdf_getslab_r','ed_history_io.f90')
+                ,'hdf_getslab_r','ed_init_full_history.F90')
         end if
      endif
      
@@ -3017,7 +3018,7 @@ subroutine hdf_getslab_i(buff,varn,dsetrank,iparallel,required)
      write(unit=*,fmt=*) 'File_ID = ',file_id
      write(unit=*,fmt=*) 'Dset_ID = ',dset_id
      call fatal_error('Could not get the dataset for '//trim(varn)//'!!!' &
-          ,'hdf_getslab_i','ed_history_io.f90')
+          ,'hdf_getslab_i','ed_init_full_history.F90')
      
   else if (hdferr /= 0 .and. .not.required ) then
      
@@ -3044,14 +3045,14 @@ subroutine hdf_getslab_i(buff,varn,dsetrank,iparallel,required)
      call h5dget_space_f(dset_id,filespace,hdferr)
      if (hdferr /= 0) then
         call fatal_error('Could not get the hyperslabs filespace for '//trim(varn)//'!!!' &
-             ,'hdf_getslab_i','ed_history_io.f90')
+             ,'hdf_getslab_i','ed_init_full_history.F90')
      endif
      
      call h5sselect_hyperslab_f(filespace,H5S_SELECT_SET_F,chnkoffs, &
           chnkdims,hdferr)
      if (hdferr /= 0) then
         call fatal_error('Could not assign the hyperslabs filespace for '//trim(varn)//'!!!' &
-             ,'hdf_getslab_i','ed_history_io.f90')
+             ,'hdf_getslab_i','ed_init_full_history.F90')
      endif
      
      call h5screate_simple_f(dsetrank,memsize,memspace,hdferr)
@@ -3059,14 +3060,14 @@ subroutine hdf_getslab_i(buff,varn,dsetrank,iparallel,required)
         write(unit=*,fmt=*) 'Chnkdims = ',chnkdims
         write(unit=*,fmt=*) 'Dsetrank = ',dsetrank
         call fatal_error('Could not create the hyperslabs memspace for '//trim(varn)//'!!!' &
-             ,'hdf_getslab_i','ed_history_io.f90')
+             ,'hdf_getslab_i','ed_init_full_history.F90')
      endif
      
      call h5sselect_hyperslab_f(memspace,H5S_SELECT_SET_F,memoffs, &
           memdims,hdferr)
      if (hdferr /= 0) then
         call fatal_error('Could not assign the hyperslabs filespace for '//trim(varn)//'!!!' &
-             ,'hdf_getslab_i','ed_history_io.f90')
+             ,'hdf_getslab_i','ed_init_full_history.F90')
      end if
 
      if (iparallel == 1) then
@@ -3076,7 +3077,7 @@ subroutine hdf_getslab_i(buff,varn,dsetrank,iparallel,required)
              xfer_prp = plist_id)
         if (hdferr /= 0) then
            call fatal_error('Could not read in the hyperslab dataset for '//trim(varn)//'!!!' &
-                ,'hdf_getslab_i','ed_history_io.f90')
+                ,'hdf_getslab_i','ed_init_full_history.F90')
         end if
         
      else
@@ -3084,7 +3085,7 @@ subroutine hdf_getslab_i(buff,varn,dsetrank,iparallel,required)
              mem_space_id = memspace, file_space_id = filespace )
         if (hdferr /= 0) then
            call fatal_error('Could not read in the hyperslab dataset for '//trim(varn)//'!!!' &
-                ,'hdf_getslab_r','ed_history_io.f90')
+                ,'hdf_getslab_r','ed_init_full_history.F90')
         end if
      end if
      
