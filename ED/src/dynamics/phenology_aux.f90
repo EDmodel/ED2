@@ -263,7 +263,7 @@ subroutine update_turnover(cpoly, isi)
          cpatch%vm_bar(ico)= (1.0 - tfact60) * cpatch%vm_bar(ico) + tfact60 * vm0
 
          !----- Update the specific leaf area (SLA). --------------------------------------!
-         if (is_tropical(ipft)) then
+         if (is_tropical(ipft) .and. ipft /= 17) then
             cpatch%sla(ico) =  10.0                                                        &
                             ** ( 1.6923                                                    &
                                - 0.3305 *log10(12.0 / ( cpatch%turnover_amp(ico)           &

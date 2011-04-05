@@ -862,7 +862,7 @@ subroutine init_pft_photo_params()
    Vm0(12:13)                = 18.3            * vmfact
    Vm0(14:15)                = 12.5            * 1.5
    Vm0(16)                   = 21.875          * vmfact
-   Vm0(17)                   = 15.625          * vmfact
+   Vm0(17)                   = 15.625
 
    !----- Define the stomatal slope (aka the M factor). -----------------------------------!
    stomatal_slope(1)         =  6.4
@@ -1062,7 +1062,7 @@ subroutine init_pft_resp_params()
    root_turnover_rate(4)          = 0.333
    root_turnover_rate(5)          = 2.0
    root_turnover_rate(6)          = 3.927218 ! 0.333
-   root_turnover_rate(7)          = 4.117847
+   root_turnover_rate(7)          = 4.117847 ! 0.333
    root_turnover_rate(8)          = 3.800132 ! 0.333
    root_turnover_rate(9)          = 5.772506
    root_turnover_rate(10)         = 5.083700
@@ -1173,7 +1173,7 @@ subroutine init_pft_mort_params()
    mort1(14) = 10.0
    mort1(15) = 10.0
    mort1(16) = 10.0
-   mort1(17) = 10.0
+   mort1(17) = 1.0
 
    mort2(1)  = 20.0
    mort2(2)  = 20.0
@@ -1208,20 +1208,20 @@ subroutine init_pft_mort_params()
    mort3(13) =  0.066
    mort3(14) =  0.037
    mort3(15) =  0.037
-   mort3(16) =  0.0660
-   mort3(17) =  0.0043
+   mort3(16) =  0.06167
+   mort3(17) =  0.01
    
    if (treefall_disturbance_rate < 0.) then
       mort3(:) = mort3(:) - treefall_disturbance_rate
       treefall_disturbance_rate = 0.
    end if
    
-   seedling_mortality(1) = 0.60
-   seedling_mortality(2:4) = 0.95 
-   seedling_mortality(5) = 0.60
+   seedling_mortality(1)    = 0.60
+   seedling_mortality(2:4)  = 0.95 
+   seedling_mortality(5)    = 0.60
    seedling_mortality(6:15) = 0.95 
-   seedling_mortality(16) = 0.60 
-   seedling_mortality(17) = 0.95 
+   seedling_mortality(16)   = 0.60 
+   seedling_mortality(17)   = 0.95 
 
    treefall_s_gtht = 0.0
 
@@ -1302,7 +1302,11 @@ subroutine init_pft_alloc_params()
    is_tropical(12:13) = .false.
    is_tropical(14:15) = .true.
    is_tropical(16)    = .true.
-   is_tropical(17)    = .false.
+   !---------------------------------------------------------------------------------------!
+   !     This uses tropical allometry for DBH->Bleaf and DBH->Bdead, but otherwise it uses !
+   ! the temperate properties.                                                             !
+   !---------------------------------------------------------------------------------------!
+   is_tropical(17)    = .true.
 
    !---------------------------------------------------------------------------------------! 
    !    This flag should be used to define whether the plant is tree or grass              !
@@ -1320,7 +1324,7 @@ subroutine init_pft_alloc_params()
    ! used only for branch area purposes.                                                   !
    !---------------------------------------------------------------------------------------!
 ![KIM] - new tropical parameters
-   rho(1)     = 0.53
+   rho(1)     = 0.32
    rho(2)     = 0.53
    rho(3)     = 0.71
    rho(4)     = 0.90
@@ -1332,9 +1336,8 @@ subroutine init_pft_alloc_params()
    rho(6:11)  = 0.00   ! Currently not used
    rho(12:13) = 0.53
    rho(14:15) = 0.53
-   rho(16)    = 0.53
-   rho(17)    = 0.00   ! Currently not used
-!   rho(17)    = 0.59  ! 0.48
+   rho(16)    = 0.32
+   rho(17)    = 0.59
    !---------------------------------------------------------------------------------------!
 
    !----- Specific leaf area [m² leaf / kg C] ---------------------------------------------!
@@ -1447,7 +1450,7 @@ subroutine init_pft_alloc_params()
    hgt_ref(6:11)  = 1.3
    hgt_ref(12:15) = 0.0
    hgt_ref(16)    = 0.0
-   hgt_ref(17)    = 0.4
+   hgt_ref(17)    = 0.0
 
    !----- Fraction of structural stem that is assumed to be above ground. -----------------!
    agf_bs = 0.7
@@ -1467,7 +1470,7 @@ subroutine init_pft_alloc_params()
    b1Ht(12:13) = 0.4778
    b1Ht(14:15) = 0.0
    b1Ht(16)    = 0.0
-   b1Ht(17)    = 38.0
+   b1Ht(17)    = 0.0
    !----- DBH-height allometry slope [1/cm]. ----------------------------------------------!
    b2Ht(1:4)   = 0.0
    b2Ht(5)     = -0.75
@@ -1480,7 +1483,7 @@ subroutine init_pft_alloc_params()
    b2Ht(12:13) = -0.75
    b2Ht(14:15) =  0.0
    b2Ht(16)    =  0.0
-   b2Ht(17)    = -0.03
+   b2Ht(17)    =  0.0
    !----- DBH-leaf allometry intercept [kg leaf biomass / plant * cm^(-b2Bl)]. ------------!
    b1Bl(1:4)   = 0.0
    b1Bl(5)     = 0.08
@@ -1493,7 +1496,7 @@ subroutine init_pft_alloc_params()
    b1Bl(12:13) = 0.08
    b1Bl(14:15) = 0.0
    b1Bl(16)    = 0.0
-   b1Bl(17)    = 0.024
+   b1Bl(17)    = 0.0
    !-----  DBH-leaf allometry slope [dimensionless]. --------------------------------------!
    b2Bl(1:4)   = 0.0
    b2Bl(5)     = 1.0
@@ -1506,7 +1509,7 @@ subroutine init_pft_alloc_params()
    b2Bl(12:13) = 1.0
    b2Bl(14:15) = 0.0
    b2Bl(16)    = 0.0
-   b2Bl(17)     = 1.899
+   b2Bl(17)    = 0.0
    !----- DBH-stem allometry intercept [kg stem biomass / plant * cm^(-b2Bs)] -------------!
    b1Bs(1:4)   = 0.0 
    b1Bs(5)     = 1.0e-5
@@ -1519,7 +1522,7 @@ subroutine init_pft_alloc_params()
    b1Bs(12:13) = 1.0e-5
    b1Bs(14:15) = 0.0 
    b1Bs(16)    = 0.0 
-   b1Bs(17)    = 0.147
+   b1Bs(17)    = 0.0
    !----- DBH-stem allometry slope [dimensionless]. ---------------------------------------!
    b2Bs(1:4)   = 0.0
    b2Bs(5)     = 1.0
@@ -1532,7 +1535,7 @@ subroutine init_pft_alloc_params()
    b2Bs(12:13) = 1.0
    b2Bs(14:15) = 0.0
    b2Bs(16)    = 0.0
-   b2Bs(17)    = 2.238
+   b2Bs(17)    = 0.0
 
    !---------------------------------------------------------------------------------------!
    !    Defining the branching parameters, following Järvelä (2004)                        !
@@ -1844,7 +1847,7 @@ subroutine init_pft_derived_params()
    real                              :: bdead_max
    real                              :: min_plant_dens
    real, dimension(n_pft)            :: hgt_max
-   logical               , parameter :: print_zero_table = .false.
+   logical               , parameter :: print_zero_table = .true.
    character(len=str_len), parameter :: zero_table_fn    = 'minimum.size.txt'
    !---------------------------------------------------------------------------------------!
 
@@ -1866,7 +1869,7 @@ subroutine init_pft_derived_params()
    hgt_max(14) = 1.50
    hgt_max(15) = 1.50
    hgt_max(16) = 1.50
-   hgt_max(17) = min(35.0, 0.95 * b1Ht(17))
+   hgt_max(17) = 35.0
 
    !----- Maximum DBH. --------------------------------------------------------------------!
    do ipft=1,n_pft     

@@ -319,7 +319,7 @@ subroutine node_sendcyclic(isflag)
       msn = msn_cyc(nsn)
       !----- Making a unique ID for this package ------------------------------------------!
       mpiid = 1000000000+maxmach*10*(machs(msn)-1)+10*(machs(mynum)-1)+ isflag
-      call MPI_Irecv(node_buffs_cyc(nsn)%buffrecv_cyc(1), nbuffrecv_cyc,MPI_PACKED         &
+      call MPI_Irecv(node_buffs_cyc(nsn)%buffrecv_cyc, nbuffrecv_cyc,MPI_PACKED            &
                     ,machs(msn),mpiid,MPI_COMM_WORLD,irecv_req_cyc(isflag,msn),ierr)
    end do
 
@@ -448,8 +448,8 @@ subroutine node_sendcyclic(isflag)
       end select
 
       mpiid = 1000000000+maxmach*10*(machs(mynum)-1)+10*(machs(mdn)-1)+ isflag
-      call MPI_Isend(node_buffs_cyc(ndn)%buffsend_cyc, ipos-1,MPI_Packed,mdn,mpiid         &
-                    ,MPI_COMM_WORLD, isend_req_cyc(isflag,mdn), ierr)
+      call MPI_Isend(node_buffs_cyc(ndn)%buffsend_cyc,ipos    &
+                    ,MPI_PACKED,mdn,mpiid ,MPI_COMM_WORLD, isend_req_cyc(isflag,mdn),ierr)
    end do
 
    return
