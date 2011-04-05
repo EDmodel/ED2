@@ -3104,15 +3104,17 @@ contains
        allocate(cpatch%dmean_gpp(ncohorts))
        allocate(cpatch%dmean_leaf_resp(ncohorts))
        allocate(cpatch%dmean_root_resp(ncohorts))
-       allocate(cpatch%dmean_nppleaf(ncohorts))
-       allocate(cpatch%dmean_nppfroot(ncohorts))
-       allocate(cpatch%dmean_nppsapwood(ncohorts))
-       allocate(cpatch%dmean_nppcroot(ncohorts))
-       allocate(cpatch%dmean_nppseeds(ncohorts))
-       allocate(cpatch%dmean_nppwood(ncohorts))
-       allocate(cpatch%dmean_nppdaily(ncohorts))
+   end if
+
+   allocate(cpatch%dmean_nppleaf(ncohorts))
+   allocate(cpatch%dmean_nppfroot(ncohorts))
+   allocate(cpatch%dmean_nppsapwood(ncohorts))
+   allocate(cpatch%dmean_nppcroot(ncohorts))
+   allocate(cpatch%dmean_nppseeds(ncohorts))
+   allocate(cpatch%dmean_nppwood(ncohorts))
+   allocate(cpatch%dmean_nppdaily(ncohorts))
           
-    end if
+    !end if
     
     if (imoutput > 0 .or. iqoutput > 0) then
        allocate(cpatch%mmean_par_v(ncohorts))
@@ -3137,13 +3139,6 @@ contains
        allocate(cpatch%mmean_leaf_drop(ncohorts))
        allocate(cpatch%mmean_cb(ncohorts))
        allocate(cpatch%mmean_gpp(ncohorts))
-       allocate(cpatch%mmean_nppleaf(ncohorts))
-       allocate(cpatch%mmean_nppfroot(ncohorts))
-       allocate(cpatch%mmean_nppsapwood(ncohorts))
-       allocate(cpatch%mmean_nppcroot(ncohorts))
-       allocate(cpatch%mmean_nppseeds(ncohorts))
-       allocate(cpatch%mmean_nppwood(ncohorts))
-       allocate(cpatch%mmean_nppdaily(ncohorts))
        allocate(cpatch%mmean_leaf_resp(ncohorts))
        allocate(cpatch%mmean_root_resp(ncohorts))
        allocate(cpatch%mmean_growth_resp(ncohorts))
@@ -3151,6 +3146,14 @@ contains
        allocate(cpatch%mmean_vleaf_resp(ncohorts))
        allocate(cpatch%mmean_mort_rate(n_mort,ncohorts))
     end if
+
+    allocate(cpatch%mmean_nppleaf(ncohorts))
+    allocate(cpatch%mmean_nppfroot(ncohorts))
+    allocate(cpatch%mmean_nppsapwood(ncohorts))
+    allocate(cpatch%mmean_nppcroot(ncohorts))
+    allocate(cpatch%mmean_nppseeds(ncohorts))
+    allocate(cpatch%mmean_nppwood(ncohorts))
+    allocate(cpatch%mmean_nppdaily(ncohorts))
     
     if (iqoutput > 0) then
        allocate(cpatch%qmean_par_v       (ndcycle,ncohorts))
