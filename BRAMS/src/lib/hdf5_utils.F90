@@ -15,7 +15,7 @@ subroutine init_hdf5_env()
   call h5open_f(hdferr)
   if (hdferr /= 0) then
      print*,'HDF5 Open error #:',hdferr
-     call fatal_error('Could not initialize the hdf environment' &
+     call abort_run('Could not initialize the hdf environment' &
           ,'h5_output','h5_output.F90')
   endif
 #endif
@@ -159,21 +159,21 @@ subroutine shdf5_open_f(locfn,access,idelete)
         print*,'shdf5_open:'
         print*,'   Attempt to open a file for reading that does not exist.'
         print*,'   Filename: ',trim(locfn)
-        call fatal_error('No file'//trim(locfn)//'.','shdf5_open','hdf5_utils.f90')
+        call abort_run('No file'//trim(locfn)//'.','shdf5_open','hdf5_utils.f90')
      else
         if (caccess == 'R ') then
            call h5fopen_f(trim(locfn)//char(0), H5F_ACC_RDONLY_F, fileid_f, hdferr)
         else if (caccess == 'RW') then
            call h5fopen_f(trim(locfn)//char(0), H5F_ACC_RDWR_F, fileid_f, hdferr)
         else
-           call fatal_error('INVALID FILE READ TYPE ACCESS. SHOULD BE READ OR READ-WRITE' &
+           call abort_run('INVALID FILE READ TYPE ACCESS. SHOULD BE READ OR READ-WRITE' &
                            ,'shdf5_open','hdf5_utils.f90')
            stop
         endif
         
         if (hdferr < 0) then
            print*,'   Error opening hdf5 file - error -',hdferr
-           call fatal_error('Error opening file '//trim(locfn)  &
+           call abort_run('Error opening file '//trim(locfn)  &
                            ,'shdf5_open','hdf5_utils.f90')
         endif
      endif
@@ -186,7 +186,7 @@ subroutine shdf5_open_f(locfn,access,idelete)
         
      else
         if(.not.present(idelete) ) then
-           call fatal_error('idelete not specified when access=W' &
+           call abort_run('idelete not specified when access=W' &
                            ,'shdf5_open','hdf5_utils.f90')
 
         endif
@@ -195,7 +195,7 @@ subroutine shdf5_open_f(locfn,access,idelete)
            print*,'In shdf5_open:'
            print*,'   Attempt to open an existing file for writing, '
            print*,'      but overwrite is disabled. idelete=',idelete
-           call fatal_error('Open existing file for writing with no overwriting.' &
+           call abort_run('Open existing file for writing with no overwriting.' &
                            ,'shdf5_open','hdf5_utils.f90')
         else
            ! Avoiding system calls...
@@ -209,7 +209,7 @@ subroutine shdf5_open_f(locfn,access,idelete)
      endif
      if(hdferr < 0) then
         print*,'file name:',trim(locfn),' ',trim(access), idelete,hdferr
-        call fatal_error('HDF5 file '//trim(locfn)//' create failed:'   &
+        call abort_run('HDF5 file '//trim(locfn)//' create failed:'   &
                         ,'shdf5_open','hdf5_utils.f90')
      endif
   endif
@@ -493,7 +493,7 @@ subroutine shdf5_irec_f(ndims,dims,dsetname,ivara,rvara,cvara,dvara,lvara  &
         !      call h5dread_f(dsetid_f,H5T_NATIVE_HBOOL,lvars, dimsh, hdferr )
         print*,"THERE IS NO HDF5 FORTRAN API DATATYPE FOR BOOLEAN"
         print*,"YOU MUST CHANGE BACK TO C IO FOR THIS"
-        call fatal_error ('Attempt to convert logical variables'&
+        call abort_run ('Attempt to convert logical variables'&
                          &,'shdf5_irec_f','hdf5_utils.f90')
      case ('ia') 
         call h5dread_f(dsetid_f,H5T_NATIVE_INTEGER,ivara, dimshf, hdferr )
@@ -506,10 +506,10 @@ subroutine shdf5_irec_f(ndims,dims,dsetname,ivara,rvara,cvara,dvara,lvara  &
      case ('la') 
         print*,"THERE IS NO HDF5 FORTRAN API DATATYPE FOR BOOLEAN"
         print*,"YOU MUST CHANGE BACK TO C IO FOR THIS"
-        call fatal_error ('Attempt to convert logical variables'&
+        call abort_run ('Attempt to convert logical variables'&
                          &,'shdf5_irec_f','hdf5_utils.f90')
      case default
-        call fatal_error ('Invalid ctype '//trim(ctype)//'!'&
+        call abort_run ('Invalid ctype '//trim(ctype)//'!'&
                          &,'shdf5_irec_f','hdf5_utils.f90')
      end select
   endif

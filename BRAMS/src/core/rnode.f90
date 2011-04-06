@@ -10,13 +10,13 @@ subroutine rams_node()
 
   use mem_grid, only : &
        ideltat,        & ! INTENT(IN)
-       iflag,          & ! INTENT(IN) - ALF - Modifyed in DTSET
+       iflag,          & ! INTENT(IN) - ALF - Modified in DTSET
        maxsched,       & ! INTENT(IN)
        maxschent,      & ! INTENT(IN)
-       nndtrat,        & ! INTENT(IN) - Modifyed in DTSET
+       nndtrat,        & ! INTENT(IN) - Modified in DTSET
        time,           & ! INTENT(INOUT)
        timmax,         & ! INTENT(IN)
-       dtlongn,        & ! INTENT(IN) - a ser Modifyed in DTSET
+       dtlongn,        & ! INTENT(IN) - a ser Modified in DTSET
        ngrids,         & ! INTENT(IN)
        nsubs,          & ! INTENT(IN) - a ser (OUT) na chamada a modsched
        isstp,          & ! INTENT(OUT)
@@ -434,17 +434,21 @@ subroutine init_fields(init)
    integer                        :: ng
    integer                        :: nm
    integer                        :: itype
+   integer                        :: jtype
    integer                        :: i1
    integer                        :: j1
    integer                        :: i2
    integer                        :: j2
    integer                        :: xlbc
    integer                        :: ylbc
+   integer                        :: xst
+   integer                        :: yst
    integer                        :: fdzp
    integer                        :: fdep
    integer                        :: idim
    integer                        :: memf
    integer                        :: nv
+   integer                        :: isflag
    !----- Include modules. ----------------------------------------------------------------!
    include 'interface.h'
    include 'mpif.h'
@@ -507,7 +511,7 @@ subroutine init_fields(init)
    !---------------------------------------------------------------------------------------!
    !      Find the size of the lateral boundary condition buffers.                         !
    !---------------------------------------------------------------------------------------!
-   nbuff_feed=0
+   nbuff_feed = 0
    do ng=1,ngrids
       do nm=1,nmachs
          i1         = ipaths(1,itype,ng,nm)
@@ -531,6 +535,35 @@ subroutine init_fields(init)
 
 
    !---------------------------------------------------------------------------------------!
+   !      Find the size of the staggered lateral boundary condition buffers.               !
+   !---------------------------------------------------------------------------------------!
+   nbuff_st = 0
+   do ng=1,ngrids
+      do nm=1,nmachs
+         do jtype=1,6
+            i1         = ipaths(1,jtype,ng,nm)
+            i2         = ipaths(2,jtype,ng,nm)
+            j1         = ipaths(3,jtype,ng,nm)
+            j2         = ipaths(4,jtype,ng,nm)
+            xst        = i2 - i1 + 1
+            yst        = j2 - j1 + 1 
+         
+            call ze_dims(ng,3,.false.,fdzp,fdep)
+            
+            !------------------------------------------------------------------------------!
+            !    The 2 is because depending on the type the package may have 2 variables.  !
+            !------------------------------------------------------------------------------!
+            memf = 2 * fdzp * xst * yst * fdep
+
+            nbuff_st = max(nbuff_st,memf)
+         end do
+      end do
+   end do
+   !---------------------------------------------------------------------------------------!
+
+
+
+   !---------------------------------------------------------------------------------------!
    !    Allocate long time step send and receive buffers.  Check the size of real and      !
    ! integer packages, and set up the largest as standard, so nothing is lost...           !
    !---------------------------------------------------------------------------------------!
@@ -547,9 +580,11 @@ subroutine init_fields(init)
    if (.not. init) then
       do nm=1,nmachs
          call dealloc_node_buff(node_buffs_lbc(nm))
-         call dealloc_node_buff(node_buffs_st(nm))
          call dealloc_node_buff(node_buffs_feed(nm))
          call dealloc_node_buff(node_buffs_nest(nm))
+         do isflag=1,6
+            call dealloc_node_buff(node_buffs_st(isflag,nm))
+         end do
       end do
    end if
    !---------------------------------------------------------------------------------------!
@@ -565,12 +600,15 @@ subroutine init_fields(init)
          nbuff_feed = max(nbuff_feed,nsend_buff(nm),nrecv_buff(nm))
          call dealloc_node_buff(node_buffs_lbc(nm))
          call alloc_node_buff(node_buffs_lbc(nm),nbuff_feed,f_ndmd_size)
-         call dealloc_node_buff(node_buffs_st(nm))
-         call alloc_node_buff(node_buffs_st(nm),nbuff_feed,f_ndmd_size)
          call dealloc_node_buff(node_buffs_feed(nm))
          call alloc_node_buff(node_buffs_feed(nm),nbuff_feed,f_ndmd_size)
          call dealloc_node_buff(node_buffs_nest(nm))
          call alloc_node_buff(node_buffs_nest(nm),nbuff_feed,f_ndmd_size)
+
+         do isflag=1,6
+            call dealloc_node_buff(node_buffs_st(isflag,nm))
+            call alloc_node_buff(node_buffs_st(isflag,nm),nbuff_st,f_ndmd_size)
+         end do
       end if
    end do
    !---------------------------------------------------------------------------------------!

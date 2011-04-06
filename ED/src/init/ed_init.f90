@@ -137,7 +137,9 @@ subroutine load_ecosystem_state()
       call MPI_Recv(ping,1,MPI_INTEGER,recvnum,100,MPI_COMM_WORLD,MPI_STATUS_IGNORE,ierr)
   
    select case (ied_init_mode)
-   case (-8,-1,0,1,2,3,6)
+   case (4)
+      continue
+   case default
       do igr = 1,ngrids
          call read_site_file(edgrid_g(igr),igr)
       end do

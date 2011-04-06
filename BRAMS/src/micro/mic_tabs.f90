@@ -531,6 +531,7 @@ subroutine mkcoltb
                   dnx = dnminx * (dnmaxx / dnminx) ** (real(iembx-1)/ real(nembc-1))
                   do idx = 1,ndx
                      dx(idx) = dxlo * (dxhi / dxlo)** (real(idx-1) / real(ndx-1))
+
                      fx(idx) = xj(dx(idx),cfvt(ihx),pwvt(ihx),cfvt(ihy),pwvt(ihy),vny,dnx  &
                                  ,dny,gnu(ix),gnu(iy),gyn1,gyn2,gynp,gynp1,gynp2)
                      gx(idx) = fx(idx) * cfmas(ihx)* dx(idx) ** pwmas(ihx)
@@ -560,7 +561,7 @@ end subroutine mkcoltb
 !==========================================================================================!
 !==========================================================================================!
 real function xj(dx,cvx,pvx,cvy,pvy,vny,dnx,dny,xnu,ynu,gyn1,gyn2,gynp,gynp1,gynp2)
-
+   use rconstants, only : lnexp_max
    implicit none
 
    !----- Arguments: ----------------------------------------------------------------------!
@@ -573,7 +574,9 @@ real function xj(dx,cvx,pvx,cvy,pvy,vny,dnx,dny,xnu,ynu,gyn1,gyn2,gynp,gynp1,gyn
    real(kind=8) :: glxnu8,glynu8,gpynu8,gqynu8,gpynua18,gqynua18,gpynua28,gqynua28
    real(kind=8) :: gpynup8,gqynup8,gpynupa18,gqynupa18,gpynupa28,gqynupa28
    !----- External functions --------------------------------------------------------------!
-   real, external :: gammln,gammp,gammq
+   real, external :: gammln,gammp,gammq,sngloff
+   !----- Local constants. ----------------------------------------------------------------!
+   real(kind=8), parameter :: tiny_offset = 1.d-30
    !---------------------------------------------------------------------------------------!
 
    dx8     = dble(dx   )
@@ -592,14 +595,15 @@ real function xj(dx,cvx,pvx,cvy,pvy,vny,dnx,dny,xnu,ynu,gyn1,gyn2,gynp,gynp1,gyn
    gynp18  = dble(gynp1)
    gynp28  = dble(gynp2)
            
-   dnxi8 = 1. / dnx8
+   dnxi8 = 1.d0 / dnx8
    rdx8  = dx8 * dnxi8
    vx8   = cvx8 * dx8 ** pvx8
-   dxy   = (sngl(vx8) / cvy) ** (1. / pvy) / dny
+   dxy   = sngloff((vx8/cvy8)**(1.d0/pvy8)/dny8,tiny_offset)
+
    ynup  = ynu + pvy 
    
 
-   if (rdx8 < 38.) then
+   if (rdx8 < lnexp_max) then
       glxnu8    = dble(gammln(xnu))
       glynu8    = dble(gammln(ynu))
       gpynu8    = dble(gammp(ynu,dxy))
@@ -616,15 +620,15 @@ real function xj(dx,cvx,pvx,cvy,pvy,vny,dnx,dny,xnu,ynu,gyn1,gyn2,gynp,gynp1,gyn
       gqynupa28 = dble(gammq(ynup+2,dxy))
      
       
-      xj8 = exp(-rdx8-glxnu8-glynu8) * rdx8**(xnu8-1.) * dnxi8                             &
+      xj8 = exp(-rdx8-glxnu8-glynu8) * rdx8**(xnu8-1.d0) * dnxi8                           &
           * (vx8 * ( dx8*dx8*(gpynu8-gqynu8))                                              &
-                   + 2.*dx8*dny8*gyn18*(gpynua18-gqynua18)                                 &
+                   + 2.d0*dx8*dny8*gyn18*(gpynua18-gqynua18)                               &
                    + dny8*dny8*gyn28*(gpynua28-gqynua28)                                   &
                    - vny8 * (dx8*dx8*gynp8*(gpynup8-gqynup8)                               &
-                            + 2.*dx8*dny8*gynp18*(gpynupa18-gqynupa18)                     &
+                            + 2.d0*dx8*dny8*gynp18*(gpynupa18-gqynupa18)                   &
                             + dny8*dny8*gynp28*(gpynupa28-gqynupa28)))
-      !----- Making sure underflow won't happen. If overflow happens, let it complain... --!
-      if (abs(xj8) < 1.d-30)  xj8 = sign(1.d-30,xj8)
+      !----- Make sure underflow won't happen.  If overflow happens, let it complain... ---!
+      if (abs(xj8) < tiny_offset)  xj8 = sign(tiny_offset,xj8)
    else
       xj8 = 0.
    end if

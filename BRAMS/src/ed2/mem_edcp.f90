@@ -44,13 +44,17 @@ module mem_edcp
       real(kind=4), dimension (:,:), pointer :: sflux_r
       real(kind=4), dimension (:,:), pointer :: sflux_c
       real(kind=4), dimension (:,:), pointer :: sflux_w
-      real(kind=4), dimension (:,:), pointer :: rlongup
       real(kind=4), dimension (:,:), pointer :: albedt
+      real(kind=4), dimension (:,:), pointer :: rlongup
+      real(kind=4), dimension (:,:), pointer :: rk4step
    end type ed_flux
 
    type(ed_flux),pointer, dimension(:) :: ed_fluxp_g
    type(ed_flux),pointer, dimension(:) :: ed_fluxf_g
    type(ed_flux),pointer, dimension(:) :: wgrid_g
+   type(ed_flux),pointer, dimension(:) :: wgridm_g ! Not that we really need, but we add
+                                                   !    this to make sure the model will 
+                                                   !    work
    !---------------------------------------------------------------------------------------!
 
 
@@ -86,13 +90,13 @@ module mem_edcp
    !=======================================================================================!
    !     This subroutine allocates the flux structures.                                    !
    !---------------------------------------------------------------------------------------!
-   subroutine alloc_edflux(edflux,n2,n3)
+   subroutine alloc_edflux(edflux,nxm,nym)
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(ed_flux), intent(inout) :: edflux
-      integer      , intent(in)    :: n2
-      integer      , intent(in)    :: n3
+      integer      , intent(in)    :: nxm
+      integer      , intent(in)    :: nym
       !------------------------------------------------------------------------------------!
 
 
@@ -102,20 +106,21 @@ module mem_edcp
 
 
       !----- Allocate the elements of the ed flux structure. ------------------------------!
-      allocate(edflux%ustar     (n2,n3)   )
-      allocate(edflux%tstar     (n2,n3)   )
-      allocate(edflux%rstar     (n2,n3)   )
-      allocate(edflux%cstar     (n2,n3)   )
-      allocate(edflux%zeta      (n2,n3)   )
-      allocate(edflux%ribulk    (n2,n3)   )
-      allocate(edflux%sflux_u   (n2,n3)   )
-      allocate(edflux%sflux_v   (n2,n3)   )
-      allocate(edflux%sflux_r   (n2,n3)   )
-      allocate(edflux%sflux_c   (n2,n3)   )
-      allocate(edflux%sflux_t   (n2,n3)   )
-      allocate(edflux%sflux_w   (n2,n3)   )
-      allocate(edflux%rlongup   (n2,n3)   )
-      allocate(edflux%albedt    (n2,n3)   )
+      allocate(edflux%ustar     (nxm,nym)   )
+      allocate(edflux%tstar     (nxm,nym)   )
+      allocate(edflux%rstar     (nxm,nym)   )
+      allocate(edflux%cstar     (nxm,nym)   )
+      allocate(edflux%zeta      (nxm,nym)   )
+      allocate(edflux%ribulk    (nxm,nym)   )
+      allocate(edflux%sflux_u   (nxm,nym)   )
+      allocate(edflux%sflux_v   (nxm,nym)   )
+      allocate(edflux%sflux_r   (nxm,nym)   )
+      allocate(edflux%sflux_c   (nxm,nym)   )
+      allocate(edflux%sflux_t   (nxm,nym)   )
+      allocate(edflux%sflux_w   (nxm,nym)   )
+      allocate(edflux%albedt    (nxm,nym)   )
+      allocate(edflux%rlongup   (nxm,nym)   )
+      allocate(edflux%rk4step   (nxm,nym)   )
 
       return
    end subroutine alloc_edflux
@@ -152,6 +157,7 @@ module mem_edcp
       if (associated(edflux%sflux_w   ))  nullify(edflux%sflux_w   )
       if (associated(edflux%albedt    ))  nullify(edflux%albedt    )
       if (associated(edflux%rlongup   ))  nullify(edflux%rlongup   )
+      if (associated(edflux%rk4step   ))  nullify(edflux%rk4step   )
 
       return
    end subroutine nullify_edflux
@@ -167,14 +173,16 @@ module mem_edcp
    !=======================================================================================!
    !     This subroutine assigns an initial value of zero for all the flux structures.     !
    !---------------------------------------------------------------------------------------!
-   subroutine zero_edflux(edflux)
+   subroutine zero_edflux(edflux,ust0,dtref)
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(ed_flux), intent(inout) :: edflux
+      real         , intent(in)    :: ust0
+      real         , intent(in)    :: dtref
       !------------------------------------------------------------------------------------!
 
-      if (associated(edflux%ustar     ))  edflux%ustar   = 0.0
+      if (associated(edflux%ustar     ))  edflux%ustar   = ust0
       if (associated(edflux%tstar     ))  edflux%tstar   = 0.0
       if (associated(edflux%rstar     ))  edflux%rstar   = 0.0
       if (associated(edflux%cstar     ))  edflux%cstar   = 0.0
@@ -188,6 +196,7 @@ module mem_edcp
       if (associated(edflux%sflux_w   ))  edflux%sflux_w = 0.0
       if (associated(edflux%albedt    ))  edflux%albedt  = 0.0
       if (associated(edflux%rlongup   ))  edflux%rlongup = 0.0
+      if (associated(edflux%rk4step   ))  edflux%rk4step = dtref
 
       return
    end subroutine zero_edflux
@@ -217,14 +226,15 @@ module mem_edcp
       if (associated(edflux%cstar     ))  deallocate(edflux%cstar     )
       if (associated(edflux%zeta      ))  deallocate(edflux%zeta      )
       if (associated(edflux%ribulk    ))  deallocate(edflux%ribulk    )
-      if (associated(edflux%rlongup   ))  deallocate(edflux%rlongup   )
-      if (associated(edflux%albedt    ))  deallocate(edflux%albedt    )
       if (associated(edflux%sflux_u   ))  deallocate(edflux%sflux_u   )
       if (associated(edflux%sflux_v   ))  deallocate(edflux%sflux_v   )
       if (associated(edflux%sflux_r   ))  deallocate(edflux%sflux_r   )
       if (associated(edflux%sflux_c   ))  deallocate(edflux%sflux_c   )
       if (associated(edflux%sflux_t   ))  deallocate(edflux%sflux_t   )
       if (associated(edflux%sflux_w   ))  deallocate(edflux%sflux_w   )
+      if (associated(edflux%albedt    ))  deallocate(edflux%albedt    )
+      if (associated(edflux%rlongup   ))  deallocate(edflux%rlongup   )
+      if (associated(edflux%rk4step   ))  deallocate(edflux%rk4step   )
 
       return
    end subroutine dealloc_edflux
@@ -238,15 +248,53 @@ module mem_edcp
 
    !=======================================================================================!
    !=======================================================================================!
+   !     This routine will fill the variable table with the previous precipitation values  !
+   ! for ED.  This is because we need the information when we run with HISTORY.            !
+   !---------------------------------------------------------------------------------------!
+   subroutine filltab_edflux(edflux,edfluxm,imean,nxm,nym,ng)
+      use var_tables
+
+      implicit none
+      !----- Arguments. -------------------------------------------------------------------!
+      type(ed_flux), intent(inout) :: edflux
+      type(ed_flux), intent(inout) :: edfluxm
+      integer      , intent(in)    :: imean
+      integer      , intent(in)    :: nxm
+      integer      , intent(in)    :: nym
+      integer      , intent(in)    :: ng
+      !----- Local variables. -------------------------------------------------------------!
+      integer                      :: npts
+      !------------------------------------------------------------------------------------!
+
+      !----- Fill pointers to arrays into variable tables. --------------------------------!
+      npts = nxm * nym
+
+      if (associated(edflux%rk4step )) then
+         call vtables2 (edflux%rk4step,edfluxm%rk4step,ng,npts,imean                       &
+                       , 'RK4STEP :2:hist:mpti:mpt3')
+      end if
+
+      return
+   end subroutine filltab_edflux
+   !=======================================================================================!
+   !=======================================================================================!
+
+
+
+
+
+
+   !=======================================================================================!
+   !=======================================================================================!
    !     This subroutine allocates the precipitation structures.                           !
    !---------------------------------------------------------------------------------------!
-   subroutine alloc_edprecip(edprec,n2,n3)
+   subroutine alloc_edprecip(edprec,nxm,nym)
 
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
       type(ed_precip), intent(inout) :: edprec
-      integer        , intent(in)    :: n2
-      integer        , intent(in)    :: n3
+      integer        , intent(in)    :: nxm
+      integer        , intent(in)    :: nym
       !------------------------------------------------------------------------------------!
 
 
@@ -256,8 +304,8 @@ module mem_edcp
 
 
       !----- Allocate the elements of the ed precipitation structure. ---------------------!
-      allocate(edprec%prev_aconpr (n2,n3))
-      allocate(edprec%prev_abulkpr(n2,n3))
+      allocate(edprec%prev_aconpr (nxm,nym))
+      allocate(edprec%prev_abulkpr(nxm,nym))
 
       return
    end subroutine alloc_edprecip
@@ -351,7 +399,7 @@ module mem_edcp
    !     This routine will fill the variable table with the previous precipitation values  !
    ! for ED.  This is because we need the information when we run with HISTORY.            !
    !---------------------------------------------------------------------------------------!
-   subroutine filltab_ed_precip(edprec,edprecm,imean,n2,n3,ng)
+   subroutine filltab_ed_precip(edprec,edprecm,imean,nxm,nym,ng)
       use var_tables
 
       implicit none
@@ -359,23 +407,23 @@ module mem_edcp
       type(ed_precip), intent(inout) :: edprec
       type(ed_precip), intent(inout) :: edprecm
       integer        , intent(in)    :: imean
-      integer        , intent(in)    :: n2
-      integer        , intent(in)    :: n3
+      integer        , intent(in)    :: nxm
+      integer        , intent(in)    :: nym
       integer        , intent(in)    :: ng
       !----- Local variables. -------------------------------------------------------------!
       integer                        :: npts
       !------------------------------------------------------------------------------------!
 
       !----- Fill pointers to arrays into variable tables. --------------------------------!
-      npts = n2 * n3
+      npts = nxm * nym
 
       if (associated(edprec%prev_aconpr )) then
          call vtables2 (edprec%prev_aconpr,edprecm%prev_aconpr,ng,npts,imean               &
-                       , 'PREV_ACONPR :2:hist:mpti:mpt3:mpt1')
+                       , 'PREV_ACONPR :2:hist:mpti:mpt3')
       end if
       if (associated(edprec%prev_abulkpr )) then
          call vtables2 (edprec%prev_abulkpr,edprecm%prev_abulkpr,ng,npts,imean             &
-                       , 'PREV_ABULKPR :2:hist:mpti:mpt3:mpt1')
+                       , 'PREV_ABULKPR :2:hist:mpti:mpt3')
       end if
 
       return

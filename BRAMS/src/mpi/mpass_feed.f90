@@ -44,8 +44,7 @@ subroutine node_sendfeed(ngr)
        i0,                 & ! intent(in)
        j0,                 & ! intent(in)
        mibcon,             & ! intent(in)
-       mchnum,             & ! intent(in)
-       f_ndmd_size
+       mchnum              ! ! intent(in)
 
   use mem_basic, only:     &
        basic_g             ! intent(in)
@@ -84,7 +83,7 @@ do nm=1,nmachs
    if (iget_paths(itype,ifm,nm).ne.0) then
       mpiid = 200000 + maxgrds*(machs(nm)-1) + icm
       call MPI_Irecv(node_buffs_feed(nm)%pack_recv_buff,  &
-           node_buffs_feed(nm)%nrecv*f_ndmd_size,MPI_PACKED,machs(nm),  &
+           node_buffs_feed(nm)%nrecv,MPI_PACKED,machs(nm),  &
            mpiid,MPI_COMM_WORLD,irecv_req(nm),ierr )
    endif
 enddo
@@ -164,38 +163,38 @@ do nm=1,nmachs
       iptr = la + mtp - 1
       !     We will send master coarse grid indices to nodes.
       ipos = 1
-      call MPI_Pack(i1f,1,MPI_INTEGER,node_buffs_feed(nm)%pack_send_buff,node_buffs_feed(nm)%nsend*f_ndmd_size,ipos, &
+      call MPI_Pack(i1f,1,MPI_INTEGER,node_buffs_feed(nm)%pack_send_buff,node_buffs_feed(nm)%nsend,ipos, &
            MPI_COMM_WORLD,ierr)
-      call MPI_Pack(i2f,1,MPI_INTEGER,node_buffs_feed(nm)%pack_send_buff,node_buffs_feed(nm)%nsend*f_ndmd_size,ipos, &
+      call MPI_Pack(i2f,1,MPI_INTEGER,node_buffs_feed(nm)%pack_send_buff,node_buffs_feed(nm)%nsend,ipos, &
            MPI_COMM_WORLD,ierr)
-      call MPI_Pack(j1f,1,MPI_INTEGER,node_buffs_feed(nm)%pack_send_buff,node_buffs_feed(nm)%nsend*f_ndmd_size,ipos, &
+      call MPI_Pack(j1f,1,MPI_INTEGER,node_buffs_feed(nm)%pack_send_buff,node_buffs_feed(nm)%nsend,ipos, &
            MPI_COMM_WORLD,ierr)
-      call MPI_Pack(j2f,1,MPI_INTEGER,node_buffs_feed(nm)%pack_send_buff,node_buffs_feed(nm)%nsend*f_ndmd_size,ipos, &
+      call MPI_Pack(j2f,1,MPI_INTEGER,node_buffs_feed(nm)%pack_send_buff,node_buffs_feed(nm)%nsend,ipos, &
            MPI_COMM_WORLD,ierr)
-      call MPI_Pack(i1s,1,MPI_INTEGER,node_buffs_feed(nm)%pack_send_buff,node_buffs_feed(nm)%nsend*f_ndmd_size,ipos, &
+      call MPI_Pack(i1s,1,MPI_INTEGER,node_buffs_feed(nm)%pack_send_buff,node_buffs_feed(nm)%nsend,ipos, &
            MPI_COMM_WORLD,ierr)
-      call MPI_Pack(i2s,1,MPI_INTEGER,node_buffs_feed(nm)%pack_send_buff,node_buffs_feed(nm)%nsend*f_ndmd_size,ipos, &
+      call MPI_Pack(i2s,1,MPI_INTEGER,node_buffs_feed(nm)%pack_send_buff,node_buffs_feed(nm)%nsend,ipos, &
            MPI_COMM_WORLD,ierr)
-      call MPI_Pack(j1s,1,MPI_INTEGER,node_buffs_feed(nm)%pack_send_buff,node_buffs_feed(nm)%nsend*f_ndmd_size,ipos, &
+      call MPI_Pack(j1s,1,MPI_INTEGER,node_buffs_feed(nm)%pack_send_buff,node_buffs_feed(nm)%nsend,ipos, &
            MPI_COMM_WORLD,ierr)
-      call MPI_Pack(j2s,1,MPI_INTEGER,node_buffs_feed(nm)%pack_send_buff,node_buffs_feed(nm)%nsend*f_ndmd_size,ipos, &
+      call MPI_Pack(j2s,1,MPI_INTEGER,node_buffs_feed(nm)%pack_send_buff,node_buffs_feed(nm)%nsend,ipos, &
            MPI_COMM_WORLD,ierr)
-      call MPI_Pack(k1s,1,MPI_INTEGER,node_buffs_feed(nm)%pack_send_buff,node_buffs_feed(nm)%nsend*f_ndmd_size,ipos, &
+      call MPI_Pack(k1s,1,MPI_INTEGER,node_buffs_feed(nm)%pack_send_buff,node_buffs_feed(nm)%nsend,ipos, &
            MPI_COMM_WORLD,ierr)
-      call MPI_Pack(k2s,1,MPI_INTEGER,node_buffs_feed(nm)%pack_send_buff,node_buffs_feed(nm)%nsend*f_ndmd_size,ipos, &
+      call MPI_Pack(k2s,1,MPI_INTEGER,node_buffs_feed(nm)%pack_send_buff,node_buffs_feed(nm)%nsend,ipos, &
            MPI_COMM_WORLD,ierr)
-      call MPI_Pack(mynum,1,MPI_INTEGER,node_buffs_feed(nm)%pack_send_buff,node_buffs_feed(nm)%nsend*f_ndmd_size,ipos, &
+      call MPI_Pack(mynum,1,MPI_INTEGER,node_buffs_feed(nm)%pack_send_buff,node_buffs_feed(nm)%nsend,ipos, &
            MPI_COMM_WORLD,ierr)
-      call MPI_Pack(nvar,1,MPI_INTEGER,node_buffs_feed(nm)%pack_send_buff,node_buffs_feed(nm)%nsend*f_ndmd_size,ipos, &
+      call MPI_Pack(nvar,1,MPI_INTEGER,node_buffs_feed(nm)%pack_send_buff,node_buffs_feed(nm)%nsend,ipos, &
            MPI_COMM_WORLD,ierr)
-      call MPI_Pack(iptr,1,MPI_INTEGER,node_buffs_feed(nm)%pack_send_buff,node_buffs_feed(nm)%nsend*f_ndmd_size,ipos, &
+      call MPI_Pack(iptr,1,MPI_INTEGER,node_buffs_feed(nm)%pack_send_buff,node_buffs_feed(nm)%nsend,ipos, &
            MPI_COMM_WORLD,ierr)
 
-      call MPI_Pack(pbuff,iptr,MPI_REAL,node_buffs_feed(nm)%pack_send_buff,node_buffs_feed(nm)%nsend*f_ndmd_size,ipos, &
+      call MPI_Pack(pbuff,iptr,MPI_REAL,node_buffs_feed(nm)%pack_send_buff,node_buffs_feed(nm)%nsend,ipos, &
            MPI_COMM_WORLD,ierr)
       mpiid = 200000 + maxgrds*(mchnum-1) + icm
       call MPI_Isend(node_buffs_feed(nm)%pack_send_buff,  &
-           ipos-1,  &
+           ipos,  &
            MPI_PACKED,ipaths(5,itype,ifm,nm),mpiid,MPI_COMM_WORLD,isend_req(nm),ierr)
 
    endif
@@ -235,8 +234,7 @@ subroutine node_getfeed(icm,ifm)
        node_buffs_feed,     & ! intent(inout)
        mi0,                 & ! intent(in)
        mj0,                 & ! intent(in)
-       mibcon,              & ! intent(in)
-       f_ndmd_size
+       mibcon               ! ! intent(in)
 
   use var_tables, only :    &
        num_scalar,          & ! intent(in)
@@ -310,31 +308,31 @@ do nm=1,nmachs
 !                         ,node_buffs_feed(nm)%nrecv)
 
       ipos = 1
-      call MPI_Unpack(node_buffs_feed(nm)%pack_recv_buff,node_buffs_feed(nm)%nrecv*f_ndmd_size  &
+      call MPI_Unpack(node_buffs_feed(nm)%pack_recv_buff,node_buffs_feed(nm)%nrecv  &
                       ,ipos,i1f,1,MPI_INTEGER,MPI_COMM_WORLD,ierr)
-      call MPI_Unpack(node_buffs_feed(nm)%pack_recv_buff,node_buffs_feed(nm)%nrecv*f_ndmd_size  &
+      call MPI_Unpack(node_buffs_feed(nm)%pack_recv_buff,node_buffs_feed(nm)%nrecv  &
                       ,ipos,i2f,1,MPI_INTEGER,MPI_COMM_WORLD,ierr)
-      call MPI_Unpack(node_buffs_feed(nm)%pack_recv_buff,node_buffs_feed(nm)%nrecv*f_ndmd_size  &
+      call MPI_Unpack(node_buffs_feed(nm)%pack_recv_buff,node_buffs_feed(nm)%nrecv  &
                       ,ipos,j1f,1,MPI_INTEGER,MPI_COMM_WORLD,ierr)
-      call MPI_Unpack(node_buffs_feed(nm)%pack_recv_buff,node_buffs_feed(nm)%nrecv*f_ndmd_size  &
+      call MPI_Unpack(node_buffs_feed(nm)%pack_recv_buff,node_buffs_feed(nm)%nrecv  &
                       ,ipos,j2f,1,MPI_INTEGER,MPI_COMM_WORLD,ierr)
-      call MPI_Unpack(node_buffs_feed(nm)%pack_recv_buff,node_buffs_feed(nm)%nrecv*f_ndmd_size  &
+      call MPI_Unpack(node_buffs_feed(nm)%pack_recv_buff,node_buffs_feed(nm)%nrecv  &
                       ,ipos,i1s,1,MPI_INTEGER,MPI_COMM_WORLD,ierr)
-      call MPI_Unpack(node_buffs_feed(nm)%pack_recv_buff,node_buffs_feed(nm)%nrecv*f_ndmd_size  &
+      call MPI_Unpack(node_buffs_feed(nm)%pack_recv_buff,node_buffs_feed(nm)%nrecv  &
                       ,ipos,i2s,1,MPI_INTEGER,MPI_COMM_WORLD,ierr)
-      call MPI_Unpack(node_buffs_feed(nm)%pack_recv_buff,node_buffs_feed(nm)%nrecv*f_ndmd_size  &
+      call MPI_Unpack(node_buffs_feed(nm)%pack_recv_buff,node_buffs_feed(nm)%nrecv  &
                       ,ipos,j1s,1,MPI_INTEGER,MPI_COMM_WORLD,ierr)
-      call MPI_Unpack(node_buffs_feed(nm)%pack_recv_buff,node_buffs_feed(nm)%nrecv*f_ndmd_size  &
+      call MPI_Unpack(node_buffs_feed(nm)%pack_recv_buff,node_buffs_feed(nm)%nrecv  &
                       ,ipos,j2s,1,MPI_INTEGER,MPI_COMM_WORLD,ierr)
-      call MPI_Unpack(node_buffs_feed(nm)%pack_recv_buff,node_buffs_feed(nm)%nrecv*f_ndmd_size  &
+      call MPI_Unpack(node_buffs_feed(nm)%pack_recv_buff,node_buffs_feed(nm)%nrecv  &
                       ,ipos,k1s,1,MPI_INTEGER,MPI_COMM_WORLD,ierr)
-      call MPI_Unpack(node_buffs_feed(nm)%pack_recv_buff,node_buffs_feed(nm)%nrecv*f_ndmd_size  &
+      call MPI_Unpack(node_buffs_feed(nm)%pack_recv_buff,node_buffs_feed(nm)%nrecv  &
                       ,ipos,k2s,1,MPI_INTEGER,MPI_COMM_WORLD,ierr)
-      call MPI_Unpack(node_buffs_feed(nm)%pack_recv_buff,node_buffs_feed(nm)%nrecv*f_ndmd_size  &
+      call MPI_Unpack(node_buffs_feed(nm)%pack_recv_buff,node_buffs_feed(nm)%nrecv  &
                       ,ipos,machf,1,MPI_INTEGER,MPI_COMM_WORLD,ierr)
-      call MPI_Unpack(node_buffs_feed(nm)%pack_recv_buff,node_buffs_feed(nm)%nrecv*f_ndmd_size  &
+      call MPI_Unpack(node_buffs_feed(nm)%pack_recv_buff,node_buffs_feed(nm)%nrecv  &
                       ,ipos,nvar,1,MPI_INTEGER,MPI_COMM_WORLD,ierr)
-      call MPI_Unpack(node_buffs_feed(nm)%pack_recv_buff,node_buffs_feed(nm)%nrecv*f_ndmd_size  &
+      call MPI_Unpack(node_buffs_feed(nm)%pack_recv_buff,node_buffs_feed(nm)%nrecv  &
                       ,ipos,nwds,1,MPI_INTEGER,MPI_COMM_WORLD,ierr)
       ! Make sure buffer for floating point info big enough
       
@@ -350,7 +348,7 @@ do nm=1,nmachs
          nbuff_save=nwds
       endif      
       
-      call MPI_Unpack(node_buffs_feed(nm)%pack_recv_buff,node_buffs_feed(nm)%nrecv*f_ndmd_size,ipos,  &
+      call MPI_Unpack(node_buffs_feed(nm)%pack_recv_buff,node_buffs_feed(nm)%nrecv,ipos,  &
                     pbuff,nwds,MPI_REAL,MPI_COMM_WORLD,ierr)
       if(icall) then
          icall=.false.

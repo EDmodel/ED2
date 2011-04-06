@@ -148,6 +148,7 @@ module node_mod
    integer                                         :: newbuff_nest
    integer                                         :: nbuff_nest
    integer                                         :: f_ndmd_size
+   integer                                         :: nbuff_st
    !---------------------------------------------------------------------------------------!
    integer, dimension(maxmach)                     :: irecv_req
    integer, dimension(maxmach)                     :: isend_req
@@ -176,10 +177,10 @@ module node_mod
    !---------------------------------------------------------------------------------------!
    !     The buffers.                                                                      !
    !---------------------------------------------------------------------------------------!
-   type(pack_buffs), dimension(maxmach) :: node_buffs_lbc
-   type(pack_buffs), dimension(maxmach) :: node_buffs_feed
-   type(pack_buffs), dimension(maxmach) :: node_buffs_nest
-   type(pack_buffs), dimension(maxmach) :: node_buffs_st
+   type(pack_buffs), dimension(  maxmach) :: node_buffs_lbc
+   type(pack_buffs), dimension(  maxmach) :: node_buffs_feed
+   type(pack_buffs), dimension(  maxmach) :: node_buffs_nest
+   type(pack_buffs), dimension(6,maxmach) :: node_buffs_st
    !---------------------------------------------------------------------------------------!
 
 
@@ -217,14 +218,14 @@ module node_mod
       call nullify_node_buff(this_buff)
 
       !------------------------------------------------------------------------------------!
-      !      Set the buffer size to the maximum needed size plus 13, which is to account   !
-      ! for up to 13 integer dimensions that are packed at the beginning of the message.   !
+      !      Set the buffer size to the maximum needed size plus 100, which is to account  !
+      ! for some integer dimensions that are packed at the beginning of the message.       !
       !------------------------------------------------------------------------------------!
-      this_buff%nsend = nbuff + 100
-      this_buff%nrecv = nbuff + 100
+      this_buff%nsend = (nbuff + 100) * number_size
+      this_buff%nrecv = (nbuff + 100) * number_size
       
-      allocate(this_buff%pack_send_buff(nbuff*number_size))
-      allocate(this_buff%pack_recv_buff(nbuff*number_size))
+      allocate(this_buff%pack_send_buff(this_buff%nsend))
+      allocate(this_buff%pack_recv_buff(this_buff%nrecv))
 
       return
    end subroutine alloc_node_buff

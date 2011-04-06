@@ -48,8 +48,7 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    use soil_coms             , only : soil8                  ! ! intent(in)
    use ed_therm_lib          , only : ed_grndvap8            ! ! subroutine
    use canopy_air_coms       , only : i_blyr_condct          ! ! intent(in)
-   use canopy_struct_dynamics, only : can_whcap8             & ! subroutine
-                                    , canopy_turbulence8     ! ! subroutine
+   use canopy_struct_dynamics, only : canopy_turbulence8     ! ! subroutine
    implicit none
 
    !----- Arguments -----------------------------------------------------------------------!
@@ -58,7 +57,6 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    integer               , intent(in) :: ipa
    !----- Local variables -----------------------------------------------------------------!
    type(patchtype)       , pointer    :: cpatch
-   real(kind=4)                       :: crown_area_tmp
    real(kind=8)                       :: rsat
    real(kind=8)                       :: sum_sfcw_mass
    real(kind=8)                       :: hvegpat_min
@@ -76,7 +74,7 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    ! no heat flux between time steps.  So we use these instead to start all other vari-    !
    ! ables.                                                                                !
    !---------------------------------------------------------------------------------------!
-   !----- 1. Update thermo variables that are conserved between steps. --------------------!
+   !----- Update thermo variables that are conserved between steps. -----------------------!
    targetp%can_theta    = dble(sourcesite%can_theta(ipa))
    targetp%can_theiv    = dble(sourcesite%can_theiv(ipa))
    targetp%can_shv      = dble(sourcesite%can_shv(ipa))
@@ -84,15 +82,25 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    targetp%can_depth    = dble(sourcesite%can_depth(ipa))
    targetp%can_rvap     = targetp%can_shv / (1.d0 - targetp%can_shv)
 
-   !----- 2. Update the canopy pressure and Exner function. -------------------------------!
+   !----- Update the canopy pressure and Exner function. ----------------------------------!
    targetp%can_prss     = reducedpress8(rk4site%atm_prss,rk4site%atm_theta,rk4site%atm_shv &
                                        ,rk4site%geoht,targetp%can_theta,targetp%can_shv    &
                                        ,targetp%can_depth)
    targetp%can_exner    = cp8 * (targetp%can_prss * p00i8) ** rocp8
+   !---------------------------------------------------------------------------------------!
+
+
+   !----- Update the vegetation properties used for roughness. ----------------------------!
+   targetp%veg_height   = dble(sourcesite%veg_height  (ipa))
+   targetp%veg_displace = dble(sourcesite%veg_displace(ipa))
+   targetp%veg_rough    = dble(sourcesite%veg_rough   (ipa))
+   !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
-   !  3. Update the natural logarithm of theta_eiv, temperature, density, relative         !
-   !     humidity, and the saturation specific humidity.                                   !
+   !     Update the natural logarithm of theta_eiv, temperature, density, relative         !
+   ! humidity, and the saturation specific humidity.                                       !
    !---------------------------------------------------------------------------------------!
    targetp%can_lntheta  = log(targetp%can_theta)
    targetp%can_temp     = cpi8 * targetp%can_theta * targetp%can_exner
@@ -102,11 +110,10 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    targetp%can_ssh      = rsat / (1.d0 + rsat)
    !---------------------------------------------------------------------------------------!
 
-   !----- 4. Find the lower and upper bounds for the derived properties. ------------------!
-   call find_derived_thbounds(rk4site%lsl,nzg,targetp%can_rhos,targetp%can_theta           &
-                             ,targetp%can_temp,targetp%can_shv,targetp%can_rvap            &
-                             ,targetp%can_prss,targetp%can_depth                           &
-                             ,sourcesite%ntext_soil(:,ipa))
+   !----- Find the lower and upper bounds for the derived properties. ---------------------!
+   call find_derived_thbounds(targetp%can_rhos,targetp%can_theta,targetp%can_temp          &
+                             ,targetp%can_shv,targetp%can_rvap,targetp%can_prss            &
+                             ,targetp%can_depth)
 
    !----- Impose a non-sense number for flag_wflxgc. --------------------------------------!
    targetp%flag_wflxgc  = -1
@@ -138,7 +145,7 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    !---------------------------------------------------------------------------------------!
    targetp%nlev_sfcwater = sourcesite%nlev_sfcwater(ipa)
    ksn                   = targetp%nlev_sfcwater
-   sum_sfcw_mass = 0.d0
+   sum_sfcw_mass  = 0.d0
    do k = 1, nzs
       targetp%sfcwater_mass(k)    = max(0.d0,dble(sourcesite%sfcwater_mass(k,ipa)))
       targetp%sfcwater_depth(k)   = dble(sourcesite%sfcwater_depth(k,ipa))
@@ -146,7 +153,7 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
                                   * dble(sourcesite%sfcwater_mass(k,ipa))
       targetp%sfcwater_tempk(k)   = dble(sourcesite%sfcwater_tempk(k,ipa))
       targetp%sfcwater_fracliq(k) = dble(sourcesite%sfcwater_fracliq(k,ipa))
-      sum_sfcw_mass = sum_sfcw_mass + targetp%sfcwater_mass(k)
+      sum_sfcw_mass  = sum_sfcw_mass  + targetp%sfcwater_mass (k)
    end do
    !----- Define the temporary surface water flag. ----------------------------------------!
    if (targetp%nlev_sfcwater == 0) then
@@ -162,16 +169,24 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    !---------------------------------------------------------------------------------------!
 
 
+   !---------------------------------------------------------------------------------------!
+   !     Find the total snow depth and fraction of canopy buried in snow.                  !
+   !---------------------------------------------------------------------------------------!
+   targetp%snowfac          = dble(sourcesite%snowfac(ipa))
+   targetp%total_sfcw_depth = dble(sourcesite%total_sfcw_depth(ipa))
+   !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
    !     Compute the ground temperature and specific humidity.                             !
    !---------------------------------------------------------------------------------------!
    k = max(1,ksn)
-   call ed_grndvap8(ksn,sourcesite%ntext_soil(nzg,ipa),targetp%soil_water(nzg)             &
-                   ,targetp%soil_tempk(nzg),targetp%soil_fracliq(nzg)                      &
-                   ,targetp%sfcwater_tempk(k),targetp%sfcwater_fracliq(k),targetp%can_prss &
-                   ,targetp%can_shv,targetp%ground_shv,targetp%ground_ssh                  &
-                   ,targetp%ground_temp,targetp%ground_fliq)
+   call ed_grndvap8(ksn,targetp%soil_water(nzg),targetp%soil_tempk(nzg)                    &
+                   ,targetp%soil_fracliq(nzg),targetp%sfcwater_tempk(k)                    &
+                   ,targetp%sfcwater_fracliq(k),targetp%can_prss,targetp%can_shv           &
+                   ,targetp%ground_shv,targetp%ground_ssh,targetp%ground_temp              &
+                   ,targetp%ground_fliq)
    !---------------------------------------------------------------------------------------!
 
 
@@ -244,7 +259,7 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
    !     Loop over cohorts.  We also use this loop to compute the fraction of open canopy, !
    ! which is initialised with 1. in case this is an empty patch.                          !
    !---------------------------------------------------------------------------------------!
-   targetp%opencan_frac = 1.d0
+   targetp%opencan_frac   = dble(sourcesite%opencan_frac(ipa))
    do ico = 1,cpatch%ncohorts
       ipft=cpatch%pft(ico)
 
@@ -256,14 +271,9 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
       targetp%wai(ico)        = dble(cpatch%wai(ico))
       targetp%wpa(ico)        = dble(cpatch%wpa(ico))
       targetp%tai(ico)        = targetp%lai(ico) + targetp%wai(ico)
-
-      !----- Find the crown area. ---------------------------------------------------------!
-      crown_area_tmp          = dbh2ca(cpatch%dbh(ico),cpatch%sla(ico),ipft)
-      targetp%crown_area(ico) = min( 1.d0                                                  &
-                                   , targetp%nplant(ico) * dble(crown_area_tmp)            &
-                                   * rk4site%green_leaf_factor(ipft) )
+      targetp%crown_area(ico) = dble(cpatch%crown_area(ico))
+      targetp%elongf(ico)     = dble(cpatch%elongf(ico)) * rk4site%green_leaf_factor(ipft)
       !------------------------------------------------------------------------------------!
-
 
 
       !------------------------------------------------------------------------------------!
@@ -331,16 +341,13 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
       targetp%psi_closed(ico) = 0.d0
       !------------------------------------------------------------------------------------!
       
-      targetp%opencan_frac = targetp%opencan_frac * (1.d0 - targetp%crown_area(ico))
    end do
-   targetp%opencan_frac = max(0.d0,min(1.d0,targetp%opencan_frac))
    !---------------------------------------------------------------------------------------!
 
 
 
    !----- Initialise the characteristic properties, and the heat capacities. --------------!
    call canopy_turbulence8(sourcesite,targetp,ipa)
-   call can_whcap8(sourcesite,ipa,targetp%can_rhos,targetp%can_temp,targetp%can_depth)
    !---------------------------------------------------------------------------------------!
 
    !----- Diagnostics variables -----------------------------------------------------------!
@@ -373,7 +380,7 @@ subroutine copy_patch_init(sourcesite,ipa,targetp)
       do k = rk4site%lsl, nzg
          targetp%avg_sensible_gg(k) = dble(sourcesite%avg_sensible_gg(k,ipa))
          targetp%avg_smoist_gg(k)   = dble(sourcesite%avg_smoist_gg(k,ipa)  )
-         targetp%avg_smoist_gc(k)   = dble(sourcesite%avg_smoist_gc(k,ipa)  )
+         targetp%avg_transloss(k)   = dble(sourcesite%avg_transloss(k,ipa)  )
       end do
    end if
    if (checkbudget) then
@@ -508,6 +515,8 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
                                     , rk4max_veg_temp       & ! intent(in)
                                     , rk4min_soil_temp      & ! intent(in)
                                     , rk4max_soil_temp      & ! intent(in)
+                                    , rk4min_soil_water     & ! intent(in)
+                                    , rk4max_soil_water     & ! intent(in)
                                     , rk4min_sfcw_temp      & ! intent(in)
                                     , rk4max_sfcw_temp      & ! intent(in)
                                     , rk4water_stab_thresh  & ! intent(in)
@@ -541,8 +550,7 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
                                     , cliq8                 & ! intent(in)
                                     , cice8                 & ! intent(in)
                                     , tsupercool8           ! ! intent(in)
-   use canopy_struct_dynamics, only : can_whcap8            & ! subroutine
-                                    , canopy_turbulence8    ! ! subroutine
+   use canopy_struct_dynamics, only : canopy_turbulence8    ! ! subroutine
    use ed_therm_lib          , only : ed_grndvap8           ! ! subroutine
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
@@ -569,9 +577,6 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
    real(kind=8)                     :: rk4min_veg_water
    !---------------------------------------------------------------------------------------!
 
-   !----- First, we update the canopy air equivalent potential temperature. ---------------!
-   initp%can_theta = exp(initp%can_lntheta)
-
    !----- Then we define some logicals to make the code cleaner. --------------------------!
    ok_shv   = initp%can_shv     >= rk4min_can_shv     .and.                                &
               initp%can_shv     <= rk4max_can_shv
@@ -585,6 +590,10 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
    ! when we add condensed/frozen water in the canopy air space.                           !
    !---------------------------------------------------------------------------------------!
    if (ok_shv .and. ok_theta) then
+
+      !----- First, we update the canopy air potential temperature. -----------------------!
+      initp%can_theta = exp(initp%can_lntheta)
+
       initp%can_rvap  = initp%can_shv / (1.d0 - initp%can_shv)
 
       !------------------------------------------------------------------------------------!
@@ -625,7 +634,7 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
 
    !----- Update soil temperature and liquid water fraction. ------------------------------!
    do k = rk4site%lsl, nzg
-      soilhcap = soil8(csite%ntext_soil(k,ipa))%slcpd
+      soilhcap = soil8(rk4site%ntext_soil(k))%slcpd
       call qwtk8(initp%soil_energy(k),initp%soil_water(k)*wdns8,soilhcap                   &
                 ,initp%soil_tempk(k),initp%soil_fracliq(k))
    end do
@@ -641,6 +650,7 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
    !---------------------------------------------------------------------------------------!
    ok_sfcw = .true.
    ksn = initp%nlev_sfcwater
+   initp%total_sfcw_depth = 0.d0
    sfcwloop: do k=1,ksn
       if (initp%sfcwater_mass(k) < rk4min_sfcw_mass) then 
          !---------------------------------------------------------------------------------!
@@ -662,7 +672,7 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
          energy_tot  = initp%sfcwater_energy(k) + initp%soil_energy(nzg) * dslz8(nzg)
          wmass_tot   = initp%sfcwater_mass  (k)                                            &
                      + initp%soil_water (nzg) * dslz8(nzg) * wdns8
-         hcapdry_tot = soil8(csite%ntext_soil(nzg,ipa))%slcpd * dslz8(nzg)
+         hcapdry_tot = soil8(rk4site%ntext_soil(nzg))%slcpd * dslz8(nzg)
          !---------------------------------------------------------------------------------!
 
 
@@ -712,6 +722,7 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
          int_sfcw_energy = initp%sfcwater_energy(k)/initp%sfcwater_mass(k)
          call qtk8(int_sfcw_energy,initp%sfcwater_tempk(k),initp%sfcwater_fracliq(k))
       end if
+      initp%total_sfcw_depth = initp%total_sfcw_depth + initp%sfcwater_depth(k)
    end do sfcwloop
    !---------------------------------------------------------------------------------------!
    !    For non-existent layers of temporary surface water, we copy the temperature and    !
@@ -728,6 +739,13 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
    end do aboveloop
    !---------------------------------------------------------------------------------------!
 
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Update the fraction of the canopy covered in snow.                                !
+   !---------------------------------------------------------------------------------------!
+   initp%snowfac = min(9.9d-1,initp%total_sfcw_depth/initp%veg_height)
+   !---------------------------------------------------------------------------------------!
 
 
    !---------------------------------------------------------------------------------------!
@@ -759,18 +777,20 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
    k = max(1,ksn)
    if (ksn == 0) then
       k = 1
-      ok_ground = initp%soil_tempk(nzg) >= rk4min_soil_temp .and.                          &
-                  initp%soil_tempk(nzg) <= rk4max_soil_temp
+      ok_ground = initp%soil_tempk(nzg) >= rk4min_soil_temp       .and.                    &
+                  initp%soil_tempk(nzg) <= rk4max_soil_temp       .and.                    &
+                  initp%soil_water(nzg) >= rk4min_soil_water(nzg) .and.                    &
+                  initp%soil_water(nzg) <= rk4max_soil_water(nzg)
    else
       k = ksn
       ok_ground = initp%sfcwater_tempk(ksn) >= rk4min_sfcw_temp .and.                      &
                   initp%sfcwater_tempk(ksn) <= rk4max_sfcw_temp
    end if
    if (ok_ground) then
-      call ed_grndvap8(ksn,csite%ntext_soil(nzg,ipa),initp%soil_water(nzg)                 &
-                      ,initp%soil_tempk(nzg),initp%soil_fracliq(nzg)                       &
-                      ,initp%sfcwater_tempk(k),initp%sfcwater_fracliq(k),initp%can_prss    &
-                      ,initp%can_shv,initp%ground_shv,initp%ground_ssh,initp%ground_temp   &
+      call ed_grndvap8(ksn,initp%soil_water(nzg),initp%soil_tempk(nzg)                     &
+                      ,initp%soil_fracliq(nzg),initp%sfcwater_tempk(k)                     &
+                      ,initp%sfcwater_fracliq(k),initp%can_prss,initp%can_shv              &
+                      ,initp%ground_shv,initp%ground_ssh,initp%ground_temp                 &
                       ,initp%ground_fliq)
    end if
    !---------------------------------------------------------------------------------------!
@@ -840,7 +860,6 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
    !----- Compute canopy turbulence properties. -------------------------------------------!
    if (ok_veg .and. ok_shv .and. ok_theta) then
       call canopy_turbulence8(csite,initp,ipa)
-      call can_whcap8(csite,ipa,initp%can_rhos,initp%can_temp,initp%can_depth)
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -868,6 +887,7 @@ end subroutine update_diagnostic_vars
 subroutine adjust_sfcw_properties(nzg,nzs,initp,hdid,csite,ipa)
 
    use rk4_coms      , only : rk4patchtype          & ! structure
+                            , rk4site               & ! intent(in)
                             , rk4min_sfcw_mass      & ! intent(in)
                             , rk4min_virt_water     & ! intent(in)
                             , rk4water_stab_thresh  & ! intent(in)
@@ -997,7 +1017,7 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,hdid,csite,ipa)
 
 
    !----- Copy the soil type at the topmost level to nsoil. -------------------------------!
-   nsoil     = csite%ntext_soil(nzg,ipa)
+   nsoil     = rk4site%ntext_soil(nzg)
    !---------------------------------------------------------------------------------------!
    
 
@@ -1095,7 +1115,14 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,hdid,csite,ipa)
          
          wmass_free         = wmass_available  - wmass_needed 
          energy_free        = energy_available - energy_needed
-         depth_free         = depth_available  - depth_needed 
+         depth_free         = depth_available  - depth_needed
+      else
+         !---------------------------------------------------------------------------------!
+         !    There is not any water vapour.  Hope for the best.                           !
+         !---------------------------------------------------------------------------------!
+         wmass_free         = wmass_needed
+         energy_free        = energy_needed
+         depth_free         = depth_needed
       end if
 
       !----- Reset both the temporary surface water and the virtual layer. ----------------!
@@ -1351,7 +1378,7 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,hdid,csite,ipa)
    !---------------------------------------------------------------------------------------!
    if (wmass_free > 0.d0) then
       wmass_room  = max(0.d0, soil8(nsoil)%slmsts - initp%soil_water(nzg))                 &
-                            * wdns8 * dslz8(nzg)
+                  * wdns8 * dslz8(nzg)
       energy_room = energy_free * wmass_room / wmass_free
 
       if (wmass_room > wmass_free) then
@@ -1362,6 +1389,10 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,hdid,csite,ipa)
          initp%soil_water(nzg)  = initp%soil_water(nzg)  + wmass_free  * dslzi8(nzg)       &
                                 * wdnsi8
          initp%soil_energy(nzg) = initp%soil_energy(nzg) + energy_free * dslzi8(nzg)
+
+         wmass_free  = 0.d0
+         energy_free = 0.d0
+         depth_free  = 0.d0
       else
          !----- Remove the water that can go to the soil. ---------------------------------!
          wmass_free  = wmass_free  - wmass_room
@@ -1380,11 +1411,50 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,hdid,csite,ipa)
 
          wmass_free  = 0.d0
          energy_free = 0.d0
-       end if
+         depth_free  = 0.d0
+      end if
    elseif (wmass_free < 0.d0) then
-      call fatal_error('Free mass is negative, this doesn''t make any sense!'              &
-                      ,'adjust_sfcw_properties','rk4_misc.f90')
-   
+      wmass_needed     = - wmass_free
+      energy_needed    = - energy_free
+      depth_needed     = - depth_free
+
+      !------ Find the amount of water that the soil can provide. -------------------------!
+      wmass_available  = max(0.d0,initp%soil_water(nzg) - soil8(nsoil)%soilcp)             &
+                       * wdns8 * dslz8(nzg)
+      energy_available = energy_free * wmass_available / wmass_free
+
+      if (wmass_available > wmass_needed) then
+         !---------------------------------------------------------------------------------!
+         !     There is enough space in the top soil layer to correct remaining negative   !
+         ! water, get all the water needed there.                                          !
+         !---------------------------------------------------------------------------------!
+         initp%soil_water(nzg)  = initp%soil_water(nzg)  - wmass_needed  * dslzi8(nzg)     &
+                                * wdnsi8
+         initp%soil_energy(nzg) = initp%soil_energy(nzg) - energy_needed * dslzi8(nzg)
+         wmass_needed     = 0.d0
+         energy_needed    = 0.d0
+         depth_needed     = 0.d0
+      else
+         !----- Add the water that can come from the soil. --------------------------------!
+         wmass_needed  = wmass_needed  - wmass_available
+         energy_needed = energy_needed - energy_available
+
+         !----- Dump what we can dump on the top soil layer. ------------------------------!
+         initp%soil_water(nzg)  = initp%soil_water(nzg)  - wmass_available  * dslzi8(nzg)  &
+                                * wdnsi8
+         initp%soil_energy(nzg) = initp%soil_energy(nzg) - energy_available * dslzi8(nzg)
+
+         !----- Condense the remaining, hoping for the best. ------------------------------!
+         initp%can_shv      = initp%can_shv       - wmass_needed  * wcapcani
+         initp%avg_vapor_gc = initp%avg_vapor_gc  - wmass_needed  * hdidi
+
+         energy_input       = - energy_needed
+
+         wmass_free  = 0.d0
+         energy_free = 0.d0
+         depth_free  = 0.d0
+
+      end if
    end if
    !---------------------------------------------------------------------------------------!
 
@@ -1688,7 +1758,7 @@ subroutine adjust_topsoil_properties(initp,hdid,csite,ipa)
    
    !----- Defining some aliases that will be often used during the integration. -----------!
    kt            = nzg
-   nstop         = csite%ntext_soil(kt,ipa)
+   nstop         = rk4site%ntext_soil(kt)
 
    !----- Check whether we are just slightly off. -----------------------------------------!
    slightlymoist = initp%soil_water(kt) > soil8(nstop)%slmsts 
@@ -1823,7 +1893,7 @@ subroutine adjust_topsoil_properties(initp,hdid,csite,ipa)
       ! we compute the temperature and liquid fraction.                                    !
       !------------------------------------------------------------------------------------!
       kb              = nzg -1 
-      nsbeneath       = csite%ntext_soil(kb,ipa)
+      nsbeneath       = rk4site%ntext_soil(kb)
       water_available = (initp%soil_water(kb)-soil8(nsbeneath)%soilcp) * wdns8 * dslz8(kb)
       shcbeneath      = soil8(nsbeneath)%slcpd
       call qwtk8(initp%soil_energy(kb),initp%soil_water(kb)*wdns8,shcbeneath               &
@@ -2027,7 +2097,7 @@ subroutine adjust_topsoil_properties(initp,hdid,csite,ipa)
       ! beneath the top.                                                                   !
       !------------------------------------------------------------------------------------!
       kb         = nzg-1
-      nsbeneath  = csite%ntext_soil(kb,ipa)
+      nsbeneath  = rk4site%ntext_soil(kb)
       shcbeneath = soil8(nsbeneath)%slcpd
       call qwtk8(initp%soil_energy(kb),initp%soil_water(kb)*wdns8,shcbeneath               &
                 ,initp%soil_tempk(kb),initp%soil_fracliq(kb))
@@ -2668,7 +2738,7 @@ subroutine print_csiteipa(csite, ipa)
    write (unit=*,fmt='(a5,1x,5(a12,1x))')   '  KZG','  NTEXT_SOIL',' SOIL_ENERGY'          &
                                    &,'  SOIL_TEMPK','  SOIL_WATER','SOIL_FRACLIQ'
    do k=rk4site%lsl,nzg
-      write (unit=*,fmt='(i5,1x,i12,4(es12.4,1x))') k,csite%ntext_soil(k,ipa)              &
+      write (unit=*,fmt='(i5,1x,i12,4(es12.4,1x))') k,rk4site%ntext_soil(k)                &
             ,csite%soil_energy(k,ipa),csite%soil_tempk(k,ipa),csite%soil_water(k,ipa)      &
             ,csite%soil_fracliq(k,ipa)
    end do
@@ -2744,18 +2814,20 @@ subroutine print_rk4patch(y,csite,ipa)
 
    write (unit=*,fmt='(80a)')         ('-',k=1,80)
    write (unit=*,fmt='(a)')           ' ATMOSPHERIC CONDITIONS: '
-   write (unit=*,fmt='(a,1x,es12.4)') ' Air temperature     : ',rk4site%atm_tmp
-   write (unit=*,fmt='(a,1x,es12.4)') ' Air potential temp. : ',rk4site%atm_theta
-   write (unit=*,fmt='(a,1x,es12.4)') ' Air theta_Eiv       : ',rk4site%atm_theiv
-   write (unit=*,fmt='(a,1x,es12.4)') ' H2Ov mixing ratio   : ',rk4site%atm_shv
-   write (unit=*,fmt='(a,1x,es12.4)') ' CO2  mixing ratio   : ',rk4site%atm_co2
-   write (unit=*,fmt='(a,1x,es12.4)') ' Pressure            : ',rk4site%atm_prss
-   write (unit=*,fmt='(a,1x,es12.4)') ' Exner function      : ',rk4site%atm_exner
-   write (unit=*,fmt='(a,1x,es12.4)') ' Wind speed          : ',rk4site%vels
-   write (unit=*,fmt='(a,1x,es12.4)') ' Height              : ',rk4site%geoht
-   write (unit=*,fmt='(a,1x,es12.4)') ' Precip. mass  flux  : ',rk4site%pcpg
-   write (unit=*,fmt='(a,1x,es12.4)') ' Precip. heat  flux  : ',rk4site%qpcpg
-   write (unit=*,fmt='(a,1x,es12.4)') ' Precip. depth flux  : ',rk4site%dpcpg
+   write (unit=*,fmt='(a,1x,es12.4)') ' Air temperature       : ',rk4site%atm_tmp
+   write (unit=*,fmt='(a,1x,es12.4)') ' Air potential temp.   : ',rk4site%atm_theta
+   write (unit=*,fmt='(a,1x,es12.4)') ' Air theta_Eiv         : ',rk4site%atm_theiv
+   write (unit=*,fmt='(a,1x,es12.4)') ' H2Ov mixing ratio     : ',rk4site%atm_shv
+   write (unit=*,fmt='(a,1x,es12.4)') ' CO2  mixing ratio     : ',rk4site%atm_co2
+   write (unit=*,fmt='(a,1x,es12.4)') ' Pressure              : ',rk4site%atm_prss
+   write (unit=*,fmt='(a,1x,es12.4)') ' Exner function        : ',rk4site%atm_exner
+   write (unit=*,fmt='(a,1x,es12.4)') ' Wind speed            : ',rk4site%vels
+   write (unit=*,fmt='(a,1x,es12.4)') ' Height                : ',rk4site%geoht
+   write (unit=*,fmt='(a,1x,es12.4)') ' Precip. mass  flux    : ',rk4site%pcpg
+   write (unit=*,fmt='(a,1x,es12.4)') ' Precip. heat  flux    : ',rk4site%qpcpg
+   write (unit=*,fmt='(a,1x,es12.4)') ' Precip. depth flux    : ',rk4site%dpcpg
+   write (unit=*,fmt='(a,1x,es12.4)') ' Downward SW radiation : ',rk4site%rshort
+   write (unit=*,fmt='(a,1x,es12.4)') ' Downward LW radiation : ',rk4site%rlong
 
    write (unit=*,fmt='(80a)') ('=',k=1,80)
    write (unit=*,fmt='(a)'  ) 'Cohort information (only those resolvable are shown): '
@@ -2824,9 +2896,9 @@ subroutine print_rk4patch(y,csite,ipa)
                                      ,'   PATCH_LAI','   CAN_DEPTH','     CAN_CO2'         &
                                      ,'    CAN_PRSS','       GGNET'
                                      
-   write (unit=*,fmt='(8(es12.4,1x))') csite%veg_height(ipa),csite%veg_rough(ipa)          &
-                                      ,csite%veg_displace(ipa),csite%lai(ipa),y%can_depth  &
-                                      ,y%can_co2,y%can_prss,y%ggnet
+   write (unit=*,fmt='(8(es12.4,1x))') y%veg_height,y%veg_rough,y%veg_displace             &
+                                      ,csite%lai(ipa),y%can_depth,y%can_co2,y%can_prss     &
+                                      ,y%ggnet
    write (unit=*,fmt='(80a)') ('-',k=1,80)
    write (unit=*,fmt='(8(a12,1x))')  '    CAN_RHOS','   CAN_THEIV','   CAN_THETA'          &
                                     ,'    CAN_TEMP','     CAN_SHV','     CAN_SSH'          &
@@ -2871,7 +2943,7 @@ subroutine print_rk4patch(y,csite,ipa)
    write (unit=*,fmt='(a5,1x,5(a12,1x))')   '  KZG','  NTEXT_SOIL',' SOIL_ENERGY'          &
                                    &,'  SOIL_TEMPK','  SOIL_WATER','SOIL_FRACLIQ'
    do k=rk4site%lsl,nzg
-      write (unit=*,fmt='(i5,1x,i12,4(es12.4,1x))') k,csite%ntext_soil(k,ipa)              &
+      write (unit=*,fmt='(i5,1x,i12,4(es12.4,1x))') k,rk4site%ntext_soil(k)                &
             ,y%soil_energy(k),y%soil_tempk(k),y%soil_water(k),y%soil_fracliq(k)
    end do
    
@@ -3060,7 +3132,7 @@ subroutine print_rk4_state(initp,fluxp,csite,ipa,elapsed,hdid)
 
 
    !----- Find the soil type of the top layer. --------------------------------------------!
-   nsoil   = csite%ntext_soil(nzg,ipa)
+   nsoil   = rk4site%ntext_soil(nzg)
    !---------------------------------------------------------------------------------------!
 
 

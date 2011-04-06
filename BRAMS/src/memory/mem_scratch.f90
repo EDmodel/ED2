@@ -15,7 +15,7 @@ module mem_scratch
 
    type scratch_vars
       !----- The largest arrays available, they should hold the largest possible variable -!
-      real, pointer, dimension(:) ::  scr1,scr2,scr3,scr4,scr5,scr6
+      real, pointer, dimension(:) ::  scr1, scr2, scr3, scr4, scr5, scr6
       !----- 2-D variables, they should hold any (X,Y) variable for any grid. -------------!
       real, pointer, dimension(:) ::  vt2da,vt2db,vt2dc,vt2dd,vt2de,vt2df,vt2dg,vt2dh
       real, pointer, dimension(:) ::  vt2di,vt2dj,vt2dk,vt2dl,vt2dm,vt2dn,vt2do,vt2dp
@@ -197,12 +197,12 @@ module mem_scratch
       allocate (scratch%vt4dc(mpts4d))
 
       !----- ALF - Put zero in every variable. --------------------------------------------!
-      call azero(nptsmax, scratch%scr1)
-      call azero(nptsmax, scratch%scr2)
-      call azero(nptsmax, scratch%scr3)
-      call azero(nptsmax, scratch%scr4)
-      call azero(nptsmax, scratch%scr5)
-      call azero(nptsmax, scratch%scr6)
+      call azero(nptsmax, scratch%scr1 )
+      call azero(nptsmax, scratch%scr2 )
+      call azero(nptsmax, scratch%scr3 )
+      call azero(nptsmax, scratch%scr4 )
+      call azero(nptsmax, scratch%scr5 )
+      call azero(nptsmax, scratch%scr6 )
 
       call azero(mpts2d , scratch%vt2da)
       call azero(mpts2d , scratch%vt2db)

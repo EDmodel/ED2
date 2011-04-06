@@ -716,7 +716,7 @@ subroutine grell_cupar_static(comp_noforc_cldwork,checkmass,iupmethod,maxens_cap
                                        ,qvap0_cup,qliq0_cup,qice0_cup,qsat0_cup,co20_cup   &
                                        ,rho0_cup,theiv0u_cld,etau_cld,dzu_cld,thil0u_cld   &
                                        ,t0u_cld,qtot0u_cld,qvap0u_cld,qliq0u_cld           &
-                                       ,qice0u_cld,qsat0u_cld,co2u_cld,rho0u_cld,dby0u     &
+                                       ,qice0u_cld,qsat0u_cld,co20u_cld,rho0u_cld,dby0u    &
                                        ,pw0u_cld,pwav0,klnb0,ktop0,ierr0)
          !---------------------------------------------------------------------------------!
          ! vii.   Finding the cloud work function                                          !
@@ -740,7 +740,7 @@ subroutine grell_cupar_static(comp_noforc_cldwork,checkmass,iupmethod,maxens_cap
                                             ,co20_cup,rho0_cup,pwav0,theiv0d_cld,etad_cld  &
                                             ,dzd_cld,thil0d_cld,t0d_cld,qtot0d_cld         &
                                             ,qvap0d_cld,qliq0d_cld,qice0d_cld,qsat0d_cld   &
-                                            ,co2d_cld,rho0d_cld,dby0d,pw0d_cld,pwev0       &
+                                            ,co20d_cld,rho0d_cld,dby0d,pw0d_cld,pwev0      &
                                             ,ierr0)
 
             !------------------------------------------------------------------------------!

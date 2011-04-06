@@ -263,7 +263,7 @@ subroutine update_turnover(cpoly, isi)
          cpatch%vm_bar(ico)= (1.0 - tfact60) * cpatch%vm_bar(ico) + tfact60 * vm0
 
          !----- Update the specific leaf area (SLA). --------------------------------------!
-         if (is_tropical(ipft)) then
+         if (is_tropical(ipft) .and. ipft /= 17) then
             cpatch%sla(ico) =  10.0                                                        &
                             ** ( 1.6923                                                    &
                                - 0.3305 *log10(12.0 / ( cpatch%turnover_amp(ico)           &
@@ -301,6 +301,7 @@ subroutine first_phenology(cgrid)
                             , patchtype        ! ! structure
    use ed_therm_lib  , only : calc_hcapveg     ! ! function
    use allometry     , only : area_indices     ! ! subroutine
+   use grid_coms     , only : nzg              ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(edtype)     , target     :: cgrid          ! Current grid
@@ -333,15 +334,16 @@ subroutine first_phenology(cgrid)
                ! factor, then compute the equilibrium biomass of active tissues and        !
                ! storage.                                                                  !
                !---------------------------------------------------------------------------!
-               call pheninit_balive_bstorage(csite,ipa,ico)
+               call pheninit_balive_bstorage(nzg,csite,ipa,ico,cpoly%ntext_soil(:,isi))
                !---------------------------------------------------------------------------!
 
 
                !----- Find LAI, WPA, WAI. -------------------------------------------------!
                call area_indices(cpatch%nplant(ico),cpatch%bleaf(ico),cpatch%bdead(ico)    &
-                                ,cpatch%balive(ico),cpatch%dbh(ico), cpatch%hite(ico)      &
-                                ,cpatch%pft(ico),cpatch%sla(ico), cpatch%lai(ico)          &
-                                ,cpatch%wpa(ico),cpatch%wai(ico),cpatch%bsapwood(ico)) 
+                                ,cpatch%balive(ico),cpatch%dbh(ico),cpatch%hite(ico)       &
+                                ,cpatch%pft(ico),cpatch%sla(ico),cpatch%lai(ico)           &
+                                ,cpatch%wpa(ico),cpatch%wai(ico),cpatch%crown_area(ico)    &
+                                ,cpatch%bsapwood(ico)) 
                !---------------------------------------------------------------------------!
 
                !----- Find heat capacity and vegetation internal energy. ------------------!
@@ -382,11 +384,9 @@ end subroutine first_phenology
 ! found but it doesn't control the phenology, so we assign the biomass that matches the    !
 ! fully flushed leaves.                                                                    !
 !------------------------------------------------------------------------------------------!
-subroutine pheninit_balive_bstorage(csite,ipa,ico)
+subroutine pheninit_balive_bstorage(mzg,csite,ipa,ico,ntext_soil)
    use ed_state_vars , only : sitetype            & ! structure
                             , patchtype           ! ! structure
-   use grid_coms     , only : nzg                 & ! intent(in)
-                            , nzs                 ! ! intent(in)
    use soil_coms     , only : soil                & ! intent(in), look-up table
                             , slz                 ! ! intent(in)
    use phenology_coms, only : theta_crit          & ! intent(in)
@@ -397,18 +397,20 @@ subroutine pheninit_balive_bstorage(csite,ipa,ico)
    use allometry     , only : dbh2bl              ! ! function
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
-   type(sitetype) , target     :: csite          ! Current site
-   integer        , intent(in) :: ipa            ! Number of the current patch
-   integer        , intent(in) :: ico            ! Cohort counter
+   type(sitetype)                , target     :: csite      ! Current site
+   integer                       , intent(in) :: mzg        ! Number of soil layers
+   integer                       , intent(in) :: ipa        ! Number of the current patch
+   integer                       , intent(in) :: ico        ! Cohort counter
+   integer       , dimension(mzg), intent(in) :: ntext_soil ! Soil texture
    !----- Local variables -----------------------------------------------------------------!
-   type(patchtype), pointer    :: cpatch         ! Current patch
-   integer                     :: k              ! Layer counter
-   integer                     :: ipft           ! PFT type
-   integer                     :: nsoil          ! Alias for soil texture class
-   real                        :: salloc         ! balive:bleaf ratio
-   real                        :: salloci        ! bleaf:balive ratio
-   real                        :: bleaf_max      ! bleaf if all leaves are flushed
-   real                        :: balive_max     ! balive if on-allometry
+   type(patchtype)               , pointer    :: cpatch     ! Current patch
+   integer                                    :: k          ! Layer counter
+   integer                                    :: ipft       ! PFT type
+   integer                                    :: nsoil      ! Alias for soil texture class
+   real                                       :: salloc     ! balive:bleaf ratio
+   real                                       :: salloci    ! bleaf:balive ratio
+   real                                       :: bleaf_max  ! maximum bleaf
+   real                                       :: balive_max ! balive if on-allometry
    !---------------------------------------------------------------------------------------!
 
 
@@ -419,17 +421,17 @@ subroutine pheninit_balive_bstorage(csite,ipa,ico)
 
    cpatch%paw_avg(ico) = 0.0
 
-   do k = cpatch%krdepth(ico), nzg - 1
-      nsoil = csite%ntext_soil(k,ipa)
+   do k = cpatch%krdepth(ico), mzg - 1
+      nsoil = ntext_soil(k)
       cpatch%paw_avg(ico) = cpatch%paw_avg(ico)                                            &
                           + max(0.0,(csite%soil_water(k,ipa) - soil(nsoil)%soilwp))        &
                           * (slz(k+1)-slz(k))                                              &
                           / (soil(nsoil)%slmsts - soil(nsoil)%soilwp) 
    end do
-   nsoil = csite%ntext_soil(nzg,ipa)
+   nsoil = ntext_soil(mzg)
    cpatch%paw_avg(ico) = cpatch%paw_avg(ico)                                               &
-                       + max(0.0,(csite%soil_water(nzg,ipa) - soil(nsoil)%soilwp))         &
-                       * (-1.0*slz(nzg)) / (soil(nsoil)%slmsts - soil(nsoil)%soilwp)
+                       + max(0.0,(csite%soil_water(mzg,ipa) - soil(nsoil)%soilwp))         &
+                       * (-1.0*slz(mzg)) / (soil(nsoil)%slmsts - soil(nsoil)%soilwp)
    cpatch%paw_avg(ico) = cpatch%paw_avg(ico)/(-1.0*slz(cpatch%krdepth(ico)))
    select case (phenology(ipft))
    case (1)

@@ -211,7 +211,7 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
    dinitp%virtual_water      = 0.0d0
    dinitp%virtual_depth      = 0.0d0
    initp%extracted_water(:)  = 0.0d0
-   dinitp%avg_smoist_gc(:)   = 0.0d0
+   dinitp%avg_transloss(:)   = 0.0d0
 
    !---------------------------------------------------------------------------------------!
    !     Calculate water available to vegetation (in meters). SLZ is specified in RAMSIN.  !
@@ -219,14 +219,14 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
    ! Eg, SLZ = -2, -1, -0.5, -0.25.  There are four soil layers in this example; soil      !
    ! layer 1 goes from 2 meters below the surface to 1 meter below the surface.            !
    !---------------------------------------------------------------------------------------!
-   nsoil = csite%ntext_soil(mzg,ipa)
+   nsoil = rk4site%ntext_soil(mzg)
    initp%available_liquid_water(mzg) = dslz8(mzg)                                          &
                                      * max(0.0d0                                           &
                                           ,initp%soil_fracliq(mzg)*(initp%soil_water(mzg)  &
                                           -soil8(nsoil)%soilwp))
 
    do k = mzg - 1, rk4site%lsl, -1
-      nsoil = csite%ntext_soil(k,ipa)
+      nsoil = rk4site%ntext_soil(k)
       initp%available_liquid_water(k) = initp%available_liquid_water(k+1) + dslz8(k)       &
            *max(0.0d0,(initp%soil_water(k)-soil8(nsoil)%soilwp)*initp%soil_fracliq(k))
    end do
@@ -237,7 +237,7 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
    ! [m].                                                                                  !
    !---------------------------------------------------------------------------------------!
    do k = rk4site%lsl, mzg
-      nsoil = csite%ntext_soil(k,ipa)
+      nsoil = rk4site%ntext_soil(k)
       initp%psiplusz(k) = slzt8(k) + soil8(nsoil)%slpots                                   &
                         * (soil8(nsoil)%slmsts / initp%soil_water(k)) ** soil8(nsoil)%slbs
 
@@ -265,7 +265,7 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
    !     Here we check whether it is bedrock or not because slmsts for that is zero.       !
    !---------------------------------------------------------------------------------------!
    do k = rk4site%lsl, mzg
-      nsoil = csite%ntext_soil(k,ipa)
+      nsoil = rk4site%ntext_soil(k)
       if(nsoil /= 13)then
          wgpfrac  = min(initp%soil_water(k) / soil8(nsoil)%slmsts,1.d0)
          soilcond = soil8(nsoil)%soilcond0                                                 &
@@ -404,7 +404,7 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
                        ,'leaftw_derivs','rk4_derivs.F90')
 
       if (initp%virtual_water /= 0.d0) then  !!process "virtural water" pool
-         nsoil = csite%ntext_soil(mzg,ipa)
+         nsoil = rk4site%ntext_soil(mzg)
          if (nsoil /= 13) then
             infilt = -dslzi8(mzg)* 5.d-1 * slcons18(mzg,nsoil)                             &
                    * (initp%soil_water(mzg) / soil8(nsoil)%slmsts)                         &
@@ -421,7 +421,7 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
       end if  !! end virtual water pool
       if (initp%nlev_sfcwater >= 1) then !----- Process "snow" water pool -----------------! 
          surface_water = initp%sfcwater_mass(1)*initp%sfcwater_fracliq(1)*wdnsi8 !(m/m2)
-         nsoil = csite%ntext_soil(mzg,ipa)
+         nsoil = rk4site%ntext_soil(mzg)
          if (nsoil /= 13) then
             !----- Calculate infiltration rate (m/s) --------------------------------------!
             infilt = -dslzi8(mzg) * 5.d-1 * slcons18(mzg,nsoil)                            &
@@ -444,8 +444,8 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
 
    !----- Keep qw_flux in W/m2. -----------------------------------------------------------!
    do k = rk4site%lsl+1, mzg
-      nsoil = csite%ntext_soil(k,ipa)
-      if(nsoil /= 13 .and. csite%ntext_soil(k-1,ipa) /= 13)then
+      nsoil = rk4site%ntext_soil(k)
+      if(nsoil /= 13 .and. rk4site%ntext_soil(k-1) /= 13)then
 
          wgpmid    = 5.d-1 * (initp%soil_water(k)   + initp%soil_water(k-1))
          freezeCor = 5.d-1 * (initp%soil_fracliq(k) + initp%soil_fracliq(k-1))
@@ -469,7 +469,7 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
    end do
 
    !----- Boundary condition at the lowest soil level -------------------------------------!
-   nsoil = csite%ntext_soil(rk4site%lsl,ipa)
+   nsoil = rk4site%ntext_soil(rk4site%lsl)
    if (nsoil /= 13) then
       select case(isoilbc)
       case (0) 
@@ -615,7 +615,7 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
    if (any_resolvable) then
       do k1 = rk4site%lsl, mzg    ! loop over extracted water
          do k2=k1,mzg
-            if (csite%ntext_soil(k2,ipa) /= 13) then
+            if (rk4site%ntext_soil(k2) /= 13) then
                if (initp%available_liquid_water(k1) > 0.d0) then
                   wloss = wdnsi8 * initp%extracted_water(k1)                               &
                         * initp%soil_liq(k2) / initp%available_liquid_water(k1)
@@ -624,12 +624,14 @@ subroutine leaftw_derivs(mzg,mzs,initp,dinitp,csite,ipa)
                   !----- Energy: only liquid water is lost through transpiration. ---------!
                   qwloss = wloss * cliqvlme8 * (initp%soil_tempk(k2) - tsupercool8)
                   dinitp%soil_energy(k2)   = dinitp%soil_energy(k2)   - qwloss
-                  dinitp%avg_smoist_gc(k2) = dinitp%avg_smoist_gc(k2) - wdns8*wloss
+                  dinitp%avg_transloss(k2) = dinitp%avg_transloss(k2) - wdns8*dble(wloss)  &
+                             * dslz8(k2)
                end if
             end if
          end do
       end do
    end if
+
 
    return
 end subroutine leaftw_derivs

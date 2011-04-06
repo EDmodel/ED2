@@ -9,6 +9,7 @@
 !------------------------------------------------------------------------------------------!
 module rk4_coms
    use ed_max_dims, only : n_pft   & ! intent(in)
+                         , nzgmax  & ! intent(in)
                          , str_len ! ! intent(in)
 
    implicit none
@@ -38,9 +39,27 @@ module rk4_coms
       !------------------------------------------------------------------------------------!
 
 
+      !----- Vegetation properties. -------------------------------------------------------!
+      real(kind=8)                        :: veg_height   ! Vegetation height    [       m]
+      real(kind=8)                        :: veg_displace ! 0-plane displacement [       m]
+      real(kind=8)                        :: veg_rough    ! Vegetation roughness [       m]
+      !------------------------------------------------------------------------------------!
+
 
       !----- Fraction of open canopy. -----------------------------------------------------!
-      real(kind=8)                        :: opencan_frac ! Frac. of open canopy [     ---]
+      real(kind=8)                        :: opencan_frac   ! Frac. of open canopy
+      !------------------------------------------------------------------------------------!
+
+
+
+      !----- Total depth of temporary surface water / snow. -------------------------------!
+      real(kind=8)                        :: total_sfcw_depth
+      !------------------------------------------------------------------------------------!
+
+
+
+      !----- Fraction of open canopy buried in snow. --------------------------------------!
+      real(kind=8)                        :: snowfac
       !------------------------------------------------------------------------------------!
 
 
@@ -157,6 +176,7 @@ module rk4_coms
       real(kind=8), pointer, dimension(:) :: wpa          ! Wood projected area [    m²/m²]
       real(kind=8), pointer, dimension(:) :: tai          ! Tree area index     [    m²/m²]
       real(kind=8), pointer, dimension(:) :: crown_area   ! Crown area          [    m²/m²]
+      real(kind=8), pointer, dimension(:) :: elongf       ! Elongation factor   [     ----]
       real(kind=8), pointer, dimension(:) :: gbh          ! Leaf b.lyr. condct. [ J/K/m²/s]
       real(kind=8), pointer, dimension(:) :: gbw          ! Leaf b.lyr. condct. [  kg/m²/s]
       real(kind=8), pointer, dimension(:) :: gsw_open     ! Sto. condct. (op.)  [ J/K/m²/s]
@@ -207,7 +227,7 @@ module rk4_coms
       real(kind=8) :: avg_carbon_ac     ! Free atm. -> canopy air
       !----- Soil fluxes ------------------------------------------------------------------!
       real(kind=8),pointer,dimension(:) :: avg_smoist_gg     ! Moisture flux between layers
-      real(kind=8),pointer,dimension(:) :: avg_smoist_gc     ! Transpired soil moisture sink
+      real(kind=8),pointer,dimension(:) :: avg_transloss     ! Transpired soil moisture sink
       real(kind=8),pointer,dimension(:) :: avg_sensible_gg   ! Soil heat flux between layers
       real(kind=8)                      :: avg_drainage      ! Drainage at the bottom.
       real(kind=8)                      :: avg_drainage_heat ! Drainage at the bottom.
@@ -241,7 +261,7 @@ module rk4_coms
       real(kind=8) :: flx_carbon_ac     ! Free atm. -> canopy air
       !----- Soil fluxes ------------------------------------------------------------------!
       real(kind=8),pointer,dimension(:) :: flx_smoist_gg     ! Moisture flux between layers
-      real(kind=8),pointer,dimension(:) :: flx_smoist_gc     ! Transpired soil moisture sink
+      real(kind=8),pointer,dimension(:) :: flx_transloss     ! Transpired soil moisture sink
       real(kind=8),pointer,dimension(:) :: flx_sensible_gg   ! Soil heat flux between layers
       real(kind=8)                      :: flx_drainage      ! Drainage at the bottom.
       real(kind=8)                      :: flx_drainage_heat ! Drainage at the bottom.
@@ -271,29 +291,30 @@ module rk4_coms
    ! inside the Runge-Kutta integrator and do not change over time.                        !
    !---------------------------------------------------------------------------------------!
    type rk4sitetype
-      integer                        :: lsl
-      real(kind=8), dimension(n_pft) :: green_leaf_factor
-      real(kind=8)                   :: atm_rhos
-      real(kind=8)                   :: vels
-      real(kind=8)                   :: atm_tmp
-      real(kind=8)                   :: atm_theta
-      real(kind=8)                   :: atm_theiv
-      real(kind=8)                   :: atm_lntheta
-      real(kind=8)                   :: atm_shv
-      real(kind=8)                   :: atm_rvap
-      real(kind=8)                   :: atm_rhv
-      real(kind=8)                   :: atm_co2
-      real(kind=8)                   :: zoff
-      real(kind=8)                   :: atm_exner
-      real(kind=8)                   :: pcpg
-      real(kind=8)                   :: qpcpg
-      real(kind=8)                   :: dpcpg
-      real(kind=8)                   :: atm_prss
-      real(kind=8)                   :: geoht
-      real(kind=8)                   :: rshort
-      real(kind=8)                   :: rlong
-      real(kind=8)                   :: lon
-      real(kind=8)                   :: lat
+      integer                         :: lsl
+      integer     , dimension(nzgmax) :: ntext_soil
+      real(kind=8), dimension(n_pft)  :: green_leaf_factor
+      real(kind=8)                    :: atm_rhos
+      real(kind=8)                    :: vels
+      real(kind=8)                    :: atm_tmp
+      real(kind=8)                    :: atm_theta
+      real(kind=8)                    :: atm_theiv
+      real(kind=8)                    :: atm_lntheta
+      real(kind=8)                    :: atm_shv
+      real(kind=8)                    :: atm_rvap
+      real(kind=8)                    :: atm_rhv
+      real(kind=8)                    :: atm_co2
+      real(kind=8)                    :: zoff
+      real(kind=8)                    :: atm_exner
+      real(kind=8)                    :: pcpg
+      real(kind=8)                    :: qpcpg
+      real(kind=8)                    :: dpcpg
+      real(kind=8)                    :: atm_prss
+      real(kind=8)                    :: geoht
+      real(kind=8)                    :: rshort
+      real(kind=8)                    :: rlong
+      real(kind=8)                    :: lon
+      real(kind=8)                    :: lat
    end type rk4sitetype
    !---------------------------------------------------------------------------------------!
 
@@ -700,10 +721,10 @@ module rk4_coms
       !------------------------------------------------------------------------------------!
       allocate(y%avg_sensible_gg(nzg))
       allocate(y%avg_smoist_gg(nzg))
-      allocate(y%avg_smoist_gc(nzg))
+      allocate(y%avg_transloss(nzg))
       allocate(y%flx_sensible_gg(nzg))
       allocate(y%flx_smoist_gg(nzg))
-      allocate(y%flx_smoist_gc(nzg))
+      allocate(y%flx_transloss(nzg))
 
       call zero_rk4_patch(y)
 
@@ -751,10 +772,10 @@ module rk4_coms
       !                   aren't used.                                                     !
       !------------------------------------------------------------------------------------!
       nullify(y%avg_smoist_gg)
-      nullify(y%avg_smoist_gc)
+      nullify(y%avg_transloss)
       nullify(y%avg_sensible_gg)
       nullify(y%flx_smoist_gg)
-      nullify(y%flx_smoist_gc)
+      nullify(y%flx_transloss)
       nullify(y%flx_sensible_gg)
 
       return
@@ -803,7 +824,12 @@ module rk4_coms
       y%can_rhos                       = 0.d0
       y%can_prss                       = 0.d0
       y%can_exner                      = 0.d0
+      y%veg_height                     = 0.d0
+      y%veg_displace                   = 0.d0
+      y%veg_rough                      = 0.d0
       y%opencan_frac                   = 0.d0
+      y%total_sfcw_depth               = 0.d0
+      y%snowfac                        = 0.d0
       y%ggbare                         = 0.d0
       y%ggveg                          = 0.d0
       y%ggnet                          = 0.d0
@@ -911,11 +937,11 @@ module rk4_coms
       if(associated(y%sfcwater_restz        ))   y%sfcwater_restz(:)              = 0.d0
 
       if(associated(y%avg_smoist_gg         ))   y%avg_smoist_gg(:)               = 0.d0
-      if(associated(y%avg_smoist_gc         ))   y%avg_smoist_gc(:)               = 0.d0
+      if(associated(y%avg_transloss         ))   y%avg_transloss(:)               = 0.d0
       if(associated(y%avg_sensible_gg       ))   y%avg_sensible_gg(:)             = 0.d0
 
       if(associated(y%flx_smoist_gg         ))   y%flx_smoist_gg(:)               = 0.d0
-      if(associated(y%flx_smoist_gc         ))   y%flx_smoist_gc(:)               = 0.d0
+      if(associated(y%flx_transloss         ))   y%flx_transloss(:)               = 0.d0
       if(associated(y%flx_sensible_gg       ))   y%flx_sensible_gg(:)             = 0.d0
 
       return
@@ -959,10 +985,10 @@ module rk4_coms
 
       ! Diagnostics
       if (associated(y%avg_smoist_gg))           deallocate(y%avg_smoist_gg)
-      if (associated(y%avg_smoist_gc))           deallocate(y%avg_smoist_gc)
+      if (associated(y%avg_transloss))           deallocate(y%avg_transloss)
       if (associated(y%avg_sensible_gg))         deallocate(y%avg_sensible_gg)
       if (associated(y%flx_smoist_gg))           deallocate(y%flx_smoist_gg)
-      if (associated(y%flx_smoist_gc))           deallocate(y%flx_smoist_gc)
+      if (associated(y%flx_transloss))           deallocate(y%flx_transloss)
       if (associated(y%flx_sensible_gg))         deallocate(y%flx_sensible_gg)
 
       return
@@ -1006,6 +1032,7 @@ module rk4_coms
       allocate(y%wpa             (maxcohort))
       allocate(y%tai             (maxcohort))
       allocate(y%crown_area      (maxcohort))
+      allocate(y%elongf          (maxcohort))
       allocate(y%gbh             (maxcohort))
       allocate(y%gbw             (maxcohort))
       allocate(y%gsw_open        (maxcohort))
@@ -1067,6 +1094,7 @@ module rk4_coms
       nullify(y%wpa             )
       nullify(y%tai             )
       nullify(y%crown_area      )
+      nullify(y%elongf          )
       nullify(y%gbh             )
       nullify(y%gbw             )
       nullify(y%gsw_open        )
@@ -1126,6 +1154,7 @@ module rk4_coms
       if(associated(y%wpa             )) y%wpa              = 0.d0
       if(associated(y%tai             )) y%tai              = 0.d0
       if(associated(y%crown_area      )) y%crown_area       = 0.d0
+      if(associated(y%elongf          )) y%elongf           = 0.d0
       if(associated(y%gbh             )) y%gbh              = 0.d0
       if(associated(y%gbw             )) y%gbw              = 0.d0
       if(associated(y%gsw_open        )) y%gsw_open         = 0.d0
@@ -1185,6 +1214,7 @@ module rk4_coms
       if(associated(y%wpa             )) deallocate(y%wpa             )
       if(associated(y%tai             )) deallocate(y%tai             )
       if(associated(y%crown_area      )) deallocate(y%crown_area      )
+      if(associated(y%elongf          )) deallocate(y%elongf          )
       if(associated(y%gbh             )) deallocate(y%gbh             )
       if(associated(y%gbw             )) deallocate(y%gbw             )
       if(associated(y%gsw_open        )) deallocate(y%gsw_open        )
@@ -1254,7 +1284,7 @@ module rk4_coms
 
       !----- Reset soil fluxes only when they are allocated. ------------------------------!
       if(associated(y%flx_smoist_gg   )) y%flx_smoist_gg    (:) = 0.d0
-      if(associated(y%flx_smoist_gc   )) y%flx_smoist_gc    (:) = 0.d0
+      if(associated(y%flx_transloss   )) y%flx_transloss    (:) = 0.d0
       if(associated(y%flx_sensible_gg )) y%flx_sensible_gg  (:) = 0.d0
       !----- Reset cohort-level energy fluxes when they are allocated. --------------------!
       if(associated(y%cfx_hflxvc      )) y%cfx_hflxvc       (:) = 0.d0
@@ -1316,7 +1346,7 @@ module rk4_coms
 
       if(associated(y%flx_smoist_gg   )) y%flx_smoist_gg    (:) = y%flx_smoist_gg   (:)    &
                                                                 * hdidi
-      if(associated(y%flx_smoist_gc   )) y%flx_smoist_gc    (:) = y%flx_smoist_gc   (:)    &
+      if(associated(y%flx_transloss   )) y%flx_transloss    (:) = y%flx_transloss   (:)    &
                                                                 * hdidi
       if(associated(y%flx_sensible_gg )) y%flx_sensible_gg  (:) = y%flx_sensible_gg (:)    &
                                                                 * hdidi
@@ -1452,8 +1482,8 @@ module rk4_coms
 
    !=======================================================================================!
    !=======================================================================================!
-   subroutine find_derived_thbounds(lsl,mzg,can_rhos,can_theta,can_temp,can_shv,can_rvap   &
-                                   ,can_prss,can_depth,nsoil)
+   subroutine find_derived_thbounds(can_rhos,can_theta,can_temp,can_shv,can_rvap,can_prss  &
+                                   ,can_depth)
       use grid_coms   , only : nzg           ! ! intent(in)
       use consts_coms , only : p008          & ! intent(in)
                              , rocp8         & ! intent(in)
@@ -1475,8 +1505,6 @@ module rk4_coms
       use ed_misc_coms, only : current_time  ! ! intent(in)
       implicit none
       !----- Arguments. -------------------------------------------------------------------!
-      integer                     , intent(in) :: lsl
-      integer                     , intent(in) :: mzg
       real(kind=8)                , intent(in) :: can_rhos
       real(kind=8)                , intent(in) :: can_theta
       real(kind=8)                , intent(in) :: can_temp
@@ -1484,7 +1512,6 @@ module rk4_coms
       real(kind=8)                , intent(in) :: can_rvap
       real(kind=8)                , intent(in) :: can_prss
       real(kind=8)                , intent(in) :: can_depth
-      integer     , dimension(mzg), intent(in) :: nsoil
       !----- Local variables. -------------------------------------------------------------!
       real(kind=8)                             :: can_prss_try
       real(kind=8)                             :: can_theta_try
@@ -1493,6 +1520,7 @@ module rk4_coms
       integer                                  :: hour
       integer                                  :: minute
       integer                                  :: second
+      integer                                  :: nsoil
       !----- Local parameters and locally saved variables. --------------------------------!
       logical                     , save       :: firsttime    = .true.
       !------------------------------------------------------------------------------------!
@@ -1505,8 +1533,8 @@ module rk4_coms
       !------------------------------------------------------------------------------------!
       if (firsttime) then
 
-         allocate(rk4min_soil_water(mzg))
-         allocate(rk4max_soil_water(mzg))
+         allocate(rk4min_soil_water(nzg))
+         allocate(rk4max_soil_water(nzg))
 
          if (print_thbnd) then
             open (unit=39,file=trim(thbnds_fout),status='replace',action='write')
@@ -1623,9 +1651,10 @@ module rk4_coms
       end if
 
 
-      do k = lsl, mzg
-         rk4min_soil_water(k) = soil8(nsoil(k))%soilcp * (1.d0 - rk4eps)
-         rk4max_soil_water(k) = soil8(nsoil(k))%slmsts * (1.d0 + rk4eps)
+      do k = rk4site%lsl, nzg
+         nsoil = rk4site%ntext_soil(k)
+         rk4min_soil_water(k) = soil8(nsoil)%soilcp * (1.d0 - rk4eps)
+         rk4max_soil_water(k) = soil8(nsoil)%slmsts * (1.d0 + rk4eps)
       end do
 
       return

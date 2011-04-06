@@ -24,6 +24,8 @@ subroutine apply_forestry(cpoly, isi, year)
    use fuse_fiss_utils      , only : terminate_patches          ! ! subroutine
    use ed_max_dims          , only : n_pft                      & ! intent(in)
                                    , n_dbh                      ! ! intent(in)
+   use grid_coms            , only : nzg                        & ! intent(in)
+                                   , nzs                        ! ! intent(in)
    implicit none
    !----- Arguments -----------------------------------------------------------------------!
    type(polygontype)             , target      :: cpoly
@@ -245,17 +247,18 @@ subroutine apply_forestry(cpoly, isi, year)
       call norm_harv_patch(csite,newp)
       
       !----- Update temperature and density. ----------------------------------------------!
-      call update_patch_thermo_props(csite,newp,newp)
+      call update_patch_thermo_props(csite,newp,newp,nzg,nzs,cpoly%ntext_soil(:,isi))
 
       !----- Plant the patch if it is a plantation. ---------------------------------------!
       if (cpoly%plantation(isi) == 1 .and. year > plantation_year) then
-         call plant_patch(csite,newp, cpoly%plantation_stocking_pft(isi)                   &
+         call plant_patch(csite,newp,nzg,cpoly%plantation_stocking_pft(isi)                &
                          ,cpoly%plantation_stocking_density(isi)                           &
-                         ,cpoly%green_leaf_factor(:,isi), 2.0, cpoly%lsl(isi))        
+                         ,cpoly%ntext_soil(:,isi),cpoly%green_leaf_factor(:,isi),2.0       &
+                         ,cpoly%lsl(isi))
          csite%plantation(newp) = 1
       end if
       call update_patch_derived_props(csite,cpoly%lsl(isi),cpoly%met(isi)%prss,newp)
-      call new_patch_sfc_props(csite,newp)
+      call new_patch_sfc_props(csite,newp,nzg,nzs,cpoly%ntext_soil(:,isi))
       call update_budget(csite,cpoly%lsl(isi),newp,newp)
    end if
 

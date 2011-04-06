@@ -105,7 +105,8 @@ subroutine nakanishi(m1,m2,m3,m4,ia,iz,ja,jz,jd,tkep,tket,vt3dd,vt3de,vt3dh,vt3d
                             , vonk                 & ! intent(in)
                             , lturbmin             & ! intent(in)
                             , tkmin                & ! intent(in)
-                            , onethird             ! ! intent(in)
+                            , onethird             & ! intent(in)
+                            , lnexp_max            ! ! intent(in)
    use leaf_coms     , only : ustmin               & ! intent(in)
                             , tiny_parea           ! ! intent(in)
    use turb_coms     , only : a1      => nna1      & ! intent(in)
@@ -453,7 +454,9 @@ subroutine nakanishi(m1,m2,m3,m4,ia,iz,ja,jz,jd,tkep,tket,vt3dd,vt3de,vt3dh,vt3d
             !------------------------------------------------------------------------------!
             elseif (zagl(k) >= 0.1* pblhgt(i,j)) then ! if z/h > 0.1
                ! If PBL is too low, this number can cause underflow in exp. ---------------!
-               aux       = max(40.,5.0*zagl(k)/pblhgt(i,j))
+
+               !----- CHANGED MAX TO MIN (RGK 03-2011). -----------------------------------!
+               aux       = min(lnexp_max,5.0*zagl(k)/pblhgt(i,j))
                tl(k,i,j) = 0.15*pblhgt(i,j)*(1-exp(-aux))/sigw(k,i,j)
             elseif ((z0w - zagl(k)) <= lmo(i,j)) then ! -(z-z0)/Lmo > 1 and z/h < 0.1
                tl(k,i,j)= 0.59*zagl(k)/sigw(k,i,j)
