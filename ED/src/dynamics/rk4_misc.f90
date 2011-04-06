@@ -515,6 +515,8 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
                                     , rk4max_veg_temp       & ! intent(in)
                                     , rk4min_soil_temp      & ! intent(in)
                                     , rk4max_soil_temp      & ! intent(in)
+                                    , rk4min_soil_water     & ! intent(in)
+                                    , rk4max_soil_water     & ! intent(in)
                                     , rk4min_sfcw_temp      & ! intent(in)
                                     , rk4max_sfcw_temp      & ! intent(in)
                                     , rk4water_stab_thresh  & ! intent(in)
@@ -775,8 +777,10 @@ subroutine update_diagnostic_vars(initp, csite,ipa)
    k = max(1,ksn)
    if (ksn == 0) then
       k = 1
-      ok_ground = initp%soil_tempk(nzg) >= rk4min_soil_temp .and.                          &
-                  initp%soil_tempk(nzg) <= rk4max_soil_temp
+      ok_ground = initp%soil_tempk(nzg) >= rk4min_soil_temp       .and.                    &
+                  initp%soil_tempk(nzg) <= rk4max_soil_temp       .and.                    &
+                  initp%soil_water(nzg) >= rk4min_soil_water(nzg) .and.                    &
+                  initp%soil_water(nzg) <= rk4max_soil_water(nzg)
    else
       k = ksn
       ok_ground = initp%sfcwater_tempk(ksn) >= rk4min_sfcw_temp .and.                      &
@@ -1111,7 +1115,14 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,hdid,csite,ipa)
          
          wmass_free         = wmass_available  - wmass_needed 
          energy_free        = energy_available - energy_needed
-         depth_free         = depth_available  - depth_needed 
+         depth_free         = depth_available  - depth_needed
+      else
+         !---------------------------------------------------------------------------------!
+         !    There is not any water vapour.  Hope for the best.                           !
+         !---------------------------------------------------------------------------------!
+         wmass_free         = wmass_needed
+         energy_free        = energy_needed
+         depth_free         = depth_needed
       end if
 
       !----- Reset both the temporary surface water and the virtual layer. ----------------!
@@ -1367,7 +1378,7 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,hdid,csite,ipa)
    !---------------------------------------------------------------------------------------!
    if (wmass_free > 0.d0) then
       wmass_room  = max(0.d0, soil8(nsoil)%slmsts - initp%soil_water(nzg))                 &
-                            * wdns8 * dslz8(nzg)
+                  * wdns8 * dslz8(nzg)
       energy_room = energy_free * wmass_room / wmass_free
 
       if (wmass_room > wmass_free) then
@@ -1378,6 +1389,10 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,hdid,csite,ipa)
          initp%soil_water(nzg)  = initp%soil_water(nzg)  + wmass_free  * dslzi8(nzg)       &
                                 * wdnsi8
          initp%soil_energy(nzg) = initp%soil_energy(nzg) + energy_free * dslzi8(nzg)
+
+         wmass_free  = 0.d0
+         energy_free = 0.d0
+         depth_free  = 0.d0
       else
          !----- Remove the water that can go to the soil. ---------------------------------!
          wmass_free  = wmass_free  - wmass_room
@@ -1396,11 +1411,50 @@ subroutine adjust_sfcw_properties(nzg,nzs,initp,hdid,csite,ipa)
 
          wmass_free  = 0.d0
          energy_free = 0.d0
+         depth_free  = 0.d0
       end if
    elseif (wmass_free < 0.d0) then
-      call fatal_error('Free mass is negative, this doesn''t make any sense!'              &
-                      ,'adjust_sfcw_properties','rk4_misc.f90')
-   
+      wmass_needed     = - wmass_free
+      energy_needed    = - energy_free
+      depth_needed     = - depth_free
+
+      !------ Find the amount of water that the soil can provide. -------------------------!
+      wmass_available  = max(0.d0,initp%soil_water(nzg) - soil8(nsoil)%soilcp)             &
+                       * wdns8 * dslz8(nzg)
+      energy_available = energy_free * wmass_available / wmass_free
+
+      if (wmass_available > wmass_needed) then
+         !---------------------------------------------------------------------------------!
+         !     There is enough space in the top soil layer to correct remaining negative   !
+         ! water, get all the water needed there.                                          !
+         !---------------------------------------------------------------------------------!
+         initp%soil_water(nzg)  = initp%soil_water(nzg)  - wmass_needed  * dslzi8(nzg)     &
+                                * wdnsi8
+         initp%soil_energy(nzg) = initp%soil_energy(nzg) - energy_needed * dslzi8(nzg)
+         wmass_needed     = 0.d0
+         energy_needed    = 0.d0
+         depth_needed     = 0.d0
+      else
+         !----- Add the water that can come from the soil. --------------------------------!
+         wmass_needed  = wmass_needed  - wmass_available
+         energy_needed = energy_needed - energy_available
+
+         !----- Dump what we can dump on the top soil layer. ------------------------------!
+         initp%soil_water(nzg)  = initp%soil_water(nzg)  - wmass_available  * dslzi8(nzg)  &
+                                * wdnsi8
+         initp%soil_energy(nzg) = initp%soil_energy(nzg) - energy_available * dslzi8(nzg)
+
+         !----- Condense the remaining, hoping for the best. ------------------------------!
+         initp%can_shv      = initp%can_shv       - wmass_needed  * wcapcani
+         initp%avg_vapor_gc = initp%avg_vapor_gc  - wmass_needed  * hdidi
+
+         energy_input       = - energy_needed
+
+         wmass_free  = 0.d0
+         energy_free = 0.d0
+         depth_free  = 0.d0
+
+      end if
    end if
    !---------------------------------------------------------------------------------------!
 

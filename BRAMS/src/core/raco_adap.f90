@@ -1,152 +1,197 @@
-!############################# Change Log ##################################
-! 5.0.0
-!
-!###########################################################################
-!  Copyright (C)  1990, 1995, 1999, 2000, 2003 - All Rights Reserved
-!  Regional Atmospheric Modeling System - RAMS
-!###########################################################################
-
-subroutine acoust_adap(m1,m2,m3,flpu,flpv,flpw            &
-                 ,scr1,scr2,vt3da,vt3db,vt3dc,vt3dd    &
-                 ,vt3de,vt3df,vt3dg,vt3dh,vt2da        &
-                 ,dn0,pi0,th0,up,vp,wp,pp,ut,vt,wt,pt  &
-                 ,dxu,dyv,fmapui,fmapvi,dxt,dyt,fmapt  &
-                 ,aru,arv,arw,volt,volu,volv,volw      )
-!--------------------------------------------------------------------
-!                  Acoustic terms small time-step driver
-!
-!     This routine calls all the necessary routines to march the model
-!     through the small timesteps.
-!-----------------------------------------------------------------------
-use mem_grid
-use mem_scratch
-use node_mod
-
-implicit none
-
-integer :: m1,m2,m3
-real, dimension(m1,m2,m3) :: dn0,pi0,th0,up,vp,wp,pp  &
-                            ,aru,arv,arw,volt,volu,volv,volw
-real, dimension(m2,m3) ::   dxu,dyv,fmapui,fmapvi,dxt,dyt,fmapt
-real, dimension(*) ::       scr1,scr2,vt3da,vt3db,vt3dc,vt3dd  &
-                           ,vt3de,vt3df,vt3dg,vt3dh,vt2da,ut,vt,wt,pt
-real, dimension(m2,m3) :: flpu,flpv,flpw
-
-real :: t1,w1,a1da2
-
-integer :: iter
-
-do iter = 1,nnacoust(ngrid)
-
-!     Get coefficients for computations
-
-dts = 2. * dtlt / nnacoust(ngrid)
-
-if (iter .eq. 1)  &
-   call coefz_adap(mzp,mxp,myp,ia,iz,ja,jz,flpw(1,1)      &
-      ,vt3dc(1),vt3dd(1),vt3de(1),dn0(1,1,1),pi0(1,1,1)  &
-      ,th0(1,1,1),a1da2,vt3df(1),vt3dg(1),scr2(1)        &
-      ,vctr1,vctr2,arw(1,1,1),volt(1,1,1),volw(1,1,1)    )
-
-if (ipara .eq. 1) then
-   if (iter .ne. 1) then
-      call node_getst(4)
-      if (ngrid .eq. 1) call node_getcyclic(4)
-   endif
-endif
-
-call prdctu_adap(mzp,mxp,myp,ia,izu,ja,jz,ibcon,flpu(1,1)    &
-   ,up(1,1,1),ut(1),pp(1,1,1),vt3da(1),th0(1,1,1),vt3db(1)  &
-   ,dxu(1,1),vt3dh(1),aru(1,1,1),volu(1,1,1),mynum          )
-
-if (ipara .eq. 1) then
-   if (iter .ne. nnacoust(ngrid)) then
-      call node_sendst(2)
-      if (ngrid .eq. 1) call node_sendcyclic(2)
-   endif
-endif
-
-!     ---------------------------------------------------------------
-   if (nxtnest(ngrid) .eq. 0 .and. ipara .eq. 0)  &
-      call cyclic_set (nzp,nxp,nyp,up(1,1,1),'U')
-!     ---------------------------------------------------------------
-
-call prdctv_adap(mzp,mxp,myp,ia,iz,ja,jzv,ibcon,flpv(1,1)    &
-   ,vp(1,1,1),vt(1),pp(1,1,1),vt3da(1),th0(1,1,1),vt3db(1)  &
-   ,dyv(1,1),vt3dh(1),arv(1,1,1),volv(1,1,1)                )
-
-if (ipara .eq. 1) then
-   if (iter .ne. nnacoust(ngrid)) then
-      call node_sendst(3)
-      if (ngrid .eq. 1) call node_sendcyclic(3)
-   else
-      call node_sendst(5)
-      if (ngrid .eq. 1) call node_sendcyclic(5)
-   endif
-endif
-
-!     ---------------------------------------------------------------
-   if (nxtnest(ngrid) .eq. 0 .and. ipara .eq. 0)  &
-      call cyclic_set (nzp,nxp,nyp,vp(1,1,1),'V')
-!     ---------------------------------------------------------------
-call prdctw1_adap(mzp,mxp,myp,ia,iz,ja,jz,ibcon,flpw(1,1)  &
-   ,wp(1,1,1),wt(1),pp(1,1,1),vt3dc(1)  &
-   ,a1da2,vt3dh(1))
+!===================================== Change Log =========================================!
+! 5.0.0                                                                                    !
+!                                                                                          !
+!                                                                                          !
+!==========================================================================================!
+!  Copyright (C)  1990, 1995, 1999, 2000, 2003 - All Rights Reserved                       !
+!  Regional Atmospheric Modeling System - RAMS                                             !
+!==========================================================================================!
+!==========================================================================================!
 
 
-if (ipara .eq. 1) then
-   if (iter .ne. nnacoust(ngrid)) then
-      call node_getst(2)
-      if (ngrid .eq. 1) call node_getcyclic(2)
-      call node_getst(3)
-      if (ngrid .eq. 1) call node_getcyclic(3)
-   else
-      call node_getst(5)
-      if (ngrid .eq. 1) call node_getcyclic(5)
-   endif
-endif
 
 
-call prdctp1_adap(mzp,mxp,myp,ia,iz,ja,jz,jdim,flpw(1,1)                &
-   ,pp(1,1,1),up(1,1,1),vp(1,1,1),pi0(1,1,1),dn0(1,1,1),th0(1,1,1)     &
-   ,pt(1),vt3da(1),vt3db(1),vt2da(1),fmapui(1,1),fmapvi(1,1),dxt(1,1)  &
-   ,dyt(1,1),fmapt(1,1),aru(1,1,1),arv(1,1,1),volt(1,1,1),mynum        )
 
-call prdctw2_adap(mzp,mxp,myp,ia,iz,ja,jz,flpw(1,1)           &
-   ,wp(1,1,1),pp(1,1,1),vt3dc(1),vt3dd(1),vt3de(1),vt3dg(1)  &
-   ,scr1(1),scr2(1),vt2da(1)                                 )
 
-call prdctw3_adap(mzp,mxp,myp,ia,iz,ja,jz,flpw(1,1)                 &
-   ,wp(1,1,1),scr1(1),vt3df(1),vt3dg(1),vt3dc(1),vt3dd(1),pp(1,1,1))
-!     ---------------------------------------------------------------
-   if (nxtnest(ngrid) .eq. 0 .and. ipara .eq. 0)  &
-      call cyclic_set (nzp,nxp,nyp,wp(1,1,1),'W')
-!     ---------------------------------------------------------------
-call prdctp2_adap(mzp,mxp,myp,ia,iz,ja,jz,ibcon,flpw(1,1)  &
-   ,pp(1,1,1),wp(1,1,1),vt3dd(1),vt3de(1),mynum)
+!==========================================================================================!
+!==========================================================================================!
+!     Acoustic terms small time-step driver: this routine calls all the necessary routines !
+! to march the model through the small timesteps when the adaptive coordinate ("shaved-    !
+! -eta") is used.                                                                          !
+!------------------------------------------------------------------------------------------!
+subroutine acoust_adap(m1,m2,m3,flpu,flpv,flpw,scr1,scr2,vt3da,vt3db,vt3dc,vt3dd,vt3de     &
+                      ,vt3df,vt3dg,vt3dh,vt2da,dn0,pi0,th0,up,vp,wp,pp,ut,vt,wt,pt,dxu,dyv &
+                      ,fmapui,fmapvi,dxt,dyt,fmapt,aru,arv,arw,volt,volu,volv,volw)
 
-   if (nxtnest(ngrid) .eq. 0 .and. ipara .eq. 0)  &
-      call cyclic_set (nzp,nxp,nyp,pp(1,1,1),'T')
+   use mem_grid
+   use mem_scratch
+   use node_mod
 
-if (ipara .eq. 1) then
-   if (iter .ne. nnacoust(ngrid)) then
-      call node_sendst(4)
-      if (ngrid .eq. 1) call node_sendcyclic(4)
-   else
-      call node_sendst(6)
-      if (ngrid .eq. 1) call node_sendcyclic(6)
-      call node_getst(6)
-      if (ngrid .eq. 1) call node_getcyclic(6)
-   endif
-endif
+   implicit none
 
-enddo
+   !------ Arguments ----------------------------------------------------------------------!
+   integer                   :: m1
+   integer                   :: m2
+   integer                   :: m3
+   real, dimension(m1,m2,m3) :: dn0
+   real, dimension(m1,m2,m3) :: pi0
+   real, dimension(m1,m2,m3) :: th0
+   real, dimension(m1,m2,m3) :: up
+   real, dimension(m1,m2,m3) :: vp
+   real, dimension(m1,m2,m3) :: wp
+   real, dimension(m1,m2,m3) :: pp
+   real, dimension(m1,m2,m3) :: aru
+   real, dimension(m1,m2,m3) :: arv
+   real, dimension(m1,m2,m3) :: arw
+   real, dimension(m1,m2,m3) :: volt
+   real, dimension(m1,m2,m3) :: volu
+   real, dimension(m1,m2,m3) :: volv
+   real, dimension(m1,m2,m3) :: volw
+   real, dimension(   m2,m3) :: dxu
+   real, dimension(   m2,m3) :: dyv
+   real, dimension(   m2,m3) :: fmapui
+   real, dimension(   m2,m3) :: fmapvi
+   real, dimension(   m2,m3) :: dxt
+   real, dimension(   m2,m3) :: dyt
+   real, dimension(   m2,m3) :: fmapt
+   real, dimension(   m2,m3) :: flpu
+   real, dimension(   m2,m3) :: flpv
+   real, dimension(   m2,m3) :: flpw
+   real, dimension(*)        :: scr1
+   real, dimension(*)        :: scr2
+   real, dimension(*)        :: vt3da
+   real, dimension(*)        :: vt3db
+   real, dimension(*)        :: vt3dc
+   real, dimension(*)        :: vt3dd
+   real, dimension(*)        :: vt3de
+   real, dimension(*)        :: vt3df
+   real, dimension(*)        :: vt3dg
+   real, dimension(*)        :: vt3dh
+   real, dimension(*)        :: vt2da
+   real, dimension(*)        :: ut
+   real, dimension(*)        :: vt
+   real, dimension(*)        :: wt
+   real, dimension(*)        :: pt
+   !----- Local variables. ----------------------------------------------------------------!
+   real                      :: t1
+   real                      :: w1
+   real                      :: a1da2
+   integer                   :: iter
+   !---------------------------------------------------------------------------------------!
 
-return
-end
 
-!******************************************************************************
+   do iter = 1,nnacoust(ngrid)
 
+      !----- Get coefficients for computations. -------------------------------------------!
+      dts = 2. * dtlt / nnacoust(ngrid)
+
+      if (iter == 1)  &
+         call coefz_adap(mzp,mxp,myp,ia,iz,ja,jz,flpw,vt3dc,vt3dd,vt3de,dn0,pi0,th0,a1da2  &
+                        ,vt3df,vt3dg,scr2,vctr1,vctr2,arw,volt,volw)
+
+      if (iter /= 1) then
+         call mpilbc_driver('getst',4)
+      end if
+
+      call prdctu_adap(mzp,mxp,myp,ia,izu,ja,jz,ibcon,flpu,up,ut,pp,vt3da,th0,vt3db,dxu    &
+                      ,vt3dh,aru,volu,mynum)
+
+      !------------------------------------------------------------------------------------!
+      !     MLO.  This block has been commented out based on RAMS-6.0.  I honestly don't   !
+      !           see why this could cause problems, but it seems to work better.          !
+      !------------------------------------------------------------------------------------!
+      ! if (iter /= nnacoust(ngrid)) then
+      !    call mpilbc_driver('sendst',2)
+      ! end if
+      !------------------------------------------------------------------------------------!
+
+      !------------------------------------------------------------------------------------!
+      if (nxtnest(ngrid) == 0 .and. ipara == 0)  then
+         call cyclic_set (nzp,nxp,nyp,up,'U')
+      end if
+      !------------------------------------------------------------------------------------!
+
+      call prdctv_adap(mzp,mxp,myp,ia,iz,ja,jzv,ibcon,flpv,vp,vt,pp,vt3da,th0,vt3db,dyv    &
+                      ,vt3dh,arv,volv)
+
+      !------------------------------------------------------------------------------------!
+      !     MLO.  This block has been commented out based on RAMS-6.0.  I honestly don't   !
+      !           see why this could cause problems, but it seems to work better.          !
+      !------------------------------------------------------------------------------------!
+      ! if (iter /= nnacoust(ngrid)) then
+      !    call mpilbc_driver('sendst',3)
+      ! else
+      !    call mpilbc_driver('sendst',5)
+      ! end if
+      !------------------------------------------------------------------------------------!
+      call mpilbc_driver('sendst',5)
+
+      !------------------------------------------------------------------------------------!
+      if (nxtnest(ngrid) == 0 .and. ipara == 0) then
+         call cyclic_set (nzp,nxp,nyp,vp,'V')
+      end if
+      !------------------------------------------------------------------------------------!
+
+
+      call prdctw1_adap(mzp,mxp,myp,ia,iz,ja,jz,ibcon,flpw,wp,wt,pp,vt3dc,a1da2,vt3dh)
+
+
+      !------------------------------------------------------------------------------------!
+      !     MLO.  This block has been commented out based on RAMS-6.0.  I honestly don't   !
+      !           see why this could cause problems, but it seems to work better.          !
+      !------------------------------------------------------------------------------------!
+      ! if (iter /= nnacoust(ngrid)) then
+      !    call mpilbc_driver('getst',2)
+      !    call mpilbc_driver('getst',3)
+      ! else
+      !    call mpilbc_driver('getst',5)
+      ! end if
+      !------------------------------------------------------------------------------------!
+      call mpilbc_driver('getst',5)
+
+
+      call prdctp1_adap(mzp,mxp,myp,ia,iz,ja,jz,jdim,flpw,pp,up,vp,pi0,dn0,th0,pt,vt3da    &
+                       ,vt3db,vt2da,fmapui,fmapvi,dxt,dyt,fmapt,aru,arv,volt,mynum)
+
+      call prdctw2_adap(mzp,mxp,myp,ia,iz,ja,jz,flpw,wp,pp,vt3dc,vt3dd,vt3de,vt3dg,scr1    &
+                       ,scr2,vt2da)
+
+      call prdctw3_adap(mzp,mxp,myp,ia,iz,ja,jz,flpw,wp,scr1,vt3df,vt3dg,vt3dc,vt3dd,pp)
+
+      !------------------------------------------------------------------------------------!
+      if (nxtnest(ngrid) == 0 .and. ipara == 0) then
+         call cyclic_set (nzp,nxp,nyp,wp,'W')
+      end if
+      !------------------------------------------------------------------------------------!
+
+      call prdctp2_adap(mzp,mxp,myp,ia,iz,ja,jz,ibcon,flpw,pp,wp,vt3dd,vt3de,mynum)
+
+      !------------------------------------------------------------------------------------!
+      if (nxtnest(ngrid) == 0 .and. ipara == 0) then
+         call cyclic_set (nzp,nxp,nyp,pp,'T')
+      end if
+      !------------------------------------------------------------------------------------!
+
+      if (iter /= nnacoust(ngrid)) then
+         call mpilbc_driver('sendst',4)
+      else
+         call mpilbc_driver('fullst',6)
+      end if
+
+   end do
+
+   return
+end subroutine acoust_adap
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
 subroutine prdctu_adap(m1,m2,m3,ia,iz,ja,jz,ibcon,flpu  &
    ,up,ut,pp,vt3da,th0,dpdx,dxu,vt3dh,aru,volu,mynum)
 

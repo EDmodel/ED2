@@ -199,37 +199,41 @@ subroutine copy_met_2_lake(i,j,ifm,dsst_dt)
    use canopy_air_coms        , only : ubmin8            ! ! intent(in)
    implicit none
    !----- Arguments. ----------------------------------------------------------------------!
-   integer     , intent(in)  :: i
-   integer     , intent(in)  :: j
-   integer     , intent(in)  :: ifm
-   real(kind=8), intent(in)  :: dsst_dt
+   integer     , intent(in)     :: i
+   integer     , intent(in)     :: j
+   integer     , intent(in)     :: ifm
+   real(kind=8), intent(in)     :: dsst_dt
    !----- Local variables. ----------------------------------------------------------------!
-   integer                   :: k1w
-   integer                   :: k2w
-   integer                   :: k3w
-   integer                   :: k2u
-   integer                   :: k3u
-   integer                   :: k2u_1
-   integer                   :: k3u_1
-   integer                   :: k2v
-   integer                   :: k3v
-   integer                   :: k2v_1
-   integer                   :: k3v_1
-   real                      :: topma_t
-   real                      :: wtw
-   real                      :: wtu1
-   real                      :: wtu2
-   real                      :: wtv1
-   real                      :: wtv2
-   real                      :: exner_mean
-   real                      :: theta_mean
-   real                      :: co2p_mean
-   real                      :: up_mean
-   real                      :: vp_mean
-   real                      :: rv_mean
-   real                      :: rtp_mean
-   real                      :: zref_mean
-   real(kind=8)              :: angle
+   integer                      :: k1w
+   integer                      :: k2w
+   integer                      :: k3w
+   integer                      :: k2u
+   integer                      :: k3u
+   integer                      :: k2u_1
+   integer                      :: k3u_1
+   integer                      :: k2v
+   integer                      :: k3v
+   integer                      :: k2v_1
+   integer                      :: k3v_1
+   logical                      :: ok_flpoint
+   real                         :: topma_t
+   real                         :: wtw
+   real                         :: wtu1
+   real                         :: wtu2
+   real                         :: wtv1
+   real                         :: wtv2
+   real                         :: exner_mean
+   real                         :: theta_mean
+   real                         :: co2p_mean
+   real                         :: up_mean
+   real                         :: vp_mean
+   real                         :: rv_mean
+   real                         :: rtp_mean
+   real                         :: zref_mean
+   real(kind=8)                 :: angle
+   !----- External functions. -------------------------------------------------------------!
+   logical           , external :: is_finite
+   logical           , external :: is_finite8
    !---------------------------------------------------------------------------------------!
 
 
@@ -247,10 +251,23 @@ subroutine copy_met_2_lake(i,j,ifm,dsst_dt)
       ! one and two for Exner function and density.  I am not sure this is consistent with !
       ! what is done for density in adaptive coordinate...                                 !
       !------------------------------------------------------------------------------------!
+      !----- U points, need to average between i-1 and i... -------------------------------!
+      k2u   = nint(grid_g(ifm)%flpu(i,j))
+      k3u   = k2u + 1
+      k2u_1 = nint(grid_g(ifm)%flpu(i-1,j))
+      k3u_1 = k2u_1 + 1
+      !----- V points, need to average between j-jdim and j... ----------------------------!
+      k2v   = nint(grid_g(ifm)%flpv(i,j))
+      k3v   = k2v+1
+      k2v_1 = nint(grid_g(ifm)%flpv(i,j-jdim))
+      k3v_1 = k2v_1 + 1
       !----- W/T points, only the i,j points are needed...  -------------------------------!
-      k2w        = nint(grid_g(ifm)%flpw(i,j))
-      k1w        = k2w - 1
-      k3w        = k2w + 1
+      k2w   = nint(grid_g(ifm)%flpw(i,j))
+      k1w   = k2w - 1
+      k3w   = k2w + 1
+      !------------------------------------------------------------------------------------!
+
+
       theta_mean = basic_g(ifm)%theta(2,i,j)
       rv_mean    = basic_g(ifm)%rv(2,i,j)
       rtp_mean   = basic_g(ifm)%rtp(2,i,j)
@@ -374,6 +391,17 @@ subroutine copy_met_2_lake(i,j,ifm,dsst_dt)
    !---------------------------------------------------------------------------------------!
 
 
+   !---------------------------------------------------------------------------------------!
+   !     Copy 2-D variables, that don't depend on the type of vertical coordinate.         !
+   !---------------------------------------------------------------------------------------!
+   lakemet%rshort   = dble(radiate_g(ifm)%rshort (i,j))
+   lakemet%rlong    = dble(radiate_g(ifm)%rlong  (i,j))
+   lakemet%tanz     = tan(acos(dble(radiate_g(ifm)%cosz  (i,j))))
+   lakemet%lon      = dble(grid_g   (ifm)%glon   (i,j))
+   lakemet%lat      = dble(grid_g   (ifm)%glat   (i,j))
+   !---------------------------------------------------------------------------------------!
+
+
 
    !---------------------------------------------------------------------------------------!
    !     Copy the values to the meteorological buffer.  Start with those that require only !
@@ -387,6 +415,88 @@ subroutine copy_met_2_lake(i,j,ifm,dsst_dt)
    !----- SST derivative is already in double precision, just copy it. --------------------!
    lakemet%dsst_dt   = dsst_dt
    !---------------------------------------------------------------------------------------!
+
+
+
+
+
+
+
+   !---------------------------------------------------------------------------------------!
+   !     Sanity check.                                                                     !
+   !---------------------------------------------------------------------------------------!
+   ok_flpoint = is_finite8(lakemet%rshort)    .and. is_finite8(lakemet%rlong)    .and.     &
+                is_finite8(lakemet%tanz)      .and. is_finite8(lakemet%lon)      .and.     &
+                is_finite8(lakemet%lat)       .and. is_finite8(lakemet%geoht)    .and.     &
+                is_finite8(lakemet%atm_theta) .and. is_finite8(lakemet%atm_co2)  .and.     &
+                is_finite8(lakemet%atm_exner) .and. is_finite8(lakemet%atm_rvap) .and.     &
+                is_finite8(lakemet%dsst_dt)   .and. is_finite (exner_mean)       .and.     &
+                is_finite (theta_mean)        .and. is_finite (co2p_mean)        .and.     &
+                is_finite (up_mean)           .and. is_finite (vp_mean)          .and.     &
+                is_finite (rv_mean)           .and. is_finite (rtp_mean)         .and.     &
+                is_finite (zref_mean)
+   if (.not. ok_flpoint) then
+      write(unit=*,fmt='(a)'          ) '-------------------------------------------------'
+      write(unit=*,fmt='(a)'          ) '  Something went wrong...                        '
+      write(unit=*,fmt='(a)'          ) '-------------------------------------------------'
+      write(unit=*,fmt='(a)'          ) ' Meteorological forcing.'
+      write(unit=*,fmt='(a,1x,es12.5)') ' - Rshort         :',lakemet%rshort
+      write(unit=*,fmt='(a,1x,es12.5)') ' - Rlong          :',lakemet%rlong
+      write(unit=*,fmt='(a,1x,es12.5)') ' - Tanz           :',lakemet%tanz
+      write(unit=*,fmt='(a,1x,es12.5)') ' - Lon            :',lakemet%lon
+      write(unit=*,fmt='(a,1x,es12.5)') ' - Lat            :',lakemet%lat
+      write(unit=*,fmt='(a,1x,es12.5)') ' - Geoht          :',lakemet%geoht
+      write(unit=*,fmt='(a,1x,es12.5)') ' - Theta          :',lakemet%atm_theta
+      write(unit=*,fmt='(a,1x,es12.5)') ' - CO2            :',lakemet%atm_co2
+      write(unit=*,fmt='(a,1x,es12.5)') ' - Exner          :',lakemet%atm_exner
+      write(unit=*,fmt='(a,1x,es12.5)') ' - Rvap           :',lakemet%atm_rvap
+      write(unit=*,fmt='(a,1x,es12.5)') ' - d(SST)/dt      :',lakemet%dsst_dt
+      write(unit=*,fmt='(a)'          ) ' Mean values.'
+      write(unit=*,fmt='(a,1x,es12.5)') ' - Exner_mean     :',exner_mean
+      write(unit=*,fmt='(a,1x,es12.5)') ' - Theta_mean     :',theta_mean
+      write(unit=*,fmt='(a,1x,es12.5)') ' - CO2p_mean      :',co2p_mean
+      write(unit=*,fmt='(a,1x,es12.5)') ' - Up_mean        :',up_mean
+      write(unit=*,fmt='(a,1x,es12.5)') ' - Vp_mean        :',vp_mean
+      write(unit=*,fmt='(a,1x,es12.5)') ' - Rv_mean        :',rv_mean
+      write(unit=*,fmt='(a,1x,es12.5)') ' - Rtp_mean       :',rtp_mean
+      write(unit=*,fmt='(a,1x,es12.5)') ' - Zref_mean      :',zref_mean
+      write(unit=*,fmt='(a)'          ) ' BRAMS values.'
+      write(unit=*,fmt='(a,1x,i12)')    ' - Grid           :',ifm
+      write(unit=*,fmt='(a,1x,i12)')    ' - I              :',i
+      write(unit=*,fmt='(a,1x,i12)')    ' - J              :',j
+      write(unit=*,fmt='(a,1x,i12)')    ' - JDIM           :',jdim
+      write(unit=*,fmt='(a,1x,i12)')    ' - K1W            :',k1w
+      write(unit=*,fmt='(a,1x,i12)')    ' - K2W            :',k2w
+      write(unit=*,fmt='(a,1x,i12)')    ' - K3W            :',k3w
+      write(unit=*,fmt='(a,1x,es12.5)') ' - Glon           :',grid_g(ifm)%glon(i,j)
+      write(unit=*,fmt='(a,1x,es12.5)') ' - Glat           :',grid_g(ifm)%glat(i,j)
+      write(unit=*,fmt='(a,1x,es12.5)') ' - Theta          :',basic_g(ifm)%theta(2,i,j)
+      write(unit=*,fmt='(a,1x,es12.5)') ' - Rv             :',basic_g(ifm)%rv(2,i,j)
+      write(unit=*,fmt='(a,1x,es12.5)') ' - Rtp            :',basic_g(ifm)%rtp(2,i,j)
+      if (co2_on) then
+         write(unit=*,fmt='(a,1x,es12.5)') ' - CO2p           :',basic_g(ifm)%co2p(2,i,j)
+      else 
+         write(unit=*,fmt='(a,1x,es12.5)') ' - CO2p           :',co2con(1)
+      end if
+      write(unit=*,fmt='(a,1x,es12.5)') ' - Up(i,j)        :',basic_g(ifm)%up(2,i,j)
+      write(unit=*,fmt='(a,1x,es12.5)') ' - Up(i-1,j)      :',basic_g(ifm)%up(2,i-1,j)
+      write(unit=*,fmt='(a,1x,es12.5)') ' - Vp(i,j)        :',basic_g(ifm)%vp(2,i,j)
+      write(unit=*,fmt='(a,1x,es12.5)') ' - Vp(i,j-jdim)   :',basic_g(ifm)%vp(2,i,j-jdim)
+      write(unit=*,fmt='(a,1x,es12.5)') ' - Pi0(1,i,j)     :',basic_g(ifm)%pi0(1,i,j)
+      write(unit=*,fmt='(a,1x,es12.5)') ' - Pi0(2,i,j)     :',basic_g(ifm)%pi0(2,i,j)
+      write(unit=*,fmt='(a,1x,es12.5)') ' - Pp(1,i,j)      :',basic_g(ifm)%pp(1,i,j)
+      write(unit=*,fmt='(a,1x,es12.5)') ' - Pp(2,i,j)      :',basic_g(ifm)%pp(2,i,j)
+      write(unit=*,fmt='(a,1x,es12.5)') ' - zt(2)          :',zt(k2w)
+      write(unit=*,fmt='(a,1x,es12.5)') ' - zm(1)          :',zm(k1w)
+      write(unit=*,fmt='(a,1x,es12.5)') ' - Rtgt           :',grid_g(ifm)%rtgt(i,j)
+      write(unit=*,fmt='(a,1x,es12.5)') ' - Rshort         :',radiate_g(ifm)%rshort(i,j)
+      write(unit=*,fmt='(a,1x,es12.5)') ' - Rlong          :',radiate_g(ifm)%rlong(i,j)
+      write(unit=*,fmt='(a,1x,es12.5)') ' - Cosz           :',radiate_g(ifm)%cosz(i,j)
+      write(unit=*,fmt='(a)'          ) ' '
+      write(unit=*,fmt='(a)'          ) '-------------------------------------------------'
+      call abort_run('Non-resolvable values','copy_met_2_lake','edcp_lake_misc.f90')
+   end if
+
 
 
 
@@ -433,17 +543,10 @@ subroutine copy_met_2_lake(i,j,ifm,dsst_dt)
    angle            = datan2(dble(vp_mean),dble(up_mean))
    lakemet%ucos     = dcos(angle)
    lakemet%usin     = dsin(angle)
+   !---------------------------------------------------------------------------------------!
 
 
-   !---------------------------------------------------------------------------------------!
-   !     Copy 2-D variables, that don't depend on the type of vertical coordinate.         !
-   !---------------------------------------------------------------------------------------!
-   lakemet%rshort   = dble(radiate_g(ifm)%rshort (i,j))
-   lakemet%rlong    = dble(radiate_g(ifm)%rlong  (i,j))
-   lakemet%tanz     = tan(acos(dble(radiate_g(ifm)%cosz  (i,j))))
-   lakemet%lon      = dble(grid_g   (ifm)%glon   (i,j))
-   lakemet%lat      = dble(grid_g   (ifm)%glat   (i,j))
-   !---------------------------------------------------------------------------------------!
+
 
    return
 end subroutine copy_met_2_lake
