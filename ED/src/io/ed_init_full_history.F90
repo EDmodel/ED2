@@ -1683,7 +1683,7 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
    use hdf5_coms,only:file_id,dset_id,dspace_id,plist_id, &
         globdims,chnkdims,chnkoffs,cnt,stride, &
         memdims,memoffs,memsize,datatype_id,setsize
-   use fusion_fission_coms, only: ff_ndbh
+   use fusion_fission_coms, only: ff_nhgt
    use ed_misc_coms, only : ndcycle
    use hdf5
 
@@ -2106,10 +2106,10 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
   memsize(3)  = int(csite%npatches,8)
   memoffs(3)  = 0_8
   
-  globdims(2) = int(ff_ndbh,8)
-  chnkdims(2) = int(ff_ndbh,8)
-  memdims(2)  = int(ff_ndbh,8)
-  memsize(2)  = int(ff_ndbh,8)
+  globdims(2) = int(ff_nhgt,8)
+  chnkdims(2) = int(ff_nhgt,8)
+  memdims(2)  = int(ff_nhgt,8)
+  memsize(2)  = int(ff_nhgt,8)
   chnkoffs(2) = 0_8
   memoffs(2)  = 0_8
 
@@ -2120,7 +2120,7 @@ subroutine fill_history_grid(cgrid,ipy,py_index)
   chnkoffs(1) = 0_8
   memoffs(1)  = 0_8
 
-  call hdf_getslab_r(csite%pft_density_profile,'PFT_DENSITY_PROFILE ',dsetrank,iparallel,.true.)
+  call hdf_getslab_r(csite%cumlai_profile,'CUMLAI_PROFILE ',dsetrank,iparallel,.false.)
 
 
   dsetrank    = 3

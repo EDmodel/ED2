@@ -1786,8 +1786,9 @@ module fuse_fiss_utils
                                      , polygontype         & ! structure
                                      , sitetype            & ! structure
                                      , patchtype           ! ! structure
-      use fusion_fission_coms , only : ff_ndbh             & ! intent(in)
-                                     , ntol                & ! intent(in)
+      use fusion_fission_coms , only : ff_nhgt             & ! intent(in)
+                                     , laimax_tol          & ! intent(in)
+                                     , dark_cumlai         & ! intent(in)
                                      , profile_tol         & ! intent(in)
                                      , pat_tolerance_max   & ! intent(in)
                                      , print_fuse_details  & ! intent(in)
@@ -1814,21 +1815,28 @@ module fuse_fiss_utils
       type(sitetype)        , pointer     :: tempsite        ! Temporary site
       logical, dimension(:) , allocatable :: fuse_table      ! Flag: this will remain.
       character(len=str_len)              :: fuse_fout       ! Filename for detailed output
-      real   , dimension(n_pft,ff_ndbh)   :: mean_nplant     ! Mean # of plants
-      integer                             :: ipy,isi         ! Counters
-      integer                             :: jpy,jsi         ! Counters
-      integer                             :: ipa,ico         ! Counters
-      integer                             :: donp,recp       ! Counters
-      integer                             :: ipft,idbh       ! Counters
+      real   , dimension(ff_nhgt)         :: laimax_cum      ! Mean # of plants
+      integer                             :: ipy             ! Counters
+      integer                             :: isi             ! Counters
+      integer                             :: jpy             ! Counters
+      integer                             :: jsi             ! Counters
+      integer                             :: ipa             ! Counters
+      integer                             :: ico             ! Counters
+      integer                             :: donp            ! Counters
+      integer                             :: recp            ! Counters
+      integer                             :: ipft            ! Counters
+      integer                             :: ihgt            ! Counters
       integer                             :: npatches_new    ! New # of patches
       integer                             :: npatches_old    ! Old # of patches
       logical                             :: fuse_flag       ! Flag: fusion will happen
       logical                             :: recp_found      ! Found a receptor candidate
-      logical                             :: small_donp      ! Donor patch bin too small
-      logical                             :: small_recp      ! Receptor patch bin too small
-      real                                :: diff            !
-      real                                :: refv            !
-      real                                :: norm            !
+      logical                             :: sunny_donp      ! Donor patch bin too sunny
+      logical                             :: sunny_recp      ! Receptor patch bin too sunny
+      logical                             :: dark_donp       ! Donor patch bin too small
+      logical                             :: dark_recp       ! Receptor patch bin too small
+      real                                :: diff            ! Absolute difference in prof.
+      real                                :: refv            ! Reference value of bin
+      real                                :: norm            ! Normalised difference
       real                                :: tolerance_mult  ! Multiplying factor for tol.
       real                                :: old_area        ! For area conservation check
       real                                :: new_area        ! For area conservation check
@@ -1840,6 +1848,8 @@ module fuse_fiss_utils
       real                                :: elim_lai        ! Elim. LAI during 1 fusion
       real                                :: elim_nplant_tot ! Total eliminated nplant
       real                                :: elim_lai_tot    ! Elim. eliminated LAI
+      real                                :: cumlai_recp     ! Cumulative LAI (receptor)
+      real                                :: cumlai_donp     ! Cumulative LAI (donor)
       integer                             :: tot_npolygons   ! Total # of polygons
       integer                             :: tot_nsites      ! Total # of sites
       integer                             :: tot_npatches    ! Total # of patches
@@ -1934,8 +1944,8 @@ module fuse_fiss_utils
                old_area  = old_area + csite%area(ipa)
                cpatch => csite%patch(ipa)
                do ico = 1, cpatch%ncohorts
-                  old_nplant_tot = old_nplant_tot + cpatch%nplant(ico)*csite%area(ipa)
-                  old_lai_tot    = old_lai_tot    + cpatch%lai(ico)*csite%area(ipa)
+                  old_nplant_tot = old_nplant_tot + cpatch%nplant(ico) * csite%area(ipa)
+                  old_lai_tot    = old_lai_tot    + cpatch%lai(ico)    * csite%area(ipa)
                end do
             end do
             !------------------------------------------------------------------------------!
@@ -1966,7 +1976,7 @@ module fuse_fiss_utils
                !---------------------------------------------------------------------------!
                if (print_fuse_details) then
                   open (unit=72,file=trim(fuse_fout),status='old',action='write'           &
-                                                     ,position='append')
+                                                    ,position='append')
                   write(unit=72,fmt='(a,i6,a)') '     * Patch ',donp,' is empty.'
                   close(unit=72,status='keep')
                end if
@@ -2077,7 +2087,7 @@ module fuse_fiss_utils
                                                      ,position='append')
                   write(unit=72,fmt='(a,1x,a,1x,es12.5,a)')                                &
                                               '   + Looking for similar populated patches' &
-                                             ,'(Tolerance =',tolerance_mult*ntol,') :'
+                                             ,'(Tolerance =',tolerance_mult*laimax_tol,') :'
                   close(unit=72,status='keep')
                end if
                !---------------------------------------------------------------------------!
@@ -2093,7 +2103,16 @@ module fuse_fiss_utils
                   !------------------------------------------------------------------------!
                   !     If this is an empty patch, or has already been merged, we skip it. !
                   !------------------------------------------------------------------------!
-                  if ((.not. fuse_table(donp))) cycle donloopp
+                  if ((.not. fuse_table(donp))) then
+                     if (print_fuse_details) then
+                        open  (unit=72,file=trim(fuse_fout),status='old',action='write'    &
+                                                           ,position='append')
+                        write (unit=72,fmt='(a,1x,i6,1x,a)') '     - DONP:',donp           &
+                                                            ,'has been fused already...'
+                        close (unit=72,status='keep')
+                     end if
+                     cycle donloopp
+                  end if
                   !------------------------------------------------------------------------!
 
 
@@ -2112,9 +2131,26 @@ module fuse_fiss_utils
                         exit recloopp
                      end if
                   end do recloopp
-                  if (.not. recp_found) cycle donloopp
+                  
+                  if (.not. recp_found) then
+                     if (print_fuse_details) then
+                        open  (unit=72,file=trim(fuse_fout),status='old',action='write'    &
+                                                           ,position='append')
+                        write (unit=72,fmt='(a)') '     - No receptor patch found. '
+                        close (unit=72,status='keep')
+                     end if
+                     cycle donloopp
+                  end if
                   !------------------------------------------------------------------------!
 
+
+                  if (print_fuse_details) then
+                     open  (unit=72,file=trim(fuse_fout),status='old',action='write'       &
+                                                        ,position='append')
+                     write (unit=72,fmt='(2(a,1x,i6,1x))') '     - DONP =',donp            &
+                                                                 ,'RECP =',recp
+                     close (unit=72,status='keep')
+                  end if
 
 
                   !------------------------------------------------------------------------!
@@ -2128,22 +2164,71 @@ module fuse_fiss_utils
 
 
                   !------------------------------------------------------------------------!
-                  !     Compare the size profile for each PFT.  If we find any case in     !
-                  ! which the difference is too large to allow fusion, we quit and move to !
-                  ! the next candidate donor patch.  If we leave this nested loop without  !
-                  ! cycling donp, then that means that both patches can be fused.          !
+                  !     Compare the size profile for each PFT.  Here we compare the        !
+                  ! maximum LAI for each PFT and height bin.  We switched the classes from !
+                  ! DBH to height because different PFTs may have different heights for a  !
+                  ! given DBH, so we want to make sure the light profile is right.         !
                   !------------------------------------------------------------------------!
-                  pftloop:do ipft=1,n_pft
-                     dbhloop: do idbh=1,ff_ndbh
-                        small_donp = csite%pft_density_profile(ipft,idbh,donp) <=          &
-                                     tolerance_mult*ntol
-                        small_recp = csite%pft_density_profile(ipft,idbh,recp) <=          &
-                                     tolerance_mult*ntol
+                  hgtloop: do ihgt=1,ff_nhgt
+                     cumlai_recp = sum(csite%cumlai_profile(:,ihgt,recp))
+                     cumlai_donp = sum(csite%cumlai_profile(:,ihgt,donp))
+
+                     !---------------------------------------------------------------------!
+                     !    Check whether these bins contain some LAI.  We don't need to     !
+                     ! check the cohorts if the understorey is too dark, so once both      !
+                     ! patches becomes very dark (very high LAI), we stop checking the     !
+                     ! profiles.                                                           !
+                     !---------------------------------------------------------------------!
+                     dark_donp = cumlai_donp > dark_cumlai
+                     dark_recp = cumlai_recp > dark_cumlai
+                     !---------------------------------------------------------------------!
+
+
+
+                     !---------------------------------------------------------------------!
+                     if (dark_recp .and. dark_donp) then
+
+                        if (print_fuse_details) then
+                           open  (unit=72,file=trim(fuse_fout),status='old',action='write' &
+                                                              ,position='append')
+                           write (unit=72,fmt='(1(a,1x,i6,1x),3(a,1x,es12.5,1x)'//         &
+                                              ',2(a,1x,l1,1x))')                           &
+                              '       * IHGT=',ihgt                                        &
+                             ,'CUMLAI_RECP =',cumlai_recp,'CUMLAI_DONP =',cumlai_donp      &
+                             ,'DARK_CUMLAI =',dark_cumlai,'DARK_RECP =',sunny_recp         &
+                             ,'DARK_RECP =',dark_donp
+                           close (unit=72,status='keep')
+                        end if
+                        cycle hgtloop
+                     end if
+                     !---------------------------------------------------------------------!
+
+                     !---------------------------------------------------------------------!
+                     !     Loop over all PFTs.                                             !
+                     !---------------------------------------------------------------------!
+                     pftloop:do ipft=1,n_pft
+                     
+                        !------------------------------------------------------------------!
+                        !    Check whether these bins contain some LAI.  Bins that have    !
+                        ! tiny cumulative LAI may differ by a lot in the relative scale,   !
+                        ! but the actual value is so small that we don't really care       !
+                        ! whether they are relatively different.                           !
+                        !------------------------------------------------------------------!
+                        sunny_donp = csite%cumlai_profile(ipft,ihgt,donp) <= laimax_tol    &
+                                                                           * tolerance_mult
+                        sunny_recp = csite%cumlai_profile(ipft,ihgt,recp) <= laimax_tol    &
+                                                                           * tolerance_mult
+                        !------------------------------------------------------------------!
+
+
+
+
+
                         !------------------------------------------------------------------!
                         !    If both patches have little or no biomass in this bin, don't  !
                         ! even bother checking the difference.                             !
                         !------------------------------------------------------------------!
-                        if (small_donp .and. small_recp) cycle dbhloop
+                        if (sunny_donp .and. sunny_recp) cycle pftloop
                         !------------------------------------------------------------------!
 
 
@@ -2153,20 +2238,41 @@ module fuse_fiss_utils
                         ! profile the norm will be set to 2.0, which is the highest value  !
                         ! that the norm can be.                                            !
                         !------------------------------------------------------------------!
-                        diff = abs( csite%pft_density_profile(ipft,idbh,donp)              &
-                                  - csite%pft_density_profile(ipft,idbh,recp) )
-                        refv = 0.5 * ( csite%pft_density_profile(ipft,idbh,donp)           &
-                                     + csite%pft_density_profile(ipft,idbh,recp))
+                        diff = abs( csite%cumlai_profile(ipft,ihgt,donp)                   &
+                                  - csite%cumlai_profile(ipft,ihgt,recp)    )
+                        refv = 0.5 * ( csite%cumlai_profile(ipft,ihgt,donp)                &
+                                     + csite%cumlai_profile(ipft,ihgt,recp) )
                         norm = diff / refv
                         fuse_flag = norm <= profile_tol
+                        !------------------------------------------------------------------!
+
+
+
+                        !------------------------------------------------------------------!
+                        if (print_fuse_details) then
+                           open  (unit=72,file=trim(fuse_fout),status='old',action='write' &
+                                                              ,position='append')
+                           write (unit=72,fmt='(2(a,1x,i6,1x),6(a,1x,es12.5,1x)'//         &
+                                              ',3(a,1x,l1,1x))')                           &
+                              '       * IPFT =',ipft,'IHGT=',ihgt                          &
+                             ,'CLAI_RECP =',csite%cumlai_profile(ipft,ihgt,recp)           &
+                             ,'CLAI_DONP =',csite%cumlai_profile(ipft,ihgt,donp)           &
+                             ,'DIFF =',diff,'REFV =',refv,'NORM =',norm                    &
+                             ,'PROFILE_TOL =',profile_tol,'SUNNY_DONP =',sunny_donp        &
+                             ,'SUNNY_RECP =',sunny_recp,'FUSE_FLAG =',fuse_flag
+                           close (unit=72,status='keep')
+                        end if
+                        !------------------------------------------------------------------!
+
+
 
                         !------------------------------------------------------------------!
                         !     If fuse_flag is false, the patches aren't similar, move to   !
                         ! the next donor patch.                                            !
                         !------------------------------------------------------------------!
                         if (.not. fuse_flag) cycle donloopp
-                     end do dbhloop
-                  end do pftloop
+                     end do pftloop
+                  end do hgtloop
                   !------------------------------------------------------------------------!
 
 
@@ -3099,7 +3205,7 @@ module fuse_fiss_utils
 
       !------------------------------------------------------------------------------------!
       !    This subroutine will update the size profile within patch.                      !
-      ! + csite%pft_density_profile(:,:,recp)                                              !
+      ! + csite%cumlai_profile(:,:,recp)                                                   !
       !------------------------------------------------------------------------------------!
       call patch_pft_size_profile(csite,recp)
       !------------------------------------------------------------------------------------!
@@ -3124,33 +3230,64 @@ module fuse_fiss_utils
       use ed_state_vars       , only : sitetype   & ! structure
                                      , patchtype  ! ! structure
       use fusion_fission_coms , only : ff_ndbh    & ! intent(in)
-                                     , dffdbhi    ! ! intent(in)
+                                     , dffhgti    ! ! intent(in)
+      use allometry           , only : dbh2bl     ! ! intent(in)
       use ed_max_dims         , only : n_pft      ! ! intent(in)
       implicit none
       !----- Arguments --------------------------------------------------------------------!
-      type(sitetype)         , target     :: csite             ! Current site
-      integer                , intent(in) :: ipa               ! Current patch ID
+      type(sitetype)         , target     :: csite     ! Current site
+      integer                , intent(in) :: ipa       ! Current patch index
       !----- Local variables --------------------------------------------------------------!
-      type(patchtype)        , pointer    :: cpatch        ! Current patch
-      integer                             :: ipft,idbh,ico ! Counters
+      type(patchtype)        , pointer    :: cpatch    ! Current patch
+      integer                             :: ipft      ! PFT index
+      integer                             :: ihgt      ! Height class index
+      integer                             :: ico       ! Counters
+      real                                :: lai_pot   ! Potential LAI
       !------------------------------------------------------------------------------------!
 
-      !----- Initialize bins --------------------------------------------------------------!
+
+      !----- Reset all bins to zero. ------------------------------------------------------!
       do ipft=1,n_pft
-         do idbh=1,ff_ndbh
-            csite%pft_density_profile(ipft,idbh,ipa)=0.0
+         do ihgt=1,ff_ndbh
+            csite%cumlai_profile(ipft,ihgt,ipa)=0.0
          end do
       end do
+      !------------------------------------------------------------------------------------!
+
+
 
       !----- Update bins ------------------------------------------------------------------!
       cpatch => csite%patch(ipa)
       do ico = 1,cpatch%ncohorts
 
-         ipft = cpatch%pft(ico)
-         idbh = min(ff_ndbh,max(1,ceiling(cpatch%dbh(ico)*dffdbhi)))
-         csite%pft_density_profile(ipft,idbh,ipa) = cpatch%nplant(ico)                     &
-                                                  + csite%pft_density_profile(ipft,idbh,ipa)
+         !----- Find the PFT and DBH class. -----------------------------------------------!
+         ipft    = cpatch%pft(ico)
+         ihgt    = min(ff_ndbh,max(1,ceiling(cpatch%hite(ico)*dffhgti)))
+         !---------------------------------------------------------------------------------!
+
+
+         !----- Find the potential (on-allometry) leaf area index. ------------------------!
+         lai_pot = cpatch%nplant(ico) * cpatch%sla(ico) * dbh2bl(cpatch%dbh(ico),ipft)
+         !---------------------------------------------------------------------------------!
+
+
+         !----- Add the potential LAI to the bin. -----------------------------------------!
+         csite%cumlai_profile(ipft,ihgt,ipa) = lai_pot                                     &
+                                             + csite%cumlai_profile(ipft,ihgt,ipa)
+         !---------------------------------------------------------------------------------!
       end do
+      !------------------------------------------------------------------------------------!
+
+
+
+      !----- Integrate the leaf area index from top to bottom. ----------------------------!
+      do ihgt=ff_ndbh-1,1,-1
+         do ipft=1,n_pft
+            csite%cumlai_profile(ipft,ihgt,ipa) = csite%cumlai_profile(ipft,ihgt  ,ipa)    &
+                                                + csite%cumlai_profile(ipft,ihgt+1,ipa)
+         end do
+      end do
+      !------------------------------------------------------------------------------------!
 
       return
    end subroutine patch_pft_size_profile

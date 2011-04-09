@@ -11,7 +11,7 @@ module ed_state_vars
                        ,maxmach,maxgrds, str_len
   use disturb_coms, only : lutime,num_lu_trans,max_lu_years
   use met_driver_coms, only: met_driv_data,met_driv_state
-  use fusion_fission_coms, only: ff_ndbh
+  use fusion_fission_coms, only: ff_nhgt
   use phenology_coms, only: prescribed_phen
   use ed_misc_coms, only: idoutput, imoutput, iqoutput, ndcycle
 
@@ -868,7 +868,7 @@ module ed_state_vars
      integer , pointer,dimension(:) :: fuse_flag
 
      ! Plant density broken down into size and PFT bins.  Used in patch fusion
-     real, pointer,dimension(:,:,:) :: pft_density_profile !(n_pft,ff_ndbh,npatches)
+     real, pointer,dimension(:,:,:) :: cumlai_profile !(n_pft,ff_nhgt,npatches)
 
      ! Above ground biomass in this patch [kgC/m2]
      real , pointer,dimension(:) :: plant_ag_biomass
@@ -2778,7 +2778,7 @@ contains
     allocate(csite%rh(npatches))
     allocate(csite%cwd_rh(npatches))
     allocate(csite%fuse_flag(npatches))
-    allocate(csite%pft_density_profile(n_pft,ff_ndbh,npatches))
+    allocate(csite%cumlai_profile(n_pft,ff_nhgt,npatches))
     allocate(csite%plant_ag_biomass(npatches))
 
     allocate(csite%mean_wflux(npatches))
@@ -3788,7 +3788,7 @@ contains
     nullify(csite%rh)
     nullify(csite%cwd_rh)
     nullify(csite%fuse_flag)
-    nullify(csite%pft_density_profile)
+    nullify(csite%cumlai_profile)
     nullify(csite%plant_ag_biomass)
 
     nullify(csite%mean_wflux)
@@ -4784,7 +4784,7 @@ contains
     if(associated(csite%rh                           )) deallocate(csite%rh                           )
     if(associated(csite%cwd_rh                       )) deallocate(csite%cwd_rh                       )
     if(associated(csite%fuse_flag                    )) deallocate(csite%fuse_flag                    )
-    if(associated(csite%pft_density_profile          )) deallocate(csite%pft_density_profile          )
+    if(associated(csite%cumlai_profile               )) deallocate(csite%cumlai_profile               )
     if(associated(csite%plant_ag_biomass             )) deallocate(csite%plant_ag_biomass             )
 
     if(associated(csite%mean_wflux                   )) deallocate(csite%mean_wflux                   )
@@ -5088,6 +5088,7 @@ contains
       integer                      :: ipft  ! PFT counter
       integer                      :: isto  ! Stomate attribute counter
       integer                      :: idbh  ! DBH counter
+      integer                      :: ihgt  ! Height counter
       integer                      :: icyc  ! Time of day counter
       !------------------------------------------------------------------------------------!
 
@@ -5298,9 +5299,8 @@ contains
                                                   isite%old_stoma_vector_max(isto,ipft,ipa)
             end do
 
-            do idbh=1,ff_ndbh
-               osite%pft_density_profile(ipft,idbh,opa) =                                  &
-                                                   isite%pft_density_profile(ipft,idbh,ipa)
+            do ihgt=1,ff_nhgt
+               osite%cumlai_profile(ipft,ihgt,opa) = isite%cumlai_profile(ipft,ihgt,ipa)
             end do
             
             !----- This is to copy the old_stoma_data_max structure. ----------------------!
@@ -5597,8 +5597,8 @@ contains
           siteout%old_stoma_vector_max(m,k,1:inc) = pack(sitein%old_stoma_vector_max(m,k,:),logmask)
        end do
 
-       do m=1,ff_ndbh
-          siteout%pft_density_profile(k,m,1:inc) = pack(sitein%pft_density_profile(k,m,:),logmask)
+       do m=1,ff_nhgt
+          siteout%cumlai_profile(k,m,1:inc)       = pack(sitein%cumlai_profile(k,m,:),logmask)
        end do
     end do
     
@@ -11400,10 +11400,10 @@ contains
       !------------------------------------------------------------------------------------!
       npts = csite%npatches * n_pft * n_dbh
 
-      if (associated(csite%pft_density_profile)) then
+      if (associated(csite%cumlai_profile)) then
          nvar=nvar+1
-           call vtable_edio_r(npts,csite%pft_density_profile,nvar,igr,init,csite%paglob_id, &
-           var_len,var_len_global,max_ptrs,'PFT_DENSITY_PROFILE :346:hist') 
+           call vtable_edio_r(npts,csite%cumlai_profile,nvar,igr,init,csite%paglob_id,     &
+           var_len,var_len_global,max_ptrs,'CUMLAI_PROFILE :346:hist') 
          call metadata_edio(nvar,igr,'No metadata available','[NA]','NA') 
       end if
       !------------------------------------------------------------------------------------!

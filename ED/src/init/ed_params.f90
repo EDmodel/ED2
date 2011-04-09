@@ -862,7 +862,7 @@ subroutine init_pft_photo_params()
    Vm0(12:13)                = 18.3            * vmfact
    Vm0(14:15)                = 12.5            * 1.5
    Vm0(16)                   = 21.875          * vmfact
-   Vm0(17)                   = 15.625
+   Vm0(17)                   = 15.625 * 0.7264
 
    !----- Define the stomatal slope (aka the M factor). -----------------------------------!
    stomatal_slope(1)         =  6.4
@@ -881,7 +881,7 @@ subroutine init_pft_photo_params()
    stomatal_slope(14)        =  6.4
    stomatal_slope(15)        =  6.4
    stomatal_slope(16)        =  8.0    * mfact
-   stomatal_slope(17)        =  6.4    * mfact
+   stomatal_slope(17)        =  6.4
  
    cuticular_cond(1)         = 10000.0    ! 10000.0
    cuticular_cond(2)         = 10000.0    ! 10000.0
@@ -1035,7 +1035,7 @@ subroutine init_pft_resp_params()
    growth_resp_factor(14)         = 0.333
    growth_resp_factor(15)         = 0.333
    growth_resp_factor(16)         = 0.333
-   growth_resp_factor(17)         = 0.333
+   growth_resp_factor(17)         = 0.4503
 
    leaf_turnover_rate(1)          = 2.0
    leaf_turnover_rate(2)          = 1.0
@@ -1053,7 +1053,7 @@ subroutine init_pft_resp_params()
    leaf_turnover_rate(14)         = 2.0
    leaf_turnover_rate(15)         = 2.0
    leaf_turnover_rate(16)         = 2.0
-   leaf_turnover_rate(17)         = 0.333
+   leaf_turnover_rate(17)         = 0.1
 
    !----- Root turnover rate.  ------------------------------------------------------------!
    root_turnover_rate(1)          = 2.0
@@ -1072,7 +1072,7 @@ subroutine init_pft_resp_params()
    root_turnover_rate(14)         = 2.0
    root_turnover_rate(15)         = 2.0
    root_turnover_rate(16)         = 2.0
-   root_turnover_rate(17)         = 0.333
+   root_turnover_rate(17)         = 0.1
 
    dark_respiration_factor(1)     = 0.06
    dark_respiration_factor(2)     = 0.02 * gamfact
@@ -1090,7 +1090,7 @@ subroutine init_pft_resp_params()
    dark_respiration_factor(14)    = 0.04
    dark_respiration_factor(15)    = 0.04
    dark_respiration_factor(16)    = 0.02 * gamfact
-   dark_respiration_factor(17)    = 0.02 * gamfact
+   dark_respiration_factor(17)    = 0.03 * gamfact
 
    storage_turnover_rate(1)       = 0.0
    storage_turnover_rate(2)       = 0.0
@@ -1173,7 +1173,7 @@ subroutine init_pft_mort_params()
    mort1(14) = 10.0
    mort1(15) = 10.0
    mort1(16) = 10.0
-   mort1(17) = 1.0
+   mort1(17) = 10.0
 
    mort2(1)  = 20.0
    mort2(2)  = 20.0
@@ -1355,7 +1355,7 @@ subroutine init_pft_alloc_params()
 !   SLA(14:15) = 10.0**((2.4-0.46*log10(12.0/leaf_turnover_rate(14:15)))) * C2B * 0.1
    SLA(14:15) = 10.0**(1.6923-0.3305*log10(12.0/leaf_turnover_rate(14:15)))
    SLA(16)    = 10.0**(2.4-0.46*log10(12.0/leaf_turnover_rate(16))) * C2B * 0.1
-   SLA(17)    = 11.0
+   SLA(17)    = 10.0
 
    !---------------------------------------------------------------------------------------!
    !    Fraction of vertical branches.  Values are from Poorter et al. (2006):             !
@@ -2622,42 +2622,52 @@ end subroutine init_phen_coms
 subroutine init_ff_coms
    use fusion_fission_coms, only : min_dbh_class      & ! intent(out)
                                  , maxffdbh           & ! intent(out)
-                                 , dffdbhi            & ! intent(out)
+                                 , maxffhgt           & ! intent(out)
                                  , min_hgt_class      & ! intent(out)
                                  , fusetol            & ! intent(out)
                                  , fusetol_h          & ! intent(out)
                                  , lai_fuse_tol       & ! intent(out)
                                  , lai_tol            & ! intent(out)
                                  , ntol               & ! intent(out)
+                                 , laimax_tol         & ! intent(out)
+                                 , dark_cumlai        & ! intent(out)
                                  , profile_tol        & ! intent(out)
                                  , max_patch_age      & ! intent(out)
                                  , ff_ndbh            & ! intent(out)
+                                 , ff_nhgt            & ! intent(out)
                                  , coh_tolerance_max  & ! intent(out)
                                  , pat_tolerance_max  & ! intent(out)
                                  , fuse_relax         & ! intent(out)
+                                 , dffdbhi            & ! intent(out)
+                                 , dffhgti            & ! intent(out)
                                  , print_fuse_details & ! intent(out)
                                  , fuse_prefix        ! ! intent(out)
 
    implicit none
 
-   min_dbh_class     = 0.0  
-   maxffdbh          = 200.0 
+   min_dbh_class     = 0.0
+   maxffdbh          = 200.0
+   maxffhgt          = 24.0
    min_hgt_class     = 0.0
    fusetol           = 0.4
    fusetol_h         = 0.5
    lai_fuse_tol      = 0.8
    lai_tol           = 1.0
    ntol              = 0.001
+   laimax_tol        = 0.01
+   dark_cumlai       = 6.0
    profile_tol       = 0.2
    max_patch_age     = 500.0
    ff_ndbh           = 20
-   coh_tolerance_max = 10.0 ! Original 2.0
-   pat_tolerance_max = 100.0
+   ff_nhgt           = ff_ndbh ! This should be always the same as ff_ndbh
+   coh_tolerance_max = 10.0    ! Original 2.0
+   pat_tolerance_max = 50.0
    fuse_relax        = .false.
    dffdbhi           = real(ff_ndbh)/maxffdbh
+   dffhgti           = real(ff_nhgt)/maxffhgt
 
    !----- The following flag switches detailed debugging on. ------------------------------!
-   print_fuse_details = .false.
+   print_fuse_details = .true.
    fuse_prefix        = 'patch_fusion_'
    !---------------------------------------------------------------------------------------!
 

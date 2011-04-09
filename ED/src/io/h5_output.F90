@@ -722,7 +722,7 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
                                  , cnt            & ! intent(in)
                                  , stride         & ! intent(in)
                                  , globdims       ! ! intent(in)
-   use fusion_fission_coms, only : ff_ndbh        ! ! intent(in)
+   use fusion_fission_coms, only : ff_nhgt        ! ! intent(in)
    use c34constants       , only : n_stoma_atts   ! ! intent(in)
    use ed_misc_coms       , only : ndcycle        ! ! intent(in)
 
@@ -1154,15 +1154,15 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
       cnt(1:2)    = 1_8
       stride(1:2) = 1_8
             
-   case (346) ! (n_pft,ff_ndbh,npatched)
+   case (346) ! (n_pft,ff_nhgt,npatched)
 
       dsetrank = 3
       globdims(1) = int(n_pft,8)
       chnkdims(1) = int(n_pft,8)
       chnkoffs(1) = 0_8
       
-      globdims(2) = int(ff_ndbh,8)
-      chnkdims(2) = int(ff_ndbh,8)
+      globdims(2) = int(ff_nhgt,8)
+      chnkdims(2) = int(ff_nhgt,8)
       chnkoffs(2) = 0_8
 
       globdims(3) = int(var_len_global,8)
