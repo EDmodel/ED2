@@ -24,7 +24,7 @@ module fusion_fission_coms
    integer :: ff_ndbh
 
    !----- Inverse of DBH bin class in patch profiling -------------------------------------!
-   integer :: dffdbhi
+   real :: dffdbhi
 
    !----- Minimum height class in patch profiling -----------------------------------------!
    real :: min_hgt_class

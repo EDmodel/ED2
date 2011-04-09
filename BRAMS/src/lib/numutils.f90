@@ -1927,6 +1927,28 @@ end function is_finite
 
 !==========================================================================================!
 !==========================================================================================!
+!     This function checks whether a number is finite or not.  This test will return true  !
+! if the number is a valid one, and false if the number is either +Infinity, -Infinity, or !
+! NaN.                                                                                     !
+!------------------------------------------------------------------------------------------!
+logical function is_finite8(number)
+   implicit none
+   real(kind=8), intent(in) :: number
+   real(kind=8), parameter  :: largeneg = -huge(1.d0)
+   real(kind=8), parameter  :: largepos =  huge(1.d0)
+   is_finite8 = number >= largeneg .and. number <= largepos
+   return
+end function is_finite8
+!==========================================================================================!
+!==========================================================================================!
+
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
 !     This subroutine extracts the diagonal of a matrix.                                   !
 !------------------------------------------------------------------------------------------!
 subroutine diagon(nsiz,mat,vec)

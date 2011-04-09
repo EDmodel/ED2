@@ -111,12 +111,49 @@ subroutine acoust_new(m1,m2,m3,scr1,scr2,vt3da,vt3db,vt3dc,vt3dd,vt3de,vt3df,vt3
    implicit none
 
    !------ Arguments ----------------------------------------------------------------------!
-   integer                   :: m1,m2,m3
-   real, dimension(m1,m2,m3) :: dn0,pi0,th0,up,vp,wp,pp
-   real, dimension(   m2,m3) :: topt,topu,topv,rtgt,rtgu,f13u,dxu,rtgv
-   real, dimension(   m2,m3) :: dyv,f23v,f13t,f23t,fmapui,fmapvi,dxt,dyt,fmapt
-   real, dimension(*)        :: scr1,scr2,vt3da,vt3db,vt3dc,vt3dd,vt3de,vt3df
-   real, dimension(*)        :: vt3dg,vt3dh,vt2da,ut,vt,wt,pt
+   integer                   :: m1
+   integer                   :: m2
+   integer                   :: m3
+   real, dimension(m1,m2,m3) :: dn0
+   real, dimension(m1,m2,m3) :: pi0
+   real, dimension(m1,m2,m3) :: th0
+   real, dimension(m1,m2,m3) :: up
+   real, dimension(m1,m2,m3) :: vp
+   real, dimension(m1,m2,m3) :: wp
+   real, dimension(m1,m2,m3) :: pp
+   real, dimension(   m2,m3) :: topt
+   real, dimension(   m2,m3) :: topu
+   real, dimension(   m2,m3) :: topv
+   real, dimension(   m2,m3) :: rtgt
+   real, dimension(   m2,m3) :: rtgu
+   real, dimension(   m2,m3) :: f13u
+   real, dimension(   m2,m3) :: dxu
+   real, dimension(   m2,m3) :: rtgv
+   real, dimension(   m2,m3) :: dyv
+   real, dimension(   m2,m3) :: f23v
+   real, dimension(   m2,m3) :: f13t
+   real, dimension(   m2,m3) :: f23t
+   real, dimension(   m2,m3) :: fmapui
+   real, dimension(   m2,m3) :: fmapvi
+   real, dimension(   m2,m3) :: dxt
+   real, dimension(   m2,m3) :: dyt
+   real, dimension(   m2,m3) :: fmapt
+   real, dimension(*)        :: scr1
+   real, dimension(*)        :: scr2
+   real, dimension(*)        :: vt3da
+   real, dimension(*)        :: vt3db
+   real, dimension(*)        :: vt3dc
+   real, dimension(*)        :: vt3dd
+   real, dimension(*)        :: vt3de
+   real, dimension(*)        :: vt3df
+   real, dimension(*)        :: vt3dg
+   real, dimension(*)        :: vt3dh
+   real, dimension(*)        :: vt2da
+   real, dimension(*)        :: ut
+   real, dimension(*)        :: vt
+   real, dimension(*)        :: wt
+   real, dimension(*)        :: pt
+   !----- Local variables. ----------------------------------------------------------------!
    real                      :: a1da2
    integer                   :: iter
    !---------------------------------------------------------------------------------------!
@@ -128,8 +165,8 @@ subroutine acoust_new(m1,m2,m3,scr1,scr2,vt3da,vt3db,vt3dc,vt3dd,vt3de,vt3df,vt3
       dts = 2. * dtlt / nnacoust(ngrid)
 
       if (iter == 1)  then
-           call coefz(mzp,mxp,myp,ia,iz,ja,jz,vt3dc,vt3dd,vt3de,dn0,pi0,th0,rtgt,a1da2     &
-                     ,vt3df,vt3dg,scr2,vctr1,vctr2  )
+         call coefz(mzp,mxp,myp,ia,iz,ja,jz,vt3dc,vt3dd,vt3de,dn0,pi0,th0,rtgt,a1da2       &
+                   ,vt3df,vt3dg,scr2,vctr1,vctr2)                                    
       end if
 
       if (iter /= 1) then
@@ -139,24 +176,35 @@ subroutine acoust_new(m1,m2,m3,scr1,scr2,vt3da,vt3db,vt3dc,vt3dd,vt3de,vt3df,vt3
       call prdctu(mzp,mxp,myp,ia,izu,ja,jz,ibcon,up,ut,pp,vt3da,th0,vt3db,f13u,rtgu,rtgt   &
                  ,dxu,vt3dh,topu,mynum)
 
-      if (iter /= nnacoust(ngrid)) then
-         call mpilbc_driver('sendst',2)
-      end if
+      !------------------------------------------------------------------------------------!
+      !     MLO.  This block has been commented out based on RAMS-6.0.  I honestly don't   !
+      !           see why this could cause problems, but it seems to work better.          !
+      !------------------------------------------------------------------------------------!
+      ! if (iter /= nnacoust(ngrid)) then
+      !    call mpilbc_driver('sendst',2)
+      ! end if
+      !------------------------------------------------------------------------------------!
 
       !------------------------------------------------------------------------------------!
       if (nxtnest(ngrid) == 0 .and. ipara == 0)  then
-         call cyclic_set (nzp,nxp,nyp,up(1,1,1),'U')
+         call cyclic_set (nzp,nxp,nyp,up,'U')
       end if
       !------------------------------------------------------------------------------------!
 
       call prdctv(mzp,mxp,myp,ia,iz,ja,jzv,ibcon,vp,vt,pp,vt3da,th0,vt3db,f23v,rtgv,rtgt   &
                  ,dyv,vt3dh,topv)
 
-      if (iter /= nnacoust(ngrid)) then
-         call mpilbc_driver('sendst',3)
-      else
-         call mpilbc_driver('sendst',5)
-      end if
+      !------------------------------------------------------------------------------------!
+      !     MLO.  This block has been commented out based on RAMS-6.0.  I honestly don't   !
+      !           see why this could cause problems, but it seems to work better.          !
+      !------------------------------------------------------------------------------------!
+      ! if (iter /= nnacoust(ngrid)) then
+      !    call mpilbc_driver('sendst',3)
+      ! else
+      !    call mpilbc_driver('sendst',5)
+      ! end if
+      !------------------------------------------------------------------------------------!
+      call mpilbc_driver('sendst',5)
 
       !------------------------------------------------------------------------------------!
       if (nxtnest(ngrid) == 0 .and. ipara == 0) then
@@ -166,12 +214,18 @@ subroutine acoust_new(m1,m2,m3,scr1,scr2,vt3da,vt3db,vt3dc,vt3dd,vt3de,vt3df,vt3
 
       call prdctw1(mzp,mxp,myp,ia,iz,ja,jz,ibcon,wp,wt,pp,vt3dc,a1da2,vt3dh,rtgt,topt)
 
-      if (iter /= nnacoust(ngrid)) then
-         call mpilbc_driver('getst',2)
-         call mpilbc_driver('getst',3)
-      else
-         call mpilbc_driver('getst',5)
-      end if
+      !------------------------------------------------------------------------------------!
+      !     MLO.  This block has been commented out based on RAMS-6.0.  I honestly don't   !
+      !           see why this could cause problems, but it seems to work better.          !
+      !------------------------------------------------------------------------------------!
+      ! if (iter /= nnacoust(ngrid)) then
+      !    call mpilbc_driver('getst',2)
+      !    call mpilbc_driver('getst',3)
+      ! else
+      !    call mpilbc_driver('getst',5)
+      ! end if
+      !------------------------------------------------------------------------------------!
+      call mpilbc_driver('getst',5)
 
       call prdctp1_new(mzp,mxp,myp,ia,iz,ja,jz,pp,up,vp,pi0,dn0,th0,pt,vt3da,vt3db,f13t    &
                       ,f23t,rtgt,rtgu,rtgv,vt2da,fmapui,fmapvi,dxt,dyt,fmapt,mynum)
@@ -188,8 +242,9 @@ subroutine acoust_new(m1,m2,m3,scr1,scr2,vt3da,vt3db,vt3dc,vt3dd,vt3de,vt3df,vt3
       call prdctp2(mzp,mxp,myp,ia,iz,ja,jz,ibcon,pp,wp,vt3dd,vt3de,rtgt,mynum)
 
       !------------------------------------------------------------------------------------!
-      if (nxtnest(ngrid) == 0 .and. ipara == 0)  &
-           call cyclic_set (nzp,nxp,nyp,pp(1,1,1),'T')
+      if (nxtnest(ngrid) == 0 .and. ipara == 0) then
+         call cyclic_set (nzp,nxp,nyp,pp,'T')
+      end if
       !------------------------------------------------------------------------------------!
 
       if (iter /= nnacoust(ngrid)) then
