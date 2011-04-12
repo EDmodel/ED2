@@ -751,7 +751,7 @@ subroutine geth5dims(idim_type,varlen,globid,var_len_global,dsetrank,varn,nrec,i
    !---------------------------------------------------------------------------------------!
 
    select case (idim_type) 
-   case(90,92) ! No polygon-site-patch or cohort dimension, or a single-dimension vector
+   case(90,92,96) ! No polygon-site-patch or cohort dimension, or single-dim. vector
       
       dsetrank = 1
       chnkdims(1) = int(varlen,8)
