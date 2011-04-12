@@ -2620,51 +2620,64 @@ end subroutine init_phen_coms
 !     This subroutine assigns the fusion and splitting parameters.                         !
 !------------------------------------------------------------------------------------------!
 subroutine init_ff_coms
-   use fusion_fission_coms, only : min_dbh_class      & ! intent(out)
-                                 , maxffdbh           & ! intent(out)
-                                 , maxffhgt           & ! intent(out)
-                                 , min_hgt_class      & ! intent(out)
+   use fusion_fission_coms, only : niter_patfus       & ! intent(out)
+                                 , hgt_class          & ! intent(out)
                                  , fusetol            & ! intent(out)
                                  , fusetol_h          & ! intent(out)
                                  , lai_fuse_tol       & ! intent(out)
                                  , lai_tol            & ! intent(out)
-                                 , ntol               & ! intent(out)
-                                 , laimax_tol         & ! intent(out)
-                                 , dark_cumlai        & ! intent(out)
-                                 , profile_tol        & ! intent(out)
-                                 , max_patch_age      & ! intent(out)
-                                 , ff_ndbh            & ! intent(out)
                                  , ff_nhgt            & ! intent(out)
                                  , coh_tolerance_max  & ! intent(out)
-                                 , pat_tolerance_max  & ! intent(out)
+                                 , dark_cumlai_min    & ! intent(out)
+                                 , dark_cumlai_max    & ! intent(out)
+                                 , dark_cumlai_mult   & ! intent(out)
+                                 , sunny_cumlai_min   & ! intent(out)
+                                 , sunny_cumlai_max   & ! intent(out)
+                                 , sunny_cumlai_mult  & ! intent(out)
+                                 , light_toler_min    & ! intent(out)
+                                 , light_toler_max    & ! intent(out)
+                                 , light_toler_mult   & ! intent(out)
                                  , fuse_relax         & ! intent(out)
-                                 , dffdbhi            & ! intent(out)
-                                 , dffhgti            & ! intent(out)
                                  , print_fuse_details & ! intent(out)
                                  , fuse_prefix        ! ! intent(out)
-
+   use consts_coms        , only : twothirds          ! ! intent(in)
    implicit none
+   !----- Local variables. ----------------------------------------------------------------!
+   real              :: exp_patfus
+   real              :: exp_hgtclass
+   !---------------------------------------------------------------------------------------!
 
-   min_dbh_class     = 0.0
-   maxffdbh          = 200.0
-   maxffhgt          = 24.0
-   min_hgt_class     = 0.0
    fusetol           = 0.4
    fusetol_h         = 0.5
    lai_fuse_tol      = 0.8
    lai_tol           = 1.0
-   ntol              = 0.001
-   laimax_tol        = 0.01
-   dark_cumlai       = 6.0
-   profile_tol       = 0.2
-   max_patch_age     = 500.0
-   ff_ndbh           = 20
-   ff_nhgt           = ff_ndbh ! This should be always the same as ff_ndbh
+   ff_nhgt           = 7
    coh_tolerance_max = 10.0    ! Original 2.0
-   pat_tolerance_max = 50.0
+
+   !----- Define the number of height classes. --------------------------------------------!
+   allocate (hgt_class(ff_nhgt))
+   hgt_class( 1) =  2.0
+   hgt_class( 2) =  5.0
+   hgt_class( 3) =  9.0
+   hgt_class( 4) = 14.0
+   hgt_class( 5) = 20.0
+   hgt_class( 6) = 26.0
+   hgt_class( 7) = 35.0
+
+   niter_patfus       = 25
+   exp_patfus         = 1. / real(niter_patfus)
+
+   dark_cumlai_min    = 5.0
+   dark_cumlai_max    = 7.0
+   sunny_cumlai_min   = 0.5
+   sunny_cumlai_max   = 1.0
+   light_toler_min    = 0.20
+   light_toler_max    = twothirds
+   sunny_cumlai_mult  = (sunny_cumlai_max/sunny_cumlai_min)**exp_patfus
+   dark_cumlai_mult   = (dark_cumlai_min /dark_cumlai_max )**exp_patfus
+   light_toler_mult   = (light_toler_max /light_toler_min )**exp_patfus
+
    fuse_relax        = .false.
-   dffdbhi           = real(ff_ndbh)/maxffdbh
-   dffhgti           = real(ff_nhgt)/maxffhgt
 
    !----- The following flag switches detailed debugging on. ------------------------------!
    print_fuse_details = .true.

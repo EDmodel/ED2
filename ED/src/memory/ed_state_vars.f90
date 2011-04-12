@@ -11,7 +11,7 @@ module ed_state_vars
                        ,maxmach,maxgrds, str_len
   use disturb_coms, only : lutime,num_lu_trans,max_lu_years
   use met_driver_coms, only: met_driv_data,met_driv_state
-  use fusion_fission_coms, only: ff_nhgt
+  use fusion_fission_coms, only: ff_nhgt,hgt_class
   use phenology_coms, only: prescribed_phen
   use ed_misc_coms, only: idoutput, imoutput, iqoutput, ndcycle
 
@@ -6628,6 +6628,14 @@ contains
                             ,'NZS :90:hist:anal:dail:mont:dcyc:year')
 
       nvar=nvar+1
+      call vtable_edio_i_sca(ff_nhgt,nvar,igr,0,0                                              &
+                            ,var_len,var_len_global,max_ptrs                               &
+                            ,'FF_NHGT :90:hist:anal:dail:mont:dcyc:year')
+      call vtable_edio_i_sca(ff_nhgt,nvar,igr,1,0                                          &
+                            ,var_len,var_len_global,max_ptrs                               &
+                            ,'FF_NHGT :90:hist:anal:dail:mont:dcyc:year')
+
+      nvar=nvar+1
       call vtable_edio_i_sca(ndcycle,nvar,igr,0,0                                              &
                             ,var_len,var_len_global,max_ptrs                               &
                             ,'NDCYCLE :90:hist:anal:dail:mont:dcyc:year')
@@ -6651,6 +6659,24 @@ contains
       call vtable_edio_r(nzg,slz,nvar,igr,1,0                                              &
                         ,var_len,var_len_global,max_ptrs                                   &
                         ,'SLZ :92:hist:anal:dail:mont:dcyc:year')
+      !------------------------------------------------------------------------------------!
+
+
+      !------------------------------------------------------------------------------------!
+      !    1-D variables, height classes.                                                  !
+      !------------------------------------------------------------------------------------!
+      var_len        = ff_nhgt
+      var_len_global = ff_nhgt
+
+
+
+      nvar=nvar+1
+      call vtable_edio_r(ff_nhgt,hgt_class,nvar,igr,0,0                                    &
+                        ,var_len,var_len_global,max_ptrs                                   &
+                        ,'HGT_CLASS :96:hist:anal:dail:mont:dcyc:year')
+      call vtable_edio_r(ff_nhgt,hgt_class,nvar,igr,1,0                                    &
+                        ,var_len,var_len_global,max_ptrs                                   &
+                        ,'HGT_CLASS :96:hist:anal:dail:mont:dcyc:year')
       !------------------------------------------------------------------------------------!
 
 
