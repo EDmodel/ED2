@@ -14,54 +14,46 @@ module fusion_fission_coms
 
    implicit none
 
-   !----- Minimum DBH class used in patch profiling ---------------------------------------!
-   real :: min_dbh_class
+   !----- Maximum number of iterations for patch fusion. ----------------------------------!
+   integer :: niter_patfus
 
-   !----- Maximum DBH (cm) used in patch profiling ----------------------------------------!
-   real :: maxffdbh
+   !----- Minimum and maximum height (m) used in patch profiling --------------------------!
+   real, dimension(:), allocatable :: hgt_class
 
-   !----- Number of DBH bins in patch profiling -------------------------------------------!
-   integer :: ff_ndbh
-
-   !----- Inverse of DBH bin class in patch profiling -------------------------------------!
-   real :: dffdbhi
-
-   !----- Minimum height class in patch profiling -----------------------------------------!
-   real :: min_hgt_class
+   !----- Number of height bins in patch profiling ----------------------------------------!
+   integer :: ff_nhgt
 
    !----- Cohort fusion tolerance on DBH (dimensionless) ----------------------------------!
-   real :: fusetol
+   real    :: fusetol
 
    !----- Cohort fusion tolerance on height (m) -------------------------------------------!
-   real :: fusetol_h
+   real    :: fusetol_h
 
    !----- Cohort fusion tolerance on LAI (m2 leaf/m2 ground) ------------------------------!
-   real :: lai_fuse_tol
+   real    :: lai_fuse_tol
 
    !----- Cohort splitting tolerance on LAI (m2 leaf/ m2 ground) --------------------------!
-   real :: lai_tol
+   real    :: lai_tol
 
    !----- Cohort maximum tolerance factor -------------------------------------------------!
-   real :: coh_tolerance_max
+   real    :: coh_tolerance_max
 
    !----- Patch maximum tolerance factor --------------------------------------------------!
-   real :: pat_tolerance_max
+   real    :: dark_cumlai_min
+   real    :: dark_cumlai_max
+   real    :: sunny_cumlai_min
+   real    :: sunny_cumlai_max
+   real    :: dark_cumlai_mult
+   real    :: sunny_cumlai_mult
 
    !----- Flag to allow a less strict fusion test for short cohorts. ----------------------!
    logical :: fuse_relax
 
-   !---------------------------------------------------------------------------------------!
-   !    Minimum plant density for height bin to be used in height profile comparisons      !
-   ! (plants/m2).                                                                          !
-   !---------------------------------------------------------------------------------------!
-   real :: ntol
-
    !----- Fractional tolerance for patch pft height comparisons (dimensionless) -----------!
-   real :: profile_tol
+   real    :: light_toler_min
+   real    :: light_toler_max
+   real    :: light_toler_mult
 
-   !----- Maximum patch age for fusion (years) --------------------------------------------!
-   real :: max_patch_age
-   
    !---------------------------------------------------------------------------------------!
    !     Flag to decide whether we should print the full details of the patch fusion       !
    ! process.                                                                              !

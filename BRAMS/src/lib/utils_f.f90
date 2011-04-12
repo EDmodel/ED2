@@ -356,7 +356,49 @@ real function RAMRAN(idum)
 
   return
 end function RAMRAN
+!==========================================================================================!
+!==========================================================================================!
 
+
+
+
+
+
+!==========================================================================================!
+!==========================================================================================!
+!    This function determines the file size in 4-byte "words".  There may be a better way  !
+! of doing this in Fortran 90, but I couldn't find any...                                  !
+!------------------------------------------------------------------------------------------!
+integer function filesize4(fname)
+   implicit none
+   !----- Arguments. ----------------------------------------------------------------------!
+   character(len=*), intent(in) :: fname
+   !----- Local variables. ----------------------------------------------------------------!
+   integer                      :: ierr
+   real                         :: dum
+   logical                      :: here
+   !---------------------------------------------------------------------------------------!
+
+   inquire (file=trim(fname),exist=here)
+   if (here) then
+      open(unit=43,file=trim(fname),access='direct',recl=4)
+      filesize4 = 0
+      bytebybyte: do
+         filesize4 = filesize4 + 1
+         read(unit=43,rec=filesize4, iostat=ierr) dum
+         if (ierr /= 0) exit bytebybyte
+      end do bytebybyte
+      close(unit=43,status='keep')
+      filesize4 = filesize4 - 1
+   else
+      filesize4 = -1
+   end if
+
+
+   return
+end function filesize4
+!==========================================================================================!
+!==========================================================================================!
 
 
 
