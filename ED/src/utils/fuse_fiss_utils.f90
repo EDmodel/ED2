@@ -2295,7 +2295,12 @@ module fuse_fiss_utils
                         refv = 0.5 * ( csite%pft_density_profile(ipft,idbh,donp)           &
                                      + csite%pft_density_profile(ipft,idbh,recp))
                         norm = diff / refv
-                        fuse_flag = norm <= profile_tol
+
+                        if (idbh==1) then
+                           fuse_flag = norm <= 1.0
+                        else
+                           fuse_flag = norm <= profile_tol
+                        end if
 
                         !------------------------------------------------------------------!
                         !     If fuse_flag is false, the patches aren't similar, move to   !
