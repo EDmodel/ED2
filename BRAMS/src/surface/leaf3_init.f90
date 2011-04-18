@@ -747,7 +747,8 @@ subroutine sfcinit_nofile(n1,n2,n3,mzg,mzs,npat,ifm,theta,pi0,pp,rv,co2p,seatp,s
                case (16,17,20)
                   soil_water(k,i,j,ipat) = slmsts(nsoil)
                case default
-                  soil_water(k,i,j,ipat) = max(soilcp(nsoil),slmstr(k) * slmsts(nsoil))
+                  soil_water(k,i,j,ipat) = soilcp(nsoil) + max(0.,min(1.,slmstr(k)))       &
+                                         * (slmsts(nsoil) - soilcp(nsoil))
                end select
 
                !---------------------------------------------------------------------------!
